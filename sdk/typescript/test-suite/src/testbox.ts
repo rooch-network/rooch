@@ -30,14 +30,13 @@ export class TestBox {
   async loadBitcoinEnv(customContainer?: BitcoinContainer, autoMining: boolean = false) {
     if (customContainer) {
       this.bitcoinContainer = await customContainer.start()
-      return
-    }
-
-    this.bitcoinContainer = await new BitcoinContainer()
+    } else {
+      this.bitcoinContainer = await new BitcoinContainer()
       .withHostDataPath(this.tmpDir.name)
       .withNetwork(await this.getNetwork())
       .withNetworkAliases(bitcoinNetworkAlias)
       .start()
+    }
 
     await this.delay(5)
 
@@ -247,9 +246,7 @@ export class TestBox {
 
   createTmpDir(): DirResult {
     tmp.setGracefulCleanup()
-    const systemTempDir = getTempDirectory()
-    console.log("systemTempDir:", systemTempDir)
-    return tmp.dirSync({ unsafeCleanup: true, tmpdir: systemTempDir })
+    return tmp.dirSync({ unsafeCleanup: true })
   }
 }
 
@@ -267,21 +264,4 @@ export async function getUnusedPort(): Promise<number> {
     });
     server.listen(0); 
   });
-}
-
-/**
- * Gets the temporary directory path.
- * Prioritizes $RUNNER_TEMP if available, otherwise uses the system's temp directory.
- * 
- * @returns {string} The path to the temporary directory
- */
-function getTempDirectory(): string {
-  // Check if RUNNER_TEMP environment variable is set (for GitHub Actions)
-  const runnerTemp = process.env.RUNNER_TEMP;
-  if (runnerTemp) {
-      return runnerTemp;
-  }
-
-  // If RUNNER_TEMP is not set, use the system's temp directory
-  return os.tmpdir();
 }

@@ -66,11 +66,11 @@ describe('Bitcoin Assets API', () => {
     expect(result!.exitCode).eq(0)
 
     // mint utxo
-    result = await testBox.bitcoinContainer?.executeRpcCommandRaw([], 'generatetoaddress', ['1', addr])
+    result = await testBox.bitcoinContainer?.executeRpcCommandRaw([], 'generatetoaddress', ['10', addr])
     expect(result).toBeDefined()
 
     // wait rooch indexer
-    await testBox.delay(20)
+    await testBox.delay(30)
 
     const inscriptions = await testBox.getClient().queryInscriptions({
       filter: {
