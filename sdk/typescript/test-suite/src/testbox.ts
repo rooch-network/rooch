@@ -1,6 +1,5 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-import * as os from 'os';
 import tmp, { DirResult } from 'tmp'
 import * as net from 'net';
 import { execSync } from 'child_process'
