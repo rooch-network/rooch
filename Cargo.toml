@@ -1,0 +1,99 @@
+[workspace]
+resolver = "2"
+
+members = [
+    "crates/moveos",
+    "crates/statedb",
+    "crates/mpm",
+]
+
+default-members = [
+    "crates/mpm",
+    "crates/moveos",
+]
+
+# All workspace members should inherit these keys
+# for package declarations.
+[workspace.package]
+authors = ["Rooch Core Dev <opensource@rooch.network>"]
+edition = "2021"
+homepage = "https://rooch.network"
+license = "Apache-2.0"
+publish = false
+repository = "https://github.com/rooch-network/moveos"
+rust-version = "1.64"
+
+
+[workspace.dependencies]
+# Internal crate dependencies.
+# Please do not add any test features here: they should be declared by the individual crate.
+moveos = { path = "crates/moveos" }
+statedb = { path = "crates/statedb" }
+
+# External crate dependencies.
+# Please do not add any test features here: they should be declared by the individual crate.
+again = "0.1.2"
+anyhow = "1.0.62"
+serde = { version = "1.0.137", features = ["derive", "rc"] }
+serde_bytes = "0.11.6"
+serde_json = { version = "1.0.81", features = ["preserve_order"] }
+serde_repr = "0.1"
+serde-name = "0.1.1"
+
+
+# Note: the BEGIN and END comments below are required for external tooling. Do not remove.
+# BEGIN MOVE DEPENDENCIES
+move-abigen = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-binary-format = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-bytecode-verifier = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-bytecode-utils = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-cli = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-command-line-common = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-compiler ={ git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-core-types = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6", features = ["address32"] }
+move-docgen = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-ir-compiler = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-model = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-package = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-prover = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-prover-boogie-backend = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-stackless-bytecode = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-prover-test-utils = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-resource-viewer = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-stackless-bytecode-interpreter = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-stdlib = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-symbol-pool = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-table-extension = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-transactional-test-runner = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-unit-test = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6", features = ["table-extension"] }
+move-vm-runtime = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6", features = ["lazy_natives"] }
+move-vm-test-utils = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6", features = ["table-extension"] }
+move-vm-types = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+read-write-set = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+read-write-set-dynamic = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+# END MOVE DEPENDENCIES
+
+[profile.release]
+debug = true
+overflow-checks = true
+
+# The performance build is not currently recommended
+# for production deployments. It has not been widely tested.
+[profile.performance]
+inherits = "release"
+opt-level = 3
+debug = true
+overflow-checks = true
+lto = true
+codegen-units = 1
+
+[profile.cli]
+inherits = "release"
+debug = false
+opt-level = "z"
+lto = true
+strip = true
+codegen-units = 1
+
+[profile.bench]
+debug = true
