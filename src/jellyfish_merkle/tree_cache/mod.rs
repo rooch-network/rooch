@@ -72,12 +72,12 @@
 #[cfg(test)]
 mod tree_cache_test;
 
-use crate::{
+use super::{
     node_type::{Node, NodeKey},
-    RawKey, StaleNodeIndex, TreeReader, TreeUpdateBatch,
+    RawKey, StaleNodeIndex, TreeReader, TreeUpdateBatch, hash::PlainCryptoHash,
 };
 use anyhow::{bail, Result};
-use starcoin_crypto::{hash::SPARSE_MERKLE_PLACEHOLDER_HASH, HashValue};
+use super::hash::{SPARSE_MERKLE_PLACEHOLDER_HASH, HashValue};
 use std::{
     collections::{hash_map::Entry, BTreeMap, BTreeSet, HashMap, HashSet},
     convert::Into,
@@ -239,7 +239,7 @@ where
         let root_hash = self
             .get_node(root_node_key)
             .unwrap_or_else(|_| unreachable!("Root node with key {:?} must exist", root_node_key))
-            .hash();
+            .crypto_hash();
         self.frozen_cache.root_hashes.push(root_hash);
         self.frozen_cache.node_cache.extend(self.node_cache.drain());
 

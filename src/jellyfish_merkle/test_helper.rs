@@ -4,8 +4,8 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{blob::Blob, mock_tree_store::MockTreeStore, HashValueKey, JellyfishMerkleTree};
-use starcoin_crypto::HashValue;
+use super::{blob::Blob, mock_tree_store::MockTreeStore, HashValueKey, JellyfishMerkleTree};
+use super::hash::HashValue;
 use std::collections::HashMap;
 
 /// Computes the key immediately after `key`.

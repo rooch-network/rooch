@@ -5,13 +5,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::*;
-use crate::{blob::Blob, mock_tree_store::MockTreeStore, node_type::Node, HashValueKey, NodeKey};
-use starcoin_crypto::HashValue;
+use super::super::{blob::Blob, mock_tree_store::MockTreeStore, node_type::Node, HashValueKey, NodeKey};
+use super::super::hash::HashValue;
 
 fn random_leaf_with_key() -> (Node<HashValueKey>, NodeKey) {
     let hash_value = HashValue::random();
     let node = Node::new_leaf(hash_value.into(), Blob::from(HashValue::random().to_vec()));
-    let node_key = node.hash();
+    let node_key = node.crypto_hash();
     (node, node_key)
 }
 

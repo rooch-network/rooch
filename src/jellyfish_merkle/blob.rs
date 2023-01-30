@@ -4,10 +4,10 @@
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::hash::*;
+use super::hash::*;
 use std::fmt;
 
-#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
+#[derive(Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub struct Blob {
     blob: Vec<u8>,
@@ -40,5 +40,11 @@ impl From<Blob> for Vec<u8> {
 impl From<Vec<u8>> for Blob {
     fn from(blob: Vec<u8>) -> Blob {
         Blob { blob }
+    }
+}
+
+impl PlainCryptoHash for Blob{
+    fn crypto_hash(&self) -> HashValue {
+        todo!()
     }
 }

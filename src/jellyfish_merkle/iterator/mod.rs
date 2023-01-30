@@ -12,7 +12,7 @@
 #[cfg(test)]
 mod iterator_test;
 
-use crate::{
+use super::{
     blob::Blob,
     nibble::Nibble,
     nibble_path::NibblePath,
@@ -20,7 +20,7 @@ use crate::{
     RawKey, TreeReader,
 };
 use anyhow::{format_err, Result};
-use starcoin_crypto::HashValue;
+use super::hash::HashValue;
 use std::marker::PhantomData;
 
 /// `NodeVisitInfo` keeps track of the status of an internal node during the iteration process. It

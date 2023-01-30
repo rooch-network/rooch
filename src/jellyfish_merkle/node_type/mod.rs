@@ -4,11 +4,11 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-//! Node types of [`JellyfishMerkleTree`](crate::JellyfishMerkleTree)
+//! Node types of [`JellyfishMerkleTree`](super::JellyfishMerkleTree)
 //!
 //! This module defines two types of Jellyfish Merkle tree nodes: [`InternalNode`]
 //! and [`LeafNode`] as building blocks of a 256-bit
-//! [`JellyfishMerkleTree`](crate::JellyfishMerkleTree). [`InternalNode`] represents a 4-level
+//! [`JellyfishMerkleTree`](super::JellyfishMerkleTree). [`InternalNode`] represents a 4-level
 //! binary tree to optimize for IOPS: it compresses a tree with 31 nodes into one node with 16
 //! chidren at the lowest level. [`LeafNode`] stores the full key and the account blob data
 //! associated.
@@ -16,7 +16,7 @@
 
 #[cfg(test)]
 mod node_type_test;
-use crate::{blob::Blob, nibble::Nibble, RawKey};
+use super::{blob::Blob, nibble::Nibble, RawKey};
 use anyhow::{ensure, Context, Result};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use num_derive::{FromPrimitive, ToPrimitive};
@@ -26,7 +26,7 @@ use proptest::{collection::hash_map, prelude::*};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use starcoin_crypto::hash::*;
+use super::hash::*;
 use std::cell::Cell;
 use std::{
     collections::hash_map::HashMap,
@@ -70,7 +70,7 @@ pub struct InternalNode {
     cached_hash: Cell<Option<HashValue>>,
 }
 
-/// Computes the hash of internal node according to [`JellyfishTree`](crate::JellyfishTree)
+/// Computes the hash of internal node according to [`JellyfishTree`](super::JellyfishTree)
 /// data structure in the logical view. `start` and `nibble_height` determine a subtree whose
 /// root hash we want to get. For an internal node with 16 children at the bottom level, we compute
 /// the root hash of it as if a full binary Merkle tree with 16 leaves as below:
@@ -486,12 +486,12 @@ where
     }
 
     pub fn serialize(&self, binary: &mut Vec<u8>) -> Result<()> {
-        binary.extend(bcs_ext::to_bytes(self)?);
+        binary.extend(bcs::to_bytes(self)?);
         Ok(())
     }
 
     pub fn deserialize(data: &[u8]) -> Result<Self> {
-        bcs_ext::from_bytes(data)
+        bcs::from_bytes(data).map_err(|e|e.into())
     }
 }
 
@@ -513,7 +513,7 @@ enum NodeTag {
     Leaf = 2,
 }
 
-/// The concrete node type of [`JellyfishMerkleTree`](crate::JellyfishMerkleTree).
+/// The concrete node type of [`JellyfishMerkleTree`](super::JellyfishMerkleTree).
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Node<K: RawKey> {
     /// Represents `null`.
@@ -616,7 +616,13 @@ where
     }
 }
 
-#[derive(CryptoHasher, Serialize, Deserialize, CryptoHash)]
+impl<K> PlainCryptoHash for Node<K> where K: RawKey {
+    fn crypto_hash(&self) -> HashValue {
+        self.hash()
+    }
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct SparseMerkleInternalNode {
     left_child: HashValue,
     right_child: HashValue,
@@ -631,7 +637,13 @@ impl SparseMerkleInternalNode {
     }
 }
 
-#[derive(CryptoHasher, Deserialize, Serialize, CryptoHash)]
+impl PlainCryptoHash for SparseMerkleInternalNode {
+    fn crypto_hash(&self) -> HashValue {
+       todo!()
+    }
+}
+
+#[derive(Deserialize, Serialize)]
 pub struct SparseMerkleLeafNode {
     pub key: HashValue,
     pub value_hash: HashValue,
@@ -640,6 +652,12 @@ pub struct SparseMerkleLeafNode {
 impl SparseMerkleLeafNode {
     pub fn new(key: HashValue, value_hash: HashValue) -> Self {
         SparseMerkleLeafNode { key, value_hash }
+    }
+}
+
+impl PlainCryptoHash for SparseMerkleLeafNode {
+    fn crypto_hash(&self) -> HashValue {
+        todo!()
     }
 }
 

@@ -84,9 +84,10 @@ pub mod node_type;
 pub mod proof;
 pub mod test_helper;
 pub mod tree_cache;
+pub mod hash;
 
 #[cfg(test)]
-use crate::iterator::JellyfishMerkleIterator;
+use iterator::JellyfishMerkleIterator;
 use anyhow::{bail, ensure, format_err, Result};
 use backtrace::Backtrace;
 use blob::Blob;
@@ -96,11 +97,11 @@ use proof::{SparseMerkleProof, SparseMerkleRangeProof};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use serde::{de::DeserializeOwned, Serialize};
-use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
-use starcoin_logger::prelude::*;
+use log::{debug};
 use std::collections::{BTreeMap, BTreeSet};
 use std::marker::PhantomData;
 use tree_cache::TreeCache;
+use hash::{HashValue,PlainCryptoHash};
 
 /// The hardcoded maximum height of a [`JellyfishMerkleTree`] in nibbles.
 pub const ROOT_NIBBLE_HEIGHT: usize = HashValue::LENGTH * 2;
@@ -198,11 +199,11 @@ where
     T: Clone + Ord + Serialize + DeserializeOwned,
 {
     fn encode_key(&self) -> Result<Vec<u8>> {
-        bcs_ext::to_bytes(self)
+        bcs::to_bytes(self).map_err(|e| e.into())
     }
 
     fn decode_key(bytes: &[u8]) -> Result<Self> {
-        bcs_ext::from_bytes(bytes)
+        bcs::from_bytes(bytes).map_err(|e| e.into())
     }
 }
 
@@ -481,7 +482,7 @@ where
 
         if children.is_empty() {
             let empty_node = Node::new_null();
-            Ok((empty_node.hash(), empty_node))
+            Ok((empty_node.crypto_hash(), empty_node))
         } else if children.len() == 1
             && children
                 .values()
@@ -495,8 +496,8 @@ where
         } else {
             let new_internal_node: Node<K> = InternalNode::new(children).into();
             // Cache this new internal node.
-            tree_cache.put_node(new_internal_node.hash(), new_internal_node.clone())?;
-            Ok((new_internal_node.hash(), new_internal_node))
+            tree_cache.put_node(new_internal_node.crypto_hash(), new_internal_node.clone())?;
+            Ok((new_internal_node.crypto_hash(), new_internal_node))
         }
     }
 
@@ -546,7 +547,7 @@ where
             if blob.is_none() {
                 tree_cache.delete_node(&node_key, true);
                 let empty_node = Node::new_null();
-                return Ok((empty_node.hash(), empty_node));
+                return Ok((empty_node.crypto_hash(), empty_node));
             }
             let blob = blob.expect("blob must some at here");
             // The new leaf node will have the same nibble_path with a new version as node_key.
@@ -588,13 +589,13 @@ where
         let (_, new_leaf_node) = Self::create_leaf_node(key, blob, tree_cache)?;
         children.insert(
             new_leaf_index,
-            Child::new(new_leaf_node.hash(), true /* is_leaf */),
+            Child::new(new_leaf_node.crypto_hash(), true /* is_leaf */),
         );
 
         let internal_node = InternalNode::new(children);
         let mut next_internal_node = internal_node.clone();
         let internal_node: Node<K> = internal_node.into();
-        tree_cache.put_node(internal_node.hash(), internal_node)?;
+        tree_cache.put_node(internal_node.crypto_hash(), internal_node)?;
 
         for _i in 0..num_common_nibbles_below_internal {
             let nibble = common_nibble_path
@@ -608,11 +609,11 @@ where
             let internal_node = InternalNode::new(children);
             next_internal_node = internal_node.clone();
             let internal_node: Node<K> = internal_node.into();
-            tree_cache.put_node(internal_node.hash(), internal_node)?;
+            tree_cache.put_node(internal_node.crypto_hash(), internal_node)?;
         }
 
         let next_internal_node: Node<K> = next_internal_node.into();
-        Ok((next_internal_node.hash(), next_internal_node))
+        Ok((next_internal_node.crypto_hash(), next_internal_node))
     }
 
     /// Helper function for creating leaf nodes. Returns the newly created leaf node.
@@ -624,7 +625,7 @@ where
         // Get the underlying bytes of nibble_iter which must be a key, i.e., hashed account address
         // with `HashValue::LENGTH` bytes.
         let new_leaf_node = Node::new_leaf(key, blob);
-        let node_key = new_leaf_node.hash();
+        let node_key = new_leaf_node.crypto_hash();
         tree_cache.put_node(node_key, new_leaf_node.clone())?;
         Ok((node_key, new_leaf_node))
     }

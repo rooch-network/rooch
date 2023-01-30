@@ -4,12 +4,12 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
+use super::{
     node_type::{LeafNode, Node, NodeKey},
     HashValueKey, NodeBatch, StaleNodeIndex, TreeReader, TreeUpdateBatch, TreeWriter,
 };
 use anyhow::{bail, ensure, Result};
-use starcoin_crypto::HashValue;
+use super::hash::HashValue;
 use std::{
     collections::{hash_map::Entry, BTreeSet, HashMap},
     sync::RwLock,

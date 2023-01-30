@@ -4,7 +4,7 @@
 // // Copyright (c) The Diem Core Contributors
 // // SPDX-License-Identifier: Apache-2.0
 //
-// use crate::{
+// use super::{
 //     iterator::JellyfishMerkleIterator, mock_tree_store::MockTreeStore, test_helper::plus_one,
 //     JellyfishMerkleTree,
 // };

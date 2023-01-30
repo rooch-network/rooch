@@ -5,21 +5,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::*;
-use crate::nibble_path::NibblePath;
-use crate::HashValueKey;
+use super::super::nibble_path::NibblePath;
+use super::super::HashValueKey;
 use proptest::prelude::*;
-use starcoin_crypto::{
-    hash::{CryptoHash, SPARSE_MERKLE_PLACEHOLDER_HASH},
+use super::super::hash::{
+    SPARSE_MERKLE_PLACEHOLDER_HASH,
     HashValue,
 };
 use std::{panic, rc::Rc};
 
 fn hash_internal(left: HashValue, right: HashValue) -> HashValue {
-    SparseMerkleInternalNode::new(left, right).hash()
+    SparseMerkleInternalNode::new(left, right).crypto_hash()
 }
 
 fn hash_leaf(key: HashValue, value_hash: HashValue) -> HashValue {
-    SparseMerkleLeafNode::new(key, value_hash).hash()
+    SparseMerkleLeafNode::new(key, value_hash).crypto_hash()
 }
 
 // Generate a random node key with 63 nibbles.
@@ -50,8 +50,8 @@ fn test_encode_decode() {
     let leaf2_node: Node<HashValueKey> = Node::new_leaf(leaf2_keys.into(), Blob::from(vec![0x01]));
 
     let mut children = Children::default();
-    children.insert(Nibble::from(1), Child::new(leaf1_node.hash(), true));
-    children.insert(Nibble::from(2), Child::new(leaf2_node.hash(), true));
+    children.insert(Nibble::from(1), Child::new(leaf1_node.crypto_hash(), true));
+    children.insert(Nibble::from(2), Child::new(leaf2_node.crypto_hash(), true));
 
     let account_key = HashValueKey(HashValue::random());
     let nodes = vec![
@@ -117,10 +117,10 @@ fn test_leaf_hash() {
     {
         let address = HashValue::random();
         let blob = Blob::from(vec![0x02]);
-        let value_hash = blob.hash();
+        let value_hash = blob.crypto_hash();
         let hash = hash_leaf(address, value_hash);
         let leaf_node = Node::new_leaf(HashValueKey(address), blob);
-        assert_eq!(leaf_node.hash(), hash);
+        assert_eq!(leaf_node.crypto_hash(), hash);
     }
 }
 
@@ -619,7 +619,7 @@ impl BinaryTreeNode {
         left: BinaryTreeNode,
         right: BinaryTreeNode,
     ) -> Self {
-        let hash = SparseMerkleInternalNode::new(left.hash(), right.hash()).hash();
+        let hash = SparseMerkleInternalNode::new(left.crypto_hash(), right.crypto_hash()).crypto_hash();
 
         Self::Internal(BinaryTreeInternalNode {
             begin: first_child_index,
@@ -636,6 +636,12 @@ impl BinaryTreeNode {
             BinaryTreeNode::Child(node) => node.hash,
             BinaryTreeNode::Null => *SPARSE_MERKLE_PLACEHOLDER_HASH,
         }
+    }
+}
+
+impl PlainCryptoHash for BinaryTreeNode{
+    fn crypto_hash(&self) -> HashValue {
+        self.hash()
     }
 }
 
@@ -730,10 +736,10 @@ impl NaiveInternalNode {
             match current_node.as_ref() {
                 BinaryTreeNode::Internal(node) => {
                     if node.in_left_subtree(n) {
-                        siblings.push(node.right.hash());
+                        siblings.push(node.right.crypto_hash());
                         current_node = Rc::clone(&node.left);
                     } else {
-                        siblings.push(node.left.hash());
+                        siblings.push(node.left.crypto_hash());
                         current_node = Rc::clone(&node.right);
                     }
                 }
