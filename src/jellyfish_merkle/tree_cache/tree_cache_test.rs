@@ -4,20 +4,20 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use super::*;
-use super::super::{blob::Blob, mock_tree_store::MockTreeStore, node_type::Node, HashValueKey, NodeKey};
-use super::super::hash::HashValue;
+use crate::jellyfish_merkle::mock_tree_store::{MockTestStore, TestKey, TestValue};
 
-fn random_leaf_with_key() -> (Node<HashValueKey>, NodeKey) {
-    let hash_value = HashValue::random();
-    let node = Node::new_leaf(hash_value.into(), Blob::from(HashValue::random().to_vec()));
-    let node_key = node.crypto_hash();
+use super::super::{node_type::Node, NodeKey};
+use super::*;
+
+fn random_leaf_with_key() -> (Node<TestKey, TestValue>, NodeKey) {
+    let node = Node::new_leaf(TestKey::random(), TestValue::random());
+    let node_key = node.merkle_hash();
     (node, node_key)
 }
 
 #[test]
 fn test_get_node() {
-    let db = MockTreeStore::default();
+    let db = MockTestStore::new_test();
     let cache = TreeCache::new(&db, None);
 
     let (node, node_key) = random_leaf_with_key();
@@ -28,7 +28,7 @@ fn test_get_node() {
 
 #[test]
 fn test_root_node() {
-    let db = MockTreeStore::default();
+    let db = MockTestStore::new_test();
     let mut cache = TreeCache::new(&db, None);
     assert_eq!(*cache.get_root_node_key(), *SPARSE_MERKLE_PLACEHOLDER_HASH);
 
@@ -41,7 +41,7 @@ fn test_root_node() {
 
 #[test]
 fn test_freeze_with_delete() {
-    let db = MockTreeStore::default();
+    let db = MockTestStore::new_test();
     let mut cache = TreeCache::new(&db, None);
 
     assert_eq!(*cache.get_root_node_key(), *SPARSE_MERKLE_PLACEHOLDER_HASH);

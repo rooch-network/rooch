@@ -1,13 +1,22 @@
-
-use std::{fmt::{self, Debug}, str::FromStr};
+use bytes::Bytes;
+use hex::FromHex;
+use more_asserts::debug_assert_lt;
 use once_cell::sync::Lazy;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use rand::{rngs::OsRng, Rng};
 use serde::{de, ser};
+use std::{
+    fmt::{self, Debug},
+    str::FromStr,
+};
 use tiny_keccak::{Hasher, Sha3};
-use bytes::Bytes;
-use hex::FromHex;
+
+pub fn merkle_hash(left: HashValue, right: HashValue) -> HashValue {
+    let mut value = left.to_vec();
+    value.extend(right.to_vec());
+    HashValue::sha3_256_of(&value)
+}
 
 /// Output value of our hash function. Intentionally opaque for safety and modularity.
 #[derive(Clone, Copy, Eq, Hash, PartialEq, PartialOrd, Ord)]
@@ -58,7 +67,7 @@ impl HashValue {
         let hash: [u8; HashValue::LENGTH] = rng.gen();
         HashValue { hash }
     }
-  
+
     /// Convenience function that computes a `HashValue` internally equal to
     /// the sha3_256 of a byte buffer. It will handle hasher creation, data
     /// feeding and finalization.
@@ -96,7 +105,7 @@ impl HashValue {
 
     /// Returns the `index`-th bit in the bytes.
     pub fn bit(&self, index: usize) -> bool {
-        assert!(index < Self::LENGTH_IN_BITS); 
+        assert!(index < Self::LENGTH_IN_BITS);
         let pos = index / 8;
         let bit = 7 - index % 8;
         (self.hash[pos] >> bit) & 1 != 0
@@ -104,7 +113,7 @@ impl HashValue {
 
     /// Returns the `index`-th nibble in the bytes.
     pub fn nibble(&self, index: usize) -> u8 {
-        assert!(index < Self::LENGTH * 2); 
+        assert!(index < Self::LENGTH * 2);
         let pos = index / 2;
         let shift = if index % 2 == 0 { 4 } else { 0 };
         (self.hash[pos] >> shift) & 0x0f
@@ -174,7 +183,7 @@ impl HashValue {
         if literal.is_empty() {
             return Err(HashValueParseError);
         }
-        let literal = literal.strip_prefix("0x").unwrap_or_else(|| literal);
+        let literal = literal.strip_prefix("0x").unwrap_or(literal);
         let hex_len = literal.len();
         // If the string is too short, pad it
         if hex_len < Self::LENGTH * 2 {
@@ -182,7 +191,7 @@ impl HashValue {
             for _ in 0..Self::LENGTH * 2 - hex_len {
                 hex_str.push('0');
             }
-            hex_str.push_str(&literal);
+            hex_str.push_str(literal);
             Self::from_hex(hex_str)
         } else {
             Self::from_hex(&literal)
@@ -335,9 +344,8 @@ impl<'a> HashValueBitIterator<'a> {
 
     /// Returns the `index`-th bit in the bytes.
     fn get_bit(&self, index: usize) -> bool {
-        debug_assert!(index < self.pos.end); // assumed precondition
-        debug_assert!(self.hash_bytes.len() == HashValue::LENGTH); // invariant
-        debug_assert!(self.pos.end == self.hash_bytes.len() * 8); // invariant
+        debug_assert_eq!(self.hash_bytes.len(), HashValue::LENGTH); // invariant
+        debug_assert_lt!(index, HashValue::LENGTH_IN_BITS); // assumed precondition
         let pos = index / 8;
         let bit = 7 - index % 8;
         (self.hash_bytes[pos] >> bit) & 1 != 0
@@ -364,12 +372,11 @@ impl<'a> std::iter::DoubleEndedIterator for HashValueBitIterator<'a> {
 
 impl<'a> std::iter::ExactSizeIterator for HashValueBitIterator<'a> {}
 
-/// A type that implements `PlainCryptoHash` can be hashed by a cryptographic hash function and produce
+/// A type that implements `SMTHash` can be hashed by a cryptographic hash function and produce
 /// a `HashValue`.
-/// diem_crypto::hash::CryptoHash need a Hasher with a salt, this trait do not need hasher.
-pub trait PlainCryptoHash {
+pub trait SMTHash {
     /// Hashes the object and produces a `HashValue`.
-    fn crypto_hash(&self) -> HashValue;
+    fn merkle_hash(&self) -> HashValue;
 }
 
 pub fn create_literal_hash(word: &str) -> HashValue {

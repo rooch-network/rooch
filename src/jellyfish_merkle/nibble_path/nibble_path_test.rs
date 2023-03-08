@@ -4,8 +4,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{arb_internal_nibble_path, skip_common_prefix, NibblePath};
 use super::super::nibble::Nibble;
+use super::{arb_internal_nibble_path, skip_common_prefix, NibblePath};
 use proptest::prelude::*;
 
 #[test]

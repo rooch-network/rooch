@@ -16,7 +16,9 @@
 
 #[cfg(test)]
 mod node_type_test;
-use super::{blob::Blob, nibble::Nibble, RawKey};
+use super::hash::*;
+use super::nibble::Nibble;
+use crate::{Key, SMTObject, Value};
 use anyhow::{ensure, Context, Result};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use num_derive::{FromPrimitive, ToPrimitive};
@@ -25,8 +27,7 @@ use num_traits::cast::FromPrimitive;
 use proptest::{collection::hash_map, prelude::*};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use super::hash::*;
+use serde::{Deserialize, Serialize};
 use std::cell::Cell;
 use std::{
     collections::hash_map::HashMap,
@@ -116,13 +117,20 @@ pub struct InternalNode {
 /// height
 /// Note: @ denotes placeholder hash.
 /// ```
-impl PlainCryptoHash for InternalNode {
-    fn crypto_hash(&self) -> HashValue {
-        self.merkle_hash(
-            0,  // start index
-            16, // the number of leaves in the subtree of which we want the hash of root
-            self.generate_bitmaps(),
-        )
+impl SMTHash for InternalNode {
+    fn merkle_hash(&self) -> HashValue {
+        match self.cached_hash.get() {
+            Some(hash) => hash,
+            None => {
+                let hash = self.make_hash(
+                    0,  // start index
+                    16, // the number of leaves in the subtree of which we want the hash of root
+                    self.generate_bitmaps(),
+                );
+                self.cached_hash.set(Some(hash));
+                hash
+            }
+        }
     }
 }
 
@@ -162,17 +170,6 @@ impl InternalNode {
         Self {
             children,
             cached_hash: Cell::new(None),
-        }
-    }
-
-    pub fn cached_hash(&self) -> HashValue {
-        match self.cached_hash.get() {
-            Some(hash) => hash,
-            None => {
-                let hash = self.crypto_hash();
-                self.cached_hash.set(Some(hash));
-                hash
-            }
         }
     }
 
@@ -277,7 +274,7 @@ impl InternalNode {
         (bitmaps.0 & mask, bitmaps.1 & mask)
     }
 
-    fn merkle_hash(
+    fn make_hash(
         &self,
         start: u8,
         width: u8,
@@ -304,13 +301,13 @@ impl InternalNode {
                 .unwrap()
                 .hash
         } else {
-            let left_child = self.merkle_hash(start, width / 2, (existence_bitmap, leaf_bitmap));
-            let right_child = self.merkle_hash(
+            let left_child = self.make_hash(start, width / 2, (existence_bitmap, leaf_bitmap));
+            let right_child = self.make_hash(
                 start + width / 2,
                 width / 2,
                 (existence_bitmap, leaf_bitmap),
             );
-            SparseMerkleInternalNode::new(left_child, right_child).crypto_hash()
+            SparseMerkleInternalNode::new(left_child, right_child).merkle_hash()
         }
     }
 
@@ -345,7 +342,7 @@ impl InternalNode {
             let width = 1 << h;
             let (child_half_start, sibling_half_start) = get_child_and_sibling_half_start(n, h);
             // Compute the root hash of the subtree rooted at the sibling of `r`.
-            siblings.push(self.merkle_hash(
+            siblings.push(self.make_hash(
                 sibling_half_start,
                 width,
                 (existence_bitmap, leaf_bitmap),
@@ -408,53 +405,26 @@ pub(crate) fn get_child_and_sibling_half_start(n: Nibble, height: u8) -> (u8, u8
     (child_half_start, sibling_half_start)
 }
 
-//TODO use serde helper's serialize_binary
-pub fn serialize_raw_key<K, S>(key: &K, s: S) -> std::result::Result<S::Ok, S::Error>
-where
-    K: RawKey,
-    S: Serializer,
-{
-    use serde::ser::Error;
-    s.serialize_bytes(key.encode_key().map_err(S::Error::custom)?.as_slice())
-}
-
-pub fn deserialize_raw_key<'de, K, D>(d: D) -> std::result::Result<K, D::Error>
-where
-    K: RawKey,
-    D: Deserializer<'de>,
-{
-    use serde::de::Error;
-    let bytes = serde_bytes::ByteBuf::deserialize(d)?;
-    K::decode_key(bytes.as_ref()).map_err(D::Error::custom)
-}
 /// Represents an account.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub struct LeafNode<K: RawKey> {
-    /// The origin key associated with this leaf node's Blob.
-    #[serde(
-        deserialize_with = "deserialize_raw_key",
-        serialize_with = "serialize_raw_key"
-    )]
-    raw_key: K,
-    /// The hash of the blob.
-    blob_hash: HashValue,
-    /// The blob associated with `raw_key`.
-    blob: Blob,
-    #[serde(skip)]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct LeafNode<K, V> {
+    /// The origin key associated with this leaf node's Value.
+    key: SMTObject<K>,
+    /// The blob value associated with `key`.
+    value: SMTObject<V>,
     cached_hash: Cell<Option<HashValue>>,
 }
 
-impl<K> LeafNode<K>
+impl<K, V> LeafNode<K, V>
 where
-    K: RawKey,
+    K: Key,
+    V: Value,
 {
     /// Creates a new leaf node.
-    pub fn new(raw_key: K, blob: Blob) -> Self {
-        let blob_hash = blob.crypto_hash();
+    pub fn new<NK: Into<SMTObject<K>>, NV: Into<SMTObject<V>>>(key: NK, value: NV) -> Self {
         Self {
-            raw_key,
-            blob_hash,
-            blob,
+            key: key.into(),
+            value: value.into(),
             cached_hash: Cell::new(None),
         }
     }
@@ -463,26 +433,36 @@ where
         match self.cached_hash.get() {
             Some(hash) => hash,
             None => {
-                let hash = self.crypto_hash();
+                let hash = self.merkle_hash();
                 self.cached_hash.set(Some(hash));
                 hash
             }
         }
     }
 
-    /// Gets the raw key
-    pub fn raw_key(&self) -> &K {
-        &self.raw_key
+    /// Gets the key
+    pub fn key(&self) -> &SMTObject<K> {
+        &self.key
+    }
+
+    /// Gets the origin key
+    pub fn origin_key(&self) -> &K {
+        &self.key.origin
+    }
+
+    /// Gets the hash of origin key.
+    pub fn key_hash(&self) -> HashValue {
+        self.key.merkle_hash()
     }
 
     /// Gets the hash of associated blob.
-    pub fn blob_hash(&self) -> HashValue {
-        self.blob_hash
+    pub fn value_hash(&self) -> HashValue {
+        self.value.merkle_hash()
     }
 
     /// Gets the associated blob itself.
-    pub fn blob(&self) -> &Blob {
-        &self.blob
+    pub fn value(&self) -> &SMTObject<V> {
+        &self.value
     }
 
     pub fn serialize(&self, binary: &mut Vec<u8>) -> Result<()> {
@@ -491,17 +471,62 @@ where
     }
 
     pub fn deserialize(data: &[u8]) -> Result<Self> {
-        bcs::from_bytes(data).map_err(|e|e.into())
+        bcs::from_bytes(data).map_err(|e| e.into())
+    }
+
+    pub fn into(self) -> (SMTObject<K>, SMTObject<V>) {
+        (self.key, self.value)
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct RawKV {
+    key: Vec<u8>,
+    value: Vec<u8>,
+}
+
+impl<K, V> Serialize for LeafNode<K, V>
+where
+    K: Key,
+    V: Value,
+{
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let wrapper = RawKV {
+            key: self.key.raw.clone(),
+            value: self.value.raw.clone(),
+        };
+        wrapper.serialize(serializer)
+    }
+}
+
+impl<'de, K, V> Deserialize<'de> for LeafNode<K, V>
+where
+    K: Key,
+    V: Value,
+{
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let wrapper = RawKV::deserialize(deserializer)?;
+        Ok(LeafNode::new(
+            K::from_raw(wrapper.key).map_err(serde::de::Error::custom)?,
+            V::from_raw(wrapper.value).map_err(serde::de::Error::custom)?,
+        ))
     }
 }
 
 /// Computes the hash of a [`LeafNode`].
-impl<K> PlainCryptoHash for LeafNode<K>
+impl<K, V> SMTHash for LeafNode<K, V>
 where
-    K: RawKey,
+    K: Key,
+    V: Value,
 {
-    fn crypto_hash(&self) -> HashValue {
-        SparseMerkleLeafNode::new(self.raw_key.key_hash(), self.blob_hash).crypto_hash()
+    fn merkle_hash(&self) -> HashValue {
+        SparseMerkleLeafNode::new(self.key.merkle_hash(), self.value.merkle_hash()).merkle_hash()
     }
 }
 
@@ -515,19 +540,16 @@ enum NodeTag {
 
 /// The concrete node type of [`JellyfishMerkleTree`](super::JellyfishMerkleTree).
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum Node<K: RawKey> {
+pub enum Node<K, V> {
     /// Represents `null`.
     Null,
     /// A wrapper of [`InternalNode`].
     Internal(InternalNode),
     /// A wrapper of [`LeafNode`].
-    Leaf(LeafNode<K>),
+    Leaf(LeafNode<K, V>),
 }
 
-impl<K> From<InternalNode> for Node<K>
-where
-    K: RawKey,
-{
+impl<K, V> From<InternalNode> for Node<K, V> {
     fn from(node: InternalNode) -> Self {
         Node::Internal(node)
     }
@@ -539,18 +561,16 @@ impl From<InternalNode> for Children {
     }
 }
 
-impl<K> From<LeafNode<K>> for Node<K>
-where
-    K: RawKey,
-{
-    fn from(node: LeafNode<K>) -> Self {
+impl<K, V> From<LeafNode<K, V>> for Node<K, V> {
+    fn from(node: LeafNode<K, V>) -> Self {
         Node::Leaf(node)
     }
 }
 
-impl<K> Node<K>
+impl<K, V> Node<K, V>
 where
-    K: RawKey,
+    K: Key,
+    V: Value,
 {
     /// Creates the [`Null`](Node::Null) variant.
     pub fn new_null() -> Self {
@@ -563,8 +583,8 @@ where
     }
 
     /// Creates the [`Leaf`](Node::Leaf) variant.
-    pub fn new_leaf(raw_key: K, blob: Blob) -> Self {
-        Node::Leaf(LeafNode::new(raw_key, blob))
+    pub fn new_leaf<NK: Into<SMTObject<K>>, NV: Into<SMTObject<V>>>(key: NK, value: NV) -> Self {
+        Node::Leaf(LeafNode::new(key, value))
     }
 
     /// Returns `true` if the node is a leaf node.
@@ -591,17 +611,8 @@ where
         Ok(out)
     }
 
-    /// Computes the hash of nodes.
-    pub fn hash(&self) -> HashValue {
-        match self {
-            Node::Null => *SPARSE_MERKLE_PLACEHOLDER_HASH,
-            Node::Internal(internal_node) => internal_node.cached_hash(),
-            Node::Leaf(leaf_node) => leaf_node.cached_hash(),
-        }
-    }
-
     /// Recovers from serialized bytes in physical storage.
-    pub fn decode(val: &[u8]) -> Result<Node<K>> {
+    pub fn decode(val: &[u8]) -> Result<Node<K, V>> {
         if val.is_empty() {
             return Err(NodeDecodeError::EmptyInput.into());
         }
@@ -616,9 +627,17 @@ where
     }
 }
 
-impl<K> PlainCryptoHash for Node<K> where K: RawKey {
-    fn crypto_hash(&self) -> HashValue {
-        self.hash()
+impl<K, V> SMTHash for Node<K, V>
+where
+    K: Key,
+    V: Value,
+{
+    fn merkle_hash(&self) -> HashValue {
+        match self {
+            Node::Null => *SPARSE_MERKLE_PLACEHOLDER_HASH,
+            Node::Internal(internal_node) => internal_node.merkle_hash(),
+            Node::Leaf(leaf_node) => leaf_node.merkle_hash(),
+        }
     }
 }
 
@@ -637,27 +656,30 @@ impl SparseMerkleInternalNode {
     }
 }
 
-impl PlainCryptoHash for SparseMerkleInternalNode {
-    fn crypto_hash(&self) -> HashValue {
-       todo!()
+impl SMTHash for SparseMerkleInternalNode {
+    fn merkle_hash(&self) -> HashValue {
+        merkle_hash(self.left_child, self.right_child)
     }
 }
 
 #[derive(Deserialize, Serialize)]
 pub struct SparseMerkleLeafNode {
-    pub key: HashValue,
+    pub key_hash: HashValue,
     pub value_hash: HashValue,
 }
 
 impl SparseMerkleLeafNode {
-    pub fn new(key: HashValue, value_hash: HashValue) -> Self {
-        SparseMerkleLeafNode { key, value_hash }
+    pub fn new(key_hash: HashValue, value_hash: HashValue) -> Self {
+        SparseMerkleLeafNode {
+            key_hash,
+            value_hash,
+        }
     }
 }
 
-impl PlainCryptoHash for SparseMerkleLeafNode {
-    fn crypto_hash(&self) -> HashValue {
-        todo!()
+impl SMTHash for SparseMerkleLeafNode {
+    fn merkle_hash(&self) -> HashValue {
+        merkle_hash(self.key_hash, self.value_hash)
     }
 }
 

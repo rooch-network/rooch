@@ -4,22 +4,22 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use super::*;
+use super::super::hash::{HashValue, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use super::super::nibble_path::NibblePath;
-use super::super::HashValueKey;
-use proptest::prelude::*;
-use super::super::hash::{
-    SPARSE_MERKLE_PLACEHOLDER_HASH,
-    HashValue,
+use super::*;
+use crate::{
+    jellyfish_merkle::mock_tree_store::{TestKey, TestValue},
+    EncodeToObject,
 };
+use proptest::prelude::*;
 use std::{panic, rc::Rc};
 
 fn hash_internal(left: HashValue, right: HashValue) -> HashValue {
-    SparseMerkleInternalNode::new(left, right).crypto_hash()
+    SparseMerkleInternalNode::new(left, right).merkle_hash()
 }
 
 fn hash_leaf(key: HashValue, value_hash: HashValue) -> HashValue {
-    SparseMerkleLeafNode::new(key, value_hash).crypto_hash()
+    SparseMerkleLeafNode::new(key, value_hash).merkle_hash()
 }
 
 // Generate a random node key with 63 nibbles.
@@ -32,11 +32,11 @@ fn random_63nibblepath() -> NibblePath {
 
 // Generate a pair of leaf node key and account key with a passed-in 63-nibble node key and the last
 // nibble to be appended.
-fn gen_leaf_keys(nibble_path: &NibblePath, nibble: Nibble) -> HashValue {
+fn gen_leaf_keys(nibble_path: &NibblePath, nibble: Nibble) -> TestKey {
     assert_eq!(nibble_path.num_nibbles(), 63);
     let mut np = nibble_path.clone();
     np.push(nibble);
-    HashValue::from_slice(np.bytes()).unwrap()
+    TestKey(HashValue::from_slice(np.bytes()).unwrap())
 }
 
 #[test]
@@ -45,31 +45,33 @@ fn test_encode_decode() {
     // let nibble_path = NibblePath::new(vec![]);
 
     let leaf1_keys = gen_leaf_keys(&nibble_path, Nibble::from(1));
-    let leaf1_node: Node<HashValueKey> = Node::new_leaf(leaf1_keys.into(), Blob::from(vec![0x00]));
+    let leaf1_node: Node<TestKey, TestValue> =
+        Node::new_leaf(leaf1_keys, TestValue::from(vec![0x00]));
     let leaf2_keys = gen_leaf_keys(&nibble_path, Nibble::from(2));
-    let leaf2_node: Node<HashValueKey> = Node::new_leaf(leaf2_keys.into(), Blob::from(vec![0x01]));
+    let leaf2_node: Node<TestKey, TestValue> =
+        Node::new_leaf(leaf2_keys, TestValue::from(vec![0x01]));
 
     let mut children = Children::default();
-    children.insert(Nibble::from(1), Child::new(leaf1_node.crypto_hash(), true));
-    children.insert(Nibble::from(2), Child::new(leaf2_node.crypto_hash(), true));
+    children.insert(Nibble::from(1), Child::new(leaf1_node.merkle_hash(), true));
+    children.insert(Nibble::from(2), Child::new(leaf2_node.merkle_hash(), true));
 
-    let account_key = HashValueKey(HashValue::random());
+    let account_key = TestKey(HashValue::random());
     let nodes = vec![
         Node::new_internal(children),
-        Node::new_leaf(account_key, Blob::from(vec![0x02])),
+        Node::new_leaf(account_key, TestValue::from(vec![0x02])),
     ];
     for n in &nodes {
         let v = n.encode().unwrap();
         assert_eq!(*n, Node::decode(&v).unwrap());
     }
     // Error cases
-    if let Err(e) = Node::<HashValueKey>::decode(&[]) {
+    if let Err(e) = Node::<TestKey, TestValue>::decode(&[]) {
         assert_eq!(
             e.downcast::<NodeDecodeError>().unwrap(),
             NodeDecodeError::EmptyInput
         );
     }
-    if let Err(e) = Node::<HashValueKey>::decode(&[100]) {
+    if let Err(e) = Node::<TestKey, TestValue>::decode(&[100]) {
         assert_eq!(
             e.downcast::<NodeDecodeError>().unwrap(),
             NodeDecodeError::UnknownTag { unknown_tag: 100 }
@@ -115,12 +117,12 @@ fn test_internal_validity() {
 #[test]
 fn test_leaf_hash() {
     {
-        let address = HashValue::random();
-        let blob = Blob::from(vec![0x02]);
-        let value_hash = blob.crypto_hash();
-        let hash = hash_leaf(address, value_hash);
-        let leaf_node = Node::new_leaf(HashValueKey(address), blob);
-        assert_eq!(leaf_node.crypto_hash(), hash);
+        let key = TestKey::random().into_object();
+        let blob = TestValue::from(vec![0x02]).into_object();
+        let value_hash = blob.merkle_hash();
+        let hash = hash_leaf(key.merkle_hash(), value_hash);
+        let leaf_node: Node<TestKey, TestValue> = Node::new_leaf(key, blob);
+        assert_eq!(leaf_node.merkle_hash(), hash);
     }
 }
 
@@ -132,8 +134,8 @@ proptest! {
 
         let leaf1_node_key = gen_leaf_keys( &nibble_path, index1);
         let leaf2_node_key = gen_leaf_keys( &nibble_path, index2);
-        let hash1 = leaf1_node_key;
-        let hash2 = leaf2_node_key;
+        let hash1 = leaf1_node_key.0;
+        let hash2 = leaf2_node_key.0;
 
         children.insert(index1, Child::new(hash1,  true));
         children.insert(index2, Child::new(hash2,  true));
@@ -147,18 +149,18 @@ proptest! {
         //        leaf1     leaf2
         //
         let root_hash = hash_internal(hash1, hash2);
-        prop_assert_eq!(internal_node.crypto_hash(), root_hash);
+        prop_assert_eq!(internal_node.merkle_hash(), root_hash);
 
         for i in 0..8 {
             prop_assert_eq!(
                 internal_node.get_child_with_siblings( i.into()),
-                (Some(leaf1_node_key), vec![hash2])
+                (Some(leaf1_node_key.0), vec![hash2])
             );
         }
         for i in 8..16 {
             prop_assert_eq!(
                 internal_node.get_child_with_siblings( i.into()),
-                (Some(leaf2_node_key), vec![hash1])
+                (Some(leaf2_node_key.0), vec![hash1])
             );
         }
 
@@ -171,8 +173,8 @@ proptest! {
 
         let leaf1_node_key = gen_leaf_keys( &nibble_path, index1);
         let leaf2_node_key = gen_leaf_keys( &nibble_path, index2);
-        let hash1 = leaf1_node_key;
-        let hash2 = leaf2_node_key;
+        let hash1 = leaf1_node_key.0;
+        let hash2 = leaf2_node_key.0;
 
         children.insert(index1, Child::new(hash1,  true));
         children.insert(index2, Child::new(hash2,  true));
@@ -194,7 +196,7 @@ proptest! {
         let hash_x2 = hash_internal(*SPARSE_MERKLE_PLACEHOLDER_HASH, hash_x1);
 
         let root_hash = hash_internal(hash_x2, *SPARSE_MERKLE_PLACEHOLDER_HASH);
-        assert_eq!(internal_node.crypto_hash(), root_hash);
+        assert_eq!(internal_node.merkle_hash(), root_hash);
 
         for i in 0..4 {
             prop_assert_eq!(
@@ -207,7 +209,7 @@ proptest! {
             prop_assert_eq!(
                 internal_node.get_child_with_siblings( i.into()),
                 (
-                    Some(leaf1_node_key),
+                    Some(leaf1_node_key.0),
                     vec![
                         *SPARSE_MERKLE_PLACEHOLDER_HASH,
                         *SPARSE_MERKLE_PLACEHOLDER_HASH,
@@ -221,7 +223,7 @@ proptest! {
             prop_assert_eq!(
                 internal_node.get_child_with_siblings( i.into()),
                 (
-                    Some(leaf2_node_key),
+                    Some(leaf2_node_key.0),
                     vec![
                         *SPARSE_MERKLE_PLACEHOLDER_HASH,
                         *SPARSE_MERKLE_PLACEHOLDER_HASH,
@@ -249,9 +251,9 @@ proptest! {
         let leaf2_node_key = gen_leaf_keys( &nibble_path, index2);
         let leaf3_node_key = gen_leaf_keys( &nibble_path, index3);
 
-        let hash1 = leaf1_node_key;
-        let hash2 = leaf2_node_key;
-        let hash3 = leaf3_node_key;
+        let hash1 = leaf1_node_key.0;
+        let hash2 = leaf2_node_key.0;
+        let hash3 = leaf3_node_key.0;
 
         children.insert(index1, Child::new(hash1, true));
         children.insert(index2, Child::new(hash2,  true));
@@ -268,26 +270,26 @@ proptest! {
         //      leaf1     leaf2
         let hash_x = hash_internal(hash1, hash2);
         let root_hash = hash_internal(hash_x, hash3);
-        prop_assert_eq!(internal_node.crypto_hash(), root_hash);
+        prop_assert_eq!(internal_node.merkle_hash(), root_hash);
 
         for i in 0..4 {
             prop_assert_eq!(
                 internal_node.get_child_with_siblings( i.into()),
-                (Some(leaf1_node_key),vec![hash3, hash2])
+                (Some(leaf1_node_key.0),vec![hash3, hash2])
             );
         }
 
         for i in 4..8 {
             prop_assert_eq!(
                 internal_node.get_child_with_siblings( i.into()),
-                (Some(leaf2_node_key),vec![hash3, hash1])
+                (Some(leaf2_node_key.0),vec![hash3, hash1])
             );
         }
 
         for i in 8..16 {
             prop_assert_eq!(
                 internal_node.get_child_with_siblings( i.into()),
-                (Some(leaf3_node_key),vec![hash_x])
+                (Some(leaf3_node_key.0),vec![hash_x])
             );
         }
     }
@@ -302,10 +304,10 @@ proptest! {
         let internal3_node_key = gen_leaf_keys(&nibble_path, 7.into());
         let leaf4_node_key = gen_leaf_keys( &nibble_path, index2);
 
-        let hash1 = leaf1_node_key;
-        let hash2 = internal2_node_key;
-        let hash3 = internal3_node_key;
-        let hash4 = leaf4_node_key;
+        let hash1 = leaf1_node_key.0;
+        let hash2 = internal2_node_key.0;
+        let hash3 = internal3_node_key.0;
+        let hash4 = leaf4_node_key.0;
         children.insert(index1, Child::new(hash1,  true));
         children.insert(2.into(), Child::new(hash2,  false));
         children.insert(7.into(), Child::new(hash3, false));
@@ -333,13 +335,13 @@ proptest! {
         let hash_x4 = hash_internal(*SPARSE_MERKLE_PLACEHOLDER_HASH, hash_x3);
         let hash_x5 = hash_internal(hash_x2, hash_x4);
         let root_hash = hash_internal(hash_x5, hash4);
-        assert_eq!(internal_node.crypto_hash(), root_hash);
+        assert_eq!(internal_node.merkle_hash(), root_hash);
 
         for i in 0..2 {
             prop_assert_eq!(
                 internal_node.get_child_with_siblings( i.into()),
                 (
-                    Some(leaf1_node_key),
+                    Some(leaf1_node_key.0),
                     vec![hash4, hash_x4, hash_x1]
                 )
             );
@@ -348,7 +350,7 @@ proptest! {
         prop_assert_eq!(
                 internal_node.get_child_with_siblings( 2.into()),
             (
-                Some(internal2_node_key),
+                Some(internal2_node_key.0),
                 vec![
                     hash4,
                     hash_x4,
@@ -393,7 +395,7 @@ proptest! {
         prop_assert_eq!(
                 internal_node.get_child_with_siblings( 7.into()),
             (
-                Some(internal3_node_key),
+                Some(internal3_node_key.0),
                 vec![
                     hash4,
                     hash_x2,
@@ -406,7 +408,7 @@ proptest! {
         for i in 8..16 {
             prop_assert_eq!(
                 internal_node.get_child_with_siblings( i.into()),
-                (Some(leaf4_node_key), vec![hash_x5])
+                (Some(leaf4_node_key.0), vec![hash_x5])
             );
         }
     }
@@ -448,7 +450,7 @@ fn test_internal_hash_and_proof() {
         let hash_x5 = hash_internal(*SPARSE_MERKLE_PLACEHOLDER_HASH, hash_x4);
         let hash_x6 = hash_internal(*SPARSE_MERKLE_PLACEHOLDER_HASH, hash_x5);
         let root_hash = hash_internal(hash_x3, hash_x6);
-        assert_eq!(internal_node.crypto_hash(), root_hash);
+        assert_eq!(internal_node.merkle_hash(), root_hash);
 
         for i in 0..4 {
             let result = internal_node.get_child_with_siblings(i.into());
@@ -541,7 +543,7 @@ fn test_internal_hash_and_proof() {
         let hash_x4 = hash_internal(*SPARSE_MERKLE_PLACEHOLDER_HASH, hash_x3);
         let hash_x5 = hash_internal(hash_x2, hash_x4);
         let root_hash = hash_internal(hash_x5, *SPARSE_MERKLE_PLACEHOLDER_HASH);
-        assert_eq!(internal_node.crypto_hash(), root_hash);
+        assert_eq!(internal_node.merkle_hash(), root_hash);
 
         assert_eq!(
             internal_node.get_child_with_siblings(1.into()),
@@ -619,7 +621,8 @@ impl BinaryTreeNode {
         left: BinaryTreeNode,
         right: BinaryTreeNode,
     ) -> Self {
-        let hash = SparseMerkleInternalNode::new(left.crypto_hash(), right.crypto_hash()).crypto_hash();
+        let hash =
+            SparseMerkleInternalNode::new(left.merkle_hash(), right.merkle_hash()).merkle_hash();
 
         Self::Internal(BinaryTreeInternalNode {
             begin: first_child_index,
@@ -639,8 +642,8 @@ impl BinaryTreeNode {
     }
 }
 
-impl PlainCryptoHash for BinaryTreeNode{
-    fn crypto_hash(&self) -> HashValue {
+impl SMTHash for BinaryTreeNode {
+    fn merkle_hash(&self) -> HashValue {
         self.hash()
     }
 }
@@ -736,10 +739,10 @@ impl NaiveInternalNode {
             match current_node.as_ref() {
                 BinaryTreeNode::Internal(node) => {
                     if node.in_left_subtree(n) {
-                        siblings.push(node.right.crypto_hash());
+                        siblings.push(node.right.merkle_hash());
                         current_node = Rc::clone(&node.left);
                     } else {
-                        siblings.push(node.left.crypto_hash());
+                        siblings.push(node.left.merkle_hash());
                         current_node = Rc::clone(&node.right);
                     }
                 }

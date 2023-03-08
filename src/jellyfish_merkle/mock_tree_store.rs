@@ -4,60 +4,125 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{
-    node_type::{LeafNode, Node, NodeKey},
-    HashValueKey, NodeBatch, StaleNodeIndex, TreeReader, TreeUpdateBatch, TreeWriter,
-};
-use anyhow::{bail, ensure, Result};
 use super::hash::HashValue;
+use super::{
+    node_type::{Node, NodeKey},
+    NodeBatch, StaleNodeIndex, TreeReader, TreeUpdateBatch, TreeWriter,
+};
+use crate::{DecodeToObject, EncodeToObject, Key, SMTObject, Value};
+use anyhow::{bail, ensure, Result};
+#[cfg(any(test, feature = "fuzzing"))]
+use proptest_derive::Arbitrary;
+use serde::{Deserialize, Serialize};
 use std::{
     collections::{hash_map::Entry, BTreeSet, HashMap},
     sync::RwLock,
 };
 
-#[derive(Default)]
-pub struct MockTreeStore(
-    RwLock<(
-        HashMap<NodeKey, Node<HashValueKey>>,
-        BTreeSet<StaleNodeIndex>,
-    )>,
-);
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
+pub struct TestKey(pub HashValue);
 
-impl TreeReader<HashValueKey> for MockTreeStore {
-    fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<HashValueKey>>> {
-        Ok(self.0.read().unwrap().0.get(node_key).cloned())
+impl TestKey {
+    pub fn new(value: [u8; HashValue::LENGTH]) -> TestKey {
+        Self(HashValue::new(value))
     }
 
-    fn get_rightmost_leaf(&self) -> Result<Option<(NodeKey, LeafNode<HashValueKey>)>> {
-        let locked = self.0.read().unwrap();
-        let mut node_key_and_node: Option<(NodeKey, LeafNode<HashValueKey>)> = None;
+    pub fn new_with_hash(hash_value: HashValue) -> TestKey {
+        Self(hash_value)
+    }
 
-        for (key, value) in locked.0.iter() {
-            if let Node::Leaf(leaf_node) = value {
-                if node_key_and_node.is_none()
-                    || leaf_node.raw_key() > node_key_and_node.as_ref().unwrap().1.raw_key()
-                {
-                    node_key_and_node.replace((*key, leaf_node.clone()));
-                }
-            }
-        }
+    pub fn random() -> TestKey {
+        Self::new_with_hash(HashValue::random())
+    }
 
-        Ok(node_key_and_node)
+    pub fn to_vec(self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+
+    pub fn into_object(self) -> SMTObject<Self> {
+        let raw = self.0.to_vec();
+        let hash = self.0;
+        SMTObject::new_for_test(self, raw, hash)
     }
 }
 
-impl TreeWriter<HashValueKey> for MockTreeStore {
-    fn write_node_batch(&self, node_batch: &NodeBatch<HashValueKey>) -> Result<()> {
+impl EncodeToObject for TestKey {
+    fn into_object(self) -> SMTObject<Self>
+    where
+        Self: std::marker::Sized,
+    {
+        self.into_object()
+    }
+}
+
+impl DecodeToObject for TestKey {
+    fn from_raw(raw: Vec<u8>) -> Result<SMTObject<Self>>
+    where
+        Self: std::marker::Sized,
+    {
+        let key = TestKey::new_with_hash(HashValue::from_slice(&raw).unwrap());
+        Ok(key.into_object())
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
+pub struct TestValue {
+    pub value: Vec<u8>,
+}
+
+impl TestValue {
+    pub fn random() -> Self {
+        Self {
+            value: HashValue::random().to_vec(),
+        }
+    }
+}
+
+impl From<Vec<u8>> for TestValue {
+    fn from(value: Vec<u8>) -> Self {
+        Self { value }
+    }
+}
+
+#[derive(Default)]
+pub struct MockTreeStore<K, V>(RwLock<(HashMap<NodeKey, Node<K, V>>, BTreeSet<StaleNodeIndex>)>);
+
+pub type MockTestStore = MockTreeStore<TestKey, TestValue>;
+
+impl MockTestStore {
+    pub fn new_test() -> Self {
+        MockTreeStore(RwLock::new((HashMap::new(), BTreeSet::new())))
+    }
+}
+
+impl<K, V> TreeReader<K, V> for MockTreeStore<K, V>
+where
+    K: Key,
+    V: Value,
+{
+    fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<K, V>>> {
+        Ok(self.0.read().unwrap().0.get(node_key).cloned())
+    }
+}
+
+impl<K, V> TreeWriter<K, V> for MockTreeStore<K, V>
+where
+    K: Key,
+    V: Value,
+{
+    fn write_node_batch(&self, node_batch: &NodeBatch<K, V>) -> Result<()> {
         let mut locked = self.0.write().unwrap();
         for (node_key, node) in node_batch.clone() {
-            assert_eq!(locked.0.insert(node_key, node), None);
+            ensure!(locked.0.insert(node_key, node).is_none());
         }
         Ok(())
     }
 }
 
-impl MockTreeStore {
-    pub fn put_node(&self, node_key: NodeKey, node: Node<HashValueKey>) -> Result<()> {
+impl<K, V> MockTreeStore<K, V> {
+    pub fn put_node(&self, node_key: NodeKey, node: Node<K, V>) -> Result<()> {
         match self.0.write().unwrap().0.entry(node_key) {
             Entry::Occupied(o) => bail!("Key {:?} exists.", o.key()),
             Entry::Vacant(v) => {
@@ -73,7 +138,7 @@ impl MockTreeStore {
         Ok(())
     }
 
-    pub fn write_tree_update_batch(&self, batch: TreeUpdateBatch<HashValueKey>) -> Result<()> {
+    pub fn write_tree_update_batch(&self, batch: TreeUpdateBatch<K, V>) -> Result<()> {
         batch
             .node_batch
             .into_iter()
