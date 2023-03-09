@@ -1,8 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::{transaction_argument::TransactionArgument, language_storage::{TypeTag, ModuleId}, identifier::Identifier, account_address::AccountAddress};
-use serde::{Serialize, Deserialize};
+use move_core_types::{
+    account_address::AccountAddress,
+    identifier::Identifier,
+    language_storage::{ModuleId, TypeTag},
+    transaction_argument::TransactionArgument,
+};
+use serde::{Deserialize, Serialize};
+use statedb::HashValue;
 
 #[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Script {
@@ -21,7 +27,7 @@ pub struct Function {
 }
 
 #[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
-pub enum MoveTransaction{
+pub enum MoveTransaction {
     //Execute a Move script
     Script(Script),
     //Execute a Move function
@@ -30,7 +36,8 @@ pub enum MoveTransaction{
     ModuleBundle(Vec<u8>),
 }
 
-pub trait AbstractTransaction{
-    fn senders(&self) -> Vec<AccountAddress>; 
+pub trait AbstractTransaction {
+    fn senders(&self) -> Vec<AccountAddress>;
     fn into_move_transaction(self) -> MoveTransaction;
+    fn txn_hash(&self) -> HashValue;
 }
