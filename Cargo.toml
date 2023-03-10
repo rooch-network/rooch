@@ -4,6 +4,7 @@ resolver = "2"
 members = [
     "crates/moveos",
     "crates/statedb",
+    "crates/framework",
     "crates/mpm",
 ]
 
@@ -29,6 +30,7 @@ rust-version = "1.64"
 # Please do not add any test features here: they should be declared by the individual crate.
 moveos = { path = "crates/moveos" }
 statedb = { path = "crates/statedb" }
+framework = { path = "crates/framework" }
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.

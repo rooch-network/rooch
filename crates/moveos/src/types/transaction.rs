@@ -33,11 +33,37 @@ pub enum MoveTransaction {
     //Execute a Move function
     Function(Function),
     //Publish Move modules
-    ModuleBundle(Vec<u8>),
+    ModuleBundle(Vec<Vec<u8>>),
 }
 
 pub trait AbstractTransaction {
     fn senders(&self) -> Vec<AccountAddress>;
     fn into_move_transaction(self) -> MoveTransaction;
     fn txn_hash(&self) -> HashValue;
+}
+
+#[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+pub struct SimpleTransaction{
+    pub sender: AccountAddress,
+    pub txn: MoveTransaction,
+}
+
+impl SimpleTransaction {
+    pub fn new(sender: AccountAddress, txn: MoveTransaction) -> Self {
+        Self { sender, txn }
+    }
+}
+
+impl AbstractTransaction for SimpleTransaction {
+    fn senders(&self) -> Vec<AccountAddress> {
+        vec![self.sender]
+    }
+
+    fn into_move_transaction(self) -> MoveTransaction {
+        self.txn
+    }
+
+    fn txn_hash(&self) -> HashValue {
+        HashValue::sha3_256_of(bcs::to_bytes(&self).unwrap().as_slice())
+    }
 }

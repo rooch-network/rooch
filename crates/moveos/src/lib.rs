@@ -6,6 +6,8 @@ use types::transaction::AbstractTransaction;
 pub mod moveos;
 pub mod types;
 mod vm;
+#[cfg(test)]
+mod tests;
 
 pub struct ValidatorResult {}
 

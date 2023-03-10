@@ -1,5 +1,5 @@
 [package]
-name = "moveos"
+name = "framework"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,7 +9,6 @@ edition = "2021"
 serde = { workspace = true }
 serde_bytes = { workspace = true }
 anyhow = { workspace = true }
-bcs = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }
@@ -21,6 +20,4 @@ move-unit-test = { workspace = true, optional = true }
 move-vm-runtime = { workspace = true }
 move-vm-test-utils = { workspace = true }
 move-vm-types = { workspace = true }
-
-statedb = { workspace = true }
-framework = { workspace = true }
+move-package = { workspace = true }
