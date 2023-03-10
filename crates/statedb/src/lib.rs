@@ -195,7 +195,7 @@ impl StateDB {
         self.smt.puts(changed_objects)
     }
 
-    pub fn is_genesis(&self) -> bool{
+    pub fn is_genesis(&self) -> bool {
         self.smt.is_genesis()
     }
 }

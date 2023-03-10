@@ -10,11 +10,15 @@ use crate::{
 };
 use anyhow::Result;
 use move_binary_format::errors::Location;
-use move_core_types::{account_address::AccountAddress, language_storage::{ModuleId, TypeTag}, identifier::IdentStr};
+use move_core_types::{
+    account_address::AccountAddress,
+    identifier::IdentStr,
+    language_storage::{ModuleId, TypeTag},
+};
 use move_table_extension::NativeTableContext;
-use move_vm_runtime::session::{Session, SerializedReturnValues};
+use move_vm_runtime::session::{SerializedReturnValues, Session};
 use move_vm_types::gas::UnmeteredGasMeter;
-use statedb::{StateDB, HashValue};
+use statedb::{HashValue, StateDB};
 
 pub struct MoveOS {
     vm: MoveVmExt,
@@ -34,8 +38,9 @@ impl MoveOS {
     }
 
     //TODO move to a suitable place
-    pub fn build_genesis_txn() -> Result<SimpleTransaction>{
-        let genesis_txn = MoveTransaction::ModuleBundle(framework::Framework::build()?.into_module_bundles()?);
+    pub fn build_genesis_txn() -> Result<SimpleTransaction> {
+        let genesis_txn =
+            MoveTransaction::ModuleBundle(framework::Framework::build()?.into_module_bundles()?);
         //TODO define the genesis sender.
         let sender = AccountAddress::from_hex_literal("0x1").unwrap();
         Ok(SimpleTransaction::new(sender, genesis_txn))
@@ -52,7 +57,12 @@ impl MoveOS {
         self.execute_transaction(session, senders, move_txn)
     }
 
-    fn execute_transaction<S>(&self, mut session: Session<S>, mut senders: Vec<AccountAddress>, txn: MoveTransaction) -> Result<()>
+    fn execute_transaction<S>(
+        &self,
+        mut session: Session<S>,
+        mut senders: Vec<AccountAddress>,
+        txn: MoveTransaction,
+    ) -> Result<()>
     where
         S: MoveResolverExt,
     {
@@ -69,7 +79,10 @@ impl MoveOS {
                     function.args,
                     &mut gas_meter,
                 )?;
-                assert!(result.return_values.is_empty(), "Entry function should not return values");
+                assert!(
+                    result.return_values.is_empty(),
+                    "Entry function should not return values"
+                );
             }
             MoveTransaction::ModuleBundle(modules) => {
                 //TODO check the modules package address with the sender
@@ -92,15 +105,24 @@ impl MoveOS {
     }
 
     /// Execute readonly view function
-    pub fn execute_view_function(&self, module: &ModuleId,
+    pub fn execute_view_function(
+        &self,
+        module: &ModuleId,
         function_name: &IdentStr,
         ty_args: Vec<TypeTag>,
-        args: Vec<impl Borrow<[u8]>>,) -> Result<SerializedReturnValues> {
+        args: Vec<impl Borrow<[u8]>>,
+    ) -> Result<SerializedReturnValues> {
         let session_id = HashValue::random();
         let mut session = self.vm.new_session(&self.db, session_id);
         //TODO limit the view function max gas usage
         let mut gas_meter = UnmeteredGasMeter;
-        let result = session.execute_function_bypass_visibility(module, function_name, ty_args, args, &mut gas_meter)?; 
+        let result = session.execute_function_bypass_visibility(
+            module,
+            function_name,
+            ty_args,
+            args,
+            &mut gas_meter,
+        )?;
         let (change_set, events, mut extensions) = session.finish_with_extensions()?;
 
         let table_context: NativeTableContext = extensions.remove();
@@ -108,12 +130,20 @@ impl MoveOS {
             .into_change_set()
             .map_err(|e| e.finish(Location::Undefined))?;
 
-        assert!(change_set.accounts().is_empty(), "Change set should be empty when execute view function");
-        assert!(events.is_empty(), "Events should be empty when execute view function");
-        assert!(table_change_set.changes.is_empty(), "Table change set should be empty when execute view function");
+        assert!(
+            change_set.accounts().is_empty(),
+            "Change set should be empty when execute view function"
+        );
+        assert!(
+            events.is_empty(),
+            "Events should be empty when execute view function"
+        );
+        assert!(
+            table_change_set.changes.is_empty(),
+            "Table change set should be empty when execute view function"
+        );
         Ok(result)
     }
-
 }
 
 impl TransactionValidator for MoveOS {

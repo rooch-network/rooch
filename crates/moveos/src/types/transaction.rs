@@ -43,7 +43,7 @@ pub trait AbstractTransaction {
 }
 
 #[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
-pub struct SimpleTransaction{
+pub struct SimpleTransaction {
     pub sender: AccountAddress,
     pub txn: MoveTransaction,
 }
