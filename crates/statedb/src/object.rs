@@ -2,13 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// The Move Object is from Sui Move, and we try to mix the Global storage module and Object model in MoveOS.
-use anyhow::{anyhow, bail, Result};
+use anyhow::{bail, Result};
 use move_core_types::{
     account_address::AccountAddress,
-    ident_str,
-    identifier::IdentStr,
-    language_storage::{StructTag, TypeTag},
-    move_resource::{MoveResource, MoveStructType},
+    language_storage::{StructTag},
+    move_resource::{MoveResource},
 };
 use move_table_extension::TableHandle;
 use serde::{Deserialize, Serialize};

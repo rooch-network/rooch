@@ -6,7 +6,7 @@ use move_bytecode_utils::dependency_graph::DependencyGraph;
 use move_core_types::account_address::AccountAddress;
 use move_package::{compilation::compiled_package::CompiledPackage, BuildConfig};
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap},
     io::stderr,
     path::PathBuf,
 };

@@ -3,14 +3,14 @@
 
 use move_binary_format::errors::VMResult;
 use move_bytecode_verifier::VerifierConfig;
-use move_core_types::{account_address::AccountAddress, resolver::MoveResolver};
+use move_core_types::{account_address::AccountAddress};
 use move_stdlib::natives::{self, GasParameters};
 use move_table_extension::NativeTableContext;
 use move_vm_runtime::{
     config::VMConfig, move_vm::MoveVM, native_extensions::NativeContextExtensions, session::Session,
 };
 use statedb::HashValue;
-use std::ops::Deref;
+
 
 use super::MoveResolverExt;
 

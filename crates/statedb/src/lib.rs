@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::collections::BTreeMap;
-
-use anyhow::{anyhow, bail, Result};
+use anyhow::{Result};
 use move_core_types::{
     account_address::AccountAddress,
     effects::{ChangeSet, Op},
@@ -12,7 +11,7 @@ use move_core_types::{
     resolver::{ModuleResolver, ResourceResolver},
 };
 use move_table_extension::{TableChangeSet, TableResolver};
-use object::{NamedTableID, Object, ObjectData, ObjectID, TableObject};
+use object::{NamedTableID, Object, ObjectID, TableObject};
 use smt::{InMemoryNodeStore, NodeStore, SMTree, UpdateSet};
 
 pub use smt::HashValue;
