@@ -13,3 +13,10 @@ Cargo.lock
 # Added by cargo
 
 /target
+
+# Move Build Output
+build/
+
+# Move coverage and tracing information
+.trace
+*.mvcov
