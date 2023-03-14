@@ -106,7 +106,8 @@ pub struct StateDB {
 }
 
 impl StateDB {
-    pub fn new() -> Self {
+    /// Init stateDB with memory store, just for test
+    pub fn new_with_memory_store() -> Self {
         let node_store = InMemoryNodeStore::default();
         let smt = SMTree::new(node_store.clone(), None);
         Self { node_store, smt }

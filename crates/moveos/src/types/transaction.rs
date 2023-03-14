@@ -5,7 +5,6 @@ use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
-    transaction_argument::TransactionArgument,
 };
 use serde::{Deserialize, Serialize};
 use statedb::HashValue;
@@ -15,7 +14,7 @@ pub struct Script {
     #[serde(with = "serde_bytes")]
     pub code: Vec<u8>,
     pub ty_args: Vec<TypeTag>,
-    pub args: Vec<TransactionArgument>,
+    pub args: Vec<Vec<u8>>,
 }
 
 #[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -34,6 +33,27 @@ pub enum MoveTransaction {
     Function(Function),
     //Publish Move modules
     ModuleBundle(Vec<Vec<u8>>),
+}
+
+impl MoveTransaction {
+    pub fn new_module_bundle(modules: Vec<Vec<u8>>) -> Self {
+        Self::ModuleBundle(modules)
+    }
+    pub fn new_function(module: ModuleId, function: Identifier, ty_args: Vec<TypeTag>, args: Vec<Vec<u8>>) -> Self {
+        Self::Function(Function {
+            module,
+            function,
+            ty_args,
+            args,
+        })
+    }
+    pub fn new_script(code: Vec<u8>, ty_args: Vec<TypeTag>, args: Vec<Vec<u8>>) -> Self {
+        Self::Script(Script {
+            code,
+            ty_args,
+            args,
+        })
+    }
 }
 
 pub trait AbstractTransaction {
