@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::borrow::Borrow;
 use crate::{
     types::transaction::{AbstractTransaction, MoveTransaction, SimpleTransaction},
     vm::{move_vm_ext::MoveVmExt, MoveResolverExt},
@@ -12,12 +11,15 @@ use move_binary_format::errors::{Location, PartialVMError, VMResult};
 use move_core_types::{
     account_address::AccountAddress,
     identifier::IdentStr,
-    language_storage::{ModuleId, TypeTag}, value::MoveValue, vm_status::StatusCode,
+    language_storage::{ModuleId, TypeTag},
+    value::MoveValue,
+    vm_status::StatusCode,
 };
 use move_table_extension::NativeTableContext;
-use move_vm_runtime::session::{SerializedReturnValues, Session, LoadedFunctionInstantiation};
+use move_vm_runtime::session::{LoadedFunctionInstantiation, SerializedReturnValues, Session};
 use move_vm_types::{gas::UnmeteredGasMeter, loaded_data::runtime_types::Type};
 use statedb::{HashValue, StateDB};
+use std::borrow::Borrow;
 
 pub struct MoveOS {
     vm: MoveVmExt,
@@ -36,7 +38,7 @@ impl MoveOS {
         Ok(moveos)
     }
 
-    pub fn state(&self) -> &StateDB{
+    pub fn state(&self) -> &StateDB {
         &self.db
     }
 
@@ -72,22 +74,33 @@ impl MoveOS {
         let mut gas_meter = UnmeteredGasMeter;
         match txn {
             MoveTransaction::Script(script) => {
-                let loaded_function = session.load_script(script.code.as_slice(),
-                    script.ty_args.clone())?;
+                let loaded_function =
+                    session.load_script(script.code.as_slice(), script.ty_args.clone())?;
                 //TODO find a nicer way to fill the signer arguments
-                let args = check_and_rearrange_args_by_signer_position(loaded_function, script.args, senders.pop().unwrap())?;
-                let result = session.execute_script(script.code, script.ty_args, args, &mut gas_meter)?;
+                let args = check_and_rearrange_args_by_signer_position(
+                    loaded_function,
+                    script.args,
+                    senders.pop().unwrap(),
+                )?;
+                let result =
+                    session.execute_script(script.code, script.ty_args, args, &mut gas_meter)?;
                 assert!(
                     result.return_values.is_empty(),
                     "Script function should not return values"
                 );
             }
             MoveTransaction::Function(function) => {
-                let loaded_function = session.load_function(&function.module,
+                let loaded_function = session.load_function(
+                    &function.module,
                     &function.function,
-                    function.ty_args.as_slice())?;
+                    function.ty_args.as_slice(),
+                )?;
                 //TODO find a nicer way to fill the signer arguments
-                let args = check_and_rearrange_args_by_signer_position(loaded_function, function.args, senders.pop().unwrap())?;
+                let args = check_and_rearrange_args_by_signer_position(
+                    loaded_function,
+                    function.args,
+                    senders.pop().unwrap(),
+                )?;
                 let result = session.execute_entry_function(
                     &function.module,
                     &function.function,
@@ -162,13 +175,13 @@ impl MoveOS {
     }
 }
 
-
 fn check_and_rearrange_args_by_signer_position(
     func: LoadedFunctionInstantiation,
     args: Vec<Vec<u8>>,
     sender: AccountAddress,
 ) -> VMResult<Vec<Vec<u8>>> {
-    let has_signer = func.parameters
+    let has_signer = func
+        .parameters
         .iter()
         .position(|i| matches!(i, Type::Signer))
         .map(|pos| {
@@ -198,7 +211,6 @@ fn check_and_rearrange_args_by_signer_position(
         Ok(args)
     }
 }
-
 
 impl TransactionValidator for MoveOS {
     fn validate_transaction<T: AbstractTransaction>(

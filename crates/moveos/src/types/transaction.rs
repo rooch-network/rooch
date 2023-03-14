@@ -39,7 +39,12 @@ impl MoveTransaction {
     pub fn new_module_bundle(modules: Vec<Vec<u8>>) -> Self {
         Self::ModuleBundle(modules)
     }
-    pub fn new_function(module: ModuleId, function: Identifier, ty_args: Vec<TypeTag>, args: Vec<Vec<u8>>) -> Self {
+    pub fn new_function(
+        module: ModuleId,
+        function: Identifier,
+        ty_args: Vec<TypeTag>,
+        args: Vec<Vec<u8>>,
+    ) -> Self {
         Self::Function(Function {
             module,
             function,

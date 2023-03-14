@@ -5,11 +5,7 @@ use anyhow::Result;
 use move_bytecode_utils::dependency_graph::DependencyGraph;
 use move_core_types::account_address::AccountAddress;
 use move_package::{compilation::compiled_package::CompiledPackage, BuildConfig};
-use std::{
-    collections::{BTreeMap},
-    io::stderr,
-    path::PathBuf,
-};
+use std::{collections::BTreeMap, io::stderr, path::PathBuf};
 
 pub struct Framework {
     package: CompiledPackage,

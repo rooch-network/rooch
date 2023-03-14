@@ -8,7 +8,7 @@ use move_core_types::{
     language_storage::ModuleId,
     value::{serialize_values, MoveValue},
 };
-use statedb::{StateDB};
+use statedb::StateDB;
 
 #[test]
 pub fn test_moveos() {
