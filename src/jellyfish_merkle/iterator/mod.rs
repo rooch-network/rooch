@@ -126,13 +126,15 @@ where
     pub fn new(
         reader: &'a R,
         state_root_hash: HashValue,
-        starting_key: SMTObject<K>,
+        starting_key: Option<SMTObject<K>>,
     ) -> Result<Self> {
         let mut parent_stack = vec![];
         let mut done = false;
 
         let mut current_node_key = state_root_hash;
-        let starting_key_hash = starting_key.merkle_hash();
+        let starting_key_hash = starting_key
+            .map(|k| k.merkle_hash())
+            .unwrap_or(HashValue::zero());
         let nibble_path = NibblePath::new(starting_key_hash.to_vec());
         let mut nibble_iter = nibble_path.nibbles();
 

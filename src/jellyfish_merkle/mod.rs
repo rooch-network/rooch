@@ -141,7 +141,7 @@ pub struct StaleNodeIndex {
 /// This is a wrapper of [`NodeBatch`](type.NodeBatch.html),
 /// [`StaleNodeIndexBatch`](type.StaleNodeIndexBatch.html) and some stats of nodes that represents
 /// the incremental updates of a tree and pruning indices after applying a write set,
-/// which is a vector of `hashed_account_address` and `new_account_state_blob` pairs.
+/// which is a vector of `K` and `V` pairs.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TreeUpdateBatch<K, V> {
     pub node_batch: NodeBatch<K, V>,
@@ -205,7 +205,7 @@ where
         let iter = self::iterator::JellyfishMerkleIterator::new(
             self.reader,
             state_root_hash,
-            start_key.into(),
+            Some(start_key.into()),
         )?;
         iter.print()
     }
@@ -233,12 +233,12 @@ where
         self.updates(state_root_hash, blob_set)
     }
 
-    pub fn updates(
+    pub fn updates<S: Into<Vec<(SMTObject<K>, Option<SMTObject<V>>)>>>(
         &self,
         state_root_hash: Option<HashValue>,
-        blob_set: Vec<(SMTObject<K>, Option<SMTObject<V>>)>,
+        blob_set: S,
     ) -> Result<(HashValue, TreeUpdateBatch<K, V>)> {
-        let (root_hashes, tree_update_batch) = self.puts(state_root_hash, vec![blob_set])?;
+        let (root_hashes, tree_update_batch) = self.puts(state_root_hash, vec![blob_set.into()])?;
         assert_eq!(
             root_hashes.len(),
             1,

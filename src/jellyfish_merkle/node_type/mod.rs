@@ -641,6 +641,33 @@ where
     }
 }
 
+impl<K, V> Serialize for Node<K, V>
+where
+    K: Key,
+    V: Value,
+{
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_bytes(self.encode().map_err(serde::ser::Error::custom)?.as_slice())
+    }
+}
+
+impl<'de, K, V> Deserialize<'de> for Node<K, V>
+where
+    K: Key,
+    V: Value,
+{
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let bytes = Vec::<u8>::deserialize(deserializer)?;
+        Node::decode(bytes.as_slice()).map_err(serde::de::Error::custom)
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct SparseMerkleInternalNode {
     left_child: HashValue,

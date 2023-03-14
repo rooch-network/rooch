@@ -312,6 +312,17 @@ impl FromStr for HashValue {
     }
 }
 
+impl From<[u8; HashValue::LENGTH]> for HashValue {
+    fn from(hash: [u8; HashValue::LENGTH]) -> Self {
+        HashValue::new(hash)
+    }
+}
+
+impl From<HashValue> for [u8; HashValue::LENGTH] {
+    fn from(hash_value: HashValue) -> Self {
+        hash_value.hash
+    }
+}
 /// Parse error when attempting to construct a HashValue
 #[derive(Clone, Copy, Debug)]
 pub struct HashValueParseError;
