@@ -21,7 +21,7 @@ pub struct BuildOptions {
 
 impl Framework {
     pub fn package() -> &'static str {
-        "moveos-stdlib"
+        "mos-stdlib"
     }
 
     /// Build framework package

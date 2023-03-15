@@ -11,6 +11,8 @@ use move_vm_runtime::{
 };
 use statedb::HashValue;
 
+use crate::mos_address;
+
 use super::MoveResolverExt;
 
 pub struct MoveVmExt {
@@ -22,7 +24,7 @@ impl MoveVmExt {
         let gas_params = GasParameters::zeros();
         Ok(Self {
             inner: MoveVM::new_with_config(
-                natives::all_natives(AccountAddress::from_hex_literal("0x1").unwrap(), gas_params),
+                natives::all_natives(AccountAddress::from_hex_literal(mos_address()).unwrap(), gas_params),
                 VMConfig {
                     verifier: VerifierConfig::default(),
                     max_binary_format_version: 6,

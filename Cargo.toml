@@ -6,12 +6,12 @@ members = [
     "crates/statedb",
     "crates/framework",
     "crates/integration-test-runner",
-    "crates/mpm",
+    "crates/mos",
 ]
 
 default-members = [
-    "crates/mpm",
     "crates/moveos",
+    "crates/mos",
 ]
 
 # All workspace members should inherit these keys

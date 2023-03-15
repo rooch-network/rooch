@@ -4,7 +4,7 @@
 use crate::{
     types::transaction::{AbstractTransaction, MoveTransaction, SimpleTransaction},
     vm::{move_vm_ext::MoveVmExt, MoveResolverExt},
-    TransactionExecutor, TransactionValidator,
+    TransactionExecutor, TransactionValidator, mos_address,
 };
 use anyhow::Result;
 use move_binary_format::errors::{Location, PartialVMError, VMResult};
@@ -47,7 +47,7 @@ impl MoveOS {
         let genesis_txn =
             MoveTransaction::ModuleBundle(framework::Framework::build()?.into_module_bundles()?);
         //TODO define the genesis sender.
-        let sender = AccountAddress::from_hex_literal("0x1").unwrap();
+        let sender = AccountAddress::from_hex_literal(mos_address()).unwrap();
         Ok(SimpleTransaction::new(sender, genesis_txn))
     }
 
