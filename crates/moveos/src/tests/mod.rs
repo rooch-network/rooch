@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{moveos::MoveOS, rooch_address};
+use crate::{moveos::MoveOS, mos_address};
 use move_core_types::{
     account_address::AccountAddress,
     identifier::IdentStr,
@@ -18,7 +18,7 @@ pub fn test_moveos() {
     //let data = HashValue::random().to_vec();
 
     let account_module = ModuleId::new(
-        AccountAddress::from_hex_literal(rooch_address()).unwrap(),
+        AccountAddress::from_hex_literal(mos_address()).unwrap(),
         IdentStr::new("account").unwrap().to_owned(),
     );
 

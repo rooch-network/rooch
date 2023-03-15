@@ -10,10 +10,10 @@ pub mod types;
 mod vm;
 
 /// Define the Rooch address with `0x1`
-const ROOCH_ADDRESS: &str = "0x1";
+const MOS_ADDRESS: &str = "0x1";
 
-pub const fn rooch_address() -> &'static str {
-    ROOCH_ADDRESS
+pub const fn mos_address() -> &'static str {
+    MOS_ADDRESS
 }
 
 pub struct ValidatorResult {}
