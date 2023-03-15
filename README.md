@@ -15,3 +15,12 @@ It provides the following features on top of MoveVM to make it easy for applicat
 
 1. as a rust library embedded in a blockchain or other application.
 2. as a standalone process, called via REST API or IPC.
+
+## Getting Started
+
+1. Build from source
+    $ cargo build && cp target/debug/mos ~/.cargo/bin/
+2. Create a new Move project
+    $ mos new my_mos_project
+3. Build the Move project
+    $ cd my_mos_project && mos build

@@ -2,12 +2,16 @@
 name = "mos"
 version = "0.1.0"
 edition = "2021"
+authors = ["Rooch Contributors <opensource@rooch.network>"]
+description = "CLI frontend for the MoveOS"
+repository = "https://github.com/rooch-network/moveos"
+homepage = "https://rooch.network"
+license = "Apache-2.0"
+publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
-
 anyhow = { workspace = true }
 bcs = { workspace = true }
 clap = { features = [ "derive",], workspace = true }
