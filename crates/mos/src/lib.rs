@@ -9,7 +9,8 @@ use move_cli::{
     base::{
         build::Build, coverage::Coverage, disassemble::Disassemble, docgen::Docgen, errmap::Errmap,
         info::Info, prove::Prove, test::Test,
-    }, Move,
+    },
+    Move,
 };
 
 pub mod commands;
@@ -59,6 +60,6 @@ pub fn run_cli(move_args: Move, cmd: Command) -> Result<()> {
             move_args.build_config,
             natives,
             Some(cost_table),
-        )
+        ),
     }
 }

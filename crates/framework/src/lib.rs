@@ -10,13 +10,11 @@ use std::{collections::BTreeMap, io::stderr, path::PathBuf};
 pub mod addresses;
 pub mod natives;
 
-
 const ERROR_DESCRIPTIONS: &[u8] = include_bytes!("../error_description.errmap");
 
 pub fn error_descriptions() -> &'static [u8] {
     ERROR_DESCRIPTIONS
 }
-
 
 pub struct Framework {
     package: CompiledPackage,
