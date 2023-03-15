@@ -1,0 +1,6 @@
+processed 4 tasks
+
+task 3 'view'. lines 23-25:
+key 0x42::test::Foo {
+    x: 500
+}

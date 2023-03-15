@@ -1,8 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::BTreeMap;
-use anyhow::{Result};
+use anyhow::Result;
 use move_core_types::{
     account_address::AccountAddress,
     effects::{ChangeSet, Op},
@@ -13,6 +12,7 @@ use move_core_types::{
 use move_table_extension::{TableChangeSet, TableResolver};
 use object::{NamedTableID, Object, ObjectID, TableObject};
 use smt::{InMemoryNodeStore, NodeStore, SMTree, UpdateSet};
+use std::collections::BTreeMap;
 
 pub use smt::HashValue;
 
@@ -106,7 +106,8 @@ pub struct StateDB {
 }
 
 impl StateDB {
-    pub fn new() -> Self {
+    /// Init stateDB with memory store, just for test
+    pub fn new_with_memory_store() -> Self {
         let node_store = InMemoryNodeStore::default();
         let smt = SMTree::new(node_store.clone(), None);
         Self { node_store, smt }

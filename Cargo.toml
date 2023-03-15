@@ -5,6 +5,7 @@ members = [
     "crates/moveos",
     "crates/statedb",
     "crates/framework",
+    "crates/integration-test-runner",
     "crates/mpm",
 ]
 
@@ -31,17 +32,20 @@ rust-version = "1.64"
 moveos = { path = "crates/moveos" }
 statedb = { path = "crates/statedb" }
 framework = { path = "crates/framework" }
+integration-test-runner = { path = "crates/integration-test-runner" }
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.
 again = "0.1.2"
 anyhow = "1.0.62"
+bcs = "0.1.3"
+clap = { version = "3", features = ["derive", ] }
+datatest-stable = "0.1.3"
 serde = { version = "1.0.137", features = ["derive", "rc"] }
 serde_bytes = "0.11.6"
 serde_json = { version = "1.0.81", features = ["preserve_order"] }
 serde_repr = "0.1"
 serde-name = "0.1.1"
-bcs = "0.1.3"
 
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
@@ -76,7 +80,7 @@ read-write-set = { git = "https://github.com/move-language/move", rev = "f976503
 read-write-set-dynamic = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
 # END MOVE DEPENDENCIES
 
-smt = { git = "https://github.com/rooch-network/smt", rev = "07cb95034a0208f176c066c75b1745fe1afdde01" }
+smt = { git = "https://github.com/rooch-network/smt", rev = "bba62b6e82b3ed81f1c27a2f6f36a017315cdf0a" }
 #smt = { path = "../smt" }
 
 [profile.release]

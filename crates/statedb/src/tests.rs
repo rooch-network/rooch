@@ -5,7 +5,7 @@ use super::*;
 
 #[test]
 fn test_statedb() {
-    let state_db = StateDB::new();
+    let state_db = StateDB::new_with_memory_store();
     let mut change_set = ChangeSet::new();
     let struct_tag: StructTag = "0x1::account::Account".parse().unwrap();
     for i in 1..10 {

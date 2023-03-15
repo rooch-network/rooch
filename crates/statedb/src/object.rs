@@ -4,9 +4,7 @@
 /// The Move Object is from Sui Move, and we try to mix the Global storage module and Object model in MoveOS.
 use anyhow::{bail, Result};
 use move_core_types::{
-    account_address::AccountAddress,
-    language_storage::{StructTag},
-    move_resource::{MoveResource},
+    account_address::AccountAddress, language_storage::StructTag, move_resource::MoveResource,
 };
 use move_table_extension::TableHandle;
 use serde::{Deserialize, Serialize};
