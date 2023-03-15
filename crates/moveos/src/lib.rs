@@ -9,6 +9,13 @@ mod tests;
 pub mod types;
 mod vm;
 
+/// Define the Rooch address with `0x1`
+const ROOCH_ADDRESS: &str = "0x1";
+
+pub const fn rooch_address() -> &'static str {
+    ROOCH_ADDRESS
+}
+
 pub struct ValidatorResult {}
 
 pub struct ExecutorResult {}
