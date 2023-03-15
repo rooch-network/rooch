@@ -6,9 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = { workspace = true }
+once_cell = { workspace = true }
 serde = { workspace = true }
 serde_bytes = { workspace = true }
-anyhow = { workspace = true }
+smallvec = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }
@@ -21,3 +23,4 @@ move-vm-runtime = { workspace = true }
 move-vm-test-utils = { workspace = true }
 move-vm-types = { workspace = true }
 move-package = { workspace = true }
+move-prover = { workspace = true }

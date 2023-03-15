@@ -1,19 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::MoveResolverExt;
+use framework::natives::{self, GasParameters};
 use move_binary_format::errors::VMResult;
 use move_bytecode_verifier::VerifierConfig;
-use move_core_types::account_address::AccountAddress;
-use move_stdlib::natives::{self, GasParameters};
 use move_table_extension::NativeTableContext;
 use move_vm_runtime::{
     config::VMConfig, move_vm::MoveVM, native_extensions::NativeContextExtensions, session::Session,
 };
 use statedb::HashValue;
-
-use crate::mos_address;
-
-use super::MoveResolverExt;
 
 pub struct MoveVmExt {
     inner: MoveVM,
@@ -24,7 +20,7 @@ impl MoveVmExt {
         let gas_params = GasParameters::zeros();
         Ok(Self {
             inner: MoveVM::new_with_config(
-                natives::all_natives(AccountAddress::from_hex_literal(mos_address()).unwrap(), gas_params),
+                natives::all_natives(gas_params),
                 VMConfig {
                     verifier: VerifierConfig::default(),
                     max_binary_format_version: 6,
