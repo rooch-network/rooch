@@ -7,4 +7,6 @@ std = "0x1"
 mos_std = "0x1"
 
 [dependencies]
-MoveStdlib = { local = "../move-stdlib" }
+#MoveStdlib = { local = "../move-stdlib" }
+MoveStdlib = { git = "https://github.com/move-language/move.git", subdir = "language/move-stdlib", rev = "47bb63611844e547fed85c9fe7f66d508caa684a" }
+MoveNursery = { git = "https://github.com/move-language/move.git", subdir = "language/move-stdlib/nursery", rev = "47bb63611844e547fed85c9fe7f66d508caa684a" }
