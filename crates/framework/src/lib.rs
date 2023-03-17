@@ -7,6 +7,15 @@ use move_core_types::account_address::AccountAddress;
 use move_package::{compilation::compiled_package::CompiledPackage, BuildConfig};
 use std::{collections::BTreeMap, io::stderr, path::PathBuf};
 
+pub mod addresses;
+pub mod natives;
+
+const ERROR_DESCRIPTIONS: &[u8] = include_bytes!("../error_description.errmap");
+
+pub fn error_descriptions() -> &'static [u8] {
+    ERROR_DESCRIPTIONS
+}
+
 pub struct Framework {
     package: CompiledPackage,
 }
@@ -21,12 +30,13 @@ pub struct BuildOptions {
 
 impl Framework {
     pub fn package() -> &'static str {
-        "mos-stdlib"
+        "mos-framework"
     }
 
     /// Build framework package
     pub fn build() -> Result<Self> {
         let options = BuildOptions::default();
+        Self::build_error_code_map();
         let package = Self::build_package(path_in_crate(Self::package()), options)?;
         Ok(Self { package })
     }
@@ -46,6 +56,11 @@ impl Framework {
             lock_file: None,
         };
         build_config.compile_package_no_exit(&package_path, &mut stderr())
+    }
+
+    pub fn build_error_code_map() {
+        let _path = path_in_crate("error_description.errmap");
+        //TODO generate error code map
     }
 
     pub fn into_module_bundles(self) -> Result<Vec<Vec<u8>>> {

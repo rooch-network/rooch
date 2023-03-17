@@ -41,11 +41,14 @@ anyhow = "1.0.62"
 bcs = "0.1.3"
 clap = { version = "3", features = ["derive", ] }
 datatest-stable = "0.1.3"
+once_cell = "1.10.0"
 serde = { version = "1.0.137", features = ["derive", "rc"] }
 serde_bytes = "0.11.6"
 serde_json = { version = "1.0.81", features = ["preserve_order"] }
 serde_repr = "0.1"
 serde-name = "0.1.1"
+smallvec = "1.6.1"
+tokio = { version = "1", features = ["full"] }
 
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
@@ -58,7 +61,10 @@ move-cli = { git = "https://github.com/move-language/move", rev = "f976503ec92e6
 move-command-line-common = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
 move-compiler ={ git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
 move-core-types = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6", features = ["address32"] }
+move-coverage = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-disassembler = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
 move-docgen = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-errmapgen = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
 move-ir-compiler = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
 move-model = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
 move-package = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
@@ -68,7 +74,7 @@ move-stackless-bytecode = { git = "https://github.com/move-language/move", rev =
 move-prover-test-utils = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
 move-resource-viewer = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
 move-stackless-bytecode-interpreter = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
-move-stdlib = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
+move-stdlib = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6", features = ["address32", "testing"] }
 move-symbol-pool = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
 move-table-extension = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
 move-transactional-test-runner = { git = "https://github.com/move-language/move", rev = "f976503ec92e6942eac1c05dd8231918d07e0af6" }
