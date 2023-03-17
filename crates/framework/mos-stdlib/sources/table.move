@@ -6,7 +6,9 @@
 /// struct itself, while the operations are implemented as native functions. No traversal is provided.
 
 module mos_std::table {
-
+    
+    friend mos_std::type_table;
+    
     /// Type of tables
     struct Table<phantom K: copy + drop, phantom V> has store {
         handle: address,
