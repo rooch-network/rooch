@@ -54,6 +54,8 @@ impl Framework {
             fetch_deps_only: false,
             skip_fetch_latest_git_deps: options.skip_fetch_latest_git_deps,
             lock_file: None,
+            //TODO set bytecode version
+            bytecode_version: None,
         };
         build_config.compile_package_no_exit(&package_path, &mut stderr())
     }

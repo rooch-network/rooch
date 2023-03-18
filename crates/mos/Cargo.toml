@@ -28,7 +28,6 @@ move-coverage = { workspace = true }
 move-disassembler = { workspace = true }
 move-errmapgen = { workspace = true }
 move-package = { workspace = true }
-move-stdlib = { workspace = true }
 move-unit-test = { workspace = true }
 move-vm-runtime = { workspace = true }
 move-vm-test-utils = { workspace = true }
