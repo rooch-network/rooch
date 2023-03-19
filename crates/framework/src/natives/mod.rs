@@ -16,6 +16,7 @@ pub struct GasParameters {
     type_info: mos_stdlib::type_info::GasParameters,
     rlp: mos_stdlib::rlp::GasParameters,
     account: mos_framework::account::GasParameters,
+    bcd: mos_stdlib::bcd::GasParameters,
 }
 
 impl GasParameters {
@@ -27,6 +28,7 @@ impl GasParameters {
             type_info: mos_stdlib::type_info::GasParameters::zeros(),
             rlp: mos_stdlib::rlp::GasParameters::zeros(),
             account: mos_framework::account::GasParameters::zeros(),
+            bcd: mos_stdlib::bcd::GasParameters::zeros(),
         }
     }
 }
@@ -34,11 +36,13 @@ impl GasParameters {
 pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
     let mut native_fun_table =
         move_stdlib::natives::all_natives(*MOVE_STD_ADDRESS, gas_params.move_stdlib);
-    
-    let nursery_fun_table = move_stdlib::natives::nursery_natives(*MOVE_STD_ADDRESS, gas_params.move_nursery);
+
+    let nursery_fun_table =
+        move_stdlib::natives::nursery_natives(*MOVE_STD_ADDRESS, gas_params.move_nursery);
     native_fun_table.extend(nursery_fun_table);
-    
-    let table_fun_table = move_table_extension::table_natives(*MOS_STD_ADDRESS, gas_params.table_extension);
+
+    let table_fun_table =
+        move_table_extension::table_natives(*MOS_STD_ADDRESS, gas_params.table_extension);
     native_fun_table.extend(table_fun_table);
 
     let mut natives = vec![];
@@ -52,8 +56,12 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
     }
 
     // mos_stdlib natives
-    add_natives!("type_info", mos_stdlib::type_info::make_all(gas_params.type_info));
+    add_natives!(
+        "type_info",
+        mos_stdlib::type_info::make_all(gas_params.type_info)
+    );
     add_natives!("rlp", mos_stdlib::rlp::make_all(gas_params.rlp));
+    add_natives!("bcd", mos_stdlib::bcd::make_all(gas_params.bcd));
 
     // mos_framework natives
     add_natives!(
