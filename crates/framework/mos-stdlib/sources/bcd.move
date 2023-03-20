@@ -5,23 +5,23 @@
 /// function because this can violate implicit struct invariants, therefore only primitive types are offerred. If
 /// a general conversion back-and-force is needed, consider the `mos_std::Any` type which preserves invariants.
 module mos_std::bcd{
-    public fun to_bool(v: &vector<u8>): bool {
+    public fun to_bool(v: vector<u8>): bool {
         from_bytes<bool>(v)
     }
 
-    public fun to_u8(v: &vector<u8>): u8 {
+    public fun to_u8(v: vector<u8>): u8 {
         from_bytes<u8>(v)
     }
 
-    public fun to_u64(v: &vector<u8>): u64 {
+    public fun to_u64(v: vector<u8>): u64 {
         from_bytes<u64>(v)
     }
 
-    public fun to_u128(v: &vector<u8>): u128 {
+    public fun to_u128(v: vector<u8>): u128 {
         from_bytes<u128>(v)
     }
 
-    public fun to_address(v: &vector<u8>): address {
+    public fun to_address(v: vector<u8>): address {
         from_bytes<address>(v)
     }
 
@@ -30,7 +30,7 @@ module mos_std::bcd{
     /// Note that this function does not put any constraint on `T`. If code uses this function to
     /// deserialize a linear value, its their responsibility that the data they deserialize is
     /// owned.
-    public(friend) native fun from_bytes<MoveValue>(bytes: &vector<u8>): MoveValue;
+    public(friend) native fun from_bytes<MoveValue>(bytes: vector<u8>): MoveValue;
     friend mos_std::any;
     friend mos_std::copyable_any;
 

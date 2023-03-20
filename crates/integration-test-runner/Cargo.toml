@@ -1,5 +1,5 @@
 [package]
-name = "moveos-integration-test-runner"
+name = "mos-integration-test-runner"
 version = "0.1.0"
 edition = "2021"
 

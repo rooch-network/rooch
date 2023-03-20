@@ -7,7 +7,6 @@ use clap::Parser;
 use move_command_line_common::files::verify_and_create_named_address_mapping;
 use move_command_line_common::{address::ParsedAddress, values::ParsableValue};
 use move_compiler::FullyCompiledProgram;
-use move_stdlib::move_stdlib_named_addresses;
 use move_transactional_test_runner::{
     framework::{CompiledState, MoveTestAdapter},
     tasks::{InitCommand, SyntaxChoice, TaskInput},
@@ -67,7 +66,7 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
             None => BTreeMap::new(),
         };
 
-        let mut named_address_mapping = move_stdlib_named_addresses();
+        let mut named_address_mapping = framework::Framework::named_addresses();
         for (name, addr) in additional_mapping {
             if named_address_mapping.contains_key(&name) {
                 panic!(
@@ -78,11 +77,24 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
             named_address_mapping.insert(name, addr);
         }
         let statedb = statedb::StateDB::new_with_memory_store();
-        let adapter = Self {
+        let mut adapter = Self {
             compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps, None),
             default_syntax,
             moveos: MoveOS::new(statedb).unwrap(),
         };
+
+        //Auto generate interface to Framework modules
+        //TODO share the genesis module with MoveOS.
+        let framework_modules = framework::Framework::build().unwrap().modules().unwrap();
+        for module in framework_modules
+            .iter()
+            .filter(|module| !adapter.compiled_state.is_precompiled_dep(&module.self_id()))
+            .collect::<Vec<_>>()
+        {
+            adapter
+                .compiled_state
+                .add_and_generate_interface_file(module.clone());
+        }
 
         (adapter, None)
     }
