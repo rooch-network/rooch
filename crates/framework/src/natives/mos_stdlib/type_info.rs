@@ -7,15 +7,17 @@
 // Source code from https://github.com/aptos-labs/aptos-core/blob/c76c6b0fc3a1b8e21b6ba2f77151ca20ea31ca32/aptos-move/framework/src/natives/type_info.rs#L1
 // TODO use the SafeNativeContext
 
-use move_binary_format::errors::{PartialVMResult, PartialVMError};
+use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::{
     gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
-    language_storage::{StructTag, TypeTag}, vm_status::StatusCode,
+    language_storage::{StructTag, TypeTag},
+    vm_status::StatusCode,
 };
-use move_vm_runtime::native_functions::{NativeFunction, NativeContext};
+use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
     loaded_data::runtime_types::Type,
-    values::{Struct, Value}, natives::function::NativeResult,
+    natives::function::NativeResult,
+    values::{Struct, Value},
 };
 use smallvec::{smallvec, SmallVec};
 use std::{collections::VecDeque, fmt::Write, sync::Arc};
@@ -66,30 +68,30 @@ fn native_type_of(
 
     let type_tag = context.type_to_type_tag(&ty_args[0])?;
 
-    let cost = gas_params.base + if gas_params.per_byte_in_str > 0.into() {
-        let type_tag_str = type_tag.to_string();
-        gas_params.per_byte_in_str * NumBytes::new(type_tag_str.len() as u64)
-        //TODO
-        //context.charge(gas_params.per_byte_in_str * NumBytes::new(type_tag_str.len() as u64))?;
-    }else{
-        0.into()
-    };
-    
+    let cost = gas_params.base
+        + if gas_params.per_byte_in_str > 0.into() {
+            let type_tag_str = type_tag.to_string();
+            gas_params.per_byte_in_str * NumBytes::new(type_tag_str.len() as u64)
+            //TODO
+            //context.charge(gas_params.per_byte_in_str * NumBytes::new(type_tag_str.len() as u64))?;
+        } else {
+            0.into()
+        };
+
     if let TypeTag::Struct(struct_tag) = type_tag {
-        Ok(NativeResult::ok(cost, type_of_internal(&struct_tag).expect("type_of should never fail.")))
+        Ok(NativeResult::ok(
+            cost,
+            type_of_internal(&struct_tag).expect("type_of should never fail."),
+        ))
     } else {
         //TODO abort_code
-        Err(PartialVMError::new(
-            StatusCode::TYPE_MISMATCH,
-        ))
+        Err(PartialVMError::new(StatusCode::TYPE_MISMATCH))
     }
 }
 
 //TODO implement a generic make_native function to replace all make_native_xxx function
 pub fn make_native_type_of(gas_params: TypeOfGasParameters) -> NativeFunction {
-    Arc::new(move |context, ty_args, args| {
-        native_type_of(&gas_params, context, ty_args, args)
-    })
+    Arc::new(move |context, ty_args, args| native_type_of(&gas_params, context, ty_args, args))
 }
 
 /***************************************************************************************************
@@ -102,19 +104,17 @@ pub struct GasParameters {
 }
 impl GasParameters {
     pub fn zeros() -> GasParameters {
-        Self { type_of: TypeOfGasParameters { base: 0.into(), per_byte_in_str: 0.into() }}
+        Self {
+            type_of: TypeOfGasParameters {
+                base: 0.into(),
+                per_byte_in_str: 0.into(),
+            },
+        }
     }
 }
 
-pub fn make_all(
-    gas_params: GasParameters,
-) -> impl Iterator<Item = (String, NativeFunction)> {
-    let natives = [
-        (
-            "type_of",
-            make_native_type_of(gas_params.type_of),
-        ),
-    ];
+pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
+    let natives = [("type_of", make_native_type_of(gas_params.type_of))];
 
     crate::natives::helpers::make_module_natives(natives)
 }
