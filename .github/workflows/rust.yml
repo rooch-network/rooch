@@ -27,12 +27,18 @@ jobs:
     - name: install nextest
       uses: taiki-e/install-action@nextest
     - uses: Swatinem/rust-cache@v1
+    - name: Install CargoFmt
+      run: rustup component add rustfmt
     - name: Check code format
       run: cargo fmt -- --check
     - name: Check the package for errors
       run: cargo check --all
+    - name: Install Cargo clippy
+      run: rustup component add clippy
     - name: Lint rust sources
       run: cargo clippy --all-targets --all-features --tests --benches -- -D warnings
+    - name: Install nextest
+      run: cargo install cargo-nextest --locked
     - name: Execute rust tests
       run: cargo nextest run --all-features
     # - name: Run tests
