@@ -32,7 +32,7 @@ jobs:
     - name: Check code format
       run: cargo fmt -- --check
     - name: Check the package for errors
-      run: cargo check --all
+      run: cargo check --all -j 2
     - name: Install Cargo clippy
       run: rustup component add clippy
     - name: Lint rust sources
