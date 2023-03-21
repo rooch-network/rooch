@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::addresses::{MOS_STD_ADDRESS, MOVE_STD_ADDRESS};
+use move_core_types::gas_algebra::InternalGas;
 use move_vm_runtime::native_functions::{make_table_from_iter, NativeFunctionTable};
 
 mod helpers;
@@ -17,6 +18,8 @@ pub struct GasParameters {
     rlp: mos_stdlib::rlp::GasParameters,
     account: mos_framework::account::GasParameters,
     bcd: mos_stdlib::bcd::GasParameters,
+    tx_context: mos_stdlib::tx_context::GasParameters,
+    object: mos_stdlib::object::GasParameters,
 }
 
 impl GasParameters {
@@ -29,6 +32,22 @@ impl GasParameters {
             rlp: mos_stdlib::rlp::GasParameters::zeros(),
             account: mos_framework::account::GasParameters::zeros(),
             bcd: mos_stdlib::bcd::GasParameters::zeros(),
+            tx_context: mos_stdlib::tx_context::GasParameters::zeros(),
+            object: mos_stdlib::object::GasParameters::zeros(),
+        }
+    }
+}
+
+/// A fixed base gas cost for a native function.
+#[derive(Debug, Clone)]
+pub struct BaseGasParameter {
+    pub base: InternalGas,
+}
+
+impl BaseGasParameter {
+    pub fn zeros() -> Self {
+        Self {
+            base: InternalGas::new(0),
         }
     }
 }
@@ -62,6 +81,11 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
     );
     add_natives!("rlp", mos_stdlib::rlp::make_all(gas_params.rlp));
     add_natives!("bcd", mos_stdlib::bcd::make_all(gas_params.bcd));
+    add_natives!(
+        "tx_context",
+        mos_stdlib::tx_context::make_all(gas_params.tx_context)
+    );
+    add_natives!("object", mos_stdlib::object::make_all(gas_params.object));
 
     // mos_framework natives
     add_natives!(

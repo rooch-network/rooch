@@ -7,6 +7,8 @@ edition = "2021"
 
 [dependencies]
 anyhow = { workspace = true }
+better_any = { workspace = true }
+linked-hash-map = { workspace = true }
 once_cell = { workspace = true }
 serde = { workspace = true }
 serde_bytes = { workspace = true }
@@ -25,6 +27,8 @@ move-vm-test-utils = { workspace = true }
 move-vm-types = { workspace = true }
 move-package = { workspace = true }
 move-prover = { workspace = true }
+
+mos-types = { workspace = true }
 
 [dev-dependencies]
 mos-integration-test-runner = { workspace = true }

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use framework::natives::mos_stdlib::object_extension::ObjectResolver;
+use mos_types::object::{NamedTableID, Object, ObjectID, TableObject};
 use move_core_types::{
     account_address::AccountAddress,
     effects::{ChangeSet, Op},
@@ -10,13 +12,11 @@ use move_core_types::{
     resolver::{ModuleResolver, ResourceResolver},
 };
 use move_table_extension::{TableChangeSet, TableResolver};
-use object::{NamedTableID, Object, ObjectID, TableObject};
 use smt::{InMemoryNodeStore, NodeStore, SMTree, UpdateSet};
 use std::collections::BTreeMap;
 
 pub use smt::HashValue;
 
-pub mod object;
 #[cfg(test)]
 mod tests;
 
@@ -233,5 +233,11 @@ impl TableResolver for StateDB {
         key: &[u8],
     ) -> std::result::Result<Option<Vec<u8>>, anyhow::Error> {
         self.get_with_key((*handle).into(), key.to_vec())
+    }
+}
+
+impl ObjectResolver for StateDB {
+    fn resolve_object(&self, id: ObjectID) -> Result<Option<Object>> {
+        self.get(id)
     }
 }

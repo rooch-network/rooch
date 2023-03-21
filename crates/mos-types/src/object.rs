@@ -26,6 +26,65 @@ impl NamedTableID {
 #[derive(Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct ObjectID(HashValue);
 
+impl ObjectID {
+    const LENGTH: usize = HashValue::LENGTH;
+
+    /// Creates a new ObjectID
+    pub fn new(obj_id: [u8; Self::LENGTH]) -> Self {
+        Self(HashValue::new(obj_id))
+    }
+
+    /// Create an ObjectID from transaction hash digest and `creation_num`.
+    /// Caller is responsible for ensuring that hash is unique and
+    /// `creation_num` is fresh
+    pub fn derive_id(mut tx_hash: Vec<u8>, creation_num: u64) -> Self {
+        tx_hash.extend(creation_num.to_le_bytes());
+        ObjectID(HashValue::sha3_256_of(&tx_hash))
+    }
+
+    pub fn from_bytes<T: AsRef<[u8]>>(bytes: T) -> Result<Self, ObjectIDParseError> {
+        <[u8; Self::LENGTH]>::try_from(bytes.as_ref())
+            .map_err(|_| ObjectIDParseError::TryFromSliceError)
+            .map(ObjectID::from)
+    }
+}
+
+#[derive(PartialEq, Eq, Clone, Debug, thiserror::Error)]
+pub enum ObjectIDParseError {
+    #[error("ObjectID hex literal must start with 0x")]
+    HexLiteralPrefixMissing,
+
+    #[error("ObjectID hex string should only contain 0-9, A-F, a-f")]
+    InvalidHexCharacter,
+
+    #[error("hex string must be even-numbered. Two chars maps to one byte.")]
+    OddLength,
+
+    #[error("ObjectID must be {} bytes long.", ObjectID::LENGTH)]
+    InvalidLength,
+
+    #[error("Could not convert from bytes slice")]
+    TryFromSliceError,
+}
+
+impl From<[u8; ObjectID::LENGTH]> for ObjectID {
+    fn from(bytes: [u8; ObjectID::LENGTH]) -> Self {
+        Self::new(bytes)
+    }
+}
+
+impl From<AccountAddress> for ObjectID {
+    fn from(address: AccountAddress) -> Self {
+        ObjectID(HashValue::new(address.into()))
+    }
+}
+
+impl From<ObjectID> for AccountAddress {
+    fn from(object_id: ObjectID) -> Self {
+        AccountAddress::new(object_id.0.into())
+    }
+}
+
 impl From<NamedTableID> for ObjectID {
     fn from(named_object_id: NamedTableID) -> Self {
         match named_object_id {
