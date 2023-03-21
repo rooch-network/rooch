@@ -185,82 +185,6 @@ function install_rustup {
   fi
 }
 
-function install_vault {
-  VERSION=$("${INSTALL_DIR}"/vault --version || true)
-  if [[ "$VERSION" != "Vault v${VAULT_VERSION}" ]]; then
-    MACHINE=$(uname -m);
-    if [[ $MACHINE == "x86_64" ]]; then
-      MACHINE="amd64"
-    fi
-    TMPFILE=$(mktemp)
-    curl -sL -o "$TMPFILE" "https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_$(uname -s | tr '[:upper:]' '[:lower:]')_${MACHINE}.zip"
-    unzip -qq -d "$INSTALL_DIR" "$TMPFILE"
-    rm "$TMPFILE"
-    chmod +x "${INSTALL_DIR}"/vault
-  fi
-  "${INSTALL_DIR}"/vault --version
-}
-
-function install_helm {
-  if ! command -v helm &> /dev/null; then
-    if [[ $(uname -s) == "Darwin" ]]; then
-      install_pkg helm brew
-    else
-      MACHINE=$(uname -m);
-      if [[ $MACHINE == "x86_64" ]]; then
-        MACHINE="amd64"
-      fi
-      TMPFILE=$(mktemp)
-      rm "$TMPFILE"
-      mkdir -p "$TMPFILE"/
-      curl -sL -o "$TMPFILE"/out.tar.gz "https://get.helm.sh/helm-v${HELM_VERSION}-$(uname -s | tr '[:upper:]' '[:lower:]')-${MACHINE}.tar.gz"
-      tar -zxvf "$TMPFILE"/out.tar.gz -C "$TMPFILE"/
-      cp "${TMPFILE}/$(uname -s | tr '[:upper:]' '[:lower:]')-${MACHINE}/helm" "${INSTALL_DIR}/helm"
-      rm -rf "$TMPFILE"
-      chmod +x "${INSTALL_DIR}"/helm
-    fi
-  fi
-}
-
-function install_terraform {
-  VERSION=$(terraform --version | head -1 || true)
-  if [[ "$VERSION" != "Terraform v${TERRAFORM_VERSION}" ]]; then
-    if [[ $(uname -s) == "Darwin" ]]; then
-      install_pkg tfenv brew
-      tfenv install ${TERRAFORM_VERSION}
-      tfenv use ${TERRAFORM_VERSION}
-    else
-      MACHINE=$(uname -m);
-      if [[ $MACHINE == "x86_64" ]]; then
-        MACHINE="amd64"
-      fi
-      TMPFILE=$(mktemp)
-      curl -sL -o "$TMPFILE" "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_$(uname -s | tr '[:upper:]' '[:lower:]')_${MACHINE}.zip"
-      unzip -qq -d "${INSTALL_DIR}" "$TMPFILE"
-      rm "$TMPFILE"
-      chmod +x "${INSTALL_DIR}"/terraform
-      terraform --version
-    fi
-  fi
-}
-
-function install_kubectl {
-  VERSION=$(kubectl version client --short=true | head -1 || true)
-  if [[ "$VERSION" != "Client Version: v${KUBECTL_VERSION}" ]]; then
-    if [[ $(uname -s) == "Darwin" ]]; then
-      install_pkg kubectl brew
-    else
-      MACHINE=$(uname -m);
-      if [[ $MACHINE == "x86_64" ]]; then
-        MACHINE="amd64"
-      fi
-      curl -sL -o "${INSTALL_DIR}"/kubectl "https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/$(uname -s | tr '[:upper:]' '[:lower:]')/${MACHINE}/kubectl"
-      chmod +x "${INSTALL_DIR}"/kubectl
-    fi
-  fi
-  kubectl version client --short=true | head -1 || true
-}
-
 function install_awscli {
   PACKAGE_MANAGER=$1
   if ! command -v aws &> /dev/null; then
@@ -928,10 +852,6 @@ if [[ "$OPERATIONS" == "true" ]]; then
     install_pkg coreutils "$PACKAGE_MANAGER"
   fi
   install_shellcheck
-  install_vault
-  install_helm
-  install_terraform
-  install_kubectl
   install_awscli "$PACKAGE_MANAGER"
   install_allure
 fi
