@@ -260,8 +260,8 @@ where
             }
             None => false,
         },
-        Type::Reference(r) => is_tx_context(session, &r),
-        Type::MutableReference(r) => is_tx_context(session, &r),
+        Type::Reference(r) => is_tx_context(session, r),
+        Type::MutableReference(r) => is_tx_context(session, r),
         _ => false,
     }
 }
