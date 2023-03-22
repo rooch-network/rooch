@@ -6,6 +6,7 @@ use move_core_types::resolver::MoveResolver;
 use move_table_extension::TableResolver;
 
 pub mod move_vm_ext;
+pub mod tx_argument_resolver;
 
 pub trait MoveResolverExt: MoveResolver + TableResolver + ObjectResolver {}
 

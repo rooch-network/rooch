@@ -3,24 +3,25 @@
 
 use crate::{
     types::transaction::{AbstractTransaction, MoveTransaction, SimpleTransaction},
-    vm::{move_vm_ext::MoveVmExt, MoveResolverExt},
+    vm::{
+        move_vm_ext::{MoveVmExt, SessionExt},
+        MoveResolverExt,
+    },
     TransactionExecutor, TransactionValidator,
 };
 use anyhow::Result;
 use framework::addresses::MOS_FRAMEWORK_ADDRESS;
 use mos_types::tx_context::TxContext;
-use move_binary_format::errors::{Location, PartialVMError, VMResult};
+use move_binary_format::errors::{Location};
 use move_core_types::{
     account_address::AccountAddress,
     identifier::IdentStr,
     language_storage::{ModuleId, TypeTag},
-    move_resource::MoveStructType,
-    value::MoveValue,
-    vm_status::StatusCode,
 };
 use move_table_extension::NativeTableContext;
-use move_vm_runtime::session::{LoadedFunctionInstantiation, SerializedReturnValues, Session};
-use move_vm_types::{gas::UnmeteredGasMeter, loaded_data::runtime_types::Type};
+use framework::natives::mos_stdlib::object_extension::NativeObjectContext;
+use move_vm_runtime::session::{SerializedReturnValues};
+use move_vm_types::{gas::UnmeteredGasMeter};
 use statedb::{HashValue, StateDB};
 use std::borrow::Borrow;
 
@@ -65,7 +66,7 @@ impl MoveOS {
 
     fn execute_transaction<S>(
         &self,
-        mut session: Session<S>,
+        mut session: SessionExt<S>,
         mut senders: Vec<AccountAddress>,
         tx_hash: HashValue,
         txn: MoveTransaction,
@@ -81,13 +82,8 @@ impl MoveOS {
             MoveTransaction::Script(script) => {
                 let loaded_function =
                     session.load_script(script.code.as_slice(), script.ty_args.clone())?;
-                //TODO find a nicer way to fill the signer arguments
-                let args = check_and_rearrange_args_by_signer_position(
-                    &session,
-                    loaded_function,
-                    script.args,
-                    tx_context,
-                )?;
+
+                let args = session.resolve_args(&tx_context, loaded_function, script.args)?;
                 let result =
                     session.execute_script(script.code, script.ty_args, args, &mut gas_meter)?;
                 assert!(
@@ -101,13 +97,7 @@ impl MoveOS {
                     &function.function,
                     function.ty_args.as_slice(),
                 )?;
-                //TODO find a nicer way to fill the signer arguments
-                let args = check_and_rearrange_args_by_signer_position(
-                    &session,
-                    loaded_function,
-                    function.args,
-                    tx_context,
-                )?;
+                let args = session.resolve_args(&tx_context, loaded_function, function.args)?;
                 let result = session.execute_entry_function(
                     &function.module,
                     &function.function,
@@ -136,6 +126,13 @@ impl MoveOS {
 
         //TODO move apply change set to a suitable place, and make MoveOS state less.
         self.db.apply_change_set(change_set, table_change_set)?;
+
+        let object_context: NativeObjectContext = extensions.remove();
+        let object_change_set = object_context
+            .into_change_set()
+            .map_err(|e| e.finish(Location::Undefined))?;
+        self.db.apply_object_change_set(object_change_set)?;
+        
         Ok(())
     }
 
@@ -181,90 +178,6 @@ impl MoveOS {
     }
 }
 
-//TODO refactor this, provide a TransactionParameterResolver trait, and let extension to provide.
-fn check_and_rearrange_args_by_signer_position<S>(
-    session: &Session<S>,
-    func: LoadedFunctionInstantiation,
-    mut args: Vec<Vec<u8>>,
-    tx_context: TxContext,
-) -> VMResult<Vec<Vec<u8>>>
-where
-    S: MoveResolverExt,
-{
-    let has_signer = func
-        .parameters
-        .iter()
-        .position(|i| matches!(i, Type::Signer))
-        .map(|pos| {
-            if pos != 0 {
-                Err(
-                    PartialVMError::new(StatusCode::NUMBER_OF_SIGNER_ARGUMENTS_MISMATCH)
-                        .with_message(format!(
-                            "Expected signer arg is this first arg, but got it at {}",
-                            pos + 1
-                        ))
-                        .finish(Location::Undefined),
-                )
-            } else {
-                Ok(true)
-            }
-        })
-        .unwrap_or(Ok(false))?;
-
-    if has_signer {
-        let signer = MoveValue::Signer(tx_context.sender());
-        args.push(
-            signer
-                .simple_serialize()
-                .expect("serialize signer should success"),
-        );
-    }
-
-    let has_tx_context = func
-        .parameters
-        .iter()
-        .position(|i| is_tx_context(session, i))
-        .map(|pos| {
-            if pos != 0 {
-                Err(
-                    PartialVMError::new(StatusCode::NUMBER_OF_SIGNER_ARGUMENTS_MISMATCH)
-                        .with_message(format!(
-                            "Expected TxContext arg is this first arg, but got it at {}",
-                            pos + 1
-                        ))
-                        .finish(Location::Undefined),
-                )
-            } else {
-                Ok(true)
-            }
-        })
-        .unwrap_or(Ok(false))?;
-
-    if has_tx_context {
-        args.push(tx_context.to_vec());
-    }
-
-    Ok(args)
-}
-
-fn is_tx_context<T>(session: &Session<T>, t: &Type) -> bool
-where
-    T: MoveResolverExt,
-{
-    match t {
-        Type::Struct(s) => match session.get_struct_type(*s) {
-            Some(t) => {
-                *t.module.address() == *framework::addresses::MOS_STD_ADDRESS
-                    && t.module.name() == TxContext::module_identifier().as_ident_str()
-                    && t.name == TxContext::struct_identifier()
-            }
-            None => false,
-        },
-        Type::Reference(r) => is_tx_context(session, r),
-        Type::MutableReference(r) => is_tx_context(session, r),
-        _ => false,
-    }
-}
 
 impl TransactionValidator for MoveOS {
     fn validate_transaction<T: AbstractTransaction>(

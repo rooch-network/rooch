@@ -198,12 +198,19 @@ impl ObjectData {
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct MoveObject {
     pub type_: StructTag,
-    version: SequenceNumber,
+    pub version: SequenceNumber,
     #[serde(with = "serde_bytes")]
-    contents: Vec<u8>,
+    pub contents: Vec<u8>,
 }
 
 impl MoveObject {
+    pub fn new(type_: StructTag, version: SequenceNumber, contents: Vec<u8>) -> Self {
+        Self {
+            type_,
+            version,
+            contents,
+        }
+    }
     pub fn decode<T: MoveResource>(&self) -> Result<T, anyhow::Error> {
         if T::struct_tag() != self.type_ {
             anyhow::bail!(

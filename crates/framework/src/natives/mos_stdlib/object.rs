@@ -13,10 +13,11 @@ use crate::natives::{
     mos_stdlib::object_extension::NativeObjectContext,
     BaseGasParameter,
 };
-use mos_types::object::Owner;
+use mos_types::object::{Owner};
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::{
-    account_address::AccountAddress, language_storage::TypeTag, vm_status::StatusCode,
+    account_address::AccountAddress, language_storage::TypeTag,
+    value::MoveTypeLayout, vm_status::StatusCode,
 };
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
@@ -27,6 +28,7 @@ use move_vm_types::{
 };
 use smallvec::smallvec;
 use std::collections::VecDeque;
+
 
 pub type BorrowUidGasParameter = BaseGasParameter;
 
@@ -167,8 +169,18 @@ fn object_runtime_transfer(
             )
         }
     };
+    let layout = match context.type_to_type_layout(&ty)? {
+        Some(MoveTypeLayout::Struct(s)) => s,
+        _ => {
+            return Err(
+                PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+                    .with_message("verifier guarantees this is a struct".to_string()),
+            )
+        }
+    };
+
     let obj_runtime: &mut NativeObjectContext = context.extensions_mut().get_mut();
-    obj_runtime.transfer(owner, ty, *tag, obj)
+    obj_runtime.transfer(owner, ty, *tag, layout, obj)
 }
 
 /***************************************************************************************************

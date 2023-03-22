@@ -6,7 +6,8 @@ use better_any::{Tid, TidAble};
 use mos_types::object::{Object, ObjectID, Owner};
 use move_binary_format::errors::PartialVMError;
 use move_core_types::{
-    account_address::AccountAddress, language_storage::StructTag, vm_status::StatusCode,
+    account_address::AccountAddress, language_storage::StructTag, value::MoveStructLayout,
+    vm_status::StatusCode,
 };
 use move_vm_types::{
     loaded_data::runtime_types::Type,
@@ -78,6 +79,7 @@ impl<'a> NativeObjectContext<'a> {
         owner: Owner,
         ty: Type,
         tag: StructTag,
+        layout: MoveStructLayout,
         obj: Value,
     ) -> Result<TransferResult, PartialVMError> {
         let mut object_data = self.object_data.borrow_mut();
@@ -86,9 +88,17 @@ impl<'a> NativeObjectContext<'a> {
             .into();
         object_data
             .transfers
-            .insert(object_id, ObjectInfo::new(owner, ty, tag, obj));
+            .insert(object_id, ObjectInfo::new(owner, ty, tag, layout, obj));
         //TODO return the correct result
         Ok(TransferResult::New)
+    }
+
+    pub fn into_change_set(self) -> Result<ObjectChangeSet, PartialVMError> {
+        let object_data = self.object_data.into_inner();
+        //TODO process change set.
+        Ok(ObjectChangeSet {
+            new_objects: object_data.transfers,
+        })
     }
 }
 
@@ -97,15 +107,24 @@ pub struct ObjectInfo {
     pub owner: Owner,
     pub ty: Type,
     pub tag: StructTag,
+    //TODO should contains layout?
+    pub layout: MoveStructLayout,
     pub value: Value,
 }
 
 impl ObjectInfo {
-    pub fn new(owner: Owner, ty: Type, tag: StructTag, value: Value) -> Self {
+    pub fn new(
+        owner: Owner,
+        ty: Type,
+        tag: StructTag,
+        layout: MoveStructLayout,
+        value: Value,
+    ) -> Self {
         Self {
             owner,
             ty,
             tag,
+            layout,
             value,
         }
     }
@@ -148,4 +167,8 @@ pub fn get_nested_struct_field(mut v: Value, offsets: &[usize]) -> Result<Value,
 pub fn get_nth_struct_field(v: Value, n: usize) -> Result<Value, PartialVMError> {
     let mut itr = v.value_as::<Struct>()?.unpack()?;
     Ok(itr.nth(n).unwrap())
+}
+
+pub struct ObjectChangeSet {
+    pub new_objects: BTreeMap<ObjectID, ObjectInfo>,
 }
