@@ -19,6 +19,10 @@ jobs:
     - uses: rooch-network/moveos/.github/actions/rust-setup@docs/contributions
     #  with:
     #    fetch-depth: 0
-    # - name: Install dev environment
-    #   run: bash ./scripts/dev-setup.sh
+    - name: Check code format
+      run: cargo fmt -- --check
+    - name: Lint rust sources
+      run: cargo clippy --all-targets --all-features --tests --benches -- -D warnings
+    - name: Execute rust tests
+      run: cargo nextest run --workspace --all-features
     
