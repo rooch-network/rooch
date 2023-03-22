@@ -8,7 +8,6 @@ This section lays out some basic coding conventions for Move that the Move team 
 - **Type names**: should be camel case if they are not a native type, e.g., `Coin`, `RoleId`.
 - **Function names**: should be lower snake case, e.g., `destroy_empty`.
 - **Constant names**: should be upper camel case and begin with an `E` if they represent error codes (e.g., `EIndexOutOfBounds`) and upper snake case if they represent a non-error value (e.g., `MIN_STAKE`).
--
 - **Generic type names**: should be descriptive, or anti-descriptive where appropriate, e.g., `T` or `Element` for the Vector generic type parameter. Most of the time the "main" type in a module should be the same name as the module e.g., `option::Option`, `fixed_point32::FixedPoint32`.
 - **Module file names**: should be the same as the module name and lower snake case, e.g., `option.move`.
 - **Script file names**: should be lower snake case and should match the name of the “main” function in the script.
@@ -24,7 +23,7 @@ For example, if there is a module:
 
 ```move
 module 0x1::foo {
-    struct Foo { }
+    struct Foo {}
     const CONST_FOO: u64 = 0;
     public fun do_foo(): Foo { Foo{} }
     ...
