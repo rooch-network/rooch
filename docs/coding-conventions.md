@@ -1,6 +1,8 @@
 # Move Coding Conventions
 
-This section lays out some basic coding conventions for Move that the Move team has found helpful. These are only recommendations, and you should feel free to use other formatting guidelines and conventions if you have a preference for them.
+To ensure the quality of project code and collaboration among developers, I think we should have a unified coding conventions in this repo.
+
+This section lays out some basic coding conventions for Move that the Move team has found helpful.
 
 ## Naming
 
