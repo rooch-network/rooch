@@ -16,7 +16,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - uses: rooch-network/movoes/.github/actions/rust-setup@docs/contributions
+    - uses: rooch-network/moveos/.github/actions/rust-setup@docs/contributions
     #  with:
     #    fetch-depth: 0
     # - name: Install dev environment
