@@ -23,7 +23,7 @@ homepage = "https://rooch.network"
 license = "Apache-2.0"
 publish = false
 repository = "https://github.com/rooch-network/moveos"
-rust-version = "1.64"
+rust-version = "1.68"
 
 
 [workspace.dependencies]

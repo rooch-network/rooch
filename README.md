@@ -1,6 +1,6 @@
 # MoveOS
 
-MoveOS is a standalone Move runtime environment based on [MoveVM](https://github.com/move-language/move).
+MoveOS is a standalone Move runtime environment based on [MoveVM](https://github.com/move-language/move) by [Rooch Network](#rooch-network).
 
 ## Key Features
 
@@ -24,3 +24,17 @@ It provides the following features on top of MoveVM to make it easy for applicat
     $ mos new my_mos_project
 3. Build the Move project
     $ cd my_mos_project && mos build
+
+## Rooch Network
+
+Rooch Network's [website](https://rooch.network) is also open source (the code can be found in this [repository](https://github.com/rooch-network/rooch-network.github.io).  You can obtain more information about Rooch here, including technical documentation and architectural design.
+
+## How to Contribute
+
+You can learn more about contributing to the Rooch project by reading our [Contribution Guide](./CONTRIBUTING.md) and by viewing our [Code of Conduct](./CODE_OF_CONDUCT.md).
+
+Rooch Network MoveOS is licensed under [Apache 2.0](./LICENSE).
+
+## Join the Community
+
+To connect with the Rooch Network community, please join our [Discord](https://discord.gg/rooch).
