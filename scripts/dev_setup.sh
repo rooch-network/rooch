@@ -37,7 +37,7 @@ function usage {
   echo "-p update ${HOME}/.profile"
   echo "-r install protoc and related tools"
   echo "-t install build tools"
-  echo "-o install operations tooling as well: helm, terraform, yamllint, vault, docker, kubectl, python3"
+  echo "-o install operations tooling as well: yamllint, docker,  python3"
   echo "-y installs or updates Move prover tools: z3, cvc5, dotnet, boogie"
   echo "-a install tools for build and test api"
   echo "-v verbose mode"
@@ -620,10 +620,6 @@ Operation tools (since -o was provided):
   * yamllint
   * python3
   * docker
-  * vault
-  * terraform
-  * kubectl
-  * helm
   * aws cli
   * allure
 EOF
