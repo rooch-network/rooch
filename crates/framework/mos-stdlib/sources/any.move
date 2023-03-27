@@ -9,6 +9,7 @@ module mos_std::any {
 
     friend mos_std::copyable_any;
 
+    //TODO unify the Error codes
     /// The type provided for `unpack` is not the same as was given for `pack`.
     const ETYPE_MISMATCH: u64 = 1;
 
