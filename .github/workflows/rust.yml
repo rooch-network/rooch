@@ -24,5 +24,6 @@ jobs:
     - name: Lint rust sources
       run: cargo clippy --all-targets --all-features --tests --benches -- -D warnings
     - name: Execute rust tests
-      run: cargo nextest run --workspace --all-features
-    
+      run: cargo nextest run --workspace --workspace --all-features
+    - name: Build
+      run: cargo build 
