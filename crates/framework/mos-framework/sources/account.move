@@ -35,6 +35,7 @@ module mos_framework::account{
          new_address != @vm_reserved && new_address != @mos_framework,
          error::invalid_argument(EAddressReseved)
       );
+      
       // there cannot be an Account resource under new_addr already.
       assert!(!exists<Account>(new_address), error::already_exists(EAccountAlreadyExists));      
 
