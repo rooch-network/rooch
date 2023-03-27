@@ -6,7 +6,11 @@ use std::{borrow::Borrow, sync::Arc};
 use super::{tx_argument_resolver::TxArgumentResolver, MoveResolverExt};
 use framework::natives::{self, mos_stdlib::object_extension::NativeObjectContext, GasParameters};
 use mos_types::tx_context::TxContext;
-use move_binary_format::{compatibility::Compatibility, errors::{VMResult, PartialVMError}, file_format::AbilitySet};
+use move_binary_format::{
+    compatibility::Compatibility,
+    errors::{PartialVMError, VMResult},
+    file_format::AbilitySet,
+};
 use move_bytecode_verifier::VerifierConfig;
 use move_core_types::{
     account_address::AccountAddress,
@@ -91,7 +95,7 @@ where
             .session
             .get_native_extensions()
             .get::<NativeObjectContext>();
-        object_context.resolve_argument(self,&func, args)
+        object_context.resolve_argument(self, &func, args)
     }
 
     /************** Proxy function */

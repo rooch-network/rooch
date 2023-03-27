@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use framework::natives::mos_stdlib::object_extension::{ObjectResolver, ObjectChangeSet};
-use mos_types::object::{NamedTableID, Object, ObjectID, TableObject, MoveObject};
+use framework::natives::mos_stdlib::object_extension::{ObjectChangeSet, ObjectResolver};
+use mos_types::object::{MoveObject, NamedTableID, Object, ObjectID, TableObject};
 use move_core_types::{
     account_address::AccountAddress,
     effects::{ChangeSet, Op},
     identifier::Identifier,
     language_storage::{ModuleId, StructTag},
-    resolver::{ModuleResolver, ResourceResolver}, value::MoveTypeLayout,
+    resolver::{ModuleResolver, ResourceResolver},
+    value::MoveTypeLayout,
 };
 use move_table_extension::{TableChangeSet, TableResolver};
 use smt::{InMemoryNodeStore, NodeStore, SMTree, UpdateSet};
@@ -199,9 +200,15 @@ impl StateDB {
         let mut changed_objects = UpdateSet::new();
         for (object_id, object_info) in change_set.new_objects {
             //TODO should serialize at the extension when make change set
-            let contents = object_info.value.simple_serialize(&MoveTypeLayout::Struct(object_info.layout)).unwrap();
+            let contents = object_info
+                .value
+                .simple_serialize(&MoveTypeLayout::Struct(object_info.layout))
+                .unwrap();
             //TODO set version
-            changed_objects.put(object_id, Object::new_move_object(MoveObject::new(object_info.tag, 1, contents)));
+            changed_objects.put(
+                object_id,
+                Object::new_move_object(MoveObject::new(object_info.tag, 1, contents)),
+            );
         }
         self.smt.puts(changed_objects)
     }

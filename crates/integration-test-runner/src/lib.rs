@@ -1,12 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{collections::BTreeMap, path::Path};
-
 use clap::Parser;
+use framework::natives::mos_stdlib::object_extension::ObjectResolver;
+use mos_types::object::{Object, ObjectData, ObjectID};
 use move_command_line_common::files::verify_and_create_named_address_mapping;
 use move_command_line_common::{address::ParsedAddress, values::ParsableValue};
 use move_compiler::FullyCompiledProgram;
+use move_resource_viewer::MoveValueAnnotator;
 use move_transactional_test_runner::{
     framework::{CompiledState, MoveTestAdapter},
     tasks::{InitCommand, SyntaxChoice, TaskInput},
@@ -17,6 +18,7 @@ use moveos::{
     moveos::MoveOS,
     types::transaction::{MoveTransaction, SimpleTransaction},
 };
+use std::{collections::BTreeMap, path::Path};
 
 pub struct MoveOSTestAdapter<'a> {
     compiled_state: CompiledState<'a>,
@@ -37,7 +39,15 @@ pub struct MoveOSRunArgs {}
 pub struct MoveOSExtraInitArgs {}
 
 #[derive(Parser, Debug)]
-pub enum MoveOSSubcommands {}
+pub enum MoveOSSubcommands {
+    /// View a object in the Move storage
+    #[clap(name = "view_object")]
+    ViewObject {
+        /// The address of the object
+        #[clap(short, long)]
+        object_id: ObjectID,
+    },
+}
 
 impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
     type ExtraPublishArgs = MoveOSPublishArgs;
@@ -205,9 +215,29 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
 
     fn handle_subcommand(
         &mut self,
-        _subcommand: TaskInput<Self::Subcommand>,
+        subcommand: TaskInput<Self::Subcommand>,
     ) -> anyhow::Result<Option<String>> {
-        todo!()
+        match subcommand.command {
+            MoveOSSubcommands::ViewObject { object_id } => {
+                let object: Option<Object> = self.moveos.state().resolve_object(object_id)?;
+                let object = object
+                    .ok_or_else(|| anyhow::anyhow!("Object with id {} not found", object_id))?;
+                let move_object = match object.data {
+                    ObjectData::MoveObject(data) => data,
+                    //TODO support table object
+                    _ => {
+                        return Err(anyhow::anyhow!(
+                            "Object with id {} is not a Move object",
+                            object_id
+                        ))
+                    }
+                };
+                //TODO print more info about object
+                let annotated = MoveValueAnnotator::new(self.moveos.state())
+                    .view_resource(&move_object.type_, &move_object.contents)?;
+                Ok(Some(format!("{}", annotated)))
+            }
+        }
     }
 }
 

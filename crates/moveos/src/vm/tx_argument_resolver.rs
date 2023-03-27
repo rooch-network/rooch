@@ -1,13 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{Result};
+use anyhow::Result;
 use framework::natives::mos_stdlib::object_extension::NativeObjectContext;
 use mos_types::{
     object::{Object, ObjectData, ObjectID},
     tx_context::TxContext,
 };
-use move_binary_format::errors::{PartialVMError};
+use move_binary_format::errors::PartialVMError;
 use move_core_types::{move_resource::MoveStructType, value::MoveValue, vm_status::StatusCode};
 use move_vm_runtime::session::LoadedFunctionInstantiation;
 use move_vm_types::loaded_data::runtime_types::{StructType, Type};
@@ -42,7 +42,7 @@ impl TxArgumentResolver for TxContext {
         let has_signer = func
             .parameters
             .iter()
-            .position(|i| matches!(i, Type::Signer))
+            .position(|t| is_signer(t))
             .map(|pos| {
                 if pos != 0 {
                     Err(
@@ -60,7 +60,8 @@ impl TxArgumentResolver for TxContext {
 
         if has_signer {
             let signer = MoveValue::Signer(self.sender());
-            args.push(
+            args.insert(
+                0,
                 signer
                     .simple_serialize()
                     .expect("serialize signer should success"),
@@ -82,8 +83,8 @@ impl TxArgumentResolver for TxContext {
                             .with_message(format!(
                                 "Expected TxContext arg is this first arg, but got it at {}",
                                 pos + 1
-                            )))
-                            
+                            )),
+                    )
                 } else {
                     Ok(true)
                 }
@@ -91,7 +92,7 @@ impl TxArgumentResolver for TxContext {
             .unwrap_or(Ok(false))?;
 
         if has_tx_context {
-            args.push(self.to_vec());
+            args.insert(0, self.to_vec());
         }
 
         Ok(args)
@@ -126,16 +127,17 @@ impl TxArgumentResolver for NativeObjectContext<'_> {
         S: MoveResolverExt,
     {
         if args.len() != func.parameters.len() {
-            return Err(PartialVMError::new(StatusCode::NUMBER_OF_ARGUMENTS_MISMATCH))
+            return Err(PartialVMError::new(
+                StatusCode::NUMBER_OF_ARGUMENTS_MISMATCH,
+            ));
         }
-            
-        
+
         let mut resolved_args = vec![];
         for (i, (t, arg)) in func.parameters.iter().zip(args.iter()).enumerate() {
             let is_object = is_object(session, t);
             let arg = match is_object {
                 Some(t) => {
-                    //skip tx context
+                    //skip tx context and signer
                     if is_tx_context(&t) {
                         arg.clone()
                     } else {
@@ -143,10 +145,8 @@ impl TxArgumentResolver for NativeObjectContext<'_> {
                             PartialVMError::new(StatusCode::NUMBER_OF_TYPE_ARGUMENTS_MISMATCH)
                         })?;
                         let object: Object = self.get_object(object_id)?.ok_or_else(|| {
-                            
-                                PartialVMError::new(StatusCode::NUMBER_OF_TYPE_ARGUMENTS_MISMATCH)
-                                    .with_message(format!("Can not find object: {:?}", object_id))
-                            
+                            PartialVMError::new(StatusCode::NUMBER_OF_TYPE_ARGUMENTS_MISMATCH)
+                                .with_message(format!("Can not find object: {:?}", object_id))
                         })?;
                         match object.data {
                             ObjectData::MoveObject(m) => m.contents,
@@ -169,6 +169,10 @@ impl TxArgumentResolver for NativeObjectContext<'_> {
 
         Ok(args)
     }
+}
+
+fn is_signer(t: &Type) -> bool {
+    matches!(t, Type::Signer)
 }
 
 fn is_object<T>(session: &SessionExt<T>, t: &Type) -> Option<Arc<StructType>>

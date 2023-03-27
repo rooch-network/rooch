@@ -11,17 +11,17 @@ use crate::{
 };
 use anyhow::Result;
 use framework::addresses::MOS_FRAMEWORK_ADDRESS;
+use framework::natives::mos_stdlib::object_extension::NativeObjectContext;
 use mos_types::tx_context::TxContext;
-use move_binary_format::errors::{Location};
+use move_binary_format::errors::Location;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::IdentStr,
     language_storage::{ModuleId, TypeTag},
 };
 use move_table_extension::NativeTableContext;
-use framework::natives::mos_stdlib::object_extension::NativeObjectContext;
-use move_vm_runtime::session::{SerializedReturnValues};
-use move_vm_types::{gas::UnmeteredGasMeter};
+use move_vm_runtime::session::SerializedReturnValues;
+use move_vm_types::gas::UnmeteredGasMeter;
 use statedb::{HashValue, StateDB};
 use std::borrow::Borrow;
 
@@ -132,7 +132,7 @@ impl MoveOS {
             .into_change_set()
             .map_err(|e| e.finish(Location::Undefined))?;
         self.db.apply_object_change_set(object_change_set)?;
-        
+
         Ok(())
     }
 
@@ -177,7 +177,6 @@ impl MoveOS {
         Ok(result)
     }
 }
-
 
 impl TransactionValidator for MoveOS {
     fn validate_transaction<T: AbstractTransaction>(

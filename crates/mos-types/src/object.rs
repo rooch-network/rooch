@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-/// The Move Object is from Sui Move, and we try to mix the Global storage module and Object model in MoveOS.
 use anyhow::{bail, Result};
 use move_core_types::{
     account_address::AccountAddress, language_storage::StructTag, move_resource::MoveResource,
@@ -9,6 +8,8 @@ use move_core_types::{
 use move_table_extension::TableHandle;
 use serde::{Deserialize, Serialize};
 use smt::HashValue;
+/// The Move Object is from Sui Move, and we try to mix the Global storage module and Object model in MoveOS.
+use std::str::FromStr;
 
 /// Specific Table Object ID associated with an address
 #[derive(Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -46,6 +47,12 @@ impl ObjectID {
         <[u8; Self::LENGTH]>::try_from(bytes.as_ref())
             .map_err(|_| ObjectIDParseError::TryFromSliceError)
             .map(ObjectID::from)
+    }
+}
+
+impl std::fmt::Display for ObjectID {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0.to_hex_literal())
     }
 }
 
@@ -105,6 +112,16 @@ impl From<NamedTableID> for ObjectID {
 impl From<TableHandle> for ObjectID {
     fn from(table_handle: TableHandle) -> Self {
         ObjectID(HashValue::new(table_handle.0.into()))
+    }
+}
+
+impl FromStr for ObjectID {
+    type Err = ObjectIDParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let address = AccountAddress::from_hex_literal(s)
+            .map_err(|_| ObjectIDParseError::InvalidHexCharacter)?;
+        Ok(address.into())
     }
 }
 
@@ -251,4 +268,25 @@ pub enum Owner {
     },
     /// Object is immutable, and hence ownership doesn't matter.
     Immutable,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_address_to_object_id() {
+        let address = AccountAddress::random();
+        let object_id = ObjectID::from(address);
+        let address2 = AccountAddress::from(object_id);
+        assert_eq!(address, address2);
+    }
+
+    #[test]
+    fn test_object_id_from_str() {
+        let address = AccountAddress::random();
+        let object_id = ObjectID::from(address);
+        let object_id2 = ObjectID::from_str(&object_id.to_string()).unwrap();
+        assert_eq!(object_id, object_id2);
+    }
 }

@@ -1,1 +1,37 @@
-processed 4 tasks
+processed 10 tasks
+
+task 3 'view_object'. lines 38-40:
+store key 0x42::m::S {
+    id: store 0x1::object::UID {
+        id: copy drop store 0x1::object::ID {
+            bytes: ae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647
+        }
+    }
+}
+
+task 5 'view_object'. lines 44-47:
+store key 0x42::m::Cup<0x42::m::S> {
+    id: store 0x1::object::UID {
+        id: copy drop store 0x1::object::ID {
+            bytes: bbaf311ae6768a532b1f9dee65b1758a7bb1114fd57df8fa94cb2d1cb5f6896
+        }
+    }
+}
+
+task 7 'view'. lines 51-53:
+store key 0x42::m::S {
+    id: store 0x1::object::UID {
+        id: copy drop store 0x1::object::ID {
+            bytes: ae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647
+        }
+    }
+}
+
+task 9 'view'. lines 57-57:
+store key 0x42::m::Cup<0x42::m::S> {
+    id: store 0x1::object::UID {
+        id: copy drop store 0x1::object::ID {
+            bytes: bbaf311ae6768a532b1f9dee65b1758a7bb1114fd57df8fa94cb2d1cb5f6896
+        }
+    }
+}
