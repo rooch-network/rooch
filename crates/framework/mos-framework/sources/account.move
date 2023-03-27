@@ -31,13 +31,12 @@ module mos_framework::account{
    /// is returned. This way, the caller of this function can publish additional resources under
    /// `new_address`.
    public(friend) fun create_account(new_address: address): signer {
-      // there cannot be an Account resource under new_addr already.
-      assert!(!exists<Account>(new_address), error::already_exists(EAccountAlreadyExists));
-
       assert!(
          new_address != @vm_reserved && new_address != @mos_framework,
          error::invalid_argument(EAddressReseved)
       );
+      // there cannot be an Account resource under new_addr already.
+      assert!(!exists<Account>(new_address), error::already_exists(EAccountAlreadyExists));      
 
       create_account_unchecked(new_address)
    }
