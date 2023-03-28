@@ -2,64 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use clap::Parser;
-use commands::new::New;
-use moveos_stdlib::natives::{all_natives, GasParameters};
-use move_cli::{
-    base::{
-        build::Build, coverage::Coverage, disassemble::Disassemble, docgen::Docgen, errmap::Errmap,
-        info::Info, prove::Prove, test::Test,
-    },
-    Move,
-};
 
-pub mod commands;
-
-#[derive(Parser)]
+#[derive(clap::Parser)]
 #[clap(author, version, about, long_about = None)]
-pub struct CliOptions {
-    #[clap(flatten)]
-    pub move_args: Move,
-
+pub struct RoochCli {
     #[clap(subcommand)]
     pub cmd: Command,
 }
 
-#[derive(Parser)]
+#[derive(clap::Parser)]
 pub enum Command {
-    Build(Build),
-    Coverage(Coverage),
-    Disassemble(Disassemble),
-    Docgen(Docgen),
-    Errmap(Errmap),
-    Info(Info),
-    New(New),
-    Prove(Prove),
-    Test(Test),
-    //TODO implement run command
-    //TODO implement integration test command
+    Move(moveos_cli::MoveCli),
 }
 
-pub fn run_cli(move_args: Move, cmd: Command) -> Result<()> {
-    //let error_descriptions: ErrorMapping = bcs::from_bytes(moveos_stdlib::error_descriptions())?;
-    //TODO define gas metering
-    let cost_table = move_vm_test_utils::gas_schedule::INITIAL_COST_SCHEDULE.clone();
-    let natives = all_natives(GasParameters::zeros());
-
-    match cmd {
-        Command::Build(c) => c.execute(move_args.package_path, move_args.build_config),
-        Command::Coverage(c) => c.execute(move_args.package_path, move_args.build_config),
-        Command::Disassemble(c) => c.execute(move_args.package_path, move_args.build_config),
-        Command::Docgen(c) => c.execute(move_args.package_path, move_args.build_config),
-        Command::Errmap(c) => c.execute(move_args.package_path, move_args.build_config),
-        Command::Info(c) => c.execute(move_args.package_path, move_args.build_config),
-        Command::New(c) => c.execute(move_args.package_path),
-        Command::Prove(c) => c.execute(move_args.package_path, move_args.build_config),
-        Command::Test(c) => c.execute(
-            move_args.package_path,
-            move_args.build_config,
-            natives,
-            Some(cost_table),
-        ),
+pub fn run_cli(opt: RoochCli) -> Result<()> {
+    match opt.cmd {
+        Command::Move(move_cli) => moveos_cli::run_cli(move_cli),
     }
 }

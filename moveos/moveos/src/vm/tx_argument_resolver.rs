@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use move_binary_format::errors::PartialVMError;
+use move_core_types::{move_resource::MoveStructType, value::MoveValue, vm_status::StatusCode};
+use move_vm_runtime::session::LoadedFunctionInstantiation;
+use move_vm_types::loaded_data::runtime_types::{StructType, Type};
 use moveos_stdlib::natives::mos_stdlib::object_extension::NativeObjectContext;
 use moveos_types::{
     object::{Object, ObjectData, ObjectID},
     tx_context::TxContext,
 };
-use move_binary_format::errors::PartialVMError;
-use move_core_types::{move_resource::MoveStructType, value::MoveValue, vm_status::StatusCode};
-use move_vm_runtime::session::LoadedFunctionInstantiation;
-use move_vm_types::loaded_data::runtime_types::{StructType, Type};
 use std::sync::Arc;
 
 use super::{move_vm_ext::SessionExt, MoveResolverExt};

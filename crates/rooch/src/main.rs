@@ -3,11 +3,11 @@
 
 use anyhow::Result;
 use clap::Parser;
-use rooch::CliOptions;
+use rooch::RoochCli;
 
-/// mos is a command line tools for MoveOS
+/// rooch is a command line tools for Rooch Network
 fn main() -> Result<()> {
-    let opt = CliOptions::parse();
-    rooch::run_cli(opt.move_args, opt.cmd).unwrap();
+    let opt = RoochCli::parse();
+    rooch::run_cli(opt).unwrap();
     Ok(())
 }

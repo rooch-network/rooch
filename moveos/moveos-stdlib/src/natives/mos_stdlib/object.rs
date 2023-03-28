@@ -13,7 +13,6 @@ use crate::natives::{
     mos_stdlib::object_extension::NativeObjectContext,
     BaseGasParameter,
 };
-use moveos_types::object::Owner;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::{
     account_address::AccountAddress, language_storage::TypeTag, value::MoveTypeLayout,
@@ -26,6 +25,7 @@ use move_vm_types::{
     pop_arg,
     values::{StructRef, Value},
 };
+use moveos_types::object::Owner;
 use smallvec::smallvec;
 use std::collections::VecDeque;
 

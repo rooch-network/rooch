@@ -3,7 +3,6 @@
 
 use anyhow::Result;
 use better_any::{Tid, TidAble};
-use moveos_types::object::{Object, ObjectID, Owner};
 use move_binary_format::errors::PartialVMError;
 use move_core_types::{
     account_address::AccountAddress, language_storage::StructTag, value::MoveStructLayout,
@@ -13,6 +12,7 @@ use move_vm_types::{
     loaded_data::runtime_types::Type,
     values::{Struct, Value},
 };
+use moveos_types::object::{Object, ObjectID, Owner};
 use std::{
     cell::RefCell,
     collections::{BTreeMap, BTreeSet},

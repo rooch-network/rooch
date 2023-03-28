@@ -33,7 +33,7 @@ pub struct BuildOptions {
 
 impl Framework {
     pub fn package() -> &'static str {
-        "mos-moveos_stdlib"
+        "mos-framework"
     }
 
     pub fn named_addresses() -> BTreeMap<String, NumericalAddress> {

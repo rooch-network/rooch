@@ -2,14 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::Parser;
-use moveos_stdlib::natives::mos_stdlib::object_extension::ObjectResolver;
-use moveos_types::object::{Object, ObjectData, ObjectID};
 use move_command_line_common::files::verify_and_create_named_address_mapping;
 use move_command_line_common::{address::ParsedAddress, values::ParsableValue};
 use move_compiler::FullyCompiledProgram;
 use move_resource_viewer::MoveValueAnnotator;
 use move_transactional_test_runner::{
-    moveos_stdlib::{CompiledState, MoveTestAdapter},
+    framework::{CompiledState, MoveTestAdapter},
     tasks::{InitCommand, SyntaxChoice, TaskInput},
     vm_test_harness::view_resource_in_move_storage,
 };
@@ -18,6 +16,8 @@ use moveos::{
     moveos::MoveOS,
     types::transaction::{MoveTransaction, SimpleTransaction},
 };
+use moveos_stdlib::natives::mos_stdlib::object_extension::ObjectResolver;
+use moveos_types::object::{Object, ObjectData, ObjectID};
 use std::{collections::BTreeMap, path::Path};
 
 pub struct MoveOSTestAdapter<'a> {
@@ -86,7 +86,7 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
             }
             named_address_mapping.insert(name, addr);
         }
-        let statedb = moveos_statedb::moveos_statedb::new_with_memory_store();
+        let statedb = moveos_statedb::StateDB::new_with_memory_store();
         let mut adapter = Self {
             compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps, None),
             default_syntax,
@@ -95,7 +95,10 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
 
         //Auto generate interface to Framework modules
         //TODO share the genesis module with MoveOS.
-        let moveos_stdlib_modules = moveos_stdlib::Framework::build().unwrap().modules().unwrap();
+        let moveos_stdlib_modules = moveos_stdlib::Framework::build()
+            .unwrap()
+            .modules()
+            .unwrap();
         for module in moveos_stdlib_modules
             .iter()
             .filter(|module| !adapter.compiled_state.is_precompiled_dep(&module.self_id()))
@@ -249,7 +252,7 @@ pub fn run_test_impl<'a>(
     path: &Path,
     fully_compiled_program_opt: Option<&'a FullyCompiledProgram>,
 ) -> Result<(), Box<dyn std::error::Error + 'static>> {
-    move_transactional_test_runner::moveos_stdlib::run_test_impl::<MoveOSTestAdapter>(
+    move_transactional_test_runner::framework::run_test_impl::<MoveOSTestAdapter>(
         path,
         fully_compiled_program_opt,
     )

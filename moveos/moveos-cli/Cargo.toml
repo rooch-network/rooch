@@ -1,5 +1,5 @@
 [package]
-name = "rooch"
+name = "moveos-cli"
 version = "0.1.0"
 
 # Workspace inherited keys
@@ -35,4 +35,3 @@ move-vm-runtime = { workspace = true }
 move-vm-test-utils = { workspace = true }
 
 moveos-stdlib = { workspace = true }
-moveos-cli = { workspace = true }

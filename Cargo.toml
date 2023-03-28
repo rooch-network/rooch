@@ -3,9 +3,10 @@ resolver = "2"
 
 members = [
     "moveos/moveos-types",
-    "moveos/moveos",
     "moveos/moveos-statedb",
     "moveos/moveos-stdlib",
+    "moveos/moveos",
+    "moveos/moveos-cli",
     "crates/integration-test-runner",
     "crates/rooch",
 ]
@@ -32,9 +33,10 @@ rust-version = "1.68"
 # Please do not add any test features here: they should be declared by the individual crate.
 # crates for MoveOS
 moveos-types = { path = "moveos/moveos-types" }
-moveos = { path = "moveos/moveos" }
 moveos-statedb = { path = "moveos/moveos-statedb" }
 moveos-stdlib = { path = "moveos/moveos-stdlib" }
+moveos = { path = "moveos/moveos" }
+moveos-cli = { path = "moveos/moveos-cli" }
 
 mos-integration-test-runner = { path = "crates/integration-test-runner" }
 

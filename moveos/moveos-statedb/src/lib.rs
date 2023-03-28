@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use moveos_stdlib::natives::mos_stdlib::object_extension::{ObjectChangeSet, ObjectResolver};
-use moveos_types::object::{MoveObject, NamedTableID, Object, ObjectID, TableObject};
 use move_core_types::{
     account_address::AccountAddress,
     effects::{ChangeSet, Op},
@@ -13,6 +11,8 @@ use move_core_types::{
     value::MoveTypeLayout,
 };
 use move_table_extension::{TableChangeSet, TableResolver};
+use moveos_stdlib::natives::mos_stdlib::object_extension::{ObjectChangeSet, ObjectResolver};
+use moveos_types::object::{MoveObject, NamedTableID, Object, ObjectID, TableObject};
 use smt::{InMemoryNodeStore, NodeStore, SMTree, UpdateSet};
 use std::collections::BTreeMap;
 

@@ -4,8 +4,6 @@
 use std::{borrow::Borrow, sync::Arc};
 
 use super::{tx_argument_resolver::TxArgumentResolver, MoveResolverExt};
-use moveos_stdlib::natives::{self, mos_stdlib::object_extension::NativeObjectContext, GasParameters};
-use moveos_types::tx_context::TxContext;
 use move_binary_format::{
     compatibility::Compatibility,
     errors::{PartialVMError, VMResult},
@@ -32,6 +30,10 @@ use move_vm_types::{
     loaded_data::runtime_types::{CachedStructIndex, StructType, Type},
 };
 use moveos_statedb::HashValue;
+use moveos_stdlib::natives::{
+    self, mos_stdlib::object_extension::NativeObjectContext, GasParameters,
+};
+use moveos_types::tx_context::TxContext;
 
 pub struct MoveVmExt {
     inner: MoveVM,

@@ -10,9 +10,6 @@ use crate::{
     TransactionExecutor, TransactionValidator,
 };
 use anyhow::Result;
-use moveos_stdlib::addresses::MOS_FRAMEWORK_ADDRESS;
-use moveos_stdlib::natives::mos_stdlib::object_extension::NativeObjectContext;
-use moveos_types::tx_context::TxContext;
 use move_binary_format::errors::Location;
 use move_core_types::{
     account_address::AccountAddress,
@@ -23,6 +20,9 @@ use move_table_extension::NativeTableContext;
 use move_vm_runtime::session::SerializedReturnValues;
 use move_vm_types::gas::UnmeteredGasMeter;
 use moveos_statedb::{HashValue, StateDB};
+use moveos_stdlib::addresses::MOS_FRAMEWORK_ADDRESS;
+use moveos_stdlib::natives::mos_stdlib::object_extension::NativeObjectContext;
+use moveos_types::tx_context::TxContext;
 use std::borrow::Borrow;
 
 pub struct MoveOS {
@@ -48,8 +48,9 @@ impl MoveOS {
 
     //TODO move to a suitable place
     pub fn build_genesis_txn() -> Result<SimpleTransaction> {
-        let genesis_txn =
-            MoveTransaction::ModuleBundle(moveos_stdlib::Framework::build()?.into_module_bundles()?);
+        let genesis_txn = MoveTransaction::ModuleBundle(
+            moveos_stdlib::Framework::build()?.into_module_bundles()?,
+        );
         Ok(SimpleTransaction::new(*MOS_FRAMEWORK_ADDRESS, genesis_txn))
     }
 
