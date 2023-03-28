@@ -9,6 +9,7 @@ module mos_std::any {
 
     friend mos_std::copyable_any;
 
+    //TODO unify the Error codes
     /// The type provided for `unpack` is not the same as was given for `pack`.
     const ETYPE_MISMATCH: u64 = 1;
 
@@ -40,7 +41,7 @@ module mos_std::any {
     /// Unpack a value from the `Any` representation. This aborts if the value has not the expected type `T`.
     public fun unpack<T>(x: Any): T {
         assert!(type_info::type_name<T>() == x.type_name, error::invalid_argument(ETYPE_MISMATCH));
-        bcd::from_bytes<T>(&x.data)
+        bcd::from_bytes<T>(x.data)
     }
 
     /// Returns the type name of this Any

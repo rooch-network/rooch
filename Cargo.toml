@@ -32,7 +32,7 @@ rust-version = "1.68"
 moveos = { path = "crates/moveos" }
 statedb = { path = "crates/statedb" }
 framework = { path = "crates/framework" }
-integration-test-runner = { path = "crates/integration-test-runner" }
+mos-integration-test-runner = { path = "crates/integration-test-runner" }
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.

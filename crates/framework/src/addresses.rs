@@ -17,3 +17,8 @@ pub static MOS_STD_ADDRESS: Lazy<AccountAddress> = Lazy::new(|| *MOVE_STD_ADDRES
 pub static MOS_FRAMEWORK_ADDRESS: Lazy<AccountAddress> = Lazy::new(|| *MOVE_STD_ADDRESS);
 pub const MOS_STD_ADDRESS_NAME: &str = "mos_std";
 pub const MOS_FRAMEWORK_ADDRESS_NAME: &str = "mos_framework";
+
+pub static MOS_NAMED_ADDRESS_MAPPING: [(&str, &str); 2] = [
+    (MOS_STD_ADDRESS_NAME, MOS_ADDRESS),
+    (MOS_FRAMEWORK_ADDRESS_NAME, MOS_ADDRESS),
+];
