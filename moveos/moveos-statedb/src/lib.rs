@@ -3,7 +3,7 @@
 
 use anyhow::Result;
 use framework::natives::mos_stdlib::object_extension::{ObjectChangeSet, ObjectResolver};
-use mos_types::object::{MoveObject, NamedTableID, Object, ObjectID, TableObject};
+use moveos_types::object::{MoveObject, NamedTableID, Object, ObjectID, TableObject};
 use move_core_types::{
     account_address::AccountAddress,
     effects::{ChangeSet, Op},

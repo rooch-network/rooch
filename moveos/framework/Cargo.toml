@@ -36,7 +36,7 @@ move-vm-types = { workspace = true }
 move-package = { workspace = true }
 move-prover = { workspace = true }
 
-mos-types = { workspace = true }
+moveos-types = { workspace = true }
 
 [dev-dependencies]
 mos-integration-test-runner = { workspace = true }

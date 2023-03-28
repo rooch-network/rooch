@@ -3,7 +3,7 @@
 
 use anyhow::Result;
 use better_any::{Tid, TidAble};
-use mos_types::object::{Object, ObjectID, Owner};
+use moveos_types::object::{Object, ObjectID, Owner};
 use move_binary_format::errors::PartialVMError;
 use move_core_types::{
     account_address::AccountAddress, language_storage::StructTag, value::MoveStructLayout,

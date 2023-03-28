@@ -12,7 +12,7 @@ use crate::{
 use anyhow::Result;
 use framework::addresses::MOS_FRAMEWORK_ADDRESS;
 use framework::natives::mos_stdlib::object_extension::NativeObjectContext;
-use mos_types::tx_context::TxContext;
+use moveos_types::tx_context::TxContext;
 use move_binary_format::errors::Location;
 use move_core_types::{
     account_address::AccountAddress,
@@ -22,7 +22,7 @@ use move_core_types::{
 use move_table_extension::NativeTableContext;
 use move_vm_runtime::session::SerializedReturnValues;
 use move_vm_types::gas::UnmeteredGasMeter;
-use statedb::{HashValue, StateDB};
+use moveos_statedb::{HashValue, StateDB};
 use std::borrow::Borrow;
 
 pub struct MoveOS {

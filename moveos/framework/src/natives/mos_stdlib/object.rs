@@ -13,7 +13,7 @@ use crate::natives::{
     mos_stdlib::object_extension::NativeObjectContext,
     BaseGasParameter,
 };
-use mos_types::object::Owner;
+use moveos_types::object::Owner;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::{
     account_address::AccountAddress, language_storage::TypeTag, value::MoveTypeLayout,

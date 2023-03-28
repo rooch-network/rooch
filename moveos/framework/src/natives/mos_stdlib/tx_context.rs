@@ -7,7 +7,7 @@
 // Source from https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/src/natives/tx_context.rs
 // and do some refactor
 
-use mos_types::object::ObjectID;
+use moveos_types::object::ObjectID;
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::InternalGas;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};

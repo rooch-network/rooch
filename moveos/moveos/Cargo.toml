@@ -30,6 +30,6 @@ move-vm-runtime = { workspace = true }
 move-vm-test-utils = { workspace = true }
 move-vm-types = { workspace = true }
 
-mos-types = { workspace = true }
-statedb = { workspace = true }
+moveos-types = { workspace = true }
+moveos-statedb = { workspace = true }
 framework = { workspace = true }

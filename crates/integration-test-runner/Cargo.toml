@@ -36,10 +36,10 @@ move-vm-types = { workspace = true }
 move-resource-viewer = { workspace = true }
 move-transactional-test-runner = { workspace = true }
 
-statedb = { workspace = true }
+moveos-statedb = { workspace = true }
 framework = { workspace = true }
 moveos = { workspace = true }
-mos-types = { workspace = true }
+moveos-types = { workspace = true }
 
 [dev-dependencies]
 datatest-stable = { workspace = true }

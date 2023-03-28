@@ -5,7 +5,7 @@ use std::{borrow::Borrow, sync::Arc};
 
 use super::{tx_argument_resolver::TxArgumentResolver, MoveResolverExt};
 use framework::natives::{self, mos_stdlib::object_extension::NativeObjectContext, GasParameters};
-use mos_types::tx_context::TxContext;
+use moveos_types::tx_context::TxContext;
 use move_binary_format::{
     compatibility::Compatibility,
     errors::{PartialVMError, VMResult},
@@ -31,7 +31,7 @@ use move_vm_types::{
     gas::GasMeter,
     loaded_data::runtime_types::{CachedStructIndex, StructType, Type},
 };
-use statedb::HashValue;
+use moveos_statedb::HashValue;
 
 pub struct MoveVmExt {
     inner: MoveVM,

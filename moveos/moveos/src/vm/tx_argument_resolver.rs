@@ -3,7 +3,7 @@
 
 use anyhow::Result;
 use framework::natives::mos_stdlib::object_extension::NativeObjectContext;
-use mos_types::{
+use moveos_types::{
     object::{Object, ObjectData, ObjectID},
     tx_context::TxContext,
 };

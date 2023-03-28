@@ -3,7 +3,7 @@
 
 use clap::Parser;
 use framework::natives::mos_stdlib::object_extension::ObjectResolver;
-use mos_types::object::{Object, ObjectData, ObjectID};
+use moveos_types::object::{Object, ObjectData, ObjectID};
 use move_command_line_common::files::verify_and_create_named_address_mapping;
 use move_command_line_common::{address::ParsedAddress, values::ParsableValue};
 use move_compiler::FullyCompiledProgram;
@@ -86,7 +86,7 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
             }
             named_address_mapping.insert(name, addr);
         }
-        let statedb = statedb::StateDB::new_with_memory_store();
+        let statedb = moveos_statedb::moveos_statedb::new_with_memory_store();
         let mut adapter = Self {
             compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps, None),
             default_syntax,

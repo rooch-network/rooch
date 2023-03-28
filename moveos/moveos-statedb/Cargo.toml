@@ -1,5 +1,5 @@
 [package]
-name = "mos-types"
+name = "moveos-statedb"
 version = "0.1.0"
 
 # Workspace inherited keys
@@ -16,10 +16,12 @@ rust-version = { workspace = true }
 [dependencies]
 anyhow = { workspace = true }
 bcs = { workspace = true }
-thiserror = { workspace = true }
 smt = { workspace = true }
 serde = { workspace = true }
 serde_bytes = { workspace = true }
 
 move-core-types = { workspace = true }
 move-table-extension = { workspace = true }
+
+moveos-types = { workspace = true }
+framework = { workspace = true }

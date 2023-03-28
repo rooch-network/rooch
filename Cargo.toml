@@ -2,16 +2,16 @@
 resolver = "2"
 
 members = [
-    "crates/mos-types",
-    "crates/moveos",
-    "crates/statedb",
-    "crates/framework",
+    "moveos/moveos-types",
+    "moveos/moveos",
+    "moveos/moveos-statedb",
+    "moveos/framework",
     "crates/integration-test-runner",
     "crates/rooch",
 ]
 
 default-members = [
-    "crates/moveos",
+    "moveos/moveos",
     "crates/rooch",
 ]
 
@@ -30,10 +30,12 @@ rust-version = "1.68"
 [workspace.dependencies]
 # Internal crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.
-mos-types = { path = "crates/mos-types" }
-moveos = { path = "crates/moveos" }
-statedb = { path = "crates/statedb" }
-framework = { path = "crates/framework" }
+# crates for MoveOS
+moveos-types = { path = "moveos/moveos-types" }
+moveos = { path = "moveos/moveos" }
+moveos-statedb = { path = "moveos/moveos-statedb" }
+framework = { path = "moveos/framework" }
+
 mos-integration-test-runner = { path = "crates/integration-test-runner" }
 
 # External crate dependencies.

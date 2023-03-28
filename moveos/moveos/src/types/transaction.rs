@@ -7,7 +7,7 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
 };
 use serde::{Deserialize, Serialize};
-use statedb::HashValue;
+use moveos_statedb::HashValue;
 
 #[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Script {
