@@ -7,7 +7,7 @@ module mos_framework::account{
    /// Account already exists
    const EAccountAlreadyExists: u64 = 1;
    /// Account does not exist
-   const EAccountNoesNotExist: u64 = 2;
+   const EAccountNotExist: u64 = 2;
    /// The provided authentication key has an invalid length
    const EMalformedAuthenticationKey: u64 = 4;
    /// Cannot create account because address is reserved
@@ -35,7 +35,7 @@ module mos_framework::account{
          new_address != @vm_reserved && new_address != @mos_framework,
          error::invalid_argument(EAddressReseved)
       );
-      
+
       // there cannot be an Account resource under new_addr already.
       assert!(!exists<Account>(new_address), error::already_exists(EAccountAlreadyExists));      
 
