@@ -7,23 +7,23 @@ members = [
     "crates/statedb",
     "crates/framework",
     "crates/integration-test-runner",
-    "crates/mos",
+    "crates/rooch",
 ]
 
 default-members = [
     "crates/moveos",
-    "crates/mos",
+    "crates/rooch",
 ]
 
 # All workspace members should inherit these keys
 # for package declarations.
 [workspace.package]
-authors = ["Rooch Core Dev <opensource@rooch.network>"]
+authors = ["Rooch Contributors <opensource@rooch.network>"]
 edition = "2021"
 homepage = "https://rooch.network"
 license = "Apache-2.0"
 publish = false
-repository = "https://github.com/rooch-network/moveos"
+repository = "https://github.com/rooch-network/rooch"
 rust-version = "1.68"
 
 

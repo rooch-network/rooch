@@ -3,11 +3,11 @@
 
 use anyhow::Result;
 use clap::Parser;
-use mos::CliOptions;
+use rooch::CliOptions;
 
 /// mos is a command line tools for MoveOS
 fn main() -> Result<()> {
     let opt = CliOptions::parse();
-    mos::run_cli(opt.move_args, opt.cmd).unwrap();
+    rooch::run_cli(opt.move_args, opt.cmd).unwrap();
     Ok(())
 }
