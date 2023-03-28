@@ -42,7 +42,7 @@ impl TxArgumentResolver for TxContext {
         let has_signer = func
             .parameters
             .iter()
-            .position(|t| is_signer(t))
+            .position(is_signer)
             .map(|pos| {
                 if pos != 0 {
                     Err(
