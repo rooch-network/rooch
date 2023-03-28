@@ -1,33 +1,27 @@
-# MoveOS
+# Rooch
 
-MoveOS is a standalone Move runtime environment based on [MoveVM](https://github.com/move-language/move) by [Rooch Network](#rooch-network).
-
-## Key Features
-
-It provides the following features on top of MoveVM to make it easy for applications to integrate with the Move runtime environment. 
-
-1. State storage and retrieval: it provides a default local database storage, which can be customized by applications.
-2. Rust-To-Move extension point ABI: the application can implement the core logic through Move, and invoke in Rust, let application easy to maintain and upgrade. Such as transaction verification logic (Account Abstraction).
-3. State proof: it provides state proof based on state tree (two-level smt).
-4. Fraud proof: it provides interactive fraud proof based on [OMO](https://github.com/rooch-network/omo), which is necessary for modular applications. Zero-knowledge proofs based on [zkMove](https://github.com/young-rocks/zkmove) will be integrated in the future.
+[Rooch](https:://rooch.network) is the first modular Layer 2 solution with the Move language, using Ethereum as the security layer. Our target is to provide a Move-based execution module to all Web3 application scenarios as well as be a bridge between all Web3 developers and versatile crypto ecosystems.
 
 ## Usage
+1. Rooch Ethereum Layer2: Rooch(Execution) + Layer1s(Settlement) + Ethereum(Arbitration) + DA
+2. XChain Modular DApp: Rooch(Execution) + XChain(Settlement + Arbitration) + DA
+3. Rooch Layer3 Modular DApp: Rooch(Execution) + Rooch Layer2(Settlement + Arbitration) + DA
+4. Sovereign Rollup: Rooch + DA
 
-1. as a rust library embedded in a blockchain or other application.
-2. as a standalone process, called via REST API or IPC.
+## Components
+* [MoveOS](./moveos): MoveOS is a standalone Move runtime environment based on [MoveVM](https://github.com/move-language/move). It provide Move execution environment for rooch.
+* Sequencer(TODO)
+* Proposer(TODO)
+* Challenger(TODO)
 
 ## Getting Started
 
 1. Build from source
-    $ cargo build && cp target/debug/mos ~/.cargo/bin/
+    $ cargo build && cp target/debug/rooch ~/.cargo/bin/
 2. Create a new Move project
-    $ mos new my_mos_project
+    $ rooch move new my_move_project
 3. Build the Move project
-    $ cd my_mos_project && mos build
-
-## Rooch Network
-
-Rooch Network's [website](https://rooch.network) is also open source (the code can be found in this [repository](https://github.com/rooch-network/rooch-network.github.io).  You can obtain more information about Rooch here, including technical documentation and architectural design.
+    $ cd my_move_project && rooch move build
 
 ## How to Contribute
 
