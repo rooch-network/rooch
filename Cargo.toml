@@ -7,7 +7,7 @@ members = [
     "moveos/moveos-stdlib",
     "moveos/moveos",
     "moveos/moveos-cli",
-    "crates/integration-test-runner",
+    "crates/rooch-integration-test-runner",
     "crates/rooch",
 ]
 
@@ -38,7 +38,8 @@ moveos-stdlib = { path = "moveos/moveos-stdlib" }
 moveos = { path = "moveos/moveos" }
 moveos-cli = { path = "moveos/moveos-cli" }
 
-mos-integration-test-runner = { path = "crates/integration-test-runner" }
+# crates for Rooch
+rooch-integration-test-runner = { path = "crates/rooch-integration-test-runner" }
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.

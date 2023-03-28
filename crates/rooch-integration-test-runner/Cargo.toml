@@ -1,5 +1,5 @@
 [package]
-name = "mos-integration-test-runner"
+name = "rooch-integration-test-runner"
 version = "0.1.0"
 
 # Workspace inherited keys
