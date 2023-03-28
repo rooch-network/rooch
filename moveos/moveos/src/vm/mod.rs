@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use framework::natives::mos_stdlib::object_extension::ObjectResolver;
+use moveos_stdlib::natives::mos_stdlib::object_extension::ObjectResolver;
 use move_core_types::resolver::MoveResolver;
 use move_table_extension::TableResolver;
 

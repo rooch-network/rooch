@@ -37,7 +37,7 @@ move-resource-viewer = { workspace = true }
 move-transactional-test-runner = { workspace = true }
 
 moveos-statedb = { workspace = true }
-framework = { workspace = true }
+moveos-stdlib = { workspace = true }
 moveos = { workspace = true }
 moveos-types = { workspace = true }
 

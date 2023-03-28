@@ -4,7 +4,7 @@
 use std::{borrow::Borrow, sync::Arc};
 
 use super::{tx_argument_resolver::TxArgumentResolver, MoveResolverExt};
-use framework::natives::{self, mos_stdlib::object_extension::NativeObjectContext, GasParameters};
+use moveos_stdlib::natives::{self, mos_stdlib::object_extension::NativeObjectContext, GasParameters};
 use moveos_types::tx_context::TxContext;
 use move_binary_format::{
     compatibility::Compatibility,

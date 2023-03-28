@@ -34,4 +34,4 @@ move-unit-test = { workspace = true }
 move-vm-runtime = { workspace = true }
 move-vm-test-utils = { workspace = true }
 
-framework = { workspace = true }
+moveos-stdlib = { workspace = true }

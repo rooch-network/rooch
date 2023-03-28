@@ -24,4 +24,4 @@ move-core-types = { workspace = true }
 move-table-extension = { workspace = true }
 
 moveos-types = { workspace = true }
-framework = { workspace = true }
+moveos-stdlib = { workspace = true }

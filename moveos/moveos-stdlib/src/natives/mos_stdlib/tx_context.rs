@@ -4,7 +4,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-// Source from https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/src/natives/tx_context.rs
+// Source from https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-moveos_stdlib/src/natives/tx_context.rs
 // and do some refactor
 
 use moveos_types::object::ObjectID;

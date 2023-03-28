@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::moveos::MoveOS;
-use framework::addresses::MOS_STD_ADDRESS;
+use moveos_stdlib::addresses::MOS_STD_ADDRESS;
 use move_core_types::{
     identifier::IdentStr,
     language_storage::ModuleId,

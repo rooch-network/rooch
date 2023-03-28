@@ -4,7 +4,7 @@
 use anyhow::Result;
 use clap::Parser;
 use commands::new::New;
-use framework::natives::{all_natives, GasParameters};
+use moveos_stdlib::natives::{all_natives, GasParameters};
 use move_cli::{
     base::{
         build::Build, coverage::Coverage, disassemble::Disassemble, docgen::Docgen, errmap::Errmap,
@@ -41,7 +41,7 @@ pub enum Command {
 }
 
 pub fn run_cli(move_args: Move, cmd: Command) -> Result<()> {
-    //let error_descriptions: ErrorMapping = bcs::from_bytes(framework::error_descriptions())?;
+    //let error_descriptions: ErrorMapping = bcs::from_bytes(moveos_stdlib::error_descriptions())?;
     //TODO define gas metering
     let cost_table = move_vm_test_utils::gas_schedule::INITIAL_COST_SCHEDULE.clone();
     let natives = all_natives(GasParameters::zeros());

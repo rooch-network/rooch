@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::Parser;
-use framework::natives::mos_stdlib::object_extension::ObjectResolver;
+use moveos_stdlib::natives::mos_stdlib::object_extension::ObjectResolver;
 use moveos_types::object::{Object, ObjectData, ObjectID};
 use move_command_line_common::files::verify_and_create_named_address_mapping;
 use move_command_line_common::{address::ParsedAddress, values::ParsableValue};
 use move_compiler::FullyCompiledProgram;
 use move_resource_viewer::MoveValueAnnotator;
 use move_transactional_test_runner::{
-    framework::{CompiledState, MoveTestAdapter},
+    moveos_stdlib::{CompiledState, MoveTestAdapter},
     tasks::{InitCommand, SyntaxChoice, TaskInput},
     vm_test_harness::view_resource_in_move_storage,
 };
@@ -76,7 +76,7 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
             None => BTreeMap::new(),
         };
 
-        let mut named_address_mapping = framework::Framework::named_addresses();
+        let mut named_address_mapping = moveos_stdlib::Framework::named_addresses();
         for (name, addr) in additional_mapping {
             if named_address_mapping.contains_key(&name) {
                 panic!(
@@ -95,8 +95,8 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
 
         //Auto generate interface to Framework modules
         //TODO share the genesis module with MoveOS.
-        let framework_modules = framework::Framework::build().unwrap().modules().unwrap();
-        for module in framework_modules
+        let moveos_stdlib_modules = moveos_stdlib::Framework::build().unwrap().modules().unwrap();
+        for module in moveos_stdlib_modules
             .iter()
             .filter(|module| !adapter.compiled_state.is_precompiled_dep(&module.self_id()))
             .collect::<Vec<_>>()
@@ -249,7 +249,7 @@ pub fn run_test_impl<'a>(
     path: &Path,
     fully_compiled_program_opt: Option<&'a FullyCompiledProgram>,
 ) -> Result<(), Box<dyn std::error::Error + 'static>> {
-    move_transactional_test_runner::framework::run_test_impl::<MoveOSTestAdapter>(
+    move_transactional_test_runner::moveos_stdlib::run_test_impl::<MoveOSTestAdapter>(
         path,
         fully_compiled_program_opt,
     )

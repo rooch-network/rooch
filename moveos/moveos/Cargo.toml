@@ -32,4 +32,4 @@ move-vm-types = { workspace = true }
 
 moveos-types = { workspace = true }
 moveos-statedb = { workspace = true }
-framework = { workspace = true }
+moveos-stdlib = { workspace = true }

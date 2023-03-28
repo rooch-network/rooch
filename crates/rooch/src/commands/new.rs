@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::Parser;
-use framework::addresses::{
+use moveos_stdlib::addresses::{
     MOS_FRAMEWORK_ADDRESS, MOS_FRAMEWORK_ADDRESS_NAME, MOS_STD_ADDRESS, MOS_STD_ADDRESS_NAME,
 };
 use move_cli::base::new;
@@ -10,7 +10,7 @@ use move_core_types::account_address::AccountAddress;
 use std::path::PathBuf;
 
 const MOS_STDLIB_PKG_NAME: &str = "MosStdLib";
-const MOS_STDLIB_PKG_PATH: &str = "{ git = \"https://github.com/rooch-network/moveos.git\", subdir = \"crates/framework/mos-stdlib\", rev = \"main\" }";
+const MOS_STDLIB_PKG_PATH: &str = "{ git = \"https://github.com/rooch-network/moveos.git\", subdir = \"crates/moveos_stdlib/mos-stdlib\", rev = \"main\" }";
 
 #[derive(Parser)]
 pub struct New {

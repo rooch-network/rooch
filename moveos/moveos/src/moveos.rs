@@ -10,8 +10,8 @@ use crate::{
     TransactionExecutor, TransactionValidator,
 };
 use anyhow::Result;
-use framework::addresses::MOS_FRAMEWORK_ADDRESS;
-use framework::natives::mos_stdlib::object_extension::NativeObjectContext;
+use moveos_stdlib::addresses::MOS_FRAMEWORK_ADDRESS;
+use moveos_stdlib::natives::mos_stdlib::object_extension::NativeObjectContext;
 use moveos_types::tx_context::TxContext;
 use move_binary_format::errors::Location;
 use move_core_types::{
@@ -49,7 +49,7 @@ impl MoveOS {
     //TODO move to a suitable place
     pub fn build_genesis_txn() -> Result<SimpleTransaction> {
         let genesis_txn =
-            MoveTransaction::ModuleBundle(framework::Framework::build()?.into_module_bundles()?);
+            MoveTransaction::ModuleBundle(moveos_stdlib::Framework::build()?.into_module_bundles()?);
         Ok(SimpleTransaction::new(*MOS_FRAMEWORK_ADDRESS, genesis_txn))
     }
 

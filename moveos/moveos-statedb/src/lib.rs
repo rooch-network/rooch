@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use framework::natives::mos_stdlib::object_extension::{ObjectChangeSet, ObjectResolver};
+use moveos_stdlib::natives::mos_stdlib::object_extension::{ObjectChangeSet, ObjectResolver};
 use moveos_types::object::{MoveObject, NamedTableID, Object, ObjectID, TableObject};
 use move_core_types::{
     account_address::AccountAddress,

@@ -1,5 +1,5 @@
 [package]
-name = "framework"
+name = "moveos-stdlib"
 version = "0.1.0"
 
 # Workspace inherited keys

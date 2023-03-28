@@ -33,7 +33,7 @@ pub struct BuildOptions {
 
 impl Framework {
     pub fn package() -> &'static str {
-        "mos-framework"
+        "mos-moveos_stdlib"
     }
 
     pub fn named_addresses() -> BTreeMap<String, NumericalAddress> {
@@ -46,7 +46,7 @@ impl Framework {
         address_mapping
     }
 
-    /// Build framework package
+    /// Build moveos_stdlib package
     pub fn build() -> Result<Self> {
         let options = BuildOptions::default();
         Self::build_error_code_map();
@@ -111,9 +111,9 @@ mod tests {
 
     #[test]
     fn test_package() {
-        let framework = Framework::build().unwrap();
-        let modules_count = framework.package.root_modules().count();
-        let bundles = framework.into_module_bundles().unwrap();
+        let moveos_stdlib = Framework::build().unwrap();
+        let modules_count = moveos_stdlib.package.root_modules().count();
+        let bundles = moveos_stdlib.into_module_bundles().unwrap();
         print!("modules_count:{}, bundles:{}", modules_count, bundles.len());
         assert!(bundles.len() > modules_count);
     }

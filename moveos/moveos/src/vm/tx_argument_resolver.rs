@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use framework::natives::mos_stdlib::object_extension::NativeObjectContext;
+use moveos_stdlib::natives::mos_stdlib::object_extension::NativeObjectContext;
 use moveos_types::{
     object::{Object, ObjectData, ObjectID},
     tx_context::TxContext,
@@ -193,7 +193,7 @@ where
 }
 
 fn is_tx_context(t: &StructType) -> bool {
-    *t.module.address() == *framework::addresses::MOS_STD_ADDRESS
+    *t.module.address() == *moveos_stdlib::addresses::MOS_STD_ADDRESS
         && t.module.name() == TxContext::module_identifier().as_ident_str()
         && t.name == TxContext::struct_identifier()
 }

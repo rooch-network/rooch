@@ -5,7 +5,7 @@ members = [
     "moveos/moveos-types",
     "moveos/moveos",
     "moveos/moveos-statedb",
-    "moveos/framework",
+    "moveos/moveos-stdlib",
     "crates/integration-test-runner",
     "crates/rooch",
 ]
@@ -34,7 +34,7 @@ rust-version = "1.68"
 moveos-types = { path = "moveos/moveos-types" }
 moveos = { path = "moveos/moveos" }
 moveos-statedb = { path = "moveos/moveos-statedb" }
-framework = { path = "moveos/framework" }
+moveos-stdlib = { path = "moveos/moveos-stdlib" }
 
 mos-integration-test-runner = { path = "crates/integration-test-runner" }
 
