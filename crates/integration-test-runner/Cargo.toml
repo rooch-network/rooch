@@ -25,11 +25,13 @@ move-unit-test = { workspace = true, optional = true }
 move-vm-runtime = { workspace = true }
 move-vm-test-utils = { workspace = true }
 move-vm-types = { workspace = true }
+move-resource-viewer = { workspace = true }
 move-transactional-test-runner = { workspace = true }
 
 statedb = { workspace = true }
 framework = { workspace = true }
 moveos = { workspace = true }
+mos-types = { workspace = true }
 
 [dev-dependencies]
 datatest-stable = { workspace = true }

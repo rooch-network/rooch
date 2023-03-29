@@ -3,22 +3,25 @@
 
 use crate::{
     types::transaction::{AbstractTransaction, MoveTransaction, SimpleTransaction},
-    vm::{move_vm_ext::MoveVmExt, MoveResolverExt},
+    vm::{
+        move_vm_ext::{MoveVmExt, SessionExt},
+        MoveResolverExt,
+    },
     TransactionExecutor, TransactionValidator,
 };
 use anyhow::Result;
 use framework::addresses::MOS_FRAMEWORK_ADDRESS;
-use move_binary_format::errors::{Location, PartialVMError, VMResult};
+use framework::natives::mos_stdlib::object_extension::NativeObjectContext;
+use mos_types::tx_context::TxContext;
+use move_binary_format::errors::Location;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::IdentStr,
     language_storage::{ModuleId, TypeTag},
-    value::MoveValue,
-    vm_status::StatusCode,
 };
 use move_table_extension::NativeTableContext;
-use move_vm_runtime::session::{LoadedFunctionInstantiation, SerializedReturnValues, Session};
-use move_vm_types::{gas::UnmeteredGasMeter, loaded_data::runtime_types::Type};
+use move_vm_runtime::session::SerializedReturnValues;
+use move_vm_types::gas::UnmeteredGasMeter;
 use statedb::{HashValue, StateDB};
 use std::borrow::Borrow;
 
@@ -54,33 +57,33 @@ impl MoveOS {
     where
         T: AbstractTransaction,
     {
-        let session_id = txn.txn_hash();
+        let tx_hash = txn.txn_hash();
         let senders = txn.senders();
         let move_txn = txn.into_move_transaction();
-        let session = self.vm.new_session(&self.db, session_id);
-        self.execute_transaction(session, senders, move_txn)
+        let session = self.vm.new_session(&self.db, tx_hash);
+        self.execute_transaction(session, senders, tx_hash, move_txn)
     }
 
     fn execute_transaction<S>(
         &self,
-        mut session: Session<S>,
+        mut session: SessionExt<S>,
         mut senders: Vec<AccountAddress>,
+        tx_hash: HashValue,
         txn: MoveTransaction,
     ) -> Result<()>
     where
         S: MoveResolverExt,
     {
         let mut gas_meter = UnmeteredGasMeter;
+        //TODO only allow one sender?
+        let sender = senders.pop().unwrap();
+        let tx_context = TxContext::new(sender, tx_hash);
         match txn {
             MoveTransaction::Script(script) => {
                 let loaded_function =
                     session.load_script(script.code.as_slice(), script.ty_args.clone())?;
-                //TODO find a nicer way to fill the signer arguments
-                let args = check_and_rearrange_args_by_signer_position(
-                    loaded_function,
-                    script.args,
-                    senders.pop().unwrap(),
-                )?;
+
+                let args = session.resolve_args(&tx_context, loaded_function, script.args)?;
                 let result =
                     session.execute_script(script.code, script.ty_args, args, &mut gas_meter)?;
                 assert!(
@@ -94,12 +97,7 @@ impl MoveOS {
                     &function.function,
                     function.ty_args.as_slice(),
                 )?;
-                //TODO find a nicer way to fill the signer arguments
-                let args = check_and_rearrange_args_by_signer_position(
-                    loaded_function,
-                    function.args,
-                    senders.pop().unwrap(),
-                )?;
+                let args = session.resolve_args(&tx_context, loaded_function, function.args)?;
                 let result = session.execute_entry_function(
                     &function.module,
                     &function.function,
@@ -114,7 +112,6 @@ impl MoveOS {
             }
             MoveTransaction::ModuleBundle(modules) => {
                 //TODO check the modules package address with the sender
-                let sender = senders.pop().unwrap();
                 session.publish_module_bundle(modules, sender, &mut gas_meter)?;
             }
         }
@@ -129,6 +126,13 @@ impl MoveOS {
 
         //TODO move apply change set to a suitable place, and make MoveOS state less.
         self.db.apply_change_set(change_set, table_change_set)?;
+
+        let object_context: NativeObjectContext = extensions.remove();
+        let object_change_set = object_context
+            .into_change_set()
+            .map_err(|e| e.finish(Location::Undefined))?;
+        self.db.apply_object_change_set(object_change_set)?;
+
         Ok(())
     }
 
@@ -171,43 +175,6 @@ impl MoveOS {
             "Table change set should be empty when execute view function"
         );
         Ok(result)
-    }
-}
-
-fn check_and_rearrange_args_by_signer_position(
-    func: LoadedFunctionInstantiation,
-    args: Vec<Vec<u8>>,
-    sender: AccountAddress,
-) -> VMResult<Vec<Vec<u8>>> {
-    let has_signer = func
-        .parameters
-        .iter()
-        .position(|i| matches!(i, Type::Signer))
-        .map(|pos| {
-            if pos != 0 {
-                Err(
-                    PartialVMError::new(StatusCode::NUMBER_OF_SIGNER_ARGUMENTS_MISMATCH)
-                        .with_message(format!(
-                            "Expected signer arg is this first arg, but got it at {}",
-                            pos + 1
-                        ))
-                        .finish(Location::Undefined),
-                )
-            } else {
-                Ok(true)
-            }
-        })
-        .unwrap_or(Ok(false))?;
-
-    if has_signer {
-        let signer = MoveValue::Signer(sender);
-        let mut final_args = vec![signer
-            .simple_serialize()
-            .expect("serialize signer should success")];
-        final_args.extend(args);
-        Ok(final_args)
-    } else {
-        Ok(args)
     }
 }
 

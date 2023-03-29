@@ -2,21 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use framework::natives::mos_stdlib::object_extension::{ObjectChangeSet, ObjectResolver};
+use mos_types::object::{MoveObject, NamedTableID, Object, ObjectID, TableObject};
 use move_core_types::{
     account_address::AccountAddress,
     effects::{ChangeSet, Op},
     identifier::Identifier,
     language_storage::{ModuleId, StructTag},
     resolver::{ModuleResolver, ResourceResolver},
+    value::MoveTypeLayout,
 };
 use move_table_extension::{TableChangeSet, TableResolver};
-use object::{NamedTableID, Object, ObjectID, TableObject};
 use smt::{InMemoryNodeStore, NodeStore, SMTree, UpdateSet};
 use std::collections::BTreeMap;
 
 pub use smt::HashValue;
 
-pub mod object;
 #[cfg(test)]
 mod tests;
 
@@ -195,6 +196,23 @@ impl StateDB {
         self.smt.puts(changed_objects)
     }
 
+    pub fn apply_object_change_set(&self, change_set: ObjectChangeSet) -> Result<HashValue> {
+        let mut changed_objects = UpdateSet::new();
+        for (object_id, object_info) in change_set.new_objects {
+            //TODO should serialize at the extension when make change set
+            let contents = object_info
+                .value
+                .simple_serialize(&MoveTypeLayout::Struct(object_info.layout))
+                .unwrap();
+            //TODO set version
+            changed_objects.put(
+                object_id,
+                Object::new_move_object(MoveObject::new(object_info.tag, 1, contents)),
+            );
+        }
+        self.smt.puts(changed_objects)
+    }
+
     pub fn is_genesis(&self) -> bool {
         self.smt.is_genesis()
     }
@@ -233,5 +251,11 @@ impl TableResolver for StateDB {
         key: &[u8],
     ) -> std::result::Result<Option<Vec<u8>>, anyhow::Error> {
         self.get_with_key((*handle).into(), key.to_vec())
+    }
+}
+
+impl ObjectResolver for StateDB {
+    fn resolve_object(&self, id: ObjectID) -> Result<Option<Object>> {
+        self.get(id)
     }
 }

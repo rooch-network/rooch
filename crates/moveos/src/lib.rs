@@ -7,7 +7,7 @@ pub mod moveos;
 #[cfg(test)]
 mod tests;
 pub mod types;
-mod vm;
+pub mod vm;
 
 pub struct ValidatorResult {}
 
