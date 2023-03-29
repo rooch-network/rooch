@@ -4,7 +4,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-// Source from https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-moveos_stdlib/src/natives/object.rs
+// Source from https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/src/natives/object.rs
 // and do some refactor
 
 use super::object_extension::TransferResult;
@@ -75,7 +75,7 @@ pub fn native_delete_impl(
 }
 
 // We make the transfer function with object native function together.
-// https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-moveos_stdlib/src/natives/transfer.rs
+// https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/src/natives/transfer.rs
 
 pub type TransferGasParameter = BaseGasParameter;
 
