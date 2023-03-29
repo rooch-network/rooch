@@ -2,39 +2,44 @@
 resolver = "2"
 
 members = [
-    "crates/mos-types",
-    "crates/moveos",
-    "crates/statedb",
-    "crates/framework",
-    "crates/integration-test-runner",
-    "crates/mos",
+    "moveos/moveos-types",
+    "moveos/moveos-statedb",
+    "moveos/moveos-stdlib",
+    "moveos/moveos",
+    "moveos/moveos-cli",
+    "crates/rooch-integration-test-runner",
+    "crates/rooch",
 ]
 
 default-members = [
-    "crates/moveos",
-    "crates/mos",
+    "moveos/moveos",
+    "crates/rooch",
 ]
 
 # All workspace members should inherit these keys
 # for package declarations.
 [workspace.package]
-authors = ["Rooch Core Dev <opensource@rooch.network>"]
+authors = ["Rooch Contributors <opensource@rooch.network>"]
 edition = "2021"
 homepage = "https://rooch.network"
 license = "Apache-2.0"
 publish = false
-repository = "https://github.com/rooch-network/moveos"
+repository = "https://github.com/rooch-network/rooch"
 rust-version = "1.68"
 
 
 [workspace.dependencies]
 # Internal crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.
-mos-types = { path = "crates/mos-types" }
-moveos = { path = "crates/moveos" }
-statedb = { path = "crates/statedb" }
-framework = { path = "crates/framework" }
-mos-integration-test-runner = { path = "crates/integration-test-runner" }
+# crates for MoveOS
+moveos-types = { path = "moveos/moveos-types" }
+moveos-statedb = { path = "moveos/moveos-statedb" }
+moveos-stdlib = { path = "moveos/moveos-stdlib" }
+moveos = { path = "moveos/moveos" }
+moveos-cli = { path = "moveos/moveos-cli" }
+
+# crates for Rooch
+rooch-integration-test-runner = { path = "crates/rooch-integration-test-runner" }
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.
