@@ -11,7 +11,7 @@ use move_core_types::{
     value::MoveTypeLayout,
 };
 use move_table_extension::{TableChangeSet, TableResolver};
-use moveos_stdlib::natives::mos_stdlib::object_extension::{ObjectChangeSet, ObjectResolver};
+use moveos_stdlib::natives::moveos_stdlib::object_extension::{ObjectChangeSet, ObjectResolver};
 use moveos_types::object::{MoveObject, NamedTableID, Object, ObjectID, TableObject};
 use smt::{InMemoryNodeStore, NodeStore, SMTree, UpdateSet};
 use std::collections::BTreeMap;

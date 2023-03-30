@@ -3,7 +3,7 @@
 
 use move_core_types::resolver::MoveResolver;
 use move_table_extension::TableResolver;
-use moveos_stdlib::natives::mos_stdlib::object_extension::ObjectResolver;
+use moveos_stdlib::natives::moveos_stdlib::object_extension::ObjectResolver;
 
 pub mod move_vm_ext;
 pub mod tx_argument_resolver;

@@ -1,10 +1,10 @@
 //Source https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/sources/address.move
 
-module mos_std::address {
+module moveos_std::address {
     use std::ascii;
     use std::bcs;
-    use mos_std::hex;
-    use mos_std::bcd;
+    use moveos_std::hex;
+    use moveos_std::bcd;
 
     /// The length of an address, in bytes
     const LENGTH: u64 = 32;

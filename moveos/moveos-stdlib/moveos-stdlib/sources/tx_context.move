@@ -1,9 +1,9 @@
 // Origin source https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/sources/tx_context.move#L24
 // And do refactoring
 
-module mos_std::tx_context {
+module moveos_std::tx_context {
 
-    friend mos_std::object;
+    friend moveos_std::object;
 
     /// Number of bytes in an tx hash (which will be the transaction digest)
     const TX_HASH_LENGTH: u64 = 32;

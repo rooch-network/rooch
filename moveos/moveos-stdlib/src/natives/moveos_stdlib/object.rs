@@ -10,7 +10,7 @@
 use super::object_extension::TransferResult;
 use crate::natives::{
     helpers::{make_module_natives, make_native},
-    mos_stdlib::object_extension::NativeObjectContext,
+    moveos_stdlib::object_extension::NativeObjectContext,
     BaseGasParameter,
 };
 use move_binary_format::errors::{PartialVMError, PartialVMResult};

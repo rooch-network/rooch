@@ -5,7 +5,7 @@
 //create account by bob self
 //# run --signers genesis
 script {
-    use mos_framework::account;
+    use rooch_framework::account;
     fun main(_sender: signer) {
         account::create_account_entry(@bob);
     }
@@ -14,7 +14,7 @@ script {
 //check
 //# run --signers bob
 script {
-    use mos_framework::account;
+    use rooch_framework::account;
     fun main(_sender: signer) {
         assert!(account::exists_at(@bob), 0);
     }

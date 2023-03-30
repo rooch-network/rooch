@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use addresses::MOS_NAMED_ADDRESS_MAPPING;
+use addresses::MOVEOS_NAMED_ADDRESS_MAPPING;
 use anyhow::Result;
 use move_binary_format::CompiledModule;
 use move_bytecode_utils::dependency_graph::DependencyGraph;
@@ -33,13 +33,13 @@ pub struct BuildOptions {
 
 impl Framework {
     pub fn package() -> &'static str {
-        "mos-framework"
+        "rooch-framework"
     }
 
     pub fn named_addresses() -> BTreeMap<String, NumericalAddress> {
         let mut address_mapping = move_stdlib::move_stdlib_named_addresses();
         address_mapping.extend(
-            MOS_NAMED_ADDRESS_MAPPING
+            MOVEOS_NAMED_ADDRESS_MAPPING
                 .iter()
                 .map(|(name, addr)| (name.to_string(), NumericalAddress::parse_str(addr).unwrap())),
         );

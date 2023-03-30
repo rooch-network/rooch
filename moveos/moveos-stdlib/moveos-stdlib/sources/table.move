@@ -5,7 +5,7 @@
 /// separate global state items. The number of items and a unique handle are tracked on the table
 /// struct itself, while the operations are implemented as native functions. No traversal is provided.
 
-module mos_std::table {
+module moveos_std::table {
 
     /// Type of tables
     struct Table<phantom K: copy + drop, phantom V> has store {

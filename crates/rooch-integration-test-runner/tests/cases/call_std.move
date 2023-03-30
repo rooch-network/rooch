@@ -11,12 +11,12 @@ script {
 }
 
 
-//call mos_std
+//call moveos_std
 //# run --signers creator
 script {
     use std::signer;
     use std::bcs;
-    use mos_std::bcd;
+    use moveos_std::bcd;
 
     fun main(s: signer) {
         let addr = signer::address_of(&s);

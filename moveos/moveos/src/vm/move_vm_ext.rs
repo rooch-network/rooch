@@ -31,7 +31,7 @@ use move_vm_types::{
 };
 use moveos_statedb::HashValue;
 use moveos_stdlib::natives::{
-    self, mos_stdlib::object_extension::NativeObjectContext, GasParameters,
+    self, moveos_stdlib::object_extension::NativeObjectContext, GasParameters,
 };
 use moveos_types::tx_context::TxContext;
 

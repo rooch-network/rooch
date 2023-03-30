@@ -1,10 +1,10 @@
 /// origin source from https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/sources/object.move#L75
 
 /// Move object identifiers
-module mos_std::object {
+module moveos_std::object {
     use std::bcs;
-    use mos_std::address;
-    use mos_std::tx_context::{Self, TxContext};
+    use moveos_std::address;
+    use moveos_std::tx_context::{Self, TxContext};
 
     /// An object ID. This is used to reference Sui Objects.
     /// This is *not* guaranteed to be globally unique--anyone can create an `ID` from a `UID` or

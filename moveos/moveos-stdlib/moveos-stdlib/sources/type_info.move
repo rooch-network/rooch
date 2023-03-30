@@ -1,6 +1,6 @@
 /// Source from https://github.com/aptos-labs/aptos-core/blob/c76c6b0fc3a1b8e21b6ba2f77151ca20ea31ca32/aptos-move/framework/aptos-stdlib/sources/type_info.move#L1
 /// https://github.com/starcoinorg/starcoin-framework/blob/952c51116e0ef5a97c119205d6f7e038acdd8682/sources/Token.move#L508
-module mos_std::type_info {
+module moveos_std::type_info {
     use std::bcs;
     use std::string;
     use std::vector;
@@ -60,7 +60,7 @@ module mos_std::type_info {
     #[test]
     fun test() {
         let type_info = type_of<TypeInfo>();
-        assert!(account_address(&type_info) == @mos_std, 0);
+        assert!(account_address(&type_info) == @moveos_std, 0);
         assert!(module_name(&type_info) == b"type_info", 1);
         assert!(struct_name(&type_info) == b"TypeInfo", 2);
     }
@@ -70,7 +70,7 @@ module mos_std::type_info {
 
     #[test]
     fun test_type_name() {
-        use mos_std::table::Table;
+        use moveos_std::table::Table;
 
         assert!(type_name<bool>() == string::utf8(b"bool"), 0);
         assert!(type_name<u8>() == string::utf8(b"u8"), 1);

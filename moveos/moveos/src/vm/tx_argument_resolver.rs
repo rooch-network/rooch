@@ -6,7 +6,7 @@ use move_binary_format::errors::PartialVMError;
 use move_core_types::{move_resource::MoveStructType, value::MoveValue, vm_status::StatusCode};
 use move_vm_runtime::session::LoadedFunctionInstantiation;
 use move_vm_types::loaded_data::runtime_types::{StructType, Type};
-use moveos_stdlib::natives::mos_stdlib::object_extension::NativeObjectContext;
+use moveos_stdlib::natives::moveos_stdlib::object_extension::NativeObjectContext;
 use moveos_types::{
     object::{Object, ObjectData, ObjectID},
     tx_context::TxContext,
@@ -193,7 +193,7 @@ where
 }
 
 fn is_tx_context(t: &StructType) -> bool {
-    *t.module.address() == *moveos_stdlib::addresses::MOS_STD_ADDRESS
+    *t.module.address() == *moveos_stdlib::addresses::MOVEOS_STD_ADDRESS
         && t.module.name() == TxContext::module_identifier().as_ident_str()
         && t.name == TxContext::struct_identifier()
 }

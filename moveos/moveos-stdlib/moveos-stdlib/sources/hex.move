@@ -4,7 +4,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// HEX (Base16) encoding utility.
-module mos_std::hex {
+module moveos_std::hex {
     use std::vector;
 
     const EInvalidHexLength: u64 = 0;

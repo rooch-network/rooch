@@ -3,8 +3,8 @@
 //# publish
 
 module test::m {
-    use mos_std::tx_context::{Self, TxContext};
-    use mos_std::object::{Self, UID};
+    use moveos_std::tx_context::{Self, TxContext};
+    use moveos_std::object::{Self, UID};
     use std::debug;
 
     struct S has store, key { id: UID }
