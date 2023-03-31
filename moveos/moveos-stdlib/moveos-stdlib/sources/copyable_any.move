@@ -1,8 +1,8 @@
 /// Source from https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framework/aptos-stdlib/sources/copyable_any.move
 
-module mos_std::copyable_any {
-    use mos_std::type_info;
-    use mos_std::bcd;
+module moveos_std::copyable_any {
+    use moveos_std::type_info;
+    use moveos_std::bcd;
     use std::bcs;
     use std::error;
     use std::string::String;

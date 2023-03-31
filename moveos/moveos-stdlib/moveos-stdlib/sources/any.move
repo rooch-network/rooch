@@ -1,13 +1,13 @@
 /// Source from https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framework/aptos-stdlib/sources/any.move
 
-module mos_std::any {
-    use mos_std::type_info;
-    use mos_std::bcd;
+module moveos_std::any {
+    use moveos_std::type_info;
+    use moveos_std::bcd;
     use std::bcs;
     use std::error;
     use std::string::String;
 
-    friend mos_std::copyable_any;
+    friend moveos_std::copyable_any;
 
     //TODO unify the Error codes
     /// The type provided for `unpack` is not the same as was given for `pack`.

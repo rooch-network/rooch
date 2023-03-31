@@ -20,8 +20,8 @@ use move_table_extension::NativeTableContext;
 use move_vm_runtime::session::SerializedReturnValues;
 use move_vm_types::gas::UnmeteredGasMeter;
 use moveos_statedb::{HashValue, StateDB};
-use moveos_stdlib::addresses::MOS_FRAMEWORK_ADDRESS;
-use moveos_stdlib::natives::mos_stdlib::object_extension::NativeObjectContext;
+use moveos_stdlib::addresses::ROOCH_FRAMEWORK_ADDRESS;
+use moveos_stdlib::natives::moveos_stdlib::object_extension::NativeObjectContext;
 use moveos_types::tx_context::TxContext;
 use std::borrow::Borrow;
 
@@ -51,7 +51,10 @@ impl MoveOS {
         let genesis_txn = MoveTransaction::ModuleBundle(
             moveos_stdlib::Framework::build()?.into_module_bundles()?,
         );
-        Ok(SimpleTransaction::new(*MOS_FRAMEWORK_ADDRESS, genesis_txn))
+        Ok(SimpleTransaction::new(
+            *ROOCH_FRAMEWORK_ADDRESS,
+            genesis_txn,
+        ))
     }
 
     pub fn execute<T>(&self, txn: T) -> Result<()>

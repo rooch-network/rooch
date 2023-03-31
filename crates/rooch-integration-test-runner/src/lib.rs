@@ -16,7 +16,7 @@ use moveos::{
     moveos::MoveOS,
     types::transaction::{MoveTransaction, SimpleTransaction},
 };
-use moveos_stdlib::natives::mos_stdlib::object_extension::ObjectResolver;
+use moveos_stdlib::natives::moveos_stdlib::object_extension::ObjectResolver;
 use moveos_types::object::{Object, ObjectData, ObjectID};
 use std::{collections::BTreeMap, path::Path};
 

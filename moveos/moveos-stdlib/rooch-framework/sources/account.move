@@ -1,4 +1,4 @@
-module mos_framework::account{
+module rooch_framework::account{
    
    use std::error;
    use std::bcs;
@@ -32,7 +32,7 @@ module mos_framework::account{
    /// `new_address`.
    public(friend) fun create_account(new_address: address): signer {
       assert!(
-         new_address != @vm_reserved && new_address != @mos_framework,
+         new_address != @vm_reserved && new_address != @rooch_framework,
          error::invalid_argument(EAddressReseved)
       );
 
