@@ -16,7 +16,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - uses: rooch-network/moveos/.github/actions/rust-setup@main
+    - uses: rooch-network/rooch/.github/actions/rust-setup@main
     #  with:
     #    fetch-depth: 0
     - name: Check code format

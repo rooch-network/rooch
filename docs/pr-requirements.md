@@ -64,7 +64,7 @@ All commit messages should begin with a single short (50 character max) line sum
 
 ```
 * [framework] enforce whitelist of nightly features
-* [moveos] removing VerificationPass trait
+* [sequencer] removing VerificationPass trait
 ```
 
 Following the commit title (unless it alone is self-explanatory), there should be a single blank line followed by the commit body which includes more detailed, explanatory text as separate paragraph(s). It is recommended that the commit body be wrapped at 72 characters so that Git has plenty of room to indent the text while still keeping everything under 80 characters overall.

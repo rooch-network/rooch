@@ -27,7 +27,7 @@
 
 You can learn more about contributing to the Rooch project by reading our [Contribution Guide](./CONTRIBUTING.md) and by viewing our [Code of Conduct](./CODE_OF_CONDUCT.md).
 
-Rooch Network MoveOS is licensed under [Apache 2.0](./LICENSE).
+Rooch Network Rooch is licensed under [Apache 2.0](./LICENSE).
 
 ## Join the Community
 
