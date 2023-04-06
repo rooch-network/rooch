@@ -7,6 +7,7 @@ members = [
     "moveos/moveos-stdlib",
     "moveos/moveos",
     "moveos/moveos-cli",
+    "moveos/moveos-rst",
     "crates/rooch-integration-test-runner",
     "crates/rooch",
 ]

@@ -24,7 +24,7 @@ mod tests;
 /// StateDB query path
 /// 1. /account_address/resource_type|module_id
 /// 2. /table_handle/key
-/// 3. /object_id/child_id
+/// 3. /object_id
 pub struct AccessPath {}
 
 pub trait StateWriter {
