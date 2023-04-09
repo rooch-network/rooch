@@ -6,8 +6,8 @@ use clap::Parser;
 use rooch::RoochCli;
 
 /// rooch is a command line tools for Rooch Network
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let opt = RoochCli::parse();
-    rooch::run_cli(opt).unwrap();
-    Ok(())
+    rooch::run_cli(opt).await
 }
