@@ -23,7 +23,7 @@ use move_vm_types::{
     loaded_data::runtime_types::Type,
     natives::function::NativeResult,
     pop_arg,
-    values::{StructRef, Value},
+    values::{Struct, StructRef, Value},
 };
 use moveos_types::object::Owner;
 use smallvec::smallvec;
@@ -153,6 +153,23 @@ pub fn native_share_object(
     Ok(NativeResult::ok(cost, smallvec![]))
 }
 
+// ObjectBox keep same layout with Object struct in Move
+pub(crate) struct ObjectBox {
+    pub id: AccountAddress,
+    pub value: Struct,
+}
+
+impl TryFrom<Value> for ObjectBox {
+    type Error = PartialVMError;
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        let mut fields = value.value_as::<Struct>()?.unpack()?;
+        let id = fields.next().unwrap().value_as::<AccountAddress>()?;
+        let value = fields.next().unwrap().value_as::<Struct>()?;
+        Ok(ObjectBox { id, value })
+    }
+}
+
 fn object_runtime_transfer(
     context: &mut NativeContext,
     owner: Owner,
@@ -168,6 +185,7 @@ fn object_runtime_transfer(
             )
         }
     };
+
     let layout = match context.type_to_type_layout(&ty)? {
         Some(MoveTypeLayout::Struct(s)) => s,
         _ => {
@@ -178,8 +196,10 @@ fn object_runtime_transfer(
         }
     };
 
+    let object_box: ObjectBox = obj.try_into()?;
+
     let obj_runtime: &mut NativeObjectContext = context.extensions_mut().get_mut();
-    obj_runtime.transfer(owner, ty, *tag, layout, obj)
+    obj_runtime.transfer(owner, ty, *tag, layout, object_box)
 }
 
 /***************************************************************************************************

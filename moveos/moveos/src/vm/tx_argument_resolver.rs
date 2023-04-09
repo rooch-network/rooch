@@ -8,7 +8,7 @@ use move_vm_runtime::session::LoadedFunctionInstantiation;
 use move_vm_types::loaded_data::runtime_types::{StructType, Type};
 use moveos_stdlib::natives::moveos_stdlib::object_extension::NativeObjectContext;
 use moveos_types::{
-    object::{Object, ObjectData, ObjectID},
+    object::{self, Object, ObjectID},
     tx_context::TxContext,
 };
 use std::sync::Arc;
@@ -72,7 +72,7 @@ impl TxArgumentResolver for TxContext {
             .parameters
             .iter()
             .position(|i| {
-                is_object(session, i)
+                as_struct(session, i)
                     .map(|t| is_tx_context(&t))
                     .unwrap_or(false)
             })
@@ -131,43 +131,44 @@ impl TxArgumentResolver for NativeObjectContext<'_> {
                 StatusCode::NUMBER_OF_ARGUMENTS_MISMATCH,
             ));
         }
-
         let mut resolved_args = vec![];
         for (i, (t, arg)) in func.parameters.iter().zip(args.iter()).enumerate() {
-            let is_object = is_object(session, t);
-            let arg = match is_object {
+            let struct_type = as_struct(session, t);
+            let resolved_arg = match struct_type {
                 Some(t) => {
                     //skip tx context and signer
                     if is_tx_context(&t) {
                         arg.clone()
-                    } else {
+                    } else if is_object(&t) {
                         let object_id = ObjectID::from_bytes(arg).map_err(|_e| {
-                            PartialVMError::new(StatusCode::NUMBER_OF_TYPE_ARGUMENTS_MISMATCH)
+                            PartialVMError::new(StatusCode::UNEXPECTED_DESERIALIZATION_ERROR)
+                                .with_message("decode ObjectID error".to_string())
                         })?;
                         let object: Object = self.get_object(object_id)?.ok_or_else(|| {
                             PartialVMError::new(StatusCode::NUMBER_OF_TYPE_ARGUMENTS_MISMATCH)
-                                .with_message(format!("Can not find object: {:?}", object_id))
-                        })?;
-                        match object.data {
-                            ObjectData::MoveObject(m) => m.contents,
-                            ObjectData::TableObject(_) => {
-                                return Err(PartialVMError::new(
-                                    StatusCode::NUMBER_OF_TYPE_ARGUMENTS_MISMATCH,
-                                )
                                 .with_message(format!(
-                            "Table object is not supported as argument currently, argument pos: {}",
-                            i + 1
-                        )))
-                            }
-                        }
+                                    "Can not find object: {:?} from arg:{:?}",
+                                    object_id, i
+                                ))
+                        })?;
+                        //object.as_move_resource default support table as argument,
+                        //should we support table as argument?
+                        object.as_object_argument(object_id).map_err(|_e| {
+                            PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
+                                .with_message("encode Object argument error".to_string())
+                        })?
+                    } else {
+                        return Err(PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
+                            .with_message("Unsupported Object argument type".to_string()));
                     }
                 }
                 None => arg.clone(),
             };
-            resolved_args.push(arg);
+
+            resolved_args.push(resolved_arg);
         }
 
-        Ok(args)
+        Ok(resolved_args)
     }
 }
 
@@ -175,21 +176,27 @@ fn is_signer(t: &Type) -> bool {
     matches!(t, Type::Signer)
 }
 
-fn is_object<T>(session: &SessionExt<T>, t: &Type) -> Option<Arc<StructType>>
+fn as_struct<T>(session: &SessionExt<T>, t: &Type) -> Option<Arc<StructType>>
 where
     T: MoveResolverExt,
 {
     match t {
-        Type::Struct(s) => match session.get_struct_type(*s) {
+        Type::Struct(s) | Type::StructInstantiation(s, _) => match session.get_struct_type(*s) {
             Some(t) => Some(t),
             None => {
-                panic!("Can not find bype for struct: {:?}", s)
+                panic!("Can not find type for struct: {:?}", s)
             }
         },
-        Type::Reference(r) => is_object(session, r),
-        Type::MutableReference(r) => is_object(session, r),
+        Type::Reference(r) => as_struct(session, r),
+        Type::MutableReference(r) => as_struct(session, r),
         _ => None,
     }
+}
+
+fn is_object(t: &StructType) -> bool {
+    *t.module.address() == *moveos_stdlib::addresses::MOVEOS_STD_ADDRESS
+        && t.module.name() == object::OBJECT_MODULE_NAME
+        && t.name.as_ident_str() == object::OBJECT_STRUCT_NAME
 }
 
 fn is_tx_context(t: &StructType) -> bool {

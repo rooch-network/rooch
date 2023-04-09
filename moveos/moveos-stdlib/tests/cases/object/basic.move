@@ -4,29 +4,32 @@
 
 module test::m {
     use moveos_std::tx_context::{Self, TxContext};
-    use moveos_std::object::{Self, UID};
+    use moveos_std::object::{Self,Object};
     use std::debug;
 
-    struct S has store, key { id: UID }
-    struct Cup<phantom T: store> has store, key { id: UID }
+    struct S has store, key { v: u8 }
+    struct Cup<phantom T: store> has store, key { v: u8 }
 
     public entry fun mint_s(ctx: &mut TxContext) {
-        let id = object::new(ctx);
-        debug::print(&id);
-        object::transfer(S { id }, tx_context::sender(ctx))
+        let obj = object::new(ctx, S { v: 1});
+        debug::print(&obj);
+        object::transfer(obj, tx_context::sender(ctx))
     }
 
-    public entry fun move_s_to_global(sender: signer, s: S) {
+    public entry fun move_s_to_global(sender: signer, obj: Object<S>) {
+        let s = object::remove_object(obj);
+        debug::print(&s);
         move_to(&sender, s);
     }
 
     public entry fun mint_cup<T: store>(ctx: &mut TxContext) {
-        let id = object::new(ctx);
-        debug::print(&id);
-        object::transfer(Cup<T> { id }, tx_context::sender(ctx))
+        let obj = object::new(ctx, Cup<T> { v: 2 });
+        debug::print(&obj);
+        object::transfer(obj, tx_context::sender(ctx))
     }
 
-    public entry fun move_cup_to_global<T:store>(sender: signer, cup: Cup<T>) {
+    public entry fun move_cup_to_global<T:store>(sender: signer, obj: Object<Cup<T>>) {
+        let cup = object::remove_object(obj);
         move_to(&sender, cup);
     }
 }

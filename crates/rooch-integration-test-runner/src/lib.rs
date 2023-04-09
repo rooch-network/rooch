@@ -226,7 +226,7 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
                 let object = object
                     .ok_or_else(|| anyhow::anyhow!("Object with id {} not found", object_id))?;
                 let move_object = match object.data {
-                    ObjectData::MoveObject(data) => data,
+                    ObjectData::Move(data) => data,
                     //TODO support table object
                     _ => {
                         return Err(anyhow::anyhow!(

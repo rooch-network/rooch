@@ -8,11 +8,10 @@ use move_core_types::{
     identifier::Identifier,
     language_storage::{ModuleId, StructTag},
     resolver::{ModuleResolver, ResourceResolver},
-    value::MoveTypeLayout,
 };
 use move_table_extension::{TableChangeSet, TableResolver};
 use moveos_stdlib::natives::moveos_stdlib::object_extension::{ObjectChangeSet, ObjectResolver};
-use moveos_types::object::{MoveObject, NamedTableID, Object, ObjectID, TableObject};
+use moveos_types::object::{MoveObjectData, NamedTableID, Object, ObjectID, TableObjectData};
 use smt::{InMemoryNodeStore, NodeStore, SMTree, UpdateSet};
 use std::collections::BTreeMap;
 
@@ -141,7 +140,7 @@ impl StateDB {
     ) -> Result<(Object, TreeTable<InMemoryNodeStore>)> {
         Ok(self.get_as_table(id)?.unwrap_or_else(|| {
             let table = TreeTable::new(self.node_store.clone());
-            let table_object = TableObject::new(table.state_root(), 0);
+            let table_object = TableObjectData::new(table.state_root(), 0);
             let object = Object::new_table_object(table_object);
             (object, table)
         }))
@@ -202,12 +201,12 @@ impl StateDB {
             //TODO should serialize at the extension when make change set
             let contents = object_info
                 .value
-                .simple_serialize(&MoveTypeLayout::Struct(object_info.layout))
+                .simple_serialize(&object_info.value_layout)
                 .unwrap();
             //TODO set version
             changed_objects.put(
                 object_id,
-                Object::new_move_object(MoveObject::new(object_info.tag, 1, contents)),
+                Object::new_move_object(MoveObjectData::new(object_info.value_tag, 1, contents)),
             );
         }
         self.smt.puts(changed_objects)

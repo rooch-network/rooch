@@ -5,8 +5,7 @@ use anyhow::Result;
 use better_any::{Tid, TidAble};
 use move_binary_format::errors::PartialVMError;
 use move_core_types::{
-    account_address::AccountAddress, language_storage::StructTag, value::MoveStructLayout,
-    vm_status::StatusCode,
+    language_storage::StructTag, value::MoveStructLayout, vm_status::StatusCode,
 };
 use move_vm_types::{
     loaded_data::runtime_types::Type,
@@ -17,6 +16,8 @@ use std::{
     cell::RefCell,
     collections::{BTreeMap, BTreeSet},
 };
+
+use super::object::ObjectBox;
 
 /// A table resolver which needs to be provided by the environment. This allows to lookup
 /// data in remote storage, as well as retrieve cost of table operations.
@@ -80,15 +81,14 @@ impl<'a> NativeObjectContext<'a> {
         ty: Type,
         tag: StructTag,
         layout: MoveStructLayout,
-        obj: Value,
+        obj: ObjectBox,
     ) -> Result<TransferResult, PartialVMError> {
         let mut object_data = self.object_data.borrow_mut();
-        let object_id: ObjectID = get_object_id(obj.copy_value()?)?
-            .value_as::<AccountAddress>()?
-            .into();
-        object_data
-            .transfers
-            .insert(object_id, ObjectInfo::new(owner, ty, tag, layout, obj));
+        let object_id: ObjectID = obj.id.into();
+        object_data.transfers.insert(
+            object_id,
+            ObjectInfo::new(owner, ty, tag, layout, obj.value),
+        );
         //TODO return the correct result
         Ok(TransferResult::New)
     }
@@ -105,26 +105,25 @@ impl<'a> NativeObjectContext<'a> {
 #[derive(Debug)]
 pub struct ObjectInfo {
     pub owner: Owner,
-    pub ty: Type,
-    pub tag: StructTag,
-    //TODO should contains layout?
-    pub layout: MoveStructLayout,
-    pub value: Value,
+    pub value_ty: Type,
+    pub value_tag: StructTag,
+    pub value_layout: MoveStructLayout,
+    pub value: Struct,
 }
 
 impl ObjectInfo {
     pub fn new(
         owner: Owner,
-        ty: Type,
-        tag: StructTag,
-        layout: MoveStructLayout,
-        value: Value,
+        value_ty: Type,
+        value_tag: StructTag,
+        value_layout: MoveStructLayout,
+        value: Struct,
     ) -> Self {
         Self {
             owner,
-            ty,
-            tag,
-            layout,
+            value_ty,
+            value_tag,
+            value_layout,
             value,
         }
     }
@@ -135,7 +134,7 @@ impl std::fmt::Display for ObjectInfo {
         write!(
             f,
             "ObjectInfo({:?}, {:?}, {:?}, {:?})",
-            self.owner, self.ty, self.tag, self.value
+            self.owner, self.value_ty, self.value_tag, self.value
         )
     }
 }
@@ -149,10 +148,15 @@ struct ObjectData {
     transfers: BTreeMap<ObjectID, ObjectInfo>,
 }
 
-// Object { id: UID { id: ID { bytes: address } } .. }
+// Object { id: address, value: T }
 // Extract the first field of the struct 3 times to get the id bytes.
 pub fn get_object_id(object: Value) -> Result<Value, PartialVMError> {
-    get_nested_struct_field(object, &[0, 0, 0])
+    get_nested_struct_field(object, &[0])
+}
+
+// Object { id: address, value: T }
+pub fn get_object_value(object: Value) -> Result<Value, PartialVMError> {
+    get_nested_struct_field(object, &[1])
 }
 
 // Extract a field valye that's nested inside value `v`. The offset of each nesting

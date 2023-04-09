@@ -114,6 +114,29 @@ read-write-set-dynamic = { git = "https://github.com/rooch-network/move", rev = 
 smt = { git = "https://github.com/rooch-network/smt", rev = "bba62b6e82b3ed81f1c27a2f6f36a017315cdf0a" }
 #smt = { path = "../smt" }
 
+# keep this for convenient debug Move in local repo
+# [patch.'https://github.com/rooch-network/move']
+# move-abigen = { path = "../../move-language/move/language/move-prover/move-abigen" }
+# move-prover = { path = "../../move-language/move/language/move-prover" }
+# move-package = { path = "../../move-language/move/language/tools/move-package" }
+# move-stdlib = { path = "../../move-language/move/language/move-stdlib" }
+# move-unit-test = { path = "../../move-language/move/language/tools/move-unit-test" }
+# move-cli = { path = "../../move-language/move/language/tools/move-cli" }
+# move-command-line-common = { path = "../../move-language/move/language/move-command-line-common" }
+# move-ir-types = { path = "../../move-language/move/language/move-ir/types" }
+# move-binary-format = { path = "../../move-language/move/language/move-binary-format" }
+# move-core-types = { path = "../../move-language/move/language/move-core/types" }
+# move-bytecode-verifier = { path = "../../move-language/move/language/move-bytecode-verifier" }
+# move-ir-compiler = { path = "../../move-language/move/language/move-ir-compiler" }
+# move-ir-to-bytecode = { path = "../../move-language/move/language/move-ir-compiler/move-ir-to-bytecode" }
+# move-bytecode-source-map = { path = "../../move-language/move/language/move-ir-compiler/move-bytecode-source-map" }
+# move-compiler = { path = "../../move-language/move/language/move-compiler" }
+# move-vm-runtime = { path = "../../move-language/move/language/move-vm/runtime" }
+# move-vm-types = { path = "../../move-language/move/language/move-vm/types" }
+# move-model = { path = "../../move-language/move/language/move-model" }
+# move-vm-test-utils = { path = "../../move-language/move/language/move-vm/test-utils" }
+# move-transactional-test-runner = { path = "../../move-language/move/language/testing-infra/transactional-test-runner" }
+
 [profile.release]
 debug = true
 overflow-checks = true
