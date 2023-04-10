@@ -20,6 +20,7 @@ clap = { features = [ "derive",], workspace = true }
 datatest-stable = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 
+
 move-binary-format = { workspace = true }
 move-bytecode-verifier = { workspace = true }
 move-cli = { workspace = true }
@@ -36,3 +37,5 @@ move-vm-test-utils = { workspace = true }
 
 moveos-stdlib = { workspace = true }
 moveos-cli = { workspace = true }
+moveos-server = { workspace = true }
+
