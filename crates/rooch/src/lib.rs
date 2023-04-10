@@ -13,7 +13,7 @@ pub struct RoochCli {
 #[derive(clap::Parser)]
 pub enum Command {
     Move(moveos_cli::MoveCli),
-    Server(moveos_server::OsServer)
+    Server(moveos_server::OsServer),
 }
 
 pub async fn run_cli(opt: RoochCli) -> Result<()> {

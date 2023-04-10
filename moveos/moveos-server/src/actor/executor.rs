@@ -5,7 +5,6 @@
 /// Step 1. Define a struct and impl the `Actor` for the struct
 /// Step 2. Define the communication protocol messages between Actors
 /// Step 3. Impl `Handler` with messages  for the Actor struct
-
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 

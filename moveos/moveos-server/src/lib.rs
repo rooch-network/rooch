@@ -67,7 +67,7 @@ pub async fn say_hello(say: SayOptions) -> Result<()> {
     Ok(())
 }
 
-// Start MoveOS Server
+// Start MoveOS server
 pub async fn start_server() -> Result<()> {
     let config = load_config().await?;
 
