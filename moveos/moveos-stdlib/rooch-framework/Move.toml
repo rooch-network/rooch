@@ -7,6 +7,7 @@ std = "0x1"
 moveos_std = "0x1"
 rooch_framework = "0x1"
 vm_reserved = "0x0"
+rooch_association = "0xA550C18"
 
 [dependencies]
 MoveosStdLib = { local = "../moveos-stdlib" }
