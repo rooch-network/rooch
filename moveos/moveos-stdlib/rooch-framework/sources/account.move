@@ -193,6 +193,7 @@ module rooch_framework::account{
       let source_addr = signer::address_of(source);
       let seed = generate_seed_bytes(&source_addr);
       let resource_addr = create_resource_address(&source_addr, seed);
+      assert!(!is_resource_account(resource_addr), error::invalid_state(EAccountIsAlreadyResourceAccount));
       let resource_signer = if (exists_at(resource_addr)) {
          let account = borrow_global<Account>(resource_addr);
          assert!(account.sequence_number == 0, error::invalid_state(EResourceAccountAlreadyUsed));
@@ -205,8 +206,6 @@ module rooch_framework::account{
       // If the source account wants direct control via auth key, they would need to explicitly rotate the auth key
       // of the resource account using the SignerCapability.
       rotate_authentication_key_internal(&resource_signer, ZERO_AUTH_KEY);
-
-      assert!(!is_resource_account(resource_addr), error::invalid_state(EAccountIsAlreadyResourceAccount));
       move_to(&resource_signer, ResourceAccount {});
 
       let signer_cap = SignerCapability { addr: resource_addr };

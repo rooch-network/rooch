@@ -1,7 +1,7 @@
 /// This module defines a struct storing the metadata of the block and new block events.
 module rooch_framework::block {
     use std::error;
-
+    use std::signer;
     use rooch_framework::core_addresses;
     // use rooch_framework::timestamp;
 
@@ -18,12 +18,14 @@ module rooch_framework::block {
 
     /// Epoch interval cannot be 0.
     const EZeroEpochInterval: u64 = 1;
+    const EBlockResourceAlreadyExist: u64 = 2;
 
 
     /// This can only be called during Genesis.
     public(friend) fun initialize(account: &signer, epoch_interval_millisecs: u64) {
         core_addresses::assert_rooch_genesis(account);
         assert!(epoch_interval_millisecs > 0, error::invalid_argument(EZeroEpochInterval));
+        assert!(!exists<BlockResource>(signer::address_of(account)), error::invalid_state(EBlockResourceAlreadyExist));
 
         move_to<BlockResource>(
             account,
