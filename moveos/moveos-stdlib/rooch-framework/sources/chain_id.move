@@ -2,6 +2,8 @@
 /// One important role is to prevent transactions intended for one chain from being executed on another.
 /// This code provides a container for storing a chain id and functions to initialize and get it.
 module rooch_framework::chain_id {
+    use std::signer;
+    use std::error;
     use rooch_framework::core_addresses;
     friend rooch_framework::genesis;
 
@@ -13,10 +15,13 @@ module rooch_framework::chain_id {
     const DEV_CHAIN_ID: u8 = 181;
     const TEST_CHAIN_ID: u8 = 182;
 
+    const EChainIdAlreadyExist: u64 = 1;
+
     /// Only called during genesis.
     /// Publish the chain ID under the genesis account
-    public fun initialize(account: &signer, id: u8) {
+    public(friend) fun initialize(account: &signer, id: u8) {
         core_addresses::assert_rooch_genesis(account);
+        assert!(!exists<ChainId>(signer::address_of(account)), error::invalid_state(EChainIdAlreadyExist));
         move_to(account, ChainId { id })
     }
 
