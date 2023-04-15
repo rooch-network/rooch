@@ -147,6 +147,7 @@ impl AbstractTransaction for FunctionTransaction {
 
     // TODO fix build the Function
     fn into_move_transaction(self) -> MoveTransaction {
+        // TODO deserialize functoin bytes
         let f: Function = bcs::from_bytes(&self.function_bytes).unwrap();
         MoveTransaction::Function(f)
     }

@@ -125,7 +125,7 @@ impl Execute for Command {
             Publish(publish) => {
                 let _resp = publish.execute().await;
                 Ok(())
-            },
+            }
             ExecuteFunction(ef) => {
                 let _resp = ef.execute().await;
                 Ok(())
@@ -191,7 +191,7 @@ pub fn http_client(url: impl AsRef<str>) -> Result<HttpClient> {
 //     response
 // }
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct Start {}
 
 #[async_trait]
@@ -202,10 +202,18 @@ impl Execute for Start {
     }
 }
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct PublishPackage {
     // TODO Refactor fields to build module
+    #[clap(short, long, default_value = ".")]
     pub module_path: String,
+}
+
+impl PublishPackage {
+    // TODO compile module and serialize to bcs bytes
+    pub fn compile_module_and_serailize(&self) -> Vec<u8> {
+        self.module_path.as_bytes().to_vec()
+    }
 }
 
 #[async_trait]
@@ -226,8 +234,9 @@ impl Execute for PublishPackage {
         let mut client = OsServiceClient::connect(url).await?;
 
         // TODO compile the package and build to bcs bytes format
+        let module_bytes = self.compile_module_and_serailize();
         let request = Request::new(PublishPackageRequest {
-            module: self.module_path.clone().into_bytes(),
+            module: module_bytes,
         });
 
         let response = client.publish(request).await?.into_inner();
@@ -237,10 +246,18 @@ impl Execute for PublishPackage {
     }
 }
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct ExecuteFunction {
     // TODO Refactor fields to move call
+    #[clap(short, long)]
     pub move_call: String,
+}
+
+impl ExecuteFunction {
+    // TODO serialize the move call to bcs bytes format
+    fn serialize_function(&self) -> Vec<u8> {
+        self.move_call.clone().into_bytes()
+    }
 }
 
 #[async_trait]
@@ -251,18 +268,15 @@ impl Execute for ExecuteFunction {
 
         // let client = http_client(&url)?;
 
-        // // TODO compile the package and build to bcs bytes format
-        // let response = client
-        //     .request("publish", rpc_params!(self.module_path.as_bytes()))
-        //     .await?;
-
         let url = load_config().await?.server.url(false);
 
         let mut client = OsServiceClient::connect(url).await?;
 
         // TODO move call bcs bytes format
+        let function_bytes = self.serialize_function();
+
         let request = Request::new(ExecutionFunctionRequest {
-            functions: self.move_call.clone().into_bytes(),
+            functions: function_bytes,
         });
 
         let response = client.execute_function(request).await?.into_inner();
