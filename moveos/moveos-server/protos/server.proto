@@ -428,9 +428,28 @@ message HelloResponse {
     google.protobuf.Timestamp timestamp = 2;
 }
 
+message PublishPackageRequest {
+    bytes module = 1;
+}
+
+message PublishPackageResponse {
+    string resp = 1;
+}
+
+message ExecutionFunctionRequest {
+    bytes functions = 1;
+}
+
+message ExecutionFunctionResponse {
+    string resp = 1;
+}
+
+
 service OsService {
 
     rpc echo(HelloRequest) returns (HelloResponse);
+    rpc publish(PublishPackageRequest) returns (PublishPackageResponse);
+    rpc execute_function(ExecutionFunctionRequest) returns (ExecutionFunctionResponse);
 
     // Add other service
 }

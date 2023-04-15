@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    types::transaction::{AbstractTransaction, MoveTransaction, SimpleTransaction},
+    types::transaction::{
+        AbstractTransaction, FunctionTransaction, MoveTransaction, PublishPackageTransaction,
+        SimpleTransaction,
+    },
     vm::{
         move_vm_ext::{MoveVmExt, SessionExt},
         MoveResolverExt,
@@ -57,6 +60,22 @@ impl MoveOS {
         ))
     }
 
+    // TODO how to build publish transaction from bytes
+    // The publish transaction package bytes should include account address, module bytes
+    pub fn build_publish_txn(module_bytes: Vec<u8>) -> Result<PublishPackageTransaction> {
+        let txn = PublishPackageTransaction::new(*ROOCH_FRAMEWORK_ADDRESS, module_bytes);
+
+        Ok(txn)
+    }
+
+    // TODO how to build function transaction from bytes
+    // The entry function transaction package bytes should include account address, module bytes, args etc.
+    pub fn build_function_txn(module_bytes: Vec<u8>) -> Result<FunctionTransaction> {
+        let txn = FunctionTransaction::new(*ROOCH_FRAMEWORK_ADDRESS, module_bytes);
+
+        Ok(txn)
+    }
+
     pub fn execute<T>(&self, txn: T) -> Result<()>
     where
         T: AbstractTransaction,
@@ -68,6 +87,7 @@ impl MoveOS {
         self.execute_transaction(session, senders, tx_hash, move_txn)
     }
 
+    // TODO should be return the execute result
     fn execute_transaction<S>(
         &self,
         mut session: SessionExt<S>,

@@ -19,6 +19,6 @@ pub enum Command {
 pub async fn run_cli(opt: RoochCli) -> Result<()> {
     match opt.cmd {
         Command::Move(move_cli) => moveos_cli::run_cli(move_cli),
-        Command::Server(_) => moveos_server::start_server().await,
+        Command::Server(os) => os.execute().await,
     }
 }
