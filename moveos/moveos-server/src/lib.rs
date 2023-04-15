@@ -13,69 +13,277 @@ pub mod pb;
 
 pub mod proxy;
 
+pub mod response;
+
 pub mod service;
 
+// use jsonrpsee::core::client::ClientT;
+use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
+// use jsonrpsee::rpc_params;
+use jsonrpsee::server::ServerBuilder;
 pub use pb::*;
 
 use anyhow::Result;
-use coerce::actor::new_actor;
+use async_trait::async_trait;
+use clap::Parser;
+use coerce::actor::{system::ActorSystem, IntoActor};
 use config::Config;
 use moveos::moveos::MoveOS;
 use moveos_statedb::StateDB;
+use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, path::Path};
+use tokio::signal::ctrl_c;
+use tokio::signal::unix::{signal, SignalKind};
 use tonic::transport::Server;
+use tonic::Request;
+use tracing::info;
 
+use crate::os_service_client::OsServiceClient;
 use crate::{
-    actor::executor::ServerActor, os_service_client::OsServiceClient,
-    os_service_server::OsServiceServer, proxy::ServerProxy, service::OsSvc, HelloRequest,
+    actor::executor::ServerActor,
+    os_service_server::OsServiceServer,
+    proxy::ServerProxy,
+    service::{OsSvc, RoochServer, RpcServiceServer},
+    HelloRequest,
 };
 
-use clap::Parser;
-use tonic::Request;
+#[async_trait]
+pub trait Execute {
+    type Res;
+    async fn execute(&self) -> Result<Self::Res>;
+}
 
+// Start json-rpc server
+pub async fn start_server() -> Result<()> {
+    tracing_subscriber::fmt::init();
+
+    let config = load_config().await?;
+
+    let addr: SocketAddr = format!("{}:{}", config.server.host, config.server.port).parse()?;
+
+    let actor_system = ActorSystem::global_system();
+    let moveos = MoveOS::new(StateDB::new_with_memory_store())?;
+    let actor = ServerActor::new(moveos)
+        .into_actor(Some("Server"), &actor_system)
+        .await?;
+    let manager = ServerProxy::new(actor.into());
+    let rpc_service = RoochServer::new(manager);
+    let server = ServerBuilder::default().build(&addr).await?;
+
+    let handle = server.start(rpc_service.into_rpc())?;
+
+    info!("starting listening {:?}", addr);
+
+    let mut sig_int = signal(SignalKind::interrupt()).unwrap();
+    let mut sig_term = signal(SignalKind::terminate()).unwrap();
+
+    tokio::select! {
+        _ = sig_int.recv() => info!("receive SIGINT"),
+        _ = sig_term.recv() => info!("receive SIGTERM"),
+        _ = ctrl_c() => info!("receive Ctrl C"),
+    }
+
+    handle.stop().unwrap();
+
+    info!("Shutdown Sever");
+
+    Ok(())
+}
+
+/// For grpc
 #[derive(Debug, Parser)]
 pub struct OsServer {
     #[clap(subcommand)]
     pub command: Command,
 }
 
+impl OsServer {
+    pub async fn execute(&self) -> Result<()> {
+        self.command.execute().await
+    }
+}
+
 #[derive(Debug, Parser)]
 pub enum Command {
     Say(SayOptions),
     Start(Start),
+    Publish(PublishPackage),
+    ExecuteFunction(ExecuteFunction),
 }
 
-#[derive(Debug, Parser)]
+#[async_trait]
+impl Execute for Command {
+    type Res = ();
+    async fn execute(&self) -> Result<()> {
+        use Command::*;
+        match self {
+            Say(say) => {
+                let _resp = say.execute().await;
+                Ok(())
+            }
+            Start(start) => start.execute().await,
+            Publish(publish) => {
+                let _resp = publish.execute().await;
+                Ok(())
+            },
+            ExecuteFunction(ef) => {
+                let _resp = ef.execute().await;
+                Ok(())
+            }
+        }
+    }
+}
+
+#[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct SayOptions {
     #[clap(short, long, default_value = "hello")]
     name: String,
 }
 
+#[async_trait]
+impl Execute for SayOptions {
+    type Res = String;
+
+    // Test server liveness
+    async fn execute(&self) -> Result<Self::Res> {
+        // let url = load_config().await?.server.url(false);
+
+        // let client = http_client(&url)?;
+
+        // let param = rpc_params![self.name.clone()];
+        // println!("{:?}", param);
+
+        // let response: Result<String> = client
+        //     .request("echo", rpc_params![self.name.clone()])
+        //     .await
+        //     .map_err(|e| e.into());
+
+        let url = load_config().await?.server.url(false);
+
+        let mut client = OsServiceClient::connect(url).await?;
+        let request = Request::new(HelloRequest {
+            name: self.name.clone(),
+        });
+
+        let response = client.echo(request).await?.into_inner();
+        println!("{:?}", response);
+
+        Ok(response.message)
+    }
+}
+
+pub fn http_client(url: impl AsRef<str>) -> Result<HttpClient> {
+    let client = HttpClientBuilder::default().build(url)?;
+    Ok(client)
+}
+
+// pub async fn http_request<R, Params>(url: impl AsRef<str>, method: impl AsRef<str>, params: Params) -> Result<R, Error>
+// where
+// 		R: DeserializeOwned,
+// 		Params: ToRpcParams + Send,
+// {
+//     let client = http_client(&url)?;
+
+//     let response: Result<R, Error> = client.request(method.as_ref(), params)
+//         .await;
+//         // .map_err(|e| e.into());
+
+//     response
+// }
+
 #[derive(Debug, Parser)]
 pub struct Start {}
 
-// Test server liveness
-pub async fn say_hello(say: SayOptions) -> Result<()> {
-    let url = load_config().await?.server.url(false);
-
-    let mut client = OsServiceClient::connect(url).await?;
-    let request = Request::new(HelloRequest { name: say.name });
-
-    let response = client.echo(request).await?.into_inner();
-    println!("{:?}", response);
-
-    Ok(())
+#[async_trait]
+impl Execute for Start {
+    type Res = ();
+    async fn execute(&self) -> Result<Self::Res> {
+        start_grpc_server().await
+    }
 }
 
-// Start MoveOS server
-pub async fn start_server() -> Result<()> {
+#[derive(Debug, Parser)]
+pub struct PublishPackage {
+    // TODO Refactor fields to build module
+    pub module_path: String,
+}
+
+#[async_trait]
+impl Execute for PublishPackage {
+    type Res = String;
+    async fn execute(&self) -> Result<Self::Res> {
+        // let url = load_config().await?.server.url(false);
+
+        // let client = http_client(&url)?;
+
+        // // TODO compile the package and build to bcs bytes format
+        // let response = client
+        //     .request("publish", rpc_params!(self.module_path.as_bytes()))
+        //     .await?;
+
+        let url = load_config().await?.server.url(false);
+
+        let mut client = OsServiceClient::connect(url).await?;
+
+        // TODO compile the package and build to bcs bytes format
+        let request = Request::new(PublishPackageRequest {
+            module: self.module_path.clone().into_bytes(),
+        });
+
+        let response = client.publish(request).await?.into_inner();
+        println!("{:?}", response);
+
+        Ok(response.resp)
+    }
+}
+
+#[derive(Debug, Parser)]
+pub struct ExecuteFunction {
+    // TODO Refactor fields to move call
+    pub move_call: String,
+}
+
+#[async_trait]
+impl Execute for ExecuteFunction {
+    type Res = String;
+    async fn execute(&self) -> Result<Self::Res> {
+        // let url = load_config().await?.server.url(false);
+
+        // let client = http_client(&url)?;
+
+        // // TODO compile the package and build to bcs bytes format
+        // let response = client
+        //     .request("publish", rpc_params!(self.module_path.as_bytes()))
+        //     .await?;
+
+        let url = load_config().await?.server.url(false);
+
+        let mut client = OsServiceClient::connect(url).await?;
+
+        // TODO move call bcs bytes format
+        let request = Request::new(ExecutionFunctionRequest {
+            functions: self.move_call.clone().into_bytes(),
+        });
+
+        let response = client.execute_function(request).await?.into_inner();
+        println!("{:?}", response);
+
+        Ok(response.resp)
+    }
+}
+
+// Start grpc server
+pub async fn start_grpc_server() -> Result<()> {
     let config = load_config().await?;
 
     let addr: SocketAddr = format!("{}:{}", config.server.host, config.server.port).parse()?;
 
-    let actor = new_actor(ServerActor::default()).await?;
+    let actor_system = ActorSystem::global_system();
     let moveos = MoveOS::new(StateDB::new_with_memory_store())?;
-    let manager = ServerProxy::new(moveos, actor.into());
+    let actor = ServerActor::new(moveos)
+        .into_actor(Some("Server"), &actor_system)
+        .await?;
+    let manager = ServerProxy::new(actor.into());
     let svc = OsSvc::new(manager);
     let svc = OsServiceServer::new(svc);
 

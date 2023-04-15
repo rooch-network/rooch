@@ -12,6 +12,8 @@ chrono = { workspace = true }
 clap = { workspace = true }
 coerce = { workspace = true }
 derive_builder = { workspace = true }
+futures = { workspace = true }
+jsonrpsee = { workspace = true }
 prost = { workspace = true }
 prost-types = { workspace = true }
 serde = { workspace = true }
@@ -19,6 +21,8 @@ serde_yaml = { workspace = true }
 thiserror = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 tonic = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 
 moveos = { workspace = true }
 moveos-statedb = { workspace = true }
