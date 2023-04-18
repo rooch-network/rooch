@@ -30,11 +30,11 @@ module moveos_std::object {
         Object<T>{id, value}
     }
 
-    public fun borrow<T: store>(this: &Object<T>): &T{
+    public fun borrow_value<T: store>(this: &Object<T>): &T{
         &this.value
     }
 
-    public fun borrow_mut<T: store>(this: &mut Object<T>): &mut T{
+    public fun borrow_value_mut<T: store>(this: &mut Object<T>): &mut T{
         &mut this.value
     }
 
