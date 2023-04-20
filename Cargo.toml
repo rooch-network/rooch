@@ -65,6 +65,7 @@ serde_json = { version = "1.0.81", features = ["preserve_order"] }
 serde_yaml = "0.9"
 serde_repr = "0.1"
 serde-name = "0.2"
+sha3 = "0.9.1"
 smallvec = "1.6.1"
 thiserror = "1.0.34"
 tokio = { version = "1", features = ["full"] }

@@ -1,7 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::addresses::{MOVEOS_STD_ADDRESS, MOVE_STD_ADDRESS};
+use crate::{
+    addresses::{MOVEOS_STD_ADDRESS, MOVE_STD_ADDRESS},
+    natives::moveos_stdlib::any_table,
+};
 use move_core_types::gas_algebra::InternalGas;
 use move_vm_runtime::native_functions::{make_table_from_iter, NativeFunctionTable};
 
@@ -60,8 +63,10 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
         move_stdlib::natives::nursery_natives(*MOVE_STD_ADDRESS, gas_params.move_nursery);
     native_fun_table.extend(nursery_fun_table);
 
-    let table_fun_table =
-        move_table_extension::table_natives(*MOVEOS_STD_ADDRESS, gas_params.table_extension);
+    let table_fun_table = move_table_extension::table_natives(
+        *MOVEOS_STD_ADDRESS,
+        gas_params.table_extension.clone(),
+    );
     native_fun_table.extend(table_fun_table);
 
     let mut natives = vec![];
@@ -93,8 +98,12 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
         rooch_framework::account::make_all(gas_params.account)
     );
 
-    let moveos_table = make_table_from_iter(*MOVEOS_STD_ADDRESS, natives);
-    native_fun_table.extend(moveos_table);
+    let moveos_native_fun_table = make_table_from_iter(*MOVEOS_STD_ADDRESS, natives);
+    native_fun_table.extend(moveos_native_fun_table);
+
+    let any_table_fun_table =
+        any_table::table_natives(*MOVEOS_STD_ADDRESS, gas_params.table_extension);
+    native_fun_table.extend(any_table_fun_table);
 
     native_fun_table
 }
