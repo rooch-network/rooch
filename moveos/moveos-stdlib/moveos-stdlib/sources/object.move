@@ -3,60 +3,87 @@
 /// Move object identifiers
 module moveos_std::object {
     use moveos_std::tx_context::{Self, TxContext};
-
-
-    //TODO we need this?
-    // marks newly created UIDs from hash
-    //native fun record_new_uid(id: address);
-
-    // === transfer functions ===
-    //https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/sources/transfer.move#L92
-
+    use moveos_std::any_table::{Self};
+    
+    /// Invalid access of object, the object is not owned by the signer or the object is not shared or immutable
+    const EInvalidAccess: u64 = 0;
    
-    /// Transfer ownership of `obj` to `recipient`.
-    public fun transfer<T: store>(obj: Object<T>, recipient: address) {
-        // TODO: emit event
-        transfer_internal(obj, recipient)
+    struct ObjectID has store, copy, drop {
+        //TODO should use u256 to replace address?
+        id: address,
     }
 
     /// Box style object
-    struct Object<T: store> {
-        id: address,
+    /// The object can not be copied, droped, only can be consumed by `add`
+    struct Object<T> {
+        id: ObjectID,
         value: T,
+        owner: address,
+        //TODO define shared and immutable
+        //shared: bool,
+        //immutable: bool,
     }
 
-    public fun new<T: store>(ctx: &mut TxContext, value: T): Object<T>{
-        let id = tx_context::new_object(ctx);
-        Object<T>{id, value}
+    #[private_generic(T)]
+    /// Create a new object, the object is owned by `owner`
+    /// The private generic is indicate the T should be defined in the same module as the caller. This is ensured by the verifier.
+    public fun new<T: key>(ctx: &mut TxContext, owner: address, value: T): Object<T>{
+        let id = tx_context::derive_id(ctx);
+        Object<T>{id: ObjectID{id}, value, owner}
     }
 
-    public fun borrow_value<T: store>(this: &Object<T>): &T{
+    //TODO should this require private generic?
+    public fun borrow_value<T>(this: &Object<T>): &T{
         &this.value
     }
 
-    public fun borrow_value_mut<T: store>(this: &mut Object<T>): &mut T{
+    /// Borrow the object mutable value
+    public fun borrow_value_mut<T>(this: &mut Object<T>): &mut T{
         &mut this.value
     }
 
-    public fun remove_object<T: store>(obj: Object<T>): T{
-        let Object{id, value} = obj;
-        delete_impl(id);
-        value
+    /// ==== Object Store ====
+
+    struct ObjectStore has drop{
+        table: any_table::Table<ObjectID>,
     }
 
-    /// ==== Native functions ===
+    public fun load_object_store(ctx: &TxContext): ObjectStore {
+        let table = any_table::load(tx_context::get_object_store_handle(ctx));
+        ObjectStore{table}
+    }
 
-    /// Freeze `obj`. After freezing `obj` becomes immutable and can no
-    /// longer be transferred or mutated.
-    //public fun freeze_object<T: store>(obj: Object<T>);
+    #[private_generic(T)]
+    public fun borrow<T: key>(this: &ObjectStore, object_id: ObjectID): &Object<T>{
+        any_table::borrow(&this.table, object_id)
+    }
 
-    /// Turn the given object into a mutable shared object that everyone
-    /// can access and mutate. This is irreversible, i.e. once an object
-    /// is shared, it will stay shared forever.
-    //public native fun share_object<T: store>(obj: Object<T>);
+    #[private_generic(T)]
+    public fun borrow_mut<T: key>(this: &mut ObjectStore, object_id: ObjectID): &mut Object<T>{
+        any_table::borrow_mut(&mut this.table, object_id)
+    }
+    
+    #[private_generic(T)]
+    /// Remove object from object store, only the owner can move the object
+    public fun remove<T: key>(this: &mut ObjectStore, object_id: ObjectID): Object<T>{
+        any_table::remove(&mut this.table, object_id)
+    }
 
-    native fun transfer_internal<T: store>(obj: Object<T>, recipient: address);
+    #[private_generic(T)]
+    public fun unpack<T>(obj: Object<T>): (ObjectID, T, address) {
+        let Object{id, value, owner} = obj;
+        (id, value, owner)
+    }
 
-    // helper for delete
-    native fun delete_impl(id: address);
+    
+    #[private_generic(T)]
+    /// Add object to object store
+    public fun add<T: key>(this: &mut ObjectStore, obj: Object<T>) {
+        any_table::add(&mut this.table, obj.id, obj);
+    }
+
+    public fun contains(this: &mut ObjectStore, object_id: ObjectID): bool{
+        any_table::contains(&this.table, object_id)
+    }
+ 
 }

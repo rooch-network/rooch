@@ -1,35 +1,45 @@
 /// Type of tables store any type of value.
+/// This type table if for design internal global storage, so all functions are friend.
 
 module moveos_std::any_table {
+    use moveos_std::tx_context::{Self, TxContext};
+    friend moveos_std::object;
 
     /// Type of tables
-    struct Table<phantom K: copy + drop> has store {
+    /// Note: This table has drop, so developer should make sure do not lost the table handle.
+    struct Table<phantom K: copy + drop> has store, drop {
         handle: address,
     }
 
     /// Create a new Table.
-    public fun new<K: copy + drop>(): Table<K> {
+    public(friend) fun new<K: copy + drop>(ctx: &mut TxContext): Table<K> {
         Table {
-            handle: new_table_handle<K>(),
+            handle: new_table_handle<K>(ctx),
+        }
+    }
+
+    public(friend) fun load<K: copy + drop>(handle: address): Table<K> {
+        Table {
+            handle,
         }
     }
 
     /// Add a new entry to the table. Aborts if an entry for this
     /// key already exists. The entry itself is not stored in the
     /// table, and cannot be discovered from it.
-    public fun add<K: copy + drop, V>(table: &mut Table<K>, key: K, val: V) {
+    public(friend) fun add<K: copy + drop, V>(table: &mut Table<K>, key: K, val: V) {
         add_box<K, V, Box<V>>(table, key, Box { val })
     }
 
     /// Acquire an immutable reference to the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
-    public fun borrow<K: copy + drop, V>(table: &Table<K>, key: K): &V {
+    public(friend) fun borrow<K: copy + drop, V>(table: &Table<K>, key: K): &V {
         &borrow_box<K, V, Box<V>>(table, key).val
     }
 
     /// Acquire an immutable reference to the value which `key` maps to.
     /// Returns specified default value if there is no entry for `key`.
-    public fun borrow_with_default<K: copy + drop, V>(table: &Table<K>, key: K, default: &V): &V {
+    public(friend) fun borrow_with_default<K: copy + drop, V>(table: &Table<K>, key: K, default: &V): &V {
         if (!contains(table, copy key)) {
             default
         } else {
@@ -39,13 +49,13 @@ module moveos_std::any_table {
 
     /// Acquire a mutable reference to the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
-    public fun borrow_mut<K: copy + drop, V>(table: &mut Table<K>, key: K): &mut V {
+    public(friend) fun borrow_mut<K: copy + drop, V>(table: &mut Table<K>, key: K): &mut V {
         &mut borrow_box_mut<K, V, Box<V>>(table, key).val
     }
 
     /// Acquire a mutable reference to the value which `key` maps to.
     /// Insert the pair (`key`, `default`) first if there is no entry for `key`.
-    public fun borrow_mut_with_default<K: copy + drop, V: drop>(table: &mut Table<K>, key: K, default: V): &mut V {
+    public(friend) fun borrow_mut_with_default<K: copy + drop, V: drop>(table: &mut Table<K>, key: K, default: V): &mut V {
         if (!contains(table, copy key)) {
             add(table, copy key, default)
         };
@@ -54,7 +64,7 @@ module moveos_std::any_table {
 
     /// Insert the pair (`key`, `value`) if there is no entry for `key`.
     /// update the value of the entry for `key` to `value` otherwise
-    public fun upsert<K: copy + drop, V: drop>(table: &mut Table<K>, key: K, value: V) {
+    public(friend) fun upsert<K: copy + drop, V: drop>(table: &mut Table<K>, key: K, value: V) {
         if (!contains(table, copy key)) {
             add(table, copy key, value)
         } else {
@@ -65,19 +75,19 @@ module moveos_std::any_table {
 
     /// Remove from `table` and return the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
-    public fun remove<K: copy + drop, V>(table: &mut Table<K>, key: K): V {
+    public(friend) fun remove<K: copy + drop, V>(table: &mut Table<K>, key: K): V {
         let Box { val } = remove_box<K, V, Box<V>>(table, key);
         val
     }
 
     /// Returns true iff `table` contains an entry for `key`.
-    public fun contains<K: copy + drop>(table: &Table<K>, key: K): bool {
+    public(friend) fun contains<K: copy + drop>(table: &Table<K>, key: K): bool {
         contains_box<K>(table, key)
     }
 
     #[test_only]
     /// Testing only: allows to drop a table even if it is not empty.
-    public fun drop_unchecked<K: copy + drop>(table: Table<K>) {
+    public(friend) fun drop_unchecked<K: copy + drop>(table: Table<K>) {
         drop_unchecked_box<K>(table)
     }
 
@@ -130,7 +140,10 @@ module moveos_std::any_table {
 
     // Primitives which take as an additional type parameter `Box<V>`, so the implementation
     // can use this to determine serialization layout.
-    native fun new_table_handle<K>(): address;
+    fun new_table_handle<K: copy + drop>(ctx: &mut TxContext): address {
+        tx_context::derive_id(ctx)
+    }
+    //native fun new_table_handle<K>(): address;
 
     native fun add_box<K: copy + drop, V, B>(table: &mut Table<K>, key: K, val: Box<V>);
 

@@ -4,33 +4,42 @@
 
 module test::m {
     use moveos_std::tx_context::{Self, TxContext};
-    use moveos_std::object::{Self,Object};
+    use moveos_std::object::{Self, ObjectID};
     use std::debug;
 
     struct S has store, key { v: u8 }
     struct Cup<phantom T: store> has store, key { v: u8 }
 
     public entry fun mint_s(ctx: &mut TxContext) {
-        let obj = object::new(ctx, S { v: 1});
+        let sender = tx_context::sender(ctx);
+        let obj = object::new(ctx, sender , S { v: 1});
         debug::print(&obj);
-        object::transfer(obj, tx_context::sender(ctx))
+        let object_store = object::load_object_store(ctx);
+        object::add(&mut object_store, obj);
     }
 
-    public entry fun move_s_to_global(sender: signer, obj: Object<S>) {
-        let s = object::remove_object(obj);
-        debug::print(&s);
-        move_to(&sender, s);
+    public entry fun move_s_to_global(ctx: &mut TxContext, sender: signer, object_id: ObjectID) {
+        let object_store = object::load_object_store(ctx);
+        let obj = object::remove<S>(&mut object_store, object_id);
+        debug::print(&obj);
+        let (_id,value,_owner) = object::unpack(obj);
+        move_to(&sender, value);
     }
 
     public entry fun mint_cup<T: store>(ctx: &mut TxContext) {
-        let obj = object::new(ctx, Cup<T> { v: 2 });
+        let sender = tx_context::sender(ctx);
+        let obj = object::new(ctx, sender, Cup<T> { v: 2 });
         debug::print(&obj);
-        object::transfer(obj, tx_context::sender(ctx))
+        let object_store = object::load_object_store(ctx);
+        object::add(&mut object_store, obj);
     }
 
-    public entry fun move_cup_to_global<T:store>(sender: signer, obj: Object<Cup<T>>) {
-        let cup = object::remove_object(obj);
-        move_to(&sender, cup);
+    public entry fun move_cup_to_global<T:store>(ctx: &mut TxContext, sender: signer, object_id: ObjectID) {
+        let object_store = object::load_object_store(ctx);
+        let obj = object::remove<Cup<T>>(&mut object_store, object_id);
+        debug::print(&obj);
+        let (_id,value,_owner) = object::unpack(obj);
+        move_to(&sender, value);
     }
 }
 
