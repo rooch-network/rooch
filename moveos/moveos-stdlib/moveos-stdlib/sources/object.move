@@ -4,6 +4,8 @@
 module moveos_std::object {
     use moveos_std::tx_context::{Self, TxContext};
     use moveos_std::any_table::{Self};
+
+    friend moveos_std::account_storage;
     
     /// Invalid access of object, the object is not owned by the signer or the object is not shared or immutable
     const EInvalidAccess: u64 = 0;
@@ -11,6 +13,10 @@ module moveos_std::object {
     struct ObjectID has store, copy, drop {
         //TODO should use u256 to replace address?
         id: address,
+    }
+
+    public(friend) fun address_to_object_id(address: address): ObjectID {
+        ObjectID{id: address}
     }
 
     /// Box style object
@@ -32,6 +38,10 @@ module moveos_std::object {
         Object<T>{id: ObjectID{id}, value, owner}
     }
 
+    public(friend) fun new_with_id<T: key>(id: ObjectID, owner: address, value: T): Object<T>{
+        Object<T>{id, value, owner}
+    }
+
     //TODO should this require private generic?
     public fun borrow_value<T>(this: &Object<T>): &T{
         &this.value
@@ -44,13 +54,8 @@ module moveos_std::object {
 
     /// ==== Object Store ====
 
-    struct ObjectStore has drop{
+    struct ObjectStore has store {
         table: any_table::Table<ObjectID>,
-    }
-
-    public fun load_object_store(ctx: &TxContext): ObjectStore {
-        let table = any_table::load(tx_context::get_object_store_handle(ctx));
-        ObjectStore{table}
     }
 
     #[private_generic(T)]

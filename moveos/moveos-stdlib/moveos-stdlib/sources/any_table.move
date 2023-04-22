@@ -4,6 +4,7 @@
 module moveos_std::any_table {
     use moveos_std::tx_context::{Self, TxContext};
     friend moveos_std::object;
+    friend moveos_std::account_storage;
 
     /// Type of tables
     /// Note: This table has drop, so developer should make sure do not lost the table handle.

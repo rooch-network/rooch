@@ -28,9 +28,6 @@ module moveos_std::tx_context {
         /// Counter recording the number of fresh id's created while executing
         /// this transaction. Always 0 at the start of a transaction
         ids_created: u64,
-        /// The Object Store table handle
-        /// We can not put the ObjectStore at here, because object module depends on tx_context module
-        object_store_handle: address,
     }
 
     /// Return the address of the user that signed the current
@@ -49,15 +46,6 @@ module moveos_std::tx_context {
         ctx.ids_created = ids_created + 1;
         bcd::to_address(id)
     }
-
-    public(friend) fun get_object_store_handle(ctx: &TxContext): address {
-        *&ctx.object_store_handle
-    }
-    
-    //TODO should support make signer with TxContext?
-    // pub fun sender_signer(self: &TxContext): &signer {
-    //     
-    //}
 
     /// Return the hash of the current transaction
     public fun tx_hash(self: &TxContext): vector<u8> {
