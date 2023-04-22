@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use commands::new::New;
+use commands::{new::New, publish::Publish, run_function::RunFunction};
 use move_cli::{
     base::{
         build::Build, coverage::Coverage, disassemble::Disassemble, docgen::Docgen, errmap::Errmap,
@@ -34,11 +34,13 @@ pub enum MoveCommand {
     New(New),
     Prove(Prove),
     Test(Test),
+    Publish(Publish),
+    Run(RunFunction),
     //TODO implement run command
     //TODO implement integration test command
 }
 
-pub fn run_cli(move_cli: MoveCli) -> Result<()> {
+pub async fn run_cli(move_cli: MoveCli) -> Result<()> {
     let move_args = move_cli.move_args;
     let cmd = move_cli.cmd;
     //let error_descriptions: ErrorMapping = bcs::from_bytes(moveos_stdlib::error_descriptions())?;
@@ -61,5 +63,10 @@ pub fn run_cli(move_cli: MoveCli) -> Result<()> {
             natives,
             Some(cost_table),
         ),
+        MoveCommand::Publish(c) => {
+            c.execute(move_args.package_path, move_args.build_config)
+                .await
+        }
+        MoveCommand::Run(c) => c.execute().await,
     }
 }

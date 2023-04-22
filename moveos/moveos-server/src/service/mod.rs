@@ -1,15 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-// Copyright (c) RoochNetwork
-// SPDX-License-Identifier: Apache-2.0
-
 use tonic::{Request, Response as GrpcResponse, Status};
 
 use crate::{
-    helper::convert_to_timestamp, os_service_server::OsService, proxy::ServerProxy,
-    ExecutionFunctionRequest, ExecutionFunctionResponse, HelloRequest, HelloResponse,
-    PublishPackageRequest, PublishPackageResponse,
+    helper::convert_to_timestamp, os_service_server::OsService, proxy::ServerProxy, HelloRequest,
+    HelloResponse, SubmitTransactionRequest, SubmitTransactionResponse,
 };
 
 use jsonrpsee::core::{async_trait, RpcResult};
@@ -22,12 +18,6 @@ use crate::response::JsonResponse;
 trait RpcService {
     #[method(name = "echo")]
     async fn echo(&self, msg: String) -> RpcResult<JsonResponse<String>>;
-
-    #[method(name = "publish")]
-    async fn publish(&self, module_bytes: Vec<u8>) -> RpcResult<JsonResponse<String>>;
-
-    #[method(name = "execute_function")]
-    async fn execute_function(&self, function_bytes: Vec<u8>) -> RpcResult<JsonResponse<String>>;
 }
 
 pub struct RoochServer {
@@ -44,16 +34,6 @@ impl RoochServer {
 impl RpcServiceServer for RoochServer {
     async fn echo(&self, msg: String) -> RpcResult<JsonResponse<String>> {
         let resp = self.manager.echo(msg).await?;
-        Ok(JsonResponse::ok(resp))
-    }
-
-    async fn publish(&self, module_bytes: Vec<u8>) -> RpcResult<JsonResponse<String>> {
-        let resp = self.manager.publish(module_bytes).await?;
-        Ok(JsonResponse::ok(resp))
-    }
-
-    async fn execute_function(&self, function_bytes: Vec<u8>) -> RpcResult<JsonResponse<String>> {
-        let resp = self.manager.execute_function(function_bytes).await?;
         Ok(JsonResponse::ok(resp))
     }
 }
@@ -87,28 +67,15 @@ impl OsService for OsSvc {
         Ok(GrpcResponse::new(response))
     }
 
-    async fn publish(
+    async fn submit_txn(
         &self,
-        request: Request<PublishPackageRequest>,
-    ) -> Result<GrpcResponse<PublishPackageResponse>, Status> {
+        request: Request<SubmitTransactionRequest>,
+    ) -> Result<GrpcResponse<SubmitTransactionResponse>, Status> {
         let request = request.into_inner();
 
-        let resp = self.manager.publish(request.module).await?;
+        let resp = self.manager.submit_txn(request.txn_payload).await?;
 
-        let response = PublishPackageResponse { resp };
-
-        Ok(GrpcResponse::new(response))
-    }
-
-    async fn execute_function(
-        &self,
-        request: Request<ExecutionFunctionRequest>,
-    ) -> Result<GrpcResponse<ExecutionFunctionResponse>, Status> {
-        let request = request.into_inner();
-
-        let resp = self.manager.execute_function(request.functions).await?;
-
-        let response = ExecutionFunctionResponse { resp };
+        let response = SubmitTransactionResponse { resp };
 
         Ok(GrpcResponse::new(response))
     }
