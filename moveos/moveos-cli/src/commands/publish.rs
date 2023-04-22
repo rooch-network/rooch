@@ -5,7 +5,6 @@ use anyhow::ensure;
 use clap::Parser;
 use move_binary_format::CompiledModule;
 use move_bytecode_utils::dependency_graph::DependencyGraph;
-use move_cli::base::reroot_path;
 use move_package::BuildConfig;
 use moveos::types::transaction::{MoveTransaction, SimpleTransaction};
 use moveos_client::Client;
@@ -24,8 +23,11 @@ impl Publish {
         package_path: Option<PathBuf>,
         config: BuildConfig,
     ) -> anyhow::Result<()> {
-        let rerooted_path = reroot_path(package_path)?;
-        let package = config.compile_package_no_exit(&rerooted_path, &mut stderr())?;
+        let package_path = match package_path {
+            Some(package_path) => package_path,
+            None => std::env::current_dir()?,
+        };
+        let package = config.compile_package_no_exit(&package_path, &mut stderr())?;
         let modules = package.root_modules_map().iter_modules_owned();
 
         let pkg_address = modules[0].self_id().address().to_owned();

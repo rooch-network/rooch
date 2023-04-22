@@ -37,6 +37,7 @@ impl Handler<SubmitTransactionMessage> for ServerActor {
     async fn handle(&mut self, msg: SubmitTransactionMessage, ctx: &mut ActorContext) -> String {
         // deserialize the payload
         let payload = bcs::from_bytes::<SimpleTransaction>(&msg.payload).unwrap();
+        println!("sender: {:?}", payload.sender);
         let exec_result = self.moveos.execute(payload);
         // TODO: handle moveos execute result
         "ok".to_string()

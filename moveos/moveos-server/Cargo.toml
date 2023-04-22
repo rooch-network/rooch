@@ -27,6 +27,7 @@ tracing-subscriber = { workspace = true }
 
 moveos = { workspace = true }
 moveos-statedb = { workspace = true }
+moveos-common = { workspace = true }
 
 [build-dependencies]
 prost-build = { workspace = true }

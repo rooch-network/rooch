@@ -2,19 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod actor;
-
-pub mod config;
-
-pub mod error;
-
 pub mod helper;
-
 pub mod pb;
-
 pub mod proxy;
-
 pub mod response;
-
 pub mod service;
 
 // use jsonrpsee::core::client::ClientT;
@@ -22,21 +13,6 @@ use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 // use jsonrpsee::rpc_params;
 use jsonrpsee::server::ServerBuilder;
 pub use pb::*;
-
-use anyhow::Result;
-use async_trait::async_trait;
-use clap::Parser;
-use coerce::actor::{system::ActorSystem, IntoActor};
-use config::Config;
-use moveos::moveos::MoveOS;
-use moveos_statedb::StateDB;
-use serde::{Deserialize, Serialize};
-use std::{net::SocketAddr, path::Path};
-use tokio::signal::ctrl_c;
-use tokio::signal::unix::{signal, SignalKind};
-use tonic::transport::Server;
-use tonic::Request;
-use tracing::info;
 
 use crate::os_service_client::OsServiceClient;
 use crate::{
@@ -46,6 +22,20 @@ use crate::{
     service::{OsSvc, RoochServer, RpcServiceServer},
     HelloRequest,
 };
+use anyhow::Result;
+use async_trait::async_trait;
+use clap::Parser;
+use coerce::actor::{system::ActorSystem, IntoActor};
+use moveos::moveos::MoveOS;
+use moveos_common::config::load_config;
+use moveos_statedb::StateDB;
+use serde::{Deserialize, Serialize};
+use std::net::SocketAddr;
+use tokio::signal::ctrl_c;
+use tokio::signal::unix::{signal, SignalKind};
+use tonic::transport::Server;
+use tonic::Request;
+use tracing::info;
 
 #[async_trait]
 pub trait Execute {
@@ -57,7 +47,7 @@ pub trait Execute {
 pub async fn start_server() -> Result<()> {
     tracing_subscriber::fmt::init();
 
-    let config = load_config().await?;
+    let config = load_config()?;
 
     let addr: SocketAddr = format!("{}:{}", config.server.host, config.server.port).parse()?;
 
@@ -136,19 +126,7 @@ impl Execute for SayOptions {
 
     // Test server liveness
     async fn execute(&self) -> Result<Self::Res> {
-        // let url = load_config().await?.server.url(false);
-
-        // let client = http_client(&url)?;
-
-        // let param = rpc_params![self.name.clone()];
-        // println!("{:?}", param);
-
-        // let response: Result<String> = client
-        //     .request("echo", rpc_params![self.name.clone()])
-        //     .await
-        //     .map_err(|e| e.into());
-
-        let url = load_config().await?.server.url(false);
+        let url = load_config()?.server.url(false);
         println!("url: {:?}", url);
 
         let mut client = OsServiceClient::connect(url).await?;
@@ -209,7 +187,7 @@ impl PublishPackage {
 
 // Start grpc server
 pub async fn start_grpc_server() -> Result<()> {
-    let config = load_config().await?;
+    let config = load_config()?;
 
     let addr: SocketAddr = format!("{}:{}", config.server.host, config.server.port).parse()?;
 
@@ -226,11 +204,4 @@ pub async fn start_grpc_server() -> Result<()> {
     Server::builder().add_service(svc).serve(addr).await?;
 
     Ok(())
-}
-
-// Load config file from env or default path or default value
-async fn load_config() -> Result<Config> {
-    let filename = std::env::var("ROOCH_CONFIG")
-        .unwrap_or_else(|_| Path::new("./rooch.yml").to_str().unwrap().to_string());
-    Config::load(filename).map_err(|e| e.into())
 }

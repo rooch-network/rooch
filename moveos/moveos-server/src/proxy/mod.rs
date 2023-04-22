@@ -3,14 +3,11 @@
 
 use coerce::actor::ActorRef;
 
-use crate::{
-    actor::{
-        executor::ServerActor,
-        messages::{HelloMessage, SubmitTransactionMessage},
-    },
-    error::Error,
+use crate::actor::{
+    executor::ServerActor,
+    messages::{HelloMessage, SubmitTransactionMessage},
 };
-
+use moveos_common::error::Error;
 pub struct ServerProxy {
     pub actor: ActorRef<ServerActor>,
 }
