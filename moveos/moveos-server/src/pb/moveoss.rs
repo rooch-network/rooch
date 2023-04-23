@@ -865,25 +865,13 @@ pub struct HelloResponse {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PublishPackageRequest {
+pub struct SubmitTransactionRequest {
     #[prost(bytes = "vec", tag = "1")]
-    pub module: ::prost::alloc::vec::Vec<u8>,
+    pub txn_payload: ::prost::alloc::vec::Vec<u8>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PublishPackageResponse {
-    #[prost(string, tag = "1")]
-    pub resp: ::prost::alloc::string::String,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ExecutionFunctionRequest {
-    #[prost(bytes = "vec", tag = "1")]
-    pub functions: ::prost::alloc::vec::Vec<u8>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ExecutionFunctionResponse {
+pub struct SubmitTransactionResponse {
     #[prost(string, tag = "1")]
     pub resp: ::prost::alloc::string::String,
 }
@@ -1074,10 +1062,10 @@ pub mod os_service_client {
             let path = http::uri::PathAndQuery::from_static("/moveoss.OsService/echo");
             self.inner.unary(request.into_request(), path, codec).await
         }
-        pub async fn publish(
+        pub async fn submit_txn(
             &mut self,
-            request: impl tonic::IntoRequest<super::PublishPackageRequest>,
-        ) -> Result<tonic::Response<super::PublishPackageResponse>, tonic::Status> {
+            request: impl tonic::IntoRequest<super::SubmitTransactionRequest>,
+        ) -> Result<tonic::Response<super::SubmitTransactionResponse>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -1085,21 +1073,7 @@ pub mod os_service_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/moveoss.OsService/publish");
-            self.inner.unary(request.into_request(), path, codec).await
-        }
-        pub async fn execute_function(
-            &mut self,
-            request: impl tonic::IntoRequest<super::ExecutionFunctionRequest>,
-        ) -> Result<tonic::Response<super::ExecutionFunctionResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/moveoss.OsService/execute_function");
+            let path = http::uri::PathAndQuery::from_static("/moveoss.OsService/submit_txn");
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
@@ -1115,14 +1089,10 @@ pub mod os_service_server {
             &self,
             request: tonic::Request<super::HelloRequest>,
         ) -> Result<tonic::Response<super::HelloResponse>, tonic::Status>;
-        async fn publish(
+        async fn submit_txn(
             &self,
-            request: tonic::Request<super::PublishPackageRequest>,
-        ) -> Result<tonic::Response<super::PublishPackageResponse>, tonic::Status>;
-        async fn execute_function(
-            &self,
-            request: tonic::Request<super::ExecutionFunctionRequest>,
-        ) -> Result<tonic::Response<super::ExecutionFunctionResponse>, tonic::Status>;
+            request: tonic::Request<super::SubmitTransactionRequest>,
+        ) -> Result<tonic::Response<super::SubmitTransactionResponse>, tonic::Status>;
     }
     #[derive(Debug)]
     pub struct OsServiceServer<T: OsService> {
@@ -1208,51 +1178,20 @@ pub mod os_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/moveoss.OsService/publish" => {
+                "/moveoss.OsService/submit_txn" => {
                     #[allow(non_camel_case_types)]
-                    struct publishSvc<T: OsService>(pub Arc<T>);
-                    impl<T: OsService> tonic::server::UnaryService<super::PublishPackageRequest> for publishSvc<T> {
-                        type Response = super::PublishPackageResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::PublishPackageRequest>,
-                        ) -> Self::Future {
-                            let inner = self.0.clone();
-                            let fut = async move { (*inner).publish(request).await };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = publishSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
-                            accept_compression_encodings,
-                            send_compression_encodings,
-                        );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/moveoss.OsService/execute_function" => {
-                    #[allow(non_camel_case_types)]
-                    struct execute_functionSvc<T: OsService>(pub Arc<T>);
-                    impl<T: OsService> tonic::server::UnaryService<super::ExecutionFunctionRequest>
-                        for execute_functionSvc<T>
+                    struct submit_txnSvc<T: OsService>(pub Arc<T>);
+                    impl<T: OsService> tonic::server::UnaryService<super::SubmitTransactionRequest>
+                        for submit_txnSvc<T>
                     {
-                        type Response = super::ExecutionFunctionResponse;
+                        type Response = super::SubmitTransactionResponse;
                         type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::ExecutionFunctionRequest>,
+                            request: tonic::Request<super::SubmitTransactionRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move { (*inner).execute_function(request).await };
+                            let fut = async move { (*inner).submit_txn(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -1261,7 +1200,7 @@ pub mod os_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = execute_functionSvc(inner);
+                        let method = submit_txnSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
                             accept_compression_encodings,

@@ -8,8 +8,8 @@
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 
-use super::messages::{ExecutionFunctionMessage, HelloMessage, PublishPackageMessage};
-use moveos::moveos::MoveOS;
+use super::messages::{HelloMessage, SubmitTransactionMessage};
+use moveos::{moveos::MoveOS, types::transaction::SimpleTransaction};
 
 pub struct ServerActor {
     moveos: MoveOS,
@@ -33,32 +33,13 @@ impl Handler<HelloMessage> for ServerActor {
 }
 
 #[async_trait]
-impl Handler<PublishPackageMessage> for ServerActor {
-    async fn handle(&mut self, msg: PublishPackageMessage, ctx: &mut ActorContext) -> String {
-        // TODO deserialize module from bytes
-        println!("actor(#{:?} received msg: {:?}", ctx.id(), msg);
-
-        let txn = MoveOS::build_publish_txn(msg.module).unwrap();
-
-        // TODO execute should return execute result, not unit
-        let _resp = self.moveos.execute(txn);
-
-        // TODO shoud format the response to json format
-        "success".to_string()
-    }
-}
-
-#[async_trait]
-impl Handler<ExecutionFunctionMessage> for ServerActor {
-    async fn handle(&mut self, msg: ExecutionFunctionMessage, ctx: &mut ActorContext) -> String {
-        // TODO shoule use tracing
-        println!("actor(#{:?} received msg: {:?}", ctx.id(), msg);
-        let txn = MoveOS::build_function_txn(msg.module).unwrap();
-
-        // TODO execute should return execute result, not unit
-        let _resp = self.moveos.execute(txn);
-
-        // TODO shoud format the response to json format
-        "success".to_string()
+impl Handler<SubmitTransactionMessage> for ServerActor {
+    async fn handle(&mut self, msg: SubmitTransactionMessage, ctx: &mut ActorContext) -> String {
+        // deserialize the payload
+        let payload = bcs::from_bytes::<SimpleTransaction>(&msg.payload).unwrap();
+        println!("sender: {:?}", payload.sender);
+        let exec_result = self.moveos.execute(payload);
+        // TODO: handle moveos execute result
+        "ok".to_string()
     }
 }

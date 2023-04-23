@@ -14,19 +14,10 @@ impl Message for HelloMessage {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct PublishPackageMessage {
-    pub module: Vec<u8>,
+pub struct SubmitTransactionMessage {
+    pub payload: Vec<u8>,
 }
 
-impl Message for PublishPackageMessage {
-    type Result = String;
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ExecutionFunctionMessage {
-    pub module: Vec<u8>,
-}
-
-impl Message for ExecutionFunctionMessage {
+impl Message for SubmitTransactionMessage {
     type Result = String;
 }

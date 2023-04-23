@@ -1,6 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use anyhow::Result;
+
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use std::{fs, path::Path};
 
 use serde::{Deserialize, Serialize};
@@ -40,6 +45,13 @@ impl Default for ServerConfig {
             port: 50051,
         }
     }
+}
+
+// Load config file from env or default path or default value
+pub fn load_config() -> Result<Config> {
+    let filename = std::env::var("ROOCH_CONFIG")
+        .unwrap_or_else(|_| Path::new("./rooch.yml").to_str().unwrap().to_string());
+    Config::load(filename).map_err(|e| e.into())
 }
 
 #[cfg(test)]

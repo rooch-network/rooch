@@ -8,6 +8,8 @@ members = [
     "moveos/moveos",
     "moveos/moveos-cli",
     "moveos/moveos-server",
+    "moveos/moveos-client",
+    "moveos/moveos-common",
     "crates/rooch-integration-test-runner",
     "crates/rooch",
 ]
@@ -39,6 +41,8 @@ moveos-stdlib = { path = "moveos/moveos-stdlib" }
 moveos = { path = "moveos/moveos" }
 moveos-cli = { path = "moveos/moveos-cli" }
 moveos-server = { path = "moveos/moveos-server" }
+moveos-client = { path = "moveos/moveos-client" }
+moveos-common = { path = "moveos/moveos-common" }
 
 # crates for Rooch
 rooch-integration-test-runner = { path = "crates/rooch-integration-test-runner" }

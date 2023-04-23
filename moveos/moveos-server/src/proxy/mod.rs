@@ -3,14 +3,11 @@
 
 use coerce::actor::ActorRef;
 
-use crate::{
-    actor::{
-        executor::ServerActor,
-        messages::{ExecutionFunctionMessage, HelloMessage, PublishPackageMessage},
-    },
-    error::Error,
+use crate::actor::{
+    executor::ServerActor,
+    messages::{HelloMessage, SubmitTransactionMessage},
 };
-
+use moveos_common::error::Error;
 pub struct ServerProxy {
     pub actor: ActorRef<ServerActor>,
 }
@@ -27,19 +24,11 @@ impl ServerProxy {
             .map_err(|e| e.into())
     }
 
-    pub async fn publish(&self, module: Vec<u8>) -> Result<String, Error> {
+    pub async fn submit_txn(&self, payload: Vec<u8>) -> Result<String, Error> {
         self.actor
-            .send(PublishPackageMessage { module })
+            .send(SubmitTransactionMessage { payload })
             .await
             .map_err(|e| e.into())
     }
-
-    pub async fn execute_function(&self, module: Vec<u8>) -> Result<String, Error> {
-        self.actor
-            .send(ExecutionFunctionMessage { module })
-            .await
-            .map_err(|e| e.into())
-    }
-
     // TODO other functions
 }
