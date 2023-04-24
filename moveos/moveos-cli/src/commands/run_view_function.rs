@@ -12,7 +12,7 @@ use move_core_types::{
     transaction_argument::TransactionArgument,
     value::MoveValue,
 };
-use moveos::types::transaction::{MoveTransaction, SimpleTransaction};
+use moveos::types::transaction::{Function, ViewPayload};
 use moveos_client::Client;
 use std::str::FromStr;
 
@@ -53,7 +53,7 @@ impl FromStr for FunctionId {
 
 /// Run a Move function
 #[derive(Parser)]
-pub struct RunFunction {
+pub struct RunViewFunction {
     /// Function name as `<ADDRESS>::<MODULE_ID>::<FUNCTION_NAME>`
     /// Example: `0x842ed41fad9640a2ad08fdd7d3e4f7f505319aac7d67e1c0dd6a7cce8732c7e3::message::set_message`
     #[clap(long)]
@@ -90,7 +90,7 @@ pub struct RunFunction {
     client: Client,
 }
 
-impl RunFunction {
+impl RunViewFunction {
     pub async fn execute(self) -> anyhow::Result<()> {
         let args = self
             .args
@@ -101,16 +101,15 @@ impl RunFunction {
                     .expect("transaction arguments must serialize")
             })
             .collect();
-        let txn = SimpleTransaction::new(
-            AccountAddress::from_str("0x123")?, // Fixme: use the real signer address
-            MoveTransaction::new_function(
-                self.function.module_id.clone(),
-                self.function.function_name.clone(),
-                self.type_args,
+        let payload = ViewPayload {
+            function: Function {
+                module: self.function.module_id.clone(),
+                function: self.function.function_name.clone(),
+                ty_args: self.type_args,
                 args,
-            ),
-        );
-        self.client.submit(txn).await?;
+            },
+        };
+        self.client.view(payload).await?;
         Ok(())
     }
 }

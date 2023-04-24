@@ -436,10 +436,19 @@ message SubmitTransactionResponse {
   string resp = 1;
 }
 
+message ViewFunctionRequest {
+  bytes payload = 1;
+}
+
+message ViewFunctionResponse {
+  string resp = 1;
+}
+
 service OsService {
 
     rpc echo(HelloRequest) returns (HelloResponse);
     rpc submit_txn(SubmitTransactionRequest) returns (SubmitTransactionResponse);
+    rpc view(ViewFunctionRequest) returns (ViewFunctionResponse);
     // Add other service
 }
 

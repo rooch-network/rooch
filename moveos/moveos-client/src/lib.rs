@@ -1,8 +1,10 @@
 use anyhow::Result;
 use clap::Parser;
-use moveos::types::transaction::SimpleTransaction;
+use moveos::types::transaction::{SimpleTransaction, ViewPayload};
 use moveos_common::config::load_config;
-use moveos_server::{os_service_client::OsServiceClient, SubmitTransactionRequest};
+use moveos_server::{
+    os_service_client::OsServiceClient, SubmitTransactionRequest, ViewFunctionRequest,
+};
 use tokio::time::Duration;
 use tonic::transport::Channel;
 
@@ -39,6 +41,14 @@ impl Client {
 
         let request = SubmitTransactionRequest { txn_payload };
         let _resp = self.rpc_client().await?.submit_txn(request).await?;
+        // TODO: parse response.
+        Ok(())
+    }
+
+    pub async fn view(&self, payload: ViewPayload) -> Result<()> {
+        let payload = bcs::to_bytes(&payload)?;
+        let request = ViewFunctionRequest { payload };
+        let _resp = self.rpc_client().await?.view(request).await?;
         // TODO: parse response.
         Ok(())
     }

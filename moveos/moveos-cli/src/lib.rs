@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use commands::{new::New, publish::Publish, run_function::RunFunction};
+use commands::{
+    new::New, publish::Publish, run_function::RunFunction, run_view_function::RunViewFunction,
+};
 use move_cli::{
     base::{
         build::Build, coverage::Coverage, disassemble::Disassemble, docgen::Docgen, errmap::Errmap,
@@ -36,7 +38,7 @@ pub enum MoveCommand {
     Test(Test),
     Publish(Publish),
     Run(RunFunction),
-    //TODO implement run command
+    View(RunViewFunction),
     //TODO implement integration test command
 }
 
@@ -70,5 +72,6 @@ pub async fn run_cli(move_cli: MoveCli) -> Result<()> {
                 .await
         }
         MoveCommand::Run(c) => c.execute().await,
+        MoveCommand::View(c) => c.execute().await,
     }
 }

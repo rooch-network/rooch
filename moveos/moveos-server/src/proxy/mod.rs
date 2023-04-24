@@ -5,7 +5,7 @@ use coerce::actor::ActorRef;
 
 use crate::actor::{
     executor::ServerActor,
-    messages::{HelloMessage, SubmitTransactionMessage},
+    messages::{HelloMessage, SubmitTransactionMessage, ViewFunctionMessage},
 };
 use moveos_common::error::Error;
 pub struct ServerProxy {
@@ -27,6 +27,13 @@ impl ServerProxy {
     pub async fn submit_txn(&self, payload: Vec<u8>) -> Result<String, Error> {
         self.actor
             .send(SubmitTransactionMessage { payload })
+            .await
+            .map_err(|e| e.into())
+    }
+
+    pub async fn view(&self, payload: Vec<u8>) -> Result<String, Error> {
+        self.actor
+            .send(ViewFunctionMessage { payload })
             .await
             .map_err(|e| e.into())
     }

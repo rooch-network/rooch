@@ -875,6 +875,18 @@ pub struct SubmitTransactionResponse {
     #[prost(string, tag = "1")]
     pub resp: ::prost::alloc::string::String,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ViewFunctionRequest {
+    #[prost(bytes = "vec", tag = "1")]
+    pub payload: ::prost::alloc::vec::Vec<u8>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ViewFunctionResponse {
+    #[prost(string, tag = "1")]
+    pub resp: ::prost::alloc::string::String,
+}
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum MoveTypes {
@@ -1076,6 +1088,20 @@ pub mod os_service_client {
             let path = http::uri::PathAndQuery::from_static("/moveoss.OsService/submit_txn");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        pub async fn view(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ViewFunctionRequest>,
+        ) -> Result<tonic::Response<super::ViewFunctionResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/moveoss.OsService/view");
+            self.inner.unary(request.into_request(), path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -1093,6 +1119,10 @@ pub mod os_service_server {
             &self,
             request: tonic::Request<super::SubmitTransactionRequest>,
         ) -> Result<tonic::Response<super::SubmitTransactionResponse>, tonic::Status>;
+        async fn view(
+            &self,
+            request: tonic::Request<super::ViewFunctionRequest>,
+        ) -> Result<tonic::Response<super::ViewFunctionResponse>, tonic::Status>;
     }
     #[derive(Debug)]
     pub struct OsServiceServer<T: OsService> {
@@ -1201,6 +1231,37 @@ pub mod os_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = submit_txnSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
+                            accept_compression_encodings,
+                            send_compression_encodings,
+                        );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/moveoss.OsService/view" => {
+                    #[allow(non_camel_case_types)]
+                    struct viewSvc<T: OsService>(pub Arc<T>);
+                    impl<T: OsService> tonic::server::UnaryService<super::ViewFunctionRequest> for viewSvc<T> {
+                        type Response = super::ViewFunctionResponse;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ViewFunctionRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move { (*inner).view(request).await };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = viewSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec).apply_compression_config(
                             accept_compression_encodings,

@@ -5,7 +5,8 @@ use tonic::{Request, Response as GrpcResponse, Status};
 
 use crate::{
     helper::convert_to_timestamp, os_service_server::OsService, proxy::ServerProxy, HelloRequest,
-    HelloResponse, SubmitTransactionRequest, SubmitTransactionResponse,
+    HelloResponse, SubmitTransactionRequest, SubmitTransactionResponse, ViewFunctionRequest,
+    ViewFunctionResponse,
 };
 
 use jsonrpsee::core::{async_trait, RpcResult};
@@ -77,6 +78,16 @@ impl OsService for OsSvc {
 
         let response = SubmitTransactionResponse { resp };
 
+        Ok(GrpcResponse::new(response))
+    }
+
+    async fn view(
+        &self,
+        request: Request<ViewFunctionRequest>,
+    ) -> Result<GrpcResponse<ViewFunctionResponse>, Status> {
+        let request = request.into_inner();
+        let resp = self.manager.view(request.payload).await?;
+        let response = ViewFunctionResponse { resp };
         Ok(GrpcResponse::new(response))
     }
 }

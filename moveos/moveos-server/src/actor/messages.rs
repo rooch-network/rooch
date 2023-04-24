@@ -21,3 +21,12 @@ pub struct SubmitTransactionMessage {
 impl Message for SubmitTransactionMessage {
     type Result = String;
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ViewFunctionMessage {
+    pub payload: Vec<u8>,
+}
+
+impl Message for ViewFunctionMessage {
+    type Result = String;
+}
