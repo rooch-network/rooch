@@ -3,7 +3,7 @@
 /// and let developers can customize the storage
 
 module moveos_std::storage_context {
-    use moveos_std::object::{ObjectStore};
+    use moveos_std::object_storage::{ObjectStorage};
     use moveos_std::tx_context::{TxContext};
 
     /// Information about the global storage context
@@ -14,7 +14,7 @@ module moveos_std::storage_context {
     struct StorageContext {
         tx_context: TxContext,
         /// The Global Object Storage
-        object_store: ObjectStore,
+        object_storage: ObjectStorage,
     }
 
     public fun tx_context(this: &StorageContext): &TxContext {
@@ -25,12 +25,12 @@ module moveos_std::storage_context {
         &mut this.tx_context
     }
 
-    public fun object_store(this: &StorageContext): &ObjectStore {
-        &this.object_store
+    public fun object_storage(this: &StorageContext): &ObjectStorage {
+        &this.object_storage
     }
 
-    public fun object_store_mut(this: &mut StorageContext): &mut ObjectStore {
-        &mut this.object_store
+    public fun object_storage_mut(this: &mut StorageContext): &mut ObjectStorage {
+        &mut this.object_storage
     }
 
 }

@@ -3,7 +3,6 @@
 /// Move object identifiers
 module moveos_std::object {
     use moveos_std::tx_context::{Self, TxContext};
-    use moveos_std::any_table::{Self};
 
     friend moveos_std::account_storage;
     
@@ -43,52 +42,23 @@ module moveos_std::object {
     }
 
     //TODO should this require private generic?
-    public fun borrow_value<T>(this: &Object<T>): &T{
+    public fun borrow<T>(this: &Object<T>): &T{
         &this.value
     }
 
     /// Borrow the object mutable value
-    public fun borrow_value_mut<T>(this: &mut Object<T>): &mut T{
+    public fun borrow_mut<T>(this: &mut Object<T>): &mut T{
         &mut this.value
     }
 
-    /// ==== Object Store ====
-
-    struct ObjectStore has store {
-        table: any_table::Table<ObjectID>,
-    }
-
-    #[private_generic(T)]
-    public fun borrow<T: key>(this: &ObjectStore, object_id: ObjectID): &Object<T>{
-        any_table::borrow(&this.table, object_id)
-    }
-
-    #[private_generic(T)]
-    public fun borrow_mut<T: key>(this: &mut ObjectStore, object_id: ObjectID): &mut Object<T>{
-        any_table::borrow_mut(&mut this.table, object_id)
-    }
-    
-    #[private_generic(T)]
-    /// Remove object from object store, only the owner can move the object
-    public fun remove<T: key>(this: &mut ObjectStore, object_id: ObjectID): Object<T>{
-        any_table::remove(&mut this.table, object_id)
+    public fun id<T>(this: &Object<T>): ObjectID{
+        this.id
     }
 
     #[private_generic(T)]
     public fun unpack<T>(obj: Object<T>): (ObjectID, T, address) {
         let Object{id, value, owner} = obj;
         (id, value, owner)
-    }
-
-    
-    #[private_generic(T)]
-    /// Add object to object store
-    public fun add<T: key>(this: &mut ObjectStore, obj: Object<T>) {
-        any_table::add(&mut this.table, obj.id, obj);
-    }
-
-    public fun contains(this: &mut ObjectStore, object_id: ObjectID): bool{
-        any_table::contains(&this.table, object_id)
     }
  
 }

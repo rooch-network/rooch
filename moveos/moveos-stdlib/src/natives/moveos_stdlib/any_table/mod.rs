@@ -11,9 +11,8 @@ use move_core_types::{
     account_address::AccountAddress,
     effects::Op,
     gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
-    language_storage::TypeTag,
     value::MoveTypeLayout,
-    vm_status::StatusCode,
+    vm_status::StatusCode, language_storage::TypeTag,
 };
 use move_vm_runtime::{
     native_functions,
@@ -30,24 +29,14 @@ use smallvec::smallvec;
 use std::{
     cell::RefCell,
     collections::{btree_map::Entry, BTreeMap, BTreeSet, VecDeque},
-    fmt::Display,
     sync::Arc,
 };
 
 // ===========================================================================================
 // Public Data Structures and Constants
 
-/// The representation of a table handle. This is created from truncating a sha3-256 based
-/// hash over a transaction hash provided by the environment and a table creation counter
-/// local to the transaction.
-#[derive(Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub struct TableHandle(pub AccountAddress);
+pub use move_table_extension::{TableHandle, TableResolver};
 
-impl Display for TableHandle {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "T-{:X}", self.0)
-    }
-}
 
 #[derive(Clone, Debug)]
 pub struct TableInfo {
@@ -60,7 +49,7 @@ impl TableInfo {
     }
 }
 
-impl Display for TableInfo {
+impl std::fmt::Display for TableInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Table<{}>", self.key_type)
     }
@@ -77,16 +66,6 @@ pub struct TableChangeSet {
 /// A change of a single table.
 pub struct TableChange {
     pub entries: BTreeMap<Vec<u8>, Op<Vec<u8>>>,
-}
-
-/// A table resolver which needs to be provided by the environment. This allows to lookup
-/// data in remote storage, as well as retrieve cost of table operations.
-pub trait TableResolver {
-    fn resolve_table_entry(
-        &self,
-        handle: &TableHandle,
-        key: &[u8],
-    ) -> Result<Option<Vec<u8>>, anyhow::Error>;
 }
 
 /// The native table context extension. This needs to be attached to the NativeContextExtensions

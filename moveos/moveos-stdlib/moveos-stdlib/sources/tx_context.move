@@ -8,7 +8,7 @@ module moveos_std::tx_context {
     use moveos_std::bcd;
 
     friend moveos_std::object;
-    friend moveos_std::any_table;
+    friend moveos_std::raw_table;
 
     /// Number of bytes in an tx hash (which will be the transaction digest)
     const TX_HASH_LENGTH: u64 = 32;

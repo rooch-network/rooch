@@ -3,43 +3,49 @@
 //# publish
 
 module test::m {
-    use moveos_std::tx_context::{Self, TxContext};
+    use moveos_std::tx_context;
+    use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::object::{Self, ObjectID};
+    use moveos_std::account_storage;
+    use moveos_std::object_storage;
     use std::debug;
 
     struct S has store, key { v: u8 }
     struct Cup<phantom T: store> has store, key { v: u8 }
 
-    public entry fun mint_s(ctx: &mut TxContext) {
-        let sender = tx_context::sender(ctx);
-        let obj = object::new(ctx, sender , S { v: 1});
+    public entry fun mint_s(ctx: &mut StorageContext) {
+        
+        let tx_ctx = storage_context::tx_context_mut(ctx);
+        let sender = tx_context::sender(tx_ctx);
+        let obj = object::new(tx_ctx, sender , S { v: 1});
         debug::print(&obj);
-        let object_store = object::load_object_store(ctx);
-        object::add(&mut object_store, obj);
+        let object_storage = storage_context::object_storage_mut(ctx);
+        object_storage::add(object_storage, obj);
     }
 
-    public entry fun move_s_to_global(ctx: &mut TxContext, sender: signer, object_id: ObjectID) {
-        let object_store = object::load_object_store(ctx);
-        let obj = object::remove<S>(&mut object_store, object_id);
+    public entry fun move_s_to_global(ctx: &mut StorageContext, sender: signer, object_id: ObjectID) {
+        let object_storage = storage_context::object_storage_mut(ctx);
+        let obj = object_storage::remove<S>(object_storage, object_id);
         debug::print(&obj);
         let (_id,value,_owner) = object::unpack(obj);
-        move_to(&sender, value);
+        account_storage::global_move_to(ctx, &sender, value);
     }
 
-    public entry fun mint_cup<T: store>(ctx: &mut TxContext) {
-        let sender = tx_context::sender(ctx);
-        let obj = object::new(ctx, sender, Cup<T> { v: 2 });
+    public entry fun mint_cup<T: store>(ctx: &mut StorageContext) {
+        let tx_ctx = storage_context::tx_context_mut(ctx);
+        let sender = tx_context::sender(tx_ctx);
+        let obj = object::new(tx_ctx, sender, Cup<T> { v: 2 });
         debug::print(&obj);
-        let object_store = object::load_object_store(ctx);
-        object::add(&mut object_store, obj);
+        let object_storage = storage_context::object_storage_mut(ctx);
+        object_storage::add(object_storage, obj);
     }
 
-    public entry fun move_cup_to_global<T:store>(ctx: &mut TxContext, sender: signer, object_id: ObjectID) {
-        let object_store = object::load_object_store(ctx);
-        let obj = object::remove<Cup<T>>(&mut object_store, object_id);
+    public entry fun move_cup_to_global<T:store>(ctx: &mut StorageContext, sender: signer, object_id: ObjectID) {
+        let object_storage = storage_context::object_storage_mut(ctx);
+        let obj = object_storage::remove<S>(object_storage, object_id);
         debug::print(&obj);
         let (_id,value,_owner) = object::unpack(obj);
-        move_to(&sender, value);
+        account_storage::global_move_to(ctx, &sender, value);
     }
 }
 
