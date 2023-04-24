@@ -28,7 +28,6 @@ move-core-types = { workspace = true }
 move-compiler = { workspace = true }
 move-command-line-common = { workspace = true }
 move-stdlib = { workspace = true }
-move-table-extension = { workspace = true }
 move-unit-test = { workspace = true, optional = true }
 move-vm-runtime = { workspace = true }
 move-vm-test-utils = { workspace = true }

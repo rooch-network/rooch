@@ -10,6 +10,11 @@ module moveos_std::raw_table {
     friend moveos_std::object_storage;
     friend moveos_std::account_storage;
 
+    struct TableInfo has key {
+        // Table SMT root
+        state_root: address,
+    }
+    
     /// Add a new entry to the table. Aborts if an entry for this
     /// key already exists. The entry itself is not stored in the
     /// table, and cannot be discovered from it.

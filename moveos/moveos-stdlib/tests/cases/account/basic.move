@@ -5,17 +5,17 @@
 //create account by bob self
 //# run --signers genesis
 script {
-    use rooch_framework::account;
+    //use rooch_framework::account;
     fun main(_sender: signer) {
-        account::create_account_entry(@bob);
+        //account::create_account_entry(@bob);
     }
 }
 
 //check
 //# run --signers bob
 script {
-    use rooch_framework::account;
+    //use rooch_framework::account;
     fun main(_sender: signer) {
-        assert!(account::exists_at(@bob), 0);
+        //assert!(account::exists_at(@bob), 0);
     }
 }

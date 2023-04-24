@@ -22,43 +22,48 @@ module moveos_std::object {
     /// The object can not be copied, droped, only can be consumed by `add`
     struct Object<T> {
         id: ObjectID,
-        value: T,
         owner: address,
         //TODO define shared and immutable
         //shared: bool,
         //immutable: bool,
+        // The value must be the last field
+        value: T,
     }
 
     #[private_generic(T)]
     /// Create a new object, the object is owned by `owner`
     /// The private generic is indicate the T should be defined in the same module as the caller. This is ensured by the verifier.
-    public fun new<T: key>(ctx: &mut TxContext, owner: address, value: T): Object<T>{
+    public fun new<T: key>(ctx: &mut TxContext, owner: address, value: T): Object<T> {
         let id = tx_context::derive_id(ctx);
         Object<T>{id: ObjectID{id}, value, owner}
     }
 
-    public(friend) fun new_with_id<T: key>(id: ObjectID, owner: address, value: T): Object<T>{
-        Object<T>{id, value, owner}
+    public(friend) fun new_with_id<T: key>(id: ObjectID, owner: address, value: T): Object<T> {
+        Object<T>{id, owner, value}
     }
 
     //TODO should this require private generic?
-    public fun borrow<T>(this: &Object<T>): &T{
+    public fun borrow<T>(this: &Object<T>): &T {
         &this.value
     }
 
     /// Borrow the object mutable value
-    public fun borrow_mut<T>(this: &mut Object<T>): &mut T{
+    public fun borrow_mut<T>(this: &mut Object<T>): &mut T {
         &mut this.value
     }
 
-    public fun id<T>(this: &Object<T>): ObjectID{
+    public fun id<T>(this: &Object<T>): ObjectID {
         this.id
     }
 
+    public fun owner<T>(this: &Object<T>): address {
+        this.owner
+    }
+
     #[private_generic(T)]
-    public fun unpack<T>(obj: Object<T>): (ObjectID, T, address) {
-        let Object{id, value, owner} = obj;
-        (id, value, owner)
+    public fun unpack<T>(obj: Object<T>): (ObjectID, address, T) {
+        let Object{id, owner, value} = obj;
+        (id, owner, value)
     }
  
 }

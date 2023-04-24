@@ -14,7 +14,9 @@ module test::m {
     struct Cup<phantom T: store> has store, key { v: u8 }
 
     public entry fun mint_s(ctx: &mut StorageContext) {
-        
+        //TODO move to account create
+        //account_storage::create_account_storage(ctx, @0x43);
+
         let tx_ctx = storage_context::tx_context_mut(ctx);
         let sender = tx_context::sender(tx_ctx);
         let obj = object::new(tx_ctx, sender , S { v: 1});
@@ -27,7 +29,7 @@ module test::m {
         let object_storage = storage_context::object_storage_mut(ctx);
         let obj = object_storage::remove<S>(object_storage, object_id);
         debug::print(&obj);
-        let (_id,value,_owner) = object::unpack(obj);
+        let (_id, _owner, value) = object::unpack(obj);
         account_storage::global_move_to(ctx, &sender, value);
     }
 
@@ -44,7 +46,7 @@ module test::m {
         let object_storage = storage_context::object_storage_mut(ctx);
         let obj = object_storage::remove<S>(object_storage, object_id);
         debug::print(&obj);
-        let (_id,value,_owner) = object::unpack(obj);
+        let (_id,_owner,value) = object::unpack(obj);
         account_storage::global_move_to(ctx, &sender, value);
     }
 }
@@ -53,13 +55,13 @@ module test::m {
 
 //# run test::m::mint_s --signers A
 
-//# view_object --object-id 0xae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647
+//# view_object --object-id 0xa5dac25e36ef3fdb7f496b6ab0d1916d73d025dc1c5f2560f779e62b645cac7d
 
 // Mint Cup<S> to A.
 
 //# run test::m::mint_cup --type-args test::m::S --signers A
 
-//# view_object --object-id 0xbbaf311ae6768a532b1f9dee65b1758a7bb1114fd57df8fa94cb2d1cb5f6896
+//# view_object --object-id 0xbe6975de71303c7a4ab6d2d15b14cb4320fba263cc4283cfe1d63a633247db1
 
 // Move S to global.
 //Currently, we use @address to pass object argument to the transaction, define a new way to pass object argument to the transaction.

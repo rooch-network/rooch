@@ -101,7 +101,7 @@ move-resource-viewer = { git = "https://github.com/rooch-network/move", rev = "5
 move-stackless-bytecode-interpreter = { git = "https://github.com/rooch-network/move", rev = "5b413d009515ad1144042ded27cbe9bd702aaad7" }
 move-stdlib = { git = "https://github.com/rooch-network/move", rev = "5b413d009515ad1144042ded27cbe9bd702aaad7", features = ["address32", "testing"] }
 move-symbol-pool = { git = "https://github.com/rooch-network/move", rev = "5b413d009515ad1144042ded27cbe9bd702aaad7" }
-move-table-extension = { git = "https://github.com/rooch-network/move", rev = "5b413d009515ad1144042ded27cbe9bd702aaad7" }
+#move-table-extension = { git = "https://github.com/rooch-network/move", rev = "5b413d009515ad1144042ded27cbe9bd702aaad7" }
 move-transactional-test-runner = { git = "https://github.com/rooch-network/move", rev = "5b413d009515ad1144042ded27cbe9bd702aaad7" }
 move-unit-test = { git = "https://github.com/rooch-network/move", rev = "5b413d009515ad1144042ded27cbe9bd702aaad7", features = ["table-extension"] }
 move-vm-runtime = { git = "https://github.com/rooch-network/move", rev = "5b413d009515ad1144042ded27cbe9bd702aaad7", features = ["lazy_natives"] }
