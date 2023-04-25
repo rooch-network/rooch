@@ -88,9 +88,12 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
             named_address_mapping.insert(name, addr);
 
             //TODO find better way to init account
-            moveos.state().create_account_storage(addr.into_inner()).unwrap();
+            moveos
+                .state()
+                .create_account_storage(addr.into_inner())
+                .unwrap();
         }
-        
+
         let mut adapter = Self {
             compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps, None),
             default_syntax,
@@ -229,7 +232,7 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
                 let object: Option<RawObject> = self.moveos.state().get_as_raw_object(object_id)?;
                 let object = object
                     .ok_or_else(|| anyhow::anyhow!("Object with id {} not found", object_id))?;
-               
+
                 //TODO print more info about object
                 // let annotated = MoveValueAnnotator::new(self.moveos.state())
                 //     .view_resource(&move_object.type_, &move_object.contents)?;

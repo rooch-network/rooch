@@ -259,7 +259,7 @@ impl Table {
                             Some(NumBytes::new(val_bytes.len() as u64)),
                         )
                     }
-                    None => (GlobalValue::none(), None)
+                    None => (GlobalValue::none(), None),
                 };
                 (
                     &mut entry
@@ -505,13 +505,13 @@ fn native_remove_box(
 ) -> PartialVMResult<NativeResult> {
     assert_eq!(ty_args.len(), 3);
     assert_eq!(args.len(), 2);
-    
+
     let table_context = context.extensions().get::<NativeTableContext>();
     let mut table_data = table_context.table_data.borrow_mut();
 
     let key = args.pop_back().unwrap();
     let handle = get_table_handle(pop_arg!(args, AccountAddress))?;
-    
+
     let table = table_data.get_or_create_table(context, handle, &ty_args[0])?;
 
     let mut cost = gas_params.base;

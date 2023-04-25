@@ -1,15 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 /// The Move Object is from Sui Move, and we try to mix the Global storage model and Object model in MoveOS.
-use anyhow::{Result, ensure};
+use anyhow::{ensure, Result};
 use move_core_types::{
     account_address::AccountAddress,
     ident_str,
     identifier::IdentStr,
-    language_storage::{TypeTag},
+    language_storage::TypeTag,
     move_resource::{MoveResource, MoveStructType},
 };
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use smt::HashValue;
 use std::str::FromStr;
 
@@ -51,7 +51,7 @@ impl ObjectID {
             .map(ObjectID::from)
     }
 
-    pub fn to_bytes(&self) -> Vec<u8>{
+    pub fn to_bytes(&self) -> Vec<u8> {
         self.0.to_vec()
     }
 }
@@ -126,14 +126,13 @@ impl FromStr for ObjectID {
 }
 
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
-pub struct AccountStorage{
+pub struct AccountStorage {
     //TODO use TableHandle
     pub resources: AccountAddress,
     pub modules: AccountAddress,
 }
 
-impl MoveStructType for AccountStorage
-{
+impl MoveStructType for AccountStorage {
     const MODULE_NAME: &'static IdentStr = ident_str!("account_storage");
     const STRUCT_NAME: &'static IdentStr = ident_str!("AccountStorage");
 
@@ -150,13 +149,12 @@ pub struct TableInfo {
 }
 
 impl TableInfo {
-    pub fn new(state_root: AccountAddress) -> Self{
+    pub fn new(state_root: AccountAddress) -> Self {
         TableInfo { state_root }
     }
 }
 
-impl MoveStructType for TableInfo
-{
+impl MoveStructType for TableInfo {
     const MODULE_NAME: &'static IdentStr = ident_str!("raw_table");
     const STRUCT_NAME: &'static IdentStr = ident_str!("AccountStorage");
 
@@ -176,26 +174,31 @@ pub struct Object<T> {
     pub value: T,
 }
 
-impl<T> Object<T> where T: MoveStructType {
-    pub fn new(id: ObjectID, owner: AccountAddress, value: T) -> Object<T>{
-        Self{
-            id,
-            owner,
-            value
-        }
+impl<T> Object<T>
+where
+    T: MoveStructType,
+{
+    pub fn new(id: ObjectID, owner: AccountAddress, value: T) -> Object<T> {
+        Self { id, owner, value }
     }
-} 
+}
 
-impl<T> Object<T> where T: Serialize {
-
-    pub fn to_bytes(&self) -> Vec<u8>{
+impl<T> Object<T>
+where
+    T: Serialize,
+{
+    pub fn to_bytes(&self) -> Vec<u8> {
         bcs::to_bytes(self).unwrap()
     }
 
-    pub fn to_raw(&self) -> RawObject{
-        RawObject { id: self.id, owner: self.owner, value: bcs::to_bytes(&self.value).unwrap() }
+    pub fn to_raw(&self) -> RawObject {
+        RawObject {
+            id: self.id,
+            owner: self.owner,
+            value: bcs::to_bytes(&self.value).unwrap(),
+        }
     }
-} 
+}
 
 impl Object<TableInfo> {
     pub fn new_table_object(id: ObjectID, value: TableInfo) -> TableObject {
@@ -203,24 +206,25 @@ impl Object<TableInfo> {
             id,
             //TODO table should have a owner?
             owner: AccountAddress::ZERO,
-            value
+            value,
         }
     }
 }
 
 impl Object<AccountStorage> {
-
-    pub fn new_account_storage_object(account: AccountAddress, value: AccountStorage) -> AccountStorageObject{
-        Self{
+    pub fn new_account_storage_object(
+        account: AccountAddress,
+        value: AccountStorage,
+    ) -> AccountStorageObject {
+        Self {
             id: ObjectID::from(account),
             owner: account,
-            value
+            value,
         }
     }
 }
 
 impl<T> MoveResource for Object<T> where T: MoveStructType + DeserializeOwned {}
-
 
 pub const OBJECT_MODULE_NAME: &IdentStr = ident_str!("object");
 pub const OBJECT_STRUCT_NAME: &IdentStr = ident_str!("Object");
@@ -240,22 +244,23 @@ where
 #[derive(Eq, PartialEq, Debug, Clone, Hash)]
 pub struct RawObject {
     pub id: ObjectID,
-    pub owner: AccountAddress, 
+    pub owner: AccountAddress,
     pub value: Vec<u8>,
 }
 
 impl RawObject {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        ensure!(bytes.len() > ObjectID::LENGTH+AccountAddress::LENGTH,"Invalid bytes length");
+        ensure!(
+            bytes.len() > ObjectID::LENGTH + AccountAddress::LENGTH,
+            "Invalid bytes length"
+        );
 
         let id: ObjectID = bcs::from_bytes(&bytes[..ObjectID::LENGTH])?;
-        let owner: AccountAddress = bcs::from_bytes(&bytes[AccountAddress::LENGTH..ObjectID::LENGTH+AccountAddress::LENGTH])?;
-        let value = bytes[ObjectID::LENGTH+AccountAddress::LENGTH..].to_vec();
-        Ok(RawObject{
-            id,
-            owner,
-            value
-        })
+        let owner: AccountAddress = bcs::from_bytes(
+            &bytes[AccountAddress::LENGTH..ObjectID::LENGTH + AccountAddress::LENGTH],
+        )?;
+        let value = bytes[ObjectID::LENGTH + AccountAddress::LENGTH..].to_vec();
+        Ok(RawObject { id, owner, value })
     }
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = vec![];
@@ -285,7 +290,6 @@ impl From<RawObject> for Object<Vec<u8>> {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -325,7 +329,7 @@ mod tests {
         let object_value = TestStruct { v: 1 };
         let object_id = ObjectID::new(HashValue::random().into());
         let object = Object::new(object_id, AccountAddress::random(), object_value);
-        
+
         let bytes = object.to_bytes();
         let raw_object: RawObject = RawObject::from_bytes(&bytes).unwrap();
 

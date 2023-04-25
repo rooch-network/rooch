@@ -1,11 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::tx_context::TxContext;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, move_resource::MoveStructType,
 };
 use serde::{Deserialize, Serialize};
-use crate::{tx_context::TxContext};
 
 pub const GLOBAL_OBJECT_STORAGE_HANDLE: AccountAddress = AccountAddress::ZERO;
 
@@ -24,16 +24,15 @@ pub struct StorageContext {
 }
 
 impl StorageContext {
-
     /// New global storage context
     pub fn new(tx_context: TxContext) -> Self {
         Self {
             tx_context,
             object_storage: ObjectStorage {
                 handle: GLOBAL_OBJECT_STORAGE_HANDLE,
-            }
+            },
         }
-    } 
+    }
 
     pub fn to_vec(&self) -> Vec<u8> {
         bcs::to_bytes(&self).unwrap()

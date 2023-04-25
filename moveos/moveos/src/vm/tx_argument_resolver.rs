@@ -1,17 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::{move_vm_ext::SessionExt, MoveResolverExt};
 use anyhow::Result;
 use move_binary_format::errors::PartialVMError;
 use move_core_types::{move_resource::MoveStructType, value::MoveValue};
 use move_vm_runtime::session::LoadedFunctionInstantiation;
 use move_vm_types::loaded_data::runtime_types::{StructType, Type};
-use moveos_stdlib::natives::moveos_stdlib::{raw_table::NativeTableContext};
-use moveos_types::{
-    tx_context::TxContext, storage_context::{StorageContext},
-};
+use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
+use moveos_types::{storage_context::StorageContext, tx_context::TxContext};
 use std::sync::Arc;
-use super::{move_vm_ext::SessionExt, MoveResolverExt};
 
 /// Transaction Argument Resolver will implemented by the Move Extension
 /// to auto fill transaction argument or do type conversion.
@@ -37,30 +35,31 @@ impl TxArgumentResolver for TxContext {
     where
         S: MoveResolverExt,
     {
-        func
-            .parameters
-            .iter()
-            .enumerate().for_each(|(i, t)| {
-                if is_signer(t) {
-                    let signer = MoveValue::Signer(self.sender());
-                    args.insert(i, signer
+        func.parameters.iter().enumerate().for_each(|(i, t)| {
+            if is_signer(t) {
+                let signer = MoveValue::Signer(self.sender());
+                args.insert(
+                    i,
+                    signer
                         .simple_serialize()
-                        .expect("serialize signer should success"));
-                }
-                if as_struct(session, t)
+                        .expect("serialize signer should success"),
+                );
+            }
+            if as_struct(session, t)
                 .map(|t| is_tx_context(&t))
-                .unwrap_or(false) {
-                    args.insert(i, self.to_vec());
-                }
+                .unwrap_or(false)
+            {
+                args.insert(i, self.to_vec());
+            }
 
-                if as_struct(session, t)
+            if as_struct(session, t)
                 .map(|t| is_storage_context(&t))
-                .unwrap_or(false) {
-                    let storage_context = StorageContext::new(self.clone());
-                    args.insert(i, storage_context.to_vec());
-                }
-
-            });
+                .unwrap_or(false)
+            {
+                let storage_context = StorageContext::new(self.clone());
+                args.insert(i, storage_context.to_vec());
+            }
+        });
         Ok(args)
     }
 }

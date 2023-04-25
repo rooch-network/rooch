@@ -17,7 +17,6 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
     value::MoveTypeLayout,
 };
-use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
 use move_vm_runtime::{
     config::VMConfig,
     move_vm::MoveVM,
@@ -29,9 +28,8 @@ use move_vm_types::{
     gas::GasMeter,
     loaded_data::runtime_types::{CachedStructIndex, StructType, Type},
 };
-use moveos_stdlib::natives::{
-    self, GasParameters,
-};
+use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
+use moveos_stdlib::natives::{self, GasParameters};
 use moveos_types::tx_context::TxContext;
 
 pub struct MoveVmExt {
@@ -53,10 +51,7 @@ impl MoveVmExt {
         })
     }
 
-    pub fn new_session<'r, S: MoveResolverExt>(
-        &self,
-        remote: &'r S,
-    ) -> SessionExt<'r, '_, S> {
+    pub fn new_session<'r, S: MoveResolverExt>(&self, remote: &'r S) -> SessionExt<'r, '_, S> {
         let mut extensions = NativeContextExtensions::default();
         //let txn_hash: [u8; 32] = session_id.into();
 

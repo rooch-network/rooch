@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::natives::helpers::{make_module_natives, make_native};
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::vm_status::StatusCode;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
@@ -8,9 +9,7 @@ use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, pop_arg, values::Value,
 };
 use smallvec::smallvec;
-use std::{collections::VecDeque, sync::Arc};
-
-use crate::natives::helpers::make_module_natives;
+use std::collections::VecDeque;
 
 #[derive(Debug, Clone)]
 pub struct FromBytesGasParameters {}
@@ -56,14 +55,6 @@ fn native_from_bytes(
     Ok(NativeResult::ok(cost, smallvec![val]))
 }
 
-pub fn make_native_from_bytes(gas_params: FromBytesGasParameters) -> NativeFunction {
-    Arc::new(
-        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_from_bytes(&gas_params, context, ty_args, args)
-        },
-    )
-}
-
 /***************************************************************************************************
  * module
  **************************************************************************************************/
@@ -82,7 +73,10 @@ impl GasParameters {
 }
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
-    let natives = [("from_bytes", make_native_from_bytes(gas_params.from_bytes))];
+    let natives = [(
+        "from_bytes",
+        make_native(gas_params.from_bytes, native_from_bytes),
+    )];
 
     make_module_natives(natives)
 }
