@@ -19,6 +19,7 @@ bcs = { workspace = true }
 smt = { workspace = true }
 serde = { workspace = true }
 serde_bytes = { workspace = true }
+hex = { workspace = true }
 
 move-core-types = { workspace = true }
 

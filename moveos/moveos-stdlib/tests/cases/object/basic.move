@@ -27,6 +27,7 @@ module test::m {
 
     public entry fun move_s_to_global(ctx: &mut StorageContext, sender: signer, object_id: ObjectID) {
         let object_storage = storage_context::object_storage_mut(ctx);
+        debug::print(&object_id);
         let obj = object_storage::remove<S>(object_storage, object_id);
         debug::print(&obj);
         let (_id, _owner, value) = object::unpack(obj);
@@ -44,7 +45,7 @@ module test::m {
 
     public entry fun move_cup_to_global<T:store>(ctx: &mut StorageContext, sender: signer, object_id: ObjectID) {
         let object_storage = storage_context::object_storage_mut(ctx);
-        let obj = object_storage::remove<S>(object_storage, object_id);
+        let obj = object_storage::remove<Cup<S>>(object_storage, object_id);
         debug::print(&obj);
         let (_id,_owner,value) = object::unpack(obj);
         account_storage::global_move_to(ctx, &sender, value);
@@ -66,12 +67,12 @@ module test::m {
 // Move S to global.
 //Currently, we use @address to pass object argument to the transaction, define a new way to pass object argument to the transaction.
 
-//# run test::m::move_s_to_global --signers A --args @0xae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647
+//# run test::m::move_s_to_global --signers A --args @0xa5dac25e36ef3fdb7f496b6ab0d1916d73d025dc1c5f2560f779e62b645cac7d
 
 //# view --address A --resource test::m::S
 
 // Move Cup<S> to global.
 
-//# run test::m::move_cup_to_global --signers A  --type-args test::m::S --args @0xbbaf311ae6768a532b1f9dee65b1758a7bb1114fd57df8fa94cb2d1cb5f6896
+//# run test::m::move_cup_to_global --signers A  --type-args test::m::S --args @0xbe6975de71303c7a4ab6d2d15b14cb4320fba263cc4283cfe1d63a633247db1
 
 //# view --address A --resource test::m::Cup<test::m::S>

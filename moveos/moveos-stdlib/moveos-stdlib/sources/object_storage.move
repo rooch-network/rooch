@@ -40,8 +40,8 @@ module moveos_std::object_storage {
         raw_table::add<ObjectID, Object<T>>(*&this.handle, object::id(&obj), obj);
     }
 
-    public fun contains(this: &mut ObjectStorage, object_id: ObjectID): bool{
-        raw_table::contains<ObjectID>(*&this.handle, object_id)
+    public fun contains<T: key>(this: &mut ObjectStorage, object_id: ObjectID): bool{
+        raw_table::contains<ObjectID, T>(*&this.handle, object_id)
     }
  
 }

@@ -5,13 +5,13 @@ use anyhow::{Result, anyhow};
 use move_core_types::{
     account_address::AccountAddress,
     effects::{ChangeSet, Op},
-    identifier::Identifier,
+    identifier::{Identifier, IdentStr},
     language_storage::{ModuleId, StructTag},
     resolver::{ModuleResolver, ResourceResolver},
 };
 use moveos_stdlib::natives::moveos_stdlib::raw_table::{TableChangeSet, TableResolver, TableHandle};
 use moveos_types::{object::{Object, ObjectID, TableInfo, RawObject, AccountStorage}, storage_context};
-use serde::de::DeserializeOwned;
+use serde::{de::DeserializeOwned, Serialize, Deserialize};
 use smt::{InMemoryNodeStore, NodeStore, SMTree, UpdateSet};
 use std::{collections::BTreeMap};
 
@@ -37,8 +37,13 @@ pub struct AccountStorageTables<NS>{
 }
 
 pub struct TreeTable<NS> {
-    //TODO move ValueBox to moveos_types
     smt: SMTree<Vec<u8>, Vec<u8>, NS>,
+}
+
+//TODO add a Box to smt value
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+struct ValueBox<T>{
+    pub value: T,
 }
 
 impl<NS> TreeTable<NS>
@@ -71,7 +76,7 @@ where
         self.put_changes(
             modules
                 .into_iter()
-                .map(|(k, v)| (k.to_string().into_bytes(), v)),
+                .map(|(k, v)| (module_name_to_key(k.as_ident_str()), v.map(box_value))),
         )
     }
 
@@ -79,7 +84,7 @@ where
         self.put_changes(
             modules
                 .into_iter()
-                .map(|(k, v)| (k.to_canonical_string().into_bytes(), v)),
+                .map(|(k, v)| (tag_to_key(&k), v)),
         )
     }
 
@@ -119,7 +124,7 @@ impl StateDB {
     }
 
     pub fn get(&self, id: ObjectID) -> Result<Option<Vec<u8>>> {
-        self.global_table.get(id.to_vec())
+        self.global_table.get(id.to_bytes())
     }
 
     fn get_as_object<T: DeserializeOwned>(&self, id: ObjectID) -> Result<Option<Object<T>>>{
@@ -130,7 +135,7 @@ impl StateDB {
 
     pub fn get_as_raw_object(&self, id: ObjectID) -> Result<Option<RawObject>>{
         self.get(id)?.map(|bytes|{
-            bcs::from_bytes::<RawObject>(&bytes)
+            RawObject::from_bytes(&bytes)
         }).transpose().map_err(Into::into)
     }
 
@@ -199,14 +204,14 @@ impl StateDB {
                 let (mut object, module_table) = self.get_as_table_or_create(object_id)?;
                 let new_state_root = module_table.put_modules(modules)?;
                 object.value.state_root = AccountAddress::new(new_state_root.into());
-                changed_objects.put(object_id.to_vec(), object.to_vec());
+                changed_objects.put(object_id.to_bytes(), object.to_bytes());
             }
             if !resources.is_empty() {
                 let object_id = account_storage.value.resources.into();
                 let (mut object, resource_table) = self.get_as_table_or_create(object_id)?;
                 let new_state_root = resource_table.put_resources(resources)?;
                 object.value.state_root = AccountAddress::new(new_state_root.into());
-                changed_objects.put(object_id.to_vec(), object.to_vec());
+                changed_objects.put(object_id.to_bytes(), object.to_bytes());
             }
         }
 
@@ -219,13 +224,13 @@ impl StateDB {
                 let (mut object, table) = self.get_as_table_or_create(object_id)?;
                 let new_state_root = table.put_changes(table_change.entries.into_iter())?;
                 object.value.state_root = AccountAddress::new(new_state_root.into());
-                changed_objects.put(object_id.to_vec(), object.to_vec());
+                changed_objects.put(object_id.to_bytes(), object.to_bytes());
             }
         }
 
         for table_handle in table_change_set.removed_tables {
             let object_id: ObjectID = table_handle.into();
-            changed_objects.remove(object_id.to_vec());
+            changed_objects.remove(object_id.to_bytes());
         }
 
         self.global_table.puts(changed_objects)
@@ -234,12 +239,20 @@ impl StateDB {
     // Only the genesis account need to create by this function 
     pub fn create_account_storage(&self, account: AccountAddress) -> Result<HashValue>{
         let resource_table_id = ObjectID::derive_id(account.to_vec(), 0);
+        let place_holder: AccountAddress = (**smt::SPARSE_MERKLE_PLACEHOLDER_HASH).into();
+        let resource_table_object = Object::new_table_object(resource_table_id, TableInfo::new(place_holder));
         let module_table_id = ObjectID::derive_id(account.to_vec(), 1);
+        let module_table_object = Object::new_table_object(module_table_id, TableInfo::new(place_holder));
         let object = Object::new_account_storage_object(account, AccountStorage {
             resources: resource_table_id.into(),
             modules: module_table_id.into(),
         });
-        self.global_table.puts((object.id.to_vec(), object.to_vec()))
+         
+        self.global_table.puts(
+            vec![
+                (resource_table_id.to_bytes(), Some(resource_table_object.to_bytes())),
+                (module_table_id.to_bytes(), Some(module_table_object.to_bytes())),
+            (object.id.to_bytes(), Some(object.to_bytes()))])
     }
 
     // pub fn apply_object_change_set(&self, change_set: ObjectChangeSet) -> Result<HashValue> {
@@ -273,9 +286,10 @@ impl ResourceResolver for StateDB {
         tag: &StructTag,
     ) -> Result<Option<Vec<u8>>, Self::Error> {
         let account_storage = self.get_as_account_storage(*address)?;
+        let key = tag_to_key(tag);
         self.get_with_key(
             account_storage.value.resources.into(),
-            tag.to_canonical_string().into_bytes(),
+            key,
         )
     }
 }
@@ -285,11 +299,36 @@ impl ModuleResolver for StateDB {
 
     fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
         let account_storage = self.get_as_account_storage(*module_id.address())?;
-        self.get_with_key(
+        let key = module_name_to_key(module_id.name());
+        let module = self.get_with_key(
             account_storage.value.modules.into(),
-            module_id.name().to_string().into_bytes(),
-        )
+            key,
+        )?;
+        module.map(|v|unbox_value(v.as_slice())).transpose()
     }
+}
+
+fn tag_to_key(tag: &StructTag) -> Vec<u8>{
+    // The key is bcs serialize format string, not String::into_bytes.
+    bcs::to_bytes(&tag.to_canonical_string()).expect("bcs to_bytes String must success.")
+}
+
+fn module_name_to_key(name: &IdentStr) -> Vec<u8>{
+    // The key is bcs serialize format string, not String::into_bytes.
+    bcs::to_bytes(&name.to_string()).expect("bcs to_bytes String must success.")
+}
+
+// Wrap value to a Box, because the table deserialize value to a Box struct
+// see moveos_std::raw_table::Box
+fn box_value<T: Serialize>(value: T) -> Vec<u8> {
+    let value_box = ValueBox{value};
+    bcs::to_bytes(&value_box).expect("bcs to_bytes ValueBox must success.")
+}
+
+// Unwrap value from a Box, because the table deserialize value to a Box struct
+fn unbox_value<T: DeserializeOwned>(bytes: &[u8]) -> Result<T> {
+    let value_box: ValueBox<T> = bcs::from_bytes(bytes)?;
+    Ok(value_box.value)
 }
 
 impl TableResolver for StateDB {
@@ -298,7 +337,11 @@ impl TableResolver for StateDB {
         handle: &TableHandle,
         key: &[u8],
     ) -> std::result::Result<Option<Vec<u8>>, anyhow::Error> {
-        self.get_with_key((*handle).into(), key.to_vec())
+        if handle.0 == storage_context::GLOBAL_OBJECT_STORAGE_HANDLE{
+            self.global_table.get(key.to_vec())
+        }else{
+            self.get_with_key((*handle).into(), key.to_vec())
+        }
     }
 }
 

@@ -2,10 +2,9 @@
 
 module moveos_std::type_table {
 
-    use std::string::{String};
+    use std::ascii::{String};
     use moveos_std::raw_table;
     use moveos_std::tx_context::TxContext;
-    use moveos_std::type_info;
 
     friend moveos_std::account_storage;
 
@@ -20,8 +19,13 @@ module moveos_std::type_table {
         }
     }
 
+    /// Note: We use Type name as key, the key will be serialized by bcs in the native function. 
     fun key<V>(): String {
-        type_info::type_name<V>()
+        let type_name = std::type_name::get<V>();
+        let name_string = std::type_name::into_string(type_name);
+        //std::debug::print(&name_string);
+        //std::debug::print(&std::bcs::to_bytes(&name_string));
+        name_string
     }
 
     /// Add a new entry to the table. Aborts if an entry for this
@@ -51,7 +55,7 @@ module moveos_std::type_table {
 
     /// Returns true if `table` contains an entry for `key`.
     public(friend) fun contains<V>(table: &TypeTable): bool {
-        raw_table::contains<String>(*&table.handle, key<V>())
+        raw_table::contains<String, V>(*&table.handle, key<V>())
     }
 
     #[test_only]

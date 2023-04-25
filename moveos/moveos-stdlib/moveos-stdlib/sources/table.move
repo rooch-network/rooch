@@ -66,7 +66,7 @@ module moveos_std::table {
 
     /// Returns true if `table` contains an entry for `key`.
     public fun contains<K: copy + drop, V>(table: &Table<K, V>, key: K): bool {
-        raw_table::contains<K>(*&table.handle, key)
+        raw_table::contains<K, V>(*&table.handle, key)
     }
 
     #[test_only]

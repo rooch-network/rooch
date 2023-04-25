@@ -61,7 +61,6 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
         move_stdlib::natives::nursery_natives(*MOVE_STD_ADDRESS, gas_params.move_nursery);
     native_fun_table.extend(nursery_fun_table);
 
-
     let mut natives = vec![];
 
     macro_rules! add_natives {

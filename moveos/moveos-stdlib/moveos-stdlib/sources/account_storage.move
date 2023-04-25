@@ -31,7 +31,7 @@ module moveos_std::account_storage {
             modules: table::new(tx_ctx),
         };
         let object_storage = storage_context::object_storage_mut(ctx);
-        assert!(!object_storage::contains(object_storage, object_id), EAccountAlreadyExists);
+        assert!(!object_storage::contains<AccountStorage>(object_storage, object_id), EAccountAlreadyExists);
         let object = object::new_with_id(object_id, account, account_storage);
         object_storage::add(object_storage, object);
     }
@@ -77,6 +77,13 @@ module moveos_std::account_storage {
         type_table::contains<T>(&account_storage.resources)
     }
 
+    fun exists_module(this: &Object<AccountStorage>, name: String) : bool {
+        let account_storage = object::borrow(this);
+        table::contains(&account_storage.modules, name)
+    }
+
+    // === Global storage functions ===
+
     #[private_generic(T)]
     /// Borrow a resource from the account's storage
     /// This function equates to `borrow_global<T>(address)` instruction in Move
@@ -118,6 +125,15 @@ module moveos_std::account_storage {
     public fun global_exists<T: key>(ctx: &mut StorageContext, account: address) : bool {
         let account_storage = borrow_account_storage(storage_context::object_storage(ctx), account);
         exists_resource<T>(account_storage)
+    }
+
+    // ==== Module functions ====
+
+    //TODO find better name.
+    /// Check if the account has a module with the given name
+    public fun module_exists(ctx: &mut StorageContext, account: address, name: String): bool {
+        let account_storage = borrow_account_storage(storage_context::object_storage(ctx), account);
+        exists_module(account_storage, name) 
     }
     
 }

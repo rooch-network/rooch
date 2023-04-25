@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 /// The Move Object is from Sui Move, and we try to mix the Global storage model and Object model in MoveOS.
-use anyhow::{Result};
+use anyhow::{Result, ensure};
 use move_core_types::{
     account_address::AccountAddress,
     ident_str,
@@ -51,7 +51,7 @@ impl ObjectID {
             .map(ObjectID::from)
     }
 
-    pub fn to_vec(&self) -> Vec<u8>{
+    pub fn to_bytes(&self) -> Vec<u8>{
         self.0.to_vec()
     }
 }
@@ -121,7 +121,7 @@ impl FromStr for ObjectID {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let address = AccountAddress::from_hex_literal(s)
             .map_err(|_| ObjectIDParseError::InvalidHexCharacter)?;
-        Ok(address.into())
+        Ok(ObjectID::from(address))
     }
 }
 
@@ -172,6 +172,7 @@ pub type AccountStorageObject = Object<AccountStorage>;
 pub struct Object<T> {
     pub id: ObjectID,
     pub owner: AccountAddress,
+    //#[serde(flatten)]
     pub value: T,
 }
 
@@ -187,7 +188,7 @@ impl<T> Object<T> where T: MoveStructType {
 
 impl<T> Object<T> where T: Serialize {
 
-    pub fn to_vec(&self) -> Vec<u8>{
+    pub fn to_bytes(&self) -> Vec<u8>{
         bcs::to_bytes(self).unwrap()
     }
 
@@ -236,17 +237,52 @@ where
     }
 }
 
-#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
+#[derive(Eq, PartialEq, Debug, Clone, Hash)]
 pub struct RawObject {
     pub id: ObjectID,
-    pub owner: AccountAddress,
+    pub owner: AccountAddress, 
     pub value: Vec<u8>,
 }
 
 impl RawObject {
-    
-    pub fn to_vec(&self) -> Vec<u8> {
-        bcs::to_bytes(self).unwrap()
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
+        ensure!(bytes.len() > ObjectID::LENGTH+AccountAddress::LENGTH,"Invalid bytes length");
+
+        let id: ObjectID = bcs::from_bytes(&bytes[..ObjectID::LENGTH])?;
+        let owner: AccountAddress = bcs::from_bytes(&bytes[AccountAddress::LENGTH..ObjectID::LENGTH+AccountAddress::LENGTH])?;
+        let value = bytes[ObjectID::LENGTH+AccountAddress::LENGTH..].to_vec();
+        Ok(RawObject{
+            id,
+            owner,
+            value
+        })
+    }
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = vec![];
+        bytes.extend(bcs::to_bytes(&self.id).unwrap());
+        bytes.extend(bcs::to_bytes(&self.owner).unwrap());
+        bytes.extend_from_slice(&self.value);
+        bytes
+    }
+}
+
+impl From<Object<Vec<u8>>> for RawObject {
+    fn from(obj: Object<Vec<u8>>) -> Self {
+        RawObject {
+            id: obj.id,
+            owner: obj.owner,
+            value: obj.value,
+        }
+    }
+}
+
+impl From<RawObject> for Object<Vec<u8>> {
+    fn from(val: RawObject) -> Self {
+        Object {
+            id: val.id,
+            owner: val.owner,
+            value: val.value,
+        }
     }
 }
 
@@ -286,20 +322,14 @@ mod tests {
     #[test]
     fn test_object_serialize() {
         //let struct_type = TestStruct::struct_tag();
-        let object_value = TestStruct { v: 0 };
+        let object_value = TestStruct { v: 1 };
         let object_id = ObjectID::new(HashValue::random().into());
         let object = Object::new(object_id, AccountAddress::random(), object_value);
         
-        let bytes = object.to_vec();
-        let raw_object: RawObject = bcs::from_bytes(&bytes).unwrap();
+        let bytes = object.to_bytes();
+        let raw_object: RawObject = RawObject::from_bytes(&bytes).unwrap();
 
-        let object2 = bcs::from_bytes::<Object<TestStruct>>(&raw_object.to_vec()).unwrap();
+        let object2 = bcs::from_bytes::<Object<TestStruct>>(&raw_object.to_bytes()).unwrap();
         assert_eq!(object, object2);
-
-        //let move_object_bytes = bcs::to_bytes(&move_object).unwrap();
-
-        //TODO fix this.
-        //let move_object_with_type = bcs::from_bytes::<MoveObjectWithType<TestStruct>>(&move_object_bytes).unwrap();
-        //assert_eq!(bcs::to_bytes(&move_object).unwrap(), bcs::to_bytes(&move_object_with_type).unwrap());
     }
 }
