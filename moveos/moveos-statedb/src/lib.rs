@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use move_core_types::{
     account_address::AccountAddress,
     effects::{ChangeSet, Op},
@@ -148,11 +148,19 @@ impl StateDB {
             .map_err(Into::into)
     }
 
-    fn get_as_account_storage(&self, account: AccountAddress) -> Result<Object<AccountStorage>> {
-        let object = self
-            .get_as_object::<AccountStorage>(account.into())?
-            .ok_or_else(|| anyhow!("Can not find account by address:{}", account))?;
-        Ok(object)
+    fn get_as_account_storage(
+        &self,
+        account: AccountAddress,
+    ) -> Result<Option<Object<AccountStorage>>> {
+        self.get_as_object::<AccountStorage>(account.into())
+    }
+
+    fn get_as_account_storage_or_create(
+        &self,
+        account: AccountAddress,
+    ) -> Result<Object<AccountStorage>> {
+        self.get_as_account_storage(account)?
+            .map_or_else(|| Ok(self.create_account_storage(account)?.1), Ok)
     }
 
     //TODO should remove this
@@ -210,7 +218,7 @@ impl StateDB {
         let mut changed_objects = UpdateSet::new();
 
         for (account, account_change_set) in change_set.into_inner() {
-            let account_storage = self.get_as_account_storage(account)?;
+            let account_storage = self.get_as_account_storage_or_create(account)?;
 
             let (modules, resources) = account_change_set.into_inner();
             if !modules.is_empty() {
@@ -252,7 +260,10 @@ impl StateDB {
     }
 
     // Only the genesis account need to create by this function
-    pub fn create_account_storage(&self, account: AccountAddress) -> Result<HashValue> {
+    pub fn create_account_storage(
+        &self,
+        account: AccountAddress,
+    ) -> Result<(HashValue, Object<AccountStorage>)> {
         let resource_table_id = ObjectID::derive_id(account.to_vec(), 0);
         let place_holder: AccountAddress = (**smt::SPARSE_MERKLE_PLACEHOLDER_HASH).into();
         let resource_table_object =
@@ -260,15 +271,14 @@ impl StateDB {
         let module_table_id = ObjectID::derive_id(account.to_vec(), 1);
         let module_table_object =
             Object::new_table_object(module_table_id, TableInfo::new(place_holder));
-        let object = Object::new_account_storage_object(
-            account,
-            AccountStorage {
-                resources: resource_table_id.into(),
-                modules: module_table_id.into(),
-            },
-        );
+        let account_storage = AccountStorage {
+            resources: resource_table_id.into(),
+            modules: module_table_id.into(),
+        };
+        let object: Object<AccountStorage> =
+            Object::new_account_storage_object(account, account_storage);
 
-        self.global_table.puts(vec![
+        let state_root = self.global_table.puts(vec![
             (
                 resource_table_id.to_bytes(),
                 Some(resource_table_object.to_bytes()),
@@ -278,7 +288,8 @@ impl StateDB {
                 Some(module_table_object.to_bytes()),
             ),
             (object.id.to_bytes(), Some(object.to_bytes())),
-        ])
+        ])?;
+        Ok((state_root, object))
     }
 
     // pub fn apply_object_change_set(&self, change_set: ObjectChangeSet) -> Result<HashValue> {
@@ -313,7 +324,10 @@ impl ResourceResolver for StateDB {
     ) -> Result<Option<Vec<u8>>, Self::Error> {
         let account_storage = self.get_as_account_storage(*address)?;
         let key = tag_to_key(tag);
-        self.get_with_key(account_storage.value.resources.into(), key)
+        account_storage.map_or_else(
+            || Ok(Option::None),
+            |account_storage| self.get_with_key(account_storage.value.resources.into(), key),
+        )
     }
 }
 
@@ -323,8 +337,13 @@ impl ModuleResolver for StateDB {
     fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
         let account_storage = self.get_as_account_storage(*module_id.address())?;
         let key = module_name_to_key(module_id.name());
-        let module = self.get_with_key(account_storage.value.modules.into(), key)?;
-        module.map(|v| unbox_value(v.as_slice())).transpose()
+        account_storage.map_or_else(
+            || Ok(Option::None),
+            |account_storage| {
+                let module = self.get_with_key(account_storage.value.modules.into(), key)?;
+                module.map(|v| unbox_value(v.as_slice())).transpose()
+            },
+        )
     }
 }
 
