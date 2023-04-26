@@ -36,8 +36,6 @@ impl MoveOS {
         let moveos = Self { vm, db };
         if is_genesis {
             let genesis_txn = Self::build_genesis_txn()?;
-            //TODO find a better way
-            moveos.db.create_account_storage(genesis_txn.sender)?;
             moveos.execute(genesis_txn)?;
         }
         Ok(moveos)

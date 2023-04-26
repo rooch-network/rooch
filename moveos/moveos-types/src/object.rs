@@ -21,8 +21,25 @@ pub enum NamedTableID {
 }
 
 impl NamedTableID {
+    const RESOURCE_TABLE_INDEX: u64 = 0;
+    const MODULE_TABLE_INDEX: u64 = 1;
+
     pub fn to_object_id(self) -> ObjectID {
         self.into()
+    }
+
+    pub fn account(&self) -> AccountAddress {
+        match self {
+            NamedTableID::Resource(addr) => *addr,
+            NamedTableID::Module(addr) => *addr,
+        }
+    }
+
+    pub fn table_index(&self) -> u64 {
+        match self {
+            NamedTableID::Resource(_) => Self::RESOURCE_TABLE_INDEX,
+            NamedTableID::Module(_) => Self::MODULE_TABLE_INDEX,
+        }
     }
 }
 
@@ -100,18 +117,10 @@ impl From<ObjectID> for AccountAddress {
 
 impl From<NamedTableID> for ObjectID {
     fn from(named_object_id: NamedTableID) -> Self {
-        match named_object_id {
-            NamedTableID::Resource(address) => {
-                let mut bytes = address.to_vec();
-                bytes.push(0);
-                ObjectID::new(HashValue::sha3_256_of(&bytes).into())
-            }
-            NamedTableID::Module(address) => {
-                let mut bytes = address.to_vec();
-                bytes.push(1);
-                ObjectID::new(HashValue::sha3_256_of(&bytes).into())
-            }
-        }
+        ObjectID::derive_id(
+            named_object_id.account().to_vec(),
+            named_object_id.table_index(),
+        )
     }
 }
 
@@ -127,9 +136,16 @@ impl FromStr for ObjectID {
 
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct AccountStorage {
-    //TODO use TableHandle
-    pub resources: AccountAddress,
-    pub modules: AccountAddress,
+    pub resources: ObjectID,
+    pub modules: ObjectID,
+}
+
+impl AccountStorage {
+    pub fn new(account: AccountAddress) -> Self {
+        let resources = NamedTableID::Resource(account).to_object_id();
+        let modules = NamedTableID::Module(account).to_object_id();
+        AccountStorage { resources, modules }
+    }
 }
 
 impl MoveStructType for AccountStorage {
@@ -212,14 +228,11 @@ impl Object<TableInfo> {
 }
 
 impl Object<AccountStorage> {
-    pub fn new_account_storage_object(
-        account: AccountAddress,
-        value: AccountStorage,
-    ) -> AccountStorageObject {
+    pub fn new_account_storage_object(account: AccountAddress) -> AccountStorageObject {
         Self {
             id: ObjectID::from(account),
             owner: account,
-            value,
+            value: AccountStorage::new(account),
         }
     }
 }
@@ -335,5 +348,17 @@ mod tests {
 
         let object2 = bcs::from_bytes::<Object<TestStruct>>(&raw_object.to_bytes()).unwrap();
         assert_eq!(object, object2);
+    }
+
+    #[test]
+    fn test_named_table_id() {
+        //ensure the table id is same as the table id in move
+        let addr = AccountAddress::from_hex_literal(
+            "0xae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647",
+        )
+        .unwrap();
+        let resource_table_id = NamedTableID::Resource(addr).to_object_id();
+        let module_table_id = NamedTableID::Module(addr).to_object_id();
+        print!("{:?} {:?}", resource_table_id, module_table_id)
     }
 }

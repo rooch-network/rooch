@@ -34,7 +34,7 @@ module moveos_std::object {
     /// Create a new object, the object is owned by `owner`
     /// The private generic is indicate the T should be defined in the same module as the caller. This is ensured by the verifier.
     public fun new<T: key>(ctx: &mut TxContext, owner: address, value: T): Object<T> {
-        let id = tx_context::derive_id(ctx);
+        let id = tx_context::fresh_address(ctx);
         Object<T>{id: ObjectID{id}, value, owner}
     }
 
