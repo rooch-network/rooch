@@ -5,7 +5,6 @@ use clap::Parser;
 use move_command_line_common::files::verify_and_create_named_address_mapping;
 use move_command_line_common::{address::ParsedAddress, values::ParsableValue};
 use move_compiler::FullyCompiledProgram;
-use move_resource_viewer::MoveValueAnnotator;
 use move_transactional_test_runner::{
     framework::{CompiledState, MoveTestAdapter},
     tasks::{InitCommand, SyntaxChoice, TaskInput},
@@ -16,8 +15,7 @@ use moveos::{
     moveos::MoveOS,
     types::transaction::{MoveTransaction, SimpleTransaction},
 };
-use moveos_stdlib::natives::moveos_stdlib::object_extension::ObjectResolver;
-use moveos_types::object::{Object, ObjectData, ObjectID};
+use moveos_types::object::{ObjectID, RawObject};
 use std::{collections::BTreeMap, path::Path};
 
 pub struct MoveOSTestAdapter<'a> {
@@ -76,6 +74,9 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
             None => BTreeMap::new(),
         };
 
+        let statedb = moveos_statedb::StateDB::new_with_memory_store();
+        let moveos = MoveOS::new(statedb).unwrap();
+
         let mut named_address_mapping = moveos_stdlib::Framework::named_addresses();
         for (name, addr) in additional_mapping {
             if named_address_mapping.contains_key(&name) {
@@ -85,12 +86,18 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
                 )
             }
             named_address_mapping.insert(name, addr);
+
+            //TODO find better way to init account
+            moveos
+                .state()
+                .create_account_storage(addr.into_inner())
+                .unwrap();
         }
-        let statedb = moveos_statedb::StateDB::new_with_memory_store();
+
         let mut adapter = Self {
             compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps, None),
             default_syntax,
-            moveos: MoveOS::new(statedb).unwrap(),
+            moveos,
         };
 
         //Auto generate interface to Framework modules
@@ -222,23 +229,14 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
     ) -> anyhow::Result<Option<String>> {
         match subcommand.command {
             MoveOSSubcommands::ViewObject { object_id } => {
-                let object: Option<Object> = self.moveos.state().resolve_object(object_id)?;
+                let object: Option<RawObject> = self.moveos.state().get_as_raw_object(object_id)?;
                 let object = object
                     .ok_or_else(|| anyhow::anyhow!("Object with id {} not found", object_id))?;
-                let move_object = match object.data {
-                    ObjectData::MoveObject(data) => data,
-                    //TODO support table object
-                    _ => {
-                        return Err(anyhow::anyhow!(
-                            "Object with id {} is not a Move object",
-                            object_id
-                        ))
-                    }
-                };
+
                 //TODO print more info about object
-                let annotated = MoveValueAnnotator::new(self.moveos.state())
-                    .view_resource(&move_object.type_, &move_object.contents)?;
-                Ok(Some(format!("{}", annotated)))
+                // let annotated = MoveValueAnnotator::new(self.moveos.state())
+                //     .view_resource(&move_object.type_, &move_object.contents)?;
+                Ok(Some(format!("{:?}", object)))
             }
         }
     }

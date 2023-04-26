@@ -1,14 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-
-use anyhow::{bail, Result};
+/// The Move Object is from Sui Move, and we try to mix the Global storage model and Object model in MoveOS.
+use anyhow::{ensure, Result};
 use move_core_types::{
-    account_address::AccountAddress, language_storage::StructTag, move_resource::MoveResource,
+    account_address::AccountAddress,
+    ident_str,
+    identifier::IdentStr,
+    language_storage::TypeTag,
+    move_resource::{MoveResource, MoveStructType},
 };
-use move_table_extension::TableHandle;
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use smt::HashValue;
-/// The Move Object is from Sui Move, and we try to mix the Global storage module and Object model in MoveOS.
 use std::str::FromStr;
 
 /// Specific Table Object ID associated with an address
@@ -25,14 +27,14 @@ impl NamedTableID {
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct ObjectID(HashValue);
+pub struct ObjectID(AccountAddress);
 
 impl ObjectID {
     const LENGTH: usize = HashValue::LENGTH;
 
     /// Creates a new ObjectID
     pub fn new(obj_id: [u8; Self::LENGTH]) -> Self {
-        Self(HashValue::new(obj_id))
+        Self(AccountAddress::new(obj_id))
     }
 
     /// Create an ObjectID from transaction hash digest and `creation_num`.
@@ -40,13 +42,17 @@ impl ObjectID {
     /// `creation_num` is fresh
     pub fn derive_id(mut tx_hash: Vec<u8>, creation_num: u64) -> Self {
         tx_hash.extend(creation_num.to_le_bytes());
-        ObjectID(HashValue::sha3_256_of(&tx_hash))
+        Self::new(HashValue::sha3_256_of(&tx_hash).into())
     }
 
     pub fn from_bytes<T: AsRef<[u8]>>(bytes: T) -> Result<Self, ObjectIDParseError> {
         <[u8; Self::LENGTH]>::try_from(bytes.as_ref())
             .map_err(|_| ObjectIDParseError::TryFromSliceError)
             .map(ObjectID::from)
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.0.to_vec()
     }
 }
 
@@ -82,7 +88,7 @@ impl From<[u8; ObjectID::LENGTH]> for ObjectID {
 
 impl From<AccountAddress> for ObjectID {
     fn from(address: AccountAddress) -> Self {
-        ObjectID(HashValue::new(address.into()))
+        ObjectID(address)
     }
 }
 
@@ -98,20 +104,14 @@ impl From<NamedTableID> for ObjectID {
             NamedTableID::Resource(address) => {
                 let mut bytes = address.to_vec();
                 bytes.push(0);
-                ObjectID(HashValue::sha3_256_of(&bytes))
+                ObjectID::new(HashValue::sha3_256_of(&bytes).into())
             }
             NamedTableID::Module(address) => {
                 let mut bytes = address.to_vec();
                 bytes.push(1);
-                ObjectID(HashValue::sha3_256_of(&bytes))
+                ObjectID::new(HashValue::sha3_256_of(&bytes).into())
             }
         }
-    }
-}
-
-impl From<TableHandle> for ObjectID {
-    fn from(table_handle: TableHandle) -> Self {
-        ObjectID(HashValue::new(table_handle.0.into()))
     }
 }
 
@@ -121,153 +121,174 @@ impl FromStr for ObjectID {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let address = AccountAddress::from_hex_literal(s)
             .map_err(|_| ObjectIDParseError::InvalidHexCharacter)?;
-        Ok(address.into())
-    }
-}
-
-pub type SequenceNumber = u64;
-
-#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
-pub struct Object {
-    pub data: ObjectData,
-    /// The owner that unlocks this object
-    pub owner: Owner,
-}
-
-impl Object {
-    pub fn new_table_object(object: TableObject) -> Self {
-        Self {
-            data: ObjectData::TableObject(object),
-            //TODO: set the owner
-            owner: Owner::Immutable,
-        }
-    }
-
-    pub fn new_move_object(object: MoveObject) -> Self {
-        Self {
-            data: ObjectData::MoveObject(object),
-            //TODO: set the owner
-            owner: Owner::Immutable,
-        }
-    }
-}
-
-impl TryInto<TableObject> for ObjectData {
-    type Error = anyhow::Error;
-
-    fn try_into(self) -> Result<TableObject, Self::Error> {
-        match self {
-            ObjectData::TableObject(object) => Ok(object),
-            ObjectData::MoveObject(_) => {
-                bail!("expect table object, but get move object")
-            }
-        }
-    }
-}
-
-impl TryInto<MoveObject> for ObjectData {
-    type Error = anyhow::Error;
-
-    fn try_into(self) -> Result<MoveObject, Self::Error> {
-        match self {
-            ObjectData::TableObject(_) => bail!("expect move object, but get table object"),
-            ObjectData::MoveObject(object) => Ok(object),
-        }
+        Ok(ObjectID::from(address))
     }
 }
 
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
-pub enum ObjectData {
-    TableObject(TableObject),
-    MoveObject(MoveObject),
+pub struct AccountStorage {
+    //TODO use TableHandle
+    pub resources: AccountAddress,
+    pub modules: AccountAddress,
 }
 
-impl ObjectData {
-    pub fn as_table_object(&self) -> Result<&TableObject> {
-        match self {
-            ObjectData::TableObject(object) => Ok(object),
-            ObjectData::MoveObject(_) => bail!("object is not a table object"),
-        }
-    }
+impl MoveStructType for AccountStorage {
+    const MODULE_NAME: &'static IdentStr = ident_str!("account_storage");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("AccountStorage");
 
-    pub fn as_table_object_mut(&mut self) -> Result<&mut TableObject> {
-        match self {
-            ObjectData::TableObject(object) => Ok(object),
-            ObjectData::MoveObject(_) => bail!("object is not a table object"),
-        }
-    }
-
-    pub fn as_move_object(&self) -> Result<&MoveObject> {
-        match self {
-            ObjectData::TableObject(_) => bail!("object is not a move object"),
-            ObjectData::MoveObject(object) => Ok(object),
-        }
-    }
-
-    pub fn as_move_object_mut(&mut self) -> Result<&mut MoveObject> {
-        match self {
-            ObjectData::TableObject(_) => bail!("object is not a move object"),
-            ObjectData::MoveObject(object) => Ok(object),
-        }
+    fn type_params() -> Vec<TypeTag> {
+        vec![]
     }
 }
 
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
-pub struct MoveObject {
-    pub type_: StructTag,
-    pub version: SequenceNumber,
-    #[serde(with = "serde_bytes")]
-    pub contents: Vec<u8>,
+pub struct TableInfo {
+    //TODO use u256?
+    pub state_root: AccountAddress,
+    //TODO keep Table Key TypeTag at here
 }
 
-impl MoveObject {
-    pub fn new(type_: StructTag, version: SequenceNumber, contents: Vec<u8>) -> Self {
-        Self {
-            type_,
-            version,
-            contents,
-        }
-    }
-    pub fn decode<T: MoveResource>(&self) -> Result<T, anyhow::Error> {
-        if T::struct_tag() != self.type_ {
-            anyhow::bail!(
-                "Type mismatch, expected: {:?}, got: {:?}",
-                T::struct_tag(),
-                self.type_
-            );
-        }
-        Ok(bcs::from_bytes(&self.contents)?)
+impl TableInfo {
+    pub fn new(state_root: AccountAddress) -> Self {
+        TableInfo { state_root }
     }
 }
+
+impl MoveStructType for TableInfo {
+    const MODULE_NAME: &'static IdentStr = ident_str!("raw_table");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("AccountStorage");
+
+    fn type_params() -> Vec<TypeTag> {
+        vec![]
+    }
+}
+
+pub type TableObject = Object<TableInfo>;
+pub type AccountStorageObject = Object<AccountStorage>;
 
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
-pub struct TableObject {
-    pub state_root: HashValue,
-    pub version: SequenceNumber,
+pub struct Object<T> {
+    pub id: ObjectID,
+    pub owner: AccountAddress,
+    //#[serde(flatten)]
+    pub value: T,
 }
 
-impl TableObject {
-    pub fn new(state_root: HashValue, version: SequenceNumber) -> Self {
-        Self {
-            state_root,
-            version,
+impl<T> Object<T>
+where
+    T: MoveStructType,
+{
+    pub fn new(id: ObjectID, owner: AccountAddress, value: T) -> Object<T> {
+        Self { id, owner, value }
+    }
+}
+
+impl<T> Object<T>
+where
+    T: Serialize,
+{
+    pub fn to_bytes(&self) -> Vec<u8> {
+        bcs::to_bytes(self).unwrap()
+    }
+
+    pub fn to_raw(&self) -> RawObject {
+        RawObject {
+            id: self.id,
+            owner: self.owner,
+            value: bcs::to_bytes(&self.value).unwrap(),
         }
     }
 }
 
-#[derive(Eq, PartialEq, Debug, Clone, Copy, Deserialize, Serialize, Hash, Ord, PartialOrd)]
-pub enum Owner {
-    /// Object is exclusively owned by a single address, and is mutable.
-    AddressOwner(AccountAddress),
-    /// Object is exclusively owned by a single object, and is mutable.
-    ObjectOwner(ObjectID),
-    /// Object is shared, can be used by any address, and is mutable.
-    Shared {
-        /// The version at which the object became shared
-        initial_shared_version: SequenceNumber,
-    },
-    /// Object is immutable, and hence ownership doesn't matter.
-    Immutable,
+impl Object<TableInfo> {
+    pub fn new_table_object(id: ObjectID, value: TableInfo) -> TableObject {
+        Self {
+            id,
+            //TODO table should have a owner?
+            owner: AccountAddress::ZERO,
+            value,
+        }
+    }
+}
+
+impl Object<AccountStorage> {
+    pub fn new_account_storage_object(
+        account: AccountAddress,
+        value: AccountStorage,
+    ) -> AccountStorageObject {
+        Self {
+            id: ObjectID::from(account),
+            owner: account,
+            value,
+        }
+    }
+}
+
+impl<T> MoveResource for Object<T> where T: MoveStructType + DeserializeOwned {}
+
+pub const OBJECT_MODULE_NAME: &IdentStr = ident_str!("object");
+pub const OBJECT_STRUCT_NAME: &IdentStr = ident_str!("Object");
+
+impl<T> MoveStructType for Object<T>
+where
+    T: MoveStructType,
+{
+    const MODULE_NAME: &'static IdentStr = OBJECT_MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = OBJECT_STRUCT_NAME;
+
+    fn type_params() -> Vec<TypeTag> {
+        vec![TypeTag::Struct(Box::new(T::struct_tag()))]
+    }
+}
+
+#[derive(Eq, PartialEq, Debug, Clone, Hash)]
+pub struct RawObject {
+    pub id: ObjectID,
+    pub owner: AccountAddress,
+    pub value: Vec<u8>,
+}
+
+impl RawObject {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
+        ensure!(
+            bytes.len() > ObjectID::LENGTH + AccountAddress::LENGTH,
+            "Invalid bytes length"
+        );
+
+        let id: ObjectID = bcs::from_bytes(&bytes[..ObjectID::LENGTH])?;
+        let owner: AccountAddress = bcs::from_bytes(
+            &bytes[AccountAddress::LENGTH..ObjectID::LENGTH + AccountAddress::LENGTH],
+        )?;
+        let value = bytes[ObjectID::LENGTH + AccountAddress::LENGTH..].to_vec();
+        Ok(RawObject { id, owner, value })
+    }
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = vec![];
+        bytes.extend(bcs::to_bytes(&self.id).unwrap());
+        bytes.extend(bcs::to_bytes(&self.owner).unwrap());
+        bytes.extend_from_slice(&self.value);
+        bytes
+    }
+}
+
+impl From<Object<Vec<u8>>> for RawObject {
+    fn from(obj: Object<Vec<u8>>) -> Self {
+        RawObject {
+            id: obj.id,
+            owner: obj.owner,
+            value: obj.value,
+        }
+    }
+}
+
+impl From<RawObject> for Object<Vec<u8>> {
+    fn from(val: RawObject) -> Self {
+        Object {
+            id: val.id,
+            owner: val.owner,
+            value: val.value,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -288,5 +309,31 @@ mod tests {
         let object_id = ObjectID::from(address);
         let object_id2 = ObjectID::from_str(&object_id.to_string()).unwrap();
         assert_eq!(object_id, object_id2);
+    }
+
+    #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
+    struct TestStruct {
+        v: u8,
+    }
+
+    impl MoveStructType for TestStruct {
+        const MODULE_NAME: &'static IdentStr = ident_str!("test");
+        const STRUCT_NAME: &'static IdentStr = ident_str!("TestStruct");
+    }
+
+    impl MoveResource for TestStruct {}
+
+    #[test]
+    fn test_object_serialize() {
+        //let struct_type = TestStruct::struct_tag();
+        let object_value = TestStruct { v: 1 };
+        let object_id = ObjectID::new(HashValue::random().into());
+        let object = Object::new(object_id, AccountAddress::random(), object_value);
+
+        let bytes = object.to_bytes();
+        let raw_object: RawObject = RawObject::from_bytes(&bytes).unwrap();
+
+        let object2 = bcs::from_bytes::<Object<TestStruct>>(&raw_object.to_bytes()).unwrap();
+        assert_eq!(object, object2);
     }
 }

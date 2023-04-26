@@ -17,7 +17,6 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
     value::MoveTypeLayout,
 };
-use move_table_extension::NativeTableContext;
 use move_vm_runtime::{
     config::VMConfig,
     move_vm::MoveVM,
@@ -29,10 +28,8 @@ use move_vm_types::{
     gas::GasMeter,
     loaded_data::runtime_types::{CachedStructIndex, StructType, Type},
 };
-use moveos_statedb::HashValue;
-use moveos_stdlib::natives::{
-    self, moveos_stdlib::object_extension::NativeObjectContext, GasParameters,
-};
+use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
+use moveos_stdlib::natives::{self, GasParameters};
 use moveos_types::tx_context::TxContext;
 
 pub struct MoveVmExt {
@@ -54,16 +51,12 @@ impl MoveVmExt {
         })
     }
 
-    pub fn new_session<'r, S: MoveResolverExt>(
-        &self,
-        remote: &'r S,
-        session_id: HashValue,
-    ) -> SessionExt<'r, '_, S> {
+    pub fn new_session<'r, S: MoveResolverExt>(&self, remote: &'r S) -> SessionExt<'r, '_, S> {
         let mut extensions = NativeContextExtensions::default();
-        let txn_hash: [u8; 32] = session_id.into();
+        //let txn_hash: [u8; 32] = session_id.into();
 
-        extensions.add(NativeTableContext::new(txn_hash, remote));
-        extensions.add(NativeObjectContext::new(remote));
+        extensions.add(NativeTableContext::new(remote));
+        //extensions.add(NativeObjectContext::new(remote));
 
         // The VM code loader has bugs around module upgrade. After a module upgrade, the internal
         // cache needs to be flushed to work around those bugs.
@@ -92,12 +85,12 @@ where
         func: LoadedFunctionInstantiation,
         args: Vec<Vec<u8>>,
     ) -> Result<Vec<Vec<u8>>, PartialVMError> {
-        let args = tx_context.resolve_argument(self, &func, args)?;
-        let object_context = self
-            .session
-            .get_native_extensions()
-            .get::<NativeObjectContext>();
-        object_context.resolve_argument(self, &func, args)
+        tx_context.resolve_argument(self, &func, args)
+        // let object_context = self
+        //     .session
+        //     .get_native_extensions()
+        //     .get::<NativeObjectContext>();
+        // object_context.resolve_argument(self, &func, args)
     }
 
     /************** Proxy function */

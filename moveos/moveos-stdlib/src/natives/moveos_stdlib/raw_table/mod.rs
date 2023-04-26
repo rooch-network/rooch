@@ -23,14 +23,14 @@ use move_vm_types::{
     loaded_data::runtime_types::Type,
     natives::function::NativeResult,
     pop_arg,
-    values::{GlobalValue, Reference, StructRef, Value},
+    values::{GlobalValue, Value},
 };
-use sha3::{Digest, Sha3_256};
+use moveos_types::object::ObjectID;
+use serde::{Deserialize, Serialize};
 use smallvec::smallvec;
 use std::{
     cell::RefCell,
     collections::{btree_map::Entry, BTreeMap, BTreeSet, VecDeque},
-    fmt::Display,
     sync::Arc,
 };
 
@@ -43,9 +43,15 @@ use std::{
 #[derive(Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
 pub struct TableHandle(pub AccountAddress);
 
-impl Display for TableHandle {
+impl std::fmt::Display for TableHandle {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "T-{:X}", self.0)
+    }
+}
+
+impl From<TableHandle> for ObjectID {
+    fn from(table_handle: TableHandle) -> Self {
+        table_handle.0.into()
     }
 }
 
@@ -60,7 +66,7 @@ impl TableInfo {
     }
 }
 
-impl Display for TableInfo {
+impl std::fmt::Display for TableInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Table<{}>", self.key_type)
     }
@@ -72,6 +78,12 @@ pub struct TableChangeSet {
     pub new_tables: BTreeMap<TableHandle, TableInfo>,
     pub removed_tables: BTreeSet<TableHandle>,
     pub changes: BTreeMap<TableHandle, TableChange>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ValueBox {
+    pub value_tag: TypeTag,
+    pub value: Vec<u8>,
 }
 
 /// A change of a single table.
@@ -95,7 +107,7 @@ pub trait TableResolver {
 #[derive(Tid)]
 pub struct NativeTableContext<'a> {
     resolver: &'a dyn TableResolver,
-    txn_hash: [u8; 32],
+    //txn_hash: [u8; 32],
     table_data: RefCell<TableData>,
 }
 
@@ -133,19 +145,15 @@ struct Table {
     content: BTreeMap<Vec<u8>, TableValue>,
 }
 
-/// The field index of the `handle` field in the `Table` Move struct.
-const HANDLE_FIELD_INDEX: usize = 0;
-
 // =========================================================================================
 // Implementation of Native Table Context
 
 impl<'a> NativeTableContext<'a> {
     /// Create a new instance of a native table context. This must be passed in via an
     /// extension into VM session functions.
-    pub fn new(txn_hash: [u8; 32], resolver: &'a dyn TableResolver) -> Self {
+    pub fn new(resolver: &'a dyn TableResolver) -> Self {
         Self {
             resolver,
-            txn_hash,
             table_data: Default::default(),
         }
     }
@@ -174,14 +182,16 @@ impl<'a> NativeTableContext<'a> {
                     Some(op) => op,
                     None => continue,
                 };
-
+                //let value_tag: TypeTag = (&value_layout).try_into().map_err(|_|PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;
                 match op {
                     Op::New(val) => {
                         let bytes = serialize(&value_layout, &val)?;
+                        //let value_box = ValueBox{ value_tag, value: bytes};
                         entries.insert(key, Op::New(bytes));
                     }
                     Op::Modify(val) => {
                         let bytes = serialize(&value_layout, &val)?;
+                        //let value_box = ValueBox{ value_tag, value: bytes};
                         entries.insert(key, Op::Modify(bytes));
                     }
                     Op::Delete => {
@@ -271,47 +281,39 @@ impl Table {
 
 /// Returns all natives for tables.
 pub fn table_natives(table_addr: AccountAddress, gas_params: GasParameters) -> NativeFunctionTable {
-    let natives: [(&str, &str, NativeFunction); 8] = [
+    let natives: [(&str, &str, NativeFunction); 7] = [
         (
-            "any_table",
-            "new_table_handle",
-            make_native_new_table_handle(gas_params.new_table_handle),
-        ),
-        (
-            "any_table",
+            "raw_table",
             "add_box",
-            make_native_add_box(gas_params.common.clone().into(), gas_params.add_box),
+            make_native_add_box(gas_params.common.clone(), gas_params.add_box),
         ),
         (
-            "any_table",
+            "raw_table",
             "borrow_box",
-            make_native_borrow_box(
-                gas_params.common.clone().into(),
-                gas_params.borrow_box.clone(),
-            ),
+            make_native_borrow_box(gas_params.common.clone(), gas_params.borrow_box.clone()),
         ),
         (
-            "any_table",
+            "raw_table",
             "borrow_box_mut",
-            make_native_borrow_box(gas_params.common.clone().into(), gas_params.borrow_box),
+            make_native_borrow_box(gas_params.common.clone(), gas_params.borrow_box),
         ),
         (
-            "any_table",
+            "raw_table",
             "remove_box",
-            make_native_remove_box(gas_params.common.clone().into(), gas_params.remove_box),
+            make_native_remove_box(gas_params.common.clone(), gas_params.remove_box),
         ),
         (
-            "any_table",
+            "raw_table",
             "contains_box",
-            make_native_contains_box(gas_params.common.into(), gas_params.contains_box),
+            make_native_contains_box(gas_params.common, gas_params.contains_box),
         ),
         (
-            "any_table",
+            "raw_table",
             "destroy_empty_box",
             make_native_destroy_empty_box(gas_params.destroy_empty_box),
         ),
         (
-            "any_table",
+            "raw_table",
             "drop_unchecked_box",
             make_native_drop_unchecked_box(gas_params.drop_unchecked_box),
         ),
@@ -338,62 +340,11 @@ impl CommonGasParameters {
     }
 }
 
-impl From<move_table_extension::CommonGasParameters> for CommonGasParameters {
-    fn from(value: move_table_extension::CommonGasParameters) -> Self {
-        CommonGasParameters {
-            load_base: value.load_base,
-            load_per_byte: value.load_per_byte,
-            load_failure: value.load_failure,
-        }
-    }
+#[derive(Debug, Clone)]
+pub struct AddBoxGasParameters {
+    pub base: InternalGas,
+    pub per_byte_serialized: InternalGasPerByte,
 }
-
-type NewTableHandleGasParameters = move_table_extension::NewTableHandleGasParameters;
-
-fn native_new_table_handle(
-    gas_params: &NewTableHandleGasParameters,
-    context: &mut NativeContext,
-    ty_args: Vec<Type>,
-    args: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    assert_eq!(ty_args.len(), 2);
-    assert!(args.is_empty());
-
-    let table_context = context.extensions().get::<NativeTableContext>();
-    let mut table_data = table_context.table_data.borrow_mut();
-
-    // Take the transaction hash provided by the environment, combine it with the # of tables
-    // produced so far, sha256 this to produce a unique handle. Given the txn hash
-    // is unique, this should create a unique and deterministic global id.
-    let mut digest = Sha3_256::new();
-    let table_len = table_data.new_tables.len() as u32; // cast usize to u32 to ensure same length
-    Digest::update(&mut digest, table_context.txn_hash);
-    Digest::update(&mut digest, table_len.to_be_bytes());
-    let bytes = digest.finalize().to_vec();
-    let handle = AccountAddress::from_bytes(&bytes[0..AccountAddress::LENGTH])
-        .map_err(|_| partial_extension_error("Unable to create table handle"))?;
-    let key_type = context.type_to_type_tag(&ty_args[0])?;
-    //let value_type = context.type_to_type_tag(&ty_args[1])?;
-    assert!(table_data
-        .new_tables
-        .insert(TableHandle(handle), TableInfo::new(key_type))
-        .is_none());
-
-    Ok(NativeResult::ok(
-        gas_params.base,
-        smallvec![Value::address(handle)],
-    ))
-}
-
-pub fn make_native_new_table_handle(gas_params: NewTableHandleGasParameters) -> NativeFunction {
-    Arc::new(
-        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_new_table_handle(&gas_params, context, ty_args, args)
-        },
-    )
-}
-
-type AddBoxGasParameters = move_table_extension::AddBoxGasParameters;
 
 fn native_add_box(
     common_gas_params: &CommonGasParameters,
@@ -410,7 +361,7 @@ fn native_add_box(
 
     let val = args.pop_back().unwrap();
     let key = args.pop_back().unwrap();
-    let handle = get_table_handle(&pop_arg!(args, StructRef))?;
+    let handle = get_table_handle(pop_arg!(args, AccountAddress))?;
 
     let mut cost = gas_params.base;
 
@@ -440,7 +391,11 @@ pub fn make_native_add_box(
     )
 }
 
-type BorrowBoxGasParameters = move_table_extension::BorrowBoxGasParameters;
+#[derive(Debug, Clone)]
+pub struct BorrowBoxGasParameters {
+    pub base: InternalGas,
+    pub per_byte_serialized: InternalGasPerByte,
+}
 
 fn native_borrow_box(
     common_gas_params: &CommonGasParameters,
@@ -456,7 +411,7 @@ fn native_borrow_box(
     let mut table_data = table_context.table_data.borrow_mut();
 
     let key = args.pop_back().unwrap();
-    let handle = get_table_handle(&pop_arg!(args, StructRef))?;
+    let handle = get_table_handle(pop_arg!(args, AccountAddress))?;
 
     let table = table_data.get_or_create_table(context, handle, &ty_args[0])?;
 
@@ -486,7 +441,11 @@ pub fn make_native_borrow_box(
     )
 }
 
-type ContainsBoxGasParameters = move_table_extension::ContainsBoxGasParameters;
+#[derive(Debug, Clone)]
+pub struct ContainsBoxGasParameters {
+    pub base: InternalGas,
+    pub per_byte_serialized: InternalGasPerByte,
+}
 
 fn native_contains_box(
     common_gas_params: &CommonGasParameters,
@@ -495,14 +454,14 @@ fn native_contains_box(
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    assert_eq!(ty_args.len(), 1);
+    assert_eq!(ty_args.len(), 3);
     assert_eq!(args.len(), 2);
 
     let table_context = context.extensions().get::<NativeTableContext>();
     let mut table_data = table_context.table_data.borrow_mut();
 
     let key = args.pop_back().unwrap();
-    let handle = get_table_handle(&pop_arg!(args, StructRef))?;
+    let handle = get_table_handle(pop_arg!(args, AccountAddress))?;
 
     let table = table_data.get_or_create_table(context, handle, &ty_args[0])?;
 
@@ -531,7 +490,11 @@ pub fn make_native_contains_box(
     )
 }
 
-type RemoveGasParameters = move_table_extension::RemoveGasParameters;
+#[derive(Debug, Clone)]
+pub struct RemoveGasParameters {
+    pub base: InternalGas,
+    pub per_byte_serialized: InternalGasPerByte,
+}
 
 fn native_remove_box(
     common_gas_params: &CommonGasParameters,
@@ -547,7 +510,7 @@ fn native_remove_box(
     let mut table_data = table_context.table_data.borrow_mut();
 
     let key = args.pop_back().unwrap();
-    let handle = get_table_handle(&pop_arg!(args, StructRef))?;
+    let handle = get_table_handle(pop_arg!(args, AccountAddress))?;
 
     let table = table_data.get_or_create_table(context, handle, &ty_args[0])?;
 
@@ -555,7 +518,6 @@ fn native_remove_box(
 
     let key_bytes = serialize(&table.key_layout, &key)?;
     cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
-
     let (gv, loaded) =
         table.get_or_create_global_value(context, table_context, key_bytes, &ty_args[2])?;
     cost += common_gas_params.calculate_load_cost(loaded);
@@ -577,7 +539,10 @@ pub fn make_native_remove_box(
     )
 }
 
-type DestroyEmptyBoxGasParameters = move_table_extension::DestroyEmptyBoxGasParameters;
+#[derive(Debug, Clone)]
+pub struct DestroyEmptyBoxGasParameters {
+    pub base: InternalGas,
+}
 
 fn native_destroy_empty_box(
     gas_params: &DestroyEmptyBoxGasParameters,
@@ -591,7 +556,7 @@ fn native_destroy_empty_box(
     let table_context = context.extensions().get::<NativeTableContext>();
     let mut table_data = table_context.table_data.borrow_mut();
 
-    let handle = get_table_handle(&pop_arg!(args, StructRef))?;
+    let handle = get_table_handle(pop_arg!(args, AccountAddress))?;
     // TODO: Can the following line be removed?
     table_data.get_or_create_table(context, handle, &ty_args[0])?;
 
@@ -608,7 +573,10 @@ pub fn make_native_destroy_empty_box(gas_params: DestroyEmptyBoxGasParameters) -
     )
 }
 
-type DropUncheckedBoxGasParameters = move_table_extension::DropUncheckedBoxGasParameters;
+#[derive(Debug, Clone)]
+pub struct DropUncheckedBoxGasParameters {
+    pub base: InternalGas,
+}
 
 fn native_drop_unchecked_box(
     gas_params: &DropUncheckedBoxGasParameters,
@@ -630,17 +598,51 @@ pub fn make_native_drop_unchecked_box(gas_params: DropUncheckedBoxGasParameters)
     )
 }
 
-type GasParameters = move_table_extension::GasParameters;
+#[derive(Debug, Clone)]
+pub struct GasParameters {
+    pub common: CommonGasParameters,
+    pub add_box: AddBoxGasParameters,
+    pub borrow_box: BorrowBoxGasParameters,
+    pub contains_box: ContainsBoxGasParameters,
+    pub remove_box: RemoveGasParameters,
+    pub destroy_empty_box: DestroyEmptyBoxGasParameters,
+    pub drop_unchecked_box: DropUncheckedBoxGasParameters,
+}
+
+impl GasParameters {
+    pub fn zeros() -> Self {
+        Self {
+            common: CommonGasParameters {
+                load_base: 0.into(),
+                load_per_byte: 0.into(),
+                load_failure: 0.into(),
+            },
+            add_box: AddBoxGasParameters {
+                base: 0.into(),
+                per_byte_serialized: 0.into(),
+            },
+            borrow_box: BorrowBoxGasParameters {
+                base: 0.into(),
+                per_byte_serialized: 0.into(),
+            },
+            contains_box: ContainsBoxGasParameters {
+                base: 0.into(),
+                per_byte_serialized: 0.into(),
+            },
+            remove_box: RemoveGasParameters {
+                base: 0.into(),
+                per_byte_serialized: 0.into(),
+            },
+            destroy_empty_box: DestroyEmptyBoxGasParameters { base: 0.into() },
+            drop_unchecked_box: DropUncheckedBoxGasParameters { base: 0.into() },
+        }
+    }
+}
 
 // =========================================================================================
 // Helpers
 
-fn get_table_handle(table: &StructRef) -> PartialVMResult<TableHandle> {
-    let handle = table
-        .borrow_field(HANDLE_FIELD_INDEX)?
-        .value_as::<Reference>()?
-        .read_ref()?
-        .value_as::<AccountAddress>()?;
+fn get_table_handle(handle: AccountAddress) -> PartialVMResult<TableHandle> {
     Ok(TableHandle(handle))
 }
 

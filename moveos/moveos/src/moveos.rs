@@ -16,12 +16,11 @@ use move_core_types::{
     identifier::IdentStr,
     language_storage::{ModuleId, TypeTag},
 };
-use move_table_extension::NativeTableContext;
 use move_vm_runtime::session::SerializedReturnValues;
 use move_vm_types::gas::UnmeteredGasMeter;
 use moveos_statedb::{HashValue, StateDB};
 use moveos_stdlib::addresses::ROOCH_FRAMEWORK_ADDRESS;
-use moveos_stdlib::natives::moveos_stdlib::object_extension::NativeObjectContext;
+use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
 use moveos_types::tx_context::TxContext;
 use std::borrow::Borrow;
 
@@ -37,6 +36,8 @@ impl MoveOS {
         let moveos = Self { vm, db };
         if is_genesis {
             let genesis_txn = Self::build_genesis_txn()?;
+            //TODO find a better way
+            moveos.db.create_account_storage(genesis_txn.sender)?;
             moveos.execute(genesis_txn)?;
         }
         Ok(moveos)
@@ -64,7 +65,7 @@ impl MoveOS {
         let tx_hash = txn.txn_hash();
         let senders = txn.senders();
         let move_txn = txn.into_move_transaction();
-        let session = self.vm.new_session(&self.db, tx_hash);
+        let session = self.vm.new_session(&self.db);
         self.execute_transaction(session, senders, tx_hash, move_txn)
     }
 
@@ -131,11 +132,11 @@ impl MoveOS {
         //TODO move apply change set to a suitable place, and make MoveOS state less.
         self.db.apply_change_set(change_set, table_change_set)?;
 
-        let object_context: NativeObjectContext = extensions.remove();
-        let object_change_set = object_context
-            .into_change_set()
-            .map_err(|e| e.finish(Location::Undefined))?;
-        self.db.apply_object_change_set(object_change_set)?;
+        // let object_context: NativeObjectContext = extensions.remove();
+        // let object_change_set = object_context
+        //     .into_change_set()
+        //     .map_err(|e| e.finish(Location::Undefined))?;
+        // self.db.apply_object_change_set(object_change_set)?;
 
         Ok(())
     }
@@ -148,8 +149,7 @@ impl MoveOS {
         ty_args: Vec<TypeTag>,
         args: Vec<impl Borrow<[u8]>>,
     ) -> Result<SerializedReturnValues> {
-        let session_id = HashValue::random();
-        let mut session = self.vm.new_session(&self.db, session_id);
+        let mut session = self.vm.new_session(&self.db);
         //TODO limit the view function max gas usage
         let mut gas_meter = UnmeteredGasMeter;
         let result = session.execute_function_bypass_visibility(

@@ -22,4 +22,3 @@ serde = { workspace = true }
 serde_bytes = { workspace = true }
 
 move-core-types = { workspace = true }
-move-table-extension = { workspace = true }

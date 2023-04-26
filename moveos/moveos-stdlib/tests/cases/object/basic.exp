@@ -1,37 +1,17 @@
 processed 10 tasks
 
-task 3 'view_object'. lines 38-40:
+task 3 'view_object'. lines 59-61:
+RawObject { id: ObjectID(a5dac25e36ef3fdb7f496b6ab0d1916d73d025dc1c5f2560f779e62b645cac7d), owner: 0000000000000000000000000000000000000000000000000000000000000043, value: [1] }
+
+task 5 'view_object'. lines 65-68:
+RawObject { id: ObjectID(0be6975de71303c7a4ab6d2d15b14cb4320fba263cc4283cfe1d63a633247db1), owner: 0000000000000000000000000000000000000000000000000000000000000043, value: [2] }
+
+task 7 'view'. lines 72-74:
 store key 0x42::m::S {
-    id: store 0x1::object::UID {
-        id: copy drop store 0x1::object::ID {
-            bytes: ae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647
-        }
-    }
+    v: 1u8
 }
 
-task 5 'view_object'. lines 44-47:
+task 9 'view'. lines 78-78:
 store key 0x42::m::Cup<0x42::m::S> {
-    id: store 0x1::object::UID {
-        id: copy drop store 0x1::object::ID {
-            bytes: bbaf311ae6768a532b1f9dee65b1758a7bb1114fd57df8fa94cb2d1cb5f6896
-        }
-    }
-}
-
-task 7 'view'. lines 51-53:
-store key 0x42::m::S {
-    id: store 0x1::object::UID {
-        id: copy drop store 0x1::object::ID {
-            bytes: ae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647
-        }
-    }
-}
-
-task 9 'view'. lines 57-57:
-store key 0x42::m::Cup<0x42::m::S> {
-    id: store 0x1::object::UID {
-        id: copy drop store 0x1::object::ID {
-            bytes: bbaf311ae6768a532b1f9dee65b1758a7bb1114fd57df8fa94cb2d1cb5f6896
-        }
-    }
+    v: 2u8
 }
