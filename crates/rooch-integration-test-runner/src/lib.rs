@@ -86,8 +86,7 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
                 )
             }
             named_address_mapping.insert(name, addr);
-
-            //TODO find better way to init account
+            //TODO find a better way to create account storage
             moveos
                 .state()
                 .create_account_storage(addr.into_inner())

@@ -13,7 +13,7 @@ use moveos_stdlib::natives::moveos_stdlib::raw_table::{
     TableChangeSet, TableHandle, TableResolver,
 };
 use moveos_types::{
-    object::{AccountStorage, Object, ObjectID, RawObject, TableInfo},
+    object::{AccountStorage, NamedTableID, Object, ObjectID, RawObject, TableInfo},
     storage_context,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -158,20 +158,19 @@ impl StateDB {
     fn get_as_account_storage_or_create(
         &self,
         account: AccountAddress,
-    ) -> Result<Object<AccountStorage>> {
-        self.get_as_account_storage(account)?
-            .map_or_else(|| Ok(self.create_account_storage(account)?.1), Ok)
+    ) -> Result<(
+        Object<AccountStorage>,
+        AccountStorageTables<InMemoryNodeStore>,
+    )> {
+        let account_storage = self
+            .get_as_account_storage(account)?
+            .unwrap_or_else(|| Object::new_account_storage_object(account));
+        let storage_tables = AccountStorageTables {
+            resources: self.get_as_table_or_create(account_storage.value.resources)?,
+            modules: self.get_as_table_or_create(account_storage.value.modules)?,
+        };
+        Ok((account_storage, storage_tables))
     }
-
-    //TODO should remove this
-    // fn get_as_account_storage_with_table(&self, account: AccountAddress) -> Result<(Object<AccountStorage>,AccountStorageTables<InMemoryNodeStore>)>{
-    //     let object = self.get_as_account_storage(account)?;
-    //     let account_storage_tables = AccountStorageTables{
-    //         resources: self.get_as_table_or_create(object.value.resources.into())?,
-    //         modules: self.get_as_table_or_create(object.value.modules.into())?,
-    //     };
-    //     Ok((object, account_storage_tables))
-    // }
 
     pub fn get_as_table(
         &self,
@@ -199,8 +198,8 @@ impl StateDB {
     ) -> Result<(Object<TableInfo>, TreeTable<InMemoryNodeStore>)> {
         Ok(self.get_as_table(id)?.unwrap_or_else(|| {
             let table = TreeTable::new(self.node_store.clone());
-            let table_object = TableInfo::new(AccountAddress::new(table.state_root().into()));
-            let object = Object::new_table_object(id, table_object);
+            let table_info = TableInfo::new(AccountAddress::new(table.state_root().into()));
+            let object = Object::new_table_object(id, table_info);
             (object, table)
         }))
     }
@@ -218,23 +217,30 @@ impl StateDB {
         let mut changed_objects = UpdateSet::new();
 
         for (account, account_change_set) in change_set.into_inner() {
-            let account_storage = self.get_as_account_storage_or_create(account)?;
+            let (account_storage, storage_tables) =
+                self.get_as_account_storage_or_create(account)?;
 
             let (modules, resources) = account_change_set.into_inner();
             if !modules.is_empty() {
-                let object_id = account_storage.value.modules.into();
-                let (mut object, module_table) = self.get_as_table_or_create(object_id)?;
+                let (mut object, module_table) = storage_tables.modules;
                 let new_state_root = module_table.put_modules(modules)?;
                 object.value.state_root = AccountAddress::new(new_state_root.into());
-                changed_objects.put(object_id.to_bytes(), object.to_bytes());
+                changed_objects.put(account_storage.value.modules.to_bytes(), object.to_bytes());
             }
             if !resources.is_empty() {
-                let object_id = account_storage.value.resources.into();
-                let (mut object, resource_table) = self.get_as_table_or_create(object_id)?;
+                let (mut object, resource_table) = storage_tables.resources;
                 let new_state_root = resource_table.put_resources(resources)?;
                 object.value.state_root = AccountAddress::new(new_state_root.into());
-                changed_objects.put(object_id.to_bytes(), object.to_bytes());
+                changed_objects.put(
+                    account_storage.value.resources.to_bytes(),
+                    object.to_bytes(),
+                );
             }
+            //TODO check if the account_storage and table is changed, if not changed, don't put it
+            changed_objects.put(
+                ObjectID::from(account).to_bytes(),
+                account_storage.to_bytes(),
+            )
         }
 
         for (table_handle, table_change) in table_change_set.changes {
@@ -259,58 +265,18 @@ impl StateDB {
         self.global_table.puts(changed_objects)
     }
 
-    // Only the genesis account need to create by this function
-    pub fn create_account_storage(
-        &self,
-        account: AccountAddress,
-    ) -> Result<(HashValue, Object<AccountStorage>)> {
-        let resource_table_id = ObjectID::derive_id(account.to_vec(), 0);
-        let place_holder: AccountAddress = (**smt::SPARSE_MERKLE_PLACEHOLDER_HASH).into();
-        let resource_table_object =
-            Object::new_table_object(resource_table_id, TableInfo::new(place_holder));
-        let module_table_id = ObjectID::derive_id(account.to_vec(), 1);
-        let module_table_object =
-            Object::new_table_object(module_table_id, TableInfo::new(place_holder));
-        let account_storage = AccountStorage {
-            resources: resource_table_id.into(),
-            modules: module_table_id.into(),
-        };
-        let object: Object<AccountStorage> =
-            Object::new_account_storage_object(account, account_storage);
-
-        let state_root = self.global_table.puts(vec![
-            (
-                resource_table_id.to_bytes(),
-                Some(resource_table_object.to_bytes()),
-            ),
-            (
-                module_table_id.to_bytes(),
-                Some(module_table_object.to_bytes()),
-            ),
-            (object.id.to_bytes(), Some(object.to_bytes())),
-        ])?;
-        Ok((state_root, object))
-    }
-
-    // pub fn apply_object_change_set(&self, change_set: ObjectChangeSet) -> Result<HashValue> {
-    //     let mut changed_objects = UpdateSet::new();
-    //     for (object_id, object_info) in change_set.new_objects {
-    //         //TODO should serialize at the extension when make change set
-    //         let contents = object_info
-    //             .value
-    //             .simple_serialize(&object_info.value_layout)
-    //             .unwrap();
-    //         //TODO set version
-    //         changed_objects.put(
-    //             object_id,
-    //             Object::new_move_object(MoveObjectData::new(object_info.value_tag, 1, contents)),
-    //         );
-    //     }
-    //     self.smt.puts(changed_objects)
-    // }
-
     pub fn is_genesis(&self) -> bool {
         self.global_table.smt.is_genesis()
+    }
+
+    //Only for unit test and integration test runner
+    pub fn create_account_storage(&self, account: AccountAddress) -> Result<()> {
+        let account_storage = Object::new_account_storage_object(account);
+        self.global_table.puts((
+            ObjectID::from(account).to_bytes(),
+            account_storage.to_bytes(),
+        ))?;
+        Ok(())
     }
 }
 
@@ -322,12 +288,13 @@ impl ResourceResolver for StateDB {
         address: &AccountAddress,
         tag: &StructTag,
     ) -> Result<Option<Vec<u8>>, Self::Error> {
-        let account_storage = self.get_as_account_storage(*address)?;
+        let resource_table_id = NamedTableID::Resource(*address).to_object_id();
         let key = tag_to_key(tag);
-        account_storage.map_or_else(
-            || Ok(Option::None),
-            |account_storage| self.get_with_key(account_storage.value.resources.into(), key),
-        )
+        let resource = self.get_with_key(resource_table_id, key)?;
+        // We do not need to unbox value at here, because the resource must be a struct,
+        // ValueBox<T> 's bcs serialized format is the same as T's bcs serialized format.
+        //resource.map(|v|unbox_value(v.as_slice())).transpose()
+        Ok(resource)
     }
 }
 
@@ -335,15 +302,10 @@ impl ModuleResolver for StateDB {
     type Error = anyhow::Error;
 
     fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
-        let account_storage = self.get_as_account_storage(*module_id.address())?;
+        let module_table_id = NamedTableID::Module(*module_id.address()).to_object_id();
         let key = module_name_to_key(module_id.name());
-        account_storage.map_or_else(
-            || Ok(Option::None),
-            |account_storage| {
-                let module = self.get_with_key(account_storage.value.modules.into(), key)?;
-                module.map(|v| unbox_value(v.as_slice())).transpose()
-            },
-        )
+        let module = self.get_with_key(module_table_id, key)?;
+        module.map(|v| unbox_value(v.as_slice())).transpose()
     }
 }
 
@@ -365,6 +327,8 @@ fn box_value<T: Serialize>(value: T) -> Vec<u8> {
 }
 
 // Unwrap value from a Box, because the table deserialize value to a Box struct
+// If we get value from Table API, like raw_table::borrow, the raw_table native auto unbox the value.
+// But if we get value from ModuleResolver or ResourceResolver, we need to unbox the value by ourselves.
 fn unbox_value<T: DeserializeOwned>(bytes: &[u8]) -> Result<T> {
     let value_box: ValueBox<T> = bcs::from_bytes(bytes)?;
     Ok(value_box.value)

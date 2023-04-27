@@ -55,6 +55,8 @@ pub fn run_cli(move_cli: MoveCli) -> Result<()> {
         MoveCommand::Info(c) => c.execute(move_args.package_path, move_args.build_config),
         MoveCommand::New(c) => c.execute(move_args.package_path),
         MoveCommand::Prove(c) => c.execute(move_args.package_path, move_args.build_config),
+        //TODO how to custom the unit test and pass MoveOS to test plan
+        //https://github.com/move-language/move/blob/dfef14a838c8dd6399e933b77426a03f40e69c4c/language/tools/move-unit-test/src/test_runner.rs#L286
         MoveCommand::Test(c) => c.execute(
             move_args.package_path,
             move_args.build_config,

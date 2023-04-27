@@ -9,6 +9,7 @@ module moveos_std::tx_context {
 
     friend moveos_std::object;
     friend moveos_std::raw_table;
+    friend moveos_std::account_storage;
 
     /// Number of bytes in an tx hash (which will be the transaction digest)
     const TX_HASH_LENGTH: u64 = 32;
@@ -36,14 +37,19 @@ module moveos_std::tx_context {
         self.sender
     } 
 
-    /// Generate a new, globally unique object ID with version 0
-    public(friend) fun derive_id(ctx: &mut TxContext): address {
-        let ids_created = ctx.ids_created;
-        let bytes = bcs::to_bytes(&ctx.tx_hash);
-        vector::append(&mut bytes, bcs::to_bytes(&ids_created));
+    /// Generate a new unique address,
+    /// It also can be object ID
+    public fun fresh_address(ctx: &mut TxContext): address {
+        let addr = derive_id(ctx.tx_hash, ctx.ids_created);
+        ctx.ids_created = ctx.ids_created + 1;
+        addr
+    }
+
+    public fun derive_id(hash: vector<u8>, index: u64): address {
+        let bytes = hash;
+        vector::append(&mut bytes, bcs::to_bytes(&index));
         //TODO change return type to u256 and use u256 to replace address
         let id = hash::sha3_256(bytes);
-        ctx.ids_created = ids_created + 1;
         bcd::to_address(id)
     }
 
@@ -58,4 +64,15 @@ module moveos_std::tx_context {
         self.ids_created
     }
 
+    
+    #[test_only]
+    /// Create a TxContext for unit test
+    public fun test_context(sender: address): TxContext {
+        let tx_hash = hash::sha3_256(b"test_txn");
+        TxContext {
+            sender,
+            tx_hash,
+            ids_created: 0,
+        }
+    }
 }

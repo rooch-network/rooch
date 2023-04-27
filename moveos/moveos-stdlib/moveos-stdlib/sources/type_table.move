@@ -19,6 +19,13 @@ module moveos_std::type_table {
         }
     }
 
+    /// Create a new Table with a given handle.
+    public(friend) fun new_with_id(handle: address): TypeTable{
+        TypeTable {
+            handle,
+        }
+    }
+
     /// Note: We use Type name as key, the key will be serialized by bcs in the native function. 
     fun key<V>(): String {
         let type_name = std::type_name::get<V>();

@@ -97,7 +97,7 @@ module moveos_std::raw_table {
     }
 
     public(friend) fun new_table_handle(ctx: &mut TxContext): address {
-        tx_context::derive_id(ctx)
+        tx_context::fresh_address(ctx)
     }
 
     native fun add_box<K: copy + drop, V, B>(table_handle: address, key: K, val: Box<V>);
