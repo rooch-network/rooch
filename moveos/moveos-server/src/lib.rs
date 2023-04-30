@@ -3,24 +3,17 @@
 
 pub mod actor;
 pub mod helper;
-pub mod pb;
 pub mod proxy;
 pub mod response;
 pub mod service;
 
-// use jsonrpsee::core::client::ClientT;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
-// use jsonrpsee::rpc_params;
 use jsonrpsee::server::ServerBuilder;
-pub use pb::*;
 
-use crate::os_service_client::OsServiceClient;
 use crate::{
     actor::executor::ServerActor,
-    os_service_server::OsServiceServer,
     proxy::ServerProxy,
-    service::{OsSvc, RoochServer, RpcServiceServer},
-    HelloRequest,
+    service::{RoochServer, RpcServiceClient, RpcServiceServer},
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -33,51 +26,12 @@ use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use tokio::signal::ctrl_c;
 use tokio::signal::unix::{signal, SignalKind};
-use tonic::transport::Server;
-use tonic::Request;
 use tracing::info;
 
 #[async_trait]
 pub trait Execute {
     type Res;
     async fn execute(&self) -> Result<Self::Res>;
-}
-
-// Start json-rpc server
-pub async fn start_server() -> Result<()> {
-    tracing_subscriber::fmt::init();
-
-    let config = load_config()?;
-
-    let addr: SocketAddr = format!("{}:{}", config.server.host, config.server.port).parse()?;
-
-    let actor_system = ActorSystem::global_system();
-    let moveos = MoveOS::new(StateDB::new_with_memory_store())?;
-    let actor = ServerActor::new(moveos)
-        .into_actor(Some("Server"), &actor_system)
-        .await?;
-    let manager = ServerProxy::new(actor.into());
-    let rpc_service = RoochServer::new(manager);
-    let server = ServerBuilder::default().build(&addr).await?;
-
-    let handle = server.start(rpc_service.into_rpc())?;
-
-    info!("starting listening {:?}", addr);
-
-    let mut sig_int = signal(SignalKind::interrupt()).unwrap();
-    let mut sig_term = signal(SignalKind::terminate()).unwrap();
-
-    tokio::select! {
-        _ = sig_int.recv() => info!("receive SIGINT"),
-        _ = sig_term.recv() => info!("receive SIGTERM"),
-        _ = ctrl_c() => info!("receive Ctrl C"),
-    }
-
-    handle.stop().unwrap();
-
-    info!("Shutdown Sever");
-
-    Ok(())
 }
 
 /// For grpc
@@ -127,17 +81,24 @@ impl Execute for SayOptions {
     // Test server liveness
     async fn execute(&self) -> Result<Self::Res> {
         let url = load_config()?.server.url(false);
-        println!("url: {:?}", url);
+        println!("client url: {:?}", url);
 
-        let mut client = OsServiceClient::connect(url).await?;
-        let request = Request::new(HelloRequest {
-            name: self.name.clone(),
-        });
+        let client = http_client(url)?;
+        let resp = client
+            .echo("Hello rooch".to_string())
+            .await
+            .unwrap_or_else(|e| panic!("{:?}", e));
+        println!("{:?}", resp);
 
-        let response = client.echo(request).await?.into_inner();
-        println!("{:?}", response);
+        // let mut client = OsServiceClient::connect(url).await?;
+        // let request = Request::new(HelloRequest {
+        //     name: self.name.clone(),
+        // });
 
-        Ok(response.message)
+        // let response = client.echo(request).await?.into_inner();
+        // println!("{:?}", response);
+
+        Ok("ok".to_string())
     }
 }
 
@@ -167,26 +128,14 @@ pub struct Start {}
 impl Execute for Start {
     type Res = ();
     async fn execute(&self) -> Result<Self::Res> {
-        start_grpc_server().await
+        start_server().await
     }
 }
 
-#[derive(Debug, Parser, Serialize, Deserialize)]
-pub struct PublishPackage {
-    // TODO Refactor fields to build module
-    #[clap(short, long, default_value = ".")]
-    pub module_path: String,
-}
+// Start json-rpc server
+pub async fn start_server() -> Result<()> {
+    tracing_subscriber::fmt::init();
 
-impl PublishPackage {
-    // TODO compile module and serialize to bcs bytes
-    pub fn compile_module_and_serailize(&self) -> Vec<u8> {
-        self.module_path.as_bytes().to_vec()
-    }
-}
-
-// Start grpc server
-pub async fn start_grpc_server() -> Result<()> {
     let config = load_config()?;
 
     let addr: SocketAddr = format!("{}:{}", config.server.host, config.server.port).parse()?;
@@ -197,11 +146,25 @@ pub async fn start_grpc_server() -> Result<()> {
         .into_actor(Some("Server"), &actor_system)
         .await?;
     let manager = ServerProxy::new(actor.into());
-    let svc = OsSvc::new(manager);
-    let svc = OsServiceServer::new(svc);
+    let rpc_service = RoochServer::new(manager);
+    let server = ServerBuilder::default().build(&addr).await?;
 
-    println!("Listening on {addr:?}");
-    Server::builder().add_service(svc).serve(addr).await?;
+    let handle = server.start(rpc_service.into_rpc())?;
+
+    info!("starting listening {:?}", addr);
+
+    let mut sig_int = signal(SignalKind::interrupt()).unwrap();
+    let mut sig_term = signal(SignalKind::terminate()).unwrap();
+
+    tokio::select! {
+        _ = sig_int.recv() => info!("receive SIGINT"),
+        _ = sig_term.recv() => info!("receive SIGTERM"),
+        _ = ctrl_c() => info!("receive Ctrl C"),
+    }
+
+    handle.stop().unwrap();
+
+    info!("Shutdown Sever");
 
     Ok(())
 }

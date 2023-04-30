@@ -1,27 +1,12 @@
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum StatusCode {
-    Ok,
-    NoAuthorization,
-    InternalError,
-    BadRequest,
-    NotFound,
-}
-
-impl Serialize for StatusCode {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_u32(match self {
-            StatusCode::Ok => 200,
-            StatusCode::BadRequest => 400,
-            StatusCode::NoAuthorization => 403,
-            StatusCode::InternalError => 500,
-            StatusCode::NotFound => 404,
-        })
-    }
+    Ok = 200,
+    NoAuthorization = 400,
+    InternalError = 403,
+    BadRequest = 500,
+    NotFound = 404,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

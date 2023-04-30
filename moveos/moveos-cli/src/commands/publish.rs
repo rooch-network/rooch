@@ -3,8 +3,6 @@
 
 use anyhow::ensure;
 use clap::Parser;
-use move_binary_format::CompiledModule;
-use move_bytecode_utils::dependency_graph::DependencyGraph;
 use move_package::BuildConfig;
 use moveos::types::transaction::{MoveTransaction, SimpleTransaction};
 use moveos_client::Client;
@@ -50,7 +48,7 @@ impl Publish {
         let sender = pkg_address;
         let txn = MoveTransaction::ModuleBundle(bundles);
         let txn = SimpleTransaction::new(sender, txn);
-        self.client.submit(txn).await?;
+        self.client.submit_txn(txn).await?;
         Ok(())
     }
 }

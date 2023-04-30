@@ -3,7 +3,6 @@
 
 use anyhow::{anyhow, Result};
 use clap::Parser;
-use move_binary_format::CompiledModule;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,

@@ -9,6 +9,7 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 
 use super::messages::{HelloMessage, SubmitTransactionMessage, ViewFunctionMessage};
+use move_core_types::value::MoveValue;
 use moveos::{
     moveos::MoveOS,
     types::transaction::{SimpleTransaction, ViewPayload},
@@ -42,8 +43,14 @@ impl Handler<SubmitTransactionMessage> for ServerActor {
         let payload = bcs::from_bytes::<SimpleTransaction>(&msg.payload).unwrap();
         println!("sender: {:?}", payload.sender);
         let exec_result = self.moveos.execute(payload);
-        // TODO: handle moveos execute result
-        "ok".to_string()
+        match exec_result {
+            Ok(_) => "ok".to_string(),
+            Err(e) => {
+                println!("{:?}", e);
+                "error".to_string()
+            }
+        }
+        // "ok".to_string()
     }
 }
 
@@ -61,7 +68,10 @@ impl Handler<ViewFunctionMessage> for ServerActor {
                 payload.function.args,
             )
             .unwrap();
-        println!("result: {:?}", result.return_values[0].0);
+
+        let value =
+            MoveValue::simple_deserialize(&result.return_values[0].0, &result.return_values[0].1);
+        println!("result: {:?}", value);
         "ok".to_string()
     }
 }

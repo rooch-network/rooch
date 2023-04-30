@@ -11,6 +11,7 @@ bcs = { workspace = true }
 tokio = { workspace = true }
 clap = { workspace = true }
 tonic = { workspace = true }
+jsonrpsee = { workspace = true }
 
 moveos = { workspace = true }
 moveos-server = { workspace = true }

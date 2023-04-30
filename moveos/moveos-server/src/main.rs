@@ -6,8 +6,10 @@ use clap::Parser;
 use moveos_server::{Execute, OsServer};
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() {
     let args = OsServer::parse();
 
-    args.command.execute().await
+    let _result = args.command.execute().await;
+
+    // TODO: handle error.
 }
