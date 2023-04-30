@@ -56,22 +56,25 @@ impl Handler<SubmitTransactionMessage> for ServerActor {
 
 #[async_trait]
 impl Handler<ViewFunctionMessage> for ServerActor {
-    async fn handle(&mut self, msg: ViewFunctionMessage, ctx: &mut ActorContext) -> String {
+    async fn handle(
+        &mut self,
+        msg: ViewFunctionMessage,
+        ctx: &mut ActorContext,
+    ) -> Result<Vec<MoveValue>, anyhow::Error> {
         // deserialize the payload
-        let payload = bcs::from_bytes::<ViewPayload>(&msg.payload).unwrap();
-        let result = self
-            .moveos
-            .execute_view_function(
-                &payload.function.module,
-                &payload.function.function,
-                payload.function.ty_args,
-                payload.function.args,
-            )
-            .unwrap();
+        let payload = bcs::from_bytes::<ViewPayload>(&msg.payload)?;
+        let result = self.moveos.execute_view_function(
+            &payload.function.module,
+            &payload.function.function,
+            payload.function.ty_args,
+            payload.function.args,
+        )?;
+        let mut output_values = vec![];
+        for v in result.return_values {
+            output_values.push(MoveValue::simple_deserialize(&v.0, &v.1)?);
+        }
 
-        let value =
-            MoveValue::simple_deserialize(&result.return_values[0].0, &result.return_values[0].1);
-        println!("result: {:?}", value);
-        "ok".to_string()
+        println!("{:?}", output_values.clone());
+        Ok(output_values)
     }
 }

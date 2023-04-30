@@ -19,7 +19,7 @@ pub trait RpcService {
 
     // TODO: add suitable response type.
     #[method(name = "view")]
-    async fn view(&self, payload: Vec<u8>) -> RpcResult<JsonResponse<String>>;
+    async fn view(&self, payload: Vec<u8>) -> RpcResult<JsonResponse<Vec<serde_json::Value>>>;
 }
 
 pub struct RoochServer {
@@ -44,8 +44,14 @@ impl RpcServiceServer for RoochServer {
         Ok(JsonResponse::ok(resp))
     }
 
-    async fn view(&self, payload: Vec<u8>) -> RpcResult<JsonResponse<String>> {
-        let resp = self.manager.view(payload).await?;
+    async fn view(&self, payload: Vec<u8>) -> RpcResult<JsonResponse<Vec<serde_json::Value>>> {
+        let output_values = self.manager.view(payload).await?;
+        println!("Output values: {:?}", output_values.clone());
+        let mut resp = vec![];
+        for v in output_values {
+            resp.push(serde_json::to_value(v)?);
+        }
+        // println!("{}", resp);
         Ok(JsonResponse::ok(resp))
     }
 }

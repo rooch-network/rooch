@@ -4,6 +4,7 @@ use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use moveos::types::transaction::{SimpleTransaction, ViewPayload};
 use moveos_common::config::load_config;
 use moveos_server::service::RpcServiceClient;
+use serde_json;
 // |use tokio::time::Duration;
 
 #[derive(Clone, Debug, Parser)]
@@ -50,7 +51,10 @@ impl Client {
         let payload = bcs::to_bytes(&payload)?;
         let resp = self.get_client()?.view(payload).await?;
         // TODO: parse response.
-        println!("{:?}", resp);
+        let output_values = match resp.try_into_inner()? {
+            Some(v) => println!("{:?}", v),
+            None => println!("{:?}", serde_json::Value::Null),
+        };
         Ok(())
     }
 }

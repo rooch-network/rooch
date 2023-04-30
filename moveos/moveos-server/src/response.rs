@@ -1,3 +1,4 @@
+use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -55,6 +56,19 @@ impl<T: Serialize> JsonResponse<T> {
         Self::Error {
             code,
             message: Some(message),
+        }
+    }
+
+    pub fn try_into_inner(self) -> Result<Option<T>> {
+        match self {
+            JsonResponse::Ok {
+                code,
+                message,
+                data,
+            } => Ok(data),
+            JsonResponse::Error { code, message } => {
+                bail!("Error response can not convert into type T.")
+            }
         }
     }
 }
