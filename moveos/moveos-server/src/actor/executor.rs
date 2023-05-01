@@ -9,20 +9,15 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 
 use super::messages::{
-    HelloMessage, ResourceMessage, SubmitTransactionMessage, ViewFunctionMessage,
+    HelloMessage, ObjectMessage, ResourceMessage, SubmitTransactionMessage, ViewFunctionMessage,
 };
-use move_core_types::{
-    account_address::AccountAddress,
-    identifier::{IdentStr, Identifier},
-    language_storage::{ModuleId, StructTag, TypeTag},
-    resolver::ResourceResolver,
-    value::MoveValue,
-};
+use move_core_types::{language_storage::StructTag, resolver::ResourceResolver, value::MoveValue};
 use move_resource_viewer::MoveValueAnnotator;
 use moveos::{
     moveos::MoveOS,
     types::transaction::{SimpleTransaction, ViewPayload},
 };
+use moveos_types::object::RawObject;
 
 pub struct ServerActor {
     moveos: MoveOS,
@@ -47,7 +42,7 @@ impl Handler<HelloMessage> for ServerActor {
 
 #[async_trait]
 impl Handler<SubmitTransactionMessage> for ServerActor {
-    async fn handle(&mut self, msg: SubmitTransactionMessage, ctx: &mut ActorContext) -> String {
+    async fn handle(&mut self, msg: SubmitTransactionMessage, _ctx: &mut ActorContext) -> String {
         // deserialize the payload
         let payload = bcs::from_bytes::<SimpleTransaction>(&msg.payload).unwrap();
         println!("sender: {:?}", payload.sender);
@@ -68,7 +63,7 @@ impl Handler<ViewFunctionMessage> for ServerActor {
     async fn handle(
         &mut self,
         msg: ViewFunctionMessage,
-        ctx: &mut ActorContext,
+        _ctx: &mut ActorContext,
     ) -> Result<Vec<MoveValue>, anyhow::Error> {
         // deserialize the payload
         let payload = bcs::from_bytes::<ViewPayload>(&msg.payload)?;
@@ -83,7 +78,6 @@ impl Handler<ViewFunctionMessage> for ServerActor {
             output_values.push(MoveValue::simple_deserialize(&v.0, &v.1)?);
         }
 
-        println!("{:?}", output_values.clone());
         Ok(output_values)
     }
 }
@@ -93,7 +87,7 @@ impl Handler<ResourceMessage> for ServerActor {
     async fn handle(
         &mut self,
         msg: ResourceMessage,
-        ctx: &mut ActorContext,
+        _ctx: &mut ActorContext,
     ) -> Result<String, anyhow::Error> {
         let ResourceMessage {
             address,
@@ -115,5 +109,24 @@ impl Handler<ResourceMessage> for ServerActor {
                 Ok(format!("{}", annotated))
             }
         }
+    }
+}
+
+#[async_trait]
+impl Handler<ObjectMessage> for ServerActor {
+    async fn handle(
+        &mut self,
+        msg: ObjectMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<String, anyhow::Error> {
+        let object_id = msg.object_id;
+        let object: Option<RawObject> = self.moveos.state().get_as_raw_object(object_id)?;
+        let object =
+            object.ok_or_else(|| anyhow::anyhow!("Object with id {} not found", object_id))?;
+
+        //TODO print more info about object
+        // let annotated = MoveValueAnnotator::new(self.moveos.state())
+        //     .view_resource(&move_object.type_, &move_object.contents)?;
+        Ok(format!("{:?}", object))
     }
 }

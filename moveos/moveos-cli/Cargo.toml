@@ -38,3 +38,4 @@ move-vm-test-utils = { workspace = true }
 moveos = { workspace = true }
 moveos-stdlib = { workspace = true }
 moveos-client = { workspace = true }
+moveos-common = { workspace = true }

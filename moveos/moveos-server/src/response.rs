@@ -62,11 +62,14 @@ impl<T: Serialize> JsonResponse<T> {
     pub fn try_into_inner(self) -> Result<Option<T>> {
         match self {
             JsonResponse::Ok {
-                code,
-                message,
+                code: _,
+                message: _,
                 data,
             } => Ok(data),
-            JsonResponse::Error { code, message } => {
+            JsonResponse::Error {
+                code: _,
+                message: _,
+            } => {
                 bail!("Error response can not convert into type T.")
             }
         }

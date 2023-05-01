@@ -6,7 +6,9 @@ use move_core_types::value::MoveValue;
 
 use crate::actor::{
     executor::ServerActor,
-    messages::{HelloMessage, ResourceMessage, SubmitTransactionMessage, ViewFunctionMessage},
+    messages::{
+        HelloMessage, ObjectMessage, ResourceMessage, SubmitTransactionMessage, ViewFunctionMessage,
+    },
 };
 use anyhow::{Error, Result};
 pub struct ServerProxy {
@@ -17,6 +19,7 @@ use move_core_types::{
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
 };
+use moveos_types::object::ObjectID;
 
 impl ServerProxy {
     pub fn new(actor: ActorRef<ServerActor>) -> Self {
@@ -56,6 +59,10 @@ impl ServerProxy {
                 type_args,
             })
             .await?
+    }
+
+    pub async fn object(&self, object_id: ObjectID) -> Result<String, Error> {
+        self.actor.send(ObjectMessage { object_id }).await?
     }
     // TODO other functions
 }

@@ -15,6 +15,7 @@ use move_cli::{
 use moveos_stdlib::natives::{all_natives, GasParameters};
 
 pub mod commands;
+pub mod types;
 
 #[derive(clap::Parser)]
 pub struct MoveCli {

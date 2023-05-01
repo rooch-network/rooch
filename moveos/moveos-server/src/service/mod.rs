@@ -10,6 +10,7 @@ use move_core_types::{
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
 };
+use moveos_types::object::ObjectID;
 
 // Define a rpc server api
 #[rpc(server, client)]
@@ -33,6 +34,9 @@ pub trait RpcService {
         resource: Identifier,
         type_args: Vec<TypeTag>,
     ) -> RpcResult<JsonResponse<String>>;
+
+    #[method(name = "object")]
+    async fn object(&self, object_id: ObjectID) -> RpcResult<JsonResponse<String>>;
 }
 
 pub struct RoochServer {
@@ -79,6 +83,11 @@ impl RpcServiceServer for RoochServer {
             .manager
             .resource(address, &module, &resource, type_args)
             .await?;
+        Ok(JsonResponse::ok(resp))
+    }
+
+    async fn object(&self, object_id: ObjectID) -> RpcResult<JsonResponse<String>> {
+        let resp = self.manager.object(object_id).await?;
         Ok(JsonResponse::ok(resp))
     }
 }

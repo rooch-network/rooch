@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::types::TransactionOptions;
 use anyhow::ensure;
 use clap::Parser;
 use move_package::BuildConfig;
@@ -13,6 +14,9 @@ use std::path::PathBuf;
 pub struct Publish {
     #[clap(flatten)]
     client: Client,
+
+    #[clap(flatten)]
+    txn_options: TransactionOptions,
 }
 
 impl Publish {
@@ -45,9 +49,13 @@ impl Publish {
             bundles.push(binary);
         }
 
-        let sender = pkg_address;
+        assert!(
+            self.txn_options.sender_account.is_some()
+                && pkg_address == self.txn_options.sender_account.unwrap(),
+            "sender account must be the same as the package address"
+        );
         let txn = MoveTransaction::ModuleBundle(bundles);
-        let txn = SimpleTransaction::new(sender, txn);
+        let txn = SimpleTransaction::new(pkg_address, txn);
         self.client.submit_txn(txn).await?;
         Ok(())
     }

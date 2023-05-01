@@ -8,6 +8,7 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
     value::MoveValue,
 };
+use moveos_types::object::ObjectID;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -46,5 +47,14 @@ pub struct ResourceMessage {
 }
 
 impl Message for ResourceMessage {
+    type Result = Result<String, anyhow::Error>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ObjectMessage {
+    pub object_id: ObjectID,
+}
+
+impl Message for ObjectMessage {
     type Result = Result<String, anyhow::Error>;
 }

@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::types::TransactionOptions;
 use anyhow::{anyhow, Result};
 use clap::Parser;
 use move_core_types::{
@@ -87,6 +88,9 @@ pub struct RunFunction {
     /// RPC client options.
     #[clap(flatten)]
     client: Client,
+
+    #[clap(flatten)]
+    txn_options: TransactionOptions,
 }
 
 impl RunFunction {
@@ -100,8 +104,12 @@ impl RunFunction {
                     .expect("transaction arguments must serialize")
             })
             .collect();
+        assert!(
+            self.txn_options.sender_account.is_some(),
+            "--sender-account required"
+        );
         let txn = SimpleTransaction::new(
-            AccountAddress::from_str("0x123")?, // Fixme: use the real signer address
+            self.txn_options.sender_account.unwrap(),
             MoveTransaction::new_function(
                 self.function.module_id.clone(),
                 self.function.function_name.clone(),

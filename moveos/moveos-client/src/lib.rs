@@ -9,6 +9,7 @@ use move_core_types::{
 use moveos::types::transaction::{SimpleTransaction, ViewPayload};
 use moveos_common::config::load_config;
 use moveos_server::service::RpcServiceClient;
+use moveos_types::object::ObjectID;
 use serde_json;
 // |use tokio::time::Duration;
 
@@ -74,6 +75,11 @@ impl Client {
             .get_client()?
             .resource(address, module, resource, type_args)
             .await?;
+        resp.try_into_inner()
+    }
+
+    pub async fn object(&self, object_id: ObjectID) -> Result<Option<String>> {
+        let resp = self.get_client()?.object(object_id).await?;
         resp.try_into_inner()
     }
 }
