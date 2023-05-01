@@ -6,12 +6,17 @@ use move_core_types::value::MoveValue;
 
 use crate::actor::{
     executor::ServerActor,
-    messages::{HelloMessage, SubmitTransactionMessage, ViewFunctionMessage},
+    messages::{HelloMessage, ResourceMessage, SubmitTransactionMessage, ViewFunctionMessage},
 };
 use anyhow::{Error, Result};
 pub struct ServerProxy {
     pub actor: ActorRef<ServerActor>,
 }
+use move_core_types::{
+    account_address::AccountAddress,
+    identifier::Identifier,
+    language_storage::{ModuleId, TypeTag},
+};
 
 impl ServerProxy {
     pub fn new(actor: ActorRef<ServerActor>) -> Self {
@@ -34,6 +39,23 @@ impl ServerProxy {
 
     pub async fn view(&self, payload: Vec<u8>) -> Result<Vec<MoveValue>, Error> {
         self.actor.send(ViewFunctionMessage { payload }).await?
+    }
+
+    pub async fn resource(
+        &self,
+        address: AccountAddress,
+        module: &ModuleId,
+        resource: &Identifier,
+        type_args: Vec<TypeTag>,
+    ) -> Result<String, Error> {
+        self.actor
+            .send(ResourceMessage {
+                address,
+                module: module.clone(),
+                resource: resource.clone(),
+                type_args,
+            })
+            .await?
     }
     // TODO other functions
 }

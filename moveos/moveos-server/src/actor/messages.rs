@@ -2,7 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use coerce::actor::message::Message;
-use move_core_types::value::MoveValue;
+use move_core_types::{
+    account_address::AccountAddress,
+    identifier::Identifier,
+    language_storage::{ModuleId, TypeTag},
+    value::MoveValue,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -30,4 +35,16 @@ pub struct ViewFunctionMessage {
 
 impl Message for ViewFunctionMessage {
     type Result = Result<Vec<MoveValue>, anyhow::Error>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ResourceMessage {
+    pub address: AccountAddress,
+    pub module: ModuleId,
+    pub resource: Identifier,
+    pub type_args: Vec<TypeTag>,
+}
+
+impl Message for ResourceMessage {
+    type Result = Result<String, anyhow::Error>;
 }

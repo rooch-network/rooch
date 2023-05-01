@@ -1,6 +1,11 @@
 use anyhow::Result;
 use clap::Parser;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
+use move_core_types::{
+    account_address::AccountAddress,
+    identifier::Identifier,
+    language_storage::{ModuleId, TypeTag},
+};
 use moveos::types::transaction::{SimpleTransaction, ViewPayload};
 use moveos_common::config::load_config;
 use moveos_server::service::RpcServiceClient;
@@ -56,5 +61,19 @@ impl Client {
             None => println!("{:?}", serde_json::Value::Null),
         };
         Ok(())
+    }
+
+    pub async fn resource(
+        &self,
+        address: AccountAddress,
+        module: ModuleId,
+        resource: Identifier,
+        type_args: Vec<TypeTag>,
+    ) -> Result<Option<String>> {
+        let resp = self
+            .get_client()?
+            .resource(address, module, resource, type_args)
+            .await?;
+        resp.try_into_inner()
     }
 }

@@ -2,10 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::proxy::ServerProxy;
+use crate::response::JsonResponse;
 use jsonrpsee::core::{async_trait, RpcResult};
 use jsonrpsee::proc_macros::rpc;
-
-use crate::response::JsonResponse;
+use move_core_types::{
+    account_address::AccountAddress,
+    identifier::Identifier,
+    language_storage::{ModuleId, TypeTag},
+};
 
 // Define a rpc server api
 #[rpc(server, client)]
@@ -20,6 +24,15 @@ pub trait RpcService {
     // TODO: add suitable response type.
     #[method(name = "view")]
     async fn view(&self, payload: Vec<u8>) -> RpcResult<JsonResponse<Vec<serde_json::Value>>>;
+
+    #[method(name = "resource")]
+    async fn resource(
+        &self,
+        address: AccountAddress,
+        module: ModuleId,
+        resource: Identifier,
+        type_args: Vec<TypeTag>,
+    ) -> RpcResult<JsonResponse<String>>;
 }
 
 pub struct RoochServer {
@@ -52,6 +65,20 @@ impl RpcServiceServer for RoochServer {
             resp.push(serde_json::to_value(v)?);
         }
         // println!("{}", resp);
+        Ok(JsonResponse::ok(resp))
+    }
+
+    async fn resource(
+        &self,
+        address: AccountAddress,
+        module: ModuleId,
+        resource: Identifier,
+        type_args: Vec<TypeTag>,
+    ) -> RpcResult<JsonResponse<String>> {
+        let resp = self
+            .manager
+            .resource(address, &module, &resource, type_args)
+            .await?;
         Ok(JsonResponse::ok(resp))
     }
 }

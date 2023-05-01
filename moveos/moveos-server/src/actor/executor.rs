@@ -8,8 +8,17 @@
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 
-use super::messages::{HelloMessage, SubmitTransactionMessage, ViewFunctionMessage};
-use move_core_types::value::MoveValue;
+use super::messages::{
+    HelloMessage, ResourceMessage, SubmitTransactionMessage, ViewFunctionMessage,
+};
+use move_core_types::{
+    account_address::AccountAddress,
+    identifier::{IdentStr, Identifier},
+    language_storage::{ModuleId, StructTag, TypeTag},
+    resolver::ResourceResolver,
+    value::MoveValue,
+};
+use move_resource_viewer::MoveValueAnnotator;
 use moveos::{
     moveos::MoveOS,
     types::transaction::{SimpleTransaction, ViewPayload},
@@ -76,5 +85,35 @@ impl Handler<ViewFunctionMessage> for ServerActor {
 
         println!("{:?}", output_values.clone());
         Ok(output_values)
+    }
+}
+
+#[async_trait]
+impl Handler<ResourceMessage> for ServerActor {
+    async fn handle(
+        &mut self,
+        msg: ResourceMessage,
+        ctx: &mut ActorContext,
+    ) -> Result<String, anyhow::Error> {
+        let ResourceMessage {
+            address,
+            module,
+            resource,
+            type_args,
+        } = msg;
+        let tag = StructTag {
+            address: *module.address(),
+            module: module.name().to_owned(),
+            name: resource.to_owned(),
+            type_params: type_args,
+        };
+        let storage = self.moveos.state();
+        match storage.get_resource(&address, &tag)? {
+            None => Ok("[No Resource Exists]".to_owned()),
+            Some(data) => {
+                let annotated = MoveValueAnnotator::new(storage).view_resource(&tag, &data)?;
+                Ok(format!("{}", annotated))
+            }
+        }
     }
 }

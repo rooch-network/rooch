@@ -13,6 +13,7 @@ clap = { workspace = true }
 tonic = { workspace = true }
 jsonrpsee = { workspace = true }
 serde_json = { workspace = true }
+move-core-types = { workspace = true }
 
 moveos = { workspace = true }
 moveos-server = { workspace = true }

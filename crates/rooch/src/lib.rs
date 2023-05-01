@@ -1,7 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::commands::resource::ResourceCommand;
 use anyhow::Result;
+
+pub mod commands;
 
 #[derive(clap::Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -14,11 +17,13 @@ pub struct RoochCli {
 pub enum Command {
     Move(moveos_cli::MoveCli),
     Server(moveos_server::OsServer),
+    Resource(ResourceCommand),
 }
 
 pub async fn run_cli(opt: RoochCli) -> Result<()> {
     match opt.cmd {
         Command::Move(move_cli) => moveos_cli::run_cli(move_cli).await,
         Command::Server(os) => os.execute().await,
+        Command::Resource(resource) => resource.execute().await,
     }
 }
