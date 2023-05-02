@@ -98,7 +98,7 @@ impl Handler<ResourceMessage> for ServerActor {
         let tag = StructTag {
             address: *module.address(),
             module: module.name().to_owned(),
-            name: resource.to_owned(),
+            name: resource,
             type_params: type_args,
         };
         let storage = self.moveos.state();

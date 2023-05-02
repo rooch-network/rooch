@@ -63,7 +63,6 @@ impl RpcServiceServer for RoochServer {
 
     async fn view(&self, payload: Vec<u8>) -> RpcResult<JsonResponse<Vec<serde_json::Value>>> {
         let output_values = self.manager.view(payload).await?;
-        println!("Output values: {:?}", output_values.clone());
         let mut resp = vec![];
         for v in output_values {
             resp.push(serde_json::to_value(v)?);
