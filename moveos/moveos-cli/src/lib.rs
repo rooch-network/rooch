@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use commands::new::New;
+use commands::{
+    new::New, publish::Publish, run_function::RunFunction, run_view_function::RunViewFunction,
+};
 use move_cli::{
     base::{
         build::Build, coverage::Coverage, disassemble::Disassemble, docgen::Docgen, errmap::Errmap,
@@ -13,6 +15,7 @@ use move_cli::{
 use moveos_stdlib::natives::{all_natives, GasParameters};
 
 pub mod commands;
+pub mod types;
 
 #[derive(clap::Parser)]
 pub struct MoveCli {
@@ -34,11 +37,13 @@ pub enum MoveCommand {
     New(New),
     Prove(Prove),
     Test(Test),
-    //TODO implement run command
+    Publish(Publish),
+    Run(RunFunction),
+    View(RunViewFunction),
     //TODO implement integration test command
 }
 
-pub fn run_cli(move_cli: MoveCli) -> Result<()> {
+pub async fn run_cli(move_cli: MoveCli) -> Result<()> {
     let move_args = move_cli.move_args;
     let cmd = move_cli.cmd;
     //let error_descriptions: ErrorMapping = bcs::from_bytes(moveos_stdlib::error_descriptions())?;
@@ -63,5 +68,11 @@ pub fn run_cli(move_cli: MoveCli) -> Result<()> {
             natives,
             Some(cost_table),
         ),
+        MoveCommand::Publish(c) => {
+            c.execute(move_args.package_path, move_args.build_config)
+                .await
+        }
+        MoveCommand::Run(c) => c.execute().await,
+        MoveCommand::View(c) => c.execute().await,
     }
 }

@@ -1,19 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
 use clap::Parser;
-use moveos_server::{say_hello, start_server, Command, OsServer};
+use moveos_server::{Execute, OsServer};
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() {
     let args = OsServer::parse();
 
-    use Command::*;
-    match args.command {
-        Say(say) => say_hello(say).await?,
-        Start(_) => start_server().await?,
-    }
+    let _result = args.command.execute().await;
 
-    Ok(())
+    // TODO: handle error.
 }

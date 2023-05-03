@@ -92,3 +92,8 @@ impl AbstractTransaction for SimpleTransaction {
         HashValue::sha3_256_of(bcs::to_bytes(&self).unwrap().as_slice())
     }
 }
+
+#[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+pub struct ViewPayload {
+    pub function: Function,
+}

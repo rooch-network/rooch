@@ -20,3 +20,6 @@ build/
 # Move coverage and tracing information
 .trace
 *.mvcov
+
+# 3rdparty configure files
+.vscode/

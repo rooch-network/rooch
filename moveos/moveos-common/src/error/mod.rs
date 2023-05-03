@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// Define the errors
+use jsonrpsee::core::error::Error as JsonError;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -43,6 +44,19 @@ impl From<Error> for tonic::Status {
             }
             Error::ActorRefError(e) => tonic::Status::internal(e.to_string()),
             Error::Unknown => tonic::Status::unknown("Unknown error"),
+        }
+    }
+}
+
+impl From<Error> for JsonError {
+    fn from(e: Error) -> Self {
+        match e {
+            Error::ConfigReadError | Error::ConfigParseError => JsonError::Custom(e.to_string()),
+            Error::NotFound => {
+                JsonError::Custom("No config file found by the given condition".to_string())
+            }
+            Error::ActorRefError(e) => JsonError::Custom(e.to_string()),
+            Error::Unknown => JsonError::Custom("Unknown error".to_string()),
         }
     }
 }

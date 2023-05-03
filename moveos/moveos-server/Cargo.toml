@@ -8,24 +8,30 @@ edition = "2021"
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
+bcs = { workspace = true }
 chrono = { workspace = true }
 clap = { workspace = true }
 coerce = { workspace = true }
 derive_builder = { workspace = true }
-prost = { workspace = true }
-prost-types = { workspace = true }
+futures = { workspace = true }
+jsonrpsee = { workspace = true }
 serde = { workspace = true }
 serde_yaml = { workspace = true }
+serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 tonic = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+move-core-types = { workspace = true }
+move-resource-viewer = { workspace = true }
 
 moveos = { workspace = true }
 moveos-statedb = { workspace = true }
+moveos-common = { workspace = true }
+moveos-types = { workspace = true }
 
 [build-dependencies]
-prost-build = { workspace = true }
-proto-builder-trait ={ workspace = true }
 tonic-build = { workspace = true }
 
 

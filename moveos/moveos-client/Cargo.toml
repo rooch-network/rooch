@@ -1,0 +1,21 @@
+[package]
+name = "moveos-client"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = { workspace = true }
+bcs = { workspace = true }
+tokio = { workspace = true }
+clap = { workspace = true }
+tonic = { workspace = true }
+jsonrpsee = { workspace = true }
+serde_json = { workspace = true }
+move-core-types = { workspace = true }
+
+moveos = { workspace = true }
+moveos-types = { workspace = true }
+moveos-server = { workspace = true }
+moveos-common = { workspace = true }
