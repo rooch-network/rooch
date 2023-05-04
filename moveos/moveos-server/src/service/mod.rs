@@ -11,6 +11,8 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
 };
 use moveos_types::object::ObjectID;
+use jsonrpsee::RpcModule;
+use crate::api::RoochRpcModule;
 
 // Define a rpc server api
 #[rpc(server, client)]
@@ -88,5 +90,11 @@ impl RpcServiceServer for RoochServer {
     async fn object(&self, object_id: ObjectID) -> RpcResult<JsonResponse<String>> {
         let resp = self.manager.object(object_id).await?;
         Ok(JsonResponse::ok(resp))
+    }
+}
+
+impl RoochRpcModule for RoochServer {
+    fn rpc(self) -> RpcModule<Self> {
+        self.into_rpc()
     }
 }
