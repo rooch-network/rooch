@@ -8,10 +8,9 @@ use move_core_types::{
     language_storage::{ModuleId},
 };
 use std::str::FromStr;
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize, Serializer};
 use std::{
     fmt,
-    fmt::Display,
 };
 
 /// Identifier of a module function
@@ -88,16 +87,6 @@ impl fmt::Display for HexEncodedBytes {
 impl Serialize for HexEncodedBytes {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.to_string().serialize(serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for HexEncodedBytes {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
-    {
-        let s = <String>::deserialize(deserializer)?;
-        s.parse().map_err(D::Error::custom)
     }
 }
 
