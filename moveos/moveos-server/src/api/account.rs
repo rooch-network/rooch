@@ -30,6 +30,7 @@ impl AccountServer {
     async fn get_balance(&self, token: String) -> RpcResult<JsonResponse<Balance>> {
         info!("get_balance");
 
+        //TODO Mock get_balance
         Ok(JsonResponse::ok(Balance {
             // coin_type: "Rooch".to_string(),
             coin_type: token,

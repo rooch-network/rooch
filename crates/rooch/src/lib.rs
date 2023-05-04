@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::commands::{object::ObjectCommand, resource::ResourceCommand};
+use crate::account::{AccountCommand};
 use anyhow::Result;
 
 pub mod commands;
+pub mod account;
 
 #[derive(clap::Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -19,6 +21,8 @@ pub enum Command {
     Server(moveos_server::OsServer),
     Resource(ResourceCommand),
     Object(ObjectCommand),
+    #[clap(subcommand)]
+    Account(AccountCommand),
 }
 
 pub async fn run_cli(opt: RoochCli) -> Result<()> {
@@ -27,5 +31,6 @@ pub async fn run_cli(opt: RoochCli) -> Result<()> {
         Command::Server(os) => os.execute().await,
         Command::Resource(resource) => resource.execute().await,
         Command::Object(object) => object.execute().await,
+        Command::Account(account) => account.execute().await,
     }
 }

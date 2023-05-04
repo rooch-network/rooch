@@ -172,7 +172,7 @@ pub async fn start_server() -> Result<()> {
     let server = ServerBuilder::default().build(&addr).await?;
 
     let mut rpc_module_builder = RpcModuleBuilder::new();
-    // let  rpc_module_builder = register_rpc_methods(rpc_module_builder);
+    // let  rpc_module_builder = register_rpc_methods(rpc_module_builder, manager);
     rpc_module_builder.register_module(RoochServer::new(manager.clone())).unwrap();
     rpc_module_builder.register_module(AccountServer::new(manager.clone())).unwrap();
     // let rpc_api = build_rpc_api(rpc_api);
