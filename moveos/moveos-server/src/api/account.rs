@@ -9,13 +9,23 @@ use crate::api::RoochRpcModule;
 use crate::jsonrpc_types::coin::Balance;
 use crate::response::JsonResponse;
 use crate::proxy::ServerProxy;
+use moveos_types::{
+    move_types::{StructId},
+};
+use move_core_types::{
+    account_address::AccountAddress,
+};
 
 // #[rpc(server, client, namespace = "rooch")]
 #[rpc(server, client)]
 pub trait AccountApi {
-    #[method(name = "account.get_balance")]
+    #[method(name = "accounts.get_balance")]
     async fn get_balance(&self, token: String) -> RpcResult<JsonResponse<Balance>>;
+
+    #[method(name = "accounts.get")]
+    async fn get(&self, address: AccountAddress, resource: StructId) -> RpcResult<JsonResponse<String>>;
 }
+
 
 pub struct AccountServer {
     manager: ServerProxy,
@@ -37,12 +47,31 @@ impl AccountServer {
             total_balance: 1005,
         }))
     }
+
+    #[instrument(skip(self))]
+    async fn get(&self, address: AccountAddress, resource: StructId) -> RpcResult<JsonResponse<String>> {
+
+        let resp = self.manager.resource(
+            address,
+            &resource.module_id.clone(),
+            &resource.struct_id.clone(),
+            Vec::new(),
+        ).await?;
+
+        //TODO convert MoveResource to Rust Struct
+        println!("{:?}", resp);
+        Ok(JsonResponse::ok(resp))
+    }
 }
 
 #[async_trait]
 impl AccountApiServer for AccountServer {
     async fn get_balance(&self, token: String) -> RpcResult<JsonResponse<Balance>> {
         Ok(self.get_balance(token).await?)
+    }
+
+    async fn get(&self, address: AccountAddress, resource: StructId) -> RpcResult<JsonResponse<String>> {
+        Ok(self.get(address, resource).await?)
     }
 }
 
