@@ -9,7 +9,7 @@ pub enum Error {
     #[error("file not found")]
     NotFound,
 
-    #[error("config file not found, \nHelp: You can add fixtures/config.yml to the ROOCH_CONFIG environment variable,\n      or copy fixtures/config.yml to the current directory")]
+    #[error("config file not found")]
     ConfigReadError,
 
     #[error("config parse error")]
