@@ -1,18 +1,18 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::api::RoochRpcModule;
 use crate::proxy::ServerProxy;
 use crate::response::JsonResponse;
 use jsonrpsee::core::{async_trait, RpcResult};
 use jsonrpsee::proc_macros::rpc;
+use jsonrpsee::RpcModule;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
 };
 use moveos_types::object::ObjectID;
-use jsonrpsee::RpcModule;
-use crate::api::RoochRpcModule;
 
 // Define a rpc server api
 #[rpc(server, client)]

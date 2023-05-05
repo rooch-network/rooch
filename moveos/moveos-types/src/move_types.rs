@@ -3,15 +3,11 @@
 
 use anyhow::{anyhow, format_err, Result};
 use move_core_types::{
-    account_address::AccountAddress,
-    identifier::Identifier,
-    language_storage::{ModuleId},
+    account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
 };
-use std::str::FromStr;
 use serde::{Deserialize, Serialize, Serializer};
-use std::{
-    fmt,
-};
+use std::fmt;
+use std::str::FromStr;
 
 /// Identifier of a module function
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -93,17 +89,5 @@ impl Serialize for HexEncodedBytes {
 impl From<Vec<u8>> for HexEncodedBytes {
     fn from(bytes: Vec<u8>) -> Self {
         Self(bytes)
-    }
-}
-
-impl From<HexEncodedBytes> for Vec<u8> {
-    fn from(bytes: HexEncodedBytes) -> Self {
-        bytes.0
-    }
-}
-
-impl HexEncodedBytes {
-    pub fn inner(&self) -> &[u8] {
-        &self.0
     }
 }

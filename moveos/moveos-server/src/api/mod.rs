@@ -17,8 +17,8 @@ pub const MAX_RESULT_LIMIT: usize = 1000;
 // }
 
 pub trait RoochRpcModule
-    where
-        Self: Sized,
+where
+    Self: Sized,
 {
     fn rpc(self) -> RpcModule<Self>;
 }

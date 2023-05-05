@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod actor;
+pub mod api;
 pub mod helper;
+pub mod jsonrpc_types;
 pub mod proxy;
 pub mod response;
 pub mod service;
-pub mod api;
-pub mod jsonrpc_types;
 
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use jsonrpsee::server::ServerBuilder;
@@ -173,8 +173,12 @@ pub async fn start_server() -> Result<()> {
 
     let mut rpc_module_builder = RpcModuleBuilder::new();
     // let  rpc_module_builder = register_rpc_methods(rpc_module_builder, manager);
-    rpc_module_builder.register_module(RoochServer::new(manager.clone())).unwrap();
-    rpc_module_builder.register_module(AccountServer::new(manager.clone())).unwrap();
+    rpc_module_builder
+        .register_module(RoochServer::new(manager.clone()))
+        .unwrap();
+    rpc_module_builder
+        .register_module(AccountServer::new(manager.clone()))
+        .unwrap();
     // let rpc_api = build_rpc_api(rpc_api);
     let methods_names = rpc_module_builder.module.method_names().collect::<Vec<_>>();
     let handle = server.start(rpc_module_builder.module)?;
@@ -198,12 +202,18 @@ pub async fn start_server() -> Result<()> {
     Ok(())
 }
 
-fn _register_rpc_methods(mut rpc_module_builder: RpcModuleBuilder, manager: ServerProxy) -> RpcModuleBuilder {
-    rpc_module_builder.register_module(AccountServer::new(manager.clone())).unwrap();
-    rpc_module_builder.register_module(RoochServer::new(manager.clone())).unwrap();
+fn _register_rpc_methods(
+    mut rpc_module_builder: RpcModuleBuilder,
+    manager: ServerProxy,
+) -> RpcModuleBuilder {
+    rpc_module_builder
+        .register_module(AccountServer::new(manager.clone()))
+        .unwrap();
+    rpc_module_builder
+        .register_module(RoochServer::new(manager.clone()))
+        .unwrap();
     rpc_module_builder
 }
-
 
 fn _build_rpc_api<M: Send + Sync + 'static>(mut rpc_module: RpcModule<M>) -> RpcModule<M> {
     let mut available_methods = rpc_module.method_names().collect::<Vec<_>>();

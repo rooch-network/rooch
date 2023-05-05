@@ -2,9 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod create_account;
-use crate::account::{
-    create_account::CreateAccount,
-};
+use crate::commands::account::create_account::CreateAccount;
 
 use anyhow::Result;
 

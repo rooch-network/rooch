@@ -1,13 +1,8 @@
 use move_core_types::{
-    account_address::AccountAddress,
-    language_storage::{TypeTag},
-    parser::parse_type_tag,
-};
-use moveos_types::{
-    move_types::{StructId},
+    account_address::AccountAddress, language_storage::TypeTag, parser::parse_type_tag,
 };
 use moveos_client::Client;
-
+use moveos_types::move_types::StructId;
 
 #[derive(clap::Parser)]
 pub struct ResourceCommand {

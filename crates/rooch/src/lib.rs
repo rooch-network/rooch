@@ -1,12 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::commands::account::AccountCommand;
 use crate::commands::{object::ObjectCommand, resource::ResourceCommand};
-use crate::account::{AccountCommand};
 use anyhow::Result;
 
 pub mod commands;
-pub mod account;
 
 #[derive(clap::Parser)]
 #[clap(author, version, about, long_about = None)]

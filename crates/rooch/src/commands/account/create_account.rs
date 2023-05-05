@@ -3,17 +3,16 @@
 
 #![allow(unused_imports)]
 use anyhow::Result;
+use clap::Parser;
 use move_core_types::{
     account_address::AccountAddress,
+    ident_str,
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
     parser::parse_type_tag,
-    ident_str,
 };
-use clap::Parser;
-use moveos_client::Client;
 use moveos::types::transaction::{MoveTransaction, SimpleTransaction};
-
+use moveos_client::Client;
 
 /// Create a new account on-chain
 ///
@@ -32,16 +31,12 @@ pub struct CreateAccount {
 }
 
 impl CreateAccount {
-    fn command_name(&self) -> &'static str {
-        "CreateAccount"
-    }
-
     pub async fn execute(self) -> Result<()> {
         let txn = MoveTransaction::new_function(
             ModuleId::new(
                 AccountAddress::new([
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 1,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 1,
                 ]),
                 ident_str!("account").to_owned(),
             ),
