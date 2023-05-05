@@ -1,4 +1,4 @@
-module 0x123::counter {
+module rooch_examples::counter {
 
      struct Counter has key, store {
         value:u64,
