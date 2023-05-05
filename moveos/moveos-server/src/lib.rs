@@ -143,6 +143,12 @@ pub struct RpcModuleBuilder {
     module: RpcModule<()>,
 }
 
+impl Default for RpcModuleBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RpcModuleBuilder {
     pub fn new() -> Self {
         Self {
@@ -172,7 +178,6 @@ pub async fn start_server() -> Result<()> {
     let server = ServerBuilder::default().build(&addr).await?;
 
     let mut rpc_module_builder = RpcModuleBuilder::new();
-    // let  rpc_module_builder = register_rpc_methods(rpc_module_builder, manager);
     rpc_module_builder
         .register_module(RoochServer::new(manager.clone()))
         .unwrap();
@@ -200,19 +205,6 @@ pub async fn start_server() -> Result<()> {
     info!("Shutdown Sever");
 
     Ok(())
-}
-
-fn _register_rpc_methods(
-    mut rpc_module_builder: RpcModuleBuilder,
-    manager: ServerProxy,
-) -> RpcModuleBuilder {
-    rpc_module_builder
-        .register_module(AccountServer::new(manager.clone()))
-        .unwrap();
-    rpc_module_builder
-        .register_module(RoochServer::new(manager.clone()))
-        .unwrap();
-    rpc_module_builder
 }
 
 fn _build_rpc_api<M: Send + Sync + 'static>(mut rpc_module: RpcModule<M>) -> RpcModule<M> {
