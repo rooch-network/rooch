@@ -107,6 +107,8 @@ impl Handler<ResourceMessage> for ServerActor {
             Some(data) => {
                 let annotated = MoveValueAnnotator::new(storage).view_resource(&tag, &data)?;
                 Ok(format!("{}", annotated))
+
+                // MoveValue::try_from();
             }
         }
     }

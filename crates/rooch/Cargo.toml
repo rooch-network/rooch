@@ -40,4 +40,5 @@ moveos-cli = { workspace = true }
 moveos-server = { workspace = true }
 moveos-client = { workspace = true }
 moveos-types = { workspace = true }
+moveos = { workspace = true }
 

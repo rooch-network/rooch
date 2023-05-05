@@ -1,47 +1,8 @@
-use anyhow::{anyhow, Result};
 use move_core_types::{
-    account_address::AccountAddress,
-    identifier::Identifier,
-    language_storage::{ModuleId, TypeTag},
-    parser::parse_type_tag,
+    account_address::AccountAddress, language_storage::TypeTag, parser::parse_type_tag,
 };
 use moveos_client::Client;
-use std::str::FromStr;
-
-/// Identifier of a module function
-#[derive(Debug, Clone)]
-pub struct StructId {
-    pub module_id: ModuleId,
-    pub struct_id: Identifier,
-}
-
-fn parse_function_id(function_id: &str) -> Result<StructId> {
-    let ids: Vec<&str> = function_id.split_terminator("::").collect();
-    if ids.len() != 3 {
-        return Err(anyhow!(
-            "StructId is not well formed.  Must be of the form <address>::<module>::<function>"
-        ));
-    }
-    let address = AccountAddress::from_str(ids.first().unwrap())
-        .map_err(|err| anyhow!("Module address error: {:?}", err.to_string()))?;
-    let module = Identifier::from_str(ids.get(1).unwrap())
-        .map_err(|err| anyhow!("Module name error: {:?}", err.to_string()))?;
-    let struct_id = Identifier::from_str(ids.get(2).unwrap())
-        .map_err(|err| anyhow!("Function name error: {:?}", err.to_string()))?;
-    let module_id = ModuleId::new(address, module);
-    Ok(StructId {
-        module_id,
-        struct_id,
-    })
-}
-
-impl FromStr for StructId {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        parse_function_id(s)
-    }
-}
+use moveos_types::move_types::StructId;
 
 #[derive(clap::Parser)]
 pub struct ResourceCommand {
