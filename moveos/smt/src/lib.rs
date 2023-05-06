@@ -13,7 +13,8 @@ use jellyfish_merkle::{
 use parking_lot::RwLock;
 use std::{
     collections::{BTreeMap, HashMap},
-    marker::PhantomData, sync::Arc,
+    marker::PhantomData,
+    sync::Arc,
 };
 
 mod jellyfish_merkle;
