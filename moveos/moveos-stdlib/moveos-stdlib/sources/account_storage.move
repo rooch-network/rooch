@@ -41,7 +41,7 @@ module moveos_std::account_storage {
         };
         let object_storage = storage_context::object_storage_mut(ctx);
         assert!(!object_storage::contains<AccountStorage>(object_storage, object_id), EAccountAlreadyExists);
-        let object = object::new_with_id(object_id, account, account_storage);
+        let object = object::new_with_id_and_owner(object_id, account, account_storage);
         object_storage::add(object_storage, object);
     }
 
