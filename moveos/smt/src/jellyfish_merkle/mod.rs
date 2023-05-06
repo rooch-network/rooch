@@ -288,6 +288,8 @@ where
     /// the returned batch, the state `S_{i+1}` is ready to be read from the tree by calling
     /// [`get_with_proof`](struct.JellyfishMerkleTree.html#method.get_with_proof). Anything inside
     /// the batch is not reachable from public interfaces before being committed.
+    //FIXME fix clippy warning
+    #[allow(clippy::type_complexity)]
     fn puts(
         &self,
         state_root_hash: Option<HashValue>,

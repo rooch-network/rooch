@@ -278,13 +278,13 @@ fn test_batch_insertion() {
     let value6 = TestValue::from(vec![6u8]);
 
     let batches: Vec<Vec<(TestKey, TestValue)>> = vec![
-        vec![(key1.into(), value1)],
-        vec![(key2.into(), value2)],
-        vec![(key3.into(), value3)],
-        vec![(key4.into(), value4)],
-        vec![(key5.into(), value5)],
-        vec![(key6.into(), value6)],
-        vec![(key2.into(), value2_update)],
+        vec![(key1, value1)],
+        vec![(key2, value2)],
+        vec![(key3, value3)],
+        vec![(key4, value4)],
+        vec![(key5, value5)],
+        vec![(key6, value6)],
+        vec![(key2, value2_update)],
     ];
     let one_batch: Vec<(SMTObject<TestKey>, SMTObject<TestValue>)> = batches
         .iter()
@@ -755,7 +755,7 @@ proptest! {
         key1 in any::<TestKey>()
             .prop_filter(
                 "Can't be 0xffffff...",
-                |key| *key != TestKey::new([0xff; HashValue::LENGTH]).into(),
+                |key| *key != TestKey::new([0xff; HashValue::LENGTH]),
             ),
         accounts in vec(any::<TestValue>(), 2),
     ) {
@@ -792,8 +792,8 @@ proptest! {
     }
 }
 
-fn test_existent_keys_impl<'a>(
-    tree: &JellyfishMerkleTree<'a, TestKey, TestValue, MockTestStore>,
+fn test_existent_keys_impl(
+    tree: &JellyfishMerkleTree<'_, TestKey, TestValue, MockTestStore>,
     root_hash: HashValue,
     existent_kvs: &HashMap<TestKey, TestValue>,
 ) {
@@ -804,8 +804,8 @@ fn test_existent_keys_impl<'a>(
     }
 }
 
-fn test_nonexistent_keys_impl<'a>(
-    tree: &JellyfishMerkleTree<'a, TestKey, TestValue, MockTestStore>,
+fn test_nonexistent_keys_impl(
+    tree: &JellyfishMerkleTree<'_, TestKey, TestValue, MockTestStore>,
     root_hash: HashValue,
     nonexistent_keys: &[TestKey],
 ) {
@@ -818,8 +818,8 @@ fn test_nonexistent_keys_impl<'a>(
     }
 }
 
-fn test_nonexistent_key_value_update_impl<'a>(
-    tree: &JellyfishMerkleTree<'a, TestKey, TestValue, MockTestStore>,
+fn test_nonexistent_key_value_update_impl(
+    tree: &JellyfishMerkleTree<'_, TestKey, TestValue, MockTestStore>,
     db: &MockTestStore,
     root_hash: HashValue,
     noneexistent_kv: (TestKey, TestValue),

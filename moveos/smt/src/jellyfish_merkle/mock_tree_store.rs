@@ -61,7 +61,7 @@ impl DecodeToObject for TestKey {
     where
         Self: std::marker::Sized,
     {
-        let key = TestKey::new_with_hash(HashValue::from_slice(&raw).unwrap());
+        let key = TestKey::new_with_hash(HashValue::from_slice(raw).unwrap());
         Ok(key.into_object())
     }
 }
@@ -86,6 +86,7 @@ impl From<Vec<u8>> for TestValue {
     }
 }
 
+#[allow(clippy::type_complexity)]
 #[derive(Default)]
 pub struct MockTreeStore<K, V>(RwLock<(HashMap<NodeKey, Node<K, V>>, BTreeSet<StaleNodeIndex>)>);
 

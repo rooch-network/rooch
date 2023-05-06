@@ -194,7 +194,7 @@ impl HashValue {
             hex_str.push_str(literal);
             Self::from_hex(hex_str)
         } else {
-            Self::from_hex(&literal)
+            Self::from_hex(literal)
         }
     }
 }
