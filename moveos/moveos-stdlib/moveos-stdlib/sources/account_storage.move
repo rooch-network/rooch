@@ -6,9 +6,10 @@ module moveos_std::account_storage {
     use std::string::String;
     use std::signer;
     use std::bcs;
+    use std::vector;
     use moveos_std::type_table::{Self, TypeTable};
     use moveos_std::table::{Self, Table};
-    use moveos_std::object::{Self, Object};
+    use moveos_std::object;
     use moveos_std::object_storage::{Self, ObjectStorage};
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::tx_context;
@@ -18,6 +19,8 @@ module moveos_std::account_storage {
 
     /// The resource with the given type already exists
     const EResourceAlreadyExists: u64 = 1;
+    /// The resource with the given type not exists 
+    const EResourceNotExists: u64 = 2;
 
     const NamedTableResource: u64 = 0;
     const NamedTableModule: u64 = 1;
@@ -45,104 +48,124 @@ module moveos_std::account_storage {
         object_storage::add(object_storage, object);
     }
 
-    fun borrow_account_storage(object_storage: &ObjectStorage, account: address): &Object<AccountStorage>{
+
+    //TODO the resource and module table's id is determined by the account address, so we can use the account address to get the table id
+    //And don't need to borrow the account storage from the object storage, but if we create the table every time, how to drop the table?
+    fun borrow_account_storage(object_storage: &ObjectStorage, account: address): &AccountStorage{
         let object_id = object::address_to_object_id(account);
-        object_storage::borrow<AccountStorage>(object_storage, object_id)
+        let object = object_storage::borrow<AccountStorage>(object_storage, object_id);
+        object::borrow(object)
     }
 
-    fun borrow_account_storage_mut(object_storage: &mut ObjectStorage, account: address): &mut Object<AccountStorage>{
+    fun borrow_account_storage_mut(object_storage: &mut ObjectStorage, account: address): &mut AccountStorage{
         let object_id = object::address_to_object_id(account);
-        object_storage::borrow_mut<AccountStorage>(object_storage, object_id)
+        let object = object_storage::borrow_mut<AccountStorage>(object_storage, object_id);
+        object::borrow_mut(object)
     }
 
     /// Borrow a resource from the AccountStorage
-    fun borrow_resource<T: key>(this: &Object<AccountStorage>): &T {
-        let account_storage = object::borrow<AccountStorage>(this);
-        type_table::borrow<T>(&account_storage.resources)
+    fun borrow_resource_from_account_storage<T: key>(this: &AccountStorage): &T {
+        type_table::borrow_internal<T>(&this.resources)
     }
 
     /// Borrow a mut resource from the AccountStorage
-    fun borrow_mut_resource<T: key>(this: &mut Object<AccountStorage>): &mut T {
-        let account_storage = object::borrow_mut<AccountStorage>(this);
-        type_table::borrow_mut<T>(&mut account_storage.resources)
+    fun borrow_mut_resource_from_account_storage<T: key>(this: &mut AccountStorage): &mut T {
+        type_table::borrow_mut_internal<T>(&mut this.resources)
     }
 
     /// Add a resource to the account storage
-    fun add_resource<T: key>(this: &mut Object<AccountStorage>, resource: T){
-        let account_storage = object::borrow_mut(this);
-        assert!(!type_table::contains<T>(&account_storage.resources), EResourceAlreadyExists);
-        type_table::add(&mut account_storage.resources, resource);
+    fun add_resource_to_account_storage<T: key>(this: &mut AccountStorage, resource: T){
+        //TODO should let the type_table native add function to check the resource is exists?
+        assert!(!type_table::contains_internal<T>(&this.resources), EResourceAlreadyExists);
+        type_table::add_internal(&mut this.resources, resource);
     }
 
     /// Remove a resource from the account storage
-    fun remove_resource<T: key>(this: &mut Object<AccountStorage>): T{
-        let account_storage = object::borrow_mut(this);
-        assert!(!type_table::contains<T>(&account_storage.resources), EResourceAlreadyExists);
-        type_table::remove<T>(&mut account_storage.resources)
+    fun remove_resource_from_account_storage<T: key>(this: &mut AccountStorage): T{
+        assert!(!type_table::contains_internal<T>(&this.resources), EResourceAlreadyExists);
+        type_table::remove<T>(&mut this.resources)
     }
 
-    fun exists_resource<T: key>(this: &Object<AccountStorage>) : bool {
-        let account_storage = object::borrow(this);
-        type_table::contains<T>(&account_storage.resources)
+    fun exists_resource_at_account_storage<T: key>(this: &AccountStorage) : bool {
+        type_table::contains<T>(&this.resources)
     }
 
-    fun exists_module(this: &Object<AccountStorage>, name: String) : bool {
-        let account_storage = object::borrow(this);
-        table::contains(&account_storage.modules, name)
+    fun exists_module_at_account_storage(this: &AccountStorage, name: String) : bool {
+        table::contains(&this.modules, name)
     }
 
     // === Global storage functions ===
 
-    #[private_generic(T)]
+    #[private_generics(T)]
     /// Borrow a resource from the account's storage
     /// This function equates to `borrow_global<T>(address)` instruction in Move
     public fun global_borrow<T: key>(ctx: &StorageContext, account: address): &T {
         let object_storage = storage_context::object_storage(ctx);
         let account_storage = borrow_account_storage(object_storage, account);
-        borrow_resource<T>(account_storage)
+        borrow_resource_from_account_storage<T>(account_storage)
     }
 
-    #[private_generic(T)]
+    #[private_generics(T)]
     /// Borrow a mut resource from the account's storage
     /// This function equates to `borrow_global_mut<T>(address)` instruction in Move
     public fun global_borrow_mut<T: key>(ctx: &mut StorageContext, account: address): &mut T {
         let object_storage = storage_context::object_storage_mut(ctx);
         let account_storage = borrow_account_storage_mut(object_storage, account);
-        borrow_mut_resource<T>(account_storage)
+        borrow_mut_resource_from_account_storage<T>(account_storage)
     }
 
-    #[private_generic(T)]
+    #[private_generics(T)]
     /// Move a resource to the account's storage
     /// This function equates to `move_to<T>(&signer, resource)` instruction in Move
     public fun global_move_to<T: key>(ctx: &mut StorageContext, account: &signer, resource: T){
         let account_address = signer::address_of(account);
         let account_storage = borrow_account_storage_mut(storage_context::object_storage_mut(ctx), account_address);
-        add_resource(account_storage, resource);
+        add_resource_to_account_storage(account_storage, resource);
     }
 
-    #[private_generic(T)]
+    #[private_generics(T)]
     /// Move a resource from the account's storage
     /// This function equates to `move_from<T>(address)` instruction in Move
     public fun global_move_from<T: key>(ctx: &mut StorageContext, account: address): T {
         let account_storage = borrow_account_storage_mut(storage_context::object_storage_mut(ctx), account);
-        remove_resource<T>(account_storage)
+        remove_resource_from_account_storage<T>(account_storage)
     }
 
-    #[private_generic(T)]
+    #[private_generics(T)]
     /// Check if the account has a resource of the given type
     /// This function equates to `exists<T>(address)` instruction in Move
-    public fun global_exists<T: key>(ctx: &mut StorageContext, account: address) : bool {
+    public fun global_exists<T: key>(ctx: &StorageContext, account: address) : bool {
         let account_storage = borrow_account_storage(storage_context::object_storage(ctx), account);
-        exists_resource<T>(account_storage)
+        exists_resource_at_account_storage<T>(account_storage)
     }
 
     // ==== Module functions ====
 
-    //TODO find better name.
     /// Check if the account has a module with the given name
-    public fun module_exists(ctx: &mut StorageContext, account: address, name: String): bool {
+    public fun exists_module(ctx: &StorageContext, account: address, name: String): bool {
         let account_storage = borrow_account_storage(storage_context::object_storage(ctx), account);
-        exists_module(account_storage, name) 
+        exists_module_at_account_storage(account_storage, name) 
+    }
+
+    /// Publish modules to the account's storage
+    public fun publish_modules(ctx: &mut StorageContext, account: &signer, modules: vector<vector<u8>>) {
+        let account_address = signer::address_of(account);
+        let account_storage = borrow_account_storage_mut(storage_context::object_storage_mut(ctx), account_address);
+        let i = 0;
+        let len = vector::length(&modules);
+        let module_names = verify_modules(&modules, account_address);
+        while (i < len) {
+            let name = vector::pop_back(&mut module_names);
+            let m = vector::pop_back(&mut modules);
+            table::add(&mut account_storage.modules, name, m);
+        }
+    }
+
+    // This is a native function that verifies the modules and returns their names
+    // This function need to ensure the module's bytecode is valid and the module id is matching the account address.
+    fun verify_modules(_modules: &vector<vector<u8>>, _account_address: address): vector<String> {
+        //TODO implement native verify modules
+        abort 0
     }
     
     #[test]

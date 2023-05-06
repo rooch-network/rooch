@@ -35,39 +35,64 @@ module moveos_std::type_table {
         name_string
     }
 
+    #[private_generics(T)]
     /// Add a new entry to the table. Aborts if an entry for this
     /// key already exists. The entry itself is not stored in the
     /// table, and cannot be discovered from it.
-    public(friend) fun add<V: key>(table: &mut TypeTable, val: V) {
+    public fun add<V: key>(table: &mut TypeTable, val: V) {
+        add_internal<V>(table, val)
+    }
+
+    public(friend) fun add_internal<V: key>(table: &mut TypeTable, val: V) {
         raw_table::add<String, V>(*&table.handle, key<V>(), val)
     }
 
+    #[private_generics(T)]
     /// Acquire an immutable reference to the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
-    public(friend) fun borrow<V: key>(table: &TypeTable): &V {
+    public fun borrow<V: key>(table: &TypeTable): &V {
+        borrow_internal<V>(table)
+    }
+
+    public(friend) fun borrow_internal<V: key>(table: &TypeTable): &V {
         raw_table::borrow<String, V>(*&table.handle, key<V>())
     }
 
+    #[private_generics(T)]
     /// Acquire a mutable reference to the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
-    public(friend) fun borrow_mut<V: key>(table: &mut TypeTable): &mut V {
+    public fun borrow_mut<V: key>(table: &mut TypeTable): &mut V {
+        borrow_mut_internal<V>(table)
+    }
+
+    public(friend) fun borrow_mut_internal<V: key>(table: &mut TypeTable): &mut V {
         raw_table::borrow_mut<String, V>(*&table.handle, key<V>())
     }
 
+    #[private_generics(T)]
     /// Remove from `table` and return the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
-    public(friend) fun remove<V: key>(table: &mut TypeTable): V {
+    public fun remove<V: key>(table: &mut TypeTable): V {
+        remove_internal<V>(table)
+    }
+
+    public(friend) fun remove_internal<V: key>(table: &mut TypeTable): V {
         raw_table::remove<String, V>(*&table.handle, key<V>())
     }
 
+    #[private_generics(T)]
     /// Returns true if `table` contains an entry for `key`.
-    public(friend) fun contains<V>(table: &TypeTable): bool {
+    public fun contains<V: key>(table: &TypeTable): bool {
+        raw_table::contains<String, V>(*&table.handle, key<V>())
+    }
+
+    public(friend) fun contains_internal<V: key>(table: &TypeTable): bool {
         raw_table::contains<String, V>(*&table.handle, key<V>())
     }
 
     #[test_only]
     /// Testing only: allows to drop a table even if it is not empty.
-    public(friend) fun drop_unchecked(table: TypeTable) {
+    public fun drop_unchecked(table: TypeTable) {
         let TypeTable{handle} = table;
         raw_table::drop_unchecked(handle)
     }

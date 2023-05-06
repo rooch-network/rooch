@@ -12,8 +12,8 @@ script {
     use moveos_std::storage_context::{StorageContext};
 
     fun main(ctx: &mut StorageContext) {
-        assert!(account_storage::module_exists(ctx, @0x1, string::utf8(b"account_storage")), 0);
-        assert!(account_storage::module_exists(ctx, @test, string::utf8(b"m")), 1);
+        assert!(account_storage::exists_module(ctx, @0x1, string::utf8(b"account_storage")), 0);
+        assert!(account_storage::exists_module(ctx, @test, string::utf8(b"m")), 1);
     }
 }
 
