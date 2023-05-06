@@ -5,6 +5,7 @@ use super::hash::*;
 use super::node_type::{SparseMerkleInternalNode, SparseMerkleLeafNode};
 use crate::{Key, Value};
 use anyhow::{bail, ensure, Result};
+use ethereum_types::H256;
 use serde::{Deserialize, Serialize};
 
 /// A proof that can be used to authenticate an element in a Sparse Merkle Tree given trusted root
@@ -12,34 +13,34 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct SparseMerkleProof {
     /// This proof can be used to authenticate whether a given leaf exists in the tree or not.
-    ///     - If this is `Some(HashValue, HashValue)`
-    ///         - If the first `HashValue` equals requested key, this is an inclusion proof and the
-    ///           second `HashValue` equals the hash of the corresponding account blob.
-    ///         - Otherwise this is a non-inclusion proof. The first `HashValue` is the only key
-    ///           that exists in the subtree and the second `HashValue` equals the hash of the
+    ///     - If this is `Some(H256, H256)`
+    ///         - If the first `H256` equals requested key, this is an inclusion proof and the
+    ///           second `H256` equals the hash of the corresponding account blob.
+    ///         - Otherwise this is a non-inclusion proof. The first `H256` is the only key
+    ///           that exists in the subtree and the second `H256` equals the hash of the
     ///           corresponding blob.
     ///     - If this is `None`, this is also a non-inclusion proof which indicates the subtree is
     ///       empty.
-    pub leaf: Option<(HashValue, HashValue)>,
+    pub leaf: Option<(H256, H256)>,
 
     /// All siblings in this proof, including the default ones. Siblings are ordered from the bottom
     /// level to the root level.
-    pub siblings: Vec<HashValue>,
+    pub siblings: Vec<H256>,
 }
 
 impl SparseMerkleProof {
     /// Constructs a new `SparseMerkleProof` using leaf and a list of siblings.
-    pub fn new(leaf: Option<(HashValue, HashValue)>, siblings: Vec<HashValue>) -> Self {
+    pub fn new(leaf: Option<(H256, H256)>, siblings: Vec<H256>) -> Self {
         SparseMerkleProof { leaf, siblings }
     }
 
     /// Returns the leaf node in this proof.
-    pub fn leaf(&self) -> Option<(HashValue, HashValue)> {
+    pub fn leaf(&self) -> Option<(H256, H256)> {
         self.leaf
     }
 
     /// Returns the list of siblings in this proof.
-    pub fn siblings(&self) -> &[HashValue] {
+    pub fn siblings(&self) -> &[H256] {
         &self.siblings
     }
 
@@ -49,7 +50,7 @@ impl SparseMerkleProof {
     /// tree.
     pub fn verify<K: Key, V: Value>(
         &self,
-        expected_root_hash: HashValue,
+        expected_root_hash: H256,
         element_key: K,
         element_blob: Option<V>,
     ) -> Result<()> {
@@ -73,7 +74,7 @@ impl SparseMerkleProof {
                     proof_key,
                     element_key_hash
                 );
-                let hash = blob.into_object().merkle_hash();
+                let hash: H256 = blob.into_object().merkle_hash().into();
                 ensure!(
                     hash == proof_value_hash,
                     "Value hashes do not match. Value hash in proof: {:x}. \
@@ -93,7 +94,8 @@ impl SparseMerkleProof {
                     "Expected non-inclusion proof, but key exists in proof.",
                 );
                 ensure!(
-                    element_key_hash.common_prefix_bits_len(proof_key) >= self.siblings.len(),
+                    element_key_hash.common_prefix_bits_len(proof_key.into())
+                        >= self.siblings.len(),
                     "Key would not have ended up in the subtree where the provided key in proof \
                      is the only existing key, if it existed. So this is not a valid \
                      non-inclusion proof.",
@@ -106,11 +108,12 @@ impl SparseMerkleProof {
             }
         }
 
-        let current_hash = self
-            .leaf
-            .map_or(*SPARSE_MERKLE_PLACEHOLDER_HASH, |(key, value_hash)| {
-                SparseMerkleLeafNode::new(key, value_hash).merkle_hash()
-            });
+        let current_hash = self.leaf.map_or(
+            *SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE,
+            |(key, value_hash)| {
+                SparseMerkleLeafNode::new(key.into(), value_hash.into()).merkle_hash()
+            },
+        );
 
         let actual_root_hash = self
             .siblings
@@ -123,9 +126,9 @@ impl SparseMerkleProof {
             )
             .fold(current_hash, |hash, (sibling_hash, bit)| {
                 if bit {
-                    SparseMerkleInternalNode::new(*sibling_hash, hash).merkle_hash()
+                    SparseMerkleInternalNode::new((*sibling_hash).into(), hash).merkle_hash()
                 } else {
-                    SparseMerkleInternalNode::new(hash, *sibling_hash).merkle_hash()
+                    SparseMerkleInternalNode::new(hash, (*sibling_hash).into()).merkle_hash()
                 }
             });
         ensure!(
@@ -144,7 +147,7 @@ impl SparseMerkleProof {
         &mut self,
         element_key: K,
         element_blob: V,
-    ) -> Result<HashValue> {
+    ) -> Result<H256> {
         let element_key_hash = element_key.into_object().merkle_hash();
         let element_hash = element_blob.into_object().merkle_hash();
         let is_non_exists_proof = match self.leaf.as_ref() {
@@ -160,12 +163,10 @@ impl SparseMerkleProof {
 
         let new_leaf_node = SparseMerkleLeafNode::new(element_key_hash, element_hash);
         let current_hash = new_leaf_node.merkle_hash();
-        if let Some(leaf_node) = self
-            .leaf
-            .as_ref()
-            .map(|(leaf_key, leaf_value)| SparseMerkleLeafNode::new(*leaf_key, *leaf_value))
-        {
-            let mut new_siblings = vec![leaf_node.merkle_hash()];
+        if let Some(leaf_node) = self.leaf.as_ref().map(|(leaf_key, leaf_value)| {
+            SparseMerkleLeafNode::new((*leaf_key).into(), (*leaf_value).into())
+        }) {
+            let mut new_siblings: Vec<H256> = vec![leaf_node.merkle_hash().into()];
             let prefix_len = leaf_node.key_hash.common_prefix_bits_len(element_key_hash);
 
             let place_holder_len = (prefix_len - self.siblings.len()) + 1;
@@ -186,13 +187,13 @@ impl SparseMerkleProof {
             )
             .fold(current_hash, |hash, (sibling_hash, bit)| {
                 if bit {
-                    SparseMerkleInternalNode::new(*sibling_hash, hash).merkle_hash()
+                    SparseMerkleInternalNode::new((*sibling_hash).into(), hash).merkle_hash()
                 } else {
-                    SparseMerkleInternalNode::new(hash, *sibling_hash).merkle_hash()
+                    SparseMerkleInternalNode::new(hash, (*sibling_hash).into()).merkle_hash()
                 }
             });
-        self.leaf = Some((element_key_hash, element_hash));
-        Ok(new_root_hash)
+        self.leaf = Some((element_key_hash.into(), element_hash.into()));
+        Ok(new_root_hash.into())
     }
 }
 
@@ -219,17 +220,17 @@ impl SparseMerkleProof {
 pub struct SparseMerkleRangeProof {
     /// The vector of siblings on the right of the path from root to last leaf. The ones near the
     /// bottom are at the beginning of the vector. In the above example, it's `[X, h]`.
-    right_siblings: Vec<HashValue>,
+    right_siblings: Vec<H256>,
 }
 
 impl SparseMerkleRangeProof {
     /// Constructs a new `SparseMerkleRangeProof`.
-    pub fn new(right_siblings: Vec<HashValue>) -> Self {
+    pub fn new(right_siblings: Vec<H256>) -> Self {
         Self { right_siblings }
     }
 
     /// Returns the siblings.
-    pub fn right_siblings(&self) -> &[HashValue] {
+    pub fn right_siblings(&self) -> &[H256] {
         &self.right_siblings
     }
 }

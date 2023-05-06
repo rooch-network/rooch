@@ -36,12 +36,12 @@ use std::{
 };
 use thiserror::Error;
 
-pub type NodeKey = HashValue;
+pub(crate) type NodeKey = HashValue;
 
 /// Each child of [`InternalNode`] encapsulates a nibble forking at this node.
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
-pub struct Child {
+pub(crate) struct Child {
     // The hash value of this child node.
     pub hash: HashValue,
     // Whether the child is a leaf node.
@@ -64,7 +64,7 @@ pub(crate) type Children = HashMap<Nibble, Child>;
 /// computation logic is similar to a 4-level sparse Merkle tree except for some customizations. See
 /// the `CryptoHash` trait implementation below for details.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct InternalNode {
+pub(crate) struct InternalNode {
     // Up to 16 children.
     children: Children,
     //Node's hash cache
@@ -285,7 +285,7 @@ impl InternalNode {
             Self::range_bitmaps(start, width, (existence_bitmap, leaf_bitmap));
         if range_existence_bitmap == 0 {
             // No child under this subtree
-            *SPARSE_MERKLE_PLACEHOLDER_HASH
+            *SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE
         } else if range_existence_bitmap.count_ones() == 1 && (range_leaf_bitmap != 0 || width == 1)
         {
             // Only 1 leaf child under this subtree or reach the lowest level
@@ -407,7 +407,7 @@ pub(crate) fn get_child_and_sibling_half_start(n: Nibble, height: u8) -> (u8, u8
 
 /// Represents an account.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct LeafNode<K, V> {
+pub(crate) struct LeafNode<K, V> {
     /// The origin key associated with this leaf node's Value.
     key: SMTObject<K>,
     /// The blob value associated with `key`.
@@ -540,7 +540,7 @@ enum NodeTag {
 
 /// The concrete node type of [`JellyfishMerkleTree`](super::JellyfishMerkleTree).
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum Node<K, V> {
+pub(crate) enum Node<K, V> {
     /// Represents `null`.
     Null,
     /// A wrapper of [`InternalNode`].
@@ -634,7 +634,7 @@ where
 {
     fn merkle_hash(&self) -> HashValue {
         match self {
-            Node::Null => *SPARSE_MERKLE_PLACEHOLDER_HASH,
+            Node::Null => *SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE,
             Node::Internal(internal_node) => internal_node.merkle_hash(),
             Node::Leaf(leaf_node) => leaf_node.merkle_hash(),
         }
@@ -669,7 +669,7 @@ where
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct SparseMerkleInternalNode {
+pub(crate) struct SparseMerkleInternalNode {
     left_child: HashValue,
     right_child: HashValue,
 }
@@ -690,7 +690,7 @@ impl SMTHash for SparseMerkleInternalNode {
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct SparseMerkleLeafNode {
+pub(crate) struct SparseMerkleLeafNode {
     pub key_hash: HashValue,
     pub value_hash: HashValue,
 }

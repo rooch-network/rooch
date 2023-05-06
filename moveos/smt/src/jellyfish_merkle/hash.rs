@@ -1,4 +1,5 @@
 use bytes::Bytes;
+use ethereum_types::H256;
 use hex::FromHex;
 use more_asserts::debug_assert_lt;
 use once_cell::sync::Lazy;
@@ -12,17 +13,18 @@ use std::{
 };
 use tiny_keccak::{Hasher, Sha3};
 
-pub fn merkle_hash(left: HashValue, right: HashValue) -> HashValue {
+pub(crate) fn merkle_hash(left: HashValue, right: HashValue) -> HashValue {
     let mut value = left.to_vec();
     value.extend(right.to_vec());
     HashValue::sha3_256_of(&value)
 }
 
+//TODO replace HashValue with H256
 /// Output value of our hash function. Intentionally opaque for safety and modularity.
 #[derive(Clone, Copy, Eq, Hash, PartialEq, PartialOrd, Ord)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
-pub struct HashValue {
-    hash: [u8; HashValue::LENGTH],
+pub(crate) struct HashValue {
+    pub hash: [u8; HashValue::LENGTH],
 }
 
 impl HashValue {
@@ -44,7 +46,7 @@ impl HashValue {
     }
 
     /// Dumps into a vector.
-    pub fn to_vec(&self) -> Vec<u8> {
+    pub fn to_vec(self) -> Vec<u8> {
         self.hash.to_vec()
     }
 
@@ -150,12 +152,12 @@ impl HashValue {
     }
 
     /// Full hex representation of a given hash value.
-    pub fn to_hex(&self) -> String {
+    pub fn as_hex(&self) -> String {
         format!("{:x}", self)
     }
 
     /// Full hex representation of a given hash value with `0x` prefix.
-    pub fn to_hex_literal(&self) -> String {
+    pub fn as_hex_literal(&self) -> String {
         format!("{:#x}", self)
     }
 
@@ -323,6 +325,25 @@ impl From<HashValue> for [u8; HashValue::LENGTH] {
         hash_value.hash
     }
 }
+
+impl From<HashValue> for H256 {
+    fn from(hash_value: HashValue) -> Self {
+        H256(hash_value.hash)
+    }
+}
+
+impl From<H256> for HashValue {
+    fn from(h256: H256) -> Self {
+        HashValue::new(h256.0)
+    }
+}
+
+impl PartialEq<H256> for HashValue {
+    fn eq(&self, other: &H256) -> bool {
+        self.hash == other.0
+    }
+}
+
 /// Parse error when attempting to construct a HashValue
 #[derive(Clone, Copy, Debug)]
 pub struct HashValueParseError;
@@ -385,18 +406,21 @@ impl<'a> std::iter::ExactSizeIterator for HashValueBitIterator<'a> {}
 
 /// A type that implements `SMTHash` can be hashed by a cryptographic hash function and produce
 /// a `HashValue`.
-pub trait SMTHash {
+pub(crate) trait SMTHash {
     /// Hashes the object and produces a `HashValue`.
     fn merkle_hash(&self) -> HashValue;
 }
 
-pub fn create_literal_hash(word: &str) -> HashValue {
+pub(crate) fn create_literal_hash(word: &str) -> HashValue {
     let mut s = word.as_bytes().to_vec();
     assert!(s.len() <= HashValue::LENGTH);
     s.resize(HashValue::LENGTH, 0);
-    HashValue::from_slice(&s).expect("Cannot fail")
+    HashValue::from_slice(&s).expect("create literal hash should success")
 }
 
 /// Placeholder hash of `SparseMerkleTree`.
-pub static SPARSE_MERKLE_PLACEHOLDER_HASH: Lazy<HashValue> =
+pub(crate) static SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE: Lazy<HashValue> =
     Lazy::new(|| create_literal_hash("SPARSE_MERKLE_PLACEHOLDER_HASH"));
+
+pub static SPARSE_MERKLE_PLACEHOLDER_HASH: Lazy<H256> =
+    Lazy::new(|| (*SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE).into());

@@ -72,7 +72,7 @@
 #[cfg(test)]
 mod tree_cache_test;
 
-use super::hash::{HashValue, SPARSE_MERKLE_PLACEHOLDER_HASH};
+use super::hash::{HashValue, SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE};
 use super::{
     hash::SMTHash,
     node_type::{Node, NodeKey},
@@ -120,7 +120,7 @@ impl<K, V> Default for FrozenTreeCache<K, V> {
 
 /// `TreeCache` is a in-memory cache for per-transaction updates of sparse Merkle nodes and value
 /// blobs.
-pub struct TreeCache<'a, R: 'a + TreeReader<K, V>, K, V> {
+pub(crate) struct TreeCache<'a, R: 'a + TreeReader<K, V>, K, V> {
     /// `NodeKey` of the current root node in cache.
     root_node_key: HashValue,
 
@@ -154,8 +154,8 @@ where
         let mut node_cache = HashMap::new();
         let root_node_key = match state_root_hash {
             None => {
-                node_cache.insert(*SPARSE_MERKLE_PLACEHOLDER_HASH, Node::new_null());
-                *SPARSE_MERKLE_PLACEHOLDER_HASH
+                node_cache.insert(*SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE, Node::new_null());
+                *SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE
             }
             Some(root) => root,
         };
@@ -172,7 +172,7 @@ where
 
     /// Gets a node with given node key. If it doesn't exist in node cache, read from `reader`.
     pub fn get_node(&self, node_key: &NodeKey) -> Result<Node<K, V>> {
-        if node_key == &*SPARSE_MERKLE_PLACEHOLDER_HASH {
+        if node_key == &*SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE {
             return Ok(Node::Null);
         }
         Ok(if let Some(node) = self.node_cache.get(node_key) {

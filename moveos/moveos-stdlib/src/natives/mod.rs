@@ -21,7 +21,6 @@ pub struct GasParameters {
     rlp: moveos_stdlib::rlp::GasParameters,
     account: rooch_framework::account::GasParameters,
     bcd: moveos_stdlib::bcd::GasParameters,
-    tx_context: moveos_stdlib::tx_context::GasParameters,
 }
 
 impl GasParameters {
@@ -34,7 +33,6 @@ impl GasParameters {
             rlp: moveos_stdlib::rlp::GasParameters::zeros(),
             account: rooch_framework::account::GasParameters::zeros(),
             bcd: moveos_stdlib::bcd::GasParameters::zeros(),
-            tx_context: moveos_stdlib::tx_context::GasParameters::zeros(),
         }
     }
 }
@@ -78,10 +76,6 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
     );
     add_natives!("rlp", moveos_stdlib::rlp::make_all(gas_params.rlp));
     add_natives!("bcd", moveos_stdlib::bcd::make_all(gas_params.bcd));
-    add_natives!(
-        "tx_context",
-        moveos_stdlib::tx_context::make_all(gas_params.tx_context)
-    );
 
     // rooch_framework natives
     add_natives!(

@@ -1,13 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use ethereum_types::H256;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
 };
-use moveos_statedb::HashValue;
 use serde::{Deserialize, Serialize};
+
+use crate::h256;
 
 #[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Script {
@@ -64,7 +66,7 @@ impl MoveTransaction {
 pub trait AbstractTransaction {
     fn senders(&self) -> Vec<AccountAddress>;
     fn into_move_transaction(self) -> MoveTransaction;
-    fn txn_hash(&self) -> HashValue;
+    fn txn_hash(&self) -> H256;
 }
 
 #[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -88,8 +90,8 @@ impl AbstractTransaction for SimpleTransaction {
         self.txn
     }
 
-    fn txn_hash(&self) -> HashValue {
-        HashValue::sha3_256_of(bcs::to_bytes(&self).unwrap().as_slice())
+    fn txn_hash(&self) -> H256 {
+        h256::sha3_256_of(bcs::to_bytes(&self).unwrap().as_slice())
     }
 }
 

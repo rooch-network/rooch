@@ -21,7 +21,7 @@ use std::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
-pub struct TestKey(pub HashValue);
+pub(crate) struct TestKey(pub HashValue);
 
 impl TestKey {
     pub fn new(value: [u8; HashValue::LENGTH]) -> TestKey {
@@ -68,7 +68,7 @@ impl DecodeToObject for TestKey {
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
-pub struct TestValue {
+pub(crate) struct TestValue {
     pub value: Vec<u8>,
 }
 
@@ -88,9 +88,11 @@ impl From<Vec<u8>> for TestValue {
 
 #[allow(clippy::type_complexity)]
 #[derive(Default)]
-pub struct MockTreeStore<K, V>(RwLock<(HashMap<NodeKey, Node<K, V>>, BTreeSet<StaleNodeIndex>)>);
+pub(crate) struct MockTreeStore<K, V>(
+    RwLock<(HashMap<NodeKey, Node<K, V>>, BTreeSet<StaleNodeIndex>)>,
+);
 
-pub type MockTestStore = MockTreeStore<TestKey, TestValue>;
+pub(crate) type MockTestStore = MockTreeStore<TestKey, TestValue>;
 
 impl MockTestStore {
     pub fn new_test() -> Self {

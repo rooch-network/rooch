@@ -12,6 +12,7 @@ use move_core_types::{
 use moveos_stdlib::natives::moveos_stdlib::raw_table::{
     TableChangeSet, TableHandle, TableResolver,
 };
+use moveos_types::h256::H256;
 use moveos_types::{
     object::{AccountStorage, NamedTableID, Object, ObjectID, RawObject, TableInfo},
     storage_context,
@@ -19,8 +20,6 @@ use moveos_types::{
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use smt::{InMemoryNodeStore, NodeStore, SMTree, UpdateSet};
 use std::collections::BTreeMap;
-
-pub use smt::HashValue;
 
 #[cfg(test)]
 mod tests;
@@ -59,7 +58,7 @@ where
         Self::new_with_root(node_store, None)
     }
 
-    pub fn new_with_root(node_store: NS, state_root: Option<HashValue>) -> Self {
+    pub fn new_with_root(node_store: NS, state_root: Option<H256>) -> Self {
         Self {
             smt: SMTree::new(node_store, state_root),
         }
@@ -69,18 +68,18 @@ where
         self.smt.get(key)
     }
 
-    pub fn puts<I>(&self, update_set: I) -> Result<HashValue>
+    pub fn puts<I>(&self, update_set: I) -> Result<H256>
     where
         I: Into<UpdateSet<Vec<u8>, Vec<u8>>>,
     {
         self.smt.puts(update_set)
     }
 
-    pub fn state_root(&self) -> HashValue {
+    pub fn state_root(&self) -> H256 {
         self.smt.root_hash()
     }
 
-    pub fn put_modules(&self, modules: BTreeMap<Identifier, Op<Vec<u8>>>) -> Result<HashValue> {
+    pub fn put_modules(&self, modules: BTreeMap<Identifier, Op<Vec<u8>>>) -> Result<H256> {
         self.put_changes(
             modules
                 .into_iter()
@@ -88,14 +87,14 @@ where
         )
     }
 
-    pub fn put_resources(&self, modules: BTreeMap<StructTag, Op<Vec<u8>>>) -> Result<HashValue> {
+    pub fn put_resources(&self, modules: BTreeMap<StructTag, Op<Vec<u8>>>) -> Result<H256> {
         self.put_changes(modules.into_iter().map(|(k, v)| (tag_to_key(&k), v)))
     }
 
     pub fn put_changes<I: IntoIterator<Item = (Vec<u8>, Op<Vec<u8>>)>>(
         &self,
         changes: I,
-    ) -> Result<HashValue> {
+    ) -> Result<H256> {
         let mut update_set = UpdateSet::new();
         for (key, op) in changes {
             match op {
@@ -184,7 +183,7 @@ impl StateDB {
                     object,
                     TreeTable::new_with_root(
                         self.node_store.clone(),
-                        Some(HashValue::new(state_root.into())),
+                        Some(H256(state_root.into())),
                     ),
                 )))
             }
@@ -213,7 +212,7 @@ impl StateDB {
         &self,
         change_set: ChangeSet,
         table_change_set: TableChangeSet,
-    ) -> Result<HashValue> {
+    ) -> Result<H256> {
         let mut changed_objects = UpdateSet::new();
 
         for (account, account_change_set) in change_set.into_inner() {

@@ -4,10 +4,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{jellyfish_merkle::hash::SMTHash, HashValue};
+use crate::jellyfish_merkle::hash::{HashValue, SMTHash};
 use anyhow::Result;
-#[cfg(any(test, feature = "fuzzing"))]
-use proptest_derive::Arbitrary;
 use serde::{
     de::{self, DeserializeOwned},
     Deserialize, Serialize,
@@ -53,7 +51,8 @@ where
 }
 
 #[derive(Clone)]
-#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
+//TODO support Arbitrary
+//#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub struct SMTObject<T> {
     pub origin: T,
     pub raw: Vec<u8>,

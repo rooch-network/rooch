@@ -1,5 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+use crate::h256::H256;
 /// The Move Object is from Sui Move, and we try to mix the Global storage model and Object model in MoveOS.
 use anyhow::{ensure, Result};
 use move_core_types::{
@@ -10,8 +11,9 @@ use move_core_types::{
     move_resource::{MoveResource, MoveStructType},
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use smt::HashValue;
 use std::str::FromStr;
+
+use crate::h256;
 
 /// Specific Table Object ID associated with an address
 #[derive(Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -47,7 +49,7 @@ impl NamedTableID {
 pub struct ObjectID(AccountAddress);
 
 impl ObjectID {
-    const LENGTH: usize = HashValue::LENGTH;
+    const LENGTH: usize = h256::LENGTH;
 
     /// Creates a new ObjectID
     pub fn new(obj_id: [u8; Self::LENGTH]) -> Self {
@@ -57,9 +59,10 @@ impl ObjectID {
     /// Create an ObjectID from transaction hash digest and `creation_num`.
     /// Caller is responsible for ensuring that hash is unique and
     /// `creation_num` is fresh
-    pub fn derive_id(mut tx_hash: Vec<u8>, creation_num: u64) -> Self {
-        tx_hash.extend(creation_num.to_le_bytes());
-        Self::new(HashValue::sha3_256_of(&tx_hash).into())
+    pub fn derive_id(tx_hash: H256, creation_num: u64) -> Self {
+        let mut buffer = tx_hash.0.to_vec();
+        buffer.extend(creation_num.to_le_bytes());
+        Self::new(h256::sha3_256_of(&buffer).into())
     }
 
     pub fn from_bytes<T: AsRef<[u8]>>(bytes: T) -> Result<Self, ObjectIDParseError> {
@@ -118,7 +121,7 @@ impl From<ObjectID> for AccountAddress {
 impl From<NamedTableID> for ObjectID {
     fn from(named_object_id: NamedTableID) -> Self {
         ObjectID::derive_id(
-            named_object_id.account().to_vec(),
+            H256(named_object_id.account().into()),
             named_object_id.table_index(),
         )
     }
@@ -340,7 +343,7 @@ mod tests {
     fn test_object_serialize() {
         //let struct_type = TestStruct::struct_tag();
         let object_value = TestStruct { v: 1 };
-        let object_id = ObjectID::new(HashValue::random().into());
+        let object_id = ObjectID::new(H256::random().into());
         let object = Object::new(object_id, AccountAddress::random(), object_value);
 
         let bytes = object.to_bytes();
