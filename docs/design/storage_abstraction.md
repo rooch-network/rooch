@@ -245,7 +245,7 @@ module moveos_std::account_storage{
 
 The above methods can replace the global storage instructions in Move, so that all storage-related operations in Move are ultimately unified to Operations on Tables. 
 
-At the same time,this approach also solves a reference problem in Move whereby developers cannot return a reference borrowed through the `borrow_global<T>` instruction in their methods, since this reference is created out of thin air and cannot be returned as a method return value. However, if the reference is borrowed through `StorageContext`, then that goal can be achieved, and the lifetime of the reference is bound to the lifetime of `StorageContext`. This eliminates the need for developers to manually track reference lifetimes and ensures the safety of their usage in the Move program.
+At the same time,this approach also solves a reference problem in Move whereby developers cannot return a reference borrowed through the `borrow_global<T>` instruction in their methods, since this reference is created out of thin air and cannot be returned as a method return value. However, if the reference is borrowed through `StorageContext`, then that goal can be achieved, and the lifetime of the reference is bound to the lifetime of `StorageContext`. 
 
 In addition, AccountStorage also provides module-related methods, making it easy to deploy Move contracts in Move and allowing developers to use contracts to define contract deployment rules, such as upgrading the contract through DAO governance.
 
