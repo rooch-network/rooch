@@ -2,16 +2,15 @@ name: Rust
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -26,4 +25,8 @@ jobs:
     - name: Execute rust tests
       run: cargo nextest run --workspace --all-features
     - name: Build
-      run: cargo build 
+      run: cargo build
+    - name: Execute stdlib tests
+      run: cargo run --bin rooch move test -p moveos/moveos-stdlib/moveos-stdlib/
+    - name: Execute framework tests
+      run: cargo run --bin rooch move test -p moveos/moveos-stdlib/rooch-framework/

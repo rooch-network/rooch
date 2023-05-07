@@ -91,41 +91,40 @@ module moveos_std::table {
         raw_table::destroy(handle)
     }
 
-    //We can not run table unit test because move unit test runner does not support custom NativeExtension.
-    //FIXME
-    // #[test_only]
-    // struct TableHolder<phantom K: copy + drop, phantom V: drop> has key {
-    //     t: Table<K, V>
-    // }
 
-    // #[test(account = @0x1)]
-    // fun test_upsert(account: signer) {
-    //     let sender = std::signer::address_of(&account);
-    //     let tx_context = moveos_std::tx_context::test_context(sender);
-    //     let t = new<u64, u8>(&mut tx_context);
-    //     let key: u64 = 111;
-    //     let error_code: u64 = 1;
-    //     assert!(!contains(&t, key), error_code);
-    //     upsert(&mut t, key, 12);
-    //     assert!(*borrow(&t, key) == 12, error_code);
-    //     upsert(&mut t, key, 23);
-    //     assert!(*borrow(&t, key) == 23, error_code);
+    #[test_only]
+    struct TableHolder<phantom K: copy + drop, phantom V: drop> has key {
+        t: Table<K, V>
+    }
 
-    //     move_to(&account, TableHolder { t });
-    // }
+    #[test(account = @0x1)]
+    fun test_upsert(account: signer) {
+        let sender = std::signer::address_of(&account);
+        let tx_context = moveos_std::tx_context::test_context(sender);
+        let t = new<u64, u8>(&mut tx_context);
+        let key: u64 = 111;
+        let error_code: u64 = 1;
+        assert!(!contains(&t, key), error_code);
+        upsert(&mut t, key, 12);
+        assert!(*borrow(&t, key) == 12, error_code);
+        upsert(&mut t, key, 23);
+        assert!(*borrow(&t, key) == 23, error_code);
 
-    // #[test(account = @0x1)]
-    // fun test_borrow_with_default(account: signer) {
-    //     let sender = std::signer::address_of(&account);
-    //     let tx_context = moveos_std::tx_context::test_context(sender);
-    //     let t = new<u64, u8>(&mut tx_context);
-    //     let key: u64 = 100;
-    //     let error_code: u64 = 1;
-    //     assert!(!contains(&t, key), error_code);
-    //     assert!(*borrow_with_default(&t, key, &12) == 12, error_code);
-    //     add(&mut t, key, 1);
-    //     assert!(*borrow_with_default(&t, key, &12) == 1, error_code);
+        move_to(&account, TableHolder { t });
+    }
 
-    //     move_to(&account, TableHolder{ t });
-    // }
+    #[test(account = @0x1)]
+    fun test_borrow_with_default(account: signer) {
+        let sender = std::signer::address_of(&account);
+        let tx_context = moveos_std::tx_context::test_context(sender);
+        let t = new<u64, u8>(&mut tx_context);
+        let key: u64 = 100;
+        let error_code: u64 = 1;
+        assert!(!contains(&t, key), error_code);
+        assert!(*borrow_with_default(&t, key, &12) == 12, error_code);
+        add(&mut t, key, 1);
+        assert!(*borrow_with_default(&t, key, &12) == 1, error_code);
+
+        move_to(&account, TableHolder{ t });
+    }
 }
