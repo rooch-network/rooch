@@ -73,17 +73,17 @@
 //! [`InternalNode`]: node_type/struct.InternalNode.html
 //! [`LeafNode`]: node_type/struct.LeafNode.html
 
-pub mod hash;
-pub mod iterator;
+pub(crate) mod hash;
+pub(crate) mod iterator;
 #[cfg(test)]
-mod jellyfish_merkle_test;
-pub mod mock_tree_store;
-pub mod nibble;
-pub mod nibble_path;
-pub mod node_type;
+pub(crate) mod jellyfish_merkle_test;
+pub(crate) mod mock_tree_store;
+pub(crate) mod nibble;
+pub(crate) mod nibble_path;
+pub(crate) mod node_type;
 pub mod proof;
-pub mod test_helper;
-pub mod tree_cache;
+pub(crate) mod test_helper;
+pub(crate) mod tree_cache;
 
 use crate::{Key, SMTObject, Value};
 use anyhow::{bail, ensure, format_err, Result};
@@ -92,6 +92,7 @@ use hash::{HashValue, SMTHash};
 use log::debug;
 use nibble_path::{skip_common_prefix, NibbleIterator, NibblePath};
 use node_type::{Child, Children, InternalNode, LeafNode, Node, NodeKey};
+use primitive_types::H256;
 use proof::{SparseMerkleProof, SparseMerkleRangeProof};
 use std::collections::{BTreeMap, BTreeSet};
 use std::marker::PhantomData;
@@ -103,7 +104,7 @@ pub const ROOT_NIBBLE_HEIGHT: usize = HashValue::LENGTH * 2;
 /// `TreeReader` defines the interface between
 /// [`JellyfishMerkleTree`](struct.JellyfishMerkleTree.html)
 /// and underlying storage holding nodes.
-pub trait TreeReader<K, V> {
+pub(crate) trait TreeReader<K, V> {
     /// Gets node given a node key. Returns error if the node does not exist.
     fn get_node(&self, node_key: &NodeKey) -> Result<Node<K, V>> {
         self.get_node_option(node_key)?.ok_or_else(|| {
@@ -117,20 +118,20 @@ pub trait TreeReader<K, V> {
     fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<K, V>>>;
 }
 
-pub trait TreeWriter<K, V> {
+pub(crate) trait TreeWriter<K, V> {
     /// Writes a node batch into storage.
     fn write_node_batch(&self, node_batch: &NodeBatch<K, V>) -> Result<()>;
 }
 
 /// Node batch that will be written into db atomically with other batches.
-pub type NodeBatch<K, V> = BTreeMap<NodeKey, Node<K, V>>;
+pub(crate) type NodeBatch<K, V> = BTreeMap<NodeKey, Node<K, V>>;
 /// [`StaleNodeIndex`](struct.StaleNodeIndex.html) batch that will be written into db atomically
 /// with other batches.
-pub type StaleNodeIndexBatch = BTreeSet<StaleNodeIndex>;
+pub(crate) type StaleNodeIndexBatch = BTreeSet<StaleNodeIndex>;
 
 /// Indicates a node becomes stale since `stale_since_version`.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct StaleNodeIndex {
+pub(crate) struct StaleNodeIndex {
     /// The version since when the node is overwritten and becomes stale.
     pub stale_since_version: HashValue,
     /// The [`NodeKey`](node_type/struct.NodeKey.html) identifying the node associated with this
@@ -143,7 +144,7 @@ pub struct StaleNodeIndex {
 /// the incremental updates of a tree and pruning indices after applying a write set,
 /// which is a vector of `K` and `V` pairs.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct TreeUpdateBatch<K, V> {
+pub(crate) struct TreeUpdateBatch<K, V> {
     pub node_batch: NodeBatch<K, V>,
     pub stale_node_index_batch: StaleNodeIndexBatch,
     pub num_new_leaves: usize,
@@ -162,7 +163,7 @@ impl<K, V> Default for TreeUpdateBatch<K, V> {
 }
 
 /// The Jellyfish Merkle tree data structure. See [`crate`] for description.
-pub struct JellyfishMerkleTree<'a, K, V, R: 'a + TreeReader<K, V>> {
+pub(crate) struct JellyfishMerkleTree<'a, K, V, R: 'a + TreeReader<K, V>> {
     reader: &'a R,
     key: PhantomData<K>,
     value: PhantomData<V>,
@@ -583,7 +584,7 @@ where
         // Empty tree just returns proof with no sibling hash.
         // let mut next_node_key = NodeKey::new_empty_path(version);
         let mut next_node_key = state_root_hash;
-        let mut siblings = vec![];
+        let mut siblings: Vec<H256> = vec![];
 
         // We use key's hash as nibble_path, not origin key bytes, make smt more distributed
         let key = key.into();
@@ -600,8 +601,11 @@ where
                     let queried_child_index = nibble_iter
                         .next()
                         .ok_or_else(|| format_err!("ran out of nibbles"))?;
-                    let (child_node_key, mut siblings_in_internal) =
+                    let (child_node_key, siblings_in_internal) =
                         internal_node.get_child_with_siblings(queried_child_index);
+                    //TODO optimize
+                    let mut siblings_in_internal: Vec<H256> =
+                        siblings_in_internal.into_iter().map(|s| s.into()).collect();
                     siblings.append(&mut siblings_in_internal);
                     if let Some(node_key) = child_node_key {
                         next_node_key = node_key;
@@ -623,7 +627,7 @@ where
                             None
                         },
                         SparseMerkleProof::new(
-                            Some((leaf_node.key_hash(), leaf_node.value_hash())),
+                            Some((leaf_node.key_hash().into(), leaf_node.value_hash().into())),
                             {
                                 siblings.reverse();
                                 siblings

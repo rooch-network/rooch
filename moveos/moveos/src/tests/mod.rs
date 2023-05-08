@@ -15,8 +15,6 @@ use moveos_stdlib::addresses::MOVEOS_STD_ADDRESS;
 pub fn test_moveos() {
     let db = StateDB::new_with_memory_store();
     let moveos = MoveOS::new(db).unwrap();
-    //let hash_module = ModuleId::new(AccountAddress::from_hex_literal("0x1").unwrap(), IdentStr::new("hash").unwrap().to_owned());
-    //let data = HashValue::random().to_vec();
 
     let math_module = ModuleId::new(
         *MOVEOS_STD_ADDRESS,

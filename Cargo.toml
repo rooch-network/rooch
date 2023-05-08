@@ -11,6 +11,7 @@ members = [
     "moveos/moveos-server",
     "moveos/moveos-client",
     "moveos/moveos-common",
+    "crates/rooch-types",
     "crates/rooch-integration-test-runner",
     "crates/rooch",
 ]
@@ -47,6 +48,7 @@ moveos-client = { path = "moveos/moveos-client" }
 moveos-common = { path = "moveos/moveos-common" }
 
 # crates for Rooch
+rooch-types = { path = "crates/rooch-types" }
 rooch-integration-test-runner = { path = "crates/rooch-integration-test-runner" }
 
 # External crate dependencies.
@@ -64,6 +66,7 @@ chrono = "0.4.23"
 coerce = "0.8"
 datatest-stable = "0.1.3"
 derive_builder = "0.12"
+ethereum-types = "0.14.1"
 hex = "0.4.3"
 itertools = "0.10.3"
 futures = "0.3"
@@ -76,6 +79,7 @@ num-derive = "0.3.3"
 num-traits = "0.2.15"
 once_cell = "1.10.0"
 parking_lot = "0.12.1"
+primitive-types = { version = "0.12.1", features = ["serde", "arbitrary"] }
 prost = "0.11"
 prost-types = "0.11"
 proptest = "1.0.0"

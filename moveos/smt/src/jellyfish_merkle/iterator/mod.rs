@@ -95,7 +95,7 @@ impl NodeVisitInfo {
 }
 
 /// The `JellyfishMerkleIterator` implementation.
-pub struct JellyfishMerkleIterator<'a, K, V, R: 'a + TreeReader<K, V>> {
+pub(crate) struct JellyfishMerkleIterator<'a, K, V, R: 'a + TreeReader<K, V>> {
     /// The storage engine from which we can read nodes using node keys.
     reader: &'a R,
 
@@ -216,7 +216,7 @@ where
     pub fn print(&self) -> Result<()> {
         let nodes = &self.parent_stack;
         for node in nodes {
-            println!("internal node key: {:?}", node.node_key.to_hex());
+            println!("internal node key: {:?}", node.node_key.as_hex());
             if let Ok(Node::Internal(internal)) = self.reader.get_node(&node.node_key) {
                 println!("child: {:?}", internal.all_child());
             }
@@ -290,7 +290,7 @@ where
 }
 
 /// The `JellyfishMerkleIntoIterator` implementation.
-pub struct JellyfishMerkleIntoIterator<K, V, R: TreeReader<K, V>> {
+pub(crate) struct JellyfishMerkleIntoIterator<K, V, R: TreeReader<K, V>> {
     /// The storage engine from which we can read nodes using node keys.
     reader: R,
 
@@ -404,7 +404,7 @@ where
     pub fn print(&self) -> Result<()> {
         let nodes = &self.parent_stack;
         for node in nodes {
-            println!("internal node key: {:?}", node.node_key.to_hex());
+            println!("internal node key: {:?}", node.node_key.as_hex());
             if let Ok(Node::Internal(internal)) = self.reader.get_node(&node.node_key) {
                 println!("child: {:?}", internal.all_child());
             }

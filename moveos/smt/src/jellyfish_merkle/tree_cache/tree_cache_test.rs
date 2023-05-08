@@ -30,7 +30,10 @@ fn test_get_node() {
 fn test_root_node() {
     let db = MockTestStore::new_test();
     let mut cache = TreeCache::new(&db, None);
-    assert_eq!(*cache.get_root_node_key(), *SPARSE_MERKLE_PLACEHOLDER_HASH);
+    assert_eq!(
+        *cache.get_root_node_key(),
+        *SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE
+    );
 
     let (node, node_key) = random_leaf_with_key();
     db.put_node(node_key, node).unwrap();
@@ -44,7 +47,10 @@ fn test_freeze_with_delete() {
     let db = MockTestStore::new_test();
     let mut cache = TreeCache::new(&db, None);
 
-    assert_eq!(*cache.get_root_node_key(), *SPARSE_MERKLE_PLACEHOLDER_HASH);
+    assert_eq!(
+        *cache.get_root_node_key(),
+        *SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE
+    );
 
     let (node1, node1_key) = random_leaf_with_key();
     cache.put_node(node1_key, node1.clone()).unwrap();

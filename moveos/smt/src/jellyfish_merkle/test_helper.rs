@@ -13,7 +13,7 @@ use crate::EncodeToObject;
 use std::collections::HashMap;
 
 /// Computes the key immediately after `key`.
-pub fn plus_one(key: HashValue) -> HashValue {
+pub(crate) fn plus_one(key: HashValue) -> HashValue {
     assert_ne!(key, HashValue::new([0xff; HashValue::LENGTH]));
 
     let mut buf = key.to_vec();
@@ -30,7 +30,9 @@ pub fn plus_one(key: HashValue) -> HashValue {
 
 /// Initializes a DB with a set of key-value pairs by inserting one key at each version.
 #[allow(clippy::all)]
-pub fn init_mock_db(kvs: &HashMap<TestKey, TestValue>) -> (MockTestStore, Option<HashValue>) {
+pub(crate) fn init_mock_db(
+    kvs: &HashMap<TestKey, TestValue>,
+) -> (MockTestStore, Option<HashValue>) {
     assert!(!kvs.is_empty());
 
     let db = MockTestStore::new_test();

@@ -37,6 +37,7 @@ move-vm-runtime = { workspace = true }
 move-vm-test-utils = { workspace = true }
 
 moveos = { workspace = true }
+moveos-types = { workspace = true }
 moveos-stdlib = { workspace = true }
 moveos-client = { workspace = true }
 moveos-common = { workspace = true }

@@ -1,5 +1,5 @@
 [package]
-name = "moveos-types"
+name = "rooch-types"
 version = "0.1.0"
 
 # Workspace inherited keys
@@ -18,13 +18,11 @@ anyhow = { workspace = true }
 bcs = { workspace = true }
 hex = { workspace = true }
 thiserror = { workspace = true }
-
+smt = { workspace = true }
 serde = { workspace = true }
 serde_bytes = { workspace = true }
 serde_json = { workspace = true }
-primitive-types = { workspace = true }
-tiny-keccak = { workspace = true, features = ["keccak", "sha3"] }
 
 move-core-types = { workspace = true }
 
-smt = { workspace = true }
+moveos-types = { workspace = true }

@@ -28,6 +28,7 @@ more-asserts = { workspace = true }
 num-derive = { workspace = true }
 num-traits = { workspace = true }
 once_cell = { workspace = true }
+primitive-types = { workspace = true }
 proptest = { workspace = true }
 proptest-derive = { workspace = true }
 parking_lot = { workspace = true }

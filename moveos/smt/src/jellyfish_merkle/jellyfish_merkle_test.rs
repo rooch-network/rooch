@@ -65,7 +65,7 @@ fn test_delete_from_tree() {
     db.write_tree_update_batch(batch).unwrap();
 
     let (new_root, batch) = tree.delete(Some(_new_root_hash), key).unwrap();
-    assert_eq!(new_root, *SPARSE_MERKLE_PLACEHOLDER_HASH);
+    assert_eq!(new_root, *SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE);
     assert_eq!(batch.num_stale_leaves, 1);
     assert_eq!(batch.stale_node_index_batch.len(), 1);
     assert_eq!(batch.num_new_leaves, 0);
@@ -481,7 +481,7 @@ fn test_non_existence() {
         let (value, proof) = tree.get_with_proof(root, non_existing_key).unwrap();
         assert_eq!(value, None);
         assert!(proof
-            .verify::<TestKey, TestValue>(root, non_existing_key, None)
+            .verify::<TestKey, TestValue>(root.into(), non_existing_key, None)
             .is_ok());
     }
     // 2. Non-existing node at non-root internal node
@@ -490,7 +490,7 @@ fn test_non_existence() {
         let (value, proof) = tree.get_with_proof(root, non_existing_key).unwrap();
         assert_eq!(value, None);
         assert!(proof
-            .verify::<TestKey, TestValue>(root, non_existing_key, None)
+            .verify::<TestKey, TestValue>(root.into(), non_existing_key, None)
             .is_ok());
     }
     // 3. Non-existing node at leaf node
@@ -499,7 +499,7 @@ fn test_non_existence() {
         let (value, proof) = tree.get_with_proof(root, non_existing_key).unwrap();
         assert_eq!(value, None);
         assert!(proof
-            .verify::<TestKey, TestValue>(root, non_existing_key, None)
+            .verify::<TestKey, TestValue>(root.into(), non_existing_key, None)
             .is_ok());
     }
 }
@@ -646,7 +646,7 @@ fn many_keys_get_proof_and_verify_tree_root(seed: &[u8], num_keys: usize) {
         let (value, proof) = tree.get_with_proof(root, k.clone()).unwrap();
         assert_eq!(value.unwrap(), *v);
         assert!(proof
-            .verify(root, k.clone().origin, Some(v.clone().origin))
+            .verify(root.into(), k.clone().origin, Some(v.clone().origin))
             .is_ok());
     }
 }
@@ -701,7 +701,9 @@ fn many_versions_get_proof_and_verify_tree_root(seed: &[u8], num_versions: usize
         let history_root = roots[random_version];
         let (value, proof) = tree.get_with_proof(history_root, *k).unwrap();
         assert_eq!(value.unwrap().origin, *v);
-        assert!(proof.verify(history_root, *k, Some(v.clone())).is_ok());
+        assert!(proof
+            .verify(history_root.into(), *k, Some(v.clone()))
+            .is_ok());
     }
 
     for (i, (k, _, v)) in kvs.iter().enumerate() {
@@ -709,7 +711,9 @@ fn many_versions_get_proof_and_verify_tree_root(seed: &[u8], num_versions: usize
         let history_root = roots[random_version];
         let (value, proof) = tree.get_with_proof(history_root, *k).unwrap();
         assert_eq!(value.unwrap().origin, *v);
-        assert!(proof.verify(history_root, *k, Some(v.clone())).is_ok());
+        assert!(proof
+            .verify(history_root.into(), *k, Some(v.clone()))
+            .is_ok());
     }
 }
 
@@ -800,7 +804,9 @@ fn test_existent_keys_impl(
     for (key, value) in existent_kvs {
         let (value_in_tree, proof) = tree.get_with_proof(root_hash, *key).unwrap();
         assert_eq!(value_in_tree.unwrap().origin, *value);
-        assert!(proof.verify(root_hash, *key, Some(value.clone())).is_ok());
+        assert!(proof
+            .verify(root_hash.into(), *key, Some(value.clone()))
+            .is_ok());
     }
 }
 
@@ -813,7 +819,7 @@ fn test_nonexistent_keys_impl(
         let (value_in_tree, proof) = tree.get_with_proof(root_hash, *key).unwrap();
         assert!(value_in_tree.is_none());
         assert!(proof
-            .verify(root_hash, *key, value_in_tree.map(|obj| obj.origin))
+            .verify(root_hash.into(), *key, value_in_tree.map(|obj| obj.origin))
             .is_ok());
     }
 }
@@ -828,7 +834,7 @@ fn test_nonexistent_key_value_update_impl(
     let (value_in_tree, mut proof) = tree.get_with_proof(root_hash, key).unwrap();
     assert!(value_in_tree.is_none());
     assert!(proof
-        .verify(root_hash, key, value_in_tree.map(|obj| obj.origin))
+        .verify(root_hash.into(), key, value_in_tree.map(|obj| obj.origin))
         .is_ok());
 
     let new_root_by_proof = proof.update_leaf(key, value.clone()).unwrap();
@@ -846,7 +852,7 @@ fn test_nonexistent_key_value_update_impl(
     assert!(value.is_some());
     assert_eq!(proof, new_proof);
 
-    assert_eq!(new_root_by_proof, root);
+    assert_eq!(new_root_by_proof, root.into());
     root
 }
 
@@ -917,7 +923,7 @@ fn verify_range_proof<K: Key, V: Value>(
         // add zeros.
         buf.resize(HashValue::LENGTH_IN_BITS, false);
         let key = HashValue::from_bit_iter(buf.into_iter()).unwrap();
-        btree1.insert(key, *sibling);
+        btree1.insert(key, (*sibling).into());
     }
 
     // Now we do the transformation (removing the suffixes) described above.
@@ -971,7 +977,7 @@ fn compute_root_hash_impl(kvs: Vec<(&[bool], HashValue)>) -> HashValue {
     match kvs.iter().position(|(key, _value)| key[0]) {
         Some(0) => {
             // Every key starts with a 1-bit, i.e., they are all in the right subtree.
-            left_hash = *SPARSE_MERKLE_PLACEHOLDER_HASH;
+            left_hash = *SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE;
             right_hash = compute_root_hash_impl(reduce(&kvs));
         }
         Some(index) => {
@@ -982,7 +988,7 @@ fn compute_root_hash_impl(kvs: Vec<(&[bool], HashValue)>) -> HashValue {
         None => {
             // Every key starts with a 0-bit, i.e., they are all in the left subtree.
             left_hash = compute_root_hash_impl(reduce(&kvs));
-            right_hash = *SPARSE_MERKLE_PLACEHOLDER_HASH;
+            right_hash = *SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE;
         }
     }
 
