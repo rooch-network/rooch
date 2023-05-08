@@ -4,8 +4,8 @@
 use std::str::FromStr;
 
 pub use primitive_types::H256;
+use serde::{Deserialize, Serializer};
 use tiny_keccak::{Hasher, Sha3};
-use serde::{Serializer, Deserialize};
 
 pub const LENGTH: usize = 32;
 
@@ -24,8 +24,7 @@ where
     if serializer.is_human_readable() {
         serializer.serialize_str(&hash.to_string())
     } else {
-        serializer
-            .serialize_newtype_struct("H256", &hash.0)
+        serializer.serialize_newtype_struct("H256", &hash.0)
     }
 }
 

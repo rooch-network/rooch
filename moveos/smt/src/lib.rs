@@ -21,8 +21,8 @@ mod smt_object;
 pub(crate) mod tests;
 mod update_set;
 
-pub use primitive_types::H256;
 pub use jellyfish_merkle::{hash::SPARSE_MERKLE_PLACEHOLDER_HASH, proof::SparseMerkleProof};
+pub use primitive_types::H256;
 pub use smt_object::{DecodeToObject, EncodeToObject, Key, SMTObject, Value};
 pub use update_set::UpdateSet;
 

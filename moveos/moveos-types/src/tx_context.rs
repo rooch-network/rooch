@@ -3,7 +3,7 @@
 
 //Source origin from https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-types/src/base_types.rs
 
-use crate::h256::{H256, self};
+use crate::h256::{self, H256};
 use crate::object::ObjectID;
 use move_core_types::value::{MoveStructLayout, MoveTypeLayout};
 use move_core_types::{
@@ -62,8 +62,7 @@ impl TxContext {
     /// Return the layout of the TxContext in Move
     /// TODO: write a macro to auto generate Layout for Rust type.
     pub fn move_layout() -> MoveTypeLayout {
-        MoveTypeLayout::Struct(
-        MoveStructLayout::new(vec![
+        MoveTypeLayout::Struct(MoveStructLayout::new(vec![
             MoveTypeLayout::Address,
             MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
             MoveTypeLayout::U64,
@@ -77,18 +76,19 @@ impl MoveStructType for TxContext {
 }
 
 #[cfg(test)]
-mod tests{
+mod tests {
     use move_core_types::value::MoveValue;
 
     use super::*;
 
     #[test]
-    pub fn test_tx_context_serialize(){
+    pub fn test_tx_context_serialize() {
         let test = TxContext::random_for_testing_only();
         let serialized = test.to_vec();
         let deserialized: TxContext = bcs::from_bytes(&serialized).unwrap();
         assert_eq!(test, deserialized);
-        let move_value = MoveValue::simple_deserialize(&serialized, &TxContext::move_layout()).unwrap();
+        let move_value =
+            MoveValue::simple_deserialize(&serialized, &TxContext::move_layout()).unwrap();
         let serialized2 = move_value.simple_serialize().unwrap();
         assert_eq!(serialized, serialized2);
     }

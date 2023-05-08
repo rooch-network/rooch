@@ -1,8 +1,8 @@
 use bytes::Bytes;
-use primitive_types::H256;
 use hex::FromHex;
 use more_asserts::debug_assert_lt;
 use once_cell::sync::Lazy;
+use primitive_types::H256;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use rand::{rngs::OsRng, Rng};
