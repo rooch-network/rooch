@@ -6,5 +6,5 @@ pub struct EthereumTransactionData {
 }
 
 pub struct EthereumSignature {
-    //TODO 
+    //TODO
 }

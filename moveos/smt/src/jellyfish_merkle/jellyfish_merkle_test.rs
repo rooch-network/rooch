@@ -701,7 +701,9 @@ fn many_versions_get_proof_and_verify_tree_root(seed: &[u8], num_versions: usize
         let history_root = roots[random_version];
         let (value, proof) = tree.get_with_proof(history_root, *k).unwrap();
         assert_eq!(value.unwrap().origin, *v);
-        assert!(proof.verify(history_root.into(), *k, Some(v.clone())).is_ok());
+        assert!(proof
+            .verify(history_root.into(), *k, Some(v.clone()))
+            .is_ok());
     }
 
     for (i, (k, _, v)) in kvs.iter().enumerate() {
@@ -709,7 +711,9 @@ fn many_versions_get_proof_and_verify_tree_root(seed: &[u8], num_versions: usize
         let history_root = roots[random_version];
         let (value, proof) = tree.get_with_proof(history_root, *k).unwrap();
         assert_eq!(value.unwrap().origin, *v);
-        assert!(proof.verify(history_root.into(), *k, Some(v.clone())).is_ok());
+        assert!(proof
+            .verify(history_root.into(), *k, Some(v.clone()))
+            .is_ok());
     }
 }
 
@@ -800,7 +804,9 @@ fn test_existent_keys_impl(
     for (key, value) in existent_kvs {
         let (value_in_tree, proof) = tree.get_with_proof(root_hash, *key).unwrap();
         assert_eq!(value_in_tree.unwrap().origin, *value);
-        assert!(proof.verify(root_hash.into(), *key, Some(value.clone())).is_ok());
+        assert!(proof
+            .verify(root_hash.into(), *key, Some(value.clone()))
+            .is_ok());
     }
 }
 
