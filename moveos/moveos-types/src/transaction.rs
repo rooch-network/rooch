@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use ethereum_types::H256;
+use crate::h256::H256;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,

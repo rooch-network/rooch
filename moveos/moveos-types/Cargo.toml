@@ -22,7 +22,7 @@ thiserror = { workspace = true }
 serde = { workspace = true }
 serde_bytes = { workspace = true }
 serde_json = { workspace = true }
-ethereum-types = { workspace = true }
+primitive-types = { workspace = true }
 tiny-keccak = { workspace = true, features = ["keccak", "sha3"] }
 
 move-core-types = { workspace = true }

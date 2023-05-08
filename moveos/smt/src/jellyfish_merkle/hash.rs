@@ -1,5 +1,5 @@
 use bytes::Bytes;
-use ethereum_types::H256;
+use primitive_types::H256;
 use hex::FromHex;
 use more_asserts::debug_assert_lt;
 use once_cell::sync::Lazy;

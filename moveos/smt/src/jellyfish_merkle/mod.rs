@@ -88,7 +88,7 @@ pub(crate) mod tree_cache;
 use crate::{Key, SMTObject, Value};
 use anyhow::{bail, ensure, format_err, Result};
 use backtrace::Backtrace;
-use ethereum_types::H256;
+use primitive_types::H256;
 use hash::{HashValue, SMTHash};
 use log::debug;
 use nibble_path::{skip_common_prefix, NibbleIterator, NibblePath};

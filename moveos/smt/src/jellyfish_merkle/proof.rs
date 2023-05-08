@@ -5,7 +5,7 @@ use super::hash::*;
 use super::node_type::{SparseMerkleInternalNode, SparseMerkleLeafNode};
 use crate::{Key, Value};
 use anyhow::{bail, ensure, Result};
-use ethereum_types::H256;
+use primitive_types::H256;
 use serde::{Deserialize, Serialize};
 
 /// A proof that can be used to authenticate an element in a Sparse Merkle Tree given trusted root

@@ -21,7 +21,6 @@ bytes = { workspace = true }
 byteorder = { workspace = true }
 backtrace = { workspace = true }
 hex = { workspace = true }
-ethereum-types = { workspace = true }
 itertools = { workspace = true }
 log = { workspace = true }
 lazy_static = { workspace = true }
@@ -29,6 +28,7 @@ more-asserts = { workspace = true }
 num-derive = { workspace = true }
 num-traits = { workspace = true }
 once_cell = { workspace = true }
+primitive-types = { workspace = true }
 proptest = { workspace = true }
 proptest-derive = { workspace = true }
 parking_lot = { workspace = true }
