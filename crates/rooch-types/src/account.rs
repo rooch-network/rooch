@@ -139,12 +139,12 @@ impl EncodeDecodeBase64 for PublicKey {
 
     fn decode_base64(value: &str) -> Result<Self, eyre::Report> {
         let bytes =
-            Base64::decode(value).map_err(|e| RoochError::Base64DecodeError(e.to_string()))?;
+            Base64::decode(value).map_err(|e| eyre!("{}", e.to_string()))?;
 
         let pk = Ed25519PublicKey::from_bytes(
             bytes
                 .get(1..)
-                .ok_or_else(|| RoochError::InvalidlengthError())?,
+                .ok_or_else(|| eyre!("Invalid length"))?,
         )?;
 
         Ok(PublicKey::Ed25519(pk))
