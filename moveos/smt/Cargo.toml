@@ -1,0 +1,45 @@
+[package]
+name = "smt"
+version = "0.1.0"
+
+# Workspace inherited keys
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+anyhow = { workspace = true }
+bcs = { workspace = true }
+bytes = { workspace = true }
+byteorder = { workspace = true }
+backtrace = { workspace = true }
+hex = { workspace = true }
+itertools = { workspace = true }
+log = { workspace = true }
+lazy_static = { workspace = true }
+more-asserts = { workspace = true }
+num-derive = { workspace = true }
+num-traits = { workspace = true }
+once_cell = { workspace = true }
+primitive-types = { workspace = true }
+proptest = { workspace = true }
+proptest-derive = { workspace = true }
+parking_lot = { workspace = true }
+rayon = { workspace = true }
+rand = { workspace = true }
+rand_core = { workspace = true, default-features = false }
+serde = { workspace = true, features = ["derive", "rc"] }
+serde_bytes = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+#sha3 = "0.9.1"
+thiserror = { workspace = true }
+tiny-keccak = { workspace = true, features = ["keccak", "sha3"] }
+

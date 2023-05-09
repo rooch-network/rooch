@@ -6,10 +6,10 @@ use move_core_types::{
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
 };
-use moveos::types::transaction::{SimpleTransaction, ViewPayload};
 use moveos_common::config::load_config;
 use moveos_server::service::RpcServiceClient;
 use moveos_types::object::ObjectID;
+use moveos_types::transaction::{SimpleTransaction, ViewPayload};
 // |use tokio::time::Duration;
 
 #[derive(Clone, Debug, Parser)]

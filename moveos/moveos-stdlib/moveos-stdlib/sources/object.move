@@ -30,7 +30,7 @@ module moveos_std::object {
         value: T,
     }
 
-    #[private_generic(T)]
+    #[private_generics(T)]
     /// Create a new object, the object is owned by `owner`
     /// The private generic is indicate the T should be defined in the same module as the caller. This is ensured by the verifier.
     public fun new<T: key>(ctx: &mut TxContext, owner: address, value: T): Object<T> {
@@ -42,14 +42,22 @@ module moveos_std::object {
         Object<T>{id, owner, value}
     }
 
+    #[private_generics(T)]
     //TODO should this require private generic?
     public fun borrow<T>(this: &Object<T>): &T {
         &this.value
     }
 
+    #[private_generics(T)]
     /// Borrow the object mutable value
     public fun borrow_mut<T>(this: &mut Object<T>): &mut T {
         &mut this.value
+    }
+
+    #[private_generics(T)]
+    /// Transfer object to recipient
+    public fun transfer<T: key>(this: &mut Object<T>, recipient: address) {
+        this.owner = recipient;
     }
 
     public fun id<T>(this: &Object<T>): ObjectID {
@@ -60,7 +68,7 @@ module moveos_std::object {
         this.owner
     }
 
-    #[private_generic(T)]
+    #[private_generics(T)]
     public fun unpack<T>(obj: Object<T>): (ObjectID, address, T) {
         let Object{id, owner, value} = obj;
         (id, owner, value)

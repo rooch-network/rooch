@@ -11,8 +11,8 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
     parser::parse_type_tag,
 };
-use moveos::types::transaction::{MoveTransaction, SimpleTransaction};
 use moveos_client::Client;
+use moveos_types::transaction::{MoveTransaction, SimpleTransaction};
 
 /// Create a new account on-chain
 ///
