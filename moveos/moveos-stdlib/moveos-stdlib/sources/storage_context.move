@@ -6,6 +6,11 @@ module moveos_std::storage_context {
     use moveos_std::object_storage::{ObjectStorage};
     use moveos_std::tx_context::{TxContext};
 
+    #[test_only]
+    use moveos_std::object_storage::{Self};
+    #[test_only]
+    use moveos_std::tx_context::{Self};
+
     /// Information about the global storage context
     /// We can not put the StorageContext to TxContext, because object module depends on tx_context module,
     /// and storage_context module depends on object module.
@@ -31,6 +36,24 @@ module moveos_std::storage_context {
 
     public fun object_storage_mut(this: &mut StorageContext): &mut ObjectStorage {
         &mut this.object_storage
+    }
+
+    #[test_only]
+    /// Create a StorageContext for unit test
+    public fun test_context(sender: address): StorageContext {
+        let tx_context = tx_context::test_context(sender);
+        let object_storage = object_storage::new(&mut tx_context);
+        StorageContext {
+            tx_context,
+            object_storage,
+        }
+    }
+
+    #[test_only]
+    /// Testing only: allow to drop oject storage
+    public fun drop_storage_context(this: &mut StorageContext) {
+        object_storage::drop_object_storage(object_storage_mut(this));
+        _ = this;
     }
 
 }

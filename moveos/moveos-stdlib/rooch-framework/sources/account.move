@@ -7,6 +7,10 @@ module rooch_framework::account{
    use moveos_std::bcd;
    #[test_only]
    use std::debug;
+   use moveos_std::storage_context::StorageContext;
+   use moveos_std::account_storage;
+   #[test_only]
+   use moveos_std::storage_context;
 
    friend rooch_framework::genesis;
    friend rooch_framework::transaction_validator;
@@ -76,14 +80,14 @@ module rooch_framework::account{
 
    /// TODO should provide a entry function at this module
    /// How to provide account extension?
-   public entry fun create_account_entry(auth_key: address): signer{
-      Self::create_account(auth_key)
+   public entry fun create_account_entry(ctx: &mut StorageContext, auth_key: address): signer{
+      Self::create_account(ctx, auth_key)
    }
 
    /// Publishes a new `Account` resource under `new_address`. A signer representing `new_address`
    /// is returned. This way, the caller of this function can publish additional resources under
    /// `new_address`.
-   public(friend) fun create_account(new_address: address): signer {
+   public(friend) fun create_account(ctx: &mut StorageContext, new_address: address): signer {
       assert!(
          new_address != @vm_reserved && new_address != @rooch_framework,
          error::invalid_argument(EAddressReseved)
@@ -92,10 +96,10 @@ module rooch_framework::account{
       // there cannot be an Account resource under new_addr already.
       assert!(!exists<Account>(new_address), error::already_exists(EAccountAlreadyExists));      
 
-      create_account_unchecked(new_address)
+      create_account_unchecked(ctx, new_address)
    }
 
-   fun create_account_unchecked(new_address: address): signer {
+   fun create_account_unchecked(ctx: &mut StorageContext, new_address: address): signer {
       let new_account = create_signer(new_address);
       let authentication_key = bcs::to_bytes(&new_address);
       assert!(
@@ -104,19 +108,19 @@ module rooch_framework::account{
       );
 
       // TODO event register
-      move_to(
+      account_storage::create_account_storage(ctx, new_address);
+      account_storage::global_move_to<Account>(ctx,
          &new_account,
          Account {
             authentication_key,
             sequence_number: 0,
-         }
-      );
+      });
 
       new_account
    }
 
    /// create the account for system reserved addresses
-   public(friend) fun create_framework_reserved_account(addr: address): (signer, SignerCapability) {
+   public(friend) fun create_framework_reserved_account(ctx: &mut StorageContext, addr: address): (signer, SignerCapability) {
       assert!(
          addr == @0x1 ||
              addr == @0x2 ||
@@ -130,19 +134,20 @@ module rooch_framework::account{
              addr == @0xa,
          error::permission_denied(ENoValidFrameworkReservedAddress),
       );
-      let signer = create_account_unchecked(addr);
+      let signer = create_account_unchecked(ctx, addr);
       let signer_cap = SignerCapability { addr };
       (signer, signer_cap)
    }
 
 
    /// Return the current sequence number at `addr`
-   public fun sequence_number(addr: address): u64 acquires Account {
-      sequence_number_for_account(borrow_global<Account>(addr))
+   public fun sequence_number(ctx: &mut StorageContext, addr: address): u64 {
+      let account = account_storage::global_borrow<Account>(ctx, addr);
+      sequence_number_for_account(account)
    }
 
-   public(friend) fun increment_sequence_number(addr: address) acquires Account {
-      let sequence_number = &mut borrow_global_mut<Account>(addr).sequence_number;
+   public(friend) fun increment_sequence_number(ctx: &mut StorageContext, addr: address) {
+      let sequence_number = &mut account_storage::global_borrow_mut<Account>(ctx, addr).sequence_number;
 
       assert!(
          (*sequence_number as u128) < MAX_U64,
@@ -164,22 +169,22 @@ module rooch_framework::account{
    }
 
    #[view]
-   public fun get_authentication_key(addr: address): vector<u8> acquires Account {
-      *&borrow_global<Account>(addr).authentication_key
+   public fun get_authentication_key(ctx: &mut StorageContext, addr: address): vector<u8> {
+      *&account_storage::global_borrow<Account>(ctx, addr).authentication_key
    }
 
    public fun signer_address(cap: &SignerCapability): address {
       cap.addr
    }
 
-   public fun is_resource_account(addr: address): bool {
-      exists<ResourceAccount>(addr)
+   public fun is_resource_account(ctx: &mut StorageContext, addr: address): bool {
+      account_storage::global_exists<ResourceAccount>(ctx, addr)
    }
 
 
    #[view]
-   public fun exists_at(addr: address): bool {
-      exists<Account>(addr)
+   public fun exists_at(ctx: &mut StorageContext, addr: address): bool {
+      account_storage::global_exists<Account>(ctx, addr)
    }
 
 
@@ -189,32 +194,37 @@ module rooch_framework::account{
    /// A resource account is used to manage resources independent of an account managed by a user.
    /// In Rooch a resource account is created based upon the sha3 256 of the source's address and additional seed data.
    /// A resource account can only be created once
-   public fun create_resource_account(source: &signer): (signer, SignerCapability) acquires Account {
+   // public fun create_resource_account(source: &signer): (signer, SignerCapability) {
+   public fun create_resource_account(ctx: &mut StorageContext, source: &signer): (signer, SignerCapability) {
       let source_addr = signer::address_of(source);
-      let seed = generate_seed_bytes(&source_addr);
+      let seed = generate_seed_bytes(ctx, &source_addr);
       let resource_addr = create_resource_address(&source_addr, seed);
-      assert!(!is_resource_account(resource_addr), error::invalid_state(EAccountIsAlreadyResourceAccount));
-      let resource_signer = if (exists_at(resource_addr)) {
-         let account = borrow_global<Account>(resource_addr);
+      assert!(!is_resource_account(ctx, resource_addr), error::invalid_state(EAccountIsAlreadyResourceAccount));
+      let resource_signer = if (exists_at(ctx, resource_addr)) {
+         let account = account_storage::global_borrow<Account>(ctx, resource_addr);
          assert!(account.sequence_number == 0, error::invalid_state(EResourceAccountAlreadyUsed));
          create_signer(resource_addr)
       } else {
-         create_account_unchecked(resource_addr)
+         create_account_unchecked(ctx, resource_addr)
       };
 
       // By default, only the SignerCapability should have control over the resource account and not the auth key.
       // If the source account wants direct control via auth key, they would need to explicitly rotate the auth key
       // of the resource account using the SignerCapability.
-      rotate_authentication_key_internal(&resource_signer, ZERO_AUTH_KEY);
-      move_to(&resource_signer, ResourceAccount {});
+      rotate_authentication_key_internal(ctx,&resource_signer, ZERO_AUTH_KEY);
+      // move_to(&resource_signer, ResourceAccount {});
+      account_storage::global_move_to<ResourceAccount>(ctx,
+         &resource_signer,
+         ResourceAccount {}
+      );
 
       let signer_cap = SignerCapability { addr: resource_addr };
       (resource_signer, signer_cap)
    }
 
    /// This is a helper function to generate seed for resource address
-   fun generate_seed_bytes(addr: &address): vector<u8> acquires Account{
-      let sequence_number = Self::sequence_number(*addr);
+   fun generate_seed_bytes(ctx: &mut StorageContext, addr: &address): vector<u8> {
+      let sequence_number = Self::sequence_number(ctx, *addr);
       // use rooch token balance as part of seed, just for new address more random.
       // TODO token standar
       // let balance = Self::balance<...>(*addr);
@@ -237,14 +247,14 @@ module rooch_framework::account{
 
    /// This function is used to rotate a resource account's authentication key to 0, so that no private key can control
    /// the resource account.
-   public(friend) fun rotate_authentication_key_internal(account: &signer, new_auth_key: vector<u8>) acquires Account {
+   public(friend) fun rotate_authentication_key_internal(ctx: &mut StorageContext, account: &signer, new_auth_key: vector<u8>) {
       let addr = signer::address_of(account);
-      assert!(exists_at(addr), error::not_found(EAccountNotExist));
+      assert!(exists_at(ctx, addr), error::not_found(EAccountNotExist));
       assert!(
          vector::length(&new_auth_key) == AUTHENTICATION_KEY_LENGTH,
          error::invalid_argument(EMalformedAuthenticationKey)
       );
-      let account_resource = borrow_global_mut<Account>(addr);
+      let account_resource = account_storage::global_borrow_mut<Account>(ctx, addr);
       account_resource.authentication_key = new_auth_key;
    }
 
@@ -262,8 +272,8 @@ module rooch_framework::account{
    public fun create_signer_for_test(addr: address): signer { create_signer(addr) }
 
    #[test_only]
-   public fun create_account_for_test(new_address: address): signer {
-      create_account_unchecked(new_address)
+   public fun create_account_for_test(ctx: &mut StorageContext, new_address: address): signer {
+      create_account_unchecked(ctx, new_address)
    }
 
    #[test]
@@ -275,12 +285,12 @@ module rooch_framework::account{
 
    #[test]
    /// Assert correct account creation.
-   fun test_create_account_for_test() acquires Account {
+   fun test_create_account_for_test(ctx: &mut StorageContext) {
       let alice_addr = @123456;
-      let alice = create_account_for_test(alice_addr);
+      let alice = create_account_for_test(ctx, alice_addr);
       let alice_addr_actual = signer::address_of(&alice);
-      let sequence_number = sequence_number(alice_addr);
-      debug::print(&get_authentication_key(alice_addr));
+      let sequence_number = sequence_number(ctx, alice_addr);
+      debug::print(&get_authentication_key(ctx, alice_addr));
       debug::print(&sequence_number);
       assert!(alice_addr_actual == alice_addr, 103);
       assert!(sequence_number >= 0, 104);
@@ -292,14 +302,19 @@ module rooch_framework::account{
    }
 
    #[test]
-   fun test_create_resource_account() acquires Account {
+   // #[test(alice_addr = @123456)]
+   fun test_create_resource_account()  {
       let alice_addr = @123456;
-      let alice = create_account_for_test(alice_addr);
-      let (resource_account, resource_account_cap) = create_resource_account(&alice);
+      let ctx = storage_context::test_context(@alice_addr);
+      let alice = create_account_for_test(&mut ctx, alice_addr);
+      let (resource_account, resource_account_cap) = create_resource_account(&mut ctx, &alice);
       let signer_cap_addr = get_signer_capability_address(&resource_account_cap);
-      move_to(&resource_account, CapResponsbility {
-         cap: resource_account_cap
-      });
+      account_storage::global_move_to<CapResponsbility>(&mut ctx,
+         &resource_account,
+         CapResponsbility {
+            cap: resource_account_cap
+         }
+      );
 
       let resource_addr = signer::address_of(&resource_account);
       debug::print(&100100);

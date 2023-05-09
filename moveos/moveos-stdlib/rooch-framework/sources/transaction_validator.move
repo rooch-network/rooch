@@ -5,6 +5,8 @@ module rooch_framework::transaction_validator {
     use rooch_framework::chain_id;
     use rooch_framework::core_addresses;
     use rooch_framework::timestamp;
+    use moveos_std::account_storage;
+    use moveos_std::storage_context::StorageContext;
 
     friend rooch_framework::genesis;
 
@@ -39,6 +41,7 @@ module rooch_framework::transaction_validator {
 
     /// Only called during genesis to initialize system resources for this module.
     public(friend) fun initialize(
+        ctx: &mut StorageContext,
         account: &signer,
         script_prologue_name: vector<u8>,
         module_prologue_name: vector<u8>,
@@ -46,18 +49,22 @@ module rooch_framework::transaction_validator {
         user_epilogue_name: vector<u8>,
     ) {
         core_addresses::assert_rooch_genesis(account);
-
-        move_to(account, TransactionValidation {
-            module_addr: core_addresses::genesis_address(),
-            module_name: b"transaction_validator",
-            script_prologue_name,
-            module_prologue_name,
-            multi_agent_prologue_name,
-            user_epilogue_name,
-        });
+        account_storage::global_move_to<TransactionValidation>(
+            ctx,
+            account,
+            TransactionValidation {
+                module_addr: core_addresses::genesis_address(),
+                module_name: b"transaction_validator",
+                script_prologue_name,
+                module_prologue_name,
+                multi_agent_prologue_name,
+                user_epilogue_name,
+            }
+        );
     }
 
     fun prologue_common(
+        ctx: &mut StorageContext,
         sender: signer,
         txn_sequence_number: u64,
         txn_authentication_key: vector<u8>,
@@ -67,15 +74,15 @@ module rooch_framework::transaction_validator {
         chain_id: u8,
     ) {
         assert!(
-            timestamp::now_seconds() < txn_expiration_time,
+            timestamp::now_seconds(ctx) < txn_expiration_time,
             error::invalid_argument(EPrologueTransactionExpired),
         );
-        assert!(chain_id::get() == chain_id, error::invalid_argument(EPrologueBadChainId));
+        assert!(chain_id::get(ctx) == chain_id, error::invalid_argument(EPrologueBadChainId));
 
         let transaction_sender = signer::address_of(&sender);
-        assert!(account::exists_at(transaction_sender), error::invalid_argument(EPrologueAccountDoesNotExist));
+        assert!(account::exists_at(ctx, transaction_sender), error::invalid_argument(EPrologueAccountDoesNotExist));
         assert!(
-            txn_authentication_key == account::get_authentication_key(transaction_sender),
+            txn_authentication_key == account::get_authentication_key(ctx, transaction_sender),
             error::invalid_argument(EPrologueInvalidAccountAuthKey),
         );
 
@@ -84,7 +91,7 @@ module rooch_framework::transaction_validator {
             error::out_of_range(EPrologueSequenceNumberTooBig)
         );
 
-        let account_sequence_number = account::sequence_number(transaction_sender);
+        let account_sequence_number = account::sequence_number(ctx, transaction_sender);
         assert!(
             txn_sequence_number >= account_sequence_number,
             error::invalid_argument(EPrologueSequenceNuberTooOld)
@@ -108,6 +115,7 @@ module rooch_framework::transaction_validator {
     }
 
     fun module_prologue(
+        ctx: &mut StorageContext,
         sender: signer,
         txn_sequence_number: u64,
         txn_public_key: vector<u8>,
@@ -116,13 +124,14 @@ module rooch_framework::transaction_validator {
         txn_expiration_time: u64,
         chain_id: u8,
     ) {
-        prologue_common(sender, txn_sequence_number, txn_public_key, txn_gas_price, txn_max_gas_units, txn_expiration_time, chain_id)
+        prologue_common(ctx, sender, txn_sequence_number, txn_public_key, txn_gas_price, txn_max_gas_units, txn_expiration_time, chain_id)
     }
 
 
     /// Epilogue function is run after a transaction is successfully executed.
     /// Called by the Adapter
     fun epilogue(
+        ctx: &mut StorageContext,
         account: signer,
         _txn_sequence_number: u64,
         txn_gas_price: u64,
@@ -158,6 +167,6 @@ module rooch_framework::transaction_validator {
         // };
 
         // Increment sequence number
-        account::increment_sequence_number(addr);
+        account::increment_sequence_number(ctx, addr);
     }
 }

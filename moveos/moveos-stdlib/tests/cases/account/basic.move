@@ -6,8 +6,9 @@
 //# run --signers genesis
 script {
     use rooch_framework::account;
-    fun main(_sender: signer) {
-        account::create_account_entry(@bob);
+    use moveos_std::storage_context::StorageContext;
+    fun main(ctx: &mut StorageContext, _sender: signer) {
+        account::create_account_entry(ctx, @bob);
     }
 }
 
@@ -15,7 +16,8 @@ script {
 //# run --signers bob
 script {
     use rooch_framework::account;
-    fun main(_sender: signer) {
-        assert!(account::exists_at(@bob), 0);
+    use moveos_std::storage_context::StorageContext;
+    fun main(ctx: &mut StorageContext, _sender: signer) {
+        assert!(account::exists_at(ctx, @bob), 0);
     }
 }

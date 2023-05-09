@@ -3,6 +3,8 @@ module rooch_framework::block {
     use std::error;
     use std::signer;
     use rooch_framework::core_addresses;
+    use moveos_std::account_storage;
+    use moveos_std::storage_context::StorageContext;
     // use rooch_framework::timestamp;
 
     friend rooch_framework::genesis;
@@ -22,12 +24,13 @@ module rooch_framework::block {
 
 
     /// This can only be called during Genesis.
-    public(friend) fun initialize(account: &signer, epoch_interval_millisecs: u64) {
+    public(friend) fun initialize(ctx: &mut StorageContext, account: &signer, epoch_interval_millisecs: u64) {
         core_addresses::assert_rooch_genesis(account);
         assert!(epoch_interval_millisecs > 0, error::invalid_argument(EZeroEpochInterval));
-        assert!(!exists<BlockResource>(signer::address_of(account)), error::invalid_state(EBlockResourceAlreadyExist));
+        assert!(!account_storage::global_exists<BlockResource>(ctx,signer::address_of(account)), error::invalid_state(EBlockResourceAlreadyExist));
 
-        move_to<BlockResource>(
+        account_storage::global_move_to<BlockResource>(
+            ctx,
             account,
             BlockResource {
                 height: 0,
@@ -38,21 +41,23 @@ module rooch_framework::block {
 
     /// Update the epoch interval.
     public fun update_epoch_interval_millisecs(
+        ctx: &mut StorageContext,
         account: &signer,
         new_epoch_interval: u64,
-    ) acquires BlockResource {
+    ) {
         core_addresses::assert_rooch_genesis(account);
         assert!(new_epoch_interval > 0, error::invalid_argument(EZeroEpochInterval));
 
-        let block_resource = borrow_global_mut<BlockResource>(core_addresses::genesis_address());
+        // let block_resource = borrow_global_mut<BlockResource>(core_addresses::genesis_address());
+        let block_resource = account_storage::global_borrow_mut<BlockResource>(ctx, core_addresses::genesis_address());
         let _old_epoch_interval = block_resource.epoch_interval;
         block_resource.epoch_interval = new_epoch_interval;
     }
 
     #[view]
     /// Return epoch interval in seconds.
-    public fun get_epoch_interval_secs(): u64 acquires BlockResource {
-        borrow_global<BlockResource>(core_addresses::genesis_address()).epoch_interval / 1000
+    public fun get_epoch_interval_secs(ctx: &mut StorageContext): u64 {
+        account_storage::global_borrow<BlockResource>(ctx,core_addresses::genesis_address()).epoch_interval / 1000
     }
 
     /// Set the metadata for the current block.
@@ -72,7 +77,7 @@ module rooch_framework::block {
 
     #[view]
     /// Get the current block height
-    public fun get_current_block_height(): u64 acquires BlockResource {
-        borrow_global<BlockResource>(core_addresses::genesis_address()).height
+    public fun get_current_block_height(ctx: &mut StorageContext): u64 {
+        account_storage::global_borrow<BlockResource>(ctx,core_addresses::genesis_address()).height
     }
 }
