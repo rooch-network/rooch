@@ -20,7 +20,7 @@ module moveos_std::storage_context {
     /// and storage_context module depends on object module.
     /// We put TxContext to StorageContext, for convenience of developers.
     /// The StorageContext can not be `drop` or `store`, so developers need to pass the `&StorageContext` or `&mut StorageContext` to the `entry` function.
-    struct StorageContext has drop {
+    struct StorageContext {
         tx_context: TxContext,
         /// The Global Object Storage
         object_storage: ObjectStorage,
