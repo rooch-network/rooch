@@ -1,5 +1,5 @@
 [package]
-name = "rooch-types"
+name = "rooch-key"
 version = "0.1.0"
 
 # Workspace inherited keys
@@ -12,25 +12,21 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 anyhow = { workspace = true }
-bcs = { workspace = true }
-hex = { workspace = true }
-thiserror = { workspace = true }
-smt = { workspace = true }
-serde = { workspace = true }
-serde_bytes = { workspace = true }
-serde_json = { workspace = true }
-serde_with = { workspace = true }
+bip32 = { workspace = true }
+enum_dispatch = {workspace = true }
 derive_more = { workspace = true }
 eyre = { workspace = true }
 fastcrypto = { workspace = true }
 rand = { workspace = true }
-schemars = {workspace = true }
+serde = { workspace = true }
+serde_with = { workspace = true }
+serde_json = { workspace = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }
-
+schemars = { workspace = true }
+slip10_ed25519 = { workspace = true }
+tiny-bip39 = { workspace = true }
+rooch-types = { workspace = true }
 move-core-types = { workspace = true }
-
-moveos-types = { workspace = true }
