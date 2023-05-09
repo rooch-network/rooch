@@ -4,5 +4,5 @@
 pub mod bcd;
 pub mod raw_table;
 pub mod rlp;
-pub mod type_info;
 pub mod test_helper;
+pub mod type_info;

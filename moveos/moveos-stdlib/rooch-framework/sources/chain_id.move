@@ -60,32 +60,15 @@ module rooch_framework::chain_id {
         initialize(ctx, rooch_framework, id);
     }
 
-    // #[test(rooch_framework = @0x1)]
-    // fun test_get(_rooch_framework: &signer) {
-    // // fun test_get(ctx: &mut StorageContext, rooch_framework: &signer) {
-    //     let ctx = storage_context::test_context(@rooch_framework);
-    //     // initialize_for_test(&mut ctx, rooch_framework, 1u8);
-    //     // assert!(get(&mut ctx) == 1u8, 1);
-    //     // storage_context::drop_storage_context(&mut ctx);
-    //     debug::print(&10000);
-    //     debug::print(&ctx);
-    //     // object_storage::drop_object_storage(storage_context::object_storage_mut(&mut ctx));
-    //     // initialize_for_test(ctx, rooch_framework, 1u8);
-    //     // assert!(get(ctx) == 1u8, 1);
-    // }
-
-    #[test]
-    fun test_get() {
-        let ctx = storage_context::test_context(@rooch_framework);
-
-
-        // assert!(get(&mut ctx) == 1u8, 1);
-        // storage_context::drop_storage_context(&mut ctx);
+    // #[test]
+    #[test(genesis = @rooch_framework)]
+    fun test_get(genesis: &signer) {
+        let genesis_address = signer::address_of(genesis);
+        let ctx = storage_context::test_context(genesis_address);
         debug::print(&10000);
         debug::print(&ctx);
+        initialize_for_test(&mut ctx, genesis, DEV_CHAIN_ID);
+        assert!(get(&mut ctx) == DEV_CHAIN_ID, 1001);
         storage_context::drop_storage_context(ctx);
-        // object_storage::drop_object_storage(storage_context::object_storage_mut(ctx));
-        // initialize_for_test(ctx, roosssch_framework, 1u8);
-        // assert!(get(ctx) == 1u8, 1);
     }
 }

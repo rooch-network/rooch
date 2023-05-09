@@ -5,12 +5,12 @@ module rooch_framework::account{
    use std::vector;
    use std::signer;
    use moveos_std::bcd;
-   // #[test_only]
-   // use std::debug;
    use moveos_std::storage_context::StorageContext;
    use moveos_std::account_storage;
-   // #[test_only]
-   // use moveos_std::storage_context;
+   #[test_only]
+   use std::debug;
+   #[test_only]
+   use moveos_std::storage_context;
 
    friend rooch_framework::genesis;
    friend rooch_framework::transaction_validator;
@@ -283,43 +283,45 @@ module rooch_framework::account{
       assert!(signer::address_of(&create_signer_for_test(@0x123)) == @0x123, 101);
    }
 
-   // #[test]
-   // /// Assert correct account creation.
-   // fun test_create_account_for_test(ctx: &mut StorageContext) {
-   //    let alice_addr = @123456;
-   //    let alice = create_account_for_test(ctx, alice_addr);
-   //    let alice_addr_actual = signer::address_of(&alice);
-   //    let sequence_number = sequence_number(ctx, alice_addr);
-   //    debug::print(&get_authentication_key(ctx, alice_addr));
-   //    debug::print(&sequence_number);
-   //    assert!(alice_addr_actual == alice_addr, 103);
-   //    assert!(sequence_number >= 0, 104);
-   // }
+   #[test]
+   /// Assert correct account creation.
+   fun test_create_account_for_test() {
+      let alice_addr = @123456;
+      let ctx = storage_context::test_context(alice_addr);
+      let alice = create_account_for_test(&mut ctx, alice_addr);
+      let alice_addr_actual = signer::address_of(&alice);
+      let sequence_number = sequence_number(&mut ctx, alice_addr);
+      debug::print(&get_authentication_key(&mut ctx, alice_addr));
+      debug::print(&sequence_number);
+      assert!(alice_addr_actual == alice_addr, 103);
+      assert!(sequence_number >= 0, 104);
+      storage_context::drop_storage_context(ctx);
+   }
 
    #[test_only]
    struct CapResponsbility has key {
       cap: SignerCapability
    }
 
-   // #[test]
-   // // #[test(alice_addr = @123456)]
-   // fun test_create_resource_account()  {
-   //    let alice_addr = @123456;
-   //    let ctx = storage_context::test_context(alice_addr);
-   //    let alice = create_account_for_test(&mut ctx, alice_addr);
-   //    let (resource_account, resource_account_cap) = create_resource_account(&mut ctx, &alice);
-   //    let signer_cap_addr = get_signer_capability_address(&resource_account_cap);
-   //    account_storage::global_move_to<CapResponsbility>(&mut ctx,
-   //       &resource_account,
-   //       CapResponsbility {
-   //          cap: resource_account_cap
-   //       }
-   //    );
-   //
-   //    let resource_addr = signer::address_of(&resource_account);
-   //    debug::print(&100100);
-   //    debug::print(&resource_addr);
-   //    assert!(resource_addr != signer::address_of(&alice), 106);
-   //    assert!(resource_addr == signer_cap_addr, 107);
-   // }
+   #[test]
+   fun test_create_resource_account()  {
+      let alice_addr = @123456;
+      let ctx = storage_context::test_context(alice_addr);
+      let alice = create_account_for_test(&mut ctx, alice_addr);
+      let (resource_account, resource_account_cap) = create_resource_account(&mut ctx, &alice);
+      let signer_cap_addr = get_signer_capability_address(&resource_account_cap);
+      account_storage::global_move_to<CapResponsbility>(&mut ctx,
+         &resource_account,
+         CapResponsbility {
+            cap: resource_account_cap
+         }
+      );
+
+      let resource_addr = signer::address_of(&resource_account);
+      debug::print(&100100);
+      debug::print(&resource_addr);
+      assert!(resource_addr != signer::address_of(&alice), 106);
+      assert!(resource_addr == signer_cap_addr, 107);
+      storage_context::drop_storage_context(ctx);
+   }
 }

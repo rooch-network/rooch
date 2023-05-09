@@ -5,6 +5,9 @@ module moveos_std::object_storage {
     use moveos_std::tx_context::{TxContext};
     use moveos_std::raw_table;
     use moveos_std::object::{Self, Object, ObjectID};
+    #[test_only]
+    use moveos_std::test_helper;
+    use std::debug;
 
     friend moveos_std::account_storage;
 
@@ -21,6 +24,7 @@ module moveos_std::object_storage {
     #[private_generics(T)]
     /// Borrow Object from object store with object_id
     public fun borrow<T: key>(this: &ObjectStorage, object_id: ObjectID): &Object<T>{
+        debug::print(this);
         raw_table::borrow<ObjectID, Object<T>>(*&this.handle, object_id)
     }
 
@@ -48,9 +52,11 @@ module moveos_std::object_storage {
 
     #[test_only]
     /// Testing only: allow to drop oject storage
-    public fun drop_object_storage(this: &mut ObjectStorage) {
-        raw_table::drop_unchecked<ObjectID>(this.handle);
-        // let _ = this;
+    public fun drop_object_storage(this: ObjectStorage) {
+        // raw_table::drop_unchecked<ObjectID>(this.handle);
+        // let ObjectStorage { handle: _} = this;
+
+        test_helper::destroy<ObjectStorage>(this);
     }
 
 }
