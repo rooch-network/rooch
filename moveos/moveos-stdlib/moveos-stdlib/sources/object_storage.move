@@ -8,7 +8,7 @@ module moveos_std::object_storage {
 
     friend moveos_std::account_storage;
 
-    struct ObjectStorage has store {
+    struct ObjectStorage has store, drop {
         handle: address,
     }
 
@@ -49,10 +49,8 @@ module moveos_std::object_storage {
     #[test_only]
     /// Testing only: allow to drop oject storage
     public fun drop_object_storage(this: &mut ObjectStorage) {
-        raw_table::drop_unchecked(this.handle);
-        _ = this;
+        raw_table::drop_unchecked<ObjectID>(this.handle);
+        let _ = this;
     }
 
-    // native fun drop_object_storage(table_handle: address);
- 
 }

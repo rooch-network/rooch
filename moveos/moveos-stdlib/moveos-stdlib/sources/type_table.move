@@ -94,13 +94,13 @@ module moveos_std::type_table {
     /// Testing only: allows to drop a table even if it is not empty.
     public fun drop_unchecked(table: TypeTable) {
         let TypeTable{handle} = table;
-        raw_table::drop_unchecked(handle)
+        raw_table::drop_unchecked<String>(handle)
     }
 
     ///TODO should open the destroy function to public?
     public(friend) fun destroy(table: TypeTable) {
         let TypeTable{handle} = table;
-        raw_table::destroy(handle)
+        raw_table::destroy<String>(handle)
     }
 
 }

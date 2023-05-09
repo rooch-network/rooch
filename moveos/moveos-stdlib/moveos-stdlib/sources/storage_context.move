@@ -10,13 +10,17 @@ module moveos_std::storage_context {
     use moveos_std::object_storage::{Self};
     #[test_only]
     use moveos_std::tx_context::{Self};
+    #[test_only]
+    use moveos_std::test_helper;
+    #[test_only]
+    use std::bcs;
 
     /// Information about the global storage context
     /// We can not put the StorageContext to TxContext, because object module depends on tx_context module,
     /// and storage_context module depends on object module.
     /// We put TxContext to StorageContext, for convenience of developers.
     /// The StorageContext can not be `drop` or `store`, so developers need to pass the `&StorageContext` or `&mut StorageContext` to the `entry` function.
-    struct StorageContext {
+    struct StorageContext has drop {
         tx_context: TxContext,
         /// The Global Object Storage
         object_storage: ObjectStorage,
@@ -49,11 +53,16 @@ module moveos_std::storage_context {
         }
     }
 
+    // struct WrapperContext has drop {
+    //     ctx: StorageContext,
+    // }
+
     #[test_only]
     /// Testing only: allow to drop oject storage
-    public fun drop_storage_context(this: &mut StorageContext) {
-        object_storage::drop_object_storage(object_storage_mut(this));
-        _ = this;
+    public fun drop_storage_context(this: StorageContext) {
+        object_storage::drop_object_storage(object_storage_mut(&mut this));
+        // _ = this;
+        // let _ = this;
+        test_helper::drop_unchecked_move_value<StorageContext>(bcs::to_bytes(&this))
     }
-
 }

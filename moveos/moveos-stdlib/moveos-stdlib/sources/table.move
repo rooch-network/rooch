@@ -82,13 +82,13 @@ module moveos_std::table {
     /// Testing only: allows to drop a table even if it is not empty.
     public fun drop_unchecked<K: copy + drop, V>(table: Table<K, V>) {
         let Table { handle } = table;
-        raw_table::drop_unchecked(handle)
+        raw_table::drop_unchecked<K>(handle)
     }
 
     ///TODO should open the destroy function to public?
     public(friend) fun destroy<K: copy + drop, V>(table: Table<K, V>) {
         let Table { handle } = table;
-        raw_table::destroy(handle)
+        raw_table::destroy<K>(handle)
     }
 
 
@@ -110,7 +110,9 @@ module moveos_std::table {
         upsert(&mut t, key, 23);
         assert!(*borrow(&t, key) == 23, error_code);
 
-        move_to(&account, TableHolder { t });
+        // drop_unchecked(t)
+        destroy(t)
+        // move_to(&account, TableHolder { t });
     }
 
     #[test(account = @0x1)]
