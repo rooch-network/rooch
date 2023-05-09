@@ -1,12 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use types::transaction::AbstractTransaction;
+use moveos_types::transaction::AbstractTransaction;
 
 pub mod moveos;
 #[cfg(test)]
 mod tests;
-pub mod types;
 pub mod vm;
 
 pub struct ValidatorResult {}

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    types::transaction::{AbstractTransaction, MoveTransaction, SimpleTransaction},
     vm::{
         move_vm_ext::{MoveVmExt, SessionExt},
         MoveResolverExt,
@@ -18,9 +17,11 @@ use move_core_types::{
 };
 use move_vm_runtime::session::SerializedReturnValues;
 use move_vm_types::gas::UnmeteredGasMeter;
-use moveos_statedb::{HashValue, StateDB};
+use moveos_statedb::StateDB;
 use moveos_stdlib::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
+use moveos_types::h256::H256;
+use moveos_types::transaction::{AbstractTransaction, MoveTransaction, SimpleTransaction};
 use moveos_types::tx_context::TxContext;
 use std::borrow::Borrow;
 
@@ -72,7 +73,7 @@ impl MoveOS {
         &self,
         mut session: SessionExt<S>,
         mut senders: Vec<AccountAddress>,
-        tx_hash: HashValue,
+        tx_hash: H256,
         txn: MoveTransaction,
     ) -> Result<()>
     where

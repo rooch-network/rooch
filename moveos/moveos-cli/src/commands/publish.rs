@@ -5,8 +5,8 @@ use crate::types::TransactionOptions;
 use anyhow::ensure;
 use clap::Parser;
 use move_package::BuildConfig;
-use moveos::types::transaction::{MoveTransaction, SimpleTransaction};
 use moveos_client::Client;
+use moveos_types::transaction::{MoveTransaction, SimpleTransaction};
 use std::io::stderr;
 use std::path::PathBuf;
 

@@ -11,6 +11,8 @@ use crate::actor::{
     },
 };
 use anyhow::{Error, Result};
+
+#[derive(Clone)]
 pub struct ServerProxy {
     pub actor: ActorRef<ServerActor>,
 }

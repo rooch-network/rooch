@@ -16,6 +16,10 @@ module test::m {
     public entry fun mint_s(ctx: &mut StorageContext) {
         let tx_ctx = storage_context::tx_context_mut(ctx);
         let sender = tx_context::sender(tx_ctx);
+        let tx_hash = tx_context::tx_hash(tx_ctx);
+        debug::print(&tx_hash);
+        // if the tx hash change, need to figure out why.
+        assert!(x"7852c5dcbd87e82102dba0db36d44b5a9fb0006b3e828c0b5f0832f70a8ff6ee" == tx_hash, 1000);
         let obj = object::new(tx_ctx, sender , S { v: 1});
         debug::print(&obj);
         let object_storage = storage_context::object_storage_mut(ctx);

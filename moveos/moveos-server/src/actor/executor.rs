@@ -13,11 +13,9 @@ use super::messages::{
 };
 use move_core_types::{language_storage::StructTag, resolver::ResourceResolver, value::MoveValue};
 use move_resource_viewer::MoveValueAnnotator;
-use moveos::{
-    moveos::MoveOS,
-    types::transaction::{SimpleTransaction, ViewPayload},
-};
+use moveos::moveos::MoveOS;
 use moveos_types::object::RawObject;
+use moveos_types::transaction::{SimpleTransaction, ViewPayload};
 
 pub struct ServerActor {
     moveos: MoveOS,
@@ -107,6 +105,8 @@ impl Handler<ResourceMessage> for ServerActor {
             Some(data) => {
                 let annotated = MoveValueAnnotator::new(storage).view_resource(&tag, &data)?;
                 Ok(format!("{}", annotated))
+
+                // MoveValue::try_from();
             }
         }
     }

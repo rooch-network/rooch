@@ -11,11 +11,9 @@ use move_transactional_test_runner::{
     vm_test_harness::view_resource_in_move_storage,
 };
 use move_vm_runtime::session::SerializedReturnValues;
-use moveos::{
-    moveos::MoveOS,
-    types::transaction::{MoveTransaction, SimpleTransaction},
-};
+use moveos::moveos::MoveOS;
 use moveos_types::object::{ObjectID, RawObject};
+use moveos_types::transaction::{MoveTransaction, SimpleTransaction};
 use std::{collections::BTreeMap, path::Path};
 
 pub struct MoveOSTestAdapter<'a> {
