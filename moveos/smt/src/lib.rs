@@ -9,6 +9,7 @@ use jellyfish_merkle::{
     JellyfishMerkleTree, TreeReader,
 };
 use parking_lot::RwLock;
+use primitive_types::H256;
 use std::{
     collections::{BTreeMap, HashMap},
     marker::PhantomData,
@@ -22,7 +23,6 @@ pub(crate) mod tests;
 mod update_set;
 
 pub use jellyfish_merkle::{hash::SPARSE_MERKLE_PLACEHOLDER_HASH, proof::SparseMerkleProof};
-pub use primitive_types::H256;
 pub use smt_object::{DecodeToObject, EncodeToObject, Key, SMTObject, Value};
 pub use update_set::UpdateSet;
 

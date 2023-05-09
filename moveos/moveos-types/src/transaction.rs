@@ -11,23 +11,25 @@ use serde::{Deserialize, Serialize};
 
 use crate::h256;
 
-#[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Script {
     #[serde(with = "serde_bytes")]
     pub code: Vec<u8>,
     pub ty_args: Vec<TypeTag>,
+    //TOOD custom serialize
     pub args: Vec<Vec<u8>>,
 }
 
-#[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Function {
     pub module: ModuleId,
     pub function: Identifier,
     pub ty_args: Vec<TypeTag>,
+    //TOOD custom serialize
     pub args: Vec<Vec<u8>>,
 }
 
-#[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub enum MoveTransaction {
     //Execute a Move script
     Script(Script),
