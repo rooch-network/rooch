@@ -1,10 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde::{de::DeserializeOwned, Serialize};
 use std::{fs, path::Path, path::PathBuf};
-use anyhow::Context;
 
 const ROOCH_DIR: &str = ".rooch";
 pub const ROOCH_CONFIG_DIR: &str = "rooch_config";

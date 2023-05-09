@@ -26,10 +26,6 @@ use std::path::{Path, PathBuf};
 /// any coins will have to transferred afterwards.
 #[derive(Debug, Parser)]
 pub struct CreateAccount {
-    // /// Address of the new account
-    // #[clap(long)]
-    // pub address: AccountAddress,
-
     /// RPC client options.
     #[clap(flatten)]
     client: Client,
@@ -67,9 +63,7 @@ async fn prompt_if_no_config(conf_path: &Path) -> Result<(), anyhow::Error> {
         .unwrap_or(&rooch_config_dir()?)
         .join(ROOCH_KEYSTORE_FILENAME);
     let mut keystore = Keystore::from(FileBasedKeystore::new(&keystore_path)?);
-
-    let (new_address, phrase, scheme) =
-        keystore.generate_and_add_new_key(ED25519, None, None)?;
+    let (new_address, phrase, scheme) = keystore.generate_and_add_new_key(ED25519, None, None)?;
     println!(
         "Generated new keypair for address with scheme {:?} [{new_address}]",
         scheme.to_string()
