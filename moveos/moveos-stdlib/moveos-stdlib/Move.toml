@@ -5,7 +5,6 @@ version = "0.0.1"
 [addresses]
 std = "0x1"
 moveos_std = "0x1"
-moveos_std_package = "0x0"
 
 [dependencies]
 #MoveStdlib = { local = "../move-stdlib" }

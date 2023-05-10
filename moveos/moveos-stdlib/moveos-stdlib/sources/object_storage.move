@@ -11,6 +11,8 @@ module moveos_std::object_storage {
     friend moveos_std::account_storage;
     friend moveos_std::storage_context;
 
+    const GlobalObjectStorageHandle : address = @0x0;
+
     struct ObjectStorage has store {
         handle: address,
     }
@@ -26,6 +28,11 @@ module moveos_std::object_storage {
         ObjectStorage {
             handle,
         }
+    }
+
+    /// The global object storage's table handle should be 0x0
+    public fun global_object_storage_handle() : address {
+        GlobalObjectStorageHandle
     }
 
     #[private_generics(T)]

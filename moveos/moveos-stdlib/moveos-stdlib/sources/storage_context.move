@@ -45,7 +45,7 @@ module moveos_std::storage_context {
     public fun new_test_context(sender: address): StorageContext {
         let tx_context = tx_context::test_context(sender);
         // let object_storage = object_storage::new(&mut tx_context);
-        let object_storage = object_storage::new_with_id(@moveos_std_package);
+        let object_storage = object_storage::new_with_id(object_storage::global_object_storage_handle());
         StorageContext {
             tx_context,
             object_storage,
