@@ -9,6 +9,7 @@ module moveos_std::object_storage {
     use moveos_std::test_helper;
 
     friend moveos_std::account_storage;
+    friend moveos_std::storage_context;
 
     struct ObjectStorage has store {
         handle: address,
@@ -17,6 +18,13 @@ module moveos_std::object_storage {
     public fun new(ctx: &mut TxContext): ObjectStorage {
         ObjectStorage {
             handle: raw_table::new_table_handle(ctx),
+        }
+    }
+
+    /// Create a new ObjectStorage with a given handle.
+    public(friend) fun new_with_id(handle: address): ObjectStorage{
+        ObjectStorage {
+            handle,
         }
     }
 

@@ -547,19 +547,15 @@ pub struct DestroyEmptyBoxGasParameters {
 fn native_destroy_empty_box(
     gas_params: &DestroyEmptyBoxGasParameters,
     context: &mut NativeContext,
-    ty_args: Vec<Type>,
+    _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    assert_eq!(ty_args.len(), 1);
     assert_eq!(args.len(), 1);
 
     let table_context = context.extensions().get::<NativeTableContext>();
     let mut table_data = table_context.table_data.borrow_mut();
 
     let handle = get_table_handle(pop_arg!(args, AccountAddress))?;
-    // TODO: Can the following line be removed?
-    table_data.get_or_create_table(context, handle, &ty_args[0])?;
-
     assert!(table_data.removed_tables.insert(handle));
 
     Ok(NativeResult::ok(gas_params.base, smallvec![]))
@@ -581,10 +577,9 @@ pub struct DropUncheckedBoxGasParameters {
 fn native_drop_unchecked_box(
     gas_params: &DropUncheckedBoxGasParameters,
     _context: &mut NativeContext,
-    ty_args: Vec<Type>,
+    _ty_args: Vec<Type>,
     args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    assert_eq!(ty_args.len(), 1);
     assert_eq!(args.len(), 1);
 
     Ok(NativeResult::ok(gas_params.base, smallvec![]))

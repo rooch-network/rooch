@@ -79,13 +79,13 @@ module moveos_std::raw_table {
 
     #[test_only]
     /// Testing only: allows to drop a table even if it is not empty.
-    public(friend) fun drop_unchecked<K>(table_handle: address) {
-        drop_unchecked_box<K>(table_handle)
+    public(friend) fun drop_unchecked(table_handle: address) {
+        drop_unchecked_box(table_handle)
     }
 
-    public(friend) fun destroy<K>(table_handle: address) {
-        destroy_empty_box<K>(table_handle);
-        drop_unchecked_box<K>(table_handle)
+    public(friend) fun destroy(table_handle: address) {
+        destroy_empty_box(table_handle);
+        drop_unchecked_box(table_handle)
     }
 
     // ======================================================================================================
@@ -110,7 +110,7 @@ module moveos_std::raw_table {
 
     native fun remove_box<K: copy + drop, V, B>(table_handle: address, key: K): Box<V>;
 
-    native fun destroy_empty_box<K>(table_handle: address);
+    native fun destroy_empty_box(table_handle: address);
 
-    native fun drop_unchecked_box<K>(table_handle: address);
+    native fun drop_unchecked_box(table_handle: address);
 }

@@ -178,13 +178,23 @@ module rooch_framework::account{
    }
 
    public fun is_resource_account(ctx: &mut StorageContext, addr: address): bool {
-      account_storage::global_exists<ResourceAccount>(ctx, addr)
+      // for resource account , account storage maybe not exist when create,
+      // so need check account storage eixst befor call global exist function
+      if(account_storage::exist_account_storage(ctx, addr)){
+         account_storage::global_exists<ResourceAccount>(ctx, addr)
+      } else {
+         false
+      }
    }
 
 
    #[view]
    public fun exists_at(ctx: &mut StorageContext, addr: address): bool {
-      account_storage::global_exists<Account>(ctx, addr)
+      if(account_storage::exist_account_storage(ctx, addr)){
+         account_storage::global_exists<Account>(ctx, addr)
+      } else {
+         false
+      }
    }
 
 
@@ -287,7 +297,7 @@ module rooch_framework::account{
    /// Assert correct account creation.
    fun test_create_account_for_test() {
       let alice_addr = @123456;
-      let ctx = storage_context::test_context(alice_addr);
+      let ctx = storage_context::new_test_context(alice_addr);
       let alice = create_account_for_test(&mut ctx, alice_addr);
       let alice_addr_actual = signer::address_of(&alice);
       let sequence_number = sequence_number(&mut ctx, alice_addr);
@@ -295,7 +305,7 @@ module rooch_framework::account{
       debug::print(&sequence_number);
       assert!(alice_addr_actual == alice_addr, 103);
       assert!(sequence_number >= 0, 104);
-      storage_context::drop_storage_context(ctx);
+      storage_context::drop_test_context(ctx);
    }
 
    #[test_only]
@@ -306,7 +316,7 @@ module rooch_framework::account{
    #[test]
    fun test_create_resource_account()  {
       let alice_addr = @123456;
-      let ctx = storage_context::test_context(alice_addr);
+      let ctx = storage_context::new_test_context(alice_addr);
       let alice = create_account_for_test(&mut ctx, alice_addr);
       let (resource_account, resource_account_cap) = create_resource_account(&mut ctx, &alice);
       let signer_cap_addr = get_signer_capability_address(&resource_account_cap);
@@ -322,6 +332,6 @@ module rooch_framework::account{
       debug::print(&resource_addr);
       assert!(resource_addr != signer::address_of(&alice), 106);
       assert!(resource_addr == signer_cap_addr, 107);
-      storage_context::drop_storage_context(ctx);
+      storage_context::drop_test_context(ctx);
    }
 }

@@ -5,13 +5,12 @@ module rooch_framework::chain_id {
     use std::signer;
     use std::error;
     use rooch_framework::core_addresses;
-    friend rooch_framework::genesis;
     use moveos_std::account_storage;
     use moveos_std::storage_context::StorageContext;
     #[test_only]
     use moveos_std::storage_context;
-    #[test_only]
-    use std::debug;
+
+    friend rooch_framework::genesis;
 
     struct ChainId has key {
         id: u8
@@ -64,11 +63,11 @@ module rooch_framework::chain_id {
     #[test(genesis = @rooch_framework)]
     fun test_get(genesis: &signer) {
         let genesis_address = signer::address_of(genesis);
-        let ctx = storage_context::test_context(genesis_address);
-        debug::print(&10000);
-        debug::print(&ctx);
+        let ctx = storage_context::new_test_context(genesis_address);
+        //create account storage for test
+        account_storage::create_account_storage(&mut ctx, genesis_address);
         initialize_for_test(&mut ctx, genesis, DEV_CHAIN_ID);
         assert!(get(&mut ctx) == DEV_CHAIN_ID, 1001);
-        storage_context::drop_storage_context(ctx);
+        storage_context::drop_test_context(ctx);
     }
 }

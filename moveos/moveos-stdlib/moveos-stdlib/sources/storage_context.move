@@ -41,10 +41,11 @@ module moveos_std::storage_context {
     }
 
     #[test_only]
-    /// Create a StorageContext for unit test
-    public fun test_context(sender: address): StorageContext {
+    /// Create a StorageContext and AccountStorage for unit test
+    public fun new_test_context(sender: address): StorageContext {
         let tx_context = tx_context::test_context(sender);
-        let object_storage = object_storage::new(&mut tx_context);
+        // let object_storage = object_storage::new(&mut tx_context);
+        let object_storage = object_storage::new_with_id(@moveos_std_package);
         StorageContext {
             tx_context,
             object_storage,
@@ -53,7 +54,7 @@ module moveos_std::storage_context {
 
     #[test_only]
     /// Testing only: allow to drop oject storage
-    public fun drop_storage_context(this: StorageContext) {
+    public fun drop_test_context(this: StorageContext) {
         test_helper::destroy<StorageContext>(this);
     }
 }
