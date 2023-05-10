@@ -1,3 +1,5 @@
+mod client;
+
 use anyhow::Result;
 use clap::Parser;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
