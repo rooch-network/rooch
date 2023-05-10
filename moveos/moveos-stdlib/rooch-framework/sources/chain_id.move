@@ -5,6 +5,11 @@ module rooch_framework::chain_id {
     use std::signer;
     use std::error;
     use rooch_framework::core_addresses;
+    use moveos_std::account_storage;
+    use moveos_std::storage_context::StorageContext;
+    #[test_only]
+    use moveos_std::storage_context;
+
     friend rooch_framework::genesis;
 
     struct ChainId has key {
@@ -19,38 +24,50 @@ module rooch_framework::chain_id {
 
     /// Only called during genesis.
     /// Publish the chain ID under the genesis account
-    public(friend) fun initialize(account: &signer, id: u8) {
+    public(friend) fun initialize(ctx: &mut StorageContext, account: &signer, id: u8) {
         core_addresses::assert_rooch_genesis(account);
-        assert!(!exists<ChainId>(signer::address_of(account)), error::invalid_state(EChainIdAlreadyExist));
-        move_to(account, ChainId { id })
+        assert!(!account_storage::global_exists<ChainId>(ctx,signer::address_of(account)), error::invalid_state(EChainIdAlreadyExist));
+        account_storage::global_move_to<ChainId>(
+            ctx,
+            account,
+            ChainId {
+                id,
+            }
+        );
     }
 
     #[view]
     /// Return the chain ID of this instance.
-    public fun get(): u8 acquires ChainId {
-        borrow_global<ChainId>(@rooch_framework).id
+    public fun get(ctx: &mut StorageContext): u8 {
+        account_storage::global_borrow<ChainId>(ctx, @rooch_framework).id
     }
 
-    public fun is_dev(): bool acquires ChainId {
-        get() == DEV_CHAIN_ID
+    public fun is_dev(ctx: &mut StorageContext): bool {
+        get(ctx) == DEV_CHAIN_ID
     }
 
-    public fun is_test(): bool acquires ChainId {
-        get() == TEST_CHAIN_ID
+    public fun is_test(ctx: &mut StorageContext): bool {
+        get(ctx) == TEST_CHAIN_ID
     }
 
-    public fun is_main(): bool acquires ChainId {
-        get() == MAIN_CHAIN_ID
+    public fun is_main(ctx: &mut StorageContext): bool {
+        get(ctx) == MAIN_CHAIN_ID
     }
 
     #[test_only]
-    public fun initialize_for_test(rooch_framework: &signer, id: u8) {
-        initialize(rooch_framework, id);
+    public fun initialize_for_test(ctx: &mut StorageContext, rooch_framework: &signer, id: u8) {
+        initialize(ctx, rooch_framework, id);
     }
 
-    #[test(rooch_framework = @0x1)]
-    fun test_get(rooch_framework: &signer) acquires ChainId {
-        initialize_for_test(rooch_framework, 1u8);
-        assert!(get() == 1u8, 1);
+    // #[test]
+    #[test(genesis = @rooch_framework)]
+    fun test_get(genesis: &signer) {
+        let genesis_address = signer::address_of(genesis);
+        let ctx = storage_context::new_test_context(genesis_address);
+        //create account storage for test
+        account_storage::create_account_storage(&mut ctx, genesis_address);
+        initialize_for_test(&mut ctx, genesis, DEV_CHAIN_ID);
+        assert!(get(&mut ctx) == DEV_CHAIN_ID, 1001);
+        storage_context::drop_test_context(ctx);
     }
 }

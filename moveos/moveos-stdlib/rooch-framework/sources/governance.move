@@ -6,6 +6,8 @@ module rooch_framework::governance {
     use std::error;
     use rooch_framework::account::{Self, SignerCapability};
     use rooch_framework::core_addresses;
+    use moveos_std::account_storage;
+    use moveos_std::storage_context::StorageContext;
 
     friend rooch_framework::genesis;
 
@@ -20,6 +22,7 @@ module rooch_framework::governance {
     /// Can be called during genesis or by the governance itself.
     /// Stores the signer capability for a given address.
     public fun store_signer_cap(
+        ctx: &mut StorageContext,
         rooch_genesis: &signer,
         signer_address: address,
         signer_cap: SignerCapability,
@@ -27,14 +30,18 @@ module rooch_framework::governance {
         core_addresses::assert_rooch_genesis(rooch_genesis);
         core_addresses::assert_framework_reserved(signer_address);
 
-        assert!(!exists<GovernanceResponsbility>(core_addresses::genesis_address()), error::invalid_state(EGovernanceResponsbilityAlreadyExist));
-        move_to(rooch_genesis, GovernanceResponsbility {
-            cap: signer_cap
-        });
+        assert!(!account_storage::global_exists<GovernanceResponsbility>(ctx, core_addresses::genesis_address()), error::invalid_state(EGovernanceResponsbilityAlreadyExist));
+        account_storage::global_move_to<GovernanceResponsbility>(
+            ctx,
+            rooch_genesis,
+            GovernanceResponsbility {
+                cap: signer_cap
+            }
+        );
     }
 
-    public(friend) fun get_governance_signer_cap(): signer acquires GovernanceResponsbility {
-        let cap = borrow_global<GovernanceResponsbility>(core_addresses::genesis_address());
+    public(friend) fun get_governance_signer_cap(ctx: &mut StorageContext): signer {
+        let cap = account_storage::global_borrow<GovernanceResponsbility>(ctx, core_addresses::genesis_address());
         account::create_signer_with_capability(&cap.cap)
     }
 

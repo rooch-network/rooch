@@ -16,4 +16,3 @@ script {
         assert!(account_storage::exists_module(ctx, @test, string::utf8(b"m")), 1);
     }
 }
-

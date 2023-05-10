@@ -5,8 +5,13 @@ module moveos_std::object_storage {
     use moveos_std::tx_context::{TxContext};
     use moveos_std::raw_table;
     use moveos_std::object::{Self, Object, ObjectID};
+    #[test_only]
+    use moveos_std::test_helper;
 
     friend moveos_std::account_storage;
+    friend moveos_std::storage_context;
+
+    const GlobalObjectStorageHandle : address = @0x0;
 
     struct ObjectStorage has store {
         handle: address,
@@ -16,6 +21,18 @@ module moveos_std::object_storage {
         ObjectStorage {
             handle: raw_table::new_table_handle(ctx),
         }
+    }
+
+    /// Create a new ObjectStorage with a given handle.
+    public(friend) fun new_with_id(handle: address): ObjectStorage{
+        ObjectStorage {
+            handle,
+        }
+    }
+
+    /// The global object storage's table handle should be 0x0
+    public fun global_object_storage_handle() : address {
+        GlobalObjectStorageHandle
     }
 
     #[private_generics(T)]
@@ -45,5 +62,14 @@ module moveos_std::object_storage {
     public fun contains<T: key>(this: &mut ObjectStorage, object_id: ObjectID): bool{
         raw_table::contains<ObjectID, T>(*&this.handle, object_id)
     }
- 
+
+    #[test_only]
+    /// Testing only: allow to drop oject storage
+    public fun drop_object_storage(this: ObjectStorage) {
+        // raw_table::drop_unchecked<ObjectID>(this.handle);
+        // let ObjectStorage { handle: _} = this;
+
+        test_helper::destroy<ObjectStorage>(this);
+    }
+
 }
