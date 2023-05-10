@@ -16,13 +16,34 @@ rust-version = { workspace = true }
 [dependencies]
 anyhow = { workspace = true }
 bcs = { workspace = true }
+bech32 = { workspace = true }
+bitcoin = { workspace = true }
+ethers = { workspace = true }
 hex = { workspace = true }
+once_cell = { workspace = true }
+proptest = { default-features = false, optional = true, workspace = true }
+proptest-derive = { default-features = false, optional = true, workspace = true }
+rand = { workspace = true }
 thiserror = { workspace = true }
 smt = { workspace = true }
 serde = { workspace = true }
 serde_bytes = { workspace = true }
 serde_json = { workspace = true }
+starcoin-crypto = { workspace = true, features= ["fuzzing"] }
+slip44 = { workspace = true }
 
 move-core-types = { workspace = true }
 
 moveos-types = { workspace = true }
+
+
+[dev-dependencies]
+proptest = { workspace = true }
+proptest-derive = { workspace = true }
+
+[features]
+default = []
+fuzzing = [
+    "proptest",
+    "proptest-derive",
+]
