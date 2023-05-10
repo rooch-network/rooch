@@ -5,6 +5,8 @@
 module rooch_framework::timestamp {
     use std::error;
     use rooch_framework::core_addresses;
+    use moveos_std::account_storage;
+    use moveos_std::storage_context::StorageContext;
 
     friend rooch_framework::genesis;
 
@@ -22,23 +24,29 @@ module rooch_framework::timestamp {
     const EInvalidTimestamp: u64 = 2;
 
     // Initialize the global wall clock time resource.
-    public(friend) fun initialize(account: &signer, genesis_timestamp: u64) {
+    public(friend) fun initialize(ctx: &mut StorageContext, account: &signer, genesis_timestamp: u64) {
         // Only callable by the genesis address
         core_addresses::assert_rooch_genesis(account);
-        let timer = CurrentTimeMilliseconds {milliseconds: genesis_timestamp};
-        move_to<CurrentTimeMilliseconds>(account, timer);
+        account_storage::global_move_to<CurrentTimeMilliseconds>(
+            ctx,
+            account,
+            CurrentTimeMilliseconds {
+                milliseconds: genesis_timestamp
+            }
+        );
     }
 
     /// Updates the wall clock time by consensus. Requires VM privilege and will be invoked during block prologue.
     public fun update_global_time(
+        ctx: &mut StorageContext,
         account: &signer,
         proposer: address,
         timestamp: u64
-    ) acquires CurrentTimeMilliseconds {
+    ) {
         // Can only be invoked by VM signer.
         core_addresses::assert_vm(account);
 
-        let global_timer = borrow_global_mut<CurrentTimeMilliseconds>(@rooch_framework);
+        let global_timer = account_storage::global_borrow_mut<CurrentTimeMilliseconds>(ctx, @rooch_framework);
         let now = global_timer.milliseconds;
         if (proposer == @vm_reserved) {
             // NIL block with null address as proposer. Timestamp must be equal.
@@ -51,39 +59,40 @@ module rooch_framework::timestamp {
     }
 
     #[test_only]
-    public fun initialize_timestamp_for_testing(account: &signer) {
-        if (!exists<CurrentTimeMilliseconds>(@rooch_framework)) {
-            initialize(account, 0);
+    public fun initialize_timestamp_for_testing(ctx: &mut StorageContext, account: &signer) {
+        if (!account_storage::global_exists<CurrentTimeMilliseconds>(ctx, @rooch_framework)) {
+            initialize(ctx, account, 0);
         };
     }
 
     #[view]
     /// Gets the current time in milliseconds.
-    public fun now_milliseconds(): u64 acquires CurrentTimeMilliseconds {
-        borrow_global<CurrentTimeMilliseconds>(@rooch_framework).milliseconds
+    public fun now_milliseconds(ctx: &mut StorageContext): u64 {
+        account_storage::global_borrow<CurrentTimeMilliseconds>(ctx, @rooch_framework).milliseconds
     }
 
     #[view]
     /// Gets the current time in seconds.
-    public fun now_seconds(): u64 acquires CurrentTimeMilliseconds {
-        now_milliseconds() / MILLI_CONVERSION_FACTOR
+    public fun now_seconds(ctx: &mut StorageContext): u64 {
+        now_milliseconds(ctx) / MILLI_CONVERSION_FACTOR
     }
 
     #[test_only]
-    public fun update_global_time_for_test(timestamp_microsecs: u64) acquires CurrentTimeMilliseconds {
-        let global_timer = borrow_global_mut<CurrentTimeMilliseconds>(@rooch_framework);
+    public fun update_global_time_for_test(ctx: &mut StorageContext, timestamp_microsecs: u64) {
+        let global_timer = account_storage::global_borrow_mut<CurrentTimeMilliseconds>(ctx, @rooch_framework);
         let now = global_timer.milliseconds;
         assert!(now < timestamp_microsecs, error::invalid_argument(EInvalidTimestamp));
         global_timer.milliseconds = timestamp_microsecs;
     }
 
     #[test_only]
-    public fun update_global_time_for_test_secs(timestamp_seconds: u64) acquires CurrentTimeMilliseconds {
-        update_global_time_for_test(timestamp_seconds * MILLI_CONVERSION_FACTOR);
+    public fun update_global_time_for_test_secs(ctx: &mut StorageContext, timestamp_seconds: u64) {
+        update_global_time_for_test(ctx,timestamp_seconds * MILLI_CONVERSION_FACTOR);
     }
 
     #[test_only]
-    public fun fast_forward_seconds(timestamp_seconds: u64) acquires CurrentTimeMilliseconds {
-        update_global_time_for_test_secs(now_seconds() + timestamp_seconds);
+    public fun fast_forward_seconds(ctx: &mut StorageContext, timestamp_seconds: u64) {
+        let now_second = now_seconds(ctx);
+        update_global_time_for_test_secs(ctx, now_second + timestamp_seconds);
     }
 }

@@ -16,11 +16,12 @@ pub mod rooch_framework;
 pub struct GasParameters {
     move_stdlib: move_stdlib::natives::GasParameters,
     move_nursery: move_stdlib::natives::NurseryGasParameters,
-    table_extension: moveos_stdlib::raw_table::GasParameters,
+    table_extension: raw_table::GasParameters,
     type_info: moveos_stdlib::type_info::GasParameters,
     rlp: moveos_stdlib::rlp::GasParameters,
     account: rooch_framework::account::GasParameters,
     bcd: moveos_stdlib::bcd::GasParameters,
+    test_helper: moveos_stdlib::test_helper::GasParameters,
 }
 
 impl GasParameters {
@@ -28,11 +29,12 @@ impl GasParameters {
         Self {
             move_stdlib: move_stdlib::natives::GasParameters::zeros(),
             move_nursery: move_stdlib::natives::NurseryGasParameters::zeros(),
-            table_extension: moveos_stdlib::raw_table::GasParameters::zeros(),
+            table_extension: raw_table::GasParameters::zeros(),
             type_info: moveos_stdlib::type_info::GasParameters::zeros(),
             rlp: moveos_stdlib::rlp::GasParameters::zeros(),
             account: rooch_framework::account::GasParameters::zeros(),
             bcd: moveos_stdlib::bcd::GasParameters::zeros(),
+            test_helper: moveos_stdlib::test_helper::GasParameters::zeros(),
         }
     }
 }
@@ -76,6 +78,10 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
     );
     add_natives!("rlp", moveos_stdlib::rlp::make_all(gas_params.rlp));
     add_natives!("bcd", moveos_stdlib::bcd::make_all(gas_params.bcd));
+    add_natives!(
+        "test_helper",
+        moveos_stdlib::test_helper::make_all(gas_params.test_helper)
+    );
 
     // rooch_framework natives
     add_natives!(

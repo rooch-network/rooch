@@ -5,9 +5,11 @@
     use rooch_framework::timestamp;
     use rooch_framework::governance;
     use rooch_framework::core_addresses;
+    use moveos_std::storage_context::StorageContext;
 
     /// Genesis step 1: Initialize rooch genesis account and core modules on chain.
     fun initialize(
+        ctx: &mut StorageContext,
         _gas_schedule: vector<u8>,
         chain_id: u8,
         _initial_version: u64,
@@ -26,7 +28,7 @@
         // Initialize the rooch genesis account. This is the account where system resources and modules will be
         // deployed to. This will be entirely managed by on-chain governance and no entities have the key or privileges
         // to use this account.
-        let (rooch_genesis_account, rooch_genesis_signer_cap) = account::create_framework_reserved_account(core_addresses::genesis_address());
+        let (rooch_genesis_account, rooch_genesis_signer_cap) = account::create_framework_reserved_account(ctx,core_addresses::genesis_address());
 
         // transaction_validation::initialize(
         //     &rooch_genesis_account,
@@ -37,14 +39,14 @@
         // );
 
         // Give the decentralized on-chain governance control over the core genesis account.
-        governance::store_signer_cap(&rooch_genesis_account, core_addresses::genesis_address(), rooch_genesis_signer_cap);
+        governance::store_signer_cap(ctx, &rooch_genesis_account, core_addresses::genesis_address(), rooch_genesis_signer_cap);
 
         // consensus_config::initialize(&rooch_genesis_account, consensus_config);
         // version::initialize(&rooch_genesis_account, initial_version);
         // gas_schedule::initialize(&rooch_genesis_account, gas_schedule);
 
-        chain_id::initialize(&rooch_genesis_account, chain_id);
-        block::initialize(&rooch_genesis_account, epoch_interval_microsecs);
-        timestamp::initialize(&rooch_genesis_account, genesis_timestamp);
+        chain_id::initialize(ctx, &rooch_genesis_account, chain_id);
+        block::initialize(ctx, &rooch_genesis_account, epoch_interval_microsecs);
+        timestamp::initialize(ctx, &rooch_genesis_account, genesis_timestamp);
     }
 }

@@ -48,6 +48,12 @@ module moveos_std::account_storage {
         object_storage::add(object_storage, object);
     }
 
+    /// check if account storage eixst
+    public fun exist_account_storage(ctx: &mut StorageContext, account: address): bool {
+        let object_id = object::address_to_object_id(account);
+        let object_storage = storage_context::object_storage_mut(ctx);
+        object_storage::contains<AccountStorage>(object_storage, object_id)
+    }
 
     //TODO the resource and module table's id is determined by the account address, so we can use the account address to get the table id
     //And don't need to borrow the account storage from the object storage, but if we create the table every time, how to drop the table?
