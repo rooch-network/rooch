@@ -19,7 +19,9 @@ bcs = { workspace = true }
 clap = { features = [ "derive",], workspace = true }
 datatest-stable = { workspace = true }
 tokio = { features = ["full"], workspace = true }
-
+dirs  = { workspace = true }
+serde = { workspace = true }
+serde_yaml = {workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-verifier = { workspace = true }
@@ -41,4 +43,8 @@ moveos-server = { workspace = true }
 moveos-client = { workspace = true }
 moveos-types = { workspace = true }
 moveos = { workspace = true }
+
+
+rooch-key = { workspace = true }
+rooch-types = { workspace = true }
 

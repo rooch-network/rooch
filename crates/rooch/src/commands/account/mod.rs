@@ -3,7 +3,6 @@
 
 pub mod create_account;
 use crate::commands::account::create_account::CreateAccount;
-
 use anyhow::Result;
 
 #[derive(Debug, clap::Subcommand)]

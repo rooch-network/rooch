@@ -6,6 +6,7 @@ use crate::commands::{object::ObjectCommand, resource::ResourceCommand};
 use anyhow::Result;
 
 pub mod commands;
+pub mod config;
 
 #[derive(clap::Parser)]
 #[clap(author, version, about, long_about = None)]
