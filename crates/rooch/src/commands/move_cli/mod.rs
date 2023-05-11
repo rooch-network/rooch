@@ -13,6 +13,7 @@ use move_cli::{
     },
     Move,
 };
+use rooch_types::cli::{CliError, CliResult};
 
 pub mod commands;
 pub mod types;
@@ -43,7 +44,7 @@ pub enum MoveCommand {
     //TODO implement integration test command
 }
 
-pub async fn run_cli(move_cli: MoveCli) -> Result<()> {
+pub async fn run_cli(move_cli: MoveCli) -> CliResult<()> {
     let move_args = move_cli.move_args;
     let cmd = move_cli.cmd;
     //let error_descriptions: ErrorMapping = bcs::from_bytes(moveos_stdlib::error_descriptions())?;
@@ -65,4 +66,5 @@ pub async fn run_cli(move_cli: MoveCli) -> Result<()> {
         MoveCommand::Run(c) => c.execute().await,
         MoveCommand::View(c) => c.execute().await,
     }
+    .map_err(CliError::from)
 }

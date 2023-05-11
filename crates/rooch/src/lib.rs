@@ -1,14 +1,19 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::commands::account::AccountCommand;
-use crate::commands::{object::ObjectCommand, resource::ResourceCommand};
+use crate::commands::{
+    account::AccountCommand,
+    move_cli::{self, MoveCli},
+    object::ObjectCommand,
+    resource::ResourceCommand,
+};
 use crate::config::{PersistedConfig, RoochConfig};
 use anyhow::anyhow;
 use anyhow::{Ok, Result};
 use clap::*;
 use commands::init::Init;
 use config::{rooch_config_dir, Config, ROOCH_CONFIG};
+use rooch_types::cli::{CliError, CliResult};
 use std::path::PathBuf;
 
 pub mod commands;
@@ -31,16 +36,16 @@ pub enum Command {
         cmd: Option<AccountCommand>,
     },
     Init(Init),
-    Move(moveos_cli::MoveCli),
+    Move(MoveCli),
     Server(moveos_server::OsServer),
     Resource(ResourceCommand),
     Object(ObjectCommand),
 }
 
-pub async fn run_cli(opt: RoochCli) -> Result<()> {
+pub async fn run_cli(opt: RoochCli) -> CliResult<()> {
     match opt.cmd {
-        Command::Move(move_cli) => moveos_cli::run_cli(move_cli).await,
-        Command::Server(os) => os.execute().await,
+        Command::Move(move_cli) => move_cli::run_cli(move_cli).await,
+        Command::Server(os) => os.execute().await.map_err(CliError::from),
         Command::Resource(resource) => resource.execute().await,
         Command::Object(object) => object.execute().await,
         Command::Init(c) => c.execute().await,

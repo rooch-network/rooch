@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::types::{AccountAddressWrapper, TransactionOptions};
+use crate::move_cli::types::{AccountAddressWrapper, TransactionOptions};
 use anyhow::ensure;
 use clap::Parser;
 use move_binary_format::file_format::CompiledModule;

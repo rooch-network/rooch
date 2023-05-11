@@ -67,7 +67,7 @@ impl Execute for Command {
         use Command::*;
         match self {
             Say(say) => {
-                let _resp = say.execute().await;
+                let _resp = say.execute().await?;
                 Ok(())
             }
             Start(start) => start.execute().await,
@@ -78,7 +78,7 @@ impl Execute for Command {
 #[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct SayOptions {
     #[clap(short, long, default_value = "hello")]
-    name: String,
+    pub name: String,
 }
 
 #[async_trait]
@@ -91,10 +91,8 @@ impl Execute for SayOptions {
         println!("client url: {:?}", url);
 
         let client = http_client(url)?;
-        let resp = client
-            .echo("Hello rooch".to_string())
-            .await
-            .unwrap_or_else(|e| panic!("{:?}", e));
+        let resp = client.echo("Hello rooch".to_string()).await?;
+        // .unwrap_or_else(|e| panic!("{:?}", e));
         println!("{:?}", resp);
 
         // let mut client = OsServiceClient::connect(url).await?;
