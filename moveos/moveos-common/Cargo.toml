@@ -13,3 +13,5 @@ jsonrpsee = { workspace = true }
 thiserror = { workspace = true }
 tonic = { workspace = true }
 coerce = { workspace = true }
+
+moveos-types = { workspace = true }

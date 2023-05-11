@@ -2,7 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Context, Result};
+use rooch_key::keystore::{AccountKeystore, Keystore};
+use rooch_types::address::RoochAddress;
+use serde::Deserialize;
 use serde::{de::DeserializeOwned, Serialize};
+use serde_with::serde_as;
+use std::fmt::{Display, Formatter, Write};
 use std::{fs, path::Path, path::PathBuf};
 
 const ROOCH_DIR: &str = ".rooch";
@@ -27,7 +32,7 @@ pub fn rooch_config_dir() -> Result<PathBuf, anyhow::Error> {
     })
 }
 
-pub trait ConfigA
+pub trait Config
 where
     Self: DeserializeOwned + Serialize,
 {
@@ -63,10 +68,10 @@ pub struct PersistedConfig<C> {
 
 impl<C> PersistedConfig<C>
 where
-    C: ConfigA,
+    C: Config,
 {
     pub fn read(path: &Path) -> Result<C, anyhow::Error> {
-        ConfigA::load(path)
+        Config::load(path)
     }
 
     pub fn save(&self) -> Result<(), anyhow::Error> {
@@ -93,5 +98,43 @@ impl<C> std::ops::Deref for PersistedConfig<C> {
 impl<C> std::ops::DerefMut for PersistedConfig<C> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
+    }
+}
+
+// TODO: server
+#[serde_as]
+#[derive(Serialize, Deserialize)]
+pub struct RoochConfig {
+    pub keystore: Keystore,
+    pub active_address: Option<RoochAddress>,
+}
+
+impl RoochConfig {
+    pub fn new(keystore: Keystore) -> Self {
+        RoochConfig {
+            keystore,
+            active_address: None,
+        }
+    }
+}
+
+impl Config for RoochConfig {}
+
+impl Display for RoochConfig {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut writer = String::new();
+
+        writeln!(
+            writer,
+            "Managed addresses : {}",
+            self.keystore.addresses().len()
+        )?;
+        write!(writer, "Active address: ")?;
+        match self.active_address {
+            Some(r) => writeln!(writer, "{}", r)?,
+            None => writeln!(writer, "None")?,
+        };
+        writeln!(writer, "{}", self.keystore)?;
+        write!(f, "{}", writer)
     }
 }

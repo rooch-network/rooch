@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::address::RoochAddress;
 use crate::{error::RoochError, rooch_serde::Readable};
 use derive_more::{AsMut, AsRef, From};
 use eyre::eyre;
@@ -15,7 +16,6 @@ pub use fastcrypto::traits::{
     AggregateAuthenticator, Authenticator, EncodeDecodeBase64, SigningKey, ToFromBytes,
     VerifyingKey,
 };
-use move_core_types::account_address::AccountAddress;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use schemars::JsonSchema;
@@ -179,13 +179,13 @@ impl<'de> Deserialize<'de> for PublicKey {
 //    }
 //}
 
-impl From<&PublicKey> for AccountAddress {
+impl From<&PublicKey> for RoochAddress {
     fn from(pk: &PublicKey) -> Self {
         let mut hasher = DefaultHash::default();
         hasher.update([pk.flag()]);
         hasher.update(pk);
         let g_arr = hasher.finalize();
-        AccountAddress::new(g_arr.digest)
+        RoochAddress(moveos_types::h256::sha3_256_of(&g_arr.digest))
     }
 }
 
@@ -288,17 +288,17 @@ impl RoochSignatureInner for RoochEd25519Signature {
 }
 
 /// Generate a keypair from the specified RNG (useful for testing with seedable rngs).
-pub fn get_key_pair_from_rng<KP: KeypairTraits, R>(csprng: &mut R) -> (AccountAddress, KP)
+pub fn get_key_pair_from_rng<KP: KeypairTraits, R>(csprng: &mut R) -> (RoochAddress, KP)
 where
     R: rand::CryptoRng + rand::RngCore,
     <KP as KeypairTraits>::PubKey: RoochPublicKey,
 {
     let kp = KP::generate(&mut StdRng::from_rng(csprng).unwrap());
     (
-        AccountAddress::new([
+        RoochAddress(moveos_types::h256::sha3_256_of(&[
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0,
-        ]),
+        ])),
         kp,
     )
     //    (kp.public().into(), kp)

@@ -3,9 +3,6 @@
 
 use anyhow::Result;
 
-// Copyright (c) RoochNetwork
-// SPDX-License-Identifier: Apache-2.0
-
 use std::{fs, path::Path};
 
 use serde::{Deserialize, Serialize};
