@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::fmt;
 use std::str::FromStr;
 
 use crate::coin::{Coin, ROOCH_COIN_ID};
@@ -11,6 +12,7 @@ use bitcoin::{
     PubkeyHash,
 };
 use ethers::types::H160;
+use fastcrypto::encoding::{Encoding, Hex};
 use move_core_types::account_address::AccountAddress;
 use moveos_types::h256::H256;
 use serde::{Deserialize, Serialize};
@@ -116,7 +118,7 @@ impl FromStr for MultiChainAddress {
 }
 
 /// Rooch address type
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Copy, Clone, Ord, PartialOrd, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct RoochAddress(pub H256);
 
 impl RoochSupportedAddress for RoochAddress {
@@ -152,6 +154,18 @@ impl TryFrom<MultiChainAddress> for RoochAddress {
             return Err(anyhow::anyhow!("coin id {} is invalid", value.coin.id));
         }
         Ok(Self(H256::from_slice(&value.address)))
+    }
+}
+
+impl fmt::Display for RoochAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "0x{}", Hex::encode(self.0))
+    }
+}
+
+impl fmt::Debug for RoochAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        write!(f, "0x{}", Hex::encode(self.0))
     }
 }
 

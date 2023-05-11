@@ -6,11 +6,11 @@ use anyhow::anyhow;
 use bip32::DerivationPath;
 use bip39::{Language, Mnemonic, Seed};
 use enum_dispatch::enum_dispatch;
-use move_core_types::account_address::AccountAddress;
 use rand::{rngs::StdRng, SeedableRng};
 use rooch_types::account::{
     get_key_pair_from_rng, EncodeDecodeBase64, PublicKey, RoochKeyPair, SignatureScheme,
 };
+use rooch_types::address::RoochAddress;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::BTreeMap;
 use std::fmt::Write;
@@ -30,9 +30,9 @@ pub enum Keystore {
 pub trait AccountKeystore: Send + Sync {
     fn add_key(&mut self, keypair: RoochKeyPair) -> Result<(), anyhow::Error>;
     fn keys(&self) -> Vec<PublicKey>;
-    fn get_key(&self, address: &AccountAddress) -> Result<&RoochKeyPair, anyhow::Error>;
+    fn get_key(&self, address: &RoochAddress) -> Result<&RoochKeyPair, anyhow::Error>;
 
-    fn addresses(&self) -> Vec<AccountAddress> {
+    fn addresses(&self) -> Vec<RoochAddress> {
         self.keys().iter().map(|k| k.into()).collect()
     }
 
@@ -41,7 +41,7 @@ pub trait AccountKeystore: Send + Sync {
         key_scheme: SignatureScheme,
         derivation_path: Option<DerivationPath>,
         word_length: Option<String>,
-    ) -> Result<(AccountAddress, String, SignatureScheme), anyhow::Error> {
+    ) -> Result<(RoochAddress, String, SignatureScheme), anyhow::Error> {
         let (address, kp, scheme, phrase) =
             generate_new_key(key_scheme, derivation_path, word_length)?;
         self.add_key(kp)?;
@@ -53,7 +53,7 @@ pub trait AccountKeystore: Send + Sync {
         phrase: &str,
         key_scheme: SignatureScheme,
         derivation_path: Option<DerivationPath>,
-    ) -> Result<AccountAddress, anyhow::Error> {
+    ) -> Result<RoochAddress, anyhow::Error> {
         let mnemonic = Mnemonic::from_phrase(phrase, Language::English)
             .map_err(|e| anyhow::anyhow!("Invalid mnemonic phrase: {:?}", e))?;
         let seed = Seed::new(&mnemonic, "");
@@ -86,7 +86,7 @@ impl Display for Keystore {
 
 #[derive(Default)]
 pub struct FileBasedKeystore {
-    keys: BTreeMap<AccountAddress, RoochKeyPair>,
+    keys: BTreeMap<RoochAddress, RoochKeyPair>,
     path: Option<PathBuf>,
 }
 
@@ -118,7 +118,7 @@ impl<'de> Deserialize<'de> for FileBasedKeystore {
 
 impl AccountKeystore for FileBasedKeystore {
     fn add_key(&mut self, keypair: RoochKeyPair) -> Result<(), anyhow::Error> {
-        let address: AccountAddress = (&keypair.public()).into();
+        let address: RoochAddress = (&keypair.public()).into();
         self.keys.insert(address, keypair);
         self.save()?;
         Ok(())
@@ -128,7 +128,7 @@ impl AccountKeystore for FileBasedKeystore {
         self.keys.values().map(|key| key.public()).collect()
     }
 
-    fn get_key(&self, address: &AccountAddress) -> Result<&RoochKeyPair, anyhow::Error> {
+    fn get_key(&self, address: &RoochAddress) -> Result<&RoochKeyPair, anyhow::Error> {
         match self.keys.get(address) {
             Some(key) => Ok(key),
             None => Err(anyhow!("Cannot find key for address: [{address}]")),
@@ -149,7 +149,7 @@ impl FileBasedKeystore {
                 .iter()
                 .map(|kpstr| {
                     let key = RoochKeyPair::decode_base64(kpstr);
-                    key.map(|k| (Into::<AccountAddress>::into(&k.public()), k))
+                    key.map(|k| (Into::<RoochAddress>::into(&k.public()), k))
                 })
                 .collect::<Result<BTreeMap<_, _>, _>>()
                 .map_err(|e| anyhow::anyhow!("Invalid Keypair file {:#?} {:?}", e, path))?
@@ -189,12 +189,12 @@ impl FileBasedKeystore {
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct InMemKeystore {
-    keys: BTreeMap<AccountAddress, RoochKeyPair>,
+    keys: BTreeMap<RoochAddress, RoochKeyPair>,
 }
 
 impl AccountKeystore for InMemKeystore {
     fn add_key(&mut self, keypair: RoochKeyPair) -> Result<(), anyhow::Error> {
-        let address: AccountAddress = (&keypair.public()).into();
+        let address: RoochAddress = (&keypair.public()).into();
         self.keys.insert(address, keypair);
         Ok(())
     }
@@ -203,7 +203,7 @@ impl AccountKeystore for InMemKeystore {
         self.keys.values().map(|key| key.public()).collect()
     }
 
-    fn get_key(&self, address: &AccountAddress) -> Result<&RoochKeyPair, anyhow::Error> {
+    fn get_key(&self, address: &RoochAddress) -> Result<&RoochKeyPair, anyhow::Error> {
         match self.keys.get(address) {
             Some(key) => Ok(key),
             None => Err(anyhow!("Cannot find key for address: [{address}]")),
@@ -217,7 +217,7 @@ impl InMemKeystore {
         let keys = (0..initial_key_number)
             .map(|_| get_key_pair_from_rng(&mut rng))
             .map(|(ad, k)| (ad, RoochKeyPair::Ed25519(k)))
-            .collect::<BTreeMap<AccountAddress, RoochKeyPair>>();
+            .collect::<BTreeMap<RoochAddress, RoochKeyPair>>();
 
         Self { keys }
     }

@@ -3,7 +3,13 @@
 
 use crate::commands::account::AccountCommand;
 use crate::commands::{object::ObjectCommand, resource::ResourceCommand};
-use anyhow::Result;
+use crate::config::{PersistedConfig, RoochConfig};
+use anyhow::anyhow;
+use anyhow::{Ok, Result};
+use clap::*;
+use commands::init::Init;
+use config::{rooch_config_dir, Config, ROOCH_CONFIG};
+use std::path::PathBuf;
 
 pub mod commands;
 pub mod config;
@@ -17,12 +23,18 @@ pub struct RoochCli {
 
 #[derive(clap::Parser)]
 pub enum Command {
+    #[clap(name = "account")]
+    Account {
+        #[clap(long = "rooch.config")]
+        config: Option<PathBuf>,
+        #[clap(subcommand)]
+        cmd: Option<AccountCommand>,
+    },
+    Init(Init),
     Move(moveos_cli::MoveCli),
     Server(moveos_server::OsServer),
     Resource(ResourceCommand),
     Object(ObjectCommand),
-    #[clap(subcommand)]
-    Account(AccountCommand),
 }
 
 pub async fn run_cli(opt: RoochCli) -> Result<()> {
@@ -31,6 +43,31 @@ pub async fn run_cli(opt: RoochCli) -> Result<()> {
         Command::Server(os) => os.execute().await,
         Command::Resource(resource) => resource.execute().await,
         Command::Object(object) => object.execute().await,
-        Command::Account(account) => account.execute().await,
+        Command::Init(c) => c.execute().await,
+        Command::Account { config, cmd } => {
+            let config_path = config.unwrap_or(rooch_config_dir()?.join(ROOCH_CONFIG));
+
+            if !config_path.exists() {
+                println!("Use rooch init first");
+                return Ok(());
+            }
+
+            let config: RoochConfig = PersistedConfig::read(&config_path).map_err(|err| {
+                anyhow!(
+                    "Cannot open Rooch config file at {:?}. Err: {err}",
+                    config_path
+                )
+            })?;
+
+            if let Some(cmd) = cmd {
+                cmd.execute(&mut config.persisted(&config_path)).await?;
+            } else {
+                // Print help
+                let mut app = Command::command();
+                app.build();
+                app.find_subcommand_mut("account").unwrap().print_help()?;
+            }
+            Ok(())
+        }
     }
 }
