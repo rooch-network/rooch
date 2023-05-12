@@ -6,7 +6,6 @@ struct SendTxnRequest {
     expiration_time: u64,
     signature: Vec<u8>,
 }
-
 struct SendTxnResponse {
     // The following four fields together are completed legal txn order evidence.
     // Transaction Hash
@@ -154,7 +153,7 @@ struct AccountProofResponse {
 }
 
 trait MoveOSClient {
-    fn send_txn(&self, request: SendTxRequest) -> SendTxResponse;
+    fn send_txn(&self, request: SendTxnRequest) -> SendTxnResponse;
     fn get_txn_order_witness(
         &self,
         request: GetTxnOrderWitnessRequest,
@@ -178,7 +177,7 @@ struct RPCRequest<T> {
     params: Vec<T>,
 }
 
-impl RPCRequest<T> {
+impl<T> RPCRequest<T> {
     fn new_request(method: String, params: Vec<T>) -> Self {
         Self {
             id: 0,
