@@ -24,6 +24,7 @@ pub trait RoochSupportedAddress:
 }
 
 /// Multi chain address representation
+/// The address is distinguished by the coin id, coin id standard is defined in [slip-0044](https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MultiChainAddress {
     pub coin: Coin,
