@@ -74,14 +74,9 @@ module rooch_framework::account{
    /// Address to create is not a valid reserved address for Rooch framework
    const ENoValidFrameworkReservedAddress: u64 = 11;
 
-
-
-
-
-   /// TODO should provide a entry function at this module
-   /// How to provide account extension?
-   public entry fun create_account_entry(ctx: &mut StorageContext, auth_key: address): signer{
-      Self::create_account(ctx, auth_key)
+   /// A entry function to create an account under `new_address`
+   public entry fun create_account_entry(ctx: &mut StorageContext, new_address: address){
+      Self::create_account(ctx, new_address);
    }
 
    /// Publishes a new `Account` resource under `new_address`. A signer representing `new_address`
@@ -332,6 +327,13 @@ module rooch_framework::account{
       debug::print(&resource_addr);
       assert!(resource_addr != signer::address_of(&alice), 106);
       assert!(resource_addr == signer_cap_addr, 107);
+      storage_context::drop_test_context(ctx);
+   }
+
+   #[test(sender=@0x42)]
+   fun test_create_account_entry(sender: address){
+      let ctx = storage_context::new_test_context(sender);
+      create_account_entry(&mut ctx, sender);
       storage_context::drop_test_context(ctx);
    }
 }
