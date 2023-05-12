@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::address::RoochAddress;
+use moveos_types::h256::H256;
 use crate::{error::RoochError, rooch_serde::Readable};
 use derive_more::{AsMut, AsRef, From};
 use eyre::eyre;
@@ -34,8 +35,6 @@ pub type DefaultHash = Blake2b256;
 /// * accounts to interact with Rooch.
 /// * Currently we support eddsa and ecdsa on Rooch.
 ///
-// TODO:Secp256k1,Secp256r1
-#[allow(clippy::large_enum_variant)]
 #[derive(Debug, From, PartialEq, Eq)]
 pub enum RoochKeyPair {
     Ed25519(Ed25519KeyPair),
@@ -99,7 +98,6 @@ impl<'de> Deserialize<'de> for RoochKeyPair {
     }
 }
 
-/// public key
 #[derive(Clone, PartialEq, Eq, From, JsonSchema)]
 pub enum PublicKey {
     #[schemars(with = "Base64")]
@@ -169,15 +167,15 @@ impl<'de> Deserialize<'de> for PublicKey {
     }
 }
 
-//impl<T: RoochPublicKey> From<&T> for ABC {
-//    fn from(pk: &T) -> Self {
-//        let mut hasher = DefaultHash::default();
-//        hasher.update([T::SIGNATURE_SCHEME.flag()]);
-//        hasher.update(pk);
-//        let g_arr = hasher.finalize();
-//        AccountAddress::new(g_arr.digest)
-//    }
-//}
+impl<T: RoochPublicKey> From<&T> for RoochAddress {
+    fn from(pk: &T) -> Self {
+        let mut hasher = DefaultHash::default();
+        hasher.update([T::SIGNATURE_SCHEME.flag()]);
+        hasher.update(pk);
+        let g_arr = hasher.finalize();
+        RoochAddress(H256(g_arr.digest))
+    }
+}
 
 impl From<&PublicKey> for RoochAddress {
     fn from(pk: &PublicKey) -> Self {
@@ -185,7 +183,7 @@ impl From<&PublicKey> for RoochAddress {
         hasher.update([pk.flag()]);
         hasher.update(pk);
         let g_arr = hasher.finalize();
-        RoochAddress(moveos_types::h256::sha3_256_of(&g_arr.digest))
+        RoochAddress(H256(g_arr.digest))
     }
 }
 

@@ -46,7 +46,6 @@ impl CreateCommand {
         );
         println!("Secret Recovery Phrase : [{phrase}]");
 
-        // TODO:https://github.com/rooch-network/rooch/issues/107
         let txn = MoveTransaction::new_function(
             ModuleId::new(
                 AccountAddress::new([

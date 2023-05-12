@@ -16,7 +16,8 @@ pub enum AccountCommand {
     Create(CreateCommand),
     // CreateResourceAccount(create_resource_account::CreateResourceAccount),
     List(ListCommand),
-    Import(ImportCommand), // RotateKey(key_rotation::RotateKey),
+    Import(ImportCommand),
+    // RotateKey(key_rotation::RotateKey),
 }
 
 impl AccountCommand {

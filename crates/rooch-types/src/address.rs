@@ -12,7 +12,6 @@ use bitcoin::{
     PubkeyHash,
 };
 use ethers::types::H160;
-use fastcrypto::encoding::{Encoding, Hex};
 use move_core_types::account_address::AccountAddress;
 use moveos_types::h256::H256;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
