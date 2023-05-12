@@ -12,10 +12,9 @@ use bitcoin::{
     PubkeyHash,
 };
 use ethers::types::H160;
-use fastcrypto::encoding::{Encoding, Hex};
 use move_core_types::account_address::AccountAddress;
 use moveos_types::h256::H256;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// The address type that Rooch supports
 pub trait RoochSupportedAddress:
@@ -25,6 +24,7 @@ pub trait RoochSupportedAddress:
 }
 
 /// Multi chain address representation
+/// The address is distinguished by the coin id, coin id standard is defined in [slip-0044](https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MultiChainAddress {
     pub coin: Coin,
@@ -118,7 +118,7 @@ impl FromStr for MultiChainAddress {
 }
 
 /// Rooch address type
-#[derive(Copy, Clone, Ord, PartialOrd, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Copy, Clone, Ord, PartialOrd, PartialEq, Eq, Hash)]
 pub struct RoochAddress(pub H256);
 
 impl RoochSupportedAddress for RoochAddress {
@@ -157,15 +157,56 @@ impl TryFrom<MultiChainAddress> for RoochAddress {
     }
 }
 
+// ==== Display and FromStr, Deserialize and Serialize ====
+// Should keep consistent with AccountAddress
+
 impl fmt::Display for RoochAddress {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "0x{}", Hex::encode(self.0))
+    fn fmt(&self, f: &mut fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:x}", AccountAddress::from(*self))
     }
 }
 
 impl fmt::Debug for RoochAddress {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "0x{}", Hex::encode(self.0))
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:x}", AccountAddress::from(*self))
+    }
+}
+
+impl FromStr for RoochAddress {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let address = AccountAddress::from_str(s)?;
+        Ok(Self::from(address))
+    }
+}
+
+impl<'de> Deserialize<'de> for RoochAddress {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        if deserializer.is_human_readable() {
+            let s = <String>::deserialize(deserializer)?;
+            Self::from_str(&s).map_err(serde::de::Error::custom)
+        } else {
+            let value = AccountAddress::deserialize(deserializer)?;
+            Ok(value.into())
+        }
+    }
+}
+
+impl Serialize for RoochAddress {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        if serializer.is_human_readable() {
+            self.to_string().serialize(serializer)
+        } else {
+            let account_address: AccountAddress = (*self).into();
+            account_address.serialize(serializer)
+        }
     }
 }
 

@@ -179,4 +179,22 @@ module moveos_std::account_storage {
         assert!(named_table_id(@0xae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647, NamedTableResource) == @0x04d8b5ccef4d5b55fa9371d1a9c344fcd4bd40dd9f32dd1d94696775fe3f3013, 1000);
         assert!(named_table_id(@0xae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647, NamedTableModule) == @0xead64c5e724c9d52b0eb792b350d56001f1fe0dc2dec0e2e713420daba18109a, 1001);
     }
+
+    #[test_only]
+    struct Test has key{
+        addr: address,
+        version: u64
+    }
+
+    #[test(sender=@0x42)]
+    fun test_account_storage(sender: signer){
+        let sender_addr = signer::address_of(&sender);
+        let ctx = storage_context::new_test_context(sender_addr);
+        create_account_storage(&mut ctx, sender_addr);
+        global_move_to(&mut ctx, &sender, Test{
+            addr: sender_addr,
+            version: 1,
+        });
+        storage_context::drop_test_context(ctx);
+    }
 }

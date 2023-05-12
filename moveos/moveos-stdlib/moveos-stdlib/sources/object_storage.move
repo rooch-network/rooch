@@ -31,7 +31,7 @@ module moveos_std::object_storage {
     }
 
     /// The global object storage's table handle should be 0x0
-    public fun global_object_storage_handle() : address {
+    public(friend) fun global_object_storage_handle() : address {
         GlobalObjectStorageHandle
     }
 
@@ -59,8 +59,8 @@ module moveos_std::object_storage {
         raw_table::add<ObjectID, Object<T>>(*&this.handle, object::id(&obj), obj);
     } 
 
-    public fun contains<T: key>(this: &mut ObjectStorage, object_id: ObjectID): bool{
-        raw_table::contains<ObjectID, T>(*&this.handle, object_id)
+    public fun contains<T: key>(this: &ObjectStorage, object_id: ObjectID): bool{
+        raw_table::contains<ObjectID, Object<T>>(*&this.handle, object_id)
     }
 
     #[test_only]
@@ -71,5 +71,36 @@ module moveos_std::object_storage {
 
         test_helper::destroy<ObjectStorage>(this);
     }
+    #[test_only]
+    struct TestObject has key{
+        f: u8
+    }
+     #[test_only]
+    struct TestObject2 has key{
+        f: u8
+    }
+    #[test(sender=@0x42)]
+    fun test_object_storage(sender: address) {
+        let ctx = moveos_std::tx_context::new_test_context(sender);
+        let os = new(&mut ctx);
+        let object = object::new(&mut ctx, sender, TestObject{f: 1});
+        let object_id = object::id(&object);
+        add(&mut os, object);
+        assert!(contains<TestObject>(&os, object_id), 1000);
 
+        //FIXME https://github.com/rooch-network/rooch/issues/112 
+        //assert!(!contains<TestObject2>(&os, object_id), 1001);
+        
+        let object_ref = borrow<TestObject>(&os, object_id);
+        let test_obj_ref = object::borrow<TestObject>(object_ref);
+        assert!(test_obj_ref.f == 1, 1002);
+        
+        let object = remove<TestObject>(&mut os, object_id);
+        let (_id, _owner, test_object) = object::unpack(object);
+        let TestObject{f} = test_object;
+        assert!(f == 1, 1003);
+        assert!(!contains<TestObject>(&os, object_id), 1004);
+
+        drop_object_storage(os);
+    }
 }
