@@ -20,6 +20,7 @@ clap = { features = [ "derive",], workspace = true }
 datatest-stable = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 once_cell = { workspace = true }
+thiserror = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-verifier = { workspace = true }

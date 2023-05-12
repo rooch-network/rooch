@@ -1,12 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::types::TransactionOptions;
+use crate::types::{AccountAddressWrapper, TransactionOptions};
 use anyhow::ensure;
 use clap::Parser;
 use move_package::BuildConfig;
 use moveos_client::Client;
 use moveos_types::transaction::{MoveTransaction, SimpleTransaction};
+use std::collections::BTreeMap;
 use std::io::stderr;
 use std::path::PathBuf;
 
@@ -17,6 +18,14 @@ pub struct Publish {
 
     #[clap(flatten)]
     txn_options: TransactionOptions,
+
+    /// Named addresses for the move binary
+    ///
+    /// Example: alice=0x1234, bob=0x5678
+    ///
+    /// Note: This will fail if there are duplicates in the Move.toml file remove those first.
+    #[clap(long, parse(try_from_str = moveos_common::utils::parse_map), default_value = "")]
+    pub(crate) named_addresses: BTreeMap<String, AccountAddressWrapper>,
 }
 
 impl Publish {
@@ -25,6 +34,14 @@ impl Publish {
         package_path: Option<PathBuf>,
         config: BuildConfig,
     ) -> anyhow::Result<()> {
+        let mut config = config.clone();
+        config.additional_named_addresses = self
+            .named_addresses
+            .clone()
+            .into_iter()
+            .map(|(key, value)| (key, value.account_address))
+            .collect();
+
         let package_path = match package_path {
             Some(package_path) => package_path,
             None => std::env::current_dir()?,
