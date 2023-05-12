@@ -5,6 +5,7 @@ use crate::types::TransactionOptions;
 use anyhow::ensure;
 use clap::Parser;
 use move_package::BuildConfig;
+use moveos::vm::dependency_order::sort_by_dependency_order;
 use moveos_client::Client;
 use moveos_types::transaction::{MoveTransaction, SimpleTransaction};
 use std::io::stderr;
@@ -32,10 +33,11 @@ impl Publish {
         let package = config.compile_package_no_exit(&package_path, &mut stderr())?;
         let modules = package.root_modules_map().iter_modules_owned();
 
+        let sorted_modules = sort_by_dependency_order(modules.iter())?;
         let pkg_address = modules[0].self_id().address().to_owned();
         let mut bundles: Vec<Vec<u8>> = vec![];
         println!("Packaging Modules:");
-        for module in modules {
+        for module in sorted_modules {
             println!("\t {}", module.self_id());
             let module_address = module.self_id().address().to_owned();
             ensure!(
