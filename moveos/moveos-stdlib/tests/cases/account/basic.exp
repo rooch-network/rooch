@@ -1,7 +1,1 @@
 processed 3 tasks
-
-task 1 'run'. lines 6-15:
-Error: VMError with status VM_EXTENSION_ERROR at location Module ModuleId { address: 0000000000000000000000000000000000000000000000000000000000000001, name: Identifier("raw_table") } and message cannot deserialize table key or value at code offset 0 in function definition 9
-
-task 2 'run'. lines 16-23:
-Error: VMError with status VM_EXTENSION_ERROR at location Module ModuleId { address: 0000000000000000000000000000000000000000000000000000000000000001, name: Identifier("raw_table") } and message cannot deserialize table key or value at code offset 0 in function definition 9

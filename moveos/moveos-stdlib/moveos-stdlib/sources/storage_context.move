@@ -43,7 +43,7 @@ module moveos_std::storage_context {
     #[test_only]
     /// Create a StorageContext and AccountStorage for unit test
     public fun new_test_context(sender: address): StorageContext {
-        let tx_context = tx_context::test_context(sender);
+        let tx_context = tx_context::new_test_context(sender);
         // let object_storage = object_storage::new(&mut tx_context);
         let object_storage = object_storage::new_with_id(object_storage::global_object_storage_handle());
         StorageContext {

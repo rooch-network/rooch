@@ -57,7 +57,7 @@ impl CreateCommand {
             ),
             ident_str!("create_account_entry").to_owned(),
             vec![],
-            vec![bcs::to_bytes(new_address.0.as_bytes()).unwrap()],
+            vec![bcs::to_bytes(&new_address).unwrap()],
         );
         let sender = AccountAddress::new(new_address.0.into());
         let txn = SimpleTransaction::new(sender, txn);

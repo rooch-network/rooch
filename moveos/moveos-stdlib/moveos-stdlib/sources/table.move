@@ -100,7 +100,7 @@ module moveos_std::table {
     #[test(account = @0x1)]
     fun test_upsert(account: signer) {
         let sender = std::signer::address_of(&account);
-        let tx_context = moveos_std::tx_context::test_context(sender);
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
         let t = new<u64, u8>(&mut tx_context);
         let key: u64 = 111;
         let error_code: u64 = 1;
@@ -116,7 +116,7 @@ module moveos_std::table {
     #[test(account = @0x1)]
     fun test_borrow_with_default(account: signer) {
         let sender = std::signer::address_of(&account);
-        let tx_context = moveos_std::tx_context::test_context(sender);
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
         let t = new<u64, u8>(&mut tx_context);
         let key: u64 = 100;
         let error_code: u64 = 1;

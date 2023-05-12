@@ -67,7 +67,7 @@ module moveos_std::tx_context {
     
     #[test_only]
     /// Create a TxContext for unit test
-    public fun test_context(sender: address): TxContext {
+    public fun new_test_context(sender: address): TxContext {
         let tx_hash = hash::sha3_256(b"test_txn");
         TxContext {
             sender,
