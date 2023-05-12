@@ -4,12 +4,16 @@
 use crate::types::TransactionOptions;
 use anyhow::ensure;
 use clap::Parser;
+use move_binary_format::file_format::CompiledModule;
+use move_bytecode_utils::dependency_graph::DependencyGraph;
 use move_package::BuildConfig;
 use moveos::vm::dependency_order::sort_by_dependency_order;
 use moveos_client::Client;
 use moveos_types::transaction::{MoveTransaction, SimpleTransaction};
 use std::io::stderr;
 use std::path::PathBuf;
+
+use move_bytecode_utils::Modules;
 
 #[derive(Parser)]
 pub struct Publish {
@@ -31,12 +35,18 @@ impl Publish {
             None => std::env::current_dir()?,
         };
         let package = config.compile_package_no_exit(&package_path, &mut stderr())?;
-        let modules = package.root_modules_map().iter_modules_owned();
+        // let modules = package.root_modules_map().iter_modules_owned();
+        let modules = package.root_modules_map();
 
-        let sorted_modules = sort_by_dependency_order(modules.iter())?;
-        let pkg_address = modules[0].self_id().address().to_owned();
+        // let pkg_address = modules..iter_modules_owned() modules[0].self_id().address().to_owned();
+        let pkg_address = modules.iter_modules_owned()[0]
+            .self_id()
+            .address()
+            .to_owned();
         let mut bundles: Vec<Vec<u8>> = vec![];
         println!("Packaging Modules:");
+        // let sorted_modules = Self::order_modules(modules)?;
+        let sorted_modules = sort_by_dependency_order(modules.iter_modules())?;
         for module in sorted_modules {
             println!("\t {}", module.self_id());
             let module_address = module.self_id().address().to_owned();
@@ -60,5 +70,14 @@ impl Publish {
         let txn = SimpleTransaction::new(pkg_address, txn);
         self.client.submit_txn(txn).await?;
         Ok(())
+    }
+
+    pub fn order_modules(modules: Modules) -> anyhow::Result<Vec<CompiledModule>> {
+        //TODO ensure all module at same address.
+        //include all module and dependency modules
+        // let modules = self.package.all_modules_map();
+        let graph = DependencyGraph::new(modules.iter_modules());
+        let order_modules = graph.compute_topological_order()?;
+        Ok(order_modules.cloned().collect())
     }
 }

@@ -12,6 +12,7 @@ use move_transactional_test_runner::{
 };
 use move_vm_runtime::session::SerializedReturnValues;
 use moveos::moveos::MoveOS;
+use moveos::vm::dependency_order::sort_by_dependency_order;
 use moveos_types::object::{ObjectID, RawObject};
 use moveos_types::transaction::{MoveTransaction, SimpleTransaction};
 use std::{collections::BTreeMap, path::Path};
@@ -103,6 +104,8 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
             .unwrap()
             .modules()
             .unwrap();
+
+        // let sorted_moveos_stdlib_modules = sort_by_dependency_order(moveos_stdlib_modules.iter())?;
         for module in moveos_stdlib_modules
             .iter()
             .filter(|module| !adapter.compiled_state.is_precompiled_dep(&module.self_id()))
