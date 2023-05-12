@@ -1,4 +1,7 @@
-//# init --addresses genesis=0x1 bob=0x42
+//# init --addresses genesis=0x1
+
+//TODO currently, we auto create account for init addresses, so I remove the bob=0x42 from the init addresses.
+//In the future, if we create account by faucet, we can keep the init named address. 
 
 //TODO create account by faucet
 
@@ -8,16 +11,16 @@ script {
     use rooch_framework::account;
     use moveos_std::storage_context::StorageContext;
     fun main(ctx: &mut StorageContext, _sender: signer) {
-        account::create_account_entry(ctx, @bob);
+        account::create_account_entry(ctx, @0x42);
     }
 }
 
 //check
-//# run --signers bob
+//# run --signers 0x42
 script {
     use rooch_framework::account;
     use moveos_std::storage_context::StorageContext;
     fun main(ctx: &mut StorageContext, _sender: signer) {
-        assert!(account::exists_at(ctx, @bob), 0);
+        assert!(account::exists_at(ctx, @0x42), 0);
     }
 }
