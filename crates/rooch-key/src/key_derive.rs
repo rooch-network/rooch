@@ -5,13 +5,11 @@ use anyhow::anyhow;
 use bip32::{ChildNumber, DerivationPath};
 use bip39::{Language, Mnemonic, MnemonicType, Seed};
 use fastcrypto::ed25519::Ed25519KeyPair;
-use fastcrypto::hash::HashFunction;
 use fastcrypto::{
     ed25519::Ed25519PrivateKey,
     traits::{KeyPair, ToFromBytes},
 };
-use moveos_types::h256::H256;
-use rooch_types::account::{DefaultHash, RoochKeyPair, SignatureScheme};
+use rooch_types::account::{RoochKeyPair, SignatureScheme};
 use rooch_types::address::RoochAddress;
 use rooch_types::error::RoochError;
 use slip10_ed25519::derive_ed25519_private_key;
@@ -23,8 +21,6 @@ pub const DERVIATION_PATH_PURPOSE_SECP256K1: u32 = 54;
 pub const DERVIATION_PATH_PURPOSE_SECP256R1: u32 = 74;
 
 /// Ed25519 follows SLIP-0010 using hardened path: m/44'/784'/0'/0'/{index}'
-/// Secp256k1 follows BIP-32/44 using path where the first 3 levels are hardened: m/54'/784'/0'/0/{index}
-/// Secp256r1 follows BIP-32/44 using path where the first 3 levels are hardened: m/74'/784'/0'/0/{index}
 /// Note that the purpose node is used to distinguish signature schemes.
 pub fn derive_key_pair_from_path(
     seed: &[u8],
@@ -37,15 +33,7 @@ pub fn derive_key_pair_from_path(
     let sk = Ed25519PrivateKey::from_bytes(&derived)
         .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
     let kp: Ed25519KeyPair = sk.into();
-    let pk = kp.public();
-
-    let mut hasher = DefaultHash::default();
-    // TODO: fix flag
-    hasher.update([0x00]);
-    hasher.update(pk);
-    let g_arr = hasher.finalize();
-
-    Ok((RoochAddress(H256(g_arr.digest)), RoochKeyPair::Ed25519(kp)))
+    Ok((kp.public().into(), RoochKeyPair::Ed25519(kp)))
 }
 
 pub fn validate_path(
