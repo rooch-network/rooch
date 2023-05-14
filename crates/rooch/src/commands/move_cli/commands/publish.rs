@@ -77,11 +77,10 @@ impl Publish {
             module.serialize(&mut binary)?;
             bundles.push(binary);
         }
-
         assert!(
             self.txn_options.sender_account.is_some()
                 && pkg_address == self.txn_options.sender_account.unwrap(),
-            "sender account must be the same as the package address"
+            "--sender-account required and the sender account must be the same as the package address"
         );
         let txn = MoveTransaction::ModuleBundle(bundles);
         let txn = SimpleTransaction::new(pkg_address, txn);

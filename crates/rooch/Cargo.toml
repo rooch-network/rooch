@@ -24,6 +24,7 @@ serde = { workspace = true }
 serde_with = { workspace = true }
 serde_yaml = { workspace = true }
 once_cell = { workspace = true }
+tracing = { workspace = true }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }
@@ -51,4 +52,3 @@ moveos = { workspace = true }
 
 rooch-key = { workspace = true }
 rooch-types = { workspace = true }
-

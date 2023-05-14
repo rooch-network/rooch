@@ -6,6 +6,7 @@ use crate::commands::{
     move_cli::{self, MoveCli},
     object::ObjectCommand,
     resource::ResourceCommand,
+    server::ServerCommand,
 };
 use crate::config::{PersistedConfig, RoochConfig};
 use anyhow::anyhow;
@@ -37,7 +38,8 @@ pub enum Command {
     },
     Init(Init),
     Move(MoveCli),
-    Server(moveos_server::OsServer),
+    #[clap(subcommand)]
+    Server(ServerCommand),
     Resource(ResourceCommand),
     Object(ObjectCommand),
 }
@@ -45,7 +47,7 @@ pub enum Command {
 pub async fn run_cli(opt: RoochCli) -> CliResult<()> {
     match opt.cmd {
         Command::Move(move_cli) => move_cli::run_cli(move_cli).await,
-        Command::Server(os) => os.execute().await.map_err(CliError::from),
+        Command::Server(server) => server.execute().await,
         Command::Resource(resource) => resource.execute().await,
         Command::Object(object) => object.execute().await,
         Command::Init(c) => c.execute().await,

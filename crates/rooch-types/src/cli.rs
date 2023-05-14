@@ -29,16 +29,24 @@ pub enum CliError {
     UnableToParse(&'static str, String),
     #[error("Unable to read file '{0}', error: {1}")]
     UnableToReadFile(String, String),
-    #[error("Unexpected error: {0}")]
+    #[error("Error: {0}")]
     UnexpectedError(String),
     #[error("Simulation failed with status: {0}")]
     SimulationError(String),
     #[error("Coverage failed with status: {0}")]
     CoverageError(String),
+    #[error("BCS failed with status: {0}")]
+    BcsError(String),
 }
 
 impl From<anyhow::Error> for CliError {
     fn from(e: anyhow::Error) -> Self {
         CliError::UnexpectedError(e.to_string())
+    }
+}
+
+impl From<bcs::Error> for CliError {
+    fn from(e: bcs::Error) -> Self {
+        CliError::BcsError(e.to_string())
     }
 }

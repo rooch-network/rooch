@@ -16,11 +16,7 @@ use jsonrpsee::RpcModule;
 use crate::api::account::AccountServer;
 use crate::api::RoochRpcModule;
 
-use crate::{
-    actor::executor::ServerActor,
-    proxy::ServerProxy,
-    service::{RoochServer},
-};
+use crate::{actor::executor::ServerActor, proxy::ServerProxy, service::RoochServer};
 use anyhow::Result;
 use coerce::actor::{system::ActorSystem, IntoActor};
 use moveos::moveos::MoveOS;
@@ -50,7 +46,7 @@ impl Service {
         Ok(())
     }
 
-    pub fn stop(&mut self) -> Result<()> {
+    pub fn stop(&self) -> Result<()> {
         if let Some(handle) = &self.handle {
             handle.stop()?
         }
