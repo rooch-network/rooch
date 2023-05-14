@@ -9,8 +9,6 @@ use crate::commands::{
     server::ServerCommand,
 };
 use crate::config::{PersistedConfig, RoochConfig};
-use anyhow::anyhow;
-use anyhow::{Ok, Result};
 use clap::*;
 use commands::init::Init;
 use config::{rooch_config_dir, Config, ROOCH_CONFIG};
@@ -52,7 +50,11 @@ pub async fn run_cli(opt: RoochCli) -> CliResult<()> {
         Command::Object(object) => object.execute().await,
         Command::Init(c) => c.execute().await,
         Command::Account { config, cmd } => {
-            let config_path = config.unwrap_or(rooch_config_dir()?.join(ROOCH_CONFIG));
+            let config_path = config.unwrap_or(
+                rooch_config_dir()
+                    .map_err(CliError::from)?
+                    .join(ROOCH_CONFIG),
+            );
 
             if !config_path.exists() {
                 println!("Use rooch init first");
@@ -60,10 +62,7 @@ pub async fn run_cli(opt: RoochCli) -> CliResult<()> {
             }
 
             let config: RoochConfig = PersistedConfig::read(&config_path).map_err(|err| {
-                anyhow!(
-                    "Cannot open Rooch config file at {:?}. Err: {err}",
-                    config_path
-                )
+                CliError::ConfigLoadError(format!("{:?}", config_path), err.to_string())
             })?;
 
             if let Some(cmd) = cmd {
@@ -72,7 +71,10 @@ pub async fn run_cli(opt: RoochCli) -> CliResult<()> {
                 // Print help
                 let mut app = Command::command();
                 app.build();
-                app.find_subcommand_mut("account").unwrap().print_help()?;
+                app.find_subcommand_mut("account")
+                    .unwrap()
+                    .print_help()
+                    .map_err(CliError::from)?;
             }
             Ok(())
         }

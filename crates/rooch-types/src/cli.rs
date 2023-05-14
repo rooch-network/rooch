@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::io;
+
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -8,6 +10,7 @@ use thiserror::Error;
 /// A common result to be handled in main
 pub type CliResult<T> = Result<T, CliError>;
 
+// TODO: TBD, move moveos-cli to rooch, use RoochError
 /// CLI Errors for reporting through telemetry and outputs
 #[derive(Eq, PartialEq, Clone, Debug, Serialize, Deserialize, Error)]
 pub enum CliError {
@@ -15,9 +18,9 @@ pub enum CliError {
     AbortedError,
     #[error("Invalid arguments: {0}")]
     CommandArgumentError(String),
-    #[error("Unable to load config: {0} {1}")]
+    #[error("Unable to load config: {0}, Reason: {1}.")]
     ConfigLoadError(String, String),
-    #[error("Unable to find config {0}, have you run `aptos init`?")]
+    #[error("Unable to find config {0}, have you run `rooch init`?")]
     ConfigNotFoundError(String),
     #[error("Move compilation failed: {0}")]
     MoveCompilationError(String),
@@ -37,6 +40,8 @@ pub enum CliError {
     CoverageError(String),
     #[error("BCS failed with status: {0}")]
     BcsError(String),
+    #[error("IO error: {0}")]
+    IOError(String),
 }
 
 impl From<anyhow::Error> for CliError {
@@ -48,5 +53,11 @@ impl From<anyhow::Error> for CliError {
 impl From<bcs::Error> for CliError {
     fn from(e: bcs::Error) -> Self {
         CliError::BcsError(e.to_string())
+    }
+}
+
+impl From<io::Error> for CliError {
+    fn from(e: io::Error) -> Self {
+        CliError::IOError(e.to_string())
     }
 }

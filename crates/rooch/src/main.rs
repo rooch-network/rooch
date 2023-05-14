@@ -12,9 +12,9 @@ async fn main() {
     let result = rooch::run_cli(opt).await;
 
     match result {
-        Ok(inner) => println!("{}", "success"),
-        Err(inner) => {
-            println!("{}", inner);
+        Ok(_) => println!(""), // TODO: unify cli output
+        Err(e) => {
+            println!("{}", e);
             exit(1);
         }
     }

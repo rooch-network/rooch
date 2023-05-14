@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::config::{rooch_config_dir, Config, RoochConfig, ROOCH_CONFIG, ROOCH_KEYSTORE_FILENAME};
-use anyhow::Ok;
 use clap::Parser;
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use rooch_types::account::SignatureScheme::ED25519;
+use rooch_types::cli::{CliError, CliResult};
 use std::path::{Path, PathBuf};
 
 // TODO: support server config
@@ -17,11 +17,15 @@ pub struct Init {
 }
 
 impl Init {
-    pub async fn execute(self) -> anyhow::Result<()> {
-        let config_path = self
-            .config
-            .unwrap_or(rooch_config_dir()?.join(ROOCH_CONFIG));
-        prompt_if_no_config(&config_path).await?;
+    pub async fn execute(self) -> CliResult<()> {
+        let config_path = self.config.unwrap_or(
+            rooch_config_dir()
+                .map_err(CliError::from)?
+                .join(ROOCH_CONFIG),
+        );
+        prompt_if_no_config(&config_path)
+            .await
+            .map_err(CliError::from)?;
         Ok(())
     }
 }
