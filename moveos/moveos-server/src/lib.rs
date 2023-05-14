@@ -54,6 +54,11 @@ impl Service {
     }
 }
 
+impl Default for Service {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 pub struct RpcModuleBuilder {
     module: RpcModule<()>,
 }

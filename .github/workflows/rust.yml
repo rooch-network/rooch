@@ -14,19 +14,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - uses: rooch-network/rooch/.github/actions/rust-setup@main
-    #  with:
-    #    fetch-depth: 0
-    - name: Check code format
-      run: cargo fmt -- --check
-    - name: Lint rust sources
-      run: cargo clippy --all-targets --all-features --tests --benches -- -D warnings
-    - name: Execute rust tests
-      run: cargo nextest run --workspace --all-features
-    - name: Build
-      run: cargo build
-    - name: Execute stdlib tests
-      run: cargo run --bin rooch move test -p moveos/moveos-stdlib/moveos-stdlib/
-    - name: Execute framework tests
-      run: cargo run --bin rooch move test -p moveos/moveos-stdlib/rooch-framework/
+      - uses: actions/checkout@v3
+      - uses: rooch-network/rooch/.github/actions/rust-setup@main
+      #  with:
+      #    fetch-depth: 0
+      - name: Check code format
+        run: cargo fmt -- --check
+      - name: Lint rust sources
+        run: cargo clippy --all-targets --all-features --tests --benches -- -D warnings
+      - name: Build
+        run: cargo build
+      - name: Execute rust tests
+        run: cargo nextest run --workspace --all-features
+      - name: Run CLI integration test
+        # cargo-nextest does not support the CLI integration test powered by Cucumber Rust.
+        # Use cargo test to test integration.
+        # TODO: FIXME
+        run: cargo test -p testsuite --test integration
+      - name: Execute stdlib tests
+        run: cargo run --bin rooch move test -p moveos/moveos-stdlib/moveos-stdlib/
+      - name: Execute framework tests
+        run: cargo run --bin rooch move test -p moveos/moveos-stdlib/rooch-framework/

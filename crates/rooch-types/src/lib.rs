@@ -3,10 +3,10 @@
 
 pub mod account;
 pub mod address;
+pub mod cli;
 pub mod coin;
 pub mod error;
 pub mod rooch_serde;
 pub mod transaction;
-pub mod cli;
 
 pub use ethers::types::{H160, H256, H512};
