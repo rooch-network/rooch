@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-
-// temporary disable this mod for pass the clippy check
-//mod client;
+mod client;
+#[cfg(test)]
+mod test;
 
 use anyhow::Result;
 use clap::Parser;
