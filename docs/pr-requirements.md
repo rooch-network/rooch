@@ -38,6 +38,18 @@ Make a self-explanatory title describing what the pull request does and self-exp
 1. Description
 Detail with what was changed, why it was changed, and how it was changed
 
+It is recommended that you add the following to.git/hooks/pre-commit
+
+``` bash
+#!/bin/sh
+#
+# An hook script to verify what is about to be committed.
+# Inclued Code Style, Hints, and Testing
+
+BASE=$(git rev-parse --show-toplevel)
+
+$BASE/scripts/pr.sh -a
+```
 
 ### Operation Suggestions
 
