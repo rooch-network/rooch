@@ -40,7 +40,7 @@ impl ListCommand {
             if active_address == Some(address) {
                 active = "True";
             };
-            
+
             println!(
                 " {0: ^66} | {1: ^45} | {2: ^6} | {3: ^6}",
                 address,

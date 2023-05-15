@@ -3,6 +3,7 @@ use move_core_types::{
 };
 use moveos_client::Client;
 use moveos_types::move_types::StructId;
+use rooch_types::cli::{CliError, CliResult};
 
 #[derive(clap::Parser)]
 pub struct ResourceCommand {
@@ -32,7 +33,7 @@ pub struct ResourceCommand {
 }
 
 impl ResourceCommand {
-    pub async fn execute(self) -> anyhow::Result<()> {
+    pub async fn execute(self) -> CliResult<()> {
         let resp = self
             .client
             .resource(
@@ -41,7 +42,8 @@ impl ResourceCommand {
                 self.resource.struct_id.clone(),
                 self.type_args,
             )
-            .await?;
+            .await
+            .map_err(CliError::from)?;
         println!("{:?}", resp);
         Ok(())
     }

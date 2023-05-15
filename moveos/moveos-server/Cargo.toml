@@ -33,7 +33,3 @@ moveos-statedb = { workspace = true }
 moveos-common = { workspace = true }
 moveos-types = { workspace = true }
 
-[build-dependencies]
-tonic-build = { workspace = true }
-
-

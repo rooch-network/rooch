@@ -6,7 +6,7 @@ pub mod import;
 pub mod list;
 use crate::commands::account::{create::CreateCommand, list::ListCommand};
 use crate::config::{PersistedConfig, RoochConfig};
-use anyhow::Result;
+use rooch_types::cli::{CliError, CliResult};
 
 use self::import::ImportCommand;
 
@@ -21,12 +21,13 @@ pub enum AccountCommand {
 }
 
 impl AccountCommand {
-    pub async fn execute(self, config: &mut PersistedConfig<RoochConfig>) -> Result<()> {
+    pub async fn execute(self, config: &mut PersistedConfig<RoochConfig>) -> CliResult<()> {
         match self {
             AccountCommand::Create(c) => c.execute(config).await,
             // AccountCommand::CreateResourceAccount(c) => c.execute_serialized().await,
             AccountCommand::List(c) => c.execute(config).await,
             AccountCommand::Import(c) => c.execute(config).await, // AccountCommand::RotateKey(c) => c.execute_serialized().await,
         }
+        .map_err(CliError::from)
     }
 }

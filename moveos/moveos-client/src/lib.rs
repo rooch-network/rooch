@@ -48,9 +48,8 @@ impl Client {
 
     pub async fn submit_txn(&self, txn: SimpleTransaction) -> Result<()> {
         let txn_payload = bcs::to_bytes(&txn)?;
-        let resp = self.get_client()?.submit_txn(txn_payload).await?;
+        let _resp = self.get_client()?.submit_txn(txn_payload).await?;
         // TODO: parse response.
-        println!("{:?}", resp);
         Ok(())
     }
 

@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::types::TransactionOptions;
+use crate::move_cli::types::TransactionOptions;
 use anyhow::{anyhow, Result};
 use clap::Parser;
 use move_core_types::{

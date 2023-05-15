@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::address::RoochAddress;
-use moveos_types::h256::H256;
 use crate::{error::RoochError, rooch_serde::Readable};
 use derive_more::{AsMut, AsRef, From};
 use eyre::eyre;
@@ -17,6 +16,7 @@ pub use fastcrypto::traits::{
     AggregateAuthenticator, Authenticator, EncodeDecodeBase64, SigningKey, ToFromBytes,
     VerifyingKey,
 };
+use moveos_types::h256::H256;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use schemars::JsonSchema;
