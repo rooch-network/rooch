@@ -76,6 +76,7 @@ fi
 
 if [ ! -z "$ALSO_TEST" ]; then
     cargo nextest run --workspace --all-features
+    cargo test -p testsuite --test integration
 fi
 
 if [ ! -z "$MOVE_TESTS" ]; then
