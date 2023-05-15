@@ -86,7 +86,7 @@ async fn assert_output(_w: &mut World, args: String) {
 async fn main() {
     World::cucumber()
         .after(move |_feature, _rule, _scenario, _ev, world| {
-            if let Some(thread_handle) = &world.unwrap().server_thread_handle {
+            if let Some(_thread_handle) = &world.unwrap().server_thread_handle {
                 // TODO: sender signal to stop server
             };
             future::ready(()).boxed()
