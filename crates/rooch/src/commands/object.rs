@@ -1,4 +1,4 @@
-use moveos_client::Client;
+use rooch_client::Client;
 use moveos_types::object::ObjectID;
 use rooch_types::cli::CliResult;
 

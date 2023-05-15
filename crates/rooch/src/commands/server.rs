@@ -1,5 +1,5 @@
 use clap::Parser;
-use moveos_server::Service;
+use rooch_server::Service;
 use rooch_types::cli::{CliError, CliResult};
 use serde::{Deserialize, Serialize};
 use tokio::signal::ctrl_c;

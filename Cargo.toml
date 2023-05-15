@@ -7,12 +7,12 @@ members = [
     "moveos/moveos-statedb",
     "moveos/moveos-stdlib",
     "moveos/moveos",
-    "moveos/moveos-server",
-    "moveos/moveos-client",
     "moveos/moveos-common",
     "crates/rooch-key",
     "crates/rooch-types",
     "crates/rooch-integration-test-runner",
+    "crates/rooch-server",
+    "crates/rooch-client",
     "crates/rooch",
     "crates/testsuite",
     
@@ -45,14 +45,14 @@ moveos-statedb = { path = "moveos/moveos-statedb" }
 moveos-stdlib = { path = "moveos/moveos-stdlib" }
 moveos = { path = "moveos/moveos" }
 moveos-cli = { path = "moveos/moveos-cli" }
-moveos-server = { path = "moveos/moveos-server" }
-moveos-client = { path = "moveos/moveos-client" }
 moveos-common = { path = "moveos/moveos-common" }
 
 # crates for Rooch
 rooch-key = { path = "crates/rooch-key" }
 rooch-types = { path = "crates/rooch-types" }
 rooch-integration-test-runner = { path = "crates/rooch-integration-test-runner" }
+rooch-server = { path = "crates/rooch-server" }
+rooch-client = { path = "crates/rooch-client" }
 rooch-testsuite = { path = "crates/testsuite" }
 
 # External crate dependencies.

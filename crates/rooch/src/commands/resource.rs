@@ -1,7 +1,7 @@
 use move_core_types::{
     account_address::AccountAddress, language_storage::TypeTag, parser::parse_type_tag,
 };
-use moveos_client::Client;
+use rooch_client::Client;
 use moveos_types::move_types::StructId;
 use rooch_types::cli::{CliError, CliResult};
 

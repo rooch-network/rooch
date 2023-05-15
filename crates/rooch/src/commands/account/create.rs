@@ -11,7 +11,7 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
     parser::parse_type_tag,
 };
-use moveos_client::Client;
+use rooch_client::Client;
 use moveos_types::transaction::{MoveTransaction, SimpleTransaction};
 
 use crate::config::{

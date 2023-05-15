@@ -8,7 +8,7 @@ use move_binary_format::file_format::CompiledModule;
 use move_bytecode_utils::dependency_graph::DependencyGraph;
 use move_package::BuildConfig;
 use moveos::vm::dependency_order::sort_by_dependency_order;
-use moveos_client::Client;
+use rooch_client::Client;
 use moveos_types::transaction::{MoveTransaction, SimpleTransaction};
 use std::collections::BTreeMap;
 use std::io::stderr;
