@@ -12,7 +12,6 @@ use move_transactional_test_runner::{
 };
 use move_vm_runtime::session::SerializedReturnValues;
 use moveos::moveos::MoveOS;
-use moveos::vm::dependency_order::sort_by_dependency_order;
 use moveos_types::object::{ObjectID, RawObject};
 use moveos_types::transaction::{MoveTransaction, SimpleTransaction};
 use std::{collections::BTreeMap, path::Path};

@@ -13,7 +13,7 @@
 # Make sure we're in the root of the repo.
 if [ ! -d ".github" ] 
 then
-    echo "Please run this from the root of moveos" 
+    echo "Please run this from the root of rooch" 
     exit 1
 fi
 
