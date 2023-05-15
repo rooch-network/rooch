@@ -47,6 +47,7 @@ EOF
       GIT_CHECKS=1
       ;;
     t)
+      CHECK=1
       ALSO_TEST=1
       ;;
     m)
@@ -75,11 +76,11 @@ fi
 
 if [ ! -z "$ALSO_TEST" ]; then
     cargo nextest run --workspace --all-features
-  fi
+fi
 
 if [ ! -z "$MOVE_TESTS" ]; then
   for crate in $MOVE_TEST_CRATES; do
-    echo "*************** [check-pr] Move tests $dir"
+    echo "*************** [check-pr] Move tests $crate"
     (
       cargo run --bin rooch move test -p $crate
     )
