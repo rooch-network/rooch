@@ -42,11 +42,9 @@ jobs:
         run: cargo nextest run --workspace --all-features
       - name: Run CLI integration test
         # cargo-nextest does not support the CLI integration test powered by Cucumber Rust.
-        # Use cargo test to test integration.
+        # Use cargo test to run CLI integration tests.
         # TODO: FIXME
         run: cargo test -p testsuite --test integration
-        # TODO disable continue-on-error after resolve https://github.com/rooch-network/rooch/issues/138
-        continue-on-error: true
       - name: Execute stdlib tests
         run: cargo run --bin rooch move test -p moveos/moveos-stdlib/moveos-stdlib/
       - name: Execute framework tests
