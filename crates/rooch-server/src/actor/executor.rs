@@ -1,21 +1,21 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::messages::{
+    HelloMessage, ObjectMessage, ResourceMessage, SubmitTransactionMessage, ViewFunctionMessage,
+};
 /// Define Executor of MoveOS Server tasks
 /// Step 1. Define a struct and impl the `Actor` for the struct
 /// Step 2. Define the communication protocol messages between Actors
 /// Step 3. Impl `Handler` with messages  for the Actor struct
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
-
-use super::messages::{
-    HelloMessage, ObjectMessage, ResourceMessage, SubmitTransactionMessage, ViewFunctionMessage,
-};
 use move_core_types::{language_storage::StructTag, resolver::ResourceResolver, value::MoveValue};
 use move_resource_viewer::MoveValueAnnotator;
-use moveos::moveos::MoveOS;
+use moveos::moveos::{MoveOS, TransactionOutput};
 use moveos_types::object::RawObject;
-use moveos_types::transaction::{SimpleTransaction, ViewPayload};
+use moveos_types::transaction::ViewPayload;
+use rooch_types::transaction::rooch::RoochTransaction;
 
 pub struct ServerActor {
     moveos: MoveOS,
@@ -40,19 +40,19 @@ impl Handler<HelloMessage> for ServerActor {
 
 #[async_trait]
 impl Handler<SubmitTransactionMessage> for ServerActor {
-    async fn handle(&mut self, msg: SubmitTransactionMessage, _ctx: &mut ActorContext) -> String {
+    async fn handle(
+        &mut self,
+        msg: SubmitTransactionMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<TransactionOutput, anyhow::Error> {
         // deserialize the payload
-        let payload = bcs::from_bytes::<SimpleTransaction>(&msg.payload).unwrap();
-        println!("sender: {:?}", payload.sender);
-        let exec_result = self.moveos.execute(payload);
-        match exec_result {
-            Ok(_) => "ok".to_string(),
-            Err(e) => {
-                println!("{:?}", e);
-                "error".to_string()
-            }
-        }
-        // "ok".to_string()
+        let tx = bcs::from_bytes::<RoochTransaction>(&msg.payload)?;
+        println!("sender: {:?}", tx.sender());
+        //First, validate the transactin
+        let moveos_tx = self.moveos.validate(tx)?;
+        // TODO Write to DA
+        // Then execute
+        self.moveos.execute(moveos_tx)
     }
 }
 

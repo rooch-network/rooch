@@ -12,6 +12,7 @@ use move_core_types::{
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
 };
+use moveos::moveos::TransactionOutput;
 use moveos_types::object::ObjectID;
 
 // Define a rpc server api
@@ -20,11 +21,9 @@ pub trait RpcService {
     #[method(name = "echo")]
     async fn echo(&self, msg: String) -> RpcResult<JsonResponse<String>>;
 
-    // TODO: add suitable response type.
     #[method(name = "submit_txn")]
-    async fn submit_txn(&self, payload: Vec<u8>) -> RpcResult<JsonResponse<String>>;
+    async fn submit_txn(&self, payload: Vec<u8>) -> RpcResult<JsonResponse<TransactionOutput>>;
 
-    // TODO: add suitable response type.
     #[method(name = "view")]
     async fn view(&self, payload: Vec<u8>) -> RpcResult<JsonResponse<Vec<serde_json::Value>>>;
 
@@ -58,7 +57,7 @@ impl RpcServiceServer for RoochServer {
         Ok(JsonResponse::ok(resp))
     }
 
-    async fn submit_txn(&self, payload: Vec<u8>) -> RpcResult<JsonResponse<String>> {
+    async fn submit_txn(&self, payload: Vec<u8>) -> RpcResult<JsonResponse<TransactionOutput>> {
         let resp = self.manager.submit_txn(payload).await?;
         Ok(JsonResponse::ok(resp))
     }
