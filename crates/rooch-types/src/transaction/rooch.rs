@@ -8,7 +8,7 @@ use super::{
 use crate::address::RoochAddress;
 use crate::H256;
 use anyhow::Result;
-use moveos_types::transaction::MoveTransaction;
+use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -17,17 +17,17 @@ pub struct RoochTransactionData {
     pub sender: RoochAddress,
     // Sequence number of this transaction corresponding to sender's account.
     pub sequence_number: u64,
-    // The transaction script to execute.
-    pub payload: MoveTransaction,
+    // The MoveAction to execute.
+    pub action: MoveAction,
     //TODO how to define Gas paramter and AppID(Or ChainID)
 }
 
 impl RoochTransactionData {
-    pub fn new(sender: RoochAddress, sequence_number: u64, payload: MoveTransaction) -> Self {
+    pub fn new(sender: RoochAddress, sequence_number: u64, action: MoveAction) -> Self {
         Self {
             sender,
             sequence_number,
-            payload,
+            action,
         }
     }
 
@@ -64,6 +64,18 @@ impl RoochTransaction {
             authenticator,
         }
     }
+
+    pub fn sender(&self) -> RoochAddress {
+        self.data.sender
+    }
+
+    pub fn sequence_number(&self) -> u64 {
+        self.data.sequence_number
+    }
+
+    pub fn action(&self) -> &MoveAction {
+        &self.data.action
+    }
 }
 
 impl AbstractTransaction for RoochTransaction {
@@ -85,7 +97,7 @@ impl AbstractTransaction for RoochTransaction {
         bcs::to_bytes(self).expect("encode transaction should success")
     }
 
-    fn hash(&self) -> Self::Hash {
+    fn tx_hash(&self) -> Self::Hash {
         //TODO cache the hash
         moveos_types::h256::sha3_256_of(self.encode().as_slice())
     }
@@ -98,6 +110,13 @@ impl AbstractTransaction for RoochTransaction {
         self.authenticator
             .verify(self.data.hash().as_bytes())
             .is_ok()
+    }
+}
+
+impl From<RoochTransaction> for MoveOSTransaction {
+    fn from(tx: RoochTransaction) -> Self {
+        let tx_hash = tx.tx_hash();
+        MoveOSTransaction::new(tx.data.sender.into(), tx.data.action, tx_hash)
     }
 }
 
@@ -115,7 +134,7 @@ mod tests {
     fn test_rooch_transaction() {
         let sender = RoochAddress::random();
         let sequence_number = 0;
-        let payload = MoveTransaction::new_function(
+        let payload = MoveAction::new_function(
             ModuleId::new(AccountAddress::random(), Identifier::new("test").unwrap()),
             Identifier::new("test").unwrap(),
             vec![],

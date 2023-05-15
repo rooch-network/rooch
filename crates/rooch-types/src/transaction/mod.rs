@@ -1,7 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::H256;
 use anyhow::Result;
+use moveos_types::transaction::MoveOSTransaction;
 use serde::{Deserialize, Serialize};
 
 pub mod authenticator;
@@ -33,7 +35,7 @@ pub trait AbstractTransaction {
         Self: std::marker::Sized;
     fn encode(&self) -> Vec<u8>;
 
-    fn hash(&self) -> Self::Hash;
+    fn tx_hash(&self) -> Self::Hash;
     fn authenticator(&self) -> Self::Authenticator;
 
     // Verify the Authenticator
@@ -44,4 +46,53 @@ pub trait AbstractTransaction {
 pub enum TypedTransaction {
     Rooch(rooch::RoochTransaction),
     Ethereum(ethereum::EthereumTransaction),
+}
+
+impl TypedTransaction {
+    pub fn transaction_type(&self) -> TransactionType {
+        match self {
+            TypedTransaction::Rooch(_) => TransactionType::Rooch,
+            TypedTransaction::Ethereum(_) => TransactionType::Ethereum,
+        }
+    }
+
+    pub fn encode(&self) -> Vec<u8> {
+        match self {
+            TypedTransaction::Rooch(tx) => tx.encode(),
+            TypedTransaction::Ethereum(tx) => tx.encode(),
+        }
+    }
+
+    pub fn hash(&self) -> H256 {
+        match self {
+            TypedTransaction::Rooch(tx) => tx.tx_hash(),
+            TypedTransaction::Ethereum(tx) => tx.tx_hash(),
+        }
+    }
+}
+
+impl TryFrom<RawTransaction> for TypedTransaction {
+    type Error = anyhow::Error;
+
+    fn try_from(raw: RawTransaction) -> Result<Self> {
+        match raw.transaction_type {
+            TransactionType::Rooch => {
+                let tx = rooch::RoochTransaction::decode(&raw.raw)?;
+                Ok(TypedTransaction::Rooch(tx))
+            }
+            TransactionType::Ethereum => {
+                let tx = ethereum::EthereumTransaction::decode(&raw.raw)?;
+                Ok(TypedTransaction::Ethereum(tx))
+            }
+        }
+    }
+}
+
+impl From<TypedTransaction> for MoveOSTransaction {
+    fn from(tx: TypedTransaction) -> Self {
+        match tx {
+            TypedTransaction::Rooch(tx) => tx.into(),
+            TypedTransaction::Ethereum(tx) => tx.into(),
+        }
+    }
 }
