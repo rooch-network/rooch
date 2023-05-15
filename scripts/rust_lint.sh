@@ -9,7 +9,6 @@
 # script to your path:
 # https://gist.github.com/banool/e6a2b85e2fff067d3a215cbfaf808032
 
-
 # Make sure we're in the root of the repo.
 if [ ! -d ".github" ] 
 then
