@@ -96,3 +96,23 @@ impl From<TypedTransaction> for MoveOSTransaction {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::rooch::RoochTransaction;
+
+    fn test_serialize_deserialize_roundtrip<T>(tx: T)
+    where
+        T: super::AbstractTransaction + std::fmt::Debug + PartialEq,
+    {
+        let bytes = tx.encode();
+        let tx2 = T::decode(&bytes).unwrap();
+        assert_eq!(tx, tx2);
+    }
+
+    #[test]
+    fn test_serialize_deserialize() {
+        let tx = RoochTransaction::mock();
+        test_serialize_deserialize_roundtrip(tx)
+    }
+}

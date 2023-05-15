@@ -52,7 +52,6 @@ impl RoochTransactionData {
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RoochTransaction {
-    #[serde(flatten)]
     data: RoochTransactionData,
     authenticator: Authenticator,
 }
@@ -75,6 +74,28 @@ impl RoochTransaction {
 
     pub fn action(&self) -> &MoveAction {
         &self.data.action
+    }
+
+    //TODO use protest Arbitrary to generate mock data
+    #[cfg(test)]
+    pub fn mock() -> RoochTransaction {
+        use crate::address::RoochSupportedAddress;
+        use move_core_types::{
+            account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
+        };
+
+        let sender = RoochAddress::random();
+        let sequence_number = 0;
+        let payload = MoveAction::new_function(
+            ModuleId::new(AccountAddress::random(), Identifier::new("test").unwrap()),
+            Identifier::new("test").unwrap(),
+            vec![],
+            vec![],
+        );
+
+        let transaction_data = RoochTransactionData::new(sender, sequence_number, payload);
+        let private_key = AccountPrivateKey::generate_for_testing();
+        transaction_data.sign(&private_key).unwrap()
     }
 }
 
@@ -122,28 +143,11 @@ impl From<RoochTransaction> for MoveOSTransaction {
 
 #[cfg(test)]
 mod tests {
-    use move_core_types::{
-        account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
-    };
-
-    use crate::address::RoochSupportedAddress;
-
     use super::*;
 
     #[test]
     fn test_rooch_transaction() {
-        let sender = RoochAddress::random();
-        let sequence_number = 0;
-        let payload = MoveAction::new_function(
-            ModuleId::new(AccountAddress::random(), Identifier::new("test").unwrap()),
-            Identifier::new("test").unwrap(),
-            vec![],
-            vec![],
-        );
-
-        let transaction_data = RoochTransactionData::new(sender, sequence_number, payload);
-        let private_key = AccountPrivateKey::generate_for_testing();
-        let transaction = transaction_data.sign(&private_key).unwrap();
+        let transaction = RoochTransaction::mock();
         assert!(transaction.verify());
     }
 }
