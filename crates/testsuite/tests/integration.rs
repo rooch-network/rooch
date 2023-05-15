@@ -47,7 +47,7 @@ async fn run_cmd(_w: &mut World, args: String) {
     for parameter in parameters {
         cmd.arg(parameter.to_owned());
     }
-    let assert = cmd.assert().success();
+    let _assert = cmd.assert().success();
 }
 
 #[then(regex = r#"assert: "([^"]*)""#)]
