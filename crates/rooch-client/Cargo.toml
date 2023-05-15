@@ -1,5 +1,5 @@
 [package]
-name = "moveos-client"
+name = "rooch-client"
 version = "0.1.0"
 edition = "2021"
 
@@ -17,5 +17,5 @@ move-core-types = { workspace = true }
 
 moveos = { workspace = true }
 moveos-types = { workspace = true }
-moveos-server = { workspace = true }
+rooch-server = { workspace = true }
 moveos-common = { workspace = true }

@@ -17,9 +17,10 @@ jpst = { workspace = true }
 serde = { features = ["derive"], workspace = true }
 serde_bytes = { workspace = true }
 serde_json = { features = ["arbitrary_precision"], workspace = true }
-moveos-server = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
+
+rooch-server = { workspace = true }
 
 [dev-dependencies]
 assert_cmd = "1.0"

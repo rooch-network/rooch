@@ -5,7 +5,7 @@
 
 use anyhow::{Ok, Result};
 use clap::Parser;
-use moveos_client::Client;
+use rooch_client::Client;
 use rooch_types::account::EncodeDecodeBase64;
 use rooch_types::address::RoochAddress;
 use std::fmt::Debug;

@@ -11,8 +11,8 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
     parser::parse_type_tag,
 };
-use moveos_client::Client;
 use moveos_types::transaction::{MoveTransaction, SimpleTransaction};
+use rooch_client::Client;
 
 use crate::config::{
     rooch_config_dir, PersistedConfig, RoochConfig, ROOCH_CONFIG, ROOCH_KEYSTORE_FILENAME,
