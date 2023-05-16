@@ -3,6 +3,7 @@
 
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
+use rooch_common::config::{rooch_config_path, PersistedConfig, RoochConfig};
 use rooch_types::cli::{CliError, CliResult};
 use std::str::FromStr;
 
@@ -24,19 +25,25 @@ impl FromStr for AccountAddressWrapper {
 /// Loads an account arg and allows for naming based on profiles
 pub fn load_account_arg(str: &str) -> CliResult<AccountAddress> {
     if str.starts_with("0x") {
-        // AccountAddress::from_hex_literal(str).map_err(|err| {
-        //     CliError::CommandArgumentError(format!("Failed to parse AccountAddress {}", err))
-        // })
-
         AccountAddress::from_hex_literal(str).map_err(|err| {
             CliError::CommandArgumentError(format!("Failed to parse AccountAddress {}", err))
         })
     } else if let Ok(account_address) = AccountAddress::from_str(str) {
         Ok(account_address)
     } else {
-        Err(CliError::CommandArgumentError(
-            "'--account' or '--profile' after using rooch init must be provided".to_string(),
-        ))
+        let config: RoochConfig =
+            PersistedConfig::read(rooch_config_path().map_err(CliError::from)?.as_path()).map_err(
+                |_| CliError::UnexpectedError(format!("{:?}", "Use `rooch init` to configuration")),
+            )?;
+
+        let address = match str {
+            "default" => AccountAddress::new(config.active_address.unwrap().0.into()),
+            _ => Err(CliError::CommandArgumentError(
+                "Use rooch init configuration".to_string(),
+            ))?,
+        };
+
+        Ok(address)
     }
 }
 

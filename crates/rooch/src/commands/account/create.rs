@@ -14,7 +14,7 @@ use move_core_types::{
 use moveos_types::transaction::{MoveTransaction, SimpleTransaction};
 use rooch_client::Client;
 
-use crate::config::{
+use rooch_common::config::{
     rooch_config_dir, PersistedConfig, RoochConfig, ROOCH_CONFIG, ROOCH_KEYSTORE_FILENAME,
 };
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};

@@ -12,11 +12,10 @@ use move_core_types::{
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
 };
-use moveos_common::config::load_config;
 use moveos_types::object::ObjectID;
 use moveos_types::transaction::{SimpleTransaction, ViewPayload};
+use rooch_common::config::{rooch_config_path, PersistedConfig, RoochConfig};
 use rooch_server::service::RpcServiceClient;
-// |use tokio::time::Duration;
 
 #[derive(Clone, Debug, Parser)]
 pub struct Client {
@@ -43,9 +42,11 @@ impl Client {
     }
 
     fn get_client(&self) -> Result<HttpClient> {
+        let config: RoochConfig = PersistedConfig::read(rooch_config_path()?.as_path())?;
+
         let url = match self.rpc.clone() {
             Some(url) => url,
-            None => load_config()?.server.url(false),
+            None => config.server.unwrap().url(false),
         };
         http_client(url)
     }

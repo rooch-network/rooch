@@ -20,8 +20,9 @@ use crate::{actor::executor::ServerActor, proxy::ServerProxy, service::RoochServ
 use anyhow::Result;
 use coerce::actor::{system::ActorSystem, IntoActor};
 use moveos::moveos::MoveOS;
-use moveos_common::config::load_config;
+//use moveos_common::config::load_config;
 use moveos_statedb::StateDB;
+use rooch_common::config::{rooch_config_path, PersistedConfig, RoochConfig};
 use serde_json::json;
 use std::net::SocketAddr;
 
@@ -85,9 +86,9 @@ impl RpcModuleBuilder {
 pub async fn start_server() -> Result<ServerHandle> {
     tracing_subscriber::fmt::init();
 
-    let config = load_config()?;
-
-    let addr: SocketAddr = format!("{}:{}", config.server.host, config.server.port).parse()?;
+    let config: RoochConfig = PersistedConfig::read(rooch_config_path()?.as_path())?;
+    let server = config.server.unwrap();
+    let addr: SocketAddr = format!("{}:{}", server.host, server.port).parse()?;
 
     let actor_system = ActorSystem::global_system();
     let moveos = MoveOS::new(StateDB::new_with_memory_store())?;
