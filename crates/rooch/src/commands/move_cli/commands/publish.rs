@@ -42,10 +42,9 @@ impl Publish {
         package_path: Option<PathBuf>,
         config: BuildConfig,
     ) -> anyhow::Result<()> {
-        let mut config = config.clone();
+        let mut config = config;
         config.additional_named_addresses = self
             .named_addresses
-            .clone()
             .into_iter()
             .map(|(key, value)| (key, value.account_address))
             .collect();

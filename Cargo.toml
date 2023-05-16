@@ -15,6 +15,7 @@ members = [
     "crates/rooch-client",
     "crates/rooch",
     "crates/testsuite",
+    "crates/rooch-common",
     "crates/rooch-da"
 ]
 
@@ -54,6 +55,7 @@ rooch-integration-test-runner = { path = "crates/rooch-integration-test-runner" 
 rooch-server = { path = "crates/rooch-server" }
 rooch-client = { path = "crates/rooch-client" }
 rooch-testsuite = { path = "crates/testsuite" }
+rooch-common = {path = "crates/rooch-common"}
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.

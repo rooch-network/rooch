@@ -8,7 +8,7 @@ use clap::Parser;
 use rooch_client::Client;
 use std::fmt::Debug;
 
-use crate::config::{PersistedConfig, RoochConfig};
+use rooch_common::config::{PersistedConfig, RoochConfig};
 use rooch_key::keystore::AccountKeystore;
 use rooch_types::account::SignatureScheme::ED25519;
 
