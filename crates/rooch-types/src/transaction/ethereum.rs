@@ -1,7 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::AbstractTransaction;
+use crate::address::EthereumAddress;
+
+use super::{authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo};
 use anyhow::Result;
 use ethers::utils::rlp::{Decodable, Rlp};
 use moveos_types::{h256::H256, transaction::MoveOSTransaction};
@@ -11,18 +13,20 @@ use serde::{Deserialize, Serialize};
 pub struct EthereumTransaction(pub ethers::core::types::Transaction);
 
 impl AbstractTransaction for EthereumTransaction {
-    type Authenticator = ethers::core::types::Signature;
     type Hash = H256;
 
     fn transaction_type(&self) -> super::TransactionType {
         super::TransactionType::Ethereum
     }
 
-    fn authenticator(&self) -> Self::Authenticator {
-        ethers::core::types::Signature {
-            r: self.0.r,
-            s: self.0.s,
-            v: self.0.v.as_u64(),
+    fn authenticator(&self) -> AuthenticatorInfo {
+        AuthenticatorInfo {
+            sender: EthereumAddress(self.0.from).into(),
+            authenticator: Authenticator::secp256k1(ethers::core::types::Signature {
+                r: self.0.r,
+                s: self.0.s,
+                v: self.0.v.as_u64(),
+            }),
         }
     }
 
@@ -39,10 +43,6 @@ impl AbstractTransaction for EthereumTransaction {
 
     fn tx_hash(&self) -> Self::Hash {
         self.0.hash()
-    }
-
-    fn verify(&self) -> bool {
-        todo!("verify ethereum transaction")
     }
 }
 

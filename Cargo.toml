@@ -16,7 +16,7 @@ members = [
     "crates/rooch",
     "crates/testsuite",
     "crates/rooch-common"
-    
+    "crates/rooch-da"
 ]
 
 default-members = [

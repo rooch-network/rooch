@@ -3,7 +3,7 @@
 
 use super::{
     authenticator::{AccountPrivateKey, Authenticator},
-    AbstractTransaction, TransactionType,
+    AbstractTransaction, AuthenticatorInfo, TransactionType,
 };
 use crate::address::RoochAddress;
 use crate::H256;
@@ -100,7 +100,6 @@ impl RoochTransaction {
 }
 
 impl AbstractTransaction for RoochTransaction {
-    type Authenticator = Authenticator;
     type Hash = H256;
 
     fn transaction_type(&self) -> super::TransactionType {
@@ -123,14 +122,11 @@ impl AbstractTransaction for RoochTransaction {
         moveos_types::h256::sha3_256_of(self.encode().as_slice())
     }
 
-    fn authenticator(&self) -> Self::Authenticator {
-        self.authenticator.clone()
-    }
-
-    fn verify(&self) -> bool {
-        self.authenticator
-            .verify(self.data.hash().as_bytes())
-            .is_ok()
+    fn authenticator(&self) -> AuthenticatorInfo {
+        AuthenticatorInfo {
+            sender: self.sender().into(),
+            authenticator: self.authenticator.clone(),
+        }
     }
 }
 
@@ -138,16 +134,5 @@ impl From<RoochTransaction> for MoveOSTransaction {
     fn from(tx: RoochTransaction) -> Self {
         let tx_hash = tx.tx_hash();
         MoveOSTransaction::new(tx.data.sender.into(), tx.data.action, tx_hash)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_rooch_transaction() {
-        let transaction = RoochTransaction::mock();
-        assert!(transaction.verify());
     }
 }
