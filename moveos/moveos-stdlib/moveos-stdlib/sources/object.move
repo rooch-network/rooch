@@ -3,6 +3,7 @@
 /// Move object identifiers
 module moveos_std::object {
     use moveos_std::tx_context::{Self, TxContext};
+    use std::debug;
 
     friend moveos_std::account_storage;
     
@@ -35,7 +36,10 @@ module moveos_std::object {
     /// The private generic is indicate the T should be defined in the same module as the caller. This is ensured by the verifier.
     public fun new<T: key>(ctx: &mut TxContext, owner: address, value: T): Object<T> {
         let id = tx_context::fresh_address(ctx);
-        Object<T>{id: ObjectID{id}, value, owner}
+        let obj = Object<T>{id: ObjectID{id}, value, owner};
+        //TODO after add event, then remove the debug info
+        debug::print(&obj);
+        obj
     }
 
     public(friend) fun new_with_id<T: key>(id: ObjectID, owner: address, value: T): Object<T> {
