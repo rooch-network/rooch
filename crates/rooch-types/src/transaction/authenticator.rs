@@ -23,7 +23,6 @@ use starcoin_crypto::{
     derive::{DeserializeKey, SerializeKey},
     ed25519::{Ed25519PublicKey, Ed25519Signature},
     multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature},
-    traits::Signature,
     CryptoMaterialError, HashValue, PrivateKey, SigningKey, ValidCryptoMaterial,
     ValidCryptoMaterialStringExt,
 };
@@ -32,55 +31,222 @@ use std::{convert::TryFrom, fmt, str::FromStr};
 /// A `Authenticator` is an an abstraction of a account authenticator.
 /// It is a part of `AccountAbstraction`
 
-#[derive(Debug)]
+/// The Authenticator scheme which builtin Rooch
+#[derive(Copy, Clone, Debug)]
 #[repr(u8)]
-pub enum Scheme {
+pub enum BuiltinScheme {
     Ed25519 = 0,
     MultiEd25519 = 1,
-    // ... add more schemes here
-    //TODO support DApp custom authenticator schema
+    Secp256k1 = 2,
 }
 
-impl fmt::Display for Scheme {
+impl fmt::Display for BuiltinScheme {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let display = match self {
-            Scheme::Ed25519 => "Ed25519",
-            Scheme::MultiEd25519 => "MultiEd25519",
+            BuiltinScheme::Ed25519 => "Ed25519",
+            BuiltinScheme::MultiEd25519 => "MultiEd25519",
+            BuiltinScheme::Secp256k1 => "Secp256k1",
         };
         write!(f, "Scheme::{}", display)
     }
 }
 
+pub trait BuiltinAuthenticator {
+    fn scheme(&self) -> BuiltinScheme;
+    fn encode(&self) -> Vec<u8>;
+}
+
+#[derive(Clone, Debug)]
+pub struct Ed25519Authenticator {
+    pub public_key: Ed25519PublicKey,
+    pub signature: Ed25519Signature,
+}
+
+impl BuiltinAuthenticator for Ed25519Authenticator {
+    fn scheme(&self) -> BuiltinScheme {
+        BuiltinScheme::Ed25519
+    }
+    fn encode(&self) -> Vec<u8> {
+        bcs::to_bytes(self).expect("encode should success.")
+    }
+}
+
+impl Serialize for Ed25519Authenticator {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(::serde::Serialize)]
+        #[serde(rename = "Ed25519Authenticator")]
+        struct Value {
+            public_key: Vec<u8>,
+            signature: Vec<u8>,
+        }
+        Value {
+            public_key: self.public_key.to_bytes().to_vec(),
+            signature: self.signature.to_bytes().to_vec(),
+        }
+        .serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Ed25519Authenticator {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(::serde::Deserialize)]
+        #[serde(rename = "Ed25519Authenticator")]
+        struct Value {
+            public_key: Vec<u8>,
+            signature: Vec<u8>,
+        }
+        let value = Value::deserialize(deserializer)?;
+        let public_key = Ed25519PublicKey::try_from(value.public_key.as_slice())
+            .map_err(|e| serde::de::Error::custom(e.to_string()))?;
+        let signature = Ed25519Signature::try_from(value.signature.as_slice())
+            .map_err(|e| serde::de::Error::custom(e.to_string()))?;
+        Ok(Ed25519Authenticator {
+            public_key,
+            signature,
+        })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct MultiEd25519Authenticator {
+    pub public_key: MultiEd25519PublicKey,
+    pub signature: MultiEd25519Signature,
+}
+
+impl BuiltinAuthenticator for MultiEd25519Authenticator {
+    fn scheme(&self) -> BuiltinScheme {
+        BuiltinScheme::MultiEd25519
+    }
+    fn encode(&self) -> Vec<u8> {
+        bcs::to_bytes(self).expect("encode should success.")
+    }
+}
+
+impl Serialize for MultiEd25519Authenticator {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(::serde::Serialize)]
+        #[serde(rename = "MultiEd25519Authenticator")]
+        struct Value {
+            public_key: Vec<u8>,
+            signature: Vec<u8>,
+        }
+        Value {
+            public_key: self.public_key.to_bytes().to_vec(),
+            signature: self.signature.to_bytes().to_vec(),
+        }
+        .serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for MultiEd25519Authenticator {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(::serde::Deserialize)]
+        #[serde(rename = "MultiEd25519Authenticator")]
+        struct Value {
+            public_key: Vec<u8>,
+            signature: Vec<u8>,
+        }
+        let value = Value::deserialize(deserializer)?;
+        let public_key = MultiEd25519PublicKey::try_from(value.public_key.as_slice())
+            .map_err(|e| serde::de::Error::custom(e.to_string()))?;
+        let signature = MultiEd25519Signature::try_from(value.signature.as_slice())
+            .map_err(|e| serde::de::Error::custom(e.to_string()))?;
+        Ok(MultiEd25519Authenticator {
+            public_key,
+            signature,
+        })
+    }
+}
+#[derive(Clone, Debug)]
+pub struct Secp256k1Authenticator {
+    pub signature: ethers::core::types::Signature,
+}
+
+impl BuiltinAuthenticator for Secp256k1Authenticator {
+    fn scheme(&self) -> BuiltinScheme {
+        BuiltinScheme::Secp256k1
+    }
+    fn encode(&self) -> Vec<u8> {
+        bcs::to_bytes(self).expect("encode should success.")
+    }
+}
+
+impl Serialize for Secp256k1Authenticator {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(::serde::Serialize)]
+        #[serde(rename = "Secp256k1Authenticator")]
+        struct Value {
+            signature: Vec<u8>,
+        }
+        Value {
+            signature: self.signature.to_vec(),
+        }
+        .serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Secp256k1Authenticator {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(::serde::Deserialize)]
+        #[serde(rename = "Secp256k1Authenticator")]
+        struct Value {
+            signature: Vec<u8>,
+        }
+        let value = Value::deserialize(deserializer)?;
+        let signature = ethers::core::types::Signature::try_from(value.signature.as_slice())
+            .map_err(|e| serde::de::Error::custom(e.to_string()))?;
+        Ok(Secp256k1Authenticator { signature })
+    }
+}
+
+impl<T> From<T> for Authenticator
+where
+    T: BuiltinAuthenticator,
+{
+    fn from(value: T) -> Self {
+        let scheme = value.scheme() as u64;
+        let payload = value.encode();
+        Authenticator { scheme, payload }
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
-pub enum Authenticator {
-    /// Single signature
-    Ed25519 {
-        public_key: Ed25519PublicKey,
-        signature: Ed25519Signature,
-    },
-    /// K-of-N multisignature
-    MultiEd25519 {
-        public_key: MultiEd25519PublicKey,
-        signature: MultiEd25519Signature,
-    },
-    // ... add more schemes here
+pub struct Authenticator {
+    pub scheme: u64,
+    pub payload: Vec<u8>,
 }
 
 impl Authenticator {
     /// Unique identifier for the signature scheme
-    pub fn scheme(&self) -> Scheme {
-        match self {
-            Self::Ed25519 { .. } => Scheme::Ed25519,
-            Self::MultiEd25519 { .. } => Scheme::MultiEd25519,
-        }
+    pub fn scheme(&self) -> u64 {
+        self.scheme
     }
 
     /// Create a single-signature ed25519 authenticator
     pub fn ed25519(public_key: Ed25519PublicKey, signature: Ed25519Signature) -> Self {
-        Self::Ed25519 {
+        Ed25519Authenticator {
             public_key,
             signature,
         }
+        .into()
     }
 
     /// Create a multisignature ed25519 authenticator
@@ -88,58 +254,21 @@ impl Authenticator {
         public_key: MultiEd25519PublicKey,
         signature: MultiEd25519Signature,
     ) -> Self {
-        Self::MultiEd25519 {
+        MultiEd25519Authenticator {
             public_key,
             signature,
         }
+        .into()
     }
 
-    /// Return Ok if the authenticator's public key matches its signature, Err otherwise
-    /// TODO limit the message type
-    pub fn verify(&self, message: &[u8]) -> Result<()> {
-        match self {
-            Self::Ed25519 {
-                public_key,
-                signature,
-            } => signature.verify_arbitrary_msg(message, public_key),
-            Self::MultiEd25519 {
-                public_key,
-                signature,
-            } => signature.verify_arbitrary_msg(message, public_key),
-        }
+    /// Create a single-signature secp256k1 authenticator
+    pub fn secp256k1(signature: ethers::core::types::Signature) -> Self {
+        Secp256k1Authenticator { signature }.into()
     }
 
-    /// Return the raw bytes of `self.public_key`
-    pub fn public_key_bytes(&self) -> Vec<u8> {
-        match self {
-            Self::Ed25519 { public_key, .. } => public_key.to_bytes().to_vec(),
-            Self::MultiEd25519 { public_key, .. } => public_key.to_bytes().to_vec(),
-        }
-    }
-
-    pub fn public_key(&self) -> AccountPublicKey {
-        match self {
-            Self::Ed25519 { public_key, .. } => AccountPublicKey::Single(public_key.clone()),
-            Self::MultiEd25519 { public_key, .. } => AccountPublicKey::Multi(public_key.clone()),
-        }
-    }
-
-    /// Return the raw bytes of `self.signature`
-    pub fn signature_bytes(&self) -> Vec<u8> {
-        match self {
-            Self::Ed25519 { signature, .. } => signature.to_bytes().to_vec(),
-            Self::MultiEd25519 { signature, .. } => signature.to_bytes().to_vec(),
-        }
-    }
-
-    /// Return an authentication key preimage derived from `self`'s public key and scheme id
-    pub fn authentication_key_preimage(&self) -> AuthenticationKeyPreimage {
-        AuthenticationKeyPreimage::new(self.public_key_bytes(), self.scheme())
-    }
-
-    /// Return an authentication key derived from `self`'s public key and scheme id
-    pub fn authentication_key(&self) -> AuthenticationKey {
-        AuthenticationKey::from_preimage(&self.authentication_key_preimage())
+    /// Create a custom authenticator
+    pub fn new(scheme: u64, payload: Vec<u8>) -> Self {
+        Self { scheme, payload }
     }
 }
 
@@ -153,6 +282,16 @@ impl FromStr for Authenticator {
     }
 }
 
+impl fmt::Display for Authenticator {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Authenticator[scheme id: {:?}, payload: {}]",
+            self.scheme(),
+            hex::encode(&self.payload),
+        )
+    }
+}
 /// A struct that represents an account authentication key. An account's address is the last 16
 /// bytes of authentication key used to create it
 #[derive(
@@ -222,36 +361,24 @@ pub struct AuthenticationKeyPreimage(Vec<u8>);
 
 impl AuthenticationKeyPreimage {
     /// Return bytes for (public_key | scheme_id)
-    fn new(mut public_key_bytes: Vec<u8>, scheme: Scheme) -> Self {
+    fn new(mut public_key_bytes: Vec<u8>, scheme: BuiltinScheme) -> Self {
         public_key_bytes.push(scheme as u8);
         Self(public_key_bytes)
     }
 
     /// Construct a preimage from an Ed25519 public key
     pub fn ed25519(public_key: &Ed25519PublicKey) -> AuthenticationKeyPreimage {
-        Self::new(public_key.to_bytes().to_vec(), Scheme::Ed25519)
+        Self::new(public_key.to_bytes().to_vec(), BuiltinScheme::Ed25519)
     }
 
     /// Construct a preimage from a MultiEd25519 public key
     pub fn multi_ed25519(public_key: &MultiEd25519PublicKey) -> AuthenticationKeyPreimage {
-        Self::new(public_key.to_bytes(), Scheme::MultiEd25519)
+        Self::new(public_key.to_bytes(), BuiltinScheme::MultiEd25519)
     }
 
     /// Construct a vector from this authentication key
     pub fn into_vec(self) -> Vec<u8> {
         self.0
-    }
-}
-
-impl fmt::Display for Authenticator {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "Authenticator[scheme id: {:?}, public key: {}, signature: {}]",
-            self.scheme(),
-            hex::encode(self.public_key_bytes()),
-            hex::encode(self.signature_bytes())
-        )
     }
 }
 
@@ -365,10 +492,10 @@ impl AccountPublicKey {
     }
 
     /// Unique identifier for the signature scheme
-    pub fn scheme(&self) -> Scheme {
+    pub fn scheme(&self) -> BuiltinScheme {
         match self {
-            Self::Single { .. } => Scheme::Ed25519,
-            Self::Multi { .. } => Scheme::MultiEd25519,
+            Self::Single { .. } => BuiltinScheme::Ed25519,
+            Self::Multi { .. } => BuiltinScheme::MultiEd25519,
         }
     }
 

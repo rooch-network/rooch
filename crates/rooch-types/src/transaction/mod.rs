@@ -1,7 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::H256;
+use self::authenticator::Authenticator;
+use crate::{address::MultiChainAddress, H256};
 use anyhow::Result;
 use moveos_types::transaction::MoveOSTransaction;
 use serde::{Deserialize, Serialize};
@@ -22,10 +23,34 @@ pub struct RawTransaction {
     pub raw: Vec<u8>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
+pub struct AuthenticatorInfo {
+    pub sender: MultiChainAddress,
+    pub authenticator: Authenticator,
+}
+
+impl AuthenticatorInfo {
+    pub fn new(sender: MultiChainAddress, authenticator: Authenticator) -> Self {
+        Self {
+            sender,
+            authenticator,
+        }
+    }
+
+    pub fn encode(&self) -> Vec<u8> {
+        bcs::to_bytes(self).expect("encode authenticator info should success")
+    }
+}
+
+impl From<AuthenticatorInfo> for Vec<u8> {
+    fn from(info: AuthenticatorInfo) -> Self {
+        info.encode()
+    }
+}
+
 pub trait AbstractTransaction {
     /// The transaction sender authenticator type.
     /// Usually it is a signature.
-    type Authenticator;
     type Hash;
 
     fn transaction_type(&self) -> TransactionType;
@@ -36,10 +61,7 @@ pub trait AbstractTransaction {
     fn encode(&self) -> Vec<u8>;
 
     fn tx_hash(&self) -> Self::Hash;
-    fn authenticator(&self) -> Self::Authenticator;
-
-    // Verify the Authenticator
-    fn verify(&self) -> bool;
+    fn authenticator(&self) -> AuthenticatorInfo;
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]

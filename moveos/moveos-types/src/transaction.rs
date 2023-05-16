@@ -29,6 +29,22 @@ pub struct Function {
     pub args: Vec<Vec<u8>>,
 }
 
+impl Function {
+    pub fn new(
+        module: ModuleId,
+        function: Identifier,
+        ty_args: Vec<TypeTag>,
+        args: Vec<Vec<u8>>,
+    ) -> Self {
+        Self {
+            module,
+            function,
+            ty_args,
+            args,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub enum MoveAction {
     //Execute a Move script
