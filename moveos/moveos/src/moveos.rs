@@ -150,14 +150,14 @@ impl MoveOS {
                 let compiled_modules = self.deserialize_modules(&modules)?;
 
                 //TODO check the modules package address with the sender
-                let result = session.publish_module_bundle(modules, sender, &mut gas_meter)?;
+                let result = session.publish_module_bundle(modules, sender, &mut gas_meter);
                 self.check_and_execute_init_modules(
                     &mut session,
                     &tx_context,
                     &mut gas_meter,
                     &compiled_modules,
                 )?;
-                Ok(result)
+                result
             }
         };
 
@@ -279,20 +279,23 @@ impl MoveOS {
             {
                 continue;
             }
-            let _return_values = self.execute_move_call_bypass_visibility(
+            //to reduce the maximum number of argument a function or method can have, default is 7
+            let loaded_function = session.load_function(&module_id, INIT_FN_NAME, vec![].as_slice())?;
+            let args = session.resolve_args(tx_context, loaded_function, vec![])?;
+
+            let result = self.execute_move_call_bypass_visibility(
                 session,
-                tx_context,
                 gas_meter,
                 &module_id,
                 INIT_FN_NAME,
                 vec![],
-                vec![],
+                args,
             )?;
 
-            // assert!(
-            // return_values.is_empty(),
-            // "init should not have return values"
-            // )
+            assert!(
+                result.return_values.is_empty(),
+                "init should not have return values"
+            )
         }
 
         Ok(())
@@ -301,21 +304,20 @@ impl MoveOS {
     fn execute_move_call_bypass_visibility<S>(
         &self,
         session: &mut SessionExt<S>,
-        tx_context: &TxContext,
         gas_meter: &mut UnmeteredGasMeter,
-        module: &ModuleId,
+        module_id: &ModuleId,
         function_name: &IdentStr,
         ty_args: Vec<TypeTag>,
         args: Vec<Vec<u8>>,
-    ) -> Result<()>
+    ) -> Result<SerializedReturnValues>
     where
         S: MoveResolverExt,
     {
-        let loaded_function = session.load_function(module, function_name, ty_args.as_slice())?;
-        let args = session.resolve_args(&tx_context, loaded_function, args)?;
+        // let loaded_function = session.load_function(module_id, function_name, ty_args.as_slice())?;
+        // let args = session.resolve_args(&tx_context, loaded_function, args)?;
 
         let result = session.execute_function_bypass_visibility(
-            module,
+            module_id,
             function_name,
             ty_args,
             args,
@@ -326,7 +328,7 @@ impl MoveOS {
             "Entry function should not return values"
         );
 
-        Ok(())
+        Ok(result)
     }
 
     /// Execute readonly view function

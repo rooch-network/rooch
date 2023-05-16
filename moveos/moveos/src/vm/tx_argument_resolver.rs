@@ -105,12 +105,9 @@ where
     T: MoveResolverExt,
 {
     match t {
-        Type::Struct(s) | Type::StructInstantiation(s, _) => match session.get_struct_type(*s) {
-            Some(t) => Some(t),
-            None => None,
-        },
-        Type::Reference(r) => as_struct(session, r),
-        Type::MutableReference(r) => as_struct(session, r),
+        Type::Struct(s) | Type::StructInstantiation(s, _) => session.get_struct_type(*s),
+        Type::Reference(r) => as_struct_no_panic(session, r),
+        Type::MutableReference(r) => as_struct_no_panic(session, r),
         _ => None,
     }
 }
