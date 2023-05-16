@@ -23,7 +23,10 @@ dirs  = { workspace = true }
 serde = { workspace = true }
 serde_with = { workspace = true }
 serde_yaml = { workspace = true }
+once_cell = { workspace = true }
+tracing = { workspace = true }
 
+move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }
 move-bytecode-verifier = { workspace = true }
 move-cli = { workspace = true }
@@ -39,13 +42,13 @@ move-vm-runtime = { workspace = true }
 move-vm-test-utils = { workspace = true }
 
 moveos-stdlib = { workspace = true }
-moveos-cli = { workspace = true }
-moveos-server = { workspace = true }
-moveos-client = { workspace = true }
 moveos-types = { workspace = true }
+moveos-statedb = { workspace = true }
+moveos-common = { workspace = true }
 moveos = { workspace = true }
 
 
 rooch-key = { workspace = true }
 rooch-types = { workspace = true }
-
+rooch-server = { workspace = true }
+rooch-client = { workspace = true }

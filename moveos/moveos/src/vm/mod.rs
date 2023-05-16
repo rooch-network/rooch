@@ -4,6 +4,7 @@
 use move_core_types::resolver::MoveResolver;
 use moveos_stdlib::natives::moveos_stdlib::raw_table::TableResolver;
 
+pub mod dependency_order;
 pub mod move_vm_ext;
 pub mod tx_argument_resolver;
 

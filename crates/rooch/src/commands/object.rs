@@ -1,5 +1,6 @@
-use moveos_client::Client;
 use moveos_types::object::ObjectID;
+use rooch_client::Client;
+use rooch_types::cli::CliResult;
 
 #[derive(clap::Parser)]
 pub struct ObjectCommand {
@@ -13,7 +14,7 @@ pub struct ObjectCommand {
 }
 
 impl ObjectCommand {
-    pub async fn execute(self) -> anyhow::Result<()> {
+    pub async fn execute(self) -> CliResult<()> {
         let resp = self.client.object(self.id).await?;
         println!("{:?}", resp);
         Ok(())

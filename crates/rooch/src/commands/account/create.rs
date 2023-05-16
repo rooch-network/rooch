@@ -11,14 +11,18 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
     parser::parse_type_tag,
 };
-use moveos_client::Client;
-use moveos_types::transaction::{MoveTransaction, SimpleTransaction};
+use moveos_types::transaction::{MoveAction, MoveOSTransaction};
+use rooch_client::Client;
 
 use crate::config::{
     rooch_config_dir, PersistedConfig, RoochConfig, ROOCH_CONFIG, ROOCH_KEYSTORE_FILENAME,
 };
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
-use rooch_types::account::SignatureScheme::ED25519;
+use rooch_types::{
+    account::SignatureScheme::ED25519,
+    address::RoochAddress,
+    transaction::{authenticator::AccountPrivateKey, rooch::RoochTransactionData},
+};
 use std::path::{Path, PathBuf};
 
 /// Create a new account on-chain
@@ -46,23 +50,21 @@ impl CreateCommand {
         );
         println!("Secret Recovery Phrase : [{phrase}]");
 
-        // TODO:https://github.com/rooch-network/rooch/issues/107
-        let txn = MoveTransaction::new_function(
-            ModuleId::new(
-                AccountAddress::new([
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 1,
-                ]),
-                ident_str!("account").to_owned(),
-            ),
+        let action = MoveAction::new_function(
+            ModuleId::new(AccountAddress::ONE, ident_str!("account").to_owned()),
             ident_str!("create_account_entry").to_owned(),
             vec![],
             vec![bcs::to_bytes(&new_address).unwrap()],
         );
-        let sender = AccountAddress::new(new_address.0.into());
-        let txn = SimpleTransaction::new(sender, txn);
 
-        self.client.submit_txn(txn).await?;
+        let sender: RoochAddress = new_address;
+        let sequence_number = self.client.get_sequence_number(sender).await?;
+        let tx_data = RoochTransactionData::new(sender, sequence_number, action);
+        //TODO sign the tx by the account private key
+        let private_key = AccountPrivateKey::generate_for_testing();
+        let tx = tx_data.sign(&private_key)?;
+
+        self.client.submit_txn(tx).await?;
 
         Ok(())
     }

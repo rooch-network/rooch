@@ -5,7 +5,9 @@
 
 use anyhow::{Ok, Result};
 use clap::Parser;
-use moveos_client::Client;
+use rooch_client::Client;
+use rooch_types::account::EncodeDecodeBase64;
+use rooch_types::address::RoochAddress;
 use std::fmt::Debug;
 
 use crate::config::{PersistedConfig, RoochConfig};
@@ -25,16 +27,27 @@ pub struct ListCommand {
 
 impl ListCommand {
     pub async fn execute(self, config: &mut PersistedConfig<RoochConfig>) -> Result<()> {
-        let addresses = config.keystore.addresses();
         let active_address = config.active_address;
 
-        println!("Showing {} results.", addresses.len());
-        for address in addresses {
+        println!(
+            " {0: ^66} | {1: ^45} | {2: ^7} | {3: ^6}",
+            "Rooch Address", "Public Key (Base64)", "Scheme", "Active"
+        );
+        println!("{}", ["-"; 134].join(""));
+        for pub_key in config.keystore.keys() {
+            let mut active = "";
+            let address = Into::<RoochAddress>::into(&pub_key);
             if active_address == Some(address) {
-                println!("{} <= active", &address);
-            } else {
-                println!("{}", address);
-            }
+                active = "True";
+            };
+
+            println!(
+                " {0: ^66} | {1: ^45} | {2: ^6} | {3: ^6}",
+                address,
+                pub_key.encode_base64(),
+                pub_key.scheme().to_string(),
+                active
+            );
         }
 
         Ok(())
