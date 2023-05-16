@@ -25,12 +25,11 @@ module moveos_std::bcd{
         from_bytes<address>(v)
     }
 
-    /// Package private native function to deserialize a type T.
-    ///
-    /// Note that this function does not put any constraint on `T`. If code uses this function to
-    /// deserialize a linear value, its their responsibility that the data they deserialize is
-    /// owned.
-    public(friend) native fun from_bytes<MoveValue>(bytes: vector<u8>): MoveValue;
+    #[private_generics(MoveValue)]
+    /// Function to deserialize a type T.
+    /// Note the `private_generics` ensure only the `MoveValue`'s owner module can call this function
+    public native fun from_bytes<MoveValue>(bytes: vector<u8>): MoveValue;
+    
     friend moveos_std::any;
     friend moveos_std::copyable_any;
 

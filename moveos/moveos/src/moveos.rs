@@ -9,11 +9,12 @@ use crate::{
     TransactionExecutor, TransactionValidator,
 };
 use anyhow::{bail, Result};
-use move_binary_format::errors::{Location, PartialVMError};
+use move_binary_format::errors::{Location, PartialVMError, VMResult};
 use move_core_types::{
     account_address::AccountAddress,
-    identifier::IdentStr,
+    identifier::{IdentStr, Identifier},
     language_storage::{ModuleId, TypeTag},
+    value::MoveValue,
     vm_status::{KeptVMStatus, StatusCode},
 };
 use move_vm_runtime::session::SerializedReturnValues;
@@ -21,9 +22,10 @@ use move_vm_types::gas::UnmeteredGasMeter;
 use moveos_statedb::StateDB;
 use moveos_stdlib::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
-use moveos_types::h256::H256;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use moveos_types::tx_context::TxContext;
+use moveos_types::{h256::H256, transaction::Function};
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::borrow::Borrow;
 
@@ -33,6 +35,16 @@ pub struct TransactionOutput {
     pub state_root: H256,
     pub status: KeptVMStatus,
 }
+
+pub static VALIDATE_FUNCTION: Lazy<(ModuleId, Identifier)> = Lazy::new(|| {
+    (
+        ModuleId::new(
+            *ROOCH_FRAMEWORK_ADDRESS,
+            Identifier::new("account").unwrap(),
+        ),
+        Identifier::new("validate").unwrap(),
+    )
+});
 
 pub struct MoveOS {
     vm: MoveVmExt,
@@ -65,12 +77,34 @@ impl MoveOS {
         ))
     }
 
-    pub fn validate<T: Into<MoveOSTransaction>>(&mut self, tx: T) -> Result<MoveOSTransaction> {
-        //TODO validate the transaction in the contract
-        // 1. signature
-        // 2. sequencer number
-        // 3. gas
-        Ok(tx.into())
+    pub fn validate<T: Into<MoveOSTransaction>, A: Into<Vec<u8>>>(
+        &mut self,
+        tx: T,
+        authenticator: A,
+    ) -> Result<MoveOSTransaction> {
+        let moveos_tx: MoveOSTransaction = tx.into();
+        let tx_context = TxContext::new(moveos_tx.sender, moveos_tx.tx_hash);
+        let session = self.vm.new_session(&self.db);
+        let (module, function_name) = VALIDATE_FUNCTION.clone();
+        let function = Function::new(
+            module,
+            function_name,
+            vec![],
+            vec![MoveValue::vector_u8(authenticator.into())
+                .simple_serialize()
+                .unwrap()],
+        );
+        let result = Self::execute_function_bypass_visibility(session, &tx_context, function);
+        match result {
+            Ok(_) => {}
+            Err(e) => {
+                //TODO handle the abort error code
+                println!("validate failed: {:?}", e);
+                // If the error code is EUnsupportedScheme, then we can try to call the sender's validate function
+                // This is the Account Abstraction.
+            }
+        }
+        Ok(moveos_tx)
     }
 
     pub fn execute(&mut self, tx: MoveOSTransaction) -> Result<TransactionOutput> {
@@ -173,6 +207,29 @@ impl MoveOS {
                 bail!("VM discard the transaction: {:?}", discard)
             }
         }
+    }
+
+    fn execute_function_bypass_visibility(
+        mut session: SessionExt<impl MoveResolverExt>,
+        tx_context: &TxContext,
+        function: Function,
+    ) -> VMResult<SerializedReturnValues> {
+        let mut gas_meter = UnmeteredGasMeter;
+        let loaded_function = session.load_function(
+            &function.module,
+            &function.function,
+            function.ty_args.as_slice(),
+        )?;
+        let args = session
+            .resolve_args(tx_context, loaded_function, function.args)
+            .map_err(|e| e.finish(Location::Undefined))?;
+        session.execute_function_bypass_visibility(
+            &function.module,
+            &function.function,
+            function.ty_args,
+            args,
+            &mut gas_meter,
+        )
     }
 
     /// Execute readonly view function
