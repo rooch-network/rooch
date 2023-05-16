@@ -48,7 +48,7 @@ impl Handler<SubmitTransactionMessage> for ServerActor {
         match exec_result {
             Ok(_) => "ok".to_string(),
             Err(e) => {
-                println!("{:?}", e);
+                println!("actor execute error {:?}", e);
                 "error".to_string()
             }
         }
