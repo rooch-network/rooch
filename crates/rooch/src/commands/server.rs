@@ -1,5 +1,5 @@
 use clap::Parser;
-use moveos_server::Service;
+use rooch_server::Service;
 use rooch_types::cli::{CliError, CliResult};
 use serde::{Deserialize, Serialize};
 use tokio::signal::ctrl_c;
@@ -30,7 +30,7 @@ impl StartServer {
 
         let mut sig_int = signal(SignalKind::interrupt()).unwrap();
         let mut sig_term = signal(SignalKind::terminate()).unwrap();
-        println!("Server started");
+
         tokio::select! {
             _ = sig_int.recv() => info!("receive SIGINT"),
             _ = sig_term.recv() => info!("receive SIGTERM"),

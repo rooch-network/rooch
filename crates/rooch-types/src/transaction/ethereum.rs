@@ -4,7 +4,7 @@
 use super::AbstractTransaction;
 use anyhow::Result;
 use ethers::utils::rlp::{Decodable, Rlp};
-use moveos_types::h256::H256;
+use moveos_types::{h256::H256, transaction::MoveOSTransaction};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -37,11 +37,17 @@ impl AbstractTransaction for EthereumTransaction {
         self.0.rlp().to_vec()
     }
 
-    fn hash(&self) -> Self::Hash {
+    fn tx_hash(&self) -> Self::Hash {
         self.0.hash()
     }
 
     fn verify(&self) -> bool {
         todo!("verify ethereum transaction")
+    }
+}
+
+impl From<EthereumTransaction> for MoveOSTransaction {
+    fn from(_tx: EthereumTransaction) -> Self {
+        todo!("convert ethereum transaction to moveos transaction")
     }
 }

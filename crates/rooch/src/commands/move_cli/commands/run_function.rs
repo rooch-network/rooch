@@ -12,8 +12,12 @@ use move_core_types::{
     transaction_argument::TransactionArgument,
     value::MoveValue,
 };
-use moveos_client::Client;
-use moveos_types::transaction::{MoveTransaction, SimpleTransaction};
+use moveos_types::transaction::MoveAction;
+use rooch_client::Client;
+use rooch_types::{
+    address::RoochAddress,
+    transaction::{authenticator::AccountPrivateKey, rooch::RoochTransactionData},
+};
 use std::str::FromStr;
 
 /// Identifier of a module function
@@ -108,16 +112,23 @@ impl RunFunction {
             self.txn_options.sender_account.is_some(),
             "--sender-account required"
         );
-        let txn = SimpleTransaction::new(
-            self.txn_options.sender_account.unwrap(),
-            MoveTransaction::new_function(
+
+        let sender: RoochAddress = self.txn_options.sender_account.unwrap().into();
+        let sequence_number = self.client.get_sequence_number(sender).await?;
+        let tx_data = RoochTransactionData::new(
+            sender,
+            sequence_number,
+            MoveAction::new_function(
                 self.function.module_id.clone(),
                 self.function.function_name.clone(),
                 self.type_args,
                 args,
             ),
         );
-        self.client.submit_txn(txn).await?;
+        //TODO sign the tx by the account private key
+        let private_key = AccountPrivateKey::generate_for_testing();
+        let tx = tx_data.sign(&private_key)?;
+        self.client.submit_txn(tx).await?;
         Ok(())
     }
 }

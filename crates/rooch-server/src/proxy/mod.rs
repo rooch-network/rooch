@@ -3,6 +3,7 @@
 
 use coerce::actor::ActorRef;
 use move_core_types::value::MoveValue;
+use moveos::moveos::TransactionOutput;
 
 use crate::actor::{
     executor::ServerActor,
@@ -35,11 +36,10 @@ impl ServerProxy {
             .map_err(|e| e.into())
     }
 
-    pub async fn submit_txn(&self, payload: Vec<u8>) -> Result<String, Error> {
+    pub async fn submit_txn(&self, payload: Vec<u8>) -> Result<TransactionOutput, Error> {
         self.actor
             .send(SubmitTransactionMessage { payload })
-            .await
-            .map_err(|e| e.into())
+            .await?
     }
 
     pub async fn view(&self, payload: Vec<u8>) -> Result<Vec<MoveValue>, Error> {

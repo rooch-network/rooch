@@ -1,5 +1,5 @@
 [package]
-name = "moveos-server"
+name = "rooch-server"
 version = "0.1.0"
 edition = "2021"
 
@@ -33,3 +33,4 @@ moveos-statedb = { workspace = true }
 moveos-common = { workspace = true }
 moveos-types = { workspace = true }
 
+rooch-types = { workspace = true }

@@ -1,4 +1,4 @@
-name: Rust
+name: Check-Build-Test
 
 on:
   push:
@@ -10,21 +10,28 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  check_build_test:
+    name: Check-Build-Test
     runs-on: ubuntu-latest
 
     steps:
+      - name: Free Up GitHub Actions Ubuntu Runner Disk Space 🔧
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # This might remove tools that are actually needed, if set to "true" but frees about 6 GB
+          tool-cache: false
+          # All of these default to true, but feel free to set to "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+      - name: Display disk space before build
+        run: df -h
       - uses: actions/checkout@v3
       - uses: rooch-network/rooch/.github/actions/rust-setup@main
       #  with:
       #    fetch-depth: 0
-      - name: Cleanup
-      # cleanup the diskspace https://github.com/actions/runner-images/issues/2840#issuecomment-790492173
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
       - name: Check code format
         run: cargo fmt -- --check
       - name: Lint rust sources
@@ -35,10 +42,12 @@ jobs:
         run: cargo nextest run --workspace --all-features
       - name: Run CLI integration test
         # cargo-nextest does not support the CLI integration test powered by Cucumber Rust.
-        # Use cargo test to test integration.
+        # Use cargo test to run CLI integration tests.
         # TODO: FIXME
         run: cargo test -p testsuite --test integration
       - name: Execute stdlib tests
         run: cargo run --bin rooch move test -p moveos/moveos-stdlib/moveos-stdlib/
       - name: Execute framework tests
         run: cargo run --bin rooch move test -p moveos/moveos-stdlib/rooch-framework/
+      - name: Display disk space after build
+        run: df -h

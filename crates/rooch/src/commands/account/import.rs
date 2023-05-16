@@ -5,7 +5,7 @@
 
 use anyhow::{Ok, Result};
 use clap::Parser;
-use moveos_client::Client;
+use rooch_client::Client;
 use std::fmt::Debug;
 
 use crate::config::{PersistedConfig, RoochConfig};

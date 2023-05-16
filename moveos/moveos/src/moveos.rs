@@ -9,10 +9,10 @@ use crate::{
     },
     TransactionExecutor, TransactionValidator, INIT_FN_NAME,
 };
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::{
-    errors::{Location, VMResult},
+    errors::{Location, PartialVMError, VMResult},
     file_format::Visibility,
     CompiledModule,
 };
@@ -20,6 +20,7 @@ use move_core_types::{
     account_address::AccountAddress,
     identifier::IdentStr,
     language_storage::{ModuleId, TypeTag},
+    vm_status::{KeptVMStatus, StatusCode},
 };
 use move_vm_runtime::session::SerializedReturnValues;
 use move_vm_types::gas::UnmeteredGasMeter;
@@ -27,10 +28,18 @@ use moveos_statedb::StateDB;
 use moveos_stdlib::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
 use moveos_types::h256::H256;
-use moveos_types::transaction::{AbstractTransaction, MoveTransaction, SimpleTransaction};
+use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use moveos_types::tx_context::TxContext;
+use serde::{Deserialize, Serialize};
 use std::borrow::Borrow;
 // use moveos_types::error::MoveOSError::{VMModuleDeserializationError};
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TransactionOutput {
+    /// The new state root after the transaction execution.
+    pub state_root: H256,
+    pub status: KeptVMStatus,
+}
 
 pub struct MoveOS {
     vm: MoveVmExt,
@@ -41,7 +50,7 @@ impl MoveOS {
     pub fn new(db: StateDB) -> Result<Self> {
         let vm = MoveVmExt::new()?;
         let is_genesis = db.is_genesis();
-        let moveos = Self { vm, db };
+        let mut moveos = Self { vm, db };
         if is_genesis {
             let genesis_txn = Self::build_genesis_txn()?;
             moveos.execute(genesis_txn)?;
@@ -54,89 +63,104 @@ impl MoveOS {
     }
 
     //TODO move to a suitable place
-    pub fn build_genesis_txn() -> Result<SimpleTransaction> {
-        let genesis_txn = MoveTransaction::ModuleBundle(
-            moveos_stdlib::Framework::build()?.into_module_bundles()?,
-        );
-        Ok(SimpleTransaction::new(
+    pub fn build_genesis_txn() -> Result<MoveOSTransaction> {
+        let genesis_txn =
+            MoveAction::ModuleBundle(moveos_stdlib::Framework::build()?.into_module_bundles()?);
+        Ok(MoveOSTransaction::new_for_test(
             *ROOCH_FRAMEWORK_ADDRESS,
             genesis_txn,
         ))
     }
 
-    pub fn execute<T>(&self, txn: T) -> Result<()>
-    where
-        T: AbstractTransaction,
-    {
-        let tx_hash = txn.txn_hash();
-        let senders = txn.senders();
-        let move_txn = txn.into_move_transaction();
+    pub fn validate<T: Into<MoveOSTransaction>>(&mut self, tx: T) -> Result<MoveOSTransaction> {
+        //TODO validate the transaction in the contract
+        // 1. signature
+        // 2. sequencer number
+        // 3. gas
+        Ok(tx.into())
+    }
+
+    pub fn execute(&mut self, tx: MoveOSTransaction) -> Result<TransactionOutput> {
+        let MoveOSTransaction {
+            sender,
+            action,
+            tx_hash,
+        } = tx;
         let session = self.vm.new_session(&self.db);
-        self.execute_transaction(session, senders, tx_hash, move_txn)
+        self.execute_transaction(session, sender, tx_hash, action)
     }
 
     // TODO should be return the execute result
     fn execute_transaction<S>(
         &self,
         mut session: SessionExt<S>,
-        mut senders: Vec<AccountAddress>,
+        sender: AccountAddress,
         tx_hash: H256,
-        txn: MoveTransaction,
-    ) -> Result<()>
+        action: MoveAction,
+    ) -> Result<TransactionOutput>
     where
         S: MoveResolverExt,
     {
         let mut gas_meter = UnmeteredGasMeter;
-        //TODO only allow one sender?
-        let sender = senders.pop().unwrap();
         let tx_context = TxContext::new(sender, tx_hash);
-        match txn {
-            MoveTransaction::Script(script) => {
+        let execute_result = match action {
+            MoveAction::Script(script) => {
                 let loaded_function =
                     session.load_script(script.code.as_slice(), script.ty_args.clone())?;
 
-                let args = session.resolve_args(&tx_context, loaded_function, script.args)?;
-                let result =
-                    session.execute_script(script.code, script.ty_args, args, &mut gas_meter)?;
-                assert!(
-                    result.return_values.is_empty(),
-                    "Script function should not return values"
-                );
+                let args = session
+                    .resolve_args(&tx_context, loaded_function, script.args)
+                    .map_err(|e| e.finish(Location::Undefined))?;
+                session
+                    .execute_script(script.code, script.ty_args, args, &mut gas_meter)
+                    .map(|ret| {
+                        debug_assert!(
+                            ret.return_values.is_empty(),
+                            "Script function should not return values"
+                        );
+                    })
             }
-            MoveTransaction::Function(function) => {
+            MoveAction::Function(function) => {
                 let loaded_function = session.load_function(
                     &function.module,
                     &function.function,
                     function.ty_args.as_slice(),
                 )?;
-                let args = session.resolve_args(&tx_context, loaded_function, function.args)?;
-                let result = session.execute_entry_function(
-                    &function.module,
-                    &function.function,
-                    function.ty_args,
-                    args,
-                    &mut gas_meter,
-                )?;
-                assert!(
-                    result.return_values.is_empty(),
-                    "Entry function should not return values"
-                );
+                let args = session
+                    .resolve_args(&tx_context, loaded_function, function.args)
+                    .map_err(|e| e.finish(Location::Undefined))?;
+                session
+                    .execute_entry_function(
+                        &function.module,
+                        &function.function,
+                        function.ty_args,
+                        args,
+                        &mut gas_meter,
+                    )
+                    .map(|ret| {
+                        debug_assert!(
+                            ret.return_values.is_empty(),
+                            "Entry function should not return values"
+                        );
+                    })
             }
-            MoveTransaction::ModuleBundle(modules) => {
+            MoveAction::ModuleBundle(modules) => {
                 // since the Move runtime does not to know about new packages created,
                 // the first deployment contract and the upgrade contract need to be handled separately
                 let compiled_modules = self.deserialize_modules(&modules)?;
 
                 //TODO check the modules package address with the sender
-                session.publish_module_bundle(modules, sender, &mut gas_meter)?;
+                let result = session.publish_module_bundle(modules, sender, &mut gas_meter)?;
                 self.check_and_execute_init_modules(
                     &mut session,
                     &tx_context,
                     &mut gas_meter,
                     &compiled_modules,
                 )?;
+                Ok(result)
             }
-        }
+        };
+
         let (change_set, _events, mut extensions) = session.finish_with_extensions()?;
 
         //TODO handle events
@@ -146,16 +170,27 @@ impl MoveOS {
             .into_change_set()
             .map_err(|e| e.finish(Location::Undefined))?;
 
-        //TODO move apply change set to a suitable place, and make MoveOS state less.
-        self.db.apply_change_set(change_set, table_change_set)?;
-
-        // let object_context: NativeObjectContext = extensions.remove();
-        // let object_change_set = object_context
-        //     .into_change_set()
-        //     .map_err(|e| e.finish(Location::Undefined))?;
-        // self.db.apply_object_change_set(object_change_set)?;
-
-        Ok(())
+        let vm_status = move_binary_format::errors::vm_status_of_result(execute_result);
+        match vm_status.keep_or_discard() {
+            Ok(status) => {
+                //TODO move apply change set to a suitable place, and make MoveOS stateless.
+                let new_state_root = self
+                    .db
+                    .apply_change_set(change_set, table_change_set)
+                    .map_err(|e| {
+                        PartialVMError::new(StatusCode::STORAGE_ERROR)
+                            .with_message(e.to_string())
+                            .finish(Location::Undefined)
+                    })?;
+                Ok(TransactionOutput {
+                    state_root: new_state_root,
+                    status,
+                })
+            }
+            Err(discard) => {
+                bail!("VM discard the transaction: {:?}", discard)
+            }
+        }
     }
 
     fn deserialize_modules(&self, module_bytes: &[Vec<u8>]) -> Result<Vec<CompiledModule>> {
@@ -336,19 +371,13 @@ impl MoveOS {
 }
 
 impl TransactionValidator for MoveOS {
-    fn validate_transaction<T: AbstractTransaction>(
-        &self,
-        _transaction: T,
-    ) -> crate::ValidatorResult {
+    fn validate_transaction<T>(&self, _transaction: T) -> crate::ValidatorResult {
         todo!()
     }
 }
 
 impl TransactionExecutor for MoveOS {
-    fn execute_transaction<T: AbstractTransaction>(
-        &self,
-        _transaction: T,
-    ) -> crate::ExecutorResult {
+    fn execute_transaction<T>(&self, _transaction: T) -> crate::ExecutorResult {
         todo!()
     }
 }
