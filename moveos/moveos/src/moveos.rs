@@ -280,7 +280,8 @@ impl MoveOS {
                 continue;
             }
             //to reduce the maximum number of argument a function or method can have, default is 7
-            let loaded_function = session.load_function(&module_id, INIT_FN_NAME, vec![].as_slice())?;
+            let loaded_function =
+                session.load_function(&module_id, INIT_FN_NAME, vec![].as_slice())?;
             let args = session.resolve_args(tx_context, loaded_function, vec![])?;
 
             let result = self.execute_move_call_bypass_visibility(
