@@ -15,7 +15,7 @@ members = [
     "crates/rooch-client",
     "crates/rooch",
     "crates/testsuite",
-    "crates/rooch-common"
+    "crates/rooch-common",
     "crates/rooch-da"
 ]
 
