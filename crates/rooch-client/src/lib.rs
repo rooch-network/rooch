@@ -13,9 +13,11 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
 };
 use moveos_types::object::ObjectID;
-use moveos_types::transaction::{SimpleTransaction, ViewPayload};
+use moveos_types::transaction::ViewPayload;
+use rand::Rng;
 use rooch_common::config::{rooch_config_path, PersistedConfig, RoochConfig};
 use rooch_server::service::RpcServiceClient;
+use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction};
 
 #[derive(Clone, Debug, Parser)]
 pub struct Client {
@@ -51,10 +53,14 @@ impl Client {
         http_client(url)
     }
 
-    pub async fn submit_txn(&self, txn: SimpleTransaction) -> Result<()> {
-        let txn_payload = bcs::to_bytes(&txn)?;
-        let _resp = self.get_client()?.submit_txn(txn_payload).await?;
-        // TODO: parse response.
+    pub async fn submit_txn(&self, tx: RoochTransaction) -> Result<()> {
+        let txn_payload = bcs::to_bytes(&tx)?;
+        let resp = self.get_client()?.submit_txn(txn_payload).await?;
+        // TODO: return the transaction output to caller.
+        match resp.try_into_inner()? {
+            Some(v) => println!("{:?}", v),
+            None => println!("{:?}", serde_json::Value::Null),
+        };
         Ok(())
     }
 
@@ -86,5 +92,12 @@ impl Client {
     pub async fn object(&self, object_id: ObjectID) -> Result<Option<String>> {
         let resp = self.get_client()?.object(object_id).await?;
         resp.try_into_inner()
+    }
+
+    pub async fn get_sequence_number(&self, _sender: RoochAddress) -> Result<u64> {
+        //TODO read sequencer_number from state,
+        // currently, we just generate a random u64 for workaround
+        let mut rng = rand::thread_rng();
+        Ok(rng.gen())
     }
 }

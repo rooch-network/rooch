@@ -30,7 +30,7 @@ pub struct Function {
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
-pub enum MoveTransaction {
+pub enum MoveAction {
     //Execute a Move script
     Script(Script),
     //Execute a Move function
@@ -39,7 +39,7 @@ pub enum MoveTransaction {
     ModuleBundle(Vec<Vec<u8>>),
 }
 
-impl MoveTransaction {
+impl MoveAction {
     pub fn new_module_bundle(modules: Vec<Vec<u8>>) -> Self {
         Self::ModuleBundle(modules)
     }
@@ -65,35 +65,32 @@ impl MoveTransaction {
     }
 }
 
-pub trait AbstractTransaction {
-    fn senders(&self) -> Vec<AccountAddress>;
-    fn into_move_transaction(self) -> MoveTransaction;
-    fn txn_hash(&self) -> H256;
-}
-
 #[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
-pub struct SimpleTransaction {
+pub struct MoveOSTransaction {
     pub sender: AccountAddress,
-    pub txn: MoveTransaction,
+    pub action: MoveAction,
+    pub tx_hash: H256,
 }
 
-impl SimpleTransaction {
-    pub fn new(sender: AccountAddress, txn: MoveTransaction) -> Self {
-        Self { sender, txn }
-    }
-}
-
-impl AbstractTransaction for SimpleTransaction {
-    fn senders(&self) -> Vec<AccountAddress> {
-        vec![self.sender]
-    }
-
-    fn into_move_transaction(self) -> MoveTransaction {
-        self.txn
+impl MoveOSTransaction {
+    /// Create a new MoveOS transaction
+    /// This function only for test case usage
+    pub fn new_for_test(sender: AccountAddress, action: MoveAction) -> Self {
+        let sender_and_action = (sender, action);
+        let tx_hash = h256::sha3_256_of(bcs::to_bytes(&sender_and_action).unwrap().as_slice());
+        Self {
+            sender: sender_and_action.0,
+            action: sender_and_action.1,
+            tx_hash,
+        }
     }
 
-    fn txn_hash(&self) -> H256 {
-        h256::sha3_256_of(bcs::to_bytes(&self).unwrap().as_slice())
+    pub fn new(sender: AccountAddress, action: MoveAction, tx_hash: H256) -> Self {
+        Self {
+            sender,
+            action,
+            tx_hash,
+        }
     }
 }
 

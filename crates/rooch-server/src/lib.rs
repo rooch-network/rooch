@@ -33,6 +33,7 @@ pub fn http_client(url: impl AsRef<str>) -> Result<HttpClient> {
     Ok(client)
 }
 
+#[derive(Debug, Default)]
 pub struct Service {
     handle: Option<ServerHandle>,
 }
@@ -55,11 +56,6 @@ impl Service {
     }
 }
 
-impl Default for Service {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 pub struct RpcModuleBuilder {
     module: RpcModule<()>,
 }

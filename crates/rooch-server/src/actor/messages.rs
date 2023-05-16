@@ -8,6 +8,7 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
     value::MoveValue,
 };
+use moveos::moveos::TransactionOutput;
 use moveos_types::object::ObjectID;
 use serde::{Deserialize, Serialize};
 
@@ -26,7 +27,7 @@ pub struct SubmitTransactionMessage {
 }
 
 impl Message for SubmitTransactionMessage {
-    type Result = String;
+    type Result = Result<TransactionOutput, anyhow::Error>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]

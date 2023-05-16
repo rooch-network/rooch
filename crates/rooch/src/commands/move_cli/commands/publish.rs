@@ -8,8 +8,11 @@ use move_binary_format::file_format::CompiledModule;
 use move_bytecode_utils::dependency_graph::DependencyGraph;
 use move_package::BuildConfig;
 use moveos::vm::dependency_order::sort_by_dependency_order;
-use moveos_types::transaction::{MoveTransaction, SimpleTransaction};
+use moveos_types::transaction::MoveAction;
 use rooch_client::Client;
+use rooch_types::address::RoochAddress;
+use rooch_types::transaction::authenticator::AccountPrivateKey;
+use rooch_types::transaction::rooch::RoochTransactionData;
 use std::collections::BTreeMap;
 use std::io::stderr;
 use std::path::PathBuf;
@@ -81,9 +84,16 @@ impl Publish {
                 && pkg_address == self.txn_options.sender_account.unwrap(),
             "--sender-account required and the sender account must be the same as the package address"
         );
-        let txn = MoveTransaction::ModuleBundle(bundles);
-        let txn = SimpleTransaction::new(pkg_address, txn);
-        self.client.submit_txn(txn).await?;
+        let action = MoveAction::ModuleBundle(bundles);
+
+        let sender: RoochAddress = pkg_address.into();
+        let sequence_number = self.client.get_sequence_number(sender).await?;
+        let tx_data = RoochTransactionData::new(sender, sequence_number, action);
+        //TODO sign the tx by the account private key
+        let private_key = AccountPrivateKey::generate_for_testing();
+        let tx = tx_data.sign(&private_key)?;
+
+        self.client.submit_txn(tx).await?;
         Ok(())
     }
 

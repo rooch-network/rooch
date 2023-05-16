@@ -34,3 +34,4 @@ moveos-statedb = { workspace = true }
 moveos-types = { workspace = true }
 rooch-common = { workspace = true }
 
+rooch-types = { workspace = true }

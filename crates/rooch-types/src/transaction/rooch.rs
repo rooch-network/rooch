@@ -8,7 +8,7 @@ use super::{
 use crate::address::RoochAddress;
 use crate::H256;
 use anyhow::Result;
-use moveos_types::transaction::MoveTransaction;
+use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -17,17 +17,17 @@ pub struct RoochTransactionData {
     pub sender: RoochAddress,
     // Sequence number of this transaction corresponding to sender's account.
     pub sequence_number: u64,
-    // The transaction script to execute.
-    pub payload: MoveTransaction,
+    // The MoveAction to execute.
+    pub action: MoveAction,
     //TODO how to define Gas paramter and AppID(Or ChainID)
 }
 
 impl RoochTransactionData {
-    pub fn new(sender: RoochAddress, sequence_number: u64, payload: MoveTransaction) -> Self {
+    pub fn new(sender: RoochAddress, sequence_number: u64, action: MoveAction) -> Self {
         Self {
             sender,
             sequence_number,
-            payload,
+            action,
         }
     }
 
@@ -52,7 +52,6 @@ impl RoochTransactionData {
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RoochTransaction {
-    #[serde(flatten)]
     data: RoochTransactionData,
     authenticator: Authenticator,
 }
@@ -63,6 +62,40 @@ impl RoochTransaction {
             data,
             authenticator,
         }
+    }
+
+    pub fn sender(&self) -> RoochAddress {
+        self.data.sender
+    }
+
+    pub fn sequence_number(&self) -> u64 {
+        self.data.sequence_number
+    }
+
+    pub fn action(&self) -> &MoveAction {
+        &self.data.action
+    }
+
+    //TODO use protest Arbitrary to generate mock data
+    #[cfg(test)]
+    pub fn mock() -> RoochTransaction {
+        use crate::address::RoochSupportedAddress;
+        use move_core_types::{
+            account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
+        };
+
+        let sender = RoochAddress::random();
+        let sequence_number = 0;
+        let payload = MoveAction::new_function(
+            ModuleId::new(AccountAddress::random(), Identifier::new("test").unwrap()),
+            Identifier::new("test").unwrap(),
+            vec![],
+            vec![],
+        );
+
+        let transaction_data = RoochTransactionData::new(sender, sequence_number, payload);
+        let private_key = AccountPrivateKey::generate_for_testing();
+        transaction_data.sign(&private_key).unwrap()
     }
 }
 
@@ -85,7 +118,7 @@ impl AbstractTransaction for RoochTransaction {
         bcs::to_bytes(self).expect("encode transaction should success")
     }
 
-    fn hash(&self) -> Self::Hash {
+    fn tx_hash(&self) -> Self::Hash {
         //TODO cache the hash
         moveos_types::h256::sha3_256_of(self.encode().as_slice())
     }
@@ -101,30 +134,20 @@ impl AbstractTransaction for RoochTransaction {
     }
 }
 
+impl From<RoochTransaction> for MoveOSTransaction {
+    fn from(tx: RoochTransaction) -> Self {
+        let tx_hash = tx.tx_hash();
+        MoveOSTransaction::new(tx.data.sender.into(), tx.data.action, tx_hash)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use move_core_types::{
-        account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
-    };
-
-    use crate::address::RoochSupportedAddress;
-
     use super::*;
 
     #[test]
     fn test_rooch_transaction() {
-        let sender = RoochAddress::random();
-        let sequence_number = 0;
-        let payload = MoveTransaction::new_function(
-            ModuleId::new(AccountAddress::random(), Identifier::new("test").unwrap()),
-            Identifier::new("test").unwrap(),
-            vec![],
-            vec![],
-        );
-
-        let transaction_data = RoochTransactionData::new(sender, sequence_number, payload);
-        let private_key = AccountPrivateKey::generate_for_testing();
-        let transaction = transaction_data.sign(&private_key).unwrap();
+        let transaction = RoochTransaction::mock();
         assert!(transaction.verify());
     }
 }
