@@ -55,6 +55,12 @@ module moveos_std::account_storage {
         object_storage::contains<AccountStorage>(object_storage, object_id)
     }
 
+    public fun ensure_account_storage(ctx: &mut StorageContext, account: address) {
+        if (!exist_account_storage(ctx, account)) {
+            create_account_storage(ctx, account);
+        }
+    }
+
     //TODO the resource and module table's id is determined by the account address, so we can use the account address to get the table id
     //And don't need to borrow the account storage from the object storage, but if we create the table every time, how to drop the table?
     fun borrow_account_storage(object_storage: &ObjectStorage, account: address): &AccountStorage{
@@ -125,6 +131,8 @@ module moveos_std::account_storage {
     /// This function equates to `move_to<T>(&signer, resource)` instruction in Move
     public fun global_move_to<T: key>(ctx: &mut StorageContext, account: &signer, resource: T){
         let account_address = signer::address_of(account);
+        //Auto create the account storage when move resource to the account
+        ensure_account_storage(ctx, account_address);
         let account_storage = borrow_account_storage_mut(storage_context::object_storage_mut(ctx), account_address);
         add_resource_to_account_storage(account_storage, resource);
     }
