@@ -92,7 +92,7 @@ if [ ! -z "$BUILD" ]; then
 fi
 
 if [ ! -z "$ALSO_TEST" ]; then
-#    cargo nextest run --workspace --all-features
+    cargo nextest run --workspace --all-features
     cargo test -p testsuite --test integration
 fi
 
