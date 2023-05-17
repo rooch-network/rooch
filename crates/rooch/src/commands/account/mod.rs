@@ -8,15 +8,14 @@ pub mod list;
 use self::import::ImportCommand;
 use crate::commands::account::{create::CreateCommand, list::ListCommand};
 
-use crate::config::{rooch_config_dir, Config, PersistedConfig, RoochConfig, ROOCH_CONFIG};
 use async_trait::async_trait;
+use rooch_common::config::{
+    rooch_config_dir, rooch_config_path, Config, PersistedConfig, RoochConfig, ROOCH_CONFIG,
+};
 use rooch_types::cli::{CliError, CliResult, CommandAction};
-use std::path::PathBuf;
 
 #[derive(clap::Parser)]
 pub struct Account {
-    #[clap(long = "rooch.config")]
-    config: Option<PathBuf>,
     #[clap(subcommand)]
     cmd: Option<AccountCommand>,
 }
@@ -24,25 +23,18 @@ pub struct Account {
 #[async_trait]
 impl CommandAction<()> for Account {
     async fn execute(self) -> CliResult<()> {
-        let config_path = self.config.unwrap_or(
-            rooch_config_dir()
-                .map_err(CliError::from)?
-                .join(ROOCH_CONFIG),
-        );
-
-        if !config_path.exists() {
-            return Err(CliError::ConfigNotFoundError(format!(
-                "{:?} not found.",
-                config_path
-            )));
-        }
-
-        let config: RoochConfig = PersistedConfig::read(&config_path).map_err(|err| {
-            CliError::ConfigLoadError(format!("{:?}", config_path), err.to_string())
-        })?;
+        let config: RoochConfig = prompt_if_no_config().await?;
 
         if let Some(cmd) = self.cmd {
-            cmd.execute(&mut config.persisted(&config_path)).await?;
+            cmd.execute(
+                &mut config.persisted(
+                    rooch_config_dir()
+                        .map_err(CliError::from)?
+                        .join(ROOCH_CONFIG)
+                        .as_path(),
+                ),
+            )
+            .await?;
         } else {
             // Print help
             let mut app = Account::command();
@@ -73,4 +65,20 @@ impl AccountCommand {
         }
         .map_err(CliError::from)
     }
+}
+
+async fn prompt_if_no_config() -> Result<RoochConfig, anyhow::Error> {
+    let config_path = rooch_config_path().map_err(CliError::from)?;
+
+    if !config_path.exists() {
+        println!(
+            "Creating config file [{:?}] with default server and ed25519 key scheme.",
+            config_path
+        );
+
+        crate::commands::init::init().await?;
+    }
+
+    Ok(PersistedConfig::read(&config_path)
+        .map_err(|err| CliError::ConfigLoadError(format!("{:?}", config_path), err.to_string()))?)
 }

@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::config::{rooch_config_dir, Config, RoochConfig, ROOCH_CONFIG, ROOCH_KEYSTORE_FILENAME};
 use async_trait::async_trait;
 use clap::Parser;
 use rooch_common::config::{
@@ -10,7 +9,6 @@ use rooch_common::config::{
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use rooch_types::account::SignatureScheme::ED25519;
 use rooch_types::cli::{CliError, CliResult, CommandAction};
-use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
 pub struct Init;
@@ -18,15 +16,7 @@ pub struct Init;
 #[async_trait]
 impl CommandAction<()> for Init {
     async fn execute(self) -> CliResult<()> {
-        let config_path = self.config.unwrap_or(
-            rooch_config_dir()
-                .map_err(CliError::from)?
-                .join(ROOCH_CONFIG),
-        );
-        prompt_if_no_config(&config_path)
-            .await
-            .map_err(CliError::from)?;
-        Ok(())
+        init().await.map_err(CliError::from)
     }
 }
 

@@ -42,19 +42,3 @@ pub async fn run_cli(opt: RoochCli) -> CliResult<String> {
         Command::Account(a) => a.execute_serialized().await,
     }
 }
-
-async fn prompt_if_no_config() -> Result<RoochConfig, anyhow::Error> {
-    let config_path = rooch_config_path().map_err(CliError::from)?;
-
-    if !config_path.exists() {
-        println!(
-            "Creating config file [{:?}] with default server and ed25519 key scheme.",
-            config_path
-        );
-
-        crate::commands::init::init().await?;
-    }
-
-    Ok(PersistedConfig::read(&config_path)
-        .map_err(|err| CliError::ConfigLoadError(format!("{:?}", config_path), err.to_string()))?)
-}
