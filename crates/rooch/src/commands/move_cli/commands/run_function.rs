@@ -3,6 +3,7 @@
 
 use crate::move_cli::types::TransactionOptions;
 use anyhow::{anyhow, Result};
+use async_trait::async_trait;
 use clap::Parser;
 use move_core_types::{
     account_address::AccountAddress,
@@ -16,6 +17,7 @@ use moveos_types::transaction::MoveAction;
 use rooch_client::Client;
 use rooch_types::{
     address::RoochAddress,
+    cli::{CliError, CliResult, CommandAction},
     transaction::{authenticator::AccountPrivateKey, rooch::RoochTransactionData},
 };
 use std::str::FromStr;
@@ -97,8 +99,9 @@ pub struct RunFunction {
     txn_options: TransactionOptions,
 }
 
-impl RunFunction {
-    pub async fn execute(self) -> anyhow::Result<()> {
+#[async_trait]
+impl CommandAction<()> for RunFunction {
+    async fn execute(self) -> CliResult<()> {
         let args = self
             .args
             .iter()
@@ -108,13 +111,19 @@ impl RunFunction {
                     .expect("transaction arguments must serialize")
             })
             .collect();
-        assert!(
-            self.txn_options.sender_account.is_some(),
-            "--sender-account required"
-        );
+
+        if self.txn_options.sender_account.is_none() {
+            return Err(CliError::CommandArgumentError(
+                "--sender-account required".to_string(),
+            ));
+        }
 
         let sender: RoochAddress = self.txn_options.sender_account.unwrap().into();
-        let sequence_number = self.client.get_sequence_number(sender).await?;
+        let sequence_number = self
+            .client
+            .get_sequence_number(sender)
+            .await
+            .map_err(CliError::from)?;
         let tx_data = RoochTransactionData::new(
             sender,
             sequence_number,
@@ -127,8 +136,14 @@ impl RunFunction {
         );
         //TODO sign the tx by the account private key
         let private_key = AccountPrivateKey::generate_for_testing();
-        let tx = tx_data.sign(&private_key)?;
-        self.client.submit_txn(tx).await?;
-        Ok(())
+        let tx = tx_data
+            .sign(&private_key)
+            .map_err(|e| CliError::SignMessageError(e.to_string()))?;
+        let resp = self
+            .client
+            .submit_txn(tx)
+            .await
+            .map_err(|e| CliError::SubmitTxError(e.to_string()))?;
+        Ok(resp)
     }
 }

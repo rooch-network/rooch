@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{anyhow, Result};
+use async_trait::async_trait;
 use clap::Parser;
 use move_core_types::{
     account_address::AccountAddress,
@@ -13,6 +14,7 @@ use move_core_types::{
 };
 use moveos_types::transaction::{Function, ViewPayload};
 use rooch_client::Client;
+use rooch_types::cli::{CliError, CliResult, CommandAction};
 use std::str::FromStr;
 
 /// Identifier of a module function
@@ -89,15 +91,16 @@ pub struct RunViewFunction {
     client: Client,
 }
 
-impl RunViewFunction {
-    pub async fn execute(self) -> anyhow::Result<()> {
+#[async_trait]
+impl CommandAction<()> for RunViewFunction {
+    async fn execute(self) -> CliResult<()> {
         let args = self
             .args
             .iter()
             .map(|arg| {
                 MoveValue::from(arg.clone())
                     .simple_serialize()
-                    .expect("transaction arguments must serialize")
+                    .expect("transaction arguments must be serializabe")
             })
             .collect();
         let payload = ViewPayload {
@@ -108,7 +111,11 @@ impl RunViewFunction {
                 args,
             },
         };
-        self.client.view(payload).await?;
-        Ok(())
+        let resp = self
+            .client
+            .view(payload)
+            .await
+            .map_err(|e| CliError::ViewFunctionError(e.to_string()))?;
+        Ok(resp)
     }
 }

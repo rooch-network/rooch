@@ -2,27 +2,29 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::move_cli::types::{AccountAddressWrapper, TransactionOptions};
-use anyhow::ensure;
+use async_trait::async_trait;
 use clap::Parser;
 use move_binary_format::file_format::CompiledModule;
 use move_bytecode_utils::dependency_graph::DependencyGraph;
-use move_package::BuildConfig;
+use move_bytecode_utils::Modules;
+use move_cli::Move;
 use moveos::vm::dependency_order::sort_by_dependency_order;
 use moveos_types::transaction::MoveAction;
 use rooch_client::Client;
 use rooch_types::address::RoochAddress;
+use rooch_types::cli::{CliError, CliResult, CommandAction};
 use rooch_types::transaction::authenticator::AccountPrivateKey;
 use rooch_types::transaction::rooch::RoochTransactionData;
 use std::collections::BTreeMap;
 use std::io::stderr;
-use std::path::PathBuf;
-
-use move_bytecode_utils::Modules;
 
 #[derive(Parser)]
 pub struct Publish {
     #[clap(flatten)]
     client: Client,
+
+    #[clap(flatten)]
+    move_args: Move,
 
     #[clap(flatten)]
     txn_options: TransactionOptions,
@@ -37,12 +39,22 @@ pub struct Publish {
 }
 
 impl Publish {
-    pub async fn execute(
-        self,
-        package_path: Option<PathBuf>,
-        config: BuildConfig,
-    ) -> anyhow::Result<()> {
-        let mut config = config;
+    pub fn order_modules(modules: Modules) -> anyhow::Result<Vec<CompiledModule>> {
+        //TODO ensure all module at same address.
+        //include all module and dependency modules
+        // let modules = self.package.all_modules_map();
+        let graph = DependencyGraph::new(modules.iter_modules());
+        let order_modules = graph.compute_topological_order()?;
+        Ok(order_modules.cloned().collect())
+    }
+}
+
+#[async_trait]
+impl CommandAction<()> for Publish {
+    async fn execute(self) -> CliResult<()> {
+        let package_path = self.move_args.package_path;
+        let config = self.move_args.build_config;
+        let mut config = config.clone();
         config.additional_named_addresses = self
             .named_addresses
             .into_iter()
@@ -63,27 +75,29 @@ impl Publish {
             .address()
             .to_owned();
         let mut bundles: Vec<Vec<u8>> = vec![];
-        println!("Packaging Modules:");
         // let sorted_modules = Self::order_modules(modules)?;
         let sorted_modules = sort_by_dependency_order(modules.iter_modules())?;
         for module in sorted_modules {
-            println!("\t {}", module.self_id());
             let module_address = module.self_id().address().to_owned();
-            ensure!(
-                module_address == pkg_address,
-                "module's address ({:?}) not same as package module address {:?}",
-                module_address,
-                pkg_address.clone(),
-            );
+            if module_address != pkg_address {
+                return Err(CliError::MoveCompilationError(format!(
+                    "module's address ({:?}) not same as package module address {:?}",
+                    module_address,
+                    pkg_address.clone(),
+                )));
+            };
             let mut binary: Vec<u8> = vec![];
             module.serialize(&mut binary)?;
             bundles.push(binary);
         }
-        assert!(
-            self.txn_options.sender_account.is_some()
-                && pkg_address == self.txn_options.sender_account.unwrap(),
-            "--sender-account required and the sender account must be the same as the package address"
-        );
+        if !(self.txn_options.sender_account.is_some()
+            && pkg_address == self.txn_options.sender_account.unwrap())
+        {
+            return Err(CliError::CommandArgumentError(
+                "--sender-account required and the sender account must be the same as the package address"
+                    .to_string(),
+            ));
+        }
         let action = MoveAction::ModuleBundle(bundles);
 
         let sender: RoochAddress = pkg_address.into();
@@ -95,14 +109,5 @@ impl Publish {
 
         self.client.submit_txn(tx).await?;
         Ok(())
-    }
-
-    pub fn order_modules(modules: Modules) -> anyhow::Result<Vec<CompiledModule>> {
-        //TODO ensure all module at same address.
-        //include all module and dependency modules
-        // let modules = self.package.all_modules_map();
-        let graph = DependencyGraph::new(modules.iter_modules());
-        let order_modules = graph.compute_topological_order()?;
-        Ok(order_modules.cloned().collect())
     }
 }
