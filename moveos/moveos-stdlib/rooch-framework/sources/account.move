@@ -11,6 +11,7 @@ module rooch_framework::account{
    use std::debug;
    #[test_only]
    use moveos_std::storage_context;
+   use rooch_framework::authenticator;
 
    friend rooch_framework::genesis;
    friend rooch_framework::transaction_validator;
@@ -270,6 +271,16 @@ module rooch_framework::account{
 
    public fun get_signer_capability_address(capability: &SignerCapability): address {
       capability.addr
+   }
+
+   /// This function is for MoveOS to validate the transaction sender's authenticator.
+   fun validate(_ctx: &mut StorageContext, authenticator_info_bytes: vector<u8>) {
+      let authenticator_info = authenticator::decode_authenticator_info(authenticator_info_bytes);
+      authenticator::check_authenticator(&authenticator_info);
+      //TODO decode by the scheme id
+      let _authenicator = authenticator::decode_ed25519_authenticator(authenticator_info);
+      //TODO verify signature
+      //TODO verify authenicator info with account's auth key
    }
 
    #[test_only]

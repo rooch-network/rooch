@@ -1,40 +1,45 @@
-struct SendTxnRequest {
-    sender_address: String,
-    public_key: Vec<u8>,
-    program: Vec<u8>,
-    sequencer_number: u64,
-    expiration_time: u64,
-    signature: Vec<u8>,
+#[derive(Clone, Debug)]
+pub struct SendTxnRequest {
+    pub sender_address: String,
+    pub public_key: Vec<u8>,
+    pub program: Vec<u8>,
+    pub sequencer_number: u64,
+    pub expiration_time: u64,
+    pub signature: Vec<u8>,
 }
-struct SendTxnResponse {
+
+#[derive(Clone, Debug)]
+pub struct SendTxnResponse {
     // The following four fields together are completed legal txn order evidence.
     // Transaction Hash
-    txn_hash: String,
+    pub txn_hash: String,
     // user's transaction's order: the execution order will follow this order strictly.
     // e.g. txn with y order must be no later than txn with x order, if x > y
-    order: u128,
+    pub order: u128,
     // It hash of txn_hash and order for indexing txn and order pair
     // It's SHA256(txn_hash, order), txn_hash & order are inputs of hash function.
-    order_hash: String,
+    pub order_hash: String,
     // Order signed by sequencer.
-    txn_order_signature: Vec<u8>,
+    pub txn_order_signature: Vec<u8>,
 }
 
 // GetTxnOrderWitnessRequest requests sequencer for txn's order witness for ensuring txn's order is in the right place,
 // anyone could verify it.
 // Witness is Layer1-friendly which could verify it in a fast way and slashing dishonest sequencer.
 // The Content of this struct is as same as SendTxnResponse
-struct GetTxnOrderWitnessRequest {
-    txn_hash: String,
-    order: u128,
-    order_hash: String,
-    txn_order_signature: Vec<u8>,
+#[derive(Clone, Debug)]
+pub struct GetTxnOrderWitnessRequest {
+    pub txn_hash: String,
+    pub order: u128,
+    pub order_hash: String,
+    pub txn_order_signature: Vec<u8>,
 }
 
-struct GetTxnOrderWitnessResponse {
-    txn_hash: String,
-    order: u128,
-    order_hash: String,
+#[derive(Clone, Debug)]
+pub struct GetTxnOrderWitnessResponse {
+    pub txn_hash: String,
+    pub order: u128,
+    pub order_hash: String,
     // Based on the order information of the transactions provided by the user,
     // return a verifiable proof of transaction order,
     // so the user can verify whether the order is valid or not.
@@ -42,117 +47,133 @@ struct GetTxnOrderWitnessResponse {
     // illegal TxnOrder
     // internal server error
     // too old txn need to search DA, but bad connection or heavy traffic cause request failed
-    txn_order_witness: Option<Vec<u8>>,
-    error_message: Option<String>,
+    pub txn_order_witness: Option<Vec<u8>>,
+    pub error_message: Option<String>,
     // Order signed by sequencer.
-    txn_order_signature: Vec<u8>,
+    pub txn_order_signature: Vec<u8>,
 }
 
-struct TxnInfoRequest {
-    txn_hash: String,
+#[derive(Clone, Debug)]
+pub struct TxnInfoRequest {
+    pub txn_hash: String,
 }
 
-struct TxnInfoResponse {
-    block_hash: String,
-    block_number: u64,
-    txn_hash: String,
-    user_txn: Vec<u8>,
-    conformations: u64,
+#[derive(Clone, Debug)]
+pub struct TxnInfoResponse {
+    pub block_hash: String,
+    pub block_number: u64,
+    pub txn_hash: String,
+    pub user_txn: Vec<u8>,
+    pub conformations: u64,
 }
 
-struct BlockByNumberRequest {
-    block_number: u64,
-}
-struct BlockResponse {
-    block_hash: String,
-    parent_hash: String,
-    timestamp: u64,
-    number: u64,
-    txn_accumulator_root: String,
-    block_accumulator_root: String,
-    state_root: String,
-    gas_used: u64,
-    nonce: u64,
-    chain_id: u64,
-    confirmations: u64,
+#[derive(Clone, Debug)]
+pub struct BlockByNumberRequest {
+    pub block_number: u64,
 }
 
-struct BlockByHashRequest {
-    hash: u64,
+#[derive(Clone, Debug)]
+pub struct BlockResponse {
+    pub block_hash: String,
+    pub parent_hash: String,
+    pub timestamp: u64,
+    pub number: u64,
+    pub txn_accumulator_root: String,
+    pub block_accumulator_root: String,
+    pub state_root: String,
+    pub gas_used: u64,
+    pub nonce: u64,
+    pub chain_id: u64,
+    pub confirmations: u64,
+}
+
+#[derive(Clone, Debug)]
+pub struct BlockByHashRequest {
+    pub hash: u64,
 }
 
 // Query account balance at specified block height
-struct AccountBalanceRequest {
-    account: String,
-    block: Option<u64>,
+#[derive(Clone, Debug)]
+pub struct AccountBalanceRequest {
+    pub account: String,
+    pub block: Option<u64>,
 }
 
-struct AccountBalanceResponse {
-    balance: String,
+#[derive(Clone, Debug)]
+pub struct AccountBalanceResponse {
+    pub balance: String,
 }
 
-struct AccountSequenceNumberRequest {
-    account: String,
+#[derive(Clone, Debug)]
+pub struct AccountSequenceNumberRequest {
+    pub account: String,
 }
 
-struct AccountSequenceNumberResponse {
-    sequence_number: u128,
+#[derive(Clone, Debug)]
+pub struct AccountSequenceNumberResponse {
+    pub sequence_number: u128,
 }
 
-struct Txn {
-    txn_hash: String,
-    user_txn: Vec<u8>,
+#[derive(Clone, Debug)]
+pub struct Txn {
+    pub txn_hash: String,
+    pub user_txn: Vec<u8>,
 }
 
 // Execute user transaction at specified block height
-struct ContractCallRequest {
-    txn: Txn,
-    block: Option<u128>,
+#[derive(Clone, Debug)]
+pub struct ContractCallRequest {
+    pub txn: Txn,
+    pub block: Option<u128>,
 }
 
-struct ContractCallResponse {
-    txn_hash: String,
-    user_txn: Vec<u8>,
+#[derive(Clone, Debug)]
+pub struct ContractCallResponse {
+    pub txn_hash: String,
+    pub user_txn: Vec<u8>,
 }
 
 // query account proof at specified block height
-struct AccountProofRequest {
+#[derive(Clone, Debug)]
+pub struct AccountProofRequest {
     // Account address
-    account: String,
+    pub account: String,
     // Array of storage-keys which should be proofed and included.
-    storage_keys: Vec<Vec<u8>>,
+    pub storage_keys: Vec<Vec<u8>>,
     // Optioned block number
-    block: Option<u128>,
+    pub block: Option<u128>,
 }
 
-struct Proof {
+#[derive(Clone, Debug)]
+pub struct Proof {
     // The requested storage key
-    key: String,
+    pub key: String,
     // The storage value
-    value: String,
+    pub value: String,
     // Array of rlp-serialized MerkleTree-Nodes, starting with the storageHash-Node,
     // following the path of the SHA3 (key) as path.
-    proof: Vec<Vec<u8>>,
+    pub proof: Vec<Vec<u8>>,
 }
 
-struct AccountProofResponse {
+#[derive(Clone, Debug)]
+pub struct AccountProofResponse {
     // Account address
-    account: String,
+    pub account: String,
     // Array of rlp-serialized MerkleTree-Nodes, starting with the stateRoot-Node,
     // following the path of the SHA3 (address) as key.
-    account_proof: Vec<Vec<u8>>,
+    pub account_proof: Vec<Vec<u8>>,
     // Account balance
-    balance: u128,
+    pub balance: u128,
     // Sequence number of account
-    sequence_number: u128,
+    pub sequence_number: u128,
     // SHA3 of the StorageRoot.
     // All storage will deliver a MerkleProof starting with this rootHash.
-    storage_hash: Vec<u8>,
+    pub storage_hash: Vec<u8>,
     // Array of storage-entries as requested.
-    storage_proof: Vec<Proof>,
+    pub storage_proof: Vec<Proof>,
 }
 
-trait MoveOSClient {
+pub trait MoveOSClient {
     fn send_txn(&self, request: SendTxnRequest) -> SendTxnResponse;
     fn get_txn_order_witness(
         &self,
@@ -168,32 +189,4 @@ trait MoveOSClient {
     ) -> AccountSequenceNumberResponse;
     fn call_contract(&self, request: ContractCallRequest) -> ContractCallResponse;
     fn account_proof(&self, request: AccountProofRequest) -> AccountProofResponse;
-}
-
-struct RPCRequest<T> {
-    id: u32,
-    json_rpc: String,
-    method: String,
-    params: Vec<T>,
-}
-
-impl<T> RPCRequest<T> {
-    fn new_request(method: String, params: Vec<T>) -> Self {
-        Self {
-            id: 0,
-            json_rpc: "2.0".to_string(),
-            method,
-            params,
-        }
-    }
-}
-
-struct RPCResponse<T> {
-    id: u32,
-    json_rpc: String,
-    result: Option<T>,
-}
-
-trait RPCClient<T> {
-    fn send_request(&self, request: RPCRequest<T>, timeout: u64) -> RPCResponse<T>;
 }

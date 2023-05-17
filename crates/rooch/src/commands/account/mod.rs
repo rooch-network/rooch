@@ -5,7 +5,7 @@ pub mod create;
 pub mod import;
 pub mod list;
 use crate::commands::account::{create::CreateCommand, list::ListCommand};
-use crate::config::{PersistedConfig, RoochConfig};
+use rooch_common::config::{PersistedConfig, RoochConfig};
 use rooch_types::cli::{CliError, CliResult};
 
 use self::import::ImportCommand;

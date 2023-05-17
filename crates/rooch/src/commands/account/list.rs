@@ -10,7 +10,7 @@ use rooch_types::account::EncodeDecodeBase64;
 use rooch_types::address::RoochAddress;
 use std::fmt::Debug;
 
-use crate::config::{PersistedConfig, RoochConfig};
+use rooch_common::config::{PersistedConfig, RoochConfig};
 use rooch_key::keystore::AccountKeystore;
 
 /// Create a new account on-chain

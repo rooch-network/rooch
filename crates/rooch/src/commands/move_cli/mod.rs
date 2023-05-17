@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use commands::{
-    new::New, publish::Publish, run_function::RunFunction, run_view_function::RunViewFunction,
-    unit_test::Test,
+    build::Build, new::New, publish::Publish, run_function::RunFunction,
+    run_view_function::RunViewFunction, unit_test::Test,
 };
 use move_cli::{
     base::{
-        build::Build, coverage::Coverage, disassemble::Disassemble, docgen::Docgen, errmap::Errmap,
-        info::Info, prove::Prove,
+        coverage::Coverage, disassemble::Disassemble, docgen::Docgen, errmap::Errmap, info::Info,
+        prove::Prove,
     },
     Move,
 };
@@ -46,6 +46,7 @@ pub enum MoveCommand {
 pub async fn run_cli(move_cli: MoveCli) -> CliResult<()> {
     let move_args = move_cli.move_args;
     let cmd = move_cli.cmd;
+
     //let error_descriptions: ErrorMapping = bcs::from_bytes(moveos_stdlib::error_descriptions())?;
 
     match cmd {

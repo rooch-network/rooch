@@ -4,16 +4,23 @@
 use crate::{
     vm::{
         move_vm_ext::{MoveVmExt, SessionExt},
+        tx_argument_resolver::{as_struct_no_panic, is_storage_context},
         MoveResolverExt,
     },
     TransactionExecutor, TransactionValidator,
 };
-use anyhow::{bail, Result};
-use move_binary_format::errors::{Location, PartialVMError};
+use anyhow::{anyhow, bail, Result};
+use move_binary_format::access::ModuleAccess;
+use move_binary_format::{
+    errors::{Location, PartialVMError, VMResult},
+    file_format::Visibility,
+    CompiledModule,
+};
 use move_core_types::{
     account_address::AccountAddress,
-    identifier::IdentStr,
+    identifier::{IdentStr, Identifier},
     language_storage::{ModuleId, TypeTag},
+    value::MoveValue,
     vm_status::{KeptVMStatus, StatusCode},
 };
 use move_vm_runtime::session::SerializedReturnValues;
@@ -21,11 +28,14 @@ use move_vm_types::gas::UnmeteredGasMeter;
 use moveos_statedb::StateDB;
 use moveos_stdlib::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
-use moveos_types::h256::H256;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use moveos_types::tx_context::TxContext;
+use moveos_types::{h256::H256, transaction::Function};
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::borrow::Borrow;
+
+// use moveos_types::error::MoveOSError::{VMModuleDeserializationError};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TransactionOutput {
@@ -33,6 +43,19 @@ pub struct TransactionOutput {
     pub state_root: H256,
     pub status: KeptVMStatus,
 }
+
+pub static VALIDATE_FUNCTION: Lazy<(ModuleId, Identifier)> = Lazy::new(|| {
+    (
+        ModuleId::new(
+            *ROOCH_FRAMEWORK_ADDRESS,
+            Identifier::new("account").unwrap(),
+        ),
+        Identifier::new("validate").unwrap(),
+    )
+});
+
+pub static INIT_FN_NAME_IDENTIFIER: Lazy<Identifier> =
+    Lazy::new(|| Identifier::new("init").unwrap());
 
 pub struct MoveOS {
     vm: MoveVmExt,
@@ -65,12 +88,52 @@ impl MoveOS {
         ))
     }
 
-    pub fn validate<T: Into<MoveOSTransaction>>(&mut self, tx: T) -> Result<MoveOSTransaction> {
-        //TODO validate the transaction in the contract
-        // 1. signature
-        // 2. sequencer number
-        // 3. gas
-        Ok(tx.into())
+    pub fn validate<T: Into<MoveOSTransaction>, A: Into<Vec<u8>>>(
+        &mut self,
+        tx: T,
+        authenticator: A,
+    ) -> Result<MoveOSTransaction> {
+        let session = self.vm.new_session(&self.db);
+        self.validate_transaction(session, tx, authenticator)
+    }
+
+    fn validate_transaction<S, T: Into<MoveOSTransaction>, A: Into<Vec<u8>>>(
+        &self,
+        mut session: SessionExt<S>,
+        tx: T,
+        authenticator: A,
+    ) -> Result<MoveOSTransaction>
+    where
+        S: MoveResolverExt,
+    {
+        let moveos_tx: MoveOSTransaction = tx.into();
+        let tx_context = TxContext::new(moveos_tx.sender, moveos_tx.tx_hash);
+        let mut gas_meter = UnmeteredGasMeter;
+        let (module, function_name) = VALIDATE_FUNCTION.clone();
+        let function = Function::new(
+            module,
+            function_name,
+            vec![],
+            vec![MoveValue::vector_u8(authenticator.into())
+                .simple_serialize()
+                .unwrap()],
+        );
+        let result = Self::execute_function_bypass_visibility(
+            &mut session,
+            &tx_context,
+            &mut gas_meter,
+            function,
+        );
+        match result {
+            Ok(_) => {}
+            Err(e) => {
+                //TODO handle the abort error code
+                println!("validate failed: {:?}", e);
+                // If the error code is EUnsupportedScheme, then we can try to call the sender's validate function
+                // This is the Account Abstraction.
+            }
+        }
+        Ok(moveos_tx)
     }
 
     pub fn execute(&mut self, tx: MoveOSTransaction) -> Result<TransactionOutput> {
@@ -138,8 +201,19 @@ impl MoveOS {
                     })
             }
             MoveAction::ModuleBundle(modules) => {
+                // since the Move runtime does not to know about new packages created,
+                // the first deployment contract and the upgrade contract need to be handled separately
+                let compiled_modules = self.deserialize_modules(&modules)?;
+
                 //TODO check the modules package address with the sender
-                session.publish_module_bundle(modules, sender, &mut gas_meter)
+                let result = session.publish_module_bundle(modules, sender, &mut gas_meter);
+                self.check_and_execute_init_modules(
+                    &mut session,
+                    &tx_context,
+                    &mut gas_meter,
+                    &compiled_modules,
+                )?;
+                result
             }
         };
 
@@ -173,6 +247,117 @@ impl MoveOS {
                 bail!("VM discard the transaction: {:?}", discard)
             }
         }
+    }
+
+    fn deserialize_modules(&self, module_bytes: &[Vec<u8>]) -> Result<Vec<CompiledModule>> {
+        let modules = module_bytes
+            .iter()
+            .map(|b| CompiledModule::deserialize(b).map_err(|e| e.finish(Location::Undefined)))
+            .collect::<VMResult<Vec<CompiledModule>>>()
+            .map_err(|e| anyhow!("Failed to deserialize modules: {:?}", e))?;
+
+        Ok(modules)
+    }
+
+    /// The initializer function must have the following properties in order to be executed at publication:
+    /// - Name init
+    /// - Single parameter of &mut TxContext type
+    /// - No return values
+    /// - Private
+    fn check_module_init_permission<S>(
+        &self,
+        session: &mut SessionExt<S>,
+        _tx_context: &TxContext,
+        module_id: &ModuleId,
+        function_name: &IdentStr,
+        ty_args: Vec<TypeTag>,
+        _args: Vec<Vec<u8>>,
+    ) -> Result<bool>
+    where
+        S: MoveResolverExt,
+    {
+        let loaded_function =
+            session.load_function(module_id, function_name, ty_args.as_slice())?;
+        let Some((_i, _t)) = loaded_function.parameters.iter().enumerate().find(|(i, t)| {
+            let struct_type = as_struct_no_panic(session, t);
+            (*i as u32 == 0u32) && Option::is_some(&struct_type) && is_storage_context(&(struct_type.unwrap()))
+        }) else {
+            return Ok(false)
+        };
+
+        if !(loaded_function.return_.is_empty()) {
+            return Ok(false);
+        }
+        Ok(true)
+    }
+
+    fn check_and_execute_init_modules<S>(
+        &self,
+        session: &mut SessionExt<S>,
+        tx_context: &TxContext,
+        gas_meter: &mut UnmeteredGasMeter,
+        modules: &[CompiledModule],
+    ) -> Result<()>
+    where
+        S: MoveResolverExt,
+    {
+        let modules_to_init = modules.iter().filter_map(|module| {
+            for fdef in &module.function_defs {
+                let fhandle = module.function_handle_at(fdef.function);
+                let fname = module.identifier_at(fhandle.name);
+                if fname == INIT_FN_NAME_IDENTIFIER.clone().as_ident_str() {
+                    // check function visibility
+                    if Visibility::Private == fdef.visibility && !fdef.is_entry {
+                        return Some(module.self_id());
+                    }
+                }
+            }
+            None
+        });
+
+        for module_id in modules_to_init {
+            // check module init permission
+            if !self.check_module_init_permission(
+                session,
+                tx_context,
+                &module_id,
+                &INIT_FN_NAME_IDENTIFIER.clone(),
+                vec![],
+                vec![],
+            )? {
+                continue;
+            };
+
+            let function =
+                Function::new(module_id, INIT_FN_NAME_IDENTIFIER.clone(), vec![], vec![]);
+            let _result =
+                Self::execute_function_bypass_visibility(session, tx_context, gas_meter, function)?;
+        }
+
+        Ok(())
+    }
+
+    fn execute_function_bypass_visibility(
+        session: &mut SessionExt<impl MoveResolverExt>,
+        tx_context: &TxContext,
+        gas_meter: &mut UnmeteredGasMeter,
+        function: Function,
+    ) -> VMResult<SerializedReturnValues> {
+        let loaded_function = session.load_function(
+            &function.module,
+            &function.function,
+            function.ty_args.as_slice(),
+        )?;
+        let args = session
+            .resolve_args(tx_context, loaded_function, function.args)
+            .map_err(|e| e.finish(Location::Undefined))?;
+        session.execute_function_bypass_visibility(
+            &function.module,
+            &function.function,
+            function.ty_args,
+            args,
+            gas_meter,
+        )
     }
 
     /// Execute readonly view function

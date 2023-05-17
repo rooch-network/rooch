@@ -22,3 +22,4 @@ moveos-common = { workspace = true }
 
 rooch-types = { workspace = true }
 rooch-server = { workspace = true }
+rooch-common = { workspace = true }
