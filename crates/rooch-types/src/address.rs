@@ -1,10 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::fmt;
-use std::str::FromStr;
-
-use crate::coin::{Coin, ROOCH_COIN_ID};
+use crate::coin_id::CoinID;
 use anyhow::Result;
 use bech32::{FromBase32, ToBase32};
 use bitcoin::{
@@ -15,6 +12,8 @@ use ethers::types::H160;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::h256::H256;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::fmt;
+use std::str::FromStr;
 
 /// The address type that Rooch supports
 pub trait RoochSupportedAddress:
@@ -27,17 +26,15 @@ pub trait RoochSupportedAddress:
 /// The address is distinguished by the coin id, coin id standard is defined in [slip-0044](https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MultiChainAddress {
-    pub coin_type: Coin,
-    pub address: Vec<u8>,
+    pub coin_id: CoinID,
+    pub raw_address: Vec<u8>,
 }
 
 impl MultiChainAddress {
-    pub(crate) fn new(coin_id: u32, address: Vec<u8>) -> Result<Self> {
-        let coin = Coin::try_from(coin_id)
-            .map_err(|e| anyhow::anyhow!("coin id {} is invalid, {}", coin_id, e))?;
+    pub(crate) fn new(coin_id: CoinID, raw_address: Vec<u8>) -> Result<Self> {
         Ok(Self {
-            coin_type: coin,
-            address,
+            coin_id,
+            raw_address,
         })
     }
 
@@ -49,24 +46,23 @@ impl MultiChainAddress {
         let version = data.first().map(|u| u.to_u8());
         anyhow::ensure!(version.filter(|v| *v == 1u8).is_some(), "expect version 1");
 
-        let coin = Coin::try_from(hrp.as_str())
-            .map_err(|e| anyhow::anyhow!("coin id {} is invalid, {}", hrp, e))?;
+        let coin = CoinID::try_from(hrp.as_str())?;
         let address = Vec::<u8>::from_base32(&data[1..])?;
         Ok(Self {
-            coin_type: coin,
-            address,
+            coin_id: coin,
+            raw_address: address,
         })
     }
 
     pub fn to_bech32(&self) -> String {
-        let mut data = self.address.to_base32();
+        let mut data = self.raw_address.to_base32();
         //A Bech32 string consists of a human-readable part (HRP), a separator (the character '1'), and a data part
         data.insert(
             0,
             bech32::u5::try_from_u8(1).expect("1 to u8 should success"),
         );
         bech32::encode(
-            &self.coin_type.symbol.to_lowercase(),
+            &self.coin_id.to_string().to_lowercase(),
             data,
             bech32::Variant::Bech32,
         )
@@ -85,7 +81,7 @@ impl Serialize for MultiChainAddress {
             #[derive(::serde::Serialize)]
             #[serde(rename = "MultiChainAddress")]
             struct Value(u32, Vec<u8>);
-            let value = Value(self.coin_type.id, self.address.clone());
+            let value = Value(self.coin_id as u32, self.raw_address.clone());
             value.serialize(serializer)
         }
     }
@@ -104,7 +100,11 @@ impl<'de> Deserialize<'de> for MultiChainAddress {
             #[serde(rename = "MultiChainAddress")]
             struct Value(u32, Vec<u8>);
             let value = Value::deserialize(deserializer)?;
-            Self::new(value.0, value.1).map_err(serde::de::Error::custom)
+            Self::new(
+                CoinID::try_from(value.0).map_err(serde::de::Error::custom)?,
+                value.1,
+            )
+            .map_err(serde::de::Error::custom)
         }
     }
 }
@@ -147,7 +147,7 @@ impl From<RoochAddress> for AccountAddress {
 
 impl From<RoochAddress> for MultiChainAddress {
     fn from(address: RoochAddress) -> Self {
-        Self::new(ROOCH_COIN_ID, address.0.as_bytes().to_vec())
+        Self::new(CoinID::ROH, address.0.as_bytes().to_vec())
             .expect("RoochAddress to MultiChainAddress should success")
     }
 }
@@ -156,10 +156,10 @@ impl TryFrom<MultiChainAddress> for RoochAddress {
     type Error = anyhow::Error;
 
     fn try_from(value: MultiChainAddress) -> Result<Self, Self::Error> {
-        if value.coin_type.id != ROOCH_COIN_ID {
-            return Err(anyhow::anyhow!("coin id {} is invalid", value.coin_type.id));
+        if value.coin_id != CoinID::ROH {
+            return Err(anyhow::anyhow!("coin id {} is invalid", value.coin_id));
         }
-        Ok(Self(H256::from_slice(&value.address)))
+        Ok(Self(H256::from_slice(&value.raw_address)))
     }
 }
 
@@ -228,7 +228,7 @@ impl RoochSupportedAddress for EthereumAddress {
 
 impl From<EthereumAddress> for MultiChainAddress {
     fn from(address: EthereumAddress) -> Self {
-        Self::new(slip44::Coin::Ether.id(), address.0.as_bytes().to_vec())
+        Self::new(CoinID::ETH, address.0.as_bytes().to_vec())
             .expect("EthereumAddress to MultiChainAddress should success")
     }
 }
@@ -237,10 +237,10 @@ impl TryFrom<MultiChainAddress> for EthereumAddress {
     type Error = anyhow::Error;
 
     fn try_from(value: MultiChainAddress) -> Result<Self, Self::Error> {
-        if value.coin_type.id != slip44::Coin::Ether.id() {
-            return Err(anyhow::anyhow!("coin id {} is invalid", value.coin_type.id));
+        if value.coin_id != CoinID::ETH {
+            return Err(anyhow::anyhow!("coin id {} is invalid", value.coin_id));
         }
-        Ok(Self(H160::from_slice(&value.address)))
+        Ok(Self(H160::from_slice(&value.raw_address)))
     }
 }
 
@@ -260,11 +260,8 @@ impl RoochSupportedAddress for BitcoinAddress {
 
 impl From<BitcoinAddress> for MultiChainAddress {
     fn from(address: BitcoinAddress) -> Self {
-        Self::new(
-            slip44::Coin::Bitcoin.id(),
-            address.0.to_string().into_bytes(),
-        )
-        .expect("BitcoinAddress to MultiChainAddress should success")
+        Self::new(CoinID::BTC, address.0.to_string().into_bytes())
+            .expect("BitcoinAddress to MultiChainAddress should success")
     }
 }
 
@@ -272,10 +269,10 @@ impl TryFrom<MultiChainAddress> for BitcoinAddress {
     type Error = anyhow::Error;
 
     fn try_from(value: MultiChainAddress) -> Result<Self, Self::Error> {
-        if value.coin_type.id != slip44::Coin::Bitcoin.id() {
-            return Err(anyhow::anyhow!("coin id {} is invalid", value.coin_type.id));
+        if value.coin_id != CoinID::BTC {
+            return Err(anyhow::anyhow!("coin id {} is invalid", value.coin_id));
         }
-        let addr = bitcoin::Address::from_str(&String::from_utf8(value.address)?)
+        let addr = bitcoin::Address::from_str(&String::from_utf8(value.raw_address)?)
             .map_err(|e| anyhow::anyhow!("invalid bitcoin address, {}", e))?;
 
         Ok(Self(addr.require_network(bitcoin::Network::Bitcoin)?))

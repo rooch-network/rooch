@@ -1,0 +1,76 @@
+module rooch_framework::address_mapping{
+    
+    use std::option::{Self, Option};
+    use std::signer;
+    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::table::{Self, Table};
+    use moveos_std::account_storage;
+
+    //The coin id standard is defined in [slip-0044](https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
+    //Please keep consistent with rust ChainID
+    const COIN_TYPE_BTC: u32 = 0;
+    const COIN_TYPE_ETH: u32 = 60;
+    const COIN_TYPE_ROH: u32 = 20230101;
+
+    struct MultiChainAddress has copy, store, drop {
+        coin_id: u32,
+        raw_address: vector<u8>,
+    }
+    
+    struct AddressMapping has key{
+        mapping: Table<MultiChainAddress, address>,
+    }
+
+    fun init(ctx: &mut StorageContext, sender: &signer) {
+        rooch_framework::core_addresses::assert_rooch_framework(sender);
+        let tx_ctx = storage_context::tx_context_mut(ctx);
+        let mapping = table::new<MultiChainAddress, address>(tx_ctx);
+        account_storage::global_move_to(ctx, sender, AddressMapping{
+            mapping,
+        });
+    }
+
+    public fun is_rooch_address(maddress: &MultiChainAddress) : bool{
+        maddress.coin_id == COIN_TYPE_ROH
+    }
+
+    /// Resolve a multi-chain address to a rooch address
+    public fun resolve(ctx: &StorageContext, maddress: MultiChainAddress): Option<address> {
+        if (is_rooch_address(&maddress)) {
+            return option::some(moveos_std::bcd::to_address(maddress.raw_address))
+        };
+        let am = account_storage::global_borrow<AddressMapping>(ctx, @rooch_framework);
+        if(table::contains(&am.mapping, maddress)){
+            let addr = table::borrow(&am.mapping, maddress);
+            option::some(*addr)
+        }else{
+            option::none<address>()
+        }
+    }
+
+    /// Binding a multi-chain address to a rooch address
+    /// The caller need to ensure the relationship between the multi-chain address and the rooch address
+    public fun binding(ctx: &mut StorageContext, sender: &signer, maddress: MultiChainAddress) {
+        let am = account_storage::global_borrow_mut<AddressMapping>(ctx, @rooch_framework);
+        let sender_addr = signer::address_of(sender);
+        table::add(&mut am.mapping, maddress, sender_addr);
+        //TODO matienance the reverse mapping rooch_address -> vector<MultiChainAddress>
+    } 
+
+
+    #[test(sender=@rooch_framework)]
+    fun test_address_mapping(sender: signer){
+        let sender_addr = signer::address_of(&sender);
+        let ctx = storage_context::new_test_context(sender_addr);
+        account_storage::create_account_storage(&mut ctx, @rooch_framework);
+        init(&mut ctx, &sender);
+        let multi_chain_address =  MultiChainAddress{
+            coin_id: COIN_TYPE_BTC,
+            raw_address: x"1234567890abcdef",
+        };
+        binding(&mut ctx, &sender, multi_chain_address);
+        let addr = option::extract(&mut resolve(&ctx, multi_chain_address));
+        assert!(addr == @rooch_framework, 1000);
+        storage_context::drop_test_context(ctx);
+    }
+}

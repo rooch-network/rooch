@@ -9,7 +9,7 @@ use crate::{
     },
     TransactionExecutor, TransactionValidator,
 };
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, bail, ensure, Result};
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::{
     errors::{Location, PartialVMError, VMResult},
@@ -125,7 +125,9 @@ impl MoveOS {
             function,
         );
         match result {
-            Ok(_) => {}
+            Ok(_) => {
+                //TODO handle the return address
+            }
             Err(e) => {
                 //TODO handle the abort error code
                 println!("validate failed: {:?}", e);
@@ -328,10 +330,21 @@ impl MoveOS {
                 continue;
             };
 
-            let function =
-                Function::new(module_id, INIT_FN_NAME_IDENTIFIER.clone(), vec![], vec![]);
+            let function = Function::new(
+                module_id.clone(),
+                INIT_FN_NAME_IDENTIFIER.clone(),
+                vec![],
+                vec![],
+            );
             let _result =
-                Self::execute_function_bypass_visibility(session, tx_context, gas_meter, function)?;
+                Self::execute_function_bypass_visibility(session, tx_context, gas_meter, function)
+                    .map_err(|e| {
+                        anyhow!(
+                            "Failed to execute init function at {:?} err: {:?}",
+                            module_id,
+                            e
+                        )
+                    })?;
         }
 
         Ok(())
@@ -371,12 +384,19 @@ impl MoveOS {
         let mut session = self.vm.new_session(&self.db);
         //TODO limit the view function max gas usage
         let mut gas_meter = UnmeteredGasMeter;
-        let result = session.execute_function_bypass_visibility(
-            module,
-            function_name,
+        //View function use a fix address and fix hash
+        let tx_context = TxContext::new(AccountAddress::ZERO, H256::zero());
+        let function = Function::new(
+            module.clone(),
+            function_name.to_owned(),
             ty_args,
-            args,
+            args.into_iter().map(|arg| arg.borrow().to_vec()).collect(),
+        );
+        let result = Self::execute_function_bypass_visibility(
+            &mut session,
+            &tx_context,
             &mut gas_meter,
+            function,
         )?;
         let (change_set, events, mut extensions) = session.finish_with_extensions()?;
 
@@ -385,15 +405,15 @@ impl MoveOS {
             .into_change_set()
             .map_err(|e| e.finish(Location::Undefined))?;
 
-        assert!(
+        ensure!(
             change_set.accounts().is_empty(),
             "Change set should be empty when execute view function"
         );
-        assert!(
+        ensure!(
             events.is_empty(),
             "Events should be empty when execute view function"
         );
-        assert!(
+        ensure!(
             table_change_set.changes.is_empty(),
             "Table change set should be empty when execute view function"
         );
