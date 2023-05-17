@@ -1,21 +1,6 @@
-use std::path::PathBuf;
-
-use anyhow::{bail, Result};
 use cucumber::{given, then, World as _};
-use futures::FutureExt as _;
 use rooch_server::Service;
-use std::future;
 use tracing::info;
-
-fn rooch_root() -> Result<PathBuf> {
-    let curr_dir = std::env::current_dir()?;
-    let parent = curr_dir.parent();
-    let rooch_root = parent.and_then(|p| p.parent());
-    match rooch_root {
-        Some(rooch_root) => Ok(rooch_root.to_path_buf()),
-        None => bail!("rooch root not found"),
-    }
-}
 
 #[derive(cucumber::World, Debug, Default)]
 struct World {
@@ -24,12 +9,6 @@ struct World {
 
 #[given(expr = "a server")] // Cucumber Expression
 async fn start_server(w: &mut World) {
-    let rooch_root = rooch_root().expect("rooch root not found");
-    let config_dir = rooch_root.to_path_buf().join("fixtures/config.yml");
-    std::env::set_var(
-        "ROOCH_CONFIG",
-        config_dir.to_str().expect("unexpected path error"),
-    );
     let mut service = Service::new();
     service.start().await.unwrap();
 
@@ -37,15 +16,21 @@ async fn start_server(w: &mut World) {
 }
 
 #[then(regex = r#"cmd: "(.*)?""#)]
-async fn run_cmd(_w: &mut World, args: String) {
-    let rooch_root = rooch_root().unwrap();
-    let config_dir = rooch_root.to_path_buf().join("fixtures/config.yml");
+async fn run_cmd(_: &mut World, args: String) {
     let mut cmd = assert_cmd::Command::cargo_bin("rooch").unwrap();
-    cmd.env("ROOCH_CONFIG", config_dir.to_str().unwrap());
+    // Discard test data
+    cmd.env("TEST_ENV", "true");
 
-    let parameters = args.split_whitespace();
-    for parameter in parameters {
-        cmd.arg(parameter.to_owned());
+    if args.contains("\"") {
+        let mut args1 = args.clone();
+        let start = args.find("\"").unwrap();
+        let commond: String = args1.drain(0..start - 1).collect();
+        let args_a: String = args1.drain(2..args1.len() - 1).collect();
+
+        cmd.args(commond.split_whitespace());
+        cmd.arg(args_a);
+    } else {
+        cmd.args(args.split_whitespace());
     }
     let _assert = cmd.assert().success();
 }
@@ -76,13 +61,6 @@ async fn assert_output(_w: &mut World, args: String) {
 #[tokio::main]
 async fn main() {
     World::cucumber()
-        .after(move |_feature, _rule, _scenario, _ev, world| {
-            if let Some(service) = &world.unwrap().service {
-                // TODO: sender signal to stop server
-                service.stop().expect("failed to stop server");
-            };
-            future::ready(()).boxed()
-        })
         .run_and_exit("./features/cmd.feature")
         .await;
 }

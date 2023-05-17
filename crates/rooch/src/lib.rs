@@ -9,9 +9,7 @@ use crate::commands::{
     resource::ResourceCommand,
     server::ServerCommand,
 };
-use rooch_common::config::{
-    rooch_config_dir, rooch_config_path, Config, PersistedConfig, RoochConfig, ROOCH_CONFIG,
-};
+use rooch_common::config::{rooch_config_path, Config, PersistedConfig, RoochConfig};
 
 use clap::*;
 use rooch_types::cli::{CliError, CliResult};
@@ -52,16 +50,10 @@ pub async fn run_cli(opt: RoochCli) -> CliResult<()> {
 
             if let Some(cmd) = cmd {
                 cmd.execute(
-                    &mut config.persisted(
-                        rooch_config_dir()
-                            .map_err(CliError::from)?
-                            .join(ROOCH_CONFIG)
-                            .as_path(),
-                    ),
+                    &mut config.persisted(rooch_config_path().map_err(CliError::from)?.as_path()),
                 )
                 .await?;
             } else {
-                // Print help
                 let mut app = Command::command();
                 app.build();
                 app.find_subcommand_mut("account")

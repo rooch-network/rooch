@@ -118,9 +118,14 @@ impl<'de> Deserialize<'de> for FileBasedKeystore {
 
 impl AccountKeystore for FileBasedKeystore {
     fn add_key(&mut self, keypair: RoochKeyPair) -> Result<(), anyhow::Error> {
-        let address: RoochAddress = (&keypair.public()).into();
-        self.keys.insert(address, keypair);
-        self.save()?;
+        match std::env::var_os("TEST_ENV") {
+            Some(_) => {}
+            None => {
+                let address: RoochAddress = (&keypair.public()).into();
+                self.keys.insert(address, keypair);
+                self.save()?;
+            }
+        }
         Ok(())
     }
 
