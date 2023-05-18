@@ -1,6 +1,7 @@
+use async_trait::async_trait;
 use clap::Parser;
 use rooch_server::Service;
-use rooch_types::cli::{CliError, CliResult};
+use rooch_types::cli::{CliError, CliResult, CommandAction};
 use serde::{Deserialize, Serialize};
 use tokio::signal::ctrl_c;
 use tokio::signal::unix::{signal, SignalKind};
@@ -13,9 +14,9 @@ pub enum ServerCommand {
 }
 
 impl ServerCommand {
-    pub async fn execute(self) -> CliResult<()> {
+    pub async fn execute(self) -> CliResult<String> {
         match self {
-            ServerCommand::Start(start) => start.execute().await,
+            ServerCommand::Start(start) => start.execute_serialized().await,
         }
     }
 }
@@ -23,13 +24,14 @@ impl ServerCommand {
 #[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct StartServer {}
 
-impl StartServer {
-    pub async fn execute(self) -> CliResult<()> {
+#[async_trait]
+impl CommandAction<()> for StartServer {
+    async fn execute(self) -> CliResult<()> {
         let mut service = Service::new();
         service.start().await.map_err(CliError::from)?;
 
-        let mut sig_int = signal(SignalKind::interrupt()).unwrap();
-        let mut sig_term = signal(SignalKind::terminate()).unwrap();
+        let mut sig_int = signal(SignalKind::interrupt()).map_err(CliError::from)?;
+        let mut sig_term = signal(SignalKind::terminate()).map_err(CliError::from)?;
 
         tokio::select! {
             _ = sig_int.recv() => info!("receive SIGINT"),

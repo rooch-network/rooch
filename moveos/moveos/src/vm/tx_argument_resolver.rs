@@ -80,7 +80,7 @@ impl TxArgumentResolver for NativeTableContext<'_> {
 }
 
 fn is_signer(t: &Type) -> bool {
-    matches!(t, Type::Signer)
+    matches!(t, Type::Signer) || matches!(t, Type::Reference(r) if matches!(**r, Type::Signer))
 }
 
 fn as_struct<T>(session: &SessionExt<T>, t: &Type) -> Option<Arc<StructType>>

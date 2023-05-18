@@ -1,21 +1,22 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use async_trait::async_trait;
 use clap::Parser;
 use rooch_common::config::{
     rooch_config_path, Config, RoochConfig, ServerConfig, ROOCH_KEYSTORE_FILENAME,
 };
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use rooch_types::account::SignatureScheme::ED25519;
-use rooch_types::cli::{CliError, CliResult};
+use rooch_types::cli::{CliError, CliResult, CommandAction};
 
 #[derive(Parser)]
 pub struct Init;
 
-impl Init {
-    pub async fn execute(self) -> CliResult<()> {
-        init().await.map_err(CliError::from)?;
-        Ok(())
+#[async_trait]
+impl CommandAction<()> for Init {
+    async fn execute(self) -> CliResult<()> {
+        init().await.map_err(CliError::from)
     }
 }
 
