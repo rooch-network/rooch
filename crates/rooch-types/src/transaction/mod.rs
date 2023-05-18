@@ -4,7 +4,8 @@
 use self::authenticator::Authenticator;
 use crate::{address::MultiChainAddress, H256};
 use anyhow::Result;
-use moveos_types::transaction::MoveOSTransaction;
+use move_core_types::account_address::AccountAddress;
+use moveos_types::transaction::AuthenticatableTransaction;
 use serde::{Deserialize, Serialize};
 
 pub mod authenticator;
@@ -26,13 +27,19 @@ pub struct RawTransaction {
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct AuthenticatorInfo {
     pub sender: MultiChainAddress,
+    pub seqence_number: u64,
     pub authenticator: Authenticator,
 }
 
 impl AuthenticatorInfo {
-    pub fn new(sender: MultiChainAddress, authenticator: Authenticator) -> Self {
+    pub fn new(
+        sender: MultiChainAddress,
+        seqence_number: u64,
+        authenticator: Authenticator,
+    ) -> Self {
         Self {
             sender,
+            seqence_number,
             authenticator,
         }
     }
@@ -48,7 +55,12 @@ impl From<AuthenticatorInfo> for Vec<u8> {
     }
 }
 
-pub trait AbstractTransaction {
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct AuthenticatorResult {
+    pub resolved_address: AccountAddress,
+}
+
+pub trait AbstractTransaction: AuthenticatableTransaction {
     /// The transaction sender authenticator type.
     /// Usually it is a signature.
     type Hash;
@@ -59,9 +71,6 @@ pub trait AbstractTransaction {
     where
         Self: std::marker::Sized;
     fn encode(&self) -> Vec<u8>;
-
-    fn tx_hash(&self) -> Self::Hash;
-    fn authenticator(&self) -> AuthenticatorInfo;
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -106,15 +115,6 @@ impl TryFrom<RawTransaction> for TypedTransaction {
                 let tx = ethereum::EthereumTransaction::decode(&raw.raw)?;
                 Ok(TypedTransaction::Ethereum(tx))
             }
-        }
-    }
-}
-
-impl From<TypedTransaction> for MoveOSTransaction {
-    fn from(tx: TypedTransaction) -> Self {
-        match tx {
-            TypedTransaction::Rooch(tx) => tx.into(),
-            TypedTransaction::Ethereum(tx) => tx.into(),
         }
     }
 }

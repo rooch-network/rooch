@@ -1,14 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::debug_assert;
+
 use super::{
     authenticator::{AccountPrivateKey, Authenticator},
-    AbstractTransaction, AuthenticatorInfo, TransactionType,
+    AbstractTransaction, AuthenticatorInfo, AuthenticatorResult, TransactionType,
 };
 use crate::address::RoochAddress;
 use crate::H256;
 use anyhow::Result;
-use moveos_types::transaction::{MoveAction, MoveOSTransaction};
+use moveos_types::transaction::{AuthenticatableTransaction, MoveAction, MoveOSTransaction};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -99,6 +101,13 @@ impl RoochTransaction {
     }
 }
 
+impl From<RoochTransaction> for MoveOSTransaction {
+    fn from(tx: RoochTransaction) -> Self {
+        let tx_hash = tx.tx_hash();
+        MoveOSTransaction::new(tx.data.sender.into(), tx.data.action, tx_hash)
+    }
+}
+
 impl AbstractTransaction for RoochTransaction {
     type Hash = H256;
 
@@ -116,23 +125,30 @@ impl AbstractTransaction for RoochTransaction {
     fn encode(&self) -> Vec<u8> {
         bcs::to_bytes(self).expect("encode transaction should success")
     }
+}
 
-    fn tx_hash(&self) -> Self::Hash {
+impl AuthenticatableTransaction for RoochTransaction {
+    type AuthenticatorInfo = AuthenticatorInfo;
+    type AuthenticatorResult = AuthenticatorResult;
+
+    fn tx_hash(&self) -> H256 {
         //TODO cache the hash
         moveos_types::h256::sha3_256_of(self.encode().as_slice())
     }
 
-    fn authenticator(&self) -> AuthenticatorInfo {
+    fn authenticator_info(&self) -> AuthenticatorInfo {
         AuthenticatorInfo {
             sender: self.sender().into(),
+            seqence_number: self.sequence_number(),
             authenticator: self.authenticator.clone(),
         }
     }
-}
 
-impl From<RoochTransaction> for MoveOSTransaction {
-    fn from(tx: RoochTransaction) -> Self {
-        let tx_hash = tx.tx_hash();
-        MoveOSTransaction::new(tx.data.sender.into(), tx.data.action, tx_hash)
+    fn construct_moveos_transaction(
+        &self,
+        result: AuthenticatorResult,
+    ) -> Result<MoveOSTransaction> {
+        debug_assert!(self.sender() == RoochAddress::from(result.resolved_address));
+        Ok(self.clone().into())
     }
 }

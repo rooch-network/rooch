@@ -11,7 +11,7 @@ module rooch_framework::account{
    use std::debug;
    #[test_only]
    use moveos_std::storage_context;
-   use rooch_framework::authenticator;
+   use rooch_framework::authenticator::{Self, AuthenticatorResult};
 
    friend rooch_framework::genesis;
    friend rooch_framework::transaction_validator;
@@ -273,8 +273,8 @@ module rooch_framework::account{
 
    /// This function is for MoveOS to validate the transaction sender's authenticator.
    /// Return the sender's address if the authenticator is valid, auto resolve multi-chain address to rooch address.
-   fun validate(ctx: &mut StorageContext, authenticator_info_bytes: vector<u8>) : address {
-      let (sender_maddr, authenticator) = authenticator::decode_authenticator_info(authenticator_info_bytes);
+   fun validate(ctx: &mut StorageContext, authenticator_info_bytes: vector<u8>) : AuthenticatorResult {
+      let (sender_maddr, _sequence_number, authenticator) = authenticator::decode_authenticator_info(authenticator_info_bytes);
       //std::debug::print(&authenticator);
       authenticator::check_authenticator(&authenticator);
       //TODO decode by the scheme id
@@ -282,7 +282,8 @@ module rooch_framework::account{
       //TODO verify signature
       //TODO verify authenicator info with account's auth key
       let addr_opt = rooch_framework::address_mapping::resolve(ctx, sender_maddr);
-      std::option::extract(&mut addr_opt)
+      let resolved_address = std::option::extract(&mut addr_opt);
+      authenticator::new_authenticator_result(resolved_address)
    }
 
    #[test_only]

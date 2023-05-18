@@ -28,7 +28,7 @@ use move_vm_types::gas::UnmeteredGasMeter;
 use moveos_statedb::StateDB;
 use moveos_stdlib::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
-use moveos_types::transaction::{MoveAction, MoveOSTransaction};
+use moveos_types::transaction::{AuthenticatableTransaction, MoveAction, MoveOSTransaction};
 use moveos_types::tx_context::TxContext;
 use moveos_types::{h256::H256, transaction::Function};
 use once_cell::sync::Lazy;
@@ -88,35 +88,34 @@ impl MoveOS {
         ))
     }
 
-    pub fn validate<T: Into<MoveOSTransaction>, A: Into<Vec<u8>>>(
-        &mut self,
-        tx: T,
-        authenticator: A,
-    ) -> Result<MoveOSTransaction> {
+    pub fn validate<T: AuthenticatableTransaction>(&mut self, tx: T) -> Result<MoveOSTransaction> {
         let session = self.vm.new_session(&self.db);
-        self.validate_transaction(session, tx, authenticator)
+        self.validate_transaction(session, tx)
     }
 
-    fn validate_transaction<S, T: Into<MoveOSTransaction>, A: Into<Vec<u8>>>(
+    fn validate_transaction<S, T: AuthenticatableTransaction>(
         &self,
         mut session: SessionExt<S>,
         tx: T,
-        authenticator: A,
     ) -> Result<MoveOSTransaction>
     where
         S: MoveResolverExt,
     {
-        let moveos_tx: MoveOSTransaction = tx.into();
-        let tx_context = TxContext::new(moveos_tx.sender, moveos_tx.tx_hash);
+        let authenticator = tx.authenticator_info();
+
+        //TODO ensure the validate function's sender should be the genesis address?
+        let tx_context = TxContext::new(*ROOCH_FRAMEWORK_ADDRESS, tx.tx_hash());
         let mut gas_meter = UnmeteredGasMeter;
         let (module, function_name) = VALIDATE_FUNCTION.clone();
         let function = Function::new(
             module,
             function_name,
             vec![],
-            vec![MoveValue::vector_u8(authenticator.into())
-                .simple_serialize()
-                .unwrap()],
+            vec![MoveValue::vector_u8(
+                bcs::to_bytes(&authenticator).expect("serialize authenticator should success"),
+            )
+            .simple_serialize()
+            .unwrap()],
         );
         let result = Self::execute_function_bypass_visibility(
             &mut session,
@@ -125,17 +124,22 @@ impl MoveOS {
             function,
         );
         match result {
-            Ok(_) => {
-                //TODO handle the return address
+            Ok(return_values) => {
+                let (validate_result, _layout) = return_values
+                    .return_values
+                    .get(0)
+                    .expect("the validate function should return the validate result.");
+                let auth_result = bcs::from_bytes::<T::AuthenticatorResult>(validate_result)?;
+                tx.construct_moveos_transaction(auth_result)
             }
             Err(e) => {
                 //TODO handle the abort error code
                 println!("validate failed: {:?}", e);
                 // If the error code is EUnsupportedScheme, then we can try to call the sender's validate function
                 // This is the Account Abstraction.
+                bail!("validate failed: {:?}", e)
             }
         }
-        Ok(moveos_tx)
     }
 
     pub fn execute(&mut self, tx: MoveOSTransaction) -> Result<TransactionOutput> {
