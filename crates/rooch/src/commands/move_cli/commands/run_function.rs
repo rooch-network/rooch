@@ -13,8 +13,10 @@ use move_core_types::{
     transaction_argument::TransactionArgument,
     value::MoveValue,
 };
+use moveos::moveos::TransactionOutput;
 use moveos_types::transaction::MoveAction;
 use rooch_client::Client;
+use rooch_server::response::JsonResponse;
 use rooch_types::{
     address::RoochAddress,
     cli::{CliError, CliResult, CommandAction},
@@ -100,8 +102,8 @@ pub struct RunFunction {
 }
 
 #[async_trait]
-impl CommandAction<()> for RunFunction {
-    async fn execute(self) -> CliResult<()> {
+impl CommandAction<JsonResponse<TransactionOutput>> for RunFunction {
+    async fn execute(self) -> CliResult<JsonResponse<TransactionOutput>> {
         let args = self
             .args
             .iter()
@@ -139,11 +141,9 @@ impl CommandAction<()> for RunFunction {
         let tx = tx_data
             .sign(&private_key)
             .map_err(|e| CliError::SignMessageError(e.to_string()))?;
-        let resp = self
-            .client
+        self.client
             .submit_txn(tx)
             .await
-            .map_err(|e| CliError::SubmitTxError(e.to_string()))?;
-        Ok(resp)
+            .map_err(|e| CliError::TransactionError(e.to_string()))
     }
 }

@@ -23,9 +23,11 @@ dirs  = { workspace = true }
 serde = { workspace = true }
 serde_with = { workspace = true }
 serde_yaml = { workspace = true }
+serde_json = { workspace = true }
 once_cell = { workspace = true }
 tracing = { workspace = true }
 async-trait = { workspace = true }
+
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }

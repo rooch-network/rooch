@@ -17,7 +17,7 @@ use rooch_types::cli::{CliError, CliResult, CommandAction};
 #[derive(clap::Parser)]
 pub struct Account {
     #[clap(subcommand)]
-    cmd: Option<AccountCommand>,
+    cmd: AccountCommand,
 }
 
 #[async_trait]
@@ -25,8 +25,8 @@ impl CommandAction<()> for Account {
     async fn execute(self) -> CliResult<()> {
         let config: RoochConfig = prompt_if_no_config().await?;
 
-        if let Some(cmd) = self.cmd {
-            cmd.execute(
+        self.cmd
+            .execute(
                 &mut config.persisted(
                     rooch_config_dir()
                         .map_err(CliError::from)?
@@ -34,14 +34,7 @@ impl CommandAction<()> for Account {
                         .as_path(),
                 ),
             )
-            .await?;
-        } else {
-            // Print help
-            let mut app = Account::command();
-            app.build();
-            app.print_help().map_err(CliError::from)?;
-        }
-        Ok(())
+            .await
     }
 }
 

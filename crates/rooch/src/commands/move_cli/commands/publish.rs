@@ -8,9 +8,11 @@ use move_binary_format::file_format::CompiledModule;
 use move_bytecode_utils::dependency_graph::DependencyGraph;
 use move_bytecode_utils::Modules;
 use move_cli::Move;
+use moveos::moveos::TransactionOutput;
 use moveos::vm::dependency_order::sort_by_dependency_order;
 use moveos_types::transaction::MoveAction;
 use rooch_client::Client;
+use rooch_server::response::JsonResponse;
 use rooch_types::address::RoochAddress;
 use rooch_types::cli::{CliError, CliResult, CommandAction};
 use rooch_types::transaction::authenticator::AccountPrivateKey;
@@ -50,8 +52,8 @@ impl Publish {
 }
 
 #[async_trait]
-impl CommandAction<()> for Publish {
-    async fn execute(self) -> CliResult<()> {
+impl CommandAction<JsonResponse<TransactionOutput>> for Publish {
+    async fn execute(self) -> CliResult<JsonResponse<TransactionOutput>> {
         let package_path = self.move_args.package_path;
         let config = self.move_args.build_config;
         let mut config = config.clone();
@@ -107,7 +109,9 @@ impl CommandAction<()> for Publish {
         let private_key = AccountPrivateKey::generate_for_testing();
         let tx = tx_data.sign(&private_key)?;
 
-        self.client.submit_txn(tx).await?;
-        Ok(())
+        self.client
+            .submit_txn(tx)
+            .await
+            .map_err(|e| CliError::TransactionError(e.to_string()))
     }
 }

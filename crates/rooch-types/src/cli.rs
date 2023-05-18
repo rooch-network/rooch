@@ -45,8 +45,8 @@ pub enum CliError {
     IOError(String),
     #[error("Sign message error: {0}")]
     SignMessageError(String),
-    #[error("Submit TX error: {0}")]
-    SubmitTxError(String),
+    #[error("Transaction error: {0}")]
+    TransactionError(String),
     #[error("View function error: {0}")]
     ViewFunctionError(String),
 }
