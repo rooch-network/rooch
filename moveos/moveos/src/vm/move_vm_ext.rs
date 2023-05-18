@@ -86,11 +86,6 @@ where
         args: Vec<Vec<u8>>,
     ) -> Result<Vec<Vec<u8>>, PartialVMError> {
         tx_context.resolve_argument(self, &func, args)
-        // let object_context = self
-        //     .session
-        //     .get_native_extensions()
-        //     .get::<NativeObjectContext>();
-        // object_context.resolve_argument(self, &func, args)
     }
 
     /************** Proxy function */

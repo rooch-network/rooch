@@ -12,7 +12,7 @@ use move_cli::{
     },
     Move,
 };
-use rooch_types::cli::{CliError, CliResult};
+use rooch_types::cli::{CliError, CliResult, CommandAction};
 
 pub mod commands;
 pub mod types;
@@ -43,28 +43,54 @@ pub enum MoveCommand {
     //TODO implement integration test command
 }
 
-pub async fn run_cli(move_cli: MoveCli) -> CliResult<()> {
+impl MoveCli {
+    pub async fn execute(self) -> CliResult<String> {
+        run_cli(self).await
+    }
+}
+
+async fn run_cli(move_cli: MoveCli) -> CliResult<String> {
     let move_args = move_cli.move_args;
     let cmd = move_cli.cmd;
 
     //let error_descriptions: ErrorMapping = bcs::from_bytes(moveos_stdlib::error_descriptions())?;
 
     match cmd {
-        MoveCommand::Build(c) => c.execute(move_args.package_path, move_args.build_config),
-        MoveCommand::Coverage(c) => c.execute(move_args.package_path, move_args.build_config),
-        MoveCommand::Disassemble(c) => c.execute(move_args.package_path, move_args.build_config),
-        MoveCommand::Docgen(c) => c.execute(move_args.package_path, move_args.build_config),
-        MoveCommand::Errmap(c) => c.execute(move_args.package_path, move_args.build_config),
-        MoveCommand::Info(c) => c.execute(move_args.package_path, move_args.build_config),
-        MoveCommand::New(c) => c.execute(move_args.package_path),
-        MoveCommand::Prove(c) => c.execute(move_args.package_path, move_args.build_config),
-        MoveCommand::Test(c) => c.execute(move_args.package_path, move_args.build_config),
-        MoveCommand::Publish(c) => {
-            c.execute(move_args.package_path, move_args.build_config)
-                .await
-        }
-        MoveCommand::Run(c) => c.execute().await,
-        MoveCommand::View(c) => c.execute().await,
+        MoveCommand::Build(c) => c
+            .execute(move_args.package_path, move_args.build_config)
+            .map(|_| "Success".to_string())
+            .map_err(CliError::from),
+        MoveCommand::Coverage(c) => c
+            .execute(move_args.package_path, move_args.build_config)
+            .map(|_| "Success".to_string())
+            .map_err(CliError::from),
+        MoveCommand::Disassemble(c) => c
+            .execute(move_args.package_path, move_args.build_config)
+            .map(|_| "Success".to_string())
+            .map_err(CliError::from),
+        MoveCommand::Docgen(c) => c
+            .execute(move_args.package_path, move_args.build_config)
+            .map(|_| "Success".to_string())
+            .map_err(CliError::from),
+        MoveCommand::Errmap(c) => c
+            .execute(move_args.package_path, move_args.build_config)
+            .map(|_| "Success".to_string())
+            .map_err(CliError::from),
+        MoveCommand::Info(c) => c
+            .execute(move_args.package_path, move_args.build_config)
+            .map(|_| "Success".to_string())
+            .map_err(CliError::from),
+        MoveCommand::New(c) => c.execute_serialized().await,
+        MoveCommand::Prove(c) => c
+            .execute(move_args.package_path, move_args.build_config)
+            .map(|_| "Success".to_string())
+            .map_err(CliError::from),
+        MoveCommand::Test(c) => c
+            .execute(move_args.package_path, move_args.build_config)
+            .map(|_| "Success".to_string())
+            .map_err(CliError::from),
+        MoveCommand::Publish(c) => c.execute_serialized().await,
+        MoveCommand::Run(c) => c.execute_serialized().await,
+        MoveCommand::View(c) => c.execute_serialized().await,
     }
-    .map_err(CliError::from)
 }

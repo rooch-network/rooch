@@ -16,7 +16,6 @@ use moveos::moveos::{MoveOS, TransactionOutput};
 use moveos_types::object::RawObject;
 use moveos_types::transaction::ViewPayload;
 use rooch_types::transaction::rooch::RoochTransaction;
-use rooch_types::transaction::AbstractTransaction;
 
 pub struct ServerActor {
     moveos: MoveOS,
@@ -50,8 +49,7 @@ impl Handler<SubmitTransactionMessage> for ServerActor {
         let tx = bcs::from_bytes::<RoochTransaction>(&msg.payload)?;
         println!("sender: {:?}", tx.sender());
         //First, validate the transactin
-        let authenticator_info = tx.authenticator();
-        let moveos_tx = self.moveos.validate(tx, authenticator_info)?;
+        let moveos_tx = self.moveos.validate(tx)?;
         // TODO Write to DA
         // Then execute
         self.moveos.execute(moveos_tx)

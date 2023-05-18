@@ -115,9 +115,12 @@ pub struct NativeTableContext<'a> {
 const _ECATEGORY_INVALID_STATE: u8 = 0;
 const ECATEGORY_INVALID_ARGUMENT: u8 = 7;
 
+//25607
 const ALREADY_EXISTS: u64 = (100 << 8) + ECATEGORY_INVALID_ARGUMENT as u64;
+//25863
 const NOT_FOUND: u64 = (101 << 8) + ECATEGORY_INVALID_ARGUMENT as u64;
 // Move side raises this
+//26112
 const _NOT_EMPTY: u64 = (102 << 8) + _ECATEGORY_INVALID_STATE as u64;
 
 // ===========================================================================================

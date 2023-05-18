@@ -11,7 +11,7 @@ module rooch_framework::account{
    use std::debug;
    #[test_only]
    use moveos_std::storage_context;
-   use rooch_framework::authenticator;
+   use rooch_framework::authenticator::{Self, AuthenticatorResult};
 
    friend rooch_framework::genesis;
    friend rooch_framework::transaction_validator;
@@ -55,9 +55,6 @@ module rooch_framework::account{
    /// authentication key length
    const AUTHENTICATION_KEY_LENGTH: u64 = 32;
 
-
-
-
    /// Account already exists
    const EAccountAlreadyExists: u64 = 1;
    /// Account does not exist
@@ -74,6 +71,7 @@ module rooch_framework::account{
    const EAccountIsAlreadyResourceAccount: u64 = 7;
    /// Address to create is not a valid reserved address for Rooch framework
    const ENoValidFrameworkReservedAddress: u64 = 11;
+ 
 
    /// A entry function to create an account under `new_address`
    public entry fun create_account_entry(ctx: &mut StorageContext, new_address: address){
@@ -104,7 +102,7 @@ module rooch_framework::account{
       );
 
       // TODO event register
-      account_storage::create_account_storage(ctx, new_address);
+      account_storage::ensure_account_storage(ctx, new_address);
       account_storage::global_move_to<Account>(ctx,
          &new_account,
          Account {
@@ -274,13 +272,18 @@ module rooch_framework::account{
    }
 
    /// This function is for MoveOS to validate the transaction sender's authenticator.
-   fun validate(_ctx: &mut StorageContext, authenticator_info_bytes: vector<u8>) {
-      let authenticator_info = authenticator::decode_authenticator_info(authenticator_info_bytes);
-      authenticator::check_authenticator(&authenticator_info);
+   /// Return the sender's address if the authenticator is valid, auto resolve multi-chain address to rooch address.
+   fun validate(ctx: &mut StorageContext, authenticator_info_bytes: vector<u8>) : AuthenticatorResult {
+      let (sender_maddr, _sequence_number, authenticator) = authenticator::decode_authenticator_info(authenticator_info_bytes);
+      //std::debug::print(&authenticator);
+      authenticator::check_authenticator(&authenticator);
       //TODO decode by the scheme id
-      let _authenicator = authenticator::decode_ed25519_authenticator(authenticator_info);
+      let _ed25519_authenicator = authenticator::decode_ed25519_authenticator(authenticator);
       //TODO verify signature
       //TODO verify authenicator info with account's auth key
+      let addr_opt = rooch_framework::address_mapping::resolve(ctx, sender_maddr);
+      let resolved_address = std::option::extract(&mut addr_opt);
+      authenticator::new_authenticator_result(resolved_address)
    }
 
    #[test_only]

@@ -36,9 +36,9 @@ fastcrypto = { workspace = true }
 schemars = {workspace = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }
+async-trait ={ workspace = true }
 
 starcoin-crypto = { workspace = true, features= ["fuzzing"] }
-slip44 = { workspace = true }
 
 
 move-core-types = { workspace = true }
