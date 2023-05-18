@@ -12,11 +12,12 @@ use move_core_types::{
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
 };
+use moveos::moveos::TransactionOutput;
 use moveos_types::object::ObjectID;
 use moveos_types::transaction::ViewPayload;
 use rand::Rng;
 use rooch_common::config::{rooch_config_path, PersistedConfig, RoochConfig};
-use rooch_server::service::RpcServiceClient;
+use rooch_server::{response::JsonResponse, service::RpcServiceClient};
 use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction};
 
 #[derive(Clone, Debug, Parser)]
@@ -53,26 +54,23 @@ impl Client {
         http_client(url)
     }
 
-    pub async fn submit_txn(&self, tx: RoochTransaction) -> Result<()> {
+    pub async fn submit_txn(
+        &self,
+        tx: RoochTransaction,
+    ) -> Result<JsonResponse<TransactionOutput>> {
         let txn_payload = bcs::to_bytes(&tx)?;
-        let resp = self.get_client()?.submit_txn(txn_payload).await?;
-        // TODO: return the transaction output to caller.
-        match resp.try_into_inner()? {
-            Some(v) => println!("{:?}", v),
-            None => println!("{:?}", serde_json::Value::Null),
-        };
-        Ok(())
+        self.get_client()?
+            .submit_txn(txn_payload)
+            .await
+            .map_err(|e| anyhow::anyhow!(e))
     }
 
-    pub async fn view(&self, payload: ViewPayload) -> Result<()> {
+    pub async fn view(&self, payload: ViewPayload) -> Result<JsonResponse<Vec<serde_json::Value>>> {
         let payload = bcs::to_bytes(&payload)?;
-        let resp = self.get_client()?.view(payload).await?;
-        // TODO: parse response.
-        match resp.try_into_inner()? {
-            Some(v) => println!("{:?}", v),
-            None => println!("{:?}", serde_json::Value::Null),
-        };
-        Ok(())
+        self.get_client()?
+            .view(payload)
+            .await
+            .map_err(|e| anyhow::anyhow!(e))
     }
 
     pub async fn resource(

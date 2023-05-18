@@ -4,6 +4,7 @@
 use std::io;
 
 use anyhow::Result;
+use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -42,6 +43,12 @@ pub enum CliError {
     BcsError(String),
     #[error("IO error: {0}")]
     IOError(String),
+    #[error("Sign message error: {0}")]
+    SignMessageError(String),
+    #[error("Transaction error: {0}")]
+    TransactionError(String),
+    #[error("View function error: {0}")]
+    ViewFunctionError(String),
 }
 
 impl From<anyhow::Error> for CliError {
@@ -59,5 +66,19 @@ impl From<bcs::Error> for CliError {
 impl From<io::Error> for CliError {
     fn from(e: io::Error) -> Self {
         CliError::IOError(e.to_string())
+    }
+}
+
+#[async_trait]
+pub trait CommandAction<T: Serialize + Send>: Sized + Send {
+    /// Executes the command, returning a command specific type
+    async fn execute(self) -> CliResult<T>;
+
+    /// Executes the command, and serializes it to the common JSON output type
+    async fn execute_serialized(self) -> CliResult<String> {
+        match self.execute().await {
+            Ok(result) => Ok(serde_json::to_string_pretty(&result).unwrap()),
+            Err(e) => Err(e),
+        }
     }
 }
