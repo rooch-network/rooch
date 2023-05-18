@@ -1,15 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::h256::H256;
+use crate::h256::{self, H256};
+use anyhow::Result;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
 };
-use serde::{Deserialize, Serialize};
-
-use crate::h256;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Script {
@@ -79,6 +78,18 @@ impl MoveAction {
             args,
         })
     }
+}
+
+pub trait AuthenticatableTransaction {
+    type AuthenticatorInfo: Serialize;
+    type AuthenticatorResult: DeserializeOwned;
+
+    fn tx_hash(&self) -> H256;
+    fn authenticator_info(&self) -> Self::AuthenticatorInfo;
+    fn construct_moveos_transaction(
+        &self,
+        result: Self::AuthenticatorResult,
+    ) -> Result<MoveOSTransaction>;
 }
 
 #[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]

@@ -10,7 +10,12 @@ module rooch_framework::authenticator{
 
     struct AuthenticatorInfo has copy, store, drop {
         sender: MultiChainAddress,
+        sequence_number: u64,
         authenticator: Authenticator,
+    }
+
+    struct AuthenticatorResult has copy, store, drop {
+        resolved_address: address,
     }
 
     struct Authenticator has copy, store, drop {
@@ -42,10 +47,10 @@ module rooch_framework::authenticator{
         assert!(is_builtin_scheme(authenticator.scheme), EUnsupportedScheme);
     }
 
-    public fun decode_authenticator_info(data: vector<u8>) : (MultiChainAddress, Authenticator) {
+    public fun decode_authenticator_info(data: vector<u8>) : (MultiChainAddress, u64, Authenticator) {
         let info = moveos_std::bcd::from_bytes<AuthenticatorInfo>(data);
-        let AuthenticatorInfo{sender, authenticator} = info;
-        (sender, authenticator)
+        let AuthenticatorInfo{sender, sequence_number, authenticator} = info;
+        (sender, sequence_number, authenticator)
     }
 
     public fun decode_ed25519_authenticator(authenticator: Authenticator) : Ed25519Authenticator {
@@ -61,5 +66,11 @@ module rooch_framework::authenticator{
     public fun decode_secp256k1_authenticator(authenticator: Authenticator) : Secp256k1Authenticator {
         assert!(authenticator.scheme == SCHEME_SECP256K1, EUnsupportedScheme);
         moveos_std::bcd::from_bytes<Secp256k1Authenticator>(authenticator.payload)
+    }
+
+    public fun new_authenticator_result(resolved_address: address): AuthenticatorResult {
+        AuthenticatorResult{
+            resolved_address
+        }
     }
 }
