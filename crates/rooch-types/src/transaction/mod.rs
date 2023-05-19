@@ -4,7 +4,7 @@
 use self::authenticator::Authenticator;
 use crate::{address::MultiChainAddress, H256};
 use anyhow::Result;
-use move_core_types::account_address::AccountAddress;
+use move_core_types::{account_address::AccountAddress, vm_status::KeptVMStatus};
 use moveos_types::transaction::AuthenticatableTransaction;
 use serde::{Deserialize, Serialize};
 
@@ -115,6 +115,46 @@ impl TryFrom<RawTransaction> for TypedTransaction {
                 let tx = ethereum::EthereumTransaction::decode(&raw.raw)?;
                 Ok(TypedTransaction::Ethereum(tx))
             }
+        }
+    }
+}
+
+/// `TransactionInfo` represents the result of executing a transaction.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct TransactionInfo {
+    /// The hash of this transaction.
+    pub tx_hash: H256,
+
+    /// The root hash of Sparse Merkle Tree describing the world state at the end of this
+    /// transaction.
+    pub state_root: H256,
+
+    /// The root hash of Merkle Accumulator storing all events emitted during this transaction.
+    pub event_root: H256,
+
+    /// The amount of gas used.
+    pub gas_used: u64,
+
+    /// The vm status. If it is not `Executed`, this will provide the general error class. Execution
+    /// failures and Move abort's receive more detailed information. But other errors are generally
+    /// categorized with no status code or other information
+    pub status: KeptVMStatus,
+}
+
+impl TransactionInfo {
+    pub fn new(
+        tx_hash: H256,
+        state_root: H256,
+        event_root: H256,
+        gas_used: u64,
+        status: KeptVMStatus,
+    ) -> TransactionInfo {
+        TransactionInfo {
+            tx_hash,
+            state_root,
+            event_root,
+            gas_used,
+            status,
         }
     }
 }

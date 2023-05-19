@@ -1,5 +1,5 @@
 [package]
-name = "rooch-server"
+name = "rooch-sequencer"
 version = "0.1.0"
 
 # Workspace inherited keys
@@ -41,5 +41,3 @@ moveos-types = { workspace = true }
 
 rooch-common = { workspace = true }
 rooch-types = { workspace = true }
-rooch-executor = { workspace = true }
-rooch-sequencer = { workspace = true }
