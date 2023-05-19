@@ -14,10 +14,10 @@ pub struct TransactionSequenceMessage {
 #[derive(Debug)]
 pub struct TransactionSequenceResult {
     /// The tx order
-    pub order: u128,
-    /// The tx order witness, usually it is the signature of the sequencer to prove the order
+    pub tx_order: u128,
+    /// The tx order signature, it is the signature of the sequencer to commit the tx order.
     //TODO confirm the type.
-    pub order_witness: Authenticator,
+    pub tx_order_signature: Authenticator,
 }
 
 impl Message for TransactionSequenceMessage {

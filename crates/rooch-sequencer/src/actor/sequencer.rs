@@ -32,16 +32,16 @@ impl Handler<TransactionSequenceMessage> for SequencerActor {
         _ctx: &mut ActorContext,
     ) -> Result<TransactionSequenceResult> {
         let tx = msg.tx;
-        let order = self.last_order + 1;
+        let tx_order = self.last_order + 1;
         let hash = tx.hash();
         let mut witness_data = hash.as_ref().to_vec();
-        witness_data.extend(order.to_le_bytes().iter());
+        witness_data.extend(tx_order.to_le_bytes().iter());
         let witness_hash = h256::sha3_256_of(&witness_data);
-        let order_witness = self.sequencer_key.sign(witness_hash.as_bytes());
-        self.last_order = order;
+        let tx_order_signature = self.sequencer_key.sign(witness_hash.as_bytes());
+        self.last_order = tx_order;
         Ok(TransactionSequenceResult {
-            order,
-            order_witness,
+            tx_order,
+            tx_order_signature,
         })
     }
 }
