@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::api::RoochRpcModule;
-use crate::proxy::ServerProxy;
 use crate::response::JsonResponse;
 use jsonrpsee::core::{async_trait, RpcResult};
 use jsonrpsee::proc_macros::rpc;
@@ -14,6 +13,10 @@ use move_core_types::{
 };
 use moveos::moveos::TransactionOutput;
 use moveos_types::object::ObjectID;
+use rooch_executor::proxy::ExecutorProxy;
+use rooch_sequencer::proxy::SequencerProxy;
+use rooch_types::transaction::rooch::RoochTransaction;
+use rooch_types::transaction::TypedTransaction;
 
 // Define a rpc server api
 #[rpc(server, client)]
@@ -41,29 +44,42 @@ pub trait RpcService {
 }
 
 pub struct RoochServer {
-    manager: ServerProxy,
+    executor: ExecutorProxy,
+    sequencer: SequencerProxy,
 }
 
 impl RoochServer {
-    pub fn new(manager: ServerProxy) -> Self {
-        Self { manager }
+    pub fn new(executor: ExecutorProxy, sequencer: SequencerProxy) -> Self {
+        Self {
+            executor,
+            sequencer,
+        }
     }
 }
 
 #[async_trait]
 impl RpcServiceServer for RoochServer {
     async fn echo(&self, msg: String) -> RpcResult<JsonResponse<String>> {
-        let resp = self.manager.echo(msg).await?;
-        Ok(JsonResponse::ok(resp))
+        Ok(JsonResponse::ok(msg))
     }
 
     async fn submit_txn(&self, payload: Vec<u8>) -> RpcResult<JsonResponse<TransactionOutput>> {
-        let resp = self.manager.submit_txn(payload).await?;
-        Ok(JsonResponse::ok(resp))
+        let tx = bcs::from_bytes::<RoochTransaction>(&payload).map_err(anyhow::Error::from)?;
+        println!("sender: {:?}", tx.sender());
+        //First, validate the transactin
+        let moveos_tx = self.executor.validate_transaction(tx.clone()).await?;
+        let _sequence_result = self
+            .sequencer
+            .sequence_transaction(TypedTransaction::Rooch(tx))
+            .await?;
+        // Then execute
+        let (output, _tx_info) = self.executor.execute_transaction(moveos_tx).await?;
+        //TODO conform the response, put the sequence result to output.
+        Ok(JsonResponse::ok(output))
     }
 
     async fn view(&self, payload: Vec<u8>) -> RpcResult<JsonResponse<Vec<serde_json::Value>>> {
-        let output_values = self.manager.view(payload).await?;
+        let output_values = self.executor.view(payload).await?;
         let mut resp = vec![];
         for v in output_values {
             resp.push(serde_json::to_value(v)?);
@@ -80,14 +96,14 @@ impl RpcServiceServer for RoochServer {
         type_args: Vec<TypeTag>,
     ) -> RpcResult<JsonResponse<String>> {
         let resp = self
-            .manager
+            .executor
             .resource(address, &module, &resource, type_args)
             .await?;
         Ok(JsonResponse::ok(resp))
     }
 
     async fn object(&self, object_id: ObjectID) -> RpcResult<JsonResponse<String>> {
-        let resp = self.manager.object(object_id).await?;
+        let resp = self.executor.object(object_id).await?;
         Ok(JsonResponse::ok(resp))
     }
 }

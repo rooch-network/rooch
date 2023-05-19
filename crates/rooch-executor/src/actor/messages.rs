@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use anyhow::Result;
 use coerce::actor::message::Message;
 use move_core_types::{
     account_address::AccountAddress,
@@ -9,25 +10,37 @@ use move_core_types::{
     value::MoveValue,
 };
 use moveos::moveos::TransactionOutput;
-use moveos_types::object::ObjectID;
+use moveos_types::{
+    object::ObjectID,
+    transaction::{AuthenticatableTransaction, MoveOSTransaction},
+};
+use rooch_types::transaction::TransactionInfo;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct HelloMessage {
-    pub msg: String,
+#[derive(Debug)]
+pub struct ValidateTransactionMessage<T> {
+    pub tx: T,
 }
 
-impl Message for HelloMessage {
-    type Result = String;
+impl<T> Message for ValidateTransactionMessage<T>
+where
+    T: 'static + AuthenticatableTransaction + Send + Sync,
+{
+    type Result = Result<MoveOSTransaction>;
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct SubmitTransactionMessage {
-    pub payload: Vec<u8>,
+#[derive(Debug)]
+pub struct ExecuteTransactionMessage {
+    pub tx: MoveOSTransaction,
 }
 
-impl Message for SubmitTransactionMessage {
-    type Result = Result<TransactionOutput, anyhow::Error>;
+pub struct ExecuteTransactionResult {
+    pub output: TransactionOutput,
+    pub transaction_info: TransactionInfo,
+}
+
+impl Message for ExecuteTransactionMessage {
+    type Result = Result<ExecuteTransactionResult>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]

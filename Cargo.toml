@@ -16,7 +16,9 @@ members = [
     "crates/rooch",
     "crates/testsuite",
     "crates/rooch-common",
-    "crates/rooch-da"
+    "crates/rooch-da",
+    "crates/rooch-sequencer",
+    "crates/rooch-executor",
 ]
 
 default-members = [
@@ -56,6 +58,8 @@ rooch-server = { path = "crates/rooch-server" }
 rooch-client = { path = "crates/rooch-client" }
 rooch-testsuite = { path = "crates/testsuite" }
 rooch-common = {path = "crates/rooch-common"}
+rooch-sequencer = {path = "crates/rooch-sequencer"}
+rooch-executor = {path = "crates/rooch-executor"}
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.

@@ -3,13 +3,13 @@
 
 use crate::api::RoochRpcModule;
 use crate::jsonrpc_types::coin::Balance;
-use crate::proxy::ServerProxy;
 use crate::response::JsonResponse;
 use async_trait::async_trait;
 use jsonrpsee::RpcModule;
 use jsonrpsee::{core::RpcResult, proc_macros::rpc};
 use move_core_types::account_address::AccountAddress;
 use moveos_types::move_types::StructId;
+use rooch_executor::proxy::ExecutorProxy;
 use tracing::{info, instrument};
 
 // #[rpc(server, client, namespace = "rooch")]
@@ -27,12 +27,12 @@ pub trait AccountApi {
 }
 
 pub struct AccountServer {
-    manager: ServerProxy,
+    executor: ExecutorProxy,
 }
 
 impl AccountServer {
-    pub fn new(manager: ServerProxy) -> Self {
-        Self { manager }
+    pub fn new(executor: ExecutorProxy) -> Self {
+        Self { executor }
     }
 
     #[instrument(skip(self))]
@@ -54,7 +54,7 @@ impl AccountServer {
         resource: StructId,
     ) -> RpcResult<JsonResponse<String>> {
         let resp = self
-            .manager
+            .executor
             .resource(
                 address,
                 &resource.module_id.clone(),
