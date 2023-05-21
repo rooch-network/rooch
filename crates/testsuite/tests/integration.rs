@@ -1,5 +1,8 @@
+use anyhow::{bail, Result};
+use clap::Parser;
 use cucumber::{given, then, World as _};
 use jpst::TemplateContext;
+use rooch::RoochCli;
 use rooch_server::Service;
 use serde_json::Value;
 use tracing::info;
@@ -30,26 +33,17 @@ async fn run_cmd(world: &mut World, args: String) {
     let tpl_ctx = world.tpl_ctx.as_mut().unwrap();
     let args = eval_command_args(tpl_ctx, args);
 
-    let cmd_name;
-    if args.contains("\"") {
-        let mut args1 = args.clone();
-        let start = args.find("\"").unwrap();
-        let command: String = args1.drain(0..start - 1).collect();
-        let args_a: String = args1.drain(2..args1.len() - 1).collect();
+    let mut args = split_string_with_quotes(&args).expect("Invalid commands");
+    let cmd_name = args[0].clone();
+    args.insert(0, "rooch".to_string());
+    let opts: RoochCli = RoochCli::parse_from(args);
+    let output = rooch::run_cli(opts)
+        .await
+        .expect("CLI should run successfully.");
 
-        let command = command.split_whitespace().collect::<Vec<_>>();
-        cmd_name = command[0].to_string();
-        cmd.args(command);
-        cmd.arg(args_a);
-    } else {
-        let args = args.split_whitespace().collect::<Vec<_>>();
-        cmd_name = args[0].to_string();
-        cmd.args(args);
-    }
-    let assert = cmd.assert().success();
-
-    let output = assert.get_output();
-    let result_json: Value = serde_json::from_slice(&output.stdout).unwrap();
+    // info!("cmd output: {:?}", output);
+    let result_json: Value =
+        serde_json::from_str(&output).expect("json parse error from cli output.");
     tpl_ctx.entry(cmd_name).append(result_json);
 }
 
@@ -84,6 +78,41 @@ fn eval_command_args(ctx: &TemplateContext, args: String) -> String {
     let eval_args = jpst::format_str!(&args, ctx);
     info!("eval args:{}", eval_args);
     eval_args
+}
+
+fn split_string_with_quotes(s: &str) -> Result<Vec<String>> {
+    let mut result = Vec::new();
+    let mut chars = s.chars().peekable();
+    let mut current = String::new();
+    let mut in_quotes = false;
+
+    while let Some(c) = chars.next() {
+        match c {
+            '"' => {
+                in_quotes = !in_quotes;
+                current.push(c);
+            }
+            ' ' if !in_quotes => {
+                if !current.is_empty() {
+                    result.push(current.clone());
+                    current.clear();
+                }
+            }
+            _ => {
+                current.push(c);
+            }
+        }
+    }
+
+    if in_quotes {
+        bail!("Mismatched quotes")
+    }
+
+    if !current.is_empty() {
+        result.push(current);
+    }
+
+    Ok(result)
 }
 
 #[tokio::main]
