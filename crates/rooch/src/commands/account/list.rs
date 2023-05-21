@@ -3,11 +3,9 @@
 
 // #![allow(unused_imports)]
 
-use anyhow::{Ok, Result};
 use clap::Parser;
 use rooch_client::Client;
-use rooch_types::account::EncodeDecodeBase64;
-use rooch_types::address::RoochAddress;
+use rooch_types::{account::EncodeDecodeBase64, address::RoochAddress, cli::CliResult};
 use std::fmt::Debug;
 
 use rooch_common::config::{PersistedConfig, RoochConfig};
@@ -26,7 +24,7 @@ pub struct ListCommand {
 }
 
 impl ListCommand {
-    pub async fn execute(self, config: &mut PersistedConfig<RoochConfig>) -> Result<()> {
+    pub async fn execute(self, config: &mut PersistedConfig<RoochConfig>) -> CliResult<()> {
         let active_address = config.active_address;
 
         println!(

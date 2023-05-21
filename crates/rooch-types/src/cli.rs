@@ -49,6 +49,10 @@ pub enum CliError {
     TransactionError(String),
     #[error("View function error: {0}")]
     ViewFunctionError(String),
+    #[error("Import account error: {0}")]
+    ImportAccountError(String),
+    #[error("Generate key error: {0}")]
+    GenerateKeyError(String),
 }
 
 impl From<anyhow::Error> for CliError {
