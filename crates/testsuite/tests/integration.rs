@@ -73,13 +73,15 @@ async fn assert_output(world: &mut World, args: String) {
 }
 
 fn eval_command_args(ctx: &TemplateContext, args: String) -> String {
-    info!("args: {}", args);
+    // info!("args: {}", args);
     let args = args.replace("\\\"", "\"");
     let eval_args = jpst::format_str!(&args, ctx);
-    info!("eval args:{}", eval_args);
+    // info!("eval args:{}", eval_args);
     eval_args
 }
 
+/// Split a string into a vector of strings, splitting on spaces, but ignoring spaces inside quotes.
+/// And quotes will alse be removed.
 fn split_string_with_quotes(s: &str) -> Result<Vec<String>> {
     let mut result = Vec::new();
     let mut chars = s.chars().peekable();
@@ -90,7 +92,7 @@ fn split_string_with_quotes(s: &str) -> Result<Vec<String>> {
         match c {
             '"' => {
                 in_quotes = !in_quotes;
-                current.push(c);
+                // Skip the quote
             }
             ' ' if !in_quotes => {
                 if !current.is_empty() {
