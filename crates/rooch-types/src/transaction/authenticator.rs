@@ -9,7 +9,11 @@
 
 use crate::address::RoochAddress;
 use anyhow::{ensure, Error, Result};
+#[cfg(any(test, feature = "fuzzing"))]
+use ethers::types::U256;
 use moveos_types::h256::H256;
+#[cfg(any(test, feature = "fuzzing"))]
+use proptest::{collection::vec, prelude::*};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use rand::{rngs::OsRng, Rng};
@@ -214,6 +218,28 @@ impl<'de> Deserialize<'de> for Secp256k1Authenticator {
         let signature = ethers::core::types::Signature::try_from(value.signature.as_slice())
             .map_err(|e| serde::de::Error::custom(e.to_string()))?;
         Ok(Secp256k1Authenticator { signature })
+    }
+}
+
+#[cfg(any(test, feature = "fuzzing"))]
+impl Arbitrary for Secp256k1Authenticator {
+    type Parameters = ();
+    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+        arb_secp256k1_authenticator().boxed()
+    }
+    type Strategy = BoxedStrategy<Self>;
+}
+
+#[cfg(any(test, feature = "fuzzing"))]
+prop_compose! {
+    fn arb_secp256k1_authenticator()(
+     r in vec(any::<u64>(), 4..=4).prop_map(|v| U256(v.try_into().unwrap())),
+     s in vec(any::<u64>(), 4..=4).prop_map(|v| U256(v.try_into().unwrap())),
+     v in any::<u64>(),
+    ) -> Secp256k1Authenticator {
+        Secp256k1Authenticator {
+            signature: ethers::core::types::Signature {v, r, s},
+        }
     }
 }
 
@@ -603,7 +629,10 @@ impl TryFrom<&[u8]> for AccountPrivateKey {
 
 #[cfg(test)]
 mod tests {
-    use crate::transaction::authenticator::{AccountPublicKey, AuthenticationKey};
+    use crate::transaction::authenticator::{
+        AccountPublicKey, AuthenticationKey, Secp256k1Authenticator,
+    };
+    use proptest::prelude::*;
     use starcoin_crypto::keygen::KeyGen;
     use starcoin_crypto::multi_ed25519::MultiEd25519PublicKey;
     use std::str::FromStr;
@@ -626,5 +655,32 @@ mod tests {
         let multi_pubkey = MultiEd25519PublicKey::new(pubkeys, threshold).unwrap();
         let auth_key2 = AuthenticationKey::multi_ed25519(&multi_pubkey);
         assert_eq!(auth_key, auth_key2);
+    }
+
+    #[test]
+    fn test_temp() {
+        use ethers::types::U256;
+        let a = Secp256k1Authenticator {
+            signature: ethers::core::types::Signature {
+                r: U256::from(0),
+                s: U256::from(0),
+                v: 256u64,
+            },
+        };
+        let r = a.signature.to_vec();
+        let serialized = serde_json::to_string(&a).unwrap();
+        println!("serialized len = {}, r len={}", serialized.len(), r.len());
+        let b: Secp256k1Authenticator = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(a.signature, b.signature);
+        println!("{:?}", b);
+    }
+
+    proptest! {
+        #[test]
+        fn test_secp256k1_authenticator_serialize_deserialize(authenticator in any::<super::Secp256k1Authenticator>()) {
+            let serialized = serde_json::to_string(&authenticator).unwrap();
+            let deserialized: Secp256k1Authenticator = serde_json::from_str(&serialized).unwrap();
+            assert_eq!(authenticator.signature, deserialized.signature);
+        }
     }
 }
