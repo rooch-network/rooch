@@ -14,6 +14,7 @@ use move_core_types::{
 use moveos::moveos::TransactionOutput;
 use moveos_types::object::ObjectID;
 use rooch_executor::proxy::ExecutorProxy;
+use rooch_proposer::proxy::ProposerProxy;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::TypedTransaction;
@@ -46,13 +47,19 @@ pub trait RpcService {
 pub struct RoochServer {
     executor: ExecutorProxy,
     sequencer: SequencerProxy,
+    proposer: ProposerProxy,
 }
 
 impl RoochServer {
-    pub fn new(executor: ExecutorProxy, sequencer: SequencerProxy) -> Self {
+    pub fn new(
+        executor: ExecutorProxy,
+        sequencer: SequencerProxy,
+        proposer: ProposerProxy,
+    ) -> Self {
         Self {
             executor,
             sequencer,
+            proposer,
         }
     }
 }
@@ -68,12 +75,16 @@ impl RpcServiceServer for RoochServer {
         println!("sender: {:?}", tx.sender());
         //First, validate the transactin
         let moveos_tx = self.executor.validate_transaction(tx.clone()).await?;
-        let _sequence_result = self
+        let typed_tx = TypedTransaction::Rooch(tx);
+        let tx_sequence_info = self
             .sequencer
-            .sequence_transaction(TypedTransaction::Rooch(tx))
+            .sequence_transaction(typed_tx.clone())
             .await?;
         // Then execute
-        let (output, _tx_info) = self.executor.execute_transaction(moveos_tx).await?;
+        let (output, tx_execution_info) = self.executor.execute_transaction(moveos_tx).await?;
+        self.proposer
+            .propose_transaction(typed_tx, tx_execution_info, tx_sequence_info)
+            .await?;
         //TODO conform the response, put the sequence result to output.
         Ok(JsonResponse::ok(output))
     }

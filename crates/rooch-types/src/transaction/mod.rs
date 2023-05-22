@@ -120,6 +120,7 @@ impl TryFrom<RawTransaction> for TypedTransaction {
 }
 
 /// `TransactionInfo` represents the result of executing a transaction.
+//TODO rename to TransactionExecutionInfo?
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TransactionInfo {
     /// The hash of this transaction.
@@ -155,6 +156,31 @@ impl TransactionInfo {
             event_root,
             gas_used,
             status,
+        }
+    }
+}
+
+///`TransactionSequenceInfo` represents the result of sequence a transaction.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct TransactionSequenceInfo {
+    /// The tx order
+    pub tx_order: u128,
+    /// The tx order signature, it is the signature of the sequencer to commit the tx order.
+    pub tx_order_signature: Authenticator,
+    /// The tx accumulator root after the tx is append to the accumulator.
+    pub tx_accumulator_root: H256,
+}
+
+impl TransactionSequenceInfo {
+    pub fn new(
+        tx_order: u128,
+        tx_order_signature: Authenticator,
+        tx_accumulator_root: H256,
+    ) -> TransactionSequenceInfo {
+        TransactionSequenceInfo {
+            tx_order,
+            tx_order_signature,
+            tx_accumulator_root,
         }
     }
 }

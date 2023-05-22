@@ -1,13 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::actor::{
-    messages::{TransactionSequenceMessage, TransactionSequenceResult},
-    sequencer::SequencerActor,
-};
+use crate::actor::{messages::TransactionSequenceMessage, sequencer::SequencerActor};
 use anyhow::Result;
 use coerce::actor::ActorRef;
-use rooch_types::transaction::TypedTransaction;
+use rooch_types::transaction::{TransactionSequenceInfo, TypedTransaction};
 
 #[derive(Clone)]
 pub struct SequencerProxy {
@@ -22,7 +19,7 @@ impl SequencerProxy {
     pub async fn sequence_transaction(
         &self,
         tx: TypedTransaction,
-    ) -> Result<TransactionSequenceResult> {
+    ) -> Result<TransactionSequenceInfo> {
         self.actor.send(TransactionSequenceMessage { tx }).await?
     }
 }
