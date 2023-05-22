@@ -1,12 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::messages::{TransactionSequenceMessage, TransactionSequenceResult};
+use super::messages::TransactionSequenceMessage;
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_types::h256;
-use rooch_types::transaction::authenticator::AccountPrivateKey;
+use rooch_types::{
+    transaction::{authenticator::AccountPrivateKey, TransactionSequenceInfo},
+    H256,
+};
 
 pub struct SequencerActor {
     last_order: u128,
@@ -30,7 +33,7 @@ impl Handler<TransactionSequenceMessage> for SequencerActor {
         &mut self,
         msg: TransactionSequenceMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<TransactionSequenceResult> {
+    ) -> Result<TransactionSequenceInfo> {
         let tx = msg.tx;
         let tx_order = self.last_order + 1;
         let hash = tx.hash();
@@ -39,9 +42,12 @@ impl Handler<TransactionSequenceMessage> for SequencerActor {
         let witness_hash = h256::sha3_256_of(&witness_data);
         let tx_order_signature = self.sequencer_key.sign(witness_hash.as_bytes());
         self.last_order = tx_order;
-        Ok(TransactionSequenceResult {
+        //TODO introduce accumulator
+        let tx_accumulator_root = H256::random();
+        Ok(TransactionSequenceInfo {
             tx_order,
             tx_order_signature,
+            tx_accumulator_root,
         })
     }
 }
