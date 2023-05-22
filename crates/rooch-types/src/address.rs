@@ -10,7 +10,13 @@ use bitcoin::{
 };
 use ethers::types::H160;
 use move_core_types::account_address::AccountAddress;
+#[cfg(any(test, feature = "fuzzing"))]
+use moveos_types::h256;
 use moveos_types::h256::H256;
+#[cfg(any(test, feature = "fuzzing"))]
+use proptest::{collection::vec, prelude::*};
+#[cfg(any(test, feature = "fuzzing"))]
+use proptest_derive::Arbitrary;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use std::str::FromStr;
@@ -25,6 +31,7 @@ pub trait RoochSupportedAddress:
 /// Multi chain address representation
 /// The address is distinguished by the coin id, coin id standard is defined in [slip-0044](https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub struct MultiChainAddress {
     pub coin_id: CoinID,
     pub raw_address: Vec<u8>,
@@ -216,6 +223,24 @@ impl Serialize for RoochAddress {
     }
 }
 
+#[cfg(any(test, feature = "fuzzing"))]
+impl Arbitrary for RoochAddress {
+    type Parameters = ();
+    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+        arb_rooch_address().boxed()
+    }
+    type Strategy = BoxedStrategy<Self>;
+}
+
+#[cfg(any(test, feature = "fuzzing"))]
+prop_compose! {
+    fn arb_rooch_address()(
+     bytes in vec(any::<u8>(), h256::LENGTH..(h256::LENGTH+1))
+    ) -> RoochAddress {
+        RoochAddress(H256::from_slice(&bytes))
+    }
+}
+
 /// Ethereum address type
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct EthereumAddress(pub H160);
@@ -305,5 +330,21 @@ mod test {
         test_rooch_supported_address_roundtrip::<RoochAddress>();
         test_rooch_supported_address_roundtrip::<EthereumAddress>();
         test_rooch_supported_address_roundtrip::<BitcoinAddress>();
+    }
+
+    proptest! {
+        #[test]
+        fn test_rooch_address_serialize_deserialize(address in any::<RoochAddress>()) {
+            let serialized = serde_json::to_string(&address).unwrap();
+            let deserialized: RoochAddress = serde_json::from_str(&serialized).unwrap();
+            assert_eq!(address, deserialized);
+        }
+
+        #[test]
+        fn test_multichain_address_serialize_deserialize(address in any::<MultiChainAddress>()) {
+            let serialized = serde_json::to_string(&address).unwrap();
+            let deserialized: MultiChainAddress = serde_json::from_str(&serialized).unwrap();
+            assert_eq!(address, deserialized);
+        }
     }
 }
