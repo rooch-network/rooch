@@ -122,8 +122,8 @@ impl TryFrom<RawTransaction> for TypedTransaction {
 }
 
 /// `TransactionInfo` represents the result of executing a transaction.
-// #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHash, CryptoHasher)]
 //TODO rename to TransactionExecutionInfo?
+// #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHash, CryptoHasher)]
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TransactionInfo {
     /// The hash of this transaction.
