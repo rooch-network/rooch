@@ -246,10 +246,11 @@ prop_compose! {
     fn arb_secp256k1_authenticator()(
      r in vec(any::<u64>(), 4..=4).prop_map(|v| U256(v.try_into().unwrap())),
      s in vec(any::<u64>(), 4..=4).prop_map(|v| U256(v.try_into().unwrap())),
-     v in any::<u64>(),
+     // Although v is an u64 type, it is actually an u8 value.
+     v in any::<u8>().prop_map(|v| <u64>::from(v)),
     ) -> Secp256k1Authenticator {
         Secp256k1Authenticator {
-            signature: ethers::core::types::Signature {v, r, s},
+            signature: ethers::core::types::Signature {r, s, v},
         }
     }
 }
@@ -666,29 +667,6 @@ mod tests {
         let multi_pubkey = MultiEd25519PublicKey::new(pubkeys, threshold).unwrap();
         let auth_key2 = AuthenticationKey::multi_ed25519(&multi_pubkey);
         assert_eq!(auth_key, auth_key2);
-    }
-
-    #[test]
-    fn test_temp() {
-        use ethers::types::U256;
-        let a = Secp256k1Authenticator {
-            signature: ethers::core::types::Signature {
-                r: U256::from(0),
-                s: U256::from(0),
-                v: 255u64,
-            },
-        };
-        let r = a.signature.to_vec();
-        let serialized = serde_json::to_string(&a).unwrap();
-        println!(
-            "serialized len = {}, r len={}, serialized: {}",
-            serialized.len(),
-            r.len(),
-            serialized
-        );
-        let b: Secp256k1Authenticator = serde_json::from_str(&serialized).unwrap();
-        assert_eq!(a.signature, b.signature);
-        println!("{:?}", b);
     }
 
     proptest! {
