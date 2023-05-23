@@ -22,7 +22,7 @@ pub struct New {
     pub new: new::New,
 
     /// Path of the new package to create.
-    #[clap(long = "path", short = 'p', global = true, parse(from_os_str))]
+    #[clap(long = "mpath", short = 'm', global = true, parse(from_os_str))]
     pub path: Option<PathBuf>,
 }
 
