@@ -183,7 +183,7 @@ impl BuiltinAuthenticator for Secp256k1Authenticator {
         BuiltinScheme::Secp256k1
     }
     fn encode(&self) -> Vec<u8> {
-        bcs::to_bytes(self).expect("encode should success.")
+        self.signature.to_vec()
     }
 }
 
@@ -192,15 +192,19 @@ impl Serialize for Secp256k1Authenticator {
     where
         S: serde::Serializer,
     {
-        #[derive(::serde::Serialize)]
-        #[serde(rename = "Secp256k1Authenticator")]
-        struct Value {
-            signature: Vec<u8>,
+        if serializer.is_human_readable() {
+            serializer.serialize_str(self.signature.to_string().as_str())
+        } else {
+            #[derive(::serde::Serialize)]
+            #[serde(rename = "Secp256k1Authenticator")]
+            struct Value {
+                signature: Vec<u8>,
+            }
+            Value {
+                signature: self.signature.to_vec(),
+            }
+            .serialize(serializer)
         }
-        Value {
-            signature: self.signature.to_vec(),
-        }
-        .serialize(serializer)
     }
 }
 
@@ -209,15 +213,22 @@ impl<'de> Deserialize<'de> for Secp256k1Authenticator {
     where
         D: serde::Deserializer<'de>,
     {
-        #[derive(::serde::Deserialize)]
-        #[serde(rename = "Secp256k1Authenticator")]
-        struct Value {
-            signature: Vec<u8>,
+        if deserializer.is_human_readable() {
+            let hex = String::deserialize(deserializer)?;
+            let signature = ethers::core::types::Signature::from_str(hex.as_str())
+                .map_err(|e| serde::de::Error::custom(e.to_string()))?;
+            Ok(Secp256k1Authenticator { signature })
+        } else {
+            #[derive(::serde::Deserialize)]
+            #[serde(rename = "Secp256k1Authenticator")]
+            struct Value {
+                signature: Vec<u8>,
+            }
+            let value = Value::deserialize(deserializer)?;
+            let signature = ethers::core::types::Signature::try_from(value.signature.as_slice())
+                .map_err(|e| serde::de::Error::custom(e.to_string()))?;
+            Ok(Secp256k1Authenticator { signature })
         }
-        let value = Value::deserialize(deserializer)?;
-        let signature = ethers::core::types::Signature::try_from(value.signature.as_slice())
-            .map_err(|e| serde::de::Error::custom(e.to_string()))?;
-        Ok(Secp256k1Authenticator { signature })
     }
 }
 
@@ -664,12 +675,17 @@ mod tests {
             signature: ethers::core::types::Signature {
                 r: U256::from(0),
                 s: U256::from(0),
-                v: 256u64,
+                v: 255u64,
             },
         };
         let r = a.signature.to_vec();
         let serialized = serde_json::to_string(&a).unwrap();
-        println!("serialized len = {}, r len={}", serialized.len(), r.len());
+        println!(
+            "serialized len = {}, r len={}, serialized: {}",
+            serialized.len(),
+            r.len(),
+            serialized
+        );
         let b: Secp256k1Authenticator = serde_json::from_str(&serialized).unwrap();
         assert_eq!(a.signature, b.signature);
         println!("{:?}", b);
