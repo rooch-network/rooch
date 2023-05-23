@@ -1,5 +1,5 @@
 [package]
-name = "moveos-statedb"
+name = "moveos-store"
 version = "0.1.0"
 
 # Workspace inherited keys
@@ -20,6 +20,7 @@ smt = { workspace = true }
 serde = { workspace = true }
 serde_bytes = { workspace = true }
 hex = { workspace = true }
+parking_lot = { workspace = true }
 
 move-core-types = { workspace = true }
 

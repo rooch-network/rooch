@@ -25,9 +25,9 @@ use move_core_types::{
 };
 use move_vm_runtime::session::SerializedReturnValues;
 use move_vm_types::gas::UnmeteredGasMeter;
-use moveos_statedb::StateDB;
 use moveos_stdlib::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
+use moveos_store::state_store::StateDB;
 use moveos_types::transaction::{AuthenticatableTransaction, MoveAction, MoveOSTransaction};
 use moveos_types::tx_context::TxContext;
 use moveos_types::{h256::H256, transaction::Function};
@@ -225,7 +225,19 @@ impl MoveOS {
 
         let (change_set, _events, mut extensions) = session.finish_with_extensions()?;
 
-        //TODO handle events
+        // //TODO handle events
+        // let block_id = block.id();
+        // let txn_infos = executed_data.txn_infos;
+        // let txn_events = executed_data.txn_events;
+        //
+        // debug_assert!(
+        //     txn_events.len() == txn_infos.len(),
+        //     "events' length should be equal to txn infos' length"
+        // );
+        // let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.id()).collect();
+        // for (info_id, events) in txn_info_ids.iter().zip(txn_events.into_iter()) {
+        //     storage.save_events(*info_id, events)?;
+        // }
 
         let table_context: NativeTableContext = extensions.remove();
         let table_change_set = table_context

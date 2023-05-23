@@ -40,7 +40,6 @@ async-trait ={ workspace = true }
 
 starcoin-crypto = { workspace = true, features= ["fuzzing"] }
 
-
 move-core-types = { workspace = true }
 
 moveos-types = { workspace = true }

@@ -21,7 +21,7 @@ use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::transaction::authenticator::AccountPrivateKey;
 //use moveos_common::config::load_config;
-use moveos_statedb::StateDB;
+use moveos_store::state_store::StateDB;
 use rooch_common::config::{rooch_config_path, PersistedConfig, RoochConfig};
 use serde_json::json;
 use std::net::SocketAddr;
