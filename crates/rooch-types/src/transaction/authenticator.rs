@@ -18,10 +18,14 @@ use proptest::{collection::vec, prelude::*};
 use proptest_derive::Arbitrary;
 use rand::{rngs::OsRng, Rng};
 use serde::{Deserialize, Serialize};
+#[cfg(any(test, feature = "fuzzing"))]
+use starcoin_crypto::ed25519::keypair_strategy;
 use starcoin_crypto::ed25519::{
     Ed25519PrivateKey, ED25519_PRIVATE_KEY_LENGTH, ED25519_PUBLIC_KEY_LENGTH,
 };
 use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519KeyShard;
+#[cfg(any(test, feature = "fuzzing"))]
+use starcoin_crypto::multi_ed25519::MultiEd25519PrivateKey;
 use starcoin_crypto::Uniform;
 use starcoin_crypto::{
     derive::{DeserializeKey, SerializeKey},
@@ -117,6 +121,27 @@ impl<'de> Deserialize<'de> for Ed25519Authenticator {
     }
 }
 
+#[cfg(any(test, feature = "fuzzing"))]
+impl Arbitrary for Ed25519Authenticator {
+    type Parameters = ();
+    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+        arb_ed25519_authenticator().boxed()
+    }
+    type Strategy = BoxedStrategy<Self>;
+}
+
+#[cfg(any(test, feature = "fuzzing"))]
+prop_compose! {
+    fn arb_ed25519_authenticator()(
+        keypair in keypair_strategy(),
+        message in vec(any::<u8>(), 1..1000)
+    ) -> Ed25519Authenticator {
+        Ed25519Authenticator {
+            public_key: keypair.public_key,
+            signature: keypair.private_key.sign_arbitrary_message(&message)
+        }
+    }
+}
 #[derive(Clone, Debug)]
 pub struct MultiEd25519Authenticator {
     pub public_key: MultiEd25519PublicKey,
@@ -173,6 +198,30 @@ impl<'de> Deserialize<'de> for MultiEd25519Authenticator {
         })
     }
 }
+
+#[cfg(any(test, feature = "fuzzing"))]
+impl Arbitrary for MultiEd25519Authenticator {
+    type Parameters = ();
+    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+        arb_multied25519_authenticator().boxed()
+    }
+    type Strategy = BoxedStrategy<Self>;
+}
+
+#[cfg(any(test, feature = "fuzzing"))]
+prop_compose! {
+    fn arb_multied25519_authenticator()(
+        message in vec(any::<u8>(), 1..1000)
+    ) -> MultiEd25519Authenticator {
+        let mut rng = rand::thread_rng();
+        let private_key = MultiEd25519PrivateKey::generate(&mut rng);
+        MultiEd25519Authenticator {
+            public_key: MultiEd25519PublicKey::from(&private_key),
+            signature: private_key.sign_arbitrary_message(&message)
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Secp256k1Authenticator {
     pub signature: ethers::core::types::Signature,
@@ -641,9 +690,7 @@ impl TryFrom<&[u8]> for AccountPrivateKey {
 
 #[cfg(test)]
 mod tests {
-    use crate::transaction::authenticator::{
-        AccountPublicKey, AuthenticationKey, Secp256k1Authenticator,
-    };
+    use crate::transaction::authenticator::{AccountPublicKey, AuthenticationKey};
     use proptest::prelude::*;
     use starcoin_crypto::keygen::KeyGen;
     use starcoin_crypto::multi_ed25519::MultiEd25519PublicKey;
@@ -673,7 +720,23 @@ mod tests {
         #[test]
         fn test_secp256k1_authenticator_serialize_deserialize(authenticator in any::<super::Secp256k1Authenticator>()) {
             let serialized = serde_json::to_string(&authenticator).unwrap();
-            let deserialized: Secp256k1Authenticator = serde_json::from_str(&serialized).unwrap();
+            let deserialized: super:: Secp256k1Authenticator = serde_json::from_str(&serialized).unwrap();
+            assert_eq!(authenticator.signature, deserialized.signature);
+        }
+
+        #[test]
+        fn test_ed25519_authenticator_serialize_deserialize(authenticator in any::<super::Ed25519Authenticator>()) {
+            let serialized = serde_json::to_string(&authenticator).unwrap();
+            let deserialized: super::Ed25519Authenticator = serde_json::from_str(&serialized).unwrap();
+            assert_eq!(authenticator.public_key, deserialized.public_key);
+            assert_eq!(authenticator.signature, deserialized.signature);
+        }
+
+        #[test]
+        fn test_multied25519_authenticator_serialize_deserialize(authenticator in any::<super::MultiEd25519Authenticator>()) {
+            let serialized = serde_json::to_string(&authenticator).unwrap();
+            let deserialized: super::MultiEd25519Authenticator = serde_json::from_str(&serialized).unwrap();
+            assert_eq!(authenticator.public_key, deserialized.public_key);
             assert_eq!(authenticator.signature, deserialized.signature);
         }
     }
