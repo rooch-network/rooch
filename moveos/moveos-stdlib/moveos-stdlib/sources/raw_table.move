@@ -32,7 +32,7 @@ module moveos_std::raw_table {
     /// Acquire an immutable reference to the value which `key` maps to.
     /// Returns specified default value if there is no entry for `key`.
     public(friend) fun borrow_with_default<K: copy + drop, V>(table_handle: &ObjectID, key: K, default: &V): &V {
-        if (!contains<K, V>(table_handle, copy key)) {
+        if (!contains<K>(table_handle, copy key)) {
             default
         } else {
             borrow(table_handle, copy key)
@@ -48,7 +48,7 @@ module moveos_std::raw_table {
     /// Acquire a mutable reference to the value which `key` maps to.
     /// Insert the pair (`key`, `default`) first if there is no entry for `key`.
     public(friend) fun borrow_mut_with_default<K: copy + drop, V: drop>(table_handle: &ObjectID, key: K, default: V): &mut V {
-        if (!contains<K, V>(table_handle, copy key)) {
+        if (!contains<K>(table_handle, copy key)) {
             add(table_handle, copy key, default)
         };
         borrow_mut(table_handle, key)
@@ -57,7 +57,7 @@ module moveos_std::raw_table {
     /// Insert the pair (`key`, `value`) if there is no entry for `key`.
     /// update the value of the entry for `key` to `value` otherwise
     public(friend) fun upsert<K: copy + drop, V: drop>(table_handle: &ObjectID, key: K, value: V) {
-        if (!contains<K, V>(table_handle, copy key)) {
+        if (!contains<K>(table_handle, copy key)) {
             add(table_handle, copy key, value)
         } else {
             let ref = borrow_mut(table_handle, key);
@@ -73,9 +73,8 @@ module moveos_std::raw_table {
     }
 
     /// Returns true if `table` contains an entry for `key`.
-    /// We do not use the `V` type in Move code, but the native code need to known how to decode the value into Runtime Value.
-    public(friend) fun contains<K: copy + drop, V>(table_handle: &ObjectID, key: K): bool {
-        contains_box<K, V, Box<V>>(table_handle, key)
+    public(friend) fun contains<K: copy + drop>(table_handle: &ObjectID, key: K): bool {
+        contains_box<K>(table_handle, key)
     }
 
     #[test_only]
@@ -108,7 +107,7 @@ module moveos_std::raw_table {
 
     native fun borrow_box_mut<K: copy + drop, V, B>(table_handle: &ObjectID, key: K): &mut Box<V>;
 
-    native fun contains_box<K: copy + drop, V, B>(table_handle: &ObjectID, key: K): bool;
+    native fun contains_box<K: copy + drop>(table_handle: &ObjectID, key: K): bool;
 
     native fun remove_box<K: copy + drop, V, B>(table_handle: &ObjectID, key: K): Box<V>;
 

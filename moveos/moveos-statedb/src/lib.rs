@@ -351,23 +351,17 @@ impl TableResolver for StateDB {
         &self,
         handle: &TableHandle,
         key: &[u8],
-        value_type: &TypeTag,
-    ) -> std::result::Result<Option<Vec<u8>>, anyhow::Error> {
+    ) -> std::result::Result<Option<TableValueBox>, anyhow::Error> {
         let state = if handle.0 == storage_context::GLOBAL_OBJECT_STORAGE_HANDLE {
             self.global_table.get(key.to_vec())
         } else {
             self.get_with_key((*handle).into(), key.to_vec())
         }?;
         match state {
-            Some(state) => {
-                ensure!(
-                    value_type == &state.value_type,
-                    "Table type mismatch, expected: {:?}, actual: {:?}",
-                    value_type,
-                    state.value_type
-                );
-                Ok(Some(state.value))
-            }
+            Some(state) => Ok(Some(TableValueBox {
+                value_type: state.value_type,
+                value: state.value,
+            })),
             None => Ok(None),
         }
     }

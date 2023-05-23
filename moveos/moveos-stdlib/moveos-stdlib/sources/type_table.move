@@ -84,11 +84,11 @@ module moveos_std::type_table {
     #[private_generics(T)]
     /// Returns true if `table` contains an entry for `key`.
     public fun contains<V: key>(table: &TypeTable): bool {
-        raw_table::contains<String, V>(&table.handle, key<V>())
+        raw_table::contains<String>(&table.handle, key<V>())
     }
 
     public(friend) fun contains_internal<V: key>(table: &TypeTable): bool {
-        raw_table::contains<String, V>(&table.handle, key<V>())
+        raw_table::contains<String>(&table.handle, key<V>())
     }
 
     #[test_only]

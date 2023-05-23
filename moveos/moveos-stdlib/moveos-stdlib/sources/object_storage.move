@@ -60,8 +60,8 @@ module moveos_std::object_storage {
         raw_table::add<ObjectID, Object<T>>(&this.handle, object::id(&obj), obj);
     } 
 
-    public fun contains<T: key>(this: &ObjectStorage, object_id: ObjectID): bool{
-        raw_table::contains<ObjectID, Object<T>>(&this.handle, object_id)
+    public fun contains(this: &ObjectStorage, object_id: ObjectID): bool{
+        raw_table::contains<ObjectID>(&this.handle, object_id)
     }
 
     #[test_only]
@@ -87,10 +87,12 @@ module moveos_std::object_storage {
         let object = object::new(&mut ctx, sender, TestObject{f: 1});
         let object_id = object::id(&object);
         add(&mut os, object);
-        assert!(contains<TestObject>(&os, object_id), 1000);
+        assert!(contains(&os, object_id), 1000);
 
-        //FIXME https://github.com/rooch-network/rooch/issues/112 
-        //assert!(!contains<TestObject2>(&os, object_id), 1001);
+        let object2 = object::new(&mut ctx, sender, TestObject2{f: 1});
+        let object_id2 = object::id(&object2);
+        // The object_id2 is not in the object storage
+        assert!(!contains(&os, object_id2), 1001);
         
         let object_ref = borrow<TestObject>(&os, object_id);
         let test_obj_ref = object::borrow<TestObject>(object_ref);
@@ -100,8 +102,10 @@ module moveos_std::object_storage {
         let (_id, _owner, test_object) = object::unpack(object);
         let TestObject{f} = test_object;
         assert!(f == 1, 1003);
-        assert!(!contains<TestObject>(&os, object_id), 1004);
+        assert!(!contains(&os, object_id), 1004);
 
         drop_object_storage(os);
+        let (_id, _owner, test_object2) = object::unpack(object2); 
+        let TestObject2{f:_f} = test_object2;
     }
 }

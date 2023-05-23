@@ -45,7 +45,7 @@ module moveos_std::account_storage {
             modules: table::new_with_id(named_table_id(account, NamedTableModule)),
         };
         let object_storage = storage_context::object_storage_mut(ctx);
-        assert!(!object_storage::contains<AccountStorage>(object_storage, object_id), EAccountAlreadyExists);
+        assert!(!object_storage::contains(object_storage, object_id), EAccountAlreadyExists);
         let object = object::new_with_id(object_id, account, account_storage);
         object_storage::add(object_storage, object);
     }
@@ -54,7 +54,7 @@ module moveos_std::account_storage {
     public fun exist_account_storage(ctx: &mut StorageContext, account: address): bool {
         let object_id = object_id::address_to_object_id(account);
         let object_storage = storage_context::object_storage_mut(ctx);
-        object_storage::contains<AccountStorage>(object_storage, object_id)
+        object_storage::contains(object_storage, object_id)
     }
 
     public fun ensure_account_storage(ctx: &mut StorageContext, account: address) {
