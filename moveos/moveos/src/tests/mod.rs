@@ -9,8 +9,8 @@ use move_core_types::{
     language_storage::ModuleId,
     value::{serialize_values, MoveValue},
 };
+use moveos_statedb::StateDB;
 use moveos_stdlib::addresses::MOVEOS_STD_ADDRESS;
-use moveos_store::state_store::StateDB;
 
 #[test]
 pub fn test_moveos() {

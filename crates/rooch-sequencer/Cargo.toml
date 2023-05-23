@@ -36,7 +36,7 @@ move-core-types = { workspace = true }
 move-resource-viewer = { workspace = true }
 
 moveos = { workspace = true }
-moveos-store = { workspace = true }
+moveos-statedb = { workspace = true }
 moveos-types = { workspace = true }
 
 rooch-common = { workspace = true }

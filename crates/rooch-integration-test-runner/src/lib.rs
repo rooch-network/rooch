@@ -72,7 +72,7 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
             None => BTreeMap::new(),
         };
 
-        let statedb = moveos_store::state_store::StateDB::new_with_memory_store();
+        let statedb = moveos_statedb::StateDB::new_with_memory_store();
         let moveos = MoveOS::new(statedb).unwrap();
 
         let mut named_address_mapping = moveos_stdlib::Framework::named_addresses();

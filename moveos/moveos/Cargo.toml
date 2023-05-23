@@ -32,5 +32,5 @@ move-vm-test-utils = { workspace = true }
 move-vm-types = { workspace = true }
 
 moveos-types = { workspace = true }
-moveos-store = { workspace = true }
+moveos-statedb = { workspace = true }
 moveos-stdlib = { workspace = true }

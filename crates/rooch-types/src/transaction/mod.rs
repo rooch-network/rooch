@@ -5,10 +5,8 @@ use self::authenticator::Authenticator;
 use crate::{address::MultiChainAddress, H256};
 use anyhow::Result;
 use move_core_types::{account_address::AccountAddress, vm_status::KeptVMStatus};
-// use moveos_types::h256::sha3_256_of;
 use moveos_types::transaction::AuthenticatableTransaction;
 use serde::{Deserialize, Serialize};
-// use starcoin_crypto::hash::{CryptoHash, CryptoHasher};
 
 pub mod authenticator;
 pub mod ethereum;
@@ -122,7 +120,6 @@ impl TryFrom<RawTransaction> for TypedTransaction {
 }
 
 /// `TransactionInfo` represents the result of executing a transaction.
-// #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHash, CryptoHasher)]
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TransactionInfo {
     /// The hash of this transaction.
@@ -159,13 +156,6 @@ impl TransactionInfo {
             gas_used,
             status,
         }
-    }
-
-    pub fn id(&self) -> H256 {
-        //TODO replace crypto_hash with the unified crypto function
-        // sha3_256_of(self.crypto_hash().as_slice())
-
-        H256::default()
     }
 }
 
