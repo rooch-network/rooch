@@ -1,22 +1,24 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::{move_resource::MoveStructType, identifier::IdentStr, ident_str, value::{MoveStructLayout, MoveTypeLayout}};
-use serde::{Serialize, Deserialize};
 use crate::state::MoveState;
-
+use move_core_types::{
+    ident_str,
+    identifier::IdentStr,
+    move_resource::MoveStructType,
+    value::{MoveStructLayout, MoveTypeLayout},
+};
+use serde::{Deserialize, Serialize};
 
 /// `MoveModule` is represented `moveos_std::move_module::MoveModule` in Move.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-pub struct MoveModule{
+pub struct MoveModule {
     pub byte_codes: Vec<u8>,
 }
 
-impl MoveModule{
+impl MoveModule {
     pub fn new(byte_codes: Vec<u8>) -> Self {
-        Self {
-            byte_codes,
-        }
+        Self { byte_codes }
     }
 }
 

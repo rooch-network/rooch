@@ -1,12 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    addresses::{MOVEOS_STD_ADDRESS, MOVE_STD_ADDRESS},
-    natives::moveos_stdlib::raw_table,
-};
+use crate::natives::moveos_stdlib::raw_table;
 use move_core_types::gas_algebra::InternalGas;
 use move_vm_runtime::native_functions::{make_table_from_iter, NativeFunctionTable};
+use moveos_types::addresses::{MOVEOS_STD_ADDRESS, MOVE_STD_ADDRESS};
 
 mod helpers;
 pub mod moveos_stdlib;

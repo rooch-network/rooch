@@ -1,13 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use moveos_types::addresses::MOVEOS_NAMED_ADDRESS_MAPPING;
 use anyhow::Result;
 use move_binary_format::CompiledModule;
 use move_bytecode_utils::dependency_graph::DependencyGraph;
 use move_command_line_common::address::NumericalAddress;
 use move_core_types::account_address::AccountAddress;
 use move_package::{compilation::compiled_package::CompiledPackage, BuildConfig};
+use moveos_types::addresses::MOVEOS_NAMED_ADDRESS_MAPPING;
 use std::{collections::BTreeMap, io::stderr, path::PathBuf};
 
 pub mod natives;

@@ -25,7 +25,7 @@ module moveos_std::table {
     }
 
     /// Create a table with a given handle.
-    public(friend) fun new_with_id<K: copy + drop, V: store>(handle: address): Table<K, V>{
+    public(friend) fun new_with_id<K: copy + drop, V: store>(handle: ObjectID): Table<K, V>{
         Table {
             handle,
         }
@@ -35,61 +35,61 @@ module moveos_std::table {
     /// key already exists. The entry itself is not stored in the
     /// table, and cannot be discovered from it.
     public fun add<K: copy + drop, V>(table: &mut Table<K, V>, key: K, val: V) {
-        raw_table::add<K, V>(*&table.handle, key, val)
+        raw_table::add<K, V>(&table.handle, key, val)
     }
 
     /// Acquire an immutable reference to the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
     public fun borrow<K: copy + drop, V>(table: &Table<K, V>, key: K): &V {
-        raw_table::borrow<K, V>(*&table.handle, key)
+        raw_table::borrow<K, V>(&table.handle, key)
     }
 
     /// Acquire an immutable reference to the value which `key` maps to.
     /// Returns specified default value if there is no entry for `key`.
     public fun borrow_with_default<K: copy + drop, V>(table: &Table<K, V>, key: K, default: &V): &V {
-        raw_table::borrow_with_default<K, V>(*&table.handle, key, default)
+        raw_table::borrow_with_default<K, V>(&table.handle, key, default)
     }
 
     /// Acquire a mutable reference to the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
     public fun borrow_mut<K: copy + drop, V>(table: &mut Table<K, V>, key: K): &mut V {
-        raw_table::borrow_mut<K, V>(*&table.handle, key)
+        raw_table::borrow_mut<K, V>(&table.handle, key)
     }
 
     /// Acquire a mutable reference to the value which `key` maps to.
     /// Insert the pair (`key`, `default`) first if there is no entry for `key`.
     public fun borrow_mut_with_default<K: copy + drop, V: drop>(table: &mut Table<K, V>, key: K, default: V): &mut V {
-        raw_table::borrow_mut_with_default<K, V>(*&table.handle, key, default)
+        raw_table::borrow_mut_with_default<K, V>(&table.handle, key, default)
     }
 
     /// Insert the pair (`key`, `value`) if there is no entry for `key`.
     /// update the value of the entry for `key` to `value` otherwise
     public fun upsert<K: copy + drop, V: drop>(table: &mut Table<K, V>, key: K, value: V) {
-        raw_table::upsert<K, V>(*&table.handle, key, value)
+        raw_table::upsert<K, V>(&table.handle, key, value)
     }
 
     /// Remove from `table` and return the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
     public fun remove<K: copy + drop, V>(table: &mut Table<K, V>, key: K): V {
-        raw_table::remove<K, V>(*&table.handle, key)
+        raw_table::remove<K, V>(&table.handle, key)
     }
 
     /// Returns true if `table` contains an entry for `key`.
     public fun contains<K: copy + drop, V>(table: &Table<K, V>, key: K): bool {
-        raw_table::contains<K, V>(*&table.handle, key)
+        raw_table::contains<K, V>(&table.handle, key)
     }
 
     #[test_only]
     /// Testing only: allows to drop a table even if it is not empty.
     public fun drop_unchecked<K: copy + drop, V>(table: Table<K, V>) {
         let Table { handle } = table;
-        raw_table::drop_unchecked(handle)
+        raw_table::drop_unchecked(&handle)
     }
 
     ///TODO should open the destroy function to public?
     public(friend) fun destroy<K: copy + drop, V>(table: Table<K, V>) {
         let Table { handle } = table;
-        raw_table::destroy(handle)
+        raw_table::destroy(&handle)
     }
 
 

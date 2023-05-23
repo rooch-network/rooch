@@ -60,7 +60,6 @@ impl TxContext {
     pub fn random_for_testing_only() -> Self {
         Self::new(AccountAddress::random(), H256::random())
     }
-
 }
 
 impl MoveStructType for TxContext {
@@ -69,7 +68,6 @@ impl MoveStructType for TxContext {
 }
 
 impl MoveState for TxContext {
-    
     /// Return the layout of the TxContext in Move
     /// TODO: write a macro to auto generate Layout for Rust type.
     fn move_layout() -> MoveStructLayout {
@@ -93,8 +91,11 @@ mod tests {
         let serialized = test.to_vec();
         let deserialized: TxContext = bcs::from_bytes(&serialized).unwrap();
         assert_eq!(test, deserialized);
-        let move_value =
-            MoveValue::simple_deserialize(&serialized, &(MoveTypeLayout::Struct(TxContext::move_layout()))).unwrap();
+        let move_value = MoveValue::simple_deserialize(
+            &serialized,
+            &(MoveTypeLayout::Struct(TxContext::move_layout())),
+        )
+        .unwrap();
         let serialized2 = move_value.simple_serialize().unwrap();
         assert_eq!(serialized, serialized2);
     }

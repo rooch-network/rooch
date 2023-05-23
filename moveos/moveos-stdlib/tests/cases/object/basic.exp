@@ -1,17 +1,17 @@
 processed 10 tasks
 
-task 3 'view_object'. lines 60-62:
+task 3 'view_object'. lines 61-63:
 RawObject { id: ObjectID(ae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647), owner: 0000000000000000000000000000000000000000000000000000000000000043, value: [1] }
 
-task 5 'view_object'. lines 66-69:
+task 5 'view_object'. lines 67-70:
 RawObject { id: ObjectID(0bbaf311ae6768a532b1f9dee65b1758a7bb1114fd57df8fa94cb2d1cb5f6896), owner: 0000000000000000000000000000000000000000000000000000000000000043, value: [2] }
 
-task 7 'view'. lines 73-75:
+task 7 'view'. lines 74-76:
 store key 0x42::m::S {
     v: 1u8
 }
 
-task 9 'view'. lines 79-79:
+task 9 'view'. lines 80-80:
 store key 0x42::m::Cup<0x42::m::S> {
     v: 2u8
 }

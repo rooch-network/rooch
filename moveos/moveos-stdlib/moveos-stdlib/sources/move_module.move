@@ -12,7 +12,7 @@ module moveos_std::move_module{
         }
     }
 
-    public fun module_name(move_module: &MoveModule): String {
+    public fun module_name(_move_module: &MoveModule): String {
         //TODO implement native module name
         abort 0
     }

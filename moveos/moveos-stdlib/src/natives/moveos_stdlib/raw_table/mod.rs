@@ -11,7 +11,7 @@ use move_core_types::{
     account_address::AccountAddress,
     effects::Op,
     gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
-    language_storage::{TypeTag, StructTag},
+    language_storage::TypeTag,
     value::MoveTypeLayout,
     vm_status::StatusCode,
 };
@@ -23,7 +23,7 @@ use move_vm_types::{
     loaded_data::runtime_types::Type,
     natives::function::NativeResult,
     pop_arg,
-    values::{GlobalValue, Value},
+    values::{GlobalValue, Reference, Struct, StructRef, Value},
 };
 use moveos_types::object::ObjectID;
 use serde::{Deserialize, Serialize};
@@ -41,17 +41,17 @@ use std::{
 /// hash over a transaction hash provided by the environment and a table creation counter
 /// local to the transaction.
 #[derive(Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub struct TableHandle(pub AccountAddress);
+pub struct TableHandle(pub ObjectID);
 
 impl std::fmt::Display for TableHandle {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "T-{:X}", self.0)
+        writeln!(f, "T-{}", self.0)
     }
 }
 
 impl From<TableHandle> for ObjectID {
     fn from(table_handle: TableHandle) -> Self {
-        table_handle.0.into()
+        table_handle.0
     }
 }
 
@@ -81,14 +81,14 @@ pub struct TableChangeSet {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ValueBox {
-    pub value_tag: TypeTag,
+pub struct TableValueBox {
+    pub value_type: TypeTag,
     pub value: Vec<u8>,
 }
 
 /// A change of a single table.
 pub struct TableChange {
-    pub entries: BTreeMap<Vec<u8>, Op<Vec<u8>>>,
+    pub entries: BTreeMap<Vec<u8>, Op<TableValueBox>>,
 }
 
 /// A table resolver which needs to be provided by the environment. This allows to lookup
@@ -98,6 +98,7 @@ pub trait TableResolver {
         &self,
         handle: &TableHandle,
         key: &[u8],
+        value_type: &TypeTag,
     ) -> Result<Option<Vec<u8>>, anyhow::Error>;
 }
 
@@ -137,9 +138,12 @@ struct TableData {
 
 /// A structure representing table value.
 struct TableValue {
+    /// This is the layout of the value stored in Box<V>
     value_layout: MoveTypeLayout,
-    value: GlobalValue,
-    value_type: StructTag,
+    /// This is the TypeTag of the value stored in Box<V>
+    value_type: TypeTag,
+    /// This is the Box<V> value in MoveVM memory
+    box_value: GlobalValue,
 }
 
 /// A structure representing a single table.
@@ -178,7 +182,8 @@ impl<'a> NativeTableContext<'a> {
                 key,
                 TableValue {
                     value_layout,
-                    value: gv,
+                    value_type,
+                    box_value: gv,
                 },
             ) in content
             {
@@ -186,17 +191,26 @@ impl<'a> NativeTableContext<'a> {
                     Some(op) => op,
                     None => continue,
                 };
-                //let value_tag: TypeTag = (&value_layout).try_into().map_err(|_|PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;
                 match op {
-                    Op::New(val) => {
-                        let bytes = serialize(&value_layout, &val)?;
-                        //let value_box = ValueBox{ value_tag, value: bytes};
-                        entries.insert(key, Op::New(bytes));
+                    Op::New(box_val) => {
+                        let bytes = unbox_and_serialize(&value_layout, box_val)?;
+                        entries.insert(
+                            key,
+                            Op::New(TableValueBox {
+                                value_type,
+                                value: bytes,
+                            }),
+                        );
                     }
                     Op::Modify(val) => {
-                        let bytes = serialize(&value_layout, &val)?;
-                        //let value_box = ValueBox{ value_tag, value: bytes};
-                        entries.insert(key, Op::Modify(bytes));
+                        let bytes = unbox_and_serialize(&value_layout, val)?;
+                        entries.insert(
+                            key,
+                            Op::Modify(TableValueBox {
+                                value_type,
+                                value: bytes,
+                            }),
+                        );
                     }
                     Op::Delete => {
                         entries.insert(key, Op::Delete);
@@ -246,18 +260,21 @@ impl Table {
         table_context: &NativeTableContext,
         key: Vec<u8>,
         value_type: &Type,
+        //We do not use the box_value_type, but we need to pass it in to ensure distinguish between value_type and box_value_type
+        _box_value_type: &Type,
     ) -> PartialVMResult<(&mut GlobalValue, Option<Option<NumBytes>>)> {
         Ok(match self.content.entry(key) {
             Entry::Vacant(entry) => {
                 let value_layout = get_type_layout(native_context, value_type)?;
+                let value_type_tag = get_type_tag(native_context, value_type)?;
                 let (gv, loaded) = match table_context
                     .resolver
-                    .resolve_table_entry(&self.handle, entry.key())
+                    .resolve_table_entry(&self.handle, entry.key(), &value_type_tag)
                     .map_err(|err| {
                         partial_extension_error(format!("remote table resolver failure: {}", err))
                     })? {
                     Some(val_bytes) => {
-                        let val = deserialize(&value_layout, &val_bytes)?;
+                        let val = deserialize_and_box(&value_layout, &val_bytes)?;
                         (
                             GlobalValue::cached(val)?,
                             Some(NumBytes::new(val_bytes.len() as u64)),
@@ -269,13 +286,14 @@ impl Table {
                     &mut entry
                         .insert(TableValue {
                             value_layout,
-                            value: gv,
+                            value_type: value_type_tag,
+                            box_value: gv,
                         })
-                        .value,
+                        .box_value,
                     Some(loaded),
                 )
             }
-            Entry::Occupied(entry) => (&mut entry.into_mut().value, None),
+            Entry::Occupied(entry) => (&mut entry.into_mut().box_value, None),
         })
     }
 }
@@ -357,7 +375,7 @@ fn native_add_box(
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    assert_eq!(ty_args.len(), 2);
+    assert_eq!(ty_args.len(), 3);
     assert_eq!(args.len(), 3);
 
     let table_context = context.extensions().get::<NativeTableContext>();
@@ -365,7 +383,7 @@ fn native_add_box(
 
     let val = args.pop_back().unwrap();
     let key = args.pop_back().unwrap();
-    let handle = get_table_handle(pop_arg!(args, AccountAddress))?;
+    let handle = get_table_handle(pop_arg!(args, StructRef))?;
 
     let mut cost = gas_params.base;
 
@@ -374,10 +392,15 @@ fn native_add_box(
     let key_bytes = serialize(&table.key_layout, &key)?;
     cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
 
-    let (gv, loaded) =
-        table.get_or_create_global_value(context, table_context, key_bytes, &ty_args[1])?;
+    let (gv, loaded) = table.get_or_create_global_value(
+        context,
+        table_context,
+        key_bytes,
+        &ty_args[1],
+        &ty_args[2],
+    )?;
     cost += common_gas_params.calculate_load_cost(loaded);
-
+    println!("gv:{:?}, val:{:?}", gv, val);
     match gv.move_to(val) {
         Ok(_) => Ok(NativeResult::ok(cost, smallvec![])),
         Err(_) => Ok(NativeResult::err(cost, ALREADY_EXISTS)),
@@ -408,14 +431,14 @@ fn native_borrow_box(
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    assert_eq!(ty_args.len(), 2);
+    assert_eq!(ty_args.len(), 3);
     assert_eq!(args.len(), 2);
 
     let table_context = context.extensions().get::<NativeTableContext>();
     let mut table_data = table_context.table_data.borrow_mut();
 
     let key = args.pop_back().unwrap();
-    let handle = get_table_handle(pop_arg!(args, AccountAddress))?;
+    let handle = get_table_handle(pop_arg!(args, StructRef))?;
 
     let table = table_data.get_or_create_table(context, handle, &ty_args[0])?;
 
@@ -424,8 +447,13 @@ fn native_borrow_box(
     let key_bytes = serialize(&table.key_layout, &key)?;
     cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
 
-    let (gv, loaded) =
-        table.get_or_create_global_value(context, table_context, key_bytes, &ty_args[1])?;
+    let (gv, loaded) = table.get_or_create_global_value(
+        context,
+        table_context,
+        key_bytes,
+        &ty_args[1],
+        &ty_args[2],
+    )?;
     cost += common_gas_params.calculate_load_cost(loaded);
 
     match gv.borrow_global() {
@@ -458,14 +486,14 @@ fn native_contains_box(
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    assert_eq!(ty_args.len(), 2);
+    assert_eq!(ty_args.len(), 3);
     assert_eq!(args.len(), 2);
 
     let table_context = context.extensions().get::<NativeTableContext>();
     let mut table_data = table_context.table_data.borrow_mut();
 
     let key = args.pop_back().unwrap();
-    let handle = get_table_handle(pop_arg!(args, AccountAddress))?;
+    let handle = get_table_handle(pop_arg!(args, StructRef))?;
 
     let table = table_data.get_or_create_table(context, handle, &ty_args[0])?;
 
@@ -474,8 +502,13 @@ fn native_contains_box(
     let key_bytes = serialize(&table.key_layout, &key)?;
     cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
 
-    let (gv, loaded) =
-        table.get_or_create_global_value(context, table_context, key_bytes, &ty_args[1])?;
+    let (gv, loaded) = table.get_or_create_global_value(
+        context,
+        table_context,
+        key_bytes,
+        &ty_args[1],
+        &ty_args[2],
+    )?;
     cost += common_gas_params.calculate_load_cost(loaded);
 
     let exists = Value::bool(gv.exists()?);
@@ -507,14 +540,14 @@ fn native_remove_box(
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    assert_eq!(ty_args.len(), 2);
+    assert_eq!(ty_args.len(), 3);
     assert_eq!(args.len(), 2);
 
     let table_context = context.extensions().get::<NativeTableContext>();
     let mut table_data = table_context.table_data.borrow_mut();
 
     let key = args.pop_back().unwrap();
-    let handle = get_table_handle(pop_arg!(args, AccountAddress))?;
+    let handle = get_table_handle(pop_arg!(args, StructRef))?;
 
     let table = table_data.get_or_create_table(context, handle, &ty_args[0])?;
 
@@ -522,8 +555,13 @@ fn native_remove_box(
 
     let key_bytes = serialize(&table.key_layout, &key)?;
     cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
-    let (gv, loaded) =
-        table.get_or_create_global_value(context, table_context, key_bytes, &ty_args[1])?;
+    let (gv, loaded) = table.get_or_create_global_value(
+        context,
+        table_context,
+        key_bytes,
+        &ty_args[1],
+        &ty_args[2],
+    )?;
     cost += common_gas_params.calculate_load_cost(loaded);
 
     match gv.move_from() {
@@ -559,7 +597,7 @@ fn native_destroy_empty_box(
     let table_context = context.extensions().get::<NativeTableContext>();
     let mut table_data = table_context.table_data.borrow_mut();
 
-    let handle = get_table_handle(pop_arg!(args, AccountAddress))?;
+    let handle = get_table_handle(pop_arg!(args, StructRef))?;
     assert!(table_data.removed_tables.insert(handle));
 
     Ok(NativeResult::ok(gas_params.base, smallvec![]))
@@ -641,8 +679,17 @@ impl GasParameters {
 // =========================================================================================
 // Helpers
 
-fn get_table_handle(handle: AccountAddress) -> PartialVMResult<TableHandle> {
-    Ok(TableHandle(handle))
+// The index of the address field in ObjectID.
+const HANDLE_FIELD_INDEX: usize = 0;
+
+// The handle type in Move is `&ObjectID`. This function extracts the address from `ObjectID`.
+fn get_table_handle(table: StructRef) -> PartialVMResult<TableHandle> {
+    let handle = table
+        .borrow_field(HANDLE_FIELD_INDEX)?
+        .value_as::<Reference>()?
+        .read_ref()?
+        .value_as::<AccountAddress>()?;
+    Ok(TableHandle(ObjectID::new(handle.into())))
 }
 
 fn serialize(layout: &MoveTypeLayout, val: &Value) -> PartialVMResult<Vec<u8>> {
@@ -650,9 +697,20 @@ fn serialize(layout: &MoveTypeLayout, val: &Value) -> PartialVMResult<Vec<u8>> {
         .ok_or_else(|| partial_extension_error("cannot serialize table key or value"))
 }
 
-fn deserialize(layout: &MoveTypeLayout, bytes: &[u8]) -> PartialVMResult<Value> {
-    Value::simple_deserialize(bytes, layout)
-        .ok_or_else(|| partial_extension_error("cannot deserialize table key or value"))
+// Unbox a value of `moveos_std::raw_table::Box<V>` to V and serialize it.
+fn unbox_and_serialize(layout: &MoveTypeLayout, box_val: Value) -> PartialVMResult<Vec<u8>> {
+    let mut fields = box_val.value_as::<Struct>()?.unpack()?;
+    let val = fields
+        .next()
+        .ok_or_else(|| partial_extension_error("Box<V> should have one field of type V"))?;
+    serialize(layout, &val)
+}
+
+// Deserialize a value and box it to `moveos_std::raw_table::Box<V>`.
+fn deserialize_and_box(layout: &MoveTypeLayout, bytes: &[u8]) -> PartialVMResult<Value> {
+    let value = Value::simple_deserialize(bytes, layout)
+        .ok_or_else(|| partial_extension_error("cannot deserialize table key or value"))?;
+    Ok(Value::struct_(Struct::pack(vec![value])))
 }
 
 fn partial_extension_error(msg: impl ToString) -> PartialVMError {
@@ -666,6 +724,5 @@ fn get_type_layout(context: &NativeContext, ty: &Type) -> PartialVMResult<MoveTy
 }
 
 fn get_type_tag(context: &NativeContext, ty: &Type) -> PartialVMResult<TypeTag> {
-    context
-        .type_to_type_tag(ty)
+    context.type_to_type_tag(ty)
 }
