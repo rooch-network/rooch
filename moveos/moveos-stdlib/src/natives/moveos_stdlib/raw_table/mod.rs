@@ -357,7 +357,7 @@ fn native_add_box(
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    assert_eq!(ty_args.len(), 3);
+    assert_eq!(ty_args.len(), 2);
     assert_eq!(args.len(), 3);
 
     let table_context = context.extensions().get::<NativeTableContext>();
@@ -375,7 +375,7 @@ fn native_add_box(
     cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
 
     let (gv, loaded) =
-        table.get_or_create_global_value(context, table_context, key_bytes, &ty_args[2])?;
+        table.get_or_create_global_value(context, table_context, key_bytes, &ty_args[1])?;
     cost += common_gas_params.calculate_load_cost(loaded);
 
     match gv.move_to(val) {
@@ -408,7 +408,7 @@ fn native_borrow_box(
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    assert_eq!(ty_args.len(), 3);
+    assert_eq!(ty_args.len(), 2);
     assert_eq!(args.len(), 2);
 
     let table_context = context.extensions().get::<NativeTableContext>();
@@ -425,7 +425,7 @@ fn native_borrow_box(
     cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
 
     let (gv, loaded) =
-        table.get_or_create_global_value(context, table_context, key_bytes, &ty_args[2])?;
+        table.get_or_create_global_value(context, table_context, key_bytes, &ty_args[1])?;
     cost += common_gas_params.calculate_load_cost(loaded);
 
     match gv.borrow_global() {
@@ -458,7 +458,7 @@ fn native_contains_box(
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    assert_eq!(ty_args.len(), 3);
+    assert_eq!(ty_args.len(), 2);
     assert_eq!(args.len(), 2);
 
     let table_context = context.extensions().get::<NativeTableContext>();
@@ -475,7 +475,7 @@ fn native_contains_box(
     cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
 
     let (gv, loaded) =
-        table.get_or_create_global_value(context, table_context, key_bytes, &ty_args[2])?;
+        table.get_or_create_global_value(context, table_context, key_bytes, &ty_args[1])?;
     cost += common_gas_params.calculate_load_cost(loaded);
 
     let exists = Value::bool(gv.exists()?);
@@ -507,7 +507,7 @@ fn native_remove_box(
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    assert_eq!(ty_args.len(), 3);
+    assert_eq!(ty_args.len(), 2);
     assert_eq!(args.len(), 2);
 
     let table_context = context.extensions().get::<NativeTableContext>();
@@ -523,7 +523,7 @@ fn native_remove_box(
     let key_bytes = serialize(&table.key_layout, &key)?;
     cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
     let (gv, loaded) =
-        table.get_or_create_global_value(context, table_context, key_bytes, &ty_args[2])?;
+        table.get_or_create_global_value(context, table_context, key_bytes, &ty_args[1])?;
     cost += common_gas_params.calculate_load_cost(loaded);
 
     match gv.move_from() {

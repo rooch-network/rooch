@@ -20,13 +20,13 @@ module moveos_std::raw_table {
     /// key already exists. The entry itself is not stored in the
     /// table, and cannot be discovered from it.
     public(friend) fun add<K: copy + drop, V>(table_handle: ObjectID, key: K, val: V) {
-        add_box<K, V, Box<V>>(table_handle, key, Box { val })
+        add_box<K, V>(table_handle, key, val)
     }
 
     /// Acquire an immutable reference to the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
     public(friend) fun borrow<K: copy + drop, V>(table_handle: ObjectID, key: K): &V {
-        &borrow_box<K, V, Box<V>>(table_handle, key).val
+        borrow_box<K, V>(table_handle, key)
     }
 
     /// Acquire an immutable reference to the value which `key` maps to.
@@ -42,7 +42,7 @@ module moveos_std::raw_table {
     /// Acquire a mutable reference to the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
     public(friend) fun borrow_mut<K: copy + drop, V>(table_handle: ObjectID, key: K): &mut V {
-        &mut borrow_box_mut<K, V, Box<V>>(table_handle, key).val
+        borrow_box_mut<K, V>(table_handle, key)
     }
 
     /// Acquire a mutable reference to the value which `key` maps to.
@@ -68,14 +68,13 @@ module moveos_std::raw_table {
     /// Remove from `table` and return the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
     public(friend) fun remove<K: copy + drop, V>(table_handle: ObjectID, key: K): V {
-        let Box { val } = remove_box<K, V, Box<V>>(table_handle, key);
-        val
+        remove_box<K, V>(table_handle, key)
     }
 
     /// Returns true if `table` contains an entry for `key`.
     /// We do not use the `V` type in Move code, but the native code need to known how to decode the value into Runtime Value.
     public(friend) fun contains<K: copy + drop, V>(table_handle: ObjectID, key: K): bool {
-        contains_box<K, V, Box<V>>(table_handle, key)
+        contains_box<K, V>(table_handle, key)
     }
 
     #[test_only]
@@ -91,25 +90,21 @@ module moveos_std::raw_table {
 
     // ======================================================================================================
     // Internal API
-
-    /// Wrapper for values. Required for making values appear as resources in the implementation.
-    struct Box<V> has key, drop, store {
-        val: V
-    }
+ 
 
     public(friend) fun new_table_handle(ctx: &mut TxContext): ObjectID {
         tx_context::fresh_object_id(ctx)
     }
 
-    native fun add_box<K: copy + drop, V, B>(table_handle: ObjectID, key: K, val: Box<V>);
+    native fun add_box<K: copy + drop, V>(table_handle: ObjectID, key: K, val: V);
 
-    native fun borrow_box<K: copy + drop, V, B>(table_handle: ObjectID, key: K): &Box<V>;
+    native fun borrow_box<K: copy + drop, V>(table_handle: ObjectID, key: K): &V;
 
-    native fun borrow_box_mut<K: copy + drop, V, B>(table_handle: ObjectID, key: K): &mut Box<V>;
+    native fun borrow_box_mut<K: copy + drop, V>(table_handle: ObjectID, key: K): &mut V;
 
-    native fun contains_box<K: copy + drop, V, B>(table_handle: ObjectID, key: K): bool;
+    native fun contains_box<K: copy + drop, V>(table_handle: ObjectID, key: K): bool;
 
-    native fun remove_box<K: copy + drop, V, B>(table_handle: ObjectID, key: K): Box<V>;
+    native fun remove_box<K: copy + drop, V>(table_handle: ObjectID, key: K): V;
 
     native fun destroy_empty_box(table_handle: ObjectID);
 

@@ -307,8 +307,7 @@ impl ModuleResolver for StateDB {
     fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
         let module_table_id = NamedTableID::Module(*module_id.address()).to_object_id();
         let key = module_name_to_key(module_id.name());
-        let module = self.get_with_key(module_table_id, key)?;
-        module.map(|v| unbox_value(v.as_slice())).transpose()
+        self.get_with_key(module_table_id, key)
     }
 }
 
@@ -320,21 +319,6 @@ fn tag_to_key(tag: &StructTag) -> Vec<u8> {
 fn module_name_to_key(name: &IdentStr) -> Vec<u8> {
     // The key is bcs serialize format string, not String::into_bytes.
     bcs::to_bytes(&name.to_string()).expect("bcs to_bytes String must success.")
-}
-
-// Wrap value to a Box, because the table deserialize value to a Box struct
-// see moveos_std::raw_table::Box
-fn box_value<T: Serialize>(value: T) -> Vec<u8> {
-    let value_box = ValueBox { value };
-    bcs::to_bytes(&value_box).expect("bcs to_bytes ValueBox must success.")
-}
-
-// Unwrap value from a Box, because the table deserialize value to a Box struct
-// If we get value from Table API, like raw_table::borrow, the raw_table native auto unbox the value.
-// But if we get value from ModuleResolver or ResourceResolver, we need to unbox the value by ourselves.
-fn unbox_value<T: DeserializeOwned>(bytes: &[u8]) -> Result<T> {
-    let value_box: ValueBox<T> = bcs::from_bytes(bytes)?;
-    Ok(value_box.value)
 }
 
 impl TableResolver for StateDB {
