@@ -5,6 +5,7 @@
 
 use crate::h256::{self, H256};
 use crate::object::ObjectID;
+use crate::state::MoveState;
 use move_core_types::value::{MoveStructLayout, MoveTypeLayout};
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, move_resource::MoveStructType,
@@ -60,20 +61,24 @@ impl TxContext {
         Self::new(AccountAddress::random(), H256::random())
     }
 
-    /// Return the layout of the TxContext in Move
-    /// TODO: write a macro to auto generate Layout for Rust type.
-    pub fn move_layout() -> MoveTypeLayout {
-        MoveTypeLayout::Struct(MoveStructLayout::new(vec![
-            MoveTypeLayout::Address,
-            MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
-            MoveTypeLayout::U64,
-        ]))
-    }
 }
 
 impl MoveStructType for TxContext {
     const MODULE_NAME: &'static IdentStr = TX_CONTEXT_MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = TX_CONTEXT_STRUCT_NAME;
+}
+
+impl MoveState for TxContext {
+    
+    /// Return the layout of the TxContext in Move
+    /// TODO: write a macro to auto generate Layout for Rust type.
+    fn move_layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![
+            MoveTypeLayout::Address,
+            MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
+            MoveTypeLayout::U64,
+        ])
+    }
 }
 
 #[cfg(test)]
@@ -89,7 +94,7 @@ mod tests {
         let deserialized: TxContext = bcs::from_bytes(&serialized).unwrap();
         assert_eq!(test, deserialized);
         let move_value =
-            MoveValue::simple_deserialize(&serialized, &TxContext::move_layout()).unwrap();
+            MoveValue::simple_deserialize(&serialized, &(MoveTypeLayout::Struct(TxContext::move_layout()))).unwrap();
         let serialized2 = move_value.simple_serialize().unwrap();
         assert_eq!(serialized, serialized2);
     }

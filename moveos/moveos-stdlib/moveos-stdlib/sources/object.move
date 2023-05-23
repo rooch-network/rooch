@@ -1,6 +1,9 @@
-/// origin source from https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/sources/object.move#L75
-
-/// Move object identifiers
+/// Move Object
+/// The Object is a box style Object
+/// The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/sources/object.move#L75):
+/// 1. The Object is a struct in Move
+/// 2. The Object is a use case for the Hot Potato pattern in Move. Objects do not have any ability, so they cannot be drop, copy, or store, and can only be handled by ObjectStorage API after creation.
+/// More details about the Object can be found in [Storage Abstraction](https://github.com/rooch-network/rooch/blob/main/docs/design/storage_abstraction.md)
 module moveos_std::object {
     use moveos_std::tx_context::{Self, TxContext};
     use std::debug;
@@ -10,17 +13,8 @@ module moveos_std::object {
     /// Invalid access of object, the object is not owned by the signer or the object is not shared or immutable
     const EInvalidAccess: u64 = 0;
    
-    struct ObjectID has store, copy, drop {
-        //TODO should use u256 to replace address?
-        id: address,
-    }
-
-    public(friend) fun address_to_object_id(address: address): ObjectID {
-        ObjectID{id: address}
-    }
-
     /// Box style object
-    /// The object can not be copied, droped, only can be consumed by `add`
+    /// The object can not be copied, droped, only can be consumed by ObjectStorage API.
     struct Object<T> {
         id: ObjectID,
         owner: address,

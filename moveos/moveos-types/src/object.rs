@@ -7,12 +7,11 @@ use move_core_types::{
     ident_str,
     identifier::IdentStr,
     language_storage::TypeTag,
-    move_resource::{MoveResource, MoveStructType},
+    move_resource::{MoveResource, MoveStructType}, value::{MoveTypeLayout, MoveStructLayout},
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::str::FromStr;
-
-use crate::h256;
+use crate::{h256, state::MoveState};
 
 /// Specific Table Object ID associated with an address
 #[derive(Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -78,6 +77,17 @@ impl ObjectID {
 impl std::fmt::Display for ObjectID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0.to_hex_literal())
+    }
+}
+
+impl MoveStructType for ObjectID {
+    const MODULE_NAME: &'static IdentStr = ident_str!("object_id");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("ObjectID");
+}
+
+impl MoveState for ObjectID {
+    fn move_layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![MoveTypeLayout::Address])
     }
 }
 
@@ -159,6 +169,15 @@ impl MoveStructType for AccountStorage {
     }
 }
 
+impl MoveState for AccountStorage {
+    fn move_layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![
+            MoveTypeLayout::Struct(ObjectID::move_layout()),
+            MoveTypeLayout::Struct(ObjectID::move_layout()),
+        ])
+    }
+}
+
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct TableInfo {
     //TODO use u256?
@@ -178,6 +197,12 @@ impl MoveStructType for TableInfo {
 
     fn type_params() -> Vec<TypeTag> {
         vec![]
+    }
+}
+
+impl MoveState for TableInfo {
+    fn move_layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![MoveTypeLayout::Address])
     }
 }
 
@@ -253,6 +278,18 @@ where
 
     fn type_params() -> Vec<TypeTag> {
         vec![TypeTag::Struct(Box::new(T::struct_tag()))]
+    }
+}
+
+impl<T> MoveState for Object<T> where T: MoveState{
+    
+    /// Return the layout of the Object in Move
+    fn move_layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![
+            MoveTypeLayout::Struct(ObjectID::move_layout()),
+            MoveTypeLayout::Address,
+            MoveTypeLayout::Struct(T::move_layout()),
+        ])
     }
 }
 

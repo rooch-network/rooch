@@ -11,7 +11,7 @@ use move_core_types::{
     account_address::AccountAddress,
     effects::Op,
     gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
-    language_storage::TypeTag,
+    language_storage::{TypeTag, StructTag},
     value::MoveTypeLayout,
     vm_status::StatusCode,
 };
@@ -139,6 +139,7 @@ struct TableData {
 struct TableValue {
     value_layout: MoveTypeLayout,
     value: GlobalValue,
+    value_type: StructTag,
 }
 
 /// A structure representing a single table.
@@ -662,4 +663,9 @@ fn get_type_layout(context: &NativeContext, ty: &Type) -> PartialVMResult<MoveTy
     context
         .type_to_type_layout(ty)?
         .ok_or_else(|| partial_extension_error("cannot determine type layout"))
+}
+
+fn get_type_tag(context: &NativeContext, ty: &Type) -> PartialVMResult<TypeTag> {
+    context
+        .type_to_type_tag(ty)
 }

@@ -13,6 +13,7 @@ module moveos_std::account_storage {
     use moveos_std::object_storage::{Self, ObjectStorage};
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::tx_context;
+    use moveos_std::move_module::{Self, MoveModule};
 
     /// The account with the given address already exists
     const EAccountAlreadyExists: u64 = 0;
@@ -27,7 +28,7 @@ module moveos_std::account_storage {
 
     struct AccountStorage has key {
         resources: TypeTable,
-        modules: Table<String, vector<u8>>,
+        modules: Table<String, MoveModule>,
     }
 
     //Ensure the NamedTableID generate use same method with Rust code
@@ -162,24 +163,17 @@ module moveos_std::account_storage {
     }
 
     /// Publish modules to the account's storage
-    public fun publish_modules(ctx: &mut StorageContext, account: &signer, modules: vector<vector<u8>>) {
+    public fun publish_modules(ctx: &mut StorageContext, account: &signer, modules: vector<MoveModule>) {
         let account_address = signer::address_of(account);
         let account_storage = borrow_account_storage_mut(storage_context::object_storage_mut(ctx), account_address);
         let i = 0;
         let len = vector::length(&modules);
-        let module_names = verify_modules(&modules, account_address);
+        let module_names = move_module::verify_modules(&modules, account_address);
         while (i < len) {
             let name = vector::pop_back(&mut module_names);
             let m = vector::pop_back(&mut modules);
             table::add(&mut account_storage.modules, name, m);
         }
-    }
-
-    // This is a native function that verifies the modules and returns their names
-    // This function need to ensure the module's bytecode is valid and the module id is matching the account address.
-    fun verify_modules(_modules: &vector<vector<u8>>, _account_address: address): vector<String> {
-        //TODO implement native verify modules
-        abort 0
     }
     
     #[test]

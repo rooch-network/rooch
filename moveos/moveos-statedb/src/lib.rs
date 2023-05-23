@@ -12,7 +12,7 @@ use move_core_types::{
 use moveos_stdlib::natives::moveos_stdlib::raw_table::{
     TableChangeSet, TableHandle, TableResolver,
 };
-use moveos_types::h256::H256;
+use moveos_types::{h256::H256, state::{State, MoveState}, move_module::MoveModule};
 use moveos_types::{
     object::{AccountStorage, NamedTableID, Object, ObjectID, RawObject, TableInfo},
     storage_context,
@@ -40,14 +40,16 @@ pub struct AccountStorageTables<NS> {
     pub modules: (Object<TableInfo>, TreeTable<NS>),
 }
 
-pub struct TreeTable<NS> {
-    smt: SMTree<Vec<u8>, Vec<u8>, NS>,
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+pub enum StateType {
+    /// The Move module
+    MoveModule,
+    /// The Move resource, include Object and Table Resource
+    MoveResource(StructTag),
 }
 
-//TODO add a Box to smt value
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
-struct ValueBox<T> {
-    pub value: T,
+pub struct TreeTable<NS> {
+    smt: SMTree<Vec<u8>, State, NS>,
 }
 
 impl<NS> TreeTable<NS>
@@ -64,13 +66,13 @@ where
         }
     }
 
-    pub fn get(&self, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
+    pub fn get(&self, key: Vec<u8>) -> Result<Option<State>> {
         self.smt.get(key)
     }
 
     pub fn puts<I>(&self, update_set: I) -> Result<H256>
     where
-        I: Into<UpdateSet<Vec<u8>, Vec<u8>>>,
+        I: Into<UpdateSet<Vec<u8>, State>>,
     {
         self.smt.puts(update_set)
     }
@@ -83,15 +85,17 @@ where
         self.put_changes(
             modules
                 .into_iter()
-                .map(|(k, v)| (module_name_to_key(k.as_ident_str()), v.map(box_value))),
+                .map(|(k, v)| (module_name_to_key(k.as_ident_str()), v.map(|v|MoveModule::new(v).into())))
         )
     }
 
     pub fn put_resources(&self, modules: BTreeMap<StructTag, Op<Vec<u8>>>) -> Result<H256> {
-        self.put_changes(modules.into_iter().map(|(k, v)| (tag_to_key(&k), v)))
+        self.put_changes(modules.into_iter().map(|(k, v)| (tag_to_key(&k), v.map(|v|
+        State::new(v, k)
+        ))))
     }
 
-    pub fn put_changes<I: IntoIterator<Item = (Vec<u8>, Op<Vec<u8>>)>>(
+    pub fn put_changes<I: IntoIterator<Item = (Vec<u8>, Op<State>)>>(
         &self,
         changes: I,
     ) -> Result<H256> {
@@ -129,20 +133,20 @@ impl StateDB {
         }
     }
 
-    pub fn get(&self, id: ObjectID) -> Result<Option<Vec<u8>>> {
+    pub fn get(&self, id: ObjectID) -> Result<Option<State>> {
         self.global_table.get(id.to_bytes())
     }
 
-    fn get_as_object<T: DeserializeOwned>(&self, id: ObjectID) -> Result<Option<Object<T>>> {
+    fn get_as_object<T: MoveState>(&self, id: ObjectID) -> Result<Option<Object<T>>> {
         self.get(id)?
-            .map(|bytes| bcs::from_bytes::<Object<T>>(&bytes))
+            .map(|state| state.as_object::<T>())
             .transpose()
             .map_err(Into::into)
     }
 
     pub fn get_as_raw_object(&self, id: ObjectID) -> Result<Option<RawObject>> {
         self.get(id)?
-            .map(|bytes| RawObject::from_bytes(&bytes))
+            .map(|state| state.as_raw_object())
             .transpose()
             .map_err(Into::into)
     }
@@ -224,7 +228,7 @@ impl StateDB {
                 let (mut object, module_table) = storage_tables.modules;
                 let new_state_root = module_table.put_modules(modules)?;
                 object.value.state_root = AccountAddress::new(new_state_root.into());
-                changed_objects.put(account_storage.value.modules.to_bytes(), object.to_bytes());
+                changed_objects.put(account_storage.value.modules.to_bytes(), object.into());
             }
             if !resources.is_empty() {
                 let (mut object, resource_table) = storage_tables.resources;
@@ -232,13 +236,13 @@ impl StateDB {
                 object.value.state_root = AccountAddress::new(new_state_root.into());
                 changed_objects.put(
                     account_storage.value.resources.to_bytes(),
-                    object.to_bytes(),
+                    object.into(),
                 );
             }
             //TODO check if the account_storage and table is changed, if not changed, don't put it
             changed_objects.put(
                 ObjectID::from(account).to_bytes(),
-                account_storage.to_bytes(),
+                account_storage.into(),
             )
         }
 
@@ -252,7 +256,7 @@ impl StateDB {
                 let (mut object, table) = self.get_as_table_or_create(object_id)?;
                 let new_state_root = table.put_changes(table_change.entries.into_iter())?;
                 object.value.state_root = AccountAddress::new(new_state_root.into());
-                changed_objects.put(object_id.to_bytes(), object.to_bytes());
+                changed_objects.put(object_id.to_bytes(), object.into());
             }
         }
 

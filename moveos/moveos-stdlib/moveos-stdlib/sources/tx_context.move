@@ -38,11 +38,15 @@ module moveos_std::tx_context {
     } 
 
     /// Generate a new unique address,
-    /// It also can be object ID
     public fun fresh_address(ctx: &mut TxContext): address {
         let addr = derive_id(ctx.tx_hash, ctx.ids_created);
         ctx.ids_created = ctx.ids_created + 1;
         addr
+    }
+
+    /// Generate a new unique object ID
+    public fun fresh_object_id(ctx: &mut TxContext): ObjectID {
+        object_id::address_to_object_id(fresh_address(ctx))
     }
 
     public fun derive_id(hash: vector<u8>, index: u64): address {

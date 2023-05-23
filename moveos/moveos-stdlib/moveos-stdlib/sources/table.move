@@ -8,12 +8,13 @@
 module moveos_std::table {
     use moveos_std::raw_table;
     use moveos_std::tx_context::TxContext;
+    use moveos_std::object_id::{ObjectID};
 
     friend moveos_std::account_storage;
 
     /// Type of tables
     struct Table<phantom K: copy + drop, phantom V> has store {
-        handle: address,
+        handle: ObjectID,
     }
 
     /// Create a new Table.

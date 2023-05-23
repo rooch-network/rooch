@@ -8,3 +8,6 @@ pub mod object;
 pub mod storage_context;
 pub mod transaction;
 pub mod tx_context;
+pub mod move_module;
+pub mod state;
+pub mod addresses;

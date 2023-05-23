@@ -4,7 +4,8 @@
 module moveos_std::object_storage {
     use moveos_std::tx_context::{TxContext};
     use moveos_std::raw_table;
-    use moveos_std::object::{Self, Object, ObjectID};
+    use moveos_std::object::{Self, Object};
+    use moveos_std::object_id::{Self, ObjectID};
     #[test_only]
     use moveos_std::test_helper;
 
@@ -14,7 +15,7 @@ module moveos_std::object_storage {
     const GlobalObjectStorageHandle : address = @0x0;
 
     struct ObjectStorage has store {
-        handle: address,
+        handle: ObjectID,
     }
 
     public fun new(ctx: &mut TxContext): ObjectStorage {
@@ -24,15 +25,15 @@ module moveos_std::object_storage {
     }
 
     /// Create a new ObjectStorage with a given handle.
-    public(friend) fun new_with_id(handle: address): ObjectStorage{
+    public(friend) fun new_with_id(handle: ObjectID): ObjectStorage{
         ObjectStorage {
             handle,
         }
     }
 
     /// The global object storage's table handle should be 0x0
-    public(friend) fun global_object_storage_handle() : address {
-        GlobalObjectStorageHandle
+    public(friend) fun global_object_storage_handle() : ObjectID {
+        object_id::address_to_object_id(GlobalObjectStorageHandle)
     }
 
     #[private_generics(T)]

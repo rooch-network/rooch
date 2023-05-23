@@ -5,11 +5,12 @@ module moveos_std::type_table {
     use std::ascii::{String};
     use moveos_std::raw_table;
     use moveos_std::tx_context::TxContext;
+    use moveos_std::object_id::ObjectID;
 
     friend moveos_std::account_storage;
 
     struct TypeTable has store {
-        handle: address,
+        handle: ObjectID,
     }
 
     /// Create a new Table.
