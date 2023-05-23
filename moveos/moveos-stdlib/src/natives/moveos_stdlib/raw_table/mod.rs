@@ -235,7 +235,13 @@ impl TableValue {
         match (op_opt, self.value_layout_and_type) {
             (Some(op), Some((value_layout, value_type))) => Some((value_layout, value_type, op)),
             (None, None) => None,
-            _ => unreachable!(),
+            (None, Some(_)) => {
+                // The box_value is loaded, but do not change, so no effect
+                None
+            }
+            (Some(_op), None) => {
+                unreachable!("Cannot have op without value_layout_and_type")
+            }
         }
     }
 }
