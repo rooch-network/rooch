@@ -10,7 +10,7 @@ use move_core_types::{
     value::{serialize_values, MoveValue},
 };
 use moveos_statedb::StateDB;
-use moveos_stdlib::addresses::MOVEOS_STD_ADDRESS;
+use moveos_types::addresses::MOVEOS_STD_ADDRESS;
 
 #[test]
 pub fn test_moveos() {

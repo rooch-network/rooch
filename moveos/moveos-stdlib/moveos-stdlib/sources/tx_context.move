@@ -6,6 +6,7 @@ module moveos_std::tx_context {
     use std::bcs;
     use std::hash;
     use moveos_std::bcd;
+    use moveos_std::object_id::{Self, ObjectID};
 
     friend moveos_std::object;
     friend moveos_std::raw_table;
@@ -38,17 +39,21 @@ module moveos_std::tx_context {
     } 
 
     /// Generate a new unique address,
-    /// It also can be object ID
     public fun fresh_address(ctx: &mut TxContext): address {
         let addr = derive_id(ctx.tx_hash, ctx.ids_created);
         ctx.ids_created = ctx.ids_created + 1;
         addr
     }
 
-    public fun derive_id(hash: vector<u8>, index: u64): address {
+    /// Generate a new unique object ID
+    public fun fresh_object_id(ctx: &mut TxContext): ObjectID {
+        object_id::address_to_object_id(fresh_address(ctx))
+    }
+
+    public(friend) fun derive_id(hash: vector<u8>, index: u64): address {
         let bytes = hash;
         vector::append(&mut bytes, bcs::to_bytes(&index));
-        //TODO change return type to u256 and use u256 to replace address
+        //TODO change return type to h256 and use h256 to replace address?
         let id = hash::sha3_256(bytes);
         bcd::to_address(id)
     }

@@ -26,8 +26,8 @@ use move_core_types::{
 use move_vm_runtime::session::SerializedReturnValues;
 use move_vm_types::gas::UnmeteredGasMeter;
 use moveos_statedb::StateDB;
-use moveos_stdlib::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
+use moveos_types::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use moveos_types::transaction::{AuthenticatableTransaction, MoveAction, MoveOSTransaction};
 use moveos_types::tx_context::TxContext;
 use moveos_types::{h256::H256, transaction::Function};

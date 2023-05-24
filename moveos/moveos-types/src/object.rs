@@ -1,5 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+use crate::{h256, state::MoveState};
 /// The Move Object is from Sui Move, and we try to mix the Global storage model and Object model in MoveOS.
 use anyhow::{ensure, Result};
 use move_core_types::{
@@ -8,11 +9,10 @@ use move_core_types::{
     identifier::IdentStr,
     language_storage::TypeTag,
     move_resource::{MoveResource, MoveStructType},
+    value::{MoveStructLayout, MoveTypeLayout},
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::str::FromStr;
-
-use crate::h256;
 
 /// Specific Table Object ID associated with an address
 #[derive(Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -51,8 +51,29 @@ impl ObjectID {
     const LENGTH: usize = h256::LENGTH;
 
     /// Creates a new ObjectID
-    pub fn new(obj_id: [u8; Self::LENGTH]) -> Self {
+    pub const fn new(obj_id: [u8; Self::LENGTH]) -> Self {
         Self(AccountAddress::new(obj_id))
+    }
+
+    /// Hex address: 0x0
+    pub const ZERO: Self = Self::new([0u8; Self::LENGTH]);
+
+    /// Hex address: 0x1
+    pub const ONE: Self = Self::get_hex_address_one();
+
+    /// Hex address: 0x2
+    pub const TWO: Self = Self::get_hex_address_two();
+
+    const fn get_hex_address_one() -> Self {
+        let mut addr = [0u8; AccountAddress::LENGTH];
+        addr[AccountAddress::LENGTH - 1] = 1u8;
+        Self::new(addr)
+    }
+
+    const fn get_hex_address_two() -> Self {
+        let mut addr = [0u8; AccountAddress::LENGTH];
+        addr[AccountAddress::LENGTH - 1] = 2u8;
+        Self::new(addr)
     }
 
     /// Create an ObjectID from transaction hash digest and `creation_num`.
@@ -78,6 +99,17 @@ impl ObjectID {
 impl std::fmt::Display for ObjectID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0.to_hex_literal())
+    }
+}
+
+impl MoveStructType for ObjectID {
+    const MODULE_NAME: &'static IdentStr = ident_str!("object_id");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("ObjectID");
+}
+
+impl MoveState for ObjectID {
+    fn move_layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![MoveTypeLayout::Address])
     }
 }
 
@@ -159,6 +191,15 @@ impl MoveStructType for AccountStorage {
     }
 }
 
+impl MoveState for AccountStorage {
+    fn move_layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![
+            MoveTypeLayout::Struct(ObjectID::move_layout()),
+            MoveTypeLayout::Struct(ObjectID::move_layout()),
+        ])
+    }
+}
+
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct TableInfo {
     //TODO use u256?
@@ -178,6 +219,12 @@ impl MoveStructType for TableInfo {
 
     fn type_params() -> Vec<TypeTag> {
         vec![]
+    }
+}
+
+impl MoveState for TableInfo {
+    fn move_layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![MoveTypeLayout::Address])
     }
 }
 
@@ -253,6 +300,20 @@ where
 
     fn type_params() -> Vec<TypeTag> {
         vec![TypeTag::Struct(Box::new(T::struct_tag()))]
+    }
+}
+
+impl<T> MoveState for Object<T>
+where
+    T: MoveState,
+{
+    /// Return the layout of the Object in Move
+    fn move_layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![
+            MoveTypeLayout::Struct(ObjectID::move_layout()),
+            MoveTypeLayout::Address,
+            MoveTypeLayout::Struct(T::move_layout()),
+        ])
     }
 }
 
