@@ -4,7 +4,8 @@
 module moveos_std::object_storage {
     use moveos_std::tx_context::{TxContext};
     use moveos_std::raw_table;
-    use moveos_std::object::{Self, Object, ObjectID};
+    use moveos_std::object::{Self, Object};
+    use moveos_std::object_id::{Self, ObjectID};
     #[test_only]
     use moveos_std::test_helper;
 
@@ -14,7 +15,7 @@ module moveos_std::object_storage {
     const GlobalObjectStorageHandle : address = @0x0;
 
     struct ObjectStorage has store {
-        handle: address,
+        handle: ObjectID,
     }
 
     public fun new(ctx: &mut TxContext): ObjectStorage {
@@ -24,43 +25,43 @@ module moveos_std::object_storage {
     }
 
     /// Create a new ObjectStorage with a given handle.
-    public(friend) fun new_with_id(handle: address): ObjectStorage{
+    public(friend) fun new_with_id(handle: ObjectID): ObjectStorage{
         ObjectStorage {
             handle,
         }
     }
 
     /// The global object storage's table handle should be 0x0
-    public(friend) fun global_object_storage_handle() : address {
-        GlobalObjectStorageHandle
+    public(friend) fun global_object_storage_handle() : ObjectID {
+        object_id::address_to_object_id(GlobalObjectStorageHandle)
     }
 
     #[private_generics(T)]
     /// Borrow Object from object store with object_id
     public fun borrow<T: key>(this: &ObjectStorage, object_id: ObjectID): &Object<T>{
-        raw_table::borrow<ObjectID, Object<T>>(*&this.handle, object_id)
+        raw_table::borrow<ObjectID, Object<T>>(&this.handle, object_id)
     }
 
     #[private_generics(T)]
     /// Borrow mut Object from object store with object_id
     public fun borrow_mut<T: key>(this: &mut ObjectStorage, object_id: ObjectID): &mut Object<T>{
-        raw_table::borrow_mut<ObjectID, Object<T>>(*&this.handle, object_id)
+        raw_table::borrow_mut<ObjectID, Object<T>>(&this.handle, object_id)
     }
     
     #[private_generics(T)]
     /// Remove object from object store
     public fun remove<T: key>(this: &mut ObjectStorage, object_id: ObjectID): Object<T>{
-        raw_table::remove<ObjectID, Object<T>>(*&this.handle, object_id)
+        raw_table::remove<ObjectID, Object<T>>(&this.handle, object_id)
     }
     
     #[private_generics(T)]
     /// Add object to object store
     public fun add<T: key>(this: &mut ObjectStorage, obj: Object<T>) {
-        raw_table::add<ObjectID, Object<T>>(*&this.handle, object::id(&obj), obj);
+        raw_table::add<ObjectID, Object<T>>(&this.handle, object::id(&obj), obj);
     } 
 
-    public fun contains<T: key>(this: &ObjectStorage, object_id: ObjectID): bool{
-        raw_table::contains<ObjectID, Object<T>>(*&this.handle, object_id)
+    public fun contains(this: &ObjectStorage, object_id: ObjectID): bool{
+        raw_table::contains<ObjectID>(&this.handle, object_id)
     }
 
     #[test_only]
@@ -86,10 +87,12 @@ module moveos_std::object_storage {
         let object = object::new(&mut ctx, sender, TestObject{f: 1});
         let object_id = object::id(&object);
         add(&mut os, object);
-        assert!(contains<TestObject>(&os, object_id), 1000);
+        assert!(contains(&os, object_id), 1000);
 
-        //FIXME https://github.com/rooch-network/rooch/issues/112 
-        //assert!(!contains<TestObject2>(&os, object_id), 1001);
+        let object2 = object::new(&mut ctx, sender, TestObject2{f: 1});
+        let object_id2 = object::id(&object2);
+        // The object_id2 is not in the object storage
+        assert!(!contains(&os, object_id2), 1001);
         
         let object_ref = borrow<TestObject>(&os, object_id);
         let test_obj_ref = object::borrow<TestObject>(object_ref);
@@ -99,8 +102,10 @@ module moveos_std::object_storage {
         let (_id, _owner, test_object) = object::unpack(object);
         let TestObject{f} = test_object;
         assert!(f == 1, 1003);
-        assert!(!contains<TestObject>(&os, object_id), 1004);
+        assert!(!contains(&os, object_id), 1004);
 
         drop_object_storage(os);
+        let (_id, _owner, test_object2) = object::unpack(object2); 
+        let TestObject2{f:_f} = test_object2;
     }
 }

@@ -1,5 +1,6 @@
 module rooch_examples::something {
-    use moveos_std::object::{Self, ObjectID, Object};
+    use moveos_std::object::{Self, Object};
+    use moveos_std::object_id::{ObjectID};
     use moveos_std::object_storage;
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::tx_context;

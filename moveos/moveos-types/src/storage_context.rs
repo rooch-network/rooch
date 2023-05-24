@@ -1,17 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::tx_context::TxContext;
-use move_core_types::{
-    account_address::AccountAddress, ident_str, identifier::IdentStr, move_resource::MoveStructType,
-};
+use crate::{object::ObjectID, tx_context::TxContext};
+use move_core_types::{ident_str, identifier::IdentStr, move_resource::MoveStructType};
 use serde::{Deserialize, Serialize};
 
-pub const GLOBAL_OBJECT_STORAGE_HANDLE: AccountAddress = AccountAddress::ZERO;
+pub const GLOBAL_OBJECT_STORAGE_HANDLE: ObjectID = ObjectID::ZERO;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct ObjectStorage {
-    pub handle: AccountAddress,
+    pub handle: ObjectID,
 }
 
 pub const STORAGE_CONTEXT_MODULE_NAME: &IdentStr = ident_str!("storage_context");

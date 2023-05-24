@@ -5,7 +5,8 @@
 module test::m {
     use moveos_std::tx_context;
     use moveos_std::storage_context::{Self, StorageContext};
-    use moveos_std::object::{Self, ObjectID};
+    use moveos_std::object;
+    use moveos_std::object_id::ObjectID;
     use moveos_std::account_storage;
     use moveos_std::object_storage;
     use std::debug;
