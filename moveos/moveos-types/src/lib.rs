@@ -3,6 +3,7 @@
 
 pub mod addresses;
 pub mod error;
+pub mod event;
 pub mod h256;
 pub mod move_module;
 pub mod move_types;

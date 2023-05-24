@@ -4,7 +4,7 @@ resolver = "2"
 members = [
     "moveos/smt",
     "moveos/moveos-types",
-    "moveos/moveos-statedb",
+    "moveos/moveos-store",
     "moveos/moveos-stdlib",
     "moveos/moveos",
     "moveos/moveos-common",
@@ -45,7 +45,7 @@ rust-version = "1.68"
 # crates for MoveOS
 smt = { path = "moveos/smt" }
 moveos-types = { path = "moveos/moveos-types" }
-moveos-statedb = { path = "moveos/moveos-statedb" }
+moveos-store = { path = "moveos/moveos-store" }
 moveos-stdlib = { path = "moveos/moveos-stdlib" }
 moveos = { path = "moveos/moveos" }
 moveos-cli = { path = "moveos/moveos-cli" }

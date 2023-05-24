@@ -46,7 +46,7 @@ move-vm-test-utils = { workspace = true }
 
 moveos-stdlib = { workspace = true }
 moveos-types = { workspace = true }
-moveos-statedb = { workspace = true }
+moveos-store = { workspace = true }
 moveos-common = { workspace = true }
 moveos = { workspace = true }
 rooch-common = { workspace = true }
