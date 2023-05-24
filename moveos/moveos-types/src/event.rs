@@ -22,7 +22,7 @@ use crate::h256::H256;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EventEnvelope {
     /// Transaction Info Id
-    pub tx_info_id: H256,
+    pub tx_id: H256,
     /// Consecutive per-tx counter assigned to this event.
     pub event_num: u64,
     /// Specific event type
@@ -37,14 +37,14 @@ pub struct EventEnvelope {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EventID {
-    pub tx_info_id: H256,
+    pub tx_id: H256,
     pub event_seq: u64,
 }
 
 impl From<(H256, u64)> for EventID {
-    fn from((tx_info_id, event_seq_number): (H256, u64)) -> Self {
+    fn from((tx_id, event_seq_number): (H256, u64)) -> Self {
         Self {
-            tx_info_id,
+            tx_id,
             event_seq: event_seq_number,
         }
     }
@@ -52,7 +52,7 @@ impl From<(H256, u64)> for EventID {
 
 impl From<EventID> for String {
     fn from(id: EventID) -> Self {
-        format!("{:?}:{}", id.tx_info_id, id.event_seq)
+        format!("{:?}:{}", id.tx_id, id.event_seq)
     }
 }
 
@@ -69,14 +69,14 @@ impl TryFrom<String> for EventID {
 impl EventEnvelope {
     pub fn new(
         timestamp: u64,
-        tx_info_id: H256,
+        tx_id: H256,
         event_num: u64,
         event: Event,
         move_struct_json_value: Value,
     ) -> Self {
         Self {
             timestamp,
-            tx_info_id,
+            tx_id,
             event_num,
             event,
             parsed_json: move_struct_json_value,

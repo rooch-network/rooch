@@ -9,12 +9,12 @@ pub mod event_store;
 pub mod state_store;
 
 #[derive(Clone)]
-pub struct RoochDB {
+pub struct MoveOSDB {
     // event_store: EventStore,
     event_store: Arc<EventStore>,
 }
 
-impl RoochDB {
+impl MoveOSDB {
     pub fn new_with_memory_store() -> Result<Self> {
         let store = Self {
             // event_store: EventStore::new_with_memory_store(),

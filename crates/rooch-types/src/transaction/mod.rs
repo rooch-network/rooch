@@ -5,10 +5,9 @@ use self::authenticator::Authenticator;
 use crate::{address::MultiChainAddress, H256};
 use anyhow::Result;
 use move_core_types::{account_address::AccountAddress, vm_status::KeptVMStatus};
-// use moveos_types::h256::sha3_256_of;
+use moveos_types::h256;
 use moveos_types::transaction::AuthenticatableTransaction;
 use serde::{Deserialize, Serialize};
-// use starcoin_crypto::hash::{CryptoHash, CryptoHasher};
 
 pub mod authenticator;
 pub mod ethereum;
@@ -163,10 +162,7 @@ impl TransactionInfo {
     }
 
     pub fn id(&self) -> H256 {
-        //TODO replace crypto_hash with the unified crypto function
-        // sha3_256_of(self.crypto_hash().as_slice())
-
-        H256::default()
+        h256::sha3_256_of(bcs::to_bytes(self).unwrap().as_slice())
     }
 }
 
