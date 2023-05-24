@@ -1,5 +1,5 @@
 module rooch_examples::something_aggregate {
-    use moveos_std::object::ObjectID;
+    use moveos_std::object_id::ObjectID;
     use moveos_std::storage_context::StorageContext;
     use rooch_examples::something;
     use rooch_examples::something_do_logic;

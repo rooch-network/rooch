@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use clap::Parser;
 use move_cli::base::new;
 use move_core_types::account_address::AccountAddress;
-use moveos_stdlib::addresses::{
+use moveos_types::addresses::{
     MOVEOS_STD_ADDRESS, MOVEOS_STD_ADDRESS_NAME, ROOCH_FRAMEWORK_ADDRESS,
     ROOCH_FRAMEWORK_ADDRESS_NAME,
 };
