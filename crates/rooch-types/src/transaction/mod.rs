@@ -120,6 +120,35 @@ impl TryFrom<RawTransaction> for TypedTransaction {
     }
 }
 
+impl AuthenticatableTransaction for TypedTransaction {
+    type AuthenticatorInfo = AuthenticatorInfo;
+    type AuthenticatorResult = AuthenticatorResult;
+
+    fn tx_hash(&self) -> H256 {
+        match self {
+            TypedTransaction::Rooch(tx) => tx.tx_hash(),
+            TypedTransaction::Ethereum(tx) => tx.tx_hash(),
+        }
+    }
+
+    fn authenticator_info(&self) -> Self::AuthenticatorInfo {
+        match self {
+            TypedTransaction::Rooch(tx) => tx.authenticator_info(),
+            TypedTransaction::Ethereum(tx) => tx.authenticator_info(),
+        }
+    }
+
+    fn construct_moveos_transaction(
+        &self,
+        result: Self::AuthenticatorResult,
+    ) -> Result<moveos_types::transaction::MoveOSTransaction> {
+        match self {
+            TypedTransaction::Rooch(tx) => tx.construct_moveos_transaction(result),
+            TypedTransaction::Ethereum(tx) => tx.construct_moveos_transaction(result),
+        }
+    }
+}
+
 /// `TransactionInfo` represents the result of executing a transaction.
 //TODO rename to TransactionExecutionInfo?
 // #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHash, CryptoHasher)]

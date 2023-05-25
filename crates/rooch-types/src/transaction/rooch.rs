@@ -131,6 +131,7 @@ impl AuthenticatableTransaction for RoochTransaction {
     type AuthenticatorInfo = AuthenticatorInfo;
     type AuthenticatorResult = AuthenticatorResult;
 
+    //TODO unify the hash function
     fn tx_hash(&self) -> H256 {
         //TODO cache the hash
         moveos_types::h256::sha3_256_of(self.encode().as_slice())

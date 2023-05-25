@@ -110,7 +110,7 @@ impl CommandAction<JsonResponse<TransactionOutput>> for Publish {
         let tx = tx_data.sign(&private_key)?;
 
         self.client
-            .submit_txn(tx)
+            .execute_tx(tx)
             .await
             .map_err(|e| CliError::TransactionError(e.to_string()))
     }

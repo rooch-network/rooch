@@ -8,6 +8,8 @@ pub enum StatusCode {
     InternalError = 403,
     BadRequest = 500,
     NotFound = 404,
+    //TODO it is suitable for not support function?
+    Gone = 410,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
