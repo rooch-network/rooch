@@ -111,8 +111,8 @@ impl Arbitrary for RoochKeyPair {
 
 #[cfg(any(test, feature = "fuzzing"))]
 prop_compose! {
-    fn arb_rooch_keypair()(_ in 1..10) -> RoochKeyPair {
-        let mut rng = rand::thread_rng();
+    pub fn arb_rooch_keypair()(seed in any::<u64>()) -> RoochKeyPair {
+        let mut rng = StdRng::seed_from_u64(seed);
         let ed25519_keypair: Ed25519KeyPair = Ed25519KeyPair::generate(&mut rng);
         prop_oneof![
             RoochKeyPair::Ed25519(ed25519_keypair),

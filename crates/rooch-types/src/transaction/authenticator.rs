@@ -17,6 +17,8 @@ use proptest::{collection::vec, prelude::*};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use rand::{rngs::OsRng, Rng};
+#[cfg(any(test, feature = "fuzzing"))]
+use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 #[cfg(any(test, feature = "fuzzing"))]
 use starcoin_crypto::ed25519::keypair_strategy;
@@ -211,9 +213,10 @@ impl Arbitrary for MultiEd25519Authenticator {
 #[cfg(any(test, feature = "fuzzing"))]
 prop_compose! {
     fn arb_multied25519_authenticator()(
+        seed in any::<u64>(),
         message in vec(any::<u8>(), 1..1000)
     ) -> MultiEd25519Authenticator {
-        let mut rng = rand::thread_rng();
+        let mut rng = StdRng::seed_from_u64(seed);
         let private_key = MultiEd25519PrivateKey::generate(&mut rng);
         MultiEd25519Authenticator {
             public_key: MultiEd25519PublicKey::from(&private_key),

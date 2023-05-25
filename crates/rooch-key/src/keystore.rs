@@ -6,6 +6,10 @@ use anyhow::anyhow;
 use bip32::DerivationPath;
 use bip39::{Language, Mnemonic, Seed};
 use enum_dispatch::enum_dispatch;
+// #[cfg(any(test, feature = "fuzzing"))]
+// use proptest::{collection::btree_map, prelude::*};
+// #[cfg(any(test, feature = "fuzzing"))]
+// use proptest_derive::Arbitrary;
 use rand::{rngs::StdRng, SeedableRng};
 use rooch_types::account::{
     get_key_pair_from_rng, EncodeDecodeBase64, PublicKey, RoochKeyPair, SignatureScheme,
@@ -84,7 +88,7 @@ impl Display for Keystore {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct FileBasedKeystore {
     keys: BTreeMap<RoochAddress, RoochKeyPair>,
     path: Option<PathBuf>,
@@ -115,6 +119,28 @@ impl<'de> Deserialize<'de> for FileBasedKeystore {
             .map_err(D::Error::custom)
     }
 }
+
+// #[cfg(any(test, feature = "fuzzing"))]
+// impl Arbitrary for FileBasedKeystore {
+//     type Parameters = ();
+//     fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+//         arb_file_based_keystore().boxed()
+//     }
+//     type Strategy = BoxedStrategy<Self>;
+// }
+
+// #[cfg(any(test, feature = "fuzzing"))]
+// prop_compose! {
+//     fn arb_file_based_keystore()(
+//         key in btree_map(any::<RoochAddress>(), any::<RoochKeyPair>(), 1..100),
+//         path in any::<PathBuf>(),
+//     ) -> FileBasedKeystore {
+//         FileBasedKeystore {
+//             keys: key,
+//             path: Some(path),
+//         }
+//     }
+// }
 
 impl AccountKeystore for FileBasedKeystore {
     fn add_key(&mut self, keypair: RoochKeyPair) -> Result<(), anyhow::Error> {
