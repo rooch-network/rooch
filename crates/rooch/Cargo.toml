@@ -27,6 +27,8 @@ serde_json = { workspace = true }
 once_cell = { workspace = true }
 tracing = { workspace = true }
 async-trait = { workspace = true }
+codespan-reporting = { workspace = true }
+termcolor = { workspace = true }
 
 
 move-bytecode-utils = { workspace = true }
@@ -43,6 +45,7 @@ move-package = { workspace = true }
 move-unit-test = { workspace = true }
 move-vm-runtime = { workspace = true }
 move-vm-test-utils = { workspace = true }
+move-model = { workspace = true }
 
 moveos-stdlib = { workspace = true }
 moveos-types = { workspace = true }

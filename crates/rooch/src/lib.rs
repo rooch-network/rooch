@@ -13,6 +13,7 @@ use commands::init::Init;
 use rooch_types::cli::{CliResult, CommandAction};
 
 pub mod commands;
+pub mod extended_checks;
 
 #[derive(clap::Parser)]
 #[clap(author, version, about, long_about = None)]
