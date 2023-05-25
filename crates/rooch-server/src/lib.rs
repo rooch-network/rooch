@@ -1,14 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-pub mod api;
-pub mod jsonrpc_types;
-pub mod response;
-pub mod service;
-
-use crate::api::account::AccountServer;
 use crate::api::RoochRpcModule;
-use crate::service::RoochServer;
+use crate::server::eth_server::EthServer;
+use crate::server::rooch_server::RoochServer;
+use crate::server::wallet_server::WalletServer;
+use crate::service::RpcService;
 use anyhow::Result;
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::{system::ActorSystem, IntoActor};
@@ -16,6 +13,7 @@ use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
 use moveos::moveos::MoveOS;
+use moveos_store::state_store::StateDB;
 use rooch_common::config::{rooch_config_path, PersistedConfig, RoochConfig};
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
@@ -25,14 +23,17 @@ use rooch_proposer::proxy::ProposerProxy;
 use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::transaction::authenticator::AccountPrivateKey;
-//use moveos_common::config::load_config;
-use moveos_store::state_store::StateDB;
 use serde_json::json;
 use std::fmt::Debug;
 use std::net::SocketAddr;
 use std::time::Duration;
-
 use tracing::info;
+
+pub mod api;
+pub mod jsonrpc_types;
+pub mod response;
+pub mod server;
+pub mod service;
 
 pub fn http_client(url: impl AsRef<str>) -> Result<HttpClient> {
     let client = HttpClientBuilder::default().build(url)?;
@@ -145,20 +146,23 @@ pub async fn start_server() -> Result<ServerHandle> {
         ProposeBlock {},
     );
 
+    let rpc_service = RpcService::new(executor_proxy, sequencer_proxy, proposer_proxy);
+
     // Build server
     let server = ServerBuilder::default().build(&addr).await?;
 
     let mut rpc_module_builder = RpcModuleBuilder::new();
     rpc_module_builder
-        .register_module(RoochServer::new(
-            executor_proxy.clone(),
-            sequencer_proxy,
-            proposer_proxy,
-        ))
+        .register_module(RoochServer::new(rpc_service.clone()))
         .unwrap();
     rpc_module_builder
-        .register_module(AccountServer::new(executor_proxy.clone()))
+        .register_module(WalletServer::new(rpc_service.clone()))
         .unwrap();
+
+    rpc_module_builder
+        .register_module(EthServer::new(rpc_service.clone()))
+        .unwrap();
+
     // let rpc_api = build_rpc_api(rpc_api);
     let methods_names = rpc_module_builder.module.method_names().collect::<Vec<_>>();
     let handle = server.start(rpc_module_builder.module)?;

@@ -171,6 +171,7 @@ impl TableValue {
         value_layout: MoveTypeLayout,
         value_type: TypeTag,
     ) -> Result<(), (PartialVMError, Value)> {
+        //TODO extract the type check logic into a helper function
         if let Some((_exist_value_layout, exist_value_type)) = &self.value_layout_and_type {
             if *exist_value_type != value_type {
                 return Err((
