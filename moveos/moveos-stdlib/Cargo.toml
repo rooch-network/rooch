@@ -16,6 +16,7 @@ rust-version = { workspace = true }
 [dependencies]
 anyhow = { workspace = true }
 better_any = { workspace = true }
+fastcrypto = { workspace = true }
 linked-hash-map = { workspace = true }
 once_cell = { workspace = true }
 serde = { workspace = true }
@@ -36,6 +37,7 @@ move-vm-test-utils = { workspace = true }
 move-vm-types = { workspace = true }
 move-package = { workspace = true }
 move-prover = { workspace = true }
+
 
 moveos-types = { workspace = true }
 moveos-verifier = { workspace = true }
