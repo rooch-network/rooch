@@ -50,6 +50,7 @@ moveos-stdlib = { path = "moveos/moveos-stdlib" }
 moveos = { path = "moveos/moveos" }
 moveos-cli = { path = "moveos/moveos-cli" }
 moveos-common = { path = "moveos/moveos-common" }
+moveos-verifier = { path = "moveos/moveos-verifier" }
 
 # crates for Rooch
 rooch = { path = "crates/rooch" }
