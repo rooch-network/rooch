@@ -31,7 +31,6 @@ use tracing::info;
 
 pub mod api;
 pub mod jsonrpc_types;
-pub mod response;
 pub mod server;
 pub mod service;
 

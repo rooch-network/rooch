@@ -61,7 +61,8 @@ pub struct ResourceMessage {
 }
 
 impl Message for ResourceMessage {
-    type Result = Result<String, anyhow::Error>;
+    //TODO change result to Move Resource
+    type Result = Result<Option<String>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -70,5 +71,6 @@ pub struct ObjectMessage {
 }
 
 impl Message for ObjectMessage {
-    type Result = Result<String, anyhow::Error>;
+    //TODO change result to Move Object
+    type Result = Result<Option<String>>;
 }
