@@ -5,6 +5,7 @@ use clap::Parser;
 use move_command_line_common::files::verify_and_create_named_address_mapping;
 use move_command_line_common::{address::ParsedAddress, values::ParsableValue};
 use move_compiler::FullyCompiledProgram;
+use move_resource_viewer::MoveValueAnnotator;
 use move_transactional_test_runner::{
     framework::{CompiledState, MoveTestAdapter},
     tasks::{InitCommand, SyntaxChoice, TaskInput},
@@ -13,7 +14,7 @@ use move_transactional_test_runner::{
 use move_vm_runtime::session::SerializedReturnValues;
 use moveos::moveos::MoveOS;
 use moveos_types::move_types::FunctionId;
-use moveos_types::object::{ObjectID, RawObject};
+use moveos_types::object::{ObjectID};
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use std::{collections::BTreeMap, path::Path};
 
@@ -230,13 +231,13 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
     ) -> anyhow::Result<Option<String>> {
         match subcommand.command {
             MoveOSSubcommands::ViewObject { object_id } => {
-                let object: Option<RawObject> = self.moveos.state().get_as_raw_object(object_id)?;
-                let object = object
-                    .ok_or_else(|| anyhow::anyhow!("Object with id {} not found", object_id))?;
-
-                //TODO print more info about object
-                // let annotated = MoveValueAnnotator::new(self.moveos.state())
-                //     .view_resource(&move_object.type_, &move_object.contents)?;
+                let storage = self.moveos.state();
+                let annotator = MoveValueAnnotator::new(storage);
+                let object = storage
+                    .get(object_id)?
+                    .map(|state| state.as_annotated_object(&annotator))
+                    .transpose()?.ok_or_else(|| anyhow::anyhow!("Object with id {} not found", object_id))?;
+                //TODO should we bring the AnnotatedObjectView from jsonrpc to test adapter for better json output formatting?
                 Ok(Some(format!("{:?}", object)))
             }
         }
