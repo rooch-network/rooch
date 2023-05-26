@@ -3,14 +3,16 @@
 
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
-    object::{self, Object, RawObject},
+    object::{self, AnnotatedObject, Object, RawObject},
 };
 use anyhow::{bail, ensure, Result};
 use move_core_types::{
     language_storage::{StructTag, TypeTag},
     move_resource::MoveStructType,
+    resolver::MoveResolver,
     value::MoveStructLayout,
 };
+use move_resource_viewer::{AnnotatedMoveValue, MoveValueAnnotator};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 /// `State` is represent state in MoveOS statedb, it can be a Move module or a Move Object or a Move resource or a Table value
@@ -49,14 +51,34 @@ impl State {
     }
 
     pub fn is_object(&self) -> bool {
+        self.get_object_struct_tag().is_some()
+    }
+
+    /// If the state is a Object, return the T's struct_tag of Object<T>
+    /// Otherwise, return None
+    pub fn get_object_struct_tag(&self) -> Option<StructTag> {
         let val_type = self.value_type();
         match val_type {
             TypeTag::Struct(struct_tag) => {
-                struct_tag.address == *MOVEOS_STD_ADDRESS
+                if struct_tag.address == *MOVEOS_STD_ADDRESS
                     && struct_tag.module.as_ident_str() == object::OBJECT_MODULE_NAME
                     && struct_tag.name.as_ident_str() == object::OBJECT_STRUCT_NAME
+                {
+                    let object_type_param = struct_tag
+                        .type_params
+                        .get(0)
+                        .expect("The Object<T> should have a type param");
+                    match object_type_param {
+                        TypeTag::Struct(struct_tag) => Some(struct_tag.as_ref().clone()),
+                        _ => {
+                            unreachable!("The Object<T> should have a struct type param")
+                        }
+                    }
+                } else {
+                    None
+                }
             }
-            _ => false,
+            _ => None,
         }
     }
 
@@ -68,12 +90,10 @@ impl State {
     }
 
     pub fn as_raw_object(&self) -> Result<RawObject> {
-        ensure!(
-            self.is_object(),
-            "Expect type Object but the state type:{}",
-            self.value_type
-        );
-        RawObject::from_bytes(&self.value)
+        let object_struct_tag = self.get_object_struct_tag().ok_or_else(|| {
+            anyhow::anyhow!("Expect type Object but the state type:{}", self.value_type)
+        })?;
+        RawObject::from_bytes(&self.value, object_struct_tag)
     }
 
     pub fn as_move_state<T>(&self) -> Result<T>
@@ -95,6 +115,27 @@ impl State {
             }
             _ => bail!("Expect type Object but the state type:{}", val_type),
         }
+    }
+
+    pub fn as_move_value<T: MoveResolver + ?Sized>(
+        &self,
+        annotator: &MoveValueAnnotator<T>,
+    ) -> Result<AnnotatedMoveValue> {
+        annotator.view_value(&self.value_type, &self.value)
+    }
+
+    pub fn as_annotated_object<T: MoveResolver + ?Sized>(
+        &self,
+        annotator: &MoveValueAnnotator<T>,
+    ) -> Result<AnnotatedObject> {
+        let raw_object = self.as_raw_object()?;
+        let annotated_move_struct =
+            annotator.view_resource(&raw_object.value.struct_tag, &raw_object.value.value)?;
+        Ok(AnnotatedObject::new_annotated_object(
+            raw_object.id,
+            raw_object.owner,
+            annotated_move_struct,
+        ))
     }
 }
 

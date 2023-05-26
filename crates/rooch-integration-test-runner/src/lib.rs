@@ -12,6 +12,7 @@ use move_transactional_test_runner::{
 };
 use move_vm_runtime::session::SerializedReturnValues;
 use moveos::moveos::MoveOS;
+use moveos_types::move_types::FunctionId;
 use moveos_types::object::{ObjectID, RawObject};
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use std::{collections::BTreeMap, path::Path};
@@ -166,7 +167,7 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
 
         let txn = MoveOSTransaction::new_for_test(
             signers.pop().unwrap(),
-            MoveAction::new_script(script_bytes, type_args, args),
+            MoveAction::new_script_call(script_bytes, type_args, args),
         );
         self.moveos.execute(txn)?;
         //TODO return values
@@ -199,9 +200,10 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
             .iter()
             .map(|arg| arg.simple_serialize().unwrap())
             .collect::<Vec<_>>();
+        let function_id = FunctionId::new(module.clone(), function.to_owned());
         let txn = MoveOSTransaction::new_for_test(
             signers.pop().unwrap(),
-            MoveAction::new_function(module.clone(), function.to_owned(), type_args, args),
+            MoveAction::new_function_call(function_id, type_args, args),
         );
         self.moveos.execute(txn)?;
         //TODO return values

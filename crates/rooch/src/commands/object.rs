@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use moveos_types::object::ObjectID;
 use rooch_client::Client;
+use rooch_server::jsonrpc_types::AnnotatedObjectView;
 use rooch_types::cli::{CliResult, CommandAction};
 #[derive(clap::Parser)]
 pub struct ObjectCommand {
@@ -14,9 +15,9 @@ pub struct ObjectCommand {
 }
 
 #[async_trait]
-impl CommandAction<Option<String>> for ObjectCommand {
-    async fn execute(self) -> CliResult<Option<String>> {
-        let resp = self.client.object(self.id).await?;
+impl CommandAction<Option<AnnotatedObjectView>> for ObjectCommand {
+    async fn execute(self) -> CliResult<Option<AnnotatedObjectView>> {
+        let resp = self.client.get_object(self.id).await?;
         Ok(resp)
     }
 }

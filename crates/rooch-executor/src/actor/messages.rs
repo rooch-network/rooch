@@ -4,15 +4,13 @@
 use anyhow::Result;
 use coerce::actor::message::Message;
 use move_core_types::{
-    account_address::AccountAddress,
-    identifier::Identifier,
-    language_storage::{ModuleId, TypeTag},
-    value::MoveValue,
+    account_address::AccountAddress, language_storage::StructTag, value::MoveValue,
 };
+use move_resource_viewer::AnnotatedMoveStruct;
 use moveos::moveos::TransactionOutput;
 use moveos_types::{
-    object::ObjectID,
-    transaction::{AuthenticatableTransaction, MoveOSTransaction},
+    object::{AnnotatedObject, ObjectID},
+    transaction::{AuthenticatableTransaction, FunctionCall, MoveOSTransaction},
 };
 use rooch_types::transaction::TransactionInfo;
 use serde::{Deserialize, Serialize};
@@ -44,25 +42,22 @@ impl Message for ExecuteTransactionMessage {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ViewFunctionMessage {
-    pub payload: Vec<u8>,
+pub struct ExecuteViewFunctionMessage {
+    pub call: FunctionCall,
 }
 
-impl Message for ViewFunctionMessage {
+impl Message for ExecuteViewFunctionMessage {
     type Result = Result<Vec<MoveValue>, anyhow::Error>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ResourceMessage {
+pub struct GetResourceMessage {
     pub address: AccountAddress,
-    pub module: ModuleId,
-    pub resource: Identifier,
-    pub type_args: Vec<TypeTag>,
+    pub resource_type: StructTag,
 }
 
-impl Message for ResourceMessage {
-    //TODO change result to Move Resource
-    type Result = Result<Option<String>>;
+impl Message for GetResourceMessage {
+    type Result = Result<Option<AnnotatedMoveStruct>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -71,6 +66,5 @@ pub struct ObjectMessage {
 }
 
 impl Message for ObjectMessage {
-    //TODO change result to Move Object
-    type Result = Result<Option<String>>;
+    type Result = Result<Option<AnnotatedObject>>;
 }
