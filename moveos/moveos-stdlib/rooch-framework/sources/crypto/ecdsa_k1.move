@@ -11,8 +11,6 @@ module rooch_framework::ecdsa_k1 {
    const SHA256: u8 = 1;
 
    /// @param signature: A 65-bytes signature in form (r, s, v) that is signed using
-   /// Secp256k1. Reference implementation on signature generation using RFC6979:
-   /// https://github.com/MystenLabs/narwhal/blob/5d6f6df8ccee94446ff88786c0dbbc98be7cfc09/crypto/src/secp256k1.rs
    /// The accepted v values are {0, 1, 2, 3}.
    /// @param msg: The message that the signature is signed against, this is raw message without hashing.
    /// @param hash: The hash function used to hash the message when signing.
@@ -30,8 +28,6 @@ module rooch_framework::ecdsa_k1 {
 
    /// @param signature: A 64-bytes signature in form (r, s) that is signed using
    /// Secp256k1. This is an non-recoverable signature without recovery id.
-   /// Reference implementation on signature generation using RFC6979:
-   /// https://github.com/MystenLabs/fastcrypto/blob/74aec4886e62122a5b769464c2bea5f803cf8ecc/fastcrypto/src/secp256k1/mod.rs#L193
    /// @param public_key: The public key to verify the signature against
    /// @param msg: The message that the signature is signed against, this is raw message without hashing.
    /// @param hash: The hash function used to hash the message when signing.
