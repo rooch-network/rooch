@@ -17,6 +17,8 @@ pub use fastcrypto::traits::{
     VerifyingKey,
 };
 use moveos_types::h256::H256;
+#[cfg(any(test, feature = "fuzzing"))]
+use proptest::prelude::*;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use schemars::JsonSchema;
@@ -98,7 +100,27 @@ impl<'de> Deserialize<'de> for RoochKeyPair {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, From, JsonSchema)]
+#[cfg(any(test, feature = "fuzzing"))]
+impl Arbitrary for RoochKeyPair {
+    type Parameters = ();
+    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+        arb_rooch_keypair().boxed()
+    }
+    type Strategy = BoxedStrategy<Self>;
+}
+
+#[cfg(any(test, feature = "fuzzing"))]
+prop_compose! {
+    pub fn arb_rooch_keypair()(seed in any::<u64>()) -> RoochKeyPair {
+        let mut rng = StdRng::seed_from_u64(seed);
+        let ed25519_keypair: Ed25519KeyPair = Ed25519KeyPair::generate(&mut rng);
+        prop_oneof![
+            RoochKeyPair::Ed25519(ed25519_keypair),
+        ]
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, From, JsonSchema)]
 pub enum PublicKey {
     #[schemars(with = "Base64")]
     Ed25519(Ed25519PublicKey),
@@ -185,6 +207,15 @@ impl From<&PublicKey> for RoochAddress {
         let g_arr = hasher.finalize();
         RoochAddress(H256(g_arr.digest))
     }
+}
+
+#[cfg(any(test, feature = "fuzzing"))]
+impl Arbitrary for PublicKey {
+    type Parameters = ();
+    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+        arb_rooch_keypair().prop_map(|kp| kp.public()).boxed()
+    }
+    type Strategy = BoxedStrategy<Self>;
 }
 
 #[derive(Deserialize, Serialize, Debug, EnumString, strum_macros::Display)]
@@ -300,4 +331,26 @@ where
         kp,
     )
     //    (kp.public().into(), kp)
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+
+    proptest! {
+        #[test]
+        fn test_rooch_keypair_serialize_deserialize(keypair in any::<RoochKeyPair>()) {
+            let serialized = serde_json::to_string(&keypair).unwrap();
+            let deserialized: RoochKeyPair = serde_json::from_str(&serialized).unwrap();
+            assert_eq!(keypair, deserialized);
+        }
+
+        #[test]
+        fn test_rooch_publickey_serialize_deserialize(publickey in any::<PublicKey>()) {
+            let serialized = serde_json::to_string(&publickey).unwrap();
+            let deserialized: PublicKey = serde_json::from_str(&serialized).unwrap();
+            assert_eq!(publickey, deserialized);
+        }
+    }
 }
