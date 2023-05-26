@@ -1,9 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-pub mod account;
-
 use jsonrpsee::RpcModule;
+
+pub mod eth_api;
+pub mod rooch_api;
+pub mod wallet_api;
 
 pub const MAX_RESULT_LIMIT: usize = 1000;
 

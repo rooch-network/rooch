@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #![allow(unused_imports)]
-use anyhow::{Ok, Result};
 use clap::Parser;
 use move_core_types::{
     account_address::AccountAddress,
@@ -11,6 +10,7 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
     parser::parse_type_tag,
 };
+use moveos::moveos::TransactionOutput;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use rooch_client::Client;
 
@@ -18,9 +18,11 @@ use rooch_common::config::{
     rooch_config_dir, PersistedConfig, RoochConfig, ROOCH_CONFIG, ROOCH_KEYSTORE_FILENAME,
 };
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
+use rooch_server::response::JsonResponse;
 use rooch_types::{
     account::SignatureScheme::ED25519,
     address::RoochAddress,
+    cli::{CliError, CliResult},
     transaction::{authenticator::AccountPrivateKey, rooch::RoochTransactionData},
 };
 use std::path::{Path, PathBuf};
@@ -38,10 +40,14 @@ pub struct CreateCommand {
 }
 
 impl CreateCommand {
-    pub async fn execute(self, config: &mut PersistedConfig<RoochConfig>) -> Result<()> {
+    pub async fn execute(
+        self,
+        config: &mut PersistedConfig<RoochConfig>,
+    ) -> CliResult<JsonResponse<TransactionOutput>> {
         let (new_address, phrase, scheme) = config
             .keystore
-            .generate_and_add_new_key(ED25519, None, None)?;
+            .generate_and_add_new_key(ED25519, None, None)
+            .map_err(|e| CliError::GenerateKeyError(e.to_string()))?;
 
         println!("{}", new_address.0);
         println!(
@@ -64,8 +70,9 @@ impl CreateCommand {
         let private_key = AccountPrivateKey::generate_for_testing();
         let tx = tx_data.sign(&private_key)?;
 
-        self.client.submit_txn(tx).await?;
-
-        Ok(())
+        self.client
+            .execute_tx(tx)
+            .await
+            .map_err(|e| CliError::TransactionError(e.to_string()))
     }
 }

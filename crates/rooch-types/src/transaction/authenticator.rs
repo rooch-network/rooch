@@ -9,15 +9,25 @@
 
 use crate::address::RoochAddress;
 use anyhow::{ensure, Error, Result};
+#[cfg(any(test, feature = "fuzzing"))]
+use ethers::types::U256;
 use moveos_types::h256::H256;
+#[cfg(any(test, feature = "fuzzing"))]
+use proptest::{collection::vec, prelude::*};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use rand::{rngs::OsRng, Rng};
+#[cfg(any(test, feature = "fuzzing"))]
+use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
+#[cfg(any(test, feature = "fuzzing"))]
+use starcoin_crypto::ed25519::keypair_strategy;
 use starcoin_crypto::ed25519::{
     Ed25519PrivateKey, ED25519_PRIVATE_KEY_LENGTH, ED25519_PUBLIC_KEY_LENGTH,
 };
 use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519KeyShard;
+#[cfg(any(test, feature = "fuzzing"))]
+use starcoin_crypto::multi_ed25519::MultiEd25519PrivateKey;
 use starcoin_crypto::Uniform;
 use starcoin_crypto::{
     derive::{DeserializeKey, SerializeKey},
@@ -113,6 +123,27 @@ impl<'de> Deserialize<'de> for Ed25519Authenticator {
     }
 }
 
+#[cfg(any(test, feature = "fuzzing"))]
+impl Arbitrary for Ed25519Authenticator {
+    type Parameters = ();
+    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+        arb_ed25519_authenticator().boxed()
+    }
+    type Strategy = BoxedStrategy<Self>;
+}
+
+#[cfg(any(test, feature = "fuzzing"))]
+prop_compose! {
+    fn arb_ed25519_authenticator()(
+        keypair in keypair_strategy(),
+        message in vec(any::<u8>(), 1..1000)
+    ) -> Ed25519Authenticator {
+        Ed25519Authenticator {
+            public_key: keypair.public_key,
+            signature: keypair.private_key.sign_arbitrary_message(&message)
+        }
+    }
+}
 #[derive(Clone, Debug)]
 pub struct MultiEd25519Authenticator {
     pub public_key: MultiEd25519PublicKey,
@@ -169,6 +200,31 @@ impl<'de> Deserialize<'de> for MultiEd25519Authenticator {
         })
     }
 }
+
+#[cfg(any(test, feature = "fuzzing"))]
+impl Arbitrary for MultiEd25519Authenticator {
+    type Parameters = ();
+    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+        arb_multied25519_authenticator().boxed()
+    }
+    type Strategy = BoxedStrategy<Self>;
+}
+
+#[cfg(any(test, feature = "fuzzing"))]
+prop_compose! {
+    fn arb_multied25519_authenticator()(
+        seed in any::<u64>(),
+        message in vec(any::<u8>(), 1..1000)
+    ) -> MultiEd25519Authenticator {
+        let mut rng = StdRng::seed_from_u64(seed);
+        let private_key = MultiEd25519PrivateKey::generate(&mut rng);
+        MultiEd25519Authenticator {
+            public_key: MultiEd25519PublicKey::from(&private_key),
+            signature: private_key.sign_arbitrary_message(&message)
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Secp256k1Authenticator {
     pub signature: ethers::core::types::Signature,
@@ -179,7 +235,7 @@ impl BuiltinAuthenticator for Secp256k1Authenticator {
         BuiltinScheme::Secp256k1
     }
     fn encode(&self) -> Vec<u8> {
-        bcs::to_bytes(self).expect("encode should success.")
+        self.signature.to_vec()
     }
 }
 
@@ -188,15 +244,19 @@ impl Serialize for Secp256k1Authenticator {
     where
         S: serde::Serializer,
     {
-        #[derive(::serde::Serialize)]
-        #[serde(rename = "Secp256k1Authenticator")]
-        struct Value {
-            signature: Vec<u8>,
+        if serializer.is_human_readable() {
+            serializer.serialize_str(self.signature.to_string().as_str())
+        } else {
+            #[derive(::serde::Serialize)]
+            #[serde(rename = "Secp256k1Authenticator")]
+            struct Value {
+                signature: Vec<u8>,
+            }
+            Value {
+                signature: self.signature.to_vec(),
+            }
+            .serialize(serializer)
         }
-        Value {
-            signature: self.signature.to_vec(),
-        }
-        .serialize(serializer)
     }
 }
 
@@ -205,15 +265,45 @@ impl<'de> Deserialize<'de> for Secp256k1Authenticator {
     where
         D: serde::Deserializer<'de>,
     {
-        #[derive(::serde::Deserialize)]
-        #[serde(rename = "Secp256k1Authenticator")]
-        struct Value {
-            signature: Vec<u8>,
+        if deserializer.is_human_readable() {
+            let hex = String::deserialize(deserializer)?;
+            let signature = ethers::core::types::Signature::from_str(hex.as_str())
+                .map_err(|e| serde::de::Error::custom(e.to_string()))?;
+            Ok(Secp256k1Authenticator { signature })
+        } else {
+            #[derive(::serde::Deserialize)]
+            #[serde(rename = "Secp256k1Authenticator")]
+            struct Value {
+                signature: Vec<u8>,
+            }
+            let value = Value::deserialize(deserializer)?;
+            let signature = ethers::core::types::Signature::try_from(value.signature.as_slice())
+                .map_err(|e| serde::de::Error::custom(e.to_string()))?;
+            Ok(Secp256k1Authenticator { signature })
         }
-        let value = Value::deserialize(deserializer)?;
-        let signature = ethers::core::types::Signature::try_from(value.signature.as_slice())
-            .map_err(|e| serde::de::Error::custom(e.to_string()))?;
-        Ok(Secp256k1Authenticator { signature })
+    }
+}
+
+#[cfg(any(test, feature = "fuzzing"))]
+impl Arbitrary for Secp256k1Authenticator {
+    type Parameters = ();
+    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+        arb_secp256k1_authenticator().boxed()
+    }
+    type Strategy = BoxedStrategy<Self>;
+}
+
+#[cfg(any(test, feature = "fuzzing"))]
+prop_compose! {
+    fn arb_secp256k1_authenticator()(
+     r in vec(any::<u64>(), 4..=4).prop_map(|v| U256(v.try_into().unwrap())),
+     s in vec(any::<u64>(), 4..=4).prop_map(|v| U256(v.try_into().unwrap())),
+     // Although v is an u64 type, it is actually an u8 value.
+     v in any::<u8>().prop_map(|v| <u64>::from(v)),
+    ) -> Secp256k1Authenticator {
+        Secp256k1Authenticator {
+            signature: ethers::core::types::Signature {r, s, v},
+        }
     }
 }
 
@@ -604,6 +694,7 @@ impl TryFrom<&[u8]> for AccountPrivateKey {
 #[cfg(test)]
 mod tests {
     use crate::transaction::authenticator::{AccountPublicKey, AuthenticationKey};
+    use proptest::prelude::*;
     use starcoin_crypto::keygen::KeyGen;
     use starcoin_crypto::multi_ed25519::MultiEd25519PublicKey;
     use std::str::FromStr;
@@ -626,5 +717,30 @@ mod tests {
         let multi_pubkey = MultiEd25519PublicKey::new(pubkeys, threshold).unwrap();
         let auth_key2 = AuthenticationKey::multi_ed25519(&multi_pubkey);
         assert_eq!(auth_key, auth_key2);
+    }
+
+    proptest! {
+        #[test]
+        fn test_secp256k1_authenticator_serialize_deserialize(authenticator in any::<super::Secp256k1Authenticator>()) {
+            let serialized = serde_json::to_string(&authenticator).unwrap();
+            let deserialized: super:: Secp256k1Authenticator = serde_json::from_str(&serialized).unwrap();
+            assert_eq!(authenticator.signature, deserialized.signature);
+        }
+
+        #[test]
+        fn test_ed25519_authenticator_serialize_deserialize(authenticator in any::<super::Ed25519Authenticator>()) {
+            let serialized = serde_json::to_string(&authenticator).unwrap();
+            let deserialized: super::Ed25519Authenticator = serde_json::from_str(&serialized).unwrap();
+            assert_eq!(authenticator.public_key, deserialized.public_key);
+            assert_eq!(authenticator.signature, deserialized.signature);
+        }
+
+        #[test]
+        fn test_multied25519_authenticator_serialize_deserialize(authenticator in any::<super::MultiEd25519Authenticator>()) {
+            let serialized = serde_json::to_string(&authenticator).unwrap();
+            let deserialized: super::MultiEd25519Authenticator = serde_json::from_str(&serialized).unwrap();
+            assert_eq!(authenticator.public_key, deserialized.public_key);
+            assert_eq!(authenticator.signature, deserialized.signature);
+        }
     }
 }

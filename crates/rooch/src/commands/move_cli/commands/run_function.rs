@@ -142,7 +142,7 @@ impl CommandAction<JsonResponse<TransactionOutput>> for RunFunction {
             .sign(&private_key)
             .map_err(|e| CliError::SignMessageError(e.to_string()))?;
         self.client
-            .submit_txn(tx)
+            .execute_tx(tx)
             .await
             .map_err(|e| CliError::TransactionError(e.to_string()))
     }

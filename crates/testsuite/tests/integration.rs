@@ -1,35 +1,20 @@
-use std::path::PathBuf;
-
 use anyhow::{bail, Result};
+use clap::Parser;
 use cucumber::{given, then, World as _};
-use futures::FutureExt as _;
+use jpst::TemplateContext;
+use rooch::RoochCli;
 use rooch_server::Service;
-use std::future;
+use serde_json::Value;
 use tracing::info;
-
-fn rooch_root() -> Result<PathBuf> {
-    let curr_dir = std::env::current_dir()?;
-    let parent = curr_dir.parent();
-    let rooch_root = parent.and_then(|p| p.parent());
-    match rooch_root {
-        Some(rooch_root) => Ok(rooch_root.to_path_buf()),
-        None => bail!("rooch root not found"),
-    }
-}
 
 #[derive(cucumber::World, Debug, Default)]
 struct World {
     service: Option<Service>,
+    tpl_ctx: Option<TemplateContext>,
 }
 
 #[given(expr = "a server")] // Cucumber Expression
 async fn start_server(w: &mut World) {
-    let rooch_root = rooch_root().expect("rooch root not found");
-    let config_dir = rooch_root.to_path_buf().join("fixtures/config.yml");
-    std::env::set_var(
-        "ROOCH_CONFIG",
-        config_dir.to_str().expect("unexpected path error"),
-    );
     let mut service = Service::new();
     service.start().await.unwrap();
 
@@ -37,21 +22,35 @@ async fn start_server(w: &mut World) {
 }
 
 #[then(regex = r#"cmd: "(.*)?""#)]
-async fn run_cmd(_w: &mut World, args: String) {
-    let rooch_root = rooch_root().unwrap();
-    let config_dir = rooch_root.to_path_buf().join("fixtures/config.yml");
+async fn run_cmd(world: &mut World, args: String) {
     let mut cmd = assert_cmd::Command::cargo_bin("rooch").unwrap();
-    cmd.env("ROOCH_CONFIG", config_dir.to_str().unwrap());
+    // Discard test data
+    cmd.env("TEST_ENV", "true");
 
-    let parameters = args.split_whitespace();
-    for parameter in parameters {
-        cmd.arg(parameter.to_owned());
+    if world.tpl_ctx.is_none() {
+        world.tpl_ctx = Some(TemplateContext::new());
     }
-    let _assert = cmd.assert().success();
+    let tpl_ctx = world.tpl_ctx.as_mut().unwrap();
+    let args = eval_command_args(tpl_ctx, args);
+
+    let mut args = split_string_with_quotes(&args).expect("Invalid commands");
+    let cmd_name = args[0].clone();
+    args.insert(0, "rooch".to_string());
+    let opts: RoochCli = RoochCli::parse_from(args);
+    let output = rooch::run_cli(opts)
+        .await
+        .expect("CLI should run successfully.");
+
+    // info!("cmd output: {:?}", output);
+    let result_json: Value =
+        serde_json::from_str(&output).expect("json parse error from cli output.");
+    tpl_ctx.entry(cmd_name).append(result_json);
 }
 
 #[then(regex = r#"assert: "([^"]*)""#)]
-async fn assert_output(_w: &mut World, args: String) {
+async fn assert_output(world: &mut World, args: String) {
+    assert!(world.tpl_ctx.is_some(), "tpl_ctx is none");
+    let args = eval_command_args(world.tpl_ctx.as_ref().unwrap(), args);
     let parameters = args.split_whitespace().collect::<Vec<_>>();
 
     for chunk in parameters.chunks(3) {
@@ -73,16 +72,54 @@ async fn assert_output(_w: &mut World, args: String) {
     info!("assert ok!");
 }
 
+fn eval_command_args(ctx: &TemplateContext, args: String) -> String {
+    // info!("args: {}", args);
+    let args = args.replace("\\\"", "\"");
+    let eval_args = jpst::format_str!(&args, ctx);
+    // info!("eval args:{}", eval_args);
+    eval_args
+}
+
+/// Split a string into a vector of strings, splitting on spaces, but ignoring spaces inside quotes.
+/// And quotes will alse be removed.
+fn split_string_with_quotes(s: &str) -> Result<Vec<String>> {
+    let mut result = Vec::new();
+    let mut chars = s.chars().peekable();
+    let mut current = String::new();
+    let mut in_quotes = false;
+
+    while let Some(c) = chars.next() {
+        match c {
+            '"' => {
+                in_quotes = !in_quotes;
+                // Skip the quote
+            }
+            ' ' if !in_quotes => {
+                if !current.is_empty() {
+                    result.push(current.clone());
+                    current.clear();
+                }
+            }
+            _ => {
+                current.push(c);
+            }
+        }
+    }
+
+    if in_quotes {
+        bail!("Mismatched quotes")
+    }
+
+    if !current.is_empty() {
+        result.push(current);
+    }
+
+    Ok(result)
+}
+
 #[tokio::main]
 async fn main() {
     World::cucumber()
-        .after(move |_feature, _rule, _scenario, _ev, world| {
-            if let Some(service) = &world.unwrap().service {
-                // TODO: sender signal to stop server
-                service.stop().expect("failed to stop server");
-            };
-            future::ready(()).boxed()
-        })
         .run_and_exit("./features/cmd.feature")
         .await;
 }

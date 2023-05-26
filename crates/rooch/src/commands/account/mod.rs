@@ -21,8 +21,8 @@ pub struct Account {
 }
 
 #[async_trait]
-impl CommandAction<()> for Account {
-    async fn execute(self) -> CliResult<()> {
+impl CommandAction<String> for Account {
+    async fn execute(self) -> CliResult<String> {
         let config: RoochConfig = prompt_if_no_config().await?;
 
         self.cmd
@@ -49,12 +49,15 @@ pub enum AccountCommand {
 }
 
 impl AccountCommand {
-    pub async fn execute(self, config: &mut PersistedConfig<RoochConfig>) -> CliResult<()> {
+    pub async fn execute(self, config: &mut PersistedConfig<RoochConfig>) -> CliResult<String> {
         match self {
-            AccountCommand::Create(c) => c.execute(config).await,
+            AccountCommand::Create(c) => c.execute(config).await.map(|resp| {
+                serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
+            }),
             // AccountCommand::CreateResourceAccount(c) => c.execute_serialized().await,
-            AccountCommand::List(c) => c.execute(config).await,
-            AccountCommand::Import(c) => c.execute(config).await, // AccountCommand::RotateKey(c) => c.execute_serialized().await,
+            AccountCommand::List(c) => c.execute(config).await.map(|_| "".to_string()),
+            AccountCommand::Import(c) => c.execute(config).await.map(|_| "".to_string()),
+            // AccountCommand::RotateKey(c) => c.execute_serialized().await,
         }
         .map_err(CliError::from)
     }

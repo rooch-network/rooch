@@ -2,62 +2,75 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::messages::{
-    HelloMessage, ObjectMessage, ResourceMessage, SubmitTransactionMessage, ViewFunctionMessage,
+    ExecuteTransactionMessage, ExecuteTransactionResult, ObjectMessage, ResourceMessage,
+    ValidateTransactionMessage, ViewFunctionMessage,
 };
-/// Define Executor of MoveOS Server tasks
-/// Step 1. Define a struct and impl the `Actor` for the struct
-/// Step 2. Define the communication protocol messages between Actors
-/// Step 3. Impl `Handler` with messages  for the Actor struct
+use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
-use move_core_types::{language_storage::StructTag, resolver::ResourceResolver, value::MoveValue};
+use move_core_types::language_storage::StructTag;
+use move_core_types::resolver::ResourceResolver;
+use move_core_types::value::MoveValue;
 use move_resource_viewer::MoveValueAnnotator;
-use moveos::moveos::{MoveOS, TransactionOutput};
+use moveos::moveos::MoveOS;
 use moveos_types::object::RawObject;
-use moveos_types::transaction::ViewPayload;
-use rooch_types::transaction::rooch::RoochTransaction;
+use moveos_types::transaction::{AuthenticatableTransaction, MoveOSTransaction, ViewPayload};
+use rooch_types::transaction::TransactionInfo;
+use rooch_types::H256;
 
-pub struct ServerActor {
+pub struct ExecutorActor {
     moveos: MoveOS,
 }
 
-impl ServerActor {
+impl ExecutorActor {
     pub fn new(moveos: MoveOS) -> Self {
         Self { moveos }
     }
 }
 
-impl Actor for ServerActor {}
+impl Actor for ExecutorActor {}
 
 #[async_trait]
-impl Handler<HelloMessage> for ServerActor {
-    async fn handle(&mut self, msg: HelloMessage, ctx: &mut ActorContext) -> String {
-        let actor_id = ctx.id();
-        // Do something
-        format!("response {}, {}", msg.msg, actor_id)
-    }
-}
-
-#[async_trait]
-impl Handler<SubmitTransactionMessage> for ServerActor {
+impl<T> Handler<ValidateTransactionMessage<T>> for ExecutorActor
+where
+    T: 'static + AuthenticatableTransaction + Send + Sync,
+{
     async fn handle(
         &mut self,
-        msg: SubmitTransactionMessage,
+        msg: ValidateTransactionMessage<T>,
         _ctx: &mut ActorContext,
-    ) -> Result<TransactionOutput, anyhow::Error> {
-        // deserialize the payload
-        let tx = bcs::from_bytes::<RoochTransaction>(&msg.payload)?;
-        println!("sender: {:?}", tx.sender());
-        //First, validate the transactin
-        let moveos_tx = self.moveos.validate(tx)?;
-        // TODO Write to DA
-        // Then execute
-        self.moveos.execute(moveos_tx)
+    ) -> Result<MoveOSTransaction> {
+        self.moveos.validate(msg.tx)
     }
 }
 
 #[async_trait]
-impl Handler<ViewFunctionMessage> for ServerActor {
+impl Handler<ExecuteTransactionMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: ExecuteTransactionMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<ExecuteTransactionResult> {
+        let tx_hash = msg.tx.tx_hash;
+        let output = self.moveos.execute(msg.tx)?;
+        //TODO calculate event_root
+        let event_root = H256::zero();
+        let transaction_info = TransactionInfo::new(
+            tx_hash,
+            output.state_root,
+            event_root,
+            0,
+            output.status.clone(),
+        );
+        Ok(ExecuteTransactionResult {
+            output,
+            transaction_info,
+        })
+    }
+}
+
+#[async_trait]
+impl Handler<ViewFunctionMessage> for ExecutorActor {
     async fn handle(
         &mut self,
         msg: ViewFunctionMessage,
@@ -81,7 +94,7 @@ impl Handler<ViewFunctionMessage> for ServerActor {
 }
 
 #[async_trait]
-impl Handler<ResourceMessage> for ServerActor {
+impl Handler<ResourceMessage> for ExecutorActor {
     async fn handle(
         &mut self,
         msg: ResourceMessage,
@@ -113,7 +126,7 @@ impl Handler<ResourceMessage> for ServerActor {
 }
 
 #[async_trait]
-impl Handler<ObjectMessage> for ServerActor {
+impl Handler<ObjectMessage> for ExecutorActor {
     async fn handle(
         &mut self,
         msg: ObjectMessage,

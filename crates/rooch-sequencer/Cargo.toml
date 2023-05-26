@@ -1,0 +1,43 @@
+[package]
+name = "rooch-sequencer"
+version = "0.1.0"
+
+# Workspace inherited keys
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+bcs = { workspace = true }
+chrono = { workspace = true }
+clap = { workspace = true }
+coerce = { workspace = true }
+derive_builder = { workspace = true }
+futures = { workspace = true }
+jsonrpsee = { workspace = true }
+serde = { workspace = true }
+serde_yaml = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { features = ["full"], workspace = true }
+tonic = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+schemars = { workspace = true }
+serde_with = { workspace = true }
+
+move-core-types = { workspace = true }
+move-resource-viewer = { workspace = true }
+
+moveos = { workspace = true }
+moveos-store = { workspace = true }
+moveos-types = { workspace = true }
+
+rooch-common = { workspace = true }
+rooch-types = { workspace = true }

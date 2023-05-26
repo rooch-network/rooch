@@ -6,9 +6,9 @@ use move_cli::base::test;
 use move_package::BuildConfig;
 use move_unit_test::extensions::set_extension_hook;
 use move_vm_runtime::native_extensions::NativeContextExtensions;
-use moveos_statedb::StateDB;
 use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
 use moveos_stdlib::natives::{all_natives, GasParameters};
+use moveos_store::state_store::StateDB;
 use once_cell::sync::Lazy;
 use std::path::PathBuf;
 

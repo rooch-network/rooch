@@ -22,8 +22,13 @@ impl CommandAction<()> for Init {
 
 // Prompt user for connect to devnet fullnode if config does not exist.
 pub async fn init() -> Result<(), anyhow::Error> {
-    let server = ServerConfig::default();
     let conf_path = rooch_config_path()?;
+
+    if conf_path.exists() {
+        return Ok(());
+    }
+
+    let server = ServerConfig::default();
 
     let keystore_path = conf_path.parent().unwrap().join(ROOCH_KEYSTORE_FILENAME);
     let mut keystore = Keystore::from(FileBasedKeystore::new(&keystore_path)?);

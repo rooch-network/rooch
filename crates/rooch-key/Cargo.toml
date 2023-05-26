@@ -31,3 +31,16 @@ tiny-bip39 = { workspace = true }
 rooch-types = { workspace = true }
 move-core-types = { workspace = true }
 moveos-types = { workspace = true }
+proptest = { default-features = false, optional = true, workspace = true }
+proptest-derive = { default-features = false, optional = true, workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+proptest-derive = { workspace = true }
+
+[features]
+default = []
+fuzzing = [
+    "proptest",
+    "proptest-derive",
+]

@@ -17,7 +17,7 @@ use moveos_types::object::ObjectID;
 use moveos_types::transaction::ViewPayload;
 use rand::Rng;
 use rooch_common::config::{rooch_config_path, PersistedConfig, RoochConfig};
-use rooch_server::{response::JsonResponse, service::RpcServiceClient};
+use rooch_server::{api::rooch_api::RoochAPIClient, response::JsonResponse};
 use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction};
 
 #[derive(Clone, Debug, Parser)]
@@ -54,13 +54,13 @@ impl Client {
         http_client(url)
     }
 
-    pub async fn submit_txn(
+    pub async fn execute_tx(
         &self,
         tx: RoochTransaction,
     ) -> Result<JsonResponse<TransactionOutput>> {
         let txn_payload = bcs::to_bytes(&tx)?;
         self.get_client()?
-            .submit_txn(txn_payload)
+            .execute_raw_transaction(txn_payload.into())
             .await
             .map_err(|e| anyhow::anyhow!(e))
     }

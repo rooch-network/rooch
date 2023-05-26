@@ -92,7 +92,7 @@ pub trait AuthenticatableTransaction {
     ) -> Result<MoveOSTransaction>;
 }
 
-#[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct MoveOSTransaction {
     pub sender: AccountAddress,
     pub action: MoveAction,

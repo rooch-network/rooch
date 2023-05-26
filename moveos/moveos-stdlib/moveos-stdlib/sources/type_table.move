@@ -5,11 +5,12 @@ module moveos_std::type_table {
     use std::ascii::{String};
     use moveos_std::raw_table;
     use moveos_std::tx_context::TxContext;
+    use moveos_std::object_id::ObjectID;
 
     friend moveos_std::account_storage;
 
     struct TypeTable has store {
-        handle: address,
+        handle: ObjectID,
     }
 
     /// Create a new Table.
@@ -20,7 +21,7 @@ module moveos_std::type_table {
     }
 
     /// Create a new Table with a given handle.
-    public(friend) fun new_with_id(handle: address): TypeTable{
+    public(friend) fun new_with_id(handle: ObjectID): TypeTable{
         TypeTable {
             handle,
         }
@@ -44,7 +45,7 @@ module moveos_std::type_table {
     }
 
     public(friend) fun add_internal<V: key>(table: &mut TypeTable, val: V) {
-        raw_table::add<String, V>(*&table.handle, key<V>(), val)
+        raw_table::add<String, V>(&table.handle, key<V>(), val)
     }
 
     #[private_generics(T)]
@@ -55,7 +56,7 @@ module moveos_std::type_table {
     }
 
     public(friend) fun borrow_internal<V: key>(table: &TypeTable): &V {
-        raw_table::borrow<String, V>(*&table.handle, key<V>())
+        raw_table::borrow<String, V>(&table.handle, key<V>())
     }
 
     #[private_generics(T)]
@@ -66,7 +67,7 @@ module moveos_std::type_table {
     }
 
     public(friend) fun borrow_mut_internal<V: key>(table: &mut TypeTable): &mut V {
-        raw_table::borrow_mut<String, V>(*&table.handle, key<V>())
+        raw_table::borrow_mut<String, V>(&table.handle, key<V>())
     }
 
     #[private_generics(T)]
@@ -77,30 +78,30 @@ module moveos_std::type_table {
     }
 
     public(friend) fun remove_internal<V: key>(table: &mut TypeTable): V {
-        raw_table::remove<String, V>(*&table.handle, key<V>())
+        raw_table::remove<String, V>(&table.handle, key<V>())
     }
 
     #[private_generics(T)]
     /// Returns true if `table` contains an entry for `key`.
     public fun contains<V: key>(table: &TypeTable): bool {
-        raw_table::contains<String, V>(*&table.handle, key<V>())
+        raw_table::contains<String>(&table.handle, key<V>())
     }
 
     public(friend) fun contains_internal<V: key>(table: &TypeTable): bool {
-        raw_table::contains<String, V>(*&table.handle, key<V>())
+        raw_table::contains<String>(&table.handle, key<V>())
     }
 
     #[test_only]
     /// Testing only: allows to drop a table even if it is not empty.
     public fun drop_unchecked(table: TypeTable) {
         let TypeTable{handle} = table;
-        raw_table::drop_unchecked(handle)
+        raw_table::drop_unchecked(&handle)
     }
 
     ///TODO should open the destroy function to public?
     public(friend) fun destroy(table: TypeTable) {
         let TypeTable{handle} = table;
-        raw_table::destroy(handle)
+        raw_table::destroy(&handle)
     }
 
 }
