@@ -8,6 +8,7 @@ use move_command_line_common::address::NumericalAddress;
 use move_core_types::account_address::AccountAddress;
 use move_package::{compilation::compiled_package::CompiledPackage, BuildConfig};
 use moveos_types::addresses::MOVEOS_NAMED_ADDRESS_MAPPING;
+use moveos_verifier::build::run_verifier;
 use std::{collections::BTreeMap, io::stderr, path::PathBuf};
 
 pub mod natives;
@@ -49,7 +50,12 @@ impl Framework {
     pub fn build() -> Result<Self> {
         let options = BuildOptions::default();
         Self::build_error_code_map();
-        let package = Self::build_package(path_in_crate(Self::package()), options)?;
+        let package_path = path_in_crate(Self::package());
+        let mut package = Self::build_package(package_path.clone(), options.clone())?;
+
+        let additional_named_address = options.named_addresses;
+        run_verifier(package_path, additional_named_address, &mut package);
+
         Ok(Self { package })
     }
 

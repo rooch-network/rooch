@@ -53,6 +53,7 @@ moveos-store = { workspace = true }
 moveos-common = { workspace = true }
 moveos = { workspace = true }
 rooch-common = { workspace = true }
+moveos-verifier = { workspace = true }
 
 
 rooch-key = { workspace = true }
