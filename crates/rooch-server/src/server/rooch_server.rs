@@ -3,7 +3,6 @@
 
 use crate::api::rooch_api::RoochAPIServer;
 use crate::api::RoochRpcModule;
-use crate::response::JsonResponse;
 use crate::service::RpcService;
 use ethers::types::Bytes;
 use jsonrpsee::{
@@ -32,8 +31,8 @@ impl RoochServer {
 
 #[async_trait]
 impl RoochAPIServer for RoochServer {
-    async fn echo(&self, msg: String) -> RpcResult<JsonResponse<String>> {
-        Ok(JsonResponse::ok(msg))
+    async fn echo(&self, msg: String) -> RpcResult<String> {
+        Ok(msg)
     }
 
     async fn send_raw_transaction(&self, payload: Bytes) -> RpcResult<H256> {
@@ -45,20 +44,16 @@ impl RoochAPIServer for RoochServer {
         Ok(hash)
     }
 
-    async fn execute_raw_transaction(
-        &self,
-        payload: Bytes,
-    ) -> RpcResult<JsonResponse<TransactionOutput>> {
+    async fn execute_raw_transaction(&self, payload: Bytes) -> RpcResult<TransactionOutput> {
         let tx = bcs::from_bytes::<RoochTransaction>(&payload).map_err(anyhow::Error::from)?;
-        Ok(JsonResponse::ok(
-            self.rpc_service
-                .execute_tx(TypedTransaction::Rooch(tx))
-                .await?,
-        ))
+        Ok(self
+            .rpc_service
+            .execute_tx(TypedTransaction::Rooch(tx))
+            .await?)
     }
 
-    async fn view(&self, payload: Vec<u8>) -> RpcResult<JsonResponse<Vec<serde_json::Value>>> {
-        Ok(JsonResponse::ok(self.rpc_service.view(payload).await?))
+    async fn view(&self, payload: Vec<u8>) -> RpcResult<Vec<serde_json::Value>> {
+        Ok(self.rpc_service.view(payload).await?)
     }
 
     async fn resource(
@@ -67,16 +62,15 @@ impl RoochAPIServer for RoochServer {
         module: ModuleId,
         resource: Identifier,
         type_args: Vec<TypeTag>,
-    ) -> RpcResult<JsonResponse<String>> {
-        Ok(JsonResponse::ok(
-            self.rpc_service
-                .resource(address, module, resource, type_args)
-                .await?,
-        ))
+    ) -> RpcResult<Option<String>> {
+        Ok(self
+            .rpc_service
+            .resource(address, module, resource, type_args)
+            .await?)
     }
 
-    async fn object(&self, object_id: ObjectID) -> RpcResult<JsonResponse<String>> {
-        Ok(JsonResponse::ok(self.rpc_service.object(object_id).await?))
+    async fn object(&self, object_id: ObjectID) -> RpcResult<Option<String>> {
+        Ok(self.rpc_service.object(object_id).await?)
     }
 }
 

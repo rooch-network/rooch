@@ -16,7 +16,6 @@ use moveos_types::transaction::MoveAction;
 use moveos_verifier::build::run_verifier;
 
 use rooch_client::Client;
-use rooch_server::response::JsonResponse;
 use rooch_types::address::RoochAddress;
 use rooch_types::cli::{CliError, CliResult, CommandAction};
 use rooch_types::transaction::authenticator::AccountPrivateKey;
@@ -56,8 +55,8 @@ impl Publish {
 }
 
 #[async_trait]
-impl CommandAction<JsonResponse<TransactionOutput>> for Publish {
-    async fn execute(self) -> CliResult<JsonResponse<TransactionOutput>> {
+impl CommandAction<TransactionOutput> for Publish {
+    async fn execute(self) -> CliResult<TransactionOutput> {
         let package_path = self.move_args.package_path;
         let config = self.move_args.build_config;
         let mut config = config.clone();

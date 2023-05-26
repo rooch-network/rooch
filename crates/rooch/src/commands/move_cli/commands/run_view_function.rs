@@ -14,7 +14,6 @@ use move_core_types::{
 };
 use moveos_types::transaction::{Function, ViewPayload};
 use rooch_client::Client;
-use rooch_server::response::JsonResponse;
 use rooch_types::cli::{CliError, CliResult, CommandAction};
 use std::str::FromStr;
 
@@ -93,8 +92,8 @@ pub struct RunViewFunction {
 }
 
 #[async_trait]
-impl CommandAction<JsonResponse<Vec<serde_json::Value>>> for RunViewFunction {
-    async fn execute(self) -> CliResult<JsonResponse<Vec<serde_json::Value>>> {
+impl CommandAction<Vec<serde_json::Value>> for RunViewFunction {
+    async fn execute(self) -> CliResult<Vec<serde_json::Value>> {
         let args = self
             .args
             .iter()

@@ -59,7 +59,7 @@ impl ExecutorProxy {
         module: &ModuleId,
         resource: &Identifier,
         type_args: Vec<TypeTag>,
-    ) -> Result<String> {
+    ) -> Result<Option<String>> {
         self.actor
             .send(ResourceMessage {
                 address,
@@ -70,7 +70,7 @@ impl ExecutorProxy {
             .await?
     }
 
-    pub async fn object(&self, object_id: ObjectID) -> Result<String> {
+    pub async fn object(&self, object_id: ObjectID) -> Result<Option<String>> {
         self.actor.send(ObjectMessage { object_id }).await?
     }
 }

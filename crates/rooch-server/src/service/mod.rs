@@ -73,7 +73,7 @@ impl RpcService {
         module: ModuleId,
         resource: Identifier,
         type_args: Vec<TypeTag>,
-    ) -> Result<String> {
+    ) -> Result<Option<String>> {
         let resp = self
             .executor
             .resource(address, &module, &resource, type_args)
@@ -81,10 +81,8 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn object(&self, object_id: ObjectID) -> Result<String> {
-        let resp = self.executor.object(object_id).await?;
-        //TODO return Move Object
-        Ok(resp)
+    pub async fn object(&self, object_id: ObjectID) -> Result<Option<String>> {
+        self.executor.object(object_id).await
     }
 
     /// Sign a message with the private key of the given address.
