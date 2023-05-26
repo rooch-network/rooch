@@ -17,7 +17,7 @@ use moveos_types::object::ObjectID;
 use moveos_types::transaction::ViewPayload;
 use rand::Rng;
 use rooch_common::config::{rooch_config_path, PersistedConfig, RoochConfig};
-use rooch_server::{api::rooch_api::RoochAPIClient, response::JsonResponse};
+use rooch_server::api::rooch_api::RoochAPIClient;
 use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction};
 
 #[derive(Clone, Debug, Parser)]
@@ -54,10 +54,7 @@ impl Client {
         http_client(url)
     }
 
-    pub async fn execute_tx(
-        &self,
-        tx: RoochTransaction,
-    ) -> Result<JsonResponse<TransactionOutput>> {
+    pub async fn execute_tx(&self, tx: RoochTransaction) -> Result<TransactionOutput> {
         let txn_payload = bcs::to_bytes(&tx)?;
         self.get_client()?
             .execute_raw_transaction(txn_payload.into())
@@ -65,7 +62,7 @@ impl Client {
             .map_err(|e| anyhow::anyhow!(e))
     }
 
-    pub async fn view(&self, payload: ViewPayload) -> Result<JsonResponse<Vec<serde_json::Value>>> {
+    pub async fn view(&self, payload: ViewPayload) -> Result<Vec<serde_json::Value>> {
         let payload = bcs::to_bytes(&payload)?;
         self.get_client()?
             .view(payload)
@@ -80,16 +77,14 @@ impl Client {
         resource: Identifier,
         type_args: Vec<TypeTag>,
     ) -> Result<Option<String>> {
-        let resp = self
+        Ok(self
             .get_client()?
             .resource(address, module, resource, type_args)
-            .await?;
-        resp.try_into_inner()
+            .await?)
     }
 
     pub async fn object(&self, object_id: ObjectID) -> Result<Option<String>> {
-        let resp = self.get_client()?.object(object_id).await?;
-        resp.try_into_inner()
+        Ok(self.get_client()?.object(object_id).await?)
     }
 
     pub async fn get_sequence_number(&self, _sender: RoochAddress) -> Result<u64> {

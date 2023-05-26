@@ -18,7 +18,6 @@ use rooch_common::config::{
     rooch_config_dir, PersistedConfig, RoochConfig, ROOCH_CONFIG, ROOCH_KEYSTORE_FILENAME,
 };
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
-use rooch_server::response::JsonResponse;
 use rooch_types::{
     account::SignatureScheme::ED25519,
     address::RoochAddress,
@@ -43,7 +42,7 @@ impl CreateCommand {
     pub async fn execute(
         self,
         config: &mut PersistedConfig<RoochConfig>,
-    ) -> CliResult<JsonResponse<TransactionOutput>> {
+    ) -> CliResult<TransactionOutput> {
         let (new_address, phrase, scheme) = config
             .keystore
             .generate_and_add_new_key(ED25519, None, None)

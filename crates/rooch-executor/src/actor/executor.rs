@@ -13,7 +13,6 @@ use move_core_types::resolver::ResourceResolver;
 use move_core_types::value::MoveValue;
 use move_resource_viewer::MoveValueAnnotator;
 use moveos::moveos::MoveOS;
-use moveos_types::object::RawObject;
 use moveos_types::transaction::{AuthenticatableTransaction, MoveOSTransaction, ViewPayload};
 use rooch_types::transaction::TransactionInfo;
 use rooch_types::H256;
@@ -99,7 +98,7 @@ impl Handler<ResourceMessage> for ExecutorActor {
         &mut self,
         msg: ResourceMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<String, anyhow::Error> {
+    ) -> Result<Option<String>> {
         let ResourceMessage {
             address,
             module,
@@ -113,15 +112,13 @@ impl Handler<ResourceMessage> for ExecutorActor {
             type_params: type_args,
         };
         let storage = self.moveos.state();
-        match storage.get_resource(&address, &tag)? {
-            None => Ok("[No Resource Exists]".to_owned()),
-            Some(data) => {
+        storage
+            .get_resource(&address, &tag)?
+            .map(|data| {
                 let annotated = MoveValueAnnotator::new(storage).view_resource(&tag, &data)?;
                 Ok(format!("{}", annotated))
-
-                // MoveValue::try_from();
-            }
-        }
+            })
+            .transpose()
     }
 }
 
@@ -131,15 +128,17 @@ impl Handler<ObjectMessage> for ExecutorActor {
         &mut self,
         msg: ObjectMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<String, anyhow::Error> {
+    ) -> Result<Option<String>, anyhow::Error> {
         let object_id = msg.object_id;
-        let object: Option<RawObject> = self.moveos.state().get_as_raw_object(object_id)?;
-        let object =
-            object.ok_or_else(|| anyhow::anyhow!("Object with id {} not found", object_id))?;
+        self.moveos
+            .state()
+            .get_as_raw_object(object_id)?
+            .map(|raw_object|
 
         //TODO print more info about object
         // let annotated = MoveValueAnnotator::new(self.moveos.state())
         //     .view_resource(&move_object.type_, &move_object.contents)?;
-        Ok(format!("{:?}", object))
+            Ok(format!("{:?}", raw_object)))
+            .transpose()
     }
 }
