@@ -17,9 +17,12 @@ pub struct GasParameters {
     table_extension: raw_table::GasParameters,
     type_info: moveos_stdlib::type_info::GasParameters,
     rlp: moveos_stdlib::rlp::GasParameters,
-    account: rooch_framework::account::GasParameters,
     bcd: moveos_stdlib::bcd::GasParameters,
     test_helper: moveos_stdlib::test_helper::GasParameters,
+    account: rooch_framework::account::GasParameters,
+    hash: rooch_framework::crypto::hash::GasParameters,
+    ed25519: rooch_framework::crypto::ed25519::GasParameters,
+    ecdsa_k1: rooch_framework::crypto::ecdsa_k1::GasParameters,
 }
 
 impl GasParameters {
@@ -30,9 +33,12 @@ impl GasParameters {
             table_extension: raw_table::GasParameters::zeros(),
             type_info: moveos_stdlib::type_info::GasParameters::zeros(),
             rlp: moveos_stdlib::rlp::GasParameters::zeros(),
-            account: rooch_framework::account::GasParameters::zeros(),
             bcd: moveos_stdlib::bcd::GasParameters::zeros(),
             test_helper: moveos_stdlib::test_helper::GasParameters::zeros(),
+            account: rooch_framework::account::GasParameters::zeros(),
+            hash: rooch_framework::crypto::hash::GasParameters::zeros(),
+            ed25519: rooch_framework::crypto::ed25519::GasParameters::zeros(),
+            ecdsa_k1: rooch_framework::crypto::ecdsa_k1::GasParameters::zeros(),
         }
     }
 }
@@ -85,6 +91,18 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
     add_natives!(
         "account",
         rooch_framework::account::make_all(gas_params.account)
+    );
+    add_natives!(
+        "rooch_hash",
+        rooch_framework::crypto::hash::make_all(gas_params.hash)
+    );
+    add_natives!(
+        "ed25519",
+        rooch_framework::crypto::ed25519::make_all(gas_params.ed25519)
+    );
+    add_natives!(
+        "ecdsa_k1",
+        rooch_framework::crypto::ecdsa_k1::make_all(gas_params.ecdsa_k1)
     );
 
     let moveos_native_fun_table = make_table_from_iter(*MOVEOS_STD_ADDRESS, natives);
