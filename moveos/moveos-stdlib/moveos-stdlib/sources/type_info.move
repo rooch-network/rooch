@@ -118,7 +118,7 @@ module moveos_std::type_info {
         let module_name = module_name(&type_info);
         let struct_name = struct_name(&type_info);
         spec {
-            assert account_address == @aptos_std;
+            assert account_address == @moveos_std;
             assert module_name == b"type_info";
             assert struct_name == b"TypeInfo";
         };
