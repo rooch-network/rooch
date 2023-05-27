@@ -14,7 +14,7 @@ use move_transactional_test_runner::{
 use move_vm_runtime::session::SerializedReturnValues;
 use moveos::moveos::MoveOS;
 use moveos_types::move_types::FunctionId;
-use moveos_types::object::{ObjectID};
+use moveos_types::object::ObjectID;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use std::{collections::BTreeMap, path::Path};
 
@@ -236,7 +236,8 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
                 let object = storage
                     .get(object_id)?
                     .map(|state| state.as_annotated_object(&annotator))
-                    .transpose()?.ok_or_else(|| anyhow::anyhow!("Object with id {} not found", object_id))?;
+                    .transpose()?
+                    .ok_or_else(|| anyhow::anyhow!("Object with id {} not found", object_id))?;
                 //TODO should we bring the AnnotatedObjectView from jsonrpc to test adapter for better json output formatting?
                 Ok(Some(format!("{:?}", object)))
             }
