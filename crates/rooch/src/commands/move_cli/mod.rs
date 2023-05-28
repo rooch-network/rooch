@@ -82,7 +82,7 @@ async fn run_cli(move_cli: MoveCli) -> CliResult<String> {
             .map_err(CliError::from),
         MoveCommand::New(c) => c
             .execute(move_args.package_path)
-            .map(|_| "success".to_string())
+            .map(|_| "Success".to_string())
             .map_err(CliError::from),
         MoveCommand::Prove(c) => c
             .execute(move_args.package_path, move_args.build_config)
