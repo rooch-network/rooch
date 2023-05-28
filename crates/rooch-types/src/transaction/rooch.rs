@@ -4,12 +4,14 @@
 use std::debug_assert;
 
 use super::{
-    authenticator::{AccountPrivateKey, Authenticator},
-    AbstractTransaction, AuthenticatorInfo, AuthenticatorResult, TransactionType,
+    authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo, AuthenticatorResult,
+    TransactionType,
 };
 use crate::address::RoochAddress;
+
 use crate::H256;
 use anyhow::Result;
+
 use moveos_types::transaction::{AuthenticatableTransaction, MoveAction, MoveOSTransaction};
 use serde::{Deserialize, Serialize};
 
@@ -39,16 +41,6 @@ impl RoochTransactionData {
 
     pub fn hash(&self) -> H256 {
         moveos_types::h256::sha3_256_of(self.encode().as_slice())
-    }
-
-    /// Signs the given `RoochTransactionData` into RoochTransaction.
-    pub fn sign(self, private_key: &AccountPrivateKey) -> Result<RoochTransaction> {
-        let msg = self.hash();
-        let authenticator = private_key.sign(msg.as_bytes());
-        Ok(RoochTransaction {
-            data: self,
-            authenticator,
-        })
     }
 }
 
@@ -82,6 +74,9 @@ impl RoochTransaction {
     #[cfg(test)]
     pub fn mock() -> RoochTransaction {
         use crate::address::RoochSupportedAddress;
+        use crate::crypto::Signature;
+        use fastcrypto::ed25519::Ed25519KeyPair;
+        use fastcrypto::traits::KeyPair;
         use move_core_types::{
             account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
         };
@@ -99,8 +94,11 @@ impl RoochTransaction {
         );
 
         let transaction_data = RoochTransactionData::new(sender, sequence_number, payload);
-        let private_key = AccountPrivateKey::generate_for_testing();
-        transaction_data.sign(&private_key).unwrap()
+        let mut rng = rand::thread_rng();
+        let ed25519_keypair: Ed25519KeyPair = Ed25519KeyPair::generate(&mut rng);
+        let auth =
+            Signature::new_hashed(transaction_data.hash().as_bytes(), &ed25519_keypair).into();
+        RoochTransaction::new(transaction_data, auth)
     }
 }
 
@@ -126,7 +124,7 @@ impl AbstractTransaction for RoochTransaction {
     }
 
     fn encode(&self) -> Vec<u8> {
-        bcs::to_bytes(self).expect("encode transaction should success")
+        bcs::to_bytes(&self).expect("encode transaction should success")
     }
 }
 
@@ -137,7 +135,8 @@ impl AuthenticatableTransaction for RoochTransaction {
     //TODO unify the hash function
     fn tx_hash(&self) -> H256 {
         //TODO cache the hash
-        moveos_types::h256::sha3_256_of(self.encode().as_slice())
+        let data = bcs::to_bytes(&self.data).expect("encode transaction should success");
+        moveos_types::h256::sha3_256_of(data.as_slice())
     }
 
     fn authenticator_info(&self) -> AuthenticatorInfo {

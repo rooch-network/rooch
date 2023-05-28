@@ -6,18 +6,16 @@ use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_types::h256;
-use rooch_types::{
-    transaction::{authenticator::AccountPrivateKey, TransactionSequenceInfo},
-    H256,
-};
+use rooch_types::crypto::{RoochKeyPair, Signature};
+use rooch_types::{transaction::TransactionSequenceInfo, H256};
 
 pub struct SequencerActor {
     last_order: u128,
-    sequencer_key: AccountPrivateKey,
+    sequencer_key: RoochKeyPair,
 }
 
 impl SequencerActor {
-    pub fn new(sequencer_key: AccountPrivateKey) -> Self {
+    pub fn new(sequencer_key: RoochKeyPair) -> Self {
         Self {
             last_order: 0,
             sequencer_key,
@@ -40,7 +38,7 @@ impl Handler<TransactionSequenceMessage> for SequencerActor {
         let mut witness_data = hash.as_ref().to_vec();
         witness_data.extend(tx_order.to_le_bytes().iter());
         let witness_hash = h256::sha3_256_of(&witness_data);
-        let tx_order_signature = self.sequencer_key.sign(witness_hash.as_bytes());
+        let tx_order_signature = Signature::new_hashed(&witness_hash.0, &self.sequencer_key).into();
         self.last_order = tx_order;
         //TODO introduce accumulator
         let tx_accumulator_root = H256::random();

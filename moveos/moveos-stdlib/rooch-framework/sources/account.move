@@ -5,13 +5,15 @@ module rooch_framework::account{
    use std::vector;
    use std::signer;
    use moveos_std::bcd;
-   use moveos_std::storage_context::StorageContext;
+   use moveos_std::storage_context::{StorageContext, tx_context};
    use moveos_std::account_storage;
    #[test_only]
    use std::debug;
    #[test_only]
    use moveos_std::storage_context;
    use rooch_framework::authenticator::{Self, AuthenticatorResult};
+   use rooch_framework::ed25519;
+   use moveos_std::tx_context::tx_hash;
 
    friend rooch_framework::genesis;
    friend rooch_framework::transaction_validator;
@@ -43,9 +45,10 @@ module rooch_framework::account{
    const CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000001";
 
    /// Scheme identifier for Ed25519 signatures used to derive authentication keys for Ed25519 public keys.
-   const ED25519_SCHEME: u8 = 0;
+   const ED25519_SCHEME: u64 = 0;
    /// Scheme identifier for MultiEd25519 signatures used to derive authentication keys for MultiEd25519 public keys.
-   const MULTI_ED25519_SCHEME: u8 = 1;
+   const MULTI_ED25519_SCHEME: u64 = 1;
+   const SCHEME_SECP256K1: u64 = 2;
    /// Scheme identifier used when hashing an account's address together with a seed to derive the address (not the
    /// authentication key) of a resource account. This is an abuse of the notion of a scheme identifier which, for now,
    /// serves to domain separate hashes used to derive resource account addresses from hashes used to derive
@@ -275,11 +278,18 @@ module rooch_framework::account{
    /// Return the sender's address if the authenticator is valid, auto resolve multi-chain address to rooch address.
    fun validate(ctx: &mut StorageContext, authenticator_info_bytes: vector<u8>) : AuthenticatorResult {
       let (sender_maddr, _sequence_number, authenticator) = authenticator::decode_authenticator_info(authenticator_info_bytes);
-      //std::debug::print(&authenticator);
       authenticator::check_authenticator(&authenticator);
-      //TODO decode by the scheme id
-      let _ed25519_authenicator = authenticator::decode_ed25519_authenticator(authenticator);
-      //TODO verify signature
+
+      if (authenticator::scheme(&authenticator) == ED25519_SCHEME) {
+         let ed25519_authenicator = authenticator::decode_ed25519_authenticator(authenticator);
+
+         assert!(
+            ed25519::verify(&authenticator::ed25519Signature(&ed25519_authenicator),
+               &authenticator::ed25519Publick(&ed25519_authenicator),
+               &tx_hash(tx_context(ctx))),
+            error::not_found(EAccountNotExist));
+      };
+
       //TODO verify authenicator info with account's auth key
       let addr_opt = rooch_framework::address_mapping::resolve(ctx, sender_maddr);
       let resolved_address = std::option::extract(&mut addr_opt);

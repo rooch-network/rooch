@@ -5,7 +5,7 @@
 
 use clap::Parser;
 use rooch_client::Client;
-use rooch_types::{account::EncodeDecodeBase64, address::RoochAddress, cli::CliResult};
+use rooch_types::{address::RoochAddress, cli::CliResult, crypto::EncodeDecodeBase64};
 use std::fmt::Debug;
 
 use rooch_common::config::{PersistedConfig, RoochConfig};

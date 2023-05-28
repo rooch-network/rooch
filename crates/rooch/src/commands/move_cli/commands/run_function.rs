@@ -16,8 +16,13 @@ use rooch_client::Client;
 use rooch_types::{
     address::RoochAddress,
     cli::{CliError, CliResult, CommandAction},
-    transaction::{authenticator::AccountPrivateKey, rooch::RoochTransactionData},
+    transaction::rooch::RoochTransactionData,
 };
+
+use rooch_common::config::{
+    rooch_config_dir, rooch_config_path, Config, PersistedConfig, RoochConfig, ROOCH_CONFIG,
+};
+use rooch_key::keystore::AccountKeystore;
 
 /// Run a Move function
 #[derive(Parser)]
@@ -92,10 +97,18 @@ impl CommandAction<TransactionOutput> for RunFunction {
             MoveAction::new_function_call(self.function, self.type_args, args),
         );
         //TODO sign the tx by the account private key
-        let private_key = AccountPrivateKey::generate_for_testing();
-        let tx = tx_data
-            .sign(&private_key)
-            .map_err(|e| CliError::SignMessageError(e.to_string()))?;
+
+        // TODO: Code refactoring
+        let config: RoochConfig = PersistedConfig::read(rooch_config_path()?.as_path())?;
+        let config: PersistedConfig<RoochConfig> = config.persisted(
+            rooch_config_dir()
+                .map_err(CliError::from)?
+                .join(ROOCH_CONFIG)
+                .as_path(),
+        );
+
+        let tx = config.keystore.sign_transaction(&sender, tx_data).unwrap();
+
         self.client
             .execute_tx(tx)
             .await

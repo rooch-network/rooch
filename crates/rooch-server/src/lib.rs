@@ -17,12 +17,12 @@ use moveos_store::state_store::StateDB;
 use rooch_common::config::{rooch_config_path, PersistedConfig, RoochConfig};
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
+use rooch_key::key_derive::generate_new_key;
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
 use rooch_proposer::proxy::ProposerProxy;
 use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
-use rooch_types::transaction::authenticator::AccountPrivateKey;
 use serde_json::json;
 use std::fmt::Debug;
 use std::net::SocketAddr;
@@ -124,15 +124,17 @@ pub async fn start_server() -> Result<ServerHandle> {
 
     // Init sequencer
     //TODO load from config
-    let sequencer_account = AccountPrivateKey::generate_for_testing();
-    let sequencer = SequencerActor::new(sequencer_account)
+
+    let (_, kp, _, _) = generate_new_key(rooch_types::crypto::BuiltinScheme::Ed25519, None, None)?;
+
+    let sequencer = SequencerActor::new(kp)
         .into_actor(Some("Sequencer"), &actor_system)
         .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
 
     // Init proposer
-    let proposer_account = AccountPrivateKey::generate_for_testing();
-    let proposer = ProposerActor::new(proposer_account)
+    let (_, kp, _, _) = generate_new_key(rooch_types::crypto::BuiltinScheme::Ed25519, None, None)?;
+    let proposer = ProposerActor::new(kp)
         .into_actor(Some("Proposer"), &actor_system)
         .await?;
     let proposer_proxy = ProposerProxy::new(proposer.clone().into());

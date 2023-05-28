@@ -6,15 +6,18 @@ use anyhow::anyhow;
 use bip32::DerivationPath;
 use bip39::{Language, Mnemonic, Seed};
 use enum_dispatch::enum_dispatch;
-// #[cfg(any(test, feature = "fuzzing"))]
-// use proptest::{collection::btree_map, prelude::*};
-// #[cfg(any(test, feature = "fuzzing"))]
-// use proptest_derive::Arbitrary;
 use rand::{rngs::StdRng, SeedableRng};
-use rooch_types::account::{
-    get_key_pair_from_rng, EncodeDecodeBase64, PublicKey, RoochKeyPair, SignatureScheme,
+use rooch_types::{
+    address::RoochAddress,
+    crypto::{
+        get_key_pair_from_rng, BuiltinScheme, EncodeDecodeBase64, PublicKey, RoochKeyPair,
+        Signature,
+    },
+    transaction::{
+        authenticator,
+        rooch::{RoochTransaction, RoochTransactionData},
+    },
 };
-use rooch_types::address::RoochAddress;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::BTreeMap;
 use std::fmt::Write;
@@ -30,11 +33,32 @@ pub enum Keystore {
     File(FileBasedKeystore),
     InMem(InMemKeystore),
 }
+
 #[enum_dispatch]
 pub trait AccountKeystore: Send + Sync {
     fn add_key(&mut self, keypair: RoochKeyPair) -> Result<(), anyhow::Error>;
     fn keys(&self) -> Vec<PublicKey>;
     fn get_key(&self, address: &RoochAddress) -> Result<&RoochKeyPair, anyhow::Error>;
+
+    fn sign_hashed(
+        &self,
+        address: &RoochAddress,
+        msg: &[u8],
+    ) -> Result<Signature, signature::Error>;
+
+    fn sign_transaction(
+        &self,
+        address: &RoochAddress,
+        msg: RoochTransactionData,
+    ) -> Result<RoochTransaction, signature::Error>;
+
+    fn sign_secure<T>(
+        &self,
+        address: &RoochAddress,
+        msg: &T,
+    ) -> Result<Signature, signature::Error>
+    where
+        T: Serialize;
 
     fn addresses(&self) -> Vec<RoochAddress> {
         self.keys().iter().map(|k| k.into()).collect()
@@ -42,10 +66,10 @@ pub trait AccountKeystore: Send + Sync {
 
     fn generate_and_add_new_key(
         &mut self,
-        key_scheme: SignatureScheme,
+        key_scheme: BuiltinScheme,
         derivation_path: Option<DerivationPath>,
         word_length: Option<String>,
-    ) -> Result<(RoochAddress, String, SignatureScheme), anyhow::Error> {
+    ) -> Result<(RoochAddress, String, BuiltinScheme), anyhow::Error> {
         let (address, kp, scheme, phrase) =
             generate_new_key(key_scheme, derivation_path, word_length)?;
         self.add_key(kp)?;
@@ -55,7 +79,7 @@ pub trait AccountKeystore: Send + Sync {
     fn import_from_mnemonic(
         &mut self,
         phrase: &str,
-        key_scheme: SignatureScheme,
+        key_scheme: BuiltinScheme,
         derivation_path: Option<DerivationPath>,
     ) -> Result<RoochAddress, anyhow::Error> {
         let mnemonic = Mnemonic::from_phrase(phrase, Language::English)
@@ -88,7 +112,7 @@ impl Display for Keystore {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default)]
 pub struct FileBasedKeystore {
     keys: BTreeMap<RoochAddress, RoochKeyPair>,
     path: Option<PathBuf>,
@@ -120,29 +144,52 @@ impl<'de> Deserialize<'de> for FileBasedKeystore {
     }
 }
 
-// #[cfg(any(test, feature = "fuzzing"))]
-// impl Arbitrary for FileBasedKeystore {
-//     type Parameters = ();
-//     fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
-//         arb_file_based_keystore().boxed()
-//     }
-//     type Strategy = BoxedStrategy<Self>;
-// }
-
-// #[cfg(any(test, feature = "fuzzing"))]
-// prop_compose! {
-//     fn arb_file_based_keystore()(
-//         key in btree_map(any::<RoochAddress>(), any::<RoochKeyPair>(), 1..100),
-//         path in any::<PathBuf>(),
-//     ) -> FileBasedKeystore {
-//         FileBasedKeystore {
-//             keys: key,
-//             path: Some(path),
-//         }
-//     }
-// }
-
 impl AccountKeystore for FileBasedKeystore {
+    fn sign_hashed(
+        &self,
+        address: &RoochAddress,
+        msg: &[u8],
+    ) -> Result<Signature, signature::Error> {
+        Ok(Signature::new_hashed(
+            msg,
+            self.keys.get(address).ok_or_else(|| {
+                signature::Error::from_source(format!("Cannot find key for address: [{address}]"))
+            })?,
+        ))
+    }
+
+    fn sign_secure<T>(&self, address: &RoochAddress, msg: &T) -> Result<Signature, signature::Error>
+    where
+        T: Serialize,
+    {
+        Ok(Signature::new_secure(
+            msg,
+            self.keys.get(address).ok_or_else(|| {
+                signature::Error::from_source(format!("Cannot find key for address: [{address}]"))
+            })?,
+        ))
+    }
+
+    fn sign_transaction(
+        &self,
+        address: &RoochAddress,
+        msg: RoochTransactionData,
+    ) -> Result<RoochTransaction, signature::Error> {
+        let pk = self.get_key(address).ok().ok_or_else(|| {
+            signature::Error::from_source(format!("Cannot find key for address: [{address}]"))
+        })?;
+
+        let signature = Signature::new_hashed(msg.hash().as_bytes(), pk);
+
+        let auth = match pk.public().scheme() {
+            BuiltinScheme::Ed25519 => authenticator::Authenticator::ed25519(signature),
+            BuiltinScheme::Secp256k1 => todo!(),
+            BuiltinScheme::MultiEd25519 => todo!(),
+        };
+
+        Ok(RoochTransaction::new(msg, auth))
+    }
+
     fn add_key(&mut self, keypair: RoochKeyPair) -> Result<(), anyhow::Error> {
         match std::env::var_os("TEST_ENV") {
             Some(_) => {}
@@ -224,6 +271,51 @@ pub struct InMemKeystore {
 }
 
 impl AccountKeystore for InMemKeystore {
+    fn sign_hashed(
+        &self,
+        address: &RoochAddress,
+        msg: &[u8],
+    ) -> Result<Signature, signature::Error> {
+        Ok(Signature::new_hashed(
+            msg,
+            self.keys.get(address).ok_or_else(|| {
+                signature::Error::from_source(format!("Cannot find key for address: [{address}]"))
+            })?,
+        ))
+    }
+
+    fn sign_transaction(
+        &self,
+        address: &RoochAddress,
+        msg: RoochTransactionData,
+    ) -> Result<RoochTransaction, signature::Error> {
+        let pk = self.get_key(address).ok().ok_or_else(|| {
+            signature::Error::from_source(format!("Cannot find key for address: [{address}]"))
+        })?;
+
+        let signature = Signature::new_hashed(msg.hash().as_bytes(), pk);
+
+        let auth = match pk.public().scheme() {
+            BuiltinScheme::Ed25519 => authenticator::Authenticator::ed25519(signature),
+            BuiltinScheme::Secp256k1 => todo!(),
+            BuiltinScheme::MultiEd25519 => todo!(),
+        };
+
+        Ok(RoochTransaction::new(msg, auth))
+    }
+
+    fn sign_secure<T>(&self, address: &RoochAddress, msg: &T) -> Result<Signature, signature::Error>
+    where
+        T: Serialize,
+    {
+        Ok(Signature::new_secure(
+            msg,
+            self.keys.get(address).ok_or_else(|| {
+                signature::Error::from_source(format!("Cannot find key for address: [{address}]"))
+            })?,
+        ))
+    }
+
     fn add_key(&mut self, keypair: RoochKeyPair) -> Result<(), anyhow::Error> {
         let address: RoochAddress = (&keypair.public()).into();
         self.keys.insert(address, keypair);

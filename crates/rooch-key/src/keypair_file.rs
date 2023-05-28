@@ -3,7 +3,7 @@
 
 use anyhow::anyhow;
 use fastcrypto::traits::EncodeDecodeBase64;
-use rooch_types::account::RoochKeyPair;
+use rooch_types::crypto::RoochKeyPair;
 
 /// Write Base64 encoded `flag || privkey` to file.
 pub fn write_keypair_to_file<P: AsRef<std::path::Path>>(

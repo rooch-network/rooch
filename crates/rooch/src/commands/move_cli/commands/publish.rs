@@ -16,9 +16,12 @@ use moveos_types::transaction::MoveAction;
 use moveos_verifier::build::run_verifier;
 
 use rooch_client::Client;
+use rooch_common::config::{
+    rooch_config_dir, rooch_config_path, Config, PersistedConfig, RoochConfig, ROOCH_CONFIG,
+};
+use rooch_key::keystore::AccountKeystore;
 use rooch_types::address::RoochAddress;
 use rooch_types::cli::{CliError, CliResult, CommandAction};
-use rooch_types::transaction::authenticator::AccountPrivateKey;
 use rooch_types::transaction::rooch::RoochTransactionData;
 use std::collections::BTreeMap;
 use std::io::stderr;
@@ -101,22 +104,32 @@ impl CommandAction<TransactionOutput> for Publish {
             module.serialize(&mut binary)?;
             bundles.push(binary);
         }
-        if !(self.txn_options.sender_account.is_some()
-            && pkg_address == self.txn_options.sender_account.unwrap())
+
+        if self.txn_options.sender_account.is_some()
+            && pkg_address != self.txn_options.sender_account.unwrap()
         {
             return Err(CliError::CommandArgumentError(
-                "--sender-account required and the sender account must be the same as the package address"
+                    "--sender-account required and the sender account must be the same as the package address"
                     .to_string(),
             ));
         }
+
         let action = MoveAction::ModuleBundle(bundles);
 
         let sender: RoochAddress = pkg_address.into();
         let sequence_number = self.client.get_sequence_number(sender).await?;
         let tx_data = RoochTransactionData::new(sender, sequence_number, action);
-        //TODO sign the tx by the account private key
-        let private_key = AccountPrivateKey::generate_for_testing();
-        let tx = tx_data.sign(&private_key)?;
+
+        // TODO: Code refactoring
+        let config: RoochConfig = PersistedConfig::read(rooch_config_path()?.as_path())?;
+        let config: PersistedConfig<RoochConfig> = config.persisted(
+            rooch_config_dir()
+                .map_err(CliError::from)?
+                .join(ROOCH_CONFIG)
+                .as_path(),
+        );
+
+        let tx = config.keystore.sign_transaction(&sender, tx_data).unwrap();
 
         self.client
             .execute_tx(tx)
