@@ -10,37 +10,72 @@ use std::fmt;
 use std::str::FromStr;
 
 /// Identifier of a module function
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct StructId {
+/// The FunctionId is of the form <address>::<module>::<function>
+#[derive(Clone, Debug, Eq, Ord, PartialOrd, PartialEq, Serialize, Deserialize, Hash)]
+pub struct FunctionId {
     pub module_id: ModuleId,
-    pub struct_id: Identifier,
+    pub function_name: Identifier,
 }
 
-fn parse_function_id(function_id: &str) -> Result<StructId> {
-    let ids: Vec<&str> = function_id.split_terminator("::").collect();
-    if ids.len() != 3 {
-        return Err(anyhow!(
-            "StructId is not well formed.  Must be of the form <address>::<module>::<function>"
-        ));
+impl FunctionId {
+    pub fn new(module_id: ModuleId, function_name: Identifier) -> Self {
+        Self {
+            module_id,
+            function_name,
+        }
     }
-    let address = AccountAddress::from_str(ids.first().unwrap())
-        .map_err(|err| anyhow!("Module address error: {:?}", err.to_string()))?;
-    let module = Identifier::from_str(ids.get(1).unwrap())
-        .map_err(|err| anyhow!("Module name error: {:?}", err.to_string()))?;
-    let struct_id = Identifier::from_str(ids.get(2).unwrap())
-        .map_err(|err| anyhow!("Function name error: {:?}", err.to_string()))?;
-    let module_id = ModuleId::new(address, module);
-    Ok(StructId {
-        module_id,
-        struct_id,
-    })
+}
+
+impl std::fmt::Display for FunctionId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}::{}", &self.module_id, &self.function_name)
+    }
+}
+
+impl FromStr for FunctionId {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (module, function_name) = parse_struct_or_function_id(s)?;
+        Ok(Self {
+            module_id: module,
+            function_name,
+        })
+    }
+}
+
+/// Identifier of a module struct
+/// The StructId is of the form <address>::<module>::<struct>
+#[derive(Clone, Debug, Eq, Ord, PartialOrd, PartialEq, Serialize, Deserialize, Hash)]
+pub struct StructId {
+    pub module_id: ModuleId,
+    pub struct_name: Identifier,
+}
+
+impl StructId {
+    pub fn new(module_id: ModuleId, struct_name: Identifier) -> Self {
+        Self {
+            module_id,
+            struct_name,
+        }
+    }
+}
+
+impl std::fmt::Display for StructId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}::{}", &self.module_id, &self.struct_name)
+    }
 }
 
 impl FromStr for StructId {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        parse_function_id(s)
+        let (module_id, struct_name) = parse_struct_or_function_id(s)?;
+        Ok(Self {
+            module_id,
+            struct_name,
+        })
     }
 }
 
@@ -90,4 +125,21 @@ impl From<Vec<u8>> for HexEncodedBytes {
     fn from(bytes: Vec<u8>) -> Self {
         Self(bytes)
     }
+}
+
+fn parse_struct_or_function_id(function_or_struct_id: &str) -> Result<(ModuleId, Identifier)> {
+    let ids: Vec<&str> = function_or_struct_id.split_terminator("::").collect();
+    if ids.len() != 3 {
+        return Err(anyhow!(
+            "StructId is not well formed.  Must be of the form <address>::<module>::<function>"
+        ));
+    }
+    let address = AccountAddress::from_str(ids.first().unwrap())
+        .map_err(|err| anyhow!("Module address error: {:?}", err.to_string()))?;
+    let module = Identifier::from_str(ids.get(1).unwrap())
+        .map_err(|err| anyhow!("Module name error: {:?}", err.to_string()))?;
+    let function_or_struct_id = Identifier::from_str(ids.get(2).unwrap())
+        .map_err(|err| anyhow!("Function or Struct name error: {:?}", err.to_string()))?;
+    let module_id = ModuleId::new(address, module);
+    Ok((module_id, function_or_struct_id))
 }

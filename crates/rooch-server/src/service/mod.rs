@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, Result};
-use move_core_types::{
-    account_address::AccountAddress,
-    identifier::Identifier,
-    language_storage::{ModuleId, TypeTag},
-};
+use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
+use move_resource_viewer::AnnotatedMoveStruct;
 use moveos::moveos::TransactionOutput;
-use moveos_types::object::ObjectID;
+use moveos_types::{
+    object::{AnnotatedObject, ObjectID},
+    transaction::FunctionCall,
+};
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_proposer::proxy::ProposerProxy;
 use rooch_sequencer::proxy::SequencerProxy;
@@ -58,8 +58,11 @@ impl RpcService {
         Ok(output)
     }
 
-    pub async fn view(&self, payload: Vec<u8>) -> Result<Vec<serde_json::Value>> {
-        let output_values = self.executor.view(payload).await?;
+    pub async fn execute_view_function(
+        &self,
+        function_call: FunctionCall,
+    ) -> Result<Vec<serde_json::Value>> {
+        let output_values = self.executor.execute_view_function(function_call).await?;
         let mut resp = vec![];
         for v in output_values {
             resp.push(serde_json::to_value(v)?);
@@ -67,24 +70,17 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn resource(
+    pub async fn get_resource(
         &self,
         address: AccountAddress,
-        module: ModuleId,
-        resource: Identifier,
-        type_args: Vec<TypeTag>,
-    ) -> Result<String> {
-        let resp = self
-            .executor
-            .resource(address, &module, &resource, type_args)
-            .await?;
+        resource_type: StructTag,
+    ) -> Result<Option<AnnotatedMoveStruct>> {
+        let resp = self.executor.get_resource(address, resource_type).await?;
         Ok(resp)
     }
 
-    pub async fn object(&self, object_id: ObjectID) -> Result<String> {
-        let resp = self.executor.object(object_id).await?;
-        //TODO return Move Object
-        Ok(resp)
+    pub async fn object(&self, object_id: ObjectID) -> Result<Option<AnnotatedObject>> {
+        self.executor.get_object(object_id).await
     }
 
     /// Sign a message with the private key of the given address.

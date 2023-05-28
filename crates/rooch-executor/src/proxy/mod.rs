@@ -3,20 +3,20 @@
 
 use crate::actor::{
     executor::ExecutorActor,
-    messages::{ObjectMessage, ResourceMessage, ValidateTransactionMessage, ViewFunctionMessage},
+    messages::{
+        ExecuteViewFunctionMessage, GetResourceMessage, ObjectMessage, ValidateTransactionMessage,
+    },
 };
 use anyhow::Result;
 use coerce::actor::ActorRef;
 use move_core_types::{
-    account_address::AccountAddress,
-    identifier::Identifier,
-    language_storage::{ModuleId, TypeTag},
-    value::MoveValue,
+    account_address::AccountAddress, language_storage::StructTag, value::MoveValue,
 };
+use move_resource_viewer::AnnotatedMoveStruct;
 use moveos::moveos::TransactionOutput;
 use moveos_types::{
-    object::ObjectID,
-    transaction::{AuthenticatableTransaction, MoveOSTransaction},
+    object::{AnnotatedObject, ObjectID},
+    transaction::{AuthenticatableTransaction, FunctionCall, MoveOSTransaction},
 };
 use rooch_types::transaction::TransactionInfo;
 
@@ -49,28 +49,24 @@ impl ExecutorProxy {
         Ok((result.output, result.transaction_info))
     }
 
-    pub async fn view(&self, payload: Vec<u8>) -> Result<Vec<MoveValue>> {
-        self.actor.send(ViewFunctionMessage { payload }).await?
+    pub async fn execute_view_function(&self, call: FunctionCall) -> Result<Vec<MoveValue>> {
+        self.actor.send(ExecuteViewFunctionMessage { call }).await?
     }
 
-    pub async fn resource(
+    pub async fn get_resource(
         &self,
         address: AccountAddress,
-        module: &ModuleId,
-        resource: &Identifier,
-        type_args: Vec<TypeTag>,
-    ) -> Result<String> {
+        resource_type: StructTag,
+    ) -> Result<Option<AnnotatedMoveStruct>> {
         self.actor
-            .send(ResourceMessage {
+            .send(GetResourceMessage {
                 address,
-                module: module.clone(),
-                resource: resource.clone(),
-                type_args,
+                resource_type,
             })
             .await?
     }
 
-    pub async fn object(&self, object_id: ObjectID) -> Result<String> {
+    pub async fn get_object(&self, object_id: ObjectID) -> Result<Option<AnnotatedObject>> {
         self.actor.send(ObjectMessage { object_id }).await?
     }
 }

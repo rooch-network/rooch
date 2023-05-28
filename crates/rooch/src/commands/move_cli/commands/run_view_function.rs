@@ -1,57 +1,17 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use clap::Parser;
 use move_core_types::{
-    account_address::AccountAddress,
-    identifier::Identifier,
-    language_storage::{ModuleId, TypeTag},
+    language_storage::TypeTag,
     parser::{parse_transaction_argument, parse_type_tag},
     transaction_argument::TransactionArgument,
     value::MoveValue,
 };
-use moveos_types::transaction::{Function, ViewPayload};
+use moveos_types::{move_types::FunctionId, transaction::FunctionCall};
 use rooch_client::Client;
-use rooch_server::response::JsonResponse;
 use rooch_types::cli::{CliError, CliResult, CommandAction};
-use std::str::FromStr;
-
-/// Identifier of a module function
-#[derive(Debug, Clone)]
-pub struct FunctionId {
-    pub module_id: ModuleId,
-    pub function_name: Identifier,
-}
-
-fn parse_function_id(function_id: &str) -> Result<FunctionId> {
-    let ids: Vec<&str> = function_id.split_terminator("::").collect();
-    if ids.len() != 3 {
-        return Err(anyhow!(
-            "FunctionId is not well formed.  Must be of the form <address>::<module>::<function>"
-        ));
-    }
-    let address = AccountAddress::from_str(ids.first().unwrap())
-        .map_err(|err| anyhow!("Module address error: {:?}", err.to_string()))?;
-    let module = Identifier::from_str(ids.get(1).unwrap())
-        .map_err(|err| anyhow!("Module name error: {:?}", err.to_string()))?;
-    let function_name = Identifier::from_str(ids.get(2).unwrap())
-        .map_err(|err| anyhow!("Function name error: {:?}", err.to_string()))?;
-    let module_id = ModuleId::new(address, module);
-    Ok(FunctionId {
-        module_id,
-        function_name,
-    })
-}
-
-impl FromStr for FunctionId {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        parse_function_id(s)
-    }
-}
 
 /// Run a Move function
 #[derive(Parser)]
@@ -93,8 +53,8 @@ pub struct RunViewFunction {
 }
 
 #[async_trait]
-impl CommandAction<JsonResponse<Vec<serde_json::Value>>> for RunViewFunction {
-    async fn execute(self) -> CliResult<JsonResponse<Vec<serde_json::Value>>> {
+impl CommandAction<Vec<serde_json::Value>> for RunViewFunction {
+    async fn execute(self) -> CliResult<Vec<serde_json::Value>> {
         let args = self
             .args
             .iter()
@@ -104,16 +64,13 @@ impl CommandAction<JsonResponse<Vec<serde_json::Value>>> for RunViewFunction {
                     .expect("transaction arguments must be serializabe")
             })
             .collect();
-        let payload = ViewPayload {
-            function: Function {
-                module: self.function.module_id.clone(),
-                function: self.function.function_name.clone(),
-                ty_args: self.type_args,
-                args,
-            },
+        let function_call = FunctionCall {
+            function_id: self.function,
+            ty_args: self.type_args,
+            args,
         };
         self.client
-            .view(payload)
+            .execute_view_function(function_call)
             .await
             .map_err(|e| CliError::ViewFunctionError(e.to_string()))
     }

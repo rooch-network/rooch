@@ -85,12 +85,15 @@ impl RoochTransaction {
         use move_core_types::{
             account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
         };
+        use moveos_types::move_types::FunctionId;
 
         let sender = RoochAddress::random();
         let sequence_number = 0;
-        let payload = MoveAction::new_function(
-            ModuleId::new(AccountAddress::random(), Identifier::new("test").unwrap()),
-            Identifier::new("test").unwrap(),
+        let payload = MoveAction::new_function_call(
+            FunctionId::new(
+                ModuleId::new(AccountAddress::random(), Identifier::new("test").unwrap()),
+                Identifier::new("test").unwrap(),
+            ),
             vec![],
             vec![],
         );

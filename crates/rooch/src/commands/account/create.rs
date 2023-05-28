@@ -11,21 +11,26 @@ use move_core_types::{
     parser::parse_type_tag,
 };
 use moveos::moveos::TransactionOutput;
-use moveos_types::transaction::{MoveAction, MoveOSTransaction};
+use moveos_types::{
+    move_types::FunctionId,
+    transaction::{MoveAction, MoveOSTransaction},
+};
 use rooch_client::Client;
 
 use rooch_common::config::{
     rooch_config_dir, PersistedConfig, RoochConfig, ROOCH_CONFIG, ROOCH_KEYSTORE_FILENAME,
 };
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
-use rooch_server::response::JsonResponse;
 use rooch_types::{
     account::SignatureScheme::ED25519,
     address::RoochAddress,
     cli::{CliError, CliResult},
     transaction::{authenticator::AccountPrivateKey, rooch::RoochTransactionData},
 };
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 /// Create a new account on-chain
 ///
@@ -43,7 +48,7 @@ impl CreateCommand {
     pub async fn execute(
         self,
         config: &mut PersistedConfig<RoochConfig>,
-    ) -> CliResult<JsonResponse<TransactionOutput>> {
+    ) -> CliResult<TransactionOutput> {
         let (new_address, phrase, scheme) = config
             .keystore
             .generate_and_add_new_key(ED25519, None, None)
@@ -55,10 +60,11 @@ impl CreateCommand {
             scheme.to_string()
         );
         println!("Secret Recovery Phrase : [{phrase}]");
-
-        let action = MoveAction::new_function(
-            ModuleId::new(AccountAddress::ONE, ident_str!("account").to_owned()),
-            ident_str!("create_account_entry").to_owned(),
+        //TODO define static variable.
+        let create_account_entry_function =
+            FunctionId::from_str("0x1::account::create_account_entry").unwrap();
+        let action = MoveAction::new_function_call(
+            create_account_entry_function,
             vec![],
             vec![bcs::to_bytes(&new_address).unwrap()],
         );

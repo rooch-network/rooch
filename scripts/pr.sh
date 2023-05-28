@@ -60,7 +60,6 @@ EOF
       ;;
     t)
       CHECK=1
-      BUILD=1
       ALSO_TEST=1
       ;;
     m)
@@ -72,6 +71,7 @@ EOF
       GEN_ARTIFACTS=1
       GIT_CHECKS=1
       ALSO_TEST=1
+      MOVE_TESTS=1
       MOVE_E2E_TESTS=1
       ;;
   esac
@@ -87,9 +87,7 @@ if [ ! -z "$CHECK" ]; then
   cargo clippy --all-targets --all-features --tests --benches -- -D warnings
 fi
 
-if [ ! -z "$BUILD" ]; then
-  cargo build
-fi
+cargo build
 
 if [ ! -z "$ALSO_TEST" ]; then
     cargo nextest run --workspace --all-features

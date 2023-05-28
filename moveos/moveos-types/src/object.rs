@@ -1,16 +1,20 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-use crate::{h256, state::MoveState};
+use crate::{
+    h256,
+    state::{MoveState, State},
+};
 /// The Move Object is from Sui Move, and we try to mix the Global storage model and Object model in MoveOS.
 use anyhow::{ensure, Result};
 use move_core_types::{
     account_address::AccountAddress,
     ident_str,
     identifier::IdentStr,
-    language_storage::TypeTag,
+    language_storage::{StructTag, TypeTag},
     move_resource::{MoveResource, MoveStructType},
     value::{MoveStructLayout, MoveTypeLayout},
 };
+use move_resource_viewer::AnnotatedMoveStruct;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -239,10 +243,7 @@ pub struct Object<T> {
     pub value: T,
 }
 
-impl<T> Object<T>
-where
-    T: MoveStructType,
-{
+impl<T> Object<T> {
     pub fn new(id: ObjectID, owner: AccountAddress, value: T) -> Object<T> {
         Self { id, owner, value }
     }
@@ -250,7 +251,7 @@ where
 
 impl<T> Object<T>
 where
-    T: Serialize,
+    T: MoveState,
 {
     pub fn to_bytes(&self) -> Vec<u8> {
         bcs::to_bytes(self).unwrap()
@@ -260,8 +261,20 @@ where
         RawObject {
             id: self.id,
             owner: self.owner,
-            value: bcs::to_bytes(&self.value).unwrap(),
+            value: RawData {
+                struct_tag: T::struct_tag(),
+                value: bcs::to_bytes(&self.value).expect("MoveState to bcs should success"),
+            },
         }
+    }
+}
+
+impl<T> From<Object<T>> for RawObject
+where
+    T: MoveState,
+{
+    fn from(object: Object<T>) -> Self {
+        object.to_raw()
     }
 }
 
@@ -317,15 +330,16 @@ where
     }
 }
 
-#[derive(Eq, PartialEq, Debug, Clone, Hash)]
-pub struct RawObject {
-    pub id: ObjectID,
-    pub owner: AccountAddress,
+pub type RawObject = Object<RawData>;
+
+#[derive(Eq, PartialEq, Debug, Clone)]
+pub struct RawData {
+    pub struct_tag: StructTag,
     pub value: Vec<u8>,
 }
 
 impl RawObject {
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
+    pub fn from_bytes(bytes: &[u8], struct_tag: StructTag) -> Result<Self> {
         ensure!(
             bytes.len() > ObjectID::LENGTH + AccountAddress::LENGTH,
             "Invalid bytes length"
@@ -336,34 +350,38 @@ impl RawObject {
             &bytes[AccountAddress::LENGTH..ObjectID::LENGTH + AccountAddress::LENGTH],
         )?;
         let value = bytes[ObjectID::LENGTH + AccountAddress::LENGTH..].to_vec();
-        Ok(RawObject { id, owner, value })
+        Ok(RawObject {
+            id,
+            owner,
+            value: RawData { struct_tag, value },
+        })
     }
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = vec![];
         bytes.extend(bcs::to_bytes(&self.id).unwrap());
         bytes.extend(bcs::to_bytes(&self.owner).unwrap());
-        bytes.extend_from_slice(&self.value);
+        bytes.extend_from_slice(&self.value.value);
         bytes
     }
 }
 
-impl From<Object<Vec<u8>>> for RawObject {
-    fn from(obj: Object<Vec<u8>>) -> Self {
-        RawObject {
-            id: obj.id,
-            owner: obj.owner,
-            value: obj.value,
-        }
+impl TryFrom<State> for RawObject {
+    type Error = anyhow::Error;
+
+    fn try_from(state: State) -> Result<Self> {
+        state.as_raw_object()
     }
 }
 
-impl From<RawObject> for Object<Vec<u8>> {
-    fn from(val: RawObject) -> Self {
-        Object {
-            id: val.id,
-            owner: val.owner,
-            value: val.value,
-        }
+pub type AnnotatedObject = Object<AnnotatedMoveStruct>;
+
+impl AnnotatedObject {
+    pub fn new_annotated_object(
+        id: ObjectID,
+        owner: AccountAddress,
+        value: AnnotatedMoveStruct,
+    ) -> Self {
+        Self::new(id, owner, value)
     }
 }
 
@@ -397,7 +415,11 @@ mod tests {
         const STRUCT_NAME: &'static IdentStr = ident_str!("TestStruct");
     }
 
-    impl MoveResource for TestStruct {}
+    impl MoveState for TestStruct {
+        fn move_layout() -> MoveStructLayout {
+            MoveStructLayout::new(vec![MoveTypeLayout::U8])
+        }
+    }
 
     #[test]
     fn test_object_serialize() {
@@ -406,8 +428,7 @@ mod tests {
         let object_id = ObjectID::new(crate::h256::H256::random().into());
         let object = Object::new(object_id, AccountAddress::random(), object_value);
 
-        let bytes = object.to_bytes();
-        let raw_object: RawObject = RawObject::from_bytes(&bytes).unwrap();
+        let raw_object: RawObject = object.to_raw();
 
         let object2 = bcs::from_bytes::<Object<TestStruct>>(&raw_object.to_bytes()).unwrap();
         assert_eq!(object, object2);

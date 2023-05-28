@@ -1,10 +1,10 @@
 processed 10 tasks
 
 task 3 'view_object'. lines 61-63:
-RawObject { id: ObjectID(ae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647), owner: 0000000000000000000000000000000000000000000000000000000000000043, value: [1] }
+Object { id: ObjectID(ae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647), owner: 0000000000000000000000000000000000000000000000000000000000000043, value: AnnotatedMoveStruct { abilities: [Store, Key, ], type_: StructTag { address: 0000000000000000000000000000000000000000000000000000000000000042, module: Identifier("m"), name: Identifier("S"), type_params: [] }, value: [(Identifier("v"), U8(1))] } }
 
 task 5 'view_object'. lines 67-70:
-RawObject { id: ObjectID(0bbaf311ae6768a532b1f9dee65b1758a7bb1114fd57df8fa94cb2d1cb5f6896), owner: 0000000000000000000000000000000000000000000000000000000000000043, value: [2] }
+Object { id: ObjectID(0bbaf311ae6768a532b1f9dee65b1758a7bb1114fd57df8fa94cb2d1cb5f6896), owner: 0000000000000000000000000000000000000000000000000000000000000043, value: AnnotatedMoveStruct { abilities: [Store, Key, ], type_: StructTag { address: 0000000000000000000000000000000000000000000000000000000000000042, module: Identifier("m"), name: Identifier("Cup"), type_params: [Struct(StructTag { address: 0000000000000000000000000000000000000000000000000000000000000042, module: Identifier("m"), name: Identifier("S"), type_params: [] })] }, value: [(Identifier("v"), U8(2))] } }
 
 task 7 'view'. lines 74-76:
 store key 0x42::m::S {

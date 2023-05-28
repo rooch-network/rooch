@@ -7,17 +7,15 @@ mod test;
 use anyhow::Result;
 use clap::Parser;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
-use move_core_types::{
-    account_address::AccountAddress,
-    identifier::Identifier,
-    language_storage::{ModuleId, TypeTag},
-};
+use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
 use moveos::moveos::TransactionOutput;
-use moveos_types::object::ObjectID;
-use moveos_types::transaction::ViewPayload;
+use moveos_types::{object::ObjectID, transaction::FunctionCall};
 use rand::Rng;
 use rooch_common::config::{rooch_config_path, PersistedConfig, RoochConfig};
-use rooch_server::{api::rooch_api::RoochAPIClient, response::JsonResponse};
+use rooch_server::{
+    api::rooch_api::RoochAPIClient,
+    jsonrpc_types::{AnnotatedMoveStructView, AnnotatedObjectView},
+};
 use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction};
 
 #[derive(Clone, Debug, Parser)]
@@ -54,10 +52,7 @@ impl Client {
         http_client(url)
     }
 
-    pub async fn execute_tx(
-        &self,
-        tx: RoochTransaction,
-    ) -> Result<JsonResponse<TransactionOutput>> {
+    pub async fn execute_tx(&self, tx: RoochTransaction) -> Result<TransactionOutput> {
         let txn_payload = bcs::to_bytes(&tx)?;
         self.get_client()?
             .execute_raw_transaction(txn_payload.into())
@@ -65,31 +60,29 @@ impl Client {
             .map_err(|e| anyhow::anyhow!(e))
     }
 
-    pub async fn view(&self, payload: ViewPayload) -> Result<JsonResponse<Vec<serde_json::Value>>> {
-        let payload = bcs::to_bytes(&payload)?;
+    pub async fn execute_view_function(
+        &self,
+        function_call: FunctionCall,
+    ) -> Result<Vec<serde_json::Value>> {
         self.get_client()?
-            .view(payload)
+            .execute_view_function(function_call.into())
             .await
             .map_err(|e| anyhow::anyhow!(e))
     }
 
-    pub async fn resource(
+    pub async fn get_resource(
         &self,
         address: AccountAddress,
-        module: ModuleId,
-        resource: Identifier,
-        type_args: Vec<TypeTag>,
-    ) -> Result<Option<String>> {
-        let resp = self
+        resource_type: StructTag,
+    ) -> Result<Option<AnnotatedMoveStructView>> {
+        Ok(self
             .get_client()?
-            .resource(address, module, resource, type_args)
-            .await?;
-        resp.try_into_inner()
+            .get_resource(address, resource_type.into())
+            .await?)
     }
 
-    pub async fn object(&self, object_id: ObjectID) -> Result<Option<String>> {
-        let resp = self.get_client()?.object(object_id).await?;
-        resp.try_into_inner()
+    pub async fn get_object(&self, object_id: ObjectID) -> Result<Option<AnnotatedObjectView>> {
+        Ok(self.get_client()?.get_object(object_id).await?)
     }
 
     pub async fn get_sequence_number(&self, _sender: RoochAddress) -> Result<u64> {

@@ -1,20 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::api::rooch_api::RoochAPIServer;
 use crate::api::RoochRpcModule;
-use crate::response::JsonResponse;
+use crate::jsonrpc_types::{AnnotatedMoveStructView, FunctionCallView, StrView, StructTagView};
 use crate::service::RpcService;
-use ethers::types::Bytes;
+use crate::{api::rooch_api::RoochAPIServer, jsonrpc_types::AnnotatedObjectView};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     RpcModule,
 };
-use move_core_types::{
-    account_address::AccountAddress,
-    identifier::Identifier,
-    language_storage::{ModuleId, TypeTag},
-};
+use move_core_types::account_address::AccountAddress;
 use moveos::moveos::TransactionOutput;
 use moveos_types::{object::ObjectID, transaction::AuthenticatableTransaction};
 use rooch_types::transaction::TypedTransaction;
@@ -32,12 +27,8 @@ impl RoochServer {
 
 #[async_trait]
 impl RoochAPIServer for RoochServer {
-    async fn echo(&self, msg: String) -> RpcResult<JsonResponse<String>> {
-        Ok(JsonResponse::ok(msg))
-    }
-
-    async fn send_raw_transaction(&self, payload: Bytes) -> RpcResult<H256> {
-        let tx = bcs::from_bytes::<RoochTransaction>(&payload).map_err(anyhow::Error::from)?;
+    async fn send_raw_transaction(&self, payload: StrView<Vec<u8>>) -> RpcResult<H256> {
+        let tx = bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;
         let hash = tx.tx_hash();
         self.rpc_service
             .quene_tx(TypedTransaction::Rooch(tx))
@@ -47,36 +38,39 @@ impl RoochAPIServer for RoochServer {
 
     async fn execute_raw_transaction(
         &self,
-        payload: Bytes,
-    ) -> RpcResult<JsonResponse<TransactionOutput>> {
-        let tx = bcs::from_bytes::<RoochTransaction>(&payload).map_err(anyhow::Error::from)?;
-        Ok(JsonResponse::ok(
-            self.rpc_service
-                .execute_tx(TypedTransaction::Rooch(tx))
-                .await?,
-        ))
+        payload: StrView<Vec<u8>>,
+    ) -> RpcResult<TransactionOutput> {
+        let tx = bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;
+        Ok(self
+            .rpc_service
+            .execute_tx(TypedTransaction::Rooch(tx))
+            .await?)
     }
 
-    async fn view(&self, payload: Vec<u8>) -> RpcResult<JsonResponse<Vec<serde_json::Value>>> {
-        Ok(JsonResponse::ok(self.rpc_service.view(payload).await?))
+    async fn execute_view_function(
+        &self,
+        function_call: FunctionCallView,
+    ) -> RpcResult<Vec<serde_json::Value>> {
+        Ok(self
+            .rpc_service
+            .execute_view_function(function_call.into())
+            .await?)
     }
 
-    async fn resource(
+    async fn get_resource(
         &self,
         address: AccountAddress,
-        module: ModuleId,
-        resource: Identifier,
-        type_args: Vec<TypeTag>,
-    ) -> RpcResult<JsonResponse<String>> {
-        Ok(JsonResponse::ok(
-            self.rpc_service
-                .resource(address, module, resource, type_args)
-                .await?,
-        ))
+        resource_type: StructTagView,
+    ) -> RpcResult<Option<AnnotatedMoveStructView>> {
+        Ok(self
+            .rpc_service
+            .get_resource(address, resource_type.into())
+            .await?
+            .map(Into::into))
     }
 
-    async fn object(&self, object_id: ObjectID) -> RpcResult<JsonResponse<String>> {
-        Ok(JsonResponse::ok(self.rpc_service.object(object_id).await?))
+    async fn get_object(&self, object_id: ObjectID) -> RpcResult<Option<AnnotatedObjectView>> {
+        Ok(self.rpc_service.object(object_id).await?.map(Into::into))
     }
 }
 

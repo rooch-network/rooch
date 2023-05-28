@@ -4,15 +4,18 @@
 use crate::move_cli::types::{AccountAddressWrapper, TransactionOptions};
 use async_trait::async_trait;
 use clap::Parser;
+
 use move_binary_format::file_format::CompiledModule;
 use move_bytecode_utils::dependency_graph::DependencyGraph;
 use move_bytecode_utils::Modules;
 use move_cli::Move;
+
 use moveos::moveos::TransactionOutput;
 use moveos::vm::dependency_order::sort_by_dependency_order;
 use moveos_types::transaction::MoveAction;
+use moveos_verifier::build::run_verifier;
+
 use rooch_client::Client;
-use rooch_server::response::JsonResponse;
 use rooch_types::address::RoochAddress;
 use rooch_types::cli::{CliError, CliResult, CommandAction};
 use rooch_types::transaction::authenticator::AccountPrivateKey;
@@ -52,8 +55,8 @@ impl Publish {
 }
 
 #[async_trait]
-impl CommandAction<JsonResponse<TransactionOutput>> for Publish {
-    async fn execute(self) -> CliResult<JsonResponse<TransactionOutput>> {
+impl CommandAction<TransactionOutput> for Publish {
+    async fn execute(self) -> CliResult<TransactionOutput> {
         let package_path = self.move_args.package_path;
         let config = self.move_args.build_config;
         let mut config = config.clone();
@@ -63,11 +66,17 @@ impl CommandAction<JsonResponse<TransactionOutput>> for Publish {
             .map(|(key, value)| (key, value.account_address))
             .collect();
 
+        let additional_named_address = config.additional_named_addresses.clone();
+
         let package_path = match package_path {
             Some(package_path) => package_path,
             None => std::env::current_dir()?,
         };
-        let package = config.compile_package_no_exit(&package_path, &mut stderr())?;
+
+        let mut package = config.compile_package_no_exit(&package_path, &mut stderr())?;
+
+        run_verifier(package_path, additional_named_address, &mut package);
+
         // let modules = package.root_modules_map().iter_modules_owned();
         let modules = package.root_modules_map();
 
