@@ -36,7 +36,7 @@ module moveos_std::tx_context {
     /// transaction
     public fun sender(self: &TxContext): address {
         self.sender
-    } 
+    }
 
     /// Generate a new unique address,
     public fun fresh_address(ctx: &mut TxContext): address {
@@ -69,7 +69,14 @@ module moveos_std::tx_context {
         self.ids_created
     }
 
-    
+    public fun new_context(sender: address, tx_hash: vector<u8>): TxContext {
+        TxContext {
+            sender,
+            tx_hash,
+            ids_created: 0,
+        }
+    }
+
     #[test_only]
     /// Create a TxContext for unit test
     public fun new_test_context(sender: address): TxContext {

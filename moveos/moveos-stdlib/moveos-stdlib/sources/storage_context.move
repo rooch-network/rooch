@@ -3,8 +3,9 @@
 /// and let developers can customize the storage
 
 module moveos_std::storage_context {
-    use moveos_std::object_storage::{ObjectStorage};
-    use moveos_std::tx_context::{TxContext};
+    use std::hash;
+    use moveos_std::object_storage::{ObjectStorage, new_with_id, global_object_storage_handle};
+    use moveos_std::tx_context::{TxContext, new_context as new_tx_context};
 
     #[test_only]
     use moveos_std::object_storage::{Self};
@@ -38,6 +39,16 @@ module moveos_std::storage_context {
 
     public fun object_storage_mut(this: &mut StorageContext): &mut ObjectStorage {
         &mut this.object_storage
+    }
+
+    public fun new_context(sender: address, context: vector<u8>): StorageContext {
+        let tx_hash = hash::sha3_256(context);
+        let tx_context = new_tx_context(sender,tx_hash);
+        let object_storage = new_with_id(global_object_storage_handle());
+        StorageContext {
+            tx_context,
+            object_storage,
+        }
     }
 
     #[test_only]
