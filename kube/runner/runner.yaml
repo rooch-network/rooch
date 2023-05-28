@@ -1,0 +1,60 @@
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: RunnerDeployment
+metadata:
+  name: rooch-runner-deployment
+spec:
+  template:
+    spec:
+      nodeSelector:
+        node-pool: ci-pool
+      image: summerwind/actions-runner:v2.283.3-ubuntu-20.04-b01e193
+      repository: rooch-network/rooch
+      ephemeral: true
+      tolerations:
+        - key: "app"
+          operator: "Equal"
+          value: "ci"
+          effect: "NoExecute"
+      serviceAccountName: github-runner
+      resources:
+        requests:
+          cpu: "15.0"
+          memory: "32Gi"
+          ephemeral-storage: "80Gi"
+        limits:
+          ephemeral-storage: "100Gi"
+      # If set to false, there are no privileged container and you cannot use docker.
+      dockerEnabled: true
+      # If set to true, runner pod container only 1 container that's expected to be able to run docker, too.
+      # image summerwind/actions-runner-dind or custom one should be used with true -value
+      dockerdWithinRunnerContainer: false
+      # Valid if dockerdWithinRunnerContainer is not true
+      dockerdContainerResources:
+        requests:
+          cpu: "15.0"
+          memory: "32Gi"
+          ephemeral-storage: "80Gi"
+        limits:
+          ephemeral-storage: "100Gi"
+
+---
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: HorizontalRunnerAutoscaler
+metadata:
+  name: rooch-runner-deployment-autoscaler
+spec:
+  scaleTargetRef:
+    name: rooch-runner-deployment
+  minReplicas: 0
+  maxReplicas: 2
+  scaleDownDelaySecondsAfterScaleOut: 120
+  scaleUpTriggers:
+  - githubEvent:
+      pullRequest:
+        types: ["synchronize"]
+        branches: ["master"]
+      checkRun:
+        types: ["created"]
+        status: "queued"
+    amount: 2
+    duration: "2m"
