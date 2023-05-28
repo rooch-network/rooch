@@ -18,7 +18,7 @@ use move_binary_format::{
 };
 use move_core_types::{
     account_address::AccountAddress,
-    identifier::{IdentStr, Identifier},
+    identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
     value::MoveValue,
     vm_status::{KeptVMStatus, StatusCode},
@@ -27,15 +27,12 @@ use move_vm_runtime::session::SerializedReturnValues;
 use move_vm_types::gas::UnmeteredGasMeter;
 use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
 use moveos_store::state_store::StateDB;
-use moveos_types::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use moveos_types::transaction::{AuthenticatableTransaction, MoveAction, MoveOSTransaction};
 use moveos_types::tx_context::TxContext;
-use moveos_types::{h256::H256, transaction::Function};
+use moveos_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, move_types::FunctionId};
+use moveos_types::{h256::H256, transaction::FunctionCall};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use std::borrow::Borrow;
-
-// use moveos_types::error::MoveOSError::{VMModuleDeserializationError};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TransactionOutput {
@@ -44,8 +41,8 @@ pub struct TransactionOutput {
     pub status: KeptVMStatus,
 }
 
-pub static VALIDATE_FUNCTION: Lazy<(ModuleId, Identifier)> = Lazy::new(|| {
-    (
+pub static VALIDATE_FUNCTION: Lazy<FunctionId> = Lazy::new(|| {
+    FunctionId::new(
         ModuleId::new(
             *ROOCH_FRAMEWORK_ADDRESS,
             Identifier::new("account").unwrap(),
@@ -106,10 +103,9 @@ impl MoveOS {
         //TODO ensure the validate function's sender should be the genesis address?
         let tx_context = TxContext::new(*ROOCH_FRAMEWORK_ADDRESS, tx.tx_hash());
         let mut gas_meter = UnmeteredGasMeter;
-        let (module, function_name) = VALIDATE_FUNCTION.clone();
-        let function = Function::new(
-            module,
-            function_name,
+        let function_id = VALIDATE_FUNCTION.clone();
+        let function = FunctionCall::new(
+            function_id,
             vec![],
             vec![MoveValue::vector_u8(
                 bcs::to_bytes(&authenticator).expect("serialize authenticator should success"),
@@ -183,18 +179,14 @@ impl MoveOS {
                     })
             }
             MoveAction::Function(function) => {
-                let loaded_function = session.load_function(
-                    &function.module,
-                    &function.function,
-                    function.ty_args.as_slice(),
-                )?;
+                let loaded_function =
+                    session.load_function(&function.function_id, function.ty_args.as_slice())?;
                 let args = session
                     .resolve_args(&tx_context, loaded_function, function.args)
                     .map_err(|e| e.finish(Location::Undefined))?;
                 session
                     .execute_entry_function(
-                        &function.module,
-                        &function.function,
+                        &function.function_id,
                         function.ty_args,
                         args,
                         &mut gas_meter,
@@ -274,16 +266,14 @@ impl MoveOS {
         &self,
         session: &mut SessionExt<S>,
         _tx_context: &TxContext,
-        module_id: &ModuleId,
-        function_name: &IdentStr,
+        function_id: &FunctionId,
         ty_args: Vec<TypeTag>,
         _args: Vec<Vec<u8>>,
     ) -> Result<bool>
     where
         S: MoveResolverExt,
     {
-        let loaded_function =
-            session.load_function(module_id, function_name, ty_args.as_slice())?;
+        let loaded_function = session.load_function(function_id, ty_args.as_slice())?;
         let Some((_i, _t)) = loaded_function.parameters.iter().enumerate().find(|(i, t)| {
             let struct_type = as_struct_no_panic(session, t);
             (*i as u32 == 0u32) && Option::is_some(&struct_type) && is_storage_context(&(struct_type.unwrap()))
@@ -322,24 +312,20 @@ impl MoveOS {
         });
 
         for module_id in modules_to_init {
+            let function_id = FunctionId::new(module_id.clone(), INIT_FN_NAME_IDENTIFIER.clone());
+
             // check module init permission
             if !self.check_module_init_permission(
                 session,
                 tx_context,
-                &module_id,
-                &INIT_FN_NAME_IDENTIFIER.clone(),
+                &function_id,
                 vec![],
                 vec![],
             )? {
                 continue;
             };
 
-            let function = Function::new(
-                module_id.clone(),
-                INIT_FN_NAME_IDENTIFIER.clone(),
-                vec![],
-                vec![],
-            );
+            let function = FunctionCall::new(function_id, vec![], vec![]);
             let _result =
                 Self::execute_function_bypass_visibility(session, tx_context, gas_meter, function)
                     .map_err(|e| {
@@ -358,20 +344,16 @@ impl MoveOS {
         session: &mut SessionExt<impl MoveResolverExt>,
         tx_context: &TxContext,
         gas_meter: &mut UnmeteredGasMeter,
-        function: Function,
+        function_call: FunctionCall,
     ) -> VMResult<SerializedReturnValues> {
-        let loaded_function = session.load_function(
-            &function.module,
-            &function.function,
-            function.ty_args.as_slice(),
-        )?;
+        let loaded_function =
+            session.load_function(&function_call.function_id, function_call.ty_args.as_slice())?;
         let args = session
-            .resolve_args(tx_context, loaded_function, function.args)
+            .resolve_args(tx_context, loaded_function, function_call.args)
             .map_err(|e| e.finish(Location::Undefined))?;
         session.execute_function_bypass_visibility(
-            &function.module,
-            &function.function,
-            function.ty_args,
+            &function_call.function_id,
+            function_call.ty_args,
             args,
             gas_meter,
         )
@@ -380,27 +362,19 @@ impl MoveOS {
     /// Execute readonly view function
     pub fn execute_view_function(
         &self,
-        module: &ModuleId,
-        function_name: &IdentStr,
-        ty_args: Vec<TypeTag>,
-        args: Vec<impl Borrow<[u8]>>,
+        function_call: FunctionCall,
     ) -> Result<SerializedReturnValues> {
         let mut session = self.vm.new_session(&self.db);
         //TODO limit the view function max gas usage
         let mut gas_meter = UnmeteredGasMeter;
         //View function use a fix address and fix hash
         let tx_context = TxContext::new(AccountAddress::ZERO, H256::zero());
-        let function = Function::new(
-            module.clone(),
-            function_name.to_owned(),
-            ty_args,
-            args.into_iter().map(|arg| arg.borrow().to_vec()).collect(),
-        );
+
         let result = Self::execute_function_bypass_visibility(
             &mut session,
             &tx_context,
             &mut gas_meter,
-            function,
+            function_call,
         )?;
         let (change_set, events, mut extensions) = session.finish_with_extensions()?;
 

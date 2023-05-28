@@ -2,18 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::messages::{
-    ExecuteTransactionMessage, ExecuteTransactionResult, ObjectMessage, ResourceMessage,
-    ValidateTransactionMessage, ViewFunctionMessage,
+    ExecuteTransactionMessage, ExecuteTransactionResult, ExecuteViewFunctionMessage,
+    GetResourceMessage, ObjectMessage, ValidateTransactionMessage,
 };
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
-use move_core_types::language_storage::StructTag;
 use move_core_types::resolver::ResourceResolver;
 use move_core_types::value::MoveValue;
-use move_resource_viewer::MoveValueAnnotator;
+use move_resource_viewer::{AnnotatedMoveStruct, MoveValueAnnotator};
 use moveos::moveos::MoveOS;
-use moveos_types::transaction::{AuthenticatableTransaction, MoveOSTransaction, ViewPayload};
+use moveos_types::object::AnnotatedObject;
+use moveos_types::transaction::{AuthenticatableTransaction, MoveOSTransaction};
 use rooch_types::transaction::TransactionInfo;
 use rooch_types::H256;
 
@@ -69,20 +69,13 @@ impl Handler<ExecuteTransactionMessage> for ExecutorActor {
 }
 
 #[async_trait]
-impl Handler<ViewFunctionMessage> for ExecutorActor {
+impl Handler<ExecuteViewFunctionMessage> for ExecutorActor {
     async fn handle(
         &mut self,
-        msg: ViewFunctionMessage,
+        msg: ExecuteViewFunctionMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<MoveValue>, anyhow::Error> {
-        // deserialize the payload
-        let payload = bcs::from_bytes::<ViewPayload>(&msg.payload)?;
-        let result = self.moveos.execute_view_function(
-            &payload.function.module,
-            &payload.function.function,
-            payload.function.ty_args,
-            payload.function.args,
-        )?;
+        let result = self.moveos.execute_view_function(msg.call)?;
         let mut output_values = vec![];
         for v in result.return_values {
             output_values.push(MoveValue::simple_deserialize(&v.0, &v.1)?);
@@ -93,31 +86,20 @@ impl Handler<ViewFunctionMessage> for ExecutorActor {
 }
 
 #[async_trait]
-impl Handler<ResourceMessage> for ExecutorActor {
+impl Handler<GetResourceMessage> for ExecutorActor {
     async fn handle(
         &mut self,
-        msg: ResourceMessage,
+        msg: GetResourceMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Option<String>> {
-        let ResourceMessage {
+    ) -> Result<Option<AnnotatedMoveStruct>> {
+        let GetResourceMessage {
             address,
-            module,
-            resource,
-            type_args,
+            resource_type,
         } = msg;
-        let tag = StructTag {
-            address: *module.address(),
-            module: module.name().to_owned(),
-            name: resource,
-            type_params: type_args,
-        };
         let storage = self.moveos.state();
         storage
-            .get_resource(&address, &tag)?
-            .map(|data| {
-                let annotated = MoveValueAnnotator::new(storage).view_resource(&tag, &data)?;
-                Ok(format!("{}", annotated))
-            })
+            .get_resource(&address, &resource_type)?
+            .map(|data| MoveValueAnnotator::new(storage).view_resource(&resource_type, &data))
             .transpose()
     }
 }
@@ -128,17 +110,14 @@ impl Handler<ObjectMessage> for ExecutorActor {
         &mut self,
         msg: ObjectMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Option<String>, anyhow::Error> {
+    ) -> Result<Option<AnnotatedObject>, anyhow::Error> {
+        let storage = self.moveos.state();
+        //TODO implement a resolver cache for MoveValueAnnotator
+        let annotator = MoveValueAnnotator::new(storage);
         let object_id = msg.object_id;
-        self.moveos
-            .state()
-            .get_as_raw_object(object_id)?
-            .map(|raw_object|
-
-        //TODO print more info about object
-        // let annotated = MoveValueAnnotator::new(self.moveos.state())
-        //     .view_resource(&move_object.type_, &move_object.contents)?;
-            Ok(format!("{:?}", raw_object)))
+        storage
+            .get(object_id)?
+            .map(|state| state.as_annotated_object(&annotator))
             .transpose()
     }
 }

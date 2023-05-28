@@ -13,8 +13,7 @@ use move_bytecode_verifier::VerifierConfig;
 use move_core_types::{
     account_address::AccountAddress,
     effects::{ChangeSet, Event},
-    identifier::IdentStr,
-    language_storage::{ModuleId, TypeTag},
+    language_storage::TypeTag,
     value::MoveTypeLayout,
 };
 use move_vm_runtime::{
@@ -30,7 +29,7 @@ use move_vm_types::{
 };
 use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
 use moveos_stdlib::natives::{self, GasParameters};
-use moveos_types::tx_context::TxContext;
+use moveos_types::{move_types::FunctionId, tx_context::TxContext};
 
 pub struct MoveVmExt {
     inner: MoveVM,
@@ -92,27 +91,30 @@ where
 
     pub fn execute_entry_function(
         &mut self,
-        module: &ModuleId,
-        function_name: &IdentStr,
+        function_id: &FunctionId,
         ty_args: Vec<TypeTag>,
         args: Vec<impl Borrow<[u8]>>,
         gas_meter: &mut impl GasMeter,
     ) -> VMResult<SerializedReturnValues> {
-        self.session
-            .execute_entry_function(module, function_name, ty_args, args, gas_meter)
+        self.session.execute_entry_function(
+            &function_id.module_id,
+            &function_id.function_name,
+            ty_args,
+            args,
+            gas_meter,
+        )
     }
 
     pub fn execute_function_bypass_visibility(
         &mut self,
-        module: &ModuleId,
-        function_name: &IdentStr,
+        function_id: &FunctionId,
         ty_args: Vec<TypeTag>,
         args: Vec<impl Borrow<[u8]>>,
         gas_meter: &mut impl GasMeter,
     ) -> VMResult<SerializedReturnValues> {
         self.session.execute_function_bypass_visibility(
-            module,
-            function_name,
+            &function_id.module_id,
+            &function_id.function_name,
             ty_args,
             args,
             gas_meter,
@@ -190,12 +192,14 @@ where
     /// Load a module, a function, and all of its types into cache
     pub fn load_function(
         &self,
-        module_id: &ModuleId,
-        function_name: &IdentStr,
+        function_id: &FunctionId,
         type_arguments: &[TypeTag],
     ) -> VMResult<LoadedFunctionInstantiation> {
-        self.session
-            .load_function(module_id, function_name, type_arguments)
+        self.session.load_function(
+            &function_id.module_id,
+            &function_id.function_name,
+            type_arguments,
+        )
     }
 
     pub fn load_type(&self, type_tag: &TypeTag) -> VMResult<Type> {

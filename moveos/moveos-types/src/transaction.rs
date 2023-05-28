@@ -1,17 +1,17 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::h256::{self, H256};
-use anyhow::Result;
-use move_core_types::{
-    account_address::AccountAddress,
-    identifier::Identifier,
-    language_storage::{ModuleId, TypeTag},
+use crate::{
+    h256::{self, H256},
+    move_types::FunctionId,
 };
+use anyhow::Result;
+use move_core_types::{account_address::AccountAddress, language_storage::TypeTag};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
+/// Call a Move script
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
-pub struct Script {
+pub struct ScriptCall {
     #[serde(with = "serde_bytes")]
     pub code: Vec<u8>,
     pub ty_args: Vec<TypeTag>,
@@ -19,25 +19,19 @@ pub struct Script {
     pub args: Vec<Vec<u8>>,
 }
 
+/// Call a Move function
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
-pub struct Function {
-    pub module: ModuleId,
-    pub function: Identifier,
+pub struct FunctionCall {
+    pub function_id: FunctionId,
     pub ty_args: Vec<TypeTag>,
     //TOOD custom serialize
     pub args: Vec<Vec<u8>>,
 }
 
-impl Function {
-    pub fn new(
-        module: ModuleId,
-        function: Identifier,
-        ty_args: Vec<TypeTag>,
-        args: Vec<Vec<u8>>,
-    ) -> Self {
+impl FunctionCall {
+    pub fn new(function_id: FunctionId, ty_args: Vec<TypeTag>, args: Vec<Vec<u8>>) -> Self {
         Self {
-            module,
-            function,
+            function_id,
             ty_args,
             args,
         }
@@ -47,9 +41,9 @@ impl Function {
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub enum MoveAction {
     //Execute a Move script
-    Script(Script),
+    Script(ScriptCall),
     //Execute a Move function
-    Function(Function),
+    Function(FunctionCall),
     //Publish Move modules
     ModuleBundle(Vec<Vec<u8>>),
 }
@@ -58,21 +52,19 @@ impl MoveAction {
     pub fn new_module_bundle(modules: Vec<Vec<u8>>) -> Self {
         Self::ModuleBundle(modules)
     }
-    pub fn new_function(
-        module: ModuleId,
-        function: Identifier,
+    pub fn new_function_call(
+        function_id: FunctionId,
         ty_args: Vec<TypeTag>,
         args: Vec<Vec<u8>>,
     ) -> Self {
-        Self::Function(Function {
-            module,
-            function,
+        Self::Function(FunctionCall {
+            function_id,
             ty_args,
             args,
         })
     }
-    pub fn new_script(code: Vec<u8>, ty_args: Vec<TypeTag>, args: Vec<Vec<u8>>) -> Self {
-        Self::Script(Script {
+    pub fn new_script_call(code: Vec<u8>, ty_args: Vec<TypeTag>, args: Vec<Vec<u8>>) -> Self {
+        Self::Script(ScriptCall {
             code,
             ty_args,
             args,
@@ -119,9 +111,4 @@ impl MoveOSTransaction {
             tx_hash,
         }
     }
-}
-
-#[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
-pub struct ViewPayload {
-    pub function: Function,
 }
