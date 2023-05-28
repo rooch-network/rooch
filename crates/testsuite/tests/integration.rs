@@ -34,14 +34,25 @@ async fn run_cmd(world: &mut World, args: String) {
     // Discard test data
     // cmd.env("TEST_ENV", "true");
 
-    let config: RoochConfig =
-        PersistedConfig::read(rooch_config_path().unwrap().as_path()).unwrap();
-    let config: PersistedConfig<RoochConfig> =
-        config.persisted(rooch_config_dir().unwrap().join(ROOCH_CONFIG).as_path());
+    let config = rooch_config_path();
 
-    let default_addr = match config.active_address {
-        Some(addr) => format!("0x{:x}", AccountAddress::from(addr)),
-        None => "".to_owned(),
+    let default_addr = match config {
+        Ok(v) => {
+            if v.exists() {
+                let config: RoochConfig =
+                    PersistedConfig::read(rooch_config_path().unwrap().as_path()).unwrap();
+                let config: PersistedConfig<RoochConfig> =
+                    config.persisted(rooch_config_dir().unwrap().join(ROOCH_CONFIG).as_path());
+
+                match config.active_address {
+                    Some(addr) => format!("0x{:x}", AccountAddress::from(addr)),
+                    None => "".to_owned(),
+                }
+            } else {
+                "".to_string()
+            }
+        }
+        Err(..) => "".to_owned(),
     };
 
     let args = args.replace("{default}", &default_addr);
