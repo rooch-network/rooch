@@ -124,7 +124,7 @@ impl AbstractTransaction for RoochTransaction {
     }
 
     fn encode(&self) -> Vec<u8> {
-        bcs::to_bytes(&self).expect("encode transaction should success")
+        bcs::to_bytes(self).expect("encode transaction should success")
     }
 }
 
@@ -135,8 +135,7 @@ impl AuthenticatableTransaction for RoochTransaction {
     //TODO unify the hash function
     fn tx_hash(&self) -> H256 {
         //TODO cache the hash
-        let data = bcs::to_bytes(&self.data).expect("encode transaction should success");
-        moveos_types::h256::sha3_256_of(data.as_slice())
+        self.data.hash()
     }
 
     fn authenticator_info(&self) -> AuthenticatorInfo {

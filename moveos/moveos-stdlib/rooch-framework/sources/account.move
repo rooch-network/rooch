@@ -284,8 +284,8 @@ module rooch_framework::account{
          let ed25519_authenicator = authenticator::decode_ed25519_authenticator(authenticator);
 
          assert!(
-            ed25519::verify(&authenticator::ed25519Signature(&ed25519_authenicator),
-               &authenticator::ed25519Publick(&ed25519_authenicator),
+            ed25519::verify(&authenticator::ed25519_signature(&ed25519_authenicator),
+               &authenticator::ed25519_public(&ed25519_authenicator),
                &tx_hash(tx_context(ctx))),
             error::not_found(EAccountNotExist));
       };

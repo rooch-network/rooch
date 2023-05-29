@@ -45,7 +45,7 @@ async fn run_cmd(world: &mut World, args: String) {
                     config.persisted(rooch_config_dir().unwrap().join(ROOCH_CONFIG).as_path());
 
                 match config.active_address {
-                    Some(addr) => format!("0x{:x}", AccountAddress::from(addr)),
+                    Some(addr) => AccountAddress::from(addr).to_hex_literal(),
                     None => "".to_owned(),
                 }
             } else {

@@ -66,7 +66,7 @@ module rooch_framework::authenticator {
       moveos_std::bcd::from_bytes<Ed25519Authenticator>(authenticator.payload)
    }
 
-   public fun ed25519Publick(this: &Ed25519Authenticator): vector<u8> {
+   public fun ed25519_public(this: &Ed25519Authenticator): vector<u8> {
       let public_key = vector::empty<u8>();
       let i = ED25519_SCHEME_LENGTH + ED25519_SIG_LENGTH;
       while (i < ED25519_SCHEME_LENGTH + ED25519_SIG_LENGTH + ED25519_PUBKEY_LENGTH) {
@@ -78,7 +78,7 @@ module rooch_framework::authenticator {
       public_key
    }
 
-   public fun ed25519Signature(this: &Ed25519Authenticator): vector<u8> {
+   public fun ed25519_signature(this: &Ed25519Authenticator): vector<u8> {
       let sign = vector::empty<u8>();
       let i = ED25519_SCHEME_LENGTH;
       while (i < ED25519_SIG_LENGTH + 1) {
