@@ -2,7 +2,9 @@ use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::file_format::{Bytecode, FunctionInstantiation, SignatureToken};
 use move_core_types::language_storage::ModuleId;
 use move_model::ast::Attribute;
-use move_model::model::{FunctionEnv, GlobalEnv, ModuleEnv};
+use move_model::model::{FunctionEnv, GlobalEnv, Loc, ModuleEnv, QualifiedId, StructId};
+use move_model::ty::PrimitiveType;
+use move_model::ty::Type;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -64,7 +66,7 @@ impl<'a> ExtendedChecker<'a> {
         for ref module in self.env.get_modules() {
             if module.is_target() {
                 self.check_private_generics_functions(module);
-                //self.check_entry_functions(module);
+                self.check_entry_functions(module);
                 //self.check_init_module(module);
             }
         }
@@ -227,6 +229,87 @@ impl<'a> ExtendedChecker<'a> {
                 .map(|index| type_params_idicies.push(*index))
                 .collect::<Vec<_>>();
         }
+    }
+}
+
+// ----------------------------------------------------------------------------------
+// Entry Function
+
+impl<'a> ExtendedChecker<'a> {
+    fn check_entry_functions(&mut self, module: &ModuleEnv) {
+        for ref fun in module.get_functions() {
+            if !fun.is_entry() {
+                continue;
+            }
+
+            let arg_tys = &fun.get_parameter_types();
+            for ty in arg_tys {
+                self.check_transaction_input_type(&fun.get_loc(), ty);
+            }
+
+            if fun.get_return_count() > 0 {
+                self.env
+                    .error(&fun.get_loc(), "entry function cannot return values")
+            }
+        }
+    }
+
+    fn check_transaction_input_type(&self, loc: &Loc, ty: &Type) {
+        use Type::*;
+        match ty {
+            Primitive(_) | TypeParameter(_) => {
+                // Any primitive type allowed, any parameter expected to instantiate with primitive
+            }
+            Vector(ety) => {
+                // Vectors are allowed if element type is allowed
+                self.check_transaction_input_type(loc, ety)
+            }
+            Struct(mid, sid, _) if self.is_allowed_input_struct(mid.qualified(*sid)) => {
+                // Specific struct types are allowed
+            }
+            Reference(false, bt)
+                if matches!(bt.as_ref(), Primitive(PrimitiveType::Signer))
+                    || self.is_allowed_reference_types(bt) =>
+            {
+                // Immutable Reference to signer and specific types is allowed
+            }
+            Reference(true, bt) if self.is_allowed_reference_types(bt) => {
+                // Mutable references to specific types is allowed
+            }
+            _ => {
+                // Everything else is disallowed.
+                self.env.error(
+                    loc,
+                    &format!(
+                        "type `{}` is not supported as a parameter type",
+                        ty.display(&self.env.get_type_display_ctx())
+                    ),
+                );
+            }
+        }
+    }
+
+    fn is_allowed_reference_types(&self, bt: &Type) -> bool {
+        match bt {
+            Type::Struct(mid, sid, _) => {
+                if self.is_allowed_input_struct(mid.qualified(*sid)) {
+                    return true;
+                }
+                false
+            }
+            _ => false,
+        }
+    }
+
+    fn is_allowed_input_struct(&self, qid: QualifiedId<StructId>) -> bool {
+        let name = self.env.get_struct(qid).get_full_name_with_address();
+        matches!(
+            name.as_str(),
+            "0x1::string::String"
+                | "0x1::object_id::ObjectID"
+                | "0x1::storage_context::StorageContext"
+                | "0x1::tx_context::TxContext"
+        )
     }
 }
 
