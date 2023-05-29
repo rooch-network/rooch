@@ -3,7 +3,8 @@
 
 use super::messages::{
     ExecuteTransactionMessage, ExecuteTransactionResult, ExecuteViewFunctionMessage,
-    GetResourceMessage, ObjectMessage, ValidateTransactionMessage,
+    GetEventsByTxHashMessage, GetEventsMessage, GetResourceMessage, ObjectMessage,
+    ValidateTransactionMessage,
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -12,6 +13,7 @@ use move_core_types::resolver::ResourceResolver;
 use move_core_types::value::MoveValue;
 use move_resource_viewer::{AnnotatedMoveStruct, MoveValueAnnotator};
 use moveos::moveos::MoveOS;
+use moveos_types::event_filter::MoveOSEvent;
 use moveos_types::object::AnnotatedObject;
 use moveos_types::transaction::{AuthenticatableTransaction, MoveOSTransaction};
 use rooch_types::transaction::TransactionInfo;
@@ -119,5 +121,65 @@ impl Handler<ObjectMessage> for ExecutorActor {
             .get(object_id)?
             .map(|state| state.as_annotated_object(&annotator))
             .transpose()
+    }
+}
+
+#[async_trait]
+impl Handler<GetEventsByTxHashMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: GetEventsByTxHashMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Option<Vec<MoveOSEvent>>> {
+        let GetEventsByTxHashMessage { tx_hash } = msg;
+        let event_store = self.moveos.event_store();
+
+        let mut result: Vec<MoveOSEvent> = Vec::new();
+        for ev in event_store
+            .get_events_by_tx_hash(&tx_hash)?
+            .unwrap()
+            .into_iter()
+            .enumerate()
+            .map(|(_i, event)| MoveOSEvent::try_from(event, tx_hash, None, None))
+            .collect::<Vec<_>>()
+        {
+            result.push(ev.unwrap());
+        }
+
+        if !result.is_empty() {
+            Ok(Some(result))
+        } else {
+            Ok(None)
+        }
+    }
+}
+
+#[async_trait]
+impl Handler<GetEventsMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: GetEventsMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Option<Vec<MoveOSEvent>>> {
+        let GetEventsMessage { filter } = msg;
+        let event_store = self.moveos.event_store();
+        //TODO handle tx hash
+        let mut result: Vec<MoveOSEvent> = Vec::new();
+        for ev in event_store
+            .get_events_with_filter(filter)?
+            .unwrap()
+            .into_iter()
+            .enumerate()
+            .map(|(_i, event)| MoveOSEvent::try_from(event, H256::zero(), None, None))
+            .collect::<Vec<_>>()
+        {
+            result.push(ev.unwrap());
+        }
+
+        if !result.is_empty() {
+            Ok(Some(result))
+        } else {
+            Ok(None)
+        }
     }
 }

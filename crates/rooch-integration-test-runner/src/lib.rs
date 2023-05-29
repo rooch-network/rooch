@@ -74,8 +74,8 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
             None => BTreeMap::new(),
         };
 
-        let statedb = moveos_store::state_store::StateDB::new_with_memory_store();
-        let moveos = MoveOS::new(statedb).unwrap();
+        let db = moveos_store::MoveOSDB::new_with_memory_store();
+        let moveos = MoveOS::new(db).unwrap();
 
         let mut named_address_mapping = moveos_stdlib::Framework::named_addresses();
         for (name, addr) in additional_mapping {
@@ -222,7 +222,7 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
         resource: &move_core_types::identifier::IdentStr,
         type_args: Vec<move_core_types::language_storage::TypeTag>,
     ) -> anyhow::Result<String> {
-        view_resource_in_move_storage(self.moveos.state(), address, module, resource, type_args)
+        view_resource_in_move_storage(&self.moveos.state(), address, module, resource, type_args)
     }
 
     fn handle_subcommand(
@@ -232,7 +232,7 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
         match subcommand.command {
             MoveOSSubcommands::ViewObject { object_id } => {
                 let storage = self.moveos.state();
-                let annotator = MoveValueAnnotator::new(storage);
+                let annotator = MoveValueAnnotator::new(&storage);
                 let object = storage
                     .get(object_id)?
                     .map(|state| state.as_annotated_object(&annotator))

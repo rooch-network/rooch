@@ -12,6 +12,7 @@ module rooch_framework::account{
    #[test_only]
    use moveos_std::storage_context;
    use rooch_framework::authenticator::{Self, AuthenticatorResult};
+   use rooch_framework::events;
 
    friend rooch_framework::genesis;
    friend rooch_framework::transaction_validator;
@@ -101,8 +102,9 @@ module rooch_framework::account{
          error::invalid_argument(EMalformedAuthenticationKey)
       );
 
-      // TODO event register
       account_storage::ensure_account_storage(ctx, new_address);
+      // event register
+      events::publish_generator(ctx, &new_account);
       account_storage::global_move_to<Account>(ctx,
          &new_account,
          Account {

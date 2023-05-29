@@ -2,28 +2,35 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::event_store::EventStore;
-use anyhow::Result;
-use std::sync::Arc;
+use crate::state_store::StateDB;
+// use std::sync::Arc;
 
 pub mod event_store;
 pub mod state_store;
 
-#[derive(Clone)]
+// #[derive(Clone)]
 pub struct MoveOSDB {
-    // event_store: EventStore,
-    event_store: Arc<EventStore>,
+    pub state_store: StateDB,
+    pub event_store: EventStore,
+    // state_store: Arc<StateDB>,
+    // event_store: Arc<EventStore>,
 }
 
 impl MoveOSDB {
-    pub fn new_with_memory_store() -> Result<Self> {
-        let store = Self {
-            // event_store: EventStore::new_with_memory_store(),
-            event_store: Arc::new(EventStore::new_with_memory_store()),
-        };
-        Ok(store)
+    pub fn new_with_memory_store() -> Self {
+        Self {
+            state_store: StateDB::new_with_memory_store(),
+            event_store: EventStore::new_with_memory_store(),
+            // state_store: Arc::new(StateDB::new_with_memory_store()),
+            // event_store: Arc::new(EventStore::new_with_memory_store()),
+        }
     }
 
-    pub fn get_event_store(&self) -> Arc<EventStore> {
-        self.event_store.clone()
+    pub fn get_state_store(&self) -> &StateDB {
+        &self.state_store
+    }
+
+    pub fn get_event_store(&self) -> &EventStore {
+        &self.event_store
     }
 }

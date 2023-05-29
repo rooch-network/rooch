@@ -13,7 +13,7 @@ use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
 use moveos::moveos::MoveOS;
-use moveos_store::state_store::StateDB;
+use moveos_store::MoveOSDB;
 use rooch_common::config::{rooch_config_path, PersistedConfig, RoochConfig};
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
@@ -116,7 +116,7 @@ pub async fn start_server() -> Result<ServerHandle> {
     let actor_system = ActorSystem::global_system();
 
     // Init executor
-    let moveos = MoveOS::new(StateDB::new_with_memory_store())?;
+    let moveos = MoveOS::new(MoveOSDB::new_with_memory_store())?;
     let executor = ExecutorActor::new(moveos)
         .into_actor(Some("Executor"), &actor_system)
         .await?;

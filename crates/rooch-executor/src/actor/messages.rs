@@ -8,11 +8,12 @@ use move_core_types::{
 };
 use move_resource_viewer::AnnotatedMoveStruct;
 use moveos::moveos::TransactionOutput;
+use moveos_types::event_filter::{EventFilter, MoveOSEvent};
 use moveos_types::{
     object::{AnnotatedObject, ObjectID},
     transaction::{AuthenticatableTransaction, FunctionCall, MoveOSTransaction},
 };
-use rooch_types::transaction::TransactionInfo;
+use rooch_types::{transaction::TransactionInfo, H256};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
@@ -67,4 +68,22 @@ pub struct ObjectMessage {
 
 impl Message for ObjectMessage {
     type Result = Result<Option<AnnotatedObject>>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetEventsByTxHashMessage {
+    pub tx_hash: H256,
+}
+
+impl Message for GetEventsByTxHashMessage {
+    type Result = Result<Option<Vec<MoveOSEvent>>>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetEventsMessage {
+    pub filter: EventFilter,
+}
+
+impl Message for GetEventsMessage {
+    type Result = Result<Option<Vec<MoveOSEvent>>>;
 }
