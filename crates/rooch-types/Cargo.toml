@@ -19,6 +19,7 @@ bcs = { workspace = true }
 bech32 = { workspace = true }
 bitcoin = { workspace = true }
 ethers = { workspace = true }
+enum_dispatch = { workspace = true }
 hex = { workspace = true }
 once_cell = { workspace = true }
 proptest = { default-features = false, optional = true, workspace = true }
@@ -38,13 +39,8 @@ strum = { workspace = true }
 strum_macros = { workspace = true }
 async-trait ={ workspace = true }
 
-starcoin-crypto = { workspace = true, features= ["fuzzing"] }
-
-
 move-core-types = { workspace = true }
-
 moveos-types = { workspace = true }
-
 
 [dev-dependencies]
 proptest = { workspace = true }

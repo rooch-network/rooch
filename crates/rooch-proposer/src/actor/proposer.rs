@@ -6,15 +6,14 @@ use crate::scc::StateCommitmentChain;
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
-use rooch_types::transaction::authenticator::AccountPrivateKey;
-
+use rooch_types::crypto::RoochKeyPair;
 pub struct ProposerActor {
-    proposer_key: AccountPrivateKey,
+    proposer_key: RoochKeyPair,
     scc: StateCommitmentChain,
 }
 
 impl ProposerActor {
-    pub fn new(proposer_key: AccountPrivateKey) -> Self {
+    pub fn new(proposer_key: RoochKeyPair) -> Self {
         Self {
             proposer_key,
             scc: StateCommitmentChain::new(),

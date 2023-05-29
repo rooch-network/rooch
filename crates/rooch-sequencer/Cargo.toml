@@ -19,6 +19,7 @@ chrono = { workspace = true }
 clap = { workspace = true }
 coerce = { workspace = true }
 derive_builder = { workspace = true }
+fastcrypto = { workspace = true }
 futures = { workspace = true }
 jsonrpsee = { workspace = true }
 serde = { workspace = true }

@@ -7,8 +7,8 @@ use rooch_common::config::{
     rooch_config_path, Config, RoochConfig, ServerConfig, ROOCH_KEYSTORE_FILENAME,
 };
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
-use rooch_types::account::SignatureScheme::ED25519;
 use rooch_types::cli::{CliError, CliResult, CommandAction};
+use rooch_types::crypto::BuiltinScheme::Ed25519;
 
 #[derive(Parser)]
 pub struct Init;
@@ -33,7 +33,7 @@ pub async fn init() -> Result<(), anyhow::Error> {
     let keystore_path = conf_path.parent().unwrap().join(ROOCH_KEYSTORE_FILENAME);
     let mut keystore = Keystore::from(FileBasedKeystore::new(&keystore_path)?);
 
-    let (new_address, phrase, scheme) = keystore.generate_and_add_new_key(ED25519, None, None)?;
+    let (new_address, phrase, scheme) = keystore.generate_and_add_new_key(Ed25519, None, None)?;
 
     println!("server config: {:?}", server);
 

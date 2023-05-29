@@ -2,10 +2,15 @@ use anyhow::{bail, Result};
 use clap::Parser;
 use cucumber::{given, then, World as _};
 use jpst::TemplateContext;
+use move_core_types::account_address::AccountAddress;
 use rooch::RoochCli;
 use rooch_server::Service;
 use serde_json::Value;
 use tracing::info;
+
+use rooch_common::config::{
+    rooch_config_dir, rooch_config_path, Config, PersistedConfig, RoochConfig, ROOCH_CONFIG,
+};
 
 #[derive(cucumber::World, Debug, Default)]
 struct World {
@@ -23,9 +28,34 @@ async fn start_server(w: &mut World) {
 
 #[then(regex = r#"cmd: "(.*)?""#)]
 async fn run_cmd(world: &mut World, args: String) {
-    let mut cmd = assert_cmd::Command::cargo_bin("rooch").unwrap();
+    // let mut cmd = assert_cmd::Command::cargo_bin("rooch").unwrap();
+
+    // TODO: We'll deal with that when we redesign config
     // Discard test data
-    cmd.env("TEST_ENV", "true");
+    // cmd.env("TEST_ENV", "true");
+
+    let config = rooch_config_path();
+
+    let default_addr = match config {
+        Ok(v) => {
+            if v.exists() {
+                let config: RoochConfig =
+                    PersistedConfig::read(rooch_config_path().unwrap().as_path()).unwrap();
+                let config: PersistedConfig<RoochConfig> =
+                    config.persisted(rooch_config_dir().unwrap().join(ROOCH_CONFIG).as_path());
+
+                match config.active_address {
+                    Some(addr) => AccountAddress::from(addr).to_hex_literal(),
+                    None => "".to_owned(),
+                }
+            } else {
+                "".to_string()
+            }
+        }
+        Err(..) => "".to_owned(),
+    };
+
+    let args = args.replace("{default}", &default_addr);
 
     if world.tpl_ctx.is_none() {
         world.tpl_ctx = Some(TemplateContext::new());
