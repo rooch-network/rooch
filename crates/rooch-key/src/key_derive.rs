@@ -9,8 +9,8 @@ use fastcrypto::{
     ed25519::Ed25519PrivateKey,
     traits::{KeyPair, ToFromBytes},
 };
-use rooch_types::account::{RoochKeyPair, SignatureScheme};
 use rooch_types::address::RoochAddress;
+use rooch_types::crypto::{BuiltinScheme, RoochKeyPair};
 use rooch_types::error::RoochError;
 use slip10_ed25519::derive_ed25519_private_key;
 use std::string::String;
@@ -25,8 +25,9 @@ pub const DERVIATION_PATH_PURPOSE_SECP256R1: u32 = 74;
 pub fn derive_key_pair_from_path(
     seed: &[u8],
     derivation_path: Option<DerivationPath>,
-    key_scheme: &SignatureScheme,
+    key_scheme: &BuiltinScheme,
 ) -> Result<(RoochAddress, RoochKeyPair), RoochError> {
+    // TODO:: Other scheme
     let path = validate_path(key_scheme, derivation_path)?;
     let indexes = path.into_iter().map(|i| i.into()).collect::<Vec<_>>();
     let derived = derive_ed25519_private_key(seed, &indexes);
@@ -37,7 +38,7 @@ pub fn derive_key_pair_from_path(
 }
 
 pub fn validate_path(
-    _: &SignatureScheme,
+    _: &BuiltinScheme,
     path: Option<DerivationPath>,
 ) -> Result<DerivationPath, RoochError> {
     // The derivation path must be hardened at all levels with purpose = 44, coin_type = 784
@@ -68,10 +69,10 @@ pub fn validate_path(
 }
 
 pub fn generate_new_key(
-    key_scheme: SignatureScheme,
+    key_scheme: BuiltinScheme,
     derivation_path: Option<DerivationPath>,
     word_length: Option<String>,
-) -> Result<(RoochAddress, RoochKeyPair, SignatureScheme, String), anyhow::Error> {
+) -> Result<(RoochAddress, RoochKeyPair, BuiltinScheme, String), anyhow::Error> {
     let mnemonic = Mnemonic::new(parse_word_length(word_length)?, Language::English);
     let seed = Seed::new(&mnemonic, "");
     match derive_key_pair_from_path(seed.as_bytes(), derivation_path, &key_scheme) {
