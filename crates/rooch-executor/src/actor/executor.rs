@@ -9,7 +9,6 @@ use super::messages::{
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
-use move_core_types::resolver::ResourceResolver;
 use move_core_types::value::MoveValue;
 use move_resource_viewer::{AnnotatedMoveStruct, MoveValueAnnotator};
 use moveos::moveos::MoveOS;

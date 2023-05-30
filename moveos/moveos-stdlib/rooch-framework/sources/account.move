@@ -11,8 +11,8 @@ module rooch_framework::account{
    use std::debug;
    #[test_only]
    use moveos_std::storage_context;
+   use moveos_std::events;
    use rooch_framework::authenticator::{Self, AuthenticatorResult};
-   use rooch_framework::events;
    use rooch_framework::ed25519;
    use moveos_std::tx_context::tx_hash;
 
