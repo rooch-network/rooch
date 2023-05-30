@@ -6,13 +6,13 @@ use move_core_types::{
     account_address::AccountAddress,
     value::{serialize_values, MoveValue},
 };
-use moveos_store::state_store::StateDB;
+use moveos_store::MoveOSDB;
 use moveos_types::{move_types::FunctionId, transaction::FunctionCall};
 use std::str::FromStr;
 
 #[test]
 pub fn test_check_account() {
-    let db = StateDB::new_with_memory_store();
+    let db = MoveOSDB::new_with_memory_store();
     let moveos = MoveOS::new(db).unwrap();
 
     let args = serialize_values(&vec![MoveValue::Address(AccountAddress::ZERO)]);

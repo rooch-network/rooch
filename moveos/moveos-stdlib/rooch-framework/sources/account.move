@@ -104,7 +104,6 @@ module rooch_framework::account{
          error::invalid_argument(EMalformedAuthenticationKey)
       );
 
-      // TODO event register
       account_storage::ensure_account_storage(ctx, new_address);
       account_storage::global_move_to<Account>(ctx,
          &new_account,

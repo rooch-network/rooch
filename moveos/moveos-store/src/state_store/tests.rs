@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::*;
+use crate::MoveOSDB;
 
 #[test]
 fn test_statedb() {
-    let state_db = StateDB::new_with_memory_store();
+    let db = MoveOSDB::new_with_memory_store();
 
     let mut change_set = ChangeSet::new();
     let struct_tag: StructTag = "0x1::account::Account".parse().unwrap();
@@ -19,11 +20,14 @@ fn test_statedb() {
             .unwrap();
     }
     let table_change_set = TableChangeSet::default();
-    state_db
+    db.state_store
         .apply_change_set(change_set, table_change_set)
         .unwrap();
     let addr = AccountAddress::from_hex_literal("0x1").unwrap();
-    let resource = state_db.get_resource(&addr, &struct_tag).unwrap();
+    let resource = db
+        .get_state_store()
+        .get_resource(&addr, &struct_tag)
+        .unwrap();
     assert!(resource.is_some());
     assert_eq!(resource.unwrap(), vec![1]);
 }

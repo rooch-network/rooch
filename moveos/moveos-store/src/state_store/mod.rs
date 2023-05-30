@@ -1,7 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{ensure, Result};
+use crate::MoveOSDB;
+use anyhow::{ensure, Error, Result};
 use move_core_types::{
     account_address::AccountAddress,
     effects::{ChangeSet, Op},
@@ -296,16 +297,12 @@ impl StateDB {
         ))?;
         Ok(())
     }
-}
 
-impl ResourceResolver for StateDB {
-    type Error = anyhow::Error;
-
-    fn get_resource(
+    pub fn get_resource(
         &self,
         address: &AccountAddress,
         tag: &StructTag,
-    ) -> Result<Option<Vec<u8>>, Self::Error> {
+    ) -> Result<Option<Vec<u8>>, Error> {
         let resource_table_id = NamedTableID::Resource(*address).to_object_id();
         let key = tag_to_key(tag);
         self.get_with_key(resource_table_id, key)?
@@ -320,12 +317,8 @@ impl ResourceResolver for StateDB {
             })
             .transpose()
     }
-}
 
-impl ModuleResolver for StateDB {
-    type Error = anyhow::Error;
-
-    fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
+    pub fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Error> {
         let module_table_id = NamedTableID::Module(*module_id.address()).to_object_id();
         let key = module_name_to_key(module_id.name());
         //We wrap the modules byte codes to `MoveModule` type when store the module.
@@ -333,6 +326,65 @@ impl ModuleResolver for StateDB {
         self.get_with_key(module_table_id, key)?
             .map(|s| Ok(s.as_move_state::<MoveModule>()?.byte_codes))
             .transpose()
+    }
+
+    pub fn resolve_table_entry(
+        &self,
+        handle: &TableHandle,
+        key: &[u8],
+    ) -> Result<Option<TableValueBox>, Error> {
+        let state = if handle.0 == storage_context::GLOBAL_OBJECT_STORAGE_HANDLE {
+            self.global_table.get(key.to_vec())
+        } else {
+            self.get_with_key((*handle).into(), key.to_vec())
+        }?;
+        match state {
+            Some(state) => Ok(Some(TableValueBox {
+                value_type: state.value_type,
+                value: state.value,
+            })),
+            None => Ok(None),
+        }
+    }
+}
+
+impl ResourceResolver for MoveOSDB {
+    type Error = anyhow::Error;
+
+    fn get_resource(
+        &self,
+        address: &AccountAddress,
+        tag: &StructTag,
+    ) -> Result<Option<Vec<u8>>, Self::Error> {
+        self.state_store.get_resource(address, tag)
+    }
+}
+
+impl ResourceResolver for StateDB {
+    type Error = anyhow::Error;
+
+    fn get_resource(
+        &self,
+        address: &AccountAddress,
+        tag: &StructTag,
+    ) -> Result<Option<Vec<u8>>, Self::Error> {
+        self.get_resource(address, tag)
+    }
+}
+
+impl ModuleResolver for MoveOSDB {
+    type Error = anyhow::Error;
+
+    fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
+        self.state_store.get_module(module_id)
+    }
+}
+
+impl ModuleResolver for StateDB {
+    type Error = anyhow::Error;
+
+    fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
+        self.get_module(module_id)
     }
 }
 
@@ -346,23 +398,22 @@ fn module_name_to_key(name: &IdentStr) -> Vec<u8> {
     bcs::to_bytes(&name.to_string()).expect("bcs to_bytes String must success.")
 }
 
+impl TableResolver for MoveOSDB {
+    fn resolve_table_entry(
+        &self,
+        handle: &TableHandle,
+        key: &[u8],
+    ) -> std::result::Result<Option<TableValueBox>, Error> {
+        self.state_store.resolve_table_entry(handle, key)
+    }
+}
+
 impl TableResolver for StateDB {
     fn resolve_table_entry(
         &self,
         handle: &TableHandle,
         key: &[u8],
-    ) -> std::result::Result<Option<TableValueBox>, anyhow::Error> {
-        let state = if handle.0 == storage_context::GLOBAL_OBJECT_STORAGE_HANDLE {
-            self.global_table.get(key.to_vec())
-        } else {
-            self.get_with_key((*handle).into(), key.to_vec())
-        }?;
-        match state {
-            Some(state) => Ok(Some(TableValueBox {
-                value_type: state.value_type,
-                value: state.value,
-            })),
-            None => Ok(None),
-        }
+    ) -> std::result::Result<Option<TableValueBox>, Error> {
+        self.resolve_table_entry(handle, key)
     }
 }

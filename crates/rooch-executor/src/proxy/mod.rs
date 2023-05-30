@@ -4,7 +4,8 @@
 use crate::actor::{
     executor::ExecutorActor,
     messages::{
-        ExecuteViewFunctionMessage, GetResourceMessage, ObjectMessage, ValidateTransactionMessage,
+        ExecuteViewFunctionMessage, GetEventsByTxHashMessage, GetEventsMessage, GetResourceMessage,
+        ObjectMessage, ValidateTransactionMessage,
     },
 };
 use anyhow::Result;
@@ -14,11 +15,12 @@ use move_core_types::{
 };
 use move_resource_viewer::AnnotatedMoveStruct;
 use moveos::moveos::TransactionOutput;
+use moveos_types::event_filter::{EventFilter, MoveOSEvent};
 use moveos_types::{
     object::{AnnotatedObject, ObjectID},
     transaction::{AuthenticatableTransaction, FunctionCall, MoveOSTransaction},
 };
-use rooch_types::transaction::TransactionInfo;
+use rooch_types::{transaction::TransactionInfo, H256};
 
 #[derive(Clone)]
 pub struct ExecutorProxy {
@@ -68,5 +70,15 @@ impl ExecutorProxy {
 
     pub async fn get_object(&self, object_id: ObjectID) -> Result<Option<AnnotatedObject>> {
         self.actor.send(ObjectMessage { object_id }).await?
+    }
+
+    pub async fn get_events_by_tx_hash(&self, tx_hash: H256) -> Result<Option<Vec<MoveOSEvent>>> {
+        self.actor
+            .send(GetEventsByTxHashMessage { tx_hash })
+            .await?
+    }
+
+    pub async fn get_events(&self, filter: EventFilter) -> Result<Option<Vec<MoveOSEvent>>> {
+        self.actor.send(GetEventsMessage { filter }).await?
     }
 }

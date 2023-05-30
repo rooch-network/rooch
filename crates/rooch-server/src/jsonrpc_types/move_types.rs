@@ -9,6 +9,9 @@ use move_core_types::{
     u256,
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
+use moveos_types::event::Event;
+use moveos_types::event_filter::MoveOSEvent;
+use moveos_types::h256::H256;
 use moveos_types::{
     move_types::FunctionId,
     object::{AnnotatedObject, ObjectID},
@@ -119,6 +122,70 @@ impl From<FunctionCallView> for FunctionCall {
             function_id: value.function_id,
             ty_args: value.ty_args.into_iter().map(Into::into).collect(),
             args: value.args.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct EventView {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tx_hash: Option<H256>,
+    /// Sender's address.
+    pub sender: AccountAddress,
+    pub event_data: StrView<Vec<u8>>,
+    pub type_tag: TypeTagView,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub event_index: Option<u32>,
+    pub event_key: ObjectID,
+    pub event_seq_number: StrView<u64>,
+}
+
+impl From<Event> for EventView {
+    fn from(event: Event) -> Self {
+        EventView {
+            tx_hash: None,
+            sender: AccountAddress::ZERO, //TODO fill event sender
+            event_data: StrView(event.event_data().to_vec()),
+            type_tag: event.type_tag().clone().into(),
+            event_index: Some(event.event_index),
+            event_key: *event.key(),
+            event_seq_number: event.sequence_number().into(),
+        }
+    }
+}
+
+impl From<MoveOSEvent> for EventView {
+    fn from(event: MoveOSEvent) -> Self {
+        EventView {
+            tx_hash: Some(event.tx_hash),
+            sender: AccountAddress::ZERO, //TODO fill event sender
+            event_data: StrView(event.event_data.to_vec()),
+            type_tag: event.type_tag.clone().into(),
+            event_index: Some(event.event_index),
+            event_key: event.key,
+            event_seq_number: event.sequence_number.into(),
+        }
+    }
+}
+
+impl EventView {
+    pub fn try_from(event: Event, tx_hash: H256) -> Self {
+        let Event {
+            key,
+            sequence_number,
+            type_tag,
+            event_data,
+            event_index,
+        } = event;
+
+        EventView {
+            tx_hash: Some(tx_hash),
+            sender: AccountAddress::ZERO, //TODO fill event sender
+            event_data: StrView(event_data.to_vec()),
+            type_tag: type_tag.into(),
+            event_index: Some(event_index),
+            event_key: key,
+            event_seq_number: sequence_number.into(),
         }
     }
 }
