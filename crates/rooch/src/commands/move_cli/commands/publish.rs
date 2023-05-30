@@ -104,10 +104,7 @@ impl CommandAction<TransactionOutput> for Publish {
             module.serialize(&mut binary)?;
             bundles.push(binary);
         }
-
-        if self.txn_options.sender_account.is_some()
-            && pkg_address != self.txn_options.sender_account.unwrap()
-        {
+        if pkg_address != self.txn_options.sender_account {
             return Err(CliError::CommandArgumentError(
                     "--sender-account required and the sender account must be the same as the package address"
                     .to_string(),

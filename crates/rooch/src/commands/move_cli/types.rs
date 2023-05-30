@@ -48,11 +48,11 @@ pub fn load_account_arg(str: &str) -> CliResult<AccountAddress> {
 }
 
 /// Common options for interacting with an account for a validator
-#[derive(Debug, Default, Parser)]
+#[derive(Debug, Parser)]
 pub struct TransactionOptions {
     /// Sender account address.
     /// This allows you to override the account address from the derived account address
     /// in the event that the authentication key was rotated or for a resource account
-    #[clap(long, parse(try_from_str=load_account_arg))]
-    pub(crate) sender_account: Option<AccountAddress>,
+    #[clap(long, parse(try_from_str=load_account_arg), default_value="default")]
+    pub(crate) sender_account: AccountAddress,
 }
