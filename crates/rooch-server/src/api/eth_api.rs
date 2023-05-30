@@ -1,14 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use ethers::types::{Bytes, TransactionRequest, BlockNumber, Block, TxHash, Transaction, H160, U256};
-use crate::jsonrpc_types::eth::CallRequest;
-use jsonrpsee::core::RpcResult;
-use jsonrpsee::proc_macros::rpc;
 use rooch_types::H256;
 use std::string::String;
 use serde::{Deserialize, Serialize};
-
+use jsonrpsee::core::RpcResult;
+use jsonrpsee::proc_macros::rpc;
+use ethers::types::{Bytes, TransactionRequest, BlockNumber, Block, TxHash, Transaction, H160, U256};
+use crate::jsonrpc_types::eth::{CallRequest, EthFeeHistory};
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Debug)]
 pub enum TransactionType {
@@ -26,7 +25,6 @@ impl Default for TransactionType {
 #[rpc(server, client)]
 pub trait EthAPI {
     
-
     /// Returns the network version.
     #[method(name = "net_version")]
     async fn net_version(&self) -> RpcResult<String>;
@@ -50,6 +48,21 @@ pub trait EthAPI {
     /// Generates and returns an estimate of how much gas is necessary to allow the transaction to complete.
     #[method(name = "eth_estimateGas")]
     async fn estimate_gas(&self, request: CallRequest, num: Option<BlockNumber>) -> RpcResult<U256>;
+
+    /// Transaction fee history
+    #[method(name = "eth_feeHistory")]
+    async fn fee_history(&self, 
+        block_count: U256,
+        newest_block: BlockNumber,
+        reward_percentiles: Option<Vec<f64>>,) -> RpcResult<EthFeeHistory>;
+
+    /// Returns the current price per gas in wei.
+    #[method(name = "eth_gasPrice")]
+    async fn gas_price(&self) -> RpcResult<U256>;
+        
+    /// Returns the number of transactions sent from an address.
+    #[method(name = "eth_getTransactionCount")]
+    async fn transaction_count(&self, address: H160, num: Option<BlockNumber>) -> RpcResult<U256>;
 
     /// Sends transaction; will block waiting for signer to return the
     /// transaction hash.

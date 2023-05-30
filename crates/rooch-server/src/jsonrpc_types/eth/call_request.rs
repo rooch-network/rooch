@@ -1,13 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use serde::{Serialize, Deserialize};
 use ethers::types::{H160, U256, U64};
 use crate::jsonrpc_types::bytes::Bytes;
 use crate::jsonrpc_types::eth::AccessList;
-use serde::{Deserialize};
 
 /// Call request
-#[derive(Debug, Default, PartialEq, Deserialize)]
+#[derive(Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 pub struct CallRequest {
