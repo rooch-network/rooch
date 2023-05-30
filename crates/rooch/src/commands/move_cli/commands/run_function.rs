@@ -79,13 +79,7 @@ impl CommandAction<TransactionOutput> for RunFunction {
             })
             .collect();
 
-        if self.txn_options.sender_account.is_none() {
-            return Err(CliError::CommandArgumentError(
-                "--sender-account required".to_string(),
-            ));
-        }
-
-        let sender: RoochAddress = self.txn_options.sender_account.unwrap().into();
+        let sender: RoochAddress = self.txn_options.sender_account.into();
         let sequence_number = self
             .client
             .get_sequence_number(sender)
