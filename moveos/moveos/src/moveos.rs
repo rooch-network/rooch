@@ -30,6 +30,7 @@ use moveos_store::event_store::EventStore;
 use moveos_store::state_store::StateDB;
 use moveos_store::MoveOSDB;
 use moveos_types::event::Event;
+use moveos_types::object::ObjectID;
 use moveos_types::transaction::{AuthenticatableTransaction, MoveAction, MoveOSTransaction};
 use moveos_types::tx_context::TxContext;
 use moveos_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, move_types::FunctionId};
@@ -253,8 +254,7 @@ impl MoveOS {
                     .map(|(i, e)| {
                         // pub type Event = (Vec<u8>, u64, TypeTag, Vec<u8>);
                         Event::new(
-                            // EventKey::new(e.0.as_slice().into()),
-                            e.0.as_slice().try_into().unwrap(),
+                            ObjectID::from_bytes(e.0.as_slice()).unwrap(),
                             e.1,
                             e.2,
                             e.3,

@@ -9,11 +9,12 @@ use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 // use move_core_types::identifier::Identifier;
 // use move_core_types::language_storage::StructTag;
-use crate::event::{Event, EventKey};
+use crate::event::Event;
 use crate::h256::H256;
 use crate::move_types::type_tag_match;
 use move_core_types::language_storage::TypeTag;
 // use schemars::JsonSchema;
+use crate::object::ObjectID;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::serde_as;
@@ -23,12 +24,7 @@ use serde_with::serde_as;
 #[derive(Eq, PartialEq, Clone, Debug)]
 // #[serde(rename = "Event", rename_all = "camelCase")]
 pub struct MoveOSEvent {
-    /// Sequential event key, ie (transaction seq number, event seq number).
-    /// 1) Serves as a unique event key for each fullnode
-    /// 2) Also serves to sequence events for the purposes of pagination and querying.
-    ///    A higher id is an event seen later by that fullnode.
-    /// This key is the "cursor" for event querying.
-    pub key: EventKey,
+    pub key: ObjectID,
     /// Sender's address.
     pub sender: AccountAddress,
     /// Transaction hash
@@ -72,7 +68,8 @@ impl MoveOSEvent {
             event_index,
         } = event;
 
-        let sender = key.get_creator_address();
+        //TODO how to store and derive sender address ?
+        let sender = AccountAddress::ZERO;
         // let move_struct = Event::move_event_to_move_struct(&type_, &contents, resolver)?;
         // let (type_, field) = type_and_fields_from_move_struct(&type_, move_struct);
         //TODO deserilize field from event_data

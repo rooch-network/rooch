@@ -18,6 +18,7 @@ use serde::{de, ser, Deserialize, Serialize};
 // use serde_json::Value;
 // use serde_with::serde_as;
 // use serde_with::Bytes;
+use crate::object::ObjectID;
 use std::str::FromStr;
 use std::{
     convert::{TryFrom, TryInto},
@@ -170,8 +171,8 @@ impl fmt::Display for EventKey {
 #[derive(Hash, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Event {
     /// The unique key that the event was emitted to
-    pub key: EventKey,
-    /// The number of messages that have been emitted to the path previously
+    pub key: ObjectID,
+    /// For expansion: The number of messages that have been emitted to the path previously
     pub sequence_number: u64,
     /// The type of the data
     pub type_tag: TypeTag,
@@ -184,7 +185,7 @@ pub struct Event {
 
 impl Event {
     pub fn new(
-        key: EventKey,
+        key: ObjectID,
         sequence_number: u64,
         type_tag: TypeTag,
         event_data: Vec<u8>,
@@ -199,7 +200,7 @@ impl Event {
         }
     }
 
-    pub fn key(&self) -> &EventKey {
+    pub fn key(&self) -> &ObjectID {
         &self.key
     }
 

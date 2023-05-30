@@ -5,7 +5,10 @@ use move_binary_format::errors::{Location, PartialVMError, PartialVMResult};
 use move_core_types::{gas_algebra::InternalGas, vm_status::StatusCode};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
-    loaded_data::runtime_types::Type, natives::function::NativeResult, pop_arg, values::Value,
+    loaded_data::runtime_types::Type,
+    natives::function::NativeResult,
+    pop_arg,
+    values::{StructRef, Value},
 };
 use smallvec::smallvec;
 use std::collections::VecDeque;
@@ -47,17 +50,17 @@ pub fn native_write_to_event_store(
     let ty = ty_args.pop().unwrap();
     let msg = args.pop_back().unwrap();
     let seq_num = pop_arg!(args, u64);
-    let guid = pop_arg!(args, Vec<u8>);
+    // let guid = pop_arg!(args, ObjectID);
+    let raw_guid = pop_arg!(args, StructRef);
+    let guid = helpers::get_object_id(raw_guid)?;
 
-    // if !context.save_event(guid, seq_num, ty, msg)? {
-    //     return Err(PartialVMError::new(StatusCode::ABORTED)
-    //         .with_message(format!("cannot save event ")));
-    // }
-    let _result = context.save_event(guid, seq_num, ty, msg).map_err(|e| {
-        PartialVMError::new(StatusCode::ABORTED)
-            .with_message(e.to_string())
-            .finish(Location::Undefined)
-    });
+    let _result = context
+        .save_event(guid.to_bytes(), seq_num, ty, msg)
+        .map_err(|e| {
+            PartialVMError::new(StatusCode::ABORTED)
+                .with_message(e.to_string())
+                .finish(Location::Undefined)
+        });
 
     Ok(NativeResult::ok(gas_params.base, smallvec![]))
 }
@@ -83,13 +86,4 @@ impl GasParameters {
             emit: EventEmitGasParameters::zeros(),
         }
     }
-}
-
-pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
-    let natives = [(
-        "write_to_event_store",
-        make_write_to_event_store(gas_params.emit),
-    )];
-
-    helpers::make_module_natives(natives)
 }

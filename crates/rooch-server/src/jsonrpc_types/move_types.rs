@@ -9,7 +9,7 @@ use move_core_types::{
     u256,
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
-use moveos_types::event::{Event, EventKey};
+use moveos_types::event::Event;
 use moveos_types::event_filter::MoveOSEvent;
 use moveos_types::h256::H256;
 use moveos_types::{
@@ -136,7 +136,7 @@ pub struct EventView {
     pub type_tag: TypeTagView,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub event_index: Option<u32>,
-    pub event_key: EventKey,
+    pub event_key: ObjectID,
     pub event_seq_number: StrView<u64>,
 }
 
@@ -144,7 +144,7 @@ impl From<Event> for EventView {
     fn from(event: Event) -> Self {
         EventView {
             tx_hash: None,
-            sender: event.key().get_creator_address(),
+            sender: AccountAddress::ZERO, //TODO fill event sender
             event_data: StrView(event.event_data().to_vec()),
             type_tag: event.type_tag().clone().into(),
             event_index: Some(event.event_index),
@@ -158,7 +158,7 @@ impl From<MoveOSEvent> for EventView {
     fn from(event: MoveOSEvent) -> Self {
         EventView {
             tx_hash: Some(event.tx_hash),
-            sender: event.key.get_creator_address(),
+            sender: AccountAddress::ZERO, //TODO fill event sender
             event_data: StrView(event.event_data.to_vec()),
             type_tag: event.type_tag.clone().into(),
             event_index: Some(event.event_index),
@@ -180,7 +180,7 @@ impl EventView {
 
         EventView {
             tx_hash: Some(tx_hash),
-            sender: key.get_creator_address(),
+            sender: AccountAddress::ZERO, //TODO fill event sender
             event_data: StrView(event_data.to_vec()),
             type_tag: type_tag.into(),
             event_index: Some(event_index),

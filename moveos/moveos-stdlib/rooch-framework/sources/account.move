@@ -11,7 +11,6 @@ module rooch_framework::account{
    use std::debug;
    #[test_only]
    use moveos_std::storage_context;
-   use moveos_std::events;
    use rooch_framework::authenticator::{Self, AuthenticatorResult};
    use rooch_framework::ed25519;
    use moveos_std::tx_context::tx_hash;
@@ -106,8 +105,6 @@ module rooch_framework::account{
       );
 
       account_storage::ensure_account_storage(ctx, new_address);
-      // event register
-      events::publish_generator(ctx, &new_account);
       account_storage::global_move_to<Account>(ctx,
          &new_account,
          Account {
