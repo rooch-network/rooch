@@ -8,6 +8,7 @@ module moveos_std::type_table {
     use moveos_std::object_id::ObjectID;
 
     friend moveos_std::account_storage;
+    friend moveos_std::events;
 
     struct TypeTable has store {
         handle: ObjectID,
