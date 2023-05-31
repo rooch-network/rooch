@@ -11,6 +11,8 @@ module moveos_std::events {
     use moveos_std::object_id::{Self, ObjectID};
     use moveos_std::object;
     use moveos_std::type_table::{Self, TypeTable};
+    #[test_only]
+    use std::debug;
 
     const NamedTableEventHandler: u64 = 2;
 
@@ -20,6 +22,8 @@ module moveos_std::events {
     const EEventHandlerTableAlreadyExists: u64 = 1;
     /// The event handle with the given type already exists
     const EEventHandleAlreadyExists: u64 = 2;
+    /// The event handle with the given type not exists
+    const EEventHandleNotExists: u64 = 3;
 
     struct EventStorage has key {
         event_handle: TypeTable,
@@ -28,7 +32,7 @@ module moveos_std::events {
     /// A handle for an event such that:
     /// 1. Other modules can emit events to this handle.
     /// 2. Storage can use this handle to prove the total number of events that happened in the past.
-    struct EventHandle<phantom T: drop + store> has key, store {
+    struct EventHandle<phantom T: drop> has key, store {
         /// Total number of events emitted to this event stream.
         counter: u64,
         /// A globally unique ID for this event stream.
@@ -66,13 +70,13 @@ module moveos_std::events {
         type_table::new_with_id(object_id)
     }
 
-    fun borrow_event_storage<T: key>(object_storage: &ObjectStorage) : &EventStorage {
+    fun borrow_event_storage(object_storage: &ObjectStorage) : &EventStorage {
         let object_id = derive_event_object_id(@moveos_std);
         let object = object_storage::borrow<EventStorage>(object_storage, object_id);
         object::borrow(object)
     }
 
-    fun borrow_mut_event_storage<T: key>(object_storage: &mut ObjectStorage) : &mut EventStorage {
+    fun borrow_mut_event_storage(object_storage: &mut ObjectStorage) : &mut EventStorage {
         let object_id = derive_event_object_id(@moveos_std);
         let object = object_storage::borrow_mut<EventStorage>(object_storage, object_id);
         object::borrow_mut(object)
@@ -81,25 +85,25 @@ module moveos_std::events {
     /// Add a event handle to the event storage
     fun add_event_handle_to_event_storage<T: key>(object_storage: &mut ObjectStorage, event_handle_resource: T){
         // let event_table_handle = derive_event_table_handle();
-        let event_storage = borrow_mut_event_storage<T>(object_storage);
+        let event_storage = borrow_mut_event_storage(object_storage);
         assert!(!type_table::contains_internal<T>(&event_storage.event_handle), EEventHandleAlreadyExists);
         type_table::add_internal(&mut event_storage.event_handle, event_handle_resource);
     }
 
     fun exists_event_handle_at_event_storage<T: key>(object_storage: &ObjectStorage) : bool {
         // let event_table_handle = derive_event_table_handle();
-        let event_storage = borrow_event_storage<T>(object_storage);
+        let event_storage = borrow_event_storage(object_storage);
         type_table::contains<T>(&event_storage.event_handle)
     }
 
     /// Borrow a mut event handle from the event storage
     fun borrow_mut_event_handle_from_event_storage<T: key>(object_storage: &mut ObjectStorage): &mut T {
-        let event_storage = borrow_mut_event_storage<T>(object_storage);
+        let event_storage = borrow_mut_event_storage(object_storage);
         type_table::borrow_mut_internal<T>(&mut event_storage.event_handle)
     }
 
     /// Use EventHandle to generate a unique event handle
-    public fun new_event_handle<T: drop + store>(ctx: &mut StorageContext, account: &signer) {
+    public fun new_event_handle<T: drop>(ctx: &mut StorageContext, account: &signer) {
         let account_addr = signer::address_of(account);
         let guid = tx_context::fresh_object_id(storage_context::tx_context_mut(ctx));
         let event_handle = EventHandle<T> {
@@ -117,7 +121,8 @@ module moveos_std::events {
     ///
     /// The type T is the main way to index the event, and can contain
     /// phantom parameters, eg emit(MyEvent<phantom T>).
-    public fun emit_event<T: drop + store>(ctx: &mut StorageContext, event: T) {
+    public fun emit_event<T: drop>(ctx: &mut StorageContext, event: T) {
+        assert!(exists_event_handle_at_event_storage<EventHandle<T>>(storage_context::object_storage(ctx)), error::not_found(EEventHandleNotExists));
         let event_handle_ref = borrow_mut_event_handle_from_event_storage<EventHandle<T>>(storage_context::object_storage_mut(ctx));
 
         let guid = *&event_handle_ref.guid;
@@ -127,11 +132,41 @@ module moveos_std::events {
 
     /// Native procedure that writes to the actual event stream in Event store
     /// This will replace the "native" portion of EmitEvent bytecode
-    native fun write_to_event_store<T: drop + store>(guid: &ObjectID, count: u64, data: T);
+    native fun write_to_event_store<T: drop>(guid: &ObjectID, count: u64, data: T);
 
 
     /// Destroy a unique handle.
     public fun destroy_handle<T: drop + store>(handle: EventHandle<T>) {
         EventHandle<T> { counter: _, guid: _, sender: _} = handle;
+    }
+
+    #[test]
+    fun test_named_table_id() {
+        debug::print(&derive_event_object_id(@moveos_std));
+        // assert!(derive_event_object_id(@moveos_std) == object_id::address_to_object_id(@0x04d8b5ccef4d5b55fa9371d1a9c344fcd4bd40dd9f32dd1d94696775fe3f3013), 1000);
+    }
+
+    #[test_only]
+    struct WithdrawEvent has drop{
+        addr: address,
+        amount: u64
+    }
+
+    #[test(sender=@0x42)]
+    fun test_event_storage(sender: signer){
+        let sender_addr = signer::address_of(&sender);
+        let ctx = storage_context::new_test_context(sender_addr);
+        create_event_storage(&mut ctx, sender_addr);
+
+        new_event_handle<WithdrawEvent>(&mut ctx, &sender);
+        emit_event<WithdrawEvent>(&mut ctx, WithdrawEvent {
+            addr: signer::address_of(&sender),
+            amount: 100,
+        });
+        emit_event<WithdrawEvent>(&mut ctx, WithdrawEvent {
+            addr: signer::address_of(&sender),
+            amount: 102,
+        });
+        storage_context::drop_test_context(ctx);
     }
 }
