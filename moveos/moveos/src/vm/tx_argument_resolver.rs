@@ -112,12 +112,6 @@ where
     }
 }
 
-// fn is_object(t: &StructType) -> bool {
-//     *t.module.address() == *moveos_types::addresses::MOVEOS_STD_ADDRESS
-//         && t.module.name() == object::OBJECT_MODULE_NAME
-//         && t.name.as_ident_str() == object::OBJECT_STRUCT_NAME
-// }
-
 fn is_tx_context(t: &StructType) -> bool {
     *t.module.address() == *moveos_types::addresses::MOVEOS_STD_ADDRESS
         && t.module.name() == TxContext::module_identifier().as_ident_str()

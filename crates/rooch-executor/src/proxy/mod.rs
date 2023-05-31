@@ -4,8 +4,9 @@
 use crate::actor::{
     executor::ExecutorActor,
     messages::{
-        ExecuteViewFunctionMessage, GetEventsByTxHashMessage, GetEventsMessage, GetResourceMessage,
-        ObjectMessage, ValidateTransactionMessage,
+        AnnotatedStatesMessage, ExecuteViewFunctionMessage, GetEventsByTxHashMessage,
+        GetEventsMessage, GetResourceMessage, ObjectMessage, StatesMessage,
+        ValidateTransactionMessage,
     },
 };
 use anyhow::Result;
@@ -15,7 +16,11 @@ use move_core_types::{
 };
 use move_resource_viewer::AnnotatedMoveStruct;
 use moveos::moveos::TransactionOutput;
-use moveos_types::event_filter::{EventFilter, MoveOSEvent};
+use moveos_types::access_path::AccessPath;
+use moveos_types::{
+    event_filter::{EventFilter, MoveOSEvent},
+    state::{AnnotatedState, State},
+};
 use moveos_types::{
     object::{AnnotatedObject, ObjectID},
     transaction::{AuthenticatableTransaction, FunctionCall, MoveOSTransaction},
@@ -70,6 +75,19 @@ impl ExecutorProxy {
 
     pub async fn get_object(&self, object_id: ObjectID) -> Result<Option<AnnotatedObject>> {
         self.actor.send(ObjectMessage { object_id }).await?
+    }
+
+    pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<State>>> {
+        self.actor.send(StatesMessage { access_path }).await?
+    }
+
+    pub async fn get_annotated_states(
+        &self,
+        access_path: AccessPath,
+    ) -> Result<Vec<Option<AnnotatedState>>> {
+        self.actor
+            .send(AnnotatedStatesMessage { access_path })
+            .await?
     }
 
     pub async fn get_events_by_tx_hash(&self, tx_hash: H256) -> Result<Option<Vec<MoveOSEvent>>> {

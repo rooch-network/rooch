@@ -9,7 +9,7 @@ use crate::commands::{
     server::ServerCommand,
 };
 
-use commands::init::Init;
+use commands::{init::Init, state::StateCommand};
 use rooch_types::cli::{CliResult, CommandAction};
 
 pub mod commands;
@@ -30,6 +30,7 @@ pub enum Command {
     Server(ServerCommand),
     Resource(ResourceCommand),
     Object(ObjectCommand),
+    State(StateCommand),
 }
 
 pub async fn run_cli(opt: RoochCli) -> CliResult<String> {
@@ -40,5 +41,6 @@ pub async fn run_cli(opt: RoochCli) -> CliResult<String> {
         Command::Object(object) => object.execute_serialized().await,
         Command::Init(c) => c.execute_serialized().await,
         Command::Account(a) => a.execute_serialized().await,
+        Command::State(s) => s.execute_serialized().await,
     }
 }
