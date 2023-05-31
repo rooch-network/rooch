@@ -22,6 +22,7 @@ derive_builder = { workspace = true }
 ethers = { workspace = true }
 futures = { workspace = true }
 hex = { workspace = true }
+rustc-hex = { workspace = true }
 jsonrpsee = { workspace = true }
 serde = { workspace = true }
 serde_yaml = { workspace = true }
