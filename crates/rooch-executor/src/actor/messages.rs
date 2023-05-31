@@ -8,7 +8,9 @@ use move_core_types::{
 };
 use move_resource_viewer::AnnotatedMoveStruct;
 use moveos::moveos::TransactionOutput;
+use moveos_types::access_path::AccessPath;
 use moveos_types::event_filter::{EventFilter, MoveOSEvent};
+use moveos_types::state::{AnnotatedState, State};
 use moveos_types::{
     object::{AnnotatedObject, ObjectID},
     transaction::{AuthenticatableTransaction, FunctionCall, MoveOSTransaction},
@@ -68,6 +70,24 @@ pub struct ObjectMessage {
 
 impl Message for ObjectMessage {
     type Result = Result<Option<AnnotatedObject>>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StatesMessage {
+    pub access_path: AccessPath,
+}
+
+impl Message for StatesMessage {
+    type Result = Result<Vec<Option<State>>>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AnnotatedStatesMessage {
+    pub access_path: AccessPath,
+}
+
+impl Message for AnnotatedStatesMessage {
+    type Result = Result<Vec<Option<AnnotatedState>>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]

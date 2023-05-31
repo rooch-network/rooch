@@ -5,7 +5,7 @@ use crate::{
     state::{MoveState, State},
 };
 /// The Move Object is from Sui Move, and we try to mix the Global storage model and Object model in MoveOS.
-use anyhow::{ensure, Result};
+use anyhow::{bail, ensure, Result};
 use move_core_types::{
     account_address::AccountAddress,
     ident_str,
@@ -14,7 +14,7 @@ use move_core_types::{
     move_resource::{MoveResource, MoveStructType},
     value::{MoveStructLayout, MoveTypeLayout},
 };
-use move_resource_viewer::AnnotatedMoveStruct;
+use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -63,18 +63,18 @@ impl ObjectID {
     pub const ZERO: Self = Self::new([0u8; Self::LENGTH]);
 
     /// Hex address: 0x1
-    pub const ONE: Self = Self::get_hex_address_one();
+    pub const ONE: Self = Self::get_hex_object_id_one();
 
     /// Hex address: 0x2
-    pub const TWO: Self = Self::get_hex_address_two();
+    pub const TWO: Self = Self::get_hex_object_id_two();
 
-    const fn get_hex_address_one() -> Self {
+    const fn get_hex_object_id_one() -> Self {
         let mut addr = [0u8; AccountAddress::LENGTH];
         addr[AccountAddress::LENGTH - 1] = 1u8;
         Self::new(addr)
     }
 
-    const fn get_hex_address_two() -> Self {
+    const fn get_hex_object_id_two() -> Self {
         let mut addr = [0u8; AccountAddress::LENGTH];
         addr[AccountAddress::LENGTH - 1] = 2u8;
         Self::new(addr)
@@ -114,6 +114,30 @@ impl MoveStructType for ObjectID {
 impl MoveState for ObjectID {
     fn move_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![MoveTypeLayout::Address])
+    }
+}
+
+/// Try to convert moveos_std::object_id::ObjectID' MoveValue to ObjectID
+impl TryFrom<AnnotatedMoveValue> for ObjectID {
+    type Error = anyhow::Error;
+
+    fn try_from(value: AnnotatedMoveValue) -> Result<Self, Self::Error> {
+        match value {
+            AnnotatedMoveValue::Struct(annotated_move_struct) => {
+                let mut annotated_move_struct = annotated_move_struct;
+                let (field_name, field_value) = annotated_move_struct
+                    .value
+                    .pop()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid ObjectID"))?;
+                debug_assert!(field_name.as_str() == "id");
+                let account_address = match field_value {
+                    AnnotatedMoveValue::Address(account_address) => account_address,
+                    _ => return Err(anyhow::anyhow!("Invalid ObjectID")),
+                };
+                Ok(ObjectID(account_address))
+            }
+            _ => Err(anyhow::anyhow!("Invalid ObjectID")),
+        }
     }
 }
 
@@ -382,6 +406,34 @@ impl AnnotatedObject {
         value: AnnotatedMoveStruct,
     ) -> Self {
         Self::new(id, owner, value)
+    }
+
+    /// Create a new AnnotatedObject from a AnnotatedMoveStruct
+    /// The MoveStruct is Object<T> in Move, not the T's value
+    pub fn new_from_annotated_struct(object_struct: AnnotatedMoveStruct) -> Result<Self> {
+        let mut fields = object_struct.value.into_iter();
+        let object_id = ObjectID::try_from(fields.next().expect("Object should have id").1)?;
+        let owner = match fields.next().expect("Object should have owner") {
+            (field_name, AnnotatedMoveValue::Address(filed_value)) => {
+                debug_assert!(
+                    field_name.as_str() == "owner",
+                    "Object owner field name should be owner"
+                );
+                filed_value
+            }
+            _ => bail!("Object owner field should be address"),
+        };
+        let value = match fields.next().expect("Object should have value") {
+            (field_name, AnnotatedMoveValue::Struct(filed_value)) => {
+                debug_assert!(
+                    field_name.as_str() == "value",
+                    "Object value field name should be value"
+                );
+                filed_value
+            }
+            _ => bail!("Object value field should be struct"),
+        };
+        Ok(Self::new_annotated_object(object_id, owner, value))
     }
 }
 

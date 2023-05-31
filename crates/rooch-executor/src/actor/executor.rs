@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::messages::{
-    ExecuteTransactionMessage, ExecuteTransactionResult, ExecuteViewFunctionMessage,
-    GetEventsByTxHashMessage, GetEventsMessage, GetResourceMessage, ObjectMessage,
-    ValidateTransactionMessage,
+    AnnotatedStatesMessage, ExecuteTransactionMessage, ExecuteTransactionResult,
+    ExecuteViewFunctionMessage, GetEventsByTxHashMessage, GetEventsMessage, GetResourceMessage,
+    ObjectMessage, StatesMessage, ValidateTransactionMessage,
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -12,8 +12,10 @@ use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use move_core_types::value::MoveValue;
 use move_resource_viewer::{AnnotatedMoveStruct, MoveValueAnnotator};
 use moveos::moveos::MoveOS;
+use moveos_store::state_store::state_view::{AnnotatedStateReader, StateReader};
 use moveos_types::event_filter::MoveOSEvent;
 use moveos_types::object::AnnotatedObject;
+use moveos_types::state::{AnnotatedState, State};
 use moveos_types::transaction::{AuthenticatableTransaction, MoveOSTransaction};
 use rooch_types::transaction::TransactionInfo;
 use rooch_types::H256;
@@ -98,6 +100,7 @@ impl Handler<GetResourceMessage> for ExecutorActor {
             resource_type,
         } = msg;
         let storage = self.moveos.state();
+        //TODO use annotated state view
         storage
             .get_resource(&address, &resource_type)?
             .map(|data| MoveValueAnnotator::new(storage).view_resource(&resource_type, &data))
@@ -113,13 +116,31 @@ impl Handler<ObjectMessage> for ExecutorActor {
         _ctx: &mut ActorContext,
     ) -> Result<Option<AnnotatedObject>, anyhow::Error> {
         let storage = self.moveos.state();
-        //TODO implement a resolver cache for MoveValueAnnotator
-        let annotator = MoveValueAnnotator::new(storage);
-        let object_id = msg.object_id;
-        storage
-            .get(object_id)?
-            .map(|state| state.as_annotated_object(&annotator))
-            .transpose()
+        storage.get_annotated_object(msg.object_id)
+    }
+}
+
+#[async_trait]
+impl Handler<StatesMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: StatesMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<Option<State>>, anyhow::Error> {
+        let statedb = self.moveos.state();
+        statedb.get_states(&msg.access_path)
+    }
+}
+
+#[async_trait]
+impl Handler<AnnotatedStatesMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: AnnotatedStatesMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<Option<AnnotatedState>>, anyhow::Error> {
+        let statedb = self.moveos.state();
+        statedb.get_annotated_states(&msg.access_path)
     }
 }
 
