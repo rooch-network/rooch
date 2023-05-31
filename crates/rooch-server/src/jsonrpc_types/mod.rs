@@ -6,7 +6,7 @@
 mod str_view;
 mod move_types;
 
-pub mod eth;
 pub mod bytes;
+pub mod eth;
 pub use move_types::*;
 pub use str_view::*;

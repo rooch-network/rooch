@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use serde::{Serialize, Deserialize};
-use ethers::types::{U256, BlockNumber};
+use ethers::types::{BlockNumber, U256};
+use serde::{Deserialize, Serialize};
 
 /// Account information.
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]

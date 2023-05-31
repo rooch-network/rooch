@@ -23,18 +23,6 @@ impl Bytes {
     }
 }
 
-impl From<Vec<u8>> for Bytes {
-    fn from(bytes: Vec<u8>) -> Bytes {
-        Bytes(bytes)
-    }
-}
-
-impl Into<Vec<u8>> for Bytes {
-    fn into(self) -> Vec<u8> {
-        self.0
-    }
-}
-
 impl Serialize for Bytes {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

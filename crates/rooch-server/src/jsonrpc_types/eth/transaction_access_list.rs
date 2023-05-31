@@ -1,9 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::vec::Vec;
-use serde::{Deserialize, Serialize};
 use ethers::types::{H160, H256};
+use serde::{Deserialize, Serialize};
+use std::vec::Vec;
 
 pub type AccessList = Vec<AccessListItem>;
 
