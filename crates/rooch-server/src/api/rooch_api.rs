@@ -2,12 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::{
-    AnnotatedMoveStructView, AnnotatedObjectView, FunctionCallView, StrView, StructTagView,
+    AnnotatedMoveStructView, AnnotatedObjectView, AnnotatedStateView, EventView, FunctionCallView,
+    StateView, StrView, StructTagView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 use move_core_types::account_address::AccountAddress;
 use moveos::moveos::TransactionOutput;
+use moveos_types::access_path::AccessPath;
+use moveos_types::event_filter::EventFilter;
 use moveos_types::object::ObjectID;
 use rooch_types::H256;
 
@@ -44,4 +47,25 @@ pub trait RoochAPI {
 
     #[method(name = "rooch_getObject")]
     async fn get_object(&self, object_id: ObjectID) -> RpcResult<Option<AnnotatedObjectView>>;
+
+    //TODO should we merge the `get_resource` and `get_object` to `get_state`?
+    /// Get the states by access_path
+    #[method(name = "rooch_getStates")]
+    async fn get_states(&self, access_path: AccessPath) -> RpcResult<Vec<Option<StateView>>>;
+
+    /// Get the annotated states by access_path
+    /// The annotated states include the decoded move value of the state
+    #[method(name = "rooch_getAnnotatedStates")]
+    async fn get_annotated_states(
+        &self,
+        access_path: AccessPath,
+    ) -> RpcResult<Vec<Option<AnnotatedStateView>>>;
+
+    /// Get the events by tx_hash
+    #[method(name = "rooch_getEventsByTxHash")]
+    async fn get_events_by_tx_hash(&self, tx_hash: H256) -> RpcResult<Option<Vec<EventView>>>;
+
+    /// Get the events by event filter
+    #[method(name = "rooch_getEvents")]
+    async fn get_events(&self, filter: EventFilter) -> RpcResult<Option<Vec<EventView>>>;
 }

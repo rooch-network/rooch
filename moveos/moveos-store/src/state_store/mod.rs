@@ -1,7 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{ensure, Result};
+use self::state_view::StateReader;
+use crate::MoveOSDB;
+use anyhow::{ensure, Error, Result};
 use move_core_types::{
     account_address::AccountAddress,
     effects::{ChangeSet, Op},
@@ -13,6 +15,7 @@ use moveos_stdlib::natives::moveos_stdlib::raw_table::{
     TableChangeSet, TableHandle, TableResolver, TableValueBox,
 };
 use moveos_types::{
+    access_path::{AccessPath, Path},
     h256::H256,
     move_module::MoveModule,
     state::{MoveState, State},
@@ -21,35 +24,16 @@ use moveos_types::{
     object::{AccountStorage, NamedTableID, Object, ObjectID, RawObject, TableInfo},
     storage_context,
 };
-use serde::{Deserialize, Serialize};
 use smt::{InMemoryNodeStore, NodeStore, SMTree, UpdateSet};
 use std::collections::BTreeMap;
 
+pub mod state_view;
 #[cfg(test)]
 mod tests;
 
-/// StateDB query path
-/// 1. /account_address/resource_type|module_id
-/// 2. /table_handle/key
-/// 3. /object_id/child_id
-pub struct AccessPath {}
-
-pub trait StateWriter {
-    //TODO define batch struct
-    fn write_batch(&self, batch: Vec<(AccessPath, Vec<u8>)>) -> Result<()>;
-}
-
-pub struct AccountStorageTables<NS> {
+struct AccountStorageTables<NS> {
     pub resources: (Object<TableInfo>, TreeTable<NS>),
     pub modules: (Object<TableInfo>, TreeTable<NS>),
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-pub enum StateType {
-    /// The Move module
-    MoveModule,
-    /// The Move resource, include Object and Table Resource
-    MoveResource(StructTag),
 }
 
 pub struct TreeTable<NS> {
@@ -156,6 +140,47 @@ impl StateDB {
 
     pub fn get(&self, id: ObjectID) -> Result<Option<State>> {
         self.global_table.get(id.to_bytes())
+    }
+
+    pub fn get_with_access_path(&self, access_path: &AccessPath) -> Result<Vec<Option<State>>> {
+        //TODO optimize the batch gets
+        match &access_path.0 {
+            Path::Object { object_ids } => {
+                let mut states = Vec::new();
+                for id in object_ids {
+                    states.push(self.get(*id)?);
+                }
+                Ok(states)
+            }
+            Path::Resource {
+                account,
+                resource_types,
+            } => {
+                let mut states = Vec::new();
+                for resource_type in resource_types {
+                    states.push(self.get_resource_state(account, resource_type)?);
+                }
+                Ok(states)
+            }
+            Path::Module {
+                account,
+                module_names,
+            } => {
+                let mut states = Vec::new();
+                for module_name in module_names {
+                    let module_id = ModuleId::new(*account, module_name.clone());
+                    states.push(self.get_module_state(&module_id)?);
+                }
+                Ok(states)
+            }
+            Path::Table { table_handle, keys } => {
+                let mut states = Vec::new();
+                for key in keys {
+                    states.push(self.get_with_key(*table_handle, key.clone())?);
+                }
+                Ok(states)
+            }
+        }
     }
 
     fn get_as_object<T: MoveState>(&self, id: ObjectID) -> Result<Option<Object<T>>> {
@@ -296,16 +321,12 @@ impl StateDB {
         ))?;
         Ok(())
     }
-}
 
-impl ResourceResolver for StateDB {
-    type Error = anyhow::Error;
-
-    fn get_resource(
+    fn get_resource_state(
         &self,
         address: &AccountAddress,
         tag: &StructTag,
-    ) -> Result<Option<Vec<u8>>, Self::Error> {
+    ) -> Result<Option<State>> {
         let resource_table_id = NamedTableID::Resource(*address).to_object_id();
         let key = tag_to_key(tag);
         self.get_with_key(resource_table_id, key)?
@@ -316,9 +337,82 @@ impl ResourceResolver for StateDB {
                     tag,
                     s.value_type
                 );
-                Ok(s.value)
+                Ok(s)
             })
             .transpose()
+    }
+
+    pub fn get_resource(
+        &self,
+        address: &AccountAddress,
+        tag: &StructTag,
+    ) -> Result<Option<Vec<u8>>, Error> {
+        Ok(self.get_resource_state(address, tag)?.map(|s| s.value))
+    }
+
+    fn get_module_state(&self, module_id: &ModuleId) -> Result<Option<State>, Error> {
+        let module_table_id = NamedTableID::Module(*module_id.address()).to_object_id();
+        let key = module_name_to_key(module_id.name());
+        self.get_with_key(module_table_id, key)
+    }
+
+    pub fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Error> {
+        //We wrap the modules byte codes to `MoveModule` type when store the module.
+        //So we need unwrap the MoveModule type.
+        self.get_module_state(module_id)?
+            .map(|s| Ok(s.as_move_state::<MoveModule>()?.byte_codes))
+            .transpose()
+    }
+
+    pub fn resolve_table_entry(
+        &self,
+        handle: &TableHandle,
+        key: &[u8],
+    ) -> Result<Option<TableValueBox>, Error> {
+        let state = if handle.0 == storage_context::GLOBAL_OBJECT_STORAGE_HANDLE {
+            self.global_table.get(key.to_vec())
+        } else {
+            self.get_with_key((*handle).into(), key.to_vec())
+        }?;
+        match state {
+            Some(state) => Ok(Some(TableValueBox {
+                value_type: state.value_type,
+                value: state.value,
+            })),
+            None => Ok(None),
+        }
+    }
+}
+
+impl ResourceResolver for MoveOSDB {
+    type Error = anyhow::Error;
+
+    fn get_resource(
+        &self,
+        address: &AccountAddress,
+        tag: &StructTag,
+    ) -> Result<Option<Vec<u8>>, Self::Error> {
+        self.state_store.get_resource(address, tag)
+    }
+}
+
+impl ResourceResolver for StateDB {
+    type Error = anyhow::Error;
+
+    fn get_resource(
+        &self,
+        address: &AccountAddress,
+        tag: &StructTag,
+    ) -> Result<Option<Vec<u8>>, Self::Error> {
+        self.get_resource(address, tag)
+    }
+}
+
+impl ModuleResolver for MoveOSDB {
+    type Error = anyhow::Error;
+
+    fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
+        self.state_store.get_module(module_id)
     }
 }
 
@@ -326,13 +420,7 @@ impl ModuleResolver for StateDB {
     type Error = anyhow::Error;
 
     fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
-        let module_table_id = NamedTableID::Module(*module_id.address()).to_object_id();
-        let key = module_name_to_key(module_id.name());
-        //We wrap the modules byte codes to `MoveModule` type when store the module.
-        //So we need unwrap the MoveModule type.
-        self.get_with_key(module_table_id, key)?
-            .map(|s| Ok(s.as_move_state::<MoveModule>()?.byte_codes))
-            .transpose()
+        self.get_module(module_id)
     }
 }
 
@@ -346,23 +434,28 @@ fn module_name_to_key(name: &IdentStr) -> Vec<u8> {
     bcs::to_bytes(&name.to_string()).expect("bcs to_bytes String must success.")
 }
 
+impl TableResolver for MoveOSDB {
+    fn resolve_table_entry(
+        &self,
+        handle: &TableHandle,
+        key: &[u8],
+    ) -> std::result::Result<Option<TableValueBox>, Error> {
+        self.state_store.resolve_table_entry(handle, key)
+    }
+}
+
 impl TableResolver for StateDB {
     fn resolve_table_entry(
         &self,
         handle: &TableHandle,
         key: &[u8],
-    ) -> std::result::Result<Option<TableValueBox>, anyhow::Error> {
-        let state = if handle.0 == storage_context::GLOBAL_OBJECT_STORAGE_HANDLE {
-            self.global_table.get(key.to_vec())
-        } else {
-            self.get_with_key((*handle).into(), key.to_vec())
-        }?;
-        match state {
-            Some(state) => Ok(Some(TableValueBox {
-                value_type: state.value_type,
-                value: state.value,
-            })),
-            None => Ok(None),
-        }
+    ) -> std::result::Result<Option<TableValueBox>, Error> {
+        self.resolve_table_entry(handle, key)
+    }
+}
+
+impl StateReader for StateDB {
+    fn get_states(&self, path: &AccessPath) -> Result<Vec<Option<State>>> {
+        self.get_with_access_path(path)
     }
 }

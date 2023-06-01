@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::api::RoochRpcModule;
-use crate::jsonrpc_types::{AnnotatedMoveStructView, FunctionCallView, StrView, StructTagView};
+use crate::jsonrpc_types::{
+    AnnotatedMoveStructView, AnnotatedStateView, EventView, FunctionCallView, StateView, StrView,
+    StructTagView,
+};
 use crate::service::RpcService;
 use crate::{api::rooch_api::RoochAPIServer, jsonrpc_types::AnnotatedObjectView};
 use jsonrpsee::{
@@ -11,6 +14,8 @@ use jsonrpsee::{
 };
 use move_core_types::account_address::AccountAddress;
 use moveos::moveos::TransactionOutput;
+use moveos_types::access_path::AccessPath;
+use moveos_types::event_filter::EventFilter;
 use moveos_types::{object::ObjectID, transaction::AuthenticatableTransaction};
 use rooch_types::transaction::TypedTransaction;
 use rooch_types::{transaction::rooch::RoochTransaction, H256};
@@ -71,6 +76,73 @@ impl RoochAPIServer for RoochServer {
 
     async fn get_object(&self, object_id: ObjectID) -> RpcResult<Option<AnnotatedObjectView>> {
         Ok(self.rpc_service.object(object_id).await?.map(Into::into))
+    }
+
+    async fn get_states(&self, access_path: AccessPath) -> RpcResult<Vec<Option<StateView>>> {
+        Ok(self
+            .rpc_service
+            .get_states(access_path)
+            .await?
+            .into_iter()
+            .map(|s| s.map(StateView::from))
+            .collect())
+    }
+
+    async fn get_annotated_states(
+        &self,
+        access_path: AccessPath,
+    ) -> RpcResult<Vec<Option<AnnotatedStateView>>> {
+        Ok(self
+            .rpc_service
+            .get_annotated_states(access_path)
+            .await?
+            .into_iter()
+            .map(|s| s.map(AnnotatedStateView::from))
+            .collect())
+    }
+
+    async fn get_events_by_tx_hash(&self, tx_hash: H256) -> RpcResult<Option<Vec<EventView>>> {
+        let mut result: Vec<EventView> = Vec::new();
+        for ev in self
+            .rpc_service
+            .get_events_by_tx_hash(tx_hash)
+            .await?
+            .unwrap()
+            .iter()
+            .enumerate()
+            .map(|(_i, event)| EventView::from(event.clone()))
+            .collect::<Vec<_>>()
+        {
+            result.push(ev);
+        }
+
+        if !result.is_empty() {
+            Ok(Some(result))
+        } else {
+            Ok(None)
+        }
+    }
+
+    async fn get_events(&self, filter: EventFilter) -> RpcResult<Option<Vec<EventView>>> {
+        let mut result: Vec<EventView> = Vec::new();
+        for ev in self
+            .rpc_service
+            .get_events(filter)
+            .await?
+            .unwrap()
+            .iter()
+            .enumerate()
+            .map(|(_i, event)| EventView::from(event.clone()))
+            .collect::<Vec<_>>()
+        {
+            result.push(ev);
+        }
+
+        if !result.is_empty() {
+            Ok(Some(result))
+        } else {
+            Ok(None)
+        }
     }
 }
 

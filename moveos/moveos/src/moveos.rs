@@ -1,13 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    vm::{
-        move_vm_ext::{MoveVmExt, SessionExt},
-        tx_argument_resolver::{as_struct_no_panic, is_storage_context},
-        MoveResolverExt,
-    },
-    TransactionExecutor, TransactionValidator,
+use crate::vm::{
+    move_vm_ext::{MoveVmExt, SessionExt},
+    tx_argument_resolver::{as_struct_no_panic, is_storage_context},
+    MoveResolverExt,
 };
 use anyhow::{anyhow, bail, ensure, Result};
 use move_binary_format::access::ModuleAccess;
@@ -26,13 +23,17 @@ use move_core_types::{
 use move_vm_runtime::session::SerializedReturnValues;
 use move_vm_types::gas::UnmeteredGasMeter;
 use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
-use moveos_store::state_store::StateDB;
+use moveos_store::MoveOSDB;
+use moveos_store::{event_store::EventStore, state_store::StateDB};
+use moveos_types::event::Event;
+use moveos_types::object::ObjectID;
 use moveos_types::transaction::{AuthenticatableTransaction, MoveAction, MoveOSTransaction};
 use moveos_types::tx_context::TxContext;
 use moveos_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, move_types::FunctionId};
 use moveos_types::{h256::H256, transaction::FunctionCall};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+// use std::sync::Arc;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TransactionOutput {
@@ -56,13 +57,14 @@ pub static INIT_FN_NAME_IDENTIFIER: Lazy<Identifier> =
 
 pub struct MoveOS {
     vm: MoveVmExt,
-    db: StateDB,
+    // db: StateDB,
+    db: MoveOSDB,
 }
 
 impl MoveOS {
-    pub fn new(db: StateDB) -> Result<Self> {
+    pub fn new(db: MoveOSDB) -> Result<Self> {
         let vm = MoveVmExt::new()?;
-        let is_genesis = db.is_genesis();
+        let is_genesis = db.get_state_store().is_genesis();
         let mut moveos = Self { vm, db };
         if is_genesis {
             let genesis_txn = Self::build_genesis_txn()?;
@@ -72,7 +74,11 @@ impl MoveOS {
     }
 
     pub fn state(&self) -> &StateDB {
-        &self.db
+        self.db.get_state_store()
+    }
+
+    pub fn event_store(&self) -> &EventStore {
+        self.db.get_event_store()
     }
 
     //TODO move to a suitable place
@@ -215,9 +221,7 @@ impl MoveOS {
             }
         };
 
-        let (change_set, _events, mut extensions) = session.finish_with_extensions()?;
-
-        //TODO handle events
+        let (change_set, raw_events, mut extensions) = session.finish_with_extensions()?;
 
         let table_context: NativeTableContext = extensions.remove();
         let table_change_set = table_context
@@ -230,12 +234,40 @@ impl MoveOS {
                 //TODO move apply change set to a suitable place, and make MoveOS stateless.
                 let new_state_root = self
                     .db
+                    .get_state_store()
                     .apply_change_set(change_set, table_change_set)
                     .map_err(|e| {
                         PartialVMError::new(StatusCode::STORAGE_ERROR)
                             .with_message(e.to_string())
                             .finish(Location::Undefined)
                     })?;
+
+                // handle events
+                // let mut events = Vec::new();
+                let events = raw_events
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, e)| {
+                        // pub type Event = (Vec<u8>, u64, TypeTag, Vec<u8>);
+                        Event::new(
+                            ObjectID::from_bytes(e.0.as_slice()).unwrap(),
+                            e.1,
+                            e.2,
+                            e.3,
+                            i as u32,
+                        )
+                    })
+                    .collect();
+
+                self.db
+                    .get_event_store()
+                    .save_events(tx_hash, events)
+                    .map_err(|e| {
+                        PartialVMError::new(StatusCode::STORAGE_ERROR)
+                            .with_message(e.to_string())
+                            .finish(Location::Undefined)
+                    })?;
+
                 Ok(TransactionOutput {
                     state_root: new_state_root,
                     status,
@@ -396,17 +428,5 @@ impl MoveOS {
             "Table change set should be empty when execute view function"
         );
         Ok(result)
-    }
-}
-
-impl TransactionValidator for MoveOS {
-    fn validate_transaction<T>(&self, _transaction: T) -> crate::ValidatorResult {
-        todo!()
-    }
-}
-
-impl TransactionExecutor for MoveOS {
-    fn execute_transaction<T>(&self, _transaction: T) -> crate::ExecutorResult {
-        todo!()
     }
 }

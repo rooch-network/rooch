@@ -30,7 +30,7 @@ module moveos_std::bcd{
     //1. The caller of from_bytes is the module that defines the `T`. This is ensured by private_generics.
     //2. The fields contained in `T` are either primitive types or are defined by the module that calls from_bytes. 
     //We need to find a solution to this problem. If we cannot solve it, then we cannot set from_bytes to public.
-    #[private_generics(T)]
+    // #[private_generics(MoveValue)]
     /// Function to deserialize a type T.
     /// Note the `private_generics` ensure only the `MoveValue`'s owner module can call this function
     public native fun from_bytes<MoveValue>(bytes: vector<u8>): MoveValue;

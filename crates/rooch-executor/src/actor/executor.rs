@@ -2,17 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::messages::{
-    ExecuteTransactionMessage, ExecuteTransactionResult, ExecuteViewFunctionMessage,
-    GetResourceMessage, ObjectMessage, ValidateTransactionMessage,
+    AnnotatedStatesMessage, ExecuteTransactionMessage, ExecuteTransactionResult,
+    ExecuteViewFunctionMessage, GetEventsByTxHashMessage, GetEventsMessage, GetResourceMessage,
+    ObjectMessage, StatesMessage, ValidateTransactionMessage,
 };
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
-use move_core_types::resolver::ResourceResolver;
 use move_core_types::value::MoveValue;
 use move_resource_viewer::{AnnotatedMoveStruct, MoveValueAnnotator};
 use moveos::moveos::MoveOS;
+use moveos_store::state_store::state_view::{AnnotatedStateReader, StateReader};
+use moveos_types::event_filter::MoveOSEvent;
 use moveos_types::object::AnnotatedObject;
+use moveos_types::state::{AnnotatedState, State};
 use moveos_types::transaction::{AuthenticatableTransaction, MoveOSTransaction};
 use rooch_types::transaction::TransactionInfo;
 use rooch_types::H256;
@@ -97,6 +100,7 @@ impl Handler<GetResourceMessage> for ExecutorActor {
             resource_type,
         } = msg;
         let storage = self.moveos.state();
+        //TODO use annotated state view
         storage
             .get_resource(&address, &resource_type)?
             .map(|data| MoveValueAnnotator::new(storage).view_resource(&resource_type, &data))
@@ -112,12 +116,90 @@ impl Handler<ObjectMessage> for ExecutorActor {
         _ctx: &mut ActorContext,
     ) -> Result<Option<AnnotatedObject>, anyhow::Error> {
         let storage = self.moveos.state();
-        //TODO implement a resolver cache for MoveValueAnnotator
-        let annotator = MoveValueAnnotator::new(storage);
-        let object_id = msg.object_id;
-        storage
-            .get(object_id)?
-            .map(|state| state.as_annotated_object(&annotator))
-            .transpose()
+        storage.get_annotated_object(msg.object_id)
+    }
+}
+
+#[async_trait]
+impl Handler<StatesMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: StatesMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<Option<State>>, anyhow::Error> {
+        let statedb = self.moveos.state();
+        statedb.get_states(&msg.access_path)
+    }
+}
+
+#[async_trait]
+impl Handler<AnnotatedStatesMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: AnnotatedStatesMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<Option<AnnotatedState>>, anyhow::Error> {
+        let statedb = self.moveos.state();
+        statedb.get_annotated_states(&msg.access_path)
+    }
+}
+
+#[async_trait]
+impl Handler<GetEventsByTxHashMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: GetEventsByTxHashMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Option<Vec<MoveOSEvent>>> {
+        let GetEventsByTxHashMessage { tx_hash } = msg;
+        let event_store = self.moveos.event_store();
+
+        let mut result: Vec<MoveOSEvent> = Vec::new();
+        for ev in event_store
+            .get_events_by_tx_hash(&tx_hash)?
+            .unwrap()
+            .into_iter()
+            .enumerate()
+            .map(|(_i, event)| MoveOSEvent::try_from(event, tx_hash, None, None))
+            .collect::<Vec<_>>()
+        {
+            result.push(ev.unwrap());
+        }
+
+        if !result.is_empty() {
+            Ok(Some(result))
+        } else {
+            Ok(None)
+        }
+    }
+}
+
+#[async_trait]
+impl Handler<GetEventsMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: GetEventsMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Option<Vec<MoveOSEvent>>> {
+        let GetEventsMessage { filter } = msg;
+        let event_store = self.moveos.event_store();
+        //TODO handle tx hash
+        let mut result: Vec<MoveOSEvent> = Vec::new();
+        for ev in event_store
+            .get_events_with_filter(filter)?
+            .unwrap()
+            .into_iter()
+            .enumerate()
+            .map(|(_i, event)| MoveOSEvent::try_from(event, H256::zero(), None, None))
+            .collect::<Vec<_>>()
+        {
+            result.push(ev.unwrap());
+        }
+
+        if !result.is_empty() {
+            Ok(Some(result))
+        } else {
+            Ok(None)
+        }
     }
 }

@@ -3,6 +3,7 @@
 // Copyright (c) The Move Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::natives::helpers;
 /// A native Table implementation for save any type of value.
 /// Refactor from https://github.com/rooch-network/move/blob/c7d8c2b0cdd06dbd90e0ab306932356620b5648a/language/extensions/move-table-extension/src/lib.rs#L4
 use better_any::{Tid, TidAble};
@@ -23,7 +24,7 @@ use move_vm_types::{
     loaded_data::runtime_types::Type,
     natives::function::NativeResult,
     pop_arg,
-    values::{GlobalValue, Reference, Struct, StructRef, Value},
+    values::{GlobalValue, Struct, StructRef, Value},
 };
 use moveos_types::object::ObjectID;
 use serde::{Deserialize, Serialize};
@@ -744,17 +745,9 @@ impl GasParameters {
 // =========================================================================================
 // Helpers
 
-// The index of the address field in ObjectID.
-const HANDLE_FIELD_INDEX: usize = 0;
-
 // The handle type in Move is `&ObjectID`. This function extracts the address from `ObjectID`.
 fn get_table_handle(table: StructRef) -> PartialVMResult<TableHandle> {
-    let handle = table
-        .borrow_field(HANDLE_FIELD_INDEX)?
-        .value_as::<Reference>()?
-        .read_ref()?
-        .value_as::<AccountAddress>()?;
-    Ok(TableHandle(ObjectID::new(handle.into())))
+    Ok(TableHandle(helpers::get_object_id(table)?))
 }
 
 fn serialize(layout: &MoveTypeLayout, val: &Value) -> PartialVMResult<Vec<u8>> {

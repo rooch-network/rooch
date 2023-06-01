@@ -4,6 +4,7 @@
 use anyhow::{anyhow, format_err, Result};
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
+    language_storage::StructTag, language_storage::TypeTag,
 };
 use serde::{Deserialize, Serialize, Serializer};
 use std::fmt;
@@ -142,4 +143,44 @@ fn parse_struct_or_function_id(function_or_struct_id: &str) -> Result<(ModuleId,
         .map_err(|err| anyhow!("Function or Struct name error: {:?}", err.to_string()))?;
     let module_id = ModuleId::new(address, module);
     Ok((module_id, function_or_struct_id))
+}
+
+/// check the filter TypeTag is match with the Target, if the filter and target both are StructTag, call `struct_tag_match`, otherwise, same as `==`
+pub fn type_tag_match(filter: &TypeTag, target: &TypeTag) -> bool {
+    if let (TypeTag::Struct(filter), TypeTag::Struct(target)) = (filter, target) {
+        struct_tag_match(filter, target)
+    } else {
+        filter == target
+    }
+}
+
+/// check the filter StructTag is match with the target.
+pub fn struct_tag_match(filter: &StructTag, target: &StructTag) -> bool {
+    if filter == target {
+        return true;
+    }
+
+    if filter.address != target.address
+        || filter.module != target.module
+        || filter.name != target.name
+    {
+        return false;
+    }
+
+    if filter.type_params.is_empty() {
+        return true;
+    }
+
+    if filter.type_params.len() != target.type_params.len() {
+        return false;
+    }
+
+    for (filter_type_tag, target_type_tag) in
+        std::iter::zip(filter.type_params.clone(), target.type_params.clone())
+    {
+        if !type_tag_match(&filter_type_tag, &target_type_tag) {
+            return false;
+        }
+    }
+    true
 }

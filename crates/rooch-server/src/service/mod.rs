@@ -5,6 +5,9 @@ use anyhow::{bail, Result};
 use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
 use move_resource_viewer::AnnotatedMoveStruct;
 use moveos::moveos::TransactionOutput;
+use moveos_types::access_path::AccessPath;
+use moveos_types::event_filter::{EventFilter, MoveOSEvent};
+use moveos_types::state::{AnnotatedState, State};
 use moveos_types::{
     object::{AnnotatedObject, ObjectID},
     transaction::FunctionCall,
@@ -12,7 +15,7 @@ use moveos_types::{
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_proposer::proxy::ProposerProxy;
 use rooch_sequencer::proxy::SequencerProxy;
-use rooch_types::{address::RoochAddress, transaction::TypedTransaction};
+use rooch_types::{address::RoochAddress, transaction::TypedTransaction, H256};
 
 /// RpcService is the implementation of the RPC service.
 /// It is the glue between the RPC server(EthAPIServer,RoochApiServer) and the rooch's actors.
@@ -83,6 +86,17 @@ impl RpcService {
         self.executor.get_object(object_id).await
     }
 
+    pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<State>>> {
+        self.executor.get_states(access_path).await
+    }
+
+    pub async fn get_annotated_states(
+        &self,
+        access_path: AccessPath,
+    ) -> Result<Vec<Option<AnnotatedState>>> {
+        self.executor.get_annotated_states(access_path).await
+    }
+
     /// Sign a message with the private key of the given address.
     pub async fn sign(&self, _address: RoochAddress, _message: Vec<u8>) -> Result<Vec<u8>> {
         bail!("Not implemented")
@@ -94,5 +108,15 @@ impl RpcService {
 
     pub async fn accounts(&self) -> Result<Vec<RoochAddress>> {
         bail!("Not implemented")
+    }
+
+    pub async fn get_events_by_tx_hash(&self, tx_hash: H256) -> Result<Option<Vec<MoveOSEvent>>> {
+        let resp = self.executor.get_events_by_tx_hash(tx_hash).await?;
+        Ok(resp)
+    }
+
+    pub async fn get_events(&self, filter: EventFilter) -> Result<Option<Vec<MoveOSEvent>>> {
+        let resp = self.executor.get_events(filter).await?;
+        Ok(resp)
     }
 }

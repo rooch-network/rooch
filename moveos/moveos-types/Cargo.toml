@@ -19,11 +19,13 @@ bcs = { workspace = true }
 hex = { workspace = true }
 once_cell = { workspace = true }
 thiserror = { workspace = true }
+rand = { workspace = true }
 
 serde = { workspace = true }
 serde_bytes = { workspace = true }
 serde_json = { workspace = true }
 serde_with = { workspace = true }
+schemars = { workspace = true }
 primitive-types = { workspace = true }
 tiny-keccak = { workspace = true, features = ["keccak", "sha3"] }
 
