@@ -103,8 +103,9 @@ module moveos_std::events {
     }
 
     /// Use EventHandle to generate a unique event handle
-    public fun new_event_handle<T: drop>(ctx: &mut StorageContext, account: &signer) {
-        let account_addr = signer::address_of(account);
+    /// user doesn't need to call this method directly
+    fun new_event_handle<T: drop>(ctx: &mut StorageContext) {
+        let account_addr = tx_context::sender(storage_context::tx_context(ctx));
         let guid = tx_context::fresh_object_id(storage_context::tx_context_mut(ctx));
         let event_handle = EventHandle<T> {
             counter: 0,
@@ -112,6 +113,12 @@ module moveos_std::events {
             sender: account_addr,
         };
         add_event_handle_to_event_storage<EventHandle<T>>(storage_context::object_storage_mut(ctx), event_handle)
+    }
+
+    public fun ensure_event_handle<T: drop>(ctx: &mut StorageContext) {
+        if (!exists_event_handle_at_event_storage<EventHandle<T>>(storage_context::object_storage(ctx))) {
+            new_event_handle<T>(ctx);
+        }
     }
 
     /// Emit a custom Move event, sending the data offchain.
@@ -122,7 +129,8 @@ module moveos_std::events {
     /// The type T is the main way to index the event, and can contain
     /// phantom parameters, eg emit(MyEvent<phantom T>).
     public fun emit_event<T: drop>(ctx: &mut StorageContext, event: T) {
-        assert!(exists_event_handle_at_event_storage<EventHandle<T>>(storage_context::object_storage(ctx)), error::not_found(EEventHandleNotExists));
+        ensure_event_handle<T>(ctx);
+        // assert!(exists_event_handle_at_event_storage<EventHandle<T>>(storage_context::object_storage(ctx)), error::not_found(EEventHandleNotExists));
         let event_handle_ref = borrow_mut_event_handle_from_event_storage<EventHandle<T>>(storage_context::object_storage_mut(ctx));
 
         let guid = *&event_handle_ref.guid;
@@ -158,7 +166,7 @@ module moveos_std::events {
         let ctx = storage_context::new_test_context(sender_addr);
         create_event_storage(&mut ctx, sender_addr);
 
-        new_event_handle<WithdrawEvent>(&mut ctx, &sender);
+        new_event_handle<WithdrawEvent>(&mut ctx);
         emit_event<WithdrawEvent>(&mut ctx, WithdrawEvent {
             addr: signer::address_of(&sender),
             amount: 100,
