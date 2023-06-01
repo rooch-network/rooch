@@ -6,7 +6,7 @@ spec:
   template:
     spec:
       nodeSelector:
-        node-pool: ci-pool
+        eks.amazonaws.com/nodegroup: ci-pool
       image: summerwind/actions-runner:v2.283.3-ubuntu-20.04-b01e193
       repository: rooch-network/rooch
       ephemeral: true
@@ -20,9 +20,6 @@ spec:
         requests:
           cpu: "15.0"
           memory: "32Gi"
-          ephemeral-storage: "80Gi"
-        limits:
-          ephemeral-storage: "100Gi"
       # If set to false, there are no privileged container and you cannot use docker.
       dockerEnabled: true
       # If set to true, runner pod container only 1 container that's expected to be able to run docker, too.
@@ -33,9 +30,6 @@ spec:
         requests:
           cpu: "15.0"
           memory: "32Gi"
-          ephemeral-storage: "80Gi"
-        limits:
-          ephemeral-storage: "100Gi"
 
 ---
 apiVersion: actions.summerwind.dev/v1alpha1
@@ -46,7 +40,7 @@ spec:
   scaleTargetRef:
     name: rooch-runner-deployment
   minReplicas: 0
-  maxReplicas: 2
+  maxReplicas: 3
   scaleDownDelaySecondsAfterScaleOut: 120
   scaleUpTriggers:
   - githubEvent:
@@ -56,5 +50,5 @@ spec:
       checkRun:
         types: ["created"]
         status: "queued"
-    amount: 2
+    amount: 1
     duration: "2m"
