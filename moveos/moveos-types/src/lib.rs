@@ -8,6 +8,7 @@ pub mod event;
 pub mod event_filter;
 pub mod h256;
 pub mod move_module;
+pub mod move_string;
 pub mod move_types;
 pub mod object;
 pub mod state;

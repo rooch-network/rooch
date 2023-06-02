@@ -48,7 +48,7 @@ impl NamedTableID {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord, Hash)]
 pub struct ObjectID(AccountAddress);
 
 impl ObjectID {
@@ -117,6 +117,28 @@ impl MoveState for ObjectID {
     }
 }
 
+impl Serialize for ObjectID {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        // The AccountAddress in Move so not append `0x` when serialize to string
+        if serializer.is_human_readable() {
+            serializer.serialize_str(self.to_string().as_str())
+        } else {
+            self.0.serialize(serializer)
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for ObjectID {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        if deserializer.is_human_readable() {
+            let s = String::deserialize(deserializer)?;
+            Ok(ObjectID::from_str(s.as_str()).map_err(serde::de::Error::custom)?)
+        } else {
+            Ok(ObjectID(AccountAddress::deserialize(deserializer)?))
+        }
+    }
+}
+
 /// Try to convert moveos_std::object_id::ObjectID' MoveValue to ObjectID
 impl TryFrom<AnnotatedMoveValue> for ObjectID {
     type Error = anyhow::Error;
@@ -124,20 +146,28 @@ impl TryFrom<AnnotatedMoveValue> for ObjectID {
     fn try_from(value: AnnotatedMoveValue) -> Result<Self, Self::Error> {
         match value {
             AnnotatedMoveValue::Struct(annotated_move_struct) => {
-                let mut annotated_move_struct = annotated_move_struct;
-                let (field_name, field_value) = annotated_move_struct
-                    .value
-                    .pop()
-                    .ok_or_else(|| anyhow::anyhow!("Invalid ObjectID"))?;
-                debug_assert!(field_name.as_str() == "id");
-                let account_address = match field_value {
-                    AnnotatedMoveValue::Address(account_address) => account_address,
-                    _ => return Err(anyhow::anyhow!("Invalid ObjectID")),
-                };
-                Ok(ObjectID(account_address))
+                ObjectID::try_from(annotated_move_struct)
             }
             _ => Err(anyhow::anyhow!("Invalid ObjectID")),
         }
+    }
+}
+
+impl TryFrom<AnnotatedMoveStruct> for ObjectID {
+    type Error = anyhow::Error;
+
+    fn try_from(value: AnnotatedMoveStruct) -> Result<Self, Self::Error> {
+        let mut annotated_move_struct = value;
+        let (field_name, field_value) = annotated_move_struct
+            .value
+            .pop()
+            .ok_or_else(|| anyhow::anyhow!("Invalid ObjectID"))?;
+        debug_assert!(field_name.as_str() == "id");
+        let account_address = match field_value {
+            AnnotatedMoveValue::Address(account_address) => account_address,
+            _ => return Err(anyhow::anyhow!("Invalid ObjectID")),
+        };
+        Ok(ObjectID(account_address))
     }
 }
 
