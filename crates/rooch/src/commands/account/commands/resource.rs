@@ -1,10 +1,10 @@
+use crate::types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
-use rooch_client::Client;
 use rooch_server::jsonrpc_types::AnnotatedMoveStructView;
-use rooch_types::cli::{CliError, CliResult, CommandAction};
+use rooch_types::error::{RoochError, RoochResult};
 
-#[derive(clap::Parser)]
+#[derive(Debug, clap::Parser)]
 pub struct ResourceCommand {
     /// Account address where the resource stored.
     #[clap(long)]
@@ -15,19 +15,18 @@ pub struct ResourceCommand {
     #[clap(long = "resource")]
     pub resource: StructTag,
 
-    /// RPC client options.
     #[clap(flatten)]
-    client: Client,
+    pub(crate) context_options: WalletContextOptions,
 }
 
 #[async_trait]
 impl CommandAction<Option<AnnotatedMoveStructView>> for ResourceCommand {
-    async fn execute(self) -> CliResult<Option<AnnotatedMoveStructView>> {
-        let resp = self
-            .client
+    async fn execute(self) -> RoochResult<Option<AnnotatedMoveStructView>> {
+        let client = self.context_options.build().await?.get_client().await?;
+        let resp = client
             .get_resource(self.address, self.resource)
             .await
-            .map_err(CliError::from)?;
+            .map_err(RoochError::from)?;
         Ok(resp)
     }
 }

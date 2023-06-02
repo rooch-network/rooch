@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use itertools::Itertools;
+use std::io::{self, stdout, Write};
 use std::{collections::BTreeMap, str::FromStr};
 
 /// Error message for parsing a map
@@ -36,4 +37,30 @@ where
         map.insert(key, value);
     }
     Ok(map)
+}
+
+//#[macro_export]
+//macro_rules! sign_and_execute {
+//    ($tx_data:expr, $context:expr) => {{
+//        let transaction = $context
+//            .get_config()
+//            .await?
+//            .keystore
+//            .sign_transaction(&$tx_data.sender, $tx_data)
+//            .map_err(|e| RoochError::SignMessageError(e.to_string()))?;
+//
+//        let client = $context.get_client().await?;
+//
+//        client
+//            .execute_tx(transaction)
+//            .await
+//            .map_err(|e| RoochError::TransactionError(e.to_string()))
+//    }};
+//}
+
+pub fn read_line() -> Result<String, anyhow::Error> {
+    let mut s = String::new();
+    let _ = stdout().flush();
+    io::stdin().read_line(&mut s)?;
+    Ok(s.trim_end().to_string())
 }

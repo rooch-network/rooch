@@ -15,7 +15,7 @@ members = [
     "crates/rooch-client",
     "crates/rooch",
     "crates/testsuite",
-    "crates/rooch-common",
+    "crates/rooch-config",
     "crates/rooch-da",
     "crates/rooch-sequencer",
     "crates/rooch-executor",
@@ -60,7 +60,7 @@ rooch-integration-test-runner = { path = "crates/rooch-integration-test-runner" 
 rooch-server = { path = "crates/rooch-server" }
 rooch-client = { path = "crates/rooch-client" }
 rooch-testsuite = { path = "crates/testsuite" }
-rooch-common = {path = "crates/rooch-common"}
+rooch-config = {path = "crates/rooch-config"}
 rooch-sequencer = {path = "crates/rooch-sequencer"}
 rooch-executor = {path = "crates/rooch-executor"}
 rooch-proposer = {path = "crates/rooch-proposer"}

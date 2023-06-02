@@ -1,38 +1,39 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-// #![allow(unused_imports)]
-
 use clap::Parser;
-use rooch_client::Client;
 use std::fmt::Debug;
 
-use rooch_common::config::{PersistedConfig, RoochConfig};
+use async_trait::async_trait;
 use rooch_key::keystore::AccountKeystore;
 use rooch_types::{
-    cli::{CliError, CliResult},
     crypto::BuiltinScheme::Ed25519,
+    error::{RoochError, RoochResult},
 };
+
+use crate::types::{CommandAction, WalletContextOptions};
 
 /// Add a new key to rooch.keystore based on the input mnemonic phrase
 #[derive(Debug, Parser)]
 pub struct ImportCommand {
-    /// RPC client options.
-    #[clap(flatten)]
-    client: Client,
-
     mnemonic_phrase: String,
+
+    #[clap(flatten)]
+    pub context_options: WalletContextOptions,
 }
 
-/// Add a new key to rooch.keystore based on the input mnemonic phrase,
-impl ImportCommand {
-    pub async fn execute(self, config: &mut PersistedConfig<RoochConfig>) -> CliResult<()> {
+#[async_trait]
+impl CommandAction<()> for ImportCommand {
+    async fn execute(self) -> RoochResult<()> {
         println!("{:?}", self.mnemonic_phrase);
 
-        let address = config
+        let mut context = self.context_options.build().await?;
+
+        let address = context
+            .config
             .keystore
             .import_from_mnemonic(&self.mnemonic_phrase, Ed25519, None)
-            .map_err(|e| CliError::ImportAccountError(e.to_string()))?;
+            .map_err(|e| RoochError::ImportAccountError(e.to_string()))?;
 
         println!("Key imported for address [{address}]");
 

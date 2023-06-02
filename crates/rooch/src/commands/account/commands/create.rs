@@ -16,25 +16,24 @@ use moveos_types::{
     move_types::FunctionId,
     transaction::{MoveAction, MoveOSTransaction},
 };
-use rooch_client::Client;
-
-use rooch_common::config::{
-    rooch_config_dir, PersistedConfig, RoochConfig, ROOCH_CONFIG, ROOCH_KEYSTORE_FILENAME,
-};
-use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
+use rooch_client::wallet_context::WalletContext;
+use rooch_key::keystore::{AccountKeystore, Keystore};
 use rooch_types::{
     address::RoochAddress,
-    cli::{CliError, CliResult},
     crypto::BuiltinScheme::Ed25519,
+    error::{RoochError, RoochResult},
     transaction::{
         authenticator::Authenticator,
         rooch::{RoochTransaction, RoochTransactionData},
     },
 };
+
 use std::{
     path::{Path, PathBuf},
     str::FromStr,
 };
+
+use crate::types::{CommandAction, WalletContextOptions};
 
 /// Create a new account on-chain
 ///
@@ -43,21 +42,19 @@ use std::{
 /// any coins will have to transferred afterwards.
 #[derive(Debug, Parser)]
 pub struct CreateCommand {
-    /// RPC client options.
     #[clap(flatten)]
-    client: Client,
+    pub context_options: WalletContextOptions,
 }
 
 impl CreateCommand {
-    pub async fn execute(
-        self,
-        config: &mut PersistedConfig<RoochConfig>,
-    ) -> CliResult<TransactionOutput> {
-        let (new_address, phrase, scheme) = config
+    pub async fn execute(self) -> RoochResult<TransactionOutput> {
+        let mut context = self.context_options.build().await?;
+        let (new_address, phrase, scheme) = context
+            .config
             .keystore
             .generate_and_add_new_key(Ed25519, None, None)?;
 
-        println!("{}", new_address.0);
+        println!("{}", AccountAddress::from(new_address).to_hex_literal());
         println!(
             "Generated new keypair for address with scheme {:?} [{new_address}]",
             scheme.to_string()
@@ -72,21 +69,6 @@ impl CreateCommand {
             vec![bcs::to_bytes(&new_address).unwrap()],
         );
 
-        // TODO: Code refactoring
-        let sender: RoochAddress = new_address;
-        let sequence_number = self.client.get_sequence_number(sender).await?;
-
-        let tx = config
-            .keystore
-            .sign_transaction(
-                &new_address,
-                RoochTransactionData::new(sender, sequence_number, action),
-            )
-            .map_err(|e| CliError::SignMessageError(e.to_string()))?;
-
-        self.client
-            .execute_tx(tx)
-            .await
-            .map_err(|e| CliError::TransactionError(e.to_string()))
+        context.sign_and_execute(new_address, action).await
     }
 }
