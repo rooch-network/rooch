@@ -37,7 +37,7 @@ module moveos_std::type_table {
         name_string
     }
 
-    #[private_generics(T)]
+    #[private_generics(V)]
     /// Add a new entry to the table. Aborts if an entry for this
     /// key already exists. The entry itself is not stored in the
     /// table, and cannot be discovered from it.
@@ -49,7 +49,7 @@ module moveos_std::type_table {
         raw_table::add<String, V>(&table.handle, key<V>(), val)
     }
 
-    #[private_generics(T)]
+    #[private_generics(V)]
     /// Acquire an immutable reference to the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
     public fun borrow<V: key>(table: &TypeTable): &V {
@@ -60,7 +60,7 @@ module moveos_std::type_table {
         raw_table::borrow<String, V>(&table.handle, key<V>())
     }
 
-    #[private_generics(T)]
+    #[private_generics(V)]
     /// Acquire a mutable reference to the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
     public fun borrow_mut<V: key>(table: &mut TypeTable): &mut V {
@@ -71,7 +71,7 @@ module moveos_std::type_table {
         raw_table::borrow_mut<String, V>(&table.handle, key<V>())
     }
 
-    #[private_generics(T)]
+    #[private_generics(V)]
     /// Remove from `table` and return the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
     public fun remove<V: key>(table: &mut TypeTable): V {
@@ -82,7 +82,7 @@ module moveos_std::type_table {
         raw_table::remove<String, V>(&table.handle, key<V>())
     }
 
-    #[private_generics(T)]
+    #[private_generics(V)]
     /// Returns true if `table` contains an entry for `key`.
     public fun contains<V: key>(table: &TypeTable): bool {
         raw_table::contains<String>(&table.handle, key<V>())

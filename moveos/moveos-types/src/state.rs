@@ -117,25 +117,12 @@ impl State {
         }
     }
 
-    pub fn as_move_value<T: MoveResolver + ?Sized>(
-        &self,
+    pub fn into_annotated_state<T: MoveResolver + ?Sized>(
+        self,
         annotator: &MoveValueAnnotator<T>,
-    ) -> Result<AnnotatedMoveValue> {
-        annotator.view_value(&self.value_type, &self.value)
-    }
-
-    pub fn as_annotated_object<T: MoveResolver + ?Sized>(
-        &self,
-        annotator: &MoveValueAnnotator<T>,
-    ) -> Result<AnnotatedObject> {
-        let raw_object = self.as_raw_object()?;
-        let annotated_move_struct =
-            annotator.view_resource(&raw_object.value.struct_tag, &raw_object.value.value)?;
-        Ok(AnnotatedObject::new_annotated_object(
-            raw_object.id,
-            raw_object.owner,
-            annotated_move_struct,
-        ))
+    ) -> Result<AnnotatedState> {
+        let move_value = annotator.view_value(&self.value_type, &self.value)?;
+        Ok(AnnotatedState::new(self, move_value))
     }
 }
 
@@ -147,5 +134,32 @@ where
         let val_type = T::struct_tag();
         let val = bcs::to_bytes(&val).expect("Serialize MoveState to bcs should success");
         Self::new(val, TypeTag::Struct(Box::new(val_type)))
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AnnotatedState {
+    pub state: State,
+    pub move_value: AnnotatedMoveValue,
+}
+
+impl AnnotatedState {
+    pub fn new(state: State, move_value: AnnotatedMoveValue) -> Self {
+        Self { state, move_value }
+    }
+
+    pub fn into_annotated_object(self) -> Result<AnnotatedObject> {
+        ensure!(
+            self.state.is_object(),
+            "Expect state is a Object but found {:?}",
+            self.state.value_type()
+        );
+
+        match self.move_value {
+            AnnotatedMoveValue::Struct(annotated_move_object) => {
+                AnnotatedObject::new_from_annotated_struct(annotated_move_object)
+            }
+            _ => bail!("Expect MoveStruct but found {:?}", self.move_value),
+        }
     }
 }

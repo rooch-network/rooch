@@ -5,7 +5,9 @@ use anyhow::{bail, Result};
 use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
 use move_resource_viewer::AnnotatedMoveStruct;
 use moveos::moveos::TransactionOutput;
+use moveos_types::access_path::AccessPath;
 use moveos_types::event_filter::{EventFilter, MoveOSEvent};
+use moveos_types::state::{AnnotatedState, State};
 use moveos_types::{
     object::{AnnotatedObject, ObjectID},
     transaction::FunctionCall,
@@ -82,6 +84,17 @@ impl RpcService {
 
     pub async fn object(&self, object_id: ObjectID) -> Result<Option<AnnotatedObject>> {
         self.executor.get_object(object_id).await
+    }
+
+    pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<State>>> {
+        self.executor.get_states(access_path).await
+    }
+
+    pub async fn get_annotated_states(
+        &self,
+        access_path: AccessPath,
+    ) -> Result<Vec<Option<AnnotatedState>>> {
+        self.executor.get_annotated_states(access_path).await
     }
 
     /// Sign a message with the private key of the given address.

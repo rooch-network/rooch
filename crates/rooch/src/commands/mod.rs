@@ -4,3 +4,4 @@ pub mod move_cli;
 pub mod object;
 pub mod resource;
 pub mod server;
+pub mod state;

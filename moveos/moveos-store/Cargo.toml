@@ -23,6 +23,7 @@ hex = { workspace = true }
 parking_lot = { workspace = true }
 
 move-core-types = { workspace = true }
+move-resource-viewer = { workspace = true }
 
 moveos-types = { workspace = true }
 moveos-stdlib = { workspace = true }

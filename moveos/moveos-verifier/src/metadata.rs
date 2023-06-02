@@ -1,6 +1,7 @@
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::file_format::{Bytecode, FunctionInstantiation, SignatureToken};
 use move_core_types::language_storage::ModuleId;
+// use move_model::model::ModuleId;
 use move_model::ast::Attribute;
 use move_model::model::{FunctionEnv, GlobalEnv, Loc, ModuleEnv, QualifiedId, StructId};
 use move_model::ty::PrimitiveType;
@@ -79,134 +80,154 @@ impl<'a> ExtendedChecker<'a> {
 impl<'a> ExtendedChecker<'a> {
     fn check_private_generics_functions(&mut self, module: &ModuleEnv) {
         let mut type_name_indices: BTreeMap<String, Vec<usize>> = BTreeMap::new();
+        let mut func_loc_map = BTreeMap::new();
 
-        // Check every function and if a function has the private_generics attribute,
-        // ensure that the function name and the types defined in the private_generics attribute match,
-        // for example: #[private_generics(T1, T2)].
+        let compiled_module = module.get_verified_module();
+        let view = BinaryIndexedView::Module(compiled_module);
+
+        // Inspect the bytecode of every function, and if an instruction is CallGeneric,
+        // verify that it calls a function with the private_generics attribute as detected earlier.
+        // Then, ensure that the generic parameters of the CallGeneric instruction are valid.
         for ref fun in module.get_functions() {
-            if !self.has_attribute(fun, PRIVATE_GENERICS_ATTRIBUTE) {
-                continue;
-            }
+            if self.has_attribute(fun, PRIVATE_GENERICS_ATTRIBUTE) {
+                // Check every function and if a function has the private_generics attribute,
+                // ensure that the function name and the types defined in the private_generics attribute match,
+                // for example: #[private_generics(T1, T2)].
 
-            let mut func_type_params_name_list = vec![];
-            let type_params = fun.get_named_type_parameters();
-            for t in type_params {
-                let type_name = self.env.symbol_pool().string(t.0).as_str().to_string();
-                func_type_params_name_list.push(type_name);
-            }
+                let mut func_type_params_name_list = vec![];
+                let type_params = fun.get_named_type_parameters();
+                for t in type_params {
+                    let type_name = self.env.symbol_pool().string(t.0).as_str().to_string();
+                    func_type_params_name_list.push(type_name);
+                }
 
-            if func_type_params_name_list.is_empty() {
-                self.env
-                    .error(&fun.get_loc(), "Function do not has type parameter.");
-            }
+                if func_type_params_name_list.is_empty() {
+                    self.env
+                        .error(&fun.get_loc(), "Function do not has type parameter.");
+                }
 
-            let attributes = fun.get_attributes();
+                let attributes = fun.get_attributes();
 
-            for attr in attributes {
-                if let Attribute::Apply(_, _, types) = attr {
-                    if types.is_empty() {
-                        self.env.error(
-                            &fun.get_loc(),
-                            "A type name is needed for private generics.",
-                        );
-                    }
+                for attr in attributes {
+                    if let Attribute::Apply(_, _, types) = attr {
+                        if types.is_empty() {
+                            self.env.error(
+                                &fun.get_loc(),
+                                "A type name is needed for private generics.",
+                            );
+                        }
 
-                    let mut attribute_type_index = vec![];
-                    let mut attribute_type_names = vec![];
-                    for (idx, type_name) in func_type_params_name_list.iter().enumerate() {
+                        let mut attribute_type_index = vec![];
+                        let mut attribute_type_names = vec![];
+                        for (idx, type_name) in func_type_params_name_list.iter().enumerate() {
+                            let _ = types
+                                .iter()
+                                .map(|attr| {
+                                    if let Attribute::Apply(_, name, _) = attr {
+                                        let attribute_type_name = self
+                                            .env
+                                            .symbol_pool()
+                                            .string(*name)
+                                            .as_str()
+                                            .to_string();
+
+                                        if attribute_type_name == type_name.as_str() {
+                                            attribute_type_index.push(idx);
+                                            attribute_type_names.push(attribute_type_name);
+                                        }
+                                    }
+                                })
+                                .collect::<Vec<_>>();
+                        }
+
                         let _ = types
                             .iter()
                             .map(|attr| {
                                 if let Attribute::Apply(_, name, _) = attr {
                                     let attribute_type_name =
                                         self.env.symbol_pool().string(*name).as_str().to_string();
+                                    if !attribute_type_names.contains(&attribute_type_name) {
+                                        let func_name = self
+                                            .env
+                                            .symbol_pool()
+                                            .string(fun.get_name())
+                                            .as_str()
+                                            .to_string();
 
-                                    if attribute_type_name == type_name.as_str() {
-                                        attribute_type_index.push(idx);
-                                        attribute_type_names.push(attribute_type_name);
+                                        self.env.error(
+                                            &fun.get_loc(),
+                                            format!(
+                                                "type name {:?} not defined in function {:?}",
+                                                attribute_type_name, func_name
+                                            )
+                                            .as_str(),
+                                        );
                                     }
                                 }
                             })
                             .collect::<Vec<_>>();
-                    }
 
-                    let _ = types
-                        .iter()
-                        .map(|attr| {
-                            if let Attribute::Apply(_, name, _) = attr {
-                                let attribute_type_name =
-                                    self.env.symbol_pool().string(*name).as_str().to_string();
-                                if !attribute_type_names.contains(&attribute_type_name) {
-                                    let func_name = self
-                                        .env
-                                        .symbol_pool()
-                                        .string(fun.get_name())
-                                        .as_str()
-                                        .to_string();
-
-                                    self.env.error(
-                                        &fun.get_loc(),
-                                        format!(
-                                            "type name {:?} not defined in function {:?}",
-                                            attribute_type_name, func_name
-                                        )
-                                        .as_str(),
-                                    );
-                                }
-                            }
-                        })
-                        .collect::<Vec<_>>();
-
-                    type_name_indices.insert(
-                        self.env
+                        let module_address = module.self_address().to_hex_literal();
+                        let module_name = self
+                            .env
+                            .symbol_pool()
+                            .string(module.get_name().name())
+                            .as_str()
+                            .to_string();
+                        let func_name = self
+                            .env
                             .symbol_pool()
                             .string(fun.get_name())
                             .as_str()
-                            .to_string(),
-                        attribute_type_index.clone(),
-                    );
+                            .to_string();
+                        let full_path_func_name =
+                            format!("{}::{}::{}", module_address, module_name, func_name);
+                        type_name_indices.insert(full_path_func_name, attribute_type_index.clone());
+
+                        func_loc_map.insert(func_name, fun.get_loc());
+                    }
                 }
             }
-        }
 
-        let module = module.get_verified_module();
-        let view = BinaryIndexedView::Module(module);
-
-        // Inspect the bytecode of every function, and if an instruction is CallGeneric,
-        // verify that it calls a function with the private_generics attribute as detected earlier.
-        // Then, ensure that the generic parameters of the CallGeneric instruction are valid.
-        for func_def in &module.function_defs {
-            let code = match func_def.code.clone() {
-                None => continue,
-                Some(code) => code,
-            };
-
-            for instr in code.code {
+            for (offset, instr) in fun.get_bytecode().iter().enumerate() {
                 if let Bytecode::CallGeneric(finst_idx) = instr {
                     let FunctionInstantiation {
                         handle,
                         type_parameters,
-                    } = view.function_instantiation_at(finst_idx);
+                    } = view.function_instantiation_at(*finst_idx);
 
                     let fhandle = view.function_handle_at(*handle);
+                    let module_handle = view.module_handle_at(fhandle.module);
+
+                    let module_address = view
+                        .address_identifier_at(module_handle.address)
+                        .to_hex_literal();
+                    let module_name = view.identifier_at(module_handle.name);
                     let func_name = view.identifier_at(fhandle.name).to_string();
 
+                    let full_path_func_name =
+                        format!("{}::{}::{}", module_address, module_name, func_name);
+
                     let type_arguments = &view.signature_at(*type_parameters).0;
-                    let private_generics_types = type_name_indices.get(func_name.as_str());
+                    let private_generics_types =
+                        type_name_indices.get(full_path_func_name.as_str());
 
                     if let Some(private_generics_types_indices) = private_generics_types {
                         for generic_type_index in private_generics_types_indices {
                             let type_arg = type_arguments.get(*generic_type_index).unwrap();
                             let (defined_in_current_module, struct_name) =
-                                is_defined_in_current_module(&view, type_arg);
+                                is_defined_or_allowed_in_current_module(&view, type_arg);
+
+                            let byte_loc = fun.get_bytecode_loc(offset as u16);
 
                             if !defined_in_current_module {
-                                panic!(
-                                    "{}",
+                                self.env.error(
+                                    &byte_loc,
                                     format!(
-                                        "resource struct {:?} not defined in current module",
-                                        struct_name
+                                        "resource type {:?} in function {:?} not defined in current module or not allowed",
+                                        struct_name, full_path_func_name
                                     )
+                                        .as_str(),
                                 );
                             }
                         }
@@ -218,7 +239,7 @@ impl<'a> ExtendedChecker<'a> {
         for (private_generics_func_name, types_list) in type_name_indices {
             let type_params_idicies = self
                 .output
-                .entry(module.self_id().clone())
+                .entry(compiled_module.self_id())
                 .or_default()
                 .private_generics_indices
                 .entry(private_generics_func_name)
@@ -328,7 +349,7 @@ impl<'a> ExtendedChecker<'a> {
     }
 }
 
-fn is_defined_in_current_module(
+fn is_defined_or_allowed_in_current_module(
     view: &BinaryIndexedView,
     type_arg: &SignatureToken,
 ) -> (bool, String) {
@@ -340,18 +361,19 @@ fn is_defined_in_current_module(
                 view.identifier_at(shandle.name).to_string(),
             )
         }
-        SignatureToken::TypeParameter(_)
-        | SignatureToken::Bool
-        | SignatureToken::U8
-        | SignatureToken::U16
-        | SignatureToken::U32
-        | SignatureToken::U64
-        | SignatureToken::U128
-        | SignatureToken::U256
-        | SignatureToken::Address
-        | SignatureToken::Vector(_)
-        | SignatureToken::Signer
-        | SignatureToken::Reference(_)
-        | SignatureToken::MutableReference(_) => (false, "".to_string()),
+        // Other types are not allowed.
+        SignatureToken::Bool => (false, "Bool".to_string()),
+        SignatureToken::U8 => (false, "U8".to_string()),
+        SignatureToken::U16 => (false, "U16".to_string()),
+        SignatureToken::U32 => (false, "U32".to_string()),
+        SignatureToken::U64 => (false, "U64".to_string()),
+        SignatureToken::U128 => (false, "U128".to_string()),
+        SignatureToken::U256 => (false, "U256".to_string()),
+        SignatureToken::Signer => (false, "Signer".to_string()),
+        SignatureToken::Address => (false, "Address".to_string()),
+        SignatureToken::TypeParameter(_) => (false, "TypeParameter".to_string()),
+        SignatureToken::Vector(_) => (false, "Vector".to_string()),
+        SignatureToken::Reference(_) => (false, "Reference".to_string()),
+        SignatureToken::MutableReference(_) => (false, "MutableReference".to_string()),
     }
 }

@@ -1,13 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    vm::{
-        move_vm_ext::{MoveVmExt, SessionExt},
-        tx_argument_resolver::{as_struct_no_panic, is_storage_context},
-        MoveResolverExt,
-    },
-    TransactionExecutor, TransactionValidator,
+use crate::vm::{
+    move_vm_ext::{MoveVmExt, SessionExt},
+    tx_argument_resolver::{as_struct_no_panic, is_storage_context},
+    MoveResolverExt,
 };
 use anyhow::{anyhow, bail, ensure, Result};
 use move_binary_format::access::ModuleAccess;
@@ -26,9 +23,8 @@ use move_core_types::{
 use move_vm_runtime::session::SerializedReturnValues;
 use move_vm_types::gas::UnmeteredGasMeter;
 use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
-use moveos_store::event_store::EventStore;
-use moveos_store::state_store::StateDB;
 use moveos_store::MoveOSDB;
+use moveos_store::{event_store::EventStore, state_store::StateDB};
 use moveos_types::event::{Event, EventID};
 use moveos_types::object::ObjectID;
 use moveos_types::transaction::{AuthenticatableTransaction, MoveAction, MoveOSTransaction};
@@ -421,17 +417,5 @@ impl MoveOS {
             "Table change set should be empty when execute view function"
         );
         Ok(result)
-    }
-}
-
-impl TransactionValidator for MoveOS {
-    fn validate_transaction<T>(&self, _transaction: T) -> crate::ValidatorResult {
-        todo!()
-    }
-}
-
-impl TransactionExecutor for MoveOS {
-    fn execute_transaction<T>(&self, _transaction: T) -> crate::ExecutorResult {
-        todo!()
     }
 }

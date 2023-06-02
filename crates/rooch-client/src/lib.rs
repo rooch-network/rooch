@@ -9,12 +9,12 @@ use clap::Parser;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
 use moveos::moveos::TransactionOutput;
-use moveos_types::{object::ObjectID, transaction::FunctionCall};
+use moveos_types::{access_path::AccessPath, object::ObjectID, transaction::FunctionCall};
 use rand::Rng;
 use rooch_common::config::{rooch_config_path, PersistedConfig, RoochConfig};
 use rooch_server::{
     api::rooch_api::RoochAPIClient,
-    jsonrpc_types::{AnnotatedMoveStructView, AnnotatedObjectView},
+    jsonrpc_types::{AnnotatedMoveStructView, AnnotatedObjectView, AnnotatedStateView, StateView},
 };
 use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction};
 
@@ -83,6 +83,17 @@ impl Client {
 
     pub async fn get_object(&self, object_id: ObjectID) -> Result<Option<AnnotatedObjectView>> {
         Ok(self.get_client()?.get_object(object_id).await?)
+    }
+
+    pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<StateView>>> {
+        Ok(self.get_client()?.get_states(access_path).await?)
+    }
+
+    pub async fn get_annotated_states(
+        &self,
+        access_path: AccessPath,
+    ) -> Result<Vec<Option<AnnotatedStateView>>> {
+        Ok(self.get_client()?.get_annotated_states(access_path).await?)
     }
 
     pub async fn get_sequence_number(&self, _sender: RoochAddress) -> Result<u64> {

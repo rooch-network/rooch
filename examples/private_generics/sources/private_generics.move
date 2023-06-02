@@ -18,7 +18,7 @@ module rooch_examples::Data {
 
     public fun run() {
         let data = Data{ v: 123 };
-        let box_val = create_box<Data, Data, Box<u32>>(data);
+        let box_val = create_box<Data, u64, Box<u32>>(data);
         let _ = box_value(&box_val);
     }
 }
