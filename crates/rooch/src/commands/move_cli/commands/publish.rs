@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::move_cli::types::{AccountAddressWrapper, TransactionOptions};
 use async_trait::async_trait;
 use clap::Parser;
 
@@ -10,26 +9,20 @@ use move_bytecode_utils::dependency_graph::DependencyGraph;
 use move_bytecode_utils::Modules;
 use move_cli::Move;
 
+use crate::types::{CommandAction, TransactionOptions, WalletContextOptions};
 use moveos::moveos::TransactionOutput;
 use moveos::vm::dependency_order::sort_by_dependency_order;
 use moveos_types::transaction::MoveAction;
 use moveos_verifier::build::run_verifier;
-
-use rooch_client::Client;
-use rooch_common::config::{
-    rooch_config_dir, rooch_config_path, Config, PersistedConfig, RoochConfig, ROOCH_CONFIG,
-};
-use rooch_key::keystore::AccountKeystore;
 use rooch_types::address::RoochAddress;
-use rooch_types::cli::{CliError, CliResult, CommandAction};
-use rooch_types::transaction::rooch::RoochTransactionData;
+use rooch_types::error::{RoochError, RoochResult};
 use std::collections::BTreeMap;
 use std::io::stderr;
 
 #[derive(Parser)]
 pub struct Publish {
     #[clap(flatten)]
-    client: Client,
+    context_options: WalletContextOptions,
 
     #[clap(flatten)]
     move_args: Move,
@@ -42,8 +35,8 @@ pub struct Publish {
     /// Example: alice=0x1234, bob=0x5678
     ///
     /// Note: This will fail if there are duplicates in the Move.toml file remove those first.
-    #[clap(long, parse(try_from_str = moveos_common::utils::parse_map), default_value = "")]
-    pub(crate) named_addresses: BTreeMap<String, AccountAddressWrapper>,
+    #[clap(long, parse(try_from_str = crate::utils::parse_map), default_value = "")]
+    pub(crate) named_addresses: BTreeMap<String, String>,
 }
 
 impl Publish {
@@ -59,15 +52,14 @@ impl Publish {
 
 #[async_trait]
 impl CommandAction<TransactionOutput> for Publish {
-    async fn execute(self) -> CliResult<TransactionOutput> {
+    async fn execute(self) -> RoochResult<TransactionOutput> {
+        let context = self.context_options.build().await?;
+
         let package_path = self.move_args.package_path;
         let config = self.move_args.build_config;
         let mut config = config.clone();
-        config.additional_named_addresses = self
-            .named_addresses
-            .into_iter()
-            .map(|(key, value)| (key, value.account_address))
-            .collect();
+
+        config.additional_named_addresses = context.parse_account_args(self.named_addresses)?;
 
         let additional_named_address = config.additional_named_addresses.clone();
 
@@ -94,7 +86,7 @@ impl CommandAction<TransactionOutput> for Publish {
         for module in sorted_modules {
             let module_address = module.self_id().address().to_owned();
             if module_address != pkg_address {
-                return Err(CliError::MoveCompilationError(format!(
+                return Err(RoochError::MoveCompilationError(format!(
                     "module's address ({:?}) not same as package module address {:?}",
                     module_address,
                     pkg_address.clone(),
@@ -104,8 +96,11 @@ impl CommandAction<TransactionOutput> for Publish {
             module.serialize(&mut binary)?;
             bundles.push(binary);
         }
-        if pkg_address != self.txn_options.sender_account {
-            return Err(CliError::CommandArgumentError(
+
+        if self.txn_options.sender_account.is_some()
+            && pkg_address != context.parse_account_arg(self.txn_options.sender_account.unwrap())?
+        {
+            return Err(RoochError::CommandArgumentError(
                     "--sender-account required and the sender account must be the same as the package address"
                     .to_string(),
             ));
@@ -114,23 +109,7 @@ impl CommandAction<TransactionOutput> for Publish {
         let action = MoveAction::ModuleBundle(bundles);
 
         let sender: RoochAddress = pkg_address.into();
-        let sequence_number = self.client.get_sequence_number(sender).await?;
-        let tx_data = RoochTransactionData::new(sender, sequence_number, action);
 
-        // TODO: Code refactoring
-        let config: RoochConfig = PersistedConfig::read(rooch_config_path()?.as_path())?;
-        let config: PersistedConfig<RoochConfig> = config.persisted(
-            rooch_config_dir()
-                .map_err(CliError::from)?
-                .join(ROOCH_CONFIG)
-                .as_path(),
-        );
-
-        let tx = config.keystore.sign_transaction(&sender, tx_data).unwrap();
-
-        self.client
-            .execute_tx(tx)
-            .await
-            .map_err(|e| CliError::TransactionError(e.to_string()))
+        context.sign_and_execute(sender, action).await
     }
 }

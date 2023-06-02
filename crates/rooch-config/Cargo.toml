@@ -1,5 +1,5 @@
 [package]
-name = "rooch-common"
+name = "rooch-config"
 version = "0.1.0"
 edition = "2021"
 
@@ -14,7 +14,6 @@ jsonrpsee = { workspace = true }
 thiserror = { workspace = true }
 tonic = { workspace = true }
 coerce = { workspace = true }
-itertools = { workspace = true }
 dirs  = { workspace = true }
 rooch-key = { workspace = true }
 rooch-types = { workspace = true }

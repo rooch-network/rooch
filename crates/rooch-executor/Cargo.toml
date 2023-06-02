@@ -39,5 +39,4 @@ moveos = { workspace = true }
 moveos-store = { workspace = true }
 moveos-types = { workspace = true }
 
-rooch-common = { workspace = true }
 rooch-types = { workspace = true }

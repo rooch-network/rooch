@@ -4,13 +4,11 @@ use cucumber::{given, then, World as _};
 use jpst::TemplateContext;
 use move_core_types::account_address::AccountAddress;
 use rooch::RoochCli;
+use rooch_client::wallet_context::WalletContext;
+use rooch_config::rooch_config_dir;
 use rooch_server::Service;
 use serde_json::Value;
 use tracing::info;
-
-use rooch_common::config::{
-    rooch_config_dir, rooch_config_path, Config, PersistedConfig, RoochConfig, ROOCH_CONFIG,
-};
 
 #[derive(cucumber::World, Debug, Default)]
 struct World {
@@ -28,34 +26,24 @@ async fn start_server(w: &mut World) {
 
 #[then(regex = r#"cmd: "(.*)?""#)]
 async fn run_cmd(world: &mut World, args: String) {
-    // let mut cmd = assert_cmd::Command::cargo_bin("rooch").unwrap();
+    let config_dir = rooch_config_dir()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("rooch_test");
 
-    // TODO: We'll deal with that when we redesign config
-    // Discard test data
-    // cmd.env("TEST_ENV", "true");
+    let default = if config_dir.exists() {
+        let context = WalletContext::new(Some(config_dir.clone())).await.unwrap();
 
-    let config = rooch_config_path();
-
-    let default_addr = match config {
-        Ok(v) => {
-            if v.exists() {
-                let config: RoochConfig =
-                    PersistedConfig::read(rooch_config_path().unwrap().as_path()).unwrap();
-                let config: PersistedConfig<RoochConfig> =
-                    config.persisted(rooch_config_dir().unwrap().join(ROOCH_CONFIG).as_path());
-
-                match config.active_address {
-                    Some(addr) => AccountAddress::from(addr).to_hex_literal(),
-                    None => "".to_owned(),
-                }
-            } else {
-                "".to_string()
-            }
+        match context.config.active_address {
+            Some(addr) => AccountAddress::from(addr).to_hex_literal(),
+            None => "".to_string(),
         }
-        Err(..) => "".to_owned(),
+    } else {
+        "".to_string()
     };
 
-    let args = args.replace("{default}", &default_addr);
+    let args = args.replace("{default}", &default);
 
     if world.tpl_ctx.is_none() {
         world.tpl_ctx = Some(TemplateContext::new());
@@ -66,15 +54,20 @@ async fn run_cmd(world: &mut World, args: String) {
     let mut args = split_string_with_quotes(&args).expect("Invalid commands");
     let cmd_name = args[0].clone();
     args.insert(0, "rooch".to_string());
+    args.push("--config-dir".to_string());
+    args.push(config_dir.to_str().unwrap().to_string());
     let opts: RoochCli = RoochCli::parse_from(args);
     let output = rooch::run_cli(opts)
         .await
         .expect("CLI should run successfully.");
 
-    // info!("cmd output: {:?}", output);
-    let result_json: Value =
-        serde_json::from_str(&output).expect("json parse error from cli output.");
-    tpl_ctx.entry(cmd_name).append(result_json);
+    let result_json = serde_json::from_str::<Value>(&output);
+
+    if result_json.is_ok() {
+        tpl_ctx
+            .entry(cmd_name)
+            .append::<Value>(result_json.unwrap());
+    }
 }
 
 #[then(regex = r#"assert: "([^"]*)""#)]

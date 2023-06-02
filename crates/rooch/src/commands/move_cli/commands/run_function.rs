@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::move_cli::types::TransactionOptions;
+use crate::types::{CommandAction, TransactionOptions, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
 use move_core_types::{
@@ -12,17 +12,10 @@ use move_core_types::{
 };
 use moveos::moveos::TransactionOutput;
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
-use rooch_client::Client;
 use rooch_types::{
     address::RoochAddress,
-    cli::{CliError, CliResult, CommandAction},
-    transaction::rooch::RoochTransactionData,
+    error::{RoochError, RoochResult},
 };
-
-use rooch_common::config::{
-    rooch_config_dir, rooch_config_path, Config, PersistedConfig, RoochConfig, ROOCH_CONFIG,
-};
-use rooch_key::keystore::AccountKeystore;
 
 /// Run a Move function
 #[derive(Parser)]
@@ -60,7 +53,7 @@ pub struct RunFunction {
 
     /// RPC client options.
     #[clap(flatten)]
-    client: Client,
+    context: WalletContextOptions,
 
     #[clap(flatten)]
     txn_options: TransactionOptions,
@@ -68,7 +61,7 @@ pub struct RunFunction {
 
 #[async_trait]
 impl CommandAction<TransactionOutput> for RunFunction {
-    async fn execute(self) -> CliResult<TransactionOutput> {
+    async fn execute(self) -> RoochResult<TransactionOutput> {
         let args = self
             .args
             .iter()
@@ -79,33 +72,19 @@ impl CommandAction<TransactionOutput> for RunFunction {
             })
             .collect();
 
-        let sender: RoochAddress = self.txn_options.sender_account.into();
-        let sequence_number = self
-            .client
-            .get_sequence_number(sender)
-            .await
-            .map_err(CliError::from)?;
-        let tx_data = RoochTransactionData::new(
-            sender,
-            sequence_number,
-            MoveAction::new_function_call(self.function, self.type_args, args),
-        );
-        //TODO sign the tx by the account private key
+        if self.txn_options.sender_account.is_none() {
+            return Err(RoochError::CommandArgumentError(
+                "--sender-account required".to_string(),
+            ));
+        }
 
-        // TODO: Code refactoring
-        let config: RoochConfig = PersistedConfig::read(rooch_config_path()?.as_path())?;
-        let config: PersistedConfig<RoochConfig> = config.persisted(
-            rooch_config_dir()
-                .map_err(CliError::from)?
-                .join(ROOCH_CONFIG)
-                .as_path(),
-        );
+        let context = self.context.build().await?;
+        let sender: RoochAddress = context
+            .parse_account_arg(self.txn_options.sender_account.unwrap())?
+            .into();
 
-        let tx = config.keystore.sign_transaction(&sender, tx_data).unwrap();
+        let action = MoveAction::new_function_call(self.function, self.type_args, args);
 
-        self.client
-            .execute_tx(tx)
-            .await
-            .map_err(|e| CliError::TransactionError(e.to_string()))
+        context.sign_and_execute(sender, action).await
     }
 }

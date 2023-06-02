@@ -3,7 +3,6 @@
 
 pub mod address;
 pub mod block;
-pub mod cli;
 pub mod coin_id;
 pub mod crypto;
 pub mod error;

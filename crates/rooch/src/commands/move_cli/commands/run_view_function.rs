@@ -10,8 +10,9 @@ use move_core_types::{
     value::MoveValue,
 };
 use moveos_types::{move_types::FunctionId, transaction::FunctionCall};
-use rooch_client::Client;
-use rooch_types::cli::{CliError, CliResult, CommandAction};
+use rooch_types::error::{RoochError, RoochResult};
+
+use crate::types::{CommandAction, WalletContextOptions};
 
 /// Run a Move function
 #[derive(Parser)]
@@ -49,12 +50,12 @@ pub struct RunViewFunction {
 
     /// RPC client options.
     #[clap(flatten)]
-    client: Client,
+    context: WalletContextOptions,
 }
 
 #[async_trait]
 impl CommandAction<Vec<serde_json::Value>> for RunViewFunction {
-    async fn execute(self) -> CliResult<Vec<serde_json::Value>> {
+    async fn execute(self) -> RoochResult<Vec<serde_json::Value>> {
         let args = self
             .args
             .iter()
@@ -69,9 +70,11 @@ impl CommandAction<Vec<serde_json::Value>> for RunViewFunction {
             ty_args: self.type_args,
             args,
         };
-        self.client
+
+        let client = self.context.build().await?.get_client().await?;
+        client
             .execute_view_function(function_call)
             .await
-            .map_err(|e| CliError::ViewFunctionError(e.to_string()))
+            .map_err(|e| RoochError::ViewFunctionError(e.to_string()))
     }
 }
