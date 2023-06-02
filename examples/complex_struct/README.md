@@ -6,7 +6,7 @@ The purpose of this example is mainly to test how different types of MoveValue a
 
 > `0x40ad744b6a3cd57d800e595b0aa9bf29ae0d2c1dadc78860a2c57df3cea5da91` is a example address. When executing, please replace it with your own local address.
 
-### publish and init
+### Publish and init
 
 ```bash
 rooch move publish -p ./examples/complex_struct --sender-account 0x40ad744b6a3cd57d800e595b0aa9bf29ae0d2c1dadc78860a2c57df3cea5da91 --named-addresses rooch_examples=0x40ad744b6a3cd57d800e595b0aa9bf29ae0d2c1dadc78860a2c57df3cea5da91
