@@ -175,13 +175,13 @@ impl TryFrom<MultiChainAddress> for RoochAddress {
 
 impl fmt::Display for RoochAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> std::fmt::Result {
-        write!(f, "0x{:x}", AccountAddress::from(*self))
+        write!(f, "{}", AccountAddress::from(*self).to_hex_literal())
     }
 }
 
 impl fmt::Debug for RoochAddress {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "0x{:x}", AccountAddress::from(*self))
+        write!(f, "{}", AccountAddress::from(*self).to_hex_literal())
     }
 }
 

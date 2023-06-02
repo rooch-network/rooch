@@ -51,9 +51,9 @@ module moveos_std::account_storage {
     }
 
     /// check if account storage eixst
-    public fun exist_account_storage(ctx: &mut StorageContext, account: address): bool {
+    public fun exist_account_storage(ctx: &StorageContext, account: address): bool {
         let object_id = object_id::address_to_object_id(account);
-        let object_storage = storage_context::object_storage_mut(ctx);
+        let object_storage = storage_context::object_storage(ctx);
         object_storage::contains(object_storage, object_id)
     }
 
@@ -151,8 +151,12 @@ module moveos_std::account_storage {
     /// Check if the account has a resource of the given type
     /// This function equates to `exists<T>(address)` instruction in Move
     public fun global_exists<T: key>(ctx: &StorageContext, account: address) : bool {
-        let account_storage = borrow_account_storage(storage_context::object_storage(ctx), account);
-        exists_resource_at_account_storage<T>(account_storage)
+        if (exist_account_storage(ctx, account)) {
+            let account_storage = borrow_account_storage(storage_context::object_storage(ctx), account);
+            exists_resource_at_account_storage<T>(account_storage)
+        }else{
+            false
+        }
     }
 
     // ==== Module functions ====

@@ -1,0 +1,14 @@
+[package]
+name = "complex_struct"
+version = "0.0.1"
+
+[dependencies]
+MoveosStdLib = { git = "https://github.com/rooch-network/rooch.git", subdir = "moveos/moveos-stdlib/moveos-stdlib", rev = "main" }
+
+[addresses]
+rooch_examples =  "_"
+moveos_std =  "0x1"
+rooch_framework =  "0x1"
+
+[dev-addresses]
+rooch_examples = "0x42"
