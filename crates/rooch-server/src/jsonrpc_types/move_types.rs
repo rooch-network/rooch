@@ -9,7 +9,7 @@ use move_core_types::{
     u256,
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
-use moveos_types::event::Event;
+use moveos_types::event::{Event, EventID};
 use moveos_types::event_filter::MoveOSEvent;
 use moveos_types::h256::H256;
 use moveos_types::{
@@ -136,20 +136,20 @@ pub struct EventView {
     pub type_tag: TypeTagView,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub event_index: Option<u32>,
-    pub event_key: ObjectID,
-    pub event_seq_number: StrView<u64>,
+    pub event_id: EventID,
+    // pub event_seq_number: StrView<u64>,
 }
 
 impl From<Event> for EventView {
     fn from(event: Event) -> Self {
         EventView {
             tx_hash: None,
-            sender: AccountAddress::ZERO, //TODO fill event sender
+            sender: AccountAddress::ZERO, //Reserved as an extension field
             event_data: StrView(event.event_data().to_vec()),
             type_tag: event.type_tag().clone().into(),
             event_index: Some(event.event_index),
-            event_key: *event.key(),
-            event_seq_number: event.sequence_number().into(),
+            event_id: *event.event_id(),
+            // event_seq_number: event.sequence_number().into(),
         }
     }
 }
@@ -157,13 +157,13 @@ impl From<Event> for EventView {
 impl From<MoveOSEvent> for EventView {
     fn from(event: MoveOSEvent) -> Self {
         EventView {
-            tx_hash: Some(event.tx_hash),
-            sender: AccountAddress::ZERO, //TODO fill event sender
+            tx_hash: event.tx_hash,
+            sender: AccountAddress::ZERO, //Reserved as an extension field
             event_data: StrView(event.event_data.to_vec()),
             type_tag: event.type_tag.clone().into(),
             event_index: Some(event.event_index),
-            event_key: event.key,
-            event_seq_number: event.sequence_number.into(),
+            event_id: event.event_id,
+            // event_seq_number: event.sequence_number.into(),
         }
     }
 }
@@ -171,8 +171,8 @@ impl From<MoveOSEvent> for EventView {
 impl EventView {
     pub fn try_from(event: Event, tx_hash: H256) -> Self {
         let Event {
-            key,
-            sequence_number,
+            event_id,
+            // sequence_number,
             type_tag,
             event_data,
             event_index,
@@ -180,12 +180,12 @@ impl EventView {
 
         EventView {
             tx_hash: Some(tx_hash),
-            sender: AccountAddress::ZERO, //TODO fill event sender
+            sender: AccountAddress::ZERO, //Reserved as an extension field
             event_data: StrView(event_data.to_vec()),
             type_tag: type_tag.into(),
             event_index: Some(event_index),
-            event_key: key,
-            event_seq_number: sequence_number.into(),
+            event_id,
+            // event_seq_number: sequence_number.into(),
         }
     }
 }

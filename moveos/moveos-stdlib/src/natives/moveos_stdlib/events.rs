@@ -50,11 +50,12 @@ pub fn native_write_to_event_store(
     let ty = ty_args.pop().unwrap();
     let msg = args.pop_back().unwrap();
     let seq_num = pop_arg!(args, u64);
-    let raw_guid = pop_arg!(args, StructRef);
-    let guid = helpers::get_object_id(raw_guid)?;
+    let raw_event_handler_id = pop_arg!(args, StructRef);
+    // event_handler_id equal to guid
+    let event_handler_id = helpers::get_object_id(raw_event_handler_id)?;
 
     let _result = context
-        .save_event(guid.to_bytes(), seq_num, ty, msg)
+        .save_event(event_handler_id.to_bytes(), seq_num, ty, msg)
         .map_err(|e| {
             PartialVMError::new(StatusCode::ABORTED)
                 .with_message(e.to_string())

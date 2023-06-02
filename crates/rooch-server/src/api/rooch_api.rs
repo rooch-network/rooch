@@ -47,9 +47,12 @@ pub trait RoochAPI {
     #[method(name = "rooch_getObject")]
     async fn get_object(&self, object_id: ObjectID) -> RpcResult<Option<AnnotatedObjectView>>;
 
-    /// Get the events by tx_hash
-    #[method(name = "rooch_getEventsByTxHash")]
-    async fn get_events_by_tx_hash(&self, tx_hash: H256) -> RpcResult<Option<Vec<EventView>>>;
+    /// Get the events by event handle id
+    #[method(name = "rooch_getEventsByEventHandle")]
+    async fn get_events_by_event_handle(
+        &self,
+        event_handle_id: ObjectID,
+    ) -> RpcResult<Option<Vec<EventView>>>;
 
     /// Get the events by event filter
     #[method(name = "rooch_getEvents")]

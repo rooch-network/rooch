@@ -29,7 +29,7 @@ use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
 use moveos_store::event_store::EventStore;
 use moveos_store::state_store::StateDB;
 use moveos_store::MoveOSDB;
-use moveos_types::event::Event;
+use moveos_types::event::{Event, EventID};
 use moveos_types::object::ObjectID;
 use moveos_types::transaction::{AuthenticatableTransaction, MoveAction, MoveOSTransaction};
 use moveos_types::tx_context::TxContext;
@@ -37,7 +37,6 @@ use moveos_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, move_types::FunctionId};
 use moveos_types::{h256::H256, transaction::FunctionCall};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-// use std::sync::Arc;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TransactionOutput {
@@ -247,30 +246,20 @@ impl MoveOS {
                     })?;
 
                 // handle events
-                // let mut events = Vec::new();
                 let events = raw_events
                     .into_iter()
                     .enumerate()
                     .map(|(i, e)| {
-                        // pub type Event = (Vec<u8>, u64, TypeTag, Vec<u8>);
-                        Event::new(
-                            ObjectID::from_bytes(e.0.as_slice()).unwrap(),
-                            e.1,
-                            e.2,
-                            e.3,
-                            i as u32,
-                        )
+                        let event_handle_id = ObjectID::from_bytes(e.0.as_slice()).unwrap();
+                        Event::new(EventID::new(event_handle_id, e.1), e.2, e.3, i as u32)
                     })
                     .collect();
 
-                self.db
-                    .get_event_store()
-                    .save_events(tx_hash, events)
-                    .map_err(|e| {
-                        PartialVMError::new(StatusCode::STORAGE_ERROR)
-                            .with_message(e.to_string())
-                            .finish(Location::Undefined)
-                    })?;
+                self.db.get_event_store().save_events(events).map_err(|e| {
+                    PartialVMError::new(StatusCode::STORAGE_ERROR)
+                        .with_message(e.to_string())
+                        .finish(Location::Undefined)
+                })?;
 
                 Ok(TransactionOutput {
                     state_root: new_state_root,

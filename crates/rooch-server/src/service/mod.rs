@@ -13,7 +13,7 @@ use moveos_types::{
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_proposer::proxy::ProposerProxy;
 use rooch_sequencer::proxy::SequencerProxy;
-use rooch_types::{address::RoochAddress, transaction::TypedTransaction, H256};
+use rooch_types::{address::RoochAddress, transaction::TypedTransaction};
 
 /// RpcService is the implementation of the RPC service.
 /// It is the glue between the RPC server(EthAPIServer,RoochApiServer) and the rooch's actors.
@@ -97,8 +97,14 @@ impl RpcService {
         bail!("Not implemented")
     }
 
-    pub async fn get_events_by_tx_hash(&self, tx_hash: H256) -> Result<Option<Vec<MoveOSEvent>>> {
-        let resp = self.executor.get_events_by_tx_hash(tx_hash).await?;
+    pub async fn get_events_by_event_handle(
+        &self,
+        event_handle_id: ObjectID,
+    ) -> Result<Option<Vec<MoveOSEvent>>> {
+        let resp = self
+            .executor
+            .get_events_by_event_handle(event_handle_id)
+            .await?;
         Ok(resp)
     }
 

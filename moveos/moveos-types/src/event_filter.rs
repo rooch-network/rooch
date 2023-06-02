@@ -4,17 +4,12 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
-// use move_bytecode_utils::module_cache::GetModule;
-use move_core_types::account_address::AccountAddress;
-// use move_core_types::identifier::Identifier;
-// use move_core_types::language_storage::StructTag;
-use crate::event::Event;
+use crate::event::{Event, EventID};
 use crate::h256::H256;
 use crate::move_types::type_tag_match;
+use anyhow::Result;
+use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::TypeTag;
-// use schemars::JsonSchema;
-use crate::object::ObjectID;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::serde_as;
@@ -24,13 +19,13 @@ use serde_with::serde_as;
 #[derive(Eq, PartialEq, Clone, Debug)]
 // #[serde(rename = "Event", rename_all = "camelCase")]
 pub struct MoveOSEvent {
-    pub key: ObjectID,
+    pub event_id: EventID,
     /// Sender's address.
     pub sender: AccountAddress,
     /// Transaction hash
-    pub tx_hash: H256,
+    pub tx_hash: Option<H256>,
     /// The number of messages that have been emitted to the path previously
-    pub sequence_number: u64,
+    // pub sequence_number: u64,
     // #[schemars(with = "String")]
     // #[serde_as(as = "TypeTag")]
     /// Move event type.
@@ -56,13 +51,13 @@ pub struct MoveOSEvent {
 impl MoveOSEvent {
     pub fn try_from(
         event: Event,
-        tx_hash: H256,
+        tx_hash: Option<H256>,
         timestamp_ms: Option<u64>,
         block_height: Option<u64>,
     ) -> Result<Self> {
         let Event {
-            key,
-            sequence_number,
+            event_id,
+            // sequence_number,
             type_tag,
             event_data,
             event_index,
@@ -70,14 +65,11 @@ impl MoveOSEvent {
 
         //TODO how to store and derive sender address ?
         let sender = AccountAddress::ZERO;
-        // let move_struct = Event::move_event_to_move_struct(&type_, &contents, resolver)?;
-        // let (type_, field) = type_and_fields_from_move_struct(&type_, move_struct);
         //TODO deserilize field from event_data
         let parsed_json = serde_json::to_value(event_data.clone()).unwrap();
 
         Ok(MoveOSEvent {
-            key,
-            sequence_number,
+            event_id,
             sender,
             tx_hash,
             type_tag,
@@ -158,8 +150,9 @@ impl EventFilter {
             EventFilter::Or(f1, f2) => {
                 EventFilter::Any(vec![*(*f1).clone(), *(*f2).clone()]).matches(item)
             }
-            EventFilter::Transaction(tx_hash) => tx_hash == &item.tx_hash,
-
+            EventFilter::Transaction(tx_hash) => {
+                Option::is_some(&item.tx_hash) && (tx_hash == &item.tx_hash.unwrap())
+            }
             EventFilter::TimeRange {
                 start_time,
                 end_time,

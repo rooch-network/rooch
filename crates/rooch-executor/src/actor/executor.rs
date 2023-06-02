@@ -3,7 +3,7 @@
 
 use super::messages::{
     ExecuteTransactionMessage, ExecuteTransactionResult, ExecuteViewFunctionMessage,
-    GetEventsByTxHashMessage, GetEventsMessage, GetResourceMessage, ObjectMessage,
+    GetEventsByEventHandleMessage, GetEventsMessage, GetResourceMessage, ObjectMessage,
     ValidateTransactionMessage,
 };
 use anyhow::Result;
@@ -124,22 +124,22 @@ impl Handler<ObjectMessage> for ExecutorActor {
 }
 
 #[async_trait]
-impl Handler<GetEventsByTxHashMessage> for ExecutorActor {
+impl Handler<GetEventsByEventHandleMessage> for ExecutorActor {
     async fn handle(
         &mut self,
-        msg: GetEventsByTxHashMessage,
+        msg: GetEventsByEventHandleMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Option<Vec<MoveOSEvent>>> {
-        let GetEventsByTxHashMessage { tx_hash } = msg;
+        let GetEventsByEventHandleMessage { event_handle_id } = msg;
         let event_store = self.moveos.event_store();
 
         let mut result: Vec<MoveOSEvent> = Vec::new();
         for ev in event_store
-            .get_events_by_tx_hash(&tx_hash)?
+            .get_events_by_event_handle_id(&event_handle_id)?
             .unwrap()
             .into_iter()
             .enumerate()
-            .map(|(_i, event)| MoveOSEvent::try_from(event, tx_hash, None, None))
+            .map(|(_i, event)| MoveOSEvent::try_from(event, None, None, None))
             .collect::<Vec<_>>()
         {
             result.push(ev.unwrap());
@@ -169,7 +169,7 @@ impl Handler<GetEventsMessage> for ExecutorActor {
             .unwrap()
             .into_iter()
             .enumerate()
-            .map(|(_i, event)| MoveOSEvent::try_from(event, H256::zero(), None, None))
+            .map(|(_i, event)| MoveOSEvent::try_from(event, None, None, None))
             .collect::<Vec<_>>()
         {
             result.push(ev.unwrap());

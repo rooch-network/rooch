@@ -76,11 +76,14 @@ impl RoochAPIServer for RoochServer {
         Ok(self.rpc_service.object(object_id).await?.map(Into::into))
     }
 
-    async fn get_events_by_tx_hash(&self, tx_hash: H256) -> RpcResult<Option<Vec<EventView>>> {
+    async fn get_events_by_event_handle(
+        &self,
+        event_handle_id: ObjectID,
+    ) -> RpcResult<Option<Vec<EventView>>> {
         let mut result: Vec<EventView> = Vec::new();
         for ev in self
             .rpc_service
-            .get_events_by_tx_hash(tx_hash)
+            .get_events_by_event_handle(event_handle_id)
             .await?
             .unwrap()
             .iter()
