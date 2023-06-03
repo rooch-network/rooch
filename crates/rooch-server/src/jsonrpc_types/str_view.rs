@@ -4,7 +4,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::u256;
+use move_core_types::{account_address::AccountAddress, u256};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::str::FromStr;
 
@@ -105,5 +105,21 @@ impl From<StrView<Vec<u8>>> for Vec<u8> {
 impl AsRef<[u8]> for StrView<Vec<u8>> {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
+    }
+}
+
+impl std::fmt::Display for StrView<AccountAddress> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        //Ensure append `0x` before the address.
+        //The Display implemention of AccountAddress has not `0x` prefix
+        write!(f, "{}", self.0.to_hex_literal())
+    }
+}
+
+impl FromStr for StrView<AccountAddress> {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // AccountAddress::from_str suppport both 0xABCD and ABCD
+        Ok(StrView(AccountAddress::from_str(s)?))
     }
 }

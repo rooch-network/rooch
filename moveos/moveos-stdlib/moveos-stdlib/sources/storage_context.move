@@ -40,6 +40,8 @@ module moveos_std::storage_context {
         &mut this.object_storage
     }
 
+    //TODO should we wrapper the tx_context::fresh_object_id at here?
+
     #[test_only]
     /// Create a StorageContext and AccountStorage for unit test
     public fun new_test_context(sender: address): StorageContext {
