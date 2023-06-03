@@ -34,3 +34,4 @@ move-vm-types = { workspace = true }
 moveos-types = { workspace = true }
 moveos-store = { workspace = true }
 moveos-stdlib = { workspace = true }
+moveos-verifier = { workspace = true }
