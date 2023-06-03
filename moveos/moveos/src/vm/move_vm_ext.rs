@@ -233,6 +233,10 @@ where
     pub fn get_native_extensions(&self) -> &NativeContextExtensions<'r> {
         self.session.get_native_extensions()
     }
+
+    pub fn runtime_session(&self) -> &Session<'r, 'l, S> {
+        self.session.borrow()
+    }
 }
 
 impl AsRef<MoveVM> for MoveVmExt {

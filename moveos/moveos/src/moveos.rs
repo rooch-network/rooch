@@ -172,6 +172,9 @@ impl MoveOS {
                 let loaded_function =
                     session.load_script(script.code.as_slice(), script.ty_args.clone())?;
 
+                let func = session.load_script(script.code.as_slice(), script.ty_args.clone())?;
+                moveos_verifier::verifier::verify_entry_function(func, session.runtime_session())?;
+
                 let args = session
                     .resolve_args(&tx_context, loaded_function, script.args)
                     .map_err(|e| e.finish(Location::Undefined))?;
@@ -190,6 +193,11 @@ impl MoveOS {
                 let args = session
                     .resolve_args(&tx_context, loaded_function, function.args)
                     .map_err(|e| e.finish(Location::Undefined))?;
+
+                let func =
+                    session.load_function(&function.function_id, function.ty_args.as_slice())?;
+                moveos_verifier::verifier::verify_entry_function(func, session.runtime_session())?;
+
                 session
                     .execute_entry_function(
                         &function.function_id,
