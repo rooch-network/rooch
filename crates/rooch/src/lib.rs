@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use commands::{
-    account::Account, init::Init, move_cli::MoveCli, server::Server, state::StateCommand,
+    account::Account, init::Init, move_cli::MoveCli, object::ObjectCommand,
+    resource::ResourceCommand, server::Server, state::StateCommand,
 };
 use rooch_types::error::RoochResult;
 use types::CommandAction;
@@ -25,14 +26,18 @@ pub enum Command {
     Move(MoveCli),
     Server(Server),
     State(StateCommand),
+    Object(ObjectCommand),
+    Resource(ResourceCommand),
 }
 
 pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
     match opt.cmd {
+        Command::Account(account) => account.execute().await,
         Command::Move(move_cli) => move_cli.execute().await,
         Command::Server(server) => server.execute().await,
-        Command::Init(c) => c.execute_serialized().await,
-        Command::State(s) => s.execute_serialized().await,
-        Command::Account(a) => a.execute().await,
+        Command::Init(init) => init.execute_serialized().await,
+        Command::State(state) => state.execute_serialized().await,
+        Command::Object(object) => object.execute_serialized().await,
+        Command::Resource(resource) => resource.execute_serialized().await,
     }
 }
