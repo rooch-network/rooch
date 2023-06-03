@@ -111,12 +111,13 @@ module moveos_std::events {
     }
 
     /// use query this method to get event handle Metadata
-    public fun get_event_handle<T: key>(ctx: &StorageContext): Option<EventHandle<T>>{
+    /// is event_handle_id doesn't exist, sender will default 0x0
+    public fun get_event_handle<T: key>(ctx: &StorageContext): (Option<ObjectID>, address, u64){
         if (exists_event_handle_at_event_storage<EventHandle<T>>(storage_context::object_storage(ctx))) {
             let event_handle = borrow_event_handle_from_event_storage<EventHandle<T>>(storage_context::object_storage(ctx));
-            option::some<EventHandle<T>>(*event_handle)
+            (option::some(event_handle.event_handle_id), event_handle.sender, event_handle.counter)
         } else {
-            option::none<EventHandle<T>>()
+            (option::none<ObjectID>(), @0x0, 0)
         }
     }
 
@@ -151,14 +152,15 @@ module moveos_std::events {
         // assert!(exists_event_handle_at_event_storage<EventHandle<T>>(storage_context::object_storage(ctx)), error::not_found(EEventHandleNotExists));
         let event_handle_ref = borrow_mut_event_handle_from_event_storage<EventHandle<T>>(storage_context::object_storage_mut(ctx));
 
-        let event_handle_id = *&event_handle_ref.event_handle_id;
-        write_to_event_store<T>(&event_handle_id, event_handle_ref.counter, event);
+        // let event_handle_id = *&event_handle_ref.event_handle_id;
+        emit<T>(bcs::to_bytes(&event_handle_ref.event_handle_id), event_handle_ref.counter, event);
         event_handle_ref.counter = event_handle_ref.counter + 1;
     }
 
     /// Native procedure that writes to the actual event stream in Event store
     /// This will replace the "native" portion of EmitEvent bytecode
-    native fun write_to_event_store<T: key>(event_handle_id: &ObjectID, count: u64, data: T);
+    // native fun emit<T: key>(event_handle_id: &ObjectID, count: u64, event: T);
+    native fun emit<T: key>(guid: vector<u8>, count: u64, event: T);
 
 
     /// Destroy a unique handle.
@@ -173,26 +175,38 @@ module moveos_std::events {
     }
 
     #[test_only]
-    struct WithdrawEvent has key, drop, copy{
+    struct WithdrawEvent has key, copy, drop{
+    // struct WithdrawEvent has key{
         addr: address,
         amount: u64
     }
 
-    #[test(sender=@0x42)]
+    #[test(sender=@0x1)]
     fun test_event_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
         let ctx = storage_context::new_test_context(sender_addr);
-        create_event_storage(&mut ctx, sender_addr);
+
+        //init event storage, only for test
+        init(&mut ctx, &sender);
+        // create_event_storage(&mut ctx, sender_addr);
 
         new_event_handle<WithdrawEvent>(&mut ctx);
+        let (event_hanlde_id, event_sender_addr, event_seq) = get_event_handle<WithdrawEvent>(&ctx);
+        debug::print(&110110);
+        debug::print(&event_hanlde_id);
+        debug::print(&event_sender_addr);
+        debug::print(&event_seq);
+
         emit_event<WithdrawEvent>(&mut ctx, WithdrawEvent {
             addr: signer::address_of(&sender),
             amount: 100,
         });
-        emit_event<WithdrawEvent>(&mut ctx, WithdrawEvent {
-            addr: signer::address_of(&sender),
-            amount: 102,
-        });
+        // emit_event<WithdrawEvent>(&mut ctx, WithdrawEvent {
+        //     addr: signer::address_of(&sender),
+        //     amount: 102,
+        // });
+
+
         storage_context::drop_test_context(ctx);
     }
 }

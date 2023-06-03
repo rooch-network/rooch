@@ -11,6 +11,7 @@ use moveos_stdlib::natives::{all_natives, GasParameters};
 use moveos_store::state_store::StateDB;
 use once_cell::sync::Lazy;
 use std::path::PathBuf;
+// use tracing::{debug, info};
 
 #[derive(Parser)]
 pub struct Test {
@@ -23,6 +24,8 @@ impl Test {
         //TODO define gas metering
         let cost_table = move_vm_test_utils::gas_schedule::INITIAL_COST_SCHEDULE.clone();
         let natives = all_natives(GasParameters::zeros());
+        // println!("move unit test natives: {:?}", natives);
+        // info!("move unit test natives: {:?}", natives);
 
         set_extension_hook(Box::new(new_moveos_natives_runtime));
         self.test
