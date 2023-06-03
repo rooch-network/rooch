@@ -354,6 +354,7 @@ pub fn is_allowed_input_struct(name: String) -> bool {
             | "0x1::object_id::ObjectID"
             | "0x1::storage_context::StorageContext"
             | "0x1::tx_context::TxContext"
+            | "0x1::ascii::String"
     )
 }
 
