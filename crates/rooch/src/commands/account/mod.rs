@@ -3,10 +3,7 @@
 
 use crate::types::CommandAction;
 use async_trait::async_trait;
-use commands::{
-    create::CreateCommand, import::ImportCommand, list::ListCommand, object::ObjectCommand,
-    resource::ResourceCommand,
-};
+use commands::{create::CreateCommand, import::ImportCommand, list::ListCommand};
 use rooch_types::error::{RoochError, RoochResult};
 use std::path::PathBuf;
 
@@ -32,8 +29,6 @@ impl CommandAction<String> for Account {
             }),
             AccountCommand::List(list) => list.execute().await.map(|_| "".to_string()),
             AccountCommand::Import(import) => import.execute().await.map(|_| "".to_string()),
-            AccountCommand::Resource(resource) => resource.execute_serialized().await,
-            AccountCommand::Object(object) => object.execute_serialized().await,
         }
         .map_err(RoochError::from)
     }
@@ -45,6 +40,4 @@ pub enum AccountCommand {
     Create(CreateCommand),
     List(ListCommand),
     Import(ImportCommand),
-    Object(ObjectCommand),
-    Resource(ResourceCommand),
 }
