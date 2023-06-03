@@ -33,8 +33,7 @@ module moveos_std::events {
     /// A handle for an event such that:
     /// 1. Other modules can emit events to this handle.
     /// 2. Storage can use this handle to prove the total number of events that happened in the past.
-    struct EventHandle<phantom T: key> has key, store, copy {
-    // struct EventHandle<phantom T: drop> has key, store {
+    struct EventHandle<phantom T: key> has key, store {
         /// Total number of events emitted to this event stream.
         counter: u64,
         /// A globally unique ID for this event stream. event handler id equal to guid.
@@ -149,18 +148,13 @@ module moveos_std::events {
     /// phantom parameters, eg emit(MyEvent<phantom T>).
     public fun emit_event<T: key>(ctx: &mut StorageContext, event: T) {
         ensure_event_handle<T>(ctx);
-        // assert!(exists_event_handle_at_event_storage<EventHandle<T>>(storage_context::object_storage(ctx)), error::not_found(EEventHandleNotExists));
         let event_handle_ref = borrow_mut_event_handle_from_event_storage<EventHandle<T>>(storage_context::object_storage_mut(ctx));
-
-        // let event_handle_id = *&event_handle_ref.event_handle_id;
-        emit<T>(bcs::to_bytes(&event_handle_ref.event_handle_id), event_handle_ref.counter, event);
+        emit<T>(&event_handle_ref.event_handle_id, event_handle_ref.counter, event);
         event_handle_ref.counter = event_handle_ref.counter + 1;
     }
 
     /// Native procedure that writes to the actual event stream in Event store
-    /// This will replace the "native" portion of EmitEvent bytecode
-    // native fun emit<T: key>(event_handle_id: &ObjectID, count: u64, event: T);
-    native fun emit<T: key>(guid: vector<u8>, count: u64, event: T);
+    native fun emit<T: key>(event_handle_id: &ObjectID, count: u64, event: T);
 
 
     /// Destroy a unique handle.
@@ -171,12 +165,11 @@ module moveos_std::events {
     #[test]
     fun test_named_table_id() {
         debug::print(&derive_event_object_id(@moveos_std));
-        // assert!(derive_event_object_id(@moveos_std) == object_id::address_to_object_id(@0x04d8b5ccef4d5b55fa9371d1a9c344fcd4bd40dd9f32dd1d94696775fe3f3013), 1000);
+        assert!(derive_event_object_id(@moveos_std) == object_id::address_to_object_id(@0xd7f6abc69aa5cc17b99aeb86fd14d4361e7d3ffd1baacab90eb3765785d3515d), 1000);
     }
 
     #[test_only]
-    struct WithdrawEvent has key, copy, drop{
-    // struct WithdrawEvent has key{
+    struct WithdrawEvent has key{
         addr: address,
         amount: u64
     }
@@ -192,7 +185,6 @@ module moveos_std::events {
 
         new_event_handle<WithdrawEvent>(&mut ctx);
         let (event_hanlde_id, event_sender_addr, event_seq) = get_event_handle<WithdrawEvent>(&ctx);
-        debug::print(&110110);
         debug::print(&event_hanlde_id);
         debug::print(&event_sender_addr);
         debug::print(&event_seq);
@@ -201,11 +193,10 @@ module moveos_std::events {
             addr: signer::address_of(&sender),
             amount: 100,
         });
-        // emit_event<WithdrawEvent>(&mut ctx, WithdrawEvent {
-        //     addr: signer::address_of(&sender),
-        //     amount: 102,
-        // });
-
+        emit_event<WithdrawEvent>(&mut ctx, WithdrawEvent {
+            addr: signer::address_of(&sender),
+            amount: 102,
+        });
 
         storage_context::drop_test_context(ctx);
     }
