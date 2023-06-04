@@ -7,10 +7,8 @@ use crate::vm::{
     MoveResolverExt,
 };
 use anyhow::{anyhow, bail, ensure, Result};
-use move_binary_format::access::ModuleAccess;
 use move_binary_format::{
     errors::{Location, PartialVMError, VMResult},
-    file_format::Visibility,
     CompiledModule,
 };
 use move_core_types::{
@@ -31,6 +29,7 @@ use moveos_types::transaction::{AuthenticatableTransaction, MoveAction, MoveOSTr
 use moveos_types::tx_context::TxContext;
 use moveos_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, move_types::FunctionId};
 use moveos_types::{h256::H256, transaction::FunctionCall};
+use moveos_verifier::verifier::{verify_init_function, INIT_FN_NAME_IDENTIFIER};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 // use std::sync::Arc;
@@ -51,9 +50,6 @@ pub static VALIDATE_FUNCTION: Lazy<FunctionId> = Lazy::new(|| {
         Identifier::new("validate").unwrap(),
     )
 });
-
-pub static INIT_FN_NAME_IDENTIFIER: Lazy<Identifier> =
-    Lazy::new(|| Identifier::new("init").unwrap());
 
 pub struct MoveOS {
     vm: MoveVmExt,
@@ -337,33 +333,28 @@ impl MoveOS {
     where
         S: MoveResolverExt,
     {
-        let modules_to_init = modules.iter().filter_map(|module| {
-            for fdef in &module.function_defs {
-                let fhandle = module.function_handle_at(fdef.function);
-                let fname = module.identifier_at(fhandle.name);
-                if fname == INIT_FN_NAME_IDENTIFIER.clone().as_ident_str() {
-                    // check function visibility
-                    if Visibility::Private == fdef.visibility && !fdef.is_entry {
-                        return Some(module.self_id());
-                    }
-                }
+        let mut modules_to_init = vec![];
+        for module in modules {
+            let result = verify_init_function(module, session.runtime_session());
+            match result {
+                Ok(_) => modules_to_init.push(module.self_id()),
+                Err(_) => {}
             }
-            None
-        });
+        }
 
         for module_id in modules_to_init {
             let function_id = FunctionId::new(module_id.clone(), INIT_FN_NAME_IDENTIFIER.clone());
 
             // check module init permission
-            if !self.check_module_init_permission(
-                session,
-                tx_context,
-                &function_id,
-                vec![],
-                vec![],
-            )? {
-                continue;
-            };
+            // if !self.check_module_init_permission(
+            //     session,
+            //     tx_context,
+            //     &function_id,
+            //     vec![],
+            //     vec![],
+            // )? {
+            //     continue;
+            // };
 
             let function = FunctionCall::new(function_id, vec![], vec![]);
             let _result =
