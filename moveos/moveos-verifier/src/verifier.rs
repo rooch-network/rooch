@@ -1,9 +1,75 @@
 use crate::metadata::is_allowed_input_struct;
-use anyhow::{Error, Result};
-use move_core_types::resolver::MoveResolver;
+use anyhow::{Error, Ok, Result};
+use move_binary_format::file_format::Visibility;
+use move_binary_format::{access::ModuleAccess, CompiledModule};
+use move_core_types::move_resource::MoveStructType;
+use move_core_types::{identifier::Identifier, resolver::MoveResolver};
 use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
-use move_vm_types::loaded_data::runtime_types::Type;
+use move_vm_types::loaded_data::runtime_types::{StructType, Type};
+use moveos_types::move_types::FunctionId;
+use moveos_types::storage_context::StorageContext;
+use once_cell::sync::Lazy;
 use std::ops::Deref;
+use std::sync::Arc;
+
+pub static INIT_FN_NAME_IDENTIFIER: Lazy<Identifier> =
+    Lazy::new(|| Identifier::new("init").unwrap());
+
+fn as_struct_no_panic<S>(session: &Session<S>, t: &Type) -> Option<Arc<StructType>>
+where
+    S: MoveResolver,
+{
+    match t {
+        Type::Struct(s) | Type::StructInstantiation(s, _) => session.get_struct_type(*s),
+        Type::Reference(r) => as_struct_no_panic(session, r),
+        Type::MutableReference(r) => as_struct_no_panic(session, r),
+        _ => None,
+    }
+}
+
+fn is_storage_context(t: &StructType) -> bool {
+    *t.module.address() == *moveos_types::addresses::MOVEOS_STD_ADDRESS
+        && t.module.name() == StorageContext::module_identifier().as_ident_str()
+        && t.name == StorageContext::struct_identifier()
+}
+
+pub fn verify_init_function<S>(module: &CompiledModule, session: &Session<S>) -> Result<bool>
+where
+    S: MoveResolver,
+{
+    for fdef in &module.function_defs {
+        let fhandle = module.function_handle_at(fdef.function);
+        let fname = module.identifier_at(fhandle.name);
+        if fname == INIT_FN_NAME_IDENTIFIER.clone().as_ident_str() {
+            if Visibility::Private != fdef.visibility {
+                return Err(Error::msg("init function should private".to_string()));
+            } else if !fdef.is_entry {
+                return Err(Error::msg(
+                    "init function should not entry function".to_string(),
+                ));
+            } else {
+                let function_id =
+                    FunctionId::new(module.self_id(), INIT_FN_NAME_IDENTIFIER.clone());
+                let loaded_function = session.load_function(
+                    &module.self_id(),
+                    &function_id.function_name,
+                    vec![].as_slice(),
+                )?;
+                let Some((_i, _t)) = loaded_function.parameters.iter().enumerate().find(|(i, t)| {
+                        let struct_type = as_struct_no_panic(session, t);
+                        (*i as u32 == 0u32) && Option::is_some(&struct_type) && is_storage_context(&(struct_type.unwrap()))
+                    }) else {
+                        return Ok(true)
+                    };
+
+                if !(loaded_function.return_.is_empty()) {
+                    return Ok(true);
+                }
+            }
+        }
+    }
+    return Err(Error::msg("module not have init function".to_string()));
+}
 
 pub fn verify_entry_function<S>(
     func: LoadedFunctionInstantiation,

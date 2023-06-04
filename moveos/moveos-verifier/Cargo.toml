@@ -7,6 +7,7 @@ edition = "2021"
 anyhow = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+once_cell = { workspace = true }
 codespan-reporting = { workspace = true }
 termcolor = { workspace = true }
 bcs = { workspace = true }
@@ -19,3 +20,5 @@ move-compiler = { workspace = true }
 move-command-line-common = { workspace = true }
 move-vm-runtime = { workspace = true }
 move-vm-types = { workspace = true }
+
+moveos-types = { workspace = true }
