@@ -155,15 +155,18 @@ impl Handler<GetEventsByEventHandleMessage> for ExecutorActor {
         let event_store = self.moveos.event_store();
 
         let mut result: Vec<MoveOSEvent> = Vec::new();
-        for ev in event_store
-            .get_events_by_event_handle_id(&event_handle_id)?
-            .unwrap()
-            .into_iter()
-            .enumerate()
-            .map(|(_i, event)| MoveOSEvent::try_from(event, None, None, None))
-            .collect::<Vec<_>>()
-        {
-            result.push(ev.unwrap());
+        let events = event_store.get_events_by_event_handle_id(&event_handle_id)?;
+
+        if Option::is_some(&events) {
+            for ev in events
+                .unwrap()
+                .into_iter()
+                .enumerate()
+                .map(|(_i, event)| MoveOSEvent::try_from(event, None, None, None))
+                .collect::<Vec<_>>()
+            {
+                result.push(ev.unwrap());
+            }
         }
 
         if !result.is_empty() {
@@ -185,15 +188,17 @@ impl Handler<GetEventsMessage> for ExecutorActor {
         let event_store = self.moveos.event_store();
         //TODO handle tx hash
         let mut result: Vec<MoveOSEvent> = Vec::new();
-        for ev in event_store
-            .get_events_with_filter(filter)?
-            .unwrap()
-            .into_iter()
-            .enumerate()
-            .map(|(_i, event)| MoveOSEvent::try_from(event, None, None, None))
-            .collect::<Vec<_>>()
-        {
-            result.push(ev.unwrap());
+        let events = event_store.get_events_with_filter(filter)?;
+        if Option::is_some(&events) {
+            for ev in events
+                .unwrap()
+                .into_iter()
+                .enumerate()
+                .map(|(_i, event)| MoveOSEvent::try_from(event, None, None, None))
+                .collect::<Vec<_>>()
+            {
+                result.push(ev.unwrap());
+            }
         }
 
         if !result.is_empty() {

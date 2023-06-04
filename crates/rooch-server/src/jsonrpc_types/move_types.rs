@@ -3,6 +3,7 @@
 
 use crate::jsonrpc_types::StrView;
 use move_binary_format::file_format::AbilitySet;
+// use move_core_types::parser::{parse_type_tag};
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
@@ -12,6 +13,7 @@ use move_core_types::{
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use moveos_types::event_filter::MoveOSEvent;
 use moveos_types::h256::H256;
+use moveos_types::move_types::parse_module_id;
 use moveos_types::{
     event::{Event, EventID},
     state::{AnnotatedState, State},
@@ -21,13 +23,17 @@ use moveos_types::{
     object::{AnnotatedObject, ObjectID},
     transaction::FunctionCall,
 };
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 pub type ModuleIdView = StrView<ModuleId>;
 pub type TypeTagView = StrView<TypeTag>;
 pub type StructTagView = StrView<StructTag>;
+pub type FunctionIdView = StrView<FunctionId>;
 
-impl_str_view_for! {TypeTag StructTag}
+impl_str_view_for! {TypeTag StructTag FunctionId}
+// impl_str_view_for! {TypeTag StructTag ModuleId FunctionId}
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AnnotatedMoveStructView {
@@ -148,9 +154,9 @@ impl From<AnnotatedObject> for AnnotatedObjectView {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct FunctionCallView {
-    pub function_id: FunctionId,
+    pub function_id: FunctionIdView,
     pub ty_args: Vec<TypeTagView>,
     pub args: Vec<StrView<Vec<u8>>>,
 }
@@ -158,7 +164,7 @@ pub struct FunctionCallView {
 impl From<FunctionCall> for FunctionCallView {
     fn from(origin: FunctionCall) -> Self {
         Self {
-            function_id: origin.function_id,
+            function_id: StrView(origin.function_id),
             ty_args: origin.ty_args.into_iter().map(StrView).collect(),
             args: origin.args.into_iter().map(StrView).collect(),
         }
@@ -168,12 +174,72 @@ impl From<FunctionCall> for FunctionCallView {
 impl From<FunctionCallView> for FunctionCall {
     fn from(value: FunctionCallView) -> Self {
         Self {
-            function_id: value.function_id,
+            function_id: value.function_id.into(),
             ty_args: value.ty_args.into_iter().map(Into::into).collect(),
             args: value.args.into_iter().map(Into::into).collect(),
         }
     }
 }
+
+// impl std::fmt::Display for FunctionIdView {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         write!(f, "{}", &self.0)
+//     }
+// }
+//
+// impl FromStr for FunctionIdView {
+//     type Err = anyhow::Error;
+//     fn from_str(s: &str) -> Result<Self, Self::Err> {
+//         Ok(Self(FunctionId::from_str(s)?))
+//     }
+// }
+
+impl std::fmt::Display for StrView<ModuleId> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", &self.0)
+    }
+}
+
+impl FromStr for StrView<ModuleId> {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(parse_module_id(s)?))
+    }
+}
+
+// impl std::fmt::Display for TypeTagView {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         write!(f, "{}", &self.0)
+//     }
+// }
+//
+// impl FromStr for TypeTagView {
+//     type Err = anyhow::Error;
+//
+//     fn from_str(s: &str) -> Result<Self, Self::Err> {
+//         let type_tag = parse_type_tag(s)?;
+//         Ok(Self(type_tag))
+//     }
+// }
+
+// impl std::fmt::Display for StrView<StructTag> {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         write!(f, "{}", &self.0)
+//     }
+// }
+//
+// impl FromStr for StructTagView {
+//     type Err = anyhow::Error;
+//
+//     fn from_str(s: &str) -> Result<Self, Self::Err> {
+//         let type_tag = parse_type_tag(s)?;
+//         match type_tag {
+//             TypeTag::Struct(s) => Ok(Self(*s)),
+//             t => anyhow::bail!("expect struct tag, actual: {}", t),
+//         }
+//     }
+// }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct EventView {

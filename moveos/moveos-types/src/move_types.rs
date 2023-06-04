@@ -45,6 +45,16 @@ impl FromStr for FunctionId {
     }
 }
 
+pub fn parse_module_id(s: &str) -> Result<ModuleId, anyhow::Error> {
+    let parts: Vec<_> = s.split("::").collect();
+    if parts.len() != 2 {
+        anyhow::bail!("invalid module id");
+    }
+    let module_addr = parts[0].parse::<AccountAddress>()?;
+    let module_name = Identifier::new(parts[1])?;
+    Ok(ModuleId::new(module_addr, module_name))
+}
+
 /// Identifier of a module struct
 /// The StructId is of the form <address>::<module>::<struct>
 #[derive(Clone, Debug, Eq, Ord, PartialOrd, PartialEq, Serialize, Deserialize, Hash)]

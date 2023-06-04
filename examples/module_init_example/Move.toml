@@ -6,6 +6,6 @@ version = "0.0.1"
 MoveosStdLib = { git = "https://github.com/rooch-network/rooch.git", subdir = "moveos/moveos-stdlib/moveos-stdlib", rev = "main" }
 
 [addresses]
-rooch_examples =  "0x123"
+rooch_examples =  "0xd2d2777904f1c16061308933df89f78fa6ff6966de00ff12d85b52fc631a4621"
 moveos_std =  "0x1"
 rooch_framework =  "0x1"

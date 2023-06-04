@@ -14,6 +14,8 @@ module moveos_std::events {
     #[test_only]
     use std::debug;
     use std::option::{Self, Option};
+    use std::hash;
+    use moveos_std::type_info;
 
     const NamedTableEventHandler: u64 = 2;
 
@@ -57,8 +59,8 @@ module moveos_std::events {
 
         let object_storage = storage_context::object_storage_mut(ctx);
         assert!(!object_storage::contains(object_storage, object_id), EEventHandlerTableAlreadyExists);
-        let object = object::new_with_id(object_id, account_addr, event_storage);
-        object_storage::add(object_storage, object);
+        let object = object::new_with_id<EventStorage>(object_id, account_addr, event_storage);
+        object_storage::add<EventStorage>(object_storage, object);
     }
 
     fun derive_event_object_id(account_addr: address): ObjectID{
@@ -74,13 +76,13 @@ module moveos_std::events {
     fun borrow_event_storage(object_storage: &ObjectStorage) : &EventStorage {
         let object_id = derive_event_object_id(@moveos_std);
         let object = object_storage::borrow<EventStorage>(object_storage, object_id);
-        object::borrow(object)
+        object::borrow<EventStorage>(object)
     }
 
     fun borrow_mut_event_storage(object_storage: &mut ObjectStorage) : &mut EventStorage {
         let object_id = derive_event_object_id(@moveos_std);
         let object = object_storage::borrow_mut<EventStorage>(object_storage, object_id);
-        object::borrow_mut(object)
+        object::borrow_mut<EventStorage>(object)
     }
 
     /// Add a event handle to the event storage
@@ -88,7 +90,7 @@ module moveos_std::events {
         // let event_table_handle = derive_event_table_handle();
         let event_storage = borrow_mut_event_storage(object_storage);
         assert!(!type_table::contains_internal<T>(&event_storage.event_handle), EEventHandleAlreadyExists);
-        type_table::add_internal(&mut event_storage.event_handle, event_handle_resource);
+        type_table::add_internal<T>(&mut event_storage.event_handle, event_handle_resource);
     }
 
     fun exists_event_handle_at_event_storage<T: key>(object_storage: &ObjectStorage) : bool {
@@ -124,7 +126,11 @@ module moveos_std::events {
     /// user doesn't need to call this method directly
     fun new_event_handle<T: key>(ctx: &mut StorageContext) {
         let account_addr = tx_context::sender(storage_context::tx_context(ctx));
-        let event_handle_id = tx_context::fresh_object_id(storage_context::tx_context_mut(ctx));
+        // let event_handle_id = tx_context::fresh_object_id(storage_context::tx_context_mut(ctx));
+        //TODO use event handle type's hash as object id
+        let t_type_info = hash::sha3_256(bcs::to_bytes(&type_info::type_of<T>()));
+        let event_handle_id =object_id::bytes_to_object_id(t_type_info);
+
         let event_handle = EventHandle<T> {
             counter: 0,
             event_handle_id,
@@ -199,5 +205,13 @@ module moveos_std::events {
         });
 
         storage_context::drop_test_context(ctx);
+    }
+
+    #[test]
+    fun test_bytes_to_object_id(){
+        let bytes = hash::sha3_256(bcs::to_bytes(&type_info::type_of<WithdrawEvent>()));
+        let id = object_id::bytes_to_object_id(bytes);
+        debug::print(&200200);
+        debug::print(&id);
     }
 }

@@ -37,6 +37,7 @@ impl EventStore {
     }
 
     pub fn save_events(&self, events: Vec<Event>) -> Result<(), Error> {
+        println!("event storage save events {:?}", events);
         let mut locked = self.store.write();
         let data = events
             .into_iter()

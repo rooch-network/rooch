@@ -106,17 +106,20 @@ impl RoochAPIServer for RoochServer {
         event_handle_id: ObjectID,
     ) -> RpcResult<Option<Vec<EventView>>> {
         let mut result: Vec<EventView> = Vec::new();
-        for ev in self
+        let events = self
             .rpc_service
             .get_events_by_event_handle(event_handle_id)
-            .await?
-            .unwrap()
-            .iter()
-            .enumerate()
-            .map(|(_i, event)| EventView::from(event.clone()))
-            .collect::<Vec<_>>()
-        {
-            result.push(ev);
+            .await?;
+        if Option::is_some(&events) {
+            for ev in events
+                .unwrap()
+                .iter()
+                .enumerate()
+                .map(|(_i, event)| EventView::from(event.clone()))
+                .collect::<Vec<_>>()
+            {
+                result.push(ev);
+            }
         }
 
         if !result.is_empty() {
@@ -128,17 +131,17 @@ impl RoochAPIServer for RoochServer {
 
     async fn get_events(&self, filter: EventFilter) -> RpcResult<Option<Vec<EventView>>> {
         let mut result: Vec<EventView> = Vec::new();
-        for ev in self
-            .rpc_service
-            .get_events(filter)
-            .await?
-            .unwrap()
-            .iter()
-            .enumerate()
-            .map(|(_i, event)| EventView::from(event.clone()))
-            .collect::<Vec<_>>()
-        {
-            result.push(ev);
+        let events = self.rpc_service.get_events(filter).await?;
+        if Option::is_some(&events) {
+            for ev in events
+                .unwrap()
+                .iter()
+                .enumerate()
+                .map(|(_i, event)| EventView::from(event.clone()))
+                .collect::<Vec<_>>()
+            {
+                result.push(ev);
+            }
         }
 
         if !result.is_empty() {
