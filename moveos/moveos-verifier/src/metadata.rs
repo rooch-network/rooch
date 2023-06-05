@@ -1,11 +1,13 @@
+use crate::build::ROOCH_METADATA_KEY;
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::file_format::{Bytecode, FunctionInstantiation, SignatureToken};
 use move_core_types::language_storage::ModuleId;
-// use move_model::model::ModuleId;
+use move_core_types::metadata::Metadata;
 use move_model::ast::Attribute;
-use move_model::model::{FunctionEnv, GlobalEnv, Loc, ModuleEnv, QualifiedId, StructId};
+use move_model::model::{FunctionEnv, GlobalEnv, Loc, ModuleEnv};
 use move_model::ty::PrimitiveType;
 use move_model::ty::Type;
+use move_vm_runtime::move_vm::MoveVM;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -36,6 +38,17 @@ impl RuntimeModuleMetadataV1 {
         self.fun_attributes.is_empty()
             && self.struct_attributes.is_empty()
             && self.private_generics_indices.is_empty()
+    }
+}
+
+pub fn get_metadata(md: &Metadata) -> Option<RuntimeModuleMetadataV1> {
+    bcs::from_bytes::<RuntimeModuleMetadataV1>(&md.value).ok()
+}
+
+pub fn get_vm_metadata(vm: &MoveVM, module_id: &ModuleId) -> Option<RuntimeModuleMetadataV1> {
+    match vm.get_module_metadata(module_id.clone(), ROOCH_METADATA_KEY) {
+        None => None,
+        Some(metadata) => get_metadata(&metadata),
     }
 }
 
@@ -285,7 +298,14 @@ impl<'a> ExtendedChecker<'a> {
                 // Vectors are allowed if element type is allowed
                 self.check_transaction_input_type(loc, ety)
             }
-            Struct(mid, sid, _) if self.is_allowed_input_struct(mid.qualified(*sid)) => {
+
+            Struct(mid, sid, _)
+                if is_allowed_input_struct(
+                    self.env
+                        .get_struct(mid.qualified(*sid))
+                        .get_full_name_with_address(),
+                ) =>
+            {
                 // Specific struct types are allowed
             }
             Reference(false, bt)
@@ -313,7 +333,11 @@ impl<'a> ExtendedChecker<'a> {
     fn is_allowed_reference_types(&self, bt: &Type) -> bool {
         match bt {
             Type::Struct(mid, sid, _) => {
-                if self.is_allowed_input_struct(mid.qualified(*sid)) {
+                let struct_name = self
+                    .env
+                    .get_struct(mid.qualified(*sid))
+                    .get_full_name_with_address();
+                if is_allowed_input_struct(struct_name) {
                     return true;
                 }
                 false
@@ -321,17 +345,17 @@ impl<'a> ExtendedChecker<'a> {
             _ => false,
         }
     }
+}
 
-    fn is_allowed_input_struct(&self, qid: QualifiedId<StructId>) -> bool {
-        let name = self.env.get_struct(qid).get_full_name_with_address();
-        matches!(
-            name.as_str(),
-            "0x1::string::String"
-                | "0x1::object_id::ObjectID"
-                | "0x1::storage_context::StorageContext"
-                | "0x1::tx_context::TxContext"
-        )
-    }
+pub fn is_allowed_input_struct(name: String) -> bool {
+    matches!(
+        name.as_str(),
+        "0x1::string::String"
+            | "0x1::object_id::ObjectID"
+            | "0x1::storage_context::StorageContext"
+            | "0x1::tx_context::TxContext"
+            | "0x1::ascii::String"
+    )
 }
 
 // ----------------------------------------------------------------------------------

@@ -22,7 +22,8 @@ tracing = { workspace = true }
 
 rooch = { workspace = true }
 rooch-server = { workspace = true }
-rooch-common = { workspace = true }
+rooch-config = { workspace = true }
+rooch-client = { workspace = true }
 rooch-key = { workspace = true }
 
 move-core-types = { workspace = true }

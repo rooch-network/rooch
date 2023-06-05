@@ -1,13 +1,18 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use serde::{Deserialize, Serialize};
+use rooch_types::address::RoochAddress;
+use serde::Deserialize;
+use serde::Serialize;
 use std::fmt::{Display, Formatter, Result, Write};
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
+    pub proposer_address: Option<RoochAddress>,
+    pub sequencer_address: Option<RoochAddress>,
+    pub block_propose_duration_in_seconds: u16,
 }
 
 impl ServerConfig {
@@ -34,6 +39,9 @@ impl Default for ServerConfig {
         Self {
             host: "0.0.0.0".to_string(),
             port: 50051,
+            proposer_address: None,
+            sequencer_address: None,
+            block_propose_duration_in_seconds: 5,
         }
     }
 }

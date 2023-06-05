@@ -1,18 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::commands::{
-    account::Account,
-    move_cli::{self, MoveCli},
-    object::ObjectCommand,
-    resource::ResourceCommand,
-    server::ServerCommand,
+use commands::{
+    account::Account, init::Init, move_cli::MoveCli, object::ObjectCommand,
+    resource::ResourceCommand, server::Server, state::StateCommand,
 };
-
-use commands::{init::Init, state::StateCommand};
-use rooch_types::cli::{CliResult, CommandAction};
+use rooch_types::error::RoochResult;
+use types::CommandAction;
 
 pub mod commands;
+pub mod types;
+pub mod utils;
 
 #[derive(clap::Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -26,21 +24,20 @@ pub enum Command {
     Account(Account),
     Init(Init),
     Move(MoveCli),
-    #[clap(subcommand)]
-    Server(ServerCommand),
-    Resource(ResourceCommand),
-    Object(ObjectCommand),
+    Server(Server),
     State(StateCommand),
+    Object(ObjectCommand),
+    Resource(ResourceCommand),
 }
 
-pub async fn run_cli(opt: RoochCli) -> CliResult<String> {
+pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
     match opt.cmd {
+        Command::Account(account) => account.execute().await,
         Command::Move(move_cli) => move_cli.execute().await,
         Command::Server(server) => server.execute().await,
-        Command::Resource(resource) => resource.execute_serialized().await,
+        Command::Init(init) => init.execute_serialized().await,
+        Command::State(state) => state.execute_serialized().await,
         Command::Object(object) => object.execute_serialized().await,
-        Command::Init(c) => c.execute_serialized().await,
-        Command::Account(a) => a.execute_serialized().await,
-        Command::State(s) => s.execute_serialized().await,
+        Command::Resource(resource) => resource.execute_serialized().await,
     }
 }

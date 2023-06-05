@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::StrView;
-use move_binary_format::file_format::AbilitySet;
-// use move_core_types::parser::{parse_type_tag};
+use anyhow::Result;
+// use move_binary_format::file_format::AbilitySet;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
@@ -11,12 +11,16 @@ use move_core_types::{
     u256,
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
-use moveos_types::event_filter::MoveOSEvent;
 use moveos_types::h256::H256;
 use moveos_types::move_types::parse_module_id;
 use moveos_types::{
     event::{Event, EventID},
     state::{AnnotatedState, State},
+};
+use moveos_types::{
+    event_filter::MoveOSEvent,
+    move_string::{MoveAsciiString, MoveString},
+    state::MoveState,
 };
 use moveos_types::{
     move_types::FunctionId,
@@ -25,6 +29,7 @@ use moveos_types::{
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::str::FromStr;
 
 pub type ModuleIdView = StrView<ModuleId>;
@@ -35,11 +40,13 @@ pub type FunctionIdView = StrView<FunctionId>;
 impl_str_view_for! {TypeTag StructTag FunctionId}
 // impl_str_view_for! {TypeTag StructTag ModuleId FunctionId}
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AnnotatedMoveStructView {
     pub abilities: u8,
+    #[serde(rename = "type")]
     pub type_: StructTagView,
-    pub value: Vec<(Identifier, AnnotatedMoveValueView)>,
+    //We use BTreeMap to Replace Vec to make the output more readable
+    pub value: BTreeMap<Identifier, AnnotatedMoveValueView>,
 }
 
 impl From<AnnotatedMoveStruct> for AnnotatedMoveStructView {
@@ -56,26 +63,57 @@ impl From<AnnotatedMoveStruct> for AnnotatedMoveStructView {
     }
 }
 
-impl TryFrom<AnnotatedMoveStructView> for AnnotatedMoveStruct {
-    type Error = anyhow::Error;
+//TODO
+// impl TryFrom<AnnotatedMoveStructView> for AnnotatedMoveStruct {
+//     type Error = anyhow::Error;
 
-    fn try_from(value: AnnotatedMoveStructView) -> Result<Self, Self::Error> {
-        Ok(Self {
-            abilities: AbilitySet::from_u8(value.abilities)
-                .ok_or_else(|| anyhow::anyhow!("invalid abilities:{}", value.abilities))?,
-            type_: value.type_.0,
-            value: value
-                .value
-                .into_iter()
-                .map(|(k, v)| {
-                    Ok::<(Identifier, AnnotatedMoveValue), anyhow::Error>((k, v.try_into()?))
-                })
-                .collect::<Result<_, _>>()?,
-        })
+//     fn try_from(value: AnnotatedMoveStructView) -> Result<Self, Self::Error> {
+//         Ok(Self {
+//             abilities: AbilitySet::from_u8(value.abilities)
+//                 .ok_or_else(|| anyhow::anyhow!("invalid abilities:{}", value.abilities))?,
+//             type_: value.type_.0,
+//             value: value
+//                 .value
+//                 .into_iter()
+//                 .map(|(k, v)| {
+//                     Ok::<(Identifier, AnnotatedMoveValue), anyhow::Error>((k, v.try_into()?))
+//                 })
+//                 .collect::<Result<_, _>>()?,
+//         })
+//     }
+// }
+
+/// Some specific struct that we want to display in a special way for better readability
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SpecificStructView {
+    MoveString(MoveString),
+    MoveAsciiString(MoveAsciiString),
+    ObjectID(ObjectID),
+}
+
+impl SpecificStructView {
+    pub fn try_from_annotated(move_struct: AnnotatedMoveStruct) -> Option<Self> {
+        if MoveString::type_match(&move_struct.type_) {
+            MoveString::try_from(move_struct)
+                .ok()
+                .map(SpecificStructView::MoveString)
+        } else if MoveAsciiString::type_match(&move_struct.type_) {
+            MoveAsciiString::try_from(move_struct)
+                .ok()
+                .map(SpecificStructView::MoveAsciiString)
+        } else if ObjectID::type_match(&move_struct.type_) {
+            ObjectID::try_from(move_struct)
+                .ok()
+                .map(SpecificStructView::ObjectID)
+        } else {
+            None
+        }
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
 pub enum AnnotatedMoveValueView {
     U8(u8),
     ///u64, u128, U256 is too large to be serialized in json
@@ -83,10 +121,11 @@ pub enum AnnotatedMoveValueView {
     U64(StrView<u64>),
     U128(StrView<u128>),
     Bool(bool),
-    Address(AccountAddress),
-    Vector(TypeTagView, Vec<AnnotatedMoveValueView>),
+    Address(StrView<AccountAddress>),
+    Vector(Vec<AnnotatedMoveValueView>),
     Bytes(StrView<Vec<u8>>),
     Struct(AnnotatedMoveStructView),
+    SpecificStruct(SpecificStructView),
     U16(u16),
     U32(u32),
     U256(StrView<u256::U256>),
@@ -99,13 +138,17 @@ impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
             AnnotatedMoveValue::U64(u) => AnnotatedMoveValueView::U64(StrView(u)),
             AnnotatedMoveValue::U128(u) => AnnotatedMoveValueView::U128(StrView(u)),
             AnnotatedMoveValue::Bool(b) => AnnotatedMoveValueView::Bool(b),
-            AnnotatedMoveValue::Address(data) => AnnotatedMoveValueView::Address(data),
-            AnnotatedMoveValue::Vector(type_tag, data) => AnnotatedMoveValueView::Vector(
-                type_tag.into(),
-                data.into_iter().map(Into::into).collect(),
-            ),
+            AnnotatedMoveValue::Address(data) => AnnotatedMoveValueView::Address(StrView(data)),
+            AnnotatedMoveValue::Vector(_type_tag, data) => {
+                AnnotatedMoveValueView::Vector(data.into_iter().map(Into::into).collect())
+            }
             AnnotatedMoveValue::Bytes(data) => AnnotatedMoveValueView::Bytes(StrView(data)),
-            AnnotatedMoveValue::Struct(data) => AnnotatedMoveValueView::Struct(data.into()),
+            AnnotatedMoveValue::Struct(data) => {
+                match SpecificStructView::try_from_annotated(data.clone()) {
+                    Some(struct_view) => AnnotatedMoveValueView::SpecificStruct(struct_view),
+                    None => AnnotatedMoveValueView::Struct(data.into()),
+                }
+            }
             AnnotatedMoveValue::U16(u) => AnnotatedMoveValueView::U16(u),
             AnnotatedMoveValue::U32(u) => AnnotatedMoveValueView::U32(u),
             AnnotatedMoveValue::U256(u) => AnnotatedMoveValueView::U256(StrView(u)),
@@ -113,29 +156,30 @@ impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
     }
 }
 
-impl TryFrom<AnnotatedMoveValueView> for AnnotatedMoveValue {
-    type Error = anyhow::Error;
-    fn try_from(value: AnnotatedMoveValueView) -> Result<Self, Self::Error> {
-        Ok(match value {
-            AnnotatedMoveValueView::U8(u8) => AnnotatedMoveValue::U8(u8),
-            AnnotatedMoveValueView::U64(u64) => AnnotatedMoveValue::U64(u64.0),
-            AnnotatedMoveValueView::U128(u128) => AnnotatedMoveValue::U128(u128.0),
-            AnnotatedMoveValueView::Bool(bool) => AnnotatedMoveValue::Bool(bool),
-            AnnotatedMoveValueView::Address(address) => AnnotatedMoveValue::Address(address),
-            AnnotatedMoveValueView::Vector(type_tag, data) => AnnotatedMoveValue::Vector(
-                type_tag.0,
-                data.into_iter()
-                    .map(AnnotatedMoveValue::try_from)
-                    .collect::<Result<Vec<_>, Self::Error>>()?,
-            ),
-            AnnotatedMoveValueView::Bytes(data) => AnnotatedMoveValue::Bytes(data.0),
-            AnnotatedMoveValueView::Struct(data) => AnnotatedMoveValue::Struct(data.try_into()?),
-            AnnotatedMoveValueView::U16(u16) => AnnotatedMoveValue::U16(u16),
-            AnnotatedMoveValueView::U32(u32) => AnnotatedMoveValue::U32(u32),
-            AnnotatedMoveValueView::U256(u256) => AnnotatedMoveValue::U256(u256.0),
-        })
-    }
-}
+//TODO
+// impl TryFrom<AnnotatedMoveValueView> for AnnotatedMoveValue {
+//     type Error = anyhow::Error;
+//     fn try_from(value: AnnotatedMoveValueView) -> Result<Self, Self::Error> {
+//         Ok(match value {
+//             AnnotatedMoveValueView::U8(u8) => AnnotatedMoveValue::U8(u8),
+//             AnnotatedMoveValueView::U64(u64) => AnnotatedMoveValue::U64(u64.0),
+//             AnnotatedMoveValueView::U128(u128) => AnnotatedMoveValue::U128(u128.0),
+//             AnnotatedMoveValueView::Bool(bool) => AnnotatedMoveValue::Bool(bool),
+//             AnnotatedMoveValueView::Address(address) => AnnotatedMoveValue::Address(address),
+//             AnnotatedMoveValueView::Vector(type_tag, data) => AnnotatedMoveValue::Vector(
+//                 type_tag.0,
+//                 data.into_iter()
+//                     .map(AnnotatedMoveValue::try_from)
+//                     .collect::<Result<Vec<_>, Self::Error>>()?,
+//             ),
+//             AnnotatedMoveValueView::Bytes(data) => AnnotatedMoveValue::Bytes(data.0),
+//             AnnotatedMoveValueView::Struct(data) => AnnotatedMoveValue::Struct(data.try_into()?),
+//             AnnotatedMoveValueView::U16(u16) => AnnotatedMoveValue::U16(u16),
+//             AnnotatedMoveValueView::U32(u32) => AnnotatedMoveValue::U32(u32),
+//             AnnotatedMoveValueView::U256(u256) => AnnotatedMoveValue::U256(u256.0),
+//         })
+//     }
+// }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AnnotatedObjectView {
@@ -181,19 +225,6 @@ impl From<FunctionCallView> for FunctionCall {
     }
 }
 
-// impl std::fmt::Display for FunctionIdView {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         write!(f, "{}", &self.0)
-//     }
-// }
-//
-// impl FromStr for FunctionIdView {
-//     type Err = anyhow::Error;
-//     fn from_str(s: &str) -> Result<Self, Self::Err> {
-//         Ok(Self(FunctionId::from_str(s)?))
-//     }
-// }
-
 impl std::fmt::Display for StrView<ModuleId> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", &self.0)
@@ -207,39 +238,6 @@ impl FromStr for StrView<ModuleId> {
         Ok(Self(parse_module_id(s)?))
     }
 }
-
-// impl std::fmt::Display for TypeTagView {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         write!(f, "{}", &self.0)
-//     }
-// }
-//
-// impl FromStr for TypeTagView {
-//     type Err = anyhow::Error;
-//
-//     fn from_str(s: &str) -> Result<Self, Self::Err> {
-//         let type_tag = parse_type_tag(s)?;
-//         Ok(Self(type_tag))
-//     }
-// }
-
-// impl std::fmt::Display for StrView<StructTag> {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         write!(f, "{}", &self.0)
-//     }
-// }
-//
-// impl FromStr for StructTagView {
-//     type Err = anyhow::Error;
-//
-//     fn from_str(s: &str) -> Result<Self, Self::Err> {
-//         let type_tag = parse_type_tag(s)?;
-//         match type_tag {
-//             TypeTag::Struct(s) => Ok(Self(*s)),
-//             t => anyhow::bail!("expect struct tag, actual: {}", t),
-//         }
-//     }
-// }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct EventView {
@@ -344,13 +342,15 @@ impl From<AnnotatedState> for AnnotatedStateView {
     }
 }
 
-impl TryFrom<AnnotatedStateView> for AnnotatedState {
-    type Error = anyhow::Error;
+//TODO Is it need to convert the AnnotatedStateView back to AnnotatedState?
+//If not, please remove this code. Otherwise, it needs to be fixed. include TryFrom<AnnotatedMoveValueView> for AnnotatedMoveValue
+// impl TryFrom<AnnotatedStateView> for AnnotatedState {
+//     type Error = anyhow::Error;
 
-    fn try_from(value: AnnotatedStateView) -> Result<Self, Self::Error> {
-        Ok(Self {
-            state: value.state.into(),
-            move_value: value.move_value.try_into()?,
-        })
-    }
-}
+//     fn try_from(value: AnnotatedStateView) -> Result<Self, Self::Error> {
+//         Ok(Self {
+//             state: value.state.into(),
+//             move_value: value.move_value.try_into()?,
+//         })
+//     }
+// }

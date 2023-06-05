@@ -14,7 +14,6 @@ use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
 use moveos::moveos::MoveOS;
 use moveos_store::MoveOSDB;
-use rooch_common::config::{rooch_config_path, PersistedConfig, RoochConfig};
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_key::key_derive::generate_new_key;
@@ -24,6 +23,7 @@ use rooch_proposer::proxy::ProposerProxy;
 use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use serde_json::json;
+use server_config::ServerConfig;
 use std::fmt::Debug;
 use std::net::SocketAddr;
 use std::time::Duration;
@@ -32,6 +32,7 @@ use tracing::info;
 pub mod api;
 pub mod jsonrpc_types;
 pub mod server;
+pub mod server_config;
 pub mod service;
 
 pub fn http_client(url: impl AsRef<str>) -> Result<HttpClient> {
@@ -109,9 +110,9 @@ impl RpcModuleBuilder {
 pub async fn start_server() -> Result<ServerHandle> {
     tracing_subscriber::fmt::init();
 
-    let config: RoochConfig = PersistedConfig::read(rooch_config_path()?.as_path())?;
-    let server = config.server.unwrap();
-    let addr: SocketAddr = format!("{}:{}", server.host, server.port).parse()?;
+    let config = ServerConfig::default();
+
+    let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
 
     let actor_system = ActorSystem::global_system();
 

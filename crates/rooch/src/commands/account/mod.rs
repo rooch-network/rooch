@@ -1,40 +1,36 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use clap::*;
-pub mod create;
-pub mod import;
-pub mod list;
-use self::import::ImportCommand;
-use crate::commands::account::{create::CreateCommand, list::ListCommand};
-
+use crate::types::CommandAction;
 use async_trait::async_trait;
-use rooch_common::config::{
-    rooch_config_dir, rooch_config_path, Config, PersistedConfig, RoochConfig, ROOCH_CONFIG,
-};
-use rooch_types::cli::{CliError, CliResult, CommandAction};
+use commands::{create::CreateCommand, import::ImportCommand, list::ListCommand};
+use rooch_types::error::{RoochError, RoochResult};
+use std::path::PathBuf;
+
+pub mod commands;
 
 #[derive(clap::Parser)]
 pub struct Account {
     #[clap(subcommand)]
     cmd: AccountCommand,
+    /// Sets the file storing the state of our user accounts (an empty one will be created if missing)
+    #[clap(long = "client.config")]
+    config: Option<PathBuf>,
+    #[clap(short = 'y', long = "yes")]
+    accept_defaults: bool,
 }
 
 #[async_trait]
 impl CommandAction<String> for Account {
-    async fn execute(self) -> CliResult<String> {
-        let config: RoochConfig = prompt_if_no_config().await?;
-
-        self.cmd
-            .execute(
-                &mut config.persisted(
-                    rooch_config_dir()
-                        .map_err(CliError::from)?
-                        .join(ROOCH_CONFIG)
-                        .as_path(),
-                ),
-            )
-            .await
+    async fn execute(self) -> RoochResult<String> {
+        match self.cmd {
+            AccountCommand::Create(create) => create.execute().await.map(|resp| {
+                serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
+            }),
+            AccountCommand::List(list) => list.execute().await.map(|_| "".to_string()),
+            AccountCommand::Import(import) => import.execute().await.map(|_| "".to_string()),
+        }
+        .map_err(RoochError::from)
     }
 }
 
@@ -42,39 +38,6 @@ impl CommandAction<String> for Account {
 #[clap(name = "account")]
 pub enum AccountCommand {
     Create(CreateCommand),
-    // CreateResourceAccount(create_resource_account::CreateResourceAccount),
     List(ListCommand),
     Import(ImportCommand),
-    // RotateKey(key_rotation::RotateKey),
-}
-
-impl AccountCommand {
-    pub async fn execute(self, config: &mut PersistedConfig<RoochConfig>) -> CliResult<String> {
-        match self {
-            AccountCommand::Create(c) => c.execute(config).await.map(|resp| {
-                serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
-            }),
-            // AccountCommand::CreateResourceAccount(c) => c.execute_serialized().await,
-            AccountCommand::List(c) => c.execute(config).await.map(|_| "".to_string()),
-            AccountCommand::Import(c) => c.execute(config).await.map(|_| "".to_string()),
-            // AccountCommand::RotateKey(c) => c.execute_serialized().await,
-        }
-        .map_err(CliError::from)
-    }
-}
-
-async fn prompt_if_no_config() -> Result<RoochConfig, anyhow::Error> {
-    let config_path = rooch_config_path().map_err(CliError::from)?;
-
-    if !config_path.exists() {
-        println!(
-            "Creating config file [{:?}] with default server and ed25519 key scheme.",
-            config_path
-        );
-
-        crate::commands::init::init().await?;
-    }
-
-    Ok(PersistedConfig::read(&config_path)
-        .map_err(|err| CliError::ConfigLoadError(format!("{:?}", config_path), err.to_string()))?)
 }

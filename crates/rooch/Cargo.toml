@@ -29,6 +29,7 @@ tracing = { workspace = true }
 async-trait = { workspace = true }
 codespan-reporting = { workspace = true }
 termcolor = { workspace = true }
+itertools = { workspace = true }
 
 
 move-bytecode-utils = { workspace = true }
@@ -52,9 +53,8 @@ moveos-types = { workspace = true }
 moveos-store = { workspace = true }
 moveos-common = { workspace = true }
 moveos = { workspace = true }
-rooch-common = { workspace = true }
+rooch-config = { workspace = true }
 moveos-verifier = { workspace = true }
-
 
 rooch-key = { workspace = true }
 rooch-types = { workspace = true }

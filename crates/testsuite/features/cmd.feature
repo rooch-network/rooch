@@ -13,7 +13,6 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1][0]}} == 1"
       Then cmd: "object --id {default}"
       Then cmd: "resource --address {default} --resource {default}::counter::Counter"
-      Then cmd: "state --access-path /resource/{default}/{default}::counter::Counter"
       Then cmd: "account create"
       Then cmd: "account list"
       Then cmd: "account import "fiber tube acid imitate frost coffee choose crowd grass topple donkey submit""

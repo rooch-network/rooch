@@ -28,6 +28,9 @@ pub struct State {
 /// It is like the `MoveResource` in move_core_types
 pub trait MoveState: MoveStructType + DeserializeOwned + Serialize {
     fn move_layout() -> MoveStructLayout;
+    fn type_match(type_tag: &StructTag) -> bool {
+        type_tag == &Self::struct_tag()
+    }
 }
 
 impl State {
