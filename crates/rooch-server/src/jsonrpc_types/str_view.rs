@@ -5,6 +5,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_core_types::{account_address::AccountAddress, u256};
+use schemars::gen::SchemaGenerator;
+use schemars::schema::{InstanceType, Schema, SchemaObject};
+use schemars::JsonSchema;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::str::FromStr;
 
@@ -12,20 +15,19 @@ use std::str::FromStr;
 #[derive(Debug, PartialEq, Hash, Eq, Clone, Copy, PartialOrd, Ord)]
 pub struct StrView<T>(pub T);
 
-//TODO define JsonSchema
-// impl<T> JsonSchema for StrView<T> {
-//     fn schema_name() -> String {
-//         std::any::type_name::<T>().to_owned()
-//     }
+impl<T> JsonSchema for StrView<T> {
+    fn schema_name() -> String {
+        std::any::type_name::<T>().to_owned()
+    }
 
-//     fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
-//         SchemaObject {
-//             instance_type: Some(InstanceType::String.into()),
-//             ..Default::default()
-//         }
-//         .into()
-//     }
-// }
+    fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
+        SchemaObject {
+            instance_type: Some(InstanceType::String.into()),
+            ..Default::default()
+        }
+        .into()
+    }
+}
 
 impl<T> From<T> for StrView<T> {
     fn from(t: T) -> Self {

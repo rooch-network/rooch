@@ -7,7 +7,7 @@ module rooch_examples::box_fun {
     use std::debug;
 
     struct Container has key {
-        name: String,
+        // name: String,
         count: u128,
     }
 
@@ -18,10 +18,11 @@ module rooch_examples::box_fun {
 
     public entry fun create_box(
         stoage_ctx: &mut StorageContext,
-        name: String,
+        // name: String,
         count: u128,
     ) {
-        let obj = box::create_box(stoage_ctx, name, count);
+        let name = string::utf8(b"name");
+        let obj = box::create_box(stoage_ctx, name ,count);
         box::add_box(stoage_ctx, obj);
     }
 
