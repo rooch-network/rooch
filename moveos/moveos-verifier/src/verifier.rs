@@ -33,6 +33,11 @@ fn is_storage_context(t: &StructType) -> bool {
         && t.name == StorageContext::struct_identifier()
 }
 
+/// The initializer function must have the following properties in order to be executed at publication:
+/// - Name init
+/// - Single parameter of &mut TxContext type
+/// - No return values
+/// - Private
 pub fn verify_init_function<S>(module: &CompiledModule, session: &Session<S>) -> Result<bool>
 where
     S: MoveResolver,
@@ -68,7 +73,7 @@ where
             }
         }
     }
-    return Err(Error::msg("module not have init function".to_string()));
+    Err(Error::msg("module not have init function".to_string()))
 }
 
 pub fn verify_entry_function<S>(
