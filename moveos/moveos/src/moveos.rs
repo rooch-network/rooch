@@ -3,7 +3,6 @@
 
 use crate::vm::{
     move_vm_ext::{MoveVmExt, SessionExt},
-    tx_argument_resolver::{as_struct_no_panic, is_storage_context},
     MoveResolverExt,
 };
 use anyhow::{anyhow, bail, ensure, Result};
@@ -14,7 +13,7 @@ use move_binary_format::{
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
-    language_storage::{ModuleId, TypeTag},
+    language_storage::ModuleId,
     value::MoveValue,
     vm_status::{KeptVMStatus, StatusCode},
 };
@@ -282,36 +281,6 @@ impl MoveOS {
         Ok(modules)
     }
 
-    /// The initializer function must have the following properties in order to be executed at publication:
-    /// - Name init
-    /// - Single parameter of &mut TxContext type
-    /// - No return values
-    /// - Private
-    fn check_module_init_permission<S>(
-        &self,
-        session: &mut SessionExt<S>,
-        _tx_context: &TxContext,
-        function_id: &FunctionId,
-        ty_args: Vec<TypeTag>,
-        _args: Vec<Vec<u8>>,
-    ) -> Result<bool>
-    where
-        S: MoveResolverExt,
-    {
-        let loaded_function = session.load_function(function_id, ty_args.as_slice())?;
-        let Some((_i, _t)) = loaded_function.parameters.iter().enumerate().find(|(i, t)| {
-            let struct_type = as_struct_no_panic(session, t);
-            (*i as u32 == 0u32) && Option::is_some(&struct_type) && is_storage_context(&(struct_type.unwrap()))
-        }) else {
-            return Ok(false)
-        };
-
-        if !(loaded_function.return_.is_empty()) {
-            return Ok(false);
-        }
-        Ok(true)
-    }
-
     fn check_and_execute_init_modules<S>(
         &self,
         session: &mut SessionExt<S>,
@@ -325,9 +294,8 @@ impl MoveOS {
         let mut modules_to_init = vec![];
         for module in modules {
             let result = verify_init_function(module, session.runtime_session());
-            match result {
-                Ok(_) => modules_to_init.push(module.self_id()),
-                Err(_) => {}
+            if result.is_ok() {
+                modules_to_init.push(module.self_id())
             }
         }
 
