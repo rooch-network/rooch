@@ -16,12 +16,27 @@ struct World {
     tpl_ctx: Option<TemplateContext>,
 }
 
-#[given(expr = "a server")] // Cucumber Expression
+#[given(expr = "the server")] // Cucumber Expression
 async fn start_server(w: &mut World) {
     let mut service = Service::new();
     service.start().await.unwrap();
 
     w.service = Some(service);
+}
+
+#[then(expr = "stop the server")] // Cucumber Expression
+async fn stop_server(w: &mut World) {
+    println!("stop server");
+    match w.service.take() {
+        Some(service) => {
+            service.stop().unwrap();
+            info!("Shutdown Sever");
+        }
+        None => {
+            info!("service is none");
+        }
+    }
+    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 }
 
 #[then(regex = r#"cmd: "(.*)?""#)]

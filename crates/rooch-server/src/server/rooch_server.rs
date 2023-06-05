@@ -3,8 +3,8 @@
 
 use crate::api::RoochRpcModule;
 use crate::jsonrpc_types::{
-    AnnotatedMoveStructView, AnnotatedStateView, EventView, FunctionCallView, StateView, StrView,
-    StructTagView,
+    AnnotatedFunctionReturnValueView, AnnotatedMoveStructView, AnnotatedStateView, EventView,
+    FunctionCallView, StateView, StrView, StructTagView,
 };
 use crate::service::RpcService;
 use crate::{api::rooch_api::RoochAPIServer, jsonrpc_types::AnnotatedObjectView};
@@ -55,11 +55,14 @@ impl RoochAPIServer for RoochServer {
     async fn execute_view_function(
         &self,
         function_call: FunctionCallView,
-    ) -> RpcResult<Vec<serde_json::Value>> {
+    ) -> RpcResult<Vec<AnnotatedFunctionReturnValueView>> {
         Ok(self
             .rpc_service
             .execute_view_function(function_call.into())
-            .await?)
+            .await?
+            .into_iter()
+            .map(AnnotatedFunctionReturnValueView::from)
+            .collect())
     }
 
     async fn get_resource(

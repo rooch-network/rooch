@@ -6,6 +6,7 @@ pub mod addresses;
 pub mod error;
 pub mod event;
 pub mod event_filter;
+pub mod function_return_value;
 pub mod h256;
 pub mod move_module;
 pub mod move_string;

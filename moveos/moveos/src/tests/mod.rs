@@ -24,7 +24,7 @@ pub fn test_check_account() {
         .unwrap();
 
     assert_eq!(
-        result.return_values[0].0,
+        result[0].value,
         serialize_values(&vec![MoveValue::Bool(false)])[0]
     );
 }

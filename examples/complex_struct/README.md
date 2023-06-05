@@ -1,6 +1,6 @@
 # Complex Struct example
  
-The purpose of this example is mainly to test how different types of MoveValue are displayed in the JSON-RPC output
+The purpose of this example is mainly to test how types of MoveValue are displayed in the JSON-RPC output
 
 ## Getting started
 

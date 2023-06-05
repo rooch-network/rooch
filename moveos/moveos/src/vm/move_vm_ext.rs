@@ -81,10 +81,10 @@ where
     pub fn resolve_args(
         &self,
         tx_context: &TxContext,
-        func: LoadedFunctionInstantiation,
+        func: &LoadedFunctionInstantiation,
         args: Vec<Vec<u8>>,
     ) -> Result<Vec<Vec<u8>>, PartialVMError> {
-        tx_context.resolve_argument(self, &func, args)
+        tx_context.resolve_argument(self, func, args)
     }
 
     /************** Proxy function */

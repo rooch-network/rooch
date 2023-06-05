@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::{
-    AnnotatedMoveStructView, AnnotatedObjectView, AnnotatedStateView, EventView, FunctionCallView,
-    StateView, StrView, StructTagView,
+    AnnotatedFunctionReturnValueView, AnnotatedMoveStructView, AnnotatedObjectView,
+    AnnotatedStateView, EventView, FunctionCallView, StateView, StrView, StructTagView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -35,7 +35,7 @@ pub trait RoochAPI {
     async fn execute_view_function(
         &self,
         function_call: FunctionCallView,
-    ) -> RpcResult<Vec<serde_json::Value>>;
+    ) -> RpcResult<Vec<AnnotatedFunctionReturnValueView>>;
 
     /// Get the resource of an account by address and type
     #[method(name = "rooch_getResource")]

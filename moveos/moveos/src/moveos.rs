@@ -20,12 +20,12 @@ use move_core_types::{
     value::MoveValue,
     vm_status::{KeptVMStatus, StatusCode},
 };
-use move_vm_runtime::session::SerializedReturnValues;
 use move_vm_types::gas::UnmeteredGasMeter;
 use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
 use moveos_store::MoveOSDB;
 use moveos_store::{event_store::EventStore, state_store::StateDB};
 use moveos_types::event::{Event, EventID};
+use moveos_types::function_return_value::FunctionReturnValue;
 use moveos_types::object::ObjectID;
 use moveos_types::transaction::{AuthenticatableTransaction, MoveAction, MoveOSTransaction};
 use moveos_types::tx_context::TxContext;
@@ -126,10 +126,10 @@ impl MoveOS {
         );
         match result {
             Ok(return_values) => {
-                let (validate_result, _layout) = return_values
-                    .return_values
+                let validate_result = &return_values
                     .get(0)
-                    .expect("the validate function should return the validate result.");
+                    .expect("the validate function should return the validate result.")
+                    .value;
                 let auth_result = bcs::from_bytes::<T::AuthenticatorResult>(validate_result)?;
                 tx.construct_moveos_transaction(auth_result)
             }
@@ -175,7 +175,7 @@ impl MoveOS {
                     session.load_script(script.code.as_slice(), script.ty_args.clone())?;
 
                 let args = session
-                    .resolve_args(&tx_context, loaded_function, script.args)
+                    .resolve_args(&tx_context, &loaded_function, script.args)
                     .map_err(|e| e.finish(Location::Undefined))?;
                 session
                     .execute_script(script.code, script.ty_args, args, &mut gas_meter)
@@ -194,7 +194,7 @@ impl MoveOS {
                 let loaded_function =
                     session.load_function(&function.function_id, function.ty_args.as_slice())?;
                 let args = session
-                    .resolve_args(&tx_context, loaded_function, function.args)
+                    .resolve_args(&tx_context, &loaded_function, function.args)
                     .map_err(|e| e.finish(Location::Undefined))?;
 
                 session
@@ -374,25 +374,39 @@ impl MoveOS {
         tx_context: &TxContext,
         gas_meter: &mut UnmeteredGasMeter,
         function_call: FunctionCall,
-    ) -> VMResult<SerializedReturnValues> {
+    ) -> VMResult<Vec<FunctionReturnValue>> {
         let loaded_function =
             session.load_function(&function_call.function_id, function_call.ty_args.as_slice())?;
         let args = session
-            .resolve_args(tx_context, loaded_function, function_call.args)
+            .resolve_args(tx_context, &loaded_function, function_call.args)
             .map_err(|e| e.finish(Location::Undefined))?;
-        session.execute_function_bypass_visibility(
+
+        let return_values = session.execute_function_bypass_visibility(
             &function_call.function_id,
             function_call.ty_args,
             args,
             gas_meter,
-        )
+        )?;
+        return_values
+            .return_values
+            .into_iter()
+            .zip(loaded_function.return_.iter())
+            .map(|((v, _layout), ty)| {
+                // We can not use
+                // let type_tag :TypeTag = TryInto::try_into(&layout)?
+                // to get TypeTag from MoveTypeLayout, because MoveTypeLayout::StructTag does not implement TryInto<TypeTag>
+                // Invalid MoveTypeLayout -> StructTag conversion--needed MoveLayoutType::WithTypes
+                let type_tag = session.get_type_tag(ty)?;
+                Ok(FunctionReturnValue::new(type_tag, v))
+            })
+            .collect()
     }
 
     /// Execute readonly view function
     pub fn execute_view_function(
         &self,
         function_call: FunctionCall,
-    ) -> Result<SerializedReturnValues> {
+    ) -> Result<Vec<FunctionReturnValue>> {
         let mut session = self.vm.new_session(&self.db);
         //TODO limit the view function max gas usage
         let mut gas_meter = UnmeteredGasMeter;
