@@ -11,8 +11,9 @@ use move_core_types::{
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use moveos_types::h256::H256;
+use moveos_types::move_types::parse_module_id;
 use moveos_types::{
-    event::Event,
+    event::EventID,
     state::{AnnotatedState, State},
 };
 use moveos_types::{
@@ -25,14 +26,18 @@ use moveos_types::{
     object::{AnnotatedObject, ObjectID},
     transaction::FunctionCall,
 };
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::str::FromStr;
 
 pub type ModuleIdView = StrView<ModuleId>;
 pub type TypeTagView = StrView<TypeTag>;
 pub type StructTagView = StrView<StructTag>;
+pub type FunctionIdView = StrView<FunctionId>;
 
-impl_str_view_for! {TypeTag StructTag}
+impl_str_view_for! {TypeTag StructTag FunctionId}
+// impl_str_view_for! {TypeTag StructTag ModuleId FunctionId}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AnnotatedMoveStructView {
@@ -192,9 +197,9 @@ impl From<AnnotatedObject> for AnnotatedObjectView {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct FunctionCallView {
-    pub function_id: FunctionId,
+    pub function_id: FunctionIdView,
     pub ty_args: Vec<TypeTagView>,
     pub args: Vec<StrView<Vec<u8>>>,
 }
@@ -202,7 +207,7 @@ pub struct FunctionCallView {
 impl From<FunctionCall> for FunctionCallView {
     fn from(origin: FunctionCall) -> Self {
         Self {
-            function_id: origin.function_id,
+            function_id: StrView(origin.function_id),
             ty_args: origin.ty_args.into_iter().map(StrView).collect(),
             args: origin.args.into_iter().map(StrView).collect(),
         }
@@ -212,10 +217,24 @@ impl From<FunctionCall> for FunctionCallView {
 impl From<FunctionCallView> for FunctionCall {
     fn from(value: FunctionCallView) -> Self {
         Self {
-            function_id: value.function_id,
+            function_id: value.function_id.into(),
             ty_args: value.ty_args.into_iter().map(Into::into).collect(),
             args: value.args.into_iter().map(Into::into).collect(),
         }
+    }
+}
+
+impl std::fmt::Display for StrView<ModuleId> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", &self.0)
+    }
+}
+
+impl FromStr for StrView<ModuleId> {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(parse_module_id(s)?))
     }
 }
 
@@ -226,59 +245,25 @@ pub struct EventView {
     /// Sender's address.
     pub sender: AccountAddress,
     pub event_data: StrView<Vec<u8>>,
+    /// Parsed json value of the event data
+    // pub parsed_json: Value,
+    pub parsed_json: AnnotatedMoveStructView,
     pub type_tag: TypeTagView,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub event_index: Option<u32>,
-    pub event_key: ObjectID,
-    pub event_seq_number: StrView<u64>,
-}
-
-impl From<Event> for EventView {
-    fn from(event: Event) -> Self {
-        EventView {
-            tx_hash: None,
-            sender: AccountAddress::ZERO, //TODO fill event sender
-            event_data: StrView(event.event_data().to_vec()),
-            type_tag: event.type_tag().clone().into(),
-            event_index: Some(event.event_index),
-            event_key: *event.key(),
-            event_seq_number: event.sequence_number().into(),
-        }
-    }
+    pub event_id: EventID,
 }
 
 impl From<MoveOSEvent> for EventView {
     fn from(event: MoveOSEvent) -> Self {
         EventView {
-            tx_hash: Some(event.tx_hash),
-            sender: AccountAddress::ZERO, //TODO fill event sender
+            tx_hash: event.tx_hash,
+            sender: AccountAddress::ZERO, //Reserved as an extension field
             event_data: StrView(event.event_data.to_vec()),
+            parsed_json: event.parsed_json.into(),
             type_tag: event.type_tag.clone().into(),
             event_index: Some(event.event_index),
-            event_key: event.key,
-            event_seq_number: event.sequence_number.into(),
-        }
-    }
-}
-
-impl EventView {
-    pub fn try_from(event: Event, tx_hash: H256) -> Self {
-        let Event {
-            key,
-            sequence_number,
-            type_tag,
-            event_data,
-            event_index,
-        } = event;
-
-        EventView {
-            tx_hash: Some(tx_hash),
-            sender: AccountAddress::ZERO, //TODO fill event sender
-            event_data: StrView(event_data.to_vec()),
-            type_tag: type_tag.into(),
-            event_index: Some(event_index),
-            event_key: key,
-            event_seq_number: sequence_number.into(),
+            event_id: event.event_id,
         }
     }
 }

@@ -23,7 +23,6 @@ impl Test {
         //TODO define gas metering
         let cost_table = move_vm_test_utils::gas_schedule::INITIAL_COST_SCHEDULE.clone();
         let natives = all_natives(GasParameters::zeros());
-
         set_extension_hook(Box::new(new_moveos_natives_runtime));
         self.test
             .execute(path, build_config, natives, Some(cost_table))

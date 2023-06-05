@@ -18,6 +18,7 @@ pub struct GasParameters {
     type_info: moveos_stdlib::type_info::GasParameters,
     rlp: moveos_stdlib::rlp::GasParameters,
     bcd: moveos_stdlib::bcd::GasParameters,
+    events: moveos_stdlib::events::GasParameters,
     test_helper: moveos_stdlib::test_helper::GasParameters,
     account: rooch_framework::account::GasParameters,
     hash: rooch_framework::crypto::hash::GasParameters,
@@ -34,6 +35,7 @@ impl GasParameters {
             type_info: moveos_stdlib::type_info::GasParameters::zeros(),
             rlp: moveos_stdlib::rlp::GasParameters::zeros(),
             bcd: moveos_stdlib::bcd::GasParameters::zeros(),
+            events: moveos_stdlib::events::GasParameters::zeros(),
             test_helper: moveos_stdlib::test_helper::GasParameters::zeros(),
             account: rooch_framework::account::GasParameters::zeros(),
             hash: rooch_framework::crypto::hash::GasParameters::zeros(),
@@ -82,6 +84,7 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
     );
     add_natives!("rlp", moveos_stdlib::rlp::make_all(gas_params.rlp));
     add_natives!("bcd", moveos_stdlib::bcd::make_all(gas_params.bcd));
+    add_natives!("events", moveos_stdlib::events::make_all(gas_params.events));
     add_natives!(
         "test_helper",
         moveos_stdlib::test_helper::make_all(gas_params.test_helper)

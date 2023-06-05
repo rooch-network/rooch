@@ -273,7 +273,7 @@ impl TableInfo {
 
 impl MoveStructType for TableInfo {
     const MODULE_NAME: &'static IdentStr = ident_str!("raw_table");
-    const STRUCT_NAME: &'static IdentStr = ident_str!("AccountStorage");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("TableInfo");
 
     fn type_params() -> Vec<TypeTag> {
         vec![]

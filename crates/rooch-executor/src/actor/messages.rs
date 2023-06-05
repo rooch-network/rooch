@@ -15,7 +15,7 @@ use moveos_types::{
     object::{AnnotatedObject, ObjectID},
     transaction::{AuthenticatableTransaction, FunctionCall, MoveOSTransaction},
 };
-use rooch_types::{transaction::TransactionInfo, H256};
+use rooch_types::transaction::TransactionInfo;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
@@ -91,11 +91,11 @@ impl Message for AnnotatedStatesMessage {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct GetEventsByTxHashMessage {
-    pub tx_hash: H256,
+pub struct GetEventsByEventHandleMessage {
+    pub event_handle_id: ObjectID,
 }
 
-impl Message for GetEventsByTxHashMessage {
+impl Message for GetEventsByEventHandleMessage {
     type Result = Result<Option<Vec<MoveOSEvent>>>;
 }
 

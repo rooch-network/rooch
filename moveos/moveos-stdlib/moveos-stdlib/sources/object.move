@@ -10,7 +10,8 @@ module moveos_std::object {
     use moveos_std::object_id::ObjectID;
 
     friend moveos_std::account_storage;
-    
+    friend moveos_std::events;
+
     /// Invalid access of object, the object is not owned by the signer or the object is not shared or immutable
     const EInvalidAccess: u64 = 0;
    
