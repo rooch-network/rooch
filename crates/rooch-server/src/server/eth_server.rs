@@ -26,6 +26,7 @@ use rooch_types::{
 use std::iter;
 use std::str::FromStr;
 use std::time::SystemTime;
+use tracing::info;
 
 pub struct EthServer {
     rpc_service: RpcService,
@@ -249,6 +250,7 @@ impl EthAPIServer for EthServer {
     }
 
     async fn send_raw_transaction(&self, bytes: Bytes) -> RpcResult<H256> {
+        info!("send_raw_transaction: {:?}", bytes);
         let tx = TypedTransaction::Ethereum(EthereumTransaction::decode(&bytes)?);
         let hash = tx.hash();
         let _output = self.rpc_service.execute_tx(tx).await?;
