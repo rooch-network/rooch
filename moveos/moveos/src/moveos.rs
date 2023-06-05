@@ -229,7 +229,6 @@ impl MoveOS {
         };
 
         let (change_set, raw_events, mut extensions) = session.finish_with_extensions()?;
-        println!("moveos events {:?}", raw_events);
 
         let table_context: NativeTableContext = extensions.remove();
         let table_change_set = table_context

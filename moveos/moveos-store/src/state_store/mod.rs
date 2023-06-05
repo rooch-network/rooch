@@ -26,7 +26,6 @@ use moveos_types::{
 };
 use smt::{InMemoryNodeStore, NodeStore, SMTree, UpdateSet};
 use std::collections::BTreeMap;
-use std::str;
 
 pub mod state_view;
 #[cfg(test)]
@@ -370,11 +369,6 @@ impl StateDB {
         handle: &TableHandle,
         key: &[u8],
     ) -> Result<Option<TableValueBox>, Error> {
-        println!(
-            "state store resolve_table_entry {:?} and key {:?}",
-            handle,
-            str::from_utf8(key)
-        );
         let state = if handle.0 == storage_context::GLOBAL_OBJECT_STORAGE_HANDLE {
             self.global_table.get(key.to_vec())
         } else {

@@ -772,7 +772,6 @@ fn deserialize_and_box(layout: &MoveTypeLayout, bytes: &[u8]) -> PartialVMResult
 }
 
 fn partial_extension_error(msg: impl ToString) -> PartialVMError {
-    println!("raw table native {:?}", msg.to_string());
     PartialVMError::new(StatusCode::VM_EXTENSION_ERROR).with_message(msg.to_string())
 }
 

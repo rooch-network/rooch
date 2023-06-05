@@ -23,13 +23,11 @@ use std::str::FromStr;
 pub enum NamedTableID {
     Resource(AccountAddress),
     Module(AccountAddress),
-    // EventHandle(AccountAddress),
 }
 
 impl NamedTableID {
     const RESOURCE_TABLE_INDEX: u64 = 0;
     const MODULE_TABLE_INDEX: u64 = 1;
-    // const EVENT_HANDLE_TABLE_INDEX: u64 = 2;
 
     pub fn to_object_id(self) -> ObjectID {
         self.into()
@@ -39,7 +37,6 @@ impl NamedTableID {
         match self {
             NamedTableID::Resource(addr) => *addr,
             NamedTableID::Module(addr) => *addr,
-            // NamedTableID::EventHandle(addr) => *addr,
         }
     }
 
@@ -47,7 +44,6 @@ impl NamedTableID {
         match self {
             NamedTableID::Resource(_) => Self::RESOURCE_TABLE_INDEX,
             NamedTableID::Module(_) => Self::MODULE_TABLE_INDEX,
-            // NamedTableID::EventHandle(_) => Self::EVENT_HANDLE_TABLE_INDEX,
         }
     }
 }
@@ -261,33 +257,6 @@ impl MoveState for AccountStorage {
         ])
     }
 }
-
-// #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
-// pub struct EventHandleStorage {
-//     pub event_handles: ObjectID,
-// }
-//
-// impl EventHandleStorage {
-//     pub fn new(account: AccountAddress) -> Self {
-//         let event_handles = NamedTableID::EventHandle(account).to_object_id();
-//         EventHandleStorage { event_handles }
-//     }
-// }
-//
-// impl MoveStructType for EventHandleStorage {
-//     const MODULE_NAME: &'static IdentStr = ident_str!("event_handle_storage");
-//     const STRUCT_NAME: &'static IdentStr = ident_str!("EventHandleStorage");
-//
-//     fn type_params() -> Vec<TypeTag> {
-//         vec![]
-//     }
-// }
-//
-// impl MoveState for EventHandleStorage {
-//     fn move_layout() -> MoveStructLayout {
-//         MoveStructLayout::new(vec![MoveTypeLayout::Struct(ObjectID::move_layout())])
-//     }
-// }
 
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct TableInfo {
