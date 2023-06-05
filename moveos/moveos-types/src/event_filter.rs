@@ -10,13 +10,15 @@ use crate::move_types::type_tag_match;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::TypeTag;
+use move_resource_viewer::AnnotatedMoveStruct;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::serde_as;
 
 #[serde_as]
 // #[derive(Eq, PartialEq, Clone, Debug, Serialize, Deserialize, JsonSchema)]
-#[derive(Eq, PartialEq, Clone, Debug)]
+// #[derive(Eq, PartialEq, Clone, Debug)]
+#[derive(Clone, Debug)]
 // #[serde(rename = "Event", rename_all = "camelCase")]
 pub struct MoveOSEvent {
     pub event_id: EventID,
@@ -33,7 +35,8 @@ pub struct MoveOSEvent {
     /// bcs bytes of the move event
     pub event_data: Vec<u8>,
     /// Parsed json value of the event data
-    pub parsed_json: Value,
+    // pub parsed_json: Value,
+    pub parsed_json: AnnotatedMoveStruct,
     /// UTC timestamp in milliseconds since epoch (1/1/1970)
     // #[serde(skip_serializing_if = "Option::is_none")]
     // #[schemars(with = "Option<u64>")]
@@ -51,6 +54,7 @@ pub struct MoveOSEvent {
 impl MoveOSEvent {
     pub fn try_from(
         event: Event,
+        parsed_json: AnnotatedMoveStruct,
         tx_hash: Option<H256>,
         timestamp_ms: Option<u64>,
         block_height: Option<u64>,
@@ -66,7 +70,7 @@ impl MoveOSEvent {
         //TODO how to store and derive sender address ?
         let sender = AccountAddress::ZERO;
         //TODO deserilize field from event_data
-        let parsed_json = serde_json::to_value(event_data.clone()).unwrap();
+        // let parsed_json = serde_json::to_value(event_data.clone()).unwrap();
 
         Ok(MoveOSEvent {
             event_id,
@@ -137,8 +141,9 @@ impl EventFilter {
     fn try_matches(&self, item: &MoveOSEvent) -> Result<bool> {
         Ok(match self {
             EventFilter::MoveEventType(event_type) => type_tag_match(&item.type_tag, event_type),
-            EventFilter::MoveEventField { path, value } => {
-                matches!(item.parsed_json.pointer(path), Some(v) if v == value)
+            EventFilter::MoveEventField { path: _, value: _ } => {
+                // matches!(item.parsed_json.pointer(path), Some(v) if v == value)
+                false
             }
 
             EventFilter::Sender(sender) => &item.sender == sender,

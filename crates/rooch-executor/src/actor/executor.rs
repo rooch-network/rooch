@@ -6,10 +6,10 @@ use super::messages::{
     ExecuteViewFunctionMessage, GetEventsByEventHandleMessage, GetEventsMessage,
     GetResourceMessage, ObjectMessage, StatesMessage, ValidateTransactionMessage,
 };
-use anyhow::Result;
+use anyhow::{bail, Result};
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
-use move_core_types::value::MoveValue;
+use move_core_types::{language_storage::TypeTag, value::MoveValue};
 use move_resource_viewer::{AnnotatedMoveStruct, MoveValueAnnotator};
 use moveos::moveos::MoveOS;
 use moveos_store::state_store::state_view::{AnnotatedStateReader, StateReader};
@@ -153,6 +153,7 @@ impl Handler<GetEventsByEventHandleMessage> for ExecutorActor {
     ) -> Result<Option<Vec<MoveOSEvent>>> {
         let GetEventsByEventHandleMessage { event_handle_id } = msg;
         let event_store = self.moveos.event_store();
+        let statedb = self.moveos.state();
 
         let mut result: Vec<MoveOSEvent> = Vec::new();
         let events = event_store.get_events_by_event_handle_id(&event_handle_id)?;
@@ -162,7 +163,18 @@ impl Handler<GetEventsByEventHandleMessage> for ExecutorActor {
                 .unwrap()
                 .into_iter()
                 .enumerate()
-                .map(|(_i, event)| MoveOSEvent::try_from(event, None, None, None))
+                .map(|(_i, event)| {
+                    let state = State::new(event.event_data.clone(), event.type_tag.clone());
+                    let struct_tag = if let TypeTag::Struct(struct_tag) = event.type_tag.clone() {
+                        *struct_tag
+                    } else {
+                        bail!("invalid struct tag: {:?}", event.type_tag)
+                    };
+                    let annotated_event_data = MoveValueAnnotator::new(statedb)
+                        .view_resource(&struct_tag, state.value.as_slice())
+                        .unwrap();
+                    MoveOSEvent::try_from(event, annotated_event_data, None, None, None)
+                })
                 .collect::<Vec<_>>()
             {
                 result.push(ev.unwrap());
@@ -186,6 +198,7 @@ impl Handler<GetEventsMessage> for ExecutorActor {
     ) -> Result<Option<Vec<MoveOSEvent>>> {
         let GetEventsMessage { filter } = msg;
         let event_store = self.moveos.event_store();
+        let statedb = self.moveos.state();
         //TODO handle tx hash
         let mut result: Vec<MoveOSEvent> = Vec::new();
         let events = event_store.get_events_with_filter(filter)?;
@@ -194,7 +207,19 @@ impl Handler<GetEventsMessage> for ExecutorActor {
                 .unwrap()
                 .into_iter()
                 .enumerate()
-                .map(|(_i, event)| MoveOSEvent::try_from(event, None, None, None))
+                .map(|(_i, event)| {
+                    let state = State::new(event.event_data.clone(), event.type_tag.clone());
+                    let struct_tag = if let TypeTag::Struct(struct_tag) = event.type_tag.clone() {
+                        *struct_tag
+                    } else {
+                        bail!("invalid struct tag: {:?}", event.type_tag)
+                    };
+                    let annotated_event_data = MoveValueAnnotator::new(statedb)
+                        .view_resource(&struct_tag, state.value.as_slice())
+                        .unwrap();
+                    MoveOSEvent::try_from(event, annotated_event_data, None, None, None)
+                    // MoveOSEvent::try_from(event, None, None, None)
+                })
                 .collect::<Vec<_>>()
             {
                 result.push(ev.unwrap());

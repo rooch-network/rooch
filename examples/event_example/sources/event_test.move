@@ -4,17 +4,7 @@ module rooch_examples::event_test {
     use moveos_std::tx_context;
 
     #[test_only]
-    use std::hash;
-    #[test_only]
-    use std::bcs;
-    #[test_only]
-    use moveos_std::type_info;
-    #[test_only]
-    use std::bcd;
-    #[test_only]
     use std::debug;
-    // #[test_only]
-    // use std::signer;
 
 
     struct WithdrawEvent has key {
@@ -36,10 +26,9 @@ module rooch_examples::event_test {
 
     #[test]
     fun test_get_test_event_handle() {
-        let bytes = hash::sha3_256(bcs::to_bytes(&type_info::type_of<WithdrawEvent>()));
-        let id = hash::sha3_256(bytes);
-        let addr = bcd::to_address(id);
-        debug::print(&addr);
+        let event_handle_id = events::derive_event_handle_id<WithdrawEvent>();
+        debug::print(&120120);
+        debug::print(&event_handle_id);
     }
 
     // #[test(sender = @042)]

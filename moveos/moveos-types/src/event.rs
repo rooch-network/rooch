@@ -135,16 +135,11 @@ impl Event {
         &self.event_id
     }
 
-    // pub fn sequence_number(&self) -> u64 {
-    //     self.sequence_number
-    // }s
-
     pub fn event_data(&self) -> &[u8] {
         &self.event_data
     }
 
     pub fn decode_event<EventType: MoveResource + DeserializeOwned>(&self) -> Result<EventType> {
-        // bcs_ext::from_bytes(self.event_data.as_slice()).map_err(Into::into)
         bcs::from_bytes(self.event_data.as_slice()).map_err(Into::into)
     }
 

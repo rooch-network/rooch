@@ -3,7 +3,6 @@
 
 use crate::jsonrpc_types::StrView;
 use anyhow::Result;
-// use move_binary_format::file_format::AbilitySet;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
@@ -14,7 +13,7 @@ use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use moveos_types::h256::H256;
 use moveos_types::move_types::parse_module_id;
 use moveos_types::{
-    event::{Event, EventID},
+    event::EventID,
     state::{AnnotatedState, State},
 };
 use moveos_types::{
@@ -246,25 +245,13 @@ pub struct EventView {
     /// Sender's address.
     pub sender: AccountAddress,
     pub event_data: StrView<Vec<u8>>,
+    /// Parsed json value of the event data
+    // pub parsed_json: Value,
+    pub parsed_json: AnnotatedMoveStructView,
     pub type_tag: TypeTagView,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub event_index: Option<u32>,
     pub event_id: EventID,
-    // pub event_seq_number: StrView<u64>,
-}
-
-impl From<Event> for EventView {
-    fn from(event: Event) -> Self {
-        EventView {
-            tx_hash: None,
-            sender: AccountAddress::ZERO, //Reserved as an extension field
-            event_data: StrView(event.event_data().to_vec()),
-            type_tag: event.type_tag().clone().into(),
-            event_index: Some(event.event_index),
-            event_id: *event.event_id(),
-            // event_seq_number: event.sequence_number().into(),
-        }
-    }
 }
 
 impl From<MoveOSEvent> for EventView {
@@ -273,32 +260,10 @@ impl From<MoveOSEvent> for EventView {
             tx_hash: event.tx_hash,
             sender: AccountAddress::ZERO, //Reserved as an extension field
             event_data: StrView(event.event_data.to_vec()),
+            parsed_json: event.parsed_json.into(),
             type_tag: event.type_tag.clone().into(),
             event_index: Some(event.event_index),
             event_id: event.event_id,
-            // event_seq_number: event.sequence_number.into(),
-        }
-    }
-}
-
-impl EventView {
-    pub fn try_from(event: Event, tx_hash: H256) -> Self {
-        let Event {
-            event_id,
-            // sequence_number,
-            type_tag,
-            event_data,
-            event_index,
-        } = event;
-
-        EventView {
-            tx_hash: Some(tx_hash),
-            sender: AccountAddress::ZERO, //Reserved as an extension field
-            event_data: StrView(event_data.to_vec()),
-            type_tag: type_tag.into(),
-            event_index: Some(event_index),
-            event_id,
-            // event_seq_number: sequence_number.into(),
         }
     }
 }
