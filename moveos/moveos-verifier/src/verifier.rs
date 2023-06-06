@@ -1,4 +1,4 @@
-use crate::metadata::{is_allowed_input_struct, check_storage_context_struct_tag};
+use crate::metadata::{check_storage_context_struct_tag, is_allowed_input_struct};
 use anyhow::{Error, Ok, Result};
 use move_binary_format::file_format::Visibility;
 use move_binary_format::{access::ModuleAccess, CompiledModule};
@@ -48,37 +48,33 @@ where
                 }
                 for ref ty in loaded_function.parameters {
                     match ty {
-
                         Type::Reference( bt) | Type::MutableReference(bt)=> {
-                            
                             match bt.as_ref() {
                                 Type::Struct(s) | Type::StructInstantiation(s, _) => {
                                     let struct_type = session.get_struct_type(*s).unwrap();
-        
-                                    if check_storage_context_struct_tag(
+                                    if !check_storage_context_struct_tag(
                                         &(struct_type.module.address().to_string()
                                             + &struct_type.module.name().to_string()
                                             + &struct_type.name.to_string()),
                                     ) {
-                                        return Ok(true);
+                                        return Err(Error::msg(
+                                            "init function should not input structures other than storageContext"
+                                                .to_string(),
+                                        ))
                                     }
                                 }
                                 Type::Signer => {}
                                 _ => {
                                     return Err(Error::msg(
-                                        "init function only should have two parameter with signer or storageContext"
+                                        "init function should only enter reference signer or mutable reference storageContext"
                                             .to_string(),
                                     ))
                                 }
                             }
-                            
                         }
-
-                        Type::Signer => {
-                        }
-    
+                        Type::Signer => {}
                         _ => return Err(Error::msg(
-                            "init function only should have two parameter with signer or storageContext"
+                            "init function should only enter signer or storageContext"
                                 .to_string(),
                         ))
                     }

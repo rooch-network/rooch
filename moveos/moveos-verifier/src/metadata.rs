@@ -302,36 +302,33 @@ impl<'a> ExtendedChecker<'a> {
             if arg_tys.len() != 1 && arg_tys.len() != 2 {
                 self.env.error(
                     &fun.get_loc(),
-                    "module init function only should have a parameter",
+                    "module init function should have 1 or 2 parameters",
                 )
             }
             for ty in arg_tys {
                 match ty {
-                    
                     Type::Reference(true, bt) => {
-                        
                         let struct_tag = bt.clone().into_struct_tag(self.env);
                         if struct_tag.is_none() {
                             self.env.error(
                                 &fun.get_loc(),
-                                "module init function only should have two parameter with signer or storageContext"
+                                "module init function should input a reference structure"
                             )
                         }
 
                         if !check_storage_context_struct_tag(&struct_tag.unwrap().to_canonical_string()){
                             self.env.error(
                                 &fun.get_loc(),
-                                "module init function only should have two parameter with signer or storageContext"
+                                "module init function should not input reference structures other than storageContext"
                             )
                         }
                     }
-                    
                     Type::Reference(false, bt) => {
                         if bt.as_ref() == &Type::Primitive(PrimitiveType::Signer) {
                         } else {
                             self.env.error(
                                 &fun.get_loc(),
-                                "module init function only should have two parameter with signer or storageContext",
+                                "module init function should not have a reference primitive type other than a signer",
                             )
                         }
                     }
@@ -340,14 +337,14 @@ impl<'a> ExtendedChecker<'a> {
                         } else {
                             self.env.error(
                             &fun.get_loc(),
-                            "module init function only should have two parameter with signer or storageContext",
+                            "module init function should not have a primitive type other than a signer",
                         )
                         }
                     }
 
                     _ => self.env.error(
                         &fun.get_loc(),
-                        "module init function only should have two parameter with signer or storageContext",
+                        "module init function only should have two parameter types with signer or storageContext",
                     ),
                 }
             }
