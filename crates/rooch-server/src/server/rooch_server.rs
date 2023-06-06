@@ -153,6 +153,23 @@ impl RoochAPIServer for RoochServer {
             Ok(None)
         }
     }
+
+    async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<Option<TypedTransaction>> {
+        let resp = self.rpc_service.get_transaction_by_hash(hash).await?;
+        Ok(resp)
+    }
+
+    async fn get_transaction_by_index(
+        &self,
+        start: u64,
+        limit: u64,
+    ) -> RpcResult<Option<Vec<TypedTransaction>>> {
+        let resp = self
+            .rpc_service
+            .get_transaction_by_index(start, limit)
+            .await?;
+        Ok(resp)
+    }
 }
 
 impl RoochRpcModule for RoochServer {

@@ -14,7 +14,11 @@ use rooch_server::{
         AnnotatedStateView, StateView,
     },
 };
-use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction};
+use rooch_types::{
+    address::RoochAddress,
+    transaction::{rooch::RoochTransaction, TypedTransaction},
+    H256,
+};
 
 pub mod client_config;
 pub mod wallet_context;
@@ -129,6 +133,18 @@ impl Client {
         access_path: AccessPath,
     ) -> Result<Vec<Option<AnnotatedStateView>>> {
         Ok(self.rpc.http.get_annotated_states(access_path).await?)
+    }
+
+    pub async fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<TypedTransaction>> {
+        Ok(self.rpc.http.get_transaction_by_hash(hash).await?)
+    }
+
+    pub async fn get_transaction_by_index(
+        &self,
+        start: u64,
+        limit: u64,
+    ) -> Result<Option<Vec<TypedTransaction>>> {
+        Ok(self.rpc.http.get_transaction_by_index(start, limit).await?)
     }
 
     pub async fn get_sequence_number(&self, _sender: RoochAddress) -> Result<u64> {

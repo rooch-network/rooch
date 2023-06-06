@@ -12,7 +12,7 @@ use moveos::moveos::TransactionOutput;
 use moveos_types::access_path::AccessPath;
 use moveos_types::event_filter::EventFilter;
 use moveos_types::object::ObjectID;
-use rooch_types::H256;
+use rooch_types::{transaction::TypedTransaction, H256};
 
 #[rpc(server, client)]
 pub trait RoochAPI {
@@ -71,4 +71,14 @@ pub trait RoochAPI {
     /// Get the events by event filter
     #[method(name = "rooch_getEvents")]
     async fn get_events(&self, filter: EventFilter) -> RpcResult<Option<Vec<EventView>>>;
+
+    #[method(name = "rooch_getTransactionByHash")]
+    async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<Option<TypedTransaction>>;
+
+    #[method(name = "rooch_getTransactionByIndex")]
+    async fn get_transaction_by_index(
+        &self,
+        start: u64,
+        limit: u64,
+    ) -> RpcResult<Option<Vec<TypedTransaction>>>;
 }

@@ -268,6 +268,9 @@ impl From<MoveOSEvent> for EventView {
     }
 }
 
+// TODO:
+pub struct TransactionView {}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct StateView {
     pub value: StrView<Vec<u8>>,
