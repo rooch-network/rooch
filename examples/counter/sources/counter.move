@@ -13,7 +13,7 @@ module rooch_examples::counter {
         counter.value = counter.value + 1;
      }
 
-     public entry fun init(account: signer){
+     public entry fun init_entry(account: signer){
         Self::init_(&account)
      }
 
