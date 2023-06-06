@@ -304,8 +304,13 @@ impl MoveOS {
         let mut modules_to_init = vec![];
         for module in modules {
             let result = verify_init_function(module, session.runtime_session());
-            if result.is_ok() {
-                modules_to_init.push(module.self_id())
+            match result {
+                Ok(res) => {
+                    if res {
+                        modules_to_init.push(module.self_id())
+                    }
+                }
+                Err(err) => return Err(err),
             }
         }
 
