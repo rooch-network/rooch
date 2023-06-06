@@ -40,7 +40,7 @@ This approach has several advantages:
 
 At the same time, Move provides the `Table<K,V>` extension, which allows developers to customize key-value storage.
 
-### Sui Move 的 Object 改进
+### Sui Move Object
 
 Sui Move has abandoned Move's global storage instructions and provided an Object model. Object is a special struct with the `key` ability, and its first field must be `UID`. Sui Move has designed a set of ownership mechanisms to define the ownership of Object. This design is mainly for achieving parallel transactions through a UTXO-like pattern. Clients therefore need to specify the Object that a contract will operate on in order to detect transaction conflicts quickly. Additionally, the model provides a parent-child relationship mechanism to facilitate the design of complex state structures by developers.
 
