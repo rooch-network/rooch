@@ -53,8 +53,8 @@ where
                                 Type::Struct(s) | Type::StructInstantiation(s, _) => {
                                     let struct_type = session.get_struct_type(*s).unwrap();
                                     if !check_storage_context_struct_tag(
-                                        &(struct_type.module.address().to_string()
-                                            + &struct_type.module.name().to_string()
+                                        &(struct_type.module.address().to_string() + "::"
+                                            + &struct_type.module.name().to_string() + "::"
                                             + &struct_type.name.to_string()),
                                     ) {
                                         return Err(Error::msg(
