@@ -1,6 +1,9 @@
 use crate::build::ROOCH_METADATA_KEY;
+use crate::verifier::INIT_FN_NAME_IDENTIFIER;
 use move_binary_format::binary_views::BinaryIndexedView;
-use move_binary_format::file_format::{Bytecode, FunctionInstantiation, SignatureToken};
+use move_binary_format::file_format::{
+    Bytecode, FunctionInstantiation, SignatureToken, Visibility,
+};
 use move_core_types::language_storage::ModuleId;
 use move_core_types::metadata::Metadata;
 use move_model::ast::Attribute;
@@ -81,7 +84,7 @@ impl<'a> ExtendedChecker<'a> {
             if module.is_target() {
                 self.check_private_generics_functions(module);
                 self.check_entry_functions(module);
-                //self.check_init_module(module);
+                self.check_init_module(module);
             }
         }
     }
@@ -270,6 +273,59 @@ impl<'a> ExtendedChecker<'a> {
 // Entry Function
 
 impl<'a> ExtendedChecker<'a> {
+    fn check_init_module(&mut self, module: &ModuleEnv) {
+        for ref fun in module.get_functions() {
+            if fun.get_identifier().as_ident_str() != INIT_FN_NAME_IDENTIFIER.as_ident_str() {
+                continue;
+            }
+
+            if Visibility::Private != fun.visibility() {
+                self.env
+                    .error(&fun.get_loc(), "module init function should private")
+            }
+
+            if fun.is_entry() {
+                self.env
+                    .error(&fun.get_loc(), "module init function should not entry")
+            }
+
+            if fun.get_return_count() != 0 {
+                self.env.error(
+                    &fun.get_loc(),
+                    "module init function should not have return",
+                )
+            }
+
+            let arg_tys = &fun.get_parameter_types();
+            if arg_tys.len() != 1 {
+                self.env.error(
+                    &fun.get_loc(),
+                    "module init function only should have a parameter",
+                )
+            }
+            for ty in arg_tys {
+                match ty {
+                    Type::Struct(mid, sid, _) => {
+                        if "0x1::storage_context::StorageContext"
+                            != self
+                                .env
+                                .get_struct(mid.qualified(*sid))
+                                .get_full_name_with_address()
+                        {
+                            self.env.error(
+                                &fun.get_loc(),
+                                "module init function only should have a parameter with storageContext")
+                        }
+                    }
+                    _ => self.env.error(
+                        &fun.get_loc(),
+                        "module init function only should have a parameter with storageContext",
+                    ),
+                }
+            }
+        }
+    }
+
     fn check_entry_functions(&mut self, module: &ModuleEnv) {
         for ref fun in module.get_functions() {
             if !fun.is_entry() {

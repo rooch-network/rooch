@@ -312,17 +312,6 @@ impl MoveOS {
         for module_id in modules_to_init {
             let function_id = FunctionId::new(module_id.clone(), INIT_FN_NAME_IDENTIFIER.clone());
 
-            // check module init permission
-            // if !self.check_module_init_permission(
-            //     session,
-            //     tx_context,
-            //     &function_id,
-            //     vec![],
-            //     vec![],
-            // )? {
-            //     continue;
-            // };
-
             let function = FunctionCall::new(function_id, vec![], vec![]);
             let _result =
                 Self::execute_function_bypass_visibility(session, tx_context, gas_meter, function)
