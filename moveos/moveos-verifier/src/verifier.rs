@@ -1,27 +1,16 @@
-use crate::metadata::is_allowed_input_struct;
+use crate::metadata::{is_allowed_input_struct, check_storage_context_struct_tag};
 use anyhow::{Error, Ok, Result};
 use move_binary_format::file_format::Visibility;
 use move_binary_format::{access::ModuleAccess, CompiledModule};
-use move_core_types::move_resource::MoveStructType;
 use move_core_types::{identifier::Identifier, resolver::MoveResolver};
 use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
 use move_vm_types::loaded_data::runtime_types::Type;
 use moveos_types::move_types::FunctionId;
-use moveos_types::storage_context::StorageContext;
 use once_cell::sync::Lazy;
 use std::ops::Deref;
 
 pub static INIT_FN_NAME_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("init").unwrap());
-
-pub fn check_storage_context_struct_tag(struct_tag: &str) -> bool {
-    let address = moveos_types::addresses::MOVEOS_STD_ADDRESS.to_string();
-    let module = StorageContext::module_identifier()
-        .as_ident_str()
-        .to_string();
-    let name = StorageContext::struct_identifier().to_string();
-    struct_tag == address + "::" + &module + "::" + &name
-}
 
 /// The initializer function must have the following properties in order to be executed at publication:
 /// - Name init

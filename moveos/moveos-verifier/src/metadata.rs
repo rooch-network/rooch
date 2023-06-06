@@ -1,16 +1,18 @@
 use crate::build::ROOCH_METADATA_KEY;
-use crate::verifier::{check_storage_context_struct_tag, INIT_FN_NAME_IDENTIFIER};
+use crate::verifier::INIT_FN_NAME_IDENTIFIER;
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::file_format::{
     Bytecode, FunctionInstantiation, SignatureToken, Visibility,
 };
 use move_core_types::language_storage::ModuleId;
 use move_core_types::metadata::Metadata;
+use move_core_types::move_resource::MoveStructType;
 use move_model::ast::Attribute;
 use move_model::model::{FunctionEnv, GlobalEnv, Loc, ModuleEnv};
 use move_model::ty::PrimitiveType;
 use move_model::ty::Type;
 use move_vm_runtime::move_vm::MoveVM;
+use moveos_types::storage_context::StorageContext;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -453,6 +455,15 @@ impl<'a> ExtendedChecker<'a> {
             }
         })
     }
+}
+
+pub fn check_storage_context_struct_tag(struct_tag: &str) -> bool {
+    let address = moveos_types::addresses::MOVEOS_STD_ADDRESS.to_string();
+    let module = StorageContext::module_identifier()
+        .as_ident_str()
+        .to_string();
+    let name = StorageContext::struct_identifier().to_string();
+    struct_tag == address + "::" + &module + "::" + &name
 }
 
 fn is_defined_or_allowed_in_current_module(
