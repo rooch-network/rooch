@@ -5,33 +5,14 @@ use move_binary_format::{access::ModuleAccess, CompiledModule};
 use move_core_types::move_resource::MoveStructType;
 use move_core_types::{identifier::Identifier, resolver::MoveResolver};
 use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
-use move_vm_types::loaded_data::runtime_types::{StructType, Type};
+use move_vm_types::loaded_data::runtime_types::Type;
 use moveos_types::move_types::FunctionId;
 use moveos_types::storage_context::StorageContext;
 use once_cell::sync::Lazy;
 use std::ops::Deref;
-use std::sync::Arc;
 
 pub static INIT_FN_NAME_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("init").unwrap());
-
-fn as_struct_no_panic<S>(session: &Session<S>, t: &Type) -> Option<Arc<StructType>>
-where
-    S: MoveResolver,
-{
-    match t {
-        Type::Struct(s) | Type::StructInstantiation(s, _) => session.get_struct_type(*s),
-        Type::Reference(r) => as_struct_no_panic(session, r),
-        Type::MutableReference(r) => as_struct_no_panic(session, r),
-        _ => None,
-    }
-}
-
-fn is_storage_context(t: &StructType) -> bool {
-    *t.module.address() == *moveos_types::addresses::MOVEOS_STD_ADDRESS
-        && t.module.name() == StorageContext::module_identifier().as_ident_str()
-        && t.name == StorageContext::struct_identifier()
-}
 
 /// The initializer function must have the following properties in order to be executed at publication:
 /// - Name init
@@ -48,7 +29,7 @@ where
         if fname == INIT_FN_NAME_IDENTIFIER.clone().as_ident_str() {
             if Visibility::Private != fdef.visibility {
                 return Err(Error::msg("init function should private".to_string()));
-            } else if !fdef.is_entry {
+            } else if fdef.is_entry {
                 return Err(Error::msg(
                     "init function should not entry function".to_string(),
                 ));
@@ -60,15 +41,33 @@ where
                     &function_id.function_name,
                     vec![].as_slice(),
                 )?;
-                let Some((_i, _t)) = loaded_function.parameters.iter().enumerate().find(|(i, t)| {
-                        let struct_type = as_struct_no_panic(session, t);
-                        (*i as u32 == 0u32) && Option::is_some(&struct_type) && is_storage_context(&(struct_type.unwrap()))
-                    }) else {
-                        return Ok(true)
-                    };
-
-                if !(loaded_function.return_.is_empty()) {
-                    return Ok(true);
+                let parameters_usize = loaded_function.parameters.len();
+                if parameters_usize != 1 {
+                    return Err(Error::msg(
+                        "init function only should have a parameter with storageContext"
+                            .to_string(),
+                    ));
+                }
+                for ref ty in loaded_function.parameters {
+                    match ty {
+                        Type::Struct(s) | Type::StructInstantiation(s, _) => {
+                            let struct_type = session.get_struct_type(*s).unwrap();
+                            if *struct_type.module.address()
+                                == *moveos_types::addresses::MOVEOS_STD_ADDRESS
+                                && struct_type.module.name()
+                                    == StorageContext::module_identifier().as_ident_str()
+                                && struct_type.name == StorageContext::struct_identifier()
+                            {
+                                return Ok(true);
+                            }
+                        }
+                        _ => {
+                            return Err(Error::msg(
+                                "init function only should have a parameter with storageContext"
+                                    .to_string(),
+                            ))
+                        }
+                    }
                 }
             }
         }
