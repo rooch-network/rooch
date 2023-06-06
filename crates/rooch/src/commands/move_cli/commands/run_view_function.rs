@@ -1,18 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use move_core_types::{
-    language_storage::TypeTag,
-    parser::{parse_transaction_argument, parse_type_tag},
-    transaction_argument::TransactionArgument,
-    value::MoveValue,
-};
+use move_core_types::value::MoveValue;
 use moveos_types::{move_types::FunctionId, transaction::FunctionCall};
+use rooch_server::jsonrpc_types::{
+    AnnotatedFunctionReturnValueView, TransactionArgumentView, TypeTagView,
+};
 use rooch_types::error::{RoochError, RoochResult};
-
-use crate::types::{CommandAction, WalletContextOptions};
 
 /// Run a Move function
 #[derive(Parser)]
@@ -27,12 +24,11 @@ pub struct RunViewFunction {
     /// Example: `u8 u16 u32 u64 u128 u256 bool address`
     #[clap(
         long = "type-args",
-        parse(try_from_str = parse_type_tag),
         takes_value(true),
         multiple_values(true),
         multiple_occurrences(true)
     )]
-    pub type_args: Vec<TypeTag>,
+    pub type_args: Vec<TypeTagView>,
 
     /// Arguments combined with their type separated by spaces.
     ///
@@ -41,12 +37,11 @@ pub struct RunViewFunction {
     /// Example: `0x1 true 0 1234 "hello"`
     #[clap(
         long = "args",
-        parse(try_from_str = parse_transaction_argument),
         takes_value(true),
         multiple_values(true),
         multiple_occurrences(true)
     )]
-    pub args: Vec<TransactionArgument>,
+    pub args: Vec<TransactionArgumentView>,
 
     /// RPC client options.
     #[clap(flatten)]
@@ -54,20 +49,20 @@ pub struct RunViewFunction {
 }
 
 #[async_trait]
-impl CommandAction<Vec<serde_json::Value>> for RunViewFunction {
-    async fn execute(self) -> RoochResult<Vec<serde_json::Value>> {
+impl CommandAction<Vec<AnnotatedFunctionReturnValueView>> for RunViewFunction {
+    async fn execute(self) -> RoochResult<Vec<AnnotatedFunctionReturnValueView>> {
         let args = self
             .args
             .iter()
             .map(|arg| {
-                MoveValue::from(arg.clone())
+                MoveValue::from(arg.0.clone())
                     .simple_serialize()
                     .expect("transaction arguments must be serializabe")
             })
             .collect();
         let function_call = FunctionCall {
             function_id: self.function,
-            ty_args: self.type_args,
+            ty_args: self.type_args.into_iter().map(Into::into).collect(),
             args,
         };
 

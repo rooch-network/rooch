@@ -9,11 +9,12 @@ use super::messages::{
 use anyhow::{bail, Result};
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
-use move_core_types::{language_storage::TypeTag, value::MoveValue};
+use move_core_types::language_storage::TypeTag;
 use move_resource_viewer::{AnnotatedMoveStruct, MoveValueAnnotator};
 use moveos::moveos::MoveOS;
 use moveos_store::state_store::state_view::{AnnotatedStateReader, StateReader};
 use moveos_types::event_filter::MoveOSEvent;
+use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::object::AnnotatedObject;
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::transaction::{AuthenticatableTransaction, MoveOSTransaction};
@@ -77,14 +78,22 @@ impl Handler<ExecuteViewFunctionMessage> for ExecutorActor {
         &mut self,
         msg: ExecuteViewFunctionMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Vec<MoveValue>, anyhow::Error> {
-        let result = self.moveos.execute_view_function(msg.call)?;
-        let mut output_values = vec![];
-        for v in result.return_values {
-            output_values.push(MoveValue::simple_deserialize(&v.0, &v.1)?);
-        }
+    ) -> Result<Vec<AnnotatedFunctionReturnValue>, anyhow::Error> {
+        //TODO should we let the execute_view_function return annotated values?
+        let storage = self.moveos.state();
+        let annotator = MoveValueAnnotator::new(storage);
 
-        Ok(output_values)
+        self.moveos
+            .execute_view_function(msg.call)?
+            .into_iter()
+            .map(|v| {
+                let move_value = annotator.view_value(&v.type_tag, &v.value)?;
+                Ok(AnnotatedFunctionReturnValue {
+                    value: v,
+                    move_value,
+                })
+            })
+            .collect::<Result<Vec<AnnotatedFunctionReturnValue>, anyhow::Error>>()
     }
 }
 

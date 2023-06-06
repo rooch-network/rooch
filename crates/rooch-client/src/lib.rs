@@ -9,7 +9,10 @@ use moveos_types::{access_path::AccessPath, object::ObjectID, transaction::Funct
 use rand::Rng;
 use rooch_server::{
     api::rooch_api::RoochAPIClient,
-    jsonrpc_types::{AnnotatedMoveStructView, AnnotatedObjectView, AnnotatedStateView, StateView},
+    jsonrpc_types::{
+        AnnotatedFunctionReturnValueView, AnnotatedMoveStructView, AnnotatedObjectView,
+        AnnotatedStateView, StateView,
+    },
 };
 use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction};
 
@@ -93,7 +96,7 @@ impl Client {
     pub async fn execute_view_function(
         &self,
         function_call: FunctionCall,
-    ) -> Result<Vec<serde_json::Value>> {
+    ) -> Result<Vec<AnnotatedFunctionReturnValueView>> {
         self.rpc
             .http
             .execute_view_function(function_call.into())

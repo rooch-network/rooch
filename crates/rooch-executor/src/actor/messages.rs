@@ -3,13 +3,12 @@
 
 use anyhow::Result;
 use coerce::actor::message::Message;
-use move_core_types::{
-    account_address::AccountAddress, language_storage::StructTag, value::MoveValue,
-};
+use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
 use move_resource_viewer::AnnotatedMoveStruct;
 use moveos::moveos::TransactionOutput;
 use moveos_types::access_path::AccessPath;
 use moveos_types::event_filter::{EventFilter, MoveOSEvent};
+use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::{
     object::{AnnotatedObject, ObjectID},
@@ -50,7 +49,7 @@ pub struct ExecuteViewFunctionMessage {
 }
 
 impl Message for ExecuteViewFunctionMessage {
-    type Result = Result<Vec<MoveValue>, anyhow::Error>;
+    type Result = Result<Vec<AnnotatedFunctionReturnValue>, anyhow::Error>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]

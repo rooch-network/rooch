@@ -4,14 +4,10 @@
 use crate::types::{CommandAction, TransactionOptions, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use move_core_types::{
-    language_storage::TypeTag,
-    parser::{parse_transaction_argument, parse_type_tag},
-    transaction_argument::TransactionArgument,
-    value::MoveValue,
-};
+use move_core_types::value::MoveValue;
 use moveos::moveos::TransactionOutput;
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
+use rooch_server::jsonrpc_types::{TransactionArgumentView, TypeTagView};
 use rooch_types::{
     address::RoochAddress,
     error::{RoochError, RoochResult},
@@ -30,12 +26,11 @@ pub struct RunFunction {
     /// Example: `u8 u16 u32 u64 u128 u256 bool address`
     #[clap(
         long = "type-args",
-        parse(try_from_str = parse_type_tag),
         takes_value(true),
         multiple_values(true),
         multiple_occurrences(true)
     )]
-    pub type_args: Vec<TypeTag>,
+    pub type_args: Vec<TypeTagView>,
 
     /// Arguments combined with their type separated by spaces.
     ///
@@ -44,12 +39,11 @@ pub struct RunFunction {
     /// Example: `0x1 true 0 1234 "hello"`
     #[clap(
         long = "args",
-        parse(try_from_str = parse_transaction_argument),
         takes_value(true),
         multiple_values(true),
         multiple_occurrences(true)
     )]
-    pub args: Vec<TransactionArgument>,
+    pub args: Vec<TransactionArgumentView>,
 
     /// RPC client options.
     #[clap(flatten)]
@@ -66,7 +60,7 @@ impl CommandAction<TransactionOutput> for RunFunction {
             .args
             .iter()
             .map(|arg| {
-                MoveValue::from(arg.clone())
+                MoveValue::from(arg.0.clone())
                     .simple_serialize()
                     .expect("transaction arguments must serialize")
             })
@@ -83,7 +77,11 @@ impl CommandAction<TransactionOutput> for RunFunction {
             .parse_account_arg(self.txn_options.sender_account.unwrap())?
             .into();
 
-        let action = MoveAction::new_function_call(self.function, self.type_args, args);
+        let action = MoveAction::new_function_call(
+            self.function,
+            self.type_args.into_iter().map(Into::into).collect(),
+            args,
+        );
 
         context.sign_and_execute(sender, action).await
     }
