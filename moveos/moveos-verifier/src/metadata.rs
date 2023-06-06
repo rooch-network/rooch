@@ -1,5 +1,5 @@
 use crate::build::ROOCH_METADATA_KEY;
-use crate::verifier::INIT_FN_NAME_IDENTIFIER;
+use crate::verifier::{check_storage_context_struct_tag, INIT_FN_NAME_IDENTIFIER};
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::file_format::{
     Bytecode, FunctionInstantiation, SignatureToken, Visibility,
@@ -297,7 +297,7 @@ impl<'a> ExtendedChecker<'a> {
             }
 
             let arg_tys = &fun.get_parameter_types();
-            if arg_tys.len() != 1 {
+            if arg_tys.len() != 1 && arg_tys.len() != 2 {
                 self.env.error(
                     &fun.get_loc(),
                     "module init function only should have a parameter",
@@ -305,21 +305,47 @@ impl<'a> ExtendedChecker<'a> {
             }
             for ty in arg_tys {
                 match ty {
-                    Type::Struct(mid, sid, _) => {
-                        if "0x1::storage_context::StorageContext"
-                            != self
-                                .env
-                                .get_struct(mid.qualified(*sid))
-                                .get_full_name_with_address()
-                        {
+                    
+                    Type::Reference(true, bt) => {
+                        
+                        let struct_tag = bt.clone().into_struct_tag(self.env);
+                        if struct_tag.is_none() {
                             self.env.error(
                                 &fun.get_loc(),
-                                "module init function only should have a parameter with storageContext")
+                                "module init function only should have two parameter with signer or storageContext"
+                            )
+                        }
+
+                        if !check_storage_context_struct_tag(&struct_tag.unwrap().to_canonical_string()){
+                            self.env.error(
+                                &fun.get_loc(),
+                                "module init function only should have two parameter with signer or storageContext"
+                            )
                         }
                     }
+                    
+                    Type::Reference(false, bt) => {
+                        if bt.as_ref() == &Type::Primitive(PrimitiveType::Signer) {
+                        } else {
+                            self.env.error(
+                                &fun.get_loc(),
+                                "module init function only should have two parameter with signer or storageContext",
+                            )
+                        }
+                    }
+                    Type::Primitive(primitive) => {
+                        if let PrimitiveType::Signer = primitive {
+                        } else {
+                            self.env.error(
+                            &fun.get_loc(),
+                            "module init function only should have two parameter with signer or storageContext",
+                        )
+                        }
+                    }
+
                     _ => self.env.error(
                         &fun.get_loc(),
-                        "module init function only should have a parameter with storageContext",
+                        "module init function only should have two parameter with signer or storageContext",
                     ),
                 }
             }

@@ -14,6 +14,15 @@ use std::ops::Deref;
 pub static INIT_FN_NAME_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("init").unwrap());
 
+pub fn check_storage_context_struct_tag(struct_tag: &str) -> bool {
+    let address = moveos_types::addresses::MOVEOS_STD_ADDRESS.to_string();
+    let module = StorageContext::module_identifier()
+        .as_ident_str()
+        .to_string();
+    let name = StorageContext::struct_identifier().to_string();
+    struct_tag == address + "::" + &module + "::" + &name
+}
+
 /// The initializer function must have the following properties in order to be executed at publication:
 /// - Name init
 /// - Single parameter of &mut TxContext type
@@ -42,37 +51,53 @@ where
                     vec![].as_slice(),
                 )?;
                 let parameters_usize = loaded_function.parameters.len();
-                if parameters_usize != 1 {
+                if parameters_usize != 1 && parameters_usize != 2 {
                     return Err(Error::msg(
-                        "init function only should have a parameter with storageContext"
+                        "init function only should have two parameter with signer or storageContext"
                             .to_string(),
                     ));
                 }
                 for ref ty in loaded_function.parameters {
                     match ty {
-                        Type::Struct(s) | Type::StructInstantiation(s, _) => {
-                            let struct_type = session.get_struct_type(*s).unwrap();
-                            if *struct_type.module.address()
-                                == *moveos_types::addresses::MOVEOS_STD_ADDRESS
-                                && struct_type.module.name()
-                                    == StorageContext::module_identifier().as_ident_str()
-                                && struct_type.name == StorageContext::struct_identifier()
-                            {
-                                return Ok(true);
+
+                        Type::Reference( bt) | Type::MutableReference(bt)=> {
+                            
+                            match bt.as_ref() {
+                                Type::Struct(s) | Type::StructInstantiation(s, _) => {
+                                    let struct_type = session.get_struct_type(*s).unwrap();
+        
+                                    if check_storage_context_struct_tag(
+                                        &(struct_type.module.address().to_string()
+                                            + &struct_type.module.name().to_string()
+                                            + &struct_type.name.to_string()),
+                                    ) {
+                                        return Ok(true);
+                                    }
+                                }
+                                Type::Signer => {}
+                                _ => {
+                                    return Err(Error::msg(
+                                        "init function only should have two parameter with signer or storageContext"
+                                            .to_string(),
+                                    ))
+                                }
                             }
+                            
                         }
-                        _ => {
-                            return Err(Error::msg(
-                                "init function only should have a parameter with storageContext"
-                                    .to_string(),
-                            ))
+
+                        Type::Signer => {
                         }
+    
+                        _ => return Err(Error::msg(
+                            "init function only should have two parameter with signer or storageContext"
+                                .to_string(),
+                        ))
                     }
                 }
             }
         }
     }
-    Err(Error::msg("module not have init function".to_string()))
+    Ok(false)
 }
 
 pub fn verify_entry_function<S>(
