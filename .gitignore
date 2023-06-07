@@ -22,6 +22,7 @@ build/
 # 3rdparty configure files
 .vscode/
 .fleet/
+.idea/
 
 # mac
 .DS_Store
