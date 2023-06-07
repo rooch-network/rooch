@@ -24,7 +24,7 @@ where
     for fdef in &module.function_defs {
         let fhandle = module.function_handle_at(fdef.function);
         let fname = module.identifier_at(fhandle.name);
-        if fname == INIT_FN_NAME_IDENTIFIER.clone().as_ident_str() {
+        if fname == INIT_FN_NAME_IDENTIFIER.as_ident_str() {
             if Visibility::Private != fdef.visibility {
                 return Err(Error::msg("init function should private".to_string()));
             } else if fdef.is_entry {
@@ -86,7 +86,7 @@ where
 }
 
 pub fn verify_entry_function<S>(
-    func: LoadedFunctionInstantiation,
+    func: &LoadedFunctionInstantiation,
     session: &Session<S>,
 ) -> Result<bool>
 where

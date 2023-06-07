@@ -3,12 +3,12 @@
 
 use crate::jsonrpc_types::{
     AnnotatedFunctionReturnValueView, AnnotatedMoveStructView, AnnotatedObjectView,
-    AnnotatedStateView, EventView, FunctionCallView, StateView, StrView, StructTagView,
+    AnnotatedStateView, EventView, ExecuteTransactionResponse, FunctionCallView, StateView,
+    StrView, StructTagView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 use move_core_types::account_address::AccountAddress;
-use moveos::moveos::TransactionOutput;
 use moveos_types::access_path::AccessPath;
 use moveos_types::event_filter::EventFilter;
 use moveos_types::object::ObjectID;
@@ -27,7 +27,7 @@ pub trait RoochAPI {
     async fn execute_raw_transaction(
         &self,
         tx_bcs_hex: StrView<Vec<u8>>,
-    ) -> RpcResult<TransactionOutput>;
+    ) -> RpcResult<ExecuteTransactionResponse>;
 
     /// Execute a read-only function call
     /// The function do not change the state of Application

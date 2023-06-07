@@ -41,7 +41,7 @@ use std::{
 /// The representation of a table handle. This is created from truncating a sha3-256 based
 /// hash over a transaction hash provided by the environment and a table creation counter
 /// local to the transaction.
-#[derive(Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TableHandle(pub ObjectID);
 
 impl std::fmt::Display for TableHandle {
@@ -56,7 +56,7 @@ impl From<TableHandle> for ObjectID {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TableInfo {
     pub key_type: TypeTag,
 }
@@ -74,7 +74,7 @@ impl std::fmt::Display for TableInfo {
 }
 
 /// A table change set.
-#[derive(Default)]
+#[derive(Default, Clone, Debug)]
 pub struct TableChangeSet {
     pub new_tables: BTreeMap<TableHandle, TableInfo>,
     pub removed_tables: BTreeSet<TableHandle>,
@@ -88,6 +88,7 @@ pub struct TableValueBox {
 }
 
 /// A change of a single table.
+#[derive(Clone, Debug)]
 pub struct TableChange {
     pub entries: BTreeMap<Vec<u8>, Op<TableValueBox>>,
 }

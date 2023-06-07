@@ -4,9 +4,13 @@
 use crate::{
     h256::{self, H256},
     move_types::FunctionId,
+    tx_context::TxContext,
 };
 use anyhow::Result;
-use move_core_types::{account_address::AccountAddress, language_storage::TypeTag};
+use move_core_types::{
+    account_address::AccountAddress,
+    language_storage::{ModuleId, TypeTag},
+};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 /// Call a Move script
@@ -72,6 +76,23 @@ impl MoveAction {
     }
 }
 
+/// The MoveAction after verifier
+#[derive(Clone, Debug)]
+pub enum VerifiedMoveAction {
+    Script {
+        call: ScriptCall,
+        resolved_args: Vec<Vec<u8>>,
+    },
+    Function {
+        call: FunctionCall,
+        resolved_args: Vec<Vec<u8>>,
+    },
+    ModuleBundle {
+        module_bundle: Vec<Vec<u8>>,
+        init_function_modules: Vec<ModuleId>,
+    },
+}
+
 pub trait AuthenticatableTransaction {
     type AuthenticatorInfo: Serialize;
     type AuthenticatorResult: DeserializeOwned;
@@ -84,11 +105,10 @@ pub trait AuthenticatableTransaction {
     ) -> Result<MoveOSTransaction>;
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct MoveOSTransaction {
-    pub sender: AccountAddress,
+    pub ctx: TxContext,
     pub action: MoveAction,
-    pub tx_hash: H256,
 }
 
 impl MoveOSTransaction {
@@ -97,18 +117,20 @@ impl MoveOSTransaction {
     pub fn new_for_test(sender: AccountAddress, action: MoveAction) -> Self {
         let sender_and_action = (sender, action);
         let tx_hash = h256::sha3_256_of(bcs::to_bytes(&sender_and_action).unwrap().as_slice());
+        let ctx = TxContext::new(sender_and_action.0, tx_hash);
         Self {
-            sender: sender_and_action.0,
+            ctx,
             action: sender_and_action.1,
-            tx_hash,
         }
     }
 
-    pub fn new(sender: AccountAddress, action: MoveAction, tx_hash: H256) -> Self {
-        Self {
-            sender,
-            action,
-            tx_hash,
-        }
+    pub fn new(ctx: TxContext, action: MoveAction) -> Self {
+        Self { ctx, action }
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct VerifiedMoveOSTransaction {
+    pub ctx: TxContext,
+    pub action: VerifiedMoveAction,
 }
