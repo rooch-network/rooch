@@ -2,15 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::natives::helpers::{make_module_natives, make_native};
-use fastcrypto::traits::VerifyRecoverable;
 use fastcrypto::{
     error::FastCryptoError,
     hash::{Keccak256, Sha256},
-    secp256k1::{recoverable::Secp256k1RecoverableSignature,
-
-        Secp256k1PublicKey, Secp256k1Signature},
+    secp256k1::{
+        recoverable::Secp256k1RecoverableSignature, Secp256k1PublicKey, Secp256k1Signature,
+    },
     traits::{RecoverableSignature, ToFromBytes},
-
 };
 use move_binary_format::errors::PartialVMResult;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
@@ -141,12 +139,8 @@ pub fn native_verify(
 
     let sign = Secp256k1Signature::from(&sig);
     let result = match hash {
-        KECCAK256 => pk
-            .verify_with_hash::<Keccak256>(&msg_ref, &sign)
-            .is_ok(),
-        SHA256 => pk
-            .verify_with_hash::<Sha256>(&msg_ref, &sign)
-            .is_ok(),
+        KECCAK256 => pk.verify_with_hash::<Keccak256>(&msg_ref, &sign).is_ok(),
+        SHA256 => pk.verify_with_hash::<Sha256>(&msg_ref, &sign).is_ok(),
         _ => false,
     };
 
@@ -194,7 +188,7 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
             make_native(gas_params.decompress_pubkey, native_decompress_pubkey),
         ),
         ("verify", make_native(gas_params.verify, native_verify)),
-        ];
+    ];
 
     make_module_natives(natives)
 }
