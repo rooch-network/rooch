@@ -4,7 +4,8 @@
 use self::authenticator::Authenticator;
 use crate::{address::MultiChainAddress, H256};
 use anyhow::Result;
-use move_core_types::{account_address::AccountAddress, vm_status::KeptVMStatus};
+use move_core_types::account_address::AccountAddress;
+use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::h256;
 use moveos_types::transaction::AuthenticatableTransaction;
 use serde::{Deserialize, Serialize};

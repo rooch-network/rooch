@@ -1,24 +1,24 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::vm::vm_status_explainer::{explain_vm_status, VmStatusExplainView};
 use crate::vm::{
     move_vm_ext::{MoveVmExt, SessionExt},
-    tx_argument_resolver::{as_struct_no_panic, is_storage_context},
     MoveResolverExt,
 };
 use anyhow::{anyhow, bail, ensure, Result};
-use move_binary_format::access::ModuleAccess;
 use move_binary_format::{
     errors::{Location, PartialVMError, VMResult},
-    file_format::Visibility,
     CompiledModule,
 };
+
+use move_core_types::vm_status::KeptVMStatus;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
-    language_storage::{ModuleId, TypeTag},
+    language_storage::ModuleId,
     value::MoveValue,
-    vm_status::{KeptVMStatus, StatusCode},
+    vm_status::StatusCode,
 };
 use move_vm_types::gas::UnmeteredGasMeter;
 use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
@@ -31,6 +31,7 @@ use moveos_types::transaction::{AuthenticatableTransaction, MoveAction, MoveOSTr
 use moveos_types::tx_context::TxContext;
 use moveos_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, move_types::FunctionId};
 use moveos_types::{h256::H256, transaction::FunctionCall};
+use moveos_verifier::verifier::{verify_init_function, INIT_FN_NAME_IDENTIFIER};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
@@ -39,6 +40,7 @@ pub struct TransactionOutput {
     /// The new state root after the transaction execution.
     pub state_root: H256,
     pub status: KeptVMStatus,
+    pub status_reexplain: VmStatusExplainView,
 }
 
 pub static VALIDATE_FUNCTION: Lazy<FunctionId> = Lazy::new(|| {
@@ -50,9 +52,6 @@ pub static VALIDATE_FUNCTION: Lazy<FunctionId> = Lazy::new(|| {
         Identifier::new("validate").unwrap(),
     )
 });
-
-pub static INIT_FN_NAME_IDENTIFIER: Lazy<Identifier> =
-    Lazy::new(|| Identifier::new("init").unwrap());
 
 pub struct MoveOS {
     vm: MoveVmExt,
@@ -134,11 +133,12 @@ impl MoveOS {
                 tx.construct_moveos_transaction(auth_result)
             }
             Err(e) => {
+                let status = explain_vm_status(self.db.get_state_store(), e.into_vm_status())?;
                 //TODO handle the abort error code
-                println!("validate failed: {:?}", e);
+                println!("validate failed: {:?}", status);
                 // If the error code is EUnsupportedScheme, then we can try to call the sender's validate function
                 // This is the Account Abstraction.
-                bail!("validate failed: {:?}", e)
+                bail!("validate failed: {:?}", status)
             }
         }
     }
@@ -236,6 +236,7 @@ impl MoveOS {
             .map_err(|e| e.finish(Location::Undefined))?;
 
         let vm_status = move_binary_format::errors::vm_status_of_result(execute_result);
+        let vm_status_cloned = vm_status.clone();
         match vm_status.keep_or_discard() {
             Ok(status) => {
                 //TODO move apply change set to a suitable place, and make MoveOS stateless.
@@ -265,9 +266,13 @@ impl MoveOS {
                         .finish(Location::Undefined)
                 })?;
 
+                let vm_status_explain =
+                    explain_vm_status(self.db.get_state_store(), vm_status_cloned)?;
+
                 Ok(TransactionOutput {
                     state_root: new_state_root,
                     status,
+                    status_reexplain: vm_status_explain,
                 })
             }
             Err(discard) => {
@@ -286,36 +291,6 @@ impl MoveOS {
         Ok(modules)
     }
 
-    /// The initializer function must have the following properties in order to be executed at publication:
-    /// - Name init
-    /// - Single parameter of &mut TxContext type
-    /// - No return values
-    /// - Private
-    fn check_module_init_permission<S>(
-        &self,
-        session: &mut SessionExt<S>,
-        _tx_context: &TxContext,
-        function_id: &FunctionId,
-        ty_args: Vec<TypeTag>,
-        _args: Vec<Vec<u8>>,
-    ) -> Result<bool>
-    where
-        S: MoveResolverExt,
-    {
-        let loaded_function = session.load_function(function_id, ty_args.as_slice())?;
-        let Some((_i, _t)) = loaded_function.parameters.iter().enumerate().find(|(i, t)| {
-            let struct_type = as_struct_no_panic(session, t);
-            (*i as u32 == 0u32) && Option::is_some(&struct_type) && is_storage_context(&(struct_type.unwrap()))
-        }) else {
-            return Ok(false)
-        };
-
-        if !(loaded_function.return_.is_empty()) {
-            return Ok(false);
-        }
-        Ok(true)
-    }
-
     fn check_and_execute_init_modules<S>(
         &self,
         session: &mut SessionExt<S>,
@@ -326,33 +301,21 @@ impl MoveOS {
     where
         S: MoveResolverExt,
     {
-        let modules_to_init = modules.iter().filter_map(|module| {
-            for fdef in &module.function_defs {
-                let fhandle = module.function_handle_at(fdef.function);
-                let fname = module.identifier_at(fhandle.name);
-                if fname == INIT_FN_NAME_IDENTIFIER.clone().as_ident_str() {
-                    // check function visibility
-                    if Visibility::Private == fdef.visibility && !fdef.is_entry {
-                        return Some(module.self_id());
+        let mut modules_to_init = vec![];
+        for module in modules {
+            let result = verify_init_function(module, session.runtime_session());
+            match result {
+                Ok(res) => {
+                    if res {
+                        modules_to_init.push(module.self_id())
                     }
                 }
+                Err(err) => return Err(err),
             }
-            None
-        });
+        }
 
         for module_id in modules_to_init {
             let function_id = FunctionId::new(module_id.clone(), INIT_FN_NAME_IDENTIFIER.clone());
-
-            // check module init permission
-            if !self.check_module_init_permission(
-                session,
-                tx_context,
-                &function_id,
-                vec![],
-                vec![],
-            )? {
-                continue;
-            };
 
             let function = FunctionCall::new(function_id, vec![], vec![]);
             let _result =

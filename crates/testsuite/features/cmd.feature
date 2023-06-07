@@ -13,7 +13,7 @@ Feature: Rooch CLI integration tests
       # TODO split Scenario for every example
       # counter example
       Then cmd: "move publish -p ../../examples/counter --sender-account {default} --named-addresses rooch_examples={default}"
-      Then cmd: "move run --function {default}::counter::init --sender-account {default}"
+      Then cmd: "move run --function {default}::counter::init_entry --sender-account {default}"
       Then cmd: "move view --function {default}::counter::value"
       Then assert: "{{$.move[-1][0].move_value}} == 0"
       Then cmd: "move run --function {default}::counter::increase --sender-account {default}"

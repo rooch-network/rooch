@@ -7,6 +7,7 @@ use moveos_stdlib::natives::moveos_stdlib::raw_table::TableResolver;
 pub mod dependency_order;
 pub mod move_vm_ext;
 pub mod tx_argument_resolver;
+pub mod vm_status_explainer;
 
 pub trait MoveResolverExt: MoveResolver + TableResolver {}
 

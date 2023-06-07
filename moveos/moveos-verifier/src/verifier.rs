@@ -1,9 +1,89 @@
-use crate::metadata::is_allowed_input_struct;
-use anyhow::{Error, Result};
-use move_core_types::resolver::MoveResolver;
+use crate::metadata::{check_storage_context_struct_tag, is_allowed_input_struct};
+use anyhow::{Error, Ok, Result};
+use move_binary_format::file_format::Visibility;
+use move_binary_format::{access::ModuleAccess, CompiledModule};
+use move_core_types::{identifier::Identifier, resolver::MoveResolver};
 use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
 use move_vm_types::loaded_data::runtime_types::Type;
+use moveos_types::move_types::FunctionId;
+use once_cell::sync::Lazy;
 use std::ops::Deref;
+
+pub static INIT_FN_NAME_IDENTIFIER: Lazy<Identifier> =
+    Lazy::new(|| Identifier::new("init").unwrap());
+
+/// The initializer function must have the following properties in order to be executed at publication:
+/// - Name init
+/// - Single parameter of &mut TxContext type
+/// - No return values
+/// - Private
+pub fn verify_init_function<S>(module: &CompiledModule, session: &Session<S>) -> Result<bool>
+where
+    S: MoveResolver,
+{
+    for fdef in &module.function_defs {
+        let fhandle = module.function_handle_at(fdef.function);
+        let fname = module.identifier_at(fhandle.name);
+        if fname == INIT_FN_NAME_IDENTIFIER.clone().as_ident_str() {
+            if Visibility::Private != fdef.visibility {
+                return Err(Error::msg("init function should private".to_string()));
+            } else if fdef.is_entry {
+                return Err(Error::msg(
+                    "init function should not entry function".to_string(),
+                ));
+            } else {
+                let function_id =
+                    FunctionId::new(module.self_id(), INIT_FN_NAME_IDENTIFIER.clone());
+                let loaded_function = session.load_function(
+                    &module.self_id(),
+                    &function_id.function_name,
+                    vec![].as_slice(),
+                )?;
+                let parameters_usize = loaded_function.parameters.len();
+                if parameters_usize != 1 && parameters_usize != 2 {
+                    return Err(Error::msg(
+                        "init function only should have two parameter with signer or storageContext"
+                            .to_string(),
+                    ));
+                }
+                for ref ty in loaded_function.parameters {
+                    match ty {
+                        Type::Reference( bt) | Type::MutableReference(bt)=> {
+                            match bt.as_ref() {
+                                Type::Struct(s) | Type::StructInstantiation(s, _) => {
+                                    let struct_type = session.get_struct_type(*s).unwrap();
+                                    if !check_storage_context_struct_tag(
+                                        &(struct_type.module.address().to_string() + "::"
+                                            + &struct_type.module.name().to_string() + "::"
+                                            + &struct_type.name.to_string()),
+                                    ) {
+                                        return Err(Error::msg(
+                                            "init function should not input structures other than storageContext"
+                                                .to_string(),
+                                        ))
+                                    }
+                                }
+                                Type::Signer => {}
+                                _ => {
+                                    return Err(Error::msg(
+                                        "init function should only enter reference signer or mutable reference storageContext"
+                                            .to_string(),
+                                    ))
+                                }
+                            }
+                        }
+                        Type::Signer => {}
+                        _ => return Err(Error::msg(
+                            "init function should only enter signer or storageContext"
+                                .to_string(),
+                        ))
+                    }
+                }
+            }
+        }
+    }
+    Ok(false)
+}
 
 pub fn verify_entry_function<S>(
     func: LoadedFunctionInstantiation,
