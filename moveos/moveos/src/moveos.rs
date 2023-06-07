@@ -14,11 +14,8 @@ use move_binary_format::{
 
 use move_core_types::vm_status::KeptVMStatus;
 use move_core_types::{
-    account_address::AccountAddress,
-    identifier::Identifier,
-    language_storage::ModuleId,
-    value::MoveValue,
-    vm_status::StatusCode,
+    account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
+    value::MoveValue, vm_status::StatusCode,
 };
 use move_vm_types::gas::UnmeteredGasMeter;
 use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;

@@ -100,6 +100,10 @@ module rooch_framework::authenticator {
       moveos_std::bcd::from_bytes<Secp256k1Authenticator>(authenticator.payload)
    }
 
+   public fun secp256k1_signature(this: &Secp256k1Authenticator): vector<u8> {
+      this.signature
+   }
+
    public fun new_authenticator_result(resolved_address: address): AuthenticatorResult {
       AuthenticatorResult {
          resolved_address
