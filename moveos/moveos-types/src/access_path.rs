@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::object::ObjectID;
+use crate::{move_string::MoveString, object::ObjectID};
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::StructTag,
 };
@@ -141,8 +141,15 @@ impl FromStr for Path {
                 let keys = keys
                     .split(',')
                     .map(|key| {
-                        let key = key.trim_start_matches("0x");
-                        hex::decode(key).map_err(|_| anyhow::anyhow!("Invalid path key: {}", key))
+                        match key.strip_prefix("0x") {
+                            Some(key) => hex::decode(key)
+                                .map_err(|_| anyhow::anyhow!("Invalid path key: {}", key)),
+                            None => {
+                                //if key not start with `0x`, we think it is a utf8 string
+                                let move_str = MoveString::from_str(key)?;
+                                Ok(bcs::to_bytes(&move_str)?)
+                            }
+                        }
                     })
                     .collect::<Result<Vec<_>, _>>()?;
                 Ok(Path::Table { table_handle, keys })
@@ -262,5 +269,6 @@ mod tests {
         test_path_roundtrip("/module/0x2/m1,m2");
         test_path_roundtrip("/table/0x1/0x12");
         test_path_roundtrip("/table/0x1/0x12,0x13");
+        test_path_roundtrip("/table/0x1/key1,key2");
     }
 }

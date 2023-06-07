@@ -11,12 +11,10 @@ use crate::actor::{
 };
 use anyhow::Result;
 use coerce::actor::ActorRef;
-use move_core_types::{
-    account_address::AccountAddress, language_storage::StructTag, value::MoveValue,
-};
+use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
 use move_resource_viewer::AnnotatedMoveStruct;
 use moveos::moveos::TransactionOutput;
-use moveos_types::access_path::AccessPath;
+use moveos_types::{access_path::AccessPath, function_return_value::AnnotatedFunctionReturnValue};
 use moveos_types::{
     event_filter::{EventFilter, MoveOSEvent},
     state::{AnnotatedState, State},
@@ -56,7 +54,10 @@ impl ExecutorProxy {
         Ok((result.output, result.transaction_info))
     }
 
-    pub async fn execute_view_function(&self, call: FunctionCall) -> Result<Vec<MoveValue>> {
+    pub async fn execute_view_function(
+        &self,
+        call: FunctionCall,
+    ) -> Result<Vec<AnnotatedFunctionReturnValue>> {
         self.actor.send(ExecuteViewFunctionMessage { call }).await?
     }
 

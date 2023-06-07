@@ -35,8 +35,8 @@ pub struct MoveOSEvent {
     /// bcs bytes of the move event
     pub event_data: Vec<u8>,
     /// Parsed json value of the event data
-    // pub parsed_json: Value,
-    pub parsed_json: AnnotatedMoveStruct,
+    // pub parsed_event_data: Value,
+    pub parsed_event_data: AnnotatedMoveStruct,
     /// UTC timestamp in milliseconds since epoch (1/1/1970)
     // #[serde(skip_serializing_if = "Option::is_none")]
     // #[schemars(with = "Option<u64>")]
@@ -54,7 +54,7 @@ pub struct MoveOSEvent {
 impl MoveOSEvent {
     pub fn try_from(
         event: Event,
-        parsed_json: AnnotatedMoveStruct,
+        parsed_event_data: AnnotatedMoveStruct,
         tx_hash: Option<H256>,
         timestamp_ms: Option<u64>,
         block_height: Option<u64>,
@@ -70,7 +70,7 @@ impl MoveOSEvent {
         //TODO how to store and derive sender address ?
         let sender = AccountAddress::ZERO;
         //TODO deserilize field from event_data
-        // let parsed_json = serde_json::to_value(event_data.clone()).unwrap();
+        // let parsed_event_data = serde_json::to_value(event_data.clone()).unwrap();
 
         Ok(MoveOSEvent {
             event_id,
@@ -78,7 +78,7 @@ impl MoveOSEvent {
             tx_hash,
             type_tag,
             event_data,
-            parsed_json,
+            parsed_event_data,
             timestamp_ms,
             block_height,
             event_index,
@@ -142,7 +142,7 @@ impl EventFilter {
         Ok(match self {
             EventFilter::MoveEventType(event_type) => type_tag_match(&item.type_tag, event_type),
             EventFilter::MoveEventField { path: _, value: _ } => {
-                // matches!(item.parsed_json.pointer(path), Some(v) if v == value)
+                // matches!(item.parsed_event_data.pointer(path), Some(v) if v == value)
                 false
             }
 

@@ -246,8 +246,8 @@ pub struct EventView {
     pub sender: AccountAddress,
     pub event_data: StrView<Vec<u8>>,
     /// Parsed json value of the event data
-    // pub parsed_json: Value,
-    pub parsed_json: AnnotatedMoveStructView,
+    // pub parsed_event_data: Value,
+    pub parsed_event_data: AnnotatedMoveStructView,
     pub type_tag: TypeTagView,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub event_index: Option<u32>,
@@ -260,7 +260,7 @@ impl From<MoveOSEvent> for EventView {
             tx_hash: event.tx_hash,
             sender: AccountAddress::ZERO, //Reserved as an extension field
             event_data: StrView(event.event_data.to_vec()),
-            parsed_json: event.parsed_json.into(),
+            parsed_event_data: event.parsed_event_data.into(),
             type_tag: event.type_tag.clone().into(),
             event_index: Some(event.event_index),
             event_id: event.event_id,

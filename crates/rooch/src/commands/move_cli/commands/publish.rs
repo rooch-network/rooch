@@ -109,7 +109,7 @@ impl CommandAction<TransactionOutput> for Publish {
         let action = MoveAction::ModuleBundle(bundles);
 
         let sender: RoochAddress = pkg_address.into();
-
+        eprintln!("Publish modules to address: {:?}", sender);
         context.sign_and_execute(sender, action).await
     }
 }

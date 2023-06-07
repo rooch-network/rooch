@@ -7,6 +7,7 @@ use move_resource_viewer::AnnotatedMoveStruct;
 use moveos::moveos::TransactionOutput;
 use moveos_types::access_path::AccessPath;
 use moveos_types::event_filter::{EventFilter, MoveOSEvent};
+use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::{
     object::{AnnotatedObject, ObjectID},
@@ -64,12 +65,8 @@ impl RpcService {
     pub async fn execute_view_function(
         &self,
         function_call: FunctionCall,
-    ) -> Result<Vec<serde_json::Value>> {
-        let output_values = self.executor.execute_view_function(function_call).await?;
-        let mut resp = vec![];
-        for v in output_values {
-            resp.push(serde_json::to_value(v)?);
-        }
+    ) -> Result<Vec<AnnotatedFunctionReturnValue>> {
+        let resp = self.executor.execute_view_function(function_call).await?;
         Ok(resp)
     }
 
