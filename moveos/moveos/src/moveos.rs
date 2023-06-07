@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::vm::vm_status_explainer::{explain_vm_status, VmStatusExplainView};
 use crate::vm::{
     move_vm_ext::{MoveVmExt, SessionExt},
     tx_argument_resolver::{as_struct_no_panic, is_storage_context},
@@ -13,12 +14,14 @@ use move_binary_format::{
     file_format::Visibility,
     CompiledModule,
 };
+
+use move_core_types::vm_status::KeptVMStatus;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
     value::MoveValue,
-    vm_status::{KeptVMStatus, StatusCode},
+    vm_status::StatusCode,
 };
 use move_vm_types::gas::UnmeteredGasMeter;
 use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
@@ -39,6 +42,7 @@ pub struct TransactionOutput {
     /// The new state root after the transaction execution.
     pub state_root: H256,
     pub status: KeptVMStatus,
+    pub status_reexplain: VmStatusExplainView,
 }
 
 pub static VALIDATE_FUNCTION: Lazy<FunctionId> = Lazy::new(|| {
@@ -134,11 +138,12 @@ impl MoveOS {
                 tx.construct_moveos_transaction(auth_result)
             }
             Err(e) => {
+                let status = explain_vm_status(self.db.get_state_store(), e.into_vm_status())?;
                 //TODO handle the abort error code
-                println!("validate failed: {:?}", e);
+                println!("validate failed: {:?}", status);
                 // If the error code is EUnsupportedScheme, then we can try to call the sender's validate function
                 // This is the Account Abstraction.
-                bail!("validate failed: {:?}", e)
+                bail!("validate failed: {:?}", status)
             }
         }
     }
@@ -236,6 +241,7 @@ impl MoveOS {
             .map_err(|e| e.finish(Location::Undefined))?;
 
         let vm_status = move_binary_format::errors::vm_status_of_result(execute_result);
+        let vm_status_cloned = vm_status.clone();
         match vm_status.keep_or_discard() {
             Ok(status) => {
                 //TODO move apply change set to a suitable place, and make MoveOS stateless.
@@ -265,9 +271,13 @@ impl MoveOS {
                         .finish(Location::Undefined)
                 })?;
 
+                let vm_status_explain =
+                    explain_vm_status(self.db.get_state_store(), vm_status_cloned)?;
+
                 Ok(TransactionOutput {
                     state_root: new_state_root,
                     status,
+                    status_reexplain: vm_status_explain,
                 })
             }
             Err(discard) => {

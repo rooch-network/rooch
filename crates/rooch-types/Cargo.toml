@@ -41,6 +41,7 @@ async-trait ={ workspace = true }
 
 move-core-types = { workspace = true }
 moveos-types = { workspace = true }
+moveos = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
