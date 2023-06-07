@@ -26,10 +26,9 @@ module rooch_framework::ecdsa_k1 {
    /// otherwise throw error.
    public native fun decompress_pubkey(pubkey: &vector<u8>): vector<u8>;
 
-   /// @param signature: A 64-bytes signature in form (r, s) that is signed using
+   /// @param signature: A 65-bytes signature in form (r, s, v) that is signed using
    /// Secp256k1. This is an non-recoverable signature without recovery id.
-   /// @param public_key: The public key to verify the signature against
-   /// @param msg: The message that the signature is signed against, this is raw message without hashing.
+   /// @param msg: The message that the signature is signed against.
    /// @param hash: The hash function used to hash the message when signing.
    ///
    /// If the signature is valid to the pubkey and hashed message, return true. Else false.
