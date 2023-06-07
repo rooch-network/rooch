@@ -4,7 +4,7 @@
 use crate::api::RoochRpcModule;
 use crate::jsonrpc_types::{
     AnnotatedFunctionReturnValueView, AnnotatedMoveStructView, AnnotatedStateView, EventView,
-    FunctionCallView, StateView, StrView, StructTagView,
+    FunctionCallView, StateView, StrView, StructTagView, TransactionView,
 };
 use crate::service::RpcService;
 use crate::{api::rooch_api::RoochAPIServer, jsonrpc_types::AnnotatedObjectView};
@@ -154,8 +154,12 @@ impl RoochAPIServer for RoochServer {
         }
     }
 
-    async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<Option<TypedTransaction>> {
-        let resp = self.rpc_service.get_transaction_by_hash(hash).await?;
+    async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<Option<TransactionView>> {
+        let resp = self
+            .rpc_service
+            .get_transaction_by_hash(hash)
+            .await?
+            .map(Into::into);
         Ok(resp)
     }
 
@@ -163,12 +167,21 @@ impl RoochAPIServer for RoochServer {
         &self,
         start: u64,
         limit: u64,
-    ) -> RpcResult<Option<Vec<TypedTransaction>>> {
+    ) -> RpcResult<Option<Vec<TransactionView>>> {
         let resp = self
             .rpc_service
             .get_transaction_by_index(start, limit)
             .await?;
-        Ok(resp)
+
+        if let Some(tx) = resp {
+            Ok(Some(
+                tx.iter()
+                    .map(|s| TransactionView::from(s.clone()))
+                    .collect(),
+            ))
+        } else {
+            Ok(None)
+        }
     }
 }
 

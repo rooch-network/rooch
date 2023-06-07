@@ -4,7 +4,8 @@
 use crate::types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use hex::FromHex;
-use rooch_types::{error::RoochResult, transaction::TypedTransaction, H256};
+use rooch_server::jsonrpc_types::TransactionView;
+use rooch_types::{error::RoochResult, H256};
 
 #[derive(Debug, clap::Parser)]
 pub struct GetByHashCommand {
@@ -18,8 +19,8 @@ pub struct GetByHashCommand {
 }
 
 #[async_trait]
-impl CommandAction<Option<TypedTransaction>> for GetByHashCommand {
-    async fn execute(self) -> RoochResult<Option<TypedTransaction>> {
+impl CommandAction<Option<TransactionView>> for GetByHashCommand {
+    async fn execute(self) -> RoochResult<Option<TransactionView>> {
         let client = self.context_options.build().await?.get_client().await?;
 
         let hex_string = if self.hash.starts_with("0x") {

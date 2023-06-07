@@ -3,7 +3,8 @@
 
 use crate::types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
-use rooch_types::{error::RoochResult, transaction::TypedTransaction};
+use rooch_server::jsonrpc_types::TransactionView;
+use rooch_types::error::RoochResult;
 
 #[derive(Debug, clap::Parser)]
 pub struct GetByIndexCommand {
@@ -17,8 +18,8 @@ pub struct GetByIndexCommand {
 }
 
 #[async_trait]
-impl CommandAction<Option<Vec<TypedTransaction>>> for GetByIndexCommand {
-    async fn execute(self) -> RoochResult<Option<Vec<TypedTransaction>>> {
+impl CommandAction<Option<Vec<TransactionView>>> for GetByIndexCommand {
+    async fn execute(self) -> RoochResult<Option<Vec<TransactionView>>> {
         let client = self.context_options.build().await?.get_client().await?;
 
         let resp = client
