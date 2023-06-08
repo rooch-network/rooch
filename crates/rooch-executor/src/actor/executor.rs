@@ -17,8 +17,8 @@ use moveos_types::event_filter::MoveOSEvent;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::object::AnnotatedObject;
 use moveos_types::state::{AnnotatedState, State};
-use moveos_types::transaction::{AuthenticatableTransaction, MoveOSTransaction};
-use rooch_types::transaction::TransactionInfo;
+use moveos_types::transaction::{AuthenticatableTransaction, VerifiedMoveOSTransaction};
+use rooch_types::transaction::TransactionExecutionInfo;
 use rooch_types::H256;
 
 pub struct ExecutorActor {
@@ -42,7 +42,7 @@ where
         &mut self,
         msg: ValidateTransactionMessage<T>,
         _ctx: &mut ActorContext,
-    ) -> Result<MoveOSTransaction> {
+    ) -> Result<VerifiedMoveOSTransaction> {
         self.moveos.validate(msg.tx)
     }
 }
@@ -54,13 +54,13 @@ impl Handler<ExecuteTransactionMessage> for ExecutorActor {
         msg: ExecuteTransactionMessage,
         _ctx: &mut ActorContext,
     ) -> Result<ExecuteTransactionResult> {
-        let tx_hash = msg.tx.tx_hash;
-        let output = self.moveos.execute(msg.tx)?;
+        let tx_hash = msg.tx.ctx.tx_hash();
+        let (state_root, output) = self.moveos.execute(msg.tx)?;
         //TODO calculate event_root
         let event_root = H256::zero();
-        let transaction_info = TransactionInfo::new(
+        let transaction_info = TransactionExecutionInfo::new(
             tx_hash,
-            output.state_root,
+            state_root,
             event_root,
             0,
             output.status.clone(),

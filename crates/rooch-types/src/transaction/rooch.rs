@@ -12,7 +12,10 @@ use crate::address::RoochAddress;
 use crate::H256;
 use anyhow::Result;
 
-use moveos_types::transaction::{AuthenticatableTransaction, MoveAction, MoveOSTransaction};
+use moveos_types::{
+    transaction::{AuthenticatableTransaction, MoveAction, MoveOSTransaction},
+    tx_context::TxContext,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -105,7 +108,8 @@ impl RoochTransaction {
 impl From<RoochTransaction> for MoveOSTransaction {
     fn from(tx: RoochTransaction) -> Self {
         let tx_hash = tx.tx_hash();
-        MoveOSTransaction::new(tx.data.sender.into(), tx.data.action, tx_hash)
+        let tx_ctx = TxContext::new(tx.data.sender.into(), tx_hash);
+        MoveOSTransaction::new(tx_ctx, tx.data.action)
     }
 }
 

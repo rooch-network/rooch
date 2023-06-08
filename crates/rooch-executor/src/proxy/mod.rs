@@ -14,16 +14,19 @@ use coerce::actor::ActorRef;
 use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
 use move_resource_viewer::AnnotatedMoveStruct;
 use moveos::moveos::TransactionOutput;
-use moveos_types::{access_path::AccessPath, function_return_value::AnnotatedFunctionReturnValue};
+use moveos_types::{
+    access_path::AccessPath, function_return_value::AnnotatedFunctionReturnValue,
+    transaction::VerifiedMoveOSTransaction,
+};
 use moveos_types::{
     event_filter::{EventFilter, MoveOSEvent},
     state::{AnnotatedState, State},
 };
 use moveos_types::{
     object::{AnnotatedObject, ObjectID},
-    transaction::{AuthenticatableTransaction, FunctionCall, MoveOSTransaction},
+    transaction::{AuthenticatableTransaction, FunctionCall},
 };
-use rooch_types::transaction::TransactionInfo;
+use rooch_types::transaction::TransactionExecutionInfo;
 
 #[derive(Clone)]
 pub struct ExecutorProxy {
@@ -35,7 +38,7 @@ impl ExecutorProxy {
         Self { actor }
     }
 
-    pub async fn validate_transaction<T>(&self, tx: T) -> Result<MoveOSTransaction>
+    pub async fn validate_transaction<T>(&self, tx: T) -> Result<VerifiedMoveOSTransaction>
     where
         T: 'static + AuthenticatableTransaction + Send + Sync,
     {
@@ -45,8 +48,8 @@ impl ExecutorProxy {
     //TODO ensure the execute result
     pub async fn execute_transaction(
         &self,
-        tx: MoveOSTransaction,
-    ) -> Result<(TransactionOutput, TransactionInfo)> {
+        tx: VerifiedMoveOSTransaction,
+    ) -> Result<(TransactionOutput, TransactionExecutionInfo)> {
         let result = self
             .actor
             .send(crate::actor::messages::ExecuteTransactionMessage { tx })

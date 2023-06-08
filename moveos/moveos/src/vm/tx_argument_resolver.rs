@@ -1,13 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{move_vm_ext::SessionExt, MoveResolverExt};
+use super::MoveResolverExt;
 use anyhow::Result;
 use move_binary_format::errors::PartialVMError;
 use move_core_types::{move_resource::MoveStructType, value::MoveValue};
-use move_vm_runtime::session::LoadedFunctionInstantiation;
+use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
 use move_vm_types::loaded_data::runtime_types::{StructType, Type};
-use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
 use moveos_types::{storage_context::StorageContext, tx_context::TxContext};
 use std::sync::Arc;
 
@@ -17,7 +16,7 @@ use std::sync::Arc;
 pub trait TxArgumentResolver {
     fn resolve_argument<S>(
         &self,
-        session: &SessionExt<S>,
+        session: &Session<S>,
         func: &LoadedFunctionInstantiation,
         args: Vec<Vec<u8>>,
     ) -> Result<Vec<Vec<u8>>, PartialVMError>
@@ -25,10 +24,10 @@ pub trait TxArgumentResolver {
         S: MoveResolverExt;
 }
 
-impl TxArgumentResolver for TxContext {
+impl TxArgumentResolver for StorageContext {
     fn resolve_argument<S>(
         &self,
-        session: &SessionExt<S>,
+        session: &Session<S>,
         func: &LoadedFunctionInstantiation,
         mut args: Vec<Vec<u8>>,
     ) -> Result<Vec<Vec<u8>>, PartialVMError>
@@ -37,7 +36,7 @@ impl TxArgumentResolver for TxContext {
     {
         func.parameters.iter().enumerate().for_each(|(i, t)| {
             if is_signer(t) {
-                let signer = MoveValue::Signer(self.sender());
+                let signer = MoveValue::Signer(self.tx_context.sender());
                 args.insert(
                     i,
                     signer
@@ -45,36 +44,21 @@ impl TxArgumentResolver for TxContext {
                         .expect("serialize signer should success"),
                 );
             }
+            //Should we remove TxContext as entry function or view function argument?
             if as_struct(session, t)
                 .map(|t| is_tx_context(&t))
                 .unwrap_or(false)
             {
-                args.insert(i, self.to_vec());
+                args.insert(i, self.tx_context.to_vec());
             }
 
             if as_struct(session, t)
                 .map(|t| is_storage_context(&t))
                 .unwrap_or(false)
             {
-                let storage_context = StorageContext::new(self.clone());
-                args.insert(i, storage_context.to_vec());
+                args.insert(i, self.to_vec());
             }
         });
-        Ok(args)
-    }
-}
-
-impl TxArgumentResolver for NativeTableContext<'_> {
-    fn resolve_argument<S>(
-        &self,
-        _session: &SessionExt<S>,
-        _func: &LoadedFunctionInstantiation,
-        args: Vec<Vec<u8>>,
-    ) -> Result<Vec<Vec<u8>>, PartialVMError>
-    where
-        S: MoveResolverExt,
-    {
-        //TableContext do nothing to the arguments now.
         Ok(args)
     }
 }
@@ -83,7 +67,7 @@ fn is_signer(t: &Type) -> bool {
     matches!(t, Type::Signer) || matches!(t, Type::Reference(r) if matches!(**r, Type::Signer))
 }
 
-fn as_struct<T>(session: &SessionExt<T>, t: &Type) -> Option<Arc<StructType>>
+fn as_struct<T>(session: &Session<T>, t: &Type) -> Option<Arc<StructType>>
 where
     T: MoveResolverExt,
 {
@@ -100,7 +84,7 @@ where
     }
 }
 
-pub fn as_struct_no_panic<T>(session: &SessionExt<T>, t: &Type) -> Option<Arc<StructType>>
+pub fn as_struct_no_panic<T>(session: &Session<T>, t: &Type) -> Option<Arc<StructType>>
 where
     T: MoveResolverExt,
 {

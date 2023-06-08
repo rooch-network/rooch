@@ -3,18 +3,22 @@
 
 use std::{borrow::Borrow, sync::Arc};
 
+use crate::moveos::TransactionOutput;
+
 use super::{tx_argument_resolver::TxArgumentResolver, MoveResolverExt};
+use anyhow::ensure;
 use move_binary_format::{
+    access::ModuleAccess,
     compatibility::Compatibility,
-    errors::{PartialVMError, VMResult},
+    errors::{Location, VMError, VMResult},
     file_format::AbilitySet,
+    CompiledModule,
 };
 use move_bytecode_verifier::VerifierConfig;
 use move_core_types::{
-    account_address::AccountAddress,
-    effects::{ChangeSet, Event},
-    language_storage::TypeTag,
+    language_storage::{ModuleId, TypeTag},
     value::MoveTypeLayout,
+    vm_status::{KeptVMStatus, VMStatus},
 };
 use move_vm_runtime::{
     config::VMConfig,
@@ -29,7 +33,15 @@ use move_vm_types::{
 };
 use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
 use moveos_stdlib::natives::{self, GasParameters};
-use moveos_types::{move_types::FunctionId, tx_context::TxContext};
+use moveos_types::{
+    event::{Event, EventID},
+    function_return_value::FunctionReturnValue,
+    move_types::FunctionId,
+    object::ObjectID,
+    storage_context::StorageContext,
+    transaction::{FunctionCall, MoveAction, VerifiedMoveAction},
+};
+use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
 
 pub struct MoveVmExt {
     inner: MoveVM,
@@ -50,134 +62,345 @@ impl MoveVmExt {
         })
     }
 
-    pub fn new_session<'r, S: MoveResolverExt>(&self, remote: &'r S) -> SessionExt<'r, '_, S> {
+    pub fn new_session<'r, S: MoveResolverExt, G: GasMeter>(
+        &self,
+        remote: &'r S,
+        ctx: StorageContext,
+        gas_meter: G,
+    ) -> SessionExt<'r, '_, S, G> {
+        SessionExt::new(&self.inner, remote, ctx, gas_meter, false)
+    }
+
+    pub fn new_readonly_session<'r, S: MoveResolverExt, G: GasMeter>(
+        &self,
+        remote: &'r S,
+        ctx: StorageContext,
+        gas_meter: G,
+    ) -> SessionExt<'r, '_, S, G> {
+        SessionExt::new(&self.inner, remote, ctx, gas_meter, true)
+    }
+}
+
+pub struct SessionExt<'r, 'l, S, G> {
+    vm: &'l MoveVM,
+    remote: &'r S,
+    session: Session<'r, 'l, S>,
+    ctx: StorageContext,
+    gas_meter: G,
+    read_only: bool,
+}
+
+impl<'r, 'l, S, G> SessionExt<'r, 'l, S, G>
+where
+    S: MoveResolverExt,
+    G: GasMeter,
+{
+    pub fn new(
+        vm: &'l MoveVM,
+        remote: &'r S,
+        ctx: StorageContext,
+        gas_meter: G,
+        read_only: bool,
+    ) -> Self {
+        Self {
+            vm,
+            remote,
+            session: Self::new_inner_session(vm, remote),
+            ctx,
+            gas_meter,
+            read_only,
+        }
+    }
+
+    fn new_inner_session(vm: &'l MoveVM, remote: &'r S) -> Session<'r, 'l, S> {
         let mut extensions = NativeContextExtensions::default();
-        //let txn_hash: [u8; 32] = session_id.into();
 
         extensions.add(NativeTableContext::new(remote));
-        //extensions.add(NativeObjectContext::new(remote));
 
         // The VM code loader has bugs around module upgrade. After a module upgrade, the internal
         // cache needs to be flushed to work around those bugs.
-        self.inner.flush_loader_cache_if_invalidated();
-
-        let session = self.inner.new_session_with_extensions(remote, extensions);
-        SessionExt::new(session)
-    }
-}
-
-pub struct SessionExt<'r, 'l, S> {
-    session: Session<'r, 'l, S>,
-}
-
-impl<'r, 'l, S> SessionExt<'r, 'l, S>
-where
-    S: MoveResolverExt,
-{
-    pub fn new(session: Session<'r, 'l, S>) -> Self {
-        Self { session }
+        vm.flush_loader_cache_if_invalidated();
+        vm.new_session_with_extensions(remote, extensions)
     }
 
-    pub fn resolve_args(
+    /// Verify a move action.
+    /// The caller should call this function when validate a transaction.
+    /// If the result is error, the transaction should be rejected.
+    pub fn verify_move_action(
         &self,
-        tx_context: &TxContext,
-        func: &LoadedFunctionInstantiation,
-        args: Vec<Vec<u8>>,
-    ) -> Result<Vec<Vec<u8>>, PartialVMError> {
-        tx_context.resolve_argument(self, func, args)
+        action: MoveAction,
+    ) -> Result<VerifiedMoveAction, anyhow::Error> {
+        match action {
+            MoveAction::Script(script) => {
+                let loaded_function = self
+                    .session
+                    .load_script(script.code.as_slice(), script.ty_args.clone())?;
+                moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)?;
+                let resolved_args = self
+                    .ctx
+                    .resolve_argument(&self.session, &loaded_function, script.args.clone())
+                    .map_err(|e| e.finish(Location::Undefined))?;
+                Ok(VerifiedMoveAction::Script {
+                    call: script,
+                    resolved_args,
+                })
+            }
+            MoveAction::Function(function) => {
+                let loaded_function = self.session.load_function(
+                    &function.function_id.module_id,
+                    &function.function_id.function_name,
+                    function.ty_args.as_slice(),
+                )?;
+                moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)?;
+                let resolved_args = self
+                    .ctx
+                    .resolve_argument(&self.session, &loaded_function, function.args.clone())
+                    .map_err(|e| e.finish(Location::Undefined))?;
+                Ok(VerifiedMoveAction::Function {
+                    call: function,
+                    resolved_args,
+                })
+            }
+            MoveAction::ModuleBundle(module_bundle) => {
+                let compiled_modules = deserialize_modules(&module_bundle)?;
+
+                let mut init_function_modules = vec![];
+                for module in compiled_modules {
+                    let result = Self::verify_init_function(&module);
+                    match result {
+                        Ok(res) => {
+                            if res {
+                                init_function_modules.push(module.self_id())
+                            }
+                        }
+                        Err(err) => return Err(err),
+                    }
+                }
+                //TODO add more module verifier.
+                Ok(VerifiedMoveAction::ModuleBundle {
+                    module_bundle,
+                    init_function_modules,
+                })
+            }
+        }
     }
 
-    /************** Proxy function */
+    //FIXME
+    // Can not use moveos_verifier::verifier::verify_init_function
+    // Because when verify module before publish, the module is not in the Session cache
+    // If we depend on the cache, we can not verify the module
+    fn verify_init_function(module: &CompiledModule) -> Result<bool, anyhow::Error> {
+        for fdef in &module.function_defs {
+            let fhandle = module.function_handle_at(fdef.function);
+            let fname = module.identifier_at(fhandle.name);
+            if fname == INIT_FN_NAME_IDENTIFIER.as_ident_str() {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
 
-    pub fn execute_entry_function(
+    /// Execute a move action.
+    /// The caller should ensure call verify_move_action before execute.
+    /// Once we start executing transactions, we must ensure that the transaction execution has a result, regardless of success or failure,
+    /// and we need to save the result and deduct gas
+    pub fn execute_move_action(&mut self, action: VerifiedMoveAction) -> VMResult<()> {
+        match action {
+            VerifiedMoveAction::Script {
+                call,
+                resolved_args,
+            } => self
+                .session
+                .execute_script(call.code, call.ty_args, resolved_args, &mut self.gas_meter)
+                .map(|ret| {
+                    debug_assert!(
+                        ret.return_values.is_empty(),
+                        "Script function should not return values"
+                    );
+                    self.update_storage_context_via_return_values(&ret);
+                }),
+            VerifiedMoveAction::Function {
+                call,
+                resolved_args,
+            } => self
+                .session
+                .execute_entry_function(
+                    &call.function_id.module_id,
+                    &call.function_id.function_name,
+                    call.ty_args,
+                    resolved_args,
+                    &mut self.gas_meter,
+                )
+                .map(|ret| {
+                    debug_assert!(
+                        ret.return_values.is_empty(),
+                        "Entry function should not return values"
+                    );
+                    self.update_storage_context_via_return_values(&ret);
+                }),
+            VerifiedMoveAction::ModuleBundle {
+                module_bundle,
+                init_function_modules,
+            } => {
+                //TODO check the modules package address with the sender
+                let sender = self.ctx.tx_context.sender();
+                //TODO check the compatiblity
+                let compat_config = Compatibility::no_check();
+                self.session.publish_module_bundle_with_compat_config(
+                    module_bundle,
+                    sender,
+                    &mut self.gas_meter,
+                    compat_config,
+                )?;
+                self.execute_init_modules(init_function_modules)
+            }
+        }
+    }
+
+    // Because the StorageContext can be mut argument, if the function change the StorageContext,
+    // we need to update the StorageContext via return values, and pass the updated StorageContext to the next function.
+    fn update_storage_context_via_return_values(
         &mut self,
-        function_id: &FunctionId,
-        ty_args: Vec<TypeTag>,
-        args: Vec<impl Borrow<[u8]>>,
-        gas_meter: &mut impl GasMeter,
-    ) -> VMResult<SerializedReturnValues> {
-        self.session.execute_entry_function(
-            &function_id.module_id,
-            &function_id.function_name,
-            ty_args,
-            args,
-            gas_meter,
-        )
+        _return_values: &SerializedReturnValues,
+    ) {
+        //TODO get StorageContext from _return_values.mutable_reference_outputs
     }
 
     pub fn execute_function_bypass_visibility(
         &mut self,
-        function_id: &FunctionId,
-        ty_args: Vec<TypeTag>,
-        args: Vec<impl Borrow<[u8]>>,
-        gas_meter: &mut impl GasMeter,
-    ) -> VMResult<SerializedReturnValues> {
-        self.session.execute_function_bypass_visibility(
-            &function_id.module_id,
-            &function_id.function_name,
-            ty_args,
-            args,
-            gas_meter,
-        )
+        call: FunctionCall,
+    ) -> VMResult<Vec<FunctionReturnValue>> {
+        let loaded_function = self.session.load_function(
+            &call.function_id.module_id,
+            &call.function_id.function_name,
+            call.ty_args.as_slice(),
+        )?;
+        let resolved_args = self
+            .ctx
+            .resolve_argument(&self.session, &loaded_function, call.args)
+            .map_err(|e| e.finish(Location::Undefined))?;
+
+        let return_values = self.session.execute_function_bypass_visibility(
+            &call.function_id.module_id,
+            &call.function_id.function_name,
+            call.ty_args,
+            resolved_args,
+            &mut self.gas_meter,
+        )?;
+        self.update_storage_context_via_return_values(&return_values);
+        return_values
+            .return_values
+            .into_iter()
+            .zip(loaded_function.return_.iter())
+            .map(|((v, _layout), ty)| {
+                // We can not use
+                // let type_tag :TypeTag = TryInto::try_into(&layout)?
+                // to get TypeTag from MoveTypeLayout, because this MoveTypeLayout not MoveLayoutType::WithTypes
+                // Invalid MoveTypeLayout -> StructTag conversion--needed MoveLayoutType::WithTypes
+                let type_tag = self.session.get_type_tag(ty)?;
+                Ok(FunctionReturnValue::new(type_tag, v))
+            })
+            .collect()
     }
 
-    pub fn execute_script(
+    fn execute_init_modules(
         &mut self,
-        script: impl Borrow<[u8]>,
-        ty_args: Vec<TypeTag>,
-        args: Vec<impl Borrow<[u8]>>,
-        gas_meter: &mut impl GasMeter,
-    ) -> VMResult<SerializedReturnValues> {
-        self.session
-            .execute_script(script, ty_args, args, gas_meter)
-    }
+        init_function_modules: Vec<ModuleId>,
+    ) -> Result<(), VMError> {
+        for module_id in init_function_modules {
+            let function_id = FunctionId::new(module_id.clone(), INIT_FN_NAME_IDENTIFIER.clone());
+            let call = FunctionCall::new(function_id, vec![], vec![]);
 
-    pub fn publish_module(
-        &mut self,
-        module: Vec<u8>,
-        sender: AccountAddress,
-        gas_meter: &mut impl GasMeter,
-    ) -> VMResult<()> {
-        self.session.publish_module(module, sender, gas_meter)
-    }
+            self.execute_function_bypass_visibility(call)
+                .map(|result| {
+                    debug_assert!(result.is_empty(), "Init function must not return value")
+                })?;
+        }
 
-    pub fn publish_module_bundle(
-        &mut self,
-        modules: Vec<Vec<u8>>,
-        sender: AccountAddress,
-        gas_meter: &mut impl GasMeter,
-    ) -> VMResult<()> {
-        self.session
-            .publish_module_bundle(modules, sender, gas_meter)
-    }
-
-    pub fn publish_module_bundle_with_compat_config(
-        &mut self,
-        modules: Vec<Vec<u8>>,
-        sender: AccountAddress,
-        gas_meter: &mut impl GasMeter,
-        compat_config: Compatibility,
-    ) -> VMResult<()> {
-        self.session.publish_module_bundle_with_compat_config(
-            modules,
-            sender,
-            gas_meter,
-            compat_config,
-        )
-    }
-
-    pub fn num_mutated_accounts(&self, sender: &AccountAddress) -> u64 {
-        self.session.num_mutated_accounts(sender)
-    }
-
-    pub fn finish(self) -> VMResult<(ChangeSet, Vec<Event>)> {
-        self.session.finish()
+        Ok(())
     }
 
     pub fn finish_with_extensions(
         self,
-    ) -> VMResult<(ChangeSet, Vec<Event>, NativeContextExtensions<'r>)> {
-        self.session.finish_with_extensions()
+        vm_status: VMStatus,
+    ) -> Result<(StorageContext, TransactionOutput), anyhow::Error> {
+        let (finalized_session, status) = match vm_status.keep_or_discard() {
+            Ok(status) => self.finalizer(status),
+            Err(discard_status) => {
+                //This should not happen, if it happens, it means that the VM or verifer has a bug
+                //TODO try to handle this error
+                panic!("Discard status: {:?}", discard_status);
+            }
+        };
+
+        let (changeset, raw_events, mut extensions) =
+            finalized_session.session.finish_with_extensions()?;
+        let table_context: NativeTableContext = extensions.remove();
+        let table_changeset = table_context
+            .into_change_set()
+            .map_err(|e| e.finish(Location::Undefined))?;
+
+        if finalized_session.read_only {
+            ensure!(
+                changeset.accounts().is_empty(),
+                "ChangeSet should be empty when execute readonly function"
+            );
+            ensure!(
+                raw_events.is_empty(),
+                "Events should be empty when execute readonly function"
+            );
+            ensure!(
+                table_changeset.changes.is_empty(),
+                "Table change set should be empty when execute readonly function"
+            );
+        }
+
+        let events = raw_events
+            .into_iter()
+            .enumerate()
+            .map(|(i, e)| {
+                let event_handle_id = ObjectID::from_bytes(e.0.as_slice())
+                    .expect("the event handle id must be ObjectID");
+                Event::new(EventID::new(event_handle_id, e.1), e.2, e.3, i as u32)
+            })
+            .collect();
+        //TODO calculate the gas_used with gas_meter
+        let gas_used = 0;
+        Ok((
+            finalized_session.ctx,
+            TransactionOutput {
+                status,
+                changeset,
+                table_changeset,
+                events,
+                gas_used,
+            },
+        ))
+    }
+
+    fn finalizer(self, status: KeptVMStatus) -> (Self, KeptVMStatus) {
+        if self.read_only {
+            (self, status)
+        } else {
+            let finalized_session = match &status {
+                KeptVMStatus::Executed => self,
+                _error => {
+                    //if the execution failed, we need to start a new session, and discard the transaction changes
+                    // and increment the sequence number or reduce the gas in new session.
+                    let SessionExt {
+                        vm,
+                        remote,
+                        session: _,
+                        ctx,
+                        gas_meter,
+                        read_only,
+                    } = self;
+                    Self::new(vm, remote, ctx, gas_meter, read_only)
+                }
+            };
+            //TODO call the finalizer move function to increment the sequence number or reduce the gas
+            (finalized_session, status)
+        }
     }
 
     /// Load a script and all of its types into cache
@@ -243,4 +466,11 @@ impl AsRef<MoveVM> for MoveVmExt {
     fn as_ref(&self) -> &MoveVM {
         &self.inner
     }
+}
+
+fn deserialize_modules(module_bytes: &[Vec<u8>]) -> Result<Vec<CompiledModule>, VMError> {
+    module_bytes
+        .iter()
+        .map(|b| CompiledModule::deserialize(b).map_err(|e| e.finish(Location::Undefined)))
+        .collect::<VMResult<Vec<CompiledModule>>>()
 }

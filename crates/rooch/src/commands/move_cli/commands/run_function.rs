@@ -5,9 +5,10 @@ use crate::types::{CommandAction, TransactionOptions, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
 use move_core_types::value::MoveValue;
-use moveos::moveos::TransactionOutput;
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
-use rooch_server::jsonrpc_types::{TransactionArgumentView, TypeTagView};
+use rooch_server::jsonrpc_types::{
+    ExecuteTransactionResponse, TransactionArgumentView, TypeTagView,
+};
 use rooch_types::{
     address::RoochAddress,
     error::{RoochError, RoochResult},
@@ -54,8 +55,8 @@ pub struct RunFunction {
 }
 
 #[async_trait]
-impl CommandAction<TransactionOutput> for RunFunction {
-    async fn execute(self) -> RoochResult<TransactionOutput> {
+impl CommandAction<ExecuteTransactionResponse> for RunFunction {
+    async fn execute(self) -> RoochResult<ExecuteTransactionResponse> {
         let args = self
             .args
             .iter()

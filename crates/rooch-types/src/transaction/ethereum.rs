@@ -10,6 +10,7 @@ use ethers::utils::rlp::{Decodable, Rlp};
 use moveos_types::{
     h256::H256,
     transaction::{AuthenticatableTransaction, MoveAction, MoveOSTransaction},
+    tx_context::TxContext,
 };
 use serde::{Deserialize, Serialize};
 
@@ -70,10 +71,7 @@ impl AuthenticatableTransaction for EthereumTransaction {
         result: super::AuthenticatorResult,
     ) -> Result<MoveOSTransaction> {
         let action = self.decode_calldata_to_action()?;
-        Ok(MoveOSTransaction::new(
-            result.resolved_address,
-            action,
-            self.tx_hash(),
-        ))
+        let tx_ctx = TxContext::new(result.resolved_address, self.tx_hash());
+        Ok(MoveOSTransaction::new(tx_ctx, action))
     }
 }

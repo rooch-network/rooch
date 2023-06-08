@@ -4,7 +4,6 @@
 use anyhow::{bail, Result};
 use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
 use move_resource_viewer::AnnotatedMoveStruct;
-use moveos::moveos::TransactionOutput;
 use moveos_types::access_path::AccessPath;
 use moveos_types::event_filter::{EventFilter, MoveOSEvent};
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
@@ -17,6 +16,8 @@ use rooch_executor::proxy::ExecutorProxy;
 use rooch_proposer::proxy::ProposerProxy;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::{address::RoochAddress, transaction::TypedTransaction};
+
+use crate::jsonrpc_types::ExecuteTransactionResponse;
 
 /// RpcService is the implementation of the RPC service.
 /// It is the glue between the RPC server(EthAPIServer,RoochApiServer) and the rooch's actors.
@@ -49,17 +50,20 @@ impl RpcService {
         Ok(())
     }
 
-    pub async fn execute_tx(&self, tx: TypedTransaction) -> Result<TransactionOutput> {
+    pub async fn execute_tx(&self, tx: TypedTransaction) -> Result<ExecuteTransactionResponse> {
         //First, validate the transactin
         let moveos_tx = self.executor.validate_transaction(tx.clone()).await?;
-        let tx_sequence_info = self.sequencer.sequence_transaction(tx.clone()).await?;
+        let sequence_info = self.sequencer.sequence_transaction(tx.clone()).await?;
         // Then execute
-        let (output, tx_execution_info) = self.executor.execute_transaction(moveos_tx).await?;
+        let (_output, execution_info) = self.executor.execute_transaction(moveos_tx).await?;
         self.proposer
-            .propose_transaction(tx, tx_execution_info, tx_sequence_info)
+            .propose_transaction(tx, execution_info.clone(), sequence_info.clone())
             .await?;
-        //TODO conform the response, put the sequence result to output.
-        Ok(output)
+        //TODO conform the response, put the TransactionOutput and proposer result to response.
+        Ok(ExecuteTransactionResponse {
+            sequence_info,
+            execution_info,
+        })
     }
 
     pub async fn execute_view_function(
