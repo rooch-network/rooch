@@ -84,10 +84,10 @@ pub struct Client {
 
 impl Client {
     pub async fn execute_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponse> {
-        let txn_payload = bcs::to_bytes(&tx)?;
+        let tx_payload = bcs::to_bytes(&tx)?;
         self.rpc
             .http
-            .execute_raw_transaction(txn_payload.into())
+            .execute_raw_transaction(tx_payload.into())
             .await
             .map_err(|e| anyhow::anyhow!(e))
     }
