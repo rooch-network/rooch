@@ -51,7 +51,7 @@ pub struct RunFunction {
     context: WalletContextOptions,
 
     #[clap(flatten)]
-    txn_options: TransactionOptions,
+    tx_options: TransactionOptions,
 }
 
 #[async_trait]
@@ -67,7 +67,7 @@ impl CommandAction<ExecuteTransactionResponse> for RunFunction {
             })
             .collect();
 
-        if self.txn_options.sender_account.is_none() {
+        if self.tx_options.sender_account.is_none() {
             return Err(RoochError::CommandArgumentError(
                 "--sender-account required".to_string(),
             ));
@@ -75,7 +75,7 @@ impl CommandAction<ExecuteTransactionResponse> for RunFunction {
 
         let context = self.context.build().await?;
         let sender: RoochAddress = context
-            .parse_account_arg(self.txn_options.sender_account.unwrap())?
+            .parse_account_arg(self.tx_options.sender_account.unwrap())?
             .into();
 
         let action = MoveAction::new_function_call(

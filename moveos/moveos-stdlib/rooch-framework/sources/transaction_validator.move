@@ -66,15 +66,15 @@ module rooch_framework::transaction_validator {
     fun prologue_common(
         ctx: &mut StorageContext,
         sender: signer,
-        txn_sequence_number: u64,
-        txn_authentication_key: vector<u8>,
-        _txn_gas_price: u64,
-        _txn_max_gas_units: u64,
-        txn_expiration_time: u64,
+        tx_sequence_number: u64,
+        tx_authentication_key: vector<u8>,
+        _tx_gas_price: u64,
+        _tx_max_gas_units: u64,
+        tx_expiration_time: u64,
         chain_id: u8,
     ) {
         assert!(
-            timestamp::now_seconds(ctx) < txn_expiration_time,
+            timestamp::now_seconds(ctx) < tx_expiration_time,
             error::invalid_argument(EPrologueTransactionExpired),
         );
         assert!(chain_id::get(ctx) == chain_id, error::invalid_argument(EPrologueBadChainId));
@@ -82,30 +82,30 @@ module rooch_framework::transaction_validator {
         let transaction_sender = signer::address_of(&sender);
         assert!(account::exists_at(ctx, transaction_sender), error::invalid_argument(EPrologueAccountDoesNotExist));
         assert!(
-            txn_authentication_key == account::get_authentication_key(ctx, transaction_sender),
+            tx_authentication_key == account::get_authentication_key(ctx, transaction_sender),
             error::invalid_argument(EPrologueInvalidAccountAuthKey),
         );
 
         assert!(
-            (txn_sequence_number as u128) < MAX_U64,
+            (tx_sequence_number as u128) < MAX_U64,
             error::out_of_range(EPrologueSequenceNumberTooBig)
         );
 
         let account_sequence_number = account::sequence_number(ctx, transaction_sender);
         assert!(
-            txn_sequence_number >= account_sequence_number,
+            tx_sequence_number >= account_sequence_number,
             error::invalid_argument(EPrologueSequenceNuberTooOld)
         );
 
         // [PCA12]: Check that the transaction's sequence number matches the
         // current sequence number. Otherwise sequence number is too new by [PCA11].
         assert!(
-            txn_sequence_number == account_sequence_number,
+            tx_sequence_number == account_sequence_number,
             error::invalid_argument(EPrologueSequenceNumberTooNew)
         );
 
         // TODO check transaction gas fee
-        // let max_transaction_fee = txn_gas_price * txn_max_gas_units;
+        // let max_transaction_fee = tx_gas_price * tx_max_gas_units;
         // assert!(
         //     coin::is_account_registered<...>(transaction_sender),
         //     error::invalid_argument(EPrologueCantPayGasDeposit),
@@ -117,14 +117,14 @@ module rooch_framework::transaction_validator {
     fun module_prologue(
         ctx: &mut StorageContext,
         sender: signer,
-        txn_sequence_number: u64,
-        txn_public_key: vector<u8>,
-        txn_gas_price: u64,
-        txn_max_gas_units: u64,
-        txn_expiration_time: u64,
+        tx_sequence_number: u64,
+        tx_public_key: vector<u8>,
+        tx_gas_price: u64,
+        tx_max_gas_units: u64,
+        tx_expiration_time: u64,
         chain_id: u8,
     ) {
-        prologue_common(ctx, sender, txn_sequence_number, txn_public_key, txn_gas_price, txn_max_gas_units, txn_expiration_time, chain_id)
+        prologue_common(ctx, sender, tx_sequence_number, tx_public_key, tx_gas_price, tx_max_gas_units, tx_expiration_time, chain_id)
     }
 
 
@@ -133,21 +133,21 @@ module rooch_framework::transaction_validator {
     fun epilogue(
         ctx: &mut StorageContext,
         account: signer,
-        _txn_sequence_number: u64,
-        txn_gas_price: u64,
-        txn_max_gas_units: u64,
+        _tx_sequence_number: u64,
+        tx_gas_price: u64,
+        tx_max_gas_units: u64,
         gas_units_remaining: u64
     ) {
-        assert!(txn_max_gas_units >= gas_units_remaining, error::invalid_argument(EOUT_OF_GAS));
-        let gas_used = txn_max_gas_units - gas_units_remaining;
+        assert!(tx_max_gas_units >= gas_units_remaining, error::invalid_argument(EOUT_OF_GAS));
+        let gas_used = tx_max_gas_units - gas_units_remaining;
 
         assert!(
-            (txn_gas_price as u128) * (gas_used as u128) <= MAX_U64,
+            (tx_gas_price as u128) * (gas_used as u128) <= MAX_U64,
             error::out_of_range(EOUT_OF_GAS)
         );
         let addr = signer::address_of(&account);
         //TODO handle transaction gas fee
-        // let transaction_fee_amount = txn_gas_price * gas_used;
+        // let transaction_fee_amount = tx_gas_price * gas_used;
         // // it's important to maintain the error code consistent with vm
         // // to do failed transaction cleanup.
         // assert!(

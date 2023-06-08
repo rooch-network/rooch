@@ -35,9 +35,9 @@ impl AbstractTransaction for EthereumTransaction {
 
     fn decode(bytes: &[u8]) -> Result<Self> {
         let rlp = Rlp::new(bytes);
-        let mut txn = ethers::core::types::Transaction::decode(&rlp)?;
-        txn.recover_from_mut()?;
-        Ok(Self(txn))
+        let mut tx = ethers::core::types::Transaction::decode(&rlp)?;
+        tx.recover_from_mut()?;
+        Ok(Self(tx))
     }
 
     fn encode(&self) -> Vec<u8> {

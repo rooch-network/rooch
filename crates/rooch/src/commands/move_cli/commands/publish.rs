@@ -28,7 +28,7 @@ pub struct Publish {
     move_args: Move,
 
     #[clap(flatten)]
-    txn_options: TransactionOptions,
+    tx_options: TransactionOptions,
 
     /// Named addresses for the move binary
     ///
@@ -97,8 +97,8 @@ impl CommandAction<ExecuteTransactionResponse> for Publish {
             bundles.push(binary);
         }
 
-        if self.txn_options.sender_account.is_some()
-            && pkg_address != context.parse_account_arg(self.txn_options.sender_account.unwrap())?
+        if self.tx_options.sender_account.is_some()
+            && pkg_address != context.parse_account_arg(self.tx_options.sender_account.unwrap())?
         {
             return Err(RoochError::CommandArgumentError(
                     "--sender-account required and the sender account must be the same as the package address"
