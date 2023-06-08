@@ -7,7 +7,9 @@ use crate::actor::{
 };
 use anyhow::Result;
 use coerce::actor::ActorRef;
-use rooch_types::transaction::{TransactionInfo, TransactionSequenceInfo, TypedTransaction};
+use rooch_types::transaction::{
+    TransactionExecutionInfo, TransactionSequenceInfo, TypedTransaction,
+};
 
 #[derive(Clone)]
 pub struct ProposerProxy {
@@ -22,7 +24,7 @@ impl ProposerProxy {
     pub async fn propose_transaction(
         &self,
         tx: TypedTransaction,
-        tx_execution_info: TransactionInfo,
+        tx_execution_info: TransactionExecutionInfo,
         tx_sequence_info: TransactionSequenceInfo,
     ) -> Result<TransactionProposeResult> {
         self.actor

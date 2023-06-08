@@ -4,7 +4,8 @@
 use crate::api::RoochRpcModule;
 use crate::jsonrpc_types::{
     AnnotatedFunctionReturnValueView, AnnotatedMoveStructView, AnnotatedStateView, EventView,
-    FunctionCallView, StateView, StrView, StructTagView, TransactionView,
+    ExecuteTransactionResponse, FunctionCallView, StateView, StrView, StructTagView,
+    TransactionView,
 };
 use crate::service::RpcService;
 use crate::{api::rooch_api::RoochAPIServer, jsonrpc_types::AnnotatedObjectView};
@@ -13,7 +14,6 @@ use jsonrpsee::{
     RpcModule,
 };
 use move_core_types::account_address::AccountAddress;
-use moveos::moveos::TransactionOutput;
 use moveos_types::access_path::AccessPath;
 use moveos_types::event_filter::EventFilter;
 use moveos_types::{object::ObjectID, transaction::AuthenticatableTransaction};
@@ -44,7 +44,7 @@ impl RoochAPIServer for RoochServer {
     async fn execute_raw_transaction(
         &self,
         payload: StrView<Vec<u8>>,
-    ) -> RpcResult<TransactionOutput> {
+    ) -> RpcResult<ExecuteTransactionResponse> {
         let tx = bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;
         Ok(self
             .rpc_service

@@ -1,13 +1,18 @@
 use crate::build::ROOCH_METADATA_KEY;
+use crate::verifier::INIT_FN_NAME_IDENTIFIER;
 use move_binary_format::binary_views::BinaryIndexedView;
-use move_binary_format::file_format::{Bytecode, FunctionInstantiation, SignatureToken};
+use move_binary_format::file_format::{
+    Bytecode, FunctionInstantiation, SignatureToken, Visibility,
+};
 use move_core_types::language_storage::ModuleId;
 use move_core_types::metadata::Metadata;
+use move_core_types::move_resource::MoveStructType;
 use move_model::ast::Attribute;
 use move_model::model::{FunctionEnv, GlobalEnv, Loc, ModuleEnv};
 use move_model::ty::PrimitiveType;
 use move_model::ty::Type;
 use move_vm_runtime::move_vm::MoveVM;
+use moveos_types::storage_context::StorageContext;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -81,7 +86,7 @@ impl<'a> ExtendedChecker<'a> {
             if module.is_target() {
                 self.check_private_generics_functions(module);
                 self.check_entry_functions(module);
-                //self.check_init_module(module);
+                self.check_init_module(module);
             }
         }
     }
@@ -270,6 +275,82 @@ impl<'a> ExtendedChecker<'a> {
 // Entry Function
 
 impl<'a> ExtendedChecker<'a> {
+    fn check_init_module(&mut self, module: &ModuleEnv) {
+        for ref fun in module.get_functions() {
+            if fun.get_identifier().as_ident_str() != INIT_FN_NAME_IDENTIFIER.as_ident_str() {
+                continue;
+            }
+
+            if Visibility::Private != fun.visibility() {
+                self.env
+                    .error(&fun.get_loc(), "module init function should private")
+            }
+
+            if fun.is_entry() {
+                self.env
+                    .error(&fun.get_loc(), "module init function should not entry")
+            }
+
+            if fun.get_return_count() != 0 {
+                self.env.error(
+                    &fun.get_loc(),
+                    "module init function should not have return",
+                )
+            }
+
+            let arg_tys = &fun.get_parameter_types();
+            if arg_tys.len() != 1 && arg_tys.len() != 2 {
+                self.env.error(
+                    &fun.get_loc(),
+                    "module init function should have 1 or 2 parameters",
+                )
+            }
+            for ty in arg_tys {
+                match ty {
+                    Type::Reference(true, bt) => {
+                        let struct_tag = bt.clone().into_struct_tag(self.env);
+                        if struct_tag.is_none() {
+                            self.env.error(
+                                &fun.get_loc(),
+                                "module init function should input a reference structure"
+                            )
+                        }
+
+                        if !check_storage_context_struct_tag(struct_tag.unwrap().to_canonical_string()){
+                            self.env.error(
+                                &fun.get_loc(),
+                                "module init function should not input reference structures other than storageContext"
+                            )
+                        }
+                    }
+                    Type::Reference(false, bt) => {
+                        if bt.as_ref() == &Type::Primitive(PrimitiveType::Signer) {
+                        } else {
+                            self.env.error(
+                                &fun.get_loc(),
+                                "module init function should not have a reference primitive type other than a signer",
+                            )
+                        }
+                    }
+                    Type::Primitive(primitive) => {
+                        if let PrimitiveType::Signer = primitive {
+                        } else {
+                            self.env.error(
+                            &fun.get_loc(),
+                            "module init function should not have a primitive type other than a signer",
+                        )
+                        }
+                    }
+
+                    _ => self.env.error(
+                        &fun.get_loc(),
+                        "module init function only should have two parameter types with signer or storageContext",
+                    ),
+                }
+            }
+        }
+    }
+
     fn check_entry_functions(&mut self, module: &ModuleEnv) {
         for ref fun in module.get_functions() {
             if !fun.is_entry() {
@@ -371,6 +452,15 @@ impl<'a> ExtendedChecker<'a> {
             }
         })
     }
+}
+
+pub fn check_storage_context_struct_tag(struct_tag: String) -> bool {
+    let address = moveos_types::addresses::MOVEOS_STD_ADDRESS.to_string();
+    let module = StorageContext::module_identifier()
+        .as_ident_str()
+        .to_string();
+    let name = StorageContext::struct_identifier().to_string();
+    struct_tag == format!("{}::{}::{}", address, module, name)
 }
 
 fn is_defined_or_allowed_in_current_module(

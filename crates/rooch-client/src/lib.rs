@@ -4,14 +4,13 @@
 use anyhow::Result;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
-use moveos::moveos::TransactionOutput;
 use moveos_types::{access_path::AccessPath, object::ObjectID, transaction::FunctionCall};
 use rand::Rng;
 use rooch_server::{
     api::rooch_api::RoochAPIClient,
     jsonrpc_types::{
         AnnotatedFunctionReturnValueView, AnnotatedMoveStructView, AnnotatedObjectView,
-        AnnotatedStateView, StateView, TransactionView,
+        AnnotatedStateView, ExecuteTransactionResponse, StateView,
     },
 };
 use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction, H256};
@@ -84,11 +83,11 @@ pub struct Client {
 }
 
 impl Client {
-    pub async fn execute_tx(&self, tx: RoochTransaction) -> Result<TransactionOutput> {
-        let txn_payload = bcs::to_bytes(&tx)?;
+    pub async fn execute_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponse> {
+        let tx_payload = bcs::to_bytes(&tx)?;
         self.rpc
             .http
-            .execute_raw_transaction(txn_payload.into())
+            .execute_raw_transaction(tx_payload.into())
             .await
             .map_err(|e| anyhow::anyhow!(e))
     }

@@ -3,7 +3,9 @@
 
 use anyhow::Result;
 use coerce::actor::{message::Message, scheduler::timer::TimerTick};
-use rooch_types::transaction::{TransactionInfo, TransactionSequenceInfo, TypedTransaction};
+use rooch_types::transaction::{
+    TransactionExecutionInfo, TransactionSequenceInfo, TypedTransaction,
+};
 
 /// Transaction Sequence Message
 #[derive(Debug)]
@@ -15,7 +17,7 @@ pub struct TransactionSequenceMessage {
 #[derive(Debug)]
 pub struct TransactionProposeMessage {
     pub tx: TypedTransaction,
-    pub tx_execution_info: TransactionInfo,
+    pub tx_execution_info: TransactionExecutionInfo,
     pub tx_sequence_info: TransactionSequenceInfo,
 }
 

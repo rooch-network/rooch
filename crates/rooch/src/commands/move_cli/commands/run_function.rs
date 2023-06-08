@@ -5,9 +5,10 @@ use crate::types::{CommandAction, TransactionOptions, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
 use move_core_types::value::MoveValue;
-use moveos::moveos::TransactionOutput;
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
-use rooch_server::jsonrpc_types::{TransactionArgumentView, TypeTagView};
+use rooch_server::jsonrpc_types::{
+    ExecuteTransactionResponse, TransactionArgumentView, TypeTagView,
+};
 use rooch_types::{
     address::RoochAddress,
     error::{RoochError, RoochResult},
@@ -50,12 +51,12 @@ pub struct RunFunction {
     context: WalletContextOptions,
 
     #[clap(flatten)]
-    txn_options: TransactionOptions,
+    tx_options: TransactionOptions,
 }
 
 #[async_trait]
-impl CommandAction<TransactionOutput> for RunFunction {
-    async fn execute(self) -> RoochResult<TransactionOutput> {
+impl CommandAction<ExecuteTransactionResponse> for RunFunction {
+    async fn execute(self) -> RoochResult<ExecuteTransactionResponse> {
         let args = self
             .args
             .iter()
@@ -66,7 +67,7 @@ impl CommandAction<TransactionOutput> for RunFunction {
             })
             .collect();
 
-        if self.txn_options.sender_account.is_none() {
+        if self.tx_options.sender_account.is_none() {
             return Err(RoochError::CommandArgumentError(
                 "--sender-account required".to_string(),
             ));
@@ -74,7 +75,7 @@ impl CommandAction<TransactionOutput> for RunFunction {
 
         let context = self.context.build().await?;
         let sender: RoochAddress = context
-            .parse_account_arg(self.txn_options.sender_account.unwrap())?
+            .parse_account_arg(self.tx_options.sender_account.unwrap())?
             .into();
 
         let action = MoveAction::new_function_call(

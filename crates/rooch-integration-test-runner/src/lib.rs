@@ -133,11 +133,12 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
         let id = module.self_id();
         let sender = *id.address();
 
-        let txn = MoveOSTransaction::new_for_test(
+        let tx = MoveOSTransaction::new_for_test(
             sender,
             MoveAction::new_module_bundle(vec![module_bytes]),
         );
-        self.moveos.execute(txn)?;
+        let verified_tx = self.moveos.verify(tx)?;
+        self.moveos.execute(verified_tx)?;
         Ok((None, module))
     }
 
@@ -166,11 +167,12 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
             .map(|arg| arg.simple_serialize().unwrap())
             .collect::<Vec<_>>();
 
-        let txn = MoveOSTransaction::new_for_test(
+        let tx = MoveOSTransaction::new_for_test(
             signers.pop().unwrap(),
             MoveAction::new_script_call(script_bytes, type_args, args),
         );
-        self.moveos.execute(txn)?;
+        let verified_tx = self.moveos.verify(tx)?;
+        self.moveos.execute(verified_tx)?;
         //TODO return values
         let value = SerializedReturnValues {
             mutable_reference_outputs: vec![],
@@ -202,11 +204,12 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
             .map(|arg| arg.simple_serialize().unwrap())
             .collect::<Vec<_>>();
         let function_id = FunctionId::new(module.clone(), function.to_owned());
-        let txn = MoveOSTransaction::new_for_test(
+        let tx = MoveOSTransaction::new_for_test(
             signers.pop().unwrap(),
             MoveAction::new_function_call(function_id, type_args, args),
         );
-        self.moveos.execute(txn)?;
+        let verified_tx = self.moveos.verify(tx)?;
+        self.moveos.execute(verified_tx)?;
         //TODO return values
         let value = SerializedReturnValues {
             mutable_reference_outputs: vec![],

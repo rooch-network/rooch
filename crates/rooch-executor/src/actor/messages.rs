@@ -10,11 +10,12 @@ use moveos_types::access_path::AccessPath;
 use moveos_types::event_filter::{EventFilter, MoveOSEvent};
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::state::{AnnotatedState, State};
+use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::{
     object::{AnnotatedObject, ObjectID},
-    transaction::{AuthenticatableTransaction, FunctionCall, MoveOSTransaction},
+    transaction::{AuthenticatableTransaction, FunctionCall},
 };
-use rooch_types::transaction::TransactionInfo;
+use rooch_types::transaction::TransactionExecutionInfo;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
@@ -26,17 +27,17 @@ impl<T> Message for ValidateTransactionMessage<T>
 where
     T: 'static + AuthenticatableTransaction + Send + Sync,
 {
-    type Result = Result<MoveOSTransaction>;
+    type Result = Result<VerifiedMoveOSTransaction>;
 }
 
 #[derive(Debug)]
 pub struct ExecuteTransactionMessage {
-    pub tx: MoveOSTransaction,
+    pub tx: VerifiedMoveOSTransaction,
 }
 
 pub struct ExecuteTransactionResult {
     pub output: TransactionOutput,
-    pub transaction_info: TransactionInfo,
+    pub transaction_info: TransactionExecutionInfo,
 }
 
 impl Message for ExecuteTransactionMessage {

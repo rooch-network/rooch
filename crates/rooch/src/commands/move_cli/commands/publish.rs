@@ -8,9 +8,9 @@ use move_binary_format::file_format::CompiledModule;
 use move_bytecode_utils::dependency_graph::DependencyGraph;
 use move_bytecode_utils::Modules;
 use move_cli::Move;
+use rooch_server::jsonrpc_types::ExecuteTransactionResponse;
 
 use crate::types::{CommandAction, TransactionOptions, WalletContextOptions};
-use moveos::moveos::TransactionOutput;
 use moveos::vm::dependency_order::sort_by_dependency_order;
 use moveos_types::transaction::MoveAction;
 use moveos_verifier::build::run_verifier;
@@ -28,7 +28,7 @@ pub struct Publish {
     move_args: Move,
 
     #[clap(flatten)]
-    txn_options: TransactionOptions,
+    tx_options: TransactionOptions,
 
     /// Named addresses for the move binary
     ///
@@ -51,8 +51,8 @@ impl Publish {
 }
 
 #[async_trait]
-impl CommandAction<TransactionOutput> for Publish {
-    async fn execute(self) -> RoochResult<TransactionOutput> {
+impl CommandAction<ExecuteTransactionResponse> for Publish {
+    async fn execute(self) -> RoochResult<ExecuteTransactionResponse> {
         let context = self.context_options.build().await?;
 
         let package_path = self.move_args.package_path;
@@ -97,8 +97,8 @@ impl CommandAction<TransactionOutput> for Publish {
             bundles.push(binary);
         }
 
-        if self.txn_options.sender_account.is_some()
-            && pkg_address != context.parse_account_arg(self.txn_options.sender_account.unwrap())?
+        if self.tx_options.sender_account.is_some()
+            && pkg_address != context.parse_account_arg(self.tx_options.sender_account.unwrap())?
         {
             return Err(RoochError::CommandArgumentError(
                     "--sender-account required and the sender account must be the same as the package address"

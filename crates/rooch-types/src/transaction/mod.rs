@@ -4,7 +4,8 @@
 use self::authenticator::Authenticator;
 use crate::{address::MultiChainAddress, H256};
 use anyhow::Result;
-use move_core_types::{account_address::AccountAddress, vm_status::KeptVMStatus};
+use move_core_types::account_address::AccountAddress;
+use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::h256;
 use moveos_types::transaction::AuthenticatableTransaction;
 use serde::{Deserialize, Serialize};
@@ -149,11 +150,9 @@ impl AuthenticatableTransaction for TypedTransaction {
     }
 }
 
-/// `TransactionInfo` represents the result of executing a transaction.
-//TODO rename to TransactionExecutionInfo?
-// #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHash, CryptoHasher)]
+/// `TransactionExecutionInfo` represents the result of executing a transaction.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub struct TransactionInfo {
+pub struct TransactionExecutionInfo {
     /// The hash of this transaction.
     pub tx_hash: H256,
 
@@ -173,15 +172,15 @@ pub struct TransactionInfo {
     pub status: KeptVMStatus,
 }
 
-impl TransactionInfo {
+impl TransactionExecutionInfo {
     pub fn new(
         tx_hash: H256,
         state_root: H256,
         event_root: H256,
         gas_used: u64,
         status: KeptVMStatus,
-    ) -> TransactionInfo {
-        TransactionInfo {
+    ) -> TransactionExecutionInfo {
+        TransactionExecutionInfo {
             tx_hash,
             state_root,
             event_root,

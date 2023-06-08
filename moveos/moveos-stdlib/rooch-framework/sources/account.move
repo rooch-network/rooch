@@ -13,6 +13,7 @@ module rooch_framework::account{
    use moveos_std::storage_context;
    use rooch_framework::authenticator::{Self, AuthenticatorResult};
    use rooch_framework::ed25519;
+   use rooch_framework::ecdsa_k1;
    use moveos_std::tx_context::tx_hash;
 
    friend rooch_framework::genesis;
@@ -48,7 +49,7 @@ module rooch_framework::account{
    const ED25519_SCHEME: u64 = 0;
    /// Scheme identifier for MultiEd25519 signatures used to derive authentication keys for MultiEd25519 public keys.
    const MULTI_ED25519_SCHEME: u64 = 1;
-   const SCHEME_SECP256K1: u64 = 2;
+   const SECP256K1_SCHEME: u64 = 2;
    /// Scheme identifier used when hashing an account's address together with a seed to derive the address (not the
    /// authentication key) of a resource account. This is an abuse of the notion of a scheme identifier which, for now,
    /// serves to domain separate hashes used to derive resource account addresses from hashes used to derive
@@ -74,7 +75,8 @@ module rooch_framework::account{
    const EAccountIsAlreadyResourceAccount: u64 = 7;
    /// Address to create is not a valid reserved address for Rooch framework
    const ENoValidFrameworkReservedAddress: u64 = 11;
- 
+   /// invalid signature
+   const InvalidSignature: u64 = 12;
 
    /// A entry function to create an account under `new_address`
    public entry fun create_account_entry(ctx: &mut StorageContext, new_address: address){
@@ -278,8 +280,8 @@ module rooch_framework::account{
    fun validate(ctx: &mut StorageContext, authenticator_info_bytes: vector<u8>) : AuthenticatorResult {
       let (sender_maddr, _sequence_number, authenticator) = authenticator::decode_authenticator_info(authenticator_info_bytes);
       authenticator::check_authenticator(&authenticator);
-
-      if (authenticator::scheme(&authenticator) == ED25519_SCHEME) {
+      let scheme = authenticator::scheme(&authenticator);
+      if (scheme == ED25519_SCHEME) {
          let ed25519_authenicator = authenticator::decode_ed25519_authenticator(authenticator);
 
          assert!(
@@ -287,6 +289,15 @@ module rooch_framework::account{
                &authenticator::ed25519_public(&ed25519_authenicator),
                &tx_hash(tx_context(ctx))),
             error::not_found(EAccountNotExist));
+      } else if (scheme == SECP256K1_SCHEME) {
+         let ecdsa_k1_authenicator = authenticator::decode_secp256k1_authenticator(authenticator);
+         assert!(
+            ecdsa_k1::verify(
+               &authenticator::secp256k1_signature(&ecdsa_k1_authenicator),
+               &tx_hash(tx_context(ctx)),
+               0 // KECCAK256:0, SHA256:1, TODO: The hash type may need to be passed through the authenticator
+            ),
+            error::invalid_argument(InvalidSignature));
       };
 
       //TODO verify authenicator info with account's auth key

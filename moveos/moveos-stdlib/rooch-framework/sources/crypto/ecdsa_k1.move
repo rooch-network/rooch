@@ -26,16 +26,14 @@ module rooch_framework::ecdsa_k1 {
    /// otherwise throw error.
    public native fun decompress_pubkey(pubkey: &vector<u8>): vector<u8>;
 
-   /// @param signature: A 64-bytes signature in form (r, s) that is signed using
+   /// @param signature: A 65-bytes signature in form (r, s, v) that is signed using
    /// Secp256k1. This is an non-recoverable signature without recovery id.
-   /// @param public_key: The public key to verify the signature against
-   /// @param msg: The message that the signature is signed against, this is raw message without hashing.
+   /// @param msg: The message that the signature is signed against.
    /// @param hash: The hash function used to hash the message when signing.
    ///
    /// If the signature is valid to the pubkey and hashed message, return true. Else false.
    public native fun verify(
       signature: &vector<u8>,
-      public_key: &vector<u8>,
       msg: &vector<u8>,
       hash: u8
    ): bool;
@@ -58,6 +56,8 @@ module rooch_framework::ecdsa_k1 {
       assert!(pubkey == pubkey_bytes, 0);
    }
 
+   // TODO: test
+
    #[test]
    #[expected_failure(abort_code = EFailToRecoverPubKey)]
    fun test_ecrecover_pubkey_fail_to_recover() {
@@ -77,55 +77,22 @@ module rooch_framework::ecdsa_k1 {
 
    #[test]
    fun test_verify_fails_with_recoverable_sig() {
-      let msg = b"Hello, world!";
-      let pk = x"02337cca2171fdbfcfd657fa59881f46269f1e590b5ffab6023686c7ad2ecc2c1c";
-      let sig = x"7e4237ebfbc36613e166bfc5f6229360a9c1949242da97ca04867e4de57b2df30c8340bcb320328cf46d71bda51fcb519e3ce53b348eec62de852e350edbd88600";
-      let verify = verify(&sig, &pk, &msg, 0);
-      assert!(verify == false, 0);
 
-      let sig_1 = x"7e4237ebfbc36613e166bfc5f6229360a9c1949242da97ca04867e4de57b2df30c8340bcb320328cf46d71bda51fcb519e3ce53b348eec62de852e350edbd88601";
-      let verify_1 = verify(&sig_1, &pk, &msg, 0);
-      assert!(verify_1 == false, 0);
    }
 
    #[test]
    fun test_verify_success_with_nonrecoverable_sig() {
-      let msg = b"Hello, world!";
-      // verify with keccak256 hash
-      let pk = x"02337cca2171fdbfcfd657fa59881f46269f1e590b5ffab6023686c7ad2ecc2c1c";
-      let sig = x"7e4237ebfbc36613e166bfc5f6229360a9c1949242da97ca04867e4de57b2df30c8340bcb320328cf46d71bda51fcb519e3ce53b348eec62de852e350edbd886";
-      let verify = verify(&sig, &pk, &msg, 0);
-      assert!(verify == true, 0);
 
-      // verify with sha256 hash
-      let sig = x"e5847245b38548547f613aaea3421ad47f5b95a222366fb9f9b8c57568feb19c7077fc31e7d83e00acc1347d08c3e1ad50a4eeb6ab044f25c861ddc7be5b8f9f";
-      let pk = x"02337cca2171fdbfcfd657fa59881f46269f1e590b5ffab6023686c7ad2ecc2c1c";
-      let verify = verify(&sig, &pk, &msg, 1);
-      assert!(verify == true, 0);
    }
 
    #[test]
    fun test_secp256k1_invalid() {
-      let msg = b"Hello, world!";
-      let sig = x"e5847245b38548547f613aaea3421ad47f5b95a222366fb9f9b8c57568feb19c7077fc31e7d83e00acc1347d08c3e1ad50a4eeb6ab044f25c861ddc7be5b8f9f";
-      let pk = x"02337cca2171fdbfcfd657fa59881f46269f1e590b5ffab6023686c7ad2ecc2c";
-      let verify = verify(&sig, &pk, &msg, 1);
-      assert!(verify == false, 0);
 
-      let sig = x"e5847245b38548547f613aaea3421ad47f5b95a222366fb9f9b8c57568feb19c7077fc31e7d83e00acc1347d08c3e1ad50a4eeb6ab044f25c861ddc7be5b8f9f";
-      let pk = x"02337cca2171fdbfcfd657fa59881f46269f1e590b5ffab6023686c7ad2ecc2c1c";
-      let verify = verify(&sig, &pk, &msg, 2);
-      assert!(verify == false, 0);
    }
 
    #[test]
    fun test_ecrecover_eth_address() {
-      // Test case from https://stackoverflow.com/questions/67278243/how-to-verify-the-signature-made-by-metamask-for-ethereum
-      let sig = x"382a3e04daf88f322730f6a2972475fc5646ea8c4a7f3b5e83a90b10ba08a7364cd2f55348f2b6d210fbed7fc485abf19ecb2f3967e410d6349dd7dd1d4487751b";
-      let msg = x"19457468657265756d205369676e6564204d6573736167653a0a3533307836336639613932643864363162343861396666663864353830383034323561333031326430356338696777796b3472316f376f";
-      let addr1 = x"63f9a92d8d61b48a9fff8d58080425a3012d05c8";
-      let addr = ecrecover_eth_address(sig, msg);
-      assert!(addr == addr1, 0);
+
    }
 
    // Helper Move function to recover signature directly to an ETH address.

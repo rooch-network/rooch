@@ -101,33 +101,46 @@ pub fn native_verify(
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     debug_assert!(ty_args.is_empty());
-    debug_assert!(args.len() == 4);
+    debug_assert!(args.len() == 3);
 
     let hash = pop_arg!(args, u8);
 
     let msg = pop_arg!(args, VectorRef);
-    let public_key_bytes = pop_arg!(args, VectorRef);
     let signature_bytes = pop_arg!(args, VectorRef);
 
     let msg_ref = msg.as_bytes_ref();
-    let public_key_bytes_ref = public_key_bytes.as_bytes_ref();
     let signature_bytes_ref = signature_bytes.as_bytes_ref();
 
     // TODO(Gas): Charge the arg size dependent costs
 
     let cost = 0.into();
 
-    let Ok(sig) = <Secp256k1Signature as ToFromBytes>::from_bytes(&signature_bytes_ref) else {
-        return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
+    let Ok(sig) = <Secp256k1RecoverableSignature as ToFromBytes>::from_bytes(&signature_bytes_ref) else {
+        return Ok(NativeResult::err(cost, INVALID_SIGNATURE));
     };
 
-    let Ok(pk) = <Secp256k1PublicKey as ToFromBytes>::from_bytes(&public_key_bytes_ref) else {
-        return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
+    let pk = match hash {
+        KECCAK256 => match sig.recover_with_hash::<Keccak256>(&msg_ref) {
+            Ok(pk) => pk,
+            Err(_) => {
+                return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
+            }
+        },
+        SHA256 => match sig.recover_with_hash::<Sha256>(&msg_ref) {
+            Ok(pk) => pk,
+            Err(_) => {
+                return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
+            }
+        },
+        _ => {
+            return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
+        }
     };
 
+    let sign = Secp256k1Signature::from(&sig);
     let result = match hash {
-        KECCAK256 => pk.verify_with_hash::<Keccak256>(&msg_ref, &sig).is_ok(),
-        SHA256 => pk.verify_with_hash::<Sha256>(&msg_ref, &sig).is_ok(),
+        KECCAK256 => pk.verify_with_hash::<Keccak256>(&msg_ref, &sign).is_ok(),
+        SHA256 => pk.verify_with_hash::<Sha256>(&msg_ref, &sign).is_ok(),
         _ => false,
     };
 

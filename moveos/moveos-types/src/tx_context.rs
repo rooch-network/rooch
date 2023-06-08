@@ -18,12 +18,12 @@ pub const TX_CONTEXT_STRUCT_NAME: &IdentStr = ident_str!("TxContext");
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct TxContext {
     /// Signer/sender of the transaction
-    sender: AccountAddress,
+    pub sender: AccountAddress,
     /// Hash of the current transaction
     /// Use the type `Vec<u8>` is to keep consistency with the `TxContext` type in Move
-    tx_hash: Vec<u8>,
+    pub tx_hash: Vec<u8>,
     /// Number of `ObjectID`'s generated during execution of the current transaction
-    ids_created: u64,
+    pub ids_created: u64,
 }
 
 impl TxContext {
@@ -43,8 +43,8 @@ impl TxContext {
     }
 
     /// Return the transaction Hash, to include in new objects
-    pub fn tx_hash(&self) -> &[u8] {
-        &self.tx_hash
+    pub fn tx_hash(&self) -> H256 {
+        H256::from_slice(&self.tx_hash)
     }
 
     pub fn sender(&self) -> AccountAddress {

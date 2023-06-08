@@ -1,24 +1,127 @@
-use crate::metadata::is_allowed_input_struct;
-use anyhow::{Error, Result};
-use move_core_types::resolver::MoveResolver;
+use crate::metadata::{check_storage_context_struct_tag, is_allowed_input_struct};
+use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMError, VMResult};
+use move_binary_format::file_format::{FunctionDefinition, FunctionDefinitionIndex, Visibility};
+use move_binary_format::{access::ModuleAccess, CompiledModule};
+use move_core_types::language_storage::ModuleId;
+use move_core_types::vm_status::StatusCode;
+use move_core_types::{identifier::Identifier, resolver::MoveResolver};
 use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
 use move_vm_types::loaded_data::runtime_types::Type;
+use moveos_types::move_types::FunctionId;
+use once_cell::sync::Lazy;
 use std::ops::Deref;
 
+pub static INIT_FN_NAME_IDENTIFIER: Lazy<Identifier> =
+    Lazy::new(|| Identifier::new("init").unwrap());
+
+/// The initializer function must have the following properties in order to be executed at publication:
+/// - Name init
+/// - Single parameter of &mut TxContext type
+/// - No return values
+/// - Private
+pub fn verify_init_function<S>(module: &CompiledModule, session: &Session<S>) -> VMResult<bool>
+where
+    S: MoveResolver,
+{
+    for fdef in &module.function_defs {
+        let fhandle = module.function_handle_at(fdef.function);
+        let fname = module.identifier_at(fhandle.name);
+        if fname == INIT_FN_NAME_IDENTIFIER.as_ident_str() {
+            if Visibility::Private != fdef.visibility {
+                return Err(vm_error_for_init_func_checking(
+                    StatusCode::INVALID_MAIN_FUNCTION_SIGNATURE,
+                    "init function should private",
+                    fdef,
+                    module.self_id(),
+                ));
+            } else if fdef.is_entry {
+                return Err(vm_error_for_init_func_checking(
+                    StatusCode::INVALID_MAIN_FUNCTION_SIGNATURE,
+                    "init function should not entry function",
+                    fdef,
+                    module.self_id(),
+                ));
+            } else {
+                let function_id =
+                    FunctionId::new(module.self_id(), INIT_FN_NAME_IDENTIFIER.clone());
+                let loaded_function = session.load_function(
+                    &module.self_id(),
+                    &function_id.function_name,
+                    vec![].as_slice(),
+                )?;
+                let parameters_usize = loaded_function.parameters.len();
+                if parameters_usize != 1 && parameters_usize != 2 {
+                    return Err(vm_error_for_init_func_checking(
+                        StatusCode::NUMBER_OF_TYPE_ARGUMENTS_MISMATCH,
+                        "init function only should have two parameter with signer or storageContext",
+                        fdef,
+                        module.self_id(),
+                    ));
+                }
+                for ref ty in loaded_function.parameters {
+                    match ty {
+                        Type::Reference(bt) | Type::MutableReference(bt) => match bt.as_ref() {
+                            Type::Struct(s) | Type::StructInstantiation(s, _) => {
+                                let struct_type = session.get_struct_type(*s).unwrap();
+                                if !check_storage_context_struct_tag(format!(
+                                    "{}::{}::{}",
+                                    struct_type.module.short_str_lossless(),
+                                    struct_type.module.name(),
+                                    struct_type.name
+                                )) {
+                                    return Err(vm_error_for_init_func_checking(
+                                            StatusCode::TYPE_MISMATCH,
+                                            "init function should not input structures other than storageContext",
+                                            fdef,
+                                            module.self_id(),
+                                        ));
+                                }
+                            }
+                            Type::Signer => {}
+                            _ => {
+                                return Err(vm_error_for_init_func_checking(
+                                        StatusCode::TYPE_MISMATCH,
+                                        "init function should only enter reference signer or mutable reference storageContext",
+                                        fdef,
+                                        module.self_id(),
+                                    ));
+                            }
+                        },
+                        Type::Signer => {}
+                        _ => {
+                            return Err(vm_error_for_init_func_checking(
+                                StatusCode::TYPE_MISMATCH,
+                                "init function should only enter signer or storageContext",
+                                fdef,
+                                module.self_id(),
+                            ))
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Ok(false)
+}
+
 pub fn verify_entry_function<S>(
-    func: LoadedFunctionInstantiation,
+    func: &LoadedFunctionInstantiation,
     session: &Session<S>,
-) -> Result<bool>
+) -> PartialVMResult<bool>
 where
     S: MoveResolver,
 {
     if !func.return_.is_empty() {
-        return Err(Error::msg("function should not return values".to_string()));
+        return Err(
+            PartialVMError::new(StatusCode::INVALID_MAIN_FUNCTION_SIGNATURE)
+                .with_message("function should not return values".to_string()),
+        );
     }
 
     for ty in &func.parameters {
         if !check_transaction_input_type(ty, session) {
-            return Err(Error::msg("parameter type is not allowed".to_string()));
+            return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
+                .with_message("parameter type is not allowed".to_string()));
         }
     }
 
@@ -80,4 +183,16 @@ where
         }
         _ => false,
     }
+}
+
+fn vm_error_for_init_func_checking(
+    status_code: StatusCode,
+    error_message: &str,
+    func_def: &FunctionDefinition,
+    module_id: ModuleId,
+) -> VMError {
+    PartialVMError::new(status_code)
+        .with_message(error_message.to_string())
+        .at_code_offset(FunctionDefinitionIndex::new(func_def.function.0), 0_u16)
+        .finish(Location::Module(module_id))
 }
