@@ -316,7 +316,7 @@ impl<'a> ExtendedChecker<'a> {
                             )
                         }
 
-                        if !check_storage_context_struct_tag(&struct_tag.unwrap().to_canonical_string()){
+                        if !check_storage_context_struct_tag(struct_tag.unwrap().to_canonical_string()){
                             self.env.error(
                                 &fun.get_loc(),
                                 "module init function should not input reference structures other than storageContext"
@@ -454,13 +454,13 @@ impl<'a> ExtendedChecker<'a> {
     }
 }
 
-pub fn check_storage_context_struct_tag(struct_tag: &str) -> bool {
+pub fn check_storage_context_struct_tag(struct_tag: String) -> bool {
     let address = moveos_types::addresses::MOVEOS_STD_ADDRESS.to_string();
     let module = StorageContext::module_identifier()
         .as_ident_str()
         .to_string();
     let name = StorageContext::struct_identifier().to_string();
-    struct_tag == address + "::" + &module + "::" + &name
+    struct_tag == format!("{}::{}::{}", address, module, name)
 }
 
 fn is_defined_or_allowed_in_current_module(
