@@ -167,21 +167,16 @@ impl RoochAPIServer for RoochServer {
         &self,
         start: u64,
         limit: u64,
-    ) -> RpcResult<Option<Vec<TransactionView>>> {
+    ) -> RpcResult<Vec<TransactionView>> {
         let resp = self
             .rpc_service
             .get_transaction_by_index(start, limit)
-            .await?;
+            .await?
+            .iter()
+            .map(|s| TransactionView::from(s.clone()))
+            .collect();
 
-        if let Some(tx) = resp {
-            Ok(Some(
-                tx.iter()
-                    .map(|s| TransactionView::from(s.clone()))
-                    .collect(),
-            ))
-        } else {
-            Ok(None)
-        }
+        Ok(resp)
     }
 }
 

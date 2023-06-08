@@ -18,8 +18,8 @@ pub struct GetByIndexCommand {
 }
 
 #[async_trait]
-impl CommandAction<Option<Vec<TransactionView>>> for GetByIndexCommand {
-    async fn execute(self) -> RoochResult<Option<Vec<TransactionView>>> {
+impl CommandAction<Vec<TransactionView>> for GetByIndexCommand {
+    async fn execute(self) -> RoochResult<Vec<TransactionView>> {
         let client = self.context_options.build().await?.get_client().await?;
 
         let resp = client

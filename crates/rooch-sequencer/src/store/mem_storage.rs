@@ -1,21 +1,24 @@
-// Copyright (c) RoochNetwork
-// SPDX-License-Identifier: Apache-2.0
-
+use crate::storage::storage::TransactionStorage;
 use rooch_types::transaction::TypedTransaction;
 use rooch_types::H256;
 
-// TODO: test
-pub struct MemTransaction {
+pub struct TransactionMemoryStorage {
+    head: Option<Box<MemTransaction>>,
+}
+
+impl Default for TransactionMemoryStorage {
+    fn default() -> Self {
+        Self { head: None }
+    }
+}
+
+struct MemTransaction {
     pub tx: TypedTransaction,
     pub next: Option<Box<MemTransaction>>,
 }
 
-pub struct MemTransactionList {
-    pub head: Option<Box<MemTransaction>>,
-}
-
-impl MemTransactionList {
-    pub fn add_transaction(&mut self, transaction: TypedTransaction) {
+impl TransactionStorage for TransactionMemoryStorage {
+    fn add_transaction(&mut self, transaction: TypedTransaction) {
         let mut new_node = Box::new(MemTransaction {
             tx: transaction,
             next: None,
@@ -26,7 +29,7 @@ impl MemTransactionList {
         self.head = Some(new_node);
     }
 
-    pub async fn get_transaction_by_hash(&self, hash: H256) -> Option<TypedTransaction> {
+    fn get_transaction_by_hash(&self, hash: H256) -> Option<TypedTransaction> {
         let mut current = self.head.as_ref();
         while let Some(node) = current {
             if node.tx.hash() == hash {
@@ -37,11 +40,7 @@ impl MemTransactionList {
         None
     }
 
-    pub async fn get_transaction_by_index(
-        &self,
-        start: u64,
-        limit: u64,
-    ) -> Option<Vec<TypedTransaction>> {
+    fn get_transaction_by_index(&self, start: u64, limit: u64) -> Vec<TypedTransaction> {
         let mut current = self.head.as_ref();
         let mut count = 0;
         let mut result = Vec::new();
@@ -52,10 +51,6 @@ impl MemTransactionList {
             current = node.next.as_ref();
             count += 1;
         }
-        if result.is_empty() {
-            None
-        } else {
-            Some(result)
-        }
+        result
     }
 }

@@ -18,6 +18,8 @@ impl Message for TransactionSequenceMessage {
     type Result = Result<TransactionSequenceInfo>;
 }
 
+/// Transaction By Hash Message
+#[derive(Debug)]
 pub struct TransactionByHashMessage {
     pub hash: H256,
 }
@@ -26,11 +28,13 @@ impl Message for TransactionByHashMessage {
     type Result = Result<Option<TypedTransaction>>;
 }
 
+/// Transaction By Index Message
+#[derive(Debug)]
 pub struct TransactionByIndexMessage {
     pub start: u64,
     pub limit: u64,
 }
 
 impl Message for TransactionByIndexMessage {
-    type Result = Result<Option<Vec<TypedTransaction>>>;
+    type Result = Result<Vec<TypedTransaction>>;
 }

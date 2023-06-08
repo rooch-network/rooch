@@ -1,9 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{
+use crate::{
     messages::{TransactionByHashMessage, TransactionByIndexMessage, TransactionSequenceMessage},
-    transaction_list::MemTransactionList,
+    store::TxDB,
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -18,15 +18,15 @@ use rooch_types::{
 pub struct SequencerActor {
     last_order: u128,
     sequencer_key: RoochKeyPair,
-    mem_transaction_list: MemTransactionList,
+    tx_db: TxDB,
 }
 
 impl SequencerActor {
-    pub fn new(sequencer_key: RoochKeyPair) -> Self {
+    pub fn new(sequencer_key: RoochKeyPair, tx_db: TxDB) -> Self {
         Self {
             last_order: 0,
             sequencer_key,
-            mem_transaction_list: MemTransactionList { head: None },
+            tx_db,
         }
     }
 }
@@ -48,9 +48,9 @@ impl Handler<TransactionSequenceMessage> for SequencerActor {
         let witness_hash = h256::sha3_256_of(&witness_data);
         let tx_order_signature = Signature::new_hashed(&witness_hash.0, &self.sequencer_key).into();
         self.last_order = tx_order;
-        //TODO introduce accumulator
 
-        self.mem_transaction_list.add_transaction(tx);
+        self.tx_db.add(tx);
+
         let tx_accumulator_root = H256::random();
         Ok(TransactionSequenceInfo {
             tx_order,
@@ -61,29 +61,23 @@ impl Handler<TransactionSequenceMessage> for SequencerActor {
 }
 
 #[async_trait]
-impl Handler<TransactionByIndexMessage> for SequencerActor {
-    async fn handle(
-        &mut self,
-        msg: TransactionByIndexMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<Option<Vec<TypedTransaction>>> {
-        Ok(self
-            .mem_transaction_list
-            .get_transaction_by_index(msg.start, msg.limit)
-            .await)
-    }
-}
-
-#[async_trait]
 impl Handler<TransactionByHashMessage> for SequencerActor {
     async fn handle(
         &mut self,
         msg: TransactionByHashMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Option<TypedTransaction>> {
-        Ok(self
-            .mem_transaction_list
-            .get_transaction_by_hash(msg.hash)
-            .await)
+        Ok(self.tx_db.get_by_hash(msg.hash))
+    }
+}
+
+#[async_trait]
+impl Handler<TransactionByIndexMessage> for SequencerActor {
+    async fn handle(
+        &mut self,
+        msg: TransactionByIndexMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<TypedTransaction>> {
+        Ok(self.tx_db.get_by_index(msg.start, msg.limit))
     }
 }

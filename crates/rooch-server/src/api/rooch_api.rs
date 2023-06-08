@@ -80,5 +80,5 @@ pub trait RoochAPI {
         &self,
         start: u64,
         limit: u64,
-    ) -> RpcResult<Option<Vec<TransactionView>>>;
+    ) -> RpcResult<Vec<TransactionView>>;
 }

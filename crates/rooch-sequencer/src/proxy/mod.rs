@@ -1,9 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::actor::{
+use crate::{
+    actor::sequencer::SequencerActor,
     messages::{TransactionByHashMessage, TransactionByIndexMessage, TransactionSequenceMessage},
-    sequencer::SequencerActor,
 };
 use anyhow::Result;
 use coerce::actor::ActorRef;
@@ -37,7 +37,7 @@ impl SequencerProxy {
         &self,
         start: u64,
         limit: u64,
-    ) -> Result<Option<Vec<TypedTransaction>>> {
+    ) -> Result<Vec<TypedTransaction>> {
         self.actor
             .send(TransactionByIndexMessage { start, limit })
             .await?

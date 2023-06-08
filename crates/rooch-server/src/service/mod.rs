@@ -136,7 +136,7 @@ impl RpcService {
         &self,
         start: u64,
         limit: u64,
-    ) -> Result<Option<Vec<TypedTransaction>>> {
+    ) -> Result<Vec<TypedTransaction>> {
         let resp = self
             .sequencer
             .get_transaction_by_index(start, limit)
