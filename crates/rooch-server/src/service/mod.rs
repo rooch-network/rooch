@@ -15,7 +15,7 @@ use moveos_types::{
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_proposer::proxy::ProposerProxy;
 use rooch_sequencer::proxy::SequencerProxy;
-use rooch_types::{address::RoochAddress, transaction::TypedTransaction};
+use rooch_types::{address::RoochAddress, transaction::TypedTransaction, H256};
 
 use crate::jsonrpc_types::ExecuteTransactionResponse;
 
@@ -124,6 +124,23 @@ impl RpcService {
 
     pub async fn get_events(&self, filter: EventFilter) -> Result<Option<Vec<MoveOSEvent>>> {
         let resp = self.executor.get_events(filter).await?;
+        Ok(resp)
+    }
+
+    pub async fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<TypedTransaction>> {
+        let resp = self.sequencer.get_transaction_by_hash(hash).await?;
+        Ok(resp)
+    }
+
+    pub async fn get_transaction_by_index(
+        &self,
+        start: u64,
+        limit: u64,
+    ) -> Result<Vec<TypedTransaction>> {
+        let resp = self
+            .sequencer
+            .get_transaction_by_index(start, limit)
+            .await?;
         Ok(resp)
     }
 }

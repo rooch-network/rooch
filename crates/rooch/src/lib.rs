@@ -3,7 +3,7 @@
 
 use commands::{
     account::Account, init::Init, move_cli::MoveCli, object::ObjectCommand,
-    resource::ResourceCommand, server::Server, state::StateCommand,
+    resource::ResourceCommand, server::Server, state::StateCommand, transaction::Transaction,
 };
 use rooch_types::error::RoochResult;
 use types::CommandAction;
@@ -28,6 +28,7 @@ pub enum Command {
     State(StateCommand),
     Object(ObjectCommand),
     Resource(ResourceCommand),
+    Transaction(Transaction),
 }
 
 pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
@@ -39,5 +40,6 @@ pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
         Command::State(state) => state.execute_serialized().await,
         Command::Object(object) => object.execute_serialized().await,
         Command::Resource(resource) => resource.execute_serialized().await,
+        Command::Transaction(transation) => transation.execute().await,
     }
 }

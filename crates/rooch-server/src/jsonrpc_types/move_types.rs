@@ -12,6 +12,7 @@ use move_core_types::{
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use moveos_types::h256::H256;
 use moveos_types::move_types::parse_module_id;
+use moveos_types::transaction::MoveAction;
 use moveos_types::{
     event::EventID,
     state::{AnnotatedState, State},
@@ -24,7 +25,7 @@ use moveos_types::{
 use moveos_types::{
     move_types::FunctionId,
     object::{AnnotatedObject, ObjectID},
-    transaction::FunctionCall,
+    transaction::{FunctionCall, ScriptCall},
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -197,6 +198,33 @@ impl From<AnnotatedObject> for AnnotatedObjectView {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+pub struct ScriptCallView {
+    pub code: StrView<Vec<u8>>,
+    pub ty_args: Vec<TypeTagView>,
+    pub args: Vec<StrView<Vec<u8>>>,
+}
+
+impl From<ScriptCall> for ScriptCallView {
+    fn from(origin: ScriptCall) -> Self {
+        Self {
+            code: origin.code.into(),
+            ty_args: origin.ty_args.into_iter().map(StrView).collect(),
+            args: origin.args.into_iter().map(StrView).collect(),
+        }
+    }
+}
+
+impl From<ScriptCallView> for ScriptCall {
+    fn from(value: ScriptCallView) -> Self {
+        Self {
+            code: value.code.into(),
+            ty_args: value.ty_args.into_iter().map(Into::into).collect(),
+            args: value.args.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct FunctionCallView {
     pub function_id: FunctionIdView,
@@ -220,6 +248,69 @@ impl From<FunctionCallView> for FunctionCall {
             function_id: value.function_id.into(),
             ty_args: value.ty_args.into_iter().map(Into::into).collect(),
             args: value.args.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct MoveActionView {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub function_call: Option<FunctionCallView>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub script_call: Option<ScriptCallView>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub module_bundle: Option<Vec<StrView<Vec<u8>>>>,
+}
+
+impl From<MoveAction> for MoveActionView {
+    fn from(action: MoveAction) -> Self {
+        match action {
+            MoveAction::Script(script) => Self {
+                script_call: Some(script.into()),
+                function_call: None,
+                module_bundle: None,
+            },
+            MoveAction::Function(fun) => Self {
+                script_call: None,
+                function_call: Some(fun.into()),
+                module_bundle: None,
+            },
+            MoveAction::ModuleBundle(module) => Self {
+                script_call: None,
+                function_call: None,
+                module_bundle: Some(module.into_iter().map(StrView).collect()),
+            },
+        }
+    }
+}
+
+impl From<MoveActionView> for MoveAction {
+    fn from(action: MoveActionView) -> Self {
+        if let Some(script_call) = action.script_call {
+            MoveAction::Script(script_call.into())
+        } else if let Some(function_call) = action.function_call {
+            MoveAction::Function(function_call.into())
+        } else if let Some(module_bundle) = action.module_bundle {
+            MoveAction::ModuleBundle(module_bundle.into_iter().map(StrView::into).collect())
+        } else {
+            panic!("Invalid MoveActionView")
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub enum MoveActionTypeView {
+    ScriptCall,
+    FunctionCall,
+    ModuleBundle,
+}
+
+impl From<MoveAction> for MoveActionTypeView {
+    fn from(action: MoveAction) -> Self {
+        match action {
+            MoveAction::Script(_) => Self::ScriptCall,
+            MoveAction::Function(_) => Self::FunctionCall,
+            MoveAction::ModuleBundle(_) => Self::ModuleBundle,
         }
     }
 }
