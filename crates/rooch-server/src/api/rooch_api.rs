@@ -3,7 +3,7 @@
 
 use crate::jsonrpc_types::{
     AnnotatedFunctionReturnValueView, AnnotatedMoveStructView, AnnotatedObjectView,
-    AnnotatedStateView, EventView, ExecuteTransactionResponse, FunctionCallView, StateView,
+    AnnotatedStateView, EventView, ExecuteTransactionResponseView, FunctionCallView, StateView,
     StrView, StructTagView, TransactionView,
 };
 use jsonrpsee::core::RpcResult;
@@ -27,7 +27,7 @@ pub trait RoochAPI {
     async fn execute_raw_transaction(
         &self,
         tx_bcs_hex: StrView<Vec<u8>>,
-    ) -> RpcResult<ExecuteTransactionResponse>;
+    ) -> RpcResult<ExecuteTransactionResponseView>;
 
     /// Execute a read-only function call
     /// The function do not change the state of Application

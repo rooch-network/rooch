@@ -26,82 +26,15 @@ use move_vm_types::{
     pop_arg,
     values::{GlobalValue, Struct, StructRef, Value},
 };
-use moveos_types::object::ObjectID;
-use serde::{Deserialize, Serialize};
+use moveos_types::table::{
+    TableChange, TableChangeSet, TableHandle, TableResolver, TableTypeInfo, TableValue,
+};
 use smallvec::smallvec;
 use std::{
     cell::RefCell,
     collections::{btree_map::Entry, BTreeMap, BTreeSet, VecDeque},
     sync::Arc,
 };
-
-// ===========================================================================================
-// Public Data Structures and Constants
-
-/// The representation of a table handle. This is created from truncating a sha3-256 based
-/// hash over a transaction hash provided by the environment and a table creation counter
-/// local to the transaction.
-#[derive(Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Serialize, Deserialize)]
-pub struct TableHandle(pub ObjectID);
-
-impl std::fmt::Display for TableHandle {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "T-{}", self.0)
-    }
-}
-
-impl From<TableHandle> for ObjectID {
-    fn from(table_handle: TableHandle) -> Self {
-        table_handle.0
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct TableInfo {
-    pub key_type: TypeTag,
-}
-
-impl TableInfo {
-    pub fn new(key_type: TypeTag) -> Self {
-        Self { key_type }
-    }
-}
-
-impl std::fmt::Display for TableInfo {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Table<{}>", self.key_type)
-    }
-}
-
-/// A table change set.
-#[derive(Default, Clone, Debug)]
-pub struct TableChangeSet {
-    pub new_tables: BTreeMap<TableHandle, TableInfo>,
-    pub removed_tables: BTreeSet<TableHandle>,
-    pub changes: BTreeMap<TableHandle, TableChange>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct TableValueBox {
-    pub value_type: TypeTag,
-    pub value: Vec<u8>,
-}
-
-/// A change of a single table.
-#[derive(Clone, Debug)]
-pub struct TableChange {
-    pub entries: BTreeMap<Vec<u8>, Op<TableValueBox>>,
-}
-
-/// A table resolver which needs to be provided by the environment. This allows to lookup
-/// data in remote storage, as well as retrieve cost of table operations.
-pub trait TableResolver {
-    fn resolve_table_entry(
-        &self,
-        handle: &TableHandle,
-        key: &[u8],
-    ) -> Result<Option<TableValueBox>, anyhow::Error>;
-}
 
 /// The native table context extension. This needs to be attached to the NativeContextExtensions
 /// value which is passed into session functions, so its accessible from natives of this
@@ -132,13 +65,13 @@ const _NOT_EMPTY: u64 = (102 << 8) + _ECATEGORY_INVALID_STATE as u64;
 /// of the overall context so we can mutate while still accessing the overall context.
 #[derive(Default)]
 struct TableData {
-    new_tables: BTreeMap<TableHandle, TableInfo>,
+    new_tables: BTreeMap<TableHandle, TableTypeInfo>,
     removed_tables: BTreeSet<TableHandle>,
     tables: BTreeMap<TableHandle, Table>,
 }
 
-/// A structure representing table value.
-struct TableValue {
+/// A structure representing runtime table value.
+struct TableRuntimeValue {
     /// This is the Layout and TypeTag of the value stored in Box<V>
     /// If the value is GlobalValue::None, the Layout and TypeTag are not known
     value_layout_and_type: Option<(MoveTypeLayout, TypeTag)>,
@@ -147,7 +80,7 @@ struct TableValue {
     box_value: GlobalValue,
 }
 
-impl TableValue {
+impl TableRuntimeValue {
     pub fn new(value_layout: MoveTypeLayout, value_type: TypeTag, box_value: GlobalValue) -> Self {
         debug_assert!(box_value.exists().unwrap());
         Self {
@@ -253,7 +186,7 @@ impl TableValue {
 struct Table {
     handle: TableHandle,
     key_layout: MoveTypeLayout,
-    content: BTreeMap<Vec<u8>, TableValue>,
+    content: BTreeMap<Vec<u8>, TableRuntimeValue>,
 }
 
 // =========================================================================================
@@ -291,7 +224,7 @@ impl<'a> NativeTableContext<'a> {
                         let bytes = unbox_and_serialize(&value_layout, box_val)?;
                         entries.insert(
                             key,
-                            Op::New(TableValueBox {
+                            Op::New(TableValue {
                                 value_type,
                                 value: bytes,
                             }),
@@ -301,7 +234,7 @@ impl<'a> NativeTableContext<'a> {
                         let bytes = unbox_and_serialize(&value_layout, val)?;
                         entries.insert(
                             key,
-                            Op::Modify(TableValueBox {
+                            Op::Modify(TableValue {
                                 value_type,
                                 value: bytes,
                             }),
@@ -354,7 +287,7 @@ impl Table {
         native_context: &NativeContext,
         table_context: &NativeTableContext,
         key: Vec<u8>,
-    ) -> PartialVMResult<(&mut TableValue, Option<Option<NumBytes>>)> {
+    ) -> PartialVMResult<(&mut TableRuntimeValue, Option<Option<NumBytes>>)> {
         Ok(match self.content.entry(key) {
             Entry::Vacant(entry) => {
                 let (tv, loaded) = match table_context
@@ -368,7 +301,7 @@ impl Table {
 
                         let val = deserialize_and_box(&value_layout, &value_box.value)?;
                         (
-                            TableValue::new(
+                            TableRuntimeValue::new(
                                 value_layout,
                                 value_box.value_type,
                                 GlobalValue::cached(val)?,
@@ -376,7 +309,7 @@ impl Table {
                             Some(NumBytes::new(value_box.value.len() as u64)),
                         )
                     }
-                    None => (TableValue::none(), None),
+                    None => (TableRuntimeValue::none(), None),
                 };
                 (entry.insert(tv), Some(loaded))
             }

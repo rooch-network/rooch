@@ -5,36 +5,24 @@ use crate::vm::move_vm_ext::MoveVmExt;
 use anyhow::{bail, Result};
 use move_binary_format::errors::vm_status_of_result;
 use move_binary_format::errors::{Location, PartialVMError};
-use move_core_types::effects::ChangeSet;
-use move_core_types::vm_status::{KeptVMStatus, VMStatus};
+use move_core_types::vm_status::VMStatus;
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
     value::MoveValue, vm_status::StatusCode,
 };
 use move_vm_types::gas::UnmeteredGasMeter;
-use moveos_stdlib::natives::moveos_stdlib::raw_table::TableChangeSet;
 use moveos_store::MoveOSDB;
 use moveos_store::{event_store::EventStore, state_store::StateDB};
-use moveos_types::event::Event;
 use moveos_types::function_return_value::FunctionReturnValue;
 use moveos_types::storage_context::StorageContext;
 use moveos_types::transaction::{
-    AuthenticatableTransaction, MoveAction, MoveOSTransaction, VerifiedMoveOSTransaction,
+    AuthenticatableTransaction, MoveAction, MoveOSTransaction, TransactionOutput,
+    VerifiedMoveOSTransaction,
 };
 use moveos_types::tx_context::TxContext;
 use moveos_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, move_types::FunctionId};
 use moveos_types::{h256::H256, transaction::FunctionCall};
 use once_cell::sync::Lazy;
-
-//TODO make TransactionOutput serializable
-#[derive(Debug, Clone)]
-pub struct TransactionOutput {
-    pub status: KeptVMStatus,
-    pub changeset: ChangeSet,
-    pub table_changeset: TableChangeSet,
-    pub events: Vec<Event>,
-    pub gas_used: u64,
-}
 
 pub static VALIDATE_FUNCTION: Lazy<FunctionId> = Lazy::new(|| {
     FunctionId::new(

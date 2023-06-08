@@ -13,7 +13,7 @@ use anyhow::Result;
 use coerce::actor::ActorRef;
 use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
 use move_resource_viewer::AnnotatedMoveStruct;
-use moveos::moveos::TransactionOutput;
+use moveos_types::transaction::TransactionOutput;
 use moveos_types::{
     access_path::AccessPath, function_return_value::AnnotatedFunctionReturnValue,
     transaction::VerifiedMoveOSTransaction,

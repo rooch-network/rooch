@@ -89,9 +89,9 @@ impl ObjectID {
         Self::new(h256::sha3_256_of(&buffer).into())
     }
 
-    pub fn from_bytes<T: AsRef<[u8]>>(bytes: T) -> Result<Self, ObjectIDParseError> {
+    pub fn from_bytes<T: AsRef<[u8]>>(bytes: T) -> Result<Self> {
         <[u8; Self::LENGTH]>::try_from(bytes.as_ref())
-            .map_err(|_| ObjectIDParseError::TryFromSliceError)
+            .map_err(|_| anyhow::anyhow!("Invalid ObjectID bytes, length:{}", bytes.as_ref().len()))
             .map(ObjectID::from)
     }
 
@@ -171,24 +171,6 @@ impl TryFrom<AnnotatedMoveStruct> for ObjectID {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Debug, thiserror::Error)]
-pub enum ObjectIDParseError {
-    #[error("ObjectID hex literal must start with 0x")]
-    HexLiteralPrefixMissing,
-
-    #[error("ObjectID hex string should only contain 0-9, A-F, a-f")]
-    InvalidHexCharacter,
-
-    #[error("hex string must be even-numbered. Two chars maps to one byte.")]
-    OddLength,
-
-    #[error("ObjectID must be {} bytes long.", ObjectID::LENGTH)]
-    InvalidLength,
-
-    #[error("Could not convert from bytes slice")]
-    TryFromSliceError,
-}
-
 impl From<[u8; ObjectID::LENGTH]> for ObjectID {
     fn from(bytes: [u8; ObjectID::LENGTH]) -> Self {
         Self::new(bytes)
@@ -217,11 +199,11 @@ impl From<NamedTableID> for ObjectID {
 }
 
 impl FromStr for ObjectID {
-    type Err = ObjectIDParseError;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let address = AccountAddress::from_hex_literal(s)
-            .map_err(|_| ObjectIDParseError::InvalidHexCharacter)?;
+            .map_err(|_e| anyhow::anyhow!("Invalid ObjectID:{}|", s))?;
         Ok(ObjectID::from(address))
     }
 }
@@ -526,5 +508,14 @@ mod tests {
         let resource_table_id = NamedTableID::Resource(addr).to_object_id();
         let module_table_id = NamedTableID::Module(addr).to_object_id();
         print!("{:?} {:?}", resource_table_id, module_table_id)
+    }
+
+    #[test]
+    fn test_zero_object_id() {
+        let object_id_zero = ObjectID::ZERO;
+        let object_id_str = object_id_zero.to_string();
+        println!("{}", object_id_str);
+        let object_id_zero_from_str = ObjectID::from_str(&object_id_str).unwrap();
+        assert_eq!(object_id_zero, object_id_zero_from_str);
     }
 }

@@ -55,14 +55,15 @@ impl RpcService {
         let moveos_tx = self.executor.validate_transaction(tx.clone()).await?;
         let sequence_info = self.sequencer.sequence_transaction(tx.clone()).await?;
         // Then execute
-        let (_output, execution_info) = self.executor.execute_transaction(moveos_tx).await?;
+        let (output, execution_info) = self.executor.execute_transaction(moveos_tx).await?;
         self.proposer
             .propose_transaction(tx, execution_info.clone(), sequence_info.clone())
             .await?;
-        //TODO conform the response, put the TransactionOutput and proposer result to response.
+
         Ok(ExecuteTransactionResponse {
             sequence_info,
             execution_info,
+            output,
         })
     }
 

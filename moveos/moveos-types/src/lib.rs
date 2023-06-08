@@ -14,5 +14,6 @@ pub mod move_types;
 pub mod object;
 pub mod state;
 pub mod storage_context;
+pub mod table;
 pub mod transaction;
 pub mod tx_context;

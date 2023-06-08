@@ -5,7 +5,7 @@ use move_core_types::account_address::AccountAddress;
 use moveos_types::transaction::MoveAction;
 use rooch_config::{rooch_config_dir, Config, PersistedConfig, ROOCH_CLIENT_CONFIG};
 use rooch_key::keystore::AccountKeystore;
-use rooch_server::jsonrpc_types::ExecuteTransactionResponse;
+use rooch_server::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_types::address::RoochAddress;
 use rooch_types::crypto::{BuiltinScheme, Signature};
 use rooch_types::error::{RoochError, RoochResult};
@@ -80,7 +80,7 @@ impl WalletContext {
         &self,
         sender: RoochAddress,
         action: MoveAction,
-    ) -> RoochResult<ExecuteTransactionResponse> {
+    ) -> RoochResult<ExecuteTransactionResponseView> {
         let pk = self.config.keystore.get_key(&sender).ok().ok_or_else(|| {
             RoochError::SignMessageError(format!("Cannot find key for address: [{sender}]"))
         })?;
