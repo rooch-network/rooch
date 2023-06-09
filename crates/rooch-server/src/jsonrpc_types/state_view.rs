@@ -88,17 +88,13 @@ impl From<StateChangeSet> for TableChangeSetView {
             new_tables: table_change_set
                 .new_tables
                 .into_iter()
-                .map(|(k, v)| (k.into(), v.into()))
+                .map(|(k, v)| (k, v.into()))
                 .collect(),
-            removed_tables: table_change_set
-                .removed_tables
-                .into_iter()
-                .map(|k| k.into())
-                .collect(),
+            removed_tables: table_change_set.removed_tables,
             changes: table_change_set
                 .changes
                 .into_iter()
-                .map(|(k, v)| (k.into(), v.into()))
+                .map(|(k, v)| (k, v.into()))
                 .collect(),
         }
     }

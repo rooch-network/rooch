@@ -3,20 +3,19 @@
 
 use super::messages::{
     AnnotatedStatesMessage, ExecuteTransactionMessage, ExecuteTransactionResult,
-    ExecuteViewFunctionMessage, GetEventsByEventHandleMessage, GetEventsMessage,
-    GetResourceMessage, ObjectMessage, StatesMessage, ValidateTransactionMessage,
+    ExecuteViewFunctionMessage, GetEventsByEventHandleMessage, GetEventsMessage, StatesMessage,
+    ValidateTransactionMessage,
 };
 use anyhow::{bail, Result};
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use move_core_types::language_storage::TypeTag;
-use move_resource_viewer::{AnnotatedMoveStruct, MoveValueAnnotator};
+use move_resource_viewer::MoveValueAnnotator;
 use moveos::moveos::MoveOS;
-use moveos_store::state_store::state_view::{AnnotatedStateReader, StateReader};
 use moveos_types::event_filter::MoveOSEvent;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
-use moveos_types::object::AnnotatedObject;
 use moveos_types::state::{AnnotatedState, State};
+use moveos_types::state_resolver::{AnnotatedStateReader, StateReader};
 use moveos_types::transaction::{AuthenticatableTransaction, VerifiedMoveOSTransaction};
 use rooch_types::transaction::TransactionExecutionInfo;
 use rooch_types::H256;
@@ -80,7 +79,7 @@ impl Handler<ExecuteViewFunctionMessage> for ExecutorActor {
         _ctx: &mut ActorContext,
     ) -> Result<Vec<AnnotatedFunctionReturnValue>, anyhow::Error> {
         //TODO should we let the execute_view_function return annotated values?
-        let storage = self.moveos.state();
+        let storage = self.moveos.moveos_resolver();
         let annotator = MoveValueAnnotator::new(storage);
 
         self.moveos
@@ -98,46 +97,14 @@ impl Handler<ExecuteViewFunctionMessage> for ExecutorActor {
 }
 
 #[async_trait]
-impl Handler<GetResourceMessage> for ExecutorActor {
-    async fn handle(
-        &mut self,
-        msg: GetResourceMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<Option<AnnotatedMoveStruct>> {
-        let GetResourceMessage {
-            address,
-            resource_type,
-        } = msg;
-        let storage = self.moveos.state();
-        //TODO use annotated state view
-        storage
-            .get_resource(&address, &resource_type)?
-            .map(|data| MoveValueAnnotator::new(storage).view_resource(&resource_type, &data))
-            .transpose()
-    }
-}
-
-#[async_trait]
-impl Handler<ObjectMessage> for ExecutorActor {
-    async fn handle(
-        &mut self,
-        msg: ObjectMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<Option<AnnotatedObject>, anyhow::Error> {
-        let storage = self.moveos.state();
-        storage.get_annotated_object(msg.object_id)
-    }
-}
-
-#[async_trait]
 impl Handler<StatesMessage> for ExecutorActor {
     async fn handle(
         &mut self,
         msg: StatesMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<Option<State>>, anyhow::Error> {
-        let statedb = self.moveos.state();
-        statedb.get_states(&msg.access_path)
+        let statedb = self.moveos.moveos_resolver();
+        statedb.get_states(msg.access_path)
     }
 }
 
@@ -148,8 +115,8 @@ impl Handler<AnnotatedStatesMessage> for ExecutorActor {
         msg: AnnotatedStatesMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<Option<AnnotatedState>>, anyhow::Error> {
-        let statedb = self.moveos.state();
-        statedb.get_annotated_states(&msg.access_path)
+        let statedb = self.moveos.moveos_resolver();
+        statedb.get_annotated_states(msg.access_path)
     }
 }
 
@@ -162,7 +129,7 @@ impl Handler<GetEventsByEventHandleMessage> for ExecutorActor {
     ) -> Result<Option<Vec<MoveOSEvent>>> {
         let GetEventsByEventHandleMessage { event_handle_id } = msg;
         let event_store = self.moveos.event_store();
-        let statedb = self.moveos.state();
+        let statedb = self.moveos.moveos_resolver();
 
         let mut result: Vec<MoveOSEvent> = Vec::new();
         let events = event_store.get_events_by_event_handle_id(&event_handle_id)?;
@@ -207,7 +174,7 @@ impl Handler<GetEventsMessage> for ExecutorActor {
     ) -> Result<Option<Vec<MoveOSEvent>>> {
         let GetEventsMessage { filter } = msg;
         let event_store = self.moveos.event_store();
-        let statedb = self.moveos.state();
+        let statedb = self.moveos.moveos_resolver();
         //TODO handle tx hash
         let mut result: Vec<MoveOSEvent> = Vec::new();
         let events = event_store.get_events_with_filter(filter)?;

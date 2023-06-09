@@ -12,9 +12,9 @@ use move_transactional_test_runner::{
 };
 use move_vm_runtime::session::SerializedReturnValues;
 use moveos::moveos::MoveOS;
-use moveos_store::state_store::state_view::AnnotatedStateReader;
 use moveos_types::move_types::FunctionId;
 use moveos_types::object::ObjectID;
+use moveos_types::state_resolver::AnnotatedStateReader;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use std::{collections::BTreeMap, path::Path};
 

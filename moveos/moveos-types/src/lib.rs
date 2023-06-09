@@ -13,6 +13,7 @@ pub mod move_string;
 pub mod move_types;
 pub mod object;
 pub mod state;
+pub mod state_resolver;
 pub mod storage_context;
 pub mod transaction;
 pub mod tx_context;

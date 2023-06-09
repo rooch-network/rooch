@@ -1,13 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::MoveResolverExt;
 use anyhow::Result;
 use move_binary_format::errors::PartialVMError;
 use move_core_types::{move_resource::MoveStructType, value::MoveValue};
 use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
 use move_vm_types::loaded_data::runtime_types::{StructType, Type};
-use moveos_types::{storage_context::StorageContext, tx_context::TxContext};
+use moveos_types::{
+    state_resolver::MoveOSResolver, storage_context::StorageContext, tx_context::TxContext,
+};
 use std::sync::Arc;
 
 /// Transaction Argument Resolver will implemented by the Move Extension
@@ -21,7 +22,7 @@ pub trait TxArgumentResolver {
         args: Vec<Vec<u8>>,
     ) -> Result<Vec<Vec<u8>>, PartialVMError>
     where
-        S: MoveResolverExt;
+        S: MoveOSResolver;
 }
 
 impl TxArgumentResolver for StorageContext {
@@ -32,7 +33,7 @@ impl TxArgumentResolver for StorageContext {
         mut args: Vec<Vec<u8>>,
     ) -> Result<Vec<Vec<u8>>, PartialVMError>
     where
-        S: MoveResolverExt,
+        S: MoveOSResolver,
     {
         func.parameters.iter().enumerate().for_each(|(i, t)| {
             if is_signer(t) {
@@ -69,7 +70,7 @@ fn is_signer(t: &Type) -> bool {
 
 fn as_struct<T>(session: &Session<T>, t: &Type) -> Option<Arc<StructType>>
 where
-    T: MoveResolverExt,
+    T: MoveOSResolver,
 {
     match t {
         Type::Struct(s) | Type::StructInstantiation(s, _) => match session.get_struct_type(*s) {
@@ -86,7 +87,7 @@ where
 
 pub fn as_struct_no_panic<T>(session: &Session<T>, t: &Type) -> Option<Arc<StructType>>
 where
-    T: MoveResolverExt,
+    T: MoveOSResolver,
 {
     match t {
         Type::Struct(s) | Type::StructInstantiation(s, _) => session.get_struct_type(*s),

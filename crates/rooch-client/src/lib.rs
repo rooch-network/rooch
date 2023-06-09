@@ -3,14 +3,13 @@
 
 use anyhow::Result;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
-use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
-use moveos_types::{access_path::AccessPath, object::ObjectID, transaction::FunctionCall};
+use moveos_types::{access_path::AccessPath, transaction::FunctionCall};
 use rand::Rng;
 use rooch_server::{
     api::rooch_api::RoochAPIClient,
     jsonrpc_types::{
-        AnnotatedFunctionReturnValueView, AnnotatedMoveStructView, AnnotatedObjectView,
-        AnnotatedStateView, ExecuteTransactionResponseView, StateView, TransactionView,
+        AnnotatedFunctionReturnValueView, AnnotatedStateView, ExecuteTransactionResponseView,
+        StateView, TransactionView,
     },
 };
 use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction, H256};
@@ -101,22 +100,6 @@ impl Client {
             .execute_view_function(function_call.into())
             .await
             .map_err(|e| anyhow::anyhow!(e))
-    }
-
-    pub async fn get_resource(
-        &self,
-        address: AccountAddress,
-        resource_type: StructTag,
-    ) -> Result<Option<AnnotatedMoveStructView>> {
-        Ok(self
-            .rpc
-            .http
-            .get_resource(address, resource_type.into())
-            .await?)
-    }
-
-    pub async fn get_object(&self, object_id: ObjectID) -> Result<Option<AnnotatedObjectView>> {
-        Ok(self.rpc.http.get_object(object_id).await?)
     }
 
     pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<StateView>>> {

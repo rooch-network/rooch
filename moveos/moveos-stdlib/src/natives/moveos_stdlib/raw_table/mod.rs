@@ -28,7 +28,8 @@ use move_vm_types::{
 };
 use moveos_types::{
     object::ObjectID,
-    state::{State, StateChange, StateChangeSet, StateResolver, TableTypeInfo},
+    state::{State, StateChange, StateChangeSet, TableTypeInfo},
+    state_resolver::StateResolver,
 };
 use smallvec::smallvec;
 use std::{
@@ -682,7 +683,7 @@ impl GasParameters {
 
 // The handle type in Move is `&ObjectID`. This function extracts the address from `ObjectID`.
 fn get_table_handle(table: StructRef) -> PartialVMResult<ObjectID> {
-    Ok(helpers::get_object_id(table)?)
+    helpers::get_object_id(table)
 }
 
 fn serialize(layout: &MoveTypeLayout, val: &Value) -> PartialVMResult<Vec<u8>> {

@@ -2,13 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::{
-    AnnotatedFunctionReturnValueView, AnnotatedMoveStructView, AnnotatedObjectView,
-    AnnotatedStateView, EventView, ExecuteTransactionResponseView, FunctionCallView, StateView,
-    StrView, StructTagView, TransactionView,
+    AnnotatedFunctionReturnValueView, AnnotatedStateView, EventView,
+    ExecuteTransactionResponseView, FunctionCallView, StateView, StrView, TransactionView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
-use move_core_types::account_address::AccountAddress;
 use moveos_types::access_path::AccessPath;
 use moveos_types::event_filter::EventFilter;
 use moveos_types::object::ObjectID;
@@ -37,18 +35,6 @@ pub trait RoochAPI {
         function_call: FunctionCallView,
     ) -> RpcResult<Vec<AnnotatedFunctionReturnValueView>>;
 
-    /// Get the resource of an account by address and type
-    #[method(name = "rooch_getResource")]
-    async fn get_resource(
-        &self,
-        address: AccountAddress,
-        resource_type: StructTagView,
-    ) -> RpcResult<Option<AnnotatedMoveStructView>>;
-
-    #[method(name = "rooch_getObject")]
-    async fn get_object(&self, object_id: ObjectID) -> RpcResult<Option<AnnotatedObjectView>>;
-
-    //TODO should we merge the `get_resource` and `get_object` to `get_state`?
     /// Get the states by access_path
     #[method(name = "rooch_getStates")]
     async fn get_states(&self, access_path: AccessPath) -> RpcResult<Vec<Option<StateView>>>;

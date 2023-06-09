@@ -14,6 +14,7 @@ use move_vm_types::gas::UnmeteredGasMeter;
 use moveos_store::MoveOSDB;
 use moveos_store::{event_store::EventStore, state_store::StateDB};
 use moveos_types::function_return_value::FunctionReturnValue;
+use moveos_types::state_resolver::MoveOSResolverProxy;
 use moveos_types::storage_context::StorageContext;
 use moveos_types::transaction::{
     AuthenticatableTransaction, MoveAction, MoveOSTransaction, TransactionOutput,
@@ -36,15 +37,17 @@ pub static VALIDATE_FUNCTION: Lazy<FunctionId> = Lazy::new(|| {
 
 pub struct MoveOS {
     vm: MoveVmExt,
-    // db: StateDB,
-    db: MoveOSDB,
+    db: MoveOSResolverProxy<MoveOSDB>,
 }
 
 impl MoveOS {
     pub fn new(db: MoveOSDB) -> Result<Self> {
         let vm = MoveVmExt::new()?;
         let is_genesis = db.get_state_store().is_genesis();
-        let mut moveos = Self { vm, db };
+        let mut moveos = Self {
+            vm,
+            db: MoveOSResolverProxy(db),
+        };
         if is_genesis {
             //TODO the genesis
             let genesis_tx = Self::build_genesis_tx()?;
@@ -55,11 +58,15 @@ impl MoveOS {
     }
 
     pub fn state(&self) -> &StateDB {
-        self.db.get_state_store()
+        self.db.0.get_state_store()
+    }
+
+    pub fn moveos_resolver(&self) -> &MoveOSResolverProxy<MoveOSDB> {
+        &self.db
     }
 
     pub fn event_store(&self) -> &EventStore {
-        self.db.get_event_store()
+        self.db.0.get_event_store()
     }
 
     //TODO move to a suitable place
@@ -156,6 +163,7 @@ impl MoveOS {
 
         let new_state_root = self
             .db
+            .0
             .get_state_store()
             .apply_change_set(changeset, table_changeset)
             .map_err(|e| {
@@ -163,11 +171,15 @@ impl MoveOS {
                     .with_message(e.to_string())
                     .finish(Location::Undefined)
             })?;
-        self.db.get_event_store().save_events(events).map_err(|e| {
-            PartialVMError::new(StatusCode::STORAGE_ERROR)
-                .with_message(e.to_string())
-                .finish(Location::Undefined)
-        })?;
+        self.db
+            .0
+            .get_event_store()
+            .save_events(events)
+            .map_err(|e| {
+                PartialVMError::new(StatusCode::STORAGE_ERROR)
+                    .with_message(e.to_string())
+                    .finish(Location::Undefined)
+            })?;
         Ok(new_state_root)
     }
 

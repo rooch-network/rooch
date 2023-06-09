@@ -1,8 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::{BTreeMap, BTreeSet};
-
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     object::{self, AnnotatedObject, Object, ObjectID, RawObject},
@@ -17,6 +15,7 @@ use move_core_types::{
 };
 use move_resource_viewer::{AnnotatedMoveValue, MoveValueAnnotator};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::collections::{BTreeMap, BTreeSet};
 
 /// `State` is represent state in MoveOS statedb, it can be a Move module or a Move Object or a Move resource or a Table value
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
@@ -200,13 +199,4 @@ pub struct StateChangeSet {
 pub struct StateChange {
     //TODO should we keep the key's type here?
     pub entries: BTreeMap<Vec<u8>, Op<State>>,
-}
-
-/// A global state resolver which needs to be provided by the environment.
-/// This allows to lookup data in remote storage.
-/// If the handle is GLOBAL_OBJECT_STORAGE_HANDLE, it will get the data from the global state tree,
-/// otherwise it will get the data from the table state tree.
-/// The key can be an ObjectID or an arbitrary key of a table.
-pub trait StateResolver {
-    fn resolve_state(&self, handle: &ObjectID, key: &[u8]) -> Result<Option<State>, anyhow::Error>;
 }
