@@ -1,15 +1,66 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{StateView, StrView, TypeTagView};
+use super::{AnnotatedMoveValueView, StrView, TypeTagView};
 use move_core_types::effects::Op;
 use moveos_types::{
     object::ObjectID,
-    state::State,
-    table::{TableChange, TableChangeSet, TableTypeInfo},
+    state::{AnnotatedState, State, StateChange, StateChangeSet, TableTypeInfo},
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct StateView {
+    pub value: StrView<Vec<u8>>,
+    pub value_type: TypeTagView,
+}
+
+impl From<State> for StateView {
+    fn from(state: State) -> Self {
+        Self {
+            value: StrView(state.value),
+            value_type: state.value_type.into(),
+        }
+    }
+}
+
+impl From<StateView> for State {
+    fn from(state: StateView) -> Self {
+        Self {
+            value: state.value.0,
+            value_type: state.value_type.into(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct AnnotatedStateView {
+    pub state: StateView,
+    pub move_value: AnnotatedMoveValueView,
+}
+
+impl From<AnnotatedState> for AnnotatedStateView {
+    fn from(state: AnnotatedState) -> Self {
+        Self {
+            state: state.state.into(),
+            move_value: state.move_value.into(),
+        }
+    }
+}
+
+//TODO Is it need to convert the AnnotatedStateView back to AnnotatedState?
+//If not, please remove this code. Otherwise, it needs to be fixed. include TryFrom<AnnotatedMoveValueView> for AnnotatedMoveValue
+// impl TryFrom<AnnotatedStateView> for AnnotatedState {
+//     type Error = anyhow::Error;
+
+//     fn try_from(value: AnnotatedStateView) -> Result<Self, Self::Error> {
+//         Ok(Self {
+//             state: value.state.into(),
+//             move_value: value.move_value.try_into()?,
+//         })
+//     }
+// }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TableTypeInfoView {
@@ -31,8 +82,8 @@ pub struct TableChangeSetView {
     pub changes: BTreeMap<ObjectID, TableChangeView>,
 }
 
-impl From<TableChangeSet> for TableChangeSetView {
-    fn from(table_change_set: TableChangeSet) -> Self {
+impl From<StateChangeSet> for TableChangeSetView {
+    fn from(table_change_set: StateChangeSet) -> Self {
         Self {
             new_tables: table_change_set
                 .new_tables
@@ -76,8 +127,8 @@ pub struct TableChangeView {
     pub entries: BTreeMap<StrView<Vec<u8>>, OpView<StateView>>,
 }
 
-impl From<TableChange> for TableChangeView {
-    fn from(table_change: TableChange) -> Self {
+impl From<StateChange> for TableChangeView {
+    fn from(table_change: StateChange) -> Self {
         Self {
             entries: table_change
                 .entries

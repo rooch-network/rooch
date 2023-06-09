@@ -11,7 +11,7 @@ use move_core_types::{
     language_storage::{ModuleId, StructTag, TypeTag},
     resolver::{ModuleResolver, ResourceResolver},
 };
-use moveos_types::table::{TableChangeSet, TableResolver};
+use moveos_types::state::{StateChangeSet, StateResolver};
 use moveos_types::{
     access_path::{AccessPath, Path},
     h256::H256,
@@ -259,7 +259,7 @@ impl StateDB {
     pub fn apply_change_set(
         &self,
         change_set: ChangeSet,
-        table_change_set: TableChangeSet,
+        table_change_set: StateChangeSet,
     ) -> Result<H256> {
         let mut changed_objects = UpdateSet::new();
 
@@ -432,8 +432,8 @@ fn module_name_to_key(name: &IdentStr) -> Vec<u8> {
     bcs::to_bytes(&name.to_string()).expect("bcs to_bytes String must success.")
 }
 
-impl TableResolver for MoveOSDB {
-    fn resolve_table_entry(
+impl StateResolver for MoveOSDB {
+    fn resolve_state(
         &self,
         handle: &ObjectID,
         key: &[u8],
@@ -442,8 +442,8 @@ impl TableResolver for MoveOSDB {
     }
 }
 
-impl TableResolver for StateDB {
-    fn resolve_table_entry(
+impl StateResolver for StateDB {
+    fn resolve_state(
         &self,
         handle: &ObjectID,
         key: &[u8],

@@ -19,7 +19,7 @@ fn test_statedb() {
             )
             .unwrap();
     }
-    let table_change_set = TableChangeSet::default();
+    let table_change_set = StateChangeSet::default();
     db.state_store
         .apply_change_set(change_set, table_change_set)
         .unwrap();

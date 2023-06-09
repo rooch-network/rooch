@@ -28,8 +28,7 @@ use move_vm_types::{
 };
 use moveos_types::{
     object::ObjectID,
-    state::State,
-    table::{TableChange, TableChangeSet, TableResolver, TableTypeInfo},
+    state::{State, StateChange, StateChangeSet, StateResolver, TableTypeInfo},
 };
 use smallvec::smallvec;
 use std::{
@@ -43,7 +42,7 @@ use std::{
 /// extension.
 #[derive(Tid)]
 pub struct NativeTableContext<'a> {
-    resolver: &'a dyn TableResolver,
+    resolver: &'a dyn StateResolver,
     //tx_hash: [u8; 32],
     table_data: RefCell<TableData>,
 }
@@ -197,7 +196,7 @@ struct Table {
 impl<'a> NativeTableContext<'a> {
     /// Create a new instance of a native table context. This must be passed in via an
     /// extension into VM session functions.
-    pub fn new(resolver: &'a dyn TableResolver) -> Self {
+    pub fn new(resolver: &'a dyn StateResolver) -> Self {
         Self {
             resolver,
             table_data: Default::default(),
@@ -205,7 +204,7 @@ impl<'a> NativeTableContext<'a> {
     }
 
     /// Computes the change set from a NativeTableContext.
-    pub fn into_change_set(self) -> PartialVMResult<TableChangeSet> {
+    pub fn into_change_set(self) -> PartialVMResult<StateChangeSet> {
         let NativeTableContext { table_data, .. } = self;
         let TableData {
             new_tables,
@@ -248,10 +247,10 @@ impl<'a> NativeTableContext<'a> {
                 }
             }
             if !entries.is_empty() {
-                changes.insert(handle, TableChange { entries });
+                changes.insert(handle, StateChange { entries });
             }
         }
-        Ok(TableChangeSet {
+        Ok(StateChangeSet {
             new_tables,
             removed_tables,
             changes,
@@ -294,7 +293,7 @@ impl Table {
             Entry::Vacant(entry) => {
                 let (tv, loaded) = match table_context
                     .resolver
-                    .resolve_table_entry(&self.handle, entry.key())
+                    .resolve_state(&self.handle, entry.key())
                     .map_err(|err| {
                         partial_extension_error(format!("remote table resolver failure: {}", err))
                     })? {

@@ -5,7 +5,7 @@ use crate::{
     event::Event,
     h256::{self, H256},
     move_types::FunctionId,
-    table::TableChangeSet,
+    state::StateChangeSet,
     tx_context::TxContext,
 };
 use anyhow::Result;
@@ -145,7 +145,7 @@ pub struct VerifiedMoveOSTransaction {
 pub struct TransactionOutput {
     pub status: KeptVMStatus,
     pub changeset: ChangeSet,
-    pub table_changeset: TableChangeSet,
+    pub table_changeset: StateChangeSet,
     pub events: Vec<Event>,
     pub gas_used: u64,
 }
