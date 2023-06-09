@@ -22,11 +22,17 @@
 ## Getting Started
 
 1. Build from source
-    $ cargo build && cp target/debug/rooch ~/.cargo/bin/
+    ```bash
+    cargo build && cp target/debug/rooch ~/.cargo/bin/
+    ```
 2. Create a new Move project
-    $ rooch move new my_move_project
+    ```bash
+    rooch move new my_move_project
+    ```
 3. Build the Move project
-    $ cd my_move_project && rooch move build
+    ```bash
+    cd my_move_project && rooch move build
+    ```
 
 ## How to Contribute
 

@@ -3,7 +3,7 @@
 
 ### Code Style, Hints, and Testing
 
-Refer to our Coding Guidelines for the [Move Guidelines](./developer-docs-site/docs/guides/move-guides/book/coding-conventions.md) and [Rust Guidelines](https://github.com/rust-dev-tools/fmt-rfcs/blob/master/guide/guide.md) | [Rust Guidelines 中文版](https://github.com/Rust-Coding-Guidelines/rust-coding-guidelines-zh/blob/main/src/SUMMARY.md) programming languages for detailed guidance about how to contribute to the project.
+Refer to our Coding Guidelines for the [Coding Conventions](./coding-conventions.md) and [Rust Guidelines](https://github.com/rust-dev-tools/fmt-rfcs/blob/master/guide/guide.md) | [Rust Guidelines 中文版](https://github.com/Rust-Coding-Guidelines/rust-coding-guidelines-zh/blob/main/src/SUMMARY.md) programming languages for detailed guidance about how to contribute to the project.
 
 Writing clean code is just one of the many factors to care about when creating a pull request.
 
@@ -23,19 +23,24 @@ Why should I care?
 The good pull requests look like:
 
 1. Pull request size
+
 It should be small. The pull request must have a maximum of 250 lines of change.
 
-1. Feature breaking
+2. Feature breaking
+
 Whenever possible, break pull-requests into smaller ones.
 
-1. Single Responsibility Principle
+3. Single Responsibility Principle
+
 The pull request should do only one thing.
 Pull requests that follow the SRP reduces the overhead caused by revising a code that attempts to solve several problems. Before submitting a PR for review, try applying the principle of single responsibility. If this code is doing more than one thing, break it into other Pull Requests.
 
-1. Title
+4. Title
+
 Make a self-explanatory title describing what the pull request does and self-explanatory.
 
-1. Description
+5. Description
+
 Detail with what was changed, why it was changed, and how it was changed
 
 It is recommended that you add the following to.git/hooks/pre-commit
@@ -88,7 +93,7 @@ The commit body should provide a meaningful commit message, which:
 
 ### References in Commit Messages
 
-If you want to reference a previous commit in the history of the project, use the format "abbreviated sha1 (subject, date)", with the subject enclosed in a pair of double-quotes, like this:
+If you want to reference a previous commit in the history of the project, use the format "abbreviated sha1 (subject, date)", with the subject enclosed in parentheses, like this:
 
 ```bash
 Commit 895b53510 ("[consensus] remove slice_patterns feature", 2019-07-18) noticed that ...
