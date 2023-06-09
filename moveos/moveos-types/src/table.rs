@@ -5,36 +5,7 @@
 use crate::{object::ObjectID, state::State};
 use move_core_types::{effects::Op, language_storage::TypeTag};
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    str::FromStr,
-};
-
-/// The representation of a table handle. This is created from truncating a sha3-256 based
-/// hash over a transaction hash provided by the environment and a table creation counter
-/// local to the transaction.
-#[derive(Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Serialize, Deserialize)]
-pub struct TableHandle(pub ObjectID);
-
-impl std::fmt::Display for TableHandle {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl From<TableHandle> for ObjectID {
-    fn from(table_handle: TableHandle) -> Self {
-        table_handle.0
-    }
-}
-
-impl FromStr for TableHandle {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(TableHandle(ObjectID::from_str(s)?))
-    }
-}
+use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TableTypeInfo {
@@ -56,9 +27,9 @@ impl std::fmt::Display for TableTypeInfo {
 /// A table change set.
 #[derive(Default, Clone, Debug)]
 pub struct TableChangeSet {
-    pub new_tables: BTreeMap<TableHandle, TableTypeInfo>,
-    pub removed_tables: BTreeSet<TableHandle>,
-    pub changes: BTreeMap<TableHandle, TableChange>,
+    pub new_tables: BTreeMap<ObjectID, TableTypeInfo>,
+    pub removed_tables: BTreeSet<ObjectID>,
+    pub changes: BTreeMap<ObjectID, TableChange>,
 }
 
 /// A change of a single table.
@@ -72,7 +43,7 @@ pub struct TableChange {
 pub trait TableResolver {
     fn resolve_table_entry(
         &self,
-        handle: &TableHandle,
+        handle: &ObjectID,
         key: &[u8],
     ) -> Result<Option<State>, anyhow::Error>;
 }

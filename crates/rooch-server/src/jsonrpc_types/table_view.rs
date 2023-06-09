@@ -4,15 +4,12 @@
 use super::{StateView, StrView, TypeTagView};
 use move_core_types::effects::Op;
 use moveos_types::{
+    object::ObjectID,
     state::State,
-    table::{TableChange, TableChangeSet, TableHandle, TableTypeInfo},
+    table::{TableChange, TableChangeSet, TableTypeInfo},
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
-
-pub type TableHandleView = StrView<TableHandle>;
-
-impl_str_view_for!(TableHandle);
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TableTypeInfoView {
@@ -29,9 +26,9 @@ impl From<TableTypeInfo> for TableTypeInfoView {
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct TableChangeSetView {
-    pub new_tables: BTreeMap<TableHandleView, TableTypeInfoView>,
-    pub removed_tables: BTreeSet<TableHandleView>,
-    pub changes: BTreeMap<TableHandleView, TableChangeView>,
+    pub new_tables: BTreeMap<ObjectID, TableTypeInfoView>,
+    pub removed_tables: BTreeSet<ObjectID>,
+    pub changes: BTreeMap<ObjectID, TableChangeView>,
 }
 
 impl From<TableChangeSet> for TableChangeSetView {

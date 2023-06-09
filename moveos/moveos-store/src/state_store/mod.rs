@@ -11,7 +11,7 @@ use move_core_types::{
     language_storage::{ModuleId, StructTag, TypeTag},
     resolver::{ModuleResolver, ResourceResolver},
 };
-use moveos_types::table::{TableChangeSet, TableHandle, TableResolver};
+use moveos_types::table::{TableChangeSet, TableResolver};
 use moveos_types::{
     access_path::{AccessPath, Path},
     h256::H256,
@@ -286,7 +286,7 @@ impl StateDB {
 
         for (table_handle, table_change) in table_change_set.changes {
             // handle global object
-            if table_handle.0 == storage_context::GLOBAL_OBJECT_STORAGE_HANDLE {
+            if table_handle == storage_context::GLOBAL_OBJECT_STORAGE_HANDLE {
                 self.global_table
                     .put_table_changes(table_change.entries.into_iter())?;
             } else {
@@ -364,10 +364,10 @@ impl StateDB {
 
     pub fn resolve_table_entry(
         &self,
-        handle: &TableHandle,
+        handle: &ObjectID,
         key: &[u8],
     ) -> Result<Option<State>, Error> {
-        let state = if handle.0 == storage_context::GLOBAL_OBJECT_STORAGE_HANDLE {
+        let state = if handle == &storage_context::GLOBAL_OBJECT_STORAGE_HANDLE {
             self.global_table.get(key.to_vec())
         } else {
             self.get_with_key((*handle).into(), key.to_vec())
@@ -435,7 +435,7 @@ fn module_name_to_key(name: &IdentStr) -> Vec<u8> {
 impl TableResolver for MoveOSDB {
     fn resolve_table_entry(
         &self,
-        handle: &TableHandle,
+        handle: &ObjectID,
         key: &[u8],
     ) -> std::result::Result<Option<State>, Error> {
         self.state_store.resolve_table_entry(handle, key)
@@ -445,7 +445,7 @@ impl TableResolver for MoveOSDB {
 impl TableResolver for StateDB {
     fn resolve_table_entry(
         &self,
-        handle: &TableHandle,
+        handle: &ObjectID,
         key: &[u8],
     ) -> std::result::Result<Option<State>, Error> {
         self.resolve_table_entry(handle, key)

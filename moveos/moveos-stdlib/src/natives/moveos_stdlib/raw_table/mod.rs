@@ -27,8 +27,9 @@ use move_vm_types::{
     values::{GlobalValue, Struct, StructRef, Value},
 };
 use moveos_types::{
+    object::ObjectID,
     state::State,
-    table::{TableChange, TableChangeSet, TableHandle, TableResolver, TableTypeInfo},
+    table::{TableChange, TableChangeSet, TableResolver, TableTypeInfo},
 };
 use smallvec::smallvec;
 use std::{
@@ -66,9 +67,9 @@ const _NOT_EMPTY: u64 = (102 << 8) + _ECATEGORY_INVALID_STATE as u64;
 /// of the overall context so we can mutate while still accessing the overall context.
 #[derive(Default)]
 struct TableData {
-    new_tables: BTreeMap<TableHandle, TableTypeInfo>,
-    removed_tables: BTreeSet<TableHandle>,
-    tables: BTreeMap<TableHandle, Table>,
+    new_tables: BTreeMap<ObjectID, TableTypeInfo>,
+    removed_tables: BTreeSet<ObjectID>,
+    tables: BTreeMap<ObjectID, Table>,
 }
 
 /// A structure representing runtime table value.
@@ -185,7 +186,7 @@ impl TableRuntimeValue {
 
 /// A structure representing a single table.
 struct Table {
-    handle: TableHandle,
+    handle: ObjectID,
     key_layout: MoveTypeLayout,
     content: BTreeMap<Vec<u8>, TableRuntimeValue>,
 }
@@ -264,7 +265,7 @@ impl TableData {
     fn get_or_create_table(
         &mut self,
         context: &NativeContext,
-        handle: TableHandle,
+        handle: ObjectID,
         key_ty: &Type,
     ) -> PartialVMResult<&mut Table> {
         Ok(match self.tables.entry(handle) {
@@ -681,8 +682,8 @@ impl GasParameters {
 // Helpers
 
 // The handle type in Move is `&ObjectID`. This function extracts the address from `ObjectID`.
-fn get_table_handle(table: StructRef) -> PartialVMResult<TableHandle> {
-    Ok(TableHandle(helpers::get_object_id(table)?))
+fn get_table_handle(table: StructRef) -> PartialVMResult<ObjectID> {
+    Ok(helpers::get_object_id(table)?)
 }
 
 fn serialize(layout: &MoveTypeLayout, val: &Value) -> PartialVMResult<Vec<u8>> {
