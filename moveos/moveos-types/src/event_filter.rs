@@ -67,7 +67,9 @@ pub enum EventFilter {
 impl EventFilter {
     fn try_matches(&self, item: &MoveOSEvent) -> Result<bool> {
         Ok(match self {
-            EventFilter::MoveEventType(event_type) => type_tag_match(&item.event.type_tag, event_type),
+            EventFilter::MoveEventType(event_type) => {
+                type_tag_match(&item.event.type_tag, event_type)
+            }
             EventFilter::MoveEventField { path: _, value: _ } => {
                 // matches!(item.parsed_event_data.pointer(path), Some(v) if v == value)
                 false

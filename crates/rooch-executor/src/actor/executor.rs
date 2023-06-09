@@ -6,7 +6,7 @@ use super::messages::{
     ExecuteViewFunctionMessage, GetEventsByEventHandleMessage, GetEventsMessage,
     GetResourceMessage, ObjectMessage, StatesMessage, ValidateTransactionMessage,
 };
-use anyhow::{Result};
+use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use move_resource_viewer::{AnnotatedMoveStruct, MoveValueAnnotator};
@@ -219,12 +219,7 @@ impl Handler<GetEventsMessage> for ExecutorActor {
                 let annotated_event_data = MoveValueAnnotator::new(statedb)
                     .view_resource(&struct_tag, state.value.as_slice())
                     .unwrap();
-                AnnotatedMoveOSEvent::new(
-                    event,
-                    annotated_event_data,
-                    None,
-                    None,
-                )
+                AnnotatedMoveOSEvent::new(event, annotated_event_data, None, None)
             })
             .collect::<Vec<_>>()
         {

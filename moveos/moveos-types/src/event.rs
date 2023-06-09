@@ -221,7 +221,9 @@ impl EventHandle {
             event_handle_type.name,
         );
         let event_handle_hash = h256::sha3_256_of(bcs::to_bytes(&type_info).unwrap().as_ref());
-        AccountAddress::try_from(event_handle_hash.as_bytes()).unwrap().into()
+        AccountAddress::try_from(event_handle_hash.as_bytes())
+            .unwrap()
+            .into()
     }
 
     // #[cfg(any(test, feature = "fuzzing"))]
@@ -241,7 +243,6 @@ impl EventHandle {
     //     }
     // }
 }
-
 
 // #[derive(Eq, PartialEq, Clone, Debug, Serialize, Deserialize, JsonSchema)]
 // #[derive(Clone, Debug)]
@@ -313,5 +314,4 @@ impl AnnotatedMoveOSEvent {
             // block_height,
         }
     }
-
 }

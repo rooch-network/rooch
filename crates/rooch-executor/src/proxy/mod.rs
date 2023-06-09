@@ -19,8 +19,8 @@ use moveos_types::{
     transaction::VerifiedMoveOSTransaction,
 };
 use moveos_types::{
-    event_filter::{EventFilter},
-    event::{AnnotatedMoveOSEvent},
+    event::AnnotatedMoveOSEvent,
+    event_filter::EventFilter,
     state::{AnnotatedState, State},
 };
 use moveos_types::{
@@ -102,11 +102,18 @@ impl ExecutorProxy {
         limit: u64,
     ) -> Result<Vec<Option<AnnotatedMoveOSEvent>>> {
         self.actor
-            .send(GetEventsByEventHandleMessage { event_handle_type, cursor, limit })
+            .send(GetEventsByEventHandleMessage {
+                event_handle_type,
+                cursor,
+                limit,
+            })
             .await?
     }
 
-    pub async fn get_events(&self, filter: EventFilter) -> Result<Vec<Option<AnnotatedMoveOSEvent>>> {
+    pub async fn get_events(
+        &self,
+        filter: EventFilter,
+    ) -> Result<Vec<Option<AnnotatedMoveOSEvent>>> {
         self.actor.send(GetEventsMessage { filter }).await?
     }
 }

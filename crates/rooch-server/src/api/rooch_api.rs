@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::{
-    AnnotatedMoveView, AnnotatedFunctionReturnValueView, AnnotatedMoveStructView,
+    AnnotatedFunctionReturnValueView, AnnotatedMoveStructView, AnnotatedMoveView,
     AnnotatedObjectView, AnnotatedStateView, ExecuteTransactionResponseView, FunctionCallView,
     StateView, StrView, StructTagView, TransactionView,
 };
