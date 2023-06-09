@@ -63,7 +63,7 @@ impl EventStore {
         let rw_locks = self.indexer_store.read();
         let data = rw_locks
             .iter()
-            .take_while(|((tx_hash_key, _), _)| tx_hash_key == tx_hash)
+            .filter(|((tx_hash_key, _), _)| *tx_hash_key == *tx_hash)
             .map(|(_, e)| e.clone())
             .collect::<Vec<_>>();
         Ok(data.is_empty().not().then_some(data))
@@ -76,7 +76,7 @@ impl EventStore {
         let rw_locks = self.store.read();
         let data = rw_locks
             .iter()
-            .take_while(|((handle_id, _), _)| handle_id == event_handle_id)
+            .filter(|((handle_id, _), _)| *handle_id == *event_handle_id)
             .map(|(_, e)| e.clone())
             .collect::<Vec<_>>();
         Ok(data.is_empty().not().then_some(data))
