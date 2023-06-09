@@ -114,15 +114,15 @@ Rooch 中，给 Move 实现了一种叫做 RawTable 的扩展，它基于原来�
 
 ```move
 module moveos_std::raw_table{
-    public(friend) fun add<K: copy + drop, V>(table_handle: address, key: K, val: V);
+    public(friend) fun add<K: copy + drop, V>(table_handle: &ObjectID, key: K, val: V);
 
-    public(friend) fun borrow<K: copy + drop, V>(table_handle: address, key: K);
+    public(friend) fun borrow<K: copy + drop, V>(table_handle: &ObjectID, key: K);
 
-    public(friend) fun borrow_mut<K: copy + drop, V>(table_handle: address, key: K): &mut V;
+    public(friend) fun borrow_mut<K: copy + drop, V>(table_handle: &ObjectID, key: K): &mut V;
 
-    public(friend) fun remove<K: copy + drop, V>(table_handle: address, key: K): V;
+    public(friend) fun remove<K: copy + drop, V>(table_handle: &ObjectID, key: K): V;
 
-    public(friend) fun contains<K: copy + drop, V>(table_handle: address, key: K): bool;
+    public(friend) fun contains<K: copy + drop, V>(table_handle: &ObjectID, key: K): bool;
 }
 ```
 
@@ -170,7 +170,7 @@ module moveos_std::object_storage{
     /// Add object to object store
     public fun add<T: key>(this: &mut ObjectStorage, obj: Object<T>);
 
-    public fun contains<T: key>(this: &mut ObjectStorage, object_id: ObjectID): bool;
+    public fun contains<T: key>(this: &ObjectStorage, object_id: ObjectID): bool;
 }
 ```
 

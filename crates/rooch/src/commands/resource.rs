@@ -1,8 +1,9 @@
 use crate::types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
-use rooch_server::jsonrpc_types::AnnotatedMoveStructView;
-use rooch_types::error::{RoochError, RoochResult};
+use moveos_types::access_path::AccessPath;
+use rooch_server::jsonrpc_types::AnnotatedStateView;
+use rooch_types::error::RoochResult;
 
 #[derive(Debug, clap::Parser)]
 pub struct ResourceCommand {
@@ -20,13 +21,15 @@ pub struct ResourceCommand {
 }
 
 #[async_trait]
-impl CommandAction<Option<AnnotatedMoveStructView>> for ResourceCommand {
-    async fn execute(self) -> RoochResult<Option<AnnotatedMoveStructView>> {
+impl CommandAction<Option<AnnotatedStateView>> for ResourceCommand {
+    async fn execute(self) -> RoochResult<Option<AnnotatedStateView>> {
         let client = self.context_options.build().await?.get_client().await?;
+
         let resp = client
-            .get_resource(self.address, self.resource)
-            .await
-            .map_err(RoochError::from)?;
+            .get_annotated_states(AccessPath::resource(self.address, self.resource))
+            .await?
+            .pop()
+            .flatten();
         Ok(resp)
     }
 }

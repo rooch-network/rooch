@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::state::MoveState;
+use crate::state::MoveStructState;
 use move_core_types::{
     ident_str,
     identifier::IdentStr,
@@ -27,7 +27,7 @@ impl MoveStructType for MoveModule {
     const STRUCT_NAME: &'static IdentStr = ident_str!("MoveModule");
 }
 
-impl MoveState for MoveModule {
+impl MoveStructState for MoveModule {
     fn move_layout() -> move_core_types::value::MoveStructLayout {
         MoveStructLayout::new(vec![MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8))])
     }

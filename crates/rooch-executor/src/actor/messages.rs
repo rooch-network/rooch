@@ -3,8 +3,6 @@
 
 use anyhow::Result;
 use coerce::actor::message::Message;
-use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
-use move_resource_viewer::AnnotatedMoveStruct;
 use moveos_types::access_path::AccessPath;
 use moveos_types::event_filter::{EventFilter, MoveOSEvent};
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
@@ -12,7 +10,7 @@ use moveos_types::state::{AnnotatedState, State};
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::{
-    object::{AnnotatedObject, ObjectID},
+    object::ObjectID,
     transaction::{AuthenticatableTransaction, FunctionCall},
 };
 use rooch_types::transaction::TransactionExecutionInfo;
@@ -51,25 +49,6 @@ pub struct ExecuteViewFunctionMessage {
 
 impl Message for ExecuteViewFunctionMessage {
     type Result = Result<Vec<AnnotatedFunctionReturnValue>, anyhow::Error>;
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GetResourceMessage {
-    pub address: AccountAddress,
-    pub resource_type: StructTag,
-}
-
-impl Message for GetResourceMessage {
-    type Result = Result<Option<AnnotatedMoveStruct>>;
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ObjectMessage {
-    pub object_id: ObjectID,
-}
-
-impl Message for ObjectMessage {
-    type Result = Result<Option<AnnotatedObject>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]

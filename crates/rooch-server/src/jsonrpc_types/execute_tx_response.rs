@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{ModuleIdView, StrView, TableChangeSetView};
+use super::{ModuleIdView, StateChangeSetView, StrView};
 use move_core_types::vm_status::{AbortLocation, KeptVMStatus};
 use moveos_types::{event::Event, transaction::TransactionOutput};
 use rooch_types::{
@@ -139,7 +139,7 @@ pub struct TransactionOutputView {
     pub status: KeptVMStatusView,
     //TODO The changeset will be removed in the future
     //pub changeset: ChangeSetView,
-    pub table_changeset: TableChangeSetView,
+    pub state_changeset: StateChangeSetView,
     //TODO refactor EventView and use EventView
     pub events: Vec<Event>,
     pub gas_used: u64,
@@ -149,7 +149,7 @@ impl From<TransactionOutput> for TransactionOutputView {
     fn from(tx_output: TransactionOutput) -> Self {
         Self {
             status: tx_output.status.into(),
-            table_changeset: tx_output.table_changeset.into(),
+            state_changeset: tx_output.state_changeset.into(),
             events: tx_output.events,
             gas_used: tx_output.gas_used,
         }

@@ -10,17 +10,14 @@ use move_core_types::{
     u256,
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
+use moveos_types::event::EventID;
 use moveos_types::h256::H256;
 use moveos_types::move_types::parse_module_id;
 use moveos_types::transaction::MoveAction;
 use moveos_types::{
-    event::EventID,
-    state::{AnnotatedState, State},
-};
-use moveos_types::{
     event_filter::MoveOSEvent,
     move_string::{MoveAsciiString, MoveString},
-    state::MoveState,
+    state::MoveStructState,
 };
 use moveos_types::{
     move_types::FunctionId,
@@ -359,55 +356,3 @@ impl From<MoveOSEvent> for EventView {
         }
     }
 }
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct StateView {
-    pub value: StrView<Vec<u8>>,
-    pub value_type: TypeTagView,
-}
-
-impl From<State> for StateView {
-    fn from(state: State) -> Self {
-        Self {
-            value: StrView(state.value),
-            value_type: state.value_type.into(),
-        }
-    }
-}
-
-impl From<StateView> for State {
-    fn from(state: StateView) -> Self {
-        Self {
-            value: state.value.0,
-            value_type: state.value_type.into(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct AnnotatedStateView {
-    pub state: StateView,
-    pub move_value: AnnotatedMoveValueView,
-}
-
-impl From<AnnotatedState> for AnnotatedStateView {
-    fn from(state: AnnotatedState) -> Self {
-        Self {
-            state: state.state.into(),
-            move_value: state.move_value.into(),
-        }
-    }
-}
-
-//TODO Is it need to convert the AnnotatedStateView back to AnnotatedState?
-//If not, please remove this code. Otherwise, it needs to be fixed. include TryFrom<AnnotatedMoveValueView> for AnnotatedMoveValue
-// impl TryFrom<AnnotatedStateView> for AnnotatedState {
-//     type Error = anyhow::Error;
-
-//     fn try_from(value: AnnotatedStateView) -> Result<Self, Self::Error> {
-//         Ok(Self {
-//             state: value.state.into(),
-//             move_value: value.move_value.try_into()?,
-//         })
-//     }
-// }

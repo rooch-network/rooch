@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{tx_argument_resolver::TxArgumentResolver, MoveResolverExt};
+use super::tx_argument_resolver::TxArgumentResolver;
 use anyhow::ensure;
 use move_binary_format::{
     access::ModuleAccess,
@@ -33,12 +33,14 @@ use moveos_types::{
     function_return_value::FunctionReturnValue,
     move_types::FunctionId,
     object::ObjectID,
+    state_resolver::MoveOSResolver,
     storage_context::StorageContext,
     transaction::{FunctionCall, MoveAction, TransactionOutput, VerifiedMoveAction},
 };
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
 use std::{borrow::Borrow, sync::Arc};
 
+//TODO rename to MoveOSVM and MoveOSSession
 pub struct MoveVmExt {
     inner: MoveVM,
 }
@@ -58,7 +60,7 @@ impl MoveVmExt {
         })
     }
 
-    pub fn new_session<'r, S: MoveResolverExt, G: GasMeter>(
+    pub fn new_session<'r, S: MoveOSResolver, G: GasMeter>(
         &self,
         remote: &'r S,
         ctx: StorageContext,
@@ -67,7 +69,7 @@ impl MoveVmExt {
         SessionExt::new(&self.inner, remote, ctx, gas_meter, false)
     }
 
-    pub fn new_readonly_session<'r, S: MoveResolverExt, G: GasMeter>(
+    pub fn new_readonly_session<'r, S: MoveOSResolver, G: GasMeter>(
         &self,
         remote: &'r S,
         ctx: StorageContext,
@@ -88,7 +90,7 @@ pub struct SessionExt<'r, 'l, S, G> {
 
 impl<'r, 'l, S, G> SessionExt<'r, 'l, S, G>
 where
-    S: MoveResolverExt,
+    S: MoveOSResolver,
     G: GasMeter,
 {
     pub fn new(
@@ -367,7 +369,7 @@ where
             TransactionOutput {
                 status,
                 changeset,
-                table_changeset,
+                state_changeset: table_changeset,
                 events,
                 gas_used,
             },

@@ -1,19 +1,17 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::api::rooch_api::RoochAPIServer;
 use crate::api::RoochRpcModule;
 use crate::jsonrpc_types::{
-    AnnotatedFunctionReturnValueView, AnnotatedMoveStructView, AnnotatedStateView, EventView,
-    ExecuteTransactionResponseView, FunctionCallView, StateView, StrView, StructTagView,
-    TransactionView,
+    AnnotatedFunctionReturnValueView, AnnotatedStateView, EventView,
+    ExecuteTransactionResponseView, FunctionCallView, StateView, StrView, TransactionView,
 };
 use crate::service::RpcService;
-use crate::{api::rooch_api::RoochAPIServer, jsonrpc_types::AnnotatedObjectView};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     RpcModule,
 };
-use move_core_types::account_address::AccountAddress;
 use moveos_types::access_path::AccessPath;
 use moveos_types::event_filter::EventFilter;
 use moveos_types::{object::ObjectID, transaction::AuthenticatableTransaction};
@@ -64,22 +62,6 @@ impl RoochAPIServer for RoochServer {
             .into_iter()
             .map(AnnotatedFunctionReturnValueView::from)
             .collect())
-    }
-
-    async fn get_resource(
-        &self,
-        address: AccountAddress,
-        resource_type: StructTagView,
-    ) -> RpcResult<Option<AnnotatedMoveStructView>> {
-        Ok(self
-            .rpc_service
-            .get_resource(address, resource_type.into())
-            .await?
-            .map(Into::into))
-    }
-
-    async fn get_object(&self, object_id: ObjectID) -> RpcResult<Option<AnnotatedObjectView>> {
-        Ok(self.rpc_service.object(object_id).await?.map(Into::into))
     }
 
     async fn get_states(&self, access_path: AccessPath) -> RpcResult<Vec<Option<StateView>>> {
