@@ -26,8 +26,9 @@ use move_vm_types::{
     pop_arg,
     values::{GlobalValue, Struct, StructRef, Value},
 };
-use moveos_types::table::{
-    TableChange, TableChangeSet, TableHandle, TableResolver, TableTypeInfo, TableValue,
+use moveos_types::{
+    state::State,
+    table::{TableChange, TableChangeSet, TableHandle, TableResolver, TableTypeInfo},
 };
 use smallvec::smallvec;
 use std::{
@@ -224,7 +225,7 @@ impl<'a> NativeTableContext<'a> {
                         let bytes = unbox_and_serialize(&value_layout, box_val)?;
                         entries.insert(
                             key,
-                            Op::New(TableValue {
+                            Op::New(State {
                                 value_type,
                                 value: bytes,
                             }),
@@ -234,7 +235,7 @@ impl<'a> NativeTableContext<'a> {
                         let bytes = unbox_and_serialize(&value_layout, val)?;
                         entries.insert(
                             key,
-                            Op::Modify(TableValue {
+                            Op::Modify(State {
                                 value_type,
                                 value: bytes,
                             }),

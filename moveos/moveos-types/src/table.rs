@@ -1,11 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-
-use crate::object::ObjectID;
-use move_core_types::{effects::Op, language_storage::TypeTag};
-use serde::{Deserialize, Serialize};
 /// Public types for tables. The raw table implementation in moveos-stdlib natives.
 /// We put them in moveos-types to avoid circular dependencies.
+use crate::{object::ObjectID, state::State};
+use move_core_types::{effects::Op, language_storage::TypeTag};
+use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, BTreeSet},
     str::FromStr,
@@ -62,16 +61,10 @@ pub struct TableChangeSet {
     pub changes: BTreeMap<TableHandle, TableChange>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct TableValue {
-    pub value_type: TypeTag,
-    pub value: Vec<u8>,
-}
-
 /// A change of a single table.
 #[derive(Clone, Debug)]
 pub struct TableChange {
-    pub entries: BTreeMap<Vec<u8>, Op<TableValue>>,
+    pub entries: BTreeMap<Vec<u8>, Op<State>>,
 }
 
 /// A table resolver which needs to be provided by the environment. This allows to lookup
@@ -81,5 +74,5 @@ pub trait TableResolver {
         &self,
         handle: &TableHandle,
         key: &[u8],
-    ) -> Result<Option<TableValue>, anyhow::Error>;
+    ) -> Result<Option<State>, anyhow::Error>;
 }

@@ -1,9 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{StrView, TypeTagView};
+use super::{StateView, StrView, TypeTagView};
 use move_core_types::effects::Op;
-use moveos_types::table::{TableChange, TableChangeSet, TableHandle, TableTypeInfo, TableValue};
+use moveos_types::{
+    state::State,
+    table::{TableChange, TableChangeSet, TableHandle, TableTypeInfo},
+};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -53,21 +56,6 @@ impl From<TableChangeSet> for TableChangeSetView {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct TableValueView {
-    pub value_type: TypeTagView,
-    pub value: StrView<Vec<u8>>,
-}
-
-impl From<TableValue> for TableValueView {
-    fn from(table_value: TableValue) -> Self {
-        Self {
-            value_type: table_value.value_type.into(),
-            value: table_value.value.into(),
-        }
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum OpView<T> {
@@ -76,8 +64,8 @@ pub enum OpView<T> {
     Delete,
 }
 
-impl From<Op<TableValue>> for OpView<TableValueView> {
-    fn from(op: Op<TableValue>) -> Self {
+impl From<Op<State>> for OpView<StateView> {
+    fn from(op: Op<State>) -> Self {
         match op {
             Op::New(data) => Self::New(data.into()),
             Op::Modify(data) => Self::Modify(data.into()),
@@ -88,7 +76,7 @@ impl From<Op<TableValue>> for OpView<TableValueView> {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TableChangeView {
-    pub entries: BTreeMap<StrView<Vec<u8>>, OpView<TableValueView>>,
+    pub entries: BTreeMap<StrView<Vec<u8>>, OpView<StateView>>,
 }
 
 impl From<TableChange> for TableChangeView {
