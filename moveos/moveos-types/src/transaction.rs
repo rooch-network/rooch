@@ -145,7 +145,7 @@ pub struct VerifiedMoveOSTransaction {
 pub struct TransactionOutput {
     pub status: KeptVMStatus,
     pub changeset: ChangeSet,
-    pub table_changeset: StateChangeSet,
+    pub state_changeset: StateChangeSet,
     pub events: Vec<Event>,
     pub gas_used: u64,
 }

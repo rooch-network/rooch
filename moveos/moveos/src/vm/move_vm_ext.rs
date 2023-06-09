@@ -369,7 +369,7 @@ where
             TransactionOutput {
                 status,
                 changeset,
-                table_changeset,
+                state_changeset: table_changeset,
                 events,
                 gas_used,
             },

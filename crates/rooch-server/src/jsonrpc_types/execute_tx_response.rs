@@ -139,7 +139,7 @@ pub struct TransactionOutputView {
     pub status: KeptVMStatusView,
     //TODO The changeset will be removed in the future
     //pub changeset: ChangeSetView,
-    pub table_changeset: StateChangeSetView,
+    pub state_changeset: StateChangeSetView,
     //TODO refactor EventView and use EventView
     pub events: Vec<Event>,
     pub gas_used: u64,
@@ -149,7 +149,7 @@ impl From<TransactionOutput> for TransactionOutputView {
     fn from(tx_output: TransactionOutput) -> Self {
         Self {
             status: tx_output.status.into(),
-            table_changeset: tx_output.table_changeset.into(),
+            state_changeset: tx_output.state_changeset.into(),
             events: tx_output.events,
             gas_used: tx_output.gas_used,
         }

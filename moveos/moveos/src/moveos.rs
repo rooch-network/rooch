@@ -156,7 +156,7 @@ impl MoveOS {
         let TransactionOutput {
             status: _,
             changeset,
-            table_changeset,
+            state_changeset: table_changeset,
             events,
             gas_used: _,
         } = output;
