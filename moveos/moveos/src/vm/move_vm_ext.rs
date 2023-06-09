@@ -357,7 +357,7 @@ where
             .map(|(i, e)| {
                 let event_handle_id = ObjectID::from_bytes(e.0.as_slice())
                     .expect("the event handle id must be ObjectID");
-                Event::new(EventID::new(event_handle_id, e.1), e.2, e.3, i as u32)
+                Event::new(EventID::new(event_handle_id, e.1), e.2, e.3, i as u64)
             })
             .collect();
         //TODO calculate the gas_used with gas_meter

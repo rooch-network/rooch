@@ -5,7 +5,8 @@ use anyhow::{bail, Result};
 use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
 use move_resource_viewer::AnnotatedMoveStruct;
 use moveos_types::access_path::AccessPath;
-use moveos_types::event_filter::{EventFilter, MoveOSEvent};
+use moveos_types::event::AnnotatedMoveOSEvent;
+use moveos_types::event_filter::EventFilter;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::{
@@ -114,16 +115,21 @@ impl RpcService {
 
     pub async fn get_events_by_event_handle(
         &self,
-        event_handle_id: ObjectID,
-    ) -> Result<Option<Vec<MoveOSEvent>>> {
+        event_handle_type: StructTag,
+        cursor: u64,
+        limit: u64,
+    ) -> Result<Vec<Option<AnnotatedMoveOSEvent>>> {
         let resp = self
             .executor
-            .get_events_by_event_handle(event_handle_id)
+            .get_events_by_event_handle(event_handle_type, cursor, limit)
             .await?;
         Ok(resp)
     }
 
-    pub async fn get_events(&self, filter: EventFilter) -> Result<Option<Vec<MoveOSEvent>>> {
+    pub async fn get_events(
+        &self,
+        filter: EventFilter,
+    ) -> Result<Vec<Option<AnnotatedMoveOSEvent>>> {
         let resp = self.executor.get_events(filter).await?;
         Ok(resp)
     }

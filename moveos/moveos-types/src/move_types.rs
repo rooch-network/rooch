@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{anyhow, format_err, Result};
+use anyhow::{anyhow, bail, format_err, Result};
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
     language_storage::StructTag, language_storage::TypeTag,
@@ -193,4 +193,34 @@ pub fn struct_tag_match(filter: &StructTag, target: &StructTag) -> bool {
         }
     }
     true
+}
+
+/// The structure of TypeInfo is consistent of contract type_info
+#[derive(Clone, Debug, Eq, Ord, PartialOrd, PartialEq, Serialize, Deserialize, Hash)]
+pub struct TypeInfo {
+    pub account_address: AccountAddress,
+    pub module_name: Identifier,
+    pub struct_name: Identifier,
+}
+
+impl TypeInfo {
+    pub fn new(
+        account_address: AccountAddress,
+        module_name: Identifier,
+        struct_name: Identifier,
+    ) -> Self {
+        Self {
+            account_address,
+            module_name,
+            struct_name,
+        }
+    }
+}
+
+pub fn parse_struct_tag(type_tag: TypeTag) -> Result<StructTag> {
+    if let TypeTag::Struct(struct_tag) = type_tag {
+        Ok(*struct_tag)
+    } else {
+        bail!("invalid struct tag: {:?}", type_tag)
+    }
 }

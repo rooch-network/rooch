@@ -10,15 +10,13 @@ use move_core_types::{
     u256,
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
-use moveos_types::h256::H256;
 use moveos_types::move_types::parse_module_id;
 use moveos_types::transaction::MoveAction;
 use moveos_types::{
-    event::EventID,
+    event::{Event, EventID},
     state::{AnnotatedState, State},
 };
 use moveos_types::{
-    event_filter::MoveOSEvent,
     move_string::{MoveAsciiString, MoveString},
     state::MoveState,
 };
@@ -31,6 +29,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::str::FromStr;
+// use move_binary_format::file_format::AbilitySet;
 
 pub type ModuleIdView = StrView<ModuleId>;
 pub type TypeTagView = StrView<TypeTag>;
@@ -66,7 +65,7 @@ impl From<AnnotatedMoveStruct> for AnnotatedMoveStructView {
 //TODO
 // impl TryFrom<AnnotatedMoveStructView> for AnnotatedMoveStruct {
 //     type Error = anyhow::Error;
-
+//
 //     fn try_from(value: AnnotatedMoveStructView) -> Result<Self, Self::Error> {
 //         Ok(Self {
 //             abilities: AbilitySet::from_u8(value.abilities)
@@ -331,34 +330,80 @@ impl FromStr for StrView<ModuleId> {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct EventView {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub tx_hash: Option<H256>,
-    /// Sender's address.
-    pub sender: AccountAddress,
-    pub event_data: StrView<Vec<u8>>,
-    /// Parsed json value of the event data
-    // pub parsed_event_data: Value,
-    pub parsed_event_data: AnnotatedMoveStructView,
-    pub type_tag: TypeTagView,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub event_index: Option<u32>,
-    pub event_id: EventID,
+pub struct EventIDView {
+    pub event_handle_id: ObjectID,
+    pub event_seq: u64,
 }
 
-impl From<MoveOSEvent> for EventView {
-    fn from(event: MoveOSEvent) -> Self {
-        EventView {
-            tx_hash: event.tx_hash,
-            sender: AccountAddress::ZERO, //Reserved as an extension field
-            event_data: StrView(event.event_data.to_vec()),
-            parsed_event_data: event.parsed_event_data.into(),
-            type_tag: event.type_tag.clone().into(),
-            event_index: Some(event.event_index),
-            event_id: event.event_id,
+impl From<EventID> for EventIDView {
+    fn from(event_id: EventID) -> Self {
+        EventIDView {
+            event_handle_id: event_id.event_handle_id,
+            event_seq: event_id.event_seq,
         }
     }
 }
+
+impl From<EventIDView> for EventID {
+    fn from(event_id: EventIDView) -> Self {
+        EventID {
+            event_handle_id: event_id.event_handle_id,
+            event_seq: event_id.event_seq,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct EventView {
+    pub event_id: EventIDView,
+    pub type_tag: TypeTagView,
+    pub event_data: StrView<Vec<u8>>,
+    pub event_index: u64,
+}
+
+impl From<Event> for EventView {
+    fn from(event: Event) -> Self {
+        EventView {
+            event_id: event.event_id.into(),
+            type_tag: event.type_tag.into(),
+            event_data: StrView(event.event_data),
+            event_index: event.event_index,
+        }
+    }
+}
+
+impl From<EventView> for Event {
+    fn from(event: EventView) -> Self {
+        Event {
+            event_id: event.event_id.into(),
+            type_tag: event.type_tag.into(),
+            event_data: event.event_data.0,
+            event_index: event.event_index,
+        }
+    }
+}
+
+// impl From<Vec<Event>> for Vec<EventView> {
+//     fn from(event: Event) -> Self {
+//         EventView {
+//             event_id: event.event_id.into(),
+//             type_tag: event.type_tag.into(),
+//             event_data: StrView(event.event_data),
+//             event_index: event.event_index,
+//         }
+//     }
+// }
+//
+// impl From<EventView> for Event {
+//     fn from(event: EventView) -> Self {
+//         Event {
+//             event_id: event.event_id.into(),
+//             type_tag: event.type_tag.into(),
+//             event_data: event.event_data.0,
+//             event_index: event.event_index,
+//         }
+//     }
+// }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct StateView {

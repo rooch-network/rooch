@@ -196,7 +196,9 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
     )> {
         let mut signers: Vec<_> = signers
             .into_iter()
-            .map(|addr| self.compiled_state().resolve_address(&addr))
+            .map(|addr| {
+                self.compiled_state().resolve_address(&addr)
+            })
             .collect();
 
         let args = args

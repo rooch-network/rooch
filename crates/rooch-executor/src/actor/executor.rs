@@ -6,15 +6,16 @@ use super::messages::{
     ExecuteViewFunctionMessage, GetEventsByEventHandleMessage, GetEventsMessage,
     GetResourceMessage, ObjectMessage, StatesMessage, ValidateTransactionMessage,
 };
-use anyhow::{bail, Result};
+use anyhow::{Result};
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
-use move_core_types::language_storage::TypeTag;
 use move_resource_viewer::{AnnotatedMoveStruct, MoveValueAnnotator};
 use moveos::moveos::MoveOS;
 use moveos_store::state_store::state_view::{AnnotatedStateReader, StateReader};
-use moveos_types::event_filter::MoveOSEvent;
+use moveos_types::event::AnnotatedMoveOSEvent;
+use moveos_types::event::EventHandle;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
+use moveos_types::move_types::parse_struct_tag;
 use moveos_types::object::AnnotatedObject;
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::transaction::{AuthenticatableTransaction, VerifiedMoveOSTransaction};
@@ -159,42 +160,40 @@ impl Handler<GetEventsByEventHandleMessage> for ExecutorActor {
         &mut self,
         msg: GetEventsByEventHandleMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Option<Vec<MoveOSEvent>>> {
-        let GetEventsByEventHandleMessage { event_handle_id } = msg;
+    ) -> Result<Vec<Option<AnnotatedMoveOSEvent>>> {
+        let GetEventsByEventHandleMessage {
+            event_handle_type,
+            cursor,
+            limit,
+        } = msg;
         let event_store = self.moveos.event_store();
         let statedb = self.moveos.state();
 
-        let mut result: Vec<MoveOSEvent> = Vec::new();
-        let events = event_store.get_events_by_event_handle_id(&event_handle_id)?;
+        // let mut result: Vec<Option<AnnotatedMoveOSEvent>> = Vec::new();
+        let event_handle_id = EventHandle::derive_event_handle_id(event_handle_type.clone());
+        let events = event_store.get_events_by_event_handle_id(&event_handle_id, cursor, limit)?;
 
-        if Option::is_some(&events) {
-            for ev in events
-                .unwrap()
-                .into_iter()
-                .enumerate()
-                .map(|(_i, event)| {
-                    let state = State::new(event.event_data.clone(), event.type_tag.clone());
-                    let struct_tag = if let TypeTag::Struct(struct_tag) = event.type_tag.clone() {
-                        *struct_tag
-                    } else {
-                        bail!("invalid struct tag: {:?}", event.type_tag)
-                    };
-                    let annotated_event_data = MoveValueAnnotator::new(statedb)
-                        .view_resource(&struct_tag, state.value.as_slice())
-                        .unwrap();
-                    MoveOSEvent::try_from(event, annotated_event_data, None, None, None)
-                })
-                .collect::<Vec<_>>()
-            {
-                result.push(ev.unwrap());
-            }
-        }
-
-        if !result.is_empty() {
-            Ok(Some(result))
-        } else {
-            Ok(None)
-        }
+        // for ev in events
+        let result = events
+            .into_iter()
+            // .enumerate()
+            .map(|event| {
+                let state = State::new(event.event_data.clone(), event.type_tag.clone());
+                let annotated_event_data = MoveValueAnnotator::new(statedb)
+                    .view_resource(&event_handle_type, state.value.as_slice())
+                    .unwrap();
+                Some(AnnotatedMoveOSEvent::new(
+                    event,
+                    annotated_event_data,
+                    None,
+                    None,
+                ))
+            })
+            .collect();
+        // {
+        //     result.push(Some(ev));
+        // }
+        Ok(result)
     }
 }
 
@@ -204,41 +203,33 @@ impl Handler<GetEventsMessage> for ExecutorActor {
         &mut self,
         msg: GetEventsMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Option<Vec<MoveOSEvent>>> {
+    ) -> Result<Vec<Option<AnnotatedMoveOSEvent>>> {
         let GetEventsMessage { filter } = msg;
         let event_store = self.moveos.event_store();
         let statedb = self.moveos.state();
         //TODO handle tx hash
-        let mut result: Vec<MoveOSEvent> = Vec::new();
+        let mut result: Vec<Option<AnnotatedMoveOSEvent>> = Vec::new();
         let events = event_store.get_events_with_filter(filter)?;
-        if Option::is_some(&events) {
-            for ev in events
-                .unwrap()
-                .into_iter()
-                .enumerate()
-                .map(|(_i, event)| {
-                    let state = State::new(event.event_data.clone(), event.type_tag.clone());
-                    let struct_tag = if let TypeTag::Struct(struct_tag) = event.type_tag.clone() {
-                        *struct_tag
-                    } else {
-                        bail!("invalid struct tag: {:?}", event.type_tag)
-                    };
-                    let annotated_event_data = MoveValueAnnotator::new(statedb)
-                        .view_resource(&struct_tag, state.value.as_slice())
-                        .unwrap();
-                    MoveOSEvent::try_from(event, annotated_event_data, None, None, None)
-                    // MoveOSEvent::try_from(event, None, None, None)
-                })
-                .collect::<Vec<_>>()
-            {
-                result.push(ev.unwrap());
-            }
+        for ev in events
+            .into_iter()
+            .enumerate()
+            .map(|(_i, event)| {
+                let state = State::new(event.event_data.clone(), event.type_tag.clone());
+                let struct_tag = parse_struct_tag(event.type_tag.clone()).unwrap();
+                let annotated_event_data = MoveValueAnnotator::new(statedb)
+                    .view_resource(&struct_tag, state.value.as_slice())
+                    .unwrap();
+                AnnotatedMoveOSEvent::new(
+                    event,
+                    annotated_event_data,
+                    None,
+                    None,
+                )
+            })
+            .collect::<Vec<_>>()
+        {
+            result.push(Some(ev));
         }
-
-        if !result.is_empty() {
-            Ok(Some(result))
-        } else {
-            Ok(None)
-        }
+        Ok(result)
     }
 }
