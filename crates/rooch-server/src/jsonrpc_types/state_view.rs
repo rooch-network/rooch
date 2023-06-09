@@ -76,13 +76,13 @@ impl From<TableTypeInfo> for TableTypeInfoView {
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
-pub struct TableChangeSetView {
+pub struct StateChangeSetView {
     pub new_tables: BTreeMap<ObjectID, TableTypeInfoView>,
     pub removed_tables: BTreeSet<ObjectID>,
-    pub changes: BTreeMap<ObjectID, TableChangeView>,
+    pub changes: BTreeMap<ObjectID, StateChangeView>,
 }
 
-impl From<StateChangeSet> for TableChangeSetView {
+impl From<StateChangeSet> for StateChangeSetView {
     fn from(table_change_set: StateChangeSet) -> Self {
         Self {
             new_tables: table_change_set
@@ -119,11 +119,11 @@ impl From<Op<State>> for OpView<StateView> {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct TableChangeView {
+pub struct StateChangeView {
     pub entries: BTreeMap<StrView<Vec<u8>>, OpView<StateView>>,
 }
 
-impl From<StateChange> for TableChangeView {
+impl From<StateChange> for StateChangeView {
     fn from(table_change: StateChange) -> Self {
         Self {
             entries: table_change
