@@ -383,28 +383,6 @@ impl From<EventView> for Event {
     }
 }
 
-// impl From<Vec<Event>> for Vec<EventView> {
-//     fn from(event: Event) -> Self {
-//         EventView {
-//             event_id: event.event_id.into(),
-//             type_tag: event.type_tag.into(),
-//             event_data: StrView(event.event_data),
-//             event_index: event.event_index,
-//         }
-//     }
-// }
-//
-// impl From<EventView> for Event {
-//     fn from(event: EventView) -> Self {
-//         Event {
-//             event_id: event.event_id.into(),
-//             type_tag: event.type_tag.into(),
-//             event_data: event.event_data.0,
-//             event_index: event.event_index,
-//         }
-//     }
-// }
-
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct StateView {
     pub value: StrView<Vec<u8>>,
