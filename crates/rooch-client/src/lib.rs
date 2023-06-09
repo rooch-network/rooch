@@ -17,6 +17,7 @@ use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction, H
 
 pub mod client_config;
 pub mod wallet_context;
+use rooch_server::jsonrpc_types::{AnnotatedEventView, StructTagView};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -148,5 +149,19 @@ impl Client {
         // currently, we just generate a random u64 for workaround
         let mut rng = rand::thread_rng();
         Ok(rng.gen())
+    }
+
+    pub async fn get_events_by_event_handle(
+        &self,
+        event_handle_type: StructTagView,
+        cursor: Option<u64>,
+        limit: Option<u64>,
+    ) -> Result<Vec<Option<AnnotatedEventView>>> {
+        let s = self
+            .rpc
+            .http
+            .get_events_by_event_handle(event_handle_type, cursor, limit)
+            .await?;
+        Ok(s)
     }
 }

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::{
-    AnnotatedFunctionReturnValueView, AnnotatedMoveStructView, AnnotatedMoveView,
+    AnnotatedEventView, AnnotatedFunctionReturnValueView, AnnotatedMoveStructView,
     AnnotatedObjectView, AnnotatedStateView, ExecuteTransactionResponseView, FunctionCallView,
     StateView, StrView, StructTagView, TransactionView,
 };
@@ -68,11 +68,11 @@ pub trait RoochAPI {
         event_handle_type: StructTagView,
         cursor: Option<u64>,
         limit: Option<u64>,
-    ) -> RpcResult<Vec<Option<AnnotatedMoveView>>>;
+    ) -> RpcResult<Vec<Option<AnnotatedEventView>>>;
 
     /// Get the events by event filter
     #[method(name = "rooch_getEvents")]
-    async fn get_events(&self, filter: EventFilter) -> RpcResult<Vec<Option<AnnotatedMoveView>>>;
+    async fn get_events(&self, filter: EventFilter) -> RpcResult<Vec<Option<AnnotatedEventView>>>;
 
     #[method(name = "rooch_getTransactionByHash")]
     async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<Option<TransactionView>>;

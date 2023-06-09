@@ -63,7 +63,7 @@ impl From<TypedTransaction> for TransactionView {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct AnnotatedMoveView {
+pub struct AnnotatedEventView {
     pub event: EventView,
     pub sender: String,
     pub tx_hash: Option<H256>,
@@ -72,9 +72,9 @@ pub struct AnnotatedMoveView {
     pub parsed_event_data: AnnotatedMoveStructView,
 }
 
-impl From<AnnotatedMoveOSEvent> for AnnotatedMoveView {
+impl From<AnnotatedMoveOSEvent> for AnnotatedEventView {
     fn from(event: AnnotatedMoveOSEvent) -> Self {
-        AnnotatedMoveView {
+        AnnotatedEventView {
             event: event.event.into(),
             sender: event.sender.to_string(),
             tx_hash: event.tx_hash,
@@ -85,8 +85,8 @@ impl From<AnnotatedMoveOSEvent> for AnnotatedMoveView {
     }
 }
 
-// impl From<AnnotatedMoveView> for AnnotatedMoveOSEvent {
-//     fn from(event: AnnotatedMoveView) -> Self {
+// impl From<AnnotatedEventView> for AnnotatedMoveOSEvent {
+//     fn from(event: AnnotatedEventView) -> Self {
 //         AnnotatedMoveOSEvent {
 //             event: event.into(),
 //             sender: AccountAddress::try_from(event.sender).unwrap(),

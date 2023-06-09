@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::commands::event::EventCommand;
 use commands::{
     account::Account, init::Init, move_cli::MoveCli, object::ObjectCommand,
     resource::ResourceCommand, server::Server, state::StateCommand, transaction::Transaction,
@@ -29,6 +30,7 @@ pub enum Command {
     Object(ObjectCommand),
     Resource(ResourceCommand),
     Transaction(Transaction),
+    Event(EventCommand),
 }
 
 pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
@@ -41,5 +43,6 @@ pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
         Command::Object(object) => object.execute_serialized().await,
         Command::Resource(resource) => resource.execute_serialized().await,
         Command::Transaction(transation) => transation.execute().await,
+        Command::Event(event) => event.execute().await,
     }
 }

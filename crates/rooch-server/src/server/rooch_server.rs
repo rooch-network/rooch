@@ -3,7 +3,7 @@
 
 use crate::api::RoochRpcModule;
 use crate::jsonrpc_types::{
-    AnnotatedFunctionReturnValueView, AnnotatedMoveStructView, AnnotatedMoveView,
+    AnnotatedEventView, AnnotatedFunctionReturnValueView, AnnotatedMoveStructView,
     AnnotatedStateView, ExecuteTransactionResponseView, FunctionCallView, StateView, StrView,
     StructTagView, TransactionView,
 };
@@ -112,7 +112,7 @@ impl RoochAPIServer for RoochServer {
         event_handle_type: StructTagView,
         cursor: Option<u64>,
         limit: Option<u64>,
-    ) -> RpcResult<Vec<Option<AnnotatedMoveView>>> {
+    ) -> RpcResult<Vec<Option<AnnotatedEventView>>> {
         Ok(self
             .rpc_service
             .get_events_by_event_handle(
@@ -122,23 +122,23 @@ impl RoochAPIServer for RoochServer {
             )
             .await?
             .into_iter()
-            .map(|event| event.map(AnnotatedMoveView::from))
+            .map(|event| event.map(AnnotatedEventView::from))
             .collect())
 
-        // let result: Vec<Option<AnnotatedMoveView>> = Vec::new();
+        // let result: Vec<Option<AnnotatedEventView>> = Vec::new();
         // Ok(result)
     }
 
-    async fn get_events(&self, filter: EventFilter) -> RpcResult<Vec<Option<AnnotatedMoveView>>> {
+    async fn get_events(&self, filter: EventFilter) -> RpcResult<Vec<Option<AnnotatedEventView>>> {
         Ok(self
             .rpc_service
             .get_events(filter)
             .await?
             .into_iter()
-            .map(|event| event.map(AnnotatedMoveView::from))
+            .map(|event| event.map(AnnotatedEventView::from))
             .collect())
 
-        // let result: Vec<Option<AnnotatedMoveView>> = Vec::new();
+        // let result: Vec<Option<AnnotatedEventView>> = Vec::new();
         // Ok(result)
     }
 

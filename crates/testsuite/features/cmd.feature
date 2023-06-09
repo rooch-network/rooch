@@ -27,7 +27,7 @@ Feature: Rooch CLI integration tests
       # event example
       Then cmd: "move publish -p ../../examples/event_example --sender-account {default} --named-addresses rooch_examples={default}"
       Then cmd: "move run --function {default}::event_test::emit_event --sender-account {default} --args 10u64"
-#      Then cmd: "move view --function 0x1::counter::value --type_args "
+      Then cmd: "event get-events-by-event-handle --event_handle_type {default}::event_test::WithdrawEvent --cursor 0 --limit 1"
 
       # kv store example
       Then cmd: "move publish -p ../../examples/kv_store --sender-account {default} --named-addresses rooch_examples={default}"
