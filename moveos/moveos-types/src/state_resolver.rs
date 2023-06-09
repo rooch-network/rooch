@@ -11,10 +11,10 @@ use anyhow::{ensure, Result};
 use move_core_types::{
     account_address::AccountAddress,
     identifier::IdentStr,
-    language_storage::{ModuleId, StructTag},
+    language_storage::{ModuleId, StructTag, TypeTag},
     resolver::{ModuleResolver, MoveResolver, ResourceResolver},
 };
-use move_resource_viewer::MoveValueAnnotator;
+use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
 
 pub const GLOBAL_OBJECT_STORAGE_HANDLE: ObjectID = ObjectID::ZERO;
 
@@ -150,6 +150,16 @@ pub trait AnnotatedStateReader: StateReader + MoveResolver {
             .and_then(|state| state)
             .map(|state| state.into_annotated_state(&annotator))
             .transpose()
+    }
+
+    fn view_value(&self, ty_tag: &TypeTag, blob: &[u8]) -> Result<AnnotatedMoveValue> {
+        let annotator = MoveValueAnnotator::new(self);
+        annotator.view_value(ty_tag, blob)
+    }
+
+    fn view_resource(&self, tag: &StructTag, blob: &[u8]) -> Result<AnnotatedMoveStruct> {
+        let annotator = MoveValueAnnotator::new(self);
+        annotator.view_resource(tag, blob)
     }
 }
 
