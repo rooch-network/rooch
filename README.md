@@ -29,7 +29,11 @@
     ```bash
     rooch move new my_move_project
     ```
-3. Build the Move project
+3. Init Rooch config
+    ```bash
+    rooch init
+    ```
+4. Build the Move project
     ```bash
     cd my_move_project && rooch move build
     ```
