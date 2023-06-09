@@ -2,14 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
+    event::Event,
     h256::{self, H256},
     move_types::FunctionId,
+    table::TableChangeSet,
     tx_context::TxContext,
 };
 use anyhow::Result;
 use move_core_types::{
     account_address::AccountAddress,
+    effects::ChangeSet,
     language_storage::{ModuleId, TypeTag},
+    vm_status::KeptVMStatus,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
@@ -133,4 +137,15 @@ impl MoveOSTransaction {
 pub struct VerifiedMoveOSTransaction {
     pub ctx: TxContext,
     pub action: VerifiedMoveAction,
+}
+
+/// TransactionOutput is the execution result of a MoveOS transaction
+//TODO make TransactionOutput serializable
+#[derive(Debug, Clone)]
+pub struct TransactionOutput {
+    pub status: KeptVMStatus,
+    pub changeset: ChangeSet,
+    pub table_changeset: TableChangeSet,
+    pub events: Vec<Event>,
+    pub gas_used: u64,
 }

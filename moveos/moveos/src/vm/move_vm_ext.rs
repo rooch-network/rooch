@@ -1,10 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{borrow::Borrow, sync::Arc};
-
-use crate::moveos::TransactionOutput;
-
 use super::{tx_argument_resolver::TxArgumentResolver, MoveResolverExt};
 use anyhow::ensure;
 use move_binary_format::{
@@ -31,17 +27,17 @@ use move_vm_types::{
     gas::GasMeter,
     loaded_data::runtime_types::{CachedStructIndex, StructType, Type},
 };
-use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
-use moveos_stdlib::natives::{self, GasParameters};
+use moveos_stdlib::natives::{self, moveos_stdlib::raw_table::NativeTableContext, GasParameters};
 use moveos_types::{
     event::{Event, EventID},
     function_return_value::FunctionReturnValue,
     move_types::FunctionId,
     object::ObjectID,
     storage_context::StorageContext,
-    transaction::{FunctionCall, MoveAction, VerifiedMoveAction},
+    transaction::{FunctionCall, MoveAction, TransactionOutput, VerifiedMoveAction},
 };
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
+use std::{borrow::Borrow, sync::Arc};
 
 pub struct MoveVmExt {
     inner: MoveVM,

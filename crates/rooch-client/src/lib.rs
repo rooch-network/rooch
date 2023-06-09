@@ -10,7 +10,7 @@ use rooch_server::{
     api::rooch_api::RoochAPIClient,
     jsonrpc_types::{
         AnnotatedFunctionReturnValueView, AnnotatedMoveStructView, AnnotatedObjectView,
-        AnnotatedStateView, ExecuteTransactionResponse, StateView, TransactionView,
+        AnnotatedStateView, ExecuteTransactionResponseView, StateView, TransactionView,
     },
 };
 use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction, H256};
@@ -83,7 +83,7 @@ pub struct Client {
 }
 
 impl Client {
-    pub async fn execute_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponse> {
+    pub async fn execute_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView> {
         let tx_payload = bcs::to_bytes(&tx)?;
         self.rpc
             .http

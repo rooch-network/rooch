@@ -8,7 +8,7 @@ use move_binary_format::file_format::CompiledModule;
 use move_bytecode_utils::dependency_graph::DependencyGraph;
 use move_bytecode_utils::Modules;
 use move_cli::Move;
-use rooch_server::jsonrpc_types::ExecuteTransactionResponse;
+use rooch_server::jsonrpc_types::ExecuteTransactionResponseView;
 
 use crate::types::{CommandAction, TransactionOptions, WalletContextOptions};
 use moveos::vm::dependency_order::sort_by_dependency_order;
@@ -51,8 +51,8 @@ impl Publish {
 }
 
 #[async_trait]
-impl CommandAction<ExecuteTransactionResponse> for Publish {
-    async fn execute(self) -> RoochResult<ExecuteTransactionResponse> {
+impl CommandAction<ExecuteTransactionResponseView> for Publish {
+    async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
         let context = self.context_options.build().await?;
 
         let package_path = self.move_args.package_path;

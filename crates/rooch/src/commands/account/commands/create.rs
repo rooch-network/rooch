@@ -11,14 +11,14 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
     parser::parse_type_tag,
 };
-use moveos::moveos::TransactionOutput;
+use moveos_types::transaction::TransactionOutput;
 use moveos_types::{
     move_types::FunctionId,
     transaction::{MoveAction, MoveOSTransaction},
 };
 use rooch_client::wallet_context::WalletContext;
 use rooch_key::keystore::{AccountKeystore, Keystore};
-use rooch_server::jsonrpc_types::ExecuteTransactionResponse;
+use rooch_server::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_types::{
     address::RoochAddress,
     crypto::BuiltinScheme::Ed25519,
@@ -48,7 +48,7 @@ pub struct CreateCommand {
 }
 
 impl CreateCommand {
-    pub async fn execute(self) -> RoochResult<ExecuteTransactionResponse> {
+    pub async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
         let mut context = self.context_options.build().await?;
         let (new_address, phrase, scheme) = context
             .config

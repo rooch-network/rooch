@@ -7,7 +7,7 @@ use clap::Parser;
 use move_core_types::value::MoveValue;
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
 use rooch_server::jsonrpc_types::{
-    ExecuteTransactionResponse, TransactionArgumentView, TypeTagView,
+    ExecuteTransactionResponseView, TransactionArgumentView, TypeTagView,
 };
 use rooch_types::{
     address::RoochAddress,
@@ -55,8 +55,8 @@ pub struct RunFunction {
 }
 
 #[async_trait]
-impl CommandAction<ExecuteTransactionResponse> for RunFunction {
-    async fn execute(self) -> RoochResult<ExecuteTransactionResponse> {
+impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
+    async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
         let args = self
             .args
             .iter()

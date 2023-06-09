@@ -299,6 +299,7 @@ impl From<MoveActionView> for MoveAction {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
 pub enum MoveActionTypeView {
     ScriptCall,
     FunctionCall,

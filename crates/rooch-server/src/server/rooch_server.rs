@@ -4,7 +4,7 @@
 use crate::api::RoochRpcModule;
 use crate::jsonrpc_types::{
     AnnotatedFunctionReturnValueView, AnnotatedMoveStructView, AnnotatedStateView, EventView,
-    ExecuteTransactionResponse, FunctionCallView, StateView, StrView, StructTagView,
+    ExecuteTransactionResponseView, FunctionCallView, StateView, StrView, StructTagView,
     TransactionView,
 };
 use crate::service::RpcService;
@@ -44,12 +44,13 @@ impl RoochAPIServer for RoochServer {
     async fn execute_raw_transaction(
         &self,
         payload: StrView<Vec<u8>>,
-    ) -> RpcResult<ExecuteTransactionResponse> {
+    ) -> RpcResult<ExecuteTransactionResponseView> {
         let tx = bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;
         Ok(self
             .rpc_service
             .execute_tx(TypedTransaction::Rooch(tx))
-            .await?)
+            .await?
+            .into())
     }
 
     async fn execute_view_function(

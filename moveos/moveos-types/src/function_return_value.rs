@@ -5,7 +5,7 @@ use move_core_types::language_storage::TypeTag;
 use move_resource_viewer::AnnotatedMoveValue;
 use serde::{Deserialize, Serialize};
 
-/// The `view` function return value in MoveOS
+/// The function return value in MoveOS
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FunctionReturnValue {
     pub type_tag: TypeTag,
