@@ -28,7 +28,7 @@ use move_vm_types::{
 };
 use moveos_types::{
     object::ObjectID,
-    state::{State, StateChange, StateChangeSet, TableTypeInfo},
+    state::{State, StateChangeSet, TableChange, TableTypeInfo},
     state_resolver::StateResolver,
 };
 use smallvec::smallvec;
@@ -248,7 +248,7 @@ impl<'a> NativeTableContext<'a> {
                 }
             }
             if !entries.is_empty() {
-                changes.insert(handle, StateChange { entries });
+                changes.insert(handle, TableChange { entries });
             }
         }
         Ok(StateChangeSet {

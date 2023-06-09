@@ -5,7 +5,7 @@ use super::{AnnotatedMoveValueView, StrView, TypeTagView};
 use move_core_types::effects::Op;
 use moveos_types::{
     object::ObjectID,
-    state::{AnnotatedState, State, StateChange, StateChangeSet, TableTypeInfo},
+    state::{AnnotatedState, State, StateChangeSet, TableChange, TableTypeInfo},
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -79,7 +79,7 @@ impl From<TableTypeInfo> for TableTypeInfoView {
 pub struct StateChangeSetView {
     pub new_tables: BTreeMap<ObjectID, TableTypeInfoView>,
     pub removed_tables: BTreeSet<ObjectID>,
-    pub changes: BTreeMap<ObjectID, StateChangeView>,
+    pub changes: BTreeMap<ObjectID, TableChangeView>,
 }
 
 impl From<StateChangeSet> for StateChangeSetView {
@@ -119,12 +119,12 @@ impl From<Op<State>> for OpView<StateView> {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct StateChangeView {
+pub struct TableChangeView {
     pub entries: BTreeMap<StrView<Vec<u8>>, OpView<StateView>>,
 }
 
-impl From<StateChange> for StateChangeView {
-    fn from(table_change: StateChange) -> Self {
+impl From<TableChange> for TableChangeView {
+    fn from(table_change: TableChange) -> Self {
         Self {
             entries: table_change
                 .entries

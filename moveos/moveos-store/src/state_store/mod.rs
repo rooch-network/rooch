@@ -12,7 +12,7 @@ use move_core_types::{
 use moveos_types::{
     h256::H256,
     move_module::MoveModule,
-    state::{MoveState, State},
+    state::{MoveStructState, State},
 };
 use moveos_types::{
     object::{AccountStorage, Object, ObjectID, RawObject, TableInfo},
@@ -128,7 +128,7 @@ impl StateDB {
         self.global_table.get(id.to_bytes())
     }
 
-    fn get_as_object<T: MoveState>(&self, id: ObjectID) -> Result<Option<Object<T>>> {
+    fn get_as_object<T: MoveStructState>(&self, id: ObjectID) -> Result<Option<Object<T>>> {
         self.get(id)?
             .map(|state| state.as_object::<T>())
             .transpose()

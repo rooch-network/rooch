@@ -17,7 +17,7 @@ use moveos_types::transaction::MoveAction;
 use moveos_types::{
     event_filter::MoveOSEvent,
     move_string::{MoveAsciiString, MoveString},
-    state::MoveState,
+    state::MoveStructState,
 };
 use moveos_types::{
     move_types::FunctionId,

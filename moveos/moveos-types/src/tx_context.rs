@@ -5,7 +5,7 @@
 
 use crate::h256::{self, H256};
 use crate::object::ObjectID;
-use crate::state::MoveState;
+use crate::state::MoveStructState;
 use move_core_types::value::{MoveStructLayout, MoveTypeLayout};
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, move_resource::MoveStructType,
@@ -67,7 +67,7 @@ impl MoveStructType for TxContext {
     const STRUCT_NAME: &'static IdentStr = TX_CONTEXT_STRUCT_NAME;
 }
 
-impl MoveState for TxContext {
+impl MoveStructState for TxContext {
     /// Return the layout of the TxContext in Move
     /// TODO: write a macro to auto generate Layout for Rust type.
     fn move_layout() -> MoveStructLayout {
