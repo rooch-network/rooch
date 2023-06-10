@@ -217,7 +217,7 @@ impl TypeInfo {
     }
 }
 
-pub fn parse_struct_tag(type_tag: TypeTag) -> Result<StructTag> {
+pub fn as_struct_tag(type_tag: TypeTag) -> Result<StructTag> {
     if let TypeTag::Struct(struct_tag) = type_tag {
         Ok(*struct_tag)
     } else {

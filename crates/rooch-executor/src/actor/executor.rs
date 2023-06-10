@@ -15,7 +15,7 @@ use moveos_store::state_store::state_view::{AnnotatedStateReader, StateReader};
 use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event::EventHandle;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
-use moveos_types::move_types::parse_struct_tag;
+use moveos_types::move_types::as_struct_tag;
 use moveos_types::object::AnnotatedObject;
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::transaction::{AuthenticatableTransaction, VerifiedMoveOSTransaction};
@@ -215,7 +215,7 @@ impl Handler<GetEventsMessage> for ExecutorActor {
             .enumerate()
             .map(|(_i, event)| {
                 let state = State::new(event.event_data.clone(), event.type_tag.clone());
-                let struct_tag = parse_struct_tag(event.type_tag.clone()).unwrap();
+                let struct_tag = as_struct_tag(event.type_tag.clone()).unwrap();
                 let annotated_event_data = MoveValueAnnotator::new(statedb)
                     .view_resource(&struct_tag, state.value.as_slice())
                     .unwrap();

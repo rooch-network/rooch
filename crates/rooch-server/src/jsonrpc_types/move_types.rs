@@ -330,32 +330,8 @@ impl FromStr for StrView<ModuleId> {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct EventIDView {
-    pub event_handle_id: ObjectID,
-    pub event_seq: u64,
-}
-
-impl From<EventID> for EventIDView {
-    fn from(event_id: EventID) -> Self {
-        EventIDView {
-            event_handle_id: event_id.event_handle_id,
-            event_seq: event_id.event_seq,
-        }
-    }
-}
-
-impl From<EventIDView> for EventID {
-    fn from(event_id: EventIDView) -> Self {
-        EventID {
-            event_handle_id: event_id.event_handle_id,
-            event_seq: event_id.event_seq,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct EventView {
-    pub event_id: EventIDView,
+    pub event_id: EventID,
     pub type_tag: TypeTagView,
     pub event_data: StrView<Vec<u8>>,
     pub event_index: u64,
@@ -364,7 +340,7 @@ pub struct EventView {
 impl From<Event> for EventView {
     fn from(event: Event) -> Self {
         EventView {
-            event_id: event.event_id.into(),
+            event_id: event.event_id,
             type_tag: event.type_tag.into(),
             event_data: StrView(event.event_data),
             event_index: event.event_index,
@@ -375,7 +351,7 @@ impl From<Event> for EventView {
 impl From<EventView> for Event {
     fn from(event: EventView) -> Self {
         Event {
-            event_id: event.event_id.into(),
+            event_id: event.event_id,
             type_tag: event.type_tag.into(),
             event_data: event.event_data.0,
             event_index: event.event_index,

@@ -59,6 +59,24 @@ impl TryFrom<String> for EventID {
     }
 }
 
+impl FromStr for EventID {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        EventID::try_from(s.to_string())
+    }
+}
+
+impl std::fmt::Display for EventID {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "EventID[event handle id: {:?}, event seq: {}]",
+            self.event_handle_id, self.event_seq,
+        )
+    }
+}
+
 impl EventID {
     /// Construct a new EventID.
     pub fn new(event_handle_id: ObjectID, event_seq: u64) -> Self {
