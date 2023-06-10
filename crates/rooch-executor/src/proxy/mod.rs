@@ -5,15 +5,14 @@ use crate::actor::{
     executor::ExecutorActor,
     messages::{
         AnnotatedStatesMessage, ExecuteViewFunctionMessage, GetEventsByEventHandleMessage,
-        GetEventsMessage, GetResourceMessage, ObjectMessage, StatesMessage,
-        ValidateTransactionMessage,
+        GetEventsMessage, StatesMessage, ValidateTransactionMessage,
     },
 };
 use anyhow::Result;
 use coerce::actor::ActorRef;
-use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
-use move_resource_viewer::AnnotatedMoveStruct;
+use move_core_types::language_storage::StructTag;
 use moveos_types::transaction::TransactionOutput;
+use moveos_types::transaction::{AuthenticatableTransaction, FunctionCall};
 use moveos_types::{
     access_path::AccessPath, function_return_value::AnnotatedFunctionReturnValue,
     transaction::VerifiedMoveOSTransaction,
@@ -22,10 +21,6 @@ use moveos_types::{
     event::AnnotatedMoveOSEvent,
     event_filter::EventFilter,
     state::{AnnotatedState, State},
-};
-use moveos_types::{
-    object::{AnnotatedObject, ObjectID},
-    transaction::{AuthenticatableTransaction, FunctionCall},
 };
 use rooch_types::transaction::TransactionExecutionInfo;
 
@@ -63,23 +58,6 @@ impl ExecutorProxy {
         call: FunctionCall,
     ) -> Result<Vec<AnnotatedFunctionReturnValue>> {
         self.actor.send(ExecuteViewFunctionMessage { call }).await?
-    }
-
-    pub async fn get_resource(
-        &self,
-        address: AccountAddress,
-        resource_type: StructTag,
-    ) -> Result<Option<AnnotatedMoveStruct>> {
-        self.actor
-            .send(GetResourceMessage {
-                address,
-                resource_type,
-            })
-            .await?
-    }
-
-    pub async fn get_object(&self, object_id: ObjectID) -> Result<Option<AnnotatedObject>> {
-        self.actor.send(ObjectMessage { object_id }).await?
     }
 
     pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<State>>> {

@@ -3,22 +3,19 @@
 
 use crate::api::RoochRpcModule;
 use crate::jsonrpc_types::{
-    AnnotatedEventView, AnnotatedFunctionReturnValueView, AnnotatedMoveStructView,
-    AnnotatedStateView, ExecuteTransactionResponseView, FunctionCallView, StateView, StrView,
-    StructTagView, TransactionView,
+    AnnotatedEventView, AnnotatedFunctionReturnValueView, AnnotatedStateView,
+    ExecuteTransactionResponseView, FunctionCallView, StateView, StrView, StructTagView,
+    TransactionView,
 };
 use crate::service::RpcService;
-use crate::{
-    api::rooch_api::RoochAPIServer, api::MAX_RESULT_LIMIT, jsonrpc_types::AnnotatedObjectView,
-};
+use crate::{api::rooch_api::RoochAPIServer, api::MAX_RESULT_LIMIT};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     RpcModule,
 };
-use move_core_types::account_address::AccountAddress;
 use moveos_types::access_path::AccessPath;
 use moveos_types::event_filter::EventFilter;
-use moveos_types::{object::ObjectID, transaction::AuthenticatableTransaction};
+use moveos_types::transaction::AuthenticatableTransaction;
 use rooch_types::transaction::TypedTransaction;
 use rooch_types::{transaction::rooch::RoochTransaction, H256};
 
@@ -66,22 +63,6 @@ impl RoochAPIServer for RoochServer {
             .into_iter()
             .map(AnnotatedFunctionReturnValueView::from)
             .collect())
-    }
-
-    async fn get_resource(
-        &self,
-        address: AccountAddress,
-        resource_type: StructTagView,
-    ) -> RpcResult<Option<AnnotatedMoveStructView>> {
-        Ok(self
-            .rpc_service
-            .get_resource(address, resource_type.into())
-            .await?
-            .map(Into::into))
-    }
-
-    async fn get_object(&self, object_id: ObjectID) -> RpcResult<Option<AnnotatedObjectView>> {
-        Ok(self.rpc_service.object(object_id).await?.map(Into::into))
     }
 
     async fn get_states(&self, access_path: AccessPath) -> RpcResult<Vec<Option<StateView>>> {

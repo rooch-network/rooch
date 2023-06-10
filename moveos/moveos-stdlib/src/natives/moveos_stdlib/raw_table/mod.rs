@@ -26,8 +26,10 @@ use move_vm_types::{
     pop_arg,
     values::{GlobalValue, Struct, StructRef, Value},
 };
-use moveos_types::table::{
-    TableChange, TableChangeSet, TableHandle, TableResolver, TableTypeInfo, TableValue,
+use moveos_types::{
+    object::ObjectID,
+    state::{State, StateChangeSet, TableChange, TableTypeInfo},
+    state_resolver::StateResolver,
 };
 use smallvec::smallvec;
 use std::{
@@ -41,7 +43,7 @@ use std::{
 /// extension.
 #[derive(Tid)]
 pub struct NativeTableContext<'a> {
-    resolver: &'a dyn TableResolver,
+    resolver: &'a dyn StateResolver,
     //tx_hash: [u8; 32],
     table_data: RefCell<TableData>,
 }
@@ -65,9 +67,9 @@ const _NOT_EMPTY: u64 = (102 << 8) + _ECATEGORY_INVALID_STATE as u64;
 /// of the overall context so we can mutate while still accessing the overall context.
 #[derive(Default)]
 struct TableData {
-    new_tables: BTreeMap<TableHandle, TableTypeInfo>,
-    removed_tables: BTreeSet<TableHandle>,
-    tables: BTreeMap<TableHandle, Table>,
+    new_tables: BTreeMap<ObjectID, TableTypeInfo>,
+    removed_tables: BTreeSet<ObjectID>,
+    tables: BTreeMap<ObjectID, Table>,
 }
 
 /// A structure representing runtime table value.
@@ -184,7 +186,7 @@ impl TableRuntimeValue {
 
 /// A structure representing a single table.
 struct Table {
-    handle: TableHandle,
+    handle: ObjectID,
     key_layout: MoveTypeLayout,
     content: BTreeMap<Vec<u8>, TableRuntimeValue>,
 }
@@ -195,7 +197,7 @@ struct Table {
 impl<'a> NativeTableContext<'a> {
     /// Create a new instance of a native table context. This must be passed in via an
     /// extension into VM session functions.
-    pub fn new(resolver: &'a dyn TableResolver) -> Self {
+    pub fn new(resolver: &'a dyn StateResolver) -> Self {
         Self {
             resolver,
             table_data: Default::default(),
@@ -203,7 +205,7 @@ impl<'a> NativeTableContext<'a> {
     }
 
     /// Computes the change set from a NativeTableContext.
-    pub fn into_change_set(self) -> PartialVMResult<TableChangeSet> {
+    pub fn into_change_set(self) -> PartialVMResult<StateChangeSet> {
         let NativeTableContext { table_data, .. } = self;
         let TableData {
             new_tables,
@@ -224,7 +226,7 @@ impl<'a> NativeTableContext<'a> {
                         let bytes = unbox_and_serialize(&value_layout, box_val)?;
                         entries.insert(
                             key,
-                            Op::New(TableValue {
+                            Op::New(State {
                                 value_type,
                                 value: bytes,
                             }),
@@ -234,7 +236,7 @@ impl<'a> NativeTableContext<'a> {
                         let bytes = unbox_and_serialize(&value_layout, val)?;
                         entries.insert(
                             key,
-                            Op::Modify(TableValue {
+                            Op::Modify(State {
                                 value_type,
                                 value: bytes,
                             }),
@@ -249,7 +251,7 @@ impl<'a> NativeTableContext<'a> {
                 changes.insert(handle, TableChange { entries });
             }
         }
-        Ok(TableChangeSet {
+        Ok(StateChangeSet {
             new_tables,
             removed_tables,
             changes,
@@ -263,7 +265,7 @@ impl TableData {
     fn get_or_create_table(
         &mut self,
         context: &NativeContext,
-        handle: TableHandle,
+        handle: ObjectID,
         key_ty: &Type,
     ) -> PartialVMResult<&mut Table> {
         Ok(match self.tables.entry(handle) {
@@ -292,7 +294,7 @@ impl Table {
             Entry::Vacant(entry) => {
                 let (tv, loaded) = match table_context
                     .resolver
-                    .resolve_table_entry(&self.handle, entry.key())
+                    .resolve_state(&self.handle, entry.key())
                     .map_err(|err| {
                         partial_extension_error(format!("remote table resolver failure: {}", err))
                     })? {
@@ -680,8 +682,8 @@ impl GasParameters {
 // Helpers
 
 // The handle type in Move is `&ObjectID`. This function extracts the address from `ObjectID`.
-fn get_table_handle(table: StructRef) -> PartialVMResult<TableHandle> {
-    Ok(TableHandle(helpers::get_object_id(table)?))
+fn get_table_handle(table: StructRef) -> PartialVMResult<ObjectID> {
+    helpers::get_object_id(table)
 }
 
 fn serialize(layout: &MoveTypeLayout, val: &Value) -> PartialVMResult<Vec<u8>> {

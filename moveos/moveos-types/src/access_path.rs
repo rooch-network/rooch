@@ -1,7 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{move_string::MoveString, object::ObjectID};
+use crate::{
+    move_string::MoveString,
+    object::{NamedTableID, ObjectID},
+    state_resolver::{self, module_name_to_key, resource_tag_to_key},
+};
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::StructTag,
 };
@@ -209,6 +213,44 @@ impl AccessPath {
 
     pub fn table(table_handle: ObjectID, keys: Vec<Vec<u8>>) -> Self {
         AccessPath(Path::Table { table_handle, keys })
+    }
+
+    /// Convert AccessPath to TableQuery, return the table handle and keys
+    /// All other AccessPath is a shortcut for TableQuery
+    pub fn into_table_query(self) -> (ObjectID, Vec<Vec<u8>>) {
+        match self.0 {
+            Path::Table { table_handle, keys } => (table_handle, keys),
+            Path::Object { object_ids } => {
+                let table_handle = state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE;
+                let keys = object_ids
+                    .iter()
+                    .map(|object_id| object_id.to_bytes())
+                    .collect();
+                (table_handle, keys)
+            }
+            Path::Module {
+                account,
+                module_names,
+            } => {
+                let table_handle = NamedTableID::Module(account).to_object_id();
+                let keys = module_names
+                    .into_iter()
+                    .map(|name| module_name_to_key(&name))
+                    .collect();
+                (table_handle, keys)
+            }
+            Path::Resource {
+                account,
+                resource_types,
+            } => {
+                let resource_table_id = NamedTableID::Resource(account).to_object_id();
+                let keys = resource_types
+                    .into_iter()
+                    .map(|tag| resource_tag_to_key(&tag))
+                    .collect();
+                (resource_table_id, keys)
+            }
+        }
     }
 }
 

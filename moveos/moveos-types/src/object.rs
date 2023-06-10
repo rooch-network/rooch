@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::{
     h256,
-    state::{MoveState, State},
+    state::{MoveStructState, State},
 };
 /// The Move Object is from Sui Move, and we try to mix the Global storage model and Object model in MoveOS.
 use anyhow::{bail, ensure, Result};
@@ -111,7 +111,7 @@ impl MoveStructType for ObjectID {
     const STRUCT_NAME: &'static IdentStr = ident_str!("ObjectID");
 }
 
-impl MoveState for ObjectID {
+impl MoveStructState for ObjectID {
     fn move_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![MoveTypeLayout::Address])
     }
@@ -231,7 +231,7 @@ impl MoveStructType for AccountStorage {
     }
 }
 
-impl MoveState for AccountStorage {
+impl MoveStructState for AccountStorage {
     fn move_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![
             MoveTypeLayout::Struct(ObjectID::move_layout()),
@@ -262,7 +262,7 @@ impl MoveStructType for TableInfo {
     }
 }
 
-impl MoveState for TableInfo {
+impl MoveStructState for TableInfo {
     fn move_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![MoveTypeLayout::Address])
     }
@@ -287,7 +287,7 @@ impl<T> Object<T> {
 
 impl<T> Object<T>
 where
-    T: MoveState,
+    T: MoveStructState,
 {
     pub fn to_bytes(&self) -> Vec<u8> {
         bcs::to_bytes(self).unwrap()
@@ -307,7 +307,7 @@ where
 
 impl<T> From<Object<T>> for RawObject
 where
-    T: MoveState,
+    T: MoveStructState,
 {
     fn from(object: Object<T>) -> Self {
         object.to_raw()
@@ -352,9 +352,9 @@ where
     }
 }
 
-impl<T> MoveState for Object<T>
+impl<T> MoveStructState for Object<T>
 where
-    T: MoveState,
+    T: MoveStructState,
 {
     /// Return the layout of the Object in Move
     fn move_layout() -> MoveStructLayout {
@@ -479,7 +479,7 @@ mod tests {
         const STRUCT_NAME: &'static IdentStr = ident_str!("TestStruct");
     }
 
-    impl MoveState for TestStruct {
+    impl MoveStructState for TestStruct {
         fn move_layout() -> MoveStructLayout {
             MoveStructLayout::new(vec![MoveTypeLayout::U8])
         }

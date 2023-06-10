@@ -3,10 +3,11 @@
 
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
-    object::{self, AnnotatedObject, Object, RawObject},
+    object::{self, AnnotatedObject, Object, ObjectID, RawObject},
 };
 use anyhow::{bail, ensure, Result};
 use move_core_types::{
+    effects::Op,
     language_storage::{StructTag, TypeTag},
     move_resource::MoveStructType,
     resolver::MoveResolver,
@@ -14,6 +15,7 @@ use move_core_types::{
 };
 use move_resource_viewer::{AnnotatedMoveValue, MoveValueAnnotator};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::collections::{BTreeMap, BTreeSet};
 
 /// `State` is represent state in MoveOS statedb, it can be a Move module or a Move Object or a Move resource or a Table value
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
@@ -26,10 +28,26 @@ pub struct State {
 
 /// Move State is a trait that is used to represent the state of a Move Resource in Rust
 /// It is like the `MoveResource` in move_core_types
-pub trait MoveState: MoveStructType + DeserializeOwned + Serialize {
+pub trait MoveStructState: MoveStructType + DeserializeOwned + Serialize {
     fn move_layout() -> MoveStructLayout;
     fn type_match(type_tag: &StructTag) -> bool {
         type_tag == &Self::struct_tag()
+    }
+    fn to_bytes(&self) -> Vec<u8> {
+        bcs::to_bytes(self).expect("Serialize the MoveStructState should success")
+    }
+    fn into_state(self) -> State {
+        let value = self.to_bytes();
+        State::new(value, TypeTag::Struct(Box::new(Self::struct_tag())))
+    }
+}
+
+impl<T> From<T> for State
+where
+    T: MoveStructState,
+{
+    fn from(state: T) -> Self {
+        state.into_state()
     }
 }
 
@@ -87,7 +105,7 @@ impl State {
 
     pub fn as_object<T>(&self) -> Result<Object<T>>
     where
-        T: MoveState,
+        T: MoveStructState,
     {
         self.as_move_state::<Object<T>>()
     }
@@ -101,7 +119,7 @@ impl State {
 
     pub fn as_move_state<T>(&self) -> Result<T>
     where
-        T: MoveState,
+        T: MoveStructState,
     {
         let val_type = self.value_type();
         match val_type {
@@ -126,17 +144,6 @@ impl State {
     ) -> Result<AnnotatedState> {
         let move_value = annotator.view_value(&self.value_type, &self.value)?;
         Ok(AnnotatedState::new(self, move_value))
-    }
-}
-
-impl<T> From<T> for State
-where
-    T: MoveState,
-{
-    fn from(val: T) -> Self {
-        let val_type = T::struct_tag();
-        let val = bcs::to_bytes(&val).expect("Serialize MoveState to bcs should success");
-        Self::new(val, TypeTag::Struct(Box::new(val_type)))
     }
 }
 
@@ -165,4 +172,36 @@ impl AnnotatedState {
             _ => bail!("Expect MoveStruct but found {:?}", self.move_value),
         }
     }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct TableTypeInfo {
+    pub key_type: TypeTag,
+}
+
+impl TableTypeInfo {
+    pub fn new(key_type: TypeTag) -> Self {
+        Self { key_type }
+    }
+}
+
+impl std::fmt::Display for TableTypeInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Table<{}>", self.key_type)
+    }
+}
+
+/// Global State change set.
+#[derive(Default, Clone, Debug)]
+pub struct StateChangeSet {
+    pub new_tables: BTreeMap<ObjectID, TableTypeInfo>,
+    pub removed_tables: BTreeSet<ObjectID>,
+    pub changes: BTreeMap<ObjectID, TableChange>,
+}
+
+/// A change of a single table.
+#[derive(Default, Clone, Debug)]
+pub struct TableChange {
+    //TODO should we keep the key's type here?
+    pub entries: BTreeMap<Vec<u8>, Op<State>>,
 }

@@ -1,6 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::str::FromStr;
+
+use moveos_types::{move_string::MoveString, state::TableChange};
+
 use super::*;
 use crate::MoveOSDB;
 
@@ -8,26 +12,27 @@ use crate::MoveOSDB;
 fn test_statedb() {
     let db = MoveOSDB::new_with_memory_store();
 
-    let mut change_set = ChangeSet::new();
-    let struct_tag: StructTag = "0x1::account::Account".parse().unwrap();
-    for i in 1..10 {
-        change_set
-            .add_resource_op(
-                AccountAddress::from_hex_literal(format!("0x{}", i).as_str()).unwrap(),
-                struct_tag.clone(),
-                Op::New(vec![i]),
-            )
-            .unwrap();
-    }
-    let table_change_set = TableChangeSet::default();
+    let change_set = ChangeSet::new();
+
+    let mut table_change_set = StateChangeSet::default();
+    let table_handle = ObjectID::ONE;
+    let mut table_change = TableChange::default();
+    let key = MoveString::from_str("test_key").unwrap();
+    let value = MoveString::from_str("test_value").unwrap();
+
+    table_change
+        .entries
+        .insert(key.to_bytes(), Op::New(value.clone().into()));
+
+    table_change_set.changes.insert(table_handle, table_change);
     db.state_store
         .apply_change_set(change_set, table_change_set)
         .unwrap();
-    let addr = AccountAddress::from_hex_literal("0x1").unwrap();
-    let resource = db
+
+    let state = db
         .get_state_store()
-        .get_resource(&addr, &struct_tag)
+        .resolve_state(&table_handle, &key.to_bytes())
         .unwrap();
-    assert!(resource.is_some());
-    assert_eq!(resource.unwrap(), vec![1]);
+    assert!(state.is_some());
+    assert_eq!(state.unwrap(), value.into());
 }

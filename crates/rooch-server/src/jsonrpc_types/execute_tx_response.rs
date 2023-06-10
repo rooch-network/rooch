@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{ModuleIdView, StrView, TableChangeSetView};
+use super::{ModuleIdView, StateChangeSetView, StrView};
 use crate::jsonrpc_types::EventView;
 use move_core_types::vm_status::{AbortLocation, KeptVMStatus};
 use moveos_types::transaction::TransactionOutput;
@@ -140,7 +140,7 @@ pub struct TransactionOutputView {
     pub status: KeptVMStatusView,
     //TODO The changeset will be removed in the future
     //pub changeset: ChangeSetView,
-    pub table_changeset: TableChangeSetView,
+    pub table_changeset: StateChangeSetView,
     // pub events: Vec<Event>,
     pub events: Vec<EventView>,
     pub gas_used: u64,
@@ -150,8 +150,7 @@ impl From<TransactionOutput> for TransactionOutputView {
     fn from(tx_output: TransactionOutput) -> Self {
         Self {
             status: tx_output.status.into(),
-            table_changeset: tx_output.table_changeset.into(),
-            // events: tx_output.events.into_iter().into(),
+            table_changeset: tx_output.state_changeset.into(),
             events: tx_output
                 .events
                 .iter()

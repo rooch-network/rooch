@@ -3,7 +3,7 @@
 
 use std::str::FromStr;
 
-use crate::state::MoveState;
+use crate::state::MoveStructState;
 use anyhow::ensure;
 use move_core_types::{
     ident_str,
@@ -44,7 +44,7 @@ impl MoveStructType for MoveString {
     const STRUCT_NAME: &'static IdentStr = ident_str!("String");
 }
 
-impl MoveState for MoveString {
+impl MoveStructState for MoveString {
     fn move_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8))])
     }
@@ -123,7 +123,7 @@ impl MoveStructType for MoveAsciiString {
     const STRUCT_NAME: &'static IdentStr = ident_str!("String");
 }
 
-impl MoveState for MoveAsciiString {
+impl MoveStructState for MoveAsciiString {
     fn move_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8))])
     }

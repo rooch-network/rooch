@@ -12,9 +12,9 @@ use move_transactional_test_runner::{
 };
 use move_vm_runtime::session::SerializedReturnValues;
 use moveos::moveos::MoveOS;
-use moveos_store::state_store::state_view::AnnotatedStateReader;
 use moveos_types::move_types::FunctionId;
 use moveos_types::object::ObjectID;
+use moveos_types::state_resolver::AnnotatedStateReader;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use std::{collections::BTreeMap, path::Path};
 
@@ -225,7 +225,13 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
         resource: &move_core_types::identifier::IdentStr,
         type_args: Vec<move_core_types::language_storage::TypeTag>,
     ) -> anyhow::Result<String> {
-        view_resource_in_move_storage(&self.moveos.state(), address, module, resource, type_args)
+        view_resource_in_move_storage(
+            self.moveos.moveos_resolver(),
+            address,
+            module,
+            resource,
+            type_args,
+        )
     }
 
     fn handle_subcommand(
@@ -234,8 +240,8 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
     ) -> anyhow::Result<Option<String>> {
         match subcommand.command {
             MoveOSSubcommands::ViewObject { object_id } => {
-                let storage = self.moveos.state();
-                let object = storage
+                let resoler = self.moveos.moveos_resolver();
+                let object = resoler
                     .get_annotated_object(object_id)?
                     .ok_or_else(|| anyhow::anyhow!("Object with id {} not found", object_id))?;
                 //TODO should we bring the AnnotatedObjectView from jsonrpc to test adapter for better json output formatting?
