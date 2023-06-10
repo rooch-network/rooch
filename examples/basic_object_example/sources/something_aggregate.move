@@ -1,4 +1,6 @@
 module rooch_examples::something_aggregate {
+    use std::string::String;
+
     use moveos_std::object_id::ObjectID;
     use moveos_std::storage_context::StorageContext;
     use rooch_examples::something;
@@ -11,6 +13,17 @@ module rooch_examples::something_aggregate {
     ) {
         let obj = something::create_something(stoage_ctx, i, j);
         something::add_something(stoage_ctx, obj);
+    }
+
+    public entry fun add_foo_table_item(
+        storage_ctx: &mut StorageContext,
+        object_id: ObjectID,
+        key: String,
+        val: String,
+    ) {
+        let obj = something::remove_something(storage_ctx, object_id);
+        let update_obj = something_do_logic::add_foo_table_item(storage_ctx, obj, key, val);
+        something::add_something(storage_ctx, update_obj);
     }
 
     public entry fun remove_do_something_add(
