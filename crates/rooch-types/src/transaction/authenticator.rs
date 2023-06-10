@@ -132,7 +132,7 @@ prop_compose! {
      r in vec(any::<u64>(), 4..=4).prop_map(|v| U256(v.try_into().unwrap())),
      s in vec(any::<u64>(), 4..=4).prop_map(|v| U256(v.try_into().unwrap())),
      // Although v is an u64 type, it is actually an u8 value.
-     v in any::<u8>().prop_map(|v| <u64>::from(v)),
+     v in any::<u8>().prop_map(<u64>::from),
     ) -> Secp256k1Authenticator {
         Secp256k1Authenticator {
             signature: ethers::core::types::Signature {r, s, v},
