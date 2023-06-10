@@ -10,18 +10,17 @@ use crate::actor::{
 };
 use anyhow::Result;
 use coerce::actor::ActorRef;
+use move_core_types::language_storage::StructTag;
 use moveos_types::transaction::TransactionOutput;
+use moveos_types::transaction::{AuthenticatableTransaction, FunctionCall};
 use moveos_types::{
     access_path::AccessPath, function_return_value::AnnotatedFunctionReturnValue,
     transaction::VerifiedMoveOSTransaction,
 };
 use moveos_types::{
-    event_filter::{EventFilter, MoveOSEvent},
+    event::AnnotatedMoveOSEvent,
+    event_filter::EventFilter,
     state::{AnnotatedState, State},
-};
-use moveos_types::{
-    object::ObjectID,
-    transaction::{AuthenticatableTransaction, FunctionCall},
 };
 use rooch_types::transaction::TransactionExecutionInfo;
 
@@ -76,14 +75,23 @@ impl ExecutorProxy {
 
     pub async fn get_events_by_event_handle(
         &self,
-        event_handle_id: ObjectID,
-    ) -> Result<Option<Vec<MoveOSEvent>>> {
+        event_handle_type: StructTag,
+        cursor: u64,
+        limit: u64,
+    ) -> Result<Vec<Option<AnnotatedMoveOSEvent>>> {
         self.actor
-            .send(GetEventsByEventHandleMessage { event_handle_id })
+            .send(GetEventsByEventHandleMessage {
+                event_handle_type,
+                cursor,
+                limit,
+            })
             .await?
     }
 
-    pub async fn get_events(&self, filter: EventFilter) -> Result<Option<Vec<MoveOSEvent>>> {
+    pub async fn get_events(
+        &self,
+        filter: EventFilter,
+    ) -> Result<Vec<Option<AnnotatedMoveOSEvent>>> {
         self.actor.send(GetEventsMessage { filter }).await?
     }
 }

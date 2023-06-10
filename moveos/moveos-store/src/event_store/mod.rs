@@ -9,7 +9,6 @@ use moveos_types::h256::H256;
 use moveos_types::move_types::type_tag_match;
 use moveos_types::object::ObjectID;
 use parking_lot::RwLock;
-use std::ops::Not;
 use std::{collections::HashMap, sync::Arc};
 
 #[derive(Debug)]
@@ -59,49 +58,55 @@ impl EventStore {
     }
 
     //TODO implement event indexer for query by tx hash
-    pub fn get_events_by_tx_hash(&self, tx_hash: &H256) -> Result<Option<Vec<Event>>, Error> {
+    pub fn get_events_by_tx_hash(&self, tx_hash: &H256) -> Result<Vec<Event>, Error> {
         let rw_locks = self.indexer_store.read();
         let data = rw_locks
             .iter()
             .filter(|((tx_hash_key, _), _)| *tx_hash_key == *tx_hash)
             .map(|(_, e)| e.clone())
             .collect::<Vec<_>>();
-        Ok(data.is_empty().not().then_some(data))
+        Ok(data)
     }
 
     pub fn get_events_by_event_handle_id(
         &self,
         event_handle_id: &ObjectID,
-    ) -> Result<Option<Vec<Event>>, Error> {
+        cursor: u64,
+        limit: u64,
+    ) -> Result<Vec<Event>, Error> {
+        //  will not cross the boundary even if the size exceeds the storage capacity,
+        let end = cursor + limit;
         let rw_locks = self.store.read();
         let data = rw_locks
             .iter()
-            .filter(|((handle_id, _), _)| *handle_id == *event_handle_id)
+            .filter(|((handle_id, event_seq), _)| {
+                *handle_id == *event_handle_id && (*event_seq >= cursor && *event_seq < end)
+            })
             .map(|(_, e)| e.clone())
             .collect::<Vec<_>>();
-        Ok(data.is_empty().not().then_some(data))
+        Ok(data)
     }
 
-    pub fn get_events_by_move_event_type(
+    pub fn get_events_by_event_handle_type(
         &self,
-        move_event_type: &TypeTag,
-    ) -> Result<Option<Vec<Event>>, Error> {
+        event_handle_type: &TypeTag,
+    ) -> Result<Vec<Event>, Error> {
         let rw_locks = self.store.read();
 
         let data = rw_locks
             .iter()
             .filter_map(|((_event_handle_id, _event_seq), event)| {
-                if type_tag_match(event.type_tag(), move_event_type) {
+                if type_tag_match(event.type_tag(), event_handle_type) {
                     return Some(event.clone());
                 }
                 None
             })
             .collect::<Vec<_>>();
-        Ok(data.is_empty().not().then_some(data))
+        Ok(data)
     }
 
     // TODO The complete event filter implementation depends on Indexer
-    pub fn get_events_with_filter(&self, filter: EventFilter) -> Result<Option<Vec<Event>>, Error> {
+    pub fn get_events_with_filter(&self, filter: EventFilter) -> Result<Vec<Event>, Error> {
         let result = match filter {
             EventFilter::All(_filters) => {
                 return Err(anyhow!(
@@ -110,7 +115,7 @@ impl EventStore {
             }
             EventFilter::Transaction(tx_hash) => self.get_events_by_tx_hash(&tx_hash)?,
             EventFilter::MoveEventType(move_event_type) => {
-                self.get_events_by_move_event_type(&move_event_type)?
+                self.get_events_by_event_handle_type(&move_event_type)?
             }
             EventFilter::Sender(_sender) => {
                 return Err(anyhow!(
@@ -130,14 +135,14 @@ impl EventStore {
                     "This type does not currently support filter combinations."
                 ));
             }
-            EventFilter::BlockRange {
-                from_block: _,
-                to_block: _,
-            } => {
-                return Err(anyhow!(
-                    "This type does not currently support filter combinations."
-                ));
-            }
+            // EventFilter::BlockRange {
+            //     from_block: _,
+            //     to_block: _,
+            // } => {
+            //     return Err(anyhow!(
+            //         "This type does not currently support filter combinations."
+            //     ));
+            // }
             _ => {
                 return Err(anyhow!(
                     "This type does not currently support filter combinations."

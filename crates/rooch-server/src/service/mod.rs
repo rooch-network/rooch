@@ -3,11 +3,13 @@
 
 use crate::jsonrpc_types::ExecuteTransactionResponse;
 use anyhow::{bail, Result};
+use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
-use moveos_types::event_filter::{EventFilter, MoveOSEvent};
+use moveos_types::event::AnnotatedMoveOSEvent;
+use moveos_types::event_filter::EventFilter;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::state::{AnnotatedState, State};
-use moveos_types::{object::ObjectID, transaction::FunctionCall};
+use moveos_types::transaction::FunctionCall;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_proposer::proxy::ProposerProxy;
 use rooch_sequencer::proxy::SequencerProxy;
@@ -95,16 +97,21 @@ impl RpcService {
 
     pub async fn get_events_by_event_handle(
         &self,
-        event_handle_id: ObjectID,
-    ) -> Result<Option<Vec<MoveOSEvent>>> {
+        event_handle_type: StructTag,
+        cursor: u64,
+        limit: u64,
+    ) -> Result<Vec<Option<AnnotatedMoveOSEvent>>> {
         let resp = self
             .executor
-            .get_events_by_event_handle(event_handle_id)
+            .get_events_by_event_handle(event_handle_type, cursor, limit)
             .await?;
         Ok(resp)
     }
 
-    pub async fn get_events(&self, filter: EventFilter) -> Result<Option<Vec<MoveOSEvent>>> {
+    pub async fn get_events(
+        &self,
+        filter: EventFilter,
+    ) -> Result<Vec<Option<AnnotatedMoveOSEvent>>> {
         let resp = self.executor.get_events(filter).await?;
         Ok(resp)
     }

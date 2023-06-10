@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{ModuleIdView, StateChangeSetView, StrView};
+use crate::jsonrpc_types::EventView;
 use move_core_types::vm_status::{AbortLocation, KeptVMStatus};
-use moveos_types::{event::Event, transaction::TransactionOutput};
+use moveos_types::transaction::TransactionOutput;
 use rooch_types::{
     transaction::{
         authenticator::Authenticator, TransactionExecutionInfo, TransactionSequenceInfo,
@@ -139,9 +140,9 @@ pub struct TransactionOutputView {
     pub status: KeptVMStatusView,
     //TODO The changeset will be removed in the future
     //pub changeset: ChangeSetView,
-    pub state_changeset: StateChangeSetView,
-    //TODO refactor EventView and use EventView
-    pub events: Vec<Event>,
+    pub table_changeset: StateChangeSetView,
+    // pub events: Vec<Event>,
+    pub events: Vec<EventView>,
     pub gas_used: u64,
 }
 
@@ -149,8 +150,12 @@ impl From<TransactionOutput> for TransactionOutputView {
     fn from(tx_output: TransactionOutput) -> Self {
         Self {
             status: tx_output.status.into(),
-            state_changeset: tx_output.state_changeset.into(),
-            events: tx_output.events,
+            table_changeset: tx_output.state_changeset.into(),
+            events: tx_output
+                .events
+                .iter()
+                .map(|event| event.clone().into())
+                .collect(),
             gas_used: tx_output.gas_used,
         }
     }

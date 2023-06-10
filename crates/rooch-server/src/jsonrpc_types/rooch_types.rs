@@ -3,8 +3,10 @@
 
 use crate::jsonrpc_types::{
     move_types::{MoveActionTypeView, MoveActionView},
-    StrView,
+    AnnotatedMoveStructView, EventView, StrView,
 };
+use moveos_types::event::AnnotatedMoveOSEvent;
+use moveos_types::h256::H256;
 use rooch_types::transaction::{AbstractTransaction, TransactionType, TypedTransaction};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -59,3 +61,39 @@ impl From<TypedTransaction> for TransactionView {
         }
     }
 }
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct AnnotatedEventView {
+    pub event: EventView,
+    pub sender: String,
+    pub tx_hash: Option<H256>,
+    pub timestamp_ms: Option<u64>,
+    // pub block_height: Option<u64>,
+    pub parsed_event_data: AnnotatedMoveStructView,
+}
+
+impl From<AnnotatedMoveOSEvent> for AnnotatedEventView {
+    fn from(event: AnnotatedMoveOSEvent) -> Self {
+        AnnotatedEventView {
+            event: event.event.into(),
+            sender: event.sender.to_string(),
+            tx_hash: event.tx_hash,
+            timestamp_ms: event.timestamp_ms,
+            // block_height: event.block_height,
+            parsed_event_data: event.parsed_event_data.into(),
+        }
+    }
+}
+
+// impl From<AnnotatedEventView> for AnnotatedMoveOSEvent {
+//     fn from(event: AnnotatedEventView) -> Self {
+//         AnnotatedMoveOSEvent {
+//             event: event.into(),
+//             sender: AccountAddress::try_from(event.sender).unwrap(),
+//             tx_hash: event.tx_hash,
+//             timestamp_ms: event.timestamp_ms,
+//             // block_height: event.block_height,
+//             parsed_event_data: event.parsed_event_data.into(),
+//         }
+//     }
+// }

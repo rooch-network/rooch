@@ -1,20 +1,21 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::api::rooch_api::RoochAPIServer;
 use crate::api::RoochRpcModule;
 use crate::jsonrpc_types::{
-    AnnotatedFunctionReturnValueView, AnnotatedStateView, EventView,
-    ExecuteTransactionResponseView, FunctionCallView, StateView, StrView, TransactionView,
+    AnnotatedEventView, AnnotatedFunctionReturnValueView, AnnotatedStateView,
+    ExecuteTransactionResponseView, FunctionCallView, StateView, StrView, StructTagView,
+    TransactionView,
 };
 use crate::service::RpcService;
+use crate::{api::rooch_api::RoochAPIServer, api::MAX_RESULT_LIMIT};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     RpcModule,
 };
 use moveos_types::access_path::AccessPath;
 use moveos_types::event_filter::EventFilter;
-use moveos_types::{object::ObjectID, transaction::AuthenticatableTransaction};
+use moveos_types::transaction::AuthenticatableTransaction;
 use rooch_types::transaction::TypedTransaction;
 use rooch_types::{transaction::rooch::RoochTransaction, H256};
 
@@ -89,52 +90,37 @@ impl RoochAPIServer for RoochServer {
 
     async fn get_events_by_event_handle(
         &self,
-        event_handle_id: ObjectID,
-    ) -> RpcResult<Option<Vec<EventView>>> {
-        let mut result: Vec<EventView> = Vec::new();
-        let events = self
+        event_handle_type: StructTagView,
+        cursor: Option<u64>,
+        limit: Option<u64>,
+    ) -> RpcResult<Vec<Option<AnnotatedEventView>>> {
+        Ok(self
             .rpc_service
-            .get_events_by_event_handle(event_handle_id)
-            .await?;
-        if Option::is_some(&events) {
-            for ev in events
-                .unwrap()
-                .iter()
-                .enumerate()
-                .map(|(_i, event)| EventView::from(event.clone()))
-                .collect::<Vec<_>>()
-            {
-                result.push(ev);
-            }
-        }
+            .get_events_by_event_handle(
+                event_handle_type.into(),
+                cursor.unwrap_or(0),
+                limit.unwrap_or(MAX_RESULT_LIMIT),
+            )
+            .await?
+            .into_iter()
+            .map(|event| event.map(AnnotatedEventView::from))
+            .collect())
 
-        if !result.is_empty() {
-            Ok(Some(result))
-        } else {
-            Ok(None)
-        }
+        // let result: Vec<Option<AnnotatedEventView>> = Vec::new();
+        // Ok(result)
     }
 
-    async fn get_events(&self, filter: EventFilter) -> RpcResult<Option<Vec<EventView>>> {
-        let mut result: Vec<EventView> = Vec::new();
-        let events = self.rpc_service.get_events(filter).await?;
-        if Option::is_some(&events) {
-            for ev in events
-                .unwrap()
-                .iter()
-                .enumerate()
-                .map(|(_i, event)| EventView::from(event.clone()))
-                .collect::<Vec<_>>()
-            {
-                result.push(ev);
-            }
-        }
+    async fn get_events(&self, filter: EventFilter) -> RpcResult<Vec<Option<AnnotatedEventView>>> {
+        Ok(self
+            .rpc_service
+            .get_events(filter)
+            .await?
+            .into_iter()
+            .map(|event| event.map(AnnotatedEventView::from))
+            .collect())
 
-        if !result.is_empty() {
-            Ok(Some(result))
-        } else {
-            Ok(None)
-        }
+        // let result: Vec<Option<AnnotatedEventView>> = Vec::new();
+        // Ok(result)
     }
 
     async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<Option<TransactionView>> {

@@ -4,87 +4,15 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::event::{Event, EventID};
+use crate::event::MoveOSEvent;
 use crate::h256::H256;
 use crate::move_types::type_tag_match;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::TypeTag;
-use move_resource_viewer::AnnotatedMoveStruct;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::serde_as;
-
-#[serde_as]
-// #[derive(Eq, PartialEq, Clone, Debug, Serialize, Deserialize, JsonSchema)]
-// #[derive(Eq, PartialEq, Clone, Debug)]
-#[derive(Clone, Debug)]
-// #[serde(rename = "Event", rename_all = "camelCase")]
-pub struct MoveOSEvent {
-    pub event_id: EventID,
-    /// Sender's address.
-    pub sender: AccountAddress,
-    /// Transaction hash
-    pub tx_hash: Option<H256>,
-    /// The number of messages that have been emitted to the path previously
-    // pub sequence_number: u64,
-    // #[schemars(with = "String")]
-    // #[serde_as(as = "TypeTag")]
-    /// Move event type.
-    pub type_tag: TypeTag,
-    /// bcs bytes of the move event
-    pub event_data: Vec<u8>,
-    /// Parsed json value of the event data
-    // pub parsed_event_data: Value,
-    pub parsed_event_data: AnnotatedMoveStruct,
-    /// UTC timestamp in milliseconds since epoch (1/1/1970)
-    // #[serde(skip_serializing_if = "Option::is_none")]
-    // #[schemars(with = "Option<u64>")]
-    // #[serde_as(as = "Option<u64>")]
-    pub timestamp_ms: Option<u64>,
-    /// block height
-    // #[serde(skip_serializing_if = "Option::is_none")]
-    // #[schemars(with = "Option<u64>")]
-    // #[serde_as(as = "Option<u64>")]
-    pub block_height: Option<u64>,
-    /// event index in the transaction events.
-    pub event_index: u32,
-}
-
-impl MoveOSEvent {
-    pub fn try_from(
-        event: Event,
-        parsed_event_data: AnnotatedMoveStruct,
-        tx_hash: Option<H256>,
-        timestamp_ms: Option<u64>,
-        block_height: Option<u64>,
-    ) -> Result<Self> {
-        let Event {
-            event_id,
-            // sequence_number,
-            type_tag,
-            event_data,
-            event_index,
-        } = event;
-
-        //TODO how to store and derive sender address ?
-        let sender = AccountAddress::ZERO;
-        //TODO deserilize field from event_data
-        // let parsed_event_data = serde_json::to_value(event_data.clone()).unwrap();
-
-        Ok(MoveOSEvent {
-            event_id,
-            sender,
-            tx_hash,
-            type_tag,
-            event_data,
-            parsed_event_data,
-            timestamp_ms,
-            block_height,
-            event_index,
-        })
-    }
-}
 
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -119,18 +47,17 @@ pub enum EventFilter {
         end_time: u64,
     },
     /// Return events emitted in [from_block, to_block) interval
-    #[serde(rename_all = "camelCase")]
-    BlockRange {
-        /// left endpoint of block height, inclusive
-        // #[schemars(with = "u64")]
-        // #[serde_as(as = "u64")]
-        from_block: u64, //TODO use BlockNumber
-        /// right endpoint of block height, exclusive
-        // #[schemars(with = "u64")]
-        // #[serde_as(as = "u64")]
-        to_block: u64, //TODO use BlockNumber
-    },
-
+    // #[serde(rename_all = "camelCase")]
+    // BlockRange {
+    //     /// left endpoint of block height, inclusive
+    //     // #[schemars(with = "u64")]
+    //     // #[serde_as(as = "u64")]
+    //     from_block: u64, //TODO use BlockNumber
+    //     /// right endpoint of block height, exclusive
+    //     // #[schemars(with = "u64")]
+    //     // #[serde_as(as = "u64")]
+    //     to_block: u64, //TODO use BlockNumber
+    // },
     All(Vec<EventFilter>),
     Any(Vec<EventFilter>),
     And(Box<EventFilter>, Box<EventFilter>),
@@ -140,7 +67,9 @@ pub enum EventFilter {
 impl EventFilter {
     fn try_matches(&self, item: &MoveOSEvent) -> Result<bool> {
         Ok(match self {
-            EventFilter::MoveEventType(event_type) => type_tag_match(&item.type_tag, event_type),
+            EventFilter::MoveEventType(event_type) => {
+                type_tag_match(&item.event.type_tag, event_type)
+            }
             EventFilter::MoveEventField { path: _, value: _ } => {
                 // matches!(item.parsed_event_data.pointer(path), Some(v) if v == value)
                 false
@@ -167,17 +96,16 @@ impl EventFilter {
                 } else {
                     false
                 }
-            }
-            EventFilter::BlockRange {
-                from_block,
-                to_block,
-            } => {
-                if let Some(block_height) = &item.block_height {
-                    from_block <= block_height && to_block > block_height
-                } else {
-                    false
-                }
-            }
+            } // EventFilter::BlockRange {
+              //     from_block,
+              //     to_block,
+              // } => {
+              //     if let Some(block_height) = &item.block_height {
+              //         from_block <= block_height && to_block > block_height
+              //     } else {
+              //         false
+              //     }
+              // }
         })
     }
 

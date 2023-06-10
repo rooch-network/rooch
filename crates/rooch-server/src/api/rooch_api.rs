@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::{
-    AnnotatedFunctionReturnValueView, AnnotatedStateView, EventView,
-    ExecuteTransactionResponseView, FunctionCallView, StateView, StrView, TransactionView,
+    AnnotatedEventView, AnnotatedFunctionReturnValueView, AnnotatedStateView,
+    ExecuteTransactionResponseView, FunctionCallView, StateView, StrView, StructTagView,
+    TransactionView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 use moveos_types::access_path::AccessPath;
 use moveos_types::event_filter::EventFilter;
-use moveos_types::object::ObjectID;
 use rooch_types::H256;
 
 #[rpc(server, client)]
@@ -51,12 +51,14 @@ pub trait RoochAPI {
     #[method(name = "rooch_getEventsByEventHandle")]
     async fn get_events_by_event_handle(
         &self,
-        event_handle_id: ObjectID,
-    ) -> RpcResult<Option<Vec<EventView>>>;
+        event_handle_type: StructTagView,
+        cursor: Option<u64>,
+        limit: Option<u64>,
+    ) -> RpcResult<Vec<Option<AnnotatedEventView>>>;
 
     /// Get the events by event filter
     #[method(name = "rooch_getEvents")]
-    async fn get_events(&self, filter: EventFilter) -> RpcResult<Option<Vec<EventView>>>;
+    async fn get_events(&self, filter: EventFilter) -> RpcResult<Vec<Option<AnnotatedEventView>>>;
 
     #[method(name = "rooch_getTransactionByHash")]
     async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<Option<TransactionView>>;
