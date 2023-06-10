@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::vm::move_vm_ext::MoveVmExt;
+use crate::vm::moveos_vm::MoveOSVM;
 use anyhow::{bail, Result};
 use move_binary_format::errors::vm_status_of_result;
 use move_binary_format::errors::{Location, PartialVMError};
@@ -36,13 +36,13 @@ pub static VALIDATE_FUNCTION: Lazy<FunctionId> = Lazy::new(|| {
 });
 
 pub struct MoveOS {
-    vm: MoveVmExt,
+    vm: MoveOSVM,
     db: MoveOSResolverProxy<MoveOSDB>,
 }
 
 impl MoveOS {
     pub fn new(db: MoveOSDB) -> Result<Self> {
-        let vm = MoveVmExt::new()?;
+        let vm = MoveOSVM::new()?;
         let is_genesis = db.get_state_store().is_genesis();
         let mut moveos = Self {
             vm,
@@ -156,7 +156,7 @@ impl MoveOS {
         let TransactionOutput {
             status: _,
             changeset,
-            state_changeset: table_changeset,
+            state_changeset,
             events,
             gas_used: _,
         } = output;
@@ -165,7 +165,7 @@ impl MoveOS {
             .db
             .0
             .get_state_store()
-            .apply_change_set(changeset, table_changeset)
+            .apply_change_set(changeset, state_changeset)
             .map_err(|e| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR)
                     .with_message(e.to_string())
