@@ -40,12 +40,12 @@ use moveos_types::{
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
 use std::{borrow::Borrow, sync::Arc};
 
-//TODO rename to MoveOSVM and MoveOSSession
-pub struct MoveVmExt {
+/// MoveOSVM is a wrapper of MoveVM with MoveOS specific features.
+pub struct MoveOSVM {
     inner: MoveVM,
 }
 
-impl MoveVmExt {
+impl MoveOSVM {
     pub fn new() -> VMResult<Self> {
         let gas_params = GasParameters::zeros();
         Ok(Self {
@@ -65,8 +65,8 @@ impl MoveVmExt {
         remote: &'r S,
         ctx: StorageContext,
         gas_meter: G,
-    ) -> SessionExt<'r, '_, S, G> {
-        SessionExt::new(&self.inner, remote, ctx, gas_meter, false)
+    ) -> MoveOSSession<'r, '_, S, G> {
+        MoveOSSession::new(&self.inner, remote, ctx, gas_meter, false)
     }
 
     pub fn new_readonly_session<'r, S: MoveOSResolver, G: GasMeter>(
@@ -74,12 +74,15 @@ impl MoveVmExt {
         remote: &'r S,
         ctx: StorageContext,
         gas_meter: G,
-    ) -> SessionExt<'r, '_, S, G> {
-        SessionExt::new(&self.inner, remote, ctx, gas_meter, true)
+    ) -> MoveOSSession<'r, '_, S, G> {
+        MoveOSSession::new(&self.inner, remote, ctx, gas_meter, true)
     }
 }
 
-pub struct SessionExt<'r, 'l, S, G> {
+/// MoveOSSession is a wrapper of MoveVM session with MoveOS specific features.
+/// It is used to execute a transaction, every transaction should be executed in a new session.
+/// Every session has a TxContext, if the transaction have multiple actions, the TxContext is shared.
+pub struct MoveOSSession<'r, 'l, S, G> {
     vm: &'l MoveVM,
     remote: &'r S,
     session: Session<'r, 'l, S>,
@@ -88,7 +91,7 @@ pub struct SessionExt<'r, 'l, S, G> {
     read_only: bool,
 }
 
-impl<'r, 'l, S, G> SessionExt<'r, 'l, S, G>
+impl<'r, 'l, S, G> MoveOSSession<'r, 'l, S, G>
 where
     S: MoveOSResolver,
     G: GasMeter,
@@ -334,7 +337,7 @@ where
         let (changeset, raw_events, mut extensions) =
             finalized_session.session.finish_with_extensions()?;
         let table_context: NativeTableContext = extensions.remove();
-        let table_changeset = table_context
+        let state_changeset = table_context
             .into_change_set()
             .map_err(|e| e.finish(Location::Undefined))?;
 
@@ -348,7 +351,7 @@ where
                 "Events should be empty when execute readonly function"
             );
             ensure!(
-                table_changeset.changes.is_empty(),
+                state_changeset.changes.is_empty(),
                 "Table change set should be empty when execute readonly function"
             );
         }
@@ -369,7 +372,7 @@ where
             TransactionOutput {
                 status,
                 changeset,
-                state_changeset: table_changeset,
+                state_changeset,
                 events,
                 gas_used,
             },
@@ -385,7 +388,7 @@ where
                 _error => {
                     //if the execution failed, we need to start a new session, and discard the transaction changes
                     // and increment the sequence number or reduce the gas in new session.
-                    let SessionExt {
+                    let MoveOSSession {
                         vm,
                         remote,
                         session: _,
@@ -460,7 +463,7 @@ where
     }
 }
 
-impl AsRef<MoveVM> for MoveVmExt {
+impl AsRef<MoveVM> for MoveOSVM {
     fn as_ref(&self) -> &MoveVM {
         &self.inner
     }
