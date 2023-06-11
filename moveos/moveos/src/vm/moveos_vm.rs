@@ -166,8 +166,9 @@ where
                 let compiled_modules = deserialize_modules(&module_bundle)?;
 
                 let mut init_function_modules = vec![];
-                for module in compiled_modules {
-                    let result = Self::verify_init_function(&module);
+                for module in &compiled_modules {
+                    moveos_verifier::verifier::verify_private_generics(module)?;
+                    let result = Self::verify_init_function(module);
                     match result {
                         Ok(res) => {
                             if res {
@@ -177,6 +178,7 @@ where
                         Err(err) => return Err(err),
                     }
                 }
+
                 //TODO add more module verifier.
                 Ok(VerifiedMoveAction::ModuleBundle {
                     module_bundle,
