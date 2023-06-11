@@ -4,6 +4,7 @@ use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::file_format::{
     Bytecode, FunctionInstantiation, SignatureToken, Visibility,
 };
+use move_binary_format::CompiledModule;
 use move_core_types::language_storage::ModuleId;
 use move_core_types::metadata::Metadata;
 use move_core_types::move_resource::MoveStructType;
@@ -11,10 +12,10 @@ use move_model::ast::Attribute;
 use move_model::model::{FunctionEnv, GlobalEnv, Loc, ModuleEnv};
 use move_model::ty::PrimitiveType;
 use move_model::ty::Type;
-use move_vm_runtime::move_vm::MoveVM;
 use moveos_types::storage_context::StorageContext;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use thiserror::Error;
 
 const PRIVATE_GENERICS_ATTRIBUTE: &str = "private_generics";
 
@@ -46,14 +47,18 @@ impl RuntimeModuleMetadataV1 {
     }
 }
 
-pub fn get_metadata(md: &Metadata) -> Option<RuntimeModuleMetadataV1> {
-    bcs::from_bytes::<RuntimeModuleMetadataV1>(&md.value).ok()
+fn find_metadata<'a>(module: &'a CompiledModule, key: &[u8]) -> Option<&'a Metadata> {
+    module.metadata.iter().find(|md| md.key == key)
 }
 
-pub fn get_vm_metadata(vm: &MoveVM, module_id: &ModuleId) -> Option<RuntimeModuleMetadataV1> {
-    match vm.get_module_metadata(module_id.clone(), ROOCH_METADATA_KEY) {
-        None => None,
-        Some(metadata) => get_metadata(&metadata),
+/// Extract metadata from a compiled module/
+pub fn get_metadata_from_compiled_module(
+    module: &CompiledModule,
+) -> Option<RuntimeModuleMetadataV1> {
+    if let Some(data) = find_metadata(module, ROOCH_METADATA_KEY) {
+        bcs::from_bytes::<RuntimeModuleMetadataV1>(&data.value).ok()
+    } else {
+        None
     }
 }
 
@@ -463,7 +468,7 @@ pub fn check_storage_context_struct_tag(struct_tag: String) -> bool {
     struct_tag == format!("{}::{}::{}", address, module, name)
 }
 
-fn is_defined_or_allowed_in_current_module(
+pub fn is_defined_or_allowed_in_current_module(
     view: &BinaryIndexedView,
     type_arg: &SignatureToken,
 ) -> (bool, String) {
@@ -490,4 +495,36 @@ fn is_defined_or_allowed_in_current_module(
         SignatureToken::Reference(_) => (false, "Reference".to_string()),
         SignatureToken::MutableReference(_) => (false, "MutableReference".to_string()),
     }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Error)]
+pub enum MalformedError {
+    #[error("Unknown key found: {0:?}")]
+    UnknownKey(Vec<u8>),
+    #[error("Unable to deserialize value for {0:?}: {1}")]
+    DeserializedError(Vec<u8>, bcs::Error),
+    #[error("Duplicate key for metadata")]
+    DuplicateKey,
+}
+
+/// Check if the metadata has unknown key/data types
+pub fn check_metadata_format(module: &CompiledModule) -> Result<(), MalformedError> {
+    let mut exist = false;
+    for data in module.metadata.iter() {
+        if data.key == ROOCH_METADATA_KEY {
+            if exist {
+                return Err(MalformedError::DuplicateKey);
+            }
+            exist = true;
+
+            if data.key == *ROOCH_METADATA_KEY {
+                bcs::from_bytes::<RuntimeModuleMetadataV1>(&data.value)
+                    .map_err(|e| MalformedError::DeserializedError(data.key.clone(), e))?;
+            }
+        } else {
+            return Err(MalformedError::UnknownKey(data.key.clone()));
+        }
+    }
+
+    Ok(())
 }

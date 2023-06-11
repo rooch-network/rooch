@@ -1,6 +1,12 @@
-use crate::metadata::{check_storage_context_struct_tag, is_allowed_input_struct};
+use crate::metadata::{
+    check_metadata_format, check_storage_context_struct_tag, get_metadata_from_compiled_module,
+    is_allowed_input_struct, is_defined_or_allowed_in_current_module,
+};
+use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMError, VMResult};
-use move_binary_format::file_format::{FunctionDefinition, FunctionDefinitionIndex, Visibility};
+use move_binary_format::file_format::{
+    Bytecode, FunctionDefinition, FunctionDefinitionIndex, FunctionInstantiation, Visibility,
+};
 use move_binary_format::{access::ModuleAccess, CompiledModule};
 use move_core_types::language_storage::ModuleId;
 use move_core_types::vm_status::StatusCode;
@@ -195,4 +201,84 @@ fn vm_error_for_init_func_checking(
         .with_message(error_message.to_string())
         .at_code_offset(FunctionDefinitionIndex::new(func_def.function.0), 0_u16)
         .finish(Location::Module(module_id))
+}
+
+pub fn verify_private_generics(module: &CompiledModule) -> VMResult<bool> {
+    if let Err(err) = check_metadata_format(module) {
+        return Err(PartialVMError::new(StatusCode::MALFORMED)
+            .with_message(err.to_string())
+            .finish(Location::Module(module.self_id())));
+    }
+
+    let metadata_opt = get_metadata_from_compiled_module(module);
+    match metadata_opt {
+        None => {
+            // If ROOCH_METADATA_KEY cannot be found in the metadata,
+            // it means that the user's code did not use #[private_generics(T)],
+            // or the user intentionally deleted the data in the metadata.
+            // In either case, we will skip the verification.
+            return Ok(true);
+        }
+
+        Some(metadata) => {
+            let type_name_indices = metadata.private_generics_indices;
+            let view = BinaryIndexedView::Module(module);
+
+            for func in &module.function_defs {
+                if let Some(code_unit) = &func.code {
+                    for instr in code_unit.code.clone().into_iter() {
+                        if let Bytecode::CallGeneric(finst_idx) = instr {
+                            let FunctionInstantiation {
+                                handle,
+                                type_parameters,
+                            } = view.function_instantiation_at(finst_idx);
+
+                            let fhandle = view.function_handle_at(*handle);
+                            let module_handle = view.module_handle_at(fhandle.module);
+
+                            let module_address = view
+                                .address_identifier_at(module_handle.address)
+                                .to_hex_literal();
+                            let module_name = view.identifier_at(module_handle.name);
+                            let func_name = view.identifier_at(fhandle.name).to_string();
+
+                            let full_path_func_name =
+                                format!("{}::{}::{}", module_address, module_name, func_name);
+
+                            let type_arguments = &view.signature_at(*type_parameters).0;
+                            let private_generics_types =
+                                type_name_indices.get(full_path_func_name.as_str());
+
+                            if let Some(private_generics_types_indices) = private_generics_types {
+                                for generic_type_index in private_generics_types_indices {
+                                    let type_arg = type_arguments.get(*generic_type_index).unwrap();
+                                    let (defined_in_current_module, struct_name) =
+                                        is_defined_or_allowed_in_current_module(&view, type_arg);
+
+                                    if !defined_in_current_module {
+                                        let err_msg = format!(
+                                            "resource type {:?} in function {:?} not defined in current module or not allowed",
+                                            struct_name, full_path_func_name
+                                        );
+
+                                        return Err(PartialVMError::new(
+                                            StatusCode::ABORT_TYPE_MISMATCH_ERROR,
+                                        )
+                                        .with_message(err_msg)
+                                        .at_code_offset(
+                                            FunctionDefinitionIndex::new(func.function.0),
+                                            0_u16,
+                                        )
+                                        .finish(Location::Module(module.self_id())));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(true)
 }
