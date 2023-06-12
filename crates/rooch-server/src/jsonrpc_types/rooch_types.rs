@@ -11,6 +11,18 @@ use rooch_types::transaction::{AbstractTransaction, TransactionType, TypedTransa
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+pub type EventPage = Page<Option<AnnotatedEventView>, u64>;
+
+/// `next_cursor` points to the last item in the page;
+/// Reading with `next_cursor` will start from the next item after `next_cursor` if
+/// `next_cursor` is `Some`, otherwise it will start from the first item.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct Page<T, C> {
+    pub data: Vec<T>,
+    pub next_cursor: Option<C>,
+    pub has_next_page: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum TransactionTypeView {

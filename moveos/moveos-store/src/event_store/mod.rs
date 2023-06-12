@@ -9,22 +9,20 @@ use moveos_types::h256::H256;
 use moveos_types::move_types::type_tag_match;
 use moveos_types::object::ObjectID;
 use parking_lot::RwLock;
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::BTreeMap, sync::Arc};
 
 #[derive(Debug)]
 pub struct EventStore {
-    store: Arc<RwLock<HashMap<(ObjectID, u64), Event>>>,
-    indexer_store: Arc<RwLock<HashMap<(H256, u64), Event>>>,
-    // store: Arc<RwLock<BTreeMap<H256, Vec<u8>>>>,
+    indexer_store: Arc<RwLock<BTreeMap<(H256, u64), Event>>>,
+    store: Arc<RwLock<BTreeMap<(ObjectID, u64), Event>>>,
 }
 
 impl EventStore {
     /// Init EventStore with memory store, just for test
     pub fn new_with_memory_store() -> Self {
         Self {
-            // store: Arc::new(RwLock::new(BTreeMap::new())),
-            store: Arc::new(RwLock::new(HashMap::new())),
-            indexer_store: Arc::new(RwLock::new(HashMap::new())),
+            store: Arc::new(RwLock::new(BTreeMap::new())),
+            indexer_store: Arc::new(RwLock::new(BTreeMap::new())),
         }
     }
 

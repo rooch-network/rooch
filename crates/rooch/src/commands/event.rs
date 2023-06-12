@@ -1,7 +1,7 @@
 use crate::types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use move_core_types::language_storage::StructTag;
-use rooch_server::jsonrpc_types::AnnotatedEventView;
+use rooch_server::jsonrpc_types::EventPage;
 use rooch_types::error::{RoochError, RoochResult};
 
 #[derive(clap::Parser)]
@@ -38,8 +38,8 @@ pub struct GetEventsByEventHandle {
 }
 
 #[async_trait]
-impl CommandAction<Vec<Option<AnnotatedEventView>>> for GetEventsByEventHandle {
-    async fn execute(self) -> RoochResult<Vec<Option<AnnotatedEventView>>> {
+impl CommandAction<EventPage> for GetEventsByEventHandle {
+    async fn execute(self) -> RoochResult<EventPage> {
         let client = self.context_options.build().await?.get_client().await?;
         let resp = client
             .get_events_by_event_handle(self.event_handle_type.into(), self.cursor, self.limit)
