@@ -12,6 +12,7 @@ use move_transactional_test_runner::{
 };
 use move_vm_runtime::session::SerializedReturnValues;
 use moveos::moveos::MoveOS;
+use moveos_stdlib::BuildOptions;
 use moveos_types::move_types::FunctionId;
 use moveos_types::object::ObjectID;
 use moveos_types::state_resolver::AnnotatedStateReader;
@@ -77,7 +78,7 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
         let db = moveos_store::MoveOSDB::new_with_memory_store();
         let moveos = MoveOS::new(db).unwrap();
 
-        let mut named_address_mapping = moveos_stdlib::Framework::named_addresses();
+        let mut named_address_mapping = moveos_stdlib::Stdlib::named_addresses();
         for (name, addr) in additional_mapping {
             if named_address_mapping.contains_key(&name) {
                 panic!(
@@ -101,9 +102,9 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
 
         //Auto generate interface to Framework modules
         //TODO share the genesis module with MoveOS.
-        let moveos_stdlib_modules = moveos_stdlib::Framework::build()
+        let moveos_stdlib_modules = moveos_stdlib::Stdlib::build(BuildOptions::default())
             .unwrap()
-            .modules()
+            .all_modules()
             .unwrap();
 
         // let sorted_moveos_stdlib_modules = sort_by_dependency_order(moveos_stdlib_modules.iter())?;

@@ -1,9 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use anyhow::{ensure, Result};
+use dependency_order::sort_by_dependency_order;
 use move_binary_format::CompiledModule;
-use move_bytecode_utils::dependency_graph::DependencyGraph;
 use move_command_line_common::address::NumericalAddress;
 use move_core_types::account_address::AccountAddress;
 use move_package::{compilation::compiled_package::CompiledPackage, BuildConfig};
@@ -11,6 +11,7 @@ use moveos_types::addresses::MOVEOS_NAMED_ADDRESS_MAPPING;
 use moveos_verifier::build::run_verifier;
 use std::{collections::BTreeMap, io::stderr, path::PathBuf};
 
+pub mod dependency_order;
 pub mod natives;
 
 const ERROR_DESCRIPTIONS: &[u8] = include_bytes!("../error_description.errmap");
@@ -19,8 +20,24 @@ pub fn error_descriptions() -> &'static [u8] {
     ERROR_DESCRIPTIONS
 }
 
-pub struct Framework {
-    package: CompiledPackage,
+#[derive(Debug, Clone)]
+pub struct Stdlib {
+    packages: Vec<StdlibPackage>,
+}
+
+#[derive(Debug, Clone)]
+pub struct StdlibPackage {
+    pub genesis_account: AccountAddress,
+    pub path: PathBuf,
+    pub package: CompiledPackage,
+}
+
+impl StdlibPackage {
+    pub fn modules(&self) -> Result<Vec<CompiledModule>> {
+        //include all root module, but do not include dependency modules
+        let modules = self.package.root_modules_map();
+        sort_by_dependency_order(modules.iter_modules())
+    }
 }
 
 #[derive(Debug, Clone, Default)]
@@ -31,9 +48,11 @@ pub struct BuildOptions {
     pub skip_fetch_latest_git_deps: bool,
 }
 
-impl Framework {
-    pub fn package() -> &'static str {
-        "rooch-framework"
+impl Stdlib {
+    ///MoveOS builtin packages
+    pub fn builtin_packages() -> [&'static str; 3] {
+        //TODO move out rooch_framework and as a external framework
+        ["move-stdlib", "moveos-stdlib", "rooch-framework"]
     }
 
     pub fn named_addresses() -> BTreeMap<String, NumericalAddress> {
@@ -46,20 +65,20 @@ impl Framework {
         address_mapping
     }
 
-    /// Build moveos_stdlib package
-    pub fn build() -> Result<Self> {
-        let options = BuildOptions::default();
-        Self::build_error_code_map();
-        let package_path = path_in_crate(Self::package());
-        let mut package = Self::build_package(package_path.clone(), options.clone())?;
+    /// Build the MoveOS stdlib with exernal frameworks.
+    /// The move_stdlib and moveos_stdlib packages are always built-in.
+    pub fn build(option: BuildOptions) -> Result<Self> {
+        //TODO build error map
+        //Self::build_error_code_map();
+        let mut packages = vec![];
+        for stdlib in Self::builtin_packages().into_iter() {
+            packages.push(Self::build_package(path_in_crate(stdlib), option.clone())?);
+        }
 
-        let additional_named_address = options.named_addresses;
-        run_verifier(package_path, additional_named_address, &mut package);
-
-        Ok(Self { package })
+        Ok(Self { packages })
     }
 
-    pub fn build_package(package_path: PathBuf, options: BuildOptions) -> Result<CompiledPackage> {
+    pub fn build_package(package_path: PathBuf, options: BuildOptions) -> Result<StdlibPackage> {
         let build_config = BuildConfig {
             dev_mode: false,
             additional_named_addresses: options.named_addresses.clone(),
@@ -75,7 +94,34 @@ impl Framework {
             //TODO set bytecode version
             bytecode_version: None,
         };
-        build_config.compile_package_no_exit(&package_path, &mut stderr())
+        let mut compiled_package =
+            build_config.compile_package_no_exit(&package_path, &mut stderr())?;
+
+        let additional_named_address = options.named_addresses;
+        run_verifier(
+            &package_path,
+            additional_named_address,
+            &mut compiled_package,
+        );
+        let module_map = compiled_package.root_modules_map();
+        let mut modules = module_map.iter_modules().into_iter();
+
+        let genesis_account = *modules
+            .next()
+            .expect("the package must have one module at least")
+            .self_id()
+            .address();
+        for module in modules {
+            ensure!(
+                module.self_id().address() == &genesis_account,
+                "all modules must have same address"
+            );
+        }
+        Ok(StdlibPackage {
+            genesis_account,
+            path: package_path,
+            package: compiled_package,
+        })
     }
 
     pub fn build_error_code_map() {
@@ -83,21 +129,24 @@ impl Framework {
         //TODO generate error code map
     }
 
-    pub fn modules(&self) -> Result<Vec<CompiledModule>> {
-        //TODO ensure all module at same address.
-        //include all module and dependency modules
-        let modules = self.package.all_modules_map();
-        let graph = DependencyGraph::new(modules.iter_modules());
-        let order_modules = graph.compute_topological_order()?;
-        Ok(order_modules.cloned().collect())
+    pub fn all_modules(&self) -> Result<Vec<CompiledModule>> {
+        let mut modules = vec![];
+        for package in self.packages.iter() {
+            modules.extend(package.modules()?);
+        }
+        Ok(modules)
     }
 
-    pub fn into_module_bundles(self) -> Result<Vec<Vec<u8>>> {
+    pub fn into_module_bundles(self) -> Result<Vec<(AccountAddress, Vec<Vec<u8>>)>> {
         let mut bundles = vec![];
-        for module in self.modules()? {
-            let mut binary = vec![];
-            module.serialize(&mut binary)?;
-            bundles.push(binary);
+        for package in self.packages {
+            let mut module_bundle = vec![];
+            for module in package.modules()? {
+                let mut binary = vec![];
+                module.serialize(&mut binary)?;
+                module_bundle.push(binary);
+            }
+            bundles.push((package.genesis_account, module_bundle));
         }
         Ok(bundles)
     }
@@ -116,10 +165,14 @@ mod tests {
 
     #[test]
     fn test_package() {
-        let moveos_stdlib = Framework::build().unwrap();
-        let modules_count = moveos_stdlib.package.root_modules().count();
-        let bundles = moveos_stdlib.into_module_bundles().unwrap();
-        print!("modules_count:{}, bundles:{}", modules_count, bundles.len());
-        assert!(bundles.len() > modules_count);
+        let moveos_stdlib = Stdlib::build(BuildOptions::default()).unwrap();
+        for stdlib_package in moveos_stdlib.packages {
+            println!(
+                "stdlib package: {}, path: {:?}, modules_count:{}",
+                stdlib_package.genesis_account.short_str_lossless(),
+                stdlib_package.path,
+                stdlib_package.modules().unwrap().len()
+            );
+        }
     }
 }
