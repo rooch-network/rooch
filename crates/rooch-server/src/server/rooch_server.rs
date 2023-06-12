@@ -126,9 +126,6 @@ impl RoochAPIServer for RoochServer {
             .map(|event| event.map(AnnotatedEventView::from))
             .collect();
 
-        // let result = Events
-
-        // let result: Vec<Option<AnnotatedEventView>> = Vec::new();
         Ok(data)
     }
 
