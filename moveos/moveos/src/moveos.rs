@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::vm::moveos_vm::MoveOSVM;
-use anyhow::{bail, Result};
+use anyhow::{bail, ensure, Result};
 use move_binary_format::errors::vm_status_of_result;
 use move_binary_format::errors::{Location, PartialVMError};
 use move_core_types::vm_status::{KeptVMStatus, VMStatus};
@@ -10,16 +10,16 @@ use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
     value::MoveValue, vm_status::StatusCode,
 };
+use move_vm_runtime::config::VMConfig;
+use move_vm_runtime::native_functions::NativeFunction;
 use move_vm_types::gas::UnmeteredGasMeter;
-use moveos_stdlib::BuildOptions;
 use moveos_store::MoveOSDB;
 use moveos_store::{event_store::EventStore, state_store::StateDB};
 use moveos_types::function_return_value::FunctionReturnValue;
 use moveos_types::state_resolver::MoveOSResolverProxy;
 use moveos_types::storage_context::StorageContext;
 use moveos_types::transaction::{
-    AuthenticatableTransaction, MoveAction, MoveOSTransaction, TransactionOutput,
-    VerifiedMoveOSTransaction,
+    AuthenticatableTransaction, MoveOSTransaction, TransactionOutput, VerifiedMoveOSTransaction,
 };
 use moveos_types::tx_context::TxContext;
 use moveos_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, move_types::FunctionId};
@@ -36,31 +36,56 @@ pub static VALIDATE_FUNCTION: Lazy<FunctionId> = Lazy::new(|| {
     )
 });
 
+pub struct MoveOSConfig {
+    pub vm_config: VMConfig,
+}
+
+//TODO make VMConfig cloneable
+impl Clone for MoveOSConfig {
+    fn clone(&self) -> Self {
+        Self {
+            vm_config: VMConfig {
+                verifier: self.vm_config.verifier.clone(),
+                max_binary_format_version: self.vm_config.max_binary_format_version,
+                paranoid_type_checks: self.vm_config.paranoid_type_checks,
+            },
+        }
+    }
+}
+
 pub struct MoveOS {
     vm: MoveOSVM,
     db: MoveOSResolverProxy<MoveOSDB>,
 }
 
 impl MoveOS {
-    pub fn new(db: MoveOSDB) -> Result<Self> {
-        let vm = MoveOSVM::new()?;
-        let is_genesis = db.get_state_store().is_genesis();
-        let mut moveos = Self {
+    pub fn new(
+        db: MoveOSDB,
+        natives: impl IntoIterator<Item = (AccountAddress, Identifier, Identifier, NativeFunction)>,
+        config: MoveOSConfig,
+    ) -> Result<Self> {
+        let vm = MoveOSVM::new(natives, config.vm_config)?;
+        Ok(Self {
             vm,
             db: MoveOSResolverProxy(db),
-        };
-        if is_genesis {
-            //TODO refactor the genesis build
-            let genesis_txs = Self::build_genesis_txs()?;
-            for genesis_tx in genesis_txs {
-                let verified_tx = moveos.verify(genesis_tx)?;
-                let (_state_root, output) = moveos.execute(verified_tx)?;
-                if output.status != KeptVMStatus::Executed {
-                    bail!("genesis tx should success, error: {:?}", output.status);
-                }
+        })
+    }
+
+    pub fn init_genesis(&mut self, genesis_txs: Vec<MoveOSTransaction>) -> Result<()> {
+        ensure!(
+            self.db.0.get_state_store().is_genesis(),
+            "genesis already initialized"
+        );
+
+        for genesis_tx in genesis_txs {
+            let verified_tx = self.verify(genesis_tx)?;
+            let (_state_root, output) = self.execute(verified_tx)?;
+            if output.status != KeptVMStatus::Executed {
+                bail!("genesis tx should success, error: {:?}", output.status);
             }
         }
-        Ok(moveos)
+        //TODO return the state root genesis TransactionExecutionInfo
+        Ok(())
     }
 
     pub fn state(&self) -> &StateDB {
@@ -73,21 +98,6 @@ impl MoveOS {
 
     pub fn event_store(&self) -> &EventStore {
         self.db.0.get_event_store()
-    }
-
-    //TODO move to a suitable place
-    pub fn build_genesis_txs() -> Result<Vec<MoveOSTransaction>> {
-        let bundles =
-            moveos_stdlib::Stdlib::build(BuildOptions::default())?.into_module_bundles()?;
-        Ok(bundles
-            .into_iter()
-            .map(|(genesis_account, bundle)|
-        //TODO rensure genesis tx hash
-        MoveOSTransaction::new_for_test(
-            genesis_account,
-            MoveAction::ModuleBundle(bundle),
-        ))
-            .collect())
     }
 
     pub fn validate<T: AuthenticatableTransaction>(

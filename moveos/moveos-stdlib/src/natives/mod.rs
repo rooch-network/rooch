@@ -6,9 +6,8 @@ use move_core_types::gas_algebra::InternalGas;
 use move_vm_runtime::native_functions::{make_table_from_iter, NativeFunctionTable};
 use moveos_types::addresses::{MOVEOS_STD_ADDRESS, MOVE_STD_ADDRESS};
 
-mod helpers;
+pub mod helpers;
 pub mod moveos_stdlib;
-pub mod rooch_framework;
 
 #[derive(Debug, Clone)]
 pub struct GasParameters {
@@ -20,10 +19,6 @@ pub struct GasParameters {
     bcd: moveos_stdlib::bcd::GasParameters,
     events: moveos_stdlib::events::GasParameters,
     test_helper: moveos_stdlib::test_helper::GasParameters,
-    account: rooch_framework::account::GasParameters,
-    hash: rooch_framework::crypto::hash::GasParameters,
-    ed25519: rooch_framework::crypto::ed25519::GasParameters,
-    ecdsa_k1: rooch_framework::crypto::ecdsa_k1::GasParameters,
 }
 
 impl GasParameters {
@@ -37,10 +32,6 @@ impl GasParameters {
             bcd: moveos_stdlib::bcd::GasParameters::zeros(),
             events: moveos_stdlib::events::GasParameters::zeros(),
             test_helper: moveos_stdlib::test_helper::GasParameters::zeros(),
-            account: rooch_framework::account::GasParameters::zeros(),
-            hash: rooch_framework::crypto::hash::GasParameters::zeros(),
-            ed25519: rooch_framework::crypto::ed25519::GasParameters::zeros(),
-            ecdsa_k1: rooch_framework::crypto::ecdsa_k1::GasParameters::zeros(),
         }
     }
 }
@@ -63,6 +54,7 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
     let mut native_fun_table =
         move_stdlib::natives::all_natives(*MOVE_STD_ADDRESS, gas_params.move_stdlib);
 
+    // we only depend on the `debug` native function from the nursery
     let nursery_fun_table =
         move_stdlib::natives::nursery_natives(*MOVE_STD_ADDRESS, gas_params.move_nursery);
     native_fun_table.extend(nursery_fun_table);
@@ -88,24 +80,6 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
     add_natives!(
         "test_helper",
         moveos_stdlib::test_helper::make_all(gas_params.test_helper)
-    );
-
-    // rooch_framework natives
-    add_natives!(
-        "account",
-        rooch_framework::account::make_all(gas_params.account)
-    );
-    add_natives!(
-        "rooch_hash",
-        rooch_framework::crypto::hash::make_all(gas_params.hash)
-    );
-    add_natives!(
-        "ed25519",
-        rooch_framework::crypto::ed25519::make_all(gas_params.ed25519)
-    );
-    add_natives!(
-        "ecdsa_k1",
-        rooch_framework::crypto::ecdsa_k1::make_all(gas_params.ecdsa_k1)
     );
 
     let moveos_native_fun_table = make_table_from_iter(*MOVEOS_STD_ADDRESS, natives);

@@ -12,11 +12,11 @@ use move_transactional_test_runner::{
 };
 use move_vm_runtime::session::SerializedReturnValues;
 use moveos::moveos::MoveOS;
-use moveos_stdlib::BuildOptions;
 use moveos_types::move_types::FunctionId;
 use moveos_types::object::ObjectID;
 use moveos_types::state_resolver::AnnotatedStateReader;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
+use rooch_genesis::RoochGenesis;
 use std::{collections::BTreeMap, path::Path};
 
 pub struct MoveOSTestAdapter<'a> {
@@ -76,9 +76,13 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
         };
 
         let db = moveos_store::MoveOSDB::new_with_memory_store();
-        let moveos = MoveOS::new(db).unwrap();
 
-        let mut named_address_mapping = moveos_stdlib::Stdlib::named_addresses();
+        let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
+        let mut moveos = MoveOS::new(db, genesis.all_natives(), genesis.config.clone()).unwrap();
+
+        moveos.init_genesis(genesis.genesis_txs.clone()).unwrap();
+
+        let mut named_address_mapping = moveos_stdlib_builder::Stdlib::named_addresses();
         for (name, addr) in additional_mapping {
             if named_address_mapping.contains_key(&name) {
                 panic!(
@@ -101,14 +105,9 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
         };
 
         //Auto generate interface to Framework modules
-        //TODO share the genesis module with MoveOS.
-        let moveos_stdlib_modules = moveos_stdlib::Stdlib::build(BuildOptions::default())
-            .unwrap()
-            .all_modules()
-            .unwrap();
+        let stdlib_modules = genesis.stdlib.all_modules().unwrap();
 
-        // let sorted_moveos_stdlib_modules = sort_by_dependency_order(moveos_stdlib_modules.iter())?;
-        for module in moveos_stdlib_modules
+        for module in stdlib_modules
             .iter()
             .filter(|module| !adapter.compiled_state.is_precompiled_dep(&module.self_id()))
             .collect::<Vec<_>>()

@@ -1,5 +1,5 @@
 [package]
-name = "moveos"
+name = "rooch-framework"
 version = "0.1.0"
 
 # Workspace inherited keys
@@ -14,24 +14,33 @@ rust-version = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = { workspace = true }
+better_any = { workspace = true }
+fastcrypto = { workspace = true }
+linked-hash-map = { workspace = true }
+once_cell = { workspace = true }
 serde = { workspace = true }
 serde_bytes = { workspace = true }
-anyhow = { workspace = true }
-bcs = { workspace = true }
-once_cell = { workspace = true }
+sha3 = { workspace = true }
+smallvec = { workspace = true }
+hex = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }
 move-bytecode-verifier = { workspace = true }
 move-core-types = { workspace = true }
+move-command-line-common = { workspace = true }
 move-stdlib = { workspace = true }
 move-unit-test = { workspace = true, optional = true }
 move-vm-runtime = { workspace = true }
 move-vm-test-utils = { workspace = true }
 move-vm-types = { workspace = true }
+move-package = { workspace = true }
+move-prover = { workspace = true }
+
 
 moveos-types = { workspace = true }
-moveos-store = { workspace = true }
+moveos-verifier = { workspace = true }
 moveos-stdlib = { workspace = true }
 moveos-stdlib-builder = { workspace = true }
-moveos-verifier = { workspace = true }
+moveos = { workspace = true }

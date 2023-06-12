@@ -53,10 +53,11 @@ moveos-types = { workspace = true }
 moveos-store = { workspace = true }
 moveos-common = { workspace = true }
 moveos = { workspace = true }
-rooch-config = { workspace = true }
 moveos-verifier = { workspace = true }
 
 rooch-key = { workspace = true }
 rooch-types = { workspace = true }
+rooch-config = { workspace = true }
+rooch-framework = { workspace = true }
 rooch-server = { workspace = true }
 rooch-client = { workspace = true }

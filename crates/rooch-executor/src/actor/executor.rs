@@ -11,6 +11,7 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use move_resource_viewer::MoveValueAnnotator;
 use moveos::moveos::MoveOS;
+use moveos_store::MoveOSDB;
 use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event::EventHandle;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
@@ -18,6 +19,7 @@ use moveos_types::move_types::as_struct_tag;
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::state_resolver::{AnnotatedStateReader, StateReader};
 use moveos_types::transaction::{AuthenticatableTransaction, VerifiedMoveOSTransaction};
+use rooch_genesis::RoochGenesis;
 use rooch_types::transaction::TransactionExecutionInfo;
 use rooch_types::H256;
 
@@ -26,8 +28,15 @@ pub struct ExecutorActor {
 }
 
 impl ExecutorActor {
-    pub fn new(moveos: MoveOS) -> Self {
-        Self { moveos }
+    pub fn new() -> Result<Self> {
+        let moveosdb = MoveOSDB::new_with_memory_store();
+        let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
+
+        let mut moveos = MoveOS::new(moveosdb, genesis.all_natives(), genesis.config.clone())?;
+        if moveos.state().is_genesis() {
+            moveos.init_genesis(genesis.genesis_txs.clone())?;
+        }
+        Ok(Self { moveos })
     }
 }
 

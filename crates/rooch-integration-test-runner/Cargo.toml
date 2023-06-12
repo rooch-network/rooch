@@ -37,8 +37,11 @@ move-transactional-test-runner = { workspace = true }
 
 moveos-store = { workspace = true }
 moveos-stdlib = { workspace = true }
+moveos-stdlib-builder = { workspace = true }
 moveos = { workspace = true }
 moveos-types = { workspace = true }
+
+rooch-genesis = { workspace = true }
 
 [dev-dependencies]
 datatest-stable = { workspace = true }
