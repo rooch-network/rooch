@@ -459,13 +459,8 @@ impl<'a> ExtendedChecker<'a> {
     }
 }
 
-pub fn check_storage_context_struct_tag(struct_tag: String) -> bool {
-    let address = moveos_types::addresses::MOVEOS_STD_ADDRESS.to_string();
-    let module = StorageContext::module_identifier()
-        .as_ident_str()
-        .to_string();
-    let name = StorageContext::struct_identifier().to_string();
-    struct_tag == format!("{}::{}::{}", address, module, name)
+pub fn check_storage_context_struct_tag(struct_full_name: String) -> bool {
+    struct_full_name == StorageContext::struct_tag().to_canonical_string()
 }
 
 pub fn is_defined_or_allowed_in_current_module(
