@@ -41,6 +41,7 @@ moveos-stdlib-builder = { workspace = true }
 moveos = { workspace = true }
 moveos-types = { workspace = true }
 
+rooch-framework = { workspace = true }
 rooch-genesis = { workspace = true }
 
 [dev-dependencies]

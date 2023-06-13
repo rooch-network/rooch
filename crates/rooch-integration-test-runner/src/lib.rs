@@ -15,7 +15,7 @@ use moveos::moveos::MoveOS;
 use moveos_types::move_types::FunctionId;
 use moveos_types::object::ObjectID;
 use moveos_types::state_resolver::AnnotatedStateReader;
-use moveos_types::transaction::{MoveAction, MoveOSTransaction};
+use moveos_types::transaction::{MoveAction, MoveOSTransaction, TransactionOutput};
 use rooch_genesis::RoochGenesis;
 use std::{collections::BTreeMap, path::Path};
 
@@ -82,11 +82,11 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
 
         moveos.init_genesis(genesis.genesis_txs.clone()).unwrap();
 
-        let mut named_address_mapping = moveos_stdlib_builder::Stdlib::named_addresses();
+        let mut named_address_mapping = rooch_framework::rooch_framework_named_addresses();
         for (name, addr) in additional_mapping {
             if named_address_mapping.contains_key(&name) {
                 panic!(
-                    "Invalid init. The named address '{}' is reserved by the move-stdlib",
+                    "Invalid init. The named address '{}' is reserved by the rooch-framework",
                     name
                 )
             }
@@ -138,8 +138,8 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
             MoveAction::new_module_bundle(vec![module_bytes]),
         );
         let verified_tx = self.moveos.verify(tx)?;
-        self.moveos.execute(verified_tx)?;
-        Ok((None, module))
+        let (_state_root, output) = self.moveos.execute(verified_tx)?;
+        Ok((Some(tx_output_to_str(output)), module))
     }
 
     fn execute_script(
@@ -172,13 +172,13 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
             MoveAction::new_script_call(script_bytes, type_args, args),
         );
         let verified_tx = self.moveos.verify(tx)?;
-        self.moveos.execute(verified_tx)?;
+        let (_state_root, output) = self.moveos.execute(verified_tx)?;
         //TODO return values
         let value = SerializedReturnValues {
             mutable_reference_outputs: vec![],
             return_values: vec![],
         };
-        Ok((None, value))
+        Ok((Some(tx_output_to_str(output)), value))
     }
 
     fn call_function(
@@ -209,13 +209,15 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
             MoveAction::new_function_call(function_id, type_args, args),
         );
         let verified_tx = self.moveos.verify(tx)?;
-        self.moveos.execute(verified_tx)?;
+        let (_state_root, output) = self.moveos.execute(verified_tx)?;
+        debug_assert!(output.status == move_core_types::vm_status::KeptVMStatus::Executed);
         //TODO return values
         let value = SerializedReturnValues {
             mutable_reference_outputs: vec![],
             return_values: vec![],
         };
-        Ok((None, value))
+
+        Ok((Some(tx_output_to_str(output)), value))
     }
 
     fn view_data(
@@ -263,4 +265,9 @@ pub fn run_test_impl<'a>(
         path,
         fully_compiled_program_opt,
     )
+}
+
+fn tx_output_to_str(output: TransactionOutput) -> String {
+    //TODO introduce output view, and print json output
+    output.status.to_string()
 }

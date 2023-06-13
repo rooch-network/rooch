@@ -1,1 +1,7 @@
 processed 3 tasks
+
+task 1 'run'. lines 9-18:
+status EXECUTED
+
+task 2 'run'. lines 19-26:
+status EXECUTED
