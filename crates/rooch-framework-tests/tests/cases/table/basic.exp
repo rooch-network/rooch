@@ -7,4 +7,4 @@ task 2 'run'. lines 53-65:
 status EXECUTED
 
 task 3 'run'. lines 67-80:
-status ABORTED with code 25863 in 0000000000000000000000000000000000000000000000000000000000000002::raw_table
+status EXECUTED
