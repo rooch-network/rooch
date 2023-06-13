@@ -42,12 +42,3 @@ move-prover = { workspace = true }
 
 moveos-types = { workspace = true }
 moveos-verifier = { workspace = true }
-
-[dev-dependencies]
-#TODO remove this dependence, MoveOS should not depend on Rooch crate 
-rooch-integration-test-runner = { workspace = true }
-datatest-stable = { workspace = true }
-
-[[test]]
-harness = false
-name = "tests"

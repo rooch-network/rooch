@@ -1,8 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{object::ObjectID, state_resolver, tx_context::TxContext};
-use move_core_types::{ident_str, identifier::IdentStr, move_resource::MoveStructType};
+use crate::{
+    addresses::MOVEOS_STD_ADDRESS, object::ObjectID, state_resolver, tx_context::TxContext,
+};
+use move_core_types::{
+    account_address::AccountAddress, ident_str, identifier::IdentStr, move_resource::MoveStructType,
+};
 use serde::{Deserialize, Serialize};
 
 pub const GLOBAL_OBJECT_STORAGE_HANDLE: ObjectID = state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE;
@@ -38,6 +42,7 @@ impl StorageContext {
 }
 
 impl MoveStructType for StorageContext {
+    const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
     const MODULE_NAME: &'static IdentStr = STORAGE_CONTEXT_MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = STORAGE_CONTEXT_STRUCT_NAME;
 }

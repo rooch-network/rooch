@@ -64,7 +64,7 @@ script {
     }
 }
 
-//# run --signers test --args 0x3e9909ac8516729bf47d8cdcba9180c07ab76a3ca770ae2ea0466acbc8fca3f8
+//# run --signers test --args @0xc1c9be4d48a51830d3af349c14cbd3c4614fdc9e998e7ed9b14bd34ea483bdf9
 script {
     use std::string;
     use moveos_std::storage_context::{StorageContext};

@@ -18,6 +18,7 @@ serde = { workspace = true }
 serde_bytes = { workspace = true }
 anyhow = { workspace = true }
 bcs = { workspace = true }
+log = { workspace = true }
 once_cell = { workspace = true }
 
 move-binary-format = { workspace = true }
@@ -33,4 +34,5 @@ move-vm-types = { workspace = true }
 moveos-types = { workspace = true }
 moveos-store = { workspace = true }
 moveos-stdlib = { workspace = true }
+moveos-stdlib-builder = { workspace = true }
 moveos-verifier = { workspace = true }

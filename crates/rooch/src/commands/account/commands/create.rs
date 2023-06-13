@@ -16,7 +16,9 @@ use moveos_types::{
     move_types::FunctionId,
     transaction::{MoveAction, MoveOSTransaction},
 };
+use once_cell::sync::Lazy;
 use rooch_client::wallet_context::WalletContext;
+use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
 use rooch_key::keystore::{AccountKeystore, Keystore};
 use rooch_server::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_types::{
@@ -29,12 +31,11 @@ use rooch_types::{
     },
 };
 
+use crate::types::{CommandAction, WalletContextOptions};
 use std::{
     path::{Path, PathBuf},
     str::FromStr,
 };
-
-use crate::types::{CommandAction, WalletContextOptions};
 
 /// Create a new account on-chain
 ///
@@ -61,9 +62,8 @@ impl CreateCommand {
             scheme.to_string()
         );
         println!("Secret Recovery Phrase : [{phrase}]");
-        //TODO define static variable.
-        let create_account_entry_function =
-            FunctionId::from_str("0x1::account::create_account_entry").unwrap();
+
+        let create_account_entry_function = CREATE_ACCOUNT_ENTRY_FUNCTION.clone();
         let action = MoveAction::new_function_call(
             create_account_entry_function,
             vec![],
@@ -73,3 +73,10 @@ impl CreateCommand {
         context.sign_and_execute(new_address, action).await
     }
 }
+
+static CREATE_ACCOUNT_ENTRY_FUNCTION: Lazy<FunctionId> = Lazy::new(|| {
+    FunctionId::new(
+        ModuleId::new(ROOCH_FRAMEWORK_ADDRESS, Identifier::new("account").unwrap()),
+        Identifier::new("create_account_entry").unwrap(),
+    )
+});

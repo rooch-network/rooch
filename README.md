@@ -37,6 +37,15 @@
     ```bash
     cd my_move_project && rooch move build
     ```
+5. Start the server
+    ```bash
+    rooch server start
+    ```
+> If you want more detail log for debug, you can use `RUST_LOG=debug rooch server start`
+6. Publish the Move project
+    ```bash
+    rooch move publish -p my_move_project
+    ```
 
 ## How to Contribute
 

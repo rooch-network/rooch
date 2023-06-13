@@ -43,6 +43,7 @@ where
         tag: &StructTag,
     ) -> Result<Option<Vec<u8>>, Self::Error> {
         let resource_table_id = NamedTableID::Resource(*address).to_object_id();
+
         let key = resource_tag_to_key(tag);
         self.0
             .resolve_state(&resource_table_id, &key)?

@@ -12,8 +12,6 @@ use coerce::actor::{system::ActorSystem, IntoActor};
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
-use moveos::moveos::MoveOS;
-use moveos_store::MoveOSDB;
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_key::key_derive::generate_new_key;
@@ -118,8 +116,7 @@ pub async fn start_server() -> Result<ServerHandle> {
     let actor_system = ActorSystem::global_system();
 
     // Init executor
-    let moveos = MoveOS::new(MoveOSDB::new_with_memory_store())?;
-    let executor = ExecutorActor::new(moveos)
+    let executor = ExecutorActor::new()?
         .into_actor(Some("Executor"), &actor_system)
         .await?;
     let executor_proxy = ExecutorProxy::new(executor.into());

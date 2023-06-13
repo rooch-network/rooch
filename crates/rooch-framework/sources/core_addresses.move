@@ -70,7 +70,7 @@ module rooch_framework::core_addresses {
             addr == @0xa
     }
 
-    /// Return true if `addr` is 0x1.
+    /// Return true if `addr` is 0x3.
     public fun is_rooch_framework_address(addr: address): bool {
         addr == @rooch_framework
     }

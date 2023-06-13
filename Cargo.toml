@@ -6,10 +6,14 @@ members = [
     "moveos/moveos-types",
     "moveos/moveos-store",
     "moveos/moveos-stdlib",
+    "moveos/moveos-stdlib-builder",
     "moveos/moveos",
     "moveos/moveos-common",
     "crates/rooch-key",
     "crates/rooch-types",
+    "crates/rooch-framework",
+    "crates/rooch-framework-tests",
+    "crates/rooch-genesis",
     "crates/rooch-integration-test-runner",
     "crates/rooch-server",
     "crates/rooch-client",
@@ -47,6 +51,7 @@ smt = { path = "moveos/smt" }
 moveos-types = { path = "moveos/moveos-types" }
 moveos-store = { path = "moveos/moveos-store" }
 moveos-stdlib = { path = "moveos/moveos-stdlib" }
+moveos-stdlib-builder = { path = "moveos/moveos-stdlib-builder" }
 moveos = { path = "moveos/moveos" }
 moveos-cli = { path = "moveos/moveos-cli" }
 moveos-common = { path = "moveos/moveos-common" }
@@ -56,7 +61,10 @@ moveos-verifier = { path = "moveos/moveos-verifier" }
 rooch = { path = "crates/rooch" }
 rooch-key = { path = "crates/rooch-key" }
 rooch-types = { path = "crates/rooch-types" }
+rooch-framework = { path = "crates/rooch-framework" }
+rooch-framework-tests = { path = "crates/rooch-framework-tests" }
 rooch-integration-test-runner = { path = "crates/rooch-integration-test-runner" }
+rooch-genesis = { path = "crates/rooch-genesis" }
 rooch-server = { path = "crates/rooch-server" }
 rooch-client = { path = "crates/rooch-client" }
 rooch-testsuite = { path = "crates/testsuite" }

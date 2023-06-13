@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::fmt::Display;
+
 use crate::{
     event::Event,
     h256::{self, H256},
@@ -95,6 +97,36 @@ pub enum VerifiedMoveAction {
         module_bundle: Vec<Vec<u8>>,
         init_function_modules: Vec<ModuleId>,
     },
+}
+
+impl Display for VerifiedMoveAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            VerifiedMoveAction::Script {
+                call: _,
+                resolved_args: _,
+            } => {
+                write!(f, "ScriptCall")
+            }
+            VerifiedMoveAction::Function {
+                call,
+                resolved_args: _,
+            } => {
+                write!(f, "FunctionCall(function_id: {})", call.function_id)
+            }
+            VerifiedMoveAction::ModuleBundle {
+                module_bundle,
+                init_function_modules,
+            } => {
+                write!(
+                    f,
+                    "ModuleBundle(module_bundle: {}, init_function_modules: {})",
+                    module_bundle.len(),
+                    init_function_modules.len()
+                )
+            }
+        }
+    }
 }
 
 pub trait AuthenticatableTransaction {

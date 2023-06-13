@@ -10,8 +10,9 @@ use move_binary_format::{
     file_format::AbilitySet,
     CompiledModule,
 };
-use move_bytecode_verifier::VerifierConfig;
 use move_core_types::{
+    account_address::AccountAddress,
+    identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
     value::MoveTypeLayout,
     vm_status::{KeptVMStatus, VMStatus},
@@ -20,6 +21,7 @@ use move_vm_runtime::{
     config::VMConfig,
     move_vm::MoveVM,
     native_extensions::NativeContextExtensions,
+    native_functions::NativeFunction,
     session::{LoadedFunctionInstantiation, SerializedReturnValues, Session},
 };
 use move_vm_types::{
@@ -27,7 +29,7 @@ use move_vm_types::{
     gas::GasMeter,
     loaded_data::runtime_types::{CachedStructIndex, StructType, Type},
 };
-use moveos_stdlib::natives::{self, moveos_stdlib::raw_table::NativeTableContext, GasParameters};
+use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
 use moveos_types::{
     event::{Event, EventID},
     function_return_value::FunctionReturnValue,
@@ -46,17 +48,12 @@ pub struct MoveOSVM {
 }
 
 impl MoveOSVM {
-    pub fn new() -> VMResult<Self> {
-        let gas_params = GasParameters::zeros();
+    pub fn new(
+        natives: impl IntoIterator<Item = (AccountAddress, Identifier, Identifier, NativeFunction)>,
+        vm_config: VMConfig,
+    ) -> VMResult<Self> {
         Ok(Self {
-            inner: MoveVM::new_with_config(
-                natives::all_natives(gas_params),
-                VMConfig {
-                    verifier: VerifierConfig::default(),
-                    max_binary_format_version: 6,
-                    paranoid_type_checks: false,
-                },
-            )?,
+            inner: MoveVM::new_with_config(natives, vm_config)?,
         })
     }
 
@@ -230,7 +227,7 @@ where
                 .execute_entry_function(
                     &call.function_id.module_id,
                     &call.function_id.function_name,
-                    call.ty_args,
+                    call.ty_args.clone(),
                     resolved_args,
                     &mut self.gas_meter,
                 )

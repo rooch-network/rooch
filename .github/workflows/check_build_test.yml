@@ -35,6 +35,6 @@ jobs:
       - name: Execute stdlib tests
         run: cargo run --bin rooch move test -p moveos/moveos-stdlib/moveos-stdlib/
       - name: Execute framework tests
-        run: cargo run --bin rooch move test -p moveos/moveos-stdlib/rooch-framework/
+        run: cargo run --bin rooch move test -p crates/rooch-framework/
       - name: Display disk space after build
         run: df -h
