@@ -98,17 +98,17 @@ impl RoochAPIServer for RoochServer {
         let u_limit = limit.unwrap_or(MAX_RESULT_LIMIT);
         let mut result: Vec<Option<AnnotatedEventView>> = self
             .rpc_service
-            .get_events_by_event_handle(event_handle_type.into(), cursor.unwrap_or(0), u_limit + 1)
+            .get_events_by_event_handle(event_handle_type.into(), cursor, u_limit + 1)
             .await?
             .into_iter()
             .map(|event| event.map(AnnotatedEventView::from))
             .collect();
 
         let has_next_page = (result.len() as u64) > u_limit;
+        result.truncate(u_limit as usize);
         let next_cursor = result.last().map_or(cursor, |event| {
             Some(event.clone().unwrap().event.event_id.event_seq)
         });
-        result.truncate(u_limit as usize);
 
         Ok(EventPage {
             data: result,
