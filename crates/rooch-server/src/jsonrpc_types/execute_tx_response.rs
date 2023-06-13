@@ -2,15 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{ModuleIdView, StateChangeSetView, StrView};
-use crate::jsonrpc_types::EventView;
+use crate::jsonrpc_types::{EventView, RoochH256View};
 use move_core_types::vm_status::{AbortLocation, KeptVMStatus};
 use moveos_types::transaction::TransactionOutput;
-use rooch_types::{
-    transaction::{
-        authenticator::Authenticator, TransactionExecutionInfo, TransactionSequenceInfo,
-    },
-    H256,
+use rooch_types::transaction::{
+    authenticator::Authenticator, TransactionExecutionInfo, TransactionSequenceInfo,
 };
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -41,7 +39,7 @@ impl FromStr for AbortLocationView {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum KeptVMStatusView {
     Executed,
@@ -81,7 +79,7 @@ impl From<KeptVMStatus> for KeptVMStatusView {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct AuthenticatorView {
     pub scheme: StrView<u64>,
     pub payload: StrView<Vec<u8>>,
@@ -95,11 +93,11 @@ impl From<Authenticator> for AuthenticatorView {
         }
     }
 }
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionSequenceInfoView {
     pub tx_order: StrView<u128>,
     pub tx_order_signature: AuthenticatorView,
-    pub tx_accumulator_root: H256,
+    pub tx_accumulator_root: RoochH256View,
 }
 
 impl From<TransactionSequenceInfo> for TransactionSequenceInfoView {
@@ -109,16 +107,16 @@ impl From<TransactionSequenceInfo> for TransactionSequenceInfoView {
             tx_order_signature: AuthenticatorView::from(
                 transaction_sequence_info.tx_order_signature,
             ),
-            tx_accumulator_root: transaction_sequence_info.tx_accumulator_root,
+            tx_accumulator_root: transaction_sequence_info.tx_accumulator_root.into(),
         }
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionExecutionInfoView {
-    pub tx_hash: H256,
-    pub state_root: H256,
-    pub event_root: H256,
+    pub tx_hash: RoochH256View,
+    pub state_root: RoochH256View,
+    pub event_root: RoochH256View,
     pub gas_used: u64,
     pub status: KeptVMStatusView,
 }
@@ -126,16 +124,16 @@ pub struct TransactionExecutionInfoView {
 impl From<TransactionExecutionInfo> for TransactionExecutionInfoView {
     fn from(transaction_execution_info: TransactionExecutionInfo) -> Self {
         Self {
-            tx_hash: transaction_execution_info.tx_hash,
-            state_root: transaction_execution_info.state_root,
-            event_root: transaction_execution_info.event_root,
+            tx_hash: transaction_execution_info.tx_hash.into(),
+            state_root: transaction_execution_info.state_root.into(),
+            event_root: transaction_execution_info.event_root.into(),
             gas_used: transaction_execution_info.gas_used,
             status: KeptVMStatusView::from(transaction_execution_info.status),
         }
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionOutputView {
     pub status: KeptVMStatusView,
     //TODO The changeset will be removed in the future
@@ -168,7 +166,7 @@ pub struct ExecuteTransactionResponse {
     pub output: TransactionOutput,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ExecuteTransactionResponseView {
     pub sequence_info: TransactionSequenceInfoView,
     pub execution_info: TransactionExecutionInfoView,

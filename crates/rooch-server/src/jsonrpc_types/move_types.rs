@@ -14,16 +14,20 @@ use moveos_types::event::{Event, EventID};
 use moveos_types::move_types::parse_module_id;
 use moveos_types::transaction::MoveAction;
 use moveos_types::{
-    move_string::{MoveAsciiString, MoveString},
-    state::MoveStructState,
-};
-use moveos_types::{
+    access_path::{AccessPath, Path},
+    event_filter::EventFilter,
+    h256::H256,
     move_types::FunctionId,
     object::{AnnotatedObject, ObjectID},
     transaction::{FunctionCall, ScriptCall},
 };
+use moveos_types::{
+    move_string::{MoveAsciiString, MoveString},
+    state::MoveStructState,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::collections::BTreeMap;
 use std::str::FromStr;
 // use move_binary_format::file_format::AbilitySet;
@@ -36,7 +40,7 @@ pub type FunctionIdView = StrView<FunctionId>;
 impl_str_view_for! {TypeTag StructTag FunctionId}
 // impl_str_view_for! {TypeTag StructTag ModuleId FunctionId}
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct AnnotatedMoveStructView {
     pub abilities: u8,
     #[serde(rename = "type")]
@@ -80,7 +84,7 @@ impl From<AnnotatedMoveStruct> for AnnotatedMoveStructView {
 // }
 
 /// Some specific struct that we want to display in a special way for better readability
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
 pub enum SpecificStructView {
     MoveString(MoveString),
@@ -108,7 +112,7 @@ impl SpecificStructView {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
 pub enum AnnotatedMoveValueView {
     U8(u8),
@@ -325,8 +329,221 @@ impl FromStr for StrView<ModuleId> {
         Ok(Self(parse_module_id(s)?))
     }
 }
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+pub struct AccountAddressView([u8; AccountAddress::LENGTH]);
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+impl From<AccountAddress> for AccountAddressView {
+    fn from(value: AccountAddress) -> Self {
+        AccountAddressView(value.into())
+    }
+}
+
+impl From<AccountAddressView> for AccountAddress {
+    fn from(value: AccountAddressView) -> Self {
+        AccountAddress::new(value.0)
+    }
+}
+
+// #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
+// #[cfg_attr(feature = "fuzzing", derive(arbitrary::Arbitrary))]
+// pub struct Identifier(Box<str>);
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+pub struct IdentifierView(String);
+
+impl From<Identifier> for IdentifierView {
+    fn from(value: Identifier) -> Self {
+        IdentifierView(value.into_string())
+    }
+}
+
+impl From<IdentifierView> for Identifier {
+    fn from(value: IdentifierView) -> Self {
+        Identifier::new(value.0).unwrap()
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+pub enum PathView {
+    /// Get Object
+    Object { object_ids: Vec<ObjectID> },
+    /// Get account resources
+    Resource {
+        account: AccountAddressView,
+        resource_types: Vec<StructTagView>,
+    },
+    /// Get account modules
+    Module {
+        account: AccountAddressView,
+        module_names: Vec<IdentifierView>,
+    },
+    /// Get table values by keys
+    Table {
+        table_handle: ObjectID,
+        keys: Vec<Vec<u8>>,
+    },
+}
+
+impl From<PathView> for Path {
+    fn from(value: PathView) -> Self {
+        match value {
+            PathView::Object { object_ids } => Self::Object { object_ids },
+            PathView::Resource {
+                account,
+                resource_types,
+            } => Self::Resource {
+                account: account.into(),
+                resource_types: resource_types.into_iter().map(StructTag::from).collect(),
+            },
+            PathView::Module {
+                account,
+                module_names,
+            } => Self::Module {
+                account: account.into(),
+                module_names: module_names.into_iter().map(Identifier::from).collect(),
+            },
+            PathView::Table { table_handle, keys } => Self::Table { table_handle, keys },
+        }
+    }
+}
+
+impl From<Path> for PathView {
+    fn from(value: Path) -> Self {
+        match value {
+            Path::Object { object_ids } => Self::Object { object_ids },
+            Path::Resource {
+                account,
+                resource_types,
+            } => Self::Resource {
+                account: account.into(),
+                resource_types: resource_types
+                    .into_iter()
+                    .map(StructTagView::from)
+                    .collect(),
+            },
+            Path::Module {
+                account,
+                module_names,
+            } => Self::Module {
+                account: account.into(),
+                module_names: module_names.into_iter().map(IdentifierView::from).collect(),
+            },
+            Path::Table { table_handle, keys } => Self::Table { table_handle, keys },
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+pub struct AccessPathView(pub PathView);
+
+impl From<AccessPathView> for AccessPath {
+    fn from(value: AccessPathView) -> Self {
+        AccessPath(value.0.into())
+    }
+}
+
+impl From<AccessPath> for AccessPathView {
+    fn from(value: AccessPath) -> Self {
+        AccessPathView(value.0.into())
+    }
+}
+
+// TODO: Specifies whether to merge Moveos h256 and rooch h256
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+pub struct MoveH256View([u8; 32]);
+
+impl From<H256> for MoveH256View {
+    fn from(value: H256) -> Self {
+        MoveH256View(value.0)
+    }
+}
+
+impl From<MoveH256View> for H256 {
+    fn from(value: MoveH256View) -> Self {
+        H256(value.0)
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+pub enum EventFilterView {
+    /// Query by sender address.
+    Sender(AccountAddressView),
+    /// Return events emitted by the given transaction.
+    Transaction(
+        ///tx hash of the transaction
+        MoveH256View,
+    ),
+    /// Return events with the given move event struct name
+    MoveEventType(
+        // #[schemars(with = "String")]
+        // #[serde_as(as = "TypeTag")]
+        TypeTagView,
+    ),
+    MoveEventField {
+        path: String,
+        value: Value,
+    },
+    /// Return events emitted in [start_time, end_time) interval
+    // #[serde(rename_all = "camelCase")]
+    TimeRange {
+        /// left endpoint of time interval, milliseconds since epoch, inclusive
+        // #[schemars(with = "u64")]
+        // #[serde_as(as = "u64")]
+        start_time: u64,
+        /// right endpoint of time interval, milliseconds since epoch, exclusive
+        // #[schemars(with = "u64")]
+        // #[serde_as(as = "u64")]
+        end_time: u64,
+    },
+    /// Return events emitted in [from_block, to_block) interval
+    // #[serde(rename_all = "camelCase")]
+    // BlockRange {
+    //     /// left endpoint of block height, inclusive
+    //     // #[schemars(with = "u64")]
+    //     // #[serde_as(as = "u64")]
+    //     from_block: u64, //TODO use BlockNumber
+    //     /// right endpoint of block height, exclusive
+    //     // #[schemars(with = "u64")]
+    //     // #[serde_as(as = "u64")]
+    //     to_block: u64, //TODO use BlockNumber
+    // },
+    All(Vec<EventFilterView>),
+    Any(Vec<EventFilterView>),
+    And(Box<EventFilterView>, Box<EventFilterView>),
+    Or(Box<EventFilterView>, Box<EventFilterView>),
+}
+
+impl From<EventFilterView> for EventFilter {
+    fn from(value: EventFilterView) -> Self {
+        match value {
+            EventFilterView::Sender(address) => Self::Sender(address.into()),
+            EventFilterView::Transaction(tx_hash) => Self::Transaction(tx_hash.into()),
+            EventFilterView::MoveEventType(type_tag) => Self::MoveEventType(type_tag.into()),
+            EventFilterView::MoveEventField { path, value } => Self::MoveEventField { path, value },
+            EventFilterView::TimeRange {
+                start_time,
+                end_time,
+            } => Self::TimeRange {
+                start_time,
+                end_time,
+            },
+            EventFilterView::All(filters) => {
+                Self::All(filters.into_iter().map(|f| f.into()).collect())
+            }
+            EventFilterView::Any(filters) => {
+                Self::Any(filters.into_iter().map(|f| f.into()).collect())
+            }
+            EventFilterView::And(left, right) => {
+                Self::And(Box::new((*left).into()), Box::new((*right).into()))
+            }
+            EventFilterView::Or(left, right) => {
+                Self::Or(Box::new((*left).into()), Box::new((*right).into()))
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct EventView {
     pub event_id: EventID,
     pub type_tag: TypeTagView,

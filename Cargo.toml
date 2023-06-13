@@ -20,6 +20,8 @@ members = [
     "crates/rooch-sequencer",
     "crates/rooch-executor",
     "crates/rooch-proposer",
+    "crates/rooch-open-rpc",
+    "crates/rooch-open-rpc-macros"
 ]
 
 default-members = [
@@ -60,10 +62,12 @@ rooch-integration-test-runner = { path = "crates/rooch-integration-test-runner" 
 rooch-server = { path = "crates/rooch-server" }
 rooch-client = { path = "crates/rooch-client" }
 rooch-testsuite = { path = "crates/testsuite" }
-rooch-config = {path = "crates/rooch-config"}
-rooch-sequencer = {path = "crates/rooch-sequencer"}
-rooch-executor = {path = "crates/rooch-executor"}
-rooch-proposer = {path = "crates/rooch-proposer"}
+rooch-config = { path = "crates/rooch-config" }
+rooch-sequencer = { path = "crates/rooch-sequencer" }
+rooch-executor = { path = "crates/rooch-executor" }
+rooch-proposer = { path = "crates/rooch-proposer" }
+rooch-open-rpc = { path = "crates/rooch-open-rpc" }
+rooch-open-rpc-macros = { path = "crates/rooch-open-rpc-macros" }
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.
@@ -93,7 +97,7 @@ fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", rev = "c27e87fb
 futures = "0.3"
 hex = "0.4.3"
 rustc-hex = "1.0"
-itertools = "0.10.3"
+itertools = "0.10.5"
 jsonrpsee = { version = "0.16", features = ["full"] }
 jpst = "0.1.1"
 lazy_static = "1.4.0"
@@ -137,6 +141,14 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 codespan-reporting = "0.11.1"
 termcolor = "1.1.2"
+versions = "4.1.0"
+pretty_assertions = "1.2.0"
+syn = { version = "1.0.104", features = ["full", "extra-traits"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+derive-syn-parse = "0.1.5"
+unescape = "0.1.0"
+
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES

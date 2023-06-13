@@ -7,10 +7,11 @@ use moveos_types::{
     object::ObjectID,
     state::{AnnotatedState, State, StateChangeSet, TableChange, TableTypeInfo},
 };
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct StateView {
     pub value: StrView<Vec<u8>>,
     pub value_type: TypeTagView,
@@ -34,7 +35,7 @@ impl From<StateView> for State {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct AnnotatedStateView {
     pub state: StateView,
     pub move_value: AnnotatedMoveValueView,
@@ -62,7 +63,7 @@ impl From<AnnotatedState> for AnnotatedStateView {
 //     }
 // }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TableTypeInfoView {
     pub key_type: TypeTagView,
 }
@@ -75,7 +76,7 @@ impl From<TableTypeInfo> for TableTypeInfoView {
     }
 }
 
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct StateChangeSetView {
     pub new_tables: BTreeMap<ObjectID, TableTypeInfoView>,
     pub removed_tables: BTreeSet<ObjectID>,
@@ -100,7 +101,7 @@ impl From<StateChangeSet> for StateChangeSetView {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum OpView<T> {
     New(T),
@@ -118,7 +119,7 @@ impl From<Op<State>> for OpView<StateView> {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TableChangeView {
     pub entries: BTreeMap<StrView<Vec<u8>>, OpView<StateView>>,
 }

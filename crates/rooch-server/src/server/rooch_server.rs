@@ -3,9 +3,9 @@
 
 use crate::api::RoochRpcModule;
 use crate::jsonrpc_types::{
-    AnnotatedEventView, AnnotatedFunctionReturnValueView, AnnotatedStateView,
-    ExecuteTransactionResponseView, FunctionCallView, StateView, StrView, StructTagView,
-    TransactionView,
+    AccessPathView, AnnotatedEventView, AnnotatedFunctionReturnValueView, AnnotatedStateView,
+    EventFilterView, ExecuteTransactionResponseView, FunctionCallView, RoochH256View, StateView,
+    StrView, StructTagView, TransactionView,
 };
 use crate::service::RpcService;
 use crate::{api::rooch_api::RoochAPIServer, api::MAX_RESULT_LIMIT};
@@ -13,11 +13,9 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     RpcModule,
 };
-use moveos_types::access_path::AccessPath;
-use moveos_types::event_filter::EventFilter;
 use moveos_types::transaction::AuthenticatableTransaction;
+use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::TypedTransaction;
-use rooch_types::{transaction::rooch::RoochTransaction, H256};
 
 pub struct RoochServer {
     rpc_service: RpcService,
@@ -31,13 +29,13 @@ impl RoochServer {
 
 #[async_trait]
 impl RoochAPIServer for RoochServer {
-    async fn send_raw_transaction(&self, payload: StrView<Vec<u8>>) -> RpcResult<H256> {
+    async fn send_raw_transaction(&self, payload: StrView<Vec<u8>>) -> RpcResult<RoochH256View> {
         let tx = bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;
         let hash = tx.tx_hash();
         self.rpc_service
             .quene_tx(TypedTransaction::Rooch(tx))
             .await?;
-        Ok(hash)
+        Ok(hash.into())
     }
 
     async fn execute_raw_transaction(
@@ -65,10 +63,10 @@ impl RoochAPIServer for RoochServer {
             .collect())
     }
 
-    async fn get_states(&self, access_path: AccessPath) -> RpcResult<Vec<Option<StateView>>> {
+    async fn get_states(&self, access_path: AccessPathView) -> RpcResult<Vec<Option<StateView>>> {
         Ok(self
             .rpc_service
-            .get_states(access_path)
+            .get_states(access_path.into())
             .await?
             .into_iter()
             .map(|s| s.map(StateView::from))
@@ -77,11 +75,11 @@ impl RoochAPIServer for RoochServer {
 
     async fn get_annotated_states(
         &self,
-        access_path: AccessPath,
+        access_path: AccessPathView,
     ) -> RpcResult<Vec<Option<AnnotatedStateView>>> {
         Ok(self
             .rpc_service
-            .get_annotated_states(access_path)
+            .get_annotated_states(access_path.into())
             .await?
             .into_iter()
             .map(|s| s.map(AnnotatedStateView::from))
@@ -110,10 +108,13 @@ impl RoochAPIServer for RoochServer {
         // Ok(result)
     }
 
-    async fn get_events(&self, filter: EventFilter) -> RpcResult<Vec<Option<AnnotatedEventView>>> {
+    async fn get_events(
+        &self,
+        filter: EventFilterView,
+    ) -> RpcResult<Vec<Option<AnnotatedEventView>>> {
         Ok(self
             .rpc_service
-            .get_events(filter)
+            .get_events(filter.into())
             .await?
             .into_iter()
             .map(|event| event.map(AnnotatedEventView::from))
@@ -123,10 +124,13 @@ impl RoochAPIServer for RoochServer {
         // Ok(result)
     }
 
-    async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<Option<TransactionView>> {
+    async fn get_transaction_by_hash(
+        &self,
+        hash: RoochH256View,
+    ) -> RpcResult<Option<TransactionView>> {
         let resp = self
             .rpc_service
-            .get_transaction_by_hash(hash)
+            .get_transaction_by_hash(hash.into())
             .await?
             .map(Into::into);
         Ok(resp)

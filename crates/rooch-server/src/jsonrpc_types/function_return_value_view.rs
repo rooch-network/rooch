@@ -1,12 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{AnnotatedMoveValueView, TypeTagView};
-use crate::jsonrpc_types::StrView;
+use crate::jsonrpc_types::{
+    move_types::{AnnotatedMoveValueView, TypeTagView},
+    StrView,
+};
 use moveos_types::function_return_value::{AnnotatedFunctionReturnValue, FunctionReturnValue};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct FunctionReturnValueView {
     pub type_tag: TypeTagView,
     pub value: StrView<Vec<u8>>,
@@ -21,7 +24,7 @@ impl From<FunctionReturnValue> for FunctionReturnValueView {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct AnnotatedFunctionReturnValueView {
     pub value: FunctionReturnValueView,
     pub move_value: AnnotatedMoveValueView,

@@ -82,6 +82,8 @@ pub struct Client {
     rpc: Arc<RpcClient>,
 }
 
+// TODO: call args are uniformly defined in jsonrpc types?
+// example execute_view_function get_events_by_event_handle
 impl Client {
     pub async fn execute_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView> {
         let tx_payload = bcs::to_bytes(&tx)?;
@@ -104,18 +106,22 @@ impl Client {
     }
 
     pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<StateView>>> {
-        Ok(self.rpc.http.get_states(access_path).await?)
+        Ok(self.rpc.http.get_states(access_path.into()).await?)
     }
 
     pub async fn get_annotated_states(
         &self,
         access_path: AccessPath,
     ) -> Result<Vec<Option<AnnotatedStateView>>> {
-        Ok(self.rpc.http.get_annotated_states(access_path).await?)
+        Ok(self
+            .rpc
+            .http
+            .get_annotated_states(access_path.into())
+            .await?)
     }
 
     pub async fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<TransactionView>> {
-        Ok(self.rpc.http.get_transaction_by_hash(hash).await?)
+        Ok(self.rpc.http.get_transaction_by_hash(hash.into()).await?)
     }
 
     pub async fn get_transaction_by_index(

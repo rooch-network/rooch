@@ -12,9 +12,10 @@ use move_core_types::{
     value::{MoveStructLayout, MoveTypeLayout},
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Eq, PartialEq, Clone, PartialOrd, Ord, Hash)]
+#[derive(Debug, Eq, PartialEq, Clone, PartialOrd, Ord, Hash, JsonSchema)]
 pub struct MoveString {
     bytes: Vec<u8>,
 }
@@ -91,7 +92,7 @@ impl TryFrom<AnnotatedMoveStruct> for MoveString {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, PartialOrd, Ord, Hash)]
+#[derive(Debug, Eq, PartialEq, Clone, PartialOrd, Ord, Hash, JsonSchema)]
 pub struct MoveAsciiString {
     bytes: Vec<u8>,
 }
