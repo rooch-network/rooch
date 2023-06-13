@@ -4,7 +4,6 @@
  */
 
 import { Serializer } from "./serializer.ts";
-import * as util from "https://deno.land/std@0.85.0/node/util.ts";
 
 export abstract class BinarySerializer implements Serializer {
   private static readonly BIG_32: bigint = BigInt(32);
@@ -13,9 +12,7 @@ export abstract class BinarySerializer implements Serializer {
   private static readonly BIG_32Fs: bigint = BigInt("4294967295");
   private static readonly BIG_64Fs: bigint = BigInt("18446744073709551615");
 
-  private static readonly textEncoder = typeof window === "undefined"
-    ? new util.TextEncoder()
-    : new TextEncoder();
+  private static readonly textEncoder = new TextEncoder();
 
   private buffer: ArrayBuffer;
   private offset: number;

@@ -12,6 +12,12 @@ ModuleId:
         TYPENAME: AccountAddress
     - name:
         TYPENAME: Identifier
+FunctionId:
+  STRUCT:
+    - module_id:
+        TYPENAME: ModuleId
+    - function_name:
+        TYPENAME: Identifier
 StructTag:
   STRUCT:
     - address:
@@ -62,7 +68,7 @@ ScriptCall:
 FunctionCall:
   STRUCT:
     - function_id:
-        TYPENAME: Identifier
+        TYPENAME: FunctionId
     - ty_args:
         SEQ:
           TYPENAME: TypeTag

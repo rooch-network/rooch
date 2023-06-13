@@ -35,7 +35,7 @@ static deserialize(deserializer: Deserializer): Bundle {
 }
 export class FunctionCall {
 
-constructor (public function_id: Identifier, public ty_args: Seq<TypeTag>, public args: Seq<bytes>) {
+constructor (public function_id: FunctionId, public ty_args: Seq<TypeTag>, public args: Seq<bytes>) {
 }
 
 public serialize(serializer: Serializer): void {
@@ -45,10 +45,27 @@ public serialize(serializer: Serializer): void {
 }
 
 static deserialize(deserializer: Deserializer): FunctionCall {
-  const function_id = Identifier.deserialize(deserializer);
+  const function_id = FunctionId.deserialize(deserializer);
   const ty_args = Helpers.deserializeVectorTypeTag(deserializer);
   const args = Helpers.deserializeVectorBytes(deserializer);
   return new FunctionCall(function_id,ty_args,args);
+}
+
+}
+export class FunctionId {
+
+constructor (public module_id: ModuleId, public function_name: Identifier) {
+}
+
+public serialize(serializer: Serializer): void {
+  this.module_id.serialize(serializer);
+  this.function_name.serialize(serializer);
+}
+
+static deserialize(deserializer: Deserializer): FunctionId {
+  const module_id = ModuleId.deserialize(deserializer);
+  const function_name = Identifier.deserialize(deserializer);
+  return new FunctionId(module_id,function_name);
 }
 
 }

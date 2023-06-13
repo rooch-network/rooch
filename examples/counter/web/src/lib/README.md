@@ -20,7 +20,7 @@ If you want to update the codes:
 1. remove the old runtime dir, and use the cmd to rewrite.
 
 ```shell
-serdegen --language TypeScript --target-source-dir ./runtime --with-runtimes=Serde ./rooch_types.yml
+serdegen --language TypeScript --target-source-dir ./runtime --with-runtimes=Bcs ./rooch_types.yml
 ```
 
 2. please use IDEs(like VS Code) to format code of this file `starcoin_types/index.ts` first.

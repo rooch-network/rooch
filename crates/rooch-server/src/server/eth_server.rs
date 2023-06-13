@@ -251,10 +251,12 @@ impl EthAPIServer for EthServer {
 
     async fn send_raw_transaction(&self, bytes: Bytes) -> RpcResult<H256> {
         info!("send_raw_transaction: {:?}", bytes);
-        let ethTx = EthereumTransaction::decode(&bytes)?;
-        info!("send_raw_transaction input: {:?}", ethTx.0.input);
+        let eth_tx = EthereumTransaction::decode(&bytes)?;
+        info!("send_raw_transaction input: {:?}", eth_tx.0.input);
+        let action = eth_tx.decode_calldata_to_action()?;
+        info!("send_raw_transaction decode_calldata_to_action: {:?}", action);
 
-        let tx = TypedTransaction::Ethereum(ethTx);
+        let tx = TypedTransaction::Ethereum(eth_tx);
         let hash = tx.hash();
         let _output = self.rpc_service.execute_tx(tx).await?;
         Ok(hash)
