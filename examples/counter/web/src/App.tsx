@@ -5,16 +5,17 @@ import MetaMaskSDK from '@metamask/sdk';
 import { arrayify, hexlify } from '@ethersproject/bytes';
 import { toUtf8Bytes } from '@ethersproject/strings';
 import { keccak256 } from '@ethersproject/keccak256';
-import { providers, utils, bcs, encoding, version as starcoinVersion } from '@starcoin/starcoin';
 
-const options = {};
+const options = {
+  dappMetadata:{},
+};
 const MMSDK = new MetaMaskSDK(options);
 const ethereum = MMSDK.getProvider(); // You can also access via window.ethereum
 
 function App() {
-  let [counter, setCounter] = useState(1)
+  let [counter, setCounter] = useState<number>(1)
 
-  const encodeMoveCall = (functionId, tyArgs, args)=>{
+  const encodeMoveCall = (functionId:string, tyArgs: string[], args:string[])=>{
     const encodedTypeArgs = utils.tx.encodeStructTypeTags(tyArgs)
     const scriptFunction = utils.tx.encodeScriptFunction(functionId, encodedTypeArgs, args)
 
