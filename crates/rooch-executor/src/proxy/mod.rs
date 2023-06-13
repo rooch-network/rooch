@@ -76,7 +76,7 @@ impl ExecutorProxy {
     pub async fn get_events_by_event_handle(
         &self,
         event_handle_type: StructTag,
-        cursor: u64,
+        cursor: Option<u64>,
         limit: u64,
     ) -> Result<Vec<Option<AnnotatedMoveOSEvent>>> {
         self.actor
