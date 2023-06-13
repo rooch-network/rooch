@@ -24,7 +24,7 @@ Move 对智能合约状态存储做了改进，应用需要通过全局存储指
 1. `move_to<T:key>(signer)`: 将 `T` 类型的资源存储在`signer`的用户状态空间内，这个只能通过用户自己发起的交易执行。
 2. `move_from<T:key>(address):T`: 将 `T` 类型的资源从用户状态空间中取出来。
 3. `borrow_global<T:key>(address):&T`: 从用户空间中读取`T` 类型的的不可变引用。
-4. `borrow_global_mut<T:key>(address):&T`: 从用户空间中读取`T` 类型的的可变引用。
+4. `borrow_global_mut<T:key>(address):&mut T`: 从用户空间中读取`T` 类型的的可变引用。
 
 以上指令都包含两个安全层面的约束：
 
@@ -170,6 +170,7 @@ module moveos_std::object_storage{
     /// Add object to object store
     public fun add<T: key>(this: &mut ObjectStorage, obj: Object<T>);
 
+    #[private_generics(T)]
     public fun contains<T: key>(this: &ObjectStorage, object_id: ObjectID): bool;
 }
 ```
@@ -185,19 +186,19 @@ TypeTable 是一种特殊的 Table，它模拟 Move 全局存储指令，以类�
 ```move
 module moveos_std::type_table {
 
-    #[private_generics(T)]
+    #[private_generics(V)]
     public fun add<V: key>(table: &mut TypeTable, val: V);
 
-    #[private_generics(T)]
+    #[private_generics(V)]
     public fun borrow<V: key>(table: &TypeTable): &V;
 
-    #[private_generics(T)]
+    #[private_generics(V)]
     public fun borrow_mut<V: key>(table: &mut TypeTable): &mut V;
 
-    #[private_generics(T)]
+    #[private_generics(V)]
     public fun remove<V: key>(table: &mut TypeTable): V;
 
-    #[private_generics(T)]
+    #[private_generics(V)]
     public fun contains<V: key>(table: &TypeTable): bool;
 }
 ```
