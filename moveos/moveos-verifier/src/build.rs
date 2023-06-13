@@ -10,7 +10,7 @@ use move_package::compilation::compiled_package::CompiledPackage;
 use move_package::compilation::package_layout::CompiledPackageLayout;
 use move_package::{BuildConfig, ModelConfig};
 use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use termcolor::{ColorChoice, StandardStream};
 
 pub const BYTECODE_VERSION: u32 = 6;
@@ -48,12 +48,12 @@ pub fn build_model(
     )
 }
 
-pub fn run_verifier(
-    package_path: PathBuf,
+pub fn run_verifier<P: AsRef<Path>>(
+    package_path: P,
     additional_named_address: BTreeMap<String, AccountAddress>,
     package: &mut CompiledPackage,
 ) {
-    let model = build_model(package_path.as_path(), additional_named_address, None).unwrap();
+    let model = build_model(package_path.as_ref(), additional_named_address, None).unwrap();
 
     let runtime_metadata = run_extended_checks(&model);
 
@@ -67,6 +67,7 @@ pub fn run_verifier(
 
     inject_runtime_metadata(
         package_path
+            .as_ref()
             .join(CompiledPackageLayout::Root.path())
             .join(package.compiled_package_info.package_name.as_str()),
         package,
@@ -74,8 +75,8 @@ pub fn run_verifier(
     );
 }
 
-pub fn inject_runtime_metadata(
-    package_path: PathBuf,
+pub fn inject_runtime_metadata<P: AsRef<Path>>(
+    package_path: P,
     pack: &mut CompiledPackage,
     metadata: BTreeMap<ModuleId, RuntimeModuleMetadataV1>,
 ) {
@@ -93,6 +94,7 @@ pub fn inject_runtime_metadata(
 
                         // Also need to update the .mv file on disk.
                         let path = package_path
+                            .as_ref()
                             .join(CompiledPackageLayout::CompiledModules.path())
                             .join(named_module.name.as_str())
                             .with_extension(MOVE_COMPILED_EXTENSION);

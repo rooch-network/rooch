@@ -7,6 +7,4 @@ std = "0x1"
 moveos_std = "0x1"
 
 [dependencies]
-#MoveStdlib = { local = "../move-stdlib" }
-MoveStdlib = { git = "https://github.com/rooch-network/move.git", subdir = "language/move-stdlib", rev = "c7d8c2b0cdd06dbd90e0ab306932356620b5648a" }
-MoveNursery = { git = "https://github.com/rooch-network/move.git", subdir = "language/move-stdlib/nursery", rev = "c7d8c2b0cdd06dbd90e0ab306932356620b5648a" }
+MoveStdlib = { local = "../move-stdlib" }
