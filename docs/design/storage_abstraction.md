@@ -24,7 +24,7 @@ Move has made improvements to smart contract state storage. Applications need to
 1. `move_to<T:key>(signer)`: Stores a resource of type `T` in the user state space of `signer`, which can only be executed by transactions initiated by the user.
 2. `move_from<T:key>(address):T`: Retrieves a resource of type `T` from the user state space.
 3. `borrow_global<T:key>(address):&T`: Reads an immutable reference of type `T` from the user space.
-4. `borrow_global_mut<T:key>(address):&T`: Reads a mutable reference of type `T` from the user space.
+4. `borrow_global_mut<T:key>(address):&mut T`: Reads a mutable reference of type `T` from the user space.
 
 All of the above instructions include two security constraints:
 
@@ -170,6 +170,7 @@ module moveos_std::object_storage{
     /// Add object to object store
     public fun add<T: key>(this: &mut ObjectStorage, obj: Object<T>);
 
+    #[private_generics(T)]
     public fun contains<T: key>(this: &ObjectStorage, object_id: ObjectID): bool;
 }
 ```
@@ -185,19 +186,19 @@ TypeTable is a special type of Table that simulates Move's global storage instru
 ```move
 module moveos_std::type_table {
 
-    #[private_generics(T)]
+    #[private_generics(V)]
     public fun add<V: key>(table: &mut TypeTable, val: V);
 
-    #[private_generics(T)]
+    #[private_generics(V)]
     public fun borrow<V: key>(table: &TypeTable): &V;
 
-    #[private_generics(T)]
+    #[private_generics(V)]
     public fun borrow_mut<V: key>(table: &mut TypeTable): &mut V;
 
-    #[private_generics(T)]
+    #[private_generics(V)]
     public fun remove<V: key>(table: &mut TypeTable): V;
 
-    #[private_generics(T)]
+    #[private_generics(V)]
     public fun contains<V: key>(table: &TypeTable): bool;
 }
 ```

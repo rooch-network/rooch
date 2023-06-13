@@ -53,7 +53,7 @@ pub trait RoochAPI {
         event_handle_type: StructTagView,
         cursor: Option<u64>,
         limit: Option<u64>,
-    ) -> RpcResult<Vec<Option<AnnotatedEventView>>>;
+    ) -> RpcResult<EventPage>;
 
     /// Get the events by event filter
     #[method(name = "getEvents")]

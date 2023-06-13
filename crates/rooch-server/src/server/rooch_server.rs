@@ -91,21 +91,28 @@ impl RoochAPIServer for RoochServer {
         event_handle_type: StructTagView,
         cursor: Option<u64>,
         limit: Option<u64>,
-    ) -> RpcResult<Vec<Option<AnnotatedEventView>>> {
-        Ok(self
+    ) -> RpcResult<EventPage> {
+        // NOTE: fetch one more object to check if there is next page
+        let u_limit = limit.unwrap_or(MAX_RESULT_LIMIT);
+        let mut result: Vec<Option<AnnotatedEventView>> = self
             .rpc_service
-            .get_events_by_event_handle(
-                event_handle_type.into(),
-                cursor.unwrap_or(0),
-                limit.unwrap_or(MAX_RESULT_LIMIT),
-            )
+            .get_events_by_event_handle(event_handle_type.into(), cursor, u_limit + 1)
             .await?
             .into_iter()
             .map(|event| event.map(AnnotatedEventView::from))
-            .collect())
+            .collect();
 
-        // let result: Vec<Option<AnnotatedEventView>> = Vec::new();
-        // Ok(result)
+        let has_next_page = (result.len() as u64) > u_limit;
+        result.truncate(u_limit as usize);
+        let next_cursor = result.last().map_or(cursor, |event| {
+            Some(event.clone().unwrap().event.event_id.event_seq)
+        });
+
+        Ok(EventPage {
+            data: result,
+            next_cursor,
+            has_next_page,
+        })
     }
 
     async fn get_events(
@@ -119,9 +126,6 @@ impl RoochAPIServer for RoochServer {
             .into_iter()
             .map(|event| event.map(AnnotatedEventView::from))
             .collect())
-
-        // let result: Vec<Option<AnnotatedEventView>> = Vec::new();
-        // Ok(result)
     }
 
     async fn get_transaction_by_hash(

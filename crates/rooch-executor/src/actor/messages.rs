@@ -71,7 +71,7 @@ impl Message for AnnotatedStatesMessage {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetEventsByEventHandleMessage {
     pub event_handle_type: StructTag,
-    pub cursor: u64,
+    pub cursor: Option<u64>,
     pub limit: u64,
 }
 

@@ -5,12 +5,13 @@ use crate::vm::moveos_vm::MoveOSVM;
 use anyhow::{bail, Result};
 use move_binary_format::errors::vm_status_of_result;
 use move_binary_format::errors::{Location, PartialVMError};
-use move_core_types::vm_status::VMStatus;
+use move_core_types::vm_status::{KeptVMStatus, VMStatus};
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
     value::MoveValue, vm_status::StatusCode,
 };
 use move_vm_types::gas::UnmeteredGasMeter;
+use moveos_stdlib::BuildOptions;
 use moveos_store::MoveOSDB;
 use moveos_store::{event_store::EventStore, state_store::StateDB};
 use moveos_types::function_return_value::FunctionReturnValue;
@@ -49,10 +50,15 @@ impl MoveOS {
             db: MoveOSResolverProxy(db),
         };
         if is_genesis {
-            //TODO the genesis
-            let genesis_tx = Self::build_genesis_tx()?;
-            let verified_tx = moveos.verify(genesis_tx)?;
-            moveos.execute(verified_tx)?;
+            //TODO refactor the genesis build
+            let genesis_txs = Self::build_genesis_txs()?;
+            for genesis_tx in genesis_txs {
+                let verified_tx = moveos.verify(genesis_tx)?;
+                let (_state_root, output) = moveos.execute(verified_tx)?;
+                if output.status != KeptVMStatus::Executed {
+                    bail!("genesis tx should success, error: {:?}", output.status);
+                }
+            }
         }
         Ok(moveos)
     }
@@ -70,13 +76,18 @@ impl MoveOS {
     }
 
     //TODO move to a suitable place
-    pub fn build_genesis_tx() -> Result<MoveOSTransaction> {
-        let genesis_tx =
-            MoveAction::ModuleBundle(moveos_stdlib::Framework::build()?.into_module_bundles()?);
-        Ok(MoveOSTransaction::new_for_test(
-            *ROOCH_FRAMEWORK_ADDRESS,
-            genesis_tx,
+    pub fn build_genesis_txs() -> Result<Vec<MoveOSTransaction>> {
+        let bundles =
+            moveos_stdlib::Stdlib::build(BuildOptions::default())?.into_module_bundles()?;
+        Ok(bundles
+            .into_iter()
+            .map(|(genesis_account, bundle)|
+        //TODO rensure genesis tx hash
+        MoveOSTransaction::new_for_test(
+            genesis_account,
+            MoveAction::ModuleBundle(bundle),
         ))
+            .collect())
     }
 
     pub fn validate<T: AuthenticatableTransaction>(
