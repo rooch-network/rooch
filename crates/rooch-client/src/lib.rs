@@ -16,7 +16,7 @@ use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction, H
 
 pub mod client_config;
 pub mod wallet_context;
-use rooch_server::jsonrpc_types::{EventPage, StructTagView};
+use rooch_server::jsonrpc_types::{EventPageView, StructTagView};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -145,7 +145,7 @@ impl Client {
         event_handle_type: StructTagView,
         cursor: Option<u64>,
         limit: Option<u64>,
-    ) -> Result<EventPage> {
+    ) -> Result<EventPageView> {
         let s = self
             .rpc
             .http

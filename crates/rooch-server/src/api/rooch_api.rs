@@ -3,8 +3,8 @@
 
 use crate::jsonrpc_types::{
     AccessPathView, AnnotatedEventView, AnnotatedFunctionReturnValueView, AnnotatedStateView,
-    EventFilterView, ExecuteTransactionResponseView, FunctionCallView, RoochH256View, StateView,
-    StrView, StructTagView, TransactionView,
+    EventFilterView, EventPageView, ExecuteTransactionResponseView, FunctionCallView,
+    RoochH256View, StateView, StrView, StructTagView, TransactionView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -53,7 +53,7 @@ pub trait RoochAPI {
         event_handle_type: StructTagView,
         cursor: Option<u64>,
         limit: Option<u64>,
-    ) -> RpcResult<EventPage>;
+    ) -> RpcResult<EventPageView>;
 
     /// Get the events by event filter
     #[method(name = "getEvents")]

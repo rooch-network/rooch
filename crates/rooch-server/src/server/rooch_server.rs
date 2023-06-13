@@ -4,8 +4,8 @@
 use crate::api::RoochRpcModule;
 use crate::jsonrpc_types::{
     AccessPathView, AnnotatedEventView, AnnotatedFunctionReturnValueView, AnnotatedStateView,
-    EventFilterView, ExecuteTransactionResponseView, FunctionCallView, RoochH256View, StateView,
-    StrView, StructTagView, TransactionView,
+    EventFilterView, EventPageView, ExecuteTransactionResponseView, FunctionCallView,
+    RoochH256View, StateView, StrView, StructTagView, TransactionView,
 };
 use crate::service::RpcService;
 use crate::{api::rooch_api::RoochAPIServer, api::MAX_RESULT_LIMIT};
@@ -91,7 +91,7 @@ impl RoochAPIServer for RoochServer {
         event_handle_type: StructTagView,
         cursor: Option<u64>,
         limit: Option<u64>,
-    ) -> RpcResult<EventPage> {
+    ) -> RpcResult<EventPageView> {
         // NOTE: fetch one more object to check if there is next page
         let u_limit = limit.unwrap_or(MAX_RESULT_LIMIT);
         let mut result: Vec<Option<AnnotatedEventView>> = self
@@ -108,7 +108,7 @@ impl RoochAPIServer for RoochServer {
             Some(event.clone().unwrap().event.event_id.event_seq)
         });
 
-        Ok(EventPage {
+        Ok(EventPageView {
             data: result,
             next_cursor,
             has_next_page,
