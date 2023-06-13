@@ -2,12 +2,12 @@ import { BcsSerializer } from "../lib/runtime/bcs/bcsSerializer"
 
 function serializeMoveAction(action: MoveAction): Uint8Array {
     const serializer = new BcsSerializer();
-   
+    
     Object.entries(action).forEach(([key, value]) => {
         switch (key) {
             case "Script":
-                serializer.serialize_variant_index(0);
-                serializer.serialize_struct(value as ScriptCall);
+                serializer.serializeVariantIndex(0);
+                serializer.serializeStruct(value as ScriptCall);
                 break;
             case "Function":
                 serializer.serialize_variant_index(1);
