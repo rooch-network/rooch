@@ -4,10 +4,11 @@ version = "0.0.1"
 
 [addresses]
 std = "0x1"
-moveos_std = "0x1"
-rooch_framework = "0x1"
+moveos_std = "0x2"
+rooch_framework = "0x3"
 vm_reserved = "0x0"
 rooch_association = "0xA550C18"
 
 [dependencies]
-MoveosStdLib = { local = "../../moveos/moveos-stdlib/moveos-stdlib" }
+MoveStdlib = { local = "../../moveos/moveos-stdlib/move-stdlib" }
+MoveosStdlib = { local = "../../moveos/moveos-stdlib/moveos-stdlib" }

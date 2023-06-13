@@ -1,8 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::state::MoveStructState;
+use crate::{addresses::MOVEOS_STD_ADDRESS, state::MoveStructState};
 use move_core_types::{
+    account_address::AccountAddress,
     ident_str,
     identifier::IdentStr,
     move_resource::MoveStructType,
@@ -23,6 +24,7 @@ impl MoveModule {
 }
 
 impl MoveStructType for MoveModule {
+    const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
     const MODULE_NAME: &'static IdentStr = ident_str!("move_module");
     const STRUCT_NAME: &'static IdentStr = ident_str!("MoveModule");
 }

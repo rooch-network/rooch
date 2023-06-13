@@ -227,7 +227,7 @@ where
                 .execute_entry_function(
                     &call.function_id.module_id,
                     &call.function_id.function_name,
-                    call.ty_args,
+                    call.ty_args.clone(),
                     resolved_args,
                     &mut self.gas_meter,
                 )

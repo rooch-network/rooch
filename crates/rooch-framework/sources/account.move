@@ -318,7 +318,7 @@ module rooch_framework::account{
    #[test]
    /// Assert correct signer creation.
    fun test_create_signer_for_test() {
-      assert!(signer::address_of(&create_signer_for_test(@rooch_framework)) == @0x1, 100);
+      assert!(signer::address_of(&create_signer_for_test(@rooch_framework)) == @0x3, 100);
       assert!(signer::address_of(&create_signer_for_test(@0x123)) == @0x123, 101);
    }
 

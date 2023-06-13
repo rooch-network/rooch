@@ -52,11 +52,11 @@ impl BaseGasParameter {
 
 pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
     let mut native_fun_table =
-        move_stdlib::natives::all_natives(*MOVE_STD_ADDRESS, gas_params.move_stdlib);
+        move_stdlib::natives::all_natives(MOVE_STD_ADDRESS, gas_params.move_stdlib);
 
     // we only depend on the `debug` native function from the nursery
     let nursery_fun_table =
-        move_stdlib::natives::nursery_natives(*MOVE_STD_ADDRESS, gas_params.move_nursery);
+        move_stdlib::natives::nursery_natives(MOVE_STD_ADDRESS, gas_params.move_nursery);
     native_fun_table.extend(nursery_fun_table);
 
     let mut natives = vec![];
@@ -82,11 +82,11 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
         moveos_stdlib::test_helper::make_all(gas_params.test_helper)
     );
 
-    let moveos_native_fun_table = make_table_from_iter(*MOVEOS_STD_ADDRESS, natives);
+    let moveos_native_fun_table = make_table_from_iter(MOVEOS_STD_ADDRESS, natives);
     native_fun_table.extend(moveos_native_fun_table);
 
     let raw_table_fun_table =
-        raw_table::table_natives(*MOVEOS_STD_ADDRESS, gas_params.table_extension);
+        raw_table::table_natives(MOVEOS_STD_ADDRESS, gas_params.table_extension);
     native_fun_table.extend(raw_table_fun_table);
 
     native_fun_table

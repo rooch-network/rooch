@@ -87,14 +87,14 @@ module moveos_std::type_info {
         // aptos_std::type_info::type_name<T> return the types name in short_str_lossless and with `0x` prefix
         // TBD use which format?
         //assert!(type_name<vector<vector<TypeInfo>>>() == string::utf8(b"vector<vector<0x1::type_info::TypeInfo>>"), 8);
-        assert!(type_name<vector<vector<TypeInfo>>>() == string::utf8(b"vector<vector<0000000000000000000000000000000000000000000000000000000000000001::type_info::TypeInfo>>"), 8);
+        assert!(type_name<vector<vector<TypeInfo>>>() == string::utf8(b"vector<vector<0000000000000000000000000000000000000000000000000000000000000002::type_info::TypeInfo>>"), 8);
         
 
         // struct
         //assert!(type_name<TypeInfo>() == string::utf8(b"0x1::type_info::TypeInfo"), 9);
-        assert!(type_name<TypeInfo>() == string::utf8(b"0000000000000000000000000000000000000000000000000000000000000001::type_info::TypeInfo"), 9);
+        assert!(type_name<TypeInfo>() == string::utf8(b"0000000000000000000000000000000000000000000000000000000000000002::type_info::TypeInfo"), 9);
 
-        assert!(type_name<TestMultiGenerics<u8, u64, vector<u8>>>() == string::utf8(b"0000000000000000000000000000000000000000000000000000000000000001::type_info::TestMultiGenerics<u8,u64,vector<u8>>"), 10);
+        assert!(type_name<TestMultiGenerics<u8, u64, vector<u8>>>() == string::utf8(b"0000000000000000000000000000000000000000000000000000000000000002::type_info::TestMultiGenerics<u8,u64,vector<u8>>"), 10);
         
         // assert!(type_name<
         //     Table<
@@ -108,7 +108,7 @@ module moveos_std::type_info {
                 TypeInfo,
                 Table<u8, vector<TypeInfo>>
             >
-        >() == string::utf8(b"0000000000000000000000000000000000000000000000000000000000000001::table::Table<0000000000000000000000000000000000000000000000000000000000000001::type_info::TypeInfo,0000000000000000000000000000000000000000000000000000000000000001::table::Table<u8,vector<0000000000000000000000000000000000000000000000000000000000000001::type_info::TypeInfo>>>"), 10);
+        >() == string::utf8(b"0000000000000000000000000000000000000000000000000000000000000002::table::Table<0000000000000000000000000000000000000000000000000000000000000002::type_info::TypeInfo,0000000000000000000000000000000000000000000000000000000000000002::table::Table<u8,vector<0000000000000000000000000000000000000000000000000000000000000002::type_info::TypeInfo>>>"), 10);
     }
 
     #[verify_only]

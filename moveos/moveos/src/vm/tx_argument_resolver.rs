@@ -98,13 +98,13 @@ where
 }
 
 fn is_tx_context(t: &StructType) -> bool {
-    *t.module.address() == *moveos_types::addresses::MOVEOS_STD_ADDRESS
+    t.module.address() == &moveos_types::addresses::MOVEOS_STD_ADDRESS
         && t.module.name() == TxContext::module_identifier().as_ident_str()
         && t.name == TxContext::struct_identifier()
 }
 
 pub fn is_storage_context(t: &StructType) -> bool {
-    *t.module.address() == *moveos_types::addresses::MOVEOS_STD_ADDRESS
+    t.module.address() == &moveos_types::addresses::MOVEOS_STD_ADDRESS
         && t.module.name() == StorageContext::module_identifier().as_ident_str()
         && t.name == StorageContext::struct_identifier()
 }

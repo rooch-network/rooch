@@ -3,6 +3,7 @@
 
 //Source origin from https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-types/src/base_types.rs
 
+use crate::addresses::MOVEOS_STD_ADDRESS;
 use crate::h256::{self, H256};
 use crate::object::ObjectID;
 use crate::state::MoveStructState;
@@ -63,6 +64,7 @@ impl TxContext {
 }
 
 impl MoveStructType for TxContext {
+    const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
     const MODULE_NAME: &'static IdentStr = TX_CONTEXT_MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = TX_CONTEXT_STRUCT_NAME;
 }

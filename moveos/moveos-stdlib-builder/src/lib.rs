@@ -4,10 +4,8 @@
 use anyhow::{ensure, Result};
 use dependency_order::sort_by_dependency_order;
 use move_binary_format::CompiledModule;
-use move_command_line_common::address::NumericalAddress;
 use move_core_types::account_address::AccountAddress;
 use move_package::{compilation::compiled_package::CompiledPackage, BuildConfig};
-use moveos_types::addresses::MOVEOS_NAMED_ADDRESS_MAPPING;
 use moveos_verifier::build::run_verifier;
 use std::{collections::BTreeMap, io::stderr, path::PathBuf};
 
@@ -50,16 +48,6 @@ impl Stdlib {
             "../moveos-stdlib/moveos-stdlib",
             "../../crates/rooch-framework",
         ]
-    }
-
-    pub fn named_addresses() -> BTreeMap<String, NumericalAddress> {
-        let mut address_mapping = move_stdlib::move_stdlib_named_addresses();
-        address_mapping.extend(
-            MOVEOS_NAMED_ADDRESS_MAPPING
-                .iter()
-                .map(|(name, addr)| (name.to_string(), NumericalAddress::parse_str(addr).unwrap())),
-        );
-        address_mapping
     }
 
     /// Build the MoveOS stdlib with exernal frameworks.

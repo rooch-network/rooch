@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::ROOCH_FRAMEWORK_ADDRESS;
 use move_vm_runtime::native_functions::{make_table_from_iter, NativeFunctionTable};
-use moveos_types::addresses::ROOCH_FRAMEWORK_ADDRESS;
 
 pub mod helpers {
     pub use moveos_stdlib::natives::helpers::*;
@@ -61,7 +61,7 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
         rooch_framework::crypto::ecdsa_k1::make_all(gas_params.ecdsa_k1)
     );
 
-    let rooch_native_fun_table = make_table_from_iter(*ROOCH_FRAMEWORK_ADDRESS, natives);
+    let rooch_native_fun_table = make_table_from_iter(ROOCH_FRAMEWORK_ADDRESS, natives);
     native_fun_table.extend(rooch_native_fun_table);
 
     native_fun_table

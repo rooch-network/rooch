@@ -81,7 +81,7 @@ impl State {
         let val_type = self.value_type();
         match val_type {
             TypeTag::Struct(struct_tag) => {
-                if struct_tag.address == *MOVEOS_STD_ADDRESS
+                if struct_tag.address == MOVEOS_STD_ADDRESS
                     && struct_tag.module.as_ident_str() == object::OBJECT_MODULE_NAME
                     && struct_tag.name.as_ident_str() == object::OBJECT_STRUCT_NAME
                 {

@@ -15,21 +15,23 @@ use move_vm_runtime::native_functions::NativeFunction;
 use move_vm_types::gas::UnmeteredGasMeter;
 use moveos_store::MoveOSDB;
 use moveos_store::{event_store::EventStore, state_store::StateDB};
+use moveos_types::addresses::MOVEOS_STD_ADDRESS;
 use moveos_types::function_return_value::FunctionReturnValue;
+use moveos_types::move_types::FunctionId;
 use moveos_types::state_resolver::MoveOSResolverProxy;
 use moveos_types::storage_context::StorageContext;
 use moveos_types::transaction::{
     AuthenticatableTransaction, MoveOSTransaction, TransactionOutput, VerifiedMoveOSTransaction,
 };
 use moveos_types::tx_context::TxContext;
-use moveos_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, move_types::FunctionId};
 use moveos_types::{h256::H256, transaction::FunctionCall};
 use once_cell::sync::Lazy;
 
+//TODO migrate this to rooch crates.
 pub static VALIDATE_FUNCTION: Lazy<FunctionId> = Lazy::new(|| {
     FunctionId::new(
         ModuleId::new(
-            *ROOCH_FRAMEWORK_ADDRESS,
+            AccountAddress::from_hex_literal("0x3").unwrap(),
             Identifier::new("account").unwrap(),
         ),
         Identifier::new("validate").unwrap(),
@@ -105,7 +107,7 @@ impl MoveOS {
         tx: T,
     ) -> Result<VerifiedMoveOSTransaction> {
         //TODO ensure the validate function's sender should be the genesis address?
-        let tx_context = TxContext::new(*ROOCH_FRAMEWORK_ADDRESS, tx.tx_hash());
+        let tx_context = TxContext::new(MOVEOS_STD_ADDRESS, tx.tx_hash());
 
         let authenticator = tx.authenticator_info();
 
@@ -160,12 +162,23 @@ impl MoveOS {
 
     pub fn execute(&mut self, tx: VerifiedMoveOSTransaction) -> Result<(H256, TransactionOutput)> {
         let VerifiedMoveOSTransaction { ctx, action } = tx;
+        let tx_hash = ctx.tx_hash();
+        if log::log_enabled!(log::Level::Debug) {
+            log::debug!(
+                "execute tx(sender:{}, hash:{}, action:{})",
+                ctx.sender(),
+                tx_hash,
+                action
+            );
+        }
         //TODO define the gas meter.
         let gas_meter = UnmeteredGasMeter;
         let ctx = StorageContext::new(ctx);
         let mut session = self.vm.new_session(&self.db, ctx, gas_meter);
-
         let execute_result = session.execute_move_action(action);
+        if execute_result.is_err() {
+            log::warn!("execute tx({}) error: {:?}", tx_hash, execute_result);
+        }
         let vm_status = vm_status_of_result(execute_result);
         let (_ctx, output) = session.finish_with_extensions(vm_status)?;
         let state_root = self.apply_transaction_output(output.clone())?;
