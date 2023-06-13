@@ -4,7 +4,6 @@
 use super::tx_argument_resolver::TxArgumentResolver;
 use anyhow::ensure;
 use move_binary_format::{
-    access::ModuleAccess,
     compatibility::Compatibility,
     errors::{Location, VMError, VMResult},
     file_format::AbilitySet,
@@ -167,15 +166,14 @@ where
 
                 let mut init_function_modules = vec![];
                 for module in &compiled_modules {
-                    moveos_verifier::verifier::verify_private_generics(module)?;
-                    let result = Self::verify_init_function(module);
+                    let result = moveos_verifier::verifier::verify_module(module);
                     match result {
                         Ok(res) => {
                             if res {
                                 init_function_modules.push(module.self_id())
                             }
                         }
-                        Err(err) => return Err(err),
+                        Err(err) => return Err(err.into()),
                     }
                 }
 
@@ -186,21 +184,6 @@ where
                 })
             }
         }
-    }
-
-    //FIXME
-    // Can not use moveos_verifier::verifier::verify_init_function
-    // Because when verify module before publish, the module is not in the Session cache
-    // If we depend on the cache, we can not verify the module
-    fn verify_init_function(module: &CompiledModule) -> Result<bool, anyhow::Error> {
-        for fdef in &module.function_defs {
-            let fhandle = module.function_handle_at(fdef.function);
-            let fname = module.identifier_at(fhandle.name);
-            if fname == INIT_FN_NAME_IDENTIFIER.as_ident_str() {
-                return Ok(true);
-            }
-        }
-        Ok(false)
     }
 
     /// Execute a move action.

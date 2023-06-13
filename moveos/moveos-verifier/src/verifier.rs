@@ -5,7 +5,8 @@ use crate::metadata::{
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMError, VMResult};
 use move_binary_format::file_format::{
-    Bytecode, FunctionDefinition, FunctionDefinitionIndex, FunctionInstantiation, Visibility,
+    Bytecode, FunctionDefinition, FunctionDefinitionIndex, FunctionInstantiation, SignatureToken,
+    Visibility,
 };
 use move_binary_format::{access::ModuleAccess, CompiledModule};
 use move_core_types::language_storage::ModuleId;
@@ -13,22 +14,23 @@ use move_core_types::vm_status::StatusCode;
 use move_core_types::{identifier::Identifier, resolver::MoveResolver};
 use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
 use move_vm_types::loaded_data::runtime_types::Type;
-use moveos_types::move_types::FunctionId;
 use once_cell::sync::Lazy;
 use std::ops::Deref;
 
 pub static INIT_FN_NAME_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("init").unwrap());
 
+pub fn verify_module(module: &CompiledModule) -> VMResult<bool> {
+    verify_private_generics(module)?;
+    verify_init_function(module)
+}
+
 /// The initializer function must have the following properties in order to be executed at publication:
 /// - Name init
 /// - Single parameter of &mut TxContext type
 /// - No return values
 /// - Private
-pub fn verify_init_function<S>(module: &CompiledModule, session: &Session<S>) -> VMResult<bool>
-where
-    S: MoveResolver,
-{
+pub fn verify_init_function(module: &CompiledModule) -> VMResult<bool> {
     for fdef in &module.function_defs {
         let fhandle = module.function_handle_at(fdef.function);
         let fname = module.identifier_at(fhandle.name);
@@ -40,74 +42,105 @@ where
                     fdef,
                     module.self_id(),
                 ));
-            } else if fdef.is_entry {
+            }
+
+            if fdef.is_entry {
                 return Err(vm_error_for_init_func_checking(
                     StatusCode::INVALID_MAIN_FUNCTION_SIGNATURE,
                     "init function should not entry function",
                     fdef,
                     module.self_id(),
                 ));
-            } else {
-                let function_id =
-                    FunctionId::new(module.self_id(), INIT_FN_NAME_IDENTIFIER.clone());
-                let loaded_function = session.load_function(
-                    &module.self_id(),
-                    &function_id.function_name,
-                    vec![].as_slice(),
-                )?;
-                let parameters_usize = loaded_function.parameters.len();
-                if parameters_usize != 1 && parameters_usize != 2 {
+            }
+
+            let view = BinaryIndexedView::Module(module);
+            let func_parameter_signatures = view.signature_at(fhandle.parameters);
+            let func_parameter_vec = &func_parameter_signatures.0;
+
+            if func_parameter_vec.is_empty() {
+                return Err(vm_error_for_init_func_checking(
+                    StatusCode::NUMBER_OF_TYPE_ARGUMENTS_MISMATCH,
+                    "The init function has no parameters and requires at least one parameter.",
+                    fdef,
+                    module.self_id(),
+                ));
+            }
+
+            if func_parameter_vec.len() != 1 && func_parameter_vec.len() != 2 {
+                return Err(vm_error_for_init_func_checking(
+                    StatusCode::NUMBER_OF_TYPE_ARGUMENTS_MISMATCH,
+                    "init function only should have two parameter with signer or storageContext",
+                    fdef,
+                    module.self_id(),
+                ));
+            }
+
+            for st in func_parameter_vec {
+                let (is_allowed, struct_name_opt) = is_allowed_init_func_param(&view, st);
+                if !is_allowed {
                     return Err(vm_error_for_init_func_checking(
-                        StatusCode::NUMBER_OF_TYPE_ARGUMENTS_MISMATCH,
-                        "init function only should have two parameter with signer or storageContext",
+                        StatusCode::TYPE_MISMATCH,
+                        "init function should only enter signer or storageContext",
                         fdef,
                         module.self_id(),
                     ));
                 }
-                for ref ty in loaded_function.parameters {
-                    match ty {
-                        Type::Reference(bt) | Type::MutableReference(bt) => match bt.as_ref() {
-                            Type::Struct(s) | Type::StructInstantiation(s, _) => {
-                                let struct_type = session.get_struct_type(*s).unwrap();
-                                if !check_storage_context_struct_tag(format!(
-                                    "{}::{}::{}",
-                                    struct_type.module.short_str_lossless(),
-                                    struct_type.module.name(),
-                                    struct_type.name
-                                )) {
-                                    return Err(vm_error_for_init_func_checking(
-                                            StatusCode::TYPE_MISMATCH,
-                                            "init function should not input structures other than storageContext",
-                                            fdef,
-                                            module.self_id(),
-                                        ));
-                                }
-                            }
-                            Type::Signer => {}
-                            _ => {
-                                return Err(vm_error_for_init_func_checking(
-                                        StatusCode::TYPE_MISMATCH,
-                                        "init function should only enter reference signer or mutable reference storageContext",
-                                        fdef,
-                                        module.self_id(),
-                                    ));
-                            }
-                        },
-                        Type::Signer => {}
-                        _ => {
-                            return Err(vm_error_for_init_func_checking(
-                                StatusCode::TYPE_MISMATCH,
-                                "init function should only enter signer or storageContext",
-                                fdef,
-                                module.self_id(),
-                            ))
-                        }
+
+                if let Some(struct_full_name) = struct_name_opt {
+                    if !check_storage_context_struct_tag(struct_full_name) {
+                        return Err(vm_error_for_init_func_checking(
+                            StatusCode::TYPE_MISMATCH,
+                            "init function should not input structures other than storageContext",
+                            fdef,
+                            module.self_id(),
+                        ));
                     }
                 }
             }
+
+            return Ok(true);
         }
     }
     Ok(false)
+}
+
+fn is_allowed_init_func_param(
+    module_view: &BinaryIndexedView,
+    st: &SignatureToken,
+) -> (bool, Option<String>) {
+    if st == &SignatureToken::Signer {
+        (true, None)
+    } else {
+        match st {
+            SignatureToken::MutableReference(inner_st) => {
+                is_allowed_init_func_param(module_view, inner_st.as_ref())
+            }
+            SignatureToken::Reference(inner_st) => {
+                if inner_st.as_ref() == &SignatureToken::Signer {
+                    (true, None)
+                } else {
+                    is_allowed_init_func_param(module_view, inner_st.as_ref())
+                }
+            }
+            SignatureToken::Struct(st_index) => {
+                let shandle = module_view.struct_handle_at(*st_index);
+                let module_handle = module_view.module_handle_at(shandle.module);
+                let struct_module_address = module_view
+                    .address_identifier_at(module_handle.address)
+                    .to_canonical_string();
+                let struct_module_name = module_view.identifier_at(module_handle.name).to_string();
+                let struct_name = module_view.identifier_at(shandle.name).to_string();
+                (
+                    true,
+                    Some(format!(
+                        "{}::{}::{}",
+                        struct_module_address, struct_module_name, struct_name
+                    )),
+                )
+            }
+            _ => (false, None),
+        }
+    }
 }
 
 pub fn verify_entry_function<S>(
