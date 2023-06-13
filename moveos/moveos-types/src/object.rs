@@ -7,6 +7,7 @@ use crate::{
 };
 /// The Move Object is from Sui Move, and we try to mix the Global storage model and Object model in MoveOS.
 use anyhow::{bail, ensure, Result};
+use fastcrypto::encoding::Hex;
 use move_core_types::{
     account_address::AccountAddress,
     ident_str,
@@ -16,7 +17,9 @@ use move_core_types::{
     value::{MoveStructLayout, MoveTypeLayout},
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
+use schemars::JsonSchema;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde_with::serde_as;
 use std::str::FromStr;
 
 /// Specific Table Object ID associated with an address
@@ -49,8 +52,13 @@ impl NamedTableID {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord, Hash)]
-pub struct ObjectID(AccountAddress);
+#[serde_as]
+#[derive(Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord, Hash, JsonSchema)]
+pub struct ObjectID(
+    #[schemars(with = "Hex")]
+    #[serde_as(as = "Readable<Hex, _>")]
+    AccountAddress,
+);
 
 impl ObjectID {
     const LENGTH: usize = h256::LENGTH;

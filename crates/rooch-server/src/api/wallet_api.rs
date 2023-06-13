@@ -7,13 +7,13 @@ use rooch_types::address::RoochAddress;
 
 /// The Wallet API
 /// This API is used to interact with the wallet in the Rooch node.
-#[rpc(server, client)]
+#[rpc(server, client, namespace = "wallet")]
 pub trait WalletApi {
-    #[method(name = "wallet_sign")]
+    #[method(name = "sign")]
     async fn sign(&self, address: RoochAddress, message: Bytes) -> RpcResult<Bytes>;
 
     /// Returns a list of addresses owned by the node.
     /// like `eth_accounts` in Ethereum
-    #[method(name = "wallet_accounts")]
+    #[method(name = "accounts")]
     async fn accounts(&self) -> RpcResult<Vec<RoochAddress>>;
 }

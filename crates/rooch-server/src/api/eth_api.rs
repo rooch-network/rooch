@@ -23,6 +23,7 @@ impl Default for TransactionType {
     }
 }
 
+// TODO: open rpc
 // Define a rpc server api
 #[rpc(server, client)]
 pub trait EthAPI {

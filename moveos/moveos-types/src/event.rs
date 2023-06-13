@@ -10,6 +10,7 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::{
     language_storage::StructTag, language_storage::TypeTag, move_resource::MoveResource,
 };
+use schemars::JsonSchema;
 // #[cfg(any(test, feature = "fuzzing"))]
 // use rand::{rngs::OsRng, RngCore};
 use crate::h256;
@@ -26,7 +27,9 @@ use serde_with::serde_as;
 /// A struct that represents a globally unique id for an Event stream that a user can listen to.
 /// the Unique ID is a combination of event handle id and event seq number.
 /// the ID is local to this particular fullnode and will be different from other fullnode.
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[derive(
+    Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize, JsonSchema,
+)]
 pub struct EventID {
     /// each event handle corresponds to a unique event handle id. event handler id equal to guid.
     pub event_handle_id: ObjectID,

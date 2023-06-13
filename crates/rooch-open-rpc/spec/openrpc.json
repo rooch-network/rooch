@@ -1,0 +1,1350 @@
+{
+  "openrpc": "1.2.6",
+  "info": {
+    "title": "Rooch JSON-RPC",
+    "description": "Rooch JSON-RPC API for interaction with rooch server. ",
+    "contact": {
+      "name": "Rooch Network",
+      "url": "https://rooch.network",
+      "email": "build@rooch.com"
+    },
+    "license": {
+      "name": "Apache-2.0",
+      "url": "https://raw.githubusercontent.com/rooch-network/rooch/main/LICENSE"
+    },
+    "version": "0.1.0"
+  },
+  "methods": [
+    {
+      "name": "rooch_executeRawTransaction",
+      "description": "Send the signed transaction in bcs hex format This method blocks waiting for the transaction to be executed.",
+      "params": [
+        {
+          "name": "tx_bcs_hex",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          }
+        }
+      ],
+      "result": {
+        "name": "ExecuteTransactionResponseView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/ExecuteTransactionResponseView"
+        }
+      }
+    },
+    {
+      "name": "rooch_executeViewFunction",
+      "description": "Execute a read-only function call The function do not change the state of Application",
+      "params": [
+        {
+          "name": "function_call",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/FunctionCallView"
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec<AnnotatedFunctionReturnValueView>",
+        "required": true,
+        "schema": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/AnnotatedFunctionReturnValueView"
+          }
+        }
+      }
+    },
+    {
+      "name": "rooch_getAnnotatedStates",
+      "description": "Get the annotated states by access_path The annotated states include the decoded move value of the state",
+      "params": [
+        {
+          "name": "access_path",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/AccessPathView"
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec<Option<AnnotatedStateView>>",
+        "required": true,
+        "schema": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnnotatedStateView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "rooch_getEvents",
+      "description": "Get the events by event filter",
+      "params": [
+        {
+          "name": "filter",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/EventFilterView"
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec<Option<AnnotatedEventView>>",
+        "required": true,
+        "schema": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnnotatedEventView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "rooch_getEventsByEventHandle",
+      "description": "Get the events by event handle id",
+      "params": [
+        {
+          "name": "event_handle_type",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+          }
+        },
+        {
+          "name": "cursor",
+          "schema": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        },
+        {
+          "name": "limit",
+          "schema": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec<Option<AnnotatedEventView>>",
+        "required": true,
+        "schema": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnnotatedEventView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "rooch_getStates",
+      "description": "Get the states by access_path",
+      "params": [
+        {
+          "name": "access_path",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/AccessPathView"
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec<Option<StateView>>",
+        "required": true,
+        "schema": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StateView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "rooch_getTransactionByHash",
+      "params": [
+        {
+          "name": "hash",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/RoochH256View"
+          }
+        }
+      ],
+      "result": {
+        "name": "TransactionView",
+        "schema": {
+          "$ref": "#/components/schemas/TransactionView"
+        }
+      }
+    },
+    {
+      "name": "rooch_getTransactionByIndex",
+      "params": [
+        {
+          "name": "start",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        },
+        {
+          "name": "limit",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec<TransactionView>",
+        "required": true,
+        "schema": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/TransactionView"
+          }
+        }
+      }
+    },
+    {
+      "name": "rooch_sendRawTransaction",
+      "description": "Send the signed transaction in bcs hex format This method does not block waiting for the transaction to be executed.",
+      "params": [
+        {
+          "name": "tx_bcs_hex",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          }
+        }
+      ],
+      "result": {
+        "name": "RoochH256View",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/RoochH256View"
+        }
+      }
+    }
+  ],
+  "components": {
+    "schemas": {
+      "AccessPathView": {
+        "$ref": "#/components/schemas/PathView"
+      },
+      "AccountAddressView": {
+        "type": "array",
+        "items": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        },
+        "maxItems": 32,
+        "minItems": 32
+      },
+      "AnnotatedEventView": {
+        "type": "object",
+        "required": [
+          "event",
+          "parsed_event_data",
+          "sender"
+        ],
+        "properties": {
+          "event": {
+            "$ref": "#/components/schemas/EventView"
+          },
+          "parsed_event_data": {
+            "$ref": "#/components/schemas/AnnotatedMoveStructView"
+          },
+          "sender": {
+            "type": "string"
+          },
+          "timestamp_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "tx_hash": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MoveH256View"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AnnotatedFunctionReturnValueView": {
+        "type": "object",
+        "required": [
+          "move_value",
+          "value"
+        ],
+        "properties": {
+          "move_value": {
+            "$ref": "#/components/schemas/AnnotatedMoveValueView"
+          },
+          "value": {
+            "$ref": "#/components/schemas/FunctionReturnValueView"
+          }
+        }
+      },
+      "AnnotatedMoveStructView": {
+        "type": "object",
+        "required": [
+          "abilities",
+          "type",
+          "value"
+        ],
+        "properties": {
+          "abilities": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          },
+          "type": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+          },
+          "value": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AnnotatedMoveValueView"
+            }
+          }
+        }
+      },
+      "AnnotatedMoveValueView": {
+        "anyOf": [
+          {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          },
+          {
+            "description": "u64, u128, U256 is too large to be serialized in json so we use string to represent them",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/u64"
+              }
+            ]
+          },
+          {
+            "$ref": "#/components/schemas/u128"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnnotatedMoveValueView"
+            }
+          },
+          {
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          },
+          {
+            "$ref": "#/components/schemas/AnnotatedMoveStructView"
+          },
+          {
+            "$ref": "#/components/schemas/SpecificStructView"
+          },
+          {
+            "type": "integer",
+            "format": "uint16",
+            "minimum": 0.0
+          },
+          {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0.0
+          },
+          {
+            "$ref": "#/components/schemas/move_core_types::u256::U256"
+          }
+        ]
+      },
+      "AnnotatedStateView": {
+        "type": "object",
+        "required": [
+          "move_value",
+          "state"
+        ],
+        "properties": {
+          "move_value": {
+            "$ref": "#/components/schemas/AnnotatedMoveValueView"
+          },
+          "state": {
+            "$ref": "#/components/schemas/StateView"
+          }
+        }
+      },
+      "AuthenticatorView": {
+        "type": "object",
+        "required": [
+          "payload",
+          "scheme"
+        ],
+        "properties": {
+          "payload": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          },
+          "scheme": {
+            "$ref": "#/components/schemas/u64"
+          }
+        }
+      },
+      "EventFilterView": {
+        "oneOf": [
+          {
+            "description": "Query by sender address.",
+            "type": "object",
+            "required": [
+              "Sender"
+            ],
+            "properties": {
+              "Sender": {
+                "$ref": "#/components/schemas/AccountAddressView"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Return events emitted by the given transaction.",
+            "type": "object",
+            "required": [
+              "Transaction"
+            ],
+            "properties": {
+              "Transaction": {
+                "$ref": "#/components/schemas/MoveH256View"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Return events with the given move event struct name",
+            "type": "object",
+            "required": [
+              "MoveEventType"
+            ],
+            "properties": {
+              "MoveEventType": {
+                "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "MoveEventField"
+            ],
+            "properties": {
+              "MoveEventField": {
+                "type": "object",
+                "required": [
+                  "path",
+                  "value"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "value": true
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Return events emitted in [start_time, end_time) interval",
+            "type": "object",
+            "required": [
+              "TimeRange"
+            ],
+            "properties": {
+              "TimeRange": {
+                "type": "object",
+                "required": [
+                  "end_time",
+                  "start_time"
+                ],
+                "properties": {
+                  "end_time": {
+                    "description": "right endpoint of time interval, milliseconds since epoch, exclusive",
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  },
+                  "start_time": {
+                    "description": "left endpoint of time interval, milliseconds since epoch, inclusive",
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Return events emitted in [from_block, to_block) interval",
+            "type": "object",
+            "required": [
+              "All"
+            ],
+            "properties": {
+              "All": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/EventFilterView"
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "Any"
+            ],
+            "properties": {
+              "Any": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/EventFilterView"
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "And"
+            ],
+            "properties": {
+              "And": {
+                "type": "array",
+                "items": [
+                  {
+                    "$ref": "#/components/schemas/EventFilterView"
+                  },
+                  {
+                    "$ref": "#/components/schemas/EventFilterView"
+                  }
+                ],
+                "maxItems": 2,
+                "minItems": 2
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "Or"
+            ],
+            "properties": {
+              "Or": {
+                "type": "array",
+                "items": [
+                  {
+                    "$ref": "#/components/schemas/EventFilterView"
+                  },
+                  {
+                    "$ref": "#/components/schemas/EventFilterView"
+                  }
+                ],
+                "maxItems": 2,
+                "minItems": 2
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "EventID": {
+        "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. the Unique ID is a combination of event handle id and event seq number. the ID is local to this particular fullnode and will be different from other fullnode.",
+        "type": "object",
+        "required": [
+          "event_handle_id",
+          "event_seq"
+        ],
+        "properties": {
+          "event_handle_id": {
+            "description": "each event handle corresponds to a unique event handle id. event handler id equal to guid.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ObjectID"
+              }
+            ]
+          },
+          "event_seq": {
+            "description": "For expansion: The number of messages that have been emitted to the path previously",
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      },
+      "EventView": {
+        "type": "object",
+        "required": [
+          "event_data",
+          "event_id",
+          "event_index",
+          "type_tag"
+        ],
+        "properties": {
+          "event_data": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          },
+          "event_id": {
+            "$ref": "#/components/schemas/EventID"
+          },
+          "event_index": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "type_tag": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
+          }
+        }
+      },
+      "ExecuteTransactionResponseView": {
+        "type": "object",
+        "required": [
+          "execution_info",
+          "output",
+          "sequence_info"
+        ],
+        "properties": {
+          "execution_info": {
+            "$ref": "#/components/schemas/TransactionExecutionInfoView"
+          },
+          "output": {
+            "$ref": "#/components/schemas/TransactionOutputView"
+          },
+          "sequence_info": {
+            "$ref": "#/components/schemas/TransactionSequenceInfoView"
+          }
+        }
+      },
+      "FunctionCallView": {
+        "type": "object",
+        "required": [
+          "args",
+          "function_id",
+          "ty_args"
+        ],
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+            }
+          },
+          "function_id": {
+            "$ref": "#/components/schemas/moveos_types::move_types::FunctionId"
+          },
+          "ty_args": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
+            }
+          }
+        }
+      },
+      "FunctionReturnValueView": {
+        "type": "object",
+        "required": [
+          "type_tag",
+          "value"
+        ],
+        "properties": {
+          "type_tag": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
+          },
+          "value": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          }
+        }
+      },
+      "Hex": {
+        "description": "Hex string encoding.",
+        "type": "string"
+      },
+      "IdentifierView": {
+        "type": "string"
+      },
+      "KeptVMStatusView": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "executed"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "outofgas"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "abort_code",
+              "location",
+              "type"
+            ],
+            "properties": {
+              "abort_code": {
+                "$ref": "#/components/schemas/u64"
+              },
+              "location": {
+                "$ref": "#/components/schemas/move_core_types::vm_status::AbortLocation"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "moveabort"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "code_offset",
+              "function",
+              "location",
+              "type"
+            ],
+            "properties": {
+              "code_offset": {
+                "type": "integer",
+                "format": "uint16",
+                "minimum": 0.0
+              },
+              "function": {
+                "type": "integer",
+                "format": "uint16",
+                "minimum": 0.0
+              },
+              "location": {
+                "$ref": "#/components/schemas/move_core_types::vm_status::AbortLocation"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "executionfailure"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "miscellaneouserror"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "MoveActionTypeView": {
+        "type": "string",
+        "enum": [
+          "scriptcall",
+          "functioncall",
+          "modulebundle"
+        ]
+      },
+      "MoveActionView": {
+        "type": "object",
+        "properties": {
+          "function_call": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FunctionCallView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "module_bundle": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+            }
+          },
+          "script_call": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScriptCallView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "MoveAsciiString": {
+        "type": "object",
+        "required": [
+          "bytes"
+        ],
+        "properties": {
+          "bytes": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            }
+          }
+        }
+      },
+      "MoveH256View": {
+        "type": "array",
+        "items": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        },
+        "maxItems": 32,
+        "minItems": 32
+      },
+      "MoveString": {
+        "type": "object",
+        "required": [
+          "bytes"
+        ],
+        "properties": {
+          "bytes": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            }
+          }
+        }
+      },
+      "ObjectID": {
+        "$ref": "#/components/schemas/Hex"
+      },
+      "OpView_for_StateView": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "type",
+              "value",
+              "value_type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "new"
+                ]
+              },
+              "value": {
+                "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+              },
+              "value_type": {
+                "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "type",
+              "value",
+              "value_type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "modify"
+                ]
+              },
+              "value": {
+                "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+              },
+              "value_type": {
+                "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "delete"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "PathView": {
+        "oneOf": [
+          {
+            "description": "Get Object",
+            "type": "object",
+            "required": [
+              "Object"
+            ],
+            "properties": {
+              "Object": {
+                "type": "object",
+                "required": [
+                  "object_ids"
+                ],
+                "properties": {
+                  "object_ids": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ObjectID"
+                    }
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Get account resources",
+            "type": "object",
+            "required": [
+              "Resource"
+            ],
+            "properties": {
+              "Resource": {
+                "type": "object",
+                "required": [
+                  "account",
+                  "resource_types"
+                ],
+                "properties": {
+                  "account": {
+                    "$ref": "#/components/schemas/AccountAddressView"
+                  },
+                  "resource_types": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+                    }
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Get account modules",
+            "type": "object",
+            "required": [
+              "Module"
+            ],
+            "properties": {
+              "Module": {
+                "type": "object",
+                "required": [
+                  "account",
+                  "module_names"
+                ],
+                "properties": {
+                  "account": {
+                    "$ref": "#/components/schemas/AccountAddressView"
+                  },
+                  "module_names": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/IdentifierView"
+                    }
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Get table values by keys",
+            "type": "object",
+            "required": [
+              "Table"
+            ],
+            "properties": {
+              "Table": {
+                "type": "object",
+                "required": [
+                  "keys",
+                  "table_handle"
+                ],
+                "properties": {
+                  "keys": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "format": "uint8",
+                        "minimum": 0.0
+                      }
+                    }
+                  },
+                  "table_handle": {
+                    "$ref": "#/components/schemas/ObjectID"
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "RoochH256View": {
+        "$ref": "#/components/schemas/Hex"
+      },
+      "ScriptCallView": {
+        "type": "object",
+        "required": [
+          "args",
+          "code",
+          "ty_args"
+        ],
+        "properties": {
+          "args": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+            }
+          },
+          "code": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          },
+          "ty_args": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
+            }
+          }
+        }
+      },
+      "SpecificStructView": {
+        "description": "Some specific struct that we want to display in a special way for better readability",
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/MoveString"
+          },
+          {
+            "$ref": "#/components/schemas/MoveAsciiString"
+          },
+          {
+            "$ref": "#/components/schemas/ObjectID"
+          }
+        ]
+      },
+      "StateChangeSetView": {
+        "type": "object",
+        "required": [
+          "changes",
+          "new_tables",
+          "removed_tables"
+        ],
+        "properties": {
+          "changes": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TableChangeView"
+            }
+          },
+          "new_tables": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TableTypeInfoView"
+            }
+          },
+          "removed_tables": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ObjectID"
+            },
+            "uniqueItems": true
+          }
+        }
+      },
+      "StateView": {
+        "type": "object",
+        "required": [
+          "value",
+          "value_type"
+        ],
+        "properties": {
+          "value": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          },
+          "value_type": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
+          }
+        }
+      },
+      "TableChangeView": {
+        "type": "object",
+        "required": [
+          "entries"
+        ],
+        "properties": {
+          "entries": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/OpView_for_StateView"
+            }
+          }
+        }
+      },
+      "TableTypeInfoView": {
+        "type": "object",
+        "required": [
+          "key_type"
+        ],
+        "properties": {
+          "key_type": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
+          }
+        }
+      },
+      "TransactionExecutionInfoView": {
+        "type": "object",
+        "required": [
+          "event_root",
+          "gas_used",
+          "state_root",
+          "status",
+          "tx_hash"
+        ],
+        "properties": {
+          "event_root": {
+            "$ref": "#/components/schemas/RoochH256View"
+          },
+          "gas_used": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "state_root": {
+            "$ref": "#/components/schemas/RoochH256View"
+          },
+          "status": {
+            "$ref": "#/components/schemas/KeptVMStatusView"
+          },
+          "tx_hash": {
+            "$ref": "#/components/schemas/RoochH256View"
+          }
+        }
+      },
+      "TransactionOutputView": {
+        "type": "object",
+        "required": [
+          "events",
+          "gas_used",
+          "status",
+          "table_changeset"
+        ],
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventView"
+            }
+          },
+          "gas_used": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "status": {
+            "$ref": "#/components/schemas/KeptVMStatusView"
+          },
+          "table_changeset": {
+            "$ref": "#/components/schemas/StateChangeSetView"
+          }
+        }
+      },
+      "TransactionSequenceInfoView": {
+        "type": "object",
+        "required": [
+          "tx_accumulator_root",
+          "tx_order",
+          "tx_order_signature"
+        ],
+        "properties": {
+          "tx_accumulator_root": {
+            "$ref": "#/components/schemas/RoochH256View"
+          },
+          "tx_order": {
+            "$ref": "#/components/schemas/u128"
+          },
+          "tx_order_signature": {
+            "$ref": "#/components/schemas/AuthenticatorView"
+          }
+        }
+      },
+      "TransactionTypeView": {
+        "type": "string",
+        "enum": [
+          "rooch",
+          "ethereum"
+        ]
+      },
+      "TransactionView": {
+        "type": "object",
+        "required": [
+          "action",
+          "action_type",
+          "raw",
+          "sender",
+          "sequence_number",
+          "transaction_type"
+        ],
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/MoveActionView"
+          },
+          "action_type": {
+            "$ref": "#/components/schemas/MoveActionTypeView"
+          },
+          "raw": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          },
+          "sender": {
+            "type": "string"
+          },
+          "sequence_number": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "transaction_type": {
+            "$ref": "#/components/schemas/TransactionTypeView"
+          }
+        }
+      },
+      "alloc::vec::Vec<u8>": {
+        "type": "string"
+      },
+      "move_core_types::account_address::AccountAddress": {
+        "type": "string"
+      },
+      "move_core_types::language_storage::StructTag": {
+        "type": "string"
+      },
+      "move_core_types::language_storage::TypeTag": {
+        "type": "string"
+      },
+      "move_core_types::u256::U256": {
+        "type": "string"
+      },
+      "move_core_types::vm_status::AbortLocation": {
+        "type": "string"
+      },
+      "moveos_types::move_types::FunctionId": {
+        "type": "string"
+      },
+      "u128": {
+        "type": "string"
+      },
+      "u64": {
+        "type": "string"
+      }
+    }
+  }
+}
