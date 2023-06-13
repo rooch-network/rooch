@@ -1,22 +1,19 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::debug_assert;
-
 use super::{
-    authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo, AuthenticatorResult,
-    TransactionType,
+    authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo, TransactionType,
 };
 use crate::address::RoochAddress;
-
 use crate::H256;
 use anyhow::Result;
-
+use move_core_types::account_address::AccountAddress;
 use moveos_types::{
-    transaction::{AuthenticatableTransaction, MoveAction, MoveOSTransaction},
+    transaction::{MoveAction, MoveOSTransaction},
     tx_context::TxContext,
 };
 use serde::{Deserialize, Serialize};
+use std::debug_assert;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RoochTransactionData {
@@ -114,8 +111,6 @@ impl From<RoochTransaction> for MoveOSTransaction {
 }
 
 impl AbstractTransaction for RoochTransaction {
-    type Hash = H256;
-
     fn transaction_type(&self) -> super::TransactionType {
         TransactionType::Rooch
     }
@@ -130,11 +125,6 @@ impl AbstractTransaction for RoochTransaction {
     fn encode(&self) -> Vec<u8> {
         bcs::to_bytes(self).expect("encode transaction should success")
     }
-}
-
-impl AuthenticatableTransaction for RoochTransaction {
-    type AuthenticatorInfo = AuthenticatorInfo;
-    type AuthenticatorResult = AuthenticatorResult;
 
     //TODO unify the hash function
     fn tx_hash(&self) -> H256 {
@@ -144,17 +134,20 @@ impl AuthenticatableTransaction for RoochTransaction {
 
     fn authenticator_info(&self) -> AuthenticatorInfo {
         AuthenticatorInfo {
-            sender: self.sender().into(),
             seqence_number: self.sequence_number(),
             authenticator: self.authenticator.clone(),
         }
     }
 
     fn construct_moveos_transaction(
-        &self,
-        result: AuthenticatorResult,
+        self,
+        resolved_sender: AccountAddress,
     ) -> Result<MoveOSTransaction> {
-        debug_assert!(self.sender() == RoochAddress::from(result.resolved_address));
-        Ok(self.clone().into())
+        debug_assert!(self.sender() == resolved_sender.into());
+        Ok(self.into())
+    }
+
+    fn sender(&self) -> crate::address::MultiChainAddress {
+        self.sender().into()
     }
 }

@@ -5,7 +5,8 @@ use self::authenticator::Authenticator;
 use crate::{address::MultiChainAddress, H256};
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
-use moveos_types::transaction::AuthenticatableTransaction;
+use move_core_types::vm_status::KeptVMStatus;
+use moveos_types::{h256, transaction::MoveOSTransaction};
 use serde::{Deserialize, Serialize};
 
 pub mod authenticator;
@@ -26,80 +27,53 @@ pub struct RawTransaction {
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct AuthenticatorInfo {
-    pub sender: MultiChainAddress,
     pub seqence_number: u64,
     pub authenticator: Authenticator,
 }
 
 impl AuthenticatorInfo {
-    pub fn new(
-        sender: MultiChainAddress,
-        seqence_number: u64,
-        authenticator: Authenticator,
-    ) -> Self {
+    pub fn new(seqence_number: u64, authenticator: Authenticator) -> Self {
         Self {
-            sender,
             seqence_number,
             authenticator,
         }
     }
 
-    pub fn encode(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         bcs::to_bytes(self).expect("encode authenticator info should success")
     }
 }
 
 impl From<AuthenticatorInfo> for Vec<u8> {
     fn from(info: AuthenticatorInfo) -> Self {
-        info.encode()
+        info.to_bytes()
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub struct AuthenticatorResult {
-    pub resolved_address: AccountAddress,
-}
-
-pub trait AbstractTransaction: AuthenticatableTransaction {
-    /// The transaction sender authenticator type.
-    /// Usually it is a signature.
-    type Hash;
-
+pub trait AbstractTransaction {
     fn transaction_type(&self) -> TransactionType;
 
     fn decode(bytes: &[u8]) -> Result<Self>
     where
         Self: std::marker::Sized;
     fn encode(&self) -> Vec<u8>;
+
+    fn sender(&self) -> MultiChainAddress;
+
+    fn tx_hash(&self) -> H256;
+
+    fn authenticator_info(&self) -> AuthenticatorInfo;
+
+    fn construct_moveos_transaction(
+        self,
+        resolved_sender: AccountAddress,
+    ) -> Result<MoveOSTransaction>;
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum TypedTransaction {
     Rooch(rooch::RoochTransaction),
     Ethereum(ethereum::EthereumTransaction),
-}
-
-impl TypedTransaction {
-    pub fn transaction_type(&self) -> TransactionType {
-        match self {
-            TypedTransaction::Rooch(_) => TransactionType::Rooch,
-            TypedTransaction::Ethereum(_) => TransactionType::Ethereum,
-        }
-    }
-
-    pub fn encode(&self) -> Vec<u8> {
-        match self {
-            TypedTransaction::Rooch(tx) => tx.encode(),
-            TypedTransaction::Ethereum(tx) => tx.encode(),
-        }
-    }
-
-    pub fn hash(&self) -> H256 {
-        match self {
-            TypedTransaction::Rooch(tx) => tx.tx_hash(),
-            TypedTransaction::Ethereum(tx) => tx.tx_hash(),
-        }
-    }
 }
 
 impl TryFrom<RawTransaction> for TypedTransaction {
@@ -119,9 +93,28 @@ impl TryFrom<RawTransaction> for TypedTransaction {
     }
 }
 
-impl AuthenticatableTransaction for TypedTransaction {
-    type AuthenticatorInfo = AuthenticatorInfo;
-    type AuthenticatorResult = AuthenticatorResult;
+impl AbstractTransaction for TypedTransaction {
+    fn transaction_type(&self) -> TransactionType {
+        match self {
+            TypedTransaction::Rooch(_) => TransactionType::Rooch,
+            TypedTransaction::Ethereum(_) => TransactionType::Ethereum,
+        }
+    }
+
+    fn encode(&self) -> Vec<u8> {
+        match self {
+            TypedTransaction::Rooch(tx) => tx.encode(),
+            TypedTransaction::Ethereum(tx) => tx.encode(),
+        }
+    }
+
+    fn decode(bytes: &[u8]) -> Result<Self>
+    where
+        Self: std::marker::Sized,
+    {
+        let raw = bcs::from_bytes::<RawTransaction>(bytes)?;
+        Self::try_from(raw)
+    }
 
     fn tx_hash(&self) -> H256 {
         match self {
@@ -130,7 +123,7 @@ impl AuthenticatableTransaction for TypedTransaction {
         }
     }
 
-    fn authenticator_info(&self) -> Self::AuthenticatorInfo {
+    fn authenticator_info(&self) -> AuthenticatorInfo {
         match self {
             TypedTransaction::Rooch(tx) => tx.authenticator_info(),
             TypedTransaction::Ethereum(tx) => tx.authenticator_info(),
@@ -138,12 +131,19 @@ impl AuthenticatableTransaction for TypedTransaction {
     }
 
     fn construct_moveos_transaction(
-        &self,
-        result: Self::AuthenticatorResult,
+        self,
+        resolved_sender: AccountAddress,
     ) -> Result<moveos_types::transaction::MoveOSTransaction> {
         match self {
-            TypedTransaction::Rooch(tx) => tx.construct_moveos_transaction(result),
-            TypedTransaction::Ethereum(tx) => tx.construct_moveos_transaction(result),
+            TypedTransaction::Rooch(tx) => tx.construct_moveos_transaction(resolved_sender),
+            TypedTransaction::Ethereum(tx) => tx.construct_moveos_transaction(resolved_sender),
+        }
+    }
+
+    fn sender(&self) -> MultiChainAddress {
+        match self {
+            TypedTransaction::Rooch(tx) => AbstractTransaction::sender(tx),
+            TypedTransaction::Ethereum(tx) => tx.sender(),
         }
     }
 }

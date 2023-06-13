@@ -44,5 +44,6 @@ moveos-verifier = { workspace = true }
 moveos-stdlib = { workspace = true }
 moveos-stdlib-builder = { workspace = true }
 moveos = { workspace = true }
+moveos-store = { workspace = true }
 
 rooch-framework = { workspace = true }

@@ -91,6 +91,7 @@ impl WalletContext {
             .get_sequence_number(sender)
             .await
             .map_err(RoochError::from)?;
+        log::debug!("use sequence_number: {}", sequence_number);
         let tx_data = RoochTransactionData::new(sender, sequence_number, action);
         let signature = Signature::new_hashed(tx_data.hash().as_bytes(), pk);
         let auth = match pk.public().scheme() {

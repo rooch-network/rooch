@@ -25,7 +25,7 @@ use move_vm_runtime::{
 };
 use move_vm_types::{
     data_store::DataStore,
-    gas::GasMeter,
+    gas::{GasMeter, UnmeteredGasMeter},
     loaded_data::runtime_types::{CachedStructIndex, StructType, Type},
 };
 use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
@@ -44,15 +44,18 @@ use std::{borrow::Borrow, sync::Arc};
 /// MoveOSVM is a wrapper of MoveVM with MoveOS specific features.
 pub struct MoveOSVM {
     inner: MoveVM,
+    finalize_function: Option<FunctionId>,
 }
 
 impl MoveOSVM {
     pub fn new(
         natives: impl IntoIterator<Item = (AccountAddress, Identifier, Identifier, NativeFunction)>,
         vm_config: VMConfig,
+        finalize_function: Option<FunctionId>,
     ) -> VMResult<Self> {
         Ok(Self {
             inner: MoveVM::new_with_config(natives, vm_config)?,
+            finalize_function,
         })
     }
 
@@ -62,7 +65,25 @@ impl MoveOSVM {
         ctx: StorageContext,
         gas_meter: G,
     ) -> MoveOSSession<'r, '_, S, G> {
-        MoveOSSession::new(&self.inner, remote, ctx, gas_meter, false)
+        MoveOSSession::new(
+            &self.inner,
+            remote,
+            ctx,
+            self.finalize_function.clone(),
+            gas_meter,
+            false,
+        )
+    }
+
+    pub fn new_genesis_session<'r, S: MoveOSResolver>(
+        &self,
+        remote: &'r S,
+        ctx: StorageContext,
+    ) -> MoveOSSession<'r, '_, S, UnmeteredGasMeter> {
+        //Do not charge gas for genesis session
+        let gas_meter = UnmeteredGasMeter;
+        // Genesis session do not need to execute finalize function
+        MoveOSSession::new(&self.inner, remote, ctx, None, gas_meter, false)
     }
 
     pub fn new_readonly_session<'r, S: MoveOSResolver, G: GasMeter>(
@@ -71,7 +92,7 @@ impl MoveOSVM {
         ctx: StorageContext,
         gas_meter: G,
     ) -> MoveOSSession<'r, '_, S, G> {
-        MoveOSSession::new(&self.inner, remote, ctx, gas_meter, true)
+        MoveOSSession::new(&self.inner, remote, ctx, None, gas_meter, true)
     }
 }
 
@@ -83,6 +104,7 @@ pub struct MoveOSSession<'r, 'l, S, G> {
     remote: &'r S,
     session: Session<'r, 'l, S>,
     ctx: StorageContext,
+    finalize_function: Option<FunctionId>,
     gas_meter: G,
     read_only: bool,
 }
@@ -96,6 +118,7 @@ where
         vm: &'l MoveVM,
         remote: &'r S,
         ctx: StorageContext,
+        finalize_function: Option<FunctionId>,
         gas_meter: G,
         read_only: bool,
     ) -> Self {
@@ -104,6 +127,7 @@ where
             remote,
             session: Self::new_inner_session(vm, remote),
             ctx,
+            finalize_function,
             gas_meter,
             read_only,
         }
@@ -365,7 +389,7 @@ where
         if self.read_only {
             (self, status)
         } else {
-            let finalized_session = match &status {
+            let mut finalized_session = match &status {
                 KeptVMStatus::Executed => self,
                 _error => {
                     //if the execution failed, we need to start a new session, and discard the transaction changes
@@ -375,13 +399,22 @@ where
                         remote,
                         session: _,
                         ctx,
+                        finalize_function,
                         gas_meter,
                         read_only,
                     } = self;
-                    Self::new(vm, remote, ctx, gas_meter, read_only)
+                    Self::new(vm, remote, ctx, finalize_function, gas_meter, read_only)
                 }
             };
-            //TODO call the finalizer move function to increment the sequence number or reduce the gas
+            if let Some(finalize_function) = &finalized_session.finalize_function {
+                finalized_session
+                    .execute_function_bypass_visibility(FunctionCall::new(
+                        finalize_function.clone(),
+                        vec![],
+                        vec![],
+                    ))
+                    .expect("finalize function should always success");
+            }
             (finalized_session, status)
         }
     }

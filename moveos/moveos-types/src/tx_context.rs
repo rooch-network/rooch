@@ -36,6 +36,16 @@ impl TxContext {
         }
     }
 
+    /// Zero TxContext for some read-only function call cases,
+    /// We do not know the sender address and tx_hash in this case
+    pub fn zero() -> Self {
+        Self {
+            sender: AccountAddress::ZERO,
+            tx_hash: vec![0u8; h256::LENGTH],
+            ids_created: 0,
+        }
+    }
+
     /// Derive a globally unique object ID by hashing self.digest | self.ids_created
     pub fn fresh_id(&mut self) -> ObjectID {
         let id = ObjectID::derive_id(self.tx_hash.clone(), self.ids_created);
@@ -72,7 +82,7 @@ impl MoveStructType for TxContext {
 impl MoveStructState for TxContext {
     /// Return the layout of the TxContext in Move
     /// TODO: write a macro to auto generate Layout for Rust type.
-    fn move_layout() -> MoveStructLayout {
+    fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![
             MoveTypeLayout::Address,
             MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
@@ -95,7 +105,7 @@ mod tests {
         assert_eq!(test, deserialized);
         let move_value = MoveValue::simple_deserialize(
             &serialized,
-            &(MoveTypeLayout::Struct(TxContext::move_layout())),
+            &(MoveTypeLayout::Struct(TxContext::struct_layout())),
         )
         .unwrap();
         let serialized2 = move_value.simple_serialize().unwrap();

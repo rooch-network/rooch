@@ -15,6 +15,7 @@ rust-version = { workspace = true }
 
 [dependencies]
 anyhow = { workspace = true }
+bcs = { workspace = true }
 better_any = { workspace = true }
 fastcrypto = { workspace = true }
 linked-hash-map = { workspace = true }
@@ -44,3 +45,5 @@ moveos-verifier = { workspace = true }
 moveos-stdlib = { workspace = true }
 moveos-stdlib-builder = { workspace = true }
 moveos = { workspace = true }
+
+rooch-types = { workspace = true }

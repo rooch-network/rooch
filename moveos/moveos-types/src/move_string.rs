@@ -48,7 +48,7 @@ impl MoveStructType for MoveString {
 }
 
 impl MoveStructState for MoveString {
-    fn move_layout() -> MoveStructLayout {
+    fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8))])
     }
 }
@@ -128,7 +128,7 @@ impl MoveStructType for MoveAsciiString {
 }
 
 impl MoveStructState for MoveAsciiString {
-    fn move_layout() -> MoveStructLayout {
+    fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8))])
     }
 }

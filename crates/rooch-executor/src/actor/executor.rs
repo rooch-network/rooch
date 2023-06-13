@@ -6,6 +6,7 @@ use super::messages::{
     ExecuteViewFunctionMessage, GetEventsByEventHandleMessage, GetEventsMessage, StatesMessage,
     ValidateTransactionMessage,
 };
+use anyhow::bail;
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
@@ -16,12 +17,17 @@ use moveos_store::MoveOSDB;
 use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event::EventHandle;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
+use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::as_struct_tag;
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::state_resolver::{AnnotatedStateReader, StateReader};
 use moveos_types::transaction::TransactionExecutionInfo;
-use moveos_types::transaction::{AuthenticatableTransaction, VerifiedMoveOSTransaction};
+use moveos_types::transaction::VerifiedMoveOSTransaction;
+use moveos_types::tx_context::TxContext;
+use rooch_framework::bindings::address_mapping::AddressMapping;
+use rooch_framework::bindings::transaction_validator::TransactionValidator;
 use rooch_genesis::RoochGenesis;
+use rooch_types::transaction::AbstractTransaction;
 
 pub struct ExecutorActor {
     moveos: MoveOS,
@@ -38,6 +44,43 @@ impl ExecutorActor {
         }
         Ok(Self { moveos })
     }
+
+    pub fn validate<T: AbstractTransaction>(&self, tx: T) -> Result<VerifiedMoveOSTransaction> {
+        let sender = tx.sender();
+
+        let resolved_sender = {
+            let address_mapping = self.moveos.as_module_bundle::<AddressMapping>();
+            address_mapping.resolve(sender.clone())?.ok_or_else(|| {
+                anyhow::anyhow!(
+                    "the multiaddress sender({}) mapping record is not exists.",
+                    sender
+                )
+            })?
+        };
+
+        let tx_context = TxContext::new(resolved_sender, tx.tx_hash());
+
+        let authenticator = tx.authenticator_info();
+
+        let result = {
+            let tx_validator = self.moveos.as_module_bundle::<TransactionValidator>();
+            tx_validator.validate(&tx_context, authenticator)
+        };
+
+        match result {
+            Ok(_) => Ok(self
+                .moveos
+                .verify(tx.construct_moveos_transaction(resolved_sender)?)?),
+            Err(e) => {
+                //TODO handle the abort error code
+                //let status = explain_vm_status(self.db.get_state_store(), e.into_vm_status())?;
+                println!("validate failed: {:?}", e);
+                // If the error code is EUnsupportedScheme, then we can try to call the sender's validate function
+                // This is the Account Abstraction.
+                bail!("validate failed: {:?}", e)
+            }
+        }
+    }
 }
 
 impl Actor for ExecutorActor {}
@@ -45,14 +88,14 @@ impl Actor for ExecutorActor {}
 #[async_trait]
 impl<T> Handler<ValidateTransactionMessage<T>> for ExecutorActor
 where
-    T: 'static + AuthenticatableTransaction + Send + Sync,
+    T: 'static + AbstractTransaction + Send + Sync,
 {
     async fn handle(
         &mut self,
         msg: ValidateTransactionMessage<T>,
         _ctx: &mut ActorContext,
     ) -> Result<VerifiedMoveOSTransaction> {
-        self.moveos.validate(msg.tx)
+        self.validate(msg.tx)
     }
 }
 

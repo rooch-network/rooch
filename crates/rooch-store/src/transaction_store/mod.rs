@@ -1,5 +1,8 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use parking_lot::RwLock;
-use rooch_types::transaction::TypedTransaction;
+use rooch_types::transaction::{AbstractTransaction, TypedTransaction};
 use rooch_types::H256;
 use std::sync::Arc;
 
@@ -46,7 +49,7 @@ impl TransactionStore for InMemoryStore {
 
     fn get_by_hash(&self, hash: H256) -> Option<TypedTransaction> {
         let inner = self.inner.read();
-        inner.iter().find(|tx| tx.hash() == hash).cloned()
+        inner.iter().find(|tx| tx.tx_hash() == hash).cloned()
     }
 
     fn get_by_index(&self, start: u64, limit: u64) -> Vec<TypedTransaction> {

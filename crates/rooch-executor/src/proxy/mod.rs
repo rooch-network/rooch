@@ -12,8 +12,8 @@ use anyhow::Result;
 use coerce::actor::ActorRef;
 use move_core_types::language_storage::StructTag;
 use moveos_types::transaction::TransactionExecutionInfo;
+use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionOutput;
-use moveos_types::transaction::{AuthenticatableTransaction, FunctionCall};
 use moveos_types::{
     access_path::AccessPath, function_return_value::AnnotatedFunctionReturnValue,
     transaction::VerifiedMoveOSTransaction,
@@ -23,6 +23,7 @@ use moveos_types::{
     event_filter::EventFilter,
     state::{AnnotatedState, State},
 };
+use rooch_types::transaction::{AbstractTransaction, TransactionExecutionInfo};
 
 #[derive(Clone)]
 pub struct ExecutorProxy {
@@ -36,7 +37,7 @@ impl ExecutorProxy {
 
     pub async fn validate_transaction<T>(&self, tx: T) -> Result<VerifiedMoveOSTransaction>
     where
-        T: 'static + AuthenticatableTransaction + Send + Sync,
+        T: 'static + AbstractTransaction + Send + Sync,
     {
         self.actor.send(ValidateTransactionMessage { tx }).await?
     }

@@ -81,7 +81,8 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
         let db = moveos_store::MoveOSDB::new_with_memory_store();
 
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
-        let mut moveos = MoveOS::new(db, genesis.all_natives(), genesis.config.clone()).unwrap();
+        let mut moveos =
+            MoveOS::new(db, genesis.all_natives(), genesis.config_for_test.clone()).unwrap();
 
         moveos.init_genesis(genesis.genesis_txs.clone()).unwrap();
 

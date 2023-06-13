@@ -4,7 +4,8 @@
 
 module moveos_std::storage_context {
     use moveos_std::object_storage::{ObjectStorage};
-    use moveos_std::tx_context::{TxContext};
+    use moveos_std::tx_context::{Self, TxContext};
+    use moveos_std::object_id::{ObjectID};
 
     #[test_only]
     use moveos_std::object_storage::{Self};
@@ -40,7 +41,23 @@ module moveos_std::storage_context {
         &mut this.object_storage
     }
 
-    //TODO should we wrapper the tx_context::fresh_object_id at here?
+    /// Wrap functions for TxContext
+
+    public fun sender(this: &StorageContext): address {
+        tx_context::sender(&this.tx_context)
+    } 
+
+    public fun fresh_address(this: &mut StorageContext): address {
+        tx_context::fresh_address(&mut this.tx_context)
+    }
+
+    public fun fresh_object_id(this: &mut StorageContext): ObjectID {
+        tx_context::fresh_object_id(&mut this.tx_context)
+    }
+
+    public fun tx_hash(this: &StorageContext): vector<u8> {
+        tx_context::tx_hash(&this.tx_context)
+    } 
 
     #[test_only]
     /// Create a StorageContext and AccountStorage for unit test

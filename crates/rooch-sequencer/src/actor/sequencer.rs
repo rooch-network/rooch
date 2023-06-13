@@ -9,7 +9,10 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_types::h256;
 use rooch_store::RoochDB;
-use rooch_types::crypto::{RoochKeyPair, Signature};
+use rooch_types::{
+    crypto::{RoochKeyPair, Signature},
+    transaction::AbstractTransaction,
+};
 use rooch_types::{
     transaction::{TransactionSequenceInfo, TypedTransaction},
     H256,
@@ -42,7 +45,7 @@ impl Handler<TransactionSequenceMessage> for SequencerActor {
     ) -> Result<TransactionSequenceInfo> {
         let tx = msg.tx;
         let tx_order = self.last_order + 1;
-        let hash = tx.hash();
+        let hash = tx.tx_hash();
         let mut witness_data = hash.as_ref().to_vec();
         witness_data.extend(tx_order.to_le_bytes().iter());
         let witness_hash = h256::sha3_256_of(&witness_data);

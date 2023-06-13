@@ -13,9 +13,8 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     RpcModule,
 };
-use moveos_types::transaction::AuthenticatableTransaction;
 use rooch_types::transaction::rooch::RoochTransaction;
-use rooch_types::transaction::TypedTransaction;
+use rooch_types::transaction::{AbstractTransaction, TypedTransaction};
 
 pub struct RoochServer {
     rpc_service: RpcService,

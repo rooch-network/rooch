@@ -260,7 +260,7 @@ impl EthAPIServer for EthServer {
         );
 
         let tx = TypedTransaction::Ethereum(eth_tx);
-        let hash = tx.hash();
+        let hash = tx.tx_hash();
         let _output = self.rpc_service.execute_tx(tx).await?;
         Ok(hash)
     }
