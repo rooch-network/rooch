@@ -25,7 +25,8 @@ members = [
     "crates/rooch-executor",
     "crates/rooch-proposer",
     "crates/rooch-open-rpc",
-    "crates/rooch-open-rpc-macros"
+    "crates/rooch-open-rpc-macros",
+    "crates/rooch-store"
 ]
 
 default-members = [
@@ -76,6 +77,7 @@ rooch-executor = { path = "crates/rooch-executor" }
 rooch-proposer = { path = "crates/rooch-proposer" }
 rooch-open-rpc = { path = "crates/rooch-open-rpc" }
 rooch-open-rpc-macros = { path = "crates/rooch-open-rpc-macros" }
+rooch-store = { path = "crates/rooch-store" }
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.

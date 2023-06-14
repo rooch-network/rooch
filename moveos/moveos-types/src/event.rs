@@ -179,6 +179,10 @@ impl Event {
     pub fn is<EventType: MoveResource>(&self) -> bool {
         self.type_tag == TypeTag::Struct(Box::new(EventType::struct_tag()))
     }
+
+    pub fn hash(&self) -> H256 {
+        h256::sha3_256_of(bcs::to_bytes(self).as_ref().unwrap())
+    }
 }
 
 impl std::fmt::Debug for Event {

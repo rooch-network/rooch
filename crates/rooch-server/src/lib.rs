@@ -20,7 +20,7 @@ use rooch_proposer::actor::proposer::ProposerActor;
 use rooch_proposer::proxy::ProposerProxy;
 use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
-use rooch_sequencer::store::TxDB;
+use rooch_store::RoochDB;
 use serde_json::json;
 use server_config::ServerConfig;
 use std::fmt::Debug;
@@ -125,8 +125,9 @@ pub async fn start_server() -> Result<ServerHandle> {
     //TODO load from config
 
     let (_, kp, _, _) = generate_new_key(rooch_types::crypto::BuiltinScheme::Ed25519, None, None)?;
-    let tx_db = TxDB::new_with_memory_store();
-    let sequencer = SequencerActor::new(kp, tx_db)
+    // let tx_db = TxDB::new_with_memory_store();
+    let rooch_db = RoochDB::new_with_memory_store();
+    let sequencer = SequencerActor::new(kp, rooch_db)
         .into_actor(Some("Sequencer"), &actor_system)
         .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());

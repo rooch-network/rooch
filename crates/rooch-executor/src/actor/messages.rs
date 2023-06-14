@@ -9,10 +9,10 @@ use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event_filter::EventFilter;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::state::{AnnotatedState, State};
+use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::transaction::{AuthenticatableTransaction, FunctionCall};
-use rooch_types::transaction::TransactionExecutionInfo;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]

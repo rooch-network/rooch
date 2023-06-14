@@ -1,14 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    messages::{TransactionByHashMessage, TransactionByIndexMessage, TransactionSequenceMessage},
-    store::TxDB,
+use crate::messages::{
+    TransactionByHashMessage, TransactionByIndexMessage, TransactionSequenceMessage,
 };
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_types::h256;
+use rooch_store::RoochDB;
 use rooch_types::crypto::{RoochKeyPair, Signature};
 use rooch_types::{
     transaction::{TransactionSequenceInfo, TypedTransaction},
@@ -18,15 +18,15 @@ use rooch_types::{
 pub struct SequencerActor {
     last_order: u128,
     sequencer_key: RoochKeyPair,
-    tx_db: TxDB,
+    rooch_db: RoochDB,
 }
 
 impl SequencerActor {
-    pub fn new(sequencer_key: RoochKeyPair, tx_db: TxDB) -> Self {
+    pub fn new(sequencer_key: RoochKeyPair, rooch_db: RoochDB) -> Self {
         Self {
             last_order: 0,
             sequencer_key,
-            tx_db,
+            rooch_db,
         }
     }
 }
@@ -49,7 +49,7 @@ impl Handler<TransactionSequenceMessage> for SequencerActor {
         let tx_order_signature = Signature::new_hashed(&witness_hash.0, &self.sequencer_key).into();
         self.last_order = tx_order;
 
-        self.tx_db.add(tx);
+        self.rooch_db.transaction_store.add(tx);
 
         let tx_accumulator_root = H256::random();
         Ok(TransactionSequenceInfo {
@@ -67,7 +67,7 @@ impl Handler<TransactionByHashMessage> for SequencerActor {
         msg: TransactionByHashMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Option<TypedTransaction>> {
-        Ok(self.tx_db.get_by_hash(msg.hash))
+        Ok(self.rooch_db.transaction_store.get_by_hash(msg.hash))
     }
 }
 
@@ -78,6 +78,9 @@ impl Handler<TransactionByIndexMessage> for SequencerActor {
         msg: TransactionByIndexMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<TypedTransaction>> {
-        Ok(self.tx_db.get_by_index(msg.start, msg.limit))
+        Ok(self
+            .rooch_db
+            .transaction_store
+            .get_by_index(msg.start, msg.limit))
     }
 }
