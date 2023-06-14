@@ -9,11 +9,11 @@ use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event_filter::EventFilter;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::state::{AnnotatedState, State};
-use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::FunctionCall;
+use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
-use rooch_types::transaction::{AbstractTransaction, TransactionExecutionInfo};
+use rooch_types::transaction::AbstractTransaction;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]

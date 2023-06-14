@@ -11,8 +11,8 @@ use crate::actor::{
 use anyhow::Result;
 use coerce::actor::ActorRef;
 use move_core_types::language_storage::StructTag;
-use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::FunctionCall;
+use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::{
     access_path::AccessPath, function_return_value::AnnotatedFunctionReturnValue,
@@ -23,7 +23,7 @@ use moveos_types::{
     event_filter::EventFilter,
     state::{AnnotatedState, State},
 };
-use rooch_types::transaction::{AbstractTransaction, TransactionExecutionInfo};
+use rooch_types::transaction::AbstractTransaction;
 
 #[derive(Clone)]
 pub struct ExecutorProxy {

@@ -5,8 +5,7 @@ use self::authenticator::Authenticator;
 use crate::{address::MultiChainAddress, H256};
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::vm_status::KeptVMStatus;
-use moveos_types::{h256, transaction::MoveOSTransaction};
+use moveos_types::transaction::MoveOSTransaction;
 use serde::{Deserialize, Serialize};
 
 pub mod authenticator;

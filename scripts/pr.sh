@@ -79,7 +79,7 @@ done
 
 MOVE_TEST_CRATES="\
   moveos/moveos-stdlib/moveos-stdlib\
-  moveos/moveos-stdlib/rooch-framework\
+  crates/rooch-framework\
 "
 
 if [ ! -z "$CHECK" ]; then

@@ -44,7 +44,9 @@ module rooch_framework::transaction_validator {
         let scheme = authenticator::scheme(&authenticator);
         if (scheme == ED25519_SCHEME) {
             let ed25519_authenicator = authenticator::decode_ed25519_authenticator(authenticator);
-
+            //FIXME we need to check the public key and address relationship
+            //The address is the public key's hash
+            //We also need to check the public key via account's auth key, if the user rotate the auth key. 
             assert!(
             ed25519::verify(&authenticator::ed25519_signature(&ed25519_authenicator),
                 &authenticator::ed25519_public(&ed25519_authenicator),

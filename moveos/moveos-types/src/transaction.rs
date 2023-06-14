@@ -1,10 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::fmt::Display;
-
 use crate::{
-    event::Event, h256, move_types::FunctionId, state::StateChangeSet, tx_context::TxContext,
+    event::Event, h256, h256::H256, move_types::FunctionId, state::StateChangeSet,
+    tx_context::TxContext,
 };
 use move_core_types::{
     account_address::AccountAddress,
@@ -13,6 +12,7 @@ use move_core_types::{
     vm_status::KeptVMStatus,
 };
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 
 /// Call a Move script
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]

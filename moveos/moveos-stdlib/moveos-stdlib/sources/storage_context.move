@@ -10,8 +10,6 @@ module moveos_std::storage_context {
     #[test_only]
     use moveos_std::object_storage::{Self};
     #[test_only]
-    use moveos_std::tx_context::{Self};
-    #[test_only]
     use moveos_std::test_helper;
 
     /// Information about the global storage context
