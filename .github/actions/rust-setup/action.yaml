@@ -17,6 +17,9 @@ runs:
     # https://github.com/Mozilla-Actions/sccache-action
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.3
+      env:
+        SCCACHE_GHA_ENABLED: "true"
+        RUSTC_WRAPPER: "sccache"
 
     - name: install protoc and related tools
       shell: bash
