@@ -25,7 +25,8 @@ members = [
     "crates/rooch-executor",
     "crates/rooch-proposer",
     "crates/rooch-open-rpc",
-    "crates/rooch-open-rpc-macros"
+    "crates/rooch-open-rpc-macros",
+    "crates/rooch-store"
 ]
 
 default-members = [
@@ -76,6 +77,7 @@ rooch-executor = { path = "crates/rooch-executor" }
 rooch-proposer = { path = "crates/rooch-proposer" }
 rooch-open-rpc = { path = "crates/rooch-open-rpc" }
 rooch-open-rpc-macros = { path = "crates/rooch-open-rpc-macros" }
+rooch-store = { path = "crates/rooch-store" }
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.
@@ -99,7 +101,7 @@ derive_more = "0.99.17"
 dirs = "4.0.0"
 enum_dispatch = "^0.3"
 ethereum-types = "0.14.1"
-ethers = { version = "2.0", features = ["legacy"] }
+ethers = { version = "2.0.7", features = ["legacy"] }
 eyre = "0.6.8"
 fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", rev = "c27e87fb539c88b6fe1eac7dd82561254bb1e07a" }
 futures = "0.3"

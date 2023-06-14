@@ -3,33 +3,33 @@ use rooch_types::transaction::TypedTransaction;
 use rooch_types::H256;
 use std::sync::Arc;
 
-pub trait TxStore {
+pub trait TransactionStore {
     fn add(&mut self, transaction: TypedTransaction);
     fn get_by_hash(&self, hash: H256) -> Option<TypedTransaction>;
     fn get_by_index(&self, start: u64, limit: u64) -> Vec<TypedTransaction>;
 }
 
-pub struct TxDB {
-    tx_store: InMemoryStore,
+pub struct TransactionDB {
+    transaction_db: InMemoryStore,
 }
 
-impl TxDB {
+impl TransactionDB {
     pub fn new_with_memory_store() -> Self {
         Self {
-            tx_store: InMemoryStore::default(),
+            transaction_db: InMemoryStore::default(),
         }
     }
 
     pub fn add(&mut self, transaction: TypedTransaction) {
-        self.tx_store.add(transaction);
+        self.transaction_db.add(transaction);
     }
 
     pub fn get_by_hash(&self, hash: H256) -> Option<TypedTransaction> {
-        self.tx_store.get_by_hash(hash)
+        self.transaction_db.get_by_hash(hash)
     }
 
     pub fn get_by_index(&self, start: u64, limit: u64) -> Vec<TypedTransaction> {
-        self.tx_store.get_by_index(start, limit)
+        self.transaction_db.get_by_index(start, limit)
     }
 }
 
@@ -38,7 +38,7 @@ pub struct InMemoryStore {
     inner: Arc<RwLock<Vec<TypedTransaction>>>,
 }
 
-impl TxStore for InMemoryStore {
+impl TransactionStore for InMemoryStore {
     fn add(&mut self, transaction: TypedTransaction) {
         let mut inner = self.inner.write();
         inner.push(transaction);

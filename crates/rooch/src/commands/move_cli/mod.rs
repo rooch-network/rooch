@@ -3,8 +3,8 @@
 
 use async_trait::async_trait;
 use commands::{
-    build::Build, new::New, publish::Publish, run_function::RunFunction,
-    run_view_function::RunViewFunction, unit_test::Test,
+    build::Build, integration_test::IntegrationTest, new::New, publish::Publish,
+    run_function::RunFunction, run_view_function::RunViewFunction, unit_test::Test,
 };
 use move_cli::{
     base::{
@@ -42,7 +42,7 @@ pub enum MoveCommand {
     Publish(Publish),
     Run(RunFunction),
     View(RunViewFunction),
-    //TODO implement integration test command
+    IntegrationTest(IntegrationTest),
 }
 
 #[async_trait]
@@ -90,6 +90,10 @@ impl CommandAction<String> for MoveCli {
             MoveCommand::Publish(c) => c.execute_serialized().await,
             MoveCommand::Run(c) => c.execute_serialized().await,
             MoveCommand::View(c) => c.execute_serialized().await,
+            MoveCommand::IntegrationTest(c) => c
+                .execute(move_args)
+                .map(|_| "Success".to_string())
+                .map_err(RoochError::from),
         }
     }
 }

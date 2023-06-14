@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use once_cell::sync::Lazy;
 use std::str::FromStr;
 
 pub use primitive_types::H256;
@@ -44,3 +45,14 @@ where
         Ok(H256(value.0))
     }
 }
+
+pub fn create_literal_hash(word: &str) -> H256 {
+    let mut s = word.as_bytes().to_vec();
+    assert!(s.len() <= LENGTH);
+    s.resize(LENGTH, 0);
+    H256::from_slice(&s)
+}
+
+/// Placeholder hash of `Accumulator`.
+pub static ACCUMULATOR_PLACEHOLDER_HASH: Lazy<H256> =
+    Lazy::new(|| create_literal_hash("ACCUMULATOR_PLACEHOLDER_HASH"));

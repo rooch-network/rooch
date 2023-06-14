@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod build;
+pub mod integration_test;
 pub mod new;
 pub mod publish;
 pub mod run_function;

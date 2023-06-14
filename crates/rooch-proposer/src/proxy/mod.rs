@@ -7,9 +7,8 @@ use crate::actor::{
 };
 use anyhow::Result;
 use coerce::actor::ActorRef;
-use rooch_types::transaction::{
-    TransactionExecutionInfo, TransactionSequenceInfo, TypedTransaction,
-};
+use moveos_types::transaction::TransactionExecutionInfo;
+use rooch_types::transaction::{TransactionSequenceInfo, TypedTransaction};
 
 #[derive(Clone)]
 pub struct ProposerProxy {

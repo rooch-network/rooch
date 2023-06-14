@@ -53,3 +53,4 @@ rooch-proposer = { workspace = true }
 rooch-key = { workspace = true }
 rooch-open-rpc = { workspace = true }
 rooch-open-rpc-macros = { workspace = true }
+rooch-store = { workspace = true }
