@@ -37,8 +37,9 @@ pub fn named_addresses() -> BTreeMap<String, NumericalAddress> {
     address_mapping
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Default)]
 enum Format {
+    #[default]
     Pretty,
     Terse,
     Json,
@@ -70,12 +71,6 @@ impl FromStr for Format {
             "json" => Ok(Format::Json),
             _ => Err(format!("Unsupported format: {}", s)),
         }
-    }
-}
-
-impl Default for Format {
-    fn default() -> Self {
-        Format::Pretty
     }
 }
 
@@ -144,9 +139,7 @@ impl IntegrationTest {
                 None => Some(std::env::current_dir()?),
             };
             // Always root ourselves to the package root, and then compile relative to that.
-            let rooted_path =
-                SourcePackageLayout::try_find_root(&path.as_ref().unwrap().canonicalize()?)?;
-            rooted_path
+            SourcePackageLayout::try_find_root(&path.as_ref().unwrap().canonicalize()?)?
         };
 
         let mut build_config = move_arg.build_config;
