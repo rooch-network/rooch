@@ -11,6 +11,7 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use move_resource_viewer::MoveValueAnnotator;
 use moveos::moveos::MoveOS;
+use moveos_common::accumulator::InMemoryAccumulator;
 use moveos_store::MoveOSDB;
 use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event::EventHandle;
@@ -18,10 +19,9 @@ use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::move_types::as_struct_tag;
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::state_resolver::{AnnotatedStateReader, StateReader};
+use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::{AuthenticatableTransaction, VerifiedMoveOSTransaction};
 use rooch_genesis::RoochGenesis;
-use rooch_types::transaction::TransactionExecutionInfo;
-use rooch_types::H256;
 
 pub struct ExecutorActor {
     moveos: MoveOS,
@@ -65,8 +65,9 @@ impl Handler<ExecuteTransactionMessage> for ExecutorActor {
     ) -> Result<ExecuteTransactionResult> {
         let tx_hash = msg.tx.ctx.tx_hash();
         let (state_root, output) = self.moveos.execute(msg.tx)?;
-        //TODO calculate event_root
-        let event_root = H256::zero();
+        let event_hashes: Vec<_> = output.events.iter().map(|e| e.hash()).collect();
+        let event_root = InMemoryAccumulator::from_leaves(event_hashes.as_slice()).root_hash();
+
         let transaction_info = TransactionExecutionInfo::new(
             tx_hash,
             state_root,

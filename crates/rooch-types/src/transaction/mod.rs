@@ -5,8 +5,6 @@ use self::authenticator::Authenticator;
 use crate::{address::MultiChainAddress, H256};
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::vm_status::KeptVMStatus;
-use moveos_types::h256;
 use moveos_types::transaction::AuthenticatableTransaction;
 use serde::{Deserialize, Serialize};
 
@@ -147,50 +145,6 @@ impl AuthenticatableTransaction for TypedTransaction {
             TypedTransaction::Rooch(tx) => tx.construct_moveos_transaction(result),
             TypedTransaction::Ethereum(tx) => tx.construct_moveos_transaction(result),
         }
-    }
-}
-
-/// `TransactionExecutionInfo` represents the result of executing a transaction.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub struct TransactionExecutionInfo {
-    /// The hash of this transaction.
-    pub tx_hash: H256,
-
-    /// The root hash of Sparse Merkle Tree describing the world state at the end of this
-    /// transaction.
-    pub state_root: H256,
-
-    /// The root hash of Merkle Accumulator storing all events emitted during this transaction.
-    pub event_root: H256,
-
-    /// The amount of gas used.
-    pub gas_used: u64,
-
-    /// The vm status. If it is not `Executed`, this will provide the general error class. Execution
-    /// failures and Move abort's receive more detailed information. But other errors are generally
-    /// categorized with no status code or other information
-    pub status: KeptVMStatus,
-}
-
-impl TransactionExecutionInfo {
-    pub fn new(
-        tx_hash: H256,
-        state_root: H256,
-        event_root: H256,
-        gas_used: u64,
-        status: KeptVMStatus,
-    ) -> TransactionExecutionInfo {
-        TransactionExecutionInfo {
-            tx_hash,
-            state_root,
-            event_root,
-            gas_used,
-            status,
-        }
-    }
-
-    pub fn id(&self) -> H256 {
-        h256::sha3_256_of(bcs::to_bytes(self).unwrap().as_slice())
     }
 }
 

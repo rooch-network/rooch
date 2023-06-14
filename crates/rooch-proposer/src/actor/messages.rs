@@ -3,9 +3,8 @@
 
 use anyhow::Result;
 use coerce::actor::{message::Message, scheduler::timer::TimerTick};
-use rooch_types::transaction::{
-    TransactionExecutionInfo, TransactionSequenceInfo, TypedTransaction,
-};
+use moveos_types::transaction::TransactionExecutionInfo;
+use rooch_types::transaction::{TransactionSequenceInfo, TypedTransaction};
 
 /// Transaction Sequence Message
 #[derive(Debug)]
