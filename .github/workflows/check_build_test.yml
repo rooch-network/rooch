@@ -44,6 +44,6 @@ jobs:
       - name: Build example projects
         run: for dir in examples/*/; do dir=${dir%*/};  cargo run --bin rooch move build -p "$dir" --named-addresses rooch_examples=0xabcd2345; done
       - name: Test example projects
-        run: for dir in examples/*/; do dir=${dir%*/};  cargo run --bin rooch move test -p "$dir" --named-addresses rooch_examples=0xabcd2345; done
+        run: for dir in examples/*/; do dir=${dir%*/};  cargo run --bin rooch move test -p "$dir"; done
       - name: Display disk space after build
         run: df -h

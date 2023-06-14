@@ -3,7 +3,6 @@ name = "kv_store"
 version = "0.0.1"
 
 [dependencies]
-#MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "moveos/moveos-stdlib/moveos-stdlib", rev = "main" }
 MoveosStdlib = { local = "../../moveos/moveos-stdlib/moveos-stdlib" }
 
 [addresses]
