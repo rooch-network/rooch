@@ -67,7 +67,6 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
             Some(package_path) => package_path,
             None => std::env::current_dir()?,
         };
-
         let mut package = config.compile_package_no_exit(&package_path, &mut stderr())?;
 
         run_verifier(package_path, additional_named_address, &mut package);

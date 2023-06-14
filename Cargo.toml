@@ -99,7 +99,7 @@ derive_more = "0.99.17"
 dirs = "4.0.0"
 enum_dispatch = "^0.3"
 ethereum-types = "0.14.1"
-ethers = { version = "2.0", features = ["legacy"] }
+ethers = { version = "2.0.7", features = ["legacy"] }
 eyre = "0.6.8"
 fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", rev = "c27e87fb539c88b6fe1eac7dd82561254bb1e07a" }
 futures = "0.3"
