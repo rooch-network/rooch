@@ -254,7 +254,10 @@ impl EthAPIServer for EthServer {
         let eth_tx = EthereumTransaction::decode(&bytes)?;
         info!("send_raw_transaction input: {:?}", eth_tx.0.input);
         let action = eth_tx.decode_calldata_to_action()?;
-        info!("send_raw_transaction decode_calldata_to_action: {:?}", action);
+        info!(
+            "send_raw_transaction decode_calldata_to_action: {:?}",
+            action
+        );
 
         let tx = TypedTransaction::Ethereum(eth_tx);
         let hash = tx.hash();
