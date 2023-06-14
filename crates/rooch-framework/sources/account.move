@@ -5,16 +5,8 @@ module rooch_framework::account{
    use std::vector;
    use std::signer;
    use moveos_std::bcd;
-   use moveos_std::storage_context::{StorageContext, tx_context};
+   use moveos_std::storage_context::{Self, StorageContext};
    use moveos_std::account_storage;
-   #[test_only]
-   use std::debug;
-   #[test_only]
-   use moveos_std::storage_context;
-   use rooch_framework::authenticator::{Self, AuthenticatorResult};
-   use rooch_framework::ed25519;
-   use rooch_framework::ecdsa_k1;
-   use moveos_std::tx_context::tx_hash;
 
    friend rooch_framework::genesis;
    friend rooch_framework::transaction_validator;
@@ -45,11 +37,6 @@ module rooch_framework::account{
    // cannot be dummy key, or empty key
    const CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000001";
 
-   /// Scheme identifier for Ed25519 signatures used to derive authentication keys for Ed25519 public keys.
-   const ED25519_SCHEME: u64 = 0;
-   /// Scheme identifier for MultiEd25519 signatures used to derive authentication keys for MultiEd25519 public keys.
-   const MULTI_ED25519_SCHEME: u64 = 1;
-   const SECP256K1_SCHEME: u64 = 2;
    /// Scheme identifier used when hashing an account's address together with a seed to derive the address (not the
    /// authentication key) of a resource account. This is an abuse of the notion of a scheme identifier which, for now,
    /// serves to domain separate hashes used to derive resource account addresses from hashes used to derive
@@ -75,8 +62,7 @@ module rooch_framework::account{
    const EAccountIsAlreadyResourceAccount: u64 = 7;
    /// Address to create is not a valid reserved address for Rooch framework
    const ENoValidFrameworkReservedAddress: u64 = 11;
-   /// invalid signature
-   const InvalidSignature: u64 = 12;
+ 
 
    /// A entry function to create an account under `new_address`
    public entry fun create_account_entry(ctx: &mut StorageContext, new_address: address){
@@ -139,13 +125,29 @@ module rooch_framework::account{
 
 
    /// Return the current sequence number at `addr`
-   public fun sequence_number(ctx: &mut StorageContext, addr: address): u64 {
+   public fun sequence_number(ctx: &StorageContext, addr: address): u64 {
+      // if account does not exist, return 0 as sequence number
+      // TODO: refactor this after we decide how to handle account create.
+      if (!account_storage::global_exists<Account>(ctx, addr)) {
+         return 0
+      };
       let account = account_storage::global_borrow<Account>(ctx, addr);
       sequence_number_for_account(account)
    }
 
-   public(friend) fun increment_sequence_number(ctx: &mut StorageContext, addr: address) {
-      let sequence_number = &mut account_storage::global_borrow_mut<Account>(ctx, addr).sequence_number;
+   public fun sequence_number_for_sender(ctx: &StorageContext): u64 {
+      let sender = storage_context::sender(ctx);
+      sequence_number(ctx, sender)
+   }
+
+   public(friend) fun increment_sequence_number(ctx: &mut StorageContext) {
+      let sender = storage_context::sender(ctx);
+      //Auto create account if not exist
+      if (!account_storage::global_exists<Account>(ctx, sender)) {
+         create_account_unchecked(ctx, sender); 
+      };
+
+      let sequence_number = &mut account_storage::global_borrow_mut<Account>(ctx, sender).sequence_number;
 
       assert!(
          (*sequence_number as u128) < MAX_U64,
@@ -275,37 +277,6 @@ module rooch_framework::account{
       capability.addr
    }
 
-   /// This function is for MoveOS to validate the transaction sender's authenticator.
-   /// Return the sender's address if the authenticator is valid, auto resolve multi-chain address to rooch address.
-   fun validate(ctx: &mut StorageContext, authenticator_info_bytes: vector<u8>) : AuthenticatorResult {
-      let (sender_maddr, _sequence_number, authenticator) = authenticator::decode_authenticator_info(authenticator_info_bytes);
-      authenticator::check_authenticator(&authenticator);
-      let scheme = authenticator::scheme(&authenticator);
-      if (scheme == ED25519_SCHEME) {
-         let ed25519_authenicator = authenticator::decode_ed25519_authenticator(authenticator);
-
-         assert!(
-            ed25519::verify(&authenticator::ed25519_signature(&ed25519_authenicator),
-               &authenticator::ed25519_public(&ed25519_authenicator),
-               &tx_hash(tx_context(ctx))),
-            error::not_found(EAccountNotExist));
-      } else if (scheme == SECP256K1_SCHEME) {
-         let ecdsa_k1_authenicator = authenticator::decode_secp256k1_authenticator(authenticator);
-         assert!(
-            ecdsa_k1::verify(
-               &authenticator::secp256k1_signature(&ecdsa_k1_authenicator),
-               &tx_hash(tx_context(ctx)),
-               0 // KECCAK256:0, SHA256:1, TODO: The hash type may need to be passed through the authenticator
-            ),
-            error::invalid_argument(InvalidSignature));
-      };
-
-      //TODO verify authenicator info with account's auth key
-      let addr_opt = rooch_framework::address_mapping::resolve(ctx, sender_maddr);
-      let resolved_address = std::option::extract(&mut addr_opt);
-      authenticator::new_authenticator_result(resolved_address)
-   }
-
    #[test_only]
    /// Create signer for testing, independently of an Rooch-style `Account`.
    public fun create_signer_for_test(addr: address): signer { create_signer(addr) }
@@ -330,8 +301,8 @@ module rooch_framework::account{
       let alice = create_account_for_test(&mut ctx, alice_addr);
       let alice_addr_actual = signer::address_of(&alice);
       let sequence_number = sequence_number(&mut ctx, alice_addr);
-      debug::print(&get_authentication_key(&mut ctx, alice_addr));
-      debug::print(&sequence_number);
+      std::debug::print(&get_authentication_key(&mut ctx, alice_addr));
+      std::debug::print(&sequence_number);
       assert!(alice_addr_actual == alice_addr, 103);
       assert!(sequence_number >= 0, 104);
       storage_context::drop_test_context(ctx);
@@ -357,8 +328,8 @@ module rooch_framework::account{
       );
 
       let resource_addr = signer::address_of(&resource_account);
-      debug::print(&100100);
-      debug::print(&resource_addr);
+      std::debug::print(&100100);
+      std::debug::print(&resource_addr);
       assert!(resource_addr != signer::address_of(&alice), 106);
       assert!(resource_addr == signer_cap_addr, 107);
       storage_context::drop_test_context(ctx);

@@ -7,11 +7,13 @@ use crate::{
 };
 use anyhow::{bail, ensure, Result};
 use move_core_types::{
+    account_address::AccountAddress,
     effects::Op,
     language_storage::{StructTag, TypeTag},
     move_resource::MoveStructType,
     resolver::MoveResolver,
-    value::MoveStructLayout,
+    u256::U256,
+    value::{MoveStructLayout, MoveTypeLayout},
 };
 use move_resource_viewer::{AnnotatedMoveValue, MoveValueAnnotator};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -26,15 +28,179 @@ pub struct State {
     pub value_type: TypeTag,
 }
 
+//TODO find a better place for MoveType, MoveState and MoveStructState
+/// The rust representation of a Move value
+pub trait MoveType {
+    fn type_tag() -> TypeTag;
+}
+
+/// The rust representation of a Move value state
+pub trait MoveState: MoveType + DeserializeOwned + Serialize {
+    fn type_layout() -> MoveTypeLayout;
+    fn from_bytes(bytes: &[u8]) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        bcs::from_bytes(bytes)
+            .map_err(|e| anyhow::anyhow!("Deserialize the MoveState error: {:?}", e))
+    }
+    fn to_bytes(&self) -> Vec<u8> {
+        bcs::to_bytes(self).expect("Serialize the MoveState should success")
+    }
+    fn into_state(self) -> State {
+        let value = self.to_bytes();
+        State::new(value, Self::type_tag())
+    }
+}
+
+impl MoveType for u8 {
+    fn type_tag() -> TypeTag {
+        TypeTag::U8
+    }
+}
+
+impl MoveState for u8 {
+    fn type_layout() -> MoveTypeLayout {
+        MoveTypeLayout::U8
+    }
+}
+
+impl MoveType for u16 {
+    fn type_tag() -> TypeTag {
+        TypeTag::U16
+    }
+}
+
+impl MoveState for u16 {
+    fn type_layout() -> MoveTypeLayout {
+        MoveTypeLayout::U16
+    }
+}
+
+impl MoveType for u32 {
+    fn type_tag() -> TypeTag {
+        TypeTag::U32
+    }
+}
+impl MoveState for u32 {
+    fn type_layout() -> MoveTypeLayout {
+        MoveTypeLayout::U32
+    }
+}
+
+impl MoveType for u64 {
+    fn type_tag() -> TypeTag {
+        TypeTag::U64
+    }
+}
+
+impl MoveState for u64 {
+    fn type_layout() -> MoveTypeLayout {
+        MoveTypeLayout::U64
+    }
+}
+
+impl MoveType for u128 {
+    fn type_tag() -> TypeTag {
+        TypeTag::U128
+    }
+}
+
+impl MoveState for u128 {
+    fn type_layout() -> MoveTypeLayout {
+        MoveTypeLayout::U128
+    }
+}
+
+impl MoveType for U256 {
+    fn type_tag() -> TypeTag {
+        TypeTag::U256
+    }
+}
+
+impl MoveState for U256 {
+    fn type_layout() -> MoveTypeLayout {
+        MoveTypeLayout::U256
+    }
+}
+
+impl MoveType for bool {
+    fn type_tag() -> TypeTag {
+        TypeTag::Bool
+    }
+}
+
+impl MoveState for bool {
+    fn type_layout() -> MoveTypeLayout {
+        MoveTypeLayout::Bool
+    }
+}
+
+impl MoveType for AccountAddress {
+    fn type_tag() -> TypeTag {
+        TypeTag::Address
+    }
+}
+
+impl MoveState for AccountAddress {
+    fn type_layout() -> MoveTypeLayout {
+        MoveTypeLayout::Address
+    }
+}
+
+//TODO
+// impl<S> MoveType for S
+// where
+//     S: MoveStructType,
+// {
+//     fn type_tag() -> TypeTag {
+//         TypeTag::Struct(Box::new(Self::struct_tag()))
+//     }
+// }
+
+// impl<S> MoveState for S
+// where
+//     S: MoveStructState,
+// {
+//     fn type_layout() -> MoveTypeLayout {
+//         MoveTypeLayout::Struct(Self::struct_layout())
+//     }
+// }
+
+impl<S> MoveType for Vec<S>
+where
+    S: MoveType,
+{
+    fn type_tag() -> TypeTag {
+        TypeTag::Vector(Box::new(S::type_tag()))
+    }
+}
+
+impl<S> MoveState for Vec<S>
+where
+    S: MoveState,
+{
+    fn type_layout() -> MoveTypeLayout {
+        MoveTypeLayout::Vector(Box::new(S::type_layout()))
+    }
+}
+
 /// Move State is a trait that is used to represent the state of a Move Resource in Rust
 /// It is like the `MoveResource` in move_core_types
 pub trait MoveStructState: MoveStructType + DeserializeOwned + Serialize {
-    fn move_layout() -> MoveStructLayout;
+    fn struct_layout() -> MoveStructLayout;
     fn type_match(type_tag: &StructTag) -> bool {
         type_tag == &Self::struct_tag()
     }
+    fn from_bytes(bytes: &[u8]) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        bcs::from_bytes(bytes)
+            .map_err(|e| anyhow::anyhow!("Deserialize the MoveState error: {:?}", e))
+    }
     fn to_bytes(&self) -> Vec<u8> {
-        bcs::to_bytes(self).expect("Serialize the MoveStructState should success")
+        bcs::to_bytes(self).expect("Serialize the MoveState should success")
     }
     fn into_state(self) -> State {
         let value = self.to_bytes();

@@ -1,15 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{
-    authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo, AuthenticatorResult,
-};
+use super::{authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo};
 use crate::address::EthereumAddress;
 use anyhow::Result;
 use ethers::utils::rlp::{Decodable, Rlp};
+use move_core_types::account_address::AccountAddress;
 use moveos_types::{
     h256::H256,
-    transaction::{AuthenticatableTransaction, MoveAction, MoveOSTransaction},
+    transaction::{MoveAction, MoveOSTransaction},
     tx_context::TxContext,
 };
 use serde::{Deserialize, Serialize};
@@ -27,8 +26,6 @@ impl EthereumTransaction {
 }
 
 impl AbstractTransaction for EthereumTransaction {
-    type Hash = H256;
-
     fn transaction_type(&self) -> super::TransactionType {
         super::TransactionType::Ethereum
     }
@@ -43,11 +40,6 @@ impl AbstractTransaction for EthereumTransaction {
     fn encode(&self) -> Vec<u8> {
         self.0.rlp().to_vec()
     }
-}
-
-impl AuthenticatableTransaction for EthereumTransaction {
-    type AuthenticatorInfo = AuthenticatorInfo;
-    type AuthenticatorResult = AuthenticatorResult;
 
     fn tx_hash(&self) -> H256 {
         self.0.hash()
@@ -55,7 +47,6 @@ impl AuthenticatableTransaction for EthereumTransaction {
 
     fn authenticator_info(&self) -> AuthenticatorInfo {
         AuthenticatorInfo {
-            sender: EthereumAddress(self.0.from).into(),
             //TODO should change the seqence_number to u256?
             seqence_number: self.0.nonce.as_u64(),
             authenticator: Authenticator::secp256k1(ethers::core::types::Signature {
@@ -67,11 +58,15 @@ impl AuthenticatableTransaction for EthereumTransaction {
     }
 
     fn construct_moveos_transaction(
-        &self,
-        result: super::AuthenticatorResult,
+        self,
+        resolved_sender: AccountAddress,
     ) -> Result<MoveOSTransaction> {
         let action = self.decode_calldata_to_action()?;
-        let tx_ctx = TxContext::new(result.resolved_address, self.tx_hash());
+        let tx_ctx = TxContext::new(resolved_sender, self.tx_hash());
         Ok(MoveOSTransaction::new(tx_ctx, action))
+    }
+
+    fn sender(&self) -> crate::address::MultiChainAddress {
+        EthereumAddress(self.0.from).into()
     }
 }

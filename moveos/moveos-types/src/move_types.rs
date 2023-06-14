@@ -19,7 +19,7 @@ pub struct FunctionId {
 }
 
 impl FunctionId {
-    pub fn new(module_id: ModuleId, function_name: Identifier) -> Self {
+    pub const fn new(module_id: ModuleId, function_name: Identifier) -> Self {
         Self {
             module_id,
             function_name,

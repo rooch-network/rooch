@@ -45,6 +45,10 @@ impl MultiChainAddress {
         })
     }
 
+    pub fn is_rooch_address(&self) -> bool {
+        self.coin_id == CoinID::ROH
+    }
+
     pub fn from_bech32(bech32: &str) -> Result<Self> {
         let (hrp, data, variant) = bech32::decode(bech32)?;
         if variant != bech32::Variant::Bech32 {
@@ -74,6 +78,10 @@ impl MultiChainAddress {
             bech32::Variant::Bech32,
         )
         .expect("bech32 encode should success")
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        bcs::to_bytes(self).expect("bcs encode should success")
     }
 }
 

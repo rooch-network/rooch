@@ -1,23 +1,18 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::fmt::Display;
-
 use crate::{
-    event::Event,
-    h256::{self, H256},
-    move_types::FunctionId,
-    state::StateChangeSet,
+    event::Event, h256, h256::H256, move_types::FunctionId, state::StateChangeSet,
     tx_context::TxContext,
 };
-use anyhow::Result;
 use move_core_types::{
     account_address::AccountAddress,
     effects::ChangeSet,
     language_storage::{ModuleId, TypeTag},
     vm_status::KeptVMStatus,
 };
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 
 /// Call a Move script
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -127,18 +122,6 @@ impl Display for VerifiedMoveAction {
             }
         }
     }
-}
-
-pub trait AuthenticatableTransaction {
-    type AuthenticatorInfo: Serialize;
-    type AuthenticatorResult: DeserializeOwned;
-
-    fn tx_hash(&self) -> H256;
-    fn authenticator_info(&self) -> Self::AuthenticatorInfo;
-    fn construct_moveos_transaction(
-        &self,
-        result: Self::AuthenticatorResult,
-    ) -> Result<MoveOSTransaction>;
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]

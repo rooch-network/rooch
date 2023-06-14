@@ -1,7 +1,6 @@
 module rooch_framework::authenticator {
 
    use std::vector;
-   use rooch_framework::address_mapping::MultiChainAddress;
 
    const SCHEME_ED25519: u64 = 0;
    const SCHEME_MULTIED25519: u64 = 1;
@@ -14,13 +13,8 @@ module rooch_framework::authenticator {
    const EUnsupportedScheme: u64 = 1000;
 
    struct AuthenticatorInfo has copy, store, drop {
-      sender: MultiChainAddress,
       sequence_number: u64,
       authenticator: Authenticator,
-   }
-
-   struct AuthenticatorResult has copy, store, drop {
-      resolved_address: address,
    }
 
    struct Authenticator has copy, store, drop {
@@ -55,10 +49,10 @@ module rooch_framework::authenticator {
       this.scheme
    }
 
-   public fun decode_authenticator_info(data: vector<u8>): (MultiChainAddress, u64, Authenticator) {
+   public fun decode_authenticator_info(data: vector<u8>): (u64, Authenticator) {
       let info = moveos_std::bcd::from_bytes<AuthenticatorInfo>(data);
-      let AuthenticatorInfo { sender, sequence_number, authenticator } = info;
-      (sender, sequence_number, authenticator)
+      let AuthenticatorInfo { sequence_number, authenticator } = info;
+      (sequence_number, authenticator)
    }
 
    public fun decode_ed25519_authenticator(authenticator: Authenticator): Ed25519Authenticator {
@@ -104,9 +98,4 @@ module rooch_framework::authenticator {
       this.signature
    }
 
-   public fun new_authenticator_result(resolved_address: address): AuthenticatorResult {
-      AuthenticatorResult {
-         resolved_address
-      }
-   }
 }

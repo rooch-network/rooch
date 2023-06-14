@@ -122,7 +122,7 @@ impl MoveStructType for ObjectID {
 }
 
 impl MoveStructState for ObjectID {
-    fn move_layout() -> MoveStructLayout {
+    fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![MoveTypeLayout::Address])
     }
 }
@@ -243,10 +243,10 @@ impl MoveStructType for AccountStorage {
 }
 
 impl MoveStructState for AccountStorage {
-    fn move_layout() -> MoveStructLayout {
+    fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![
-            MoveTypeLayout::Struct(ObjectID::move_layout()),
-            MoveTypeLayout::Struct(ObjectID::move_layout()),
+            MoveTypeLayout::Struct(ObjectID::struct_layout()),
+            MoveTypeLayout::Struct(ObjectID::struct_layout()),
         ])
     }
 }
@@ -275,7 +275,7 @@ impl MoveStructType for TableInfo {
 }
 
 impl MoveStructState for TableInfo {
-    fn move_layout() -> MoveStructLayout {
+    fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![MoveTypeLayout::Address])
     }
 }
@@ -370,11 +370,11 @@ where
     T: MoveStructState,
 {
     /// Return the layout of the Object in Move
-    fn move_layout() -> MoveStructLayout {
+    fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![
-            MoveTypeLayout::Struct(ObjectID::move_layout()),
+            MoveTypeLayout::Struct(ObjectID::struct_layout()),
             MoveTypeLayout::Address,
-            MoveTypeLayout::Struct(T::move_layout()),
+            MoveTypeLayout::Struct(T::struct_layout()),
         ])
     }
 }
@@ -494,7 +494,7 @@ mod tests {
     }
 
     impl MoveStructState for TestStruct {
-        fn move_layout() -> MoveStructLayout {
+        fn struct_layout() -> MoveStructLayout {
             MoveStructLayout::new(vec![MoveTypeLayout::U8])
         }
     }

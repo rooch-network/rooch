@@ -3,8 +3,8 @@
 
 use anyhow::Result;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
-use moveos_types::{access_path::AccessPath, transaction::FunctionCall};
-use rand::Rng;
+use move_core_types::move_resource::MoveStructType;
+use moveos_types::{access_path::AccessPath, state::State, transaction::FunctionCall};
 use rooch_server::{
     api::rooch_api::RoochAPIClient,
     jsonrpc_types::{
@@ -12,7 +12,9 @@ use rooch_server::{
         StateView, TransactionView,
     },
 };
-use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction, H256};
+use rooch_types::{
+    account::Account, address::RoochAddress, transaction::rooch::RoochTransaction, H256,
+};
 
 pub mod client_config;
 pub mod wallet_context;
@@ -133,11 +135,18 @@ impl Client {
         Ok(s)
     }
 
-    pub async fn get_sequence_number(&self, _sender: RoochAddress) -> Result<u64> {
-        //TODO read sequencer_number from state,
-        // currently, we just generate a random u64 for workaround
-        let mut rng = rand::thread_rng();
-        Ok(rng.gen())
+    pub async fn get_sequence_number(&self, sender: RoochAddress) -> Result<u64> {
+        Ok(self
+            .get_states(AccessPath::resource(sender.into(), Account::struct_tag()))
+            .await?
+            .pop()
+            .flatten()
+            .map(|state_view| {
+                let state = State::from(state_view);
+                state.as_move_state::<Account>()
+            })
+            .transpose()?
+            .map_or(0, |account| account.sequence_number))
     }
 
     pub async fn get_events_by_event_handle(
