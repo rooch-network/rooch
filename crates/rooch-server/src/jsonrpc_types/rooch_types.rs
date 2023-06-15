@@ -3,36 +3,12 @@
 
 use crate::jsonrpc_types::{
     move_types::{MoveActionTypeView, MoveActionView},
-    AnnotatedMoveStructView, EventView, MoveH256View, StrView,
+    AnnotatedMoveStructView, EventView, H256View, StrView,
 };
-use fastcrypto::encoding::Hex;
 use moveos_types::event::AnnotatedMoveOSEvent;
-use moveos_types::h256::H256;
-use rooch_types::rooch_serde::Readable;
 use rooch_types::transaction::{AbstractTransaction, TransactionType, TypedTransaction};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
-
-#[serde_as]
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct RoochH256View(
-    #[schemars(with = "Hex")]
-    #[serde_as(as = "Readable<Hex, _>")]
-    [u8; 32],
-);
-
-impl From<H256> for RoochH256View {
-    fn from(value: H256) -> Self {
-        RoochH256View(value.0)
-    }
-}
-
-impl From<RoochH256View> for H256 {
-    fn from(value: RoochH256View) -> Self {
-        H256(value.0)
-    }
-}
 
 pub type EventPageView = PageView<Option<AnnotatedEventView>, u64>;
 
@@ -101,7 +77,7 @@ impl From<TypedTransaction> for TransactionView {
 pub struct AnnotatedEventView {
     pub event: EventView,
     pub sender: String,
-    pub tx_hash: Option<MoveH256View>,
+    pub tx_hash: Option<H256View>,
     pub timestamp_ms: Option<u64>,
     // pub block_height: Option<u64>,
     pub parsed_event_data: AnnotatedMoveStructView,

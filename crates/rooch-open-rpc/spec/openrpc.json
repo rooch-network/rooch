@@ -147,20 +147,10 @@
         }
       ],
       "result": {
-        "name": "Vec<Option<AnnotatedEventView>>",
+        "name": "EventPageView",
         "required": true,
         "schema": {
-          "type": "array",
-          "items": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AnnotatedEventView"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
+          "$ref": "#/components/schemas/PageView_for_Nullable_AnnotatedEventView_and_uint64"
         }
       }
     },
@@ -201,7 +191,7 @@
           "name": "hash",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/RoochH256View"
+            "$ref": "#/components/schemas/H256View"
           }
         }
       ],
@@ -258,10 +248,10 @@
         }
       ],
       "result": {
-        "name": "RoochH256View",
+        "name": "H256View",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/RoochH256View"
+          "$ref": "#/components/schemas/H256View"
         }
       }
     }
@@ -309,7 +299,7 @@
           "tx_hash": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/MoveH256View"
+                "$ref": "#/components/schemas/H256View"
               },
               {
                 "type": "null"
@@ -464,7 +454,7 @@
             ],
             "properties": {
               "Transaction": {
-                "$ref": "#/components/schemas/MoveH256View"
+                "$ref": "#/components/schemas/H256View"
               }
             },
             "additionalProperties": false
@@ -720,6 +710,9 @@
           }
         }
       },
+      "H256View": {
+        "$ref": "#/components/schemas/Hex"
+      },
       "Hex": {
         "description": "Hex string encoding.",
         "type": "string"
@@ -883,16 +876,6 @@
           }
         }
       },
-      "MoveH256View": {
-        "type": "array",
-        "items": {
-          "type": "integer",
-          "format": "uint8",
-          "minimum": 0.0
-        },
-        "maxItems": 32,
-        "minItems": 32
-      },
       "MoveString": {
         "type": "object",
         "required": [
@@ -973,6 +956,40 @@
             }
           }
         ]
+      },
+      "PageView_for_Nullable_AnnotatedEventView_and_uint64": {
+        "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
+        "type": "object",
+        "required": [
+          "data",
+          "has_next_page"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/AnnotatedEventView"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "has_next_page": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
       },
       "PathView": {
         "oneOf": [
@@ -1090,9 +1107,6 @@
             "additionalProperties": false
           }
         ]
-      },
-      "RoochH256View": {
-        "$ref": "#/components/schemas/Hex"
       },
       "ScriptCallView": {
         "type": "object",
@@ -1213,7 +1227,7 @@
         ],
         "properties": {
           "event_root": {
-            "$ref": "#/components/schemas/RoochH256View"
+            "$ref": "#/components/schemas/H256View"
           },
           "gas_used": {
             "type": "integer",
@@ -1221,13 +1235,13 @@
             "minimum": 0.0
           },
           "state_root": {
-            "$ref": "#/components/schemas/RoochH256View"
+            "$ref": "#/components/schemas/H256View"
           },
           "status": {
             "$ref": "#/components/schemas/KeptVMStatusView"
           },
           "tx_hash": {
-            "$ref": "#/components/schemas/RoochH256View"
+            "$ref": "#/components/schemas/H256View"
           }
         }
       },
@@ -1268,7 +1282,7 @@
         ],
         "properties": {
           "tx_accumulator_root": {
-            "$ref": "#/components/schemas/RoochH256View"
+            "$ref": "#/components/schemas/H256View"
           },
           "tx_order": {
             "$ref": "#/components/schemas/u128"

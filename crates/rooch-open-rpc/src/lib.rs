@@ -447,3 +447,22 @@ struct Components {
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     schemas: BTreeMap<String, SchemaObject>,
 }
+
+#[test]
+fn test_json_rpc_spec() {
+    // If this test breaks and you intended a json rpc schema change, you need to run to get the fresh schema:
+    // # cargo -q run --example generate-json-rpc-spec -- record
+    let status = std::process::Command::new("cargo")
+        .args(["run", "--example", "generate-json-rpc-spec", "--"])
+        .arg("test")
+        .status()
+        .expect("msg");
+
+    assert!(
+        status.success(),
+            "\n\
+    If this test breaks and you intended a json rpc schema change, you need to run to get the fresh schema:\n\
+    ./scripts/generate_json_rpc_spec.sh
+            "
+        );
+}

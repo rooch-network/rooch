@@ -4,8 +4,8 @@
 use crate::api::RoochRpcModule;
 use crate::jsonrpc_types::{
     AccessPathView, AnnotatedEventView, AnnotatedFunctionReturnValueView, AnnotatedStateView,
-    EventFilterView, EventPageView, ExecuteTransactionResponseView, FunctionCallView,
-    RoochH256View, StateView, StrView, StructTagView, TransactionView,
+    EventFilterView, EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
+    StateView, StrView, StructTagView, TransactionView,
 };
 use crate::service::RpcService;
 use crate::{api::rooch_api::RoochAPIServer, api::MAX_RESULT_LIMIT};
@@ -28,7 +28,7 @@ impl RoochServer {
 
 #[async_trait]
 impl RoochAPIServer for RoochServer {
-    async fn send_raw_transaction(&self, payload: StrView<Vec<u8>>) -> RpcResult<RoochH256View> {
+    async fn send_raw_transaction(&self, payload: StrView<Vec<u8>>) -> RpcResult<H256View> {
         let tx = bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;
         let hash = tx.tx_hash();
         self.rpc_service
@@ -127,10 +127,7 @@ impl RoochAPIServer for RoochServer {
             .collect())
     }
 
-    async fn get_transaction_by_hash(
-        &self,
-        hash: RoochH256View,
-    ) -> RpcResult<Option<TransactionView>> {
+    async fn get_transaction_by_hash(&self, hash: H256View) -> RpcResult<Option<TransactionView>> {
         let resp = self
             .rpc_service
             .get_transaction_by_hash(hash.into())
