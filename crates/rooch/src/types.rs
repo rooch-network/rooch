@@ -131,7 +131,7 @@ impl FunctionArgType {
                     .map_err(|err| RoochError::UnableToParse("bool", err.to_string()))?,
             ),
             FunctionArgType::ObjectID => bcs::to_bytes(
-                &hex::decode(arg)
+                &load_account_arg(arg)
                     .map_err(|err| RoochError::UnableToParse("object_id", err.to_string()))?,
             ),
             FunctionArgType::String => bcs::to_bytes(arg),
@@ -177,7 +177,7 @@ impl FunctionArgType {
                         })
                     }),
                     FunctionArgType::ObjectID => parse_vector_arg(arg, |arg| {
-                        hex::decode(arg).map_err(|err| {
+                        load_account_arg(arg).map_err(|err| {
                             RoochError::UnableToParse("vector<object_id>", err.to_string())
                         })
                     }),
