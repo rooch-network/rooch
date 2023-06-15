@@ -32,9 +32,15 @@ jobs:
         # Use cargo test to run CLI integration tests.
         # TODO: FIXME
         run: cargo test -p testsuite --test integration
+      - name: Run Rooch init
+        run: cargo run --bin rooch init
       - name: Execute stdlib tests
         run: cargo run --bin rooch move test -p moveos/moveos-stdlib/moveos-stdlib/
       - name: Execute framework tests
         run: cargo run --bin rooch move test -p crates/rooch-framework/
+      - name: Build example projects
+        run: for dir in examples/*/; do dir=${dir%*/};  cargo run --bin rooch move build -p "$dir" --named-addresses rooch_examples=0xabcd2345; done
+      - name: Test example projects
+        run: for dir in examples/*/; do dir=${dir%*/};  cargo run --bin rooch move test -p "$dir"; done
       - name: Display disk space after build
         run: df -h

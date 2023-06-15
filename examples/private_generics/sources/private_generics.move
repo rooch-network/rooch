@@ -1,4 +1,4 @@
-module rooch_examples::Data {
+module rooch_examples::box {
     struct Box<T: store> has key, store, drop {
         value: T
     }
@@ -7,8 +7,8 @@ module rooch_examples::Data {
         v: u64,
     }
 
-    #[private_generics(T3, T2)]
-    public fun create_box<T1: store, T2, T3>(value: T1): Box<T1> {
+    #[private_generics(T1)]
+    public fun create_box<T1: store>(value: T1): Box<T1> {
         Box<T1> { value: value }
     }
 
@@ -16,9 +16,11 @@ module rooch_examples::Data {
         *&box.value
     }
 
-    public fun run() {
+
+    #[test]
+    fun test() {
         let data = Data{ v: 123 };
-        let box_val = create_box<Data, u64, Box<u32>>(data);
-        let _ = box_value(&box_val);
+        let box_val = create_box<Data>(data);
+        assert!(box_value(&box_val).v == 123, 0);   
     }
 }

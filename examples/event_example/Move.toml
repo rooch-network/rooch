@@ -9,3 +9,6 @@ MoveosStdlib = { local = "../../moveos/moveos-stdlib/moveos-stdlib" }
 rooch_examples =  "_"
 moveos_std =  "0x2"
 rooch_framework =  "0x3"
+
+[dev-addresses]
+rooch_examples = "0x42"
