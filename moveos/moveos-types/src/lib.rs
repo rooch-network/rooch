@@ -14,6 +14,7 @@ pub mod move_option;
 pub mod move_string;
 pub mod move_types;
 pub mod object;
+pub mod serde;
 pub mod state;
 pub mod state_resolver;
 pub mod storage_context;

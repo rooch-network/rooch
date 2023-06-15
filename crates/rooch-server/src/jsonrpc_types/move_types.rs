@@ -19,8 +19,13 @@ use moveos_types::{
     h256::H256,
     move_types::FunctionId,
     object::{AnnotatedObject, ObjectID},
+    serde::Readable,
     transaction::{FunctionCall, ScriptCall},
 };
+
+use fastcrypto::encoding::Hex;
+use serde_with::serde_as;
+
 use moveos_types::{
     move_string::{MoveAsciiString, MoveString},
     state::MoveStructState,
@@ -448,18 +453,22 @@ impl From<AccessPath> for AccessPathView {
     }
 }
 
-// TODO: Specifies whether to merge Moveos h256 and rooch h256
-#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
-pub struct MoveH256View([u8; 32]);
+#[serde_as]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct H256View(
+    #[schemars(with = "Hex")]
+    #[serde_as(as = "Readable<Hex, _>")]
+    [u8; 32],
+);
 
-impl From<H256> for MoveH256View {
+impl From<H256> for H256View {
     fn from(value: H256) -> Self {
-        MoveH256View(value.0)
+        H256View(value.0)
     }
 }
 
-impl From<MoveH256View> for H256 {
-    fn from(value: MoveH256View) -> Self {
+impl From<H256View> for H256 {
+    fn from(value: H256View) -> Self {
         H256(value.0)
     }
 }
@@ -471,7 +480,7 @@ pub enum EventFilterView {
     /// Return events emitted by the given transaction.
     Transaction(
         ///tx hash of the transaction
-        MoveH256View,
+        H256View,
     ),
     /// Return events with the given move event struct name
     MoveEventType(
