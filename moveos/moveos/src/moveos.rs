@@ -84,7 +84,7 @@ impl MoveOS {
 
         let ctx = StorageContext::new(tx_context);
         let mut session = self.vm.new_genesis_session(&self.db, ctx);
-        let verified_action = session.verify_move_action(action)?;
+        let verified_action = session.verify_move_action(action, &self.db)?;
         let execute_result = session.execute_move_action(verified_action);
         let vm_status = vm_status_of_result(execute_result);
         let (_ctx, output) = session.finish_with_extensions(vm_status)?;
@@ -117,7 +117,7 @@ impl MoveOS {
         let ctx = StorageContext::new(tx_context.clone());
         let session = self.vm.new_readonly_session(&self.db, ctx, gas_meter);
 
-        let verified_action = session.verify_move_action(action)?;
+        let verified_action = session.verify_move_action(action, &self.db)?;
         let (_, _) = session.finish_with_extensions(VMStatus::Executed)?;
         Ok(VerifiedMoveOSTransaction {
             ctx: tx_context,
