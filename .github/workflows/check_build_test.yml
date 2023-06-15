@@ -38,7 +38,7 @@ jobs:
         # TODO: FIXME
         run: cargo test -p testsuite --test integration
       - name: Run Rooch init
-        run: rooch init
+        run: cargo run --bin rooch init
       - name: Execute stdlib tests
         run: cargo run --bin rooch move test -p moveos/moveos-stdlib/moveos-stdlib/
       - name: Execute framework tests
