@@ -233,6 +233,16 @@ module moveos_std::account_storage{
     }
 
     #[private_generics(T)]
+    /// Borrow a resource from the account's storage
+    /// This function equates to `borrow_global<T>(address)` instruction in Move
+    public fun global_borrow<T: key>(ctx: &StorageContext, account: address): &T;
+
+    #[private_generics(T)]
+    /// Borrow a mut resource from the account's storage
+    /// This function equates to `borrow_global_mut<T>(address)` instruction in Move
+    public fun global_borrow_mut<T: key>(ctx: &mut StorageContext, account: address): &mut T;
+
+    #[private_generics(T)]
     /// Move a resource to the account's storage
     /// This function equates to `move_to<T>(&signer, resource)` instruction in Move
     public fun global_move_to<T: key>(ctx: &mut StorageContext, account: &signer, resource: T);
