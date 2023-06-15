@@ -40,6 +40,8 @@ Feature: Rooch CLI integration tests
 
       # entry function example
       Then cmd: "move publish -p ../../examples/entry_function_arguments/ --sender-account {default} --named-addresses rooch_examples={default}"
+      Then cmd: "move run --function {default}::entry_function::emit_bool --args bool:true --sender-account {default}"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function {default}::entry_function::emit_u8 --args u8:3 --sender-account {default}"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function {default}::entry_function::emit_u8 --args 4u8 --sender-account {default}"
@@ -52,7 +54,9 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function {default}::entry_function::emit_string --args string:world --sender-account {default}"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function {default}::entry_function::emit_vec_u8 --args 'vector<u8>:2,3,4' --sender-account {default}"
+      Then cmd: "move run --function {default}::entry_function::emit_vec_u8 --args "vector<u8>:2,3,4" --sender-account {default}"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function {default}::entry_function::emit_vec_object_id --args 'vector<address>:0x1324,0x41234,0x1234' --sender-account {default}"
+      Then cmd: "move run --function {default}::entry_function::emit_vec_object_id --args "vector<address>:0x1324,0x41234,0x1234" --sender-account {default}"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"

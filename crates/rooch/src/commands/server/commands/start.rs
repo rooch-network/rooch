@@ -1,4 +1,4 @@
-use crate::types::CommandAction;
+use crate::cli_types::CommandAction;
 use async_trait::async_trait;
 use clap::Parser;
 use rooch_server::Service;

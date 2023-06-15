@@ -31,7 +31,7 @@ use rooch_types::{
     },
 };
 
-use crate::types::{CommandAction, WalletContextOptions};
+use crate::cli_types::{CommandAction, WalletContextOptions};
 use std::{
     path::{Path, PathBuf},
     str::FromStr,

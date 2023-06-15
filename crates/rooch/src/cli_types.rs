@@ -274,7 +274,7 @@ impl FromStr for FunctionArgType {
 
                     Ok(FunctionArgType::Vector(Box::new(arg)))
                 } else {
-                    Err(RoochError::CommandArgumentError(format!("Invalid arg type '{}'.  Must be one of: ['address','bool','hex','hex_array','string','u8','u16','u32','u64','u128','u256','raw', 'vector<inner_type>']", str)))
+                    Err(RoochError::CommandArgumentError(format!("Invalid arg type '{}'.  Must be one of: ['address','bool','object_id','string','u8','u16','u32','u64','u128','u256','vector<inner_type>']", str)))
                 }
             }
         }
