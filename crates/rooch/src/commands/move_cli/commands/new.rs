@@ -21,6 +21,10 @@ const ROOCH_FRAMEWORK_PKG_PATH: &str = "{ git = \"https://github.com/rooch-netwo
 
 #[derive(Parser)]
 pub struct New {
+    /// Existing account address from Rooch
+    #[clap(long = "address", short = 'a')]
+    account_address: Option<AccountAddress>,
+
     #[clap(flatten)]
     pub new: new::New,
 }
@@ -28,6 +32,14 @@ pub struct New {
 impl New {
     pub fn execute(self, path: Option<PathBuf>) -> anyhow::Result<()> {
         let name = &self.new.name.to_lowercase();
+        let address = if let Some(account_address) = &self.account_address {
+            // Existing account address is available
+            account_address.to_hex_literal()
+        } else {
+            // Existing account address is not available, generate a new random address
+            AccountAddress::random().to_hex_literal()
+        };
+
         self.new.execute(
             path,
             "0.0.1",
@@ -37,8 +49,7 @@ impl New {
                 (ROOCH_FRAMEWORK_PKG_NAME, ROOCH_FRAMEWORK_PKG_PATH),
             ],
             [
-                //TODO let dev pass the address as option.
-                (name, &AccountAddress::random().to_hex_literal()),
+                (name, &address),
                 (
                     &MOVE_STD_ADDRESS_NAME.to_string(),
                     &MOVE_STD_ADDRESS.to_hex_literal(),
