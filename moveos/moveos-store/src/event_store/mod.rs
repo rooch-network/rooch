@@ -73,16 +73,16 @@ impl EventStore {
         limit: u64,
     ) -> Result<Vec<Event>, Error> {
         //  will not cross the boundary even if the size exceeds the storage capacity,
-        let u_cursor = cursor.unwrap_or(0);
-        let end = u_cursor + limit;
+        let start = cursor.unwrap_or(0);
+        let end = start + limit;
         let rw_locks = self.store.read();
         let data = rw_locks
             .iter()
             .filter(|((handle_id, event_seq), _)| {
                 if Option::is_some(&cursor) {
-                    *handle_id == *event_handle_id && (*event_seq > u_cursor && *event_seq <= end)
+                    *handle_id == *event_handle_id && (*event_seq > start && *event_seq <= end)
                 } else {
-                    *handle_id == *event_handle_id && (*event_seq >= u_cursor && *event_seq < end)
+                    *handle_id == *event_handle_id && (*event_seq >= start && *event_seq < end)
                 }
             })
             .map(|(_, e)| e.clone())

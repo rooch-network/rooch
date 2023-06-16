@@ -52,7 +52,10 @@ impl Handler<TransactionSequenceMessage> for SequencerActor {
         let tx_order_signature = Signature::new_hashed(&witness_hash.0, &self.sequencer_key).into();
         self.last_order = tx_order;
 
-        self.rooch_db.transaction_store.add(tx);
+        self.rooch_db.transaction_store.save_transaction(tx);
+        self.rooch_db
+            .transaction_store
+            .save_tx_seq_info_mapping(tx_order, hash);
 
         let tx_accumulator_root = H256::random();
         Ok(TransactionSequenceInfo {
@@ -70,7 +73,7 @@ impl Handler<TransactionByHashMessage> for SequencerActor {
         msg: TransactionByHashMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Option<TypedTransaction>> {
-        Ok(self.rooch_db.transaction_store.get_by_hash(msg.hash))
+        Ok(self.rooch_db.transaction_store.get_tx_by_hash(msg.hash))
     }
 }
 
@@ -84,6 +87,6 @@ impl Handler<TransactionByIndexMessage> for SequencerActor {
         Ok(self
             .rooch_db
             .transaction_store
-            .get_by_index(msg.start, msg.limit))
+            .get_tx_by_index(msg.start, msg.limit))
     }
 }

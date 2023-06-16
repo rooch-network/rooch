@@ -4,7 +4,8 @@
 use crate::jsonrpc_types::{
     AccessPathView, AnnotatedEventView, AnnotatedFunctionReturnValueView, AnnotatedStateView,
     EventFilterView, EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
-    StateView, StrView, StructTagView, TransactionView,
+    StateView, StrView, StructTagView, TransactionExecutionInfoView, TransactionInfoPageView,
+    TransactionView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -71,4 +72,17 @@ pub trait RoochAPI {
         start: u64,
         limit: u64,
     ) -> RpcResult<Vec<TransactionView>>;
+
+    #[method(name = "getTransactionInfosByTxOrder")]
+    async fn get_transaction_infos_by_tx_order(
+        &self,
+        cursor: Option<u128>,
+        limit: Option<u64>,
+    ) -> RpcResult<TransactionInfoPageView>;
+
+    #[method(name = "getTransactionInfosByTxHash")]
+    async fn get_transaction_infos_by_tx_hash(
+        &self,
+        tx_hashes: Vec<H256View>,
+    ) -> RpcResult<Vec<Option<TransactionExecutionInfoView>>>;
 }

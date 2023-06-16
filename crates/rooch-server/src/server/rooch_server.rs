@@ -5,7 +5,8 @@ use crate::api::RoochRpcModule;
 use crate::jsonrpc_types::{
     AccessPathView, AnnotatedEventView, AnnotatedFunctionReturnValueView, AnnotatedStateView,
     EventFilterView, EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
-    StateView, StrView, StructTagView, TransactionView,
+    StateView, StrView, StructTagView, TransactionExecutionInfoView, TransactionInfoPageView,
+    TransactionView,
 };
 use crate::service::RpcService;
 use crate::{api::rooch_api::RoochAPIServer, api::MAX_RESULT_LIMIT};
@@ -13,6 +14,7 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     RpcModule,
 };
+use moveos_types::h256::H256;
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::{AbstractTransaction, TypedTransaction};
 
@@ -92,17 +94,17 @@ impl RoochAPIServer for RoochServer {
         limit: Option<u64>,
     ) -> RpcResult<EventPageView> {
         // NOTE: fetch one more object to check if there is next page
-        let u_limit = limit.unwrap_or(MAX_RESULT_LIMIT);
+        let limit_of = limit.unwrap_or(MAX_RESULT_LIMIT);
         let mut result: Vec<Option<AnnotatedEventView>> = self
             .rpc_service
-            .get_events_by_event_handle(event_handle_type.into(), cursor, u_limit + 1)
+            .get_events_by_event_handle(event_handle_type.into(), cursor, limit_of + 1)
             .await?
             .into_iter()
             .map(|event| event.map(AnnotatedEventView::from))
             .collect();
 
-        let has_next_page = (result.len() as u64) > u_limit;
-        result.truncate(u_limit as usize);
+        let has_next_page = (result.len() as u64) > limit_of;
+        result.truncate(limit_of as usize);
         let next_cursor = result.last().map_or(cursor, |event| {
             Some(event.clone().unwrap().event.event_id.event_seq)
         });
@@ -150,6 +152,62 @@ impl RoochAPIServer for RoochServer {
             .collect();
 
         Ok(resp)
+    }
+
+    async fn get_transaction_infos_by_tx_order(
+        &self,
+        cursor: Option<u128>,
+        limit: Option<u64>,
+    ) -> RpcResult<TransactionInfoPageView> {
+        // NOTE: fetch one more object to check if there is next page
+        let limit_of = limit.unwrap_or(MAX_RESULT_LIMIT);
+
+        let mut tx_seq_mapping = self
+            .rpc_service
+            .get_tx_seq_mapping_by_tx_order(cursor, limit_of + 1)
+            .await?;
+
+        let has_next_page = (tx_seq_mapping.len() as u64) > limit_of;
+        tx_seq_mapping.truncate(limit_of as usize);
+        let next_cursor = tx_seq_mapping
+            .last()
+            .map_or(cursor, |m| Some(m.clone().tx_order));
+
+        let tx_hashes = tx_seq_mapping.iter().map(|m| m.tx_hash).collect::<Vec<_>>();
+
+        let result = self
+            .rpc_service
+            .get_transaction_infos_by_tx_hash(tx_hashes)
+            .await?
+            .into_iter()
+            .map(|tx_info| tx_info.map(TransactionExecutionInfoView::from))
+            .collect();
+
+        Ok(TransactionInfoPageView {
+            data: result,
+            next_cursor,
+            has_next_page,
+        })
+    }
+
+    async fn get_transaction_infos_by_tx_hash(
+        &self,
+        tx_hashes: Vec<H256View>,
+    ) -> RpcResult<Vec<Option<TransactionExecutionInfoView>>> {
+        let hashes: Vec<H256> = tx_hashes
+            .iter()
+            .map(|m| (*m).clone().into())
+            .collect::<Vec<_>>();
+
+        let result = self
+            .rpc_service
+            .get_transaction_infos_by_tx_hash(hashes)
+            .await?
+            .into_iter()
+            .map(|tx_info| tx_info.map(TransactionExecutionInfoView::from))
+            .collect();
+
+        Ok(result)
     }
 }
 

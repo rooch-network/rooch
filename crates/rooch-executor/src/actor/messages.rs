@@ -8,12 +8,13 @@ use moveos_types::access_path::AccessPath;
 use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event_filter::EventFilter;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
+use moveos_types::h256::H256;
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
-use rooch_types::transaction::AbstractTransaction;
+use rooch_types::transaction::{AbstractTransaction, TransactionSequenceMapping};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
@@ -87,4 +88,23 @@ pub struct GetEventsMessage {
 
 impl Message for GetEventsMessage {
     type Result = Result<Vec<Option<AnnotatedMoveOSEvent>>>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetTxSeqMappingByTxOrderMessage {
+    pub cursor: Option<u128>,
+    pub limit: u64,
+}
+
+impl Message for GetTxSeqMappingByTxOrderMessage {
+    type Result = Result<Vec<TransactionSequenceMapping>>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetTransactionInfosByTxHashMessage {
+    pub tx_hashes: Vec<H256>,
+}
+
+impl Message for GetTransactionInfosByTxHashMessage {
+    type Result = Result<Vec<Option<TransactionExecutionInfo>>>;
 }

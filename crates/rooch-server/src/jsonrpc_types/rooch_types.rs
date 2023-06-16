@@ -3,7 +3,7 @@
 
 use crate::jsonrpc_types::{
     move_types::{MoveActionTypeView, MoveActionView},
-    AnnotatedMoveStructView, EventView, H256View, StrView,
+    AnnotatedMoveStructView, EventView, H256View, StrView, TransactionExecutionInfoView,
 };
 use moveos_types::event::AnnotatedMoveOSEvent;
 use rooch_types::transaction::{AbstractTransaction, TransactionType, TypedTransaction};
@@ -11,6 +11,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 pub type EventPageView = PageView<Option<AnnotatedEventView>, u64>;
+pub type TransactionInfoPageView = PageView<Option<TransactionExecutionInfoView>, u128>;
 
 /// `next_cursor` points to the last item in the page;
 /// Reading with `next_cursor` will start from the next item after `next_cursor` if
