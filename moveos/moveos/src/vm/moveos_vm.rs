@@ -9,7 +9,7 @@ use move_binary_format::{
     file_format::AbilitySet,
     CompiledModule,
 };
-use move_core_types::resolver::ModuleResolver;
+
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
@@ -148,14 +148,10 @@ where
     /// Verify a move action.
     /// The caller should call this function when validate a transaction.
     /// If the result is error, the transaction should be rejected.
-    pub fn verify_move_action<Resolver>(
+    pub fn verify_move_action(
         &self,
         action: MoveAction,
-        db: &Resolver,
-    ) -> Result<VerifiedMoveAction, anyhow::Error>
-    where
-        Resolver: ModuleResolver,
-    {
+    ) -> Result<VerifiedMoveAction, anyhow::Error> {
         match action {
             MoveAction::Script(script) => {
                 let loaded_function = self
@@ -192,7 +188,7 @@ where
 
                 let mut init_function_modules = vec![];
                 for module in &compiled_modules {
-                    let result = moveos_verifier::verifier::verify_module(module, db);
+                    let result = moveos_verifier::verifier::verify_module(module, self.remote);
                     match result {
                         Ok(res) => {
                             if res {
