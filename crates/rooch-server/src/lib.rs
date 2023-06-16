@@ -112,11 +112,11 @@ pub async fn start_server() -> Result<ServerHandle> {
     let config = ServerConfig::default();
 
     let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
-
+    let rooch_db = RoochDB::new_with_memory_store();
     let actor_system = ActorSystem::global_system();
 
     // Init executor
-    let executor = ExecutorActor::new()?
+    let executor = ExecutorActor::new(rooch_db.clone())?
         .into_actor(Some("Executor"), &actor_system)
         .await?;
     let executor_proxy = ExecutorProxy::new(executor.into());
@@ -125,8 +125,7 @@ pub async fn start_server() -> Result<ServerHandle> {
     //TODO load from config
 
     let (_, kp, _, _) = generate_new_key(rooch_types::crypto::BuiltinScheme::Ed25519, None, None)?;
-    // let tx_db = TxDB::new_with_memory_store();
-    let rooch_db = RoochDB::new_with_memory_store();
+    // let rooch_db = RoochDB::new_with_memory_store();
     let sequencer = SequencerActor::new(kp, rooch_db)
         .into_actor(Some("Sequencer"), &actor_system)
         .await?;

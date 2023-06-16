@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use parking_lot::RwLock;
-use rooch_types::transaction::{AbstractTransaction, TransactionSequenceInfo, TypedTransaction};
+use rooch_types::transaction::{
+    AbstractTransaction, TransactionSequenceInfo, TransactionSequenceMapping, TypedTransaction,
+};
 use rooch_types::H256;
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -19,9 +21,14 @@ pub trait TransactionStore {
         limit: u64,
     ) -> Vec<TransactionSequenceInfo>;
     fn save_tx_seq_info_mapping(&self, tx_order: u128, tx_hash: H256);
-    fn get_tx_hashes_by_tx_order(&self, cursor: Option<u128>, limit: u64) -> Vec<H256>;
+    fn get_tx_seq_mapping_by_tx_order(
+        &self,
+        cursor: Option<u128>,
+        limit: u64,
+    ) -> Vec<TransactionSequenceMapping>;
 }
 
+#[derive(Clone)]
 pub struct TransactionDB {
     transaction_db: InMemoryStore,
 }
@@ -63,8 +70,13 @@ impl TransactionDB {
             .save_tx_seq_info_mapping(tx_order, tx_hash)
     }
 
-    pub fn get_tx_hashes_by_tx_order(&self, cursor: Option<u128>, limit: u64) -> Vec<H256> {
-        self.transaction_db.get_tx_hashes_by_tx_order(cursor, limit)
+    pub fn get_tx_seq_mapping_by_tx_order(
+        &self,
+        cursor: Option<u128>,
+        limit: u64,
+    ) -> Vec<TransactionSequenceMapping> {
+        self.transaction_db
+            .get_tx_seq_mapping_by_tx_order(cursor, limit)
     }
 }
 
@@ -124,7 +136,11 @@ impl TransactionStore for InMemoryStore {
         locked.insert(tx_order, tx_hash);
     }
 
-    fn get_tx_hashes_by_tx_order(&self, cursor: Option<u128>, limit: u64) -> Vec<H256> {
+    fn get_tx_seq_mapping_by_tx_order(
+        &self,
+        cursor: Option<u128>,
+        limit: u64,
+    ) -> Vec<TransactionSequenceMapping> {
         let start = cursor.unwrap_or(0);
         let end = start + (limit as u128);
         let rw_locks = self.inner_tx_index.read();
@@ -137,7 +153,7 @@ impl TransactionStore for InMemoryStore {
                     **tx_order >= start && **tx_order < end
                 }
             })
-            .map(|(_, e)| *e)
+            .map(|(tx_order, tx_hash)| TransactionSequenceMapping::new(*tx_order, *tx_hash))
             .collect::<Vec<_>>();
         data
     }

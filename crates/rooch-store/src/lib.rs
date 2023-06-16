@@ -5,7 +5,7 @@ use crate::transaction_store::TransactionDB;
 
 pub mod transaction_store;
 
-// #[derive(Clone)]
+#[derive(Clone)]
 pub struct RoochDB {
     pub transaction_store: TransactionDB,
 }
