@@ -1,4 +1,4 @@
-# 存储抽象（Storage Abstraction）
+# 存储抽象
 
 [English](./storage_abstraction.md)|中文
 
@@ -6,13 +6,13 @@
 
 智能合约编程语言和传统编程语言最大的区别是智能合约编程语言需要在编程语言内部提供标准化的状态存储接口，屏蔽状态存储的底层实现，智能合约应用主要关心自己的业务逻辑。
 
-**而“存储抽象”的目标是让开发者可以在智能合约中更灵活地定义自己的状态存储结构，而不局限于平台提供的标准化方案**。
+**而“存储抽象（Storage Abstraction）”的目标是让开发者可以在智能合约中更灵活地定义自己的状态存储结构，而不局限于平台提供的标准化方案**。
 
 我们先回顾一下当前的智能合约平台提供的方案，然后提出 Rooch 的 `Storage Abstraction` 方案。
 
 ### EVM 的方案
 
-EVM 中，合约的状态是通过合约的字段变量来存储，虚拟机直接将合约的字段映射到存储槽（slot）中持久化。这种方案的优点是对开发者几乎透明，开发者可以把存储当内存使用，但也有一些缺点：
+EVM 中，合约的状态是通过合约的字段变量来存储，虚拟机直接将合约的字段映射到存储槽（Slot）中持久化。这种方案的优点是对开发者几乎透明，开发者可以把存储当内存使用，但也有一些缺点：
 
 1. 设计复杂的状态存储时，会遇到扩展性难题，开发者依然需要理解合约变量是如何映射到底层存储的。
 2. 存储槽对外部系统访问不友好，外部系统很难直接解析存储槽中的数据。
@@ -30,7 +30,7 @@ Move 对智能合约状态存储做了改进，应用需要通过全局存储指
 
 以上指令都包含两个安全层面的约束：
 
-1. `T` 类型必须是拥有 `key` 能力（ability）的结构体（struct）。而结构体中的字段都必须是拥有 `store` 能力的数据类型。
+1. `T` 类型必须是拥有 `key` 能力（Ability）的结构体（Struct）。而结构体中的字段都必须是拥有 `store` 能力的数据类型。
 2. `T` 类型必须定义在当前的模块中。
 
 第一个约束确保只有开发者明确声明具有 `store` 能力的数据类型才能写入存储层。第二个约束确保合约之间的状态安全。当前模块中数据结构的存储操作只能通过当前合约提供的方法进行，开发者可以在方法中封装访问校验逻辑，保证安全性。
@@ -40,18 +40,18 @@ Move 对智能合约状态存储做了改进，应用需要通过全局存储指
 1. 明确了状态的所有权，方便底层的系统设计状态计费以及提供安全措施。
 2. 类型系统是全局的，合约之间可以进行状态互通。当然，这点也依赖 Move 提供的类型安全机制。
 
-同时，Move 提供了 `Table<K,V>` 扩展，开发者可以通过 `Table<K,V>` 自定义键-值（Key-Value）存储。
+同时，Move 提供了 `Table<K,V>` 扩展，开发者可以通过 `Table<K,V>` 自定义 Key-Value 存储。
 
 ### Sui Move 的 Object 改进
 
-Sui Move 中废弃了上面的 Move 的全局存储指令，提供了一种对象（object）模型。Object 是一种特殊的结构体，它需要拥有 `key` 能力，同时第一个字段必须是 `UID`。Sui Move 设计了一套所有权机制，来定义 Object 的所有权。Sui Move 这样设计主要是为了通过类似 UTXO 的模式来实现交易的并行，所以它需要客户端在交易参数中指定合约中需要操作的 Object，这样可以快速判断交易之间是否有冲突。同时，它还提供了 Object 的父子关系机制，方便开发者设计复杂的状态结构。
+Sui Move 中废弃了上面的 Move 的全局存储指令，提供了一种对象（Object）模型。Object 是一种特殊的结构体，它需要拥有 `key` 能力，同时第一个字段必须是 `UID`。Sui Move 设计了一套所有权机制，来定义 Object 的所有权。Sui Move 这样设计主要是为了通过类似 UTXO 的模式来实现交易的并行，所以它需要客户端在交易参数中指定合约中需要操作的 Object，这样可以快速判断交易之间是否有冲突。同时，它还提供了 Object 的父子关系机制，方便开发者设计复杂的状态结构。
 
 Sui Move 的 Object 安全约束：
 
-1. Object 有明确的拥有者（owner），或者是共享的（shared）Object，虚拟机加载参数的时候需要校验 Object 的所有权。
+1. Object 有明确的拥有者（Owner），或者是共享的（Shared）Object，虚拟机加载参数的时候需要校验 Object 的所有权。
 2. 合约内的 Object 有两种方式转让所有权。一种是 `transfer<T:key>(T,address)`，这个方法只能是在定义 `T` 的当前模块中调用，需要开发者再次封装给用户使用，开发者可以自定义转让的验证逻辑。另外一种是 `public_transfer<T:key,store>(T,address)`，对象拥有者可以直接调用该方法转让 Object，但对 `T` 有额外的能力约束，必须拥有 `store` 能力。
 
-Move 的全局存储指令都是基于用户的，获取一个资源必须先知道它存在哪个用户的空间下，然后基于该资源的类型来获取。对象模型给 Move 的状态存储引入一种基于 ID 的存储。同时，它通过 `public_transfer` 提供了一种用户可以跳过开发者直接操作状态的能力。
+Move 的全局存储指令都是基于用户的，获取一个资源必须先知道它存在哪个用户的空间下，然后基于该资源的类型来获取。Object 模型给 Move 的状态存储引入一种基于 ID 的存储。同时，它通过 `public_transfer` 提供了一种用户可以跳过开发者直接操作状态的能力。
 
 ### Rooch Storage Abstraction 设计原则
 
@@ -67,11 +67,11 @@ Move 的全局存储指令都是基于用户的，获取一个资源必须先知
 
 ![Storage Abstraction](./rooch-design-storage-abstraction.svg)
 
-1. `RawTable` 提供最底层的键-值存储接口，合约状态变更最终都统一为 `RawTable` 的键-值对变更集。
-2. 基于 `RawTable` 实现 `Table<K,V>`，对键（key）和值（value）的类型进行约束。
-3. 基于 `RawTable` 实现 `TypeTable`，以值的类型（type of value）为键（key）的存储结构。
+1. `RawTable` 提供最底层的 Key-Value 存储接口，合约状态变更最终都统一为 `RawTable` 的 Key-Value 变更集。
+2. 基于 `RawTable` 实现 `Table<K,V>`，对 Key 和 Value 的类型进行约束。
+3. 基于 `RawTable` 实现 `TypeTable`，以 Value 的类型为 Key 的存储结构。
 4. 基于 `RawTable` 实现 `ObjectStorage`，提供 Object 的存储能力。
-5. 基于 `TypeTable` 和 `Table` 实现 `ResourceTable` 和 `ModuleTable`，封装为 `AccountStorage`，提供 Move 的用户空间的存储接口，用于替代 Move 的全局存储指令。同时，`AccountStorage` 也提供了在合约中操作模块（module）的接口，方便未来在合约中定义合约的升级逻辑。
+5. 基于 `TypeTable` 和 `Table` 实现 `ResourceTable` 和 `ModuleTable`，封装为 `AccountStorage`，提供 Move 的用户空间的存储接口，用于替代 Move 的全局存储指令。同时，`AccountStorage` 也提供了在合约中操作模块（Module）的接口，方便未来在合约中定义合约的升级逻辑。
 6. 开发者可以基于以上存储结构，封装自己应用专用的存储接口。
 
 ### 状态树的设计
@@ -87,14 +87,13 @@ Rooch 的 StateDB 状态树整体架构如下图所示：
 
 ![statedb](./rooch-design-statedb.svg)
 
-状态树的第一层是一个以 ObjectID 为键的 SMT，值是 Object 的序列化二进制数据，可以理解为一个全局的 `ObjectStore`。其中有三个特殊的 Object：
+状态树的第一层是一个以 `ObjectID` 为键的 SMT，值是 Object 的序列化二进制数据，可以理解为一个全局的 `ObjectStore`。其中有三个特殊的 Object：
 
-1. 以用户的 Address 为 Key，保存了 AccountStorage Object，后面会详细介绍。
-2. 以 Hash(Address + 0) 为 Key，保存了用户的 Resource Table Object。Resource Table 的 Key 为 Resource 类型，Value 为 Resource。
-3. 以 Hash(Address + 1) 为 Key，保存了用户的 Module Table Object。Module Table 的 Key 为 Module Name，Value 为 Module 字节码。
+1. 以用户的 `Address` 为 Key，保存了 `AccountStorage` Object，后面会详细介绍。
+2. 以 `Hash(Address + 0)` 为 Key，保存了用户的 `ResourceTable` Object。Resource Table 的 Key 为 Resource 类型，Value 为 Resource。
+3. 以 `Hash(Address + 1)` 为 Key，保存了用户的 `ModuleTable` Object。Module Table 的 Key 为 Module Name，Value 为 Module 字节码。
 
-在 Rooch 中，Move 中的每个 Table 对应一个 SMT，Table Object 对象主要存储了 SMT 的 Root。加载 Table 的数据的时候，首先通过 Table Object ID 获取到 SMT 的 Root，然后初始化 SMT，通过 Key 获取 Value。而 Table 也可以成为 Struct 的字段，Struct 中序列化的是 Table 的 Object ID（TableHandle）。这样，Rooch 的状态树就是一个层层嵌套的 SMT。
-
+在 Rooch 中，Move 中的每个 Table 对应一个 SMT，Table Object 主要存储了 SMT 的 Root。加载 Table 的数据的时候，首先通过 Table Object ID 获取到 SMT 的 Root，然后初始化 SMT，通过 Key 获取 Value。而 Table 也可以成为 Struct 的字段，Struct 中序列化的是 Table 的 Object ID（TableHandle）。这样，Rooch 的状态树就是一个层层嵌套的 SMT。
 
 ### StorageContext
 
@@ -121,7 +120,7 @@ module example::my_module{
 
 ### RawTable
 
-Rooch 中，给 Move 实现了一种叫做 RawTable 的扩展，它基于原来的 Table 扩展改造，取消了对 Key，Value 的约束。
+Rooch 中，给 Move 实现了一种叫做 RawTable 的扩展，它基于原来的 Table 扩展改造，取消了对 Key 和 Value 的约束。
 
 以下是 RawTable 在 Move 中提供的几个关键接口：
 
@@ -139,9 +138,9 @@ module moveos_std::raw_table{
 }
 ```
 
-TableHandle 即 TableObject 的 ObjectID，RawTable 的上层数据结构拿到 TableHandle 后，可以直接操作任意类型的 K，V，相当于一个最底层的 KV 存储接口。每个 RowTable 对应 StateDB 中的一颗 SMT，Global ObjectStore 的 ObjectID 是所有字节都为`0`的一个特殊 ObjectID。
+TableHandle 即 TableObject 的 ObjectID，RawTable 的上层数据结构拿到 TableHandle 后，可以直接操作任意类型的 K 和 V，相当于一个最底层的 KV 存储接口。每个 RawTable 对应 StateDB 中的一颗 SMT，Global ObjectStore 的 ObjectID 是所有字节都为`0`的一个特殊 ObjectID。
 
-当前 RawTable 中的方法都是 `friend`，开发者无法直接操作，需要通过 RawTable 上层封装的数据结构进行操作。比如 `Table<K,V>`， `TypeTable`，`ObjectStorage` 。
+当前 RawTable 中的方法都是 `friend`，开发者无法直接操作，需要通过 RawTable 上层封装的数据结构进行操作。比如 `Table<K,V>`，`TypeTable`，`ObjectStorage` 。
 
 ### Rooch Object
 
@@ -273,7 +272,6 @@ module moveos_std::account_storage{
 
 > TBD: 是否需要完全废弃 Move 的全局存储指令，还是同时提供两种方式，需要进一步的研究来决定。
 
-
 ### 统一的状态访问路径接口
 
 Rooch 的 StateDB 是一个层层嵌套的 SMT，所以我们可以提供一种统一的[访问路径接口](https://github.com/rooch-network/rooch/issues/58)。
@@ -282,9 +280,9 @@ Rooch 的 StateDB 是一个层层嵌套的 SMT，所以我们可以提供一种�
 
 同时还提供几个别名访问方式：
 
-* `/object/$object_id`: 访问第一层的 SMT 的快捷方法，等价于 `/table/0x0/$object_id`。
-* `/module/$address/$module_name`: 访问某个用户的 AccountStorage 里的某个 Module，等价于 `/table/NamedTable($address,resource)/hex($module_name)`。
-* `/resource/$address/$resource_struct_tag`: 访问某个用户的 AccountStorage 里的某个 Resource，等价于 `/table/NamedTable($address,module)/hex($resource_struct_tag)`。
+* `/object/$object_id`：访问第一层的 SMT 的快捷方法，等价于 `/table/0x0/$object_id`。
+* `/module/$address/$module_name`：访问某个用户的 AccountStorage 里的某个 Module，等价于 `/table/NamedTable($address,resource)/hex($module_name)`。
+* `/resource/$address/$resource_struct_tag`：访问某个用户的 AccountStorage 里的某个 Resource，等价于 `/table/NamedTable($address,module)/hex($resource_struct_tag)`。
 
 由于 SMT 存储的是 Move 的 Struct 序列化值，外部系统可以直接反序列化成 JSON 或者其他编程语言中的数据结构，对开发者友好。
 
@@ -294,7 +292,7 @@ Rooch 将应用对存储的需求抽象为 KV 存储接口，统一了应用状�
 
 而 Rooch 的状态树以及统一访问接口，方便外部系统和 Rooch 的组合，保证了互操作性。
 
-最后，关于执行平台，合约开发者，用户三者之间的关系，Rooch 延续了 Move 的安全约束，状态所有权明确，但对状态的操作需要通过开发者定义的接口约束，同时也在探索用户直接操作自己的状态的方案。
+最后，关于执行平台、合约开发者和用户三者之间的关系，Rooch 延续了 Move 的安全约束，状态所有权明确，但对状态的操作需要通过开发者定义的接口约束，同时也在探索用户直接操作自己的状态的方案。
 
 `Storage Abstraction` 是一种新的理念，随着应用场景的丰富，对存储方式也会有新的需求。未来有以下探索方向：
 
