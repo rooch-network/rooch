@@ -118,6 +118,9 @@ impl Handler<ExecuteTransactionMessage> for ExecutorActor {
             0,
             output.status.clone(),
         );
+        self.moveos
+            .transaction_store()
+            .save_tx_exec_info(transaction_info.clone());
         Ok(ExecuteTransactionResult {
             output,
             transaction_info,

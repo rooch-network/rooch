@@ -3,7 +3,7 @@
 
 use crate::cli_types::CommandAction;
 use async_trait::async_trait;
-use commands::{get_by_hash::GetByHashCommand, get_by_index::GetByIndexCommand};
+use commands::{get_tx_by_hash::GetByHashCommand, get_tx_by_index::GetByIndexCommand};
 use rooch_types::error::RoochResult;
 pub mod commands;
 

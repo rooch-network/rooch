@@ -12,6 +12,7 @@ use move_core_types::{
 use move_vm_runtime::config::VMConfig;
 use move_vm_runtime::native_functions::NativeFunction;
 use move_vm_types::gas::UnmeteredGasMeter;
+use moveos_store::transaction_store::TransactionDB;
 use moveos_store::MoveOSDB;
 use moveos_store::{event_store::EventStore, state_store::StateDB};
 use moveos_types::function_return_value::FunctionReturnValue;
@@ -105,6 +106,10 @@ impl MoveOS {
 
     pub fn event_store(&self) -> &EventStore {
         self.db.0.get_event_store()
+    }
+
+    pub fn transaction_store(&self) -> &TransactionDB {
+        self.db.0.get_transaction_store()
     }
 
     pub fn verify(&self, tx: MoveOSTransaction) -> Result<VerifiedMoveOSTransaction> {
