@@ -8,7 +8,6 @@ module rooch_framework::account{
    use moveos_std::storage_context::{Self, StorageContext};
    use moveos_std::account_storage;
 
-   friend rooch_framework::genesis;
    friend rooch_framework::transaction_validator;
 
    /// Resource representing an account.
