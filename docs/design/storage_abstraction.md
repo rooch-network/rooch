@@ -6,6 +6,8 @@ English|[中文](./storage_abstraction.zh-CN.md)
 
 The biggest difference between smart contract programming languages and traditional programming languages is that smart contract programming languages need to provide standardized state storage interfaces within the language, shielding the underlying implementation of state storage. Smart contract applications primarily focus on their own business logic. 
 
+**The objective of "Storage Abstraction" is to allow developers to define their own state storage structures more flexibly in smart contracts, rather than being limited to standardized solutions provided by the platform.**
+
 Let's first review the current solutions provided by smart contract platforms, and then introduce Rooch's "Storage Abstraction" solution.
 
 ### EVM Solution
@@ -63,6 +65,15 @@ After analyzing the above solutions, we find that the storage model of a contrac
 
 ## Design Solution
 
+![Storage Abstraction](./rooch-design-storage-abstraction.svg)
+
+1. `RawTable` provides the lowest-level Key Value storage interface, where all contract state changes are ultimately uniformly changed as the Key Value change set of `RawTable`.
+2. `Table<K,V>` is implemented based on `RawTable`, constraining the types of Key and Value.
+3. `TypeTable` is implemented based on `RawTable`, using the type of Value as the Key for the storage structure.
+4. `ObjectStorage` is implemented based on `RawTable`, providing storage capabilities for Objects.
+5. `ResourceTable` and `ModuleTable` are implemented based on `TypeTable` and `Table` respectively, encapsulating them into `AccountStorage`, providing storage interfaces for Move's user space storage to replace Move's global storage instructions. At the same time, `AccountStorage` also provides an interface for operating Modules in the contract, which is convenient for defining the upgrade logic of the contract in the future.
+6. Developers can encapsulate their own application-specific storage interfaces based on the above storage structures.
+
 ### Design of State Tree
 
 We believe that providing state proofs through a state tree is an important feature for interoperability between Web3 systems and external systems. Therefore, Rooch's state storage is designed around the state tree.
@@ -101,8 +112,10 @@ module moveos_std::storage_context{
 Developers can define the StorageContext parameter in the `entry` method, and the MoveVM will automatically fill in the parameter.
 
 ```move
-public entry function main(ctx: &mut StorageContext){
-    //function logic
+module example::my_module{
+    public entry fun my_entry_fun(ctx: &mut StorageContext){
+        //function logic
+    }
 }
 ```
 
@@ -177,7 +190,7 @@ module moveos_std::object_storage{
 
 The above methods are ensured to only be called directly by Modules containing `T` through [private_generics](https://github.com/rooch-network/rooch/issues/64), and the safety model follow to the constraints of the Move global storage instructions.
 
->TBD: Whether to provide a method that allows Owners to directly operate on Objects, similar to Sui's `public_transfer`, needs further study.
+>TBD: Whether to provide a method that allows Owners to directly operate on Objects, similar to Sui's `public_transfer`, needs further research to decide.
 
 ### TypeTable
 
@@ -209,17 +222,25 @@ The methods in TypeTable rely on the type safety guarantee of `private_generics`
 
 AccountStorage is an abstraction of a user's storage space in Move, which contains two Tables, the Resource Table and Module Table, allowing Resources and Modules to be directly manipulated in Move without the need for global storage instructions.
 
-```move
-struct AccountStorage has key {
-    resources: TypeTable,
-    modules: Table<String, vector<u8>>,
-}
-```
-
 It mainly provides the following API:
 
-```
+```move
 module moveos_std::account_storage{
+    
+    struct AccountStorage has key {
+        resources: TypeTable,
+        modules: Table<String, MoveModule>,
+    }
+
+    #[private_generics(T)]
+    /// Borrow a resource from the account's storage
+    /// This function equates to `borrow_global<T>(address)` instruction in Move
+    public fun global_borrow<T: key>(ctx: &StorageContext, account: address): &T;
+
+    #[private_generics(T)]
+    /// Borrow a mut resource from the account's storage
+    /// This function equates to `borrow_global_mut<T>(address)` instruction in Move
+    public fun global_borrow_mut<T: key>(ctx: &mut StorageContext, account: address): &mut T;
 
     #[private_generics(T)]
     /// Move a resource to the account's storage
@@ -240,7 +261,7 @@ module moveos_std::account_storage{
     public fun exists_module(ctx: &StorageContext, account: address, name: String): bool;
 
     /// Publish modules to the account's storage
-    public fun publish_modules(ctx: &mut StorageContext, account: &signer, modules: vector<vector<u8>>);
+    public fun publish_modules(ctx: &mut StorageContext, account: &signer, modules: vector<MoveModule>);
 }
 ```
 
@@ -250,17 +271,21 @@ At the same time,this approach also solves a reference problem in Move whereby d
 
 In addition, AccountStorage also provides module-related methods, making it easy to deploy Move contracts in Move and allowing developers to use contracts to define contract deployment rules, such as upgrading the contract through DAO governance.
 
-> TBD: Whether to completely abandon the global storage instructions in Move, or to simultaneously provide both methods of operation, needs further study to decide.
+> TBD: Whether to completely abandon the global storage instructions in Move, or to simultaneously provide both methods of operation, needs further research to decide.
 
 ### Unified State AccessPath API
 
 Since Rooch's StateDB is a nested SMT, we can provide a unified [access path API](https://github.com/rooch-network/rooch/issues/58).
 
-- `/key`: Access the first-level SMT, where `key` is an `ObjectID`.
-- `/key/field_index`: Access a specific field of an Object at index `field_index`.
-- `/key/field_index/key`: If the field at `field_index` is a Table, data in that Table can be retrieved through the second `key`.
+`/table/$table_handle/$key1,$key2`: Accesses the data of `$key1,$key2` in the Table of `$table_handle`. If `$table_handle` is `0x0`, it means that the accessed data is from the first level of the SMT.
 
-Since SMT store serialized values of Move's Struct, an external system can directly deserialize these to JSON or other data structures in programming languages, which is more developer-friendly.
+In addition, the following aliases are provided for accessing data:
+
+* `/object/$object_id`: A shortcut for accessing the first layer of the SMT, which is equivalent to `/table/0x0/$object_id`.
+* `/module/$address/$module_name`: Accesses a Module in the AccountStorage of a user, which is equivalent to `/table/NamedTable($address,resource)/hex($module_name)`.
+* `/resource/$address/$resource_struct_tag`: Accesses a Resource in the AccountStorage of a user, which is equivalent to `/table/NamedTable($address,module)/hex($resource_struct_tag)`.
+
+Since SMT stores serialized values of Move's Struct, external systems can directly deserialize them into JSON or other data structures in programming languages, which is friendly to developers.
 
 ## Summary
 

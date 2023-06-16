@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::types::{CommandAction, WalletContextOptions};
+use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use rooch_server::jsonrpc_types::TransactionView;
 use rooch_types::error::RoochResult;

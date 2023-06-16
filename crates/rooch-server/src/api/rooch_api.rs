@@ -3,8 +3,8 @@
 
 use crate::jsonrpc_types::{
     AccessPathView, AnnotatedEventView, AnnotatedFunctionReturnValueView, AnnotatedStateView,
-    EventFilterView, EventPageView, ExecuteTransactionResponseView, FunctionCallView,
-    RoochH256View, StateView, StrView, StructTagView, TransactionView,
+    EventFilterView, EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
+    StateView, StrView, StructTagView, TransactionView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -16,7 +16,7 @@ pub trait RoochAPI {
     /// Send the signed transaction in bcs hex format
     /// This method does not block waiting for the transaction to be executed.
     #[method(name = "sendRawTransaction")]
-    async fn send_raw_transaction(&self, tx_bcs_hex: StrView<Vec<u8>>) -> RpcResult<RoochH256View>;
+    async fn send_raw_transaction(&self, tx_bcs_hex: StrView<Vec<u8>>) -> RpcResult<H256View>;
 
     /// Send the signed transaction in bcs hex format
     /// This method blocks waiting for the transaction to be executed.
@@ -63,10 +63,7 @@ pub trait RoochAPI {
     ) -> RpcResult<Vec<Option<AnnotatedEventView>>>;
 
     #[method(name = "getTransactionByHash")]
-    async fn get_transaction_by_hash(
-        &self,
-        hash: RoochH256View,
-    ) -> RpcResult<Option<TransactionView>>;
+    async fn get_transaction_by_hash(&self, hash: H256View) -> RpcResult<Option<TransactionView>>;
 
     #[method(name = "getTransactionByIndex")]
     async fn get_transaction_by_index(

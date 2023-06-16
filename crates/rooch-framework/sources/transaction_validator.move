@@ -6,8 +6,6 @@ module rooch_framework::transaction_validator {
     use rooch_framework::ed25519;
     use rooch_framework::ecdsa_k1;
 
-    friend rooch_framework::genesis;
-
     const MAX_U64: u128 = 18446744073709551615;
 
     /// Scheme identifier for Ed25519 signatures used to derive authentication keys for Ed25519 public keys.

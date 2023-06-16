@@ -11,7 +11,7 @@ use rooch_types::{
     error::{RoochError, RoochResult},
 };
 
-use crate::types::{CommandAction, WalletContextOptions};
+use crate::cli_types::{CommandAction, WalletContextOptions};
 
 /// Add a new key to rooch.keystore based on the input mnemonic phrase
 #[derive(Debug, Parser)]

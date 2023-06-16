@@ -1,14 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::types::{CommandAction, TransactionOptions, WalletContextOptions};
+use crate::cli_types::{ArgWithType, CommandAction, TransactionOptions, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use move_core_types::value::MoveValue;
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
-use rooch_server::jsonrpc_types::{
-    ExecuteTransactionResponseView, TransactionArgumentView, TypeTagView,
-};
+use rooch_server::jsonrpc_types::{ExecuteTransactionResponseView, TypeTagView};
 use rooch_types::{
     address::RoochAddress,
     error::{RoochError, RoochResult},
@@ -35,16 +32,17 @@ pub struct RunFunction {
 
     /// Arguments combined with their type separated by spaces.
     ///
-    /// Supported types [u8, u16, u32, u64, u128, u256, bool, hex, address, raw]
+    /// Supported types [u8, u16, u32, u64, u128, u256, bool, object_id, string, address, vector<inner_type>]
     ///
-    /// Example: `0x1 true 0 1234 "hello"`
+    /// Example: `address:0x1 bool:true u8:0 u256:1234 'vector<u32>:a,b,c,d'`
+    ///     address and uint can be written in short form like `@0x1 1u8 4123u256`.
     #[clap(
         long = "args",
         takes_value(true),
         multiple_values(true),
         multiple_occurrences(true)
     )]
-    pub args: Vec<TransactionArgumentView>,
+    pub args: Vec<ArgWithType>,
 
     /// RPC client options.
     #[clap(flatten)]
@@ -57,14 +55,10 @@ pub struct RunFunction {
 #[async_trait]
 impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
     async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
-        let args = self
+        let args: Vec<Vec<u8>> = self
             .args
-            .iter()
-            .map(|arg| {
-                MoveValue::from(arg.0.clone())
-                    .simple_serialize()
-                    .expect("transaction arguments must serialize")
-            })
+            .into_iter()
+            .map(|arg_with_type| arg_with_type.arg)
             .collect();
 
         if self.tx_options.sender_account.is_none() {

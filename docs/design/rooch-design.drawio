@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e" pages="7" scale="1" border="5" disableSvgWarning="true">
     <diagram id="5Dg04Nr58mkKkYB7gLD7" name="moveos">
-        <mxGraphModel dx="695" dy="479" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="1192" dy="716" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -38,7 +38,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="2alpfbnSqNpXs6ikViOz" name="omo">
-        <mxGraphModel dx="962" dy="602" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="1192" dy="716" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -123,7 +123,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="JpEhz7xsoWTMopCF3eo8" name="statedb">
-        <mxGraphModel dx="817" dy="479" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" background="#ffffff" math="0" shadow="0">
+        <mxGraphModel dx="1192" dy="716" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" background="#ffffff" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -337,6 +337,52 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="RnYH5GV5izf0RyfVhBAA" name="StorageAbstraction">
+        <mxGraphModel dx="405" dy="716" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="VE-epdOxlRjSkLW2V2dk-1" value="" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="110" y="280" width="650" height="270" as="geometry"/>
+                </mxCell>
+                <mxCell id="VE-epdOxlRjSkLW2V2dk-2" value="Storage Abstraction" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;strokeColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="132.76" y="292" width="600.4705882352941" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="VE-epdOxlRjSkLW2V2dk-9" value="RawTable" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="133" y="500" width="604" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="VE-epdOxlRjSkLW2V2dk-11" value="Table" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="133" y="440" width="187" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="VE-epdOxlRjSkLW2V2dk-12" value="TypeTable" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="340" y="440" width="187" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="VE-epdOxlRjSkLW2V2dk-13" value="ObjectStorage" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="547.23" y="440" width="187" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="1LlnzmgLya8TC7z18cx_-1" value="AccountStorage&lt;div style=&quot;text-align: justify;&quot;&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;fillColor=none;verticalAlign=top;" vertex="1" parent="1">
+                    <mxGeometry x="129.76" y="350" width="400.24" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="VE-epdOxlRjSkLW2V2dk-14" value="ResourceTable" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="340" y="380" width="187" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="VE-epdOxlRjSkLW2V2dk-15" value="ModuleTable" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="133" y="380" width="187" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="lG586sItyR9QX2SpN4v9-2" value="App Specific Storage" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;" vertex="1" parent="1">
+                    <mxGeometry x="547.23" y="350" width="187" height="80" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="VMdmvHIP7ZLM2UMgbgJ8" name="Page-5">
+        <mxGraphModel dx="1192" dy="716" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
             </root>
         </mxGraphModel>
     </diagram>

@@ -6,6 +6,8 @@
 
 智能合约编程语言和传统编程语言最大的区别是智能合约编程语言需要在编程语言内部提供标准化的状态存储接口，屏蔽状态存储的底层实现，智能合约应用主要关心自己的业务逻辑。
 
+**而"存储抽象"的目标是让开发者可以在智能合约中更灵活的定义自己的状态存储结构，而不局限于平台提供的标准化方案**。
+
 我们先回顾一下当前的智能合约平台提供的方案，然后提出 Rooch 的 `Storage Abstraction`方案。
 
 ### EVM 的方案
@@ -63,6 +65,15 @@ Move 的全局存储指令都是基于用户的，获取一个资源必须先知
 
 ## 设计方案
 
+![Storage Abstraction](./rooch-design-storage-abstraction.svg)
+
+1. `RawTable` 提供最底层的 Key Value 存储接口，合约状态变更最终都统一为 `RawTable` 的 Key Value 变更集。
+2. 基于 `RawTable` 实现 `Table<K,V>`，对 Key, Value 的类型进行约束。
+3. 基于 `RawTable` 实现 `TypeTable`，以 Value 的类型为 Key 的存储结构。
+4. 基于 `RawTable` 实现 `ObjectStorage`，提供 Object 的存储能力。
+5. 基于 `TypeTable` 和 `Table` 实现 `ResourceTable` 和 `ModuleTable`，封装为 `AccountStorage`，提供 Move 的用户空间的存储接口，用于替代 Move 的全局存储指令。同时，`AccountStorage` 也提供了在合约中操作 Module 的接口，方便未来在合约中定义合约的升级逻辑。
+6. 开发者可以基于以上存储结构，封装自己应用专用的存储接口。
+
 ### 状态树的设计
 
 我们认为通过状态树提供状态证明，是 Web3 系统和外部系统实现互操作的重要特性，所以 Rooch 的状态存储都围绕状态树来设计。
@@ -101,8 +112,10 @@ module moveos_std::storage_context{
 开发者可以在 `entry` 方法中定义 StorageContext 参数，MoveVM 会自动填充该参数。
 
 ```move
-public entry function main(ctx: &mut StorageContext){
-    //function logic
+module example::my_module{
+    public entry fun my_entry_fun(ctx: &mut StorageContext){
+        //function logic
+    }
 }
 ```
 
@@ -209,17 +222,25 @@ TypeTable 的方法需要依赖 `private_generics` 的类型安全保证，和 M
 
 AccountStorage 是用户存储空间在 Move 中的抽象，它包含两个 Table，Resource Table 和 Module Table，这样可以在 Move 中直接操作 Resource 和 Module，而不需要通过全局存储指令。
 
-```move
-struct AccountStorage has key {
-    resources: TypeTable,
-    modules: Table<String, vector<u8>>,
-}
-```
-
 它主要提供以下 API：
 
-```
+```move
 module moveos_std::account_storage{
+
+    struct AccountStorage has key {
+        resources: TypeTable,
+        modules: Table<String, MoveModule>,
+    }
+
+    #[private_generics(T)]
+    /// Borrow a resource from the account's storage
+    /// This function equates to `borrow_global<T>(address)` instruction in Move
+    public fun global_borrow<T: key>(ctx: &StorageContext, account: address): &T;
+
+    #[private_generics(T)]
+    /// Borrow a mut resource from the account's storage
+    /// This function equates to `borrow_global_mut<T>(address)` instruction in Move
+    public fun global_borrow_mut<T: key>(ctx: &mut StorageContext, account: address): &mut T;
 
     #[private_generics(T)]
     /// Move a resource to the account's storage
@@ -240,7 +261,7 @@ module moveos_std::account_storage{
     public fun exists_module(ctx: &StorageContext, account: address, name: String): bool;
 
     /// Publish modules to the account's storage
-    public fun publish_modules(ctx: &mut StorageContext, account: &signer, modules: vector<vector<u8>>);
+    public fun publish_modules(ctx: &mut StorageContext, account: &signer, modules: vector<MoveModule>);
 }
 ```
 
@@ -257,9 +278,13 @@ module moveos_std::account_storage{
 
 Rooch 的 StateDB 是一个层层嵌套的 SMT，所以我们可以提供一种统一的[访问路径接口](https://github.com/rooch-network/rooch/issues/58)。
 
-* `/key`: 访问第一级的 SMT，`key` 是一个 `ObjectID`。
-* `/key/field_index`: 访问某个 Object 的第 `field_index` 的字段。
-* `/key/field_index/key`: 如果 `field_index` 字段是一个 Table，则可以继续通过第二个 `key` 获取该 Table 里的数据。
+`/table/$table_handle/$key1,$key2`: 访问 `$table_handle` 的 Table 下的 `$key1,$key2` 的数据。如果 $table_handle 是 `0x0`，则表明访问的是第一层的 SMT 的数据。
+
+同时还提供几个别名访问方式：
+
+* `/object/$object_id`: 访问第一层的 SMT 的快捷方法，等价于 `/table/0x0/$object_id`。
+* `/module/$address/$module_name`: 访问某个用户的 AccountStorage 里的某个 Module，等价于 `/table/NamedTable($address,resource)/hex($module_name)`。
+* `/resource/$address/$resource_struct_tag`: 访问某个用户的 AccountStorage 里的某个 Resource，等价于 `/table/NamedTable($address,module)/hex($resource_struct_tag)`。
 
 由于 SMT 存储的是 Move 的 Struct 序列化值，外部系统可以直接反序列化成 JSON 或者其他编程语言中的数据结构，对开发者友好。
 

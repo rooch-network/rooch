@@ -3,6 +3,7 @@
 
 use clap::Parser;
 use move_cli::base::test;
+use move_core_types::account_address::AccountAddress;
 use move_package::BuildConfig;
 use move_unit_test::extensions::set_extension_hook;
 use move_vm_runtime::native_extensions::NativeContextExtensions;
@@ -10,16 +11,31 @@ use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
 use moveos_store::state_store::StateDB;
 use once_cell::sync::Lazy;
 use rooch_framework::natives::{all_natives, GasParameters};
-use std::path::PathBuf;
+use std::{collections::BTreeMap, path::PathBuf};
 
 #[derive(Parser)]
 pub struct Test {
     #[clap(flatten)]
     pub test: test::Test,
+
+    /// Named addresses for the move binary
+    ///
+    /// Example: alice=0x1234, bob=0x5678
+    ///
+    /// Note: This will fail if there are duplicates in the Move.toml file remove those first.
+    #[clap(long, parse(try_from_str = crate::utils::parse_map), default_value = "")]
+    pub(crate) named_addresses: BTreeMap<String, String>,
 }
 
 impl Test {
     pub fn execute(self, path: Option<PathBuf>, build_config: BuildConfig) -> anyhow::Result<()> {
+        let mut build_config = build_config;
+        build_config.additional_named_addresses = self
+            .named_addresses
+            .clone()
+            .into_iter()
+            .map(|(key, value)| (key, AccountAddress::from_hex_literal(&value).unwrap()))
+            .collect();
         //TODO define gas metering
         let cost_table = move_vm_test_utils::gas_schedule::INITIAL_COST_SCHEDULE.clone();
         let natives = all_natives(GasParameters::zeros());

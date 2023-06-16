@@ -20,7 +20,9 @@ module rooch_examples::Test1 {
         *&box.value
     }
 
-    public fun run() {
+
+    #[test]
+    fun test() {
         let data = Data{ v: 123 };
 
         // Here, it will report that the U64 type is not allowed to appear within private_generics.

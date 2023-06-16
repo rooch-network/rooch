@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{ModuleIdView, StateChangeSetView, StrView};
-use crate::jsonrpc_types::{EventView, RoochH256View};
+use crate::jsonrpc_types::{EventView, H256View};
 use move_core_types::vm_status::{AbortLocation, KeptVMStatus};
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
@@ -96,7 +96,7 @@ impl From<Authenticator> for AuthenticatorView {
 pub struct TransactionSequenceInfoView {
     pub tx_order: StrView<u128>,
     pub tx_order_signature: AuthenticatorView,
-    pub tx_accumulator_root: RoochH256View,
+    pub tx_accumulator_root: H256View,
 }
 
 impl From<TransactionSequenceInfo> for TransactionSequenceInfoView {
@@ -113,9 +113,9 @@ impl From<TransactionSequenceInfo> for TransactionSequenceInfoView {
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionExecutionInfoView {
-    pub tx_hash: RoochH256View,
-    pub state_root: RoochH256View,
-    pub event_root: RoochH256View,
+    pub tx_hash: H256View,
+    pub state_root: H256View,
+    pub event_root: H256View,
     pub gas_used: u64,
     pub status: KeptVMStatusView,
 }

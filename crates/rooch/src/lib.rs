@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::commands::event::EventCommand;
+use cli_types::CommandAction;
 use commands::{
     account::Account, init::Init, move_cli::MoveCli, object::ObjectCommand,
     resource::ResourceCommand, server::Server, state::StateCommand, transaction::Transaction,
 };
 use rooch_types::error::RoochResult;
-use types::CommandAction;
 
+pub mod cli_types;
 pub mod commands;
-pub mod types;
 pub mod utils;
 
 #[derive(clap::Parser)]
