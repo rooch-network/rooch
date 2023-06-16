@@ -1,4 +1,4 @@
-use crate::types::{CommandAction, WalletContextOptions};
+use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use moveos_types::{access_path::AccessPath, object::ObjectID};
 use rooch_server::jsonrpc_types::AnnotatedStateView;

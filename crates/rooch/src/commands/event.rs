@@ -1,4 +1,4 @@
-use crate::types::{CommandAction, WalletContextOptions};
+use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use move_core_types::language_storage::StructTag;
 use rooch_server::jsonrpc_types::EventPageView;

@@ -10,7 +10,7 @@ use move_bytecode_utils::Modules;
 use move_cli::Move;
 use rooch_server::jsonrpc_types::ExecuteTransactionResponseView;
 
-use crate::types::{CommandAction, TransactionOptions, WalletContextOptions};
+use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use moveos::vm::dependency_order::sort_by_dependency_order;
 use moveos_types::transaction::MoveAction;
 use moveos_verifier::build::run_verifier;

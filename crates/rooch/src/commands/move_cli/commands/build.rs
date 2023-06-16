@@ -9,7 +9,7 @@ use move_package::BuildConfig;
 
 use moveos_verifier::build::run_verifier;
 
-use crate::types::WalletContextOptions;
+use crate::cli_types::WalletContextOptions;
 use std::{collections::BTreeMap, path::PathBuf};
 
 /// Build the package at `path`. If no path is provided defaults to current directory.
