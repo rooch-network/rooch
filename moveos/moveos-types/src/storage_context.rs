@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    addresses::MOVEOS_STD_ADDRESS, object::ObjectID, state_resolver, tx_context::TxContext,
+    addresses::MOVEOS_STD_ADDRESS, object::ObjectID, state::MoveStructType, state_resolver,
+    tx_context::TxContext,
 };
-use move_core_types::{
-    account_address::AccountAddress, ident_str, identifier::IdentStr, move_resource::MoveStructType,
-};
+use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use serde::{Deserialize, Serialize};
 
 pub const GLOBAL_OBJECT_STORAGE_HANDLE: ObjectID = state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE;

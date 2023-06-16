@@ -3,14 +3,13 @@
 
 use crate::{
     addresses::MOVE_STD_ADDRESS,
-    state::{MoveState, MoveStructState, MoveType},
+    state::{MoveState, MoveStructState, MoveStructType, MoveType},
 };
 use move_core_types::{
     account_address::AccountAddress,
     ident_str,
     identifier::IdentStr,
     language_storage::TypeTag,
-    move_resource::MoveStructType,
     value::{MoveStructLayout, MoveTypeLayout},
 };
 use serde::{Deserialize, Serialize};

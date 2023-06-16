@@ -5,8 +5,13 @@ module moveos_std::tx_context {
     use std::vector;
     use std::bcs;
     use std::hash;
+    use std::string::String;
+    use std::option::{Self, Option};
     use moveos_std::bcd;
     use moveos_std::object_id::{Self, ObjectID};
+    use moveos_std::simple_map::{Self, SimpleMap};
+    use moveos_std::copyable_any::{Self, Any};
+    use moveos_std::type_info;
 
     friend moveos_std::object;
     friend moveos_std::raw_table;
@@ -31,6 +36,8 @@ module moveos_std::tx_context {
         /// Counter recording the number of fresh id's created while executing
         /// this transaction. Always 0 at the start of a transaction
         ids_created: u64,
+        /// A Key-Value map that can be used to store context information
+        map: SimpleMap<String, Any>,
     }
 
     /// Return the address of the user that signed the current
@@ -70,6 +77,23 @@ module moveos_std::tx_context {
         self.ids_created
     }
 
+    /// Add a value to the context map
+    public fun add<T: drop + store + copy>(self: &mut TxContext, value: T) {
+        let any = copyable_any::pack(value);
+        let type_name = *copyable_any::type_name(&any);
+        simple_map::add(&mut self.map, type_name, any)
+    }
+
+    /// Get a value from the context map
+    public fun get<T: drop + store + copy>(self: &TxContext): Option<T> {
+        let type_name = type_info::type_name<T>();
+        if (simple_map::contains_key(&self.map, &type_name)) {
+            let any = simple_map::borrow(&self.map, &type_name);
+            option::some(copyable_any::unpack(*any))   
+        }else{
+            option::none()
+        }
+    }
     
     #[test_only]
     /// Create a TxContext for unit test
@@ -79,6 +103,21 @@ module moveos_std::tx_context {
             sender,
             tx_hash,
             ids_created: 0,
+            map: simple_map::create(),
         }
+    }
+
+    #[test_only]
+    struct TestValue has store, drop, copy{
+        value: u64,
+    }
+
+    #[test(sender=@0x42)]
+    fun test_context(sender: address) {
+        let ctx = new_test_context(sender);
+        let value = TestValue{value: 42};
+        add(&mut ctx, value);
+        let value2 = get<TestValue>(&ctx);
+        assert!(value == option::extract(&mut value2), 1000);
     }
 }

@@ -5,18 +5,21 @@
 
 use crate::addresses::MOVEOS_STD_ADDRESS;
 use crate::h256::{self, H256};
+use crate::move_any::{AnyTrait, CopyableAny};
+use crate::move_simple_map::SimpleMap;
+use crate::move_string::MoveString;
 use crate::object::ObjectID;
-use crate::state::MoveStructState;
+use crate::state::{MoveState, MoveStructState, MoveStructType};
+use anyhow::Result;
 use move_core_types::value::{MoveStructLayout, MoveTypeLayout};
-use move_core_types::{
-    account_address::AccountAddress, ident_str, identifier::IdentStr, move_resource::MoveStructType,
-};
+use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 pub const TX_CONTEXT_MODULE_NAME: &IdentStr = ident_str!("tx_context");
 pub const TX_CONTEXT_STRUCT_NAME: &IdentStr = ident_str!("TxContext");
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct TxContext {
     /// Signer/sender of the transaction
     pub sender: AccountAddress,
@@ -25,6 +28,8 @@ pub struct TxContext {
     pub tx_hash: Vec<u8>,
     /// Number of `ObjectID`'s generated during execution of the current transaction
     pub ids_created: u64,
+    /// A map for storing context data
+    pub map: SimpleMap<MoveString, CopyableAny>,
 }
 
 impl TxContext {
@@ -33,6 +38,7 @@ impl TxContext {
             sender,
             tx_hash: tx_hash.0.to_vec(),
             ids_created: 0,
+            map: SimpleMap::create(),
         }
     }
 
@@ -43,6 +49,7 @@ impl TxContext {
             sender: AccountAddress::ZERO,
             tx_hash: vec![0u8; h256::LENGTH],
             ids_created: 0,
+            map: SimpleMap::create(),
         }
     }
 
@@ -62,7 +69,7 @@ impl TxContext {
         self.sender
     }
 
-    pub fn to_vec(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         debug_assert!(self.tx_hash.len() == h256::LENGTH);
         bcs::to_bytes(&self).unwrap()
     }
@@ -70,6 +77,25 @@ impl TxContext {
     // for testing
     pub fn random_for_testing_only() -> Self {
         Self::new(AccountAddress::random(), H256::random())
+    }
+
+    pub fn add<T: MoveState>(&mut self, value: T) -> Result<()> {
+        let type_name = MoveString::from_str(&T::type_tag().to_canonical_string())?;
+        let any = CopyableAny::pack(value)?;
+        self.map.add(type_name, any);
+        Ok(())
+    }
+
+    pub fn get<T: MoveState>(&self) -> Result<Option<T>> {
+        let type_name = MoveString::from_str(&T::type_tag().to_canonical_string())?;
+        let any = self.map.borrow(&type_name);
+        match any {
+            Some(any) => {
+                let value = any.clone().unpack::<T>()?;
+                Ok(Some(value))
+            }
+            None => Ok(None),
+        }
     }
 }
 
@@ -87,6 +113,7 @@ impl MoveStructState for TxContext {
             MoveTypeLayout::Address,
             MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
             MoveTypeLayout::U64,
+            MoveTypeLayout::Struct(SimpleMap::<MoveString, CopyableAny>::struct_layout()),
         ])
     }
 }
@@ -100,7 +127,7 @@ mod tests {
     #[test]
     pub fn test_tx_context_serialize() {
         let test = TxContext::random_for_testing_only();
-        let serialized = test.to_vec();
+        let serialized = test.to_bytes();
         let deserialized: TxContext = bcs::from_bytes(&serialized).unwrap();
         assert_eq!(test, deserialized);
         let move_value = MoveValue::simple_deserialize(

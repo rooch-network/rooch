@@ -23,7 +23,6 @@ use moveos_types::state::{AnnotatedState, State};
 use moveos_types::state_resolver::{AnnotatedStateReader, StateReader};
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
-use moveos_types::tx_context::TxContext;
 use rooch_framework::bindings::address_mapping::AddressMapping;
 use rooch_framework::bindings::transaction_validator::TransactionValidator;
 use rooch_genesis::RoochGenesis;
@@ -46,31 +45,37 @@ impl ExecutorActor {
     }
 
     pub fn validate<T: AbstractTransaction>(&self, tx: T) -> Result<VerifiedMoveOSTransaction> {
-        let sender = tx.sender();
+        let multi_chain_address_sender = tx.sender();
 
         let resolved_sender = {
             let address_mapping = self.moveos.as_module_bundle::<AddressMapping>();
-            address_mapping.resolve(sender.clone())?.ok_or_else(|| {
-                anyhow::anyhow!(
-                    "the multiaddress sender({}) mapping record is not exists.",
-                    sender
-                )
-            })?
+            address_mapping
+                .resolve(multi_chain_address_sender.clone())?
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "the multiaddress sender({}) mapping record is not exists.",
+                        multi_chain_address_sender
+                    )
+                })?
         };
-
-        let tx_context = TxContext::new(resolved_sender, tx.tx_hash());
-
         let authenticator = tx.authenticator_info();
+
+        let mut moveos_tx = tx.construct_moveos_transaction(resolved_sender)?;
 
         let result = {
             let tx_validator = self.moveos.as_module_bundle::<TransactionValidator>();
-            tx_validator.validate(&tx_context, authenticator)
+            tx_validator.validate(&moveos_tx.ctx, authenticator)
         };
 
         match result {
-            Ok(_) => Ok(self
-                .moveos
-                .verify(tx.construct_moveos_transaction(resolved_sender)?)?),
+            Ok(_) => {
+                // Add the original multichain address to the context
+                moveos_tx
+                    .ctx
+                    .add(multi_chain_address_sender)
+                    .expect("add sender to context failed");
+                Ok(self.moveos.verify(moveos_tx)?)
+            }
             Err(e) => {
                 //TODO handle the abort error code
                 //let status = explain_vm_status(self.db.get_state_store(), e.into_vm_status())?;

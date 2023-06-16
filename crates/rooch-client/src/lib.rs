@@ -3,8 +3,11 @@
 
 use anyhow::Result;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
-use move_core_types::move_resource::MoveStructType;
-use moveos_types::{access_path::AccessPath, state::State, transaction::FunctionCall};
+use moveos_types::{
+    access_path::AccessPath,
+    state::{MoveStructType, State},
+    transaction::FunctionCall,
+};
 use rooch_server::{
     api::rooch_api::RoochAPIClient,
     jsonrpc_types::{

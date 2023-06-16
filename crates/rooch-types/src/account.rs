@@ -2,10 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
-use move_core_types::{
-    account_address::AccountAddress, ident_str, identifier::IdentStr, move_resource::MoveStructType,
-};
-use moveos_types::state::MoveStructState;
+use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
+use moveos_types::state::{MoveStructState, MoveStructType};
 use serde::{Deserialize, Serialize};
 
 /// Account is the rust representation of the account in rooch_framework
