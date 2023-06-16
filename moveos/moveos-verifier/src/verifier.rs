@@ -5,11 +5,12 @@ use crate::metadata::{
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMError, VMResult};
 use move_binary_format::file_format::{
-    Bytecode, FunctionDefinition, FunctionDefinitionIndex, FunctionInstantiation, SignatureToken,
-    Visibility,
+    Bytecode, FunctionDefinition, FunctionDefinitionIndex, FunctionInstantiation,
+    FunctionInstantiationIndex, SignatureToken, Visibility,
 };
 use move_binary_format::{access::ModuleAccess, CompiledModule};
 use move_core_types::language_storage::ModuleId;
+use move_core_types::resolver::ModuleResolver;
 use move_core_types::vm_status::StatusCode;
 use move_core_types::{identifier::Identifier, resolver::MoveResolver};
 use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
@@ -20,8 +21,11 @@ use std::ops::Deref;
 pub static INIT_FN_NAME_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("init").unwrap());
 
-pub fn verify_module(module: &CompiledModule) -> VMResult<bool> {
-    verify_private_generics(module)?;
+pub fn verify_module<Resolver>(module: &CompiledModule, db: Resolver) -> VMResult<bool>
+where
+    Resolver: ModuleResolver,
+{
+    verify_private_generics(module, &db)?;
     verify_init_function(module)
 }
 
@@ -236,7 +240,10 @@ fn vm_error_for_init_func_checking(
         .finish(Location::Module(module_id))
 }
 
-pub fn verify_private_generics(module: &CompiledModule) -> VMResult<bool> {
+pub fn verify_private_generics<Resolver>(module: &CompiledModule, db: &Resolver) -> VMResult<bool>
+where
+    Resolver: ModuleResolver,
+{
     if let Err(err) = check_metadata_format(module) {
         return Err(PartialVMError::new(StatusCode::MALFORMED)
             .with_message(err.to_string())
@@ -254,13 +261,39 @@ pub fn verify_private_generics(module: &CompiledModule) -> VMResult<bool> {
         }
 
         Some(metadata) => {
-            let type_name_indices = metadata.private_generics_indices;
+            let mut type_name_indices = metadata.private_generics_indices;
             let view = BinaryIndexedView::Module(module);
 
             for func in &module.function_defs {
                 if let Some(code_unit) = &func.code {
                     for instr in code_unit.code.clone().into_iter() {
                         if let Bytecode::CallGeneric(finst_idx) = instr {
+                            // Find the module where a function is located based on its InstantiationIndex,
+                            // and then find the metadata of the module.
+                            let compiled_module_opt =
+                                load_compiled_module_from_finst_idx(db, &view, finst_idx);
+
+                            if let Some(compiled_module) = compiled_module_opt {
+                                if let Err(err) = check_metadata_format(&compiled_module) {
+                                    return Err(PartialVMError::new(StatusCode::MALFORMED)
+                                        .with_message(err.to_string())
+                                        .finish(Location::Module(compiled_module.self_id())));
+                                }
+
+                                // Find the definition records of compile-time private_generics from CompiledModule.
+                                let metadata_opt =
+                                    get_metadata_from_compiled_module(&compiled_module);
+                                if let Some(metadata) = metadata_opt {
+                                    let _ = metadata
+                                        .private_generics_indices
+                                        .iter()
+                                        .map(|(key, value)| {
+                                            type_name_indices.insert(key.clone(), value.clone())
+                                        })
+                                        .collect::<Vec<_>>();
+                                }
+                            }
+
                             let FunctionInstantiation {
                                 handle,
                                 type_parameters,
@@ -314,4 +347,32 @@ pub fn verify_private_generics(module: &CompiledModule) -> VMResult<bool> {
     }
 
     Ok(true)
+}
+
+// Find the module where a function is located based on its InstantiationIndex.
+fn load_compiled_module_from_finst_idx<Resolver>(
+    db: &Resolver,
+    view: &BinaryIndexedView,
+    finst_idx: FunctionInstantiationIndex,
+) -> Option<CompiledModule>
+where
+    Resolver: ModuleResolver,
+{
+    let FunctionInstantiation {
+        handle,
+        type_parameters: _type_parameters,
+    } = view.function_instantiation_at(finst_idx);
+
+    let fhandle = view.function_handle_at(*handle);
+    let module_handle = view.module_handle_at(fhandle.module);
+
+    let module_address = view.address_identifier_at(module_handle.address);
+    let module_name = view.identifier_at(module_handle.name);
+    let module_id = ModuleId::new(*module_address, Identifier::from(module_name));
+    let module_bytes_opt = db.get_module(&module_id).unwrap();
+
+    if let Some(module_bytes) = module_bytes_opt {
+        return CompiledModule::deserialize(module_bytes.as_slice()).ok();
+    }
+    None
 }

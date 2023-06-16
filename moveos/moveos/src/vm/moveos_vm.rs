@@ -9,6 +9,7 @@ use move_binary_format::{
     file_format::AbilitySet,
     CompiledModule,
 };
+
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
@@ -187,7 +188,7 @@ where
 
                 let mut init_function_modules = vec![];
                 for module in &compiled_modules {
-                    let result = moveos_verifier::verifier::verify_module(module);
+                    let result = moveos_verifier::verifier::verify_module(module, self.remote);
                     match result {
                         Ok(res) => {
                             if res {
