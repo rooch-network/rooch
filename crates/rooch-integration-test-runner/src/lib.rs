@@ -8,12 +8,13 @@ use move_compiler::compiled_unit::CompiledUnitEnum;
 use move_compiler::FullyCompiledProgram;
 use move_core_types::effects::{ChangeSet, Op};
 use move_transactional_test_runner::{
-    framework::{CompiledState, MoveTestAdapter},
-    tasks::{InitCommand, SyntaxChoice, TaskInput},
+    tasks::{InitCommand, SyntaxChoice},
     vm_test_harness::view_resource_in_move_storage,
 };
 use move_vm_runtime::session::SerializedReturnValues;
 use moveos::moveos::MoveOS;
+use moveos::moveos_test_runner::MoveOSMainTestAdapter;
+use moveos::moveos_test_runner::{CompiledState, TaskInput};
 use moveos_types::move_types::FunctionId;
 use moveos_types::object::ObjectID;
 use moveos_types::state::StateChangeSet;
@@ -51,7 +52,7 @@ pub enum MoveOSSubcommands {
     },
 }
 
-impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
+impl<'a> MoveOSMainTestAdapter<'a> for MoveOSTestAdapter<'a> {
     type ExtraPublishArgs = MoveOSPublishArgs;
     type ExtraRunArgs = MoveOSRunArgs;
     type Subcommand = MoveOSSubcommands;
@@ -68,10 +69,10 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
 
     fn init(
         default_syntax: SyntaxChoice,
-        pre_compiled_deps: Option<&'a FullyCompiledProgram>,
-        task_opt: Option<TaskInput<(InitCommand, Self::ExtraInitArgs)>>,
+        option: Option<&'a FullyCompiledProgram>,
+        init_data: Option<TaskInput<(InitCommand, Self::ExtraInitArgs)>>,
     ) -> (Self, Option<String>) {
-        let additional_mapping = match task_opt.map(|t| t.command) {
+        let additional_mapping = match init_data.map(|t| t.command) {
             Some((InitCommand { named_addresses }, _)) => {
                 verify_and_create_named_address_mapping(named_addresses).unwrap()
             }
@@ -105,7 +106,7 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
         // Apply new modules and add precompiled address mapping
         let mut change_set = ChangeSet::new();
         let table_change_set = StateChangeSet::default();
-        if let Some(pre_compiled_lib) = pre_compiled_deps {
+        if let Some(pre_compiled_lib) = option {
             for c in &pre_compiled_lib.compiled {
                 if let CompiledUnitEnum::Module(m) = c {
                     println!(
@@ -144,7 +145,7 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
             .unwrap();
 
         let mut adapter = Self {
-            compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps, None),
+            compiled_state: CompiledState::new(named_address_mapping, option, None),
             default_syntax,
             moveos,
         };
@@ -191,7 +192,9 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
         script: move_binary_format::file_format::CompiledScript,
         type_args: Vec<move_core_types::language_storage::TypeTag>,
         signers: Vec<ParsedAddress>,
-        args: Vec<<<Self as MoveTestAdapter<'a>>::ExtraValueArgs as ParsableValue>::ConcreteValue>,
+        args: Vec<
+            <<Self as MoveOSMainTestAdapter<'a>>::ExtraValueArgs as ParsableValue>::ConcreteValue,
+        >,
         _gas_budget: Option<u64>,
         _extra: Self::ExtraRunArgs,
     ) -> anyhow::Result<(
@@ -231,7 +234,9 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
         function: &move_core_types::identifier::IdentStr,
         type_args: Vec<move_core_types::language_storage::TypeTag>,
         signers: Vec<ParsedAddress>,
-        args: Vec<<<Self as MoveTestAdapter<'a>>::ExtraValueArgs as ParsableValue>::ConcreteValue>,
+        args: Vec<
+            <<Self as MoveOSMainTestAdapter<'a>>::ExtraValueArgs as ParsableValue>::ConcreteValue,
+        >,
         _gas_budget: Option<u64>,
         _extra: Self::ExtraRunArgs,
     ) -> anyhow::Result<(
@@ -305,10 +310,7 @@ pub fn run_test_impl<'a>(
     path: &Path,
     fully_compiled_program_opt: Option<&'a FullyCompiledProgram>,
 ) -> Result<(), Box<dyn std::error::Error + 'static>> {
-    move_transactional_test_runner::framework::run_test_impl::<MoveOSTestAdapter>(
-        path,
-        fully_compiled_program_opt,
-    )
+    moveos::moveos_test_runner::run_test_impl::<MoveOSTestAdapter>(path, fully_compiled_program_opt)
 }
 
 fn tx_output_to_str(output: TransactionOutput) -> String {
