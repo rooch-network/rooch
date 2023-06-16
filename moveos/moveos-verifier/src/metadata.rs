@@ -87,9 +87,10 @@ impl<'a> ExtendedChecker<'a> {
     }
 
     fn run(&mut self) {
+        let mut global_private_generics_indices: BTreeMap<String, Vec<usize>> = BTreeMap::new();
         for ref module in self.env.get_modules() {
             if module.is_target() {
-                self.check_private_generics_functions(module);
+                self.check_private_generics_functions(module, &mut global_private_generics_indices);
                 self.check_entry_functions(module);
                 self.check_init_module(module);
             }
@@ -101,7 +102,11 @@ impl<'a> ExtendedChecker<'a> {
 // Private Generic Functions
 
 impl<'a> ExtendedChecker<'a> {
-    fn check_private_generics_functions(&mut self, module: &ModuleEnv) {
+    fn check_private_generics_functions(
+        &mut self,
+        module: &ModuleEnv,
+        global_private_generics_indices: &mut BTreeMap<String, Vec<usize>>,
+    ) {
         let mut type_name_indices: BTreeMap<String, Vec<usize>> = BTreeMap::new();
         let mut func_loc_map = BTreeMap::new();
 
@@ -205,7 +210,10 @@ impl<'a> ExtendedChecker<'a> {
                             .to_string();
                         let full_path_func_name =
                             format!("{}::{}::{}", module_address, module_name, func_name);
-                        type_name_indices.insert(full_path_func_name, attribute_type_index.clone());
+                        type_name_indices
+                            .insert(full_path_func_name.clone(), attribute_type_index.clone());
+                        global_private_generics_indices
+                            .insert(full_path_func_name, attribute_type_index.clone());
 
                         func_loc_map.insert(func_name, fun.get_loc());
                     }
@@ -233,7 +241,7 @@ impl<'a> ExtendedChecker<'a> {
 
                     let type_arguments = &view.signature_at(*type_parameters).0;
                     let private_generics_types =
-                        type_name_indices.get(full_path_func_name.as_str());
+                        global_private_generics_indices.get(full_path_func_name.as_str());
 
                     if let Some(private_generics_types_indices) = private_generics_types {
                         for generic_type_index in private_generics_types_indices {
@@ -470,11 +478,15 @@ pub fn is_defined_or_allowed_in_current_module(
     match type_arg {
         SignatureToken::Struct(idx) | SignatureToken::StructInstantiation(idx, _) => {
             let shandle = view.struct_handle_at(*idx);
-            (
-                view.self_handle_idx() == Some(shandle.module),
-                view.identifier_at(shandle.name).to_string(),
-            )
+            let struct_name = view.identifier_at(shandle.name).to_string();
+
+            if view.self_handle_idx() == Some(shandle.module) {
+                return (true, struct_name);
+            }
+
+            (false, struct_name)
         }
+        SignatureToken::TypeParameter(_) => (true, "TypeParameter".to_string()),
         // Other types are not allowed.
         SignatureToken::Bool => (false, "Bool".to_string()),
         SignatureToken::U8 => (false, "U8".to_string()),
@@ -485,7 +497,6 @@ pub fn is_defined_or_allowed_in_current_module(
         SignatureToken::U256 => (false, "U256".to_string()),
         SignatureToken::Signer => (false, "Signer".to_string()),
         SignatureToken::Address => (false, "Address".to_string()),
-        SignatureToken::TypeParameter(_) => (false, "TypeParameter".to_string()),
         SignatureToken::Vector(_) => (false, "Vector".to_string()),
         SignatureToken::Reference(_) => (false, "Reference".to_string()),
         SignatureToken::MutableReference(_) => (false, "MutableReference".to_string()),
