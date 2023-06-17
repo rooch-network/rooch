@@ -93,6 +93,7 @@ where
     Value: MoveState,
 {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
+
     const MODULE_NAME: &'static IdentStr = ident_str!("simple_map");
     const STRUCT_NAME: &'static IdentStr = ident_str!("SimpleMap");
 
@@ -107,8 +108,8 @@ where
     Value: MoveState,
 {
     fn struct_layout() -> MoveStructLayout {
-        MoveStructLayout::new(vec![MoveTypeLayout::Struct(
-            Element::<Key, Value>::struct_layout(),
-        )])
+        MoveStructLayout::new(vec![MoveTypeLayout::Vector(Box::new(
+            MoveTypeLayout::Struct(Element::<Key, Value>::struct_layout()),
+        ))])
     }
 }
