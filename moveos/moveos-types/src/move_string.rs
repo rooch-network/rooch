@@ -3,13 +3,15 @@
 
 use std::str::FromStr;
 
-use crate::{addresses::MOVE_STD_ADDRESS, state::MoveStructState};
+use crate::{
+    addresses::MOVE_STD_ADDRESS,
+    state::{MoveStructState, MoveStructType},
+};
 use anyhow::ensure;
 use move_core_types::{
     account_address::AccountAddress,
     ident_str,
     identifier::IdentStr,
-    move_resource::MoveStructType,
     value::{MoveStructLayout, MoveTypeLayout},
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};

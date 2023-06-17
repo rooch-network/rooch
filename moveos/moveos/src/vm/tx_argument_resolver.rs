@@ -3,11 +3,12 @@
 
 use anyhow::Result;
 use move_binary_format::errors::PartialVMError;
-use move_core_types::{move_resource::MoveStructType, value::MoveValue};
+use move_core_types::value::MoveValue;
 use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
 use move_vm_types::loaded_data::runtime_types::{StructType, Type};
 use moveos_types::{
-    state_resolver::MoveOSResolver, storage_context::StorageContext, tx_context::TxContext,
+    state::MoveStructType, state_resolver::MoveOSResolver, storage_context::StorageContext,
+    tx_context::TxContext,
 };
 use std::sync::Arc;
 
@@ -50,7 +51,7 @@ impl TxArgumentResolver for StorageContext {
                 .map(|t| is_tx_context(&t))
                 .unwrap_or(false)
             {
-                args.insert(i, self.tx_context.to_vec());
+                args.insert(i, self.tx_context.to_bytes());
             }
 
             if as_struct(session, t)
