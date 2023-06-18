@@ -600,10 +600,10 @@ fn native_destroy_empty_box(
     let mut table_data = table_context.table_data.borrow_mut();
 
     let handle = get_table_handle(pop_arg!(args, StructRef))?;
-    if table_data.tables.contains_key(&handle) {
-        if table_data.tables.get(&handle).unwrap().content.len() > 0 {
-            return Ok(NativeResult::err(gas_params.base, NOT_EMPTY));
-        }
+    if table_data.tables.contains_key(&handle)
+        && !table_data.tables.get(&handle).unwrap().content.is_empty()
+    {
+        return Ok(NativeResult::err(gas_params.base, NOT_EMPTY));
     }
     assert!(table_data.removed_tables.insert(handle));
 
