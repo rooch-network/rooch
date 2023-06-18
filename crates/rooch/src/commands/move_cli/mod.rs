@@ -77,6 +77,7 @@ impl CommandAction<String> for MoveCli {
                 .map_err(RoochError::from),
             MoveCommand::New(c) => c
                 .execute(move_args.package_path)
+                .await
                 .map(|_| "Success".to_string())
                 .map_err(RoochError::from),
             MoveCommand::Prove(c) => c
