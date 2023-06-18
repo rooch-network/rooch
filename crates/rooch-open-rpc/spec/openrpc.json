@@ -66,7 +66,7 @@
           "name": "access_path",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/AccessPathView"
+            "$ref": "#/components/schemas/moveos_types::access_path::AccessPath"
           }
         }
       ],
@@ -162,7 +162,7 @@
           "name": "access_path",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/AccessPathView"
+            "$ref": "#/components/schemas/moveos_types::access_path::AccessPath"
           }
         }
       ],
@@ -318,9 +318,6 @@
   ],
   "components": {
     "schemas": {
-      "AccessPathView": {
-        "$ref": "#/components/schemas/PathView"
-      },
       "AccountAddressView": {
         "type": "array",
         "items": {
@@ -777,9 +774,6 @@
         "description": "Hex string encoding.",
         "type": "string"
       },
-      "IdentifierView": {
-        "type": "string"
-      },
       "KeptVMStatusView": {
         "oneOf": [
           {
@@ -1085,123 +1079,6 @@
           }
         }
       },
-      "PathView": {
-        "oneOf": [
-          {
-            "description": "Get Object",
-            "type": "object",
-            "required": [
-              "Object"
-            ],
-            "properties": {
-              "Object": {
-                "type": "object",
-                "required": [
-                  "object_ids"
-                ],
-                "properties": {
-                  "object_ids": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/components/schemas/ObjectID"
-                    }
-                  }
-                }
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "description": "Get account resources",
-            "type": "object",
-            "required": [
-              "Resource"
-            ],
-            "properties": {
-              "Resource": {
-                "type": "object",
-                "required": [
-                  "account",
-                  "resource_types"
-                ],
-                "properties": {
-                  "account": {
-                    "$ref": "#/components/schemas/AccountAddressView"
-                  },
-                  "resource_types": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
-                    }
-                  }
-                }
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "description": "Get account modules",
-            "type": "object",
-            "required": [
-              "Module"
-            ],
-            "properties": {
-              "Module": {
-                "type": "object",
-                "required": [
-                  "account",
-                  "module_names"
-                ],
-                "properties": {
-                  "account": {
-                    "$ref": "#/components/schemas/AccountAddressView"
-                  },
-                  "module_names": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/components/schemas/IdentifierView"
-                    }
-                  }
-                }
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "description": "Get table values by keys",
-            "type": "object",
-            "required": [
-              "Table"
-            ],
-            "properties": {
-              "Table": {
-                "type": "object",
-                "required": [
-                  "keys",
-                  "table_handle"
-                ],
-                "properties": {
-                  "keys": {
-                    "type": "array",
-                    "items": {
-                      "type": "array",
-                      "items": {
-                        "type": "integer",
-                        "format": "uint8",
-                        "minimum": 0.0
-                      }
-                    }
-                  },
-                  "table_handle": {
-                    "$ref": "#/components/schemas/ObjectID"
-                  }
-                }
-              }
-            },
-            "additionalProperties": false
-          }
-        ]
-      },
       "ScriptCallView": {
         "type": "object",
         "required": [
@@ -1442,6 +1319,9 @@
         "type": "string"
       },
       "move_core_types::vm_status::AbortLocation": {
+        "type": "string"
+      },
+      "moveos_types::access_path::AccessPath": {
         "type": "string"
       },
       "moveos_types::move_types::FunctionId": {
