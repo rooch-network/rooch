@@ -8,11 +8,12 @@ use move_core_types::account_address::AccountAddress;
 use moveos_types::addresses::{
     MOVEOS_STD_ADDRESS, MOVEOS_STD_ADDRESS_NAME, MOVE_STD_ADDRESS, MOVE_STD_ADDRESS_NAME,
 };
-use rooch_client::wallet_context::WalletContext;
-use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG};
+use rooch_config::ROOCH_CLIENT_CONFIG;
 use rooch_framework::{ROOCH_FRAMEWORK_ADDRESS, ROOCH_FRAMEWORK_ADDRESS_NAME};
 use rooch_types::error::RoochError;
 use std::path::PathBuf;
+
+use crate::cli_types::WalletContextOptions;
 
 const MOVE_STDLIB_PKG_NAME: &str = "MoveStdlib";
 const MOVE_STDLIB_PKG_PATH: &str = "{ git = \"https://github.com/rooch-network/rooch.git\", subdir = \"moveos/moveos-stdlib/move-stdlib\", rev = \"main\" }";
@@ -31,29 +32,23 @@ pub struct New {
 
     #[clap(flatten)]
     pub new: new::New,
+
+    #[clap(flatten)]
+    wallet_context_options: WalletContextOptions,
 }
 
 impl New {
     async fn get_active_account_address_from_config(&self) -> Result<String, RoochError> {
-        let config_dir = rooch_config_dir().unwrap();
-
-        let context = match WalletContext::new(Some(config_dir.clone())).await {
-            Ok(ctx) => ctx,
-            Err(err) => {
-                return Err(RoochError::ConfigLoadError(
-                    config_dir.to_str().unwrap().to_string(),
-                    err.to_string(),
-                ));
-            }
-        };
-
+        // build wallet context options
+        let context = self.wallet_context_options.build().await?;
+        // get active account address value
         match context.config.active_address {
             Some(address) => Ok(AccountAddress::from(address).to_hex_literal()),
             None => Err(RoochError::ConfigLoadError(
-                config_dir.to_str().unwrap().to_string(),
+                ROOCH_CLIENT_CONFIG.to_string(),
                 format!(
-                    "No active address found in {}. Use `rooch init` to configuration",
-                    config_dir.join(ROOCH_CLIENT_CONFIG).to_str().unwrap()
+                    "No active address found in {}. Check if {} is complete",
+                    ROOCH_CLIENT_CONFIG, ROOCH_CLIENT_CONFIG,
                 ),
             )),
         }
