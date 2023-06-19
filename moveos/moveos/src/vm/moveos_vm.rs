@@ -88,7 +88,7 @@ impl MoveOSVM {
     ) -> MoveOSSession<'r, '_, S, UnmeteredGasMeter> {
         //Do not charge gas for genesis session
         let gas_meter = UnmeteredGasMeter;
-        // Genesis session do not need to execute finalize function
+        // Genesis session do not need to execute pre_execute and post_execute function
         MoveOSSession::new(&self.inner, remote, ctx, None, None, gas_meter, false)
     }
 

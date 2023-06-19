@@ -51,7 +51,6 @@ impl RoochGenesis {
             pre_execute_function: Some(
                 transaction_validator::TransactionValidator::pre_execute_function_id(),
             ),
-            //We do not execute the finalize function in the test.
             post_execute_function: Some(
                 transaction_validator::TransactionValidator::post_execute_function_id(),
             ),
