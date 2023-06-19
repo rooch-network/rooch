@@ -128,4 +128,137 @@ module moveos_std::table {
 
         move_to(&account, TableHolder{ t });
     }
+
+    #[test(account = @0x1)]
+    fun test_all(account: signer) {
+        let sender = std::signer::address_of(&account);
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let t = new<u64, u8>(&mut tx_context);
+        let key: u64 = 100;
+        let error_code: u64 = 1;
+        assert!(!contains(&t, key), error_code);
+        add(&mut t, key, 12);
+        let val = borrow_mut(&mut t, key);
+        *val = 23;
+        assert!(*borrow(&t, key) == 23, error_code);
+        remove(&mut t, key);
+        assert!(!contains(&t, key), error_code);
+        drop_unchecked(t);
+    }
+
+    #[test(account = @0x1)]
+    #[expected_failure]
+    fun test_add_key_exist_failure(account: signer) {
+        let sender = std::signer::address_of(&account);
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let t = new<u64, u8>(&mut tx_context);
+        let key: u64 = 100;
+        add(&mut t, key, 1);
+        add(&mut t, key, 2);
+
+        drop_unchecked(t);
+    }
+
+    #[test(account = @0x1)]
+    #[expected_failure]
+    fun test_borrow_key_not_exist_failure(account: signer) {
+        let sender = std::signer::address_of(&account);
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let t = new<u64, u8>(&mut tx_context);
+        let key: u64 = 100;
+        let _ = borrow(&mut t, key);
+
+        drop_unchecked(t);
+    }
+
+    #[test(account = @0x1)]
+    #[expected_failure]
+    fun test_borrow_mut_key_not_exist_failure(account: signer) {
+        let sender = std::signer::address_of(&account);
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let t = new<u64, u8>(&mut tx_context);
+        let key: u64 = 100;
+        let _ = borrow_mut(&mut t, key);
+
+        drop_unchecked(t);
+    }
+
+    #[test(account = @0x1)]
+    #[expected_failure]
+    fun test_remove_key_not_exist_failure(account: signer) {
+        let sender = std::signer::address_of(&account);
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let t = new<u64, u8>(&mut tx_context);
+        let key: u64 = 100;
+        remove(&mut t, key);
+
+        drop_unchecked(t);
+    }
+
+    #[test(account = @0x1)]
+    fun test_nested_table(account: signer) {
+        let sender = std::signer::address_of(&account);
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let t1 = new<u64, Table<u8, u32>>(&mut tx_context);
+        let t2 = new<u8, u32>(&mut tx_context);
+        let t2_id = t2.handle;
+
+        let t1_key = 2u64;
+        let t2_key = 1u8;
+        add(&mut t2, t2_key, 32u32);
+        add(&mut t1, t1_key, t2);
+
+        let borrowed_t2 = borrow(&t1, t1_key);
+        let value = borrow(borrowed_t2, t2_key);
+        assert!(*value == 32u32, 1);
+
+        let t2 = new_with_id<u8, u32>(copy t2_id);
+        assert!(contains(&t2, t2_key), 2);
+        drop_unchecked(t2);
+
+        let borrowed_mut_t2 = borrow_mut(&mut t1, t1_key);
+        remove(borrowed_mut_t2, t2_key);
+
+        let t2 = new_with_id<u8, u32>(t2_id);
+        assert!(!contains(&t2, t2_key), 2);
+        drop_unchecked(t2);
+
+        drop_unchecked(t1);
+    }
+
+    #[test(account = @0x1)]
+    #[expected_failure]
+    fun test_destroy_nonempty_table(account: signer) {
+        let sender = std::signer::address_of(&account);
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let t = new<u64, u8>(&mut tx_context);
+        let key: u64 = 100;
+        add(&mut t, key, 1);
+
+        destroy(t);
+    }
+
+    #[test(account = @0x1)]
+    #[expected_failure]
+    fun test_nested_table_destroy(account: signer) {
+        let sender = std::signer::address_of(&account);
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let t1 = new<u64, Table<u8, u32>>(&mut tx_context);
+        let t2 = new<u8, u32>(&mut tx_context);
+        let t2_id = t2.handle;
+
+        let t1_key = 2u64;
+        let t2_key = 1u8;
+        add(&mut t2, t2_key, 32u32);
+        add(&mut t1, t1_key, t2);
+
+        destroy(t1);
+
+        let t2 = new_with_id<u8, u32>(t2_id);
+        assert!(*borrow(&t2, t2_key) == 32u32, 1);
+
+        drop_unchecked(t2);
+    }
+
+
 }
