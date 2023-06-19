@@ -14,7 +14,6 @@ use std::sync::Arc;
 
 /// Transaction Argument Resolver will implemented by the Move Extension
 /// to auto fill transaction argument or do type conversion.
-// TODO: Try to push to Move upstream if possible.
 pub trait TxArgumentResolver {
     fn resolve_argument<S>(
         &self,
@@ -45,20 +44,13 @@ impl TxArgumentResolver for StorageContext {
                         .simple_serialize()
                         .expect("serialize signer should success"),
                 );
-            }
-            //Should we remove TxContext as entry function or view function argument?
-            if as_struct(session, t)
-                .map(|t| is_tx_context(&t))
-                .unwrap_or(false)
-            {
-                args.insert(i, self.tx_context.to_bytes());
-            }
+            } 
 
             if as_struct(session, t)
                 .map(|t| is_storage_context(&t))
                 .unwrap_or(false)
             {
-                args.insert(i, self.to_vec());
+                args.insert(i, self.to_bytes());
             }
         });
         Ok(args)
@@ -98,14 +90,8 @@ where
     }
 }
 
-fn is_tx_context(t: &StructType) -> bool {
-    t.module.address() == &moveos_types::addresses::MOVEOS_STD_ADDRESS
-        && t.module.name() == TxContext::module_identifier().as_ident_str()
-        && t.name == TxContext::struct_identifier()
-}
-
 pub fn is_storage_context(t: &StructType) -> bool {
-    t.module.address() == &moveos_types::addresses::MOVEOS_STD_ADDRESS
+    t.module.address() == &StorageContext::ADDRESS
         && t.module.name() == StorageContext::module_identifier().as_ident_str()
         && t.name == StorageContext::struct_identifier()
 }
