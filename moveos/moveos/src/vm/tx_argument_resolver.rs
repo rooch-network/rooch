@@ -8,7 +8,6 @@ use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
 use move_vm_types::loaded_data::runtime_types::{StructType, Type};
 use moveos_types::{
     state::MoveStructType, state_resolver::MoveOSResolver, storage_context::StorageContext,
-    tx_context::TxContext,
 };
 use std::sync::Arc;
 
@@ -44,7 +43,7 @@ impl TxArgumentResolver for StorageContext {
                         .simple_serialize()
                         .expect("serialize signer should success"),
                 );
-            } 
+            }
 
             if as_struct(session, t)
                 .map(|t| is_storage_context(&t))
