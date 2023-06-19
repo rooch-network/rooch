@@ -1,10 +1,12 @@
 module rooch_framework::transaction_validator {
     use std::error;
-    use rooch_framework::account;
+    use std::option;
     use moveos_std::storage_context::{Self,StorageContext};
+    use rooch_framework::account;
     use rooch_framework::authenticator;
     use rooch_framework::ed25519;
     use rooch_framework::ecdsa_k1;
+    use rooch_framework::address_mapping::{Self,MultiChainAddress};
 
     const MAX_U64: u128 = 18446744073709551615;
 
@@ -80,15 +82,35 @@ module rooch_framework::transaction_validator {
         );
     }
 
-    /// Transaction finalize function.
+    /// Transaction pre_execute function.
+    /// Execute before the transaction is executed, automatically called by the MoveOS VM.
+    /// This function is for Rooch to auto create account and address maping.
+    fun pre_execute(
+        ctx: &mut StorageContext,
+    ) { 
+        let sender = storage_context::sender(ctx);
+        //Auto create account if not exist
+        if (!account::exists_at(ctx, sender)) {
+            account::create_account(ctx, sender); 
+        };
+        // the transaction validator will put the multi chain address into the context
+        let multichain_address = storage_context::get<MultiChainAddress>(ctx);
+        if (option::is_some(&multichain_address)){
+            let multichain_address = option::extract(&mut multichain_address);
+            //Auto create address mapping if not exist
+            if (!address_mapping::exists_mapping(ctx, multichain_address)) {
+                address_mapping::bind_no_check(ctx, sender, multichain_address); 
+            };
+        }
+    }
+
+    /// Transaction post_execute function.
+    /// Execute after the transaction is executed, automatically called by the MoveOS VM.
     /// This function is for Rooch to update the sender's sequence number and pay the gas fee.
-    /// Called by the MoveOS VM.
-    /// TODO how to pass the gas arguement to this function
-    fun finalize(
+    fun post_execute(
         ctx: &mut StorageContext,
     ) { 
         //TODO handle transaction gas fee
-       
         // Increment sequence number
         account::increment_sequence_number(ctx);
     }

@@ -21,7 +21,8 @@ pub struct TransactionValidator<'a> {
 
 impl<'a> TransactionValidator<'a> {
     const VALIDATE_FUNCTION_NAME: &'static IdentStr = ident_str!("validate");
-    const FINALIZE_FUNCTION_NAME: &IdentStr = ident_str!("finalize");
+    const PRE_EXECUTE_FUNCTION_NAME: &IdentStr = ident_str!("pre_execute");
+    const POST_EXECUTE_FUNCTION_NAME: &IdentStr = ident_str!("post_execute");
 
     pub fn validate(&self, ctx: &TxContext, auth: AuthenticatorInfo) -> Result<()> {
         let call = FunctionCall::new(
@@ -38,8 +39,12 @@ impl<'a> TransactionValidator<'a> {
         })
     }
 
-    pub fn finalize_function_id() -> FunctionId {
-        Self::function_id(Self::FINALIZE_FUNCTION_NAME)
+    pub fn pre_execute_function_id() -> FunctionId {
+        Self::function_id(Self::PRE_EXECUTE_FUNCTION_NAME)
+    }
+
+    pub fn post_execute_function_id() -> FunctionId {
+        Self::function_id(Self::POST_EXECUTE_FUNCTION_NAME)
     }
 }
 
