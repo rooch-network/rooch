@@ -38,6 +38,7 @@ use moveos_types::{
     state_resolver::MoveOSResolver,
     storage_context::StorageContext,
     transaction::{FunctionCall, MoveAction, TransactionOutput, VerifiedMoveAction},
+    tx_context::TxContext,
 };
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
 use std::{borrow::Borrow, sync::Arc};
@@ -45,32 +46,36 @@ use std::{borrow::Borrow, sync::Arc};
 /// MoveOSVM is a wrapper of MoveVM with MoveOS specific features.
 pub struct MoveOSVM {
     inner: MoveVM,
-    finalize_function: Option<FunctionId>,
+    pre_execute_function: Option<FunctionId>,
+    post_execute_function: Option<FunctionId>,
 }
 
 impl MoveOSVM {
     pub fn new(
         natives: impl IntoIterator<Item = (AccountAddress, Identifier, Identifier, NativeFunction)>,
         vm_config: VMConfig,
-        finalize_function: Option<FunctionId>,
+        pre_execute_function: Option<FunctionId>,
+        post_execute_function: Option<FunctionId>,
     ) -> VMResult<Self> {
         Ok(Self {
             inner: MoveVM::new_with_config(natives, vm_config)?,
-            finalize_function,
+            pre_execute_function,
+            post_execute_function,
         })
     }
 
     pub fn new_session<'r, S: MoveOSResolver, G: GasMeter>(
         &self,
         remote: &'r S,
-        ctx: StorageContext,
+        ctx: TxContext,
         gas_meter: G,
     ) -> MoveOSSession<'r, '_, S, G> {
         MoveOSSession::new(
             &self.inner,
             remote,
             ctx,
-            self.finalize_function.clone(),
+            self.pre_execute_function.clone(),
+            self.post_execute_function.clone(),
             gas_meter,
             false,
         )
@@ -79,21 +84,21 @@ impl MoveOSVM {
     pub fn new_genesis_session<'r, S: MoveOSResolver>(
         &self,
         remote: &'r S,
-        ctx: StorageContext,
+        ctx: TxContext,
     ) -> MoveOSSession<'r, '_, S, UnmeteredGasMeter> {
         //Do not charge gas for genesis session
         let gas_meter = UnmeteredGasMeter;
         // Genesis session do not need to execute finalize function
-        MoveOSSession::new(&self.inner, remote, ctx, None, gas_meter, false)
+        MoveOSSession::new(&self.inner, remote, ctx, None, None, gas_meter, false)
     }
 
     pub fn new_readonly_session<'r, S: MoveOSResolver, G: GasMeter>(
         &self,
         remote: &'r S,
-        ctx: StorageContext,
+        ctx: TxContext,
         gas_meter: G,
     ) -> MoveOSSession<'r, '_, S, G> {
-        MoveOSSession::new(&self.inner, remote, ctx, None, gas_meter, true)
+        MoveOSSession::new(&self.inner, remote, ctx, None, None, gas_meter, true)
     }
 }
 
@@ -105,7 +110,8 @@ pub struct MoveOSSession<'r, 'l, S, G> {
     remote: &'r S,
     session: Session<'r, 'l, S>,
     ctx: StorageContext,
-    finalize_function: Option<FunctionId>,
+    pre_execute_function: Option<FunctionId>,
+    post_execute_function: Option<FunctionId>,
     gas_meter: G,
     read_only: bool,
 }
@@ -118,20 +124,48 @@ where
     pub fn new(
         vm: &'l MoveVM,
         remote: &'r S,
-        ctx: StorageContext,
-        finalize_function: Option<FunctionId>,
+        ctx: TxContext,
+        pre_execute_function: Option<FunctionId>,
+        post_execute_function: Option<FunctionId>,
         gas_meter: G,
         read_only: bool,
     ) -> Self {
-        Self {
+        if read_only {
+            assert!(
+                pre_execute_function.is_none(),
+                "pre_execute_function is not allowed in read only session"
+            );
+            assert!(
+                post_execute_function.is_none(),
+                "post_execute_function is not allowed in read only session"
+            );
+        }
+        let ctx = StorageContext::new(ctx);
+        let s = Self {
             vm,
             remote,
             session: Self::new_inner_session(vm, remote),
             ctx,
-            finalize_function,
+            pre_execute_function,
+            post_execute_function,
             gas_meter,
             read_only,
-        }
+        };
+        s.pre_execute()
+    }
+
+    /// Re spawn a new session with the same context.
+    pub fn respawn(self) -> Self {
+        //Create a new tx context with the same sender and tx hash, but drop the ids_created and kv map.
+        let tx_ctx = self.ctx.tx_context.spawn();
+        let ctx = StorageContext::new(tx_ctx);
+        let s = Self {
+            session: Self::new_inner_session(self.vm, self.remote),
+            ctx,
+            ..self
+        };
+        //Because the session is respawned, the pre_execute function should be called again.
+        s.pre_execute()
     }
 
     fn new_inner_session(vm: &'l MoveVM, remote: &'r S) -> Session<'r, 'l, S> {
@@ -267,11 +301,25 @@ where
 
     // Because the StorageContext can be mut argument, if the function change the StorageContext,
     // we need to update the StorageContext via return values, and pass the updated StorageContext to the next function.
-    fn update_storage_context_via_return_values(
-        &mut self,
-        _return_values: &SerializedReturnValues,
-    ) {
-        //TODO get StorageContext from _return_values.mutable_reference_outputs
+    fn update_storage_context_via_return_values(&mut self, return_values: &SerializedReturnValues) {
+        //The only mutable reference output is &mut StorageContext
+        debug_assert!(
+            return_values.mutable_reference_outputs.len() <= 1,
+            "The function should not return more than one mutable reference"
+        );
+
+        if let Some((_index, value, _layout)) = return_values.mutable_reference_outputs.get(0) {
+            //TODO check the type with local index
+            let returned_storage_context = StorageContext::from_bytes(value.as_slice())
+                .expect("The return mutable reference should be a StorageContext");
+            if log::log_enabled!(log::Level::Debug) {
+                log::debug!(
+                    "The returned storage context is {:?}",
+                    returned_storage_context
+                );
+            }
+            self.ctx = returned_storage_context;
+        }
     }
 
     pub fn execute_function_bypass_visibility(
@@ -331,9 +379,9 @@ where
     pub fn finish_with_extensions(
         self,
         vm_status: VMStatus,
-    ) -> Result<(StorageContext, TransactionOutput), anyhow::Error> {
+    ) -> Result<(TxContext, TransactionOutput), anyhow::Error> {
         let (finalized_session, status) = match vm_status.keep_or_discard() {
-            Ok(status) => self.finalizer(status),
+            Ok(status) => self.post_execute(status),
             Err(discard_status) => {
                 //This should not happen, if it happens, it means that the VM or verifer has a bug
                 //TODO try to handle this error
@@ -361,6 +409,10 @@ where
                 state_changeset.changes.is_empty(),
                 "Table change set should be empty when execute readonly function"
             );
+            ensure!(
+                finalized_session.ctx.tx_context.ids_created == 0,
+                "ids_created should be zero when execute readonly function"
+            );
         }
 
         let events = raw_events
@@ -375,7 +427,7 @@ where
         //TODO calculate the gas_used with gas_meter
         let gas_used = 0;
         Ok((
-            finalized_session.ctx,
+            finalized_session.ctx.tx_context,
             TransactionOutput {
                 status,
                 changeset,
@@ -386,37 +438,44 @@ where
         ))
     }
 
-    fn finalizer(self, status: KeptVMStatus) -> (Self, KeptVMStatus) {
+    fn pre_execute(self) -> Self {
+        // the read_only function should not execute pre_execute function
+        // this ensure via the check in new_session
+        let mut pre_execute_session = self;
+        if let Some(pre_execute_function) = &pre_execute_session.pre_execute_function {
+            pre_execute_session
+                .execute_function_bypass_visibility(FunctionCall::new(
+                    pre_execute_function.clone(),
+                    vec![],
+                    vec![],
+                ))
+                .expect("pre_execute function should always success");
+        }
+        pre_execute_session
+    }
+
+    fn post_execute(self, execute_status: KeptVMStatus) -> (Self, KeptVMStatus) {
         if self.read_only {
-            (self, status)
+            (self, execute_status)
         } else {
-            let mut finalized_session = match &status {
+            let mut post_execute_session = match &execute_status {
                 KeptVMStatus::Executed => self,
                 _error => {
                     //if the execution failed, we need to start a new session, and discard the transaction changes
                     // and increment the sequence number or reduce the gas in new session.
-                    let MoveOSSession {
-                        vm,
-                        remote,
-                        session: _,
-                        ctx,
-                        finalize_function,
-                        gas_meter,
-                        read_only,
-                    } = self;
-                    Self::new(vm, remote, ctx, finalize_function, gas_meter, read_only)
+                    self.respawn()
                 }
             };
-            if let Some(finalize_function) = &finalized_session.finalize_function {
-                finalized_session
+            if let Some(post_execute_function) = &post_execute_session.post_execute_function {
+                post_execute_session
                     .execute_function_bypass_visibility(FunctionCall::new(
-                        finalize_function.clone(),
+                        post_execute_function.clone(),
                         vec![],
                         vec![],
                     ))
-                    .expect("finalize function should always success");
+                    .expect("post_execute function should always success");
             }
-            (finalized_session, status)
+            (post_execute_session, execute_status)
         }
     }
 

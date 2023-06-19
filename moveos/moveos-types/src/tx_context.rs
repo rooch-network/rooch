@@ -19,7 +19,7 @@ use std::str::FromStr;
 pub const TX_CONTEXT_MODULE_NAME: &IdentStr = ident_str!("tx_context");
 pub const TX_CONTEXT_STRUCT_NAME: &IdentStr = ident_str!("TxContext");
 
-#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[derive(Clone, Deserialize, Serialize, Eq, PartialEq)]
 pub struct TxContext {
     /// Signer/sender of the transaction
     pub sender: AccountAddress,
@@ -32,11 +32,32 @@ pub struct TxContext {
     pub map: SimpleMap<MoveString, CopyableAny>,
 }
 
+impl std::fmt::Debug for TxContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TxContext")
+            .field("sender", &self.sender)
+            .field("tx_hash", &hex::encode(&self.tx_hash))
+            .field("ids_created", &self.ids_created)
+            .field("map", &self.map)
+            .finish()
+    }
+}
+
 impl TxContext {
     pub fn new(sender: AccountAddress, tx_hash: H256) -> Self {
         Self {
             sender,
             tx_hash: tx_hash.0.to_vec(),
+            ids_created: 0,
+            map: SimpleMap::create(),
+        }
+    }
+
+    /// Spawn a new TxContext with a new `ids_created` counter and empty map
+    pub fn spawn(self) -> Self {
+        Self {
+            sender: self.sender,
+            tx_hash: self.tx_hash,
             ids_created: 0,
             map: SimpleMap::create(),
         }

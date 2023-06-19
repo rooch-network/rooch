@@ -18,17 +18,39 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 /// `Any` is represented `moveos_std::any::Any` in Move.
-#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[derive(Clone, Deserialize, Serialize, Eq, PartialEq)]
 pub struct Any {
     pub type_name: MoveString,
     pub data: Vec<u8>,
 }
 
+impl std::fmt::Debug for Any {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Any {{ type_name: {}, data: {} }}",
+            self.type_name,
+            hex::encode(&self.data)
+        )
+    }
+}
+
 /// `CopyableAny` is represented `moveos_std::copyable_any::Any` in Move.
-#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[derive(Clone, Deserialize, Serialize, Eq, PartialEq)]
 pub struct CopyableAny {
     pub type_name: MoveString,
     pub data: Vec<u8>,
+}
+
+impl std::fmt::Debug for CopyableAny {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "CopyableAny {{ type_name: {}, data: {} }}",
+            self.type_name,
+            hex::encode(&self.data)
+        )
+    }
 }
 
 pub trait AnyTrait {

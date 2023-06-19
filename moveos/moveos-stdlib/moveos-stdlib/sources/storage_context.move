@@ -3,6 +3,8 @@
 /// and let developers can customize the storage
 
 module moveos_std::storage_context {
+
+    use std::option::Option;
     use moveos_std::object_storage::{ObjectStorage};
     use moveos_std::tx_context::{Self, TxContext};
     use moveos_std::object_id::{ObjectID};
@@ -56,6 +58,16 @@ module moveos_std::storage_context {
     public fun tx_hash(this: &StorageContext): vector<u8> {
         tx_context::tx_hash(&this.tx_context)
     } 
+
+    /// Add a value to the context map
+    public fun add<T: drop + store + copy>(self: &mut StorageContext, value: T) {
+        tx_context::add(&mut self.tx_context, value); 
+    }
+
+    /// Get a value from the context map
+    public fun get<T: drop + store + copy>(self: &StorageContext): Option<T> {
+        tx_context::get(&self.tx_context)
+    }
 
     #[test_only]
     /// Create a StorageContext and AccountStorage for unit test
