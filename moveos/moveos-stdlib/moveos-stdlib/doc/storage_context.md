@@ -17,9 +17,12 @@ and let developers can customize the storage
 -  [Function `fresh_address`](#0x2_storage_context_fresh_address)
 -  [Function `fresh_object_id`](#0x2_storage_context_fresh_object_id)
 -  [Function `tx_hash`](#0x2_storage_context_tx_hash)
+-  [Function `add`](#0x2_storage_context_add)
+-  [Function `get`](#0x2_storage_context_get)
 
 
-<pre><code><b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="object_storage.md#0x2_object_storage">0x2::object_storage</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 </code></pre>
@@ -250,6 +253,56 @@ Wrap functions for TxContext
 
 <pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_tx_hash">tx_hash</a>(this: &<a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>): <a href="">vector</a>&lt;u8&gt; {
     <a href="tx_context.md#0x2_tx_context_tx_hash">tx_context::tx_hash</a>(&this.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_storage_context_add"></a>
+
+## Function `add`
+
+Add a value to the context map
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_add">add</a>&lt;T: <b>copy</b>, drop, store&gt;(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, value: T)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_add">add</a>&lt;T: drop + store + <b>copy</b>&gt;(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>, value: T) {
+    <a href="tx_context.md#0x2_tx_context_add">tx_context::add</a>(&<b>mut</b> self.<a href="tx_context.md#0x2_tx_context">tx_context</a>, value);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_storage_context_get"></a>
+
+## Function `get`
+
+Get a value from the context map
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_get">get</a>&lt;T: <b>copy</b>, drop, store&gt;(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): <a href="_Option">option::Option</a>&lt;T&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_get">get</a>&lt;T: drop + store + <b>copy</b>&gt;(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>): Option&lt;T&gt; {
+    <a href="tx_context.md#0x2_tx_context_get">tx_context::get</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
 }
 </code></pre>
 

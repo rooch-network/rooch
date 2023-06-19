@@ -6,6 +6,8 @@ module rooch_framework::address_mapping{
     use moveos_std::table::{Self, Table};
     use moveos_std::account_storage;
 
+    friend rooch_framework::transaction_validator;
+
     //The coin id standard is defined in [slip-0044](https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
     //Please keep consistent with rust ChainID
     const COIN_TYPE_BTC: u32 = 0;
@@ -47,16 +49,32 @@ module rooch_framework::address_mapping{
             option::none<address>()
         }
     }
+    
+    /// Check if a multi-chain address is bound to a rooch address
+    public fun exists_mapping(ctx: &StorageContext, maddress: MultiChainAddress): bool {
+        if (is_rooch_address(&maddress)) {
+            return true
+        };
+        let am = account_storage::global_borrow<AddressMapping>(ctx, @rooch_framework);
+        table::contains(&am.mapping, maddress)
+    }
 
-    /// Binding a multi-chain address to a rooch address
+    /// Bind a multi-chain address to the sender's rooch address
     /// The caller need to ensure the relationship between the multi-chain address and the rooch address
-    public fun binding(ctx: &mut StorageContext, sender: &signer, maddress: MultiChainAddress) {
-        let am = account_storage::global_borrow_mut<AddressMapping>(ctx, @rooch_framework);
-        let sender_addr = signer::address_of(sender);
-        table::add(&mut am.mapping, maddress, sender_addr);
-        //TODO matienance the reverse mapping rooch_address -> vector<MultiChainAddress>
+    public fun bind(ctx: &mut StorageContext, sender: &signer, maddress: MultiChainAddress) {
+        bind_no_check(ctx, signer::address_of(sender), maddress);
     } 
 
+    /// Bind a rooch address to a multi-chain address
+    public(friend) fun bind_no_check(ctx: &mut StorageContext, rooch_address: address, maddress: MultiChainAddress) {
+        if(is_rooch_address(&maddress)){
+            //Do nothing if the multi-chain address is a rooch address
+            return
+        };
+        let am = account_storage::global_borrow_mut<AddressMapping>(ctx, @rooch_framework);
+        table::add(&mut am.mapping, maddress, rooch_address);
+        //TODO matienance the reverse mapping rooch_address -> vector<MultiChainAddress>
+    }
 
     #[test(sender=@rooch_framework)]
     fun test_address_mapping(sender: signer){
@@ -68,7 +86,7 @@ module rooch_framework::address_mapping{
             coin_id: COIN_TYPE_BTC,
             raw_address: x"1234567890abcdef",
         };
-        binding(&mut ctx, &sender, multi_chain_address);
+        bind(&mut ctx, &sender, multi_chain_address);
         let addr = option::extract(&mut resolve(&ctx, multi_chain_address));
         assert!(addr == @rooch_framework, 1000);
         storage_context::drop_test_context(ctx);
