@@ -5,7 +5,6 @@ use crate::{
     h256,
     state::{MoveStructState, MoveStructType, State},
 };
-/// The Move Object is from Sui Move, and we try to mix the Global storage model and Object model in MoveOS.
 use anyhow::{bail, ensure, Result};
 use fastcrypto::encoding::Hex;
 use move_core_types::{
@@ -18,7 +17,6 @@ use move_core_types::{
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
 use std::str::FromStr;
 
 /// Specific Table Object ID associated with an address
@@ -51,13 +49,8 @@ impl NamedTableID {
     }
 }
 
-#[serde_as]
 #[derive(Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord, Hash, JsonSchema)]
-pub struct ObjectID(
-    #[schemars(with = "Hex")]
-    #[serde_as(as = "Readable<Hex, _>")]
-    AccountAddress,
-);
+pub struct ObjectID(#[schemars(with = "Hex")] AccountAddress);
 
 impl ObjectID {
     const LENGTH: usize = h256::LENGTH;
@@ -110,7 +103,8 @@ impl ObjectID {
 
 impl std::fmt::Display for ObjectID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0.to_hex_literal())
+        // The AccountAddress display has no prefix, so we add it here
+        write!(f, "0x{}", self.0)
     }
 }
 
@@ -128,7 +122,6 @@ impl MoveStructState for ObjectID {
 
 impl Serialize for ObjectID {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        // The AccountAddress in Move so not append `0x` when serialize to string
         if serializer.is_human_readable() {
             serializer.serialize_str(self.to_string().as_str())
         } else {
@@ -521,12 +514,30 @@ mod tests {
         print!("{:?} {:?}", resource_table_id, module_table_id)
     }
 
+    fn test_object_id_roundtrip(object_id: ObjectID) {
+        let object_id_str = object_id.to_string();
+        //ensure the ObjectID to string is hex with 0x prefix
+        //and is full 32 bytes output
+        assert!(object_id_str.starts_with("0x"));
+        assert_eq!(object_id_str.len(), 66);
+        let object_id_from_str = ObjectID::from_str(&object_id_str).unwrap();
+        assert_eq!(object_id, object_id_from_str);
+
+        let json_str = serde_json::to_string(&object_id).unwrap();
+        assert_eq!(format!("\"{}\"", object_id_str), json_str);
+        let object_id_from_json: ObjectID = serde_json::from_str(&json_str).unwrap();
+        assert_eq!(object_id, object_id_from_json);
+
+        let bytes = bcs::to_bytes(&object_id).unwrap();
+        assert!(bytes.len() == 32);
+        let object_id_from_bytes = bcs::from_bytes(&bytes).unwrap();
+        assert_eq!(object_id, object_id_from_bytes);
+    }
+
     #[test]
-    fn test_zero_object_id() {
-        let object_id_zero = ObjectID::ZERO;
-        let object_id_str = object_id_zero.to_string();
-        println!("{}", object_id_str);
-        let object_id_zero_from_str = ObjectID::from_str(&object_id_str).unwrap();
-        assert_eq!(object_id_zero, object_id_zero_from_str);
+    fn test_object_id() {
+        test_object_id_roundtrip(ObjectID::ZERO);
+        test_object_id_roundtrip(ObjectID::ONE);
+        test_object_id_roundtrip(ObjectID::new(crate::h256::H256::random().into()));
     }
 }

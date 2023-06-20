@@ -318,16 +318,6 @@
   ],
   "components": {
     "schemas": {
-      "AccountAddressView": {
-        "type": "array",
-        "items": {
-          "type": "integer",
-          "format": "uint8",
-          "minimum": 0.0
-        },
-        "maxItems": 32,
-        "minItems": 32
-      },
       "AnnotatedEventView": {
         "type": "object",
         "required": [
@@ -343,7 +333,7 @@
             "$ref": "#/components/schemas/AnnotatedMoveStructView"
           },
           "sender": {
-            "type": "string"
+            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
           },
           "timestamp_ms": {
             "type": [
@@ -498,7 +488,7 @@
             ],
             "properties": {
               "Sender": {
-                "$ref": "#/components/schemas/AccountAddressView"
+                "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
               }
             },
             "additionalProperties": false

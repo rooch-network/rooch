@@ -204,11 +204,11 @@ impl TryFrom<MultiChainAddress> for RoochAddress {
 }
 
 // ==== Display and FromStr, Deserialize and Serialize ====
-// Should keep consistent with AccountAddress
 
 impl fmt::Display for RoochAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", AccountAddress::from(*self).to_hex_literal())
+        //Use full address and 0x prefix for address display
+        write!(f, "0x{}", AccountAddress::from(*self))
     }
 }
 
@@ -347,6 +347,7 @@ mod test {
         T: RoochSupportedAddress + Clone + std::fmt::Debug + PartialEq + Eq + std::hash::Hash,
     {
         let address = T::random();
+        println!("{:?}", address);
         let multi_chain_address: MultiChainAddress = address.clone().into();
         let address2 = T::try_from(multi_chain_address.clone()).unwrap();
         assert_eq!(address, address2);
@@ -363,6 +364,33 @@ mod test {
         test_rooch_supported_address_roundtrip::<RoochAddress>();
         test_rooch_supported_address_roundtrip::<EthereumAddress>();
         test_rooch_supported_address_roundtrip::<BitcoinAddress>();
+    }
+
+    fn test_rooch_address_roundtrip(rooch_address: RoochAddress) {
+        let rooch_str = rooch_address.to_string();
+        //ensure the rooch to string is hex with 0x prefix
+        //and is full 32 bytes output
+        assert!(rooch_str.starts_with("0x"));
+        assert_eq!(rooch_str.len(), 66);
+        let rooch_address_from_str = RoochAddress::from_str(&rooch_str).unwrap();
+        assert_eq!(rooch_address, rooch_address_from_str);
+
+        let json_str = serde_json::to_string(&rooch_address).unwrap();
+        assert_eq!(format!("\"{}\"", rooch_str), json_str);
+        let rooch_address_from_json: RoochAddress = serde_json::from_str(&json_str).unwrap();
+        assert_eq!(rooch_address, rooch_address_from_json);
+
+        let bytes = bcs::to_bytes(&rooch_address).unwrap();
+        assert!(bytes.len() == 32);
+        let rooch_address_from_bytes = bcs::from_bytes(&bytes).unwrap();
+        assert_eq!(rooch_address, rooch_address_from_bytes);
+    }
+
+    #[test]
+    fn test_rooch_address_to_string() {
+        test_rooch_address_roundtrip(RoochAddress::from(AccountAddress::ZERO));
+        test_rooch_address_roundtrip(RoochAddress::from(AccountAddress::ONE));
+        test_rooch_address_roundtrip(RoochAddress::random());
     }
 
     proptest! {

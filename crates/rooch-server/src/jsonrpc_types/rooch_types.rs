@@ -10,6 +10,8 @@ use rooch_types::transaction::{AbstractTransaction, TransactionType, TypedTransa
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use super::AccountAddressView;
+
 pub type EventPageView = PageView<Option<AnnotatedEventView>, u64>;
 pub type TransactionInfoPageView = PageView<Option<TransactionExecutionInfoView>, u128>;
 
@@ -77,7 +79,7 @@ impl From<TypedTransaction> for TransactionView {
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct AnnotatedEventView {
     pub event: EventView,
-    pub sender: String,
+    pub sender: AccountAddressView,
     pub tx_hash: Option<H256View>,
     pub timestamp_ms: Option<u64>,
     // pub block_height: Option<u64>,
@@ -88,7 +90,7 @@ impl From<AnnotatedMoveOSEvent> for AnnotatedEventView {
     fn from(event: AnnotatedMoveOSEvent) -> Self {
         AnnotatedEventView {
             event: event.event.into(),
-            sender: event.sender.to_string(),
+            sender: event.sender.into(),
             tx_hash: event.tx_hash.map(|h256| h256.into()),
             timestamp_ms: event.timestamp_ms,
             // block_height: event.block_height,
