@@ -28,30 +28,9 @@ rooch move run --function {ACCOUNT_ADDRESS}::something_aggregate::create_somethi
 
 ## Query using JSON RPC APIs
 
-### Get event handle
-
-Request the RPC interface `rooch_executeViewFunction` to get the event handle corresponding to the event type:
-
-```shell
-curl --location --request POST 'http://localhost:50051' \
---header 'Content-Type: application/json' \
---data-raw '{
- "id":101,
- "jsonrpc":"2.0",
- "method":"rooch_executeViewFunction",
- "params":[{"function_id":"0x1::events::get_event_handle","ty_args":["{ACCOUNT_ADDRESS}::something::SomethingCreated"],"args":[]}]
-}'
-```
-
-The output is similar to the following (Note that the event handle ID appears where the placeholder `{THIS_IS_THE_EVENT_HANDLE}` is located.):
-
-```json
-{"jsonrpc":"2.0","result":[{"value":{"type_tag":"0x1::object_id::ObjectID","value":"{THIS_IS_THE_EVENT_HANDLE}"},"move_value":"0x53f32af12dc9236eb67f1c064cf55ee8891a90040f71ba17422cfdd91eb7358b"},{"value":{"type_tag":"address","value":"0x565d5717526aecec1f9d464867f7d92d6eae2dc8ca73a0dc2613dd185d3d7bc7"},"move_value":"0x565d5717526aecec1f9d464867f7d92d6eae2dc8ca73a0dc2613dd185d3d7bc7"},{"value":{"type_tag":"u64","value":"0x0100000000000000"},"move_value":"1"}],"id":101}
-```
-
 ### Get events by event handle
 
-Request the RPC interface `rooch_getEventsByEventHandle` to get the events (Note that the placeholder `{EVENT_HANDLE_ID}` should be replaced with the value output above):
+Request the RPC interface `rooch_getEventsByEventHandle` to get the events (Note that the placeholder `{EVENT_HANDLE_TYPE}` `{CURSOR}` `{LIMIT}` should be replaced with the value output above):
 
 ```shell
 curl --location --request POST 'http://localhost:50051' \
@@ -60,14 +39,62 @@ curl --location --request POST 'http://localhost:50051' \
  "id":101,
  "jsonrpc":"2.0",
  "method":"rooch_getEventsByEventHandle",
- "params":["{EVENT_HANDLE_ID}"]
+ "params": [
+    "{EVENT_HANDLE_TYPE}", "{CURSOR}", "{LIMIT}"
+]
+}'
+```
+
+An example
+```
+curl --location 'http://localhost:50051' \
+--header 'Content-Type: application/json' \
+--data '{
+    "id": 101,
+    "jsonrpc": "2.0",
+    "method": "rooch_getEventsByEventHandle",
+    "params": [
+        "0xb4321fa441b5d9fdefb71f82856a56447451f7b1ba9478747b07e9f26b34c87::something::SomethingCreated", 1, 2
+    ]
 }'
 ```
 
 The output is similar to the following (Note that the ID of the created object appears where the placeholder `{ID_OF_CREATED_OBJECT}` is located.):
 
 ```json
-{"jsonrpc":"2.0","result":[{"sender":"0000000000000000000000000000000000000000000000000000000000000000","event_data":"0x0b00395f380aa20ab634291b1fe8705e8ba94ce5bfab66dbe436865cc40974ef0100000002000000000000000000000000000000","parsed_event_data":{"abilities":8,"type":"0x565d5717526aecec1f9d464867f7d92d6eae2dc8ca73a0dc2613dd185d3d7bc7::something::SomethingCreated","value":{"i":1,"j":"2","obj_id":"{ID_OF_CREATED_OBJECT}"}},"type_tag":"0x565d5717526aecec1f9d464867f7d92d6eae2dc8ca73a0dc2613dd185d3d7bc7::something::SomethingCreated","event_index":3,"event_id":{"event_handle_id":"0x53f32af12dc9236eb67f1c064cf55ee8891a90040f71ba17422cfdd91eb7358b","event_seq":0}}],"id":101}
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "data": [
+      {
+        "event": {
+          "event_id": {
+            "event_handle_id": "0xebe6b25007d2d52a8245b21d654b015726ae6f5edff9001ec4a529322885588e",
+            "event_seq": 0
+          },
+          "type_tag": "0xb4321fa441b5d9fdefb71f82856a56447451f7b1ba9478747b07e9f26b34c87::something::SomethingCreated",
+          "event_data": "0xc8e70b6230d7113043aef70a0ce9e748beda3fa0703a058c39e887a2772701bb0100000002000000000000000000000000000000",
+          "event_index": 3
+        },
+        "sender": "0000000000000000000000000000000000000000000000000000000000000000",
+        "tx_hash": null,
+        "timestamp_ms": null,
+        "parsed_event_data": {
+          "abilities": 8,
+          "type": "0xb4321fa441b5d9fdefb71f82856a56447451f7b1ba9478747b07e9f26b34c87::something::SomethingCreated",
+          "value": {
+            "i": 1,
+            "j": "2",
+            "obj_id": "0xc8e70b6230d7113043aef70a0ce9e748beda3fa0703a058c39e887a2772701bb"
+          }
+        }
+      }
+    ],
+    "next_cursor": 0,
+    "has_next_page": true
+  },
+  "id": 101
+}
 ```
 
 ### Get annotated states by object ID
