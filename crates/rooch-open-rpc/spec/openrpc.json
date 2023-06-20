@@ -66,7 +66,7 @@
           "name": "access_path",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/AccessPathView"
+            "$ref": "#/components/schemas/moveos_types::access_path::AccessPath"
           }
         }
       ],
@@ -162,7 +162,7 @@
           "name": "access_path",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/AccessPathView"
+            "$ref": "#/components/schemas/moveos_types::access_path::AccessPath"
           }
         }
       ],
@@ -236,6 +236,66 @@
       }
     },
     {
+      "name": "rooch_getTransactionInfosByTxHash",
+      "params": [
+        {
+          "name": "tx_hashes",
+          "required": true,
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/H256View"
+            }
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec<Option<TransactionExecutionInfoView>>",
+        "required": true,
+        "schema": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TransactionExecutionInfoView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "rooch_getTransactionInfosByTxOrder",
+      "params": [
+        {
+          "name": "cursor",
+          "schema": {
+            "type": "integer",
+            "format": "uint128",
+            "minimum": 0.0
+          }
+        },
+        {
+          "name": "limit",
+          "schema": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      ],
+      "result": {
+        "name": "TransactionInfoPageView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/PageView_for_Nullable_TransactionExecutionInfoView_and_uint128"
+        }
+      }
+    },
+    {
       "name": "rooch_sendRawTransaction",
       "description": "Send the signed transaction in bcs hex format This method does not block waiting for the transaction to be executed.",
       "params": [
@@ -258,9 +318,6 @@
   ],
   "components": {
     "schemas": {
-      "AccessPathView": {
-        "$ref": "#/components/schemas/PathView"
-      },
       "AccountAddressView": {
         "type": "array",
         "items": {
@@ -717,9 +774,6 @@
         "description": "Hex string encoding.",
         "type": "string"
       },
-      "IdentifierView": {
-        "type": "string"
-      },
       "KeptVMStatusView": {
         "oneOf": [
           {
@@ -991,122 +1045,39 @@
           }
         }
       },
-      "PathView": {
-        "oneOf": [
-          {
-            "description": "Get Object",
-            "type": "object",
-            "required": [
-              "Object"
-            ],
-            "properties": {
-              "Object": {
-                "type": "object",
-                "required": [
-                  "object_ids"
-                ],
-                "properties": {
-                  "object_ids": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/components/schemas/ObjectID"
-                    }
-                  }
+      "PageView_for_Nullable_TransactionExecutionInfoView_and_uint128": {
+        "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
+        "type": "object",
+        "required": [
+          "data",
+          "has_next_page"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/TransactionExecutionInfoView"
+                },
+                {
+                  "type": "null"
                 }
-              }
-            },
-            "additionalProperties": false
+              ]
+            }
           },
-          {
-            "description": "Get account resources",
-            "type": "object",
-            "required": [
-              "Resource"
-            ],
-            "properties": {
-              "Resource": {
-                "type": "object",
-                "required": [
-                  "account",
-                  "resource_types"
-                ],
-                "properties": {
-                  "account": {
-                    "$ref": "#/components/schemas/AccountAddressView"
-                  },
-                  "resource_types": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
-                    }
-                  }
-                }
-              }
-            },
-            "additionalProperties": false
+          "has_next_page": {
+            "type": "boolean"
           },
-          {
-            "description": "Get account modules",
-            "type": "object",
-            "required": [
-              "Module"
+          "next_cursor": {
+            "type": [
+              "integer",
+              "null"
             ],
-            "properties": {
-              "Module": {
-                "type": "object",
-                "required": [
-                  "account",
-                  "module_names"
-                ],
-                "properties": {
-                  "account": {
-                    "$ref": "#/components/schemas/AccountAddressView"
-                  },
-                  "module_names": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/components/schemas/IdentifierView"
-                    }
-                  }
-                }
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "description": "Get table values by keys",
-            "type": "object",
-            "required": [
-              "Table"
-            ],
-            "properties": {
-              "Table": {
-                "type": "object",
-                "required": [
-                  "keys",
-                  "table_handle"
-                ],
-                "properties": {
-                  "keys": {
-                    "type": "array",
-                    "items": {
-                      "type": "array",
-                      "items": {
-                        "type": "integer",
-                        "format": "uint8",
-                        "minimum": 0.0
-                      }
-                    }
-                  },
-                  "table_handle": {
-                    "$ref": "#/components/schemas/ObjectID"
-                  }
-                }
-              }
-            },
-            "additionalProperties": false
+            "format": "uint128",
+            "minimum": 0.0
           }
-        ]
+        }
       },
       "ScriptCallView": {
         "type": "object",
@@ -1348,6 +1319,9 @@
         "type": "string"
       },
       "move_core_types::vm_status::AbortLocation": {
+        "type": "string"
+      },
+      "moveos_types::access_path::AccessPath": {
         "type": "string"
       },
       "moveos_types::move_types::FunctionId": {

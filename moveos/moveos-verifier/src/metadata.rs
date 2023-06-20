@@ -10,11 +10,11 @@ use move_binary_format::file_format::{
 use move_binary_format::CompiledModule;
 use move_core_types::language_storage::ModuleId;
 use move_core_types::metadata::Metadata;
-use move_core_types::move_resource::MoveStructType;
 use move_model::ast::Attribute;
 use move_model::model::{FunctionEnv, GlobalEnv, Loc, ModuleEnv};
 use move_model::ty::PrimitiveType;
 use move_model::ty::Type;
+use moveos_types::state::MoveStructType;
 use moveos_types::storage_context::StorageContext;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};

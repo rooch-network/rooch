@@ -9,10 +9,11 @@ use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event_filter::EventFilter;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::state::{AnnotatedState, State};
-use moveos_types::transaction::FunctionCall;
+use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_proposer::proxy::ProposerProxy;
 use rooch_sequencer::proxy::SequencerProxy;
+use rooch_types::transaction::TransactionSequenceMapping;
 use rooch_types::{address::RoochAddress, transaction::TypedTransaction, H256};
 
 /// RpcService is the implementation of the RPC service.
@@ -129,6 +130,29 @@ impl RpcService {
         let resp = self
             .sequencer
             .get_transaction_by_index(start, limit)
+            .await?;
+        Ok(resp)
+    }
+
+    pub async fn get_tx_seq_mapping_by_tx_order(
+        &self,
+        cursor: Option<u128>,
+        limit: u64,
+    ) -> Result<Vec<TransactionSequenceMapping>> {
+        let resp = self
+            .executor
+            .get_tx_seq_mapping_by_tx_order(cursor, limit)
+            .await?;
+        Ok(resp)
+    }
+
+    pub async fn get_transaction_infos_by_tx_hash(
+        &self,
+        tx_hashes: Vec<H256>,
+    ) -> Result<Vec<Option<TransactionExecutionInfo>>> {
+        let resp = self
+            .executor
+            .get_transaction_infos_by_tx_hash(tx_hashes)
             .await?;
         Ok(resp)
     }

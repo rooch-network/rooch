@@ -3,22 +3,30 @@
 
 use std::str::FromStr;
 
-use crate::{addresses::MOVE_STD_ADDRESS, state::MoveStructState};
+use crate::{
+    addresses::MOVE_STD_ADDRESS,
+    state::{MoveStructState, MoveStructType},
+};
 use anyhow::ensure;
 use move_core_types::{
     account_address::AccountAddress,
     ident_str,
     identifier::IdentStr,
-    move_resource::MoveStructType,
     value::{MoveStructLayout, MoveTypeLayout},
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Eq, PartialEq, Clone, PartialOrd, Ord, Hash, JsonSchema)]
+#[derive(Eq, PartialEq, Clone, PartialOrd, Ord, Hash, JsonSchema)]
 pub struct MoveString {
     bytes: Vec<u8>,
+}
+
+impl std::fmt::Debug for MoveString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
+    }
 }
 
 impl std::fmt::Display for MoveString {

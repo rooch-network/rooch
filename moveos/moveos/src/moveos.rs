@@ -12,22 +12,23 @@ use move_core_types::{
 use move_vm_runtime::config::VMConfig;
 use move_vm_runtime::native_functions::NativeFunction;
 use move_vm_types::gas::UnmeteredGasMeter;
+use moveos_store::transaction_store::TransactionDB;
 use moveos_store::MoveOSDB;
 use moveos_store::{event_store::EventStore, state_store::StateDB};
 use moveos_types::function_return_value::FunctionReturnValue;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::FunctionId;
 use moveos_types::state_resolver::MoveOSResolverProxy;
-use moveos_types::storage_context::StorageContext;
 use moveos_types::transaction::{MoveOSTransaction, TransactionOutput, VerifiedMoveOSTransaction};
 use moveos_types::tx_context::TxContext;
 use moveos_types::{h256::H256, transaction::FunctionCall};
 
 pub struct MoveOSConfig {
     pub vm_config: VMConfig,
-    /// if the finalize_function is set, the MoveOS will call the function after the transaction is executed.
-    /// otherwise, the MoveOS will not call the function.
-    pub finalize_function: Option<FunctionId>,
+    /// if the pre_execute_function is set, the MoveOS will call the function before the transaction is executed.
+    pub pre_execute_function: Option<FunctionId>,
+    /// if the post_execute_function is set, the MoveOS will call the function after the transaction is executed.
+    pub post_execute_function: Option<FunctionId>,
 }
 
 //TODO make VMConfig cloneable
@@ -39,7 +40,8 @@ impl Clone for MoveOSConfig {
                 max_binary_format_version: self.vm_config.max_binary_format_version,
                 paranoid_type_checks: self.vm_config.paranoid_type_checks,
             },
-            finalize_function: self.finalize_function.clone(),
+            pre_execute_function: self.pre_execute_function.clone(),
+            post_execute_function: self.post_execute_function.clone(),
         }
     }
 }
@@ -55,7 +57,12 @@ impl MoveOS {
         natives: impl IntoIterator<Item = (AccountAddress, Identifier, Identifier, NativeFunction)>,
         config: MoveOSConfig,
     ) -> Result<Self> {
-        let vm = MoveOSVM::new(natives, config.vm_config, config.finalize_function)?;
+        let vm = MoveOSVM::new(
+            natives,
+            config.vm_config,
+            config.pre_execute_function,
+            config.post_execute_function,
+        )?;
         Ok(Self {
             vm,
             db: MoveOSResolverProxy(db),
@@ -77,12 +84,8 @@ impl MoveOS {
     }
 
     fn verify_and_execute_genesis_tx(&mut self, tx: MoveOSTransaction) -> Result<()> {
-        let MoveOSTransaction {
-            ctx: tx_context,
-            action,
-        } = tx;
+        let MoveOSTransaction { ctx, action } = tx;
 
-        let ctx = StorageContext::new(tx_context);
         let mut session = self.vm.new_genesis_session(&self.db, ctx);
         let verified_action = session.verify_move_action(action)?;
         let execute_result = session.execute_move_action(verified_action);
@@ -107,20 +110,22 @@ impl MoveOS {
         self.db.0.get_event_store()
     }
 
+    pub fn transaction_store(&self) -> &TransactionDB {
+        self.db.0.get_transaction_store()
+    }
+
     pub fn verify(&self, tx: MoveOSTransaction) -> Result<VerifiedMoveOSTransaction> {
-        let MoveOSTransaction {
-            ctx: tx_context,
-            action,
-        } = tx;
+        let MoveOSTransaction { ctx, action } = tx;
 
         let gas_meter = UnmeteredGasMeter;
-        let ctx = StorageContext::new(tx_context.clone());
-        let session = self.vm.new_readonly_session(&self.db, ctx, gas_meter);
+        let session = self
+            .vm
+            .new_readonly_session(&self.db, ctx.clone(), gas_meter);
 
         let verified_action = session.verify_move_action(action)?;
         let (_, _) = session.finish_with_extensions(VMStatus::Executed)?;
         Ok(VerifiedMoveOSTransaction {
-            ctx: tx_context,
+            ctx,
             action: verified_action,
         })
     }
@@ -138,7 +143,6 @@ impl MoveOS {
         }
         //TODO define the gas meter.
         let gas_meter = UnmeteredGasMeter;
-        let ctx = StorageContext::new(ctx);
         let mut session = self.vm.new_session(&self.db, ctx, gas_meter);
         let execute_result = session.execute_move_action(action);
         if execute_result.is_err() {
@@ -199,10 +203,11 @@ impl MoveOS {
         tx_context: &TxContext,
         function_call: FunctionCall,
     ) -> Result<Vec<FunctionReturnValue>> {
-        let ctx = StorageContext::new(tx_context.clone());
         //TODO limit the view function max gas usage
         let gas_meter = UnmeteredGasMeter;
-        let mut session = self.vm.new_readonly_session(&self.db, ctx, gas_meter);
+        let mut session = self
+            .vm
+            .new_readonly_session(&self.db, tx_context.clone(), gas_meter);
 
         let result = session.execute_function_bypass_visibility(function_call)?;
 

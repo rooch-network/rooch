@@ -5,11 +5,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::object::ObjectID;
+use crate::state::MoveStructType;
 use anyhow::{ensure, Error, Result};
 use move_core_types::account_address::AccountAddress;
-use move_core_types::{
-    language_storage::StructTag, language_storage::TypeTag, move_resource::MoveResource,
-};
+use move_core_types::{language_storage::StructTag, language_storage::TypeTag};
 use schemars::JsonSchema;
 // #[cfg(any(test, feature = "fuzzing"))]
 // use rand::{rngs::OsRng, RngCore};
@@ -168,7 +167,7 @@ impl Event {
         &self.event_data
     }
 
-    pub fn decode_event<EventType: MoveResource + DeserializeOwned>(&self) -> Result<EventType> {
+    pub fn decode_event<EventType: MoveStructType + DeserializeOwned>(&self) -> Result<EventType> {
         bcs::from_bytes(self.event_data.as_slice()).map_err(Into::into)
     }
 
@@ -176,7 +175,7 @@ impl Event {
         &self.type_tag
     }
 
-    pub fn is<EventType: MoveResource>(&self) -> bool {
+    pub fn is<EventType: MoveStructType>(&self) -> bool {
         self.type_tag == TypeTag::Struct(Box::new(EventType::struct_tag()))
     }
 

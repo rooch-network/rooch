@@ -6,6 +6,7 @@ use super::messages::{
     ExecuteViewFunctionMessage, GetEventsByEventHandleMessage, GetEventsMessage, StatesMessage,
     ValidateTransactionMessage,
 };
+use crate::actor::messages::{GetTransactionInfosByTxHashMessage, GetTxSeqMappingByTxOrderMessage};
 use anyhow::bail;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -23,18 +24,19 @@ use moveos_types::state::{AnnotatedState, State};
 use moveos_types::state_resolver::{AnnotatedStateReader, StateReader};
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
-use moveos_types::tx_context::TxContext;
 use rooch_framework::bindings::address_mapping::AddressMapping;
 use rooch_framework::bindings::transaction_validator::TransactionValidator;
 use rooch_genesis::RoochGenesis;
-use rooch_types::transaction::AbstractTransaction;
+use rooch_store::RoochDB;
+use rooch_types::transaction::{AbstractTransaction, TransactionSequenceMapping};
 
 pub struct ExecutorActor {
     moveos: MoveOS,
+    rooch_db: RoochDB,
 }
 
 impl ExecutorActor {
-    pub fn new() -> Result<Self> {
+    pub fn new(rooch_db: RoochDB) -> Result<Self> {
         let moveosdb = MoveOSDB::new_with_memory_store();
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
 
@@ -42,35 +44,41 @@ impl ExecutorActor {
         if moveos.state().is_genesis() {
             moveos.init_genesis(genesis.genesis_txs.clone())?;
         }
-        Ok(Self { moveos })
+        Ok(Self { moveos, rooch_db })
     }
 
     pub fn validate<T: AbstractTransaction>(&self, tx: T) -> Result<VerifiedMoveOSTransaction> {
-        let sender = tx.sender();
+        let multi_chain_address_sender = tx.sender();
 
         let resolved_sender = {
             let address_mapping = self.moveos.as_module_bundle::<AddressMapping>();
-            address_mapping.resolve(sender.clone())?.ok_or_else(|| {
-                anyhow::anyhow!(
-                    "the multiaddress sender({}) mapping record is not exists.",
-                    sender
-                )
-            })?
+            address_mapping
+                .resolve(multi_chain_address_sender.clone())?
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "the multiaddress sender({}) mapping record is not exists.",
+                        multi_chain_address_sender
+                    )
+                })?
         };
-
-        let tx_context = TxContext::new(resolved_sender, tx.tx_hash());
-
         let authenticator = tx.authenticator_info();
+
+        let mut moveos_tx = tx.construct_moveos_transaction(resolved_sender)?;
 
         let result = {
             let tx_validator = self.moveos.as_module_bundle::<TransactionValidator>();
-            tx_validator.validate(&tx_context, authenticator)
+            tx_validator.validate(&moveos_tx.ctx, authenticator)
         };
 
         match result {
-            Ok(_) => Ok(self
-                .moveos
-                .verify(tx.construct_moveos_transaction(resolved_sender)?)?),
+            Ok(_) => {
+                // Add the original multichain address to the context
+                moveos_tx
+                    .ctx
+                    .add(multi_chain_address_sender)
+                    .expect("add sender to context failed");
+                Ok(self.moveos.verify(moveos_tx)?)
+            }
             Err(e) => {
                 //TODO handle the abort error code
                 //let status = explain_vm_status(self.db.get_state_store(), e.into_vm_status())?;
@@ -118,6 +126,9 @@ impl Handler<ExecuteTransactionMessage> for ExecutorActor {
             0,
             output.status.clone(),
         );
+        self.moveos
+            .transaction_store()
+            .save_tx_exec_info(transaction_info.clone());
         Ok(ExecuteTransactionResult {
             output,
             transaction_info,
@@ -239,6 +250,34 @@ impl Handler<GetEventsMessage> for ExecutorActor {
         {
             result.push(Some(ev));
         }
+        Ok(result)
+    }
+}
+
+#[async_trait]
+impl Handler<GetTxSeqMappingByTxOrderMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: GetTxSeqMappingByTxOrderMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<TransactionSequenceMapping>> {
+        let GetTxSeqMappingByTxOrderMessage { cursor, limit } = msg;
+        let rooch_tx_store = self.rooch_db.get_transaction_store();
+        let result = rooch_tx_store.get_tx_seq_mapping_by_tx_order(cursor, limit);
+        Ok(result)
+    }
+}
+
+#[async_trait]
+impl Handler<GetTransactionInfosByTxHashMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: GetTransactionInfosByTxHashMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<Option<TransactionExecutionInfo>>> {
+        let GetTransactionInfosByTxHashMessage { tx_hashes } = msg;
+        let moveos_tx_store = self.moveos.transaction_store();
+        let result = moveos_tx_store.multi_get_tx_exec_infos(tx_hashes);
         Ok(result)
     }
 }

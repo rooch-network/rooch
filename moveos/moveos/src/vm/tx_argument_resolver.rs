@@ -3,17 +3,16 @@
 
 use anyhow::Result;
 use move_binary_format::errors::PartialVMError;
-use move_core_types::{move_resource::MoveStructType, value::MoveValue};
+use move_core_types::value::MoveValue;
 use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
 use move_vm_types::loaded_data::runtime_types::{StructType, Type};
 use moveos_types::{
-    state_resolver::MoveOSResolver, storage_context::StorageContext, tx_context::TxContext,
+    state::MoveStructType, state_resolver::MoveOSResolver, storage_context::StorageContext,
 };
 use std::sync::Arc;
 
 /// Transaction Argument Resolver will implemented by the Move Extension
 /// to auto fill transaction argument or do type conversion.
-// TODO: Try to push to Move upstream if possible.
 pub trait TxArgumentResolver {
     fn resolve_argument<S>(
         &self,
@@ -45,19 +44,12 @@ impl TxArgumentResolver for StorageContext {
                         .expect("serialize signer should success"),
                 );
             }
-            //Should we remove TxContext as entry function or view function argument?
-            if as_struct(session, t)
-                .map(|t| is_tx_context(&t))
-                .unwrap_or(false)
-            {
-                args.insert(i, self.tx_context.to_vec());
-            }
 
             if as_struct(session, t)
                 .map(|t| is_storage_context(&t))
                 .unwrap_or(false)
             {
-                args.insert(i, self.to_vec());
+                args.insert(i, self.to_bytes());
             }
         });
         Ok(args)
@@ -97,14 +89,8 @@ where
     }
 }
 
-fn is_tx_context(t: &StructType) -> bool {
-    t.module.address() == &moveos_types::addresses::MOVEOS_STD_ADDRESS
-        && t.module.name() == TxContext::module_identifier().as_ident_str()
-        && t.name == TxContext::struct_identifier()
-}
-
 pub fn is_storage_context(t: &StructType) -> bool {
-    t.module.address() == &moveos_types::addresses::MOVEOS_STD_ADDRESS
+    t.module.address() == &StorageContext::ADDRESS
         && t.module.name() == StorageContext::module_identifier().as_ident_str()
         && t.name == StorageContext::struct_identifier()
 }

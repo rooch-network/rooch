@@ -141,10 +141,6 @@ module rooch_framework::account{
 
    public(friend) fun increment_sequence_number(ctx: &mut StorageContext) {
       let sender = storage_context::sender(ctx);
-      //Auto create account if not exist
-      if (!account_storage::global_exists<Account>(ctx, sender)) {
-         create_account_unchecked(ctx, sender); 
-      };
 
       let sequence_number = &mut account_storage::global_borrow_mut<Account>(ctx, sender).sequence_number;
 
@@ -188,7 +184,7 @@ module rooch_framework::account{
 
 
    #[view]
-   public fun exists_at(ctx: &mut StorageContext, addr: address): bool {
+   public fun exists_at(ctx: &StorageContext, addr: address): bool {
       if(account_storage::exist_account_storage(ctx, addr)){
          account_storage::global_exists<Account>(ctx, addr)
       } else {

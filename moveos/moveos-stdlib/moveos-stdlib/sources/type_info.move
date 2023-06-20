@@ -70,7 +70,7 @@ module moveos_std::type_info {
 
     #[test]
     fun test_type_name() {
-        use moveos_std::table::Table;
+        //use moveos_std::table::Table;
 
         assert!(type_name<bool>() == string::utf8(b"bool"), 0);
         assert!(type_name<u8>() == string::utf8(b"u8"), 1);
@@ -103,12 +103,13 @@ module moveos_std::type_info {
         //     >
         // >() == string::utf8(b"0x1::table::Table<0x1::type_info::TypeInfo, 0x1::table::Table<u8, vector<0x1::type_info::TypeInfo>>>"), 10);
 
-        assert!(type_name<
-            Table<
-                TypeInfo,
-                Table<u8, vector<TypeInfo>>
-            >
-        >() == string::utf8(b"0000000000000000000000000000000000000000000000000000000000000002::table::Table<0000000000000000000000000000000000000000000000000000000000000002::type_info::TypeInfo,0000000000000000000000000000000000000000000000000000000000000002::table::Table<u8,vector<0000000000000000000000000000000000000000000000000000000000000002::type_info::TypeInfo>>>"), 10);
+        // Use table will cause dependency cycle, TODO use another way to test
+        // assert!(type_name<
+        //     Table<
+        //         TypeInfo,
+        //         Table<u8, vector<TypeInfo>>
+        //     >
+        // >() == string::utf8(b"0000000000000000000000000000000000000000000000000000000000000002::table::Table<0000000000000000000000000000000000000000000000000000000000000002::type_info::TypeInfo,0000000000000000000000000000000000000000000000000000000000000002::table::Table<u8,vector<0000000000000000000000000000000000000000000000000000000000000002::type_info::TypeInfo>>>"), 10);
     }
 
     #[verify_only]

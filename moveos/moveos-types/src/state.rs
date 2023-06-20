@@ -9,8 +9,8 @@ use anyhow::{bail, ensure, Result};
 use move_core_types::{
     account_address::AccountAddress,
     effects::Op,
+    identifier::{IdentStr, Identifier},
     language_storage::{StructTag, TypeTag},
-    move_resource::MoveStructType,
     resolver::MoveResolver,
     u256::U256,
     value::{MoveStructLayout, MoveTypeLayout},
@@ -32,6 +32,36 @@ pub struct State {
 /// The rust representation of a Move value
 pub trait MoveType {
     fn type_tag() -> TypeTag;
+}
+
+/// The rust representation of a Move Struct
+/// This trait copy from `move_core_types::move_resource::MoveStructType`
+/// For auto implement `MoveType` to `MoveStructType`
+pub trait MoveStructType {
+    const ADDRESS: AccountAddress = move_core_types::language_storage::CORE_CODE_ADDRESS;
+    const MODULE_NAME: &'static IdentStr;
+    const STRUCT_NAME: &'static IdentStr;
+
+    fn module_identifier() -> Identifier {
+        Self::MODULE_NAME.to_owned()
+    }
+
+    fn struct_identifier() -> Identifier {
+        Self::STRUCT_NAME.to_owned()
+    }
+
+    fn type_params() -> Vec<TypeTag> {
+        vec![]
+    }
+
+    fn struct_tag() -> StructTag {
+        StructTag {
+            address: Self::ADDRESS,
+            name: Self::struct_identifier(),
+            module: Self::module_identifier(),
+            type_params: Self::type_params(),
+        }
+    }
 }
 
 /// The rust representation of a Move value state
@@ -148,24 +178,23 @@ impl MoveState for AccountAddress {
     }
 }
 
-//TODO
-// impl<S> MoveType for S
-// where
-//     S: MoveStructType,
-// {
-//     fn type_tag() -> TypeTag {
-//         TypeTag::Struct(Box::new(Self::struct_tag()))
-//     }
-// }
+impl<S> MoveType for S
+where
+    S: MoveStructType,
+{
+    fn type_tag() -> TypeTag {
+        TypeTag::Struct(Box::new(Self::struct_tag()))
+    }
+}
 
-// impl<S> MoveState for S
-// where
-//     S: MoveStructState,
-// {
-//     fn type_layout() -> MoveTypeLayout {
-//         MoveTypeLayout::Struct(Self::struct_layout())
-//     }
-// }
+impl<S> MoveState for S
+where
+    S: MoveStructState,
+{
+    fn type_layout() -> MoveTypeLayout {
+        MoveTypeLayout::Struct(Self::struct_layout())
+    }
+}
 
 impl<S> MoveType for Vec<S>
 where

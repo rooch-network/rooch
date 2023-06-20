@@ -105,4 +105,102 @@ module moveos_std::type_table {
         raw_table::destroy(&handle)
     }
 
+    #[test_only]
+    struct TestType has key {
+        val: u64,
+    }
+
+    #[test(account = @0x1)]
+    fun test_all(account: signer) {
+        let sender = std::signer::address_of(&account);
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let table = new(&mut tx_context);
+
+        let t = TestType {
+            val: 1,
+        };
+
+        assert!(!contains<TestType>(&table), 1);
+        add<TestType>(&mut table, t);
+        assert!(contains<TestType>(&table), 2);
+
+        assert!(borrow<TestType>(&table).val == 1, 3);
+        borrow_mut<TestType>(&mut table).val = 2;
+        assert!(borrow<TestType>(&table).val == 2, 4);
+
+        let TestType {val:_} = remove<TestType>(&mut table);
+        assert!(!contains<TestType>(&table), 5);
+
+        drop_unchecked(table);
+    }
+
+    #[test(account = @0x1)]
+    #[expected_failure]
+    fun test_add_key_exist_failure(account: signer) {
+        let sender = std::signer::address_of(&account);
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let table = new(&mut tx_context);
+
+        let t = TestType {
+            val: 1,
+        };
+
+        add<TestType>(&mut table, t);
+        assert!(contains<TestType>(&table), 1);
+
+        let t = TestType {
+            val: 2,
+        };
+        add<TestType>(&mut table, t);
+
+        drop_unchecked(table);
+    }
+
+    #[test(account = @0x1)]
+    #[expected_failure]
+    fun test_borrow_key_not_exist_failure(account: signer) {
+        let sender = std::signer::address_of(&account);
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let table = new(&mut tx_context);
+        let _ = borrow<TestType>(&table).val;
+
+        drop_unchecked(table);
+    }
+
+    #[test(account = @0x1)]
+    #[expected_failure]
+    fun test_borrow_mut_key_not_exist_failure(account: signer) {
+        let sender = std::signer::address_of(&account);
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let table = new(&mut tx_context);
+        let t = borrow_mut<TestType>(&mut table);
+        t.val = 1;
+
+        drop_unchecked(table);
+    }
+
+    #[test(account = @0x1)]
+    #[expected_failure]
+    fun test_remove_key_not_exist_failure(account: signer) {
+        let sender = std::signer::address_of(&account);
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let table = new(&mut tx_context);
+        let TestType { val: _} = remove<TestType>(&mut table);
+
+        drop_unchecked(table);
+    }
+
+    #[test(account = @0x1)]
+    #[expected_failure]
+    fun test_destroy_non_empty_failure(account: signer) {
+        let sender = std::signer::address_of(&account);
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let table = new(&mut tx_context);
+        let t = TestType {
+            val: 1,
+        };
+        add<TestType>(&mut table, t);
+
+        destroy(table);
+    }
 }

@@ -58,7 +58,7 @@ const ALREADY_EXISTS: u64 = (100 << 8) + ECATEGORY_INVALID_ARGUMENT as u64;
 const NOT_FOUND: u64 = (101 << 8) + ECATEGORY_INVALID_ARGUMENT as u64;
 // Move side raises this
 //26112
-const _NOT_EMPTY: u64 = (102 << 8) + _ECATEGORY_INVALID_STATE as u64;
+const NOT_EMPTY: u64 = (102 << 8) + _ECATEGORY_INVALID_STATE as u64;
 
 // ===========================================================================================
 // Private Data Structures and Constants
@@ -600,6 +600,11 @@ fn native_destroy_empty_box(
     let mut table_data = table_context.table_data.borrow_mut();
 
     let handle = get_table_handle(pop_arg!(args, StructRef))?;
+    if table_data.tables.contains_key(&handle)
+        && !table_data.tables.get(&handle).unwrap().content.is_empty()
+    {
+        return Ok(NativeResult::err(gas_params.base, NOT_EMPTY));
+    }
     assert!(table_data.removed_tables.insert(handle));
 
     Ok(NativeResult::ok(gas_params.base, smallvec![]))

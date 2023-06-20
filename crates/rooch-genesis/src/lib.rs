@@ -38,15 +38,22 @@ impl RoochGenesis {
             .collect();
         let config = MoveOSConfig {
             vm_config: VMConfig::default(),
-            finalize_function: Some(
-                transaction_validator::TransactionValidator::finalize_function_id(),
+            pre_execute_function: Some(
+                transaction_validator::TransactionValidator::pre_execute_function_id(),
+            ),
+            post_execute_function: Some(
+                transaction_validator::TransactionValidator::post_execute_function_id(),
             ),
         };
 
         let config_for_test = MoveOSConfig {
             vm_config: VMConfig::default(),
-            //We do not execute the finalize function in the test.
-            finalize_function: None,
+            pre_execute_function: Some(
+                transaction_validator::TransactionValidator::pre_execute_function_id(),
+            ),
+            post_execute_function: Some(
+                transaction_validator::TransactionValidator::post_execute_function_id(),
+            ),
         };
 
         let gas_params = rooch_framework::natives::GasParameters::zeros();

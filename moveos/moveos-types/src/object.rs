@@ -3,7 +3,7 @@
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     h256,
-    state::{MoveStructState, State},
+    state::{MoveStructState, MoveStructType, State},
 };
 /// The Move Object is from Sui Move, and we try to mix the Global storage model and Object model in MoveOS.
 use anyhow::{bail, ensure, Result};
@@ -13,12 +13,11 @@ use move_core_types::{
     ident_str,
     identifier::IdentStr,
     language_storage::{StructTag, TypeTag},
-    move_resource::{MoveResource, MoveStructType},
     value::{MoveStructLayout, MoveTypeLayout},
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use schemars::JsonSchema;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::str::FromStr;
 
@@ -346,8 +345,6 @@ impl Object<AccountStorage> {
         }
     }
 }
-
-impl<T> MoveResource for Object<T> where T: MoveStructType + DeserializeOwned {}
 
 pub const OBJECT_MODULE_NAME: &IdentStr = ident_str!("object");
 pub const OBJECT_STRUCT_NAME: &IdentStr = ident_str!("Object");

@@ -14,7 +14,7 @@ use moveos_types::event::{Event, EventID};
 use moveos_types::move_types::parse_module_id;
 use moveos_types::transaction::MoveAction;
 use moveos_types::{
-    access_path::{AccessPath, Path},
+    access_path::AccessPath,
     event_filter::EventFilter,
     h256::H256,
     move_types::FunctionId,
@@ -41,8 +41,9 @@ pub type ModuleIdView = StrView<ModuleId>;
 pub type TypeTagView = StrView<TypeTag>;
 pub type StructTagView = StrView<StructTag>;
 pub type FunctionIdView = StrView<FunctionId>;
+pub type AccessPathView = StrView<AccessPath>;
 
-impl_str_view_for! {TypeTag StructTag FunctionId}
+impl_str_view_for! {TypeTag StructTag FunctionId AccessPath}
 // impl_str_view_for! {TypeTag StructTag ModuleId FunctionId}
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -365,91 +366,6 @@ impl From<Identifier> for IdentifierView {
 impl From<IdentifierView> for Identifier {
     fn from(value: IdentifierView) -> Self {
         Identifier::new(value.0).unwrap()
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
-pub enum PathView {
-    /// Get Object
-    Object { object_ids: Vec<ObjectID> },
-    /// Get account resources
-    Resource {
-        account: AccountAddressView,
-        resource_types: Vec<StructTagView>,
-    },
-    /// Get account modules
-    Module {
-        account: AccountAddressView,
-        module_names: Vec<IdentifierView>,
-    },
-    /// Get table values by keys
-    Table {
-        table_handle: ObjectID,
-        keys: Vec<Vec<u8>>,
-    },
-}
-
-impl From<PathView> for Path {
-    fn from(value: PathView) -> Self {
-        match value {
-            PathView::Object { object_ids } => Self::Object { object_ids },
-            PathView::Resource {
-                account,
-                resource_types,
-            } => Self::Resource {
-                account: account.into(),
-                resource_types: resource_types.into_iter().map(StructTag::from).collect(),
-            },
-            PathView::Module {
-                account,
-                module_names,
-            } => Self::Module {
-                account: account.into(),
-                module_names: module_names.into_iter().map(Identifier::from).collect(),
-            },
-            PathView::Table { table_handle, keys } => Self::Table { table_handle, keys },
-        }
-    }
-}
-
-impl From<Path> for PathView {
-    fn from(value: Path) -> Self {
-        match value {
-            Path::Object { object_ids } => Self::Object { object_ids },
-            Path::Resource {
-                account,
-                resource_types,
-            } => Self::Resource {
-                account: account.into(),
-                resource_types: resource_types
-                    .into_iter()
-                    .map(StructTagView::from)
-                    .collect(),
-            },
-            Path::Module {
-                account,
-                module_names,
-            } => Self::Module {
-                account: account.into(),
-                module_names: module_names.into_iter().map(IdentifierView::from).collect(),
-            },
-            Path::Table { table_handle, keys } => Self::Table { table_handle, keys },
-        }
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
-pub struct AccessPathView(pub PathView);
-
-impl From<AccessPathView> for AccessPath {
-    fn from(value: AccessPathView) -> Self {
-        AccessPath(value.0.into())
-    }
-}
-
-impl From<AccessPath> for AccessPathView {
-    fn from(value: AccessPath) -> Self {
-        AccessPathView(value.0.into())
     }
 }
 
