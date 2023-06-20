@@ -8,12 +8,13 @@ use move_compiler::compiled_unit::CompiledUnitEnum;
 use move_compiler::FullyCompiledProgram;
 use move_core_types::effects::{ChangeSet, Op};
 use move_transactional_test_runner::{
-    framework::{CompiledState, MoveTestAdapter},
-    tasks::{InitCommand, SyntaxChoice, TaskInput},
+    tasks::{InitCommand, SyntaxChoice},
     vm_test_harness::view_resource_in_move_storage,
 };
 use move_vm_runtime::session::SerializedReturnValues;
 use moveos::moveos::MoveOS;
+use moveos::moveos_test_runner::MoveOSTestAdapter;
+use moveos::moveos_test_runner::{CompiledState, TaskInput};
 use moveos_types::move_types::FunctionId;
 use moveos_types::object::ObjectID;
 use moveos_types::state::StateChangeSet;
@@ -22,7 +23,7 @@ use moveos_types::transaction::{MoveAction, MoveOSTransaction, TransactionOutput
 use rooch_genesis::RoochGenesis;
 use std::{collections::BTreeMap, path::Path};
 
-pub struct MoveOSTestAdapter<'a> {
+pub struct MoveOSTestRunner<'a> {
     compiled_state: CompiledState<'a>,
     // storage: SelectableStateView<ChainStateDB, InMemoryStateCache<RemoteViewer>>,
     default_syntax: SyntaxChoice,
@@ -51,7 +52,7 @@ pub enum MoveOSSubcommands {
     },
 }
 
-impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
+impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
     type ExtraPublishArgs = MoveOSPublishArgs;
     type ExtraRunArgs = MoveOSRunArgs;
     type Subcommand = MoveOSSubcommands;
@@ -191,7 +192,9 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
         script: move_binary_format::file_format::CompiledScript,
         type_args: Vec<move_core_types::language_storage::TypeTag>,
         signers: Vec<ParsedAddress>,
-        args: Vec<<<Self as MoveTestAdapter<'a>>::ExtraValueArgs as ParsableValue>::ConcreteValue>,
+        args: Vec<
+            <<Self as MoveOSTestAdapter<'a>>::ExtraValueArgs as ParsableValue>::ConcreteValue,
+        >,
         _gas_budget: Option<u64>,
         _extra: Self::ExtraRunArgs,
     ) -> anyhow::Result<(
@@ -231,7 +234,9 @@ impl<'a> MoveTestAdapter<'a> for MoveOSTestAdapter<'a> {
         function: &move_core_types::identifier::IdentStr,
         type_args: Vec<move_core_types::language_storage::TypeTag>,
         signers: Vec<ParsedAddress>,
-        args: Vec<<<Self as MoveTestAdapter<'a>>::ExtraValueArgs as ParsableValue>::ConcreteValue>,
+        args: Vec<
+            <<Self as MoveOSTestAdapter<'a>>::ExtraValueArgs as ParsableValue>::ConcreteValue,
+        >,
         _gas_budget: Option<u64>,
         _extra: Self::ExtraRunArgs,
     ) -> anyhow::Result<(
@@ -305,10 +310,7 @@ pub fn run_test_impl<'a>(
     path: &Path,
     fully_compiled_program_opt: Option<&'a FullyCompiledProgram>,
 ) -> Result<(), Box<dyn std::error::Error + 'static>> {
-    move_transactional_test_runner::framework::run_test_impl::<MoveOSTestAdapter>(
-        path,
-        fully_compiled_program_opt,
-    )
+    moveos::moveos_test_runner::run_test_impl::<MoveOSTestRunner>(path, fully_compiled_program_opt)
 }
 
 fn tx_output_to_str(output: TransactionOutput) -> String {

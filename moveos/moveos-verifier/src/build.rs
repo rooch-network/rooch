@@ -43,7 +43,7 @@ pub fn build_model(
         package_path,
         ModelConfig {
             target_filter,
-            all_files_as_targets: false,
+            all_files_as_targets: true,
         },
     )
 }
