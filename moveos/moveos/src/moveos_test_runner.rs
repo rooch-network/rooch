@@ -329,7 +329,7 @@ fn compile_ir_script<'a>(
     Ok(script)
 }
 
-pub trait MoveOSMainTestAdapter<'a>: Sized {
+pub trait MoveOSTestAdapter<'a>: Sized {
     type ExtraPublishArgs: Parser;
     type ExtraValueArgs: ParsableValue;
     type ExtraRunArgs: Parser;
@@ -340,8 +340,8 @@ pub trait MoveOSMainTestAdapter<'a>: Sized {
     fn default_syntax(&self) -> SyntaxChoice;
     fn init(
         default_syntax: SyntaxChoice,
-        option: Option<&'a FullyCompiledProgram>,
-        init_data: Option<TaskInput<(InitCommand, Self::ExtraInitArgs)>>,
+        pre_compiled_deps: Option<&'a FullyCompiledProgram>,
+        task_opt: Option<TaskInput<(InitCommand, Self::ExtraInitArgs)>>,
     ) -> (Self, Option<String>);
     fn publish_module(
         &mut self,
@@ -356,7 +356,7 @@ pub trait MoveOSMainTestAdapter<'a>: Sized {
         type_args: Vec<TypeTag>,
         signers: Vec<ParsedAddress>,
         args: Vec<
-            <<Self as MoveOSMainTestAdapter<'a>>::ExtraValueArgs as ParsableValue>::ConcreteValue,
+            <<Self as MoveOSTestAdapter<'a>>::ExtraValueArgs as ParsableValue>::ConcreteValue,
         >,
         gas_budget: Option<u64>,
         extra: Self::ExtraRunArgs,
@@ -368,7 +368,7 @@ pub trait MoveOSMainTestAdapter<'a>: Sized {
         type_args: Vec<TypeTag>,
         signers: Vec<ParsedAddress>,
         args: Vec<
-            <<Self as MoveOSMainTestAdapter<'a>>::ExtraValueArgs as ParsableValue>::ConcreteValue,
+            <<Self as MoveOSTestAdapter<'a>>::ExtraValueArgs as ParsableValue>::ConcreteValue,
         >,
         gas_budget: Option<u64>,
         extra: Self::ExtraRunArgs,
@@ -667,7 +667,7 @@ pub fn run_test_impl<'a, Adapter>(
     fully_compiled_program_opt: Option<&'a FullyCompiledProgram>,
 ) -> Result<(), Box<dyn std::error::Error>>
 where
-    Adapter: MoveOSMainTestAdapter<'a>,
+    Adapter: MoveOSTestAdapter<'a>,
     Adapter::ExtraInitArgs: Debug,
     Adapter::ExtraPublishArgs: Debug,
     Adapter::ExtraValueArgs: Debug,
@@ -726,7 +726,7 @@ where
     Ok(())
 }
 
-fn handle_known_task<'a, Adapter: MoveOSMainTestAdapter<'a>>(
+fn handle_known_task<'a, Adapter: MoveOSTestAdapter<'a>>(
     output: &mut String,
     adapter: &mut Adapter,
     task: TaskInput<

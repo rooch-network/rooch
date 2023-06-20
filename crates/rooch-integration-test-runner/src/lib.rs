@@ -13,7 +13,7 @@ use move_transactional_test_runner::{
 };
 use move_vm_runtime::session::SerializedReturnValues;
 use moveos::moveos::MoveOS;
-use moveos::moveos_test_runner::MoveOSMainTestAdapter;
+use moveos::moveos_test_runner::MoveOSTestAdapter;
 use moveos::moveos_test_runner::{CompiledState, TaskInput};
 use moveos_types::move_types::FunctionId;
 use moveos_types::object::ObjectID;
@@ -23,7 +23,7 @@ use moveos_types::transaction::{MoveAction, MoveOSTransaction, TransactionOutput
 use rooch_genesis::RoochGenesis;
 use std::{collections::BTreeMap, path::Path};
 
-pub struct MoveOSTestAdapter<'a> {
+pub struct MoveOSTestRunner<'a> {
     compiled_state: CompiledState<'a>,
     // storage: SelectableStateView<ChainStateDB, InMemoryStateCache<RemoteViewer>>,
     default_syntax: SyntaxChoice,
@@ -52,7 +52,7 @@ pub enum MoveOSSubcommands {
     },
 }
 
-impl<'a> MoveOSMainTestAdapter<'a> for MoveOSTestAdapter<'a> {
+impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
     type ExtraPublishArgs = MoveOSPublishArgs;
     type ExtraRunArgs = MoveOSRunArgs;
     type Subcommand = MoveOSSubcommands;
@@ -69,10 +69,10 @@ impl<'a> MoveOSMainTestAdapter<'a> for MoveOSTestAdapter<'a> {
 
     fn init(
         default_syntax: SyntaxChoice,
-        option: Option<&'a FullyCompiledProgram>,
-        init_data: Option<TaskInput<(InitCommand, Self::ExtraInitArgs)>>,
+        pre_compiled_deps: Option<&'a FullyCompiledProgram>,
+        task_opt: Option<TaskInput<(InitCommand, Self::ExtraInitArgs)>>,
     ) -> (Self, Option<String>) {
-        let additional_mapping = match init_data.map(|t| t.command) {
+        let additional_mapping = match task_opt.map(|t| t.command) {
             Some((InitCommand { named_addresses }, _)) => {
                 verify_and_create_named_address_mapping(named_addresses).unwrap()
             }
@@ -106,7 +106,7 @@ impl<'a> MoveOSMainTestAdapter<'a> for MoveOSTestAdapter<'a> {
         // Apply new modules and add precompiled address mapping
         let mut change_set = ChangeSet::new();
         let table_change_set = StateChangeSet::default();
-        if let Some(pre_compiled_lib) = option {
+        if let Some(pre_compiled_lib) = pre_compiled_deps {
             for c in &pre_compiled_lib.compiled {
                 if let CompiledUnitEnum::Module(m) = c {
                     println!(
@@ -145,7 +145,7 @@ impl<'a> MoveOSMainTestAdapter<'a> for MoveOSTestAdapter<'a> {
             .unwrap();
 
         let mut adapter = Self {
-            compiled_state: CompiledState::new(named_address_mapping, option, None),
+            compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps, None),
             default_syntax,
             moveos,
         };
@@ -193,7 +193,7 @@ impl<'a> MoveOSMainTestAdapter<'a> for MoveOSTestAdapter<'a> {
         type_args: Vec<move_core_types::language_storage::TypeTag>,
         signers: Vec<ParsedAddress>,
         args: Vec<
-            <<Self as MoveOSMainTestAdapter<'a>>::ExtraValueArgs as ParsableValue>::ConcreteValue,
+            <<Self as MoveOSTestAdapter<'a>>::ExtraValueArgs as ParsableValue>::ConcreteValue,
         >,
         _gas_budget: Option<u64>,
         _extra: Self::ExtraRunArgs,
@@ -235,7 +235,7 @@ impl<'a> MoveOSMainTestAdapter<'a> for MoveOSTestAdapter<'a> {
         type_args: Vec<move_core_types::language_storage::TypeTag>,
         signers: Vec<ParsedAddress>,
         args: Vec<
-            <<Self as MoveOSMainTestAdapter<'a>>::ExtraValueArgs as ParsableValue>::ConcreteValue,
+            <<Self as MoveOSTestAdapter<'a>>::ExtraValueArgs as ParsableValue>::ConcreteValue,
         >,
         _gas_budget: Option<u64>,
         _extra: Self::ExtraRunArgs,
@@ -310,7 +310,7 @@ pub fn run_test_impl<'a>(
     path: &Path,
     fully_compiled_program_opt: Option<&'a FullyCompiledProgram>,
 ) -> Result<(), Box<dyn std::error::Error + 'static>> {
-    moveos::moveos_test_runner::run_test_impl::<MoveOSTestAdapter>(path, fully_compiled_program_opt)
+    moveos::moveos_test_runner::run_test_impl::<MoveOSTestRunner>(path, fully_compiled_program_opt)
 }
 
 fn tx_output_to_str(output: TransactionOutput) -> String {

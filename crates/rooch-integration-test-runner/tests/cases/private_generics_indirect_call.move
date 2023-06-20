@@ -14,23 +14,23 @@ module creator::test {
     }
     use std::string::{Self};
 
+    use moveos_std::account_storage;
     #[private_generics(T1)]
-    public fun publish_foo<T1>(s: &signer) {
-        move_to<Foo>(s, Foo { x: 500 })
+    public fun publish_foo<T1>(ctx: &mut StorageContext, s: &signer) {
+        account_storage::global_move_to<Foo>(ctx, s, Foo { x: 500 })
     }
 
     use creator::test0::KeyStruct;
     // use moveos_std::account_storage::AccountStorage;
 
-    public fun run(s: &signer) {
+    public fun run(ctx: &mut StorageContext, s: &signer) {
         let _ = string::utf8(b"account_storage");
-        publish_foo<Foo>(s)
+        publish_foo<Foo>(ctx, s)
     }
 
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::object;
     use moveos_std::object_id::ObjectID;
-    use moveos_std::account_storage;
     use moveos_std::object_storage;
     use std::debug;
 
@@ -44,14 +44,5 @@ module creator::test {
         debug::print(&obj);
         let (_id,_owner,value) = object::unpack(obj);
         account_storage::global_move_to(ctx, &sender, value);
-    }
-}
-
-//# run --signers creator
-script {
-    use creator::test;
-
-    fun main(s: signer) {
-        test::run(&s);
     }
 }

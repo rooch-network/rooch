@@ -1,4 +1,4 @@
-processed 4 tasks
+processed 3 tasks
 
 task 1 'publish'. lines 3-8:
 status EXECUTED
@@ -22,7 +22,4 @@ error: resource type "KeyStruct" in function "0x2::account_storage::global_move_
 40 │         account_storage::global_move_to(ctx, &sender, value);
    │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-status EXECUTED
-
-task 3 'run'. lines 50-57:
 status EXECUTED
