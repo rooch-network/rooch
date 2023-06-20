@@ -1,7 +1,7 @@
 processed 3 tasks
 
-task 1 'publish'. lines 3-17:
+task 1 'publish'. lines 3-21:
 status EXECUTED
 
-task 2 'run'. lines 18-34:
-status ABORTED with code 21 in Script
+task 2 'run'. lines 22-39:
+status EXECUTED

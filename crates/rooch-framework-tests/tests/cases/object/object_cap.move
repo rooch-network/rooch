@@ -12,6 +12,10 @@ module test::m {
             f,
         }
     }
+
+    public fun destroy_test_object(test_object: TestObject) {
+        let TestObject{f : _f} = test_object;
+    }
 }
 
 //check private_generics verify
@@ -27,9 +31,10 @@ script {
         let object = m::new_test_object(12);
         let obj = object::new<TestObject>(storage_context::tx_context_mut(ctx), sender_addr, object);
 
-        let _borrow_object = object::borrow_mut(&mut obj);
-        abort 21
-
+        let _borrow_object = object::borrow(&obj);
+        let (_id, _owner, test_object) = object::unpack(obj);
+        m::destroy_test_object(test_object);
     }
 }
+// check: ABORTED
 

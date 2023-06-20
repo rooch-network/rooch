@@ -119,7 +119,9 @@ module moveos_std::object_storage {
         let object_id = object::id(&object);
 
         let _obj_ref = borrow<TestObject>(&os, object_id);
-        abort 21
+        drop_object_storage(os);
+        let (_id, _owner, test_object) = object::unpack(object);
+        let TestObject{f :_f} = test_object;
     }
 
     #[test(sender = @0x42)]
@@ -131,14 +133,13 @@ module moveos_std::object_storage {
         let object = object::new(&mut ctx, sender_addr, TestObject{f: 1});
         let object_id = object::id(&object);
         add<TestObject>(&mut os, object);
-        let _obj_rem1 = remove<TestObject>(&mut os, object_id);
-        let _obj_rem2 = remove<TestObject>(&mut os, object_id);
-        abort 21
-        // drop_object_storage(os);
-        // let (_id, _owner, test_object1) = object::unpack(obj_rem1);
-        // let TestObject{f :_f} = test_object1;
-        // let (_id, _owner, test_object2) = object::unpack(obj_rem2);
-        // let TestObject{f :_f} = test_object2;
+        let obj_rem1 = remove<TestObject>(&mut os, object_id);
+        let obj_rem2 = remove<TestObject>(&mut os, object_id);
+        drop_object_storage(os);
+        let (_id, _owner, test_object1) = object::unpack(obj_rem1);
+        let TestObject{f :_f} = test_object1;
+        let (_id, _owner, test_object2) = object::unpack(obj_rem2);
+        let TestObject{f :_f} = test_object2;
     }
 
     #[test(sender = @0x42)]
@@ -150,8 +151,12 @@ module moveos_std::object_storage {
         let object = object::new(&mut ctx, sender_addr, TestObject{f: 1});
         let object_id = object::id(&object);
 
-        let _obj_rem = remove<TestObject>(&mut os, object_id);
-        abort 21
+        let obj_rem = remove<TestObject>(&mut os, object_id);
+        drop_object_storage(os);
+        let (_id, _owner, test_object) = object::unpack(object);
+        let TestObject{f :_f} = test_object;
+        let (_id, _owner, test_object_rem) = object::unpack(obj_rem);
+        let TestObject{f :_f} = test_object_rem;
     }
 
 }
