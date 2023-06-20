@@ -9,16 +9,6 @@
 3. Rooch Layer3 Modular DApp: Rooch(Execution) + Rooch Layer2(Settlement + Arbitration) + DA
 4. Sovereign Rollup: Rooch + DA
 
-## Design
-
-1. [Storage Abstraction](./docs/design/storage_abstraction.md)
-
-## Components
-* [MoveOS](./moveos): MoveOS is a standalone Move runtime environment based on [MoveVM](https://github.com/move-language/move). It provide Move execution environment for rooch.
-* Sequencer(TODO)
-* Proposer(TODO)
-* Challenger(TODO)
-
 ## Getting Started
 
 1. Build from source
@@ -46,6 +36,25 @@
     ```bash
     rooch move publish -p my_move_project
     ```
+
+## Deep Dive into Rooch
+
+### [Storage Abstraction](./docs/design/storage_abstraction.md)
+
+Storage Abstraction module overview:
+
+![Storage Abstraction](./docs/design/rooch-design-storage-abstraction.svg)
+
+State DB:
+
+![State DB](./docs/design/rooch-design-statedb.svg)
+
+### [Transaction Flow](./docs/design/transaction_flow.md)
+
+![Rooch Transaction Flow](./docs/design/rooch-design-transaction-flow-functional-perspective.svg)
+
+## Components
+* [MoveOS](./moveos): MoveOS is a standalone Move runtime environment based on [MoveVM](https://github.com/move-language/move). It provide Move execution environment for rooch.
 
 ## How to Contribute
 

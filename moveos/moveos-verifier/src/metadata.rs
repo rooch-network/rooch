@@ -1,3 +1,6 @@
+#![allow(clippy::redundant_closure)]
+#![allow(clippy::map_clone)]
+
 use crate::build::ROOCH_METADATA_KEY;
 use crate::verifier::INIT_FN_NAME_IDENTIFIER;
 use move_binary_format::binary_views::BinaryIndexedView;
@@ -13,9 +16,15 @@ use move_model::ty::PrimitiveType;
 use move_model::ty::Type;
 use moveos_types::state::MoveStructType;
 use moveos_types::storage_context::StorageContext;
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use thiserror::Error;
+
+// This is only used for local integration testing and compiling multiple Move Packages.
+// When publishing, use FunctionIndex -> ModuleID to read the module from the DB.
+pub static mut GLOBAL_PRIVATE_GENERICS: Lazy<BTreeMap<String, Vec<usize>>> =
+    Lazy::new(|| BTreeMap::new());
 
 const PRIVATE_GENERICS_ATTRIBUTE: &str = "private_generics";
 
@@ -87,10 +96,9 @@ impl<'a> ExtendedChecker<'a> {
     }
 
     fn run(&mut self) {
-        let mut global_private_generics_indices: BTreeMap<String, Vec<usize>> = BTreeMap::new();
         for ref module in self.env.get_modules() {
             if module.is_target() {
-                self.check_private_generics_functions(module, &mut global_private_generics_indices);
+                self.check_private_generics_functions(module);
                 self.check_entry_functions(module);
                 self.check_init_module(module);
             }
@@ -102,26 +110,20 @@ impl<'a> ExtendedChecker<'a> {
 // Private Generic Functions
 
 impl<'a> ExtendedChecker<'a> {
-    fn check_private_generics_functions(
-        &mut self,
-        module: &ModuleEnv,
-        global_private_generics_indices: &mut BTreeMap<String, Vec<usize>>,
-    ) {
+    fn check_private_generics_functions(&mut self, module: &ModuleEnv) {
+        // The `type_name_indices` is used to save the private_generics information of the found function to the metadata of the module.
+        // The private_generics information of the function is looked up from `GLOBAL_PRIVATE_GENERICS`.
         let mut type_name_indices: BTreeMap<String, Vec<usize>> = BTreeMap::new();
         let mut func_loc_map = BTreeMap::new();
 
         let compiled_module = module.get_verified_module();
         let view = BinaryIndexedView::Module(compiled_module);
 
-        // Inspect the bytecode of every function, and if an instruction is CallGeneric,
-        // verify that it calls a function with the private_generics attribute as detected earlier.
-        // Then, ensure that the generic parameters of the CallGeneric instruction are valid.
+        // Check every function and if a function has the private_generics attribute,
+        // ensure that the function name and the types defined in the private_generics attribute match,
+        // for example: #[private_generics(T1, T2)].
         for ref fun in module.get_functions() {
             if self.has_attribute(fun, PRIVATE_GENERICS_ATTRIBUTE) {
-                // Check every function and if a function has the private_generics attribute,
-                // ensure that the function name and the types defined in the private_generics attribute match,
-                // for example: #[private_generics(T1, T2)].
-
                 let mut func_type_params_name_list = vec![];
                 let type_params = fun.get_named_type_parameters();
                 for t in type_params {
@@ -212,14 +214,20 @@ impl<'a> ExtendedChecker<'a> {
                             format!("{}::{}::{}", module_address, module_name, func_name);
                         type_name_indices
                             .insert(full_path_func_name.clone(), attribute_type_index.clone());
-                        global_private_generics_indices
-                            .insert(full_path_func_name, attribute_type_index.clone());
+
+                        unsafe {
+                            GLOBAL_PRIVATE_GENERICS
+                                .insert(full_path_func_name, attribute_type_index.clone());
+                        }
 
                         func_loc_map.insert(func_name, fun.get_loc());
                     }
                 }
             }
 
+            // Inspect the bytecode of every function, and if an instruction is CallGeneric,
+            // verify that it calls a function with the private_generics attribute as detected earlier.
+            // Then, ensure that the generic parameters of the CallGeneric instruction are valid.
             for (offset, instr) in fun.get_bytecode().iter().enumerate() {
                 if let Bytecode::CallGeneric(finst_idx) = instr {
                     let FunctionInstantiation {
@@ -240,12 +248,17 @@ impl<'a> ExtendedChecker<'a> {
                         format!("{}::{}::{}", module_address, module_name, func_name);
 
                     let type_arguments = &view.signature_at(*type_parameters).0;
-                    let private_generics_types =
-                        global_private_generics_indices.get(full_path_func_name.as_str());
+                    let private_generics_types = {
+                        unsafe {
+                            GLOBAL_PRIVATE_GENERICS
+                                .get(full_path_func_name.as_str())
+                                .map(|list| list.clone())
+                        }
+                    };
 
                     if let Some(private_generics_types_indices) = private_generics_types {
                         for generic_type_index in private_generics_types_indices {
-                            let type_arg = type_arguments.get(*generic_type_index).unwrap();
+                            let type_arg = type_arguments.get(generic_type_index).unwrap();
                             let (defined_in_current_module, struct_name) =
                                 is_defined_or_allowed_in_current_module(&view, type_arg);
 

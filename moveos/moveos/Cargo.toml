@@ -20,6 +20,13 @@ anyhow = { workspace = true }
 bcs = { workspace = true }
 log = { workspace = true }
 once_cell = { workspace = true }
+clap = { workspace = true }
+rayon = { workspace = true }
+tempfile = { workspace = true }
+codespan-reporting = { workspace = true }
+codespan = { workspace = true }
+itertools = { workspace = true }
+regex = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }
@@ -30,6 +37,16 @@ move-unit-test = { workspace = true, optional = true }
 move-vm-runtime = { workspace = true }
 move-vm-test-utils = { workspace = true }
 move-vm-types = { workspace = true }
+move-command-line-common = { workspace = true }
+move-bytecode-source-map = { workspace = true }
+move-ir-types = { workspace = true }
+move-disassembler = { workspace = true }
+move-ir-compiler = { workspace = true }
+move-transactional-test-runner = { workspace = true }
+move-compiler = { workspace = true }
+move-symbol-pool = { workspace = true }
+move-package = { workspace = true }
+move-model = { workspace = true }
 
 moveos-types = { workspace = true }
 moveos-store = { workspace = true }

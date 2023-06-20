@@ -1,4 +1,84 @@
 processed 2 tasks
 
 task 1 'publish'. lines 3-54:
+error: entry function cannot return values
+   ┌─ /tmp/tempfile:26:5
+   │  
+26 │ ╭     entry public fun test_entry_function_return_value_String():std::string::String{
+27 │ │         std::string::utf8(b"")
+28 │ │     }
+   │ ╰─────^
+
+error: entry function cannot return values
+   ┌─ /tmp/tempfile:38:5
+   │  
+38 │ ╭     entry public fun test_entry_function_return_value_T<T>(): FooT<T>{
+39 │ │         FooT<T>{ x: 0 }
+40 │ │     }
+   │ ╰─────^
+
+error: entry function cannot return values
+   ┌─ /tmp/tempfile:23:5
+   │  
+23 │ ╭     entry public fun test_entry_function_return_value_address():address{
+24 │ │         @creator
+25 │ │     }
+   │ ╰─────^
+
+error: entry function cannot return values
+   ┌─ /tmp/tempfile:32:5
+   │  
+32 │ ╭     entry public fun test_entry_function_return_value_struct():Foo {
+33 │ │         Foo { x: 0 }
+34 │ │     }
+   │ ╰─────^
+
+error: entry function cannot return values
+   ┌─ /tmp/tempfile:17:5
+   │  
+17 │ ╭     entry public fun test_entry_function_return_value_u128():u128{
+18 │ │         0
+19 │ │     }
+   │ ╰─────^
+
+error: entry function cannot return values
+   ┌─ /tmp/tempfile:8:5
+   │  
+ 8 │ ╭     entry public fun test_entry_function_return_value_u16():u16{
+ 9 │ │         0
+10 │ │     }
+   │ ╰─────^
+
+error: entry function cannot return values
+   ┌─ /tmp/tempfile:20:5
+   │  
+20 │ ╭     entry public fun test_entry_function_return_value_u256():u256{
+21 │ │         0
+22 │ │     }
+   │ ╰─────^
+
+error: entry function cannot return values
+   ┌─ /tmp/tempfile:11:5
+   │  
+11 │ ╭     entry public fun test_entry_function_return_value_u32():u32{
+12 │ │         0
+13 │ │     }
+   │ ╰─────^
+
+error: entry function cannot return values
+   ┌─ /tmp/tempfile:14:5
+   │  
+14 │ ╭     entry public fun test_entry_function_return_value_u64():u64{
+15 │ │         0
+16 │ │     }
+   │ ╰─────^
+
+error: entry function cannot return values
+  ┌─ /tmp/tempfile:5:5
+  │  
+5 │ ╭     entry public fun test_entry_function_return_value_u8():u8{
+6 │ │         0
+7 │ │     }
+  │ ╰─────^
+
 status EXECUTED
