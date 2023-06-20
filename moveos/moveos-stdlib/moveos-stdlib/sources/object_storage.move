@@ -67,19 +67,19 @@ module moveos_std::object_storage {
     #[test_only]
     /// Testing only: allow to drop oject storage
     public fun drop_object_storage(this: ObjectStorage) {
-        // raw_table::drop_unchecked<ObjectID>(this.handle);
-        // let ObjectStorage { handle: _} = this;
-
         test_helper::destroy<ObjectStorage>(this);
     }
+
     #[test_only]
     struct TestObject has key{
         f: u8
     }
+
      #[test_only]
     struct TestObject2 has key{
         f: u8
     }
+
     #[test(sender=@0x42)]
     fun test_object_storage(sender: address) {
         let ctx = moveos_std::tx_context::new_test_context(sender);
@@ -108,4 +108,50 @@ module moveos_std::object_storage {
         let (_id, _owner, test_object2) = object::unpack(object2); 
         let TestObject2{f:_f} = test_object2;
     }
+
+    #[test(sender = @0x42)]
+    #[expected_failure]
+    fun test_borrow_not_exist_failure(sender: signer) {
+        let sender_addr = std::signer::address_of(&sender);
+        let ctx = moveos_std::tx_context::new_test_context(sender_addr);
+        let os = new(&mut ctx);
+        let object = object::new(&mut ctx, sender_addr, TestObject{f: 1});
+        let object_id = object::id(&object);
+
+        let _obj_ref = borrow<TestObject>(&os, object_id);
+        abort 21
+    }
+
+    #[test(sender = @0x42)]
+    #[expected_failure]
+    fun test_double_remove_failure(sender: signer) {
+        let sender_addr = std::signer::address_of(&sender);
+        let ctx = moveos_std::tx_context::new_test_context(sender_addr);
+        let os = new(&mut ctx);
+        let object = object::new(&mut ctx, sender_addr, TestObject{f: 1});
+        let object_id = object::id(&object);
+        add<TestObject>(&mut os, object);
+        let _obj_rem1 = remove<TestObject>(&mut os, object_id);
+        let _obj_rem2 = remove<TestObject>(&mut os, object_id);
+        abort 21
+        // drop_object_storage(os);
+        // let (_id, _owner, test_object1) = object::unpack(obj_rem1);
+        // let TestObject{f :_f} = test_object1;
+        // let (_id, _owner, test_object2) = object::unpack(obj_rem2);
+        // let TestObject{f :_f} = test_object2;
+    }
+
+    #[test(sender = @0x42)]
+    #[expected_failure]
+    fun test_remove_not_exist_failure(sender: signer) {
+        let sender_addr = std::signer::address_of(&sender);
+        let ctx = moveos_std::tx_context::new_test_context(sender_addr);
+        let os = new(&mut ctx);
+        let object = object::new(&mut ctx, sender_addr, TestObject{f: 1});
+        let object_id = object::id(&object);
+
+        let _obj_rem = remove<TestObject>(&mut os, object_id);
+        abort 21
+    }
+
 }

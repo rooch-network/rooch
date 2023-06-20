@@ -73,5 +73,30 @@ module moveos_std::object {
         let Object{id, owner, value} = obj;
         (id, owner, value)
     }
- 
+
+    #[test_only]
+    struct TestObject has key {
+        count: u64,
+    }
+
+    #[test(sender = @0x2)]
+    fun test_object(sender: signer) {
+        let sender_addr = std::signer::address_of(&sender);
+        let tx_context = moveos_std::tx_context::new_test_context(sender_addr);
+        let object_count = 12;
+        let object = TestObject {
+            count: object_count,
+        };
+        let obj = new<TestObject>(&mut tx_context, sender_addr, object);
+
+        let borrow_object = borrow_mut(&mut obj);
+        assert!(borrow_object.count == object_count, 1001);
+
+        transfer(&mut obj, @0x10);
+        let obj_owner = owner(&obj);
+        assert!(obj_owner != sender_addr, 1002);
+
+        let (_id, _owner, test_obj) = unpack(obj);
+        let TestObject{count: _count} = test_obj;
+    }
 }
