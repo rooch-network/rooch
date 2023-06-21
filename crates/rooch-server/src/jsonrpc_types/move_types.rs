@@ -35,13 +35,13 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::BTreeMap;
 use std::str::FromStr;
-// use move_binary_format::file_format::AbilitySet;
 
 pub type ModuleIdView = StrView<ModuleId>;
 pub type TypeTagView = StrView<TypeTag>;
 pub type StructTagView = StrView<StructTag>;
 pub type FunctionIdView = StrView<FunctionId>;
 pub type AccessPathView = StrView<AccessPath>;
+pub type AccountAddressView = StrView<AccountAddress>;
 
 impl_str_view_for! {TypeTag StructTag FunctionId AccessPath}
 // impl_str_view_for! {TypeTag StructTag ModuleId FunctionId}
@@ -127,7 +127,7 @@ pub enum AnnotatedMoveValueView {
     U64(StrView<u64>),
     U128(StrView<u128>),
     Bool(bool),
-    Address(StrView<AccountAddress>),
+    Address(AccountAddressView),
     Vector(Vec<AnnotatedMoveValueView>),
     Bytes(StrView<Vec<u8>>),
     Struct(AnnotatedMoveStructView),
@@ -190,7 +190,7 @@ impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AnnotatedObjectView {
     pub id: ObjectID,
-    pub owner: AccountAddress,
+    pub owner: AccountAddressView,
     pub value: AnnotatedMoveStructView,
 }
 
@@ -198,7 +198,7 @@ impl From<AnnotatedObject> for AnnotatedObjectView {
     fn from(origin: AnnotatedObject) -> Self {
         Self {
             id: origin.id,
-            owner: origin.owner,
+            owner: origin.owner.into(),
             value: origin.value.into(),
         }
     }
@@ -333,20 +333,6 @@ impl FromStr for StrView<ModuleId> {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self(parse_module_id(s)?))
-    }
-}
-#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
-pub struct AccountAddressView([u8; AccountAddress::LENGTH]);
-
-impl From<AccountAddress> for AccountAddressView {
-    fn from(value: AccountAddress) -> Self {
-        AccountAddressView(value.into())
-    }
-}
-
-impl From<AccountAddressView> for AccountAddress {
-    fn from(value: AccountAddressView) -> Self {
-        AccountAddress::new(value.0)
     }
 }
 

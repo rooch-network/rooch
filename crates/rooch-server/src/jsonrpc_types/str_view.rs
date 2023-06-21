@@ -83,7 +83,7 @@ macro_rules! impl_str_view_for {
     )*}
 }
 
-impl_str_view_for! {u64 i64 u128 i128 u16 i16 u32 i32 u256::U256}
+impl_str_view_for! {u64 i64 u128 i128 u16 i16 u32 i32 u256::U256 }
 
 impl std::fmt::Display for StrView<Vec<u8>> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -112,9 +112,9 @@ impl AsRef<[u8]> for StrView<Vec<u8>> {
 
 impl std::fmt::Display for StrView<AccountAddress> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        //Ensure append `0x` before the address.
+        //Ensure append `0x` before the address, and output full address
         //The Display implemention of AccountAddress has not `0x` prefix
-        write!(f, "{}", self.0.to_hex_literal())
+        write!(f, "0x{}", self.0)
     }
 }
 
@@ -123,5 +123,11 @@ impl FromStr for StrView<AccountAddress> {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // AccountAddress::from_str suppport both 0xABCD and ABCD
         Ok(StrView(AccountAddress::from_str(s)?))
+    }
+}
+
+impl From<StrView<AccountAddress>> for AccountAddress {
+    fn from(value: StrView<AccountAddress>) -> Self {
+        value.0
     }
 }
