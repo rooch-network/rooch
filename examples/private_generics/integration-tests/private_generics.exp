@@ -1,5 +1,0 @@
-processed 2 tasks
-
-// TODO should be panic after checking scripts at the verifier level
-task 1 'run'. lines 3-10:
-status EXECUTED

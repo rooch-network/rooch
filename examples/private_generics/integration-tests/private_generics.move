@@ -2,9 +2,11 @@
 
 //# run --signers test
 script {
-    use rooch_examples::Data;
+    use rooch_examples::Test1;
+    use rooch_examples::Test2;
 
     fun main() {
-        Data::run();
+        Test1::test();
+        Test2::run();
     }
 }
