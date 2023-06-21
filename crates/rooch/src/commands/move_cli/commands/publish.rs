@@ -69,7 +69,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         };
         let mut package = config.compile_package_no_exit(&package_path, &mut stderr())?;
 
-        run_verifier(package_path, additional_named_address, &mut package);
+        run_verifier(package_path, additional_named_address, &mut package)?;
 
         // let modules = package.root_modules_map().iter_modules_owned();
         let modules = package.root_modules_map();

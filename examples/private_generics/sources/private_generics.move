@@ -20,32 +20,10 @@ module rooch_examples::Test1 {
         *&box.value
     }
 
-
-    #[test]
     fun test() {
         let data = Data{ v: 123 };
 
-        // Here, it will report that the U64 type is not allowed to appear within private_generics.
-        let box_val = create_box<Data, u64, Box<u32>>(data);
-
-        let _ = box_value(&box_val);
-    }
-}
-
-module rooch_examples::Test2 {
-    use rooch_examples::Test1::Data;
-    use rooch_examples::Test1::Box;
-    use rooch_examples::Test1::new_data;
-    use rooch_examples::Test1::create_box;
-    use rooch_examples::Test1::box_value;
-
-    public fun run() {
-        let data = new_data(789);
-
-        // Here, it will report that `Data` is not defined within the current module,
-        // because `Data` is imported from the `Test1` module.
         let box_val = create_box<Data, Data, Box<u32>>(data);
-
         let _ = box_value(&box_val);
     }
 }
