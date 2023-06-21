@@ -96,7 +96,7 @@ module moveos_std::account_storage {
 
     /// Remove a resource from the account storage
     fun remove_resource_from_account_storage<T: key>(this: &mut AccountStorage): T{
-        assert!(!type_table::contains_internal<T>(&this.resources), EResourceAlreadyExists);
+        assert!(type_table::contains_internal<T>(&this.resources), EResourceNotExists);
         type_table::remove<T>(&mut this.resources)
     }
 
