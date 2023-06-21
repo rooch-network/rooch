@@ -3,5 +3,23 @@ processed 3 tasks
 task 1 'publish'. lines 3-21:
 status EXECUTED
 
-task 2 'run'. lines 22-39:
+task 2 'run'. lines 22-38:
+error: resource type "TestObject" in function "0x2::object::new" not defined in current module or not allowed
+   ┌─ /var/folders/b7/gt6_vlj14mn6h8xk1x9ly6m40000gn/T/.tmpIr4LLF:31:19
+   │
+31 │         let obj = object::new<TestObject>(storage_context::tx_context_mut(ctx), sender_addr, object);
+   │                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: resource type "TestObject" in function "0x2::object::borrow" not defined in current module or not allowed
+   ┌─ /var/folders/b7/gt6_vlj14mn6h8xk1x9ly6m40000gn/T/.tmpIr4LLF:32:30
+   │
+32 │         let _borrow_object = object::borrow(&obj);
+   │                              ^^^^^^^^^^^^^^^^^^^^
+
+error: resource type "TestObject" in function "0x2::object::unpack" not defined in current module or not allowed
+   ┌─ /var/folders/b7/gt6_vlj14mn6h8xk1x9ly6m40000gn/T/.tmpIr4LLF:33:42
+   │
+33 │         let (_id, _owner, test_object) = object::unpack(obj);
+   │                                          ^^^^^^^^^^^^^^^^^^^
+
 status EXECUTED

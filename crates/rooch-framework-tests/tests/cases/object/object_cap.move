@@ -36,5 +36,4 @@ script {
         m::destroy_test_object(test_object);
     }
 }
-// check: ABORTED
 
