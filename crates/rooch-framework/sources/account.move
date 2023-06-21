@@ -336,4 +336,60 @@ module rooch_framework::account{
       create_account_entry(&mut ctx, sender);
       storage_context::drop_test_context(ctx);
    }
+
+   #[test(sender=@0x0)]
+   #[expected_failure(abort_code = 0x10005, location = Self)]
+   fun test_failur_entry_account_creation_reserved(sender: address){
+      let ctx = storage_context::new_test_context(sender);
+      create_account_entry(&mut ctx, sender);
+      storage_context::drop_test_context(ctx);
+   }
+
+   #[test(sender=@0x42)]
+   #[expected_failure(abort_code = 0x1, location = moveos_std::account_storage)]
+   fun test_failure_entry_account_redundant_creation(sender: address){
+      let ctx = storage_context::new_test_context(sender);
+      create_account_entry(&mut ctx, sender);
+      create_account_entry(&mut ctx, sender);
+      storage_context::drop_test_context(ctx);
+   }
+
+   #[test(sender=@0x42)]
+   #[expected_failure(abort_code = 0x60002, location = Self)]
+   fun test_failure_rotate_authentication_key_internal(sender: address){
+      let ctx = storage_context::new_test_context(@std);
+      let sender_signer = create_signer_for_test(sender);
+      rotate_authentication_key_internal(&mut ctx, &sender_signer, ZERO_AUTH_KEY);
+      storage_context::drop_test_context(ctx);
+   }
+
+   #[test(sender=@0x42)]
+   #[expected_failure(abort_code = 0x10004, location = Self)]
+   fun test_failure_rotate_authentication_key_internal_wrong_auth(sender: address){
+      let ctx = storage_context::new_test_context(@std);
+      let sender_signer = create_account_for_test(&mut ctx, sender);
+      rotate_authentication_key_internal(&mut ctx, &sender_signer, vector[]);
+      storage_context::drop_test_context(ctx);
+   }
+
+   #[test(sender=@0x42, resource_account=@0xbb6e573f7feb9d8474ac20813fc086cc3100b8b7d49c246b0f4aee8ea19eaef4)]
+   #[expected_failure(abort_code = 0x30006, location = Self)]
+   fun test_failure_create_resource_account_wrong_sequence_number(sender: address, resource_account: address){
+      {
+         let ctx = storage_context::new_test_context(resource_account);
+         create_account_for_test(&mut ctx, resource_account);
+         increment_sequence_number(&mut ctx);
+         storage_context::drop_test_context(ctx);
+      };
+      let ctx = storage_context::new_test_context(sender);
+      let sender_signer = create_account_for_test(&mut ctx, sender);
+      let (signer, cap) = create_resource_account(&mut ctx, &sender_signer);
+      account_storage::global_move_to<CapResponsbility>(&mut ctx,
+         &signer,
+         CapResponsbility {
+            cap: cap
+         }
+      );
+      storage_context::drop_test_context(ctx);
+   }
 }
