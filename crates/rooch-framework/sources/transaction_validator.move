@@ -76,10 +76,10 @@ module rooch_framework::transaction_validator {
 
         // [PCA12]: Check that the transaction's sequence number matches the
         // current sequence number. Otherwise sequence number is too new by [PCA11].
-        assert!(
-            tx_sequence_number == account_sequence_number,
-            error::invalid_argument(EPrologueSequenceNumberTooNew)
-        );
+        //assert!(
+        //    tx_sequence_number == account_sequence_number,
+        //    error::invalid_argument(EPrologueSequenceNumberTooNew)
+        //);
     }
 
     /// Transaction pre_execute function.

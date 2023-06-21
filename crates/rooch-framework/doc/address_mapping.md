@@ -23,6 +23,7 @@
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="core_addresses.md#0x3_core_addresses">0x3::core_addresses</a>;
+<b>use</b> <a href="rooch_hash.md#0x3_rooch_hash">0x3::rooch_hash</a>;
 </code></pre>
 
 
@@ -168,7 +169,7 @@ Resolve a multi-chain address to a rooch address
         <b>let</b> addr = <a href="_borrow">table::borrow</a>(&am.mapping, maddress);
         <a href="_some">option::some</a>(*addr)
     }<b>else</b>{
-        <a href="_none">option::none</a>&lt;<b>address</b>&gt;()
+        <a href="address_mapping.md#0x3_address_mapping_default_rooch_address">default_rooch_address</a>(maddress)
     }
 }
 </code></pre>

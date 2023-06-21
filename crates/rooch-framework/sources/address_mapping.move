@@ -5,6 +5,7 @@ module rooch_framework::address_mapping{
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::table::{Self, Table};
     use moveos_std::account_storage;
+    use rooch_framework::rooch_hash::{blake2b256};
 
     friend rooch_framework::transaction_validator;
 
@@ -46,10 +47,15 @@ module rooch_framework::address_mapping{
             let addr = table::borrow(&am.mapping, maddress);
             option::some(*addr)
         }else{
-            option::none<address>()
+            default_rooch_address(maddress)
         }
     }
     
+    fun default_rooch_address(maddress: MultiChainAddress): Option<address> {
+        let hash = blake2b256(&maddress.raw_address);
+        option::some(moveos_std::bcd::to_address(hash))
+    }
+
     /// Check if a multi-chain address is bound to a rooch address
     public fun exists_mapping(ctx: &StorageContext, maddress: MultiChainAddress): bool {
         if (is_rooch_address(&maddress)) {

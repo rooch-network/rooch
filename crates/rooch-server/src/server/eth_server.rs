@@ -1,16 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::jsonrpc_types::eth::{CallRequest, EthFeeHistory};
-use crate::{
-    api::{
-        eth_api::{EthAPIServer, TransactionType},
-        RoochRpcModule,
-    },
-    service::RpcService,
-};
+
 use ethers::types::{
-    transaction::eip2930::AccessList, Block, BlockNumber, Bytes, OtherFields, Transaction,
+    transaction::eip2930::AccessList, Block, BlockNumber, Bytes, OtherFields, Transaction, TransactionReceipt,
     Withdrawal, H160, U256, U64,
 };
 use jsonrpsee::{
@@ -22,6 +15,17 @@ use rand::{Rng, SeedableRng};
 use rooch_types::{
     transaction::{ethereum::EthereumTransaction, AbstractTransaction, TypedTransaction},
     H256,
+};
+use crate::jsonrpc_types::{
+    eth::{CallRequest, EthFeeHistory},
+    TransactionView
+};
+use crate::{
+    api::{
+        eth_api::{EthAPIServer, TransactionType},
+        RoochRpcModule,
+    },
+    service::RpcService,
 };
 use std::iter;
 use std::str::FromStr;
@@ -264,6 +268,76 @@ impl EthAPIServer for EthServer {
         let _output = self.rpc_service.execute_tx(tx).await?;
         Ok(hash)
     }
+
+    async fn transaction_receipt(&self, hash: H256) -> RpcResult<Option<TransactionReceipt>> {
+        let hashes: Vec<H256> = vec![hash];
+
+        let result = self
+            .rpc_service
+            .get_transaction_infos_by_tx_hash(hashes)
+            .await?
+            .into_iter()
+            .last()
+            .map(|info| TransactionReceipt {
+                transaction_hash: info.transaction_hash,
+                transaction_index: info.transaction_index,
+                block_hash: info.block_hash,
+                block_number: info.block_number,
+                from: info.from,
+                to: info.to,
+                cumulative_gas_used: info.cumulative_gas_used,
+                contract_address: info.contract_address,
+                logs: info.logs,
+                root: info.root,
+                logs_bloom: info.logs_bloom,
+                transaction_type: info.transaction_type,
+                effective_gas_price: info.effective_gas_price,
+                other: info.other,
+                tx_hash: info.tx_hash,
+                state_root: info.state_root,
+                event_root: info.event_root,
+                gas_used: info.gas_used,
+                status: info.status,
+            }); 
+
+        Ok(result)
+    }
+
+    async fn transaction_by_hash(&self, hash: H256) -> RpcResult<Option<Transaction>> {
+        let resp = self
+            .rpc_service
+            .get_transaction_by_hash(hash.into())
+            .await?
+            .map(Into::into);
+
+        let transaction = resp.map(|transaction_view: TransactionView| -> Transaction {
+            Transaction {
+                transaction_type: transaction_view.transaction_type.into(),
+                hash: transaction_view.hash,
+                nonce: transaction_view.nonce,
+                block_hash: transaction_view.block_hash.map(Into::into),
+                block_number: transaction_view.block_number,
+                transaction_index: transaction_view.transaction_index,
+                from: transaction_view.from,
+                to: transaction_view.to.map(Into::into),
+                value: transaction_view.value,
+                gas_price: transaction_view.gas_price,
+                gas: transaction_view.gas,
+                input: transaction_view.input.0,
+                v: transaction_view.v,
+                r: transaction_view.r,
+                s: transaction_view.s,
+                access_list: transaction_view.access_list.into_iter().map(Into::into).collect(),
+                max_priority_fee_per_gas: transaction_view.max_priority_fee_per_gas,
+                max_fee_per_gas: transaction_view.max_fee_per_gas,
+                chain_id: transaction_view.chain_id,
+                other: transaction_view.other
+            }
+        });
+    
+        Ok(transaction)
+    }
+
 }
 
 impl RoochRpcModule for EthServer {
