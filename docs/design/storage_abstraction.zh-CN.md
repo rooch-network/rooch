@@ -1,7 +1,5 @@
 # 存储抽象
 
-[English](./storage_abstraction.md)|中文
-
 ## 动机
 
 智能合约编程语言和传统编程语言最大的区别是智能合约编程语言需要在编程语言内部提供标准化的状态存储接口，屏蔽状态存储的底层实现，智能合约应用主要关心自己的业务逻辑。
@@ -65,7 +63,7 @@ Move 的全局存储指令都是基于用户的，获取一个资源必须先知
 
 ## 设计方案
 
-![Storage Abstraction](./rooch-design-storage-abstraction.svg)
+![Storage Abstraction](../static/design/rooch-design-storage-abstraction.svg)
 
 1. `RawTable` 提供最底层的 Key-Value 存储接口，合约状态变更最终都统一为 `RawTable` 的 Key-Value 变更集。
 2. 基于 `RawTable` 实现 `Table<K,V>`，对 Key 和 Value 的类型进行约束。
@@ -85,7 +83,7 @@ Rooch 的状态树使用稀疏默克尔树（[Sparse Merkle Tree](https://github
 
 Rooch 的 StateDB 状态树整体架构如下图所示：
 
-![statedb](./rooch-design-statedb.svg)
+![statedb](../static/design/rooch-design-statedb.svg)
 
 状态树的第一层是一个以 `ObjectID` 为键的 SMT，值是 Object 的序列化二进制数据，可以理解为一个全局的 `ObjectStore`。其中有三个特殊的 Object：
 

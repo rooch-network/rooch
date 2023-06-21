@@ -1,14 +1,12 @@
 # 交易执行流
 
-[English](./transaction_flow.md)|中文
-
 本文档主要目标是解释 Rooch 中交易的处理流程，让 DApp 开发者以及 Rooch 的开发者深入理解 Rooch 的设计和实现，从而更容易的参与到 DApp 以及 Rooch 的开发中。同时，本文档也试图解答一些常见问题，比如交易的执行顺序，交易的最终确定性等。
 
 ## 用户视角
 
 从用户的调用视角来看，Rooch 的交易执行流程如下：
 
-![rooch transaction flow user perspective](./rooch-design-transaction-flow-user-perspective.svg)
+![rooch transaction flow user perspective](../static/design/rooch-design-transaction-flow-user-perspective.svg)
 
 1. 用户通过 SDK，或者 CLI 将交易发送到 Rooch RPC API。同时，Rooch 也支持 Ethereum RPC API，所以用户也可以通过 MetaMask 等支持 Ethereum RPC 的客户端发送交易给 Rooch。未来，Rooch 会支持更多 L1 的 RPC API。
 2. Rooch 的各种 RPC API 收到交易后，统一发送给 RPC Service 进行处理。
@@ -19,7 +17,7 @@
 
 从系统内部组件的功能视角来看，Rooch 的交易执行流程如下：
 
-![rooch transaction flow functional perspective](./rooch-design-transaction-flow-functional-perspective.svg)
+![rooch transaction flow functional perspective](../static/design/rooch-design-transaction-flow-functional-perspective.svg)
 
 1. RPC Service 收到不同的 API 的交易后，会先将多链交易发送给 Executor 进行 `validate_tx`。
 2. 在 Executor 的 `validate_tx` 中：

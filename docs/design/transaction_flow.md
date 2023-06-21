@@ -1,7 +1,5 @@
 # Transaction Flow
 
-English|[中文](./transaction_flow.zh-CN.md)
-
 The main objective of this document is to explain the transaction processing flow in Rooch, in order to help DApp developers and Rooch developers to gain a deeper understanding of the design and implementation of Rooch, and thus participate more easily in the development of DApp and Rooch. At the same time, this document also attempts to answer some common questions, such as the execution order of transactions, transaction finality, and so on.
 
 
@@ -10,7 +8,7 @@ The main objective of this document is to explain the transaction processing flo
 
 From the user's perspective of calling, the transaction execution process in Rooch is as follows:
 
-![rooch transaction flow user perspective](./rooch-design-transaction-flow-user-perspective.svg)
+![rooch transaction flow user perspective](../static/design/rooch-design-transaction-flow-user-perspective.svg)
 
 1. Users send transactions to Rooch RPC API via SDK or CLI. In addition, Rooch also supports Ethereum RPC API, so users can also send transactions to Rooch via clients that support Ethereum RPC, such as MetaMask. In the future, Rooch will support more L1's RPC APIs.
 2. After receiving the transactions, Rooch's various RPC APIs send them to RPC Service for processing.
@@ -22,7 +20,7 @@ From the user's perspective of calling, the transaction execution process in Roo
 
 From the functional perspective of internal components, the transaction execution process in Rooch is as follows:
 
-![rooch transaction flow functional perspective](./rooch-design-transaction-flow-functional-perspective.svg)
+![rooch transaction flow functional perspective](../static/design/rooch-design-transaction-flow-functional-perspective.svg)
 
 1. After receiving transactions from different APIs, RPC Service first sends the multi-chain transactions to Executor for `validate_tx`.
 2. In Executor's `validate_tx`:

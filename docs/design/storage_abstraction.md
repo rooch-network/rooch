@@ -1,7 +1,5 @@
 # Storage Abstraction
 
-English|[中文](./storage_abstraction.zh-CN.md)
-
 ## Motivation
 
 The biggest difference between smart contract programming languages and traditional programming languages is that smart contract programming languages need to provide standardized state storage interfaces within the language, shielding the underlying implementation of state storage. Smart contract applications primarily focus on their own business logic. 
@@ -65,7 +63,7 @@ After analyzing the above solutions, we find that the storage model of a contrac
 
 ## Design Solution
 
-![Storage Abstraction](./rooch-design-storage-abstraction.svg)
+![Storage Abstraction](../static/design/rooch-design-storage-abstraction.svg)
 
 1. `RawTable` provides the lowest-level Key Value storage interface, where all contract state changes are ultimately uniformly changed as the Key Value change set of `RawTable`.
 2. `Table<K,V>` is implemented based on `RawTable`, constraining the types of Key and Value.
@@ -85,7 +83,7 @@ Rooch's state tree is implemented using a [Sparse Merkle Tree](https://github.co
 
 The overall architecture of Rooch's StateDB state tree is shown in the following diagram:
 
-![statedb](./rooch-design-statedb.svg)
+![statedb](../static/design/rooch-design-statedb.svg)
 
 The first layer of the state tree in Rooch is an SMT with ObjectID as the key and the serialized binary data of the Object as the value. It can be understood as a global ObjectStore. There are three special Objects in it:
 
