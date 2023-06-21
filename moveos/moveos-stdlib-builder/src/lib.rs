@@ -88,7 +88,7 @@ impl Stdlib {
             &package_path,
             additional_named_address,
             &mut compiled_package,
-        );
+        )?;
         let module_map = compiled_package.root_modules_map();
         let mut modules = module_map.iter_modules().into_iter();
 

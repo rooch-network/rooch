@@ -52,7 +52,7 @@ pub fn run_verifier<P: AsRef<Path>>(
     package_path: P,
     additional_named_address: BTreeMap<String, AccountAddress>,
     package: &mut CompiledPackage,
-) {
+) -> anyhow::Result<bool> {
     let model = build_model(package_path.as_ref(), additional_named_address, None).unwrap();
 
     let runtime_metadata = run_extended_checks(&model);
@@ -61,7 +61,7 @@ pub fn run_verifier<P: AsRef<Path>>(
         let mut error_writer = StandardStream::stderr(ColorChoice::Auto);
         model.report_diag(&mut error_writer, Severity::Warning);
         if model.has_errors() {
-            eprintln!("extended checks failed")
+            return Err(anyhow::Error::msg("extended checks failed"));
         }
     }
 
@@ -73,6 +73,8 @@ pub fn run_verifier<P: AsRef<Path>>(
         package,
         runtime_metadata,
     );
+
+    Ok(true)
 }
 
 pub fn inject_runtime_metadata<P: AsRef<Path>>(

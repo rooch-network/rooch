@@ -48,7 +48,7 @@ impl Build {
 
         let mut package = config.compile_package_no_exit(&rerooted_path, &mut std::io::stdout())?;
 
-        run_verifier(rerooted_path, additional_named_address, &mut package);
+        run_verifier(rerooted_path, additional_named_address, &mut package)?;
 
         Ok(())
     }
