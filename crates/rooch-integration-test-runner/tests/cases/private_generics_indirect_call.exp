@@ -5,19 +5,19 @@ status EXECUTED
 
 task 2 'publish'. lines 10-48:
 error: resource type "KeyStruct" in function "0x2::object_storage::remove" not defined in current module or not allowed
-   ┌─ /var/folders/b7/gt6_vlj14mn6h8xk1x9ly6m40000gn/T/.tmp9d2M62:37:19
+   ┌─ /tmp/tempfile:37:19
    │
 37 │         let obj = object_storage::remove<KeyStruct>(object_storage, object_id);
    │                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error: resource type "KeyStruct" in function "0x2::object::unpack" not defined in current module or not allowed
-   ┌─ /var/folders/b7/gt6_vlj14mn6h8xk1x9ly6m40000gn/T/.tmp9d2M62:39:34
+   ┌─ /tmp/tempfile:39:34
    │
 39 │         let (_id,_owner,value) = object::unpack(obj);
    │                                  ^^^^^^^^^^^^^^^^^^^
 
 error: resource type "KeyStruct" in function "0x2::account_storage::global_move_to" not defined in current module or not allowed
-   ┌─ /var/folders/b7/gt6_vlj14mn6h8xk1x9ly6m40000gn/T/.tmp9d2M62:40:9
+   ┌─ /tmp/tempfile:40:9
    │
 40 │         account_storage::global_move_to(ctx, &sender, value);
    │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

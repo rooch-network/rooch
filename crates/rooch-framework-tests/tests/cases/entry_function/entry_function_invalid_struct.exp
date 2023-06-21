@@ -2,7 +2,7 @@ processed 2 tasks
 
 task 1 'publish'. lines 3-12:
 error: type `test::Foo` is not supported as a parameter type
-  ┌─ /var/folders/b7/gt6_vlj14mn6h8xk1x9ly6m40000gn/T/.tmpcBhTpj:8:5
+  ┌─ /tmp/tempfile:8:5
   │  
 8 │ ╭     entry public fun test_entry_function_invalid_struct( _foo: Foo ){
 9 │ │     }
