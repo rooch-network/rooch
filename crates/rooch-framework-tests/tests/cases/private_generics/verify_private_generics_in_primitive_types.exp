@@ -1,7 +1,121 @@
 processed 3 tasks
 
-task 1 'publish'. lines 3-11:
+task 1 'publish'. lines 3-87:
+error: resource type "Address" in function "0x42::test::bar" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:32:9
+   │
+32 │         bar<address>();
+   │         ^^^^^^^^^^^^^^
+
+error: resource type "Bool" in function "0x42::test::bar" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:11:9
+   │
+11 │         bar<bool>();
+   │         ^^^^^^^^^^^
+
+error: resource type "Signer" in function "0x42::test::bar" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:35:9
+   │
+35 │         bar<signer>();
+   │         ^^^^^^^^^^^^^
+
+error: resource type "U128" in function "0x42::test::bar" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:26:9
+   │
+26 │         bar<u128>();
+   │         ^^^^^^^^^^^
+
+error: resource type "U16" in function "0x42::test::bar" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:17:9
+   │
+17 │         bar<u16>();
+   │         ^^^^^^^^^^
+
+error: resource type "U256" in function "0x42::test::bar" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:29:9
+   │
+29 │         bar<u256>();
+   │         ^^^^^^^^^^^
+
+error: resource type "U32" in function "0x42::test::bar" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:20:9
+   │
+20 │         bar<u32>();
+   │         ^^^^^^^^^^
+
+error: resource type "U64" in function "0x42::test::bar" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:23:9
+   │
+23 │         bar<u64>();
+   │         ^^^^^^^^^^
+
+error: resource type "U8" in function "0x42::test::bar" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:14:9
+   │
+14 │         bar<u8>();
+   │         ^^^^^^^^^
+
+error: resource type "Vector" in function "0x42::test::bar" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:65:9
+   │
+65 │         bar<vector<StructT>>();
+   │         ^^^^^^^^^^^^^^^^^^^^^^
+
+error: resource type "Vector" in function "0x42::test::bar" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:59:9
+   │
+59 │         bar<vector<address>>();
+   │         ^^^^^^^^^^^^^^^^^^^^^^
+
+error: resource type "Vector" in function "0x42::test::bar" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:38:9
+   │
+38 │         bar<vector<bool>>();
+   │         ^^^^^^^^^^^^^^^^^^^
+
+error: resource type "Vector" in function "0x42::test::bar" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:62:9
+   │
+62 │         bar<vector<signer>>();
+   │         ^^^^^^^^^^^^^^^^^^^^^
+
+error: resource type "Vector" in function "0x42::test::bar" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:53:9
+   │
+53 │         bar<vector<u128>>();
+   │         ^^^^^^^^^^^^^^^^^^^
+
+error: resource type "Vector" in function "0x42::test::bar" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:44:9
+   │
+44 │         bar<vector<u16>>();
+   │         ^^^^^^^^^^^^^^^^^^
+
+error: resource type "Vector" in function "0x42::test::bar" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:56:9
+   │
+56 │         bar<vector<u256>>();
+   │         ^^^^^^^^^^^^^^^^^^^
+
+error: resource type "Vector" in function "0x42::test::bar" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:47:9
+   │
+47 │         bar<vector<u32>>();
+   │         ^^^^^^^^^^^^^^^^^^
+
+error: resource type "Vector" in function "0x42::test::bar" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:50:9
+   │
+50 │         bar<vector<u64>>();
+   │         ^^^^^^^^^^^^^^^^^^
+
+error: resource type "Vector" in function "0x42::test::bar" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:41:9
+   │
+41 │         bar<vector<u8>>();
+   │         ^^^^^^^^^^^^^^^^^
+
 status EXECUTED
 
-task 2 'run'. lines 13-39:
+task 2 'run'. lines 89-114:
 status EXECUTED

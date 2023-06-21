@@ -7,8 +7,12 @@ module creator::test {
     }
 
     #[private_generics(T)]
-    public fun publish_foo<T: key>(s: &signer) {
+    fun publish_foo<T: key>(s: &signer) {
         move_to<Foo>(s, Foo { x: 500 })
+    }
+
+    public fun invoke_publish_foo(s: &signer) {
+        publish_foo<Foo>(s);
     }
 }
 
@@ -17,10 +21,6 @@ script {
     use creator::test;
 
     fun main(s: signer) {
-        test::publish_foo<test::Foo>(&s);
+        test::invoke_publish_foo(&s);
     }
 }
-
-//# view
-//#     --address 0x42
-//#     --resource 0x42::test::Foo

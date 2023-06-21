@@ -5,14 +5,18 @@ module creator::test {
     struct NoAbilities {}
 
     #[private_generics(T)]
-    public fun bar<T>() {}
+    fun bar<T>() {}
+
+    public fun invoke_bar() {
+        bar<NoAbilities>();
+    }
 }
 
-//# run
+//# run --signers creator
 script {
     use creator::test;
 
-    fun main() {
-        test::bar<NoAbilities>();
+    fun main(_s: signer) {
+        test::invoke_bar();
     }
 }
