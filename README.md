@@ -31,7 +31,7 @@
     ```bash
     rooch server start
     ```
-> If you want more detail log for debug, you can use `RUST_LOG=debug rooch server start`
+> If you want a more detailed log for debugging, you can use `RUST_LOG=debug rooch server start`
 6. Publish the Move project
     ```bash
     rooch move publish -p my_move_project
@@ -39,7 +39,7 @@
 
 ## Deep Dive into Rooch
 
-### [Storage Abstraction](./docs/static/design/storage_abstraction.md)
+### [Storage Abstraction](./docs/design/storage_abstraction.md)
 
 Storage Abstraction module overview:
 
@@ -49,7 +49,7 @@ State DB:
 
 ![State DB](./docs/static/design/rooch-design-statedb.svg)
 
-### [Transaction Flow](./docs/static/design/transaction_flow.md)
+### [Transaction Flow](./docs/design/transaction_flow.md)
 
 ![Rooch Transaction Flow](./docs/static/design/rooch-design-transaction-flow-functional-perspective.svg)
 
