@@ -1,0 +1,10 @@
+{
+  "contribute": "贡献",
+  "design": "设计",
+  "rpc": {
+    "title": "RPC",
+    "type": "page",
+    "href": "https://playground.open-rpc.org/?schemaUrl=https://raw.githubusercontent.com/rooch-network/rooch/main/crates/rooch-open-rpc/spec/openrpc.json",
+    "newWindow": true
+  }
+}
