@@ -43,6 +43,8 @@ use std::{
 };
 use tempfile::NamedTempFile;
 
+const FIXED_TEMP_PATH: &str = "/tmp/tempfile";
+
 pub struct ProcessedModule {
     module: CompiledModule,
     source_file: Option<(String, NamedTempFile)>,
@@ -253,8 +255,12 @@ fn compile_source_unit(
             global_env.report_diag(&mut buffer, Severity::Warning);
             let warn_msg = String::from_utf8_lossy(buffer.as_slice()).to_string();
             let re = Regex::new("/tmp/.[0-9a-zA-Z]+").unwrap();
+            let re1 = Regex::new("/var/.*tmp[0-9a-zA-Z]+").unwrap();
+            let output = re
+                .replace_all(warn_msg.as_str(), FIXED_TEMP_PATH)
+                .to_string();
             Some(
-                re.replace_all(warn_msg.as_str(), "/tmp/tempfile")
+                re1.replace_all(output.as_str(), FIXED_TEMP_PATH)
                     .to_string(),
             )
         } else {
