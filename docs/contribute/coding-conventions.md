@@ -14,6 +14,7 @@ This section lays out some basic coding conventions for Move that the Move team 
 - **Module file names**: should be the same as the module name and lower snake case, e.g., `option.move`.
 - **Script file names**: should be lower snake case and should match the name of the “main” function in the script.
 - **Mixed file names**: If the file contains multiple modules and/or scripts, the file name should be lower snake case, where the name does not match any particular module/script inside.
+- **Module aliases**: when importing from other modules in function parameters, the variable names should be `self`.  
 
 ## Imports
 
@@ -76,3 +77,5 @@ The Move team plans to write an autoformatter to enforce formatting conventions.
 - Four space indentation should be used except for `script` and `address` blocks whose contents should not be indented.
 - Lines should be broken if they are longer than 100 characters.
 - Structs and constants should be declared before all functions in a module.
+- In `.exp` files, leave a new line in the end of files. Do not have multiple lines.
+

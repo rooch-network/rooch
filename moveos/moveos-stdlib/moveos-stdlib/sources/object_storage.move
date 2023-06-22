@@ -38,36 +38,36 @@ module moveos_std::object_storage {
 
     #[private_generics(T)]
     /// Borrow Object from object store with object_id
-    public fun borrow<T: key>(this: &ObjectStorage, object_id: ObjectID): &Object<T>{
-        raw_table::borrow<ObjectID, Object<T>>(&this.handle, object_id)
+    public fun borrow<T: key>(self: &ObjectStorage, object_id: ObjectID): &Object<T>{
+        raw_table::borrow<ObjectID, Object<T>>(&self.handle, object_id)
     }
 
     #[private_generics(T)]
     /// Borrow mut Object from object store with object_id
-    public fun borrow_mut<T: key>(this: &mut ObjectStorage, object_id: ObjectID): &mut Object<T>{
-        raw_table::borrow_mut<ObjectID, Object<T>>(&this.handle, object_id)
+    public fun borrow_mut<T: key>(self: &mut ObjectStorage, object_id: ObjectID): &mut Object<T>{
+        raw_table::borrow_mut<ObjectID, Object<T>>(&self.handle, object_id)
     }
     
     #[private_generics(T)]
     /// Remove object from object store
-    public fun remove<T: key>(this: &mut ObjectStorage, object_id: ObjectID): Object<T>{
-        raw_table::remove<ObjectID, Object<T>>(&this.handle, object_id)
+    public fun remove<T: key>(self: &mut ObjectStorage, object_id: ObjectID): Object<T>{
+        raw_table::remove<ObjectID, Object<T>>(&self.handle, object_id)
     }
     
     #[private_generics(T)]
     /// Add object to object store
-    public fun add<T: key>(this: &mut ObjectStorage, obj: Object<T>) {
-        raw_table::add<ObjectID, Object<T>>(&this.handle, object::id(&obj), obj);
+    public fun add<T: key>(self: &mut ObjectStorage, obj: Object<T>) {
+        raw_table::add<ObjectID, Object<T>>(&self.handle, object::id(&obj), obj);
     } 
 
-    public fun contains(this: &ObjectStorage, object_id: ObjectID): bool{
-        raw_table::contains<ObjectID>(&this.handle, object_id)
+    public fun contains(self: &ObjectStorage, object_id: ObjectID): bool{
+        raw_table::contains<ObjectID>(&self.handle, object_id)
     }
 
     #[test_only]
     /// Testing only: allow to drop oject storage
-    public fun drop_object_storage(this: ObjectStorage) {
-        test_helper::destroy<ObjectStorage>(this);
+    public fun drop_object_storage(self: ObjectStorage) {
+        test_helper::destroy<ObjectStorage>(self);
     }
 
     #[test_only]

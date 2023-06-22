@@ -25,38 +25,38 @@ module moveos_std::storage_context {
         object_storage: ObjectStorage,
     }
 
-    public fun tx_context(this: &StorageContext): &TxContext {
-        &this.tx_context
+    public fun tx_context(self: &StorageContext): &TxContext {
+        &self.tx_context
     }
 
-    public fun tx_context_mut(this: &mut StorageContext): &mut TxContext {
-        &mut this.tx_context
+    public fun tx_context_mut(self: &mut StorageContext): &mut TxContext {
+        &mut self.tx_context
     }
 
-    public fun object_storage(this: &StorageContext): &ObjectStorage {
-        &this.object_storage
+    public fun object_storage(self: &StorageContext): &ObjectStorage {
+        &self.object_storage
     }
 
-    public fun object_storage_mut(this: &mut StorageContext): &mut ObjectStorage {
-        &mut this.object_storage
+    public fun object_storage_mut(self: &mut StorageContext): &mut ObjectStorage {
+        &mut self.object_storage
     }
 
     /// Wrap functions for TxContext
 
-    public fun sender(this: &StorageContext): address {
-        tx_context::sender(&this.tx_context)
+    public fun sender(self: &StorageContext): address {
+        tx_context::sender(&self.tx_context)
     } 
 
-    public fun fresh_address(this: &mut StorageContext): address {
-        tx_context::fresh_address(&mut this.tx_context)
+    public fun fresh_address(self: &mut StorageContext): address {
+        tx_context::fresh_address(&mut self.tx_context)
     }
 
-    public fun fresh_object_id(this: &mut StorageContext): ObjectID {
-        tx_context::fresh_object_id(&mut this.tx_context)
+    public fun fresh_object_id(self: &mut StorageContext): ObjectID {
+        tx_context::fresh_object_id(&mut self.tx_context)
     }
 
-    public fun tx_hash(this: &StorageContext): vector<u8> {
-        tx_context::tx_hash(&this.tx_context)
+    public fun tx_hash(self: &StorageContext): vector<u8> {
+        tx_context::tx_hash(&self.tx_context)
     } 
 
     /// Add a value to the context map
@@ -82,7 +82,7 @@ module moveos_std::storage_context {
 
     #[test_only]
     /// Testing only: allow to drop oject storage
-    public fun drop_test_context(this: StorageContext) {
-        test_helper::destroy<StorageContext>(this);
+    public fun drop_test_context(self: StorageContext) {
+        test_helper::destroy<StorageContext>(self);
     }
 }
