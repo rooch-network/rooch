@@ -2,6 +2,9 @@
 
 //# publish
 module creator::test {
+    use std::string::String;
+    use moveos_std::object_id::ObjectID;
+
     struct StructT has copy, drop {
         x: u64,
     }
@@ -41,6 +44,14 @@ module creator::test {
         bar<address>();
     }
 
+    public fun invoke_bar_string() {
+        bar<String>();
+    }
+
+    public fun invoke_bar_object_id() {
+        bar<ObjectID>();
+    }
+
     public fun invoke_bar_signer() {
         bar<signer>();
     }
@@ -76,6 +87,14 @@ module creator::test {
     public fun invoke_bar_vector_address() {
         bar<vector<address>>();
     }
+
+    public fun invoke_bar_vector_string() {
+        bar<vector<String>>();
+    }
+
+    public fun invoke_bar_vector_object_id() {
+        bar<vector<ObjectID>>();
+    }
     
     public fun invoke_bar_vector_signer() {
         bar<vector<signer>>();
@@ -99,6 +118,8 @@ script {
         test::invoke_bar_u128();
         test::invoke_bar_u256();
         test::invoke_bar_address();
+        test::invoke_bar_string();
+        test::invoke_bar_object_id();
         test::invoke_bar_signer();
         test::invoke_bar_vector_bool();
         test::invoke_bar_vector_u8();
@@ -108,6 +129,8 @@ script {
         test::invoke_bar_vector_u128();
         test::invoke_bar_vector_u256();
         test::invoke_bar_vector_address();
+        test::invoke_bar_vector_string();
+        test::invoke_bar_vector_object_id();
         test::invoke_bar_vector_signer();
         test::invoke_bar_vector_StructT();
     }
