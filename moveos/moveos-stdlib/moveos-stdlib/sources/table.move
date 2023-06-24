@@ -235,7 +235,7 @@ module moveos_std::table {
         let key: u64 = 100;
         add(&mut t, key, 1);
 
-        destroy(t);
+        destroy_empty(t);
     }
 
     #[test(account = @0x1)]
@@ -252,7 +252,7 @@ module moveos_std::table {
         add(&mut t2, t2_key, 32u32);
         add(&mut t1, t1_key, t2);
 
-        destroy(t1);
+        destroy_empty(t1);
 
         let t2 = new_with_id<u8, u32>(t2_id);
         assert!(*borrow(&t2, t2_key) == 32u32, 1);
