@@ -1,7 +1,7 @@
 processed 2 tasks
 
 task 1 'publish'. lines 3-54:
-error: entry function cannot return values
+Error: error: entry function cannot return values
    ┌─ /tmp/tempfile:26:5
    │  
 26 │ ╭     entry public fun test_entry_function_return_value_String():std::string::String{
@@ -81,4 +81,4 @@ error: entry function cannot return values
 7 │ │     }
   │ ╰─────^
 
-status EXECUTED
+
