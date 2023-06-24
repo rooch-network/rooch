@@ -1,7 +1,17 @@
 //# init --addresses creator=0x42
 
 //# publish
-module creator::test {
+module creator::foo {
+    struct T has drop {
+        x: u64,
+    }
+
+    #[private_generics(T)]
+    public fun empty_foo<T>() {}
+}
+
+//# publish
+module creator::bar {
     use std::string::String;
     use moveos_std::object_id::ObjectID;
 
@@ -107,31 +117,35 @@ module creator::test {
 
 //# run --signers creator
 script {
-    use creator::test;
+    // creator::bar doesn't exist due to publishing failure
+    // creator::foo exists
+    use creator::foo::{Self, T};
+    use std::string::String;
+    use moveos_std::object_id::ObjectID;
 
     fun main(_s: signer) {
-        test::invoke_bar_bool();
-        test::invoke_bar_u8();
-        test::invoke_bar_u16();
-        test::invoke_bar_u32();
-        test::invoke_bar_u64();
-        test::invoke_bar_u128();
-        test::invoke_bar_u256();
-        test::invoke_bar_address();
-        test::invoke_bar_string();
-        test::invoke_bar_object_id();
-        test::invoke_bar_signer();
-        test::invoke_bar_vector_bool();
-        test::invoke_bar_vector_u8();
-        test::invoke_bar_vector_u16();
-        test::invoke_bar_vector_u32();
-        test::invoke_bar_vector_u64();
-        test::invoke_bar_vector_u128();
-        test::invoke_bar_vector_u256();
-        test::invoke_bar_vector_address();
-        test::invoke_bar_vector_string();
-        test::invoke_bar_vector_object_id();
-        test::invoke_bar_vector_signer();
-        test::invoke_bar_vector_StructT();
+        foo::empty_foo<bool>();
+        foo::empty_foo<u8>();
+        foo::empty_foo<u16>();
+        foo::empty_foo<u32>();
+        foo::empty_foo<u64>();
+        foo::empty_foo<u128>();
+        foo::empty_foo<u256>();
+        foo::empty_foo<address>();
+        foo::empty_foo<String>();
+        foo::empty_foo<ObjectID>();
+        foo::empty_foo<signer>();
+        foo::empty_foo<vector<bool>>();
+        foo::empty_foo<vector<u8>>();
+        foo::empty_foo<vector<u16>>();
+        foo::empty_foo<vector<u32>>();
+        foo::empty_foo<vector<u64>>();
+        foo::empty_foo<vector<u128>>();
+        foo::empty_foo<vector<u256>>();
+        foo::empty_foo<vector<address>>();
+        foo::empty_foo<vector<String>>();
+        foo::empty_foo<vector<ObjectID>>();
+        foo::empty_foo<vector<signer>>();
+        foo::empty_foo<vector<T>>();
     }
 }

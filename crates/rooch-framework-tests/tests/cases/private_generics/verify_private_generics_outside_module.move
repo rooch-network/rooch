@@ -7,7 +7,7 @@ module creator::test {
     }
 
     #[private_generics(T)]
-    fun publish_foo<T: key>(s: &signer) {
+    public fun publish_foo<T: key>(s: &signer) {
         move_to<Foo>(s, Foo { x: 500 })
     }
 }
@@ -32,9 +32,11 @@ module A::m {
 
 //# run --signers creator
 script {
-    use A::m;
+    // A::m doesn't exist due to module publishing failure
+    // creator::test exists
+    use creator::test::{Self, Foo};
 
     fun main(s: signer) {
-        m::invoke_publish_bar(&s);
+        test::publish_foo<Foo>(&s);
     }
 }

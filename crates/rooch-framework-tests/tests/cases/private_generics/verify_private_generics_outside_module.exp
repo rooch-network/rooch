@@ -4,7 +4,19 @@ task 1 'publish'. lines 3-13:
 status EXECUTED
 
 task 2 'publish'. lines 15-31:
-status EXECUTED
+Error: error: resource type "Foo" in function "0x43::m::publish_bar" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:26:9
+   │
+26 │         publish_bar<Foo>(s);
+   │         ^^^^^^^^^^^^^^^^^^^
 
-task 3 'run'. lines 33-40:
-status EXECUTED
+
+
+task 3 'run'. lines 33-42:
+Error: error: resource type "Foo" in function "0x42::test::publish_foo" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:39:9
+   │
+39 │         test::publish_foo<Foo>(&s);
+   │         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
