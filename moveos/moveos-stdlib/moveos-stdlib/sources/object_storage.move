@@ -64,6 +64,12 @@ module moveos_std::object_storage {
         raw_table::contains<ObjectID>(&self.handle, object_id)
     }
 
+    /// Destroy a ObjectStroage. The ObjectStorage must be empty to succeed.
+    public fun destroy_empty(self: ObjectStorage) {
+        let ObjectStorage{handle} = self;
+        raw_table::destroy_empty(&handle)
+    }
+
     #[test_only]
     /// Testing only: allow to drop oject storage
     public fun drop_object_storage(self: ObjectStorage) {

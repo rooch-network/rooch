@@ -630,7 +630,7 @@ fn native_drop_unchecked_box(
     args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     assert_eq!(args.len(), 1);
-
+    //TODO remove the droped table from the table_data
     Ok(NativeResult::ok(gas_params.base, smallvec![]))
 }
 

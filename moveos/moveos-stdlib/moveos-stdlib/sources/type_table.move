@@ -99,10 +99,10 @@ module moveos_std::type_table {
         raw_table::drop_unchecked(&handle)
     }
 
-    ///TODO should open the destroy function to public?
-    public(friend) fun destroy(table: TypeTable) {
+    /// Destroy a table. The table must be empty to succeed.
+    public fun destroy_empty(table: TypeTable) {
         let TypeTable{handle} = table;
-        raw_table::destroy(&handle)
+        raw_table::destroy_empty(&handle)
     }
 
     #[test_only]
@@ -201,6 +201,6 @@ module moveos_std::type_table {
         };
         add<TestType>(&mut table, t);
 
-        destroy(table);
+        destroy_empty(table);
     }
 }

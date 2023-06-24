@@ -82,10 +82,10 @@ module moveos_std::raw_table {
     public(friend) fun drop_unchecked(table_handle: &ObjectID) {
         drop_unchecked_box(table_handle)
     }
-
-    public(friend) fun destroy(table_handle: &ObjectID) {
-        destroy_empty_box(table_handle);
-        drop_unchecked_box(table_handle)
+    
+    /// Destroy a table. The table must be empty to succeed.
+    public(friend) fun destroy_empty(table_handle: &ObjectID) {
+        destroy_empty_box(table_handle)
     }
 
     // ======================================================================================================
