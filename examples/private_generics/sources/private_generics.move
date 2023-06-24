@@ -21,7 +21,7 @@ module rooch_examples::Test1 {
     }
 
     #[test]
-    fun test() {
+    public fun test() {
         let data = Data{ v: 123 };
 
         let box_val = create_box<Data, Data, Box<u32>>(data);

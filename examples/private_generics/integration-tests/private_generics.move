@@ -5,7 +5,7 @@ script {
     use rooch_examples::Test1;
     use rooch_examples::Test2;
 
-    fun main() {
+    fun main(_s: &signer) {
         Test1::test();
         Test2::run();
     }
