@@ -4,7 +4,7 @@
 
 use ethers::types::{
     transaction::eip2930::AccessList, Block, BlockNumber, Bytes, OtherFields, Transaction, TransactionReceipt,
-    Withdrawal, H160, U256, U64,
+    Withdrawal, H160, U256, U64, Address
 };
 use jsonrpsee::{
     core::{async_trait, Error as JsonRpcError, RpcResult},
@@ -270,36 +270,20 @@ impl EthAPIServer for EthServer {
     }
 
     async fn transaction_receipt(&self, hash: H256) -> RpcResult<Option<TransactionReceipt>> {
-        let hashes: Vec<H256> = vec![hash];
-
-        let result = self
-            .rpc_service
-            .get_transaction_infos_by_tx_hash(hashes)
-            .await?
-            .into_iter()
-            .last()
-            .map(|info| TransactionReceipt {
-                transaction_hash: info.transaction_hash,
-                transaction_index: info.transaction_index,
-                block_hash: info.block_hash,
-                block_number: info.block_number,
-                from: info.from,
-                to: info.to,
-                cumulative_gas_used: info.cumulative_gas_used,
-                contract_address: info.contract_address,
-                logs: info.logs,
-                root: info.root,
-                logs_bloom: info.logs_bloom,
-                transaction_type: info.transaction_type,
-                effective_gas_price: info.effective_gas_price,
-                other: info.other,
-                tx_hash: info.tx_hash,
-                state_root: info.state_root,
-                event_root: info.event_root,
-                gas_used: info.gas_used,
-                status: info.status,
-            }); 
-
+        let result = self.rpc_service.get_transaction_infos_by_tx_hash(vec![hash]).
+            await?.
+            into_iter().
+            last().
+            map_or(None, |trans| {
+                trans.map(|info| TransactionReceipt {
+                    transaction_hash: info.tx_hash,
+                    block_hash: Some(info.state_root),
+                    gas_used: Some(info.gas_used.into()),
+                    status: Some((info.status.is_success() as u8).into()),
+                    ..Default::default()
+                })
+            });
+    
         Ok(result)
     }
 
@@ -310,28 +294,30 @@ impl EthAPIServer for EthServer {
             .await?
             .map(Into::into);
 
-        let transaction = resp.map(|transaction_view: TransactionView| -> Transaction {
+        let transaction = resp.map(|_transaction_view: TransactionView| -> Transaction {
             Transaction {
-                transaction_type: transaction_view.transaction_type.into(),
-                hash: transaction_view.hash,
-                nonce: transaction_view.nonce,
-                block_hash: transaction_view.block_hash.map(Into::into),
-                block_number: transaction_view.block_number,
-                transaction_index: transaction_view.transaction_index,
-                from: transaction_view.from,
-                to: transaction_view.to.map(Into::into),
-                value: transaction_view.value,
-                gas_price: transaction_view.gas_price,
-                gas: transaction_view.gas,
-                input: transaction_view.input.0,
-                v: transaction_view.v,
-                r: transaction_view.r,
-                s: transaction_view.s,
-                access_list: transaction_view.access_list.into_iter().map(Into::into).collect(),
-                max_priority_fee_per_gas: transaction_view.max_priority_fee_per_gas,
-                max_fee_per_gas: transaction_view.max_fee_per_gas,
-                chain_id: transaction_view.chain_id,
-                other: transaction_view.other
+                hash: H256::from_str("0x7fd17d4a368fccdba4291ab121e48c96329b7dc3d027a373643fb23c20a19a3f").unwrap(),
+                nonce: U256::from(4391989),
+                block_hash: Some(H256::from_str("0xc2794a16acacd9f7670379ffd12b6968ff98e2a602f57d7d1f880220aa5a4973").unwrap()),
+                block_number: Some(8453214u64.into()),
+                transaction_index: Some(0u64.into()),
+                from: Address::from_str("0xdeaddeaddeaddeaddeaddeaddeaddeaddead0001").unwrap(),
+                to: Some(Address::from_str("0x4200000000000000000000000000000000000015").unwrap()),
+                value: U256::zero(),
+                gas_price: Some(U256::zero()),
+                gas: U256::from(1000000u64),
+                input: Bytes::from(
+                    hex::decode("015d8eb90000000000000000000000000000000000000000000000000000000000878c1c00000000000000000000000000000000000000000000000000000000644662bc0000000000000000000000000000000000000000000000000000001ee24fba17b7e19cc10812911dfa8a438e0a81a9933f843aa5b528899b8d9e221b649ae0df00000000000000000000000000000000000000000000000000000000000000060000000000000000000000007431310e026b69bfc676c0013e12a1a11411eec9000000000000000000000000000000000000000000000000000000000000083400000000000000000000000000000000000000000000000000000000000f4240").unwrap()
+                ),
+                v: U64::zero(),
+                r: U256::zero(),
+                s: U256::zero(),
+                transaction_type: Some(U64::from(126)),
+                access_list: None,
+                max_priority_fee_per_gas: None,
+                max_fee_per_gas: None,
+                chain_id: None,
+                other: Default::default()
             }
         });
     
