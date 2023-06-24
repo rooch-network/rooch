@@ -86,10 +86,10 @@ module moveos_std::table {
         raw_table::drop_unchecked(&handle)
     }
 
-    ///TODO should open the destroy function to public?
-    public(friend) fun destroy<K: copy + drop, V>(table: Table<K, V>) {
+    /// Destroy a table. The table must be empty to succeed.
+    public fun destroy_empty<K: copy + drop, V>(table: Table<K, V>) {
         let Table { handle } = table;
-        raw_table::destroy(&handle)
+        raw_table::destroy_empty(&handle)
     }
 
 
