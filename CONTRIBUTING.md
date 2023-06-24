@@ -52,5 +52,8 @@ Rooch Network uses [GitHub issues](https://github.com/rooch-network/rooch/issues
 
 You now have a fork of the Rooch repo set up in your local workspace. You can make changes to the files in the workspace, add commits, then push your changes to your fork of the repo to then create a Pull Request.
 
-Rooch Network welcomes everyone to participate and contribute, after reading the contribution guidelines, we also invite you to take a look at the requirements for Pull Requests [PR-Guidelines](./docs/pr-requirements.md). 
+Rooch Network welcomes everyone to participate and contribute, after reading the contribution guidelines, we also invite you to take a look at the requirements for Pull Requests [PR-Guidelines](./docs/contribute/pr-requirements.md). 
 
+## Coding Guidelines for Move Language
+
+Please refer to [Move Coding Conventions](./docs/contribute/coding-conventions.md).

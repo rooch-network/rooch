@@ -45,8 +45,8 @@ module rooch_framework::authenticator {
       assert!(is_builtin_scheme(authenticator.scheme), EUnsupportedScheme);
    }
 
-   public fun scheme(this: &Authenticator): u64 {
-      this.scheme
+   public fun scheme(self: &Authenticator): u64 {
+      self.scheme
    }
 
    public fun decode_authenticator_info(data: vector<u8>): (u64, Authenticator) {
@@ -60,11 +60,11 @@ module rooch_framework::authenticator {
       moveos_std::bcd::from_bytes<Ed25519Authenticator>(authenticator.payload)
    }
 
-   public fun ed25519_public(this: &Ed25519Authenticator): vector<u8> {
+   public fun ed25519_public(self: &Ed25519Authenticator): vector<u8> {
       let public_key = vector::empty<u8>();
       let i = ED25519_SCHEME_LENGTH + ED25519_SIG_LENGTH;
       while (i < ED25519_SCHEME_LENGTH + ED25519_SIG_LENGTH + ED25519_PUBKEY_LENGTH) {
-         let value = vector::borrow(&this.signature, i);
+         let value = vector::borrow(&self.signature, i);
          vector::push_back(&mut public_key, *value);
          i = i + 1;
       };
@@ -72,11 +72,11 @@ module rooch_framework::authenticator {
       public_key
    }
 
-   public fun ed25519_signature(this: &Ed25519Authenticator): vector<u8> {
+   public fun ed25519_signature(self: &Ed25519Authenticator): vector<u8> {
       let sign = vector::empty<u8>();
       let i = ED25519_SCHEME_LENGTH;
       while (i < ED25519_SIG_LENGTH + 1) {
-         let value = vector::borrow(&this.signature, i);
+         let value = vector::borrow(&self.signature, i);
          vector::push_back(&mut sign, *value);
          i = i + 1;
       };
@@ -94,8 +94,8 @@ module rooch_framework::authenticator {
       moveos_std::bcd::from_bytes<Secp256k1Authenticator>(authenticator.payload)
    }
 
-   public fun secp256k1_signature(this: &Secp256k1Authenticator): vector<u8> {
-      this.signature
+   public fun secp256k1_signature(self: &Secp256k1Authenticator): vector<u8> {
+      self.signature
    }
 
 }

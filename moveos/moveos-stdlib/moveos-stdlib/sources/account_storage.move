@@ -78,34 +78,34 @@ module moveos_std::account_storage {
     }
 
     /// Borrow a resource from the AccountStorage
-    fun borrow_resource_from_account_storage<T: key>(this: &AccountStorage): &T {
-        type_table::borrow_internal<T>(&this.resources)
+    fun borrow_resource_from_account_storage<T: key>(self: &AccountStorage): &T {
+        type_table::borrow_internal<T>(&self.resources)
     }
 
     /// Borrow a mut resource from the AccountStorage
-    fun borrow_mut_resource_from_account_storage<T: key>(this: &mut AccountStorage): &mut T {
-        type_table::borrow_mut_internal<T>(&mut this.resources)
+    fun borrow_mut_resource_from_account_storage<T: key>(self: &mut AccountStorage): &mut T {
+        type_table::borrow_mut_internal<T>(&mut self.resources)
     }
 
     /// Add a resource to the account storage
-    fun add_resource_to_account_storage<T: key>(this: &mut AccountStorage, resource: T){
+    fun add_resource_to_account_storage<T: key>(self: &mut AccountStorage, resource: T){
         //TODO should let the type_table native add function to check the resource is exists?
-        assert!(!type_table::contains_internal<T>(&this.resources), EResourceAlreadyExists);
-        type_table::add_internal(&mut this.resources, resource);
+        assert!(!type_table::contains_internal<T>(&self.resources), EResourceAlreadyExists);
+        type_table::add_internal(&mut self.resources, resource);
     }
 
     /// Remove a resource from the account storage
-    fun remove_resource_from_account_storage<T: key>(this: &mut AccountStorage): T{
-        assert!(type_table::contains_internal<T>(&this.resources), EResourceNotExists);
-        type_table::remove<T>(&mut this.resources)
+    fun remove_resource_from_account_storage<T: key>(self: &mut AccountStorage): T {
+        assert!(type_table::contains_internal<T>(&self.resources), EResourceNotExists);
+        type_table::remove<T>(&mut self.resources)
     }
 
-    fun exists_resource_at_account_storage<T: key>(this: &AccountStorage) : bool {
-        type_table::contains<T>(&this.resources)
+    fun exists_resource_at_account_storage<T: key>(self: &AccountStorage) : bool {
+        type_table::contains<T>(&self.resources)
     }
 
-    fun exists_module_at_account_storage(this: &AccountStorage, name: String) : bool {
-        table::contains(&this.modules, name)
+    fun exists_module_at_account_storage(self: &AccountStorage, name: String) : bool {
+        table::contains(&self.modules, name)
     }
 
     // === Global storage functions ===
