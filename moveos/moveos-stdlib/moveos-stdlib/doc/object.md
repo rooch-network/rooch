@@ -146,7 +146,7 @@ The private generic is indicate the T should be defined in the same module as th
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow">borrow</a>&lt;T&gt;(this: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): &T
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow">borrow</a>&lt;T&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): &T
 </code></pre>
 
 
@@ -155,8 +155,8 @@ The private generic is indicate the T should be defined in the same module as th
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow">borrow</a>&lt;T&gt;(this: &<a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): &T {
-    &this.value
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow">borrow</a>&lt;T&gt;(self: &<a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): &T {
+    &self.value
 }
 </code></pre>
 
@@ -171,7 +171,7 @@ The private generic is indicate the T should be defined in the same module as th
 Borrow the object mutable value
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_mut">borrow_mut</a>&lt;T&gt;(this: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): &<b>mut</b> T
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_mut">borrow_mut</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): &<b>mut</b> T
 </code></pre>
 
 
@@ -180,8 +180,8 @@ Borrow the object mutable value
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_mut">borrow_mut</a>&lt;T&gt;(this: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): &<b>mut</b> T {
-    &<b>mut</b> this.value
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_mut">borrow_mut</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): &<b>mut</b> T {
+    &<b>mut</b> self.value
 }
 </code></pre>
 
@@ -196,7 +196,7 @@ Borrow the object mutable value
 Transfer object to recipient
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_transfer">transfer</a>&lt;T: key&gt;(this: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, recipient: <b>address</b>)
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_transfer">transfer</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, recipient: <b>address</b>)
 </code></pre>
 
 
@@ -205,8 +205,8 @@ Transfer object to recipient
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_transfer">transfer</a>&lt;T: key&gt;(this: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;, recipient: <b>address</b>) {
-    this.owner = recipient;
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_transfer">transfer</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;, recipient: <b>address</b>) {
+    self.owner = recipient;
 }
 </code></pre>
 
@@ -220,7 +220,7 @@ Transfer object to recipient
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_id">id</a>&lt;T&gt;(this: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_id">id</a>&lt;T&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
 </code></pre>
 
 
@@ -229,8 +229,8 @@ Transfer object to recipient
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_id">id</a>&lt;T&gt;(this: &<a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): ObjectID {
-    this.id
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_id">id</a>&lt;T&gt;(self: &<a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): ObjectID {
+    self.id
 }
 </code></pre>
 
@@ -244,7 +244,7 @@ Transfer object to recipient
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_owner">owner</a>&lt;T&gt;(this: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_owner">owner</a>&lt;T&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): <b>address</b>
 </code></pre>
 
 
@@ -253,8 +253,8 @@ Transfer object to recipient
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_owner">owner</a>&lt;T&gt;(this: &<a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): <b>address</b> {
-    this.owner
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_owner">owner</a>&lt;T&gt;(self: &<a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): <b>address</b> {
+    self.owner
 }
 </code></pre>
 

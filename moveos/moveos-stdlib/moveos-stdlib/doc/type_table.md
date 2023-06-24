@@ -19,7 +19,7 @@ TypeTable is a table use struct Type as Key, struct as Value
 -  [Function `remove_internal`](#0x2_type_table_remove_internal)
 -  [Function `contains`](#0x2_type_table_contains)
 -  [Function `contains_internal`](#0x2_type_table_contains_internal)
--  [Function `destroy`](#0x2_type_table_destroy)
+-  [Function `destroy_empty`](#0x2_type_table_destroy_empty)
 
 
 <pre><code><b>use</b> <a href="">0x1::ascii</a>;
@@ -362,14 +362,14 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 
 </details>
 
-<a name="0x2_type_table_destroy"></a>
+<a name="0x2_type_table_destroy_empty"></a>
 
-## Function `destroy`
+## Function `destroy_empty`
 
-TODO should open the destroy function to public?
+Destroy a table. The table must be empty to succeed.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="type_table.md#0x2_type_table_destroy">destroy</a>(<a href="table.md#0x2_table">table</a>: <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_destroy_empty">destroy_empty</a>(<a href="table.md#0x2_table">table</a>: <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>)
 </code></pre>
 
 
@@ -378,9 +378,9 @@ TODO should open the destroy function to public?
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="type_table.md#0x2_type_table_destroy">destroy</a>(<a href="table.md#0x2_table">table</a>: <a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a>) {
+<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_destroy_empty">destroy_empty</a>(<a href="table.md#0x2_table">table</a>: <a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a>) {
     <b>let</b> <a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a>{handle} = <a href="table.md#0x2_table">table</a>;
-    <a href="raw_table.md#0x2_raw_table_destroy">raw_table::destroy</a>(&handle)
+    <a href="raw_table.md#0x2_raw_table_destroy_empty">raw_table::destroy_empty</a>(&handle)
 }
 </code></pre>
 

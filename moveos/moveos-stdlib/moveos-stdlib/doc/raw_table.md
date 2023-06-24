@@ -18,7 +18,7 @@ This type table if for design internal global storage, so all functions are frie
 -  [Function `upsert`](#0x2_raw_table_upsert)
 -  [Function `remove`](#0x2_raw_table_remove)
 -  [Function `contains`](#0x2_raw_table_contains)
--  [Function `destroy`](#0x2_raw_table_destroy)
+-  [Function `destroy_empty`](#0x2_raw_table_destroy_empty)
 -  [Function `new_table_handle`](#0x2_raw_table_new_table_handle)
 
 
@@ -305,13 +305,14 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 
 </details>
 
-<a name="0x2_raw_table_destroy"></a>
+<a name="0x2_raw_table_destroy_empty"></a>
 
-## Function `destroy`
+## Function `destroy_empty`
+
+Destroy a table. The table must be empty to succeed.
 
 
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_destroy">destroy</a>(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_destroy_empty">destroy_empty</a>(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>)
 </code></pre>
 
 
@@ -320,9 +321,8 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_destroy">destroy</a>(table_handle: &ObjectID) {
-    <a href="raw_table.md#0x2_raw_table_destroy_empty_box">destroy_empty_box</a>(table_handle);
-    <a href="raw_table.md#0x2_raw_table_drop_unchecked_box">drop_unchecked_box</a>(table_handle)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_destroy_empty">destroy_empty</a>(table_handle: &ObjectID) {
+    <a href="raw_table.md#0x2_raw_table_destroy_empty_box">destroy_empty_box</a>(table_handle)
 }
 </code></pre>
 

@@ -22,7 +22,7 @@ struct itself, while the operations are implemented as native functions. No trav
 -  [Function `upsert`](#0x2_table_upsert)
 -  [Function `remove`](#0x2_table_remove)
 -  [Function `contains`](#0x2_table_contains)
--  [Function `destroy`](#0x2_table_destroy)
+-  [Function `destroy_empty`](#0x2_table_destroy_empty)
 
 
 <pre><code><b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
@@ -322,14 +322,14 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 
 </details>
 
-<a name="0x2_table_destroy"></a>
+<a name="0x2_table_destroy_empty"></a>
 
-## Function `destroy`
+## Function `destroy_empty`
 
-TODO should open the destroy function to public?
+Destroy a table. The table must be empty to succeed.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="table.md#0x2_table_destroy">destroy</a>&lt;K: <b>copy</b>, drop, V&gt;(<a href="table.md#0x2_table">table</a>: <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_destroy_empty">destroy_empty</a>&lt;K: <b>copy</b>, drop, V&gt;(<a href="table.md#0x2_table">table</a>: <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;)
 </code></pre>
 
 
@@ -338,9 +338,9 @@ TODO should open the destroy function to public?
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="table.md#0x2_table_destroy">destroy</a>&lt;K: <b>copy</b> + drop, V&gt;(<a href="table.md#0x2_table">table</a>: <a href="table.md#0x2_table_Table">Table</a>&lt;K, V&gt;) {
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_destroy_empty">destroy_empty</a>&lt;K: <b>copy</b> + drop, V&gt;(<a href="table.md#0x2_table">table</a>: <a href="table.md#0x2_table_Table">Table</a>&lt;K, V&gt;) {
     <b>let</b> <a href="table.md#0x2_table_Table">Table</a> { handle } = <a href="table.md#0x2_table">table</a>;
-    <a href="raw_table.md#0x2_raw_table_destroy">raw_table::destroy</a>(&handle)
+    <a href="raw_table.md#0x2_raw_table_destroy_empty">raw_table::destroy_empty</a>(&handle)
 }
 </code></pre>
 

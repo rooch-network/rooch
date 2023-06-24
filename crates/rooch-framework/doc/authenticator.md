@@ -280,7 +280,7 @@ If not, just abort
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_scheme">scheme</a>(this: &<a href="authenticator.md#0x3_authenticator_Authenticator">authenticator::Authenticator</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_scheme">scheme</a>(self: &<a href="authenticator.md#0x3_authenticator_Authenticator">authenticator::Authenticator</a>): u64
 </code></pre>
 
 
@@ -289,8 +289,8 @@ If not, just abort
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_scheme">scheme</a>(this: &<a href="authenticator.md#0x3_authenticator_Authenticator">Authenticator</a>): u64 {
-   this.scheme
+<pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_scheme">scheme</a>(self: &<a href="authenticator.md#0x3_authenticator_Authenticator">Authenticator</a>): u64 {
+   self.scheme
 }
 </code></pre>
 
@@ -355,7 +355,7 @@ If not, just abort
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_ed25519_public">ed25519_public</a>(this: &<a href="authenticator.md#0x3_authenticator_Ed25519Authenticator">authenticator::Ed25519Authenticator</a>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_ed25519_public">ed25519_public</a>(self: &<a href="authenticator.md#0x3_authenticator_Ed25519Authenticator">authenticator::Ed25519Authenticator</a>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -364,11 +364,11 @@ If not, just abort
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_ed25519_public">ed25519_public</a>(this: &<a href="authenticator.md#0x3_authenticator_Ed25519Authenticator">Ed25519Authenticator</a>): <a href="">vector</a>&lt;u8&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_ed25519_public">ed25519_public</a>(self: &<a href="authenticator.md#0x3_authenticator_Ed25519Authenticator">Ed25519Authenticator</a>): <a href="">vector</a>&lt;u8&gt; {
    <b>let</b> public_key = <a href="_empty">vector::empty</a>&lt;u8&gt;();
    <b>let</b> i = <a href="authenticator.md#0x3_authenticator_ED25519_SCHEME_LENGTH">ED25519_SCHEME_LENGTH</a> + <a href="authenticator.md#0x3_authenticator_ED25519_SIG_LENGTH">ED25519_SIG_LENGTH</a>;
    <b>while</b> (i &lt; <a href="authenticator.md#0x3_authenticator_ED25519_SCHEME_LENGTH">ED25519_SCHEME_LENGTH</a> + <a href="authenticator.md#0x3_authenticator_ED25519_SIG_LENGTH">ED25519_SIG_LENGTH</a> + <a href="authenticator.md#0x3_authenticator_ED25519_PUBKEY_LENGTH">ED25519_PUBKEY_LENGTH</a>) {
-      <b>let</b> value = <a href="_borrow">vector::borrow</a>(&this.signature, i);
+      <b>let</b> value = <a href="_borrow">vector::borrow</a>(&self.signature, i);
       <a href="_push_back">vector::push_back</a>(&<b>mut</b> public_key, *value);
       i = i + 1;
    };
@@ -387,7 +387,7 @@ If not, just abort
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_ed25519_signature">ed25519_signature</a>(this: &<a href="authenticator.md#0x3_authenticator_Ed25519Authenticator">authenticator::Ed25519Authenticator</a>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_ed25519_signature">ed25519_signature</a>(self: &<a href="authenticator.md#0x3_authenticator_Ed25519Authenticator">authenticator::Ed25519Authenticator</a>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -396,11 +396,11 @@ If not, just abort
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_ed25519_signature">ed25519_signature</a>(this: &<a href="authenticator.md#0x3_authenticator_Ed25519Authenticator">Ed25519Authenticator</a>): <a href="">vector</a>&lt;u8&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_ed25519_signature">ed25519_signature</a>(self: &<a href="authenticator.md#0x3_authenticator_Ed25519Authenticator">Ed25519Authenticator</a>): <a href="">vector</a>&lt;u8&gt; {
    <b>let</b> sign = <a href="_empty">vector::empty</a>&lt;u8&gt;();
    <b>let</b> i = <a href="authenticator.md#0x3_authenticator_ED25519_SCHEME_LENGTH">ED25519_SCHEME_LENGTH</a>;
    <b>while</b> (i &lt; <a href="authenticator.md#0x3_authenticator_ED25519_SIG_LENGTH">ED25519_SIG_LENGTH</a> + 1) {
-      <b>let</b> value = <a href="_borrow">vector::borrow</a>(&this.signature, i);
+      <b>let</b> value = <a href="_borrow">vector::borrow</a>(&self.signature, i);
       <a href="_push_back">vector::push_back</a>(&<b>mut</b> sign, *value);
       i = i + 1;
    };
@@ -469,7 +469,7 @@ If not, just abort
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_secp256k1_signature">secp256k1_signature</a>(this: &<a href="authenticator.md#0x3_authenticator_Secp256k1Authenticator">authenticator::Secp256k1Authenticator</a>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_secp256k1_signature">secp256k1_signature</a>(self: &<a href="authenticator.md#0x3_authenticator_Secp256k1Authenticator">authenticator::Secp256k1Authenticator</a>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -478,8 +478,8 @@ If not, just abort
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_secp256k1_signature">secp256k1_signature</a>(this: &<a href="authenticator.md#0x3_authenticator_Secp256k1Authenticator">Secp256k1Authenticator</a>): <a href="">vector</a>&lt;u8&gt; {
-   this.signature
+<pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_secp256k1_signature">secp256k1_signature</a>(self: &<a href="authenticator.md#0x3_authenticator_Secp256k1Authenticator">Secp256k1Authenticator</a>): <a href="">vector</a>&lt;u8&gt; {
+   self.signature
 }
 </code></pre>
 
