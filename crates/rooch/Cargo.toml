@@ -17,7 +17,7 @@ rust-version = { workspace = true }
 anyhow = { workspace = true }
 bcs = { workspace = true }
 clap = { features = [ "derive",], workspace = true }
-datatest-stable = { git = "https://github.com/starcoinorg/diem-devtools", branch = "feature/pub-test-opts" }
+datatest-stable = { git = "https://github.com/rooch-network/diem-devtools", branch = "feature/pub-test-opts" }
 tokio = { features = ["full"], workspace = true }
 dirs  = { workspace = true }
 serde = { workspace = true }

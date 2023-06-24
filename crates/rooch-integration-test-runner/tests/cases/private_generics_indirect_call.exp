@@ -4,7 +4,7 @@ task 1 'publish'. lines 3-8:
 status EXECUTED
 
 task 2 'publish'. lines 10-48:
-error: resource type "KeyStruct" in function "0x2::object_storage::remove" not defined in current module or not allowed
+Error: error: resource type "KeyStruct" in function "0x2::object_storage::remove" not defined in current module or not allowed
    ┌─ /tmp/tempfile:37:19
    │
 37 │         let obj = object_storage::remove<KeyStruct>(object_storage, object_id);
@@ -22,4 +22,4 @@ error: resource type "KeyStruct" in function "0x2::account_storage::global_move_
 40 │         account_storage::global_move_to(ctx, &sender, value);
    │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-status EXECUTED
+

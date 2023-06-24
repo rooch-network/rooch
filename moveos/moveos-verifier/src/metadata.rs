@@ -224,7 +224,9 @@ impl<'a> ExtendedChecker<'a> {
                     }
                 }
             }
+        }
 
+        for ref fun in module.get_functions() {
             // Inspect the bytecode of every function, and if an instruction is CallGeneric,
             // verify that it calls a function with the private_generics attribute as detected earlier.
             // Then, ensure that the generic parameters of the CallGeneric instruction are valid.

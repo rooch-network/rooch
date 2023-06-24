@@ -182,7 +182,8 @@ impl IntegrationTest {
             },
         }];
 
-        let program_res = construct_pre_compiled_lib(targets, None, move_compiler::Flags::empty())?;
+        let program_res =
+            construct_pre_compiled_lib(targets.clone(), None, move_compiler::Flags::empty())?;
         let pre_compiled_lib = match program_res {
             Ok(af) => af,
             Err((files, errors)) => {
@@ -202,16 +203,27 @@ impl IntegrationTest {
             return Ok(());
         }
 
+        let named_address_map = targets.get(0).unwrap().named_address_map.clone();
+        let mut named_address_string_map = BTreeMap::new();
+        let _ = named_address_map
+            .iter()
+            .map(|(key, value)| {
+                named_address_string_map.insert(key.clone(), value.to_string());
+            })
+            .collect::<Vec<_>>();
+
         let requirements = datatest_stable::Requirements::new(
-            move |path| {
-                rooch_integration_test_runner::run_test_impl(
+            move |path, data| {
+                rooch_integration_test_runner::run_integration_test_with_extended_check(
                     path,
                     G_PRE_COMPILED_LIB.lock().unwrap().as_ref(),
+                    data,
                 )
             },
             "integration-test333".to_string(),
             tests_dir.display().to_string(),
             r".*\.move".to_string(),
+            named_address_string_map,
         );
         if self.update_baseline {
             std::env::set_var(UPDATE_BASELINE, "true");
