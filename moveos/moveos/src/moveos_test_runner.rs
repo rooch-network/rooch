@@ -230,6 +230,14 @@ fn merge_output(left: Option<String>, right: Option<String>) -> Option<String> {
     }
 }
 
+fn filter_temp_path(input: String) -> String {
+    let re = Regex::new("/tmp/.[0-9a-zA-Z]+").unwrap();
+    let re1 = Regex::new("/var/.*tmp[0-9a-zA-Z]+").unwrap();
+    let re_output = re.replace_all(input.as_str(), FIXED_TEMP_PATH).to_string();
+    re1.replace_all(re_output.as_str(), FIXED_TEMP_PATH)
+        .to_string()
+}
+
 fn compile_source_unit(
     pre_compiled_deps: Option<&FullyCompiledProgram>,
     named_address_mapping: BTreeMap<String, NumericalAddress>,
@@ -253,16 +261,7 @@ fn compile_source_unit(
         if global_env.diag_count(Severity::Warning) > 0 {
             let mut buffer = Buffer::no_color();
             global_env.report_diag(&mut buffer, Severity::Warning);
-            let warn_msg = String::from_utf8_lossy(buffer.as_slice()).to_string();
-            let re = Regex::new("/tmp/.[0-9a-zA-Z]+").unwrap();
-            let re1 = Regex::new("/var/.*tmp[0-9a-zA-Z]+").unwrap();
-            let output = re
-                .replace_all(warn_msg.as_str(), FIXED_TEMP_PATH)
-                .to_string();
-            Some(
-                re1.replace_all(output.as_str(), FIXED_TEMP_PATH)
-                    .to_string(),
-            )
+            Some(String::from_utf8_lossy(buffer.as_slice()).to_string())
         } else {
             None
         }
@@ -301,17 +300,25 @@ fn compile_source_unit(
                 }
             }
 
-            Err(anyhow!(rendered_diags(&files, diags).unwrap()))
+            Err(anyhow!(filter_temp_path(
+                rendered_diags(&files, diags).unwrap()
+            )))
         }
         Ok((mut units, warnings)) => {
             let warnings = rendered_diags(&files, warnings);
+            let merged_output = merge_output(extended_checks_error, warnings);
+
+            let modified_merged_error = merged_output.map(filter_temp_path);
+
+            if let Some(merged_error_message) = modified_merged_error {
+                return Err(anyhow::Error::msg(merged_error_message));
+            }
             let len = units.len();
             if len != 1 {
                 panic!("Invalid input. Expected 1 compiled unit but got {}", len)
             }
             let unit = units.pop().unwrap();
-            let merged_output = merge_output(extended_checks_error, warnings);
-            Ok((unit, merged_output))
+            Ok((unit, modified_merged_error))
         }
     }
 }

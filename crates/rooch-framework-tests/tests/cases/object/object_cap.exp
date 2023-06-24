@@ -4,7 +4,7 @@ task 1 'publish'. lines 3-21:
 status EXECUTED
 
 task 2 'run'. lines 22-38:
-error: resource type "TestObject" in function "0x2::object::new" not defined in current module or not allowed
+Error: error: resource type "TestObject" in function "0x2::object::new" not defined in current module or not allowed
    ┌─ /tmp/tempfile:31:19
    │
 31 │         let obj = object::new<TestObject>(storage_context::tx_context_mut(ctx), sender_addr, object);
@@ -22,4 +22,4 @@ error: resource type "TestObject" in function "0x2::object::unpack" not defined 
 33 │         let (_id, _owner, test_object) = object::unpack(obj);
    │                                          ^^^^^^^^^^^^^^^^^^^
 
-status EXECUTED
+
