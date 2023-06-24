@@ -3,7 +3,7 @@
 
 use crate::jsonrpc_types::eth::{CallRequest, EthFeeHistory};
 use ethers::types::{
-    Block, BlockNumber, Bytes, Transaction, TransactionRequest, TransactionReceipt, TxHash, H160, U256,
+    Block, BlockNumber, Bytes, Transaction, TransactionRequest, TransactionReceipt, TxHash, H160, U256
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -95,5 +95,9 @@ pub trait EthAPI {
     /// Get transaction by its hash.
     #[method(name = "eth_getTransactionByHash")]
     async fn transaction_by_hash(&self, hash: H256) -> RpcResult<Option<Transaction>>;
+
+    /// Returns block with given hash.
+    #[method(name = "eth_getBlockByHash")]
+    async fn block_by_hash(&self, hash: H256, include_txs: bool) -> RpcResult<Block<TransactionType>>;
 
 }
