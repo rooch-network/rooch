@@ -10,11 +10,8 @@ module moveos_std::raw_table {
     friend moveos_std::type_table;
     friend moveos_std::object_storage;
     friend moveos_std::account_storage;
+    friend moveos_std::storage_context;
 
-    struct TableInfo has key {
-        // Table SMT root
-        state_root: address,
-    }
     
     /// Add a new entry to the table. Aborts if an entry for this
     /// key already exists. The entry itself is not stored in the
@@ -86,6 +83,34 @@ module moveos_std::raw_table {
     /// Destroy a table. The table must be empty to succeed.
     public(friend) fun destroy_empty(table_handle: &ObjectID) {
         destroy_empty_box(table_handle)
+    }
+
+    // ======================================================================================================
+    // TableInfo
+
+    const SparseMerklePlaceHolderHash: address = @0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000;
+    
+    /// TableInfo is a struct that contains the information of a table, include Table,TypeTable,ObjectStorage.
+    struct TableInfo has key {
+        // Table SMT root, it is a 32 bytes hash, we use address to represent it.
+        state_root: address,
+        length: u64,
+    }
+
+    public(friend) fun new_empty_table_info(): TableInfo {
+        TableInfo {
+            state_root: SparseMerklePlaceHolderHash,
+            length: 0u64,
+        }
+    }
+
+    public(friend) fun length(self: &TableInfo) : u64{
+        self.length
+    }
+
+    public(friend) fun unpack(self: TableInfo) : (address, u64){
+        let TableInfo { state_root, length } = self;
+        (state_root, length)
     }
 
     // ======================================================================================================

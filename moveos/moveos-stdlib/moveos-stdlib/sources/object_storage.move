@@ -32,33 +32,49 @@ module moveos_std::object_storage {
     }
 
     /// The global object storage's table handle should be 0x0
-    public(friend) fun global_object_storage_handle() : ObjectID {
+    public fun global_object_storage_handle() : ObjectID {
         object_id::address_to_object_id(GlobalObjectStorageHandle)
     }
 
     #[private_generics(T)]
     /// Borrow Object from object store with object_id
     public fun borrow<T: key>(self: &ObjectStorage, object_id: ObjectID): &Object<T>{
+        borrow_internal(self, object_id)
+    }
+
+    public(friend) fun borrow_internal<T: key>(self: &ObjectStorage, object_id: ObjectID): &Object<T>{
         raw_table::borrow<ObjectID, Object<T>>(&self.handle, object_id)
     }
 
     #[private_generics(T)]
     /// Borrow mut Object from object store with object_id
     public fun borrow_mut<T: key>(self: &mut ObjectStorage, object_id: ObjectID): &mut Object<T>{
+        borrow_mut_internal(self, object_id)
+    }
+
+    public(friend) fun borrow_mut_internal<T: key>(self: &mut ObjectStorage, object_id: ObjectID): &mut Object<T>{
         raw_table::borrow_mut<ObjectID, Object<T>>(&self.handle, object_id)
     }
     
     #[private_generics(T)]
     /// Remove object from object store
     public fun remove<T: key>(self: &mut ObjectStorage, object_id: ObjectID): Object<T>{
+        remove_internal(self, object_id)
+    }
+
+    public(friend) fun remove_internal<T: key>(self: &mut ObjectStorage, object_id: ObjectID): Object<T>{
         raw_table::remove<ObjectID, Object<T>>(&self.handle, object_id)
     }
     
     #[private_generics(T)]
     /// Add object to object store
     public fun add<T: key>(self: &mut ObjectStorage, obj: Object<T>) {
-        raw_table::add<ObjectID, Object<T>>(&self.handle, object::id(&obj), obj);
+        add_internal(self, obj);
     } 
+
+    public(friend) fun add_internal<T: key>(self: &mut ObjectStorage, obj: Object<T>) {
+        raw_table::add<ObjectID, Object<T>>(&self.handle, object::id(&obj), obj);
+    }
 
     public fun contains(self: &ObjectStorage, object_id: ObjectID): bool{
         raw_table::contains<ObjectID>(&self.handle, object_id)

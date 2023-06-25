@@ -11,6 +11,7 @@ module moveos_std::table {
     use moveos_std::object_id::{ObjectID};
 
     friend moveos_std::account_storage;
+    friend moveos_std::storage_context;
 
     /// Type of tables
     struct Table<phantom K: copy + drop, phantom V> has store {
@@ -29,6 +30,10 @@ module moveos_std::table {
         Table {
             handle,
         }
+    }
+
+    public(friend) fun handle<K: copy + drop, V: store>(table: &Table<K, V>): ObjectID {
+        table.handle
     }
 
     /// Add a new entry to the table. Aborts if an entry for this

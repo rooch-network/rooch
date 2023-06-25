@@ -14,6 +14,7 @@ struct itself, while the operations are implemented as native functions. No trav
 -  [Struct `Table`](#0x2_table_Table)
 -  [Function `new`](#0x2_table_new)
 -  [Function `new_with_id`](#0x2_table_new_with_id)
+-  [Function `handle`](#0x2_table_handle)
 -  [Function `add`](#0x2_table_add)
 -  [Function `borrow`](#0x2_table_borrow)
 -  [Function `borrow_with_default`](#0x2_table_borrow_with_default)
@@ -107,6 +108,30 @@ Create a table with a given handle.
     <a href="table.md#0x2_table_Table">Table</a> {
         handle,
     }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_table_handle"></a>
+
+## Function `handle`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="table.md#0x2_table_handle">handle</a>&lt;K: <b>copy</b>, drop, V: store&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="table.md#0x2_table_handle">handle</a>&lt;K: <b>copy</b> + drop, V: store&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">Table</a>&lt;K, V&gt;): ObjectID {
+    <a href="table.md#0x2_table">table</a>.handle
 }
 </code></pre>
 

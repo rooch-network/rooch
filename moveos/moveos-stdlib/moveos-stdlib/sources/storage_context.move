@@ -5,9 +5,12 @@
 module moveos_std::storage_context {
 
     use std::option::Option;
-    use moveos_std::object_storage::{ObjectStorage};
+    use moveos_std::object_storage::{Self, ObjectStorage};
     use moveos_std::tx_context::{Self, TxContext};
     use moveos_std::object_id::{ObjectID};
+    use moveos_std::table::{Self, Table};
+    use moveos_std::raw_table::{Self, TableInfo};
+    use moveos_std::object::{Self};
 
     #[test_only]
     use moveos_std::object_storage::{Self};
@@ -39,6 +42,26 @@ module moveos_std::storage_context {
 
     public fun object_storage_mut(self: &mut StorageContext): &mut ObjectStorage {
         &mut self.object_storage
+    }
+
+    /// Table create function
+
+    public fun new_table<K: copy + drop, V: store>(self: &mut StorageContext): Table<K,V> {
+        let sender = sender(self);
+        let table_handle = fresh_object_id(self);
+        let table_info = raw_table::new_empty_table_info();
+        let table_info_object = object::new_with_id(table_handle, sender, table_info);
+        object_storage::add_internal(&mut self.object_storage, table_info_object);
+        table::new_with_id(table_handle)
+    }
+
+    public fun destroy_empty_table<K: copy + drop, V: store>(self: &mut StorageContext, table: Table<K,V>) {
+        let handle = table::handle(&table);
+        let table_info_object = object_storage::remove_internal(&mut self.object_storage, handle);
+        let (_, _, table_info) = object::unpack_internal<TableInfo>(table_info_object);
+        let (_state_root, length) = raw_table::unpack(table_info);
+        assert!(length == 0, 1000);
+        table::destroy_empty(table)
     }
 
     /// Wrap functions for TxContext

@@ -11,6 +11,7 @@ module moveos_std::object {
 
     friend moveos_std::account_storage;
     friend moveos_std::events;
+    friend moveos_std::storage_context;
 
     /// Invalid access of object, the object is not owned by the signer or the object is not shared or immutable
     const EInvalidAccess: u64 = 0;
@@ -70,6 +71,10 @@ module moveos_std::object {
 
     #[private_generics(T)]
     public fun unpack<T>(obj: Object<T>): (ObjectID, address, T) {
+        unpack_internal(obj)
+    }
+
+    public(friend) fun unpack_internal<T>(obj: Object<T>): (ObjectID, address, T) {
         let Object{id, owner, value} = obj;
         (id, owner, value)
     }

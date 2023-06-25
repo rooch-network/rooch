@@ -10,6 +10,7 @@ This type table if for design internal global storage, so all functions are frie
 
 -  [Resource `TableInfo`](#0x2_raw_table_TableInfo)
 -  [Resource `Box`](#0x2_raw_table_Box)
+-  [Constants](#@Constants_0)
 -  [Function `add`](#0x2_raw_table_add)
 -  [Function `borrow`](#0x2_raw_table_borrow)
 -  [Function `borrow_with_default`](#0x2_raw_table_borrow_with_default)
@@ -19,6 +20,9 @@ This type table if for design internal global storage, so all functions are frie
 -  [Function `remove`](#0x2_raw_table_remove)
 -  [Function `contains`](#0x2_raw_table_contains)
 -  [Function `destroy_empty`](#0x2_raw_table_destroy_empty)
+-  [Function `new_empty_table_info`](#0x2_raw_table_new_empty_table_info)
+-  [Function `length`](#0x2_raw_table_length)
+-  [Function `unpack`](#0x2_raw_table_unpack)
 -  [Function `new_table_handle`](#0x2_raw_table_new_table_handle)
 
 
@@ -32,6 +36,7 @@ This type table if for design internal global storage, so all functions are frie
 
 ## Resource `TableInfo`
 
+TableInfo is a struct that contains the information of a table, include Table,TypeTable,ObjectStorage.
 
 
 <pre><code><b>struct</b> <a href="raw_table.md#0x2_raw_table_TableInfo">TableInfo</a> <b>has</b> key
@@ -46,6 +51,12 @@ This type table if for design internal global storage, so all functions are frie
 <dl>
 <dt>
 <code>state_root: <b>address</b></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>length: u64</code>
 </dt>
 <dd>
 
@@ -83,6 +94,20 @@ Because the GlobalValue in MoveVM must be a resource.
 
 
 </details>
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x2_raw_table_SparseMerklePlaceHolderHash"></a>
+
+
+
+<pre><code><b>const</b> <a href="raw_table.md#0x2_raw_table_SparseMerklePlaceHolderHash">SparseMerklePlaceHolderHash</a>: <b>address</b> = 5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000;
+</code></pre>
+
+
 
 <a name="0x2_raw_table_add"></a>
 
@@ -323,6 +348,82 @@ Destroy a table. The table must be empty to succeed.
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_destroy_empty">destroy_empty</a>(table_handle: &ObjectID) {
     <a href="raw_table.md#0x2_raw_table_destroy_empty_box">destroy_empty_box</a>(table_handle)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_raw_table_new_empty_table_info"></a>
+
+## Function `new_empty_table_info`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_new_empty_table_info">new_empty_table_info</a>(): <a href="raw_table.md#0x2_raw_table_TableInfo">raw_table::TableInfo</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_new_empty_table_info">new_empty_table_info</a>(): <a href="raw_table.md#0x2_raw_table_TableInfo">TableInfo</a> {
+    <a href="raw_table.md#0x2_raw_table_TableInfo">TableInfo</a> {
+        state_root: <a href="raw_table.md#0x2_raw_table_SparseMerklePlaceHolderHash">SparseMerklePlaceHolderHash</a>,
+        length: 0u64,
+    }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_raw_table_length"></a>
+
+## Function `length`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_length">length</a>(self: &<a href="raw_table.md#0x2_raw_table_TableInfo">raw_table::TableInfo</a>): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_length">length</a>(self: &<a href="raw_table.md#0x2_raw_table_TableInfo">TableInfo</a>) : u64{
+    self.length
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_raw_table_unpack"></a>
+
+## Function `unpack`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_unpack">unpack</a>(self: <a href="raw_table.md#0x2_raw_table_TableInfo">raw_table::TableInfo</a>): (<b>address</b>, u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_unpack">unpack</a>(self: <a href="raw_table.md#0x2_raw_table_TableInfo">TableInfo</a>) : (<b>address</b>, u64){
+    <b>let</b> <a href="raw_table.md#0x2_raw_table_TableInfo">TableInfo</a> { state_root, length } = self;
+    (state_root, length)
 }
 </code></pre>
 

@@ -21,6 +21,7 @@ More details about the Object can be found in [Storage Abstraction](https://gith
 -  [Function `id`](#0x2_object_id)
 -  [Function `owner`](#0x2_object_owner)
 -  [Function `unpack`](#0x2_object_unpack)
+-  [Function `unpack_internal`](#0x2_object_unpack_internal)
 
 
 <pre><code><b>use</b> <a href="">0x1::debug</a>;
@@ -278,6 +279,30 @@ Transfer object to recipient
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_unpack">unpack</a>&lt;T&gt;(obj: <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): (ObjectID, <b>address</b>, T) {
+    <a href="object.md#0x2_object_unpack_internal">unpack_internal</a>(obj)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_object_unpack_internal"></a>
+
+## Function `unpack_internal`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_unpack_internal">unpack_internal</a>&lt;T&gt;(obj: <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): (<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, <b>address</b>, T)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_unpack_internal">unpack_internal</a>&lt;T&gt;(obj: <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): (ObjectID, <b>address</b>, T) {
     <b>let</b> <a href="object.md#0x2_object_Object">Object</a>{id, owner, value} = obj;
     (id, owner, value)
 }
