@@ -20,10 +20,7 @@ use jsonrpsee::{
     core::{async_trait, Error as JsonRpcError, RpcResult},
     RpcModule,
 };
-use moveos_types::{
-    access_path::AccessPath,
-    state::{MoveStructType},
-};
+use moveos_types::{access_path::AccessPath, state::MoveStructType};
 use rand::Rng;
 use rooch_types::{
     account::Account,
