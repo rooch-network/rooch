@@ -3,6 +3,7 @@
 
 use anyhow::Result;
 use coerce::actor::message::Message;
+use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
 use moveos_types::event::AnnotatedMoveOSEvent;
@@ -14,6 +15,7 @@ use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
+use rooch_types::address::MultiChainAddress;
 use rooch_types::transaction::{AbstractTransaction, TransactionSequenceMapping};
 use serde::{Deserialize, Serialize};
 
@@ -59,6 +61,15 @@ pub struct StatesMessage {
 
 impl Message for StatesMessage {
     type Result = Result<Vec<Option<State>>>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ResolveMessage {
+    pub address: MultiChainAddress,
+}
+
+impl Message for ResolveMessage {
+    type Result = Result<AccountAddress>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]

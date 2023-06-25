@@ -3,14 +3,15 @@
 
 use super::messages::{
     AnnotatedStatesMessage, ExecuteTransactionMessage, ExecuteTransactionResult,
-    ExecuteViewFunctionMessage, GetEventsByEventHandleMessage, GetEventsMessage, StatesMessage,
-    ValidateTransactionMessage,
+    ExecuteViewFunctionMessage, GetEventsByEventHandleMessage, GetEventsMessage, ResolveMessage,
+    StatesMessage, ValidateTransactionMessage,
 };
 use crate::actor::messages::{GetTransactionInfosByTxHashMessage, GetTxSeqMappingByTxOrderMessage};
 use anyhow::bail;
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
+use move_core_types::account_address::AccountAddress;
 use move_resource_viewer::MoveValueAnnotator;
 use moveos::moveos::MoveOS;
 use moveos_common::accumulator::InMemoryAccumulator;
@@ -28,6 +29,7 @@ use rooch_framework::bindings::address_mapping::AddressMapping;
 use rooch_framework::bindings::transaction_validator::TransactionValidator;
 use rooch_genesis::RoochGenesis;
 use rooch_store::RoochDB;
+use rooch_types::address::MultiChainAddress;
 use rooch_types::transaction::{AbstractTransaction, TransactionSequenceMapping};
 
 pub struct ExecutorActor {
@@ -47,9 +49,10 @@ impl ExecutorActor {
         Ok(Self { moveos, rooch_db })
     }
 
-    pub fn validate<T: AbstractTransaction>(&self, tx: T) -> Result<VerifiedMoveOSTransaction> {
-        let multi_chain_address_sender = tx.sender();
-
+    pub fn resolve_address(
+        &self,
+        multi_chain_address_sender: MultiChainAddress,
+    ) -> Result<AccountAddress> {
         let resolved_sender = {
             let address_mapping = self.moveos.as_module_bundle::<AddressMapping>();
             address_mapping
@@ -61,9 +64,17 @@ impl ExecutorActor {
                     )
                 })?
         };
+
+        Ok(resolved_sender)
+    }
+
+    pub fn validate<T: AbstractTransaction>(&self, tx: T) -> Result<VerifiedMoveOSTransaction> {
+        let multi_chain_address_sender = tx.sender();
+
+        let resolved_sender = self.resolve_address(multi_chain_address_sender.clone());
         let authenticator = tx.authenticator_info();
 
-        let mut moveos_tx = tx.construct_moveos_transaction(resolved_sender)?;
+        let mut moveos_tx = tx.construct_moveos_transaction(resolved_sender?)?;
 
         let result = {
             let tx_validator = self.moveos.as_module_bundle::<TransactionValidator>();
@@ -156,6 +167,17 @@ impl Handler<ExecuteViewFunctionMessage> for ExecutorActor {
                 })
             })
             .collect::<Result<Vec<AnnotatedFunctionReturnValue>, anyhow::Error>>()
+    }
+}
+
+#[async_trait]
+impl Handler<ResolveMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: ResolveMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<AccountAddress, anyhow::Error> {
+        self.resolve_address(msg.address)
     }
 }
 

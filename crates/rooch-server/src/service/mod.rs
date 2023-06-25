@@ -3,6 +3,7 @@
 
 use crate::jsonrpc_types::ExecuteTransactionResponse;
 use anyhow::{bail, Result};
+use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
 use moveos_types::event::AnnotatedMoveOSEvent;
@@ -13,8 +14,9 @@ use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_proposer::proxy::ProposerProxy;
 use rooch_sequencer::proxy::SequencerProxy;
+use rooch_types::address::{MultiChainAddress, RoochAddress};
 use rooch_types::transaction::TransactionSequenceMapping;
-use rooch_types::{address::RoochAddress, transaction::TypedTransaction, H256};
+use rooch_types::{transaction::TypedTransaction, H256};
 
 /// RpcService is the implementation of the RPC service.
 /// It is the glue between the RPC server(EthAPIServer,RoochApiServer) and the rooch's actors.
@@ -70,6 +72,10 @@ impl RpcService {
     ) -> Result<Vec<AnnotatedFunctionReturnValue>> {
         let resp = self.executor.execute_view_function(function_call).await?;
         Ok(resp)
+    }
+
+    pub async fn resolve_address(&self, mca: MultiChainAddress) -> Result<AccountAddress> {
+        self.executor.resolve_address(mca).await
     }
 
     pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<State>>> {
