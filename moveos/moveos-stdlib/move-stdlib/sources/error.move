@@ -62,7 +62,7 @@ module std::error {
 
   /// Construct a canonical error code from a category and a reason.
   public fun canonical(category: u64, reason: u64): u64 {
-    (category * 10000) + reason
+    (category << 16) + reason
   }
 
   /// Functions to construct a canonical error code of the given category.
