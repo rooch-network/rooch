@@ -223,10 +223,10 @@ If the authenticator is invaid, abort this function.
 
     // [PCA12]: Check that the transaction's sequence number matches the
     // current sequence number. Otherwise sequence number is too new by [PCA11].
-    //<b>assert</b>!(
-    //    tx_sequence_number == account_sequence_number,
-    //    <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EPrologueSequenceNumberTooNew">EPrologueSequenceNumberTooNew</a>)
-    //);
+    <b>assert</b>!(
+        tx_sequence_number == account_sequence_number,
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EPrologueSequenceNumberTooNew">EPrologueSequenceNumberTooNew</a>)
+    );
 }
 </code></pre>
 

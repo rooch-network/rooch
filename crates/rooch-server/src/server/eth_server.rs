@@ -10,15 +10,13 @@ use jsonrpsee::{
     core::{async_trait, Error as JsonRpcError, RpcResult},
     RpcModule,
 };
-use rand::rngs::StdRng;
-use rand::{Rng, SeedableRng};
+use rand::Rng;
 use moveos_types::{
     access_path::AccessPath,
     state::{MoveStructType, State},
-    transaction::FunctionCall,
 };
 use rooch_types::{
-    account::Account, address::RoochAddress, H256,
+    account::Account, address::{MultiChainAddress, EthereumAddress}, H256,
     transaction::{ethereum::EthereumTransaction, AbstractTransaction, TypedTransaction},
 };
 use crate::jsonrpc_types::{
@@ -254,10 +252,10 @@ impl EthAPIServer for EthServer {
         address: H160,
         _num: Option<BlockNumber>,
     ) -> RpcResult<U256> {
-        // TODO
+        let account_address = self.rpc_service.resolve_address(MultiChainAddress::from(EthereumAddress(address))).await?;
+
         Ok(self.rpc_service
-            .get_states(AccessPath::resource(AccountAddress(address.into()), Account::struct_tag()))
-            .await?
+            .get_states(AccessPath::resource(account_address, Account::struct_tag())).await?
             .pop()
             .flatten()
             .map(|state_view| {
@@ -276,6 +274,10 @@ impl EthAPIServer for EthServer {
         info!(
             "send_raw_transaction decode_calldata_to_action: {:?}",
             action
+        );
+        info!(
+            "send_raw_transaction nonce: {:?}",
+            eth_tx.0.nonce
         );
 
         let tx = TypedTransaction::Ethereum(eth_tx);

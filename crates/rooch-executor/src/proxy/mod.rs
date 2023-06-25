@@ -6,11 +6,12 @@ use crate::actor::{
     executor::ExecutorActor,
     messages::{
         AnnotatedStatesMessage, ExecuteViewFunctionMessage, GetEventsByEventHandleMessage,
-        GetEventsMessage, StatesMessage, ValidateTransactionMessage,
+        GetEventsMessage, StatesMessage, ValidateTransactionMessage, ResolveMessage
     },
 };
 use anyhow::Result;
 use coerce::actor::ActorRef;
+use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use moveos_types::h256::H256;
 use moveos_types::transaction::FunctionCall;
@@ -25,6 +26,7 @@ use moveos_types::{
     event_filter::EventFilter,
     state::{AnnotatedState, State},
 };
+use rooch_types::address::MultiChainAddress;
 use rooch_types::transaction::{AbstractTransaction, TransactionSequenceMapping};
 
 #[derive(Clone)]
@@ -65,6 +67,10 @@ impl ExecutorProxy {
 
     pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<State>>> {
         self.actor.send(StatesMessage { access_path }).await?
+    }
+
+    pub async fn resolve_address(&self, mca: MultiChainAddress) -> Result<AccountAddress> {
+        self.actor.send(ResolveMessage { address: mca }).await?
     }
 
     pub async fn get_annotated_states(
