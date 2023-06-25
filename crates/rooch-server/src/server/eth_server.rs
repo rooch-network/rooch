@@ -1,27 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-
-use ethers::types::{
-    transaction::eip2930::AccessList, Block, BlockNumber, Bytes, OtherFields, Transaction, TransactionReceipt,
-    Withdrawal, H160, U256, U64, Address, Bloom
-};
-use jsonrpsee::{
-    core::{async_trait, Error as JsonRpcError, RpcResult},
-    RpcModule,
-};
-use rand::Rng;
-use moveos_types::{
-    access_path::AccessPath,
-    state::{MoveStructType, State},
-};
-use rooch_types::{
-    account::Account, address::{MultiChainAddress, EthereumAddress}, H256,
-    transaction::{ethereum::EthereumTransaction, AbstractTransaction, TypedTransaction},
-};
 use crate::jsonrpc_types::{
     eth::{CallRequest, EthFeeHistory},
-    TransactionView
+    TransactionView,
 };
 use crate::{
     api::{
@@ -29,6 +11,25 @@ use crate::{
         RoochRpcModule,
     },
     service::RpcService,
+};
+use ethers::types::{
+    transaction::eip2930::AccessList, Address, Block, BlockNumber, Bloom, Bytes, OtherFields,
+    Transaction, TransactionReceipt, Withdrawal, H160, U256, U64,
+};
+use jsonrpsee::{
+    core::{async_trait, Error as JsonRpcError, RpcResult},
+    RpcModule,
+};
+use moveos_types::{
+    access_path::AccessPath,
+    state::{MoveStructType, State},
+};
+use rand::Rng;
+use rooch_types::{
+    account::Account,
+    address::{EthereumAddress, MultiChainAddress},
+    transaction::{ethereum::EthereumTransaction, AbstractTransaction, TypedTransaction},
+    H256,
 };
 use std::iter;
 use std::str::FromStr;
@@ -247,15 +248,16 @@ impl EthAPIServer for EthServer {
         Ok(U256::from(20 * (10_u64.pow(9))))
     }
 
-    async fn transaction_count(
-        &self,
-        address: H160,
-        _num: Option<BlockNumber>,
-    ) -> RpcResult<U256> {
-        let account_address = self.rpc_service.resolve_address(MultiChainAddress::from(EthereumAddress(address))).await?;
+    async fn transaction_count(&self, address: H160, _num: Option<BlockNumber>) -> RpcResult<U256> {
+        let account_address = self
+            .rpc_service
+            .resolve_address(MultiChainAddress::from(EthereumAddress(address)))
+            .await?;
 
-        Ok(self.rpc_service
-            .get_states(AccessPath::resource(account_address, Account::struct_tag())).await?
+        Ok(self
+            .rpc_service
+            .get_states(AccessPath::resource(account_address, Account::struct_tag()))
+            .await?
             .pop()
             .flatten()
             .map(|state_view| {
@@ -275,10 +277,7 @@ impl EthAPIServer for EthServer {
             "send_raw_transaction decode_calldata_to_action: {:?}",
             action
         );
-        info!(
-            "send_raw_transaction nonce: {:?}",
-            eth_tx.0.nonce
-        );
+        info!("send_raw_transaction nonce: {:?}", eth_tx.0.nonce);
 
         let tx = TypedTransaction::Ethereum(eth_tx);
         let hash = tx.tx_hash();
@@ -287,25 +286,27 @@ impl EthAPIServer for EthServer {
     }
 
     async fn transaction_receipt(&self, hash: H256) -> RpcResult<Option<TransactionReceipt>> {
-        let result = self.rpc_service.get_transaction_infos_by_tx_hash(vec![hash]).
-            await?.
-            into_iter().
-            last().
-            map_or(None, |trans| {
+        let result = self
+            .rpc_service
+            .get_transaction_infos_by_tx_hash(vec![hash])
+            .await?
+            .into_iter()
+            .last()
+            .map_or(None, |trans| {
                 trans.map(|info| TransactionReceipt {
                     transaction_hash: info.tx_hash,
                     block_hash: Some(info.state_root),
                     block_number: Some(10_u64.into()),
                     gas_used: Some(info.gas_used.into()),
                     status: Some((info.status.is_success() as u8).into()),
-                    cumulative_gas_used: info.gas_used.into(), 
+                    cumulative_gas_used: info.gas_used.into(),
                     contract_address: None,
                     logs: Vec::new(),
                     logs_bloom: Bloom::default(),
                     ..Default::default()
                 })
             });
-    
+
         Ok(result)
     }
 
@@ -342,12 +343,15 @@ impl EthAPIServer for EthServer {
                 other: Default::default()
             }
         });
-    
+
         Ok(transaction)
     }
 
-
-    async fn block_by_hash(&self, hash: H256, include_txs: bool) -> RpcResult<Block<TransactionType>> {
+    async fn block_by_hash(
+        &self,
+        hash: H256,
+        include_txs: bool,
+    ) -> RpcResult<Block<TransactionType>> {
         let block_number = (10 as u64).into();
         let parent_hash = "0xe5ece23ec875db0657f964cbc74fa34439eef3ab3dc8664e7f4ae8b5c5c963e1"
             .parse()
@@ -357,7 +361,7 @@ impl EthAPIServer for EthServer {
 
         let txs = if include_txs {
             vec![TransactionType::Full(Transaction {
-                hash: hash,
+                hash,
                 nonce: U256::zero(),
                 block_hash: Some(parent_hash),
                 block_number: Some(block_number),
@@ -452,7 +456,6 @@ impl EthAPIServer for EthServer {
 
         Ok(block)
     }
-
 }
 
 impl RoochRpcModule for EthServer {

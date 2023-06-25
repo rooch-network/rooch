@@ -6,7 +6,7 @@ use crate::actor::{
     executor::ExecutorActor,
     messages::{
         AnnotatedStatesMessage, ExecuteViewFunctionMessage, GetEventsByEventHandleMessage,
-        GetEventsMessage, StatesMessage, ValidateTransactionMessage, ResolveMessage
+        GetEventsMessage, ResolveMessage, StatesMessage, ValidateTransactionMessage,
     },
 };
 use anyhow::Result;

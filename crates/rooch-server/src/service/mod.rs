@@ -14,7 +14,7 @@ use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_proposer::proxy::ProposerProxy;
 use rooch_sequencer::proxy::SequencerProxy;
-use rooch_types::address::{RoochAddress, MultiChainAddress};
+use rooch_types::address::{MultiChainAddress, RoochAddress};
 use rooch_types::transaction::TransactionSequenceMapping;
 use rooch_types::{transaction::TypedTransaction, H256};
 
