@@ -20,8 +20,8 @@ pub struct Init {
 }
 
 #[async_trait]
-impl CommandAction<()> for Init {
-    async fn execute(self) -> RoochResult<()> {
+impl CommandAction<String> for Init {
+    async fn execute(self) -> RoochResult<String> {
         let client_config_path = match self.context_options.config_dir {
             Some(v) => {
                 if !v.exists() {
@@ -31,7 +31,7 @@ impl CommandAction<()> for Init {
             }
             None => rooch_config_dir()?.join(ROOCH_CLIENT_CONFIG),
         };
-        //         Prompt user for connect to devnet fullnode if config does not exist.
+        // Prompt user for connect to devnet fullnode if config does not exist.
         if !client_config_path.exists() {
             let env = match std::env::var_os("ROOCH_CONFIG_WITH_RPC_URL") {
                 Some(v) => Some(Env {
@@ -112,8 +112,20 @@ impl CommandAction<()> for Init {
                 .persisted(client_config_path.as_path())
                 .save()?;
             }
+
+            let message = format!(
+                "Rooch config file generated at {}",
+                client_config_path.display()
+            );
+
+            return Ok(message);
         }
 
-        Ok(())
+        let message = format!(
+            "Rooch config file already exists at {}",
+            client_config_path.display()
+        );
+
+        Ok(message)
     }
 }
