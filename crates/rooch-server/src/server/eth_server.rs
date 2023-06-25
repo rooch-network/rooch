@@ -260,9 +260,7 @@ impl EthAPIServer for EthServer {
             .await?
             .pop()
             .flatten()
-            .map(|state_view| {
-                state_view.as_move_state::<Account>()
-            })
+            .map(|state_view| state_view.as_move_state::<Account>())
             .transpose()?
             .map_or(0.into(), |account| account.sequence_number.into()))
     }
