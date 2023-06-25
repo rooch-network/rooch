@@ -40,7 +40,7 @@ module rooch_examples::Test2 {
 
     #[test]
     public fun run() {
-        let data = InnerData{ v: 789 };
+        let data = InnerData { v: 789 };
 
         // Here is correct because the InnerData type is defined within the current module.
         let box_val = create_box<InnerData, InnerData, Box<u32>>(data);
@@ -49,3 +49,20 @@ module rooch_examples::Test2 {
     }
 }
 
+module rooch_examples::Test3 {
+    use rooch_examples::Test1::Data;
+    use rooch_examples::Test1::Box;
+    use rooch_examples::Test1::new_data;
+    use rooch_examples::Test1::create_box;
+    use rooch_examples::Test1::box_value;
+
+    public fun run() {
+        let data = new_data(789);
+
+        // Here, it will report that `Data` is not defined within the current module,
+        // because `Data` is imported from the `Test1` module.
+        let box_val = create_box<Data, Data, Box<u32>>(data);
+
+        let _ = box_value(&box_val);
+    }
+}
