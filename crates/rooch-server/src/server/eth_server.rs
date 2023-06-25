@@ -261,8 +261,7 @@ impl EthAPIServer for EthServer {
             .pop()
             .flatten()
             .map(|state_view| {
-                let state = State::from(state_view);
-                state.as_move_state::<Account>()
+                state_view.as_move_state::<Account>()
             })
             .transpose()?
             .map_or(0.into(), |account| account.sequence_number.into()))
@@ -292,7 +291,7 @@ impl EthAPIServer for EthServer {
             .await?
             .into_iter()
             .last()
-            .map_or(None, |trans| {
+            .and_then(|trans| {
                 trans.map(|info| TransactionReceipt {
                     transaction_hash: info.tx_hash,
                     block_hash: Some(info.state_root),
@@ -313,7 +312,7 @@ impl EthAPIServer for EthServer {
     async fn transaction_by_hash(&self, hash: H256) -> RpcResult<Option<Transaction>> {
         let resp = self
             .rpc_service
-            .get_transaction_by_hash(hash.into())
+            .get_transaction_by_hash(hash)
             .await?
             .map(Into::into);
 
@@ -352,7 +351,7 @@ impl EthAPIServer for EthServer {
         hash: H256,
         include_txs: bool,
     ) -> RpcResult<Block<TransactionType>> {
-        let block_number = (10 as u64).into();
+        let block_number = 10_u64.into();
         let parent_hash = "0xe5ece23ec875db0657f964cbc74fa34439eef3ab3dc8664e7f4ae8b5c5c963e1"
             .parse()
             .unwrap();
