@@ -22,7 +22,7 @@ use jsonrpsee::{
 };
 use moveos_types::{
     access_path::AccessPath,
-    state::{MoveStructType, State},
+    state::{MoveStructType},
 };
 use rand::Rng;
 use rooch_types::{
