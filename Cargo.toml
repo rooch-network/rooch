@@ -161,6 +161,7 @@ derive-syn-parse = "0.1.5"
 unescape = "0.1.0"
 tempfile = "3.2.0"
 regex = "1.8.4"
+walkdir = "2.3.3"
 
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.

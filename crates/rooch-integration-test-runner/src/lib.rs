@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::Parser;
+use codespan_reporting::diagnostic::Severity;
+use codespan_reporting::term::termcolor::Buffer;
+use move_command_line_common::address::NumericalAddress;
 use move_command_line_common::files::verify_and_create_named_address_mapping;
 use move_command_line_common::{address::ParsedAddress, values::ParsableValue};
 use move_compiler::compiled_unit::CompiledUnitEnum;
@@ -20,7 +23,11 @@ use moveos_types::object::ObjectID;
 use moveos_types::state::StateChangeSet;
 use moveos_types::state_resolver::AnnotatedStateReader;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction, TransactionOutput};
+use moveos_verifier::build::build_model;
+use moveos_verifier::metadata::run_extended_checks;
+use regex::Regex;
 use rooch_genesis::RoochGenesis;
+use std::path::PathBuf;
 use std::{collections::BTreeMap, path::Path};
 
 pub struct MoveOSTestRunner<'a> {
@@ -310,7 +317,68 @@ pub fn run_test_impl<'a>(
     path: &Path,
     fully_compiled_program_opt: Option<&'a FullyCompiledProgram>,
 ) -> Result<(), Box<dyn std::error::Error + 'static>> {
-    moveos::moveos_test_runner::run_test_impl::<MoveOSTestRunner>(path, fully_compiled_program_opt)
+    moveos::moveos_test_runner::run_test_impl::<MoveOSTestRunner>(
+        path,
+        fully_compiled_program_opt,
+        None,
+    )
+}
+
+pub fn iterate_directory(path: &Path) -> impl Iterator<Item = PathBuf> {
+    walkdir::WalkDir::new(path)
+        .into_iter()
+        .map(::std::result::Result::unwrap)
+        .filter(|entry| {
+            entry.file_type().is_file()
+                && entry
+                    .file_name()
+                    .to_str()
+                    .map_or(false, |s| !s.starts_with('.')) // Skip hidden files
+        })
+        .map(|entry| entry.path().to_path_buf())
+}
+
+// Perform extended checks to ensure that the dependencies of the Move files are compiled correctly.
+pub fn run_integration_test_with_extended_check(
+    path: &Path,
+    fully_compiled_program_opt: Option<&FullyCompiledProgram>,
+    data: &BTreeMap<String, String>,
+) -> Result<(), Box<dyn std::error::Error + 'static>> {
+    let dep_package_path = path.parent().unwrap().parent().unwrap();
+
+    let mut named_account_address_map = BTreeMap::new();
+    let _ = data
+        .iter()
+        .map(|(key, value)| {
+            let account_address = NumericalAddress::parse_str(value.as_str()).unwrap();
+            named_account_address_map.insert(key.clone(), account_address.into_inner());
+        })
+        .collect::<Vec<_>>();
+
+    let global_env = build_model(dep_package_path, named_account_address_map, None).unwrap();
+
+    let _ = run_extended_checks(&global_env);
+
+    let extended_checks_error = {
+        if global_env.diag_count(Severity::Warning) > 0 {
+            let mut buffer = Buffer::no_color();
+            global_env.report_diag(&mut buffer, Severity::Warning);
+            let buffer_output = String::from_utf8_lossy(buffer.as_slice()).to_string();
+            let re = Regex::new("(/.*)(.move:[0-9]+:[0-9]+)").unwrap();
+            Some(
+                re.replace(buffer_output.as_str(), "/tmp/tempfile$2".to_string())
+                    .to_string(),
+            )
+        } else {
+            None
+        }
+    };
+
+    moveos::moveos_test_runner::run_test_impl::<MoveOSTestRunner>(
+        path,
+        fully_compiled_program_opt,
+        extended_checks_error,
+    )
 }
 
 fn tx_output_to_str(output: TransactionOutput) -> String {

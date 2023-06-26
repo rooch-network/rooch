@@ -678,6 +678,7 @@ fn display_return_values(return_values: SerializedReturnValues) -> Option<String
 pub fn run_test_impl<'a, Adapter>(
     path: &Path,
     fully_compiled_program_opt: Option<&'a FullyCompiledProgram>,
+    additional_output: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>>
 where
     Adapter: MoveOSTestAdapter<'a>,
@@ -695,6 +696,10 @@ where
         SyntaxChoice::Source
     };
     let mut output = String::new();
+    if let Some(value) = additional_output {
+        writeln!(output, "{}", value).unwrap();
+    }
+
     let mut tasks = taskify::<
         TaskCommand<
             Adapter::ExtraInitArgs,

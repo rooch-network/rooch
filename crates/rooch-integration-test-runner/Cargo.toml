@@ -20,6 +20,10 @@ bcs = { workspace = true }
 clap = { features = [ "derive",], workspace = true }
 serde = { workspace = true }
 serde_bytes = { workspace = true }
+codespan-reporting = { workspace = true }
+regex = { workspace = true }
+datatest-stable = { workspace = true }
+walkdir = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }
@@ -40,6 +44,7 @@ moveos-stdlib = { workspace = true }
 moveos-stdlib-builder = { workspace = true }
 moveos = { workspace = true }
 moveos-types = { workspace = true }
+moveos-verifier = { workspace = true }
 
 rooch-framework = { workspace = true }
 rooch-genesis = { workspace = true }
