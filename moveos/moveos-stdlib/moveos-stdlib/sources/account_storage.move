@@ -204,4 +204,154 @@ module moveos_std::account_storage {
         });
         storage_context::drop_test_context(ctx);
     }
+
+    #[test(sender=@0x42)]
+    fun test_move_to_account_storage(sender: signer){
+        let sender_addr = signer::address_of(&sender);
+        let ctx = storage_context::new_test_context(sender_addr);
+        create_account_storage(&mut ctx, sender_addr);
+        global_move_to(&mut ctx, &sender, Test{
+            addr: sender_addr,
+            version: 1,
+        });
+        storage_context::drop_test_context(ctx);
+    }
+
+    #[test(sender=@0x42)]
+    fun test_move_from_account_storage(sender: signer){
+        let sender_addr = signer::address_of(&sender);
+        let ctx = storage_context::new_test_context(sender_addr);
+        create_account_storage(&mut ctx, sender_addr);
+        global_move_to(&mut ctx, &sender, Test{
+            addr: sender_addr,
+            version: 1,
+        });
+        let Test {
+            addr,
+            version
+        } = global_move_from<Test>(&mut ctx, sender_addr);
+        assert!(addr == sender_addr, 0x10);
+        assert!(version == 1, 0x11);
+        storage_context::drop_test_context(ctx);
+    }
+
+    #[test(sender=@0x42)]
+    #[expected_failure(abort_code = 0x0, location = Self)]
+    fun test_failure_repeatedly_create_account_storage(sender: signer){
+        let sender_addr = signer::address_of(&sender);
+        let ctx = storage_context::new_test_context(sender_addr);
+        create_account_storage(&mut ctx, sender_addr);
+        create_account_storage(&mut ctx, sender_addr);
+        storage_context::drop_test_context(ctx);
+    }
+
+    #[test(sender=@0x42)]
+    #[expected_failure(abort_code = 0x1, location = Self)]
+    fun test_failure_repeatedly_move_to_account_storage(sender: signer){
+        let sender_addr = signer::address_of(&sender);
+        let ctx = storage_context::new_test_context(sender_addr);
+        create_account_storage(&mut ctx, sender_addr);
+        global_move_to(&mut ctx, &sender, Test{
+            addr: sender_addr,
+            version: 1,
+        });
+        global_move_to(&mut ctx, &sender, Test{
+            addr: sender_addr,
+            version: 1,
+        });
+        storage_context::drop_test_context(ctx);
+    }
+
+    #[test(sender=@0x42)]
+    #[expected_failure(abort_code = 0x2, location = Self)]
+    fun test_failure_repeatedly_move_from_account_storage(sender: signer){
+        let sender_addr = signer::address_of(&sender);
+        let ctx = storage_context::new_test_context(sender_addr);
+        create_account_storage(&mut ctx, sender_addr);
+        global_move_to(&mut ctx, &sender, Test{
+            addr: sender_addr,
+            version: 1,
+        });
+        let Test {
+            addr: _,
+            version: _
+        } = global_move_from<Test>(&mut ctx, sender_addr);
+        let Test {
+            addr: _,
+            version: _
+        } = global_move_from<Test>(&mut ctx, sender_addr);
+        storage_context::drop_test_context(ctx);
+    }
+
+    #[test(sender=@0x42)]
+    fun test_global_borrow_account_storage(sender: signer){
+        let sender_addr = signer::address_of(&sender);
+        let ctx = storage_context::new_test_context(sender_addr);
+        create_account_storage(&mut ctx, sender_addr);
+        global_move_to(&mut ctx, &sender, Test{
+            addr: sender_addr,
+            version: 1,
+        });
+
+        let ref_test = global_borrow<Test>(& ctx, sender_addr);
+        assert!( ref_test.version == 1, 1);
+        assert!( ref_test.addr == sender_addr, 2);
+        storage_context::drop_test_context(ctx);
+    }
+
+    #[test(sender=@0x42)]
+    fun test_global_borrow_mut_account_storage(sender: signer){
+        let sender_addr = signer::address_of(&sender);
+        let ctx = storage_context::new_test_context(sender_addr);
+        create_account_storage(&mut ctx, sender_addr);
+        global_move_to(&mut ctx, &sender, Test{
+            addr: sender_addr,
+            version: 1,
+        });
+
+        let ref_test = global_borrow_mut<Test>(&mut ctx, sender_addr);
+        assert!( ref_test.version == 1, 1);
+        assert!( ref_test.addr == sender_addr, 2);
+
+        ref_test.version = 2;
+        assert!( ref_test.version == 2, 3);
+        storage_context::drop_test_context(ctx);
+    }
+
+    #[test(sender=@0x42)]
+    #[expected_failure(abort_code = 0x6507, location = moveos_std::raw_table)]
+    fun test_failure_global_borrow_account_storage(sender: signer){
+        let sender_addr = signer::address_of(&sender);
+        let ctx = storage_context::new_test_context(sender_addr);
+        create_account_storage(&mut ctx, sender_addr);
+        global_borrow<Test>(&mut ctx, sender_addr);
+        storage_context::drop_test_context(ctx);
+    }
+
+    #[test(sender=@0x42)]
+    #[expected_failure(abort_code = 0x6507, location = moveos_std::raw_table)]
+    fun test_failure_global_borrow_mut_account_storage(sender: signer){
+        let sender_addr = signer::address_of(&sender);
+        let ctx = storage_context::new_test_context(sender_addr);
+        create_account_storage(&mut ctx, sender_addr);
+        global_borrow_mut<Test>(&mut ctx, sender_addr);
+        storage_context::drop_test_context(ctx);
+    }
+
+    #[test(sender=@0x42)]
+    fun test_exist_account_storage(sender: signer){
+        let sender_addr = signer::address_of(&sender);
+        let ctx = storage_context::new_test_context(sender_addr);
+        assert!(exist_account_storage(&ctx , sender_addr) == false, 1);
+        storage_context::drop_test_context(ctx);
+    }
+
+    #[test(sender=@0x42)]
+    fun test_ensure_account_storage(sender: signer){
+        let sender_addr = signer::address_of(&sender);
+        let ctx = storage_context::new_test_context(sender_addr);
+        ensure_account_storage(&mut ctx , sender_addr);
+        assert!(exist_account_storage(&ctx , sender_addr), 1);
+        storage_context::drop_test_context(ctx);
+    }
 }

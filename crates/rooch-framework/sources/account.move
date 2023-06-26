@@ -339,7 +339,7 @@ module rooch_framework::account{
 
    #[test(sender=@0x0)]
    #[expected_failure(abort_code = 0x10005, location = Self)]
-   fun test_failur_entry_account_creation_reserved(sender: address){
+   fun test_failure_entry_account_creation_reserved(sender: address){
       let ctx = storage_context::new_test_context(sender);
       create_account_entry(&mut ctx, sender);
       storage_context::drop_test_context(ctx);
