@@ -32,6 +32,7 @@ jobs:
         if: matrix.platform == 'windows-latest'
       - name: Rust setup
         uses: rooch-network/rooch/.github/actions/rust-setup@main
+        if: matrix.platform != 'windows-latest' && matrix.platform != 'macos-latest'
 
       - name: build for ${{ matrix.platform }}
         uses: actions-rs/cargo@v1
