@@ -12,6 +12,8 @@ To install dependencise:
 pnpm install
 ```
 
+
+
 To preview the website locally:
 ```
 pnpm dev
