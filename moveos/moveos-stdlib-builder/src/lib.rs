@@ -126,7 +126,7 @@ impl Stdlib {
             toc_depth: Option::None,
             no_collapsed_sections: false,
             output_directory: None,
-            template: vec!["doc_template/overview.md".to_string()],
+            template: vec!["doc_template/README.md".to_string()],
             references_file: Option::None,
             include_dep_diagrams: false,
             include_call_diagrams: false,

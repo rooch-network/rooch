@@ -31,3 +31,13 @@ This is the reference documentation of the MoveOS standard library.
 -  [`0x2::tx_context`](tx_context.md#0x2_tx_context)
 -  [`0x2::type_info`](type_info.md#0x2_type_info)
 -  [`0x2::type_table`](type_table.md#0x2_type_table)
+
+
+
+<a name="@Reference_2"></a>
+
+## Reference
+
+
+* [MoveStdlib](https://github.com/rooch-network/rooch/tree/main/moveos/moveos-stdlib/move-stdlib/doc)
+* [RoochFramework](https://github.com/rooch-network/rooch/tree/main/crates/rooch-framework/doc)
