@@ -1,6 +1,6 @@
 export const ROOCH_ASSETS = {
     "banner": ["/logo/rooch-banner.png"],
-    "wrodMark": [
+    "wordmark": [
         "/logo/rooch_black_text.png",
         "/logo/rooch_white_text.png",
     ],
