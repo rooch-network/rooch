@@ -7,12 +7,16 @@ on:
       - 'crates/**'
       - 'examples/**'
       - 'moveos/**'
+      - '.github/**'
+      - 'Cargo.toml'
   pull_request:
     branches: ["main"]
     paths:
       - 'crates/**'
       - 'examples/**'
       - 'moveos/**'
+      - '.github/**'
+      - 'Cargo.toml'
 
 env:
   CARGO_TERM_COLOR: always
