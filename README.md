@@ -39,19 +39,19 @@
 
 ## Deep Dive into Rooch
 
-### [Storage Abstraction](./docs/design/storage_abstraction.md)
+### [Storage Abstraction](./docs/website/pages/docs/tech-highlights/storage_abstraction.en-US.mdx)
 
 Storage Abstraction module overview:
 
-![Storage Abstraction](./docs/static/design/rooch-design-storage-abstraction.svg)
+![Storage Abstraction](./docs/website/public/docs/rooch-design-storage-abstraction.svg)
 
 State DB:
 
-![State DB](./docs/static/design/rooch-design-statedb.svg)
+![State DB](./docs/website/public/docs/rooch-design-statedb.svg)
 
-### [Transaction Flow](./docs/design/transaction_flow.md)
+### [Transaction Flow](./docs/website/pages/docs/tech-highlights/transaction_flow.en-US.mdx)
 
-![Rooch Transaction Flow](./docs/static/design/rooch-design-transaction-flow-functional-perspective.svg)
+![Rooch Transaction Flow](./docs/website/public/docs/rooch-design-transaction-flow-functional-perspective.svg)
 
 ## Components
 
