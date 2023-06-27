@@ -13,7 +13,6 @@ jobs:
       matrix:
         platform:
           - ubuntu-latest
-          - ubuntu-18.04
           - ubuntu-22.04
           - macos-latest
           - windows-latest
