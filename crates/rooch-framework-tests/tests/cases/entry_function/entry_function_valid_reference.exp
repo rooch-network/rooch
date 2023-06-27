@@ -8,4 +8,18 @@ Error: error: type `&mut signer` is not supported as a parameter type
 10 │ │     }
    │ ╰─────^
 
+error: type `&mut tx_context::TxContext` is not supported as a parameter type
+   ┌─ /tmp/tempfile:17:5
+   │  
+17 │ ╭     entry public fun test_entry_function_valid_reference_mut_tx_context( _: &mut tx_context::TxContext ){
+18 │ │     }
+   │ ╰─────^
+
+error: type `&tx_context::TxContext` is not supported as a parameter type
+   ┌─ /tmp/tempfile:15:5
+   │  
+15 │ ╭     entry public fun test_entry_function_valid_reference_tx_context( _: & tx_context::TxContext ){
+16 │ │     }
+   │ ╰─────^
+
 
