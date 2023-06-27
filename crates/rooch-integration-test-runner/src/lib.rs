@@ -116,10 +116,6 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         if let Some(pre_compiled_lib) = pre_compiled_deps {
             for c in &pre_compiled_lib.compiled {
                 if let CompiledUnitEnum::Module(m) = c {
-                    println!(
-                        "precompiled module: {:?}, {:?}, {:?}",
-                        m.named_module.package_name, m.named_module.address, m.named_module.name
-                    );
                     // update named_address_mapping
                     if let Some(named_address) = &m.address_name {
                         let name = named_address.value.to_string();
