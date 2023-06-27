@@ -15,13 +15,13 @@ script {
 //# run --signers creator
 script {
     use std::signer;
-    use std::bcs;
-    use moveos_std::bcd;
+    use moveos_std::bcs;
+    use moveos_std::bcs;
 
     fun main(s: signer) {
         let addr = signer::address_of(&s);
         let bytes = bcs::to_bytes(&addr);
-        let addr2 = bcd::to_address(bytes);
+        let addr2 = bcs::to_address(bytes);
         assert!(addr == addr2, 0);
     }
 }

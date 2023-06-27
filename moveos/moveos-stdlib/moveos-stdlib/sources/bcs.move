@@ -4,7 +4,12 @@
 /// to values. This is the opposite of `bcs::to_bytes`. Note that it is not safe to define a generic public `from_bytes`
 /// function because this can violate implicit struct invariants, therefore only primitive types are offerred. If
 /// a general conversion back-and-force is needed, consider the `moveos_std::Any` type which preserves invariants.
-module moveos_std::bcd{
+module moveos_std::bcs{
+
+    public fun to_bytes<MoveValue>(v: &MoveValue): vector<u8>{
+        std::bcs::to_bytes(v)
+    }
+
     public fun to_bool(v: vector<u8>): bool {
         from_bytes<bool>(v)
     }

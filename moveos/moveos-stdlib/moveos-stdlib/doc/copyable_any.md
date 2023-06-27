@@ -13,10 +13,9 @@ Source from https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framew
 -  [Function `type_name`](#0x2_copyable_any_type_name)
 
 
-<pre><code><b>use</b> <a href="">0x1::bcs</a>;
-<b>use</b> <a href="">0x1::error</a>;
+<pre><code><b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x1::string</a>;
-<b>use</b> <a href="bcd.md#0x2_bcd">0x2::bcd</a>;
+<b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 <b>use</b> <a href="type_info.md#0x2_type_info">0x2::type_info</a>;
 </code></pre>
 
@@ -91,7 +90,7 @@ also required from <code>T</code>.
 <pre><code><b>public</b> <b>fun</b> <a href="copyable_any.md#0x2_copyable_any_pack">pack</a>&lt;T: drop + store + <b>copy</b>&gt;(x: T): <a href="copyable_any.md#0x2_copyable_any_Any">Any</a> {
     <a href="copyable_any.md#0x2_copyable_any_Any">Any</a> {
         <a href="">type_name</a>: <a href="type_info.md#0x2_type_info_type_name">type_info::type_name</a>&lt;T&gt;(),
-        data: <a href="_to_bytes">bcs::to_bytes</a>(&x)
+        data: <a href="../doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(&x)
     }
 }
 </code></pre>
@@ -118,7 +117,7 @@ Unpack a value from the <code><a href="copyable_any.md#0x2_copyable_any_Any">Any
 
 <pre><code><b>public</b> <b>fun</b> <a href="copyable_any.md#0x2_copyable_any_unpack">unpack</a>&lt;T&gt;(x: <a href="copyable_any.md#0x2_copyable_any_Any">Any</a>): T {
     <b>assert</b>!(<a href="type_info.md#0x2_type_info_type_name">type_info::type_name</a>&lt;T&gt;() == x.<a href="">type_name</a>, <a href="_invalid_argument">error::invalid_argument</a>(<a href="copyable_any.md#0x2_copyable_any_ETYPE_MISMATCH">ETYPE_MISMATCH</a>));
-    <a href="bcd.md#0x2_bcd_from_bytes">bcd::from_bytes</a>&lt;T&gt;(x.data)
+    bcs::from_bytes&lt;T&gt;(x.data)
 }
 </code></pre>
 

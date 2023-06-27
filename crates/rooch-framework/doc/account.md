@@ -28,13 +28,12 @@
 -  [Function `get_signer_capability_address`](#0x3_account_get_signer_capability_address)
 
 
-<pre><code><b>use</b> <a href="">0x1::bcs</a>;
-<b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x1::hash</a>;
+<pre><code><b>use</b> <a href="">0x1::error</a>;
+<b>use</b> <a href="../doc/hash.md#0x1_hash">0x1::hash</a>;
 <b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::account_storage</a>;
-<b>use</b> <a href="">0x2::bcd</a>;
+<b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
 </code></pre>
 
@@ -684,7 +683,7 @@ involves the use of a cryptographic hash operation and should be use thoughtfull
    <b>let</b> bytes = <a href="_to_bytes">bcs::to_bytes</a>(source);
    <a href="_append">vector::append</a>(&<b>mut</b> bytes, seed);
    <a href="_push_back">vector::push_back</a>(&<b>mut</b> bytes, <a href="account.md#0x3_account_DERIVE_RESOURCE_ACCOUNT_SCHEME">DERIVE_RESOURCE_ACCOUNT_SCHEME</a>);
-   <a href="_to_address">bcd::to_address</a>(<a href="_sha3_256">hash::sha3_256</a>(bytes))
+   bcs::to_address(<a href="../doc/hash.md#0x1_hash_sha3_256">hash::sha3_256</a>(bytes))
 }
 </code></pre>
 

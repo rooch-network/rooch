@@ -15,9 +15,8 @@ events emitted to a handle and emit events to the event store.
 -  [Function `emit_event`](#0x2_events_emit_event)
 
 
-<pre><code><b>use</b> <a href="">0x1::bcs</a>;
-<b>use</b> <a href="">0x1::hash</a>;
-<b>use</b> <a href="bcd.md#0x2_bcd">0x2::bcd</a>;
+<pre><code><b>use</b> <a href="">0x1::hash</a>;
+<b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="object_storage.md#0x2_object_storage">0x2::object_storage</a>;
@@ -76,7 +75,7 @@ A globally unique ID for this event stream. event handler id equal to guid.
 
 <pre><code><b>public</b> <b>fun</b> <a href="events.md#0x2_events_derive_event_handle_id">derive_event_handle_id</a>&lt;T: key&gt;(): ObjectID {
     <b>let</b> <a href="type_info.md#0x2_type_info">type_info</a> = <a href="type_info.md#0x2_type_info_type_of">type_info::type_of</a>&lt;T&gt;();
-    <b>let</b> event_handle_address = <a href="bcd.md#0x2_bcd_to_address">bcd::to_address</a>(<a href="_sha3_256">hash::sha3_256</a>(<a href="_to_bytes">bcs::to_bytes</a>(&<a href="type_info.md#0x2_type_info">type_info</a>)));
+    <b>let</b> event_handle_address = bcs::to_address(<a href="_sha3_256">hash::sha3_256</a>(<a href="../doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(&<a href="type_info.md#0x2_type_info">type_info</a>)));
     <a href="object_id.md#0x2_object_id_address_to_object_id">object_id::address_to_object_id</a>(event_handle_address)
 }
 </code></pre>

@@ -16,7 +16,7 @@ pub struct GasParameters {
     table_extension: raw_table::GasParameters,
     type_info: moveos_stdlib::type_info::GasParameters,
     rlp: moveos_stdlib::rlp::GasParameters,
-    bcd: moveos_stdlib::bcd::GasParameters,
+    bcd: moveos_stdlib::bcs::GasParameters,
     events: moveos_stdlib::events::GasParameters,
     test_helper: moveos_stdlib::test_helper::GasParameters,
 }
@@ -29,7 +29,7 @@ impl GasParameters {
             table_extension: raw_table::GasParameters::zeros(),
             type_info: moveos_stdlib::type_info::GasParameters::zeros(),
             rlp: moveos_stdlib::rlp::GasParameters::zeros(),
-            bcd: moveos_stdlib::bcd::GasParameters::zeros(),
+            bcd: moveos_stdlib::bcs::GasParameters::zeros(),
             events: moveos_stdlib::events::GasParameters::zeros(),
             test_helper: moveos_stdlib::test_helper::GasParameters::zeros(),
         }
@@ -75,7 +75,7 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
         moveos_stdlib::type_info::make_all(gas_params.type_info)
     );
     add_natives!("rlp", moveos_stdlib::rlp::make_all(gas_params.rlp));
-    add_natives!("bcd", moveos_stdlib::bcd::make_all(gas_params.bcd));
+    add_natives!("bcs", moveos_stdlib::bcs::make_all(gas_params.bcd));
     add_natives!("events", moveos_stdlib::events::make_all(gas_params.events));
     add_natives!(
         "test_helper",
