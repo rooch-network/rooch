@@ -3,8 +3,16 @@ name: Check-Build-Test
 on:
   push:
     branches: ["main"]
+    paths:
+      - 'crates/**'
+      - 'examples/**'
+      - 'moveos/**'
   pull_request:
     branches: ["main"]
+    paths:
+      - 'crates/**'
+      - 'examples/**'
+      - 'moveos/**'
 
 env:
   CARGO_TERM_COLOR: always
