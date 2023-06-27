@@ -1,6 +1,7 @@
 /// `move_module` provides some basic functions for handle Move module in Move.
 module moveos_std::move_module{
     use std::string::String;
+    friend moveos_std::account_storage;
 
     struct MoveModule has store, drop {
         byte_codes: vector<u8>,
@@ -10,6 +11,10 @@ module moveos_std::move_module{
         MoveModule {
             byte_codes,
         }
+    }
+
+    public(friend) fun module_bytes(move_module: MoveModule): vector<u8> {
+        move_module.byte_codes
     }
 
     public fun module_name(_move_module: &MoveModule): String {

@@ -168,18 +168,23 @@ module moveos_std::account_storage {
     }
 
     /// Publish modules to the account's storage
-    public fun publish_modules(ctx: &mut StorageContext, account: &signer, modules: vector<MoveModule>) {
+    public fun publish_modules(_ctx: &mut StorageContext, account: &signer, modules: vector<MoveModule>) {
         let account_address = signer::address_of(account);
-        let account_storage = borrow_account_storage_mut(storage_context::object_storage_mut(ctx), account_address);
         let i = 0;
         let len = vector::length(&modules);
-        let module_names = move_module::verify_modules(&modules, account_address);
+        let module_bytes = vector::empty<vector<u8>>();
         while (i < len) {
-            let name = vector::pop_back(&mut module_names);
             let m = vector::pop_back(&mut modules);
-            table::add(&mut account_storage.modules, name, m);
-        }
+            vector::push_back(&mut module_bytes, move_module::module_bytes(m));
+        };
+        request_publish(account_address, module_bytes);
     }
+
+    /// Native function to initiate module loading
+    native fun request_publish(
+        owner: address,
+        bundle: vector<vector<u8>>,
+    );
     
     #[test]
     fun test_named_table_id() {

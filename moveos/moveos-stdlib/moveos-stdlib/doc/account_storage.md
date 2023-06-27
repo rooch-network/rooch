@@ -385,7 +385,7 @@ Check if the account has a module with the given name
 Publish modules to the account's storage
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_publish_modules">publish_modules</a>(ctx: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, account: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_publish_modules">publish_modules</a>(_ctx: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, account: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;)
 </code></pre>
 
 
@@ -394,17 +394,16 @@ Publish modules to the account's storage
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_publish_modules">publish_modules</a>(ctx: &<b>mut</b> StorageContext, account: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;MoveModule&gt;) {
+<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_publish_modules">publish_modules</a>(_ctx: &<b>mut</b> StorageContext, account: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;MoveModule&gt;) {
     <b>let</b> account_address = <a href="_address_of">signer::address_of</a>(account);
-    <b>let</b> <a href="account_storage.md#0x2_account_storage">account_storage</a> = <a href="account_storage.md#0x2_account_storage_borrow_account_storage_mut">borrow_account_storage_mut</a>(<a href="storage_context.md#0x2_storage_context_object_storage_mut">storage_context::object_storage_mut</a>(ctx), account_address);
     <b>let</b> i = 0;
     <b>let</b> len = <a href="_length">vector::length</a>(&modules);
-    <b>let</b> module_names = <a href="move_module.md#0x2_move_module_verify_modules">move_module::verify_modules</a>(&modules, account_address);
+    <b>let</b> module_bytes = <a href="_empty">vector::empty</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;();
     <b>while</b> (i &lt; len) {
-        <b>let</b> name = <a href="_pop_back">vector::pop_back</a>(&<b>mut</b> module_names);
         <b>let</b> m = <a href="_pop_back">vector::pop_back</a>(&<b>mut</b> modules);
-        <a href="table.md#0x2_table_add">table::add</a>(&<b>mut</b> <a href="account_storage.md#0x2_account_storage">account_storage</a>.modules, name, m);
-    }
+        <a href="_push_back">vector::push_back</a>(&<b>mut</b> module_bytes, <a href="move_module.md#0x2_move_module_module_bytes">move_module::module_bytes</a>(m));
+    };
+    <a href="account_storage.md#0x2_account_storage_request_publish">request_publish</a>(account_address, module_bytes);
 }
 </code></pre>
 

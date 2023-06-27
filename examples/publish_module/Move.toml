@@ -1,0 +1,16 @@
+[package]
+name = "publish_module"
+version = "0.0.1"
+
+[dependencies]
+MoveosStdlib = { local = "../../moveos/moveos-stdlib/moveos-stdlib" }
+MoveStdlib = { local = "../../moveos/moveos-stdlib/move-stdlib" }
+
+[addresses]
+rooch_examples = "_"
+std =  "0x1"
+moveos_std =  "0x2"
+rooch_framework =  "0x3"
+
+[dev-addresses]
+rooch_examples="0x1234"

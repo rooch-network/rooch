@@ -8,6 +8,7 @@
 
 -  [Struct `MoveModule`](#0x2_move_module_MoveModule)
 -  [Function `new`](#0x2_move_module_new)
+-  [Function `module_bytes`](#0x2_move_module_module_bytes)
 -  [Function `module_name`](#0x2_move_module_module_name)
 -  [Function `verify_modules`](#0x2_move_module_verify_modules)
 
@@ -63,6 +64,30 @@
     <a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a> {
         byte_codes,
     }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_move_module_module_bytes"></a>
+
+## Function `module_bytes`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_module_bytes">module_bytes</a>(<a href="move_module.md#0x2_move_module">move_module</a>: <a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_module_bytes">module_bytes</a>(<a href="move_module.md#0x2_move_module">move_module</a>: <a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>): <a href="">vector</a>&lt;u8&gt; {
+    <a href="move_module.md#0x2_move_module">move_module</a>.byte_codes
 }
 </code></pre>
 

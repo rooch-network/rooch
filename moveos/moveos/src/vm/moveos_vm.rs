@@ -29,7 +29,10 @@ use move_vm_types::{
     gas::{GasMeter, UnmeteredGasMeter},
     loaded_data::runtime_types::{CachedStructIndex, StructType, Type},
 };
-use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
+use moveos_stdlib::natives::moveos_stdlib::{
+    account_storage::{NativeCodeContext, PublishRequest},
+    raw_table::NativeTableContext,
+};
 use moveos_types::{
     event::{Event, EventID},
     function_return_value::FunctionReturnValue,
@@ -172,6 +175,7 @@ where
         let mut extensions = NativeContextExtensions::default();
 
         extensions.add(NativeTableContext::new(remote));
+        extensions.add(NativeCodeContext::default());
 
         // The VM code loader has bugs around module upgrade. After a module upgrade, the internal
         // cache needs to be flushed to work around those bugs.
@@ -247,39 +251,43 @@ where
     /// Once we start executing transactions, we must ensure that the transaction execution has a result, regardless of success or failure,
     /// and we need to save the result and deduct gas
     pub fn execute_move_action(&mut self, action: VerifiedMoveAction) -> VMResult<()> {
-        match action {
+        let (action_result, should_resolve_pending_publish) = match action {
             VerifiedMoveAction::Script {
                 call,
                 resolved_args,
-            } => self
-                .session
-                .execute_script(call.code, call.ty_args, resolved_args, &mut self.gas_meter)
-                .map(|ret| {
-                    debug_assert!(
-                        ret.return_values.is_empty(),
-                        "Script function should not return values"
-                    );
-                    self.update_storage_context_via_return_values(&ret);
-                }),
+            } => (
+                self.session
+                    .execute_script(call.code, call.ty_args, resolved_args, &mut self.gas_meter)
+                    .map(|ret| {
+                        debug_assert!(
+                            ret.return_values.is_empty(),
+                            "Script function should not return values"
+                        );
+                        self.update_storage_context_via_return_values(&ret);
+                    }),
+                true,
+            ),
             VerifiedMoveAction::Function {
                 call,
                 resolved_args,
-            } => self
-                .session
-                .execute_entry_function(
-                    &call.function_id.module_id,
-                    &call.function_id.function_name,
-                    call.ty_args.clone(),
-                    resolved_args,
-                    &mut self.gas_meter,
-                )
-                .map(|ret| {
-                    debug_assert!(
-                        ret.return_values.is_empty(),
-                        "Entry function should not return values"
-                    );
-                    self.update_storage_context_via_return_values(&ret);
-                }),
+            } => (
+                self.session
+                    .execute_entry_function(
+                        &call.function_id.module_id,
+                        &call.function_id.function_name,
+                        call.ty_args.clone(),
+                        resolved_args,
+                        &mut self.gas_meter,
+                    )
+                    .map(|ret| {
+                        debug_assert!(
+                            ret.return_values.is_empty(),
+                            "Entry function should not return values"
+                        );
+                        self.update_storage_context_via_return_values(&ret);
+                    }),
+                true,
+            ),
             VerifiedMoveAction::ModuleBundle {
                 module_bundle,
                 init_function_modules,
@@ -294,9 +302,14 @@ where
                     &mut self.gas_meter,
                     compat_config,
                 )?;
-                self.execute_init_modules(init_function_modules)
+                (self.execute_init_modules(init_function_modules), false)
             }
+        };
+
+        if should_resolve_pending_publish {
+            self.resolve_pending_code_publish()?;
         }
+        action_result
     }
 
     // Because the StorageContext can be mut argument, if the function change the StorageContext,
@@ -479,6 +492,50 @@ where
         }
     }
 
+    fn extract_publish_request(&mut self) -> Option<PublishRequest> {
+        let ctx = self
+            .get_native_extensions_mut()
+            .get_mut::<NativeCodeContext>();
+        ctx.requested_module_bundle.take()
+    }
+
+    /// Resolve a pending code publish request registered via the NativeCodeContext.
+    fn resolve_pending_code_publish(&mut self) -> VMResult<()> {
+        if let Some(PublishRequest { owner, bundle }) = self.extract_publish_request() {
+            // TODO: unfortunately we need to deserialize the entire bundle here to handle
+            // `init_module` and verify some deployment conditions, while the VM need to do
+            // the deserialization again. Consider adding an API to MoveVM which allows to
+            // directly pass CompiledModule.
+            let compiled_modules = deserialize_modules(&bundle)?;
+
+            let mut init_function_modules = vec![];
+            for module in &compiled_modules {
+                let result = moveos_verifier::verifier::verify_module(module, self.remote);
+                match result {
+                    Ok(res) => {
+                        if res {
+                            init_function_modules.push(module.self_id())
+                        }
+                    }
+                    Err(err) => return Err(err.into()),
+                }
+            }
+
+            //TODO check the modules package address with the sender
+            //TODO check the compatiblity
+            let compat_config = Compatibility::no_check();
+            self.session.publish_module_bundle_with_compat_config(
+                bundle,
+                owner,
+                &mut self.gas_meter,
+                compat_config,
+            )?;
+            self.execute_init_modules(init_function_modules)
+        } else {
+            Ok(())
+        }
+    }
+
     /// Load a script and all of its types into cache
     pub fn load_script(
         &self,
@@ -531,6 +588,10 @@ where
 
     pub fn get_native_extensions(&self) -> &NativeContextExtensions<'r> {
         self.session.get_native_extensions()
+    }
+
+    pub fn get_native_extensions_mut(&mut self) -> &mut NativeContextExtensions<'r> {
+        self.session.get_native_extensions_mut()
     }
 
     pub fn runtime_session(&self) -> &Session<'r, 'l, S> {
