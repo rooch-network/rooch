@@ -1,0 +1,17 @@
+# Sequence Proof
+
+Sequence Proof proves wether a transaction is at a specific position in a sequence. In the context of Rooch, it is used to provide safer transaction confirmation for users.
+
+## Without Sequence Proof
+
+![Without Sequence Proof Diagram](/docs/without-sequence-proof.png)
+
+In a Layer2 network, limited by Fraud Proof or ZK Proof, the Sequencer can't alter the content of the transaction otherwise it will be facing a slash. However, the Sequencer could reject the transaction from a certain user (by not sending the transaction to DA and Layer1), or change the position of the transaction, to gain indirect profits by colluding with a third party (e.g. rejects a margin deposit transaction in the hope of getting clearance profit, or change transaction order for MEV profit).
+
+## With Sequence Proof
+
+![With Sequence Proof Diagram](/docs/with-sequence-proof.png)
+
+With Sequence Proof, once the user submits the transaction to the Sequencer, the Sequencer is required to return a confirmation along with a Sequence Proof proving that the transaction is included in a certain position of a transaction sequence. If later on, the Sequencer removes the transaction from the sequence and doesn't commit it, the user can use the Sequence Proof to arbitrate for slashing the Sequencer.
+
+This mechanism makes sure that the Sequencer is counterincentived for such behaviors and leaves no profit for the Sequencer to gain via rejecting certain transactions.

@@ -1,0 +1,142 @@
+---
+title: From Web2.5 to Web3
+description: Web3 has yet to come. What we have seen today are mostly Web2.5 applications.
+author: haichao
+category: Web3
+date: 2023/04/15
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+There are already more than a dozen of great Web3 infrastructures constantly breaking the boundary of blockchain technology and trying to take our industry a step further toward the dream of Web3.
+
+But Web3 has yet to come. What we have seen today are mostly Web2.5 applications.
+
+## From Web2.5 to Web3
+
+Below is the architecture of a Web3 application, comparing to a not-so Web3 App architecture which we call a Web2.5 App.
+
+import Image from "next/image";
+
+<Image
+  src="/docs/web2-web2.5-web3.png"
+  alt="Web2.5 and Web3"
+  width={700}
+  height={700}
+  className="mx-auto my-8"
+/>
+
+A Web2.5 App usually adopts the same architecture of a Web2 App where the user sends requests from the frontend to the backend server and the server does the computation and storage. The only difference it makes is that, in the backend server, there is a private key which operates tokens on a decentralized blockchain "on behalf of" the users.
+
+To compare, A Web3 App does not have a centralized private key controlling users' assets. The backend of the App is fully implemented in a smart contract runtime, which is open, transparent, permissionless and it is the logic defined by smart contracts that controls everything from the users' assets to the functionality of the App.
+
+## Breakdown with 6 Questions
+
+Here are 6 questions that can help you understand our vision of Web3 in detail.
+
+### Does user own their data and state?
+
+The first essential feature of a Web3 App that most people talk about is data ownership. But owning the value of data is a vague description, so I usually think about it from 2 angles: data attribution and data privacy.
+
+- **Data Attribution** - all data published by the user and all state transitions incurred by a user's in-App behaviors should be explicitly attributed to the user
+- **Data Privacy** - user can choose to only reveal data to designated parties and can update the data visibility
+
+The value of the data comes from the trading of data atrribution and the data visibility towards specific parties in the trade. And in the era of Web3, with tokens being the representation of data atrribution and visibility, their value gets to be discovered in a much more free and frictionless market.
+
+In a Web2 App, user data published and recorded in a centralized server makes them incapable of having clear attribution. Privacy is also an open question with this design, as the backend is a black box and you have no idea what's being recorded and what's not, let alone the fact that there's no way for you to utilize any cryptographic tools to conceal your key information.
+
+However, with a true Web3 model, users are identified with a single public key and all data is stored under a State Tree with the public key as key path, forming an explicit attribution to the user. No one will able to change it unless a transaction is signed with the according private key and this transaction is used to trigger predefined contract logic. The backend is a fully transparent environment where every single user can see what user behaviors are recorded. And if a user wishes to hide some info they can use tools such as Zero Knowledge proof to do so.
+
+E.g. Games can have trustless free markets for players to trade in-game assets and fabricate unique new assets. When an in-game asset is created, it is directly stored as a piece of data under the user's address. The way it can be fabricated is a piece of logic predefined by the smart contract. The user can freely trade this asset to others and no one else will be able to steal or destroy it, not even the builder of the game.
+
+E.g. UGC platform can be formed in a peer-to-peer network. All the content producers can keep the content in their local servers and viewers will access these server to access the content. A streaming payment channel can be established between the producer and the viewer where for every byte of the content the user downloads, they pay a penny in crypto. The content itself can be encrypted and watermarked with viewers public key to prevent piracy behabiors.
+
+### Can governance make actual changes?
+
+Apart from the data published by users, the logic, rules and functionalities of the App defined by the App builder should be fully implemented with smart contracts, running in a provable smart contract runtime. The builder of the App shall be able to give the right of updating all the logic and functions to its users by defining a sustainable governance mechanism to make it fully community-driven.
+
+This cannot be done with the Web2.5 model, as all the logics are hard coded in a black box server. Even if the App operator wants to make it public and is open for making changes according to the voting result of community governance, the execution of the result won't be a trustless procedure for users to believe in.
+
+In a Web3 model, all smart contracts that comprise the functions of a App can have clear update rules, so that governance can change or delete them, as well as open API, so that governance mechanisms can extend its functions. The governance mechanism shall be defined with a set of smart contracts that no one can change. The governance results are based on voting for or against some data published to the smart contract environment beforehand. The result of the governance will directly lead to an upgrade to relevant smart contracts with no intervention from any centralized parties.
+
+E.g. An App can be grown from a DAO by letting all the DAO members collectively build all the functionalities of it from ground up. Each single functional component of this App will be decided directly by DAO governance. No hidden functions.
+
+E.g. Players of a game can design and launch their own adventure for other players to enjoy. This adventure can be ensured to be fair and square as all the rules of it are reviewed and agreed to by governance.
+
+### Are the assets secured by trust or verification?
+
+Having ownership for all the data and functions of a App is a great first step, but being able to maintain them without trust but rather via open verification is also a key feature.
+
+In the Web2.5 model, the ownership of data, functions, and assets are totally in the hands of the server operator (sometimes the cloud server provider). So trusting the App operator is the only security mechanism here.
+
+In the Web3 model, the server runs a provable smart contract environment where every single execution of a operation code as well as every CRUD operation to any data is provable. I.e. a proof can be generated. Anyone can take the proof to verify the integrity and the correctness of everything that happened on that server by sending the proof to the blockchain. The blockchain will offer the result of verification and act as a court to do arbitration based on the proof. Any malicious behaviors, such as rejecting providing the proof or proving a wrong proof, will make this App lose its users once and for all.
+
+E.g. In a casino game App, the process of the radonmness generation can be proven to be based on a set of rules, which are practically secured by a decentralized public blockchain.
+
+### Is it censorship resistant?
+
+Just like the blockchain system, an App should be decentralized, permissionless and distributed so that anyone can keep a copy of the App data.
+
+In the Web2.5 model, everything is contained in a centralized server. Once a user is rejected by the server or the server gets shut down by its operator, the user loses all their data along with the value of the assets in that App.
+
+In the Web3 model, the backend of the App is practically a network where each node in the network keeps a copy of all the latest data. So even if a few nodes goes down the App will still be operational and users will never lose their assets.
+
+E.g. A player who cares about the game App can keep run a node to keep a copy of their latest data. If the game builder decides to shut down, all the players who have a node can still play it with the latest status of the game.
+
+### How's the user experience?
+
+Due to the decentralized nature, an App can face challenges on its system performance which could cause an inferior user experience for its user. Usually the performance is measured by the system throughput rate (in TPS), storage capacity, transaction Gas fee, as well as the transaction confirmation latency. These performance metrics will eventually affect the end user experience.
+
+Web2.5 and Web3 applications have different levels of decentralization.
+
+In the case of the Web2.5 App, all assets(i.e. tokens) are held in a centralized off-chain environment which mainly relies on social consensus as its trust mechanism. These tokens can be withdrawn to a Layer1 blockchain if the authority permits it.
+
+In the case of the Web3 App, assets are fully contained in a provable smart contract environment whose trust mechanism is based on a decentralized Layer1 blockchain. Being provable means all the assets can be freely withdrawn from the App into a Layer1.
+
+However, although these 2 architectures have different levels of decentralization, as the computation and storage are both done off-chain, their system performance is about the same level.
+
+## Challenges for Web3 Infra
+
+As a developer, you may ask where should I start with building a Web3 App. Ideally this question should be answered by pointing to a good enough infrastructure solution that provides all the necessary tools and environment.
+
+The solution of such an infrastructure has two challenges: the architecture and the programming language.
+
+### Solution Architecture
+
+The architecture of the solution we are looking for is a smart contract execution runtime that can generate proofs to be verified on a Layer 1 blockchain. Ideally this runtime should act as an App container that allow builders to throw their code in and spin off an App in no time. It also has to be compatible with all the existing Web3 infrastructures so that all the assets from different ecosystems can be integrated.
+
+The idea of [Modular Blockchain](https://celestia.org/learn/basics-of-modular-blockchains/modular-and-monolithic-blockchains/) architecture as well as Layer2 solutions such as [Optimistic Rollup](https://ethereum.org/en/developers/docs/scaling/optimistic-rollups/) and [ZK-Rollup](https://ethereum.org/en/developers/docs/scaling/zk-rollups/) offers the path towards the solution for this challenge.
+
+> Feel free to click in the links to learn details about these advanced technologies.
+
+### Smart Contract Programming Language
+
+The programming language for Web3 Apps should be optimized for describing assets and composing functions, so that the data ownership and governance-based upgrades can be better implemented. Along with that, the safety of the assets should be a prioritized design goal for the contract language as well. So finding the balance between flexibility and safety is the main challenge for a smart contract programming language.
+
+[Move Language](https://github.com/move-language/move) is an object-oriented programming language. It is designed to address this balance issue.
+
+With Move, developers can use `struct` to define arbitrary types of assets. The assets can also be passed into functions as arguments, so that all the assets can be flexibly operated by different smart contracts. In the meantime, the creation, destruction, and ownership of the assets are explicity defined with language declarations, giving language level safety to all the assets defined by Move Language.
+
+As a new programming language, Move is promoted by more than just one communities and projects. (See [Awesome-Move](https://awesome-move.com/#move-powered-blockchains) for a list of Move powered blockchains) This gives it great potential to grow into a much popular choice of language in the future.
+
+Move Language also has built-in support for features such as contract upgradability and account abstraction, making it easier for App builders to eliminate pain points for their users.
+
+## Conclusion
+
+In this article we have discussed 6 key questions regarding how we achieve true Web3, including a back-to-back comparsion between Web2.5 Apps and Web3 Apps in terms wether they could achieve these Web3 features.
+
+<Image
+  src="/docs/web3-comparsion.png"
+  alt="Hello"
+  width={700}
+  height={500}
+  className="mx-auto my-4"
+/>
+
+Having these features as the final goal, we have also discussed what it takes to build an infrastructure solution for developers to design and build Web3 Apps.
+
+Along with other pioneers, at Rooch project, we share the vision of Web3, and we are working on delivering the best product to all Web3 builders.
+
+Feel free to [check out our documents](/docs/) to learn more details about the solution proposed by Rooch.

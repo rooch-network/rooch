@@ -1,0 +1,22 @@
+{
+  "move-language": "Move Language",
+  "fraud-proof": "Fraud Proof",
+  "hybrid-security": "Hybrid Security with ZK Proof",
+  "multi-chain-settlement": "Multi-Chain Settlement",
+  "decentralized-validator": {
+    "title": "Decentralized Validator",
+    "display": "hidden"
+  },
+  "pipeline-transaction-processing": "Pipeline Transaction Processing",
+  "sequence-proof": "Sequence Proof",
+  "storage": {
+    "title": "Object and KV Storage",
+    "display": "hidden"
+  },
+  "p2p-state-channel": {
+    "title": "P2P Channel",
+    "display": "hidden"
+  },
+  "storage_abstraction": "Storage Abstraction",
+  "transaction_flow": "Transaction Flow"
+}
