@@ -6,7 +6,7 @@ module rooch_examples::complex_struct {
    use moveos_std::object_id::{ObjectID};
    use moveos_std::object;
    use moveos_std::object_storage;
-   use std::bcs;
+   use moveos_std::bcs;
    use std::vector;
    use std::signer;
 

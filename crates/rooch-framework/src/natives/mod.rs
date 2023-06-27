@@ -49,7 +49,7 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
         rooch_framework::account::make_all(gas_params.account)
     );
     add_natives!(
-        "rooch_hash",
+        "hash",
         rooch_framework::crypto::hash::make_all(gas_params.hash)
     );
     add_natives!(

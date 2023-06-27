@@ -98,7 +98,7 @@ module rooch_framework::ecdsa_k1 {
    // Helper Move function to recover signature directly to an ETH address.
    fun ecrecover_eth_address(sig: vector<u8>, msg: vector<u8>): vector<u8> {
       use std::vector;
-      use rooch_framework::rooch_hash;
+      use rooch_framework::hash;
 
       // Normalize the last byte of the signature to be 0 or 1.
       let v = vector::borrow_mut(&mut sig, 64);
@@ -124,7 +124,7 @@ module rooch_framework::ecdsa_k1 {
       };
 
       // Take the last 20 bytes of the hash of the 64-bytes uncompressed pubkey.
-      let hashed = rooch_hash::keccak256(&uncompressed_64);
+      let hashed = hash::keccak256(&uncompressed_64);
       let addr = vector::empty<u8>();
       let i = 12;
       while (i < 32) {

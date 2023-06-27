@@ -6,8 +6,6 @@ module creator::test {
     use std::ascii;
     use moveos_std::storage_context;
     use moveos_std::object_id;
-    use moveos_std::tx_context;
-
 
     entry public fun test_entry_function_valid_struct_string( _str: string::String ){
         
@@ -24,9 +22,4 @@ module creator::test {
     entry public fun test_entry_function_valid_struct_object_id( _id: object_id::ObjectID ){
         
     }
-
-    entry public fun test_entry_function_valid_struct_tx_context( _ctx: &mut tx_context::TxContext ){
-        
-    }
-
 }

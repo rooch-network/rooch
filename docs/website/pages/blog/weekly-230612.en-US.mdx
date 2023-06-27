@@ -1,0 +1,45 @@
+---
+title: Rooch Weekly 2023-06-12
+author: geometryolife
+category: Rooch Weekly
+date: 2023/06/12
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch's Development Progress
+
+### New features
+
+- Support for transaction signature verification for Ethereum with Metamask in [#241](https://github.com/rooch-network/rooch/pull/241).
+- Implemented transaction's RPC functionality in [#229](https://github.com/rooch-network/rooch/pull/238).
+- Implemented event pagination and refactored event output in [#257](https://github.com/rooch-network/rooch/pull/257).
+- Let the `verifier` initialize the function, adding compilation validation.
+
+### Improvements and fixes
+
+- In [#220](https://github.com/rooch-network/rooch/pull/220) completed optimization refactoring of `cli`, `server`, `testsuite`, added client config, added `ServerConfig` (default), added `WalletContext` to CLI.
+- Completed MoveOS VM and Session refactoring in [#242](https://github.com/rooch-network/rooch/pull/242).
+- In [#246](https://github.com/rooch-network/rooch/pull/246), the variable `tnx` representing the transaction is uniformly renamed to `tx`.
+- Replace `Result` with `VMResult`, `PartialVMResult` and refactor `verify_entry_function` for more complete error information.
+- Added TransactionOutput to the response at [#250](https://github.com/rooch-network/rooch/pull/250). Define `TransactionSequenceInfoView` and `TransactionExecutionView`, make all enum json lowercase.
+- Fixed event query returning `null` in [#251](https://github.com/rooch-network/rooch/pull/251).
+- Refactored State API and State RPC to make State API clearer, please refer to [#255](https://github.com/rooch-network/rooch/pull/255) PR for detailed modification.
+- Updated base object example and added README documentation at [#256](https://github.com/rooch-network/rooch/pull/256).
+- In [#262](https://github.com/rooch-network/rooch/pull/262), renamed `MoveVmExt` to `MoveOSVM` and `SessionExt` to `MoveOSSesson`. Renamed some `table_changeset` variables to `state_changeset`. Add documentation description to `MoveOSSession`.
+
+### Rooch Community Dev Meeting
+
+- Rooch stores related design and implementation tasks planned to `v0.2`.
+- Discuss `executeTransaction -> TransactionInfo + Transaction Output`, the transaction information needs to include sequence information and execution information, and then the query function of transaction information needs to be implemented.
+- Discuss the `sequence_number` verification and update scheme of the account, account abstraction (signature abstraction, `sequence_number` is completed by the system, Gas abstraction). Regarding the design of the Gas payment function, Rooch chooses to support any Token payment for Gas.
+- Discuss ETH RPC Proxy and CallData BCS parsing issues.
+- CLI parameter type annotation support, see [#217](https://github.com/rooch-network/rooch/issues/217) for discussion.
+- Related methods to disable global storage, `move_to`, `move_from`, `borrow_global`, `borrow_global_mut`, see [#248](https://github.com/rooch-network/rooch/issues/248) for details.
+- Discusses the format of Rooch documentation and tests.
+- Rooch Weekly Report (development, market, activities, others), published every Monday (UTC+8), reporting the progress of the previous week.
+- [2023-06-08 Rooch community meeting recording](https://drive.google.com/file/d/1qhEKqJDEvoF1wOVXsNvIWLPY1VJ7q4Q4/view)
+    - MoveOS session refactoring and sharing of transaction finality
+    - Discord discussion habits: make good use of thread

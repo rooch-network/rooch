@@ -2,8 +2,7 @@
 
 module moveos_std::copyable_any {
     use moveos_std::type_info;
-    use moveos_std::bcd;
-    use std::bcs;
+    use moveos_std::bcs;
     use std::error;
     use std::string::String;
 
@@ -29,7 +28,7 @@ module moveos_std::copyable_any {
     /// Unpack a value from the `Any` representation. This aborts if the value has not the expected type `T`.
     public fun unpack<T>(x: Any): T {
         assert!(type_info::type_name<T>() == x.type_name, error::invalid_argument(ETYPE_MISMATCH));
-        bcd::from_bytes<T>(x.data)
+        bcs::from_bytes<T>(x.data)
     }
 
     /// Returns the type name of this Any

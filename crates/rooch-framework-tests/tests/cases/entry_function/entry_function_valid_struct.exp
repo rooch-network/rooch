@@ -1,11 +1,4 @@
 processed 2 tasks
 
-task 1 'publish'. lines 3-32:
-Error: error: type `&mut tx_context::TxContext` is not supported as a parameter type
-   ┌─ /tmp/tempfile:18:5
-   │  
-18 │ ╭     entry public fun test_entry_function_valid_struct_tx_context( _ctx: &mut tx_context::TxContext ){
-19 │ │     }
-   │ ╰─────^
-
-
+task 1 'publish'. lines 3-25:
+status EXECUTED

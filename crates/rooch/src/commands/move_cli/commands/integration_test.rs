@@ -186,10 +186,7 @@ impl IntegrationTest {
             construct_pre_compiled_lib(targets.clone(), None, move_compiler::Flags::empty())?;
         let pre_compiled_lib = match program_res {
             Ok(af) => af,
-            Err((files, errors)) => {
-                eprintln!("!!!Package failed to compile!!!");
-                move_compiler::diagnostics::report_diagnostics(&files, errors)
-            }
+            Err((files, errors)) => move_compiler::diagnostics::report_diagnostics(&files, errors),
         };
         {
             // update the global

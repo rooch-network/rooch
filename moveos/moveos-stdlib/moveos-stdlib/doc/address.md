@@ -14,8 +14,7 @@
 
 
 <pre><code><b>use</b> <a href="">0x1::ascii</a>;
-<b>use</b> <a href="">0x1::bcs</a>;
-<b>use</b> <a href="bcd.md#0x2_bcd">0x2::bcd</a>;
+<b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 <b>use</b> <a href="hex.md#0x2_hex">0x2::hex</a>;
 </code></pre>
 
@@ -87,7 +86,7 @@ Aborts with <code><a href="address.md#0x2_address_EAddressParseError">EAddressPa
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_from_bytes">from_bytes</a>(bytes: <a href="">vector</a>&lt;u8&gt;): <b>address</b>{
-    <a href="bcd.md#0x2_bcd_to_address">bcd::to_address</a>(bytes)
+    bcs::to_address(bytes)
 }
 </code></pre>
 
@@ -112,7 +111,7 @@ Convert <code>a</code> into BCS-encoded bytes.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_to_bytes">to_bytes</a>(a: <b>address</b>): <a href="">vector</a>&lt;u8&gt; {
-    <a href="_to_bytes">bcs::to_bytes</a>(&a)
+    <a href="../doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(&a)
 }
 </code></pre>
 

@@ -1,10 +1,9 @@
 module rooch_framework::account{
    use std::error;
-   use std::bcs;
    use std::hash;
    use std::vector;
    use std::signer;
-   use moveos_std::bcd;
+   use moveos_std::bcs;
    use moveos_std::storage_context::{Self, StorageContext};
    use moveos_std::account_storage;
 
@@ -247,7 +246,7 @@ module rooch_framework::account{
       let bytes = bcs::to_bytes(source);
       vector::append(&mut bytes, seed);
       vector::push_back(&mut bytes, DERIVE_RESOURCE_ACCOUNT_SCHEME);
-      bcd::to_address(hash::sha3_256(bytes))
+      bcs::to_address(hash::sha3_256(bytes))
    }
 
    /// This function is used to rotate a resource account's authentication key to 0, so that no private key can control

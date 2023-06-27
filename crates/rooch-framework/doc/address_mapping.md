@@ -18,12 +18,12 @@
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x2::account_storage</a>;
-<b>use</b> <a href="">0x2::bcd</a>;
+<b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="core_addresses.md#0x3_core_addresses">0x3::core_addresses</a>;
-<b>use</b> <a href="rooch_hash.md#0x3_rooch_hash">0x3::rooch_hash</a>;
+<b>use</b> <a href="hash.md#0x3_hash">0x3::hash</a>;
 </code></pre>
 
 
@@ -162,7 +162,7 @@ Resolve a multi-chain address to a rooch address
 
 <pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve">resolve</a>(ctx: &StorageContext, maddress: <a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">MultiChainAddress</a>): Option&lt;<b>address</b>&gt; {
     <b>if</b> (<a href="address_mapping.md#0x3_address_mapping_is_rooch_address">is_rooch_address</a>(&maddress)) {
-        <b>return</b> <a href="_some">option::some</a>(moveos_std::bcd::to_address(maddress.raw_address))
+        <b>return</b> <a href="_some">option::some</a>(moveos_std::bcs::to_address(maddress.raw_address))
     };
     <b>let</b> am = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="address_mapping.md#0x3_address_mapping_AddressMapping">AddressMapping</a>&gt;(ctx, @rooch_framework);
     <b>if</b>(<a href="_contains">table::contains</a>(&am.mapping, maddress)){

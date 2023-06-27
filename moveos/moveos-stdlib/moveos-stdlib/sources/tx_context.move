@@ -3,11 +3,10 @@
 
 module moveos_std::tx_context {
     use std::vector;
-    use std::bcs;
     use std::hash;
     use std::string::String;
     use std::option::{Self, Option};
-    use moveos_std::bcd;
+    use moveos_std::bcs;
     use moveos_std::object_id::{Self, ObjectID};
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::copyable_any::{Self, Any};
@@ -16,7 +15,7 @@ module moveos_std::tx_context {
     friend moveos_std::object;
     friend moveos_std::raw_table;
     friend moveos_std::account_storage;
-    friend moveos_std::events;
+    friend moveos_std::event;
 
     /// Number of bytes in an tx hash (which will be the transaction digest)
     const TX_HASH_LENGTH: u64 = 32;
@@ -63,7 +62,7 @@ module moveos_std::tx_context {
         vector::append(&mut bytes, bcs::to_bytes(&index));
         //TODO change return type to h256 and use h256 to replace address?
         let id = hash::sha3_256(bytes);
-        bcd::to_address(id)
+        bcs::to_address(id)
     }
 
     /// Return the hash of the current transaction

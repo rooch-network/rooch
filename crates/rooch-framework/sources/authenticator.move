@@ -50,14 +50,14 @@ module rooch_framework::authenticator {
    }
 
    public fun decode_authenticator_info(data: vector<u8>): (u64, Authenticator) {
-      let info = moveos_std::bcd::from_bytes<AuthenticatorInfo>(data);
+      let info = moveos_std::bcs::from_bytes<AuthenticatorInfo>(data);
       let AuthenticatorInfo { sequence_number, authenticator } = info;
       (sequence_number, authenticator)
    }
 
    public fun decode_ed25519_authenticator(authenticator: Authenticator): Ed25519Authenticator {
       assert!(authenticator.scheme == SCHEME_ED25519, EUnsupportedScheme);
-      moveos_std::bcd::from_bytes<Ed25519Authenticator>(authenticator.payload)
+      moveos_std::bcs::from_bytes<Ed25519Authenticator>(authenticator.payload)
    }
 
    public fun ed25519_public(self: &Ed25519Authenticator): vector<u8> {
@@ -86,12 +86,12 @@ module rooch_framework::authenticator {
 
    public fun decode_multied25519_authenticator(authenticator: Authenticator): MultiEd25519Authenticator {
       assert!(authenticator.scheme == SCHEME_MULTIED25519, EUnsupportedScheme);
-      moveos_std::bcd::from_bytes<MultiEd25519Authenticator>(authenticator.payload)
+      moveos_std::bcs::from_bytes<MultiEd25519Authenticator>(authenticator.payload)
    }
 
    public fun decode_secp256k1_authenticator(authenticator: Authenticator): Secp256k1Authenticator {
       assert!(authenticator.scheme == SCHEME_SECP256K1, EUnsupportedScheme);
-      moveos_std::bcd::from_bytes<Secp256k1Authenticator>(authenticator.payload)
+      moveos_std::bcs::from_bytes<Secp256k1Authenticator>(authenticator.payload)
    }
 
    public fun secp256k1_signature(self: &Secp256k1Authenticator): vector<u8> {

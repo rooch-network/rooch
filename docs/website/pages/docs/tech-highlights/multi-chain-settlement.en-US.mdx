@@ -1,0 +1,42 @@
+# Multi-chain Settlement
+
+Multi-chain Settlement is one of the most important features of Rooch Network. This chapter details the protocols and challenges to be solved.
+
+## How it works
+
+import Image from "next/image";
+
+<Image
+  src="/docs/multi-chain-settlement.png"
+  alt="Rooch Architecture"
+  width={600}
+  height={600}
+  class="mx-auto my-4"
+/>
+
+The responsibility of the settlement layer is to perform state migration and asset settlement between Layer1 and the execution layer.
+
+We use Ethereum as an example to explain how the settlement layer works.
+
+Rooch deploys the settlement smart contract(`State Commitment Chain` & `Bridge`) on Ethereum, which maintains an off-chain state tree, with only the root of the state tree recorded on the chain, through which users migrate state between Layer1 and Rooch.
+
+1. When a user migrates state from Layer1 to Rooch, the state appears in the state tree of Rooch after the transactions in Layer1 are finalized.
+2. When a user migrates state from Rooch to Layer1, the state is first locked and waits for the Layer2 (Challenge period to pass or **zkProver** provides valid proof) before being moved out of the state tree for settlement.
+3. When the `State Commitment Chain` receives a notification from the arbitration contract that fraud has occurred, it rolls back the root of the off-chain state tree to before the fraud occurred, discarding any state tree changes made during that period.
+
+Now, if we want to expand the settlement layer to multiple chains, we will encounter some challenges.
+
+How to maintain the `State Commitment Chain` on other chains?
+
+Our solution is mirror the `State Commitment Chain` from Ethereum to other chains by Ethereum state proof.
+
+Then, another challenge is how to verify the state proof of Ethereum on other chains?
+
+We depend on the solution of syncing Ethereum state root to other chains. This is a challenge that all cross-chain solutions face. There are some solutions to this problem, such as Ethereum light nodes, Oracles, etc. As the project reaches maturity and grows from and alongside community contributions, we hope to continually iterate towards the optimal solution of a multi-chain layer2.
+
+## Features
+
+Here are why Rooch's Multi-Chain Settlement solution is more advanced.
+
+- Multi-chain settlement is more secure. The security of the cross-layer bridge in a multi-chain settlement solution is protected by the arbitration layer (i.e. Ethereum), and the execution layer inherits the security of the arbitration layer.
+- More generic cross-layer solution. In Rooch's multi-chain settlement solution, cross-layer is achieved through a generic state migration pattern where states can be used to represent Token, NFT, digital contracts, and other future application states, without the need to design specialized protocols for new state types.
