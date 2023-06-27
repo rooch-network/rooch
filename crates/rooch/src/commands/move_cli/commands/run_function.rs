@@ -5,7 +5,7 @@ use crate::cli_types::{ArgWithType, CommandAction, TransactionOptions, WalletCon
 use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
-use rooch_server::jsonrpc_types::{ExecuteTransactionResponseView, TypeTagView};
+use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, TypeTagView};
 use rooch_types::{
     address::RoochAddress,
     error::{RoochError, RoochResult},

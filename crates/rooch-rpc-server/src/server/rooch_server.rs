@@ -1,20 +1,20 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::api::RoochRpcModule;
-use crate::jsonrpc_types::{
-    AccessPathView, AnnotatedEventView, AnnotatedFunctionReturnValueView, AnnotatedStateView,
-    EventFilterView, EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
-    StateView, StrView, StructTagView, TransactionExecutionInfoView, TransactionInfoPageView,
-    TransactionView,
-};
 use crate::service::RpcService;
-use crate::{api::rooch_api::RoochAPIServer, api::MAX_RESULT_LIMIT};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     RpcModule,
 };
 use moveos_types::h256::H256;
+use rooch_rpc_api::api::RoochRpcModule;
+use rooch_rpc_api::jsonrpc_types::{
+    AccessPathView, AnnotatedEventView, AnnotatedFunctionReturnValueView, AnnotatedStateView,
+    EventFilterView, EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
+    StateView, StrView, StructTagView, TransactionExecutionInfoView, TransactionInfoPageView,
+    TransactionView,
+};
+use rooch_rpc_api::{api::rooch_api::RoochAPIServer, api::MAX_RESULT_LIMIT};
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::{AbstractTransaction, TypedTransaction};
 

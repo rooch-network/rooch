@@ -1,5 +1,5 @@
 [package]
-name = "rooch-client"
+name = "rooch-rpc-client"
 version = "0.1.0"
 edition = "2021"
 
@@ -27,5 +27,5 @@ moveos-common = { workspace = true }
 
 rooch-key = { workspace = true }
 rooch-types = { workspace = true }
-rooch-server = { workspace = true }
+rooch-rpc-api = { workspace = true }
 rooch-config = { workspace = true }

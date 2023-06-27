@@ -21,9 +21,9 @@ tokio = { workspace = true }
 tracing = { workspace = true }
 
 rooch = { workspace = true }
-rooch-server = { workspace = true }
+rooch-rpc-server = { workspace = true }
 rooch-config = { workspace = true }
-rooch-client = { workspace = true }
+rooch-rpc-client = { workspace = true }
 rooch-key = { workspace = true }
 
 move-core-types = { workspace = true }

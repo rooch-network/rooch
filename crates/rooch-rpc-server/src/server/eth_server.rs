@@ -1,17 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::jsonrpc_types::{
-    eth::{CallRequest, EthFeeHistory},
-    TransactionView,
-};
-use crate::{
-    api::{
-        eth_api::{EthAPIServer, TransactionType},
-        RoochRpcModule,
-    },
-    service::RpcService,
-};
+use crate::service::RpcService;
 use ethers::types::{
     transaction::eip2930::AccessList, Address, Block, BlockNumber, Bloom, Bytes, OtherFields,
     Transaction, TransactionReceipt, Withdrawal, H160, U256, U64,
@@ -22,6 +12,14 @@ use jsonrpsee::{
 };
 use moveos_types::{access_path::AccessPath, state::MoveStructType};
 use rand::Rng;
+use rooch_rpc_api::api::{
+    eth_api::{EthAPIServer, TransactionType},
+    RoochRpcModule,
+};
+use rooch_rpc_api::jsonrpc_types::{
+    eth::{CallRequest, EthFeeHistory},
+    TransactionView,
+};
 use rooch_types::{
     account::Account,
     address::{EthereumAddress, MultiChainAddress},

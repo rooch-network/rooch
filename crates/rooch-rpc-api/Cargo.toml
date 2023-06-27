@@ -1,5 +1,5 @@
 [package]
-name = "rooch-server"
+name = "rooch-rpc-api"
 version = "0.1.0"
 
 # Workspace inherited keys
@@ -30,8 +30,6 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 tonic = { workspace = true }
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
 schemars = { workspace = true }
 serde_with = { workspace = true }
 rand = { workspace = true }
@@ -41,16 +39,10 @@ move-core-types = { workspace = true }
 move-resource-viewer = { workspace = true }
 move-binary-format = { workspace = true }
 
-moveos-store = { workspace = true }
 moveos-types = { workspace = true }
 move-bytecode-utils = { workspace = true }
 
-rooch-config = { workspace = true }
 rooch-types = { workspace = true }
-rooch-executor = { workspace = true }
-rooch-sequencer = { workspace = true }
-rooch-proposer = { workspace = true }
-rooch-key = { workspace = true }
+rooch-config = { workspace = true }
 rooch-open-rpc = { workspace = true }
 rooch-open-rpc-macros = { workspace = true }
-rooch-store = { workspace = true }

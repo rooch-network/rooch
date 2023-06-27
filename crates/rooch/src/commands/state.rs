@@ -4,7 +4,7 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use moveos_types::access_path::AccessPath;
-use rooch_server::jsonrpc_types::AnnotatedStateView;
+use rooch_rpc_api::jsonrpc_types::AnnotatedStateView;
 use rooch_types::error::{RoochError, RoochResult};
 
 /// Get States by AccessPath
