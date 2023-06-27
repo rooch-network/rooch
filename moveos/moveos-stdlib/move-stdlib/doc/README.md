@@ -25,3 +25,13 @@ This is the reference documentation of the Move standard library.
 -  [`0x1::string`](string.md#0x1_string)
 -  [`0x1::type_name`](type_name.md#0x1_type_name)
 -  [`0x1::vector`](vector.md#0x1_vector)
+
+
+
+<a name="@Reference_2"></a>
+
+## Reference
+
+
+* [MoveosStdlib](https://github.com/rooch-network/rooch/tree/main/moveos/moveos-stdlib/moveos-stdlib/doc)
+* [RoochFramework](https://github.com/rooch-network/rooch/tree/main/crates/rooch-framework/doc)

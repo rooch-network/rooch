@@ -20,3 +20,13 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::ed25519`](ed25519.md#0x3_ed25519)
 -  [`0x3::hash`](hash.md#0x3_hash)
 -  [`0x3::transaction_validator`](transaction_validator.md#0x3_transaction_validator)
+
+
+
+<a name="@Reference_2"></a>
+
+## Reference
+
+
+* [MoveStdlib](https://github.com/rooch-network/rooch/tree/main/moveos/moveos-stdlib/move-stdlib/doc)
+* [MoveosStdlib](https://github.com/rooch-network/rooch/tree/main/moveos/moveos-stdlib/moveos-stdlib/doc)
