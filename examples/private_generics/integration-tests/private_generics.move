@@ -3,12 +3,26 @@
 //# run --signers test
 script {
     use rooch_examples::Test1;
+
+    fun main() {
+        Test1::test();
+    }
+}
+
+//# run --signers test
+script {
     use rooch_examples::Test2;
+
+    fun main() {
+        Test2::run();
+    }
+}
+
+//# run --signers test
+script {
     use rooch_examples::Test3;
 
-    fun main(_s: &signer) {
-        Test1::test();
-        Test2::run();
+    fun main() {
         // FIXME: expected failure
         Test3::run();
     }
