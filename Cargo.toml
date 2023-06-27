@@ -95,7 +95,7 @@ byteorder = "1.4.3"
 clap = { version = "3", features = ["derive", ] }
 chrono = "0.4.23"
 coerce = "0.8"
-datatest-stable = "0.1.3"
+datatest-stable = { git = "https://github.com/rooch-network/diem-devtools", branch = "feature/pub-test-opts" }
 derive_builder = "0.12"
 derive_more = "0.99.17"
 dirs = "4.0.0"
