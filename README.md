@@ -1,9 +1,9 @@
 # Rooch
 
-[Rooch](https:://rooch.network) is a modular DApp container with the [Move language](https://github.com/move-language/move).
-
+[Rooch](https://rooch.network) is a modular DApp container with the [Move language](https://github.com/move-language/move).
 
 ## Usage
+
 1. Rooch Ethereum Layer2: Rooch(Execution) + Layer1s(Settlement) + Ethereum(Arbitration) + DA
 2. XChain Modular DApp: Rooch(Execution) + XChain(Settlement + Arbitration) + DA
 3. Rooch Layer3 Modular DApp: Rooch(Execution) + Rooch Layer2(Settlement + Arbitration) + DA
@@ -54,7 +54,8 @@ State DB:
 ![Rooch Transaction Flow](./docs/static/design/rooch-design-transaction-flow-functional-perspective.svg)
 
 ## Components
-* [MoveOS](./moveos): MoveOS is a standalone Move runtime environment based on [MoveVM](https://github.com/move-language/move). It provide Move execution environment for rooch.
+
+* [MoveOS](./moveos): MoveOS is a standalone Move runtime environment based on [MoveVM](https://github.com/move-language/move). It provides Move execution environment for rooch.
 
 ## How to Contribute
 
