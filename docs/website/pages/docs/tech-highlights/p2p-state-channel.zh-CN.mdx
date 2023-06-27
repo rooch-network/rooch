@@ -1,0 +1,72 @@
+# State Channel on P2P Network
+
+The State Channel, or Payment Channel, represented by the Lightning Network, is a proven scaling solution. The idea is that each participant pledges a certain amount of assets on the chain, and then maintains a local consensus state off-chain that contains only the participants, and each transaction only needs to be confirmed by the participants together，so it can support high frequency transactions in the channel.
+
+However, current state channels are built on Layer1, the costs of Gas and time to create a channel is high and cannot be directly used in P2P networks.
+
+Rooch provides secure and instant transaction confirmation and low transaction costs, allowing nodes in a P2P network to create a network connection and upgrade it to a state channel, thus enabling [high-frequency streaming payment](./01-streaming-payment.md) in P2P networks.
+
+Also, Rooch supports [smart contract in state channel](./02-channel-contract.md) through the feature of Move, simplifying the design of game and DApp protocol on P2P networks.
+
+![p2p](/docs/rooch-p2p.svg)
+
+## Representation of a state channel
+
+Each state channel is actually an RST maintained at the execution level by the participants of the channel, so it can also use the [state migration](../06-state-scaling.md) pattern to migrate state from the execution layer to the state channel.
+
+:::note
+
+TODO Representation via the Move contract
+
+:::
+
+## Opening the channel
+
+The channel participants (typically both participants, but can be extended to multiple participants), commit funds to a smart contract on the Rooch execution layer, initialize the RST, and open the state channel.
+
+Since transactions at the Rooch execution layer are confirmed instantly, the user can open a state channel for each scenario, e.g. one state channel per game.
+
+## Using the channel
+
+Transactions on state channel execute a smart contract method, just like transactions on the execution layer, and then trigger a change in state. The key difference is that a contract on a state channel can only modify the state in the channel, but a contract on a state channel can still read the state in Layer1 and the execution layer to implement some complex logic. For example, participants can swap in the state channel based on the prices in Layer1 Oracle.
+
+## Closing the channel
+
+Closing the channel can be done in three scenarios.
+
+1. Collaborative closing, where it is settled from the execution layer instantly, if all participants agree.
+2. Passive closure by waiting for a timeout, where the state tree root is settled with the last common confirmation of the participants. The timeout duration can be set by agreement between the participants when opening the channel.
+3. One participant frauds, and the other participant can use [fraud-proofs] (../02-fraud-proofs.md) to initiate an arbitration request at the Rooch execution layer for settlement by the arbitration contract.
+
+- [streaming-payment](01-streaming-payment.md)
+- [state channel contract](02-channel-contract.md)
+
+## Streaming Payment
+
+Transactions in a state channel requires only participants confirmation, so its throughput is limited only by the network bandwidth between participant nodes, so it makes streaming or micropayments possible.
+
+When we use paid Web services, the longer the payment period to the service provider, the more we rely on trust on the service provider and the higher the risk of fraud we face. If we split the payment granularity small enough, for example, pay per byte for downloading files, or pay per request for RPC services, the risk to the user is small enough.
+
+And this kind of frequency of payment cannot be achieved through traditional payment methods, but only through the state channel. And this kind of payment method really realizes the on-demand payment, and we think the future applications and services should be paid on-demand.
+
+## SmartContract on State Channel
+
+The current state channel solutions all only enable payments through the state channel. If a new asset type is invented and wants to be applied in state channel, the solution of the state channel needs to be redesigned. It has been a challenge to implement a universal state channel that can execute smart contracts.
+
+We believe that Web3 applications will be implemented as protocols over P2P, and running generic smart contracts on state channels will simplify the design of protocols at the P2P network layer, such as billing protocols and exchange protocols.
+
+Thanks to Move's state model, we can execute application contracts deployed in Layer1 or Rooch execution layers directly on the state channel, see [Cross-Layer Invocation](../07-move-on-rooch/01-cross-layer-interoperability.md).
+
+For example, if there is a game written in Move, two users can create a dedicated state channel for this game and play on the state channel. The state of the game is actually only stored in the state channel, and when the game is over, both players clear out and the state of the game is discarded (or backed up in the user's device, of course), while the game's smart contract is still in Layer1 or the Rooch execution layer.
+
+### Our explorations of state channel application
+
+- [Thor](https://github.com/starcoinorg/thor): Implement a WASM-based smart contract engine on Lightning Network, through a third-party arbitration service, players can play Gobang games on Lightning Network.
+- [Gobang game on Move State Channel](https://github.com/starcoinorg/stargate/tree/master/demo/Gobang): a proof-of-concept solution for Move state channel that implements a Gobang game on the state channel, with the game implemented via Move.
+
+### P2P network protocols and applications
+
+- [IPFS: Peer-to-peer hypermedia protocol](https://github.com/ipfs/ipfs)
+- [Planet: Decentralized blogs and websites powered by IPFS and Ethereum Name System](https://github.com/Planetable/Planet)
+- [RingsNetwork: p2p network based on ICE](https://github.com/RingsNetwork/rings-node)
+- [Yjs: Yjs is a CRDT implementation on p2p network](https://github.com/yjs/yjs)

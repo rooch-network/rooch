@@ -1,0 +1,25 @@
+# 具有零知识证明的混合安全性
+
+Rooch 将利用 [zkMove](https://www.zkmove.net/) 生成零知识证明（ZK Proof）以优化欺诈证明（Fraud Proof）机制的挑战期，并创建一个同时具有欺诈证明和零知识证明的混合安全机制。
+
+> [zkMove](https://www.zkmove.net/) 是一个零知识的 Move 语言运行环境，实现了字节码级别的兼容性。Rooch Network 与 zkMove 建立了合作伙伴关系，两个项目将在技术开发和应用场景方面进行合作。
+
+## 它如何工作
+
+import Image from "next/image";
+
+<Image
+  src="/docs/hybrid-security.png"
+  alt="Rooch Architecture"
+  width={600}
+  height={600}
+  class="mx-auto my-2"
+/>
+
+在只有欺诈证明的情况下，用户在 `BlockT` 提交的提款交易需要等待 `N` 个区块的挑战期才能最终确定，然后用户才能在 Layer1 提取其资产。
+
+通过 ZK Prover 使用 zkMove 生成的零知识证明，挑战期可以优化到更少的块数。它是这样工作的：
+
+- 提交器（proposer）不断以最大速度将状态块提交给 Layer1
+- 由于证明生成时间相当长，ZK Prover 以相对较慢的速度为已提交到 Layer1 的状态块生成零知识证明
+- 对于在 `BlockT` 提交的提款交易，当 `BlockT` 的零知识证明已经在 Layer1 上生成并通过验证时，就可以认为已经完成，而不需要等到整个挑战期结束

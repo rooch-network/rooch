@@ -1,0 +1,49 @@
+---
+title: Rooch 周报 2023-06-19
+description: "Rooch 的第二篇周报"
+author: geometryolife
+category: Rooch Weekly
+date: 2023/06/19
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch 的开发进展
+
+### 新特性
+
+- 在 [#267](https://github.com/rooch-network/rooch/pull/267) 中实现了事件页面。
+- 在 [#275](https://github.com/rooch-network/rooch/pull/267) 和 [#299](https://github.com/rooch-network/rooch/pull/299) 为 [#213](https://github.com/rooch-network/rooch/issues/213) RPC 文档功能实现相应的 API。
+- 在 [#280](https://github.com/rooch-network/rooch/pull/280) 中实现了 `counter` 合约的 Web 版本。
+- 在 [#282](https://github.com/rooch-network/rooch/pull/282) 中添加了集成测试工具，具体使用方法，请参阅 PR 中的描述。
+- 实现 rooch storage，用于存储 `Transaction`、`Block` 等数据，将 `store` 实现从 `sequencer` 移动到 rooch storage，将 `TransactionExecutionInfo` 从 rooch 类型移动到 moveos 类型，引入 `InMemoryAccumulator` 并实现事件累加器根，详细的内容请参阅 [#287](https://github.com/rooch-network/rooch/pull/287)。
+- 支持传入不同类型的参数给 `entry` 函数，支持类型包括：`u8`、`u16`、`u32`、`u64`、`u128`、`u256`、`bool`、`object_id`、`string`、`address` 和 `vector<inner_type>`，详细用法请参见 PR [#307](https://github.com/rooch-network/rooch/pull/307)。
+- 实现跨模块 `private_generics` 属性检查。一个模块调用另一个模块调用时，需要检查用 `#[private_generics]` 修饰的函数的泛型参数类型，详细说明和例子请参阅 PR [#298](https://github.com/rooch-network/rooch/pull/298)。
+
+### 重大重构
+
+- 为 `move-std`、`moveos-std`、`rooch-framework` 模块分配不同的地址，使用不同的地址可以避免模块命名冲突，也便于扩展。例如，`moveos-std::bcs` 可以包装 `move-std::bcs` 的所有方法并添加扩展方法。这种方式也便于日后扩展其他内置标准库或框架，为生态共建方提供良好的协作体验。详细讨论请参阅 [issue #245](https://github.com/rooch-network/rooch/issues/245) 和 [Discord 帖子](https://discord.com/channels/1078938449974935592/1116245987598540811)。
+  - 在 [#266](https://github.com/rooch-network/rooch/pull/266) 中添加 Move 标准库 `move-stdlib` 的代码，让不同的库生成各自的创世交易，从而实现生成多个创世交易的功能。
+  - 在 [#270](https://github.com/rooch-network/rooch/pull/270) 将 `rooch-framework` 从 `moveos/moveos-stdlib/rooch-framework` 迁移到 `crate/rooch-framework`。将框架测试用例从 `moveos/moveos-stdlib` 迁移到 `crate/rooch-framework-tests`。引入 `moveos_stdlib_builder` 和 `rooch-genesis`。示例使用 `MoveosStdlib` 的本地依赖项。将 `0x1` 用于 `move_std`，将 `0x2` 用于 `moveos_std`，将 `0x3` 用于 `rooch_framework`。Move 集成测试 `exp` 文件打印交易输出状态。
+- 在 [#283](https://github.com/rooch-network/rooch/pull/283) 中引入 Move 模块绑定并重构交易验证器。引入 Move 模块绑定，方便从 Rust 代码中调用 Move 函数。将来，我们可以通过 ABI 生成绑定。
+
+### 改进和修复
+
+- 在 [#272](https://github.com/rooch-network/rooch/pull/272) 统一 `next_cursor` 为返回结果中最后一个对象对应的光标。
+- 在 [#276](https://github.com/rooch-network/rooch/pull/276) 重构了运行时的 `init` 函数的验证，去掉了验证函数对 `Session` 的依赖。
+- 添加运行时 `entry` 函数验证的测试用例，详细请参阅 [#269](https://github.com/rooch-network/rooch/pull/269)
+- 在 [#291](https://github.com/rooch-network/rooch/pull/291) 中添加 CI 来自动测试示例项目。
+- 更新存储抽象文档，详细参见 [#300](https://github.com/rooch-network/rooch/pull/300)、[#311](https://github.com/rooch-network/rooch/pull/311) 和 [#314](https://github.com/rooch-network/rooch/pull/300)。
+- 优化 CI 测试，清理未使用的 framework 模块。
+
+
+### Rooch 社区开发会议
+ 
+- 将 `verifier` 的相关功能实现安排在 Rooch `v0.2`。
+- 讨论账户创建的预执行函数和地址映射的方案。
+- 讨论什么时候需要 RPC `View` 类型。
+- 讨论 `MoveState` 和 `ETH proxy`。
+- 分享在 Rust 中引入 Move 绑定。
+- [会议录屏](https://drive.google.com/file/d/1kqRZGG44wqAeFlAgAm4im_bmrvj-X04B/view)

@@ -1,0 +1,48 @@
+---
+title: Rooch Weekly 2023-06-19
+description: "Rooch's second weekly report."
+author: geometryolife
+category: Rooch Weekly
+date: 2023/06/19
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch's Development Progress
+
+### New features
+
+- Implemented event page in [#267](https://github.com/rooch-network/rooch/pull/267).
+- Implemented corresponding APIs for [#213](https://github.com/rooch-network/rooch/issues/213) RPC documentation functionality at [#275](https://github.com/rooch-network/rooch/pull/267) and [#299](https://github.com/rooch-network/rooch/pull/299).
+- Implemented a web version of the `counter` contract in [#280](https://github.com/rooch-network/rooch/pull/280).
+- Added an integration testing tool in [#282](https://github.com/rooch-network/rooch/pull/282), for how to use it, please refer to the description in the PR.
+- Implement rooch storage for storing `Transaction`, `Block` and other data, move `store` implementation from `sequencer` to rooch storage, move `TransactionExecutionInfo` from rooch type to moveos type, introduce `InMemoryAccumulator` and implement event accumulator root, see [#287](https://github.com/rooch-network/rooch/pull/287).
+- Supports passing different types of parameters to the `entry` function. Supported types include: `u8`, `u16`, `u32`, `u64`, `u128`, `u256`, `bool`, `object_id`, `string`, `address` and `vector<inner_type>`. For detailed usage, please refer to PR [#307](https://github.com/rooch-network/rooch/pull/307).
+- Implement cross-module `private_generics` attribute checking. When a module calls another module, it needs to check the generic parameter type of the function decorated with `#[private_generics]`. For details and examples, please refer to PR [#298](https://github.com/rooch-network/rooch/pull/298).
+
+### Major refactoring
+
+- Assign different addresses to `move-std`, `moveos-std`, and `rooch-framework` modules. Using different addresses can avoid module naming conflicts and facilitate expansion. For example, `moveos-std::bcs` can wrap all the methods of `move-std::bcs` and add extension methods. This approach is also convenient for extending other built-in standard libraries or frameworks in the future, providing a good collaborative experience for ecosystem co-builders. See [issue #245](https://github.com/rooch-network/rooch/issues/245) and [Discord post](https://discord.com/channels/1078938449974935592/1116245987598540811) for a detailed discussion.
+  - Add the code of the Move standard library `move-stdlib` in [#266](https://github.com/rooch-network/rooch/pull/266), so that different libraries can generate their own genesis transactions, so as to realize the function of generating multiple genesis transactions.
+  - Migrated `rooch-framework` from `moveos/moveos-stdlib/rooch-framework` to `crate/rooch-framework` at [#270](https://github.com/rooch-network/rooch/pull/270). Migrate framework test cases from `moveos/moveos-stdlib` to `crate/rooch-framework-tests`. Introduce moveos_stdlib_builder and `rooch-genesis`. The examples use a native dependency of MoveosStdlib. Use `0x1` for `move_std`, `0x2` for `moveos_std`, and `0x3` for `rooch_framework`. The Move integration test `exp` file prints transaction output status.
+- Introduced Move module bindings and refactored transaction validators in [#283](https://github.com/rooch-network/rooch/pull/283). Introduce Move module bindings to facilitate calling Move functions from Rust code. In the future, we can generate bindings via the ABI.
+
+### Improvements and fixes
+
+- In [#272](https://github.com/rooch-network/rooch/pull/272) unify `next_cursor` as the cursor corresponding to the last object in the returned result.
+- In [#276](https://github.com/rooch-network/rooch/pull/276), the verification of the `init` function at runtime is refactored, and the dependency of the verification function on `Session` is removed.
+- Add a test case for `entry` function verification at runtime, see [#269](https://github.com/rooch-network/rooch/pull/269) for details
+- Added CI to automatically test example projects in [#291](https://github.com/rooch-network/rooch/pull/291).
+- Update storage abstraction documentation, see [#300](https://github.com/rooch-network/rooch/pull/300), [#311](https://github.com/rooch-network/rooch/pull/311) and [#314](https://github.com/rooch-network/rooch/pull/300) for details.
+- Optimize CI tests and clean up unused framework modules.
+
+### Rooch Community Dev Meeting
+
+- Arrange the implementation of `verifier` related functions in Rooch `v0.2`.
+- Discusses account creation pre-execution functions and address mapping schemes.
+- Discusses when the RPC `View` type is required.
+- Discusses `MoveState` and `ETH proxy`.
+- Share introducing Move bindings in Rust.
+- [Conference recording](https://drive.google.com/file/d/1kqRZGG44wqAeFlAgAm4im_bmrvj-X04B/view)

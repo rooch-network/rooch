@@ -1,0 +1,53 @@
+{
+  "index": {
+    "title": "Homepage",
+    "type": "page",
+    "display": "hidden",
+    "theme": {
+      "timestamp": false,
+      "layout": "raw"
+    }
+  },
+  "docs": {
+    "title": "Docs",
+    "type": "page"
+  },
+  "blog": {
+    "title": "Blog",
+    "type": "page",
+    "theme": {
+      "sidebar": false,
+      "timestamp": false,
+      "typesetting": "article"
+    }
+  },
+  "about": {
+    "title": "About",
+    "type": "page",
+    "theme": {
+      "sidebar": false,
+      "timestamp": false,
+      "typesetting": "article"
+    }
+  },
+  "404": {
+    "type": "page",
+    "theme": {
+      "sidebar": false,
+      "typesetting": "article"
+    }
+  },
+  "brand": {
+    "type": "page",
+    "display": "hidden",
+    "theme": {
+      "sidebar": false,
+      "timestamp": false,
+      "typesetting": "article"
+    }
+  },
+  "blog-template": {
+    "type": "page",
+    "display": "hidden"
+  }
+}

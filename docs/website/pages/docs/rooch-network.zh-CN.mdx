@@ -1,0 +1,56 @@
+# Rooch Network
+
+Rooch Network 为 Web3 DApp 提供强大的一体化服务，使其能够轻松灵活地部署。这使得 Web3 开发者在不用顾虑基础设施问题的前提下，可以更专注于构建更个性化的产品。
+
+import Image from "next/image";
+
+<Image
+  src="/docs/rooch-network-architecture.png"
+  alt="Hello"
+  width={700}
+  height={700}
+  class="mx-auto my-8"
+/>
+
+## 执行层
+
+执行层由以 Rooch 作为容器以及智能合约执行环境的 Dapp 组成。
+
+根据不同的场景和资源需求，Rooch 的使用有三种类型：
+
+- **通用平台** - 我们将启动并维护一个 Rooch 实例作为通用的智能合约平台。DApp 和开发人员将能够将其智能合约直接部署到现有平台上。开发体验将与在 Layer1 区块链上工作的体验相同，但具有更高的 TPS，更低的 Gas 费用以及更大更方便的存储空间。
+- **DApp 专用平台** - 想要拥有定制平台的 DApp 可以启动一个专用的 Rooch 实例，开发者可以自定个性化的以及特殊的特性，如通证经济模型。
+- **Sector 专用平台** - 想要使用多个 DApp 开发和扩展其生态系统的 Web3 开发者也可以启动 Rooch 实例，不同 DApp 的资产和功能将具有无缝互操作性，用户可以在不同生态系统的 DApp 之间共享帐户和配置文件。
+
+## 网络中间件
+
+Rooch Network 有几个关键的中间件服务，负责处理执行层上所有 Rooch 实例的交易和状态。所有服务都基于相同的核心 Rooch 实现。
+
+- **Sequencer** - Sequencer 负责验证传入的交易并对其进行排序。排序后的交易将提交给 DA Chain 和 Proposer。
+- **Challenger** - Challenger 是 Rooch Layer2 网络的守护者。它不断监视交易流，并执行交易以计算状态转换。如果计算的状态结果与提议的状态不匹配，则 Challenger 将请求欺诈证明并将其提交仲裁。 （有关更多信息，请参见 Fraud Proof。）
+- **ZK Prover** - ZK Prover 根据批处理的交易生成状态转换的 ZK 证明。证明将发送到仲裁层以优化安全机制所需的挑战期。(有关更多信息，请参见使用 [Hybrid Security with ZK Proof](/docs/tech-highlights/hybrid-security)）
+- **Proposer** - Proposer 负责执行所有排序后的交易并将生成的状态提交给仲裁层。
+
+## DA 层
+
+DA（数据可用性）的重要性在于确保任何人都可以访问发生在离线环境中的所有交易。
+
+Rooch 网络将采用第三方解决方案以确保交易的可用性并保持高 TPS。我们仍在研究不同的选择，这其中包括 [Celestia](https://celestia.org/)，[Eigenlayer](https://www.eigenlayer.xyz/)，[Polygon Avail](https://polygon.technology/blog-tags/polygon-avail)，以及 [Arweave](https://www.arweave.org/)。
+
+## 仲裁层
+
+仲裁层作为“法院”，为仲裁和验证包含不同 DApp 的不同 Rooch 实例中发生的所有状态转换。
+
+在 Rooch 网络中，以太坊承担了仲裁层的角色，并将是 Rooch 生态系统中所有 DApp 的唯一安全来源，原因是以太坊目前拥有最高的代币市值，而这代表着它拥有最高的攻击成本。
+
+在以太坊上，有三个智能合约担任不同的角色：
+
+- **欺诈证明仲裁合约** - 该合约接受欺诈证明，并模拟状态转换的执行以做出削减决策。
+- **ZK Verifier 合约** - 该合约负责验证由 ZK Prover 提交的 ZK 证明。
+- **State Commitment Chain** - 该合约保留由 Proposer 提交的所有状态的记录链。
+
+## 结算层
+
+结算层为所有基于 Rooch 的 DApp 提供状态结算。使用 Rooch 作为执行环境的每个 DApp 都能够在其 DApp 和不同的 Layer1 之间迁移资产（即 token）。
+
+Rooch Network 支持将任意 Layer1 整合到结算层中，所有使用以太坊作为安全保证源的内容。(有关更多信息，请参见 [Multi-Chain Settlement](/docs/tech-highlights/multi-chain-settlement)）

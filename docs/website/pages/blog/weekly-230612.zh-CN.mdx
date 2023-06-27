@@ -1,0 +1,48 @@
+---
+title: Rooch 周报 2023-06-12
+author: geometryolife
+category: Rooch Weekly
+date: 2023/06/12
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch 的开发进展
+
+### 新特性
+
+- 在 [#241](https://github.com/rooch-network/rooch/pull/241) 中，支持 Metamask 的以太坊的交易签名验证。
+
+- 在 [#229](https://github.com/rooch-network/rooch/pull/238) 中实现了交易 RPC 功能。
+- 在 [#257](https://github.com/rooch-network/rooch/pull/257) 中实现事件分页和重构事件输出。
+- 让 `verifier` 初始化函数，添加编译验证。
+
+### 改进和修复
+
+- 在 [#220](https://github.com/rooch-network/rooch/pull/220) 中完成了 `cli`，`server`，`testsuite` 的优化重构，添加客户端配置，添加 `ServerConfig`（默认），将 `WalletContext` 添加到 CLI。
+- 在 [#242](https://github.com/rooch-network/rooch/pull/242) 中完成了 MoveOS VM 和 Session 的重构。
+- 在 [#246](https://github.com/rooch-network/rooch/pull/246) 中将代表交易的变量 `tnx` 统一重命名为 `tx`。
+- 把 `Result` 替换为 `VMResult`、`PartialVMResult` 并重构 `verify_entry_function` 以获取更完整的错误信息。
+
+- 在 [#250](https://github.com/rooch-network/rooch/pull/250) 将 `TransactionOutput` 添加到响应中。定义 `TransactionSequenceInfoView` 和 `TransactionExecutionView`，将所有枚举 json 设为小写。
+- 在 [#251](https://github.com/rooch-network/rooch/pull/251) 中修复了事件查询返回 `null` 的问题。
+- 重构 State API 和 State RPC，使 State API 更清晰，关于详细修改请参阅 [#255](https://github.com/rooch-network/rooch/pull/255) 这个 PR。
+- 在 [#256](https://github.com/rooch-network/rooch/pull/256) 更新了基本对象示例并添加了 README 文档。
+- 在 [#262](https://github.com/rooch-network/rooch/pull/262) 中，将 `MoveVmExt` 重命名为 `MoveOSVM`，将 `SessionExt` 重命名为 `MoveOSSesson`。将一些 `table_changeset` 变量重命名为 `state_changeset`。给 `MoveOSSession` 添加文档描述。
+
+### Rooch 社区开发会议
+ 
+- Rooch 存储相关设计和实现任务规划到 `v0.2`。
+- 讨论 `executeTransaction -> TransactionInfo + Transaction Output`，交易信息需要包含排序信息和执行信息，接下来需要实现交易信息的查询功能。
+- 讨论账户的 `sequence_number` 验证和更新方案，账户抽象（签名抽象，`sequence_number` 由系统完成，Gas 抽象）。关于代付 Gas 的功能的设计，Rooch 选择支持任意 Token 代付 Gas。
+- 讨论 ETH RPC Proxy 和 CallData BCS 解析问题。
+- CLI 参数类型注解支持，相关讨论请参见 [#217](https://github.com/rooch-network/rooch/issues/217)。
+- 禁用全局存储的相关方法，`move_to`、`move_from`、`borrow_global`、`borrow_global_mut`，详细信息请参见 [#248](https://github.com/rooch-network/rooch/issues/248)。
+- 讨论 Rooch 文档和测试的格式。
+- Rooch 周报（开发、市场、活动、其他），每周一（UTC+8）发布，汇报上一周相关进展。
+
+- [2023-06-08 Rooch 社区会议录屏](https://drive.google.com/file/d/1qhEKqJDEvoF1wOVXsNvIWLPY1VJ7q4Q4/view)
+    - MoveOS 会话重构和交易最终确定性的分享
+    - Discord 讨论习惯：善用 thread
