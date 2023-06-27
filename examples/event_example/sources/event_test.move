@@ -1,6 +1,6 @@
 module rooch_examples::event_test {
     use moveos_std::storage_context::{Self, StorageContext};
-    use moveos_std::events;
+    use moveos_std::event;
     use moveos_std::tx_context;
 
     #[test_only]

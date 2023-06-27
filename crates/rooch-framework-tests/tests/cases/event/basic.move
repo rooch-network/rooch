@@ -20,7 +20,7 @@ module test::m {
 script {
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::tx_context;
-    use moveos_std::events;
+    use moveos_std::event;
     use test::m::{Self, WithdrawEvent};
 
     fun main(ctx: &mut StorageContext) {

@@ -1,5 +1,5 @@
 module rooch_examples::entry_function {
-   use moveos_std::events;
+   use moveos_std::event;
    use moveos_std::object_id::ObjectID;
    use moveos_std::storage_context::StorageContext;
 

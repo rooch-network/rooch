@@ -15,7 +15,7 @@ module moveos_std::tx_context {
     friend moveos_std::object;
     friend moveos_std::raw_table;
     friend moveos_std::account_storage;
-    friend moveos_std::events;
+    friend moveos_std::event;
 
     /// Number of bytes in an tx hash (which will be the transaction digest)
     const TX_HASH_LENGTH: u64 = 32;

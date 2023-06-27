@@ -1,7 +1,7 @@
 /// `EventHandle`s with unique event handle id (GUID). It contains a counter for the number
 /// of `EventHandle`s it generates. An `EventHandle` is used to count the number of
 /// events emitted to a handle and emit events to the event store.
-module moveos_std::events {
+module moveos_std::event {
     use moveos_std::bcs;
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::tx_context::{Self};

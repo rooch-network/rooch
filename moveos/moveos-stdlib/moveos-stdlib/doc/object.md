@@ -106,7 +106,7 @@ The private generic is indicate the T should be defined in the same module as th
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(ctx: &<b>mut</b> TxContext, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt; {
     <b>let</b> id = <a href="tx_context.md#0x2_tx_context_fresh_object_id">tx_context::fresh_object_id</a>(ctx);
     <b>let</b> obj = <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;{id, value, owner};
-    //TODO after add event, then remove the <a href="">debug</a> info
+    //TODO after add <a href="event.md#0x2_event">event</a>, then remove the <a href="">debug</a> info
     <a href="_print">debug::print</a>(&obj);
     obj
 }
