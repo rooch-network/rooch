@@ -8,7 +8,11 @@ use move_cli::base::docgen::Docgen;
 use move_core_types::account_address::AccountAddress;
 use move_package::{compilation::compiled_package::CompiledPackage, BuildConfig};
 use moveos_verifier::build::run_verifier;
-use std::{collections::BTreeMap, io::stderr, path::PathBuf};
+use std::{
+    collections::BTreeMap,
+    io::stderr,
+    path::{Path, PathBuf},
+};
 pub mod dependency_order;
 
 #[derive(Debug, Clone)]
@@ -103,6 +107,15 @@ impl Stdlib {
                 "all modules must have same address"
             );
         }
+        Self::build_doc(package_path.as_path(), build_config)?;
+        Ok(StdlibPackage {
+            genesis_account,
+            path: package_path,
+            package: compiled_package,
+        })
+    }
+
+    fn build_doc(package_path: &Path, build_config: BuildConfig) -> Result<()> {
         let current_path = std::env::current_dir().unwrap();
         let docgen = Docgen {
             section_level_start: Option::None,
@@ -112,20 +125,16 @@ impl Stdlib {
             exclude_impl: false,
             toc_depth: Option::None,
             no_collapsed_sections: false,
-            output_directory: Option::None,
+            output_directory: None,
             template: vec!["doc_template/overview.md".to_string()],
             references_file: Option::None,
             include_dep_diagrams: false,
             include_call_diagrams: false,
             compile_relative_to_output_dir: false,
         };
-        docgen.execute(Option::Some(package_path.clone()), build_config)?;
+        docgen.execute(Option::Some(package_path.to_path_buf()), build_config)?;
         std::env::set_current_dir(current_path).unwrap();
-        Ok(StdlibPackage {
-            genesis_account,
-            path: package_path,
-            package: compiled_package,
-        })
+        Ok(())
     }
 
     pub fn build_error_code_map() {

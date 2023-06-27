@@ -16,7 +16,6 @@ script {
 script {
     use std::signer;
     use moveos_std::bcs;
-    use moveos_std::bcs;
 
     fun main(s: signer) {
         let addr = signer::address_of(&s);
