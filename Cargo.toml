@@ -227,7 +227,7 @@ move-ir-types = { git = "https://github.com/rooch-network/move", rev = "5597bcfd
 # move-transactional-test-runner = { path = "../../move-language/move/language/testing-infra/transactional-test-runner" }
 
 [profile.release]
-debug = true
+debug = false
 overflow-checks = true
 
 # The performance build is not currently recommended

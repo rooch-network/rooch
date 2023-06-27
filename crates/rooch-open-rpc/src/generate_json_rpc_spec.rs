@@ -21,7 +21,7 @@ pub fn rooch_rpc_doc(version: &str) -> Project {
         "Rooch JSON-RPC API for interaction with rooch server. ",
         "Rooch Network",
         "https://rooch.network",
-        "build@rooch.com", // TODO: Determine the specific address
+        "opensource@rooch.network",
         "Apache-2.0",
         "https://raw.githubusercontent.com/rooch-network/rooch/main/LICENSE",
     )
