@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+pub mod rpc;
+
 use anyhow::{Context, Result};
 use serde::{de::DeserializeOwned, Serialize};
 use std::{fmt::Debug, fs, path::Path, path::PathBuf};

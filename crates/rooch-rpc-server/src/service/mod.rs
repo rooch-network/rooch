@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::jsonrpc_types::ExecuteTransactionResponse;
 use anyhow::{bail, Result};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
@@ -13,6 +12,7 @@ use moveos_types::state::{AnnotatedState, State};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_proposer::proxy::ProposerProxy;
+use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponse;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::address::{MultiChainAddress, RoochAddress};
 use rooch_types::transaction::TransactionSequenceMapping;

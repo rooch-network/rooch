@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::api::RoochRpcModule;
 use crate::server::eth_server::EthServer;
 use crate::server::rooch_server::RoochServer;
 use crate::server::wallet_server::WalletServer;
@@ -12,26 +11,24 @@ use coerce::actor::{system::ActorSystem, IntoActor};
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
+use rooch_config::rpc::server_config::ServerConfig;
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_key::key_derive::generate_new_key;
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
 use rooch_proposer::proxy::ProposerProxy;
+use rooch_rpc_api::api::RoochRpcModule;
 use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochDB;
 use serde_json::json;
-use server_config::ServerConfig;
 use std::fmt::Debug;
 use std::net::SocketAddr;
 use std::time::Duration;
 use tracing::info;
 
-pub mod api;
-pub mod jsonrpc_types;
 pub mod server;
-pub mod server_config;
 pub mod service;
 
 pub fn http_client(url: impl AsRef<str>) -> Result<HttpClient> {

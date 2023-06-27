@@ -8,7 +8,8 @@ use moveos_types::{
     state::{MoveStructType, State},
     transaction::FunctionCall,
 };
-use rooch_server::{
+use rooch_rpc_api::jsonrpc_types::{EventPageView, StructTagView};
+use rooch_rpc_api::{
     api::rooch_api::RoochAPIClient,
     jsonrpc_types::{
         AnnotatedFunctionReturnValueView, AnnotatedStateView, ExecuteTransactionResponseView,
@@ -18,12 +19,11 @@ use rooch_server::{
 use rooch_types::{
     account::Account, address::RoochAddress, transaction::rooch::RoochTransaction, H256,
 };
+use std::sync::Arc;
+use std::time::Duration;
 
 pub mod client_config;
 pub mod wallet_context;
-use rooch_server::jsonrpc_types::{EventPageView, StructTagView};
-use std::sync::Arc;
-use std::time::Duration;
 
 pub struct ClientBuilder {
     request_timeout: Duration,

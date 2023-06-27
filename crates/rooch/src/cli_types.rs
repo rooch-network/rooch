@@ -6,7 +6,7 @@ use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::transaction_argument::TransactionArgument;
 use move_core_types::u256::U256;
-use rooch_client::wallet_context::WalletContext;
+use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_types::error::{RoochError, RoochResult};
 use serde::Serialize;
 use std::fmt::{Display, Formatter};

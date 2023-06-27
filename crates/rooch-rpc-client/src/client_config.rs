@@ -3,9 +3,9 @@
 
 use crate::{Client, ClientBuilder};
 use anyhow::anyhow;
+use rooch_config::rpc::server_config::ServerConfig;
 use rooch_config::Config;
 use rooch_key::keystore::{AccountKeystore, Keystore};
-use rooch_server::server_config::ServerConfig;
 use rooch_types::address::RoochAddress;
 use serde::Deserialize;
 use serde::Serialize;

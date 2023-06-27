@@ -60,6 +60,7 @@ rooch-key = { workspace = true }
 rooch-types = { workspace = true }
 rooch-config = { workspace = true }
 rooch-framework = { workspace = true }
-rooch-server = { workspace = true }
-rooch-client = { workspace = true }
+rooch-rpc-api = { workspace = true }
+rooch-rpc-server = { workspace = true }
+rooch-rpc-client = { workspace = true }
 rooch-integration-test-runner = { workspace = true }

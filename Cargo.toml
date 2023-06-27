@@ -15,8 +15,9 @@ members = [
     "crates/rooch-framework-tests",
     "crates/rooch-genesis",
     "crates/rooch-integration-test-runner",
-    "crates/rooch-server",
-    "crates/rooch-client",
+    "crates/rooch-rpc-server",
+    "crates/rooch-rpc-client",
+    "crates/rooch-rpc-api",
     "crates/rooch",
     "crates/testsuite",
     "crates/rooch-config",
@@ -68,8 +69,9 @@ rooch-framework = { path = "crates/rooch-framework" }
 rooch-framework-tests = { path = "crates/rooch-framework-tests" }
 rooch-integration-test-runner = { path = "crates/rooch-integration-test-runner" }
 rooch-genesis = { path = "crates/rooch-genesis" }
-rooch-server = { path = "crates/rooch-server" }
-rooch-client = { path = "crates/rooch-client" }
+rooch-rpc-server = { path = "crates/rooch-rpc-server" }
+rooch-rpc-client = { path = "crates/rooch-rpc-client" }
+rooch-rpc-api = { path = "crates/rooch-rpc-api" }
 rooch-testsuite = { path = "crates/testsuite" }
 rooch-config = { path = "crates/rooch-config" }
 rooch-sequencer = { path = "crates/rooch-sequencer" }

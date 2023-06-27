@@ -1,12 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::api::wallet_api::WalletApiServer;
-use crate::api::RoochRpcModule;
 use crate::service::RpcService;
 use ethers::types::Bytes;
 use jsonrpsee::core::{async_trait, RpcResult};
 use jsonrpsee::RpcModule;
+use rooch_rpc_api::api::wallet_api::WalletApiServer;
+use rooch_rpc_api::api::RoochRpcModule;
 use rooch_types::address::RoochAddress;
 
 pub struct WalletServer {

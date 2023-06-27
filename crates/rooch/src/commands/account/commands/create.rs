@@ -17,10 +17,10 @@ use moveos_types::{
     transaction::{MoveAction, MoveOSTransaction},
 };
 use once_cell::sync::Lazy;
-use rooch_client::wallet_context::WalletContext;
 use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
 use rooch_key::keystore::{AccountKeystore, Keystore};
-use rooch_server::jsonrpc_types::ExecuteTransactionResponseView;
+use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
+use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_types::{
     address::RoochAddress,
     crypto::BuiltinScheme::Ed25519,

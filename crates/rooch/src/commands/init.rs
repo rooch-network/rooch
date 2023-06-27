@@ -5,9 +5,9 @@ use crate::cli_types::{CommandAction, WalletContextOptions};
 use crate::utils::read_line;
 use async_trait::async_trait;
 use clap::Parser;
-use rooch_client::client_config::{ClientConfig, Env};
 use rooch_config::{rooch_config_dir, Config, ROOCH_CLIENT_CONFIG, ROOCH_KEYSTORE_FILENAME};
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
+use rooch_rpc_client::client_config::{ClientConfig, Env};
 use rooch_types::{crypto::BuiltinScheme, error::RoochResult};
 use std::fs;
 

@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use clap::Parser;
 use move_core_types::value::MoveValue;
 use moveos_types::{move_types::FunctionId, transaction::FunctionCall};
-use rooch_server::jsonrpc_types::{
+use rooch_rpc_api::jsonrpc_types::{
     AnnotatedFunctionReturnValueView, TransactionArgumentView, TypeTagView,
 };
 use rooch_types::error::{RoochError, RoochResult};

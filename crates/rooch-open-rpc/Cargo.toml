@@ -25,7 +25,8 @@ clap = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["full"] }
 fastcrypto = { workspace = true }
 rand = { workspace = true }
-rooch-server = { workspace = true }
+rooch-rpc-server = { workspace = true }
+rooch-rpc-api = { workspace = true }
 
 
 [[example]]

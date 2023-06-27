@@ -8,7 +8,7 @@ use move_binary_format::file_format::CompiledModule;
 use move_bytecode_utils::dependency_graph::DependencyGraph;
 use move_bytecode_utils::Modules;
 use move_cli::Move;
-use rooch_server::jsonrpc_types::ExecuteTransactionResponseView;
+use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use moveos::vm::dependency_order::sort_by_dependency_order;

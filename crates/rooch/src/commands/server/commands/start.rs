@@ -1,7 +1,7 @@
 use crate::cli_types::CommandAction;
 use async_trait::async_trait;
 use clap::Parser;
-use rooch_server::Service;
+use rooch_rpc_server::Service;
 use rooch_types::error::{RoochError, RoochResult};
 use tokio::signal::ctrl_c;
 #[cfg(unix)]

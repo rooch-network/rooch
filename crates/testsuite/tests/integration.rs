@@ -4,9 +4,9 @@ use cucumber::{given, then, World as _};
 use jpst::TemplateContext;
 use move_core_types::account_address::AccountAddress;
 use rooch::RoochCli;
-use rooch_client::wallet_context::WalletContext;
 use rooch_config::rooch_config_dir;
-use rooch_server::Service;
+use rooch_rpc_client::wallet_context::WalletContext;
+use rooch_rpc_server::Service;
 use serde_json::Value;
 use tracing::info;
 
