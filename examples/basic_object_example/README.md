@@ -30,6 +30,21 @@ rooch move run --function {ACCOUNT_ADDRESS}::something_aggregate::create_somethi
 
 ### Get events by event handle type
 
+Run this command to get events by event handle type:
+
+```shell
+curl --location --request POST 'http://localhost:50051' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+ "id":101,
+ "jsonrpc":"2.0",
+ "method":"rooch_getEventsByEventHandle",
+ "params": [
+    "{EVENT_HANDLE_TYPE}", "{CURSOR}", "{LIMIT}"
+]
+}'
+```
+
 An example:
 
 ```
