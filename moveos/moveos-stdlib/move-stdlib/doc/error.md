@@ -198,7 +198,7 @@ Construct a canonical error code from a category and a reason.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="error.md#0x1_error_canonical">canonical</a>(category: u64, reason: u64): u64 {
-  (category * 10000) + reason
+  (category &lt;&lt; 16) + reason
 }
 </code></pre>
 

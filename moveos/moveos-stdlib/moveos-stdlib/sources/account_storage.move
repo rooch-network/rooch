@@ -354,4 +354,26 @@ module moveos_std::account_storage {
         assert!(exist_account_storage(&ctx , sender_addr), 1);
         storage_context::drop_test_context(ctx);
     }
+
+    #[test(sender=@0x42)]
+    fun test_ensure_move_from_and_exists(sender: signer){
+        let sender_addr = signer::address_of(&sender);
+        let ctx = storage_context::new_test_context(sender_addr);
+        let test_exists = global_exists<Test>(&ctx, sender_addr);
+        assert!(!test_exists, 1);
+        global_move_to(&mut ctx, &sender, Test{
+            addr: sender_addr,
+            version: 1,
+        });
+        let test_exists = global_exists<Test>(&ctx, sender_addr);
+        assert!(test_exists, 2);
+        let test = global_move_from<Test>(&mut ctx, sender_addr); 
+        let test_exists = global_exists<Test>(&ctx, sender_addr);
+        assert!(!test_exists, 3);
+        let Test{
+            addr: _,
+            version: _
+        } = test;
+        storage_context::drop_test_context(ctx);
+    }
 }

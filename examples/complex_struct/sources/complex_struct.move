@@ -107,16 +107,6 @@ module rooch_examples::complex_struct {
    fun init(ctx: &mut StorageContext, sender: signer) {
       
       let addr = signer::address_of(&sender);
-      //When we try to re publish the modules, the `ComplexStruct` already inited
-      //so we need to remove it first. 
-      //There some bugs in the global_exists| global_move_from | global_move_to
-      //Seam like the VM think the resource after move_from still exists.
-      //FIXME
-      // if (account_storage::global_exists<ComplexStruct>(ctx, addr)){
-      //    let old_struct = account_storage::global_move_from<ComplexStruct>(ctx, addr);
-      //    drop(old_struct);
-      // };
-      
       let object_id = {
          let tx_ctx = storage_context::tx_context_mut(ctx);
          tx_context::fresh_object_id(tx_ctx) 
