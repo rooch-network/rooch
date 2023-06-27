@@ -1,8 +1,8 @@
 /// `EventHandle`s with unique event handle id (GUID). It contains a counter for the number
 /// of `EventHandle`s it generates. An `EventHandle` is used to count the number of
 /// events emitted to a handle and emit events to the event store.
-module moveos_std::events {
-    use std::bcs;
+module moveos_std::event {
+    use moveos_std::bcs;
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::tx_context::{Self};
     use moveos_std::object_storage::{Self, ObjectStorage};
@@ -14,7 +14,6 @@ module moveos_std::events {
     use std::signer;
     use std::hash;
     use moveos_std::type_info;
-    use moveos_std::bcd;
 
     /// A handle for an event such that:
     /// 1. Other modules can emit events to this handle.
@@ -27,7 +26,7 @@ module moveos_std::events {
     /// A globally unique ID for this event stream. event handler id equal to guid.
     public fun derive_event_handle_id<T: key>(): ObjectID {
         let type_info = type_info::type_of<T>();
-        let event_handle_address = bcd::to_address(hash::sha3_256(bcs::to_bytes(&type_info)));
+        let event_handle_address = bcs::to_address(hash::sha3_256(bcs::to_bytes(&type_info)));
         object_id::address_to_object_id(event_handle_address)
     }
 

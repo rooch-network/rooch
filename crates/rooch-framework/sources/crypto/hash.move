@@ -1,7 +1,15 @@
 /// Module which defines hash functions. Note that Sha-256 and Sha3-256 is available in the std::hash module in the
-/// standard library.
-/// Conflict with the standard library, change the name for hash
-module rooch_framework::rooch_hash {
+/// Move standard library and wrap the functions at here.
+module rooch_framework::hash {
+   
+   public fun sha2_256(data: vector<u8>): vector<u8> {
+      std::hash::sha2_256(data)
+   }
+   
+   public fun sha3_256(data: vector<u8>): vector<u8> {
+      std::hash::sha3_256(data)
+   }
+
    /// @param data: Arbitrary binary data to hash
    /// Hash the input bytes using Blake2b-256 and returns 32 bytes.
    native public fun blake2b256(data: &vector<u8>): vector<u8>;

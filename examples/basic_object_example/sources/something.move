@@ -1,7 +1,7 @@
 module rooch_examples::something {
     use std::string::String;
 
-    use moveos_std::events;
+    use moveos_std::event;
     use moveos_std::object::{Self, Object};
     use moveos_std::object_id::ObjectID;
     use moveos_std::object_storage;
@@ -70,7 +70,7 @@ module rooch_examples::something {
             owner,
             value,
         );
-        events::emit_event(storage_ctx, SomethingCreated {
+        event::emit_event(storage_ctx, SomethingCreated {
             obj_id: object::id(&obj),
             i,
             j,
@@ -102,7 +102,7 @@ module rooch_examples::something {
                            val: u128
     ) {
         table::add(table, key, val);
-        events::emit_event(storage_ctx, BarTableItemAdded {
+        event::emit_event(storage_ctx, BarTableItemAdded {
             item: KeyValuePair {
                 key,
                 value: val,
@@ -117,7 +117,7 @@ module rooch_examples::something {
         val: String
     ) {
         table::add(&mut object::borrow_mut(obj).fooTable, key, val);
-        // events::emit_event(storage_ctx, FooTableItemAdded {
+        // event::emit_event(storage_ctx, FooTableItemAdded {
         //     key
         // });
         let _ = storage_ctx;

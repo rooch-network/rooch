@@ -2,9 +2,8 @@
 
 module moveos_std::address {
     use std::ascii;
-    use std::bcs;
+    use moveos_std::bcs;
     use moveos_std::hex;
-    use moveos_std::bcd;
 
     /// The length of an address, in bytes
     const LENGTH: u64 = 32;
@@ -31,7 +30,7 @@ module moveos_std::address {
     /// Convert `bytes` into an address.
     /// Aborts with `EAddressParseError` if the length of `bytes` is invalid length
     public fun from_bytes(bytes: vector<u8>): address{
-        bcd::to_address(bytes)
+        bcs::to_address(bytes)
     }
 
 

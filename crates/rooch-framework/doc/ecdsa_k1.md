@@ -11,7 +11,7 @@
 -  [Function `verify`](#0x3_ecdsa_k1_verify)
 
 
-<pre><code><b>use</b> <a href="rooch_hash.md#0x3_rooch_hash">0x3::rooch_hash</a>;
+<pre><code><b>use</b> <a href="hash.md#0x3_hash">0x3::hash</a>;
 </code></pre>
 
 
@@ -74,7 +74,7 @@ key, otherwise throw error. This is similar to ecrecover in Ethereum, can only b
 applied to Secp256k1 signatures.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_ecrecover">ecrecover</a>(signature: &<a href="">vector</a>&lt;u8&gt;, msg: &<a href="">vector</a>&lt;u8&gt;, <a href="">hash</a>: u8): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_ecrecover">ecrecover</a>(signature: &<a href="">vector</a>&lt;u8&gt;, msg: &<a href="">vector</a>&lt;u8&gt;, <a href="../doc/hash.md#0x1_hash">hash</a>: u8): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -83,7 +83,7 @@ applied to Secp256k1 signatures.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>native</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_ecrecover">ecrecover</a>(signature: &<a href="">vector</a>&lt;u8&gt;, msg: &<a href="">vector</a>&lt;u8&gt;, <a href="">hash</a>: u8): <a href="">vector</a>&lt;u8&gt;;
+<pre><code><b>public</b> <b>native</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_ecrecover">ecrecover</a>(signature: &<a href="">vector</a>&lt;u8&gt;, msg: &<a href="">vector</a>&lt;u8&gt;, <a href="../doc/hash.md#0x1_hash">hash</a>: u8): <a href="">vector</a>&lt;u8&gt;;
 </code></pre>
 
 
@@ -128,7 +128,7 @@ Secp256k1. This is an non-recoverable signature without recovery id.
 If the signature is valid to the pubkey and hashed message, return true. Else false.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_verify">verify</a>(signature: &<a href="">vector</a>&lt;u8&gt;, msg: &<a href="">vector</a>&lt;u8&gt;, <a href="">hash</a>: u8): bool
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_verify">verify</a>(signature: &<a href="">vector</a>&lt;u8&gt;, msg: &<a href="">vector</a>&lt;u8&gt;, <a href="../doc/hash.md#0x1_hash">hash</a>: u8): bool
 </code></pre>
 
 
@@ -140,7 +140,7 @@ If the signature is valid to the pubkey and hashed message, return true. Else fa
 <pre><code><b>public</b> <b>native</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_verify">verify</a>(
    signature: &<a href="">vector</a>&lt;u8&gt;,
    msg: &<a href="">vector</a>&lt;u8&gt;,
-   <a href="">hash</a>: u8
+   <a href="../doc/hash.md#0x1_hash">hash</a>: u8
 ): bool;
 </code></pre>
 

@@ -1,6 +1,6 @@
 module rooch_examples::event_test {
     use moveos_std::storage_context::{Self, StorageContext};
-    use moveos_std::events;
+    use moveos_std::event;
     use moveos_std::tx_context;
 
     #[test_only]
@@ -18,7 +18,7 @@ module rooch_examples::event_test {
         amount: u64,
     ) {
         let addr = tx_context::sender(storage_context::tx_context(ctx));
-        events::emit_event<WithdrawEvent>(ctx, WithdrawEvent {
+        event::emit_event<WithdrawEvent>(ctx, WithdrawEvent {
             addr,
             amount,
         });
@@ -26,7 +26,7 @@ module rooch_examples::event_test {
 
     #[test]
     fun test_get_test_event_handle() {
-        let event_handle_id = events::derive_event_handle_id<WithdrawEvent>();
+        let event_handle_id = event::derive_event_handle_id<WithdrawEvent>();
         debug::print(&120120);
         debug::print(&event_handle_id);
     }
@@ -36,7 +36,7 @@ module rooch_examples::event_test {
     //     let sender_addr = signer::address_of(&sender);
     //     let ctx = storage_context::new_test_context(sender_addr);
     //
-    //     events::emit_event<WithdrawEvent>(&mut ctx, WithdrawEvent {
+    //     event::emit_event<WithdrawEvent>(&mut ctx, WithdrawEvent {
     //         addr: signer::address_of(&sender),
     //         amount: 100,
     //     });

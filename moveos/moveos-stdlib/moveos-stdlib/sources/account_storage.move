@@ -5,7 +5,7 @@ module moveos_std::account_storage {
 
     use std::string::String;
     use std::signer;
-    use std::bcs;
+    use moveos_std::bcs;
     use std::vector;
     use moveos_std::type_table::{Self, TypeTable};
     use moveos_std::table::{Self, Table};

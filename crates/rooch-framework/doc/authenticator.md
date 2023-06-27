@@ -22,7 +22,7 @@
 -  [Function `secp256k1_signature`](#0x3_authenticator_secp256k1_signature)
 
 
-<pre><code><b>use</b> <a href="">0x2::bcd</a>;
+<pre><code><b>use</b> <a href="">0x2::bcs</a>;
 </code></pre>
 
 
@@ -314,7 +314,7 @@ If not, just abort
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_decode_authenticator_info">decode_authenticator_info</a>(data: <a href="">vector</a>&lt;u8&gt;): (u64, <a href="authenticator.md#0x3_authenticator_Authenticator">Authenticator</a>) {
-   <b>let</b> info = moveos_std::bcd::from_bytes&lt;<a href="authenticator.md#0x3_authenticator_AuthenticatorInfo">AuthenticatorInfo</a>&gt;(data);
+   <b>let</b> info = moveos_std::bcs::from_bytes&lt;<a href="authenticator.md#0x3_authenticator_AuthenticatorInfo">AuthenticatorInfo</a>&gt;(data);
    <b>let</b> <a href="authenticator.md#0x3_authenticator_AuthenticatorInfo">AuthenticatorInfo</a> { sequence_number, <a href="authenticator.md#0x3_authenticator">authenticator</a> } = info;
    (sequence_number, <a href="authenticator.md#0x3_authenticator">authenticator</a>)
 }
@@ -341,7 +341,7 @@ If not, just abort
 
 <pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_decode_ed25519_authenticator">decode_ed25519_authenticator</a>(<a href="authenticator.md#0x3_authenticator">authenticator</a>: <a href="authenticator.md#0x3_authenticator_Authenticator">Authenticator</a>): <a href="authenticator.md#0x3_authenticator_Ed25519Authenticator">Ed25519Authenticator</a> {
    <b>assert</b>!(<a href="authenticator.md#0x3_authenticator">authenticator</a>.scheme == <a href="authenticator.md#0x3_authenticator_SCHEME_ED25519">SCHEME_ED25519</a>, <a href="authenticator.md#0x3_authenticator_EUnsupportedScheme">EUnsupportedScheme</a>);
-   moveos_std::bcd::from_bytes&lt;<a href="authenticator.md#0x3_authenticator_Ed25519Authenticator">Ed25519Authenticator</a>&gt;(<a href="authenticator.md#0x3_authenticator">authenticator</a>.payload)
+   moveos_std::bcs::from_bytes&lt;<a href="authenticator.md#0x3_authenticator_Ed25519Authenticator">Ed25519Authenticator</a>&gt;(<a href="authenticator.md#0x3_authenticator">authenticator</a>.payload)
 }
 </code></pre>
 
@@ -430,7 +430,7 @@ If not, just abort
 
 <pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_decode_multied25519_authenticator">decode_multied25519_authenticator</a>(<a href="authenticator.md#0x3_authenticator">authenticator</a>: <a href="authenticator.md#0x3_authenticator_Authenticator">Authenticator</a>): <a href="authenticator.md#0x3_authenticator_MultiEd25519Authenticator">MultiEd25519Authenticator</a> {
    <b>assert</b>!(<a href="authenticator.md#0x3_authenticator">authenticator</a>.scheme == <a href="authenticator.md#0x3_authenticator_SCHEME_MULTIED25519">SCHEME_MULTIED25519</a>, <a href="authenticator.md#0x3_authenticator_EUnsupportedScheme">EUnsupportedScheme</a>);
-   moveos_std::bcd::from_bytes&lt;<a href="authenticator.md#0x3_authenticator_MultiEd25519Authenticator">MultiEd25519Authenticator</a>&gt;(<a href="authenticator.md#0x3_authenticator">authenticator</a>.payload)
+   moveos_std::bcs::from_bytes&lt;<a href="authenticator.md#0x3_authenticator_MultiEd25519Authenticator">MultiEd25519Authenticator</a>&gt;(<a href="authenticator.md#0x3_authenticator">authenticator</a>.payload)
 }
 </code></pre>
 
@@ -455,7 +455,7 @@ If not, just abort
 
 <pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_decode_secp256k1_authenticator">decode_secp256k1_authenticator</a>(<a href="authenticator.md#0x3_authenticator">authenticator</a>: <a href="authenticator.md#0x3_authenticator_Authenticator">Authenticator</a>): <a href="authenticator.md#0x3_authenticator_Secp256k1Authenticator">Secp256k1Authenticator</a> {
    <b>assert</b>!(<a href="authenticator.md#0x3_authenticator">authenticator</a>.scheme == <a href="authenticator.md#0x3_authenticator_SCHEME_SECP256K1">SCHEME_SECP256K1</a>, <a href="authenticator.md#0x3_authenticator_EUnsupportedScheme">EUnsupportedScheme</a>);
-   moveos_std::bcd::from_bytes&lt;<a href="authenticator.md#0x3_authenticator_Secp256k1Authenticator">Secp256k1Authenticator</a>&gt;(<a href="authenticator.md#0x3_authenticator">authenticator</a>.payload)
+   moveos_std::bcs::from_bytes&lt;<a href="authenticator.md#0x3_authenticator_Secp256k1Authenticator">Secp256k1Authenticator</a>&gt;(<a href="authenticator.md#0x3_authenticator">authenticator</a>.payload)
 }
 </code></pre>
 

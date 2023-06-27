@@ -192,7 +192,7 @@ If the authenticator is invaid, abort this function.
     <b>if</b> (scheme == <a href="transaction_validator.md#0x3_transaction_validator_ED25519_SCHEME">ED25519_SCHEME</a>) {
         <b>let</b> ed25519_authenicator = <a href="authenticator.md#0x3_authenticator_decode_ed25519_authenticator">authenticator::decode_ed25519_authenticator</a>(<a href="authenticator.md#0x3_authenticator">authenticator</a>);
         //FIXME we need <b>to</b> check the <b>public</b> key and <b>address</b> relationship
-        //The <b>address</b> is the <b>public</b> key's <a href="">hash</a>
+        //The <b>address</b> is the <b>public</b> key's <a href="../doc/hash.md#0x1_hash">hash</a>
         //We also need <b>to</b> check the <b>public</b> key via <a href="account.md#0x3_account">account</a>'s auth key, <b>if</b> the user rotate the auth key.
         <b>assert</b>!(
         <a href="ed25519.md#0x3_ed25519_verify">ed25519::verify</a>(&<a href="authenticator.md#0x3_authenticator_ed25519_signature">authenticator::ed25519_signature</a>(&ed25519_authenicator),
@@ -205,7 +205,7 @@ If the authenticator is invaid, abort this function.
         <a href="ecdsa_k1.md#0x3_ecdsa_k1_verify">ecdsa_k1::verify</a>(
             &<a href="authenticator.md#0x3_authenticator_secp256k1_signature">authenticator::secp256k1_signature</a>(&ecdsa_k1_authenicator),
             &<a href="_tx_hash">storage_context::tx_hash</a>(ctx),
-            0 // KECCAK256:0, SHA256:1, TODO: The <a href="">hash</a> type may need <b>to</b> be passed through the <a href="authenticator.md#0x3_authenticator">authenticator</a>
+            0 // KECCAK256:0, SHA256:1, TODO: The <a href="../doc/hash.md#0x1_hash">hash</a> type may need <b>to</b> be passed through the <a href="authenticator.md#0x3_authenticator">authenticator</a>
         ),
         <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EInvalidAuthenticator">EInvalidAuthenticator</a>));
     };
