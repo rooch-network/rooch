@@ -1,25 +1,11 @@
 processed 2 tasks
 
-task 1 'publish'. lines 3-33:
+task 1 'publish'. lines 3-22:
 Error: error: type `&mut signer` is not supported as a parameter type
-   ┌─ /tmp/tempfile:9:5
-   │  
- 9 │ ╭     entry public fun test_entry_function_valid_reference_mut_signer( _: &mut signer ){
-10 │ │     }
-   │ ╰─────^
-
-error: type `&mut tx_context::TxContext` is not supported as a parameter type
-   ┌─ /tmp/tempfile:17:5
-   │  
-17 │ ╭     entry public fun test_entry_function_valid_reference_mut_tx_context( _: &mut tx_context::TxContext ){
-18 │ │     }
-   │ ╰─────^
-
-error: type `&tx_context::TxContext` is not supported as a parameter type
-   ┌─ /tmp/tempfile:15:5
-   │  
-15 │ ╭     entry public fun test_entry_function_valid_reference_tx_context( _: & tx_context::TxContext ){
-16 │ │     }
-   │ ╰─────^
+  ┌─ /tmp/tempfile:8:5
+  │  
+8 │ ╭     entry public fun test_entry_function_valid_reference_mut_signer( _: &mut signer ){
+9 │ │     }
+  │ ╰─────^
 
 

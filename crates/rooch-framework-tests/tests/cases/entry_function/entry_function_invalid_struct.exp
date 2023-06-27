@@ -1,11 +1,18 @@
 processed 2 tasks
 
-task 1 'publish'. lines 3-12:
+task 1 'publish'. lines 3-18:
 Error: error: type `test::Foo` is not supported as a parameter type
-  ┌─ /tmp/tempfile:8:5
-  │  
-8 │ ╭     entry public fun test_entry_function_invalid_struct( _foo: Foo ){
-9 │ │     }
-  │ ╰─────^
+   ┌─ /tmp/tempfile:9:5
+   │  
+ 9 │ ╭     entry public fun test_entry_function_invalid_struct( _foo: Foo ){
+10 │ │     }
+   │ ╰─────^
+
+error: type `&tx_context::TxContext` is not supported as a parameter type
+   ┌─ /tmp/tempfile:11:5
+   │  
+11 │ ╭     entry public fun test_entry_function_invalid_struct_txcontext( _: &tx_context::TxContext ){
+12 │ │     }
+   │ ╰─────^
 
 
