@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use moveos_types::{access_path::AccessPath, object::ObjectID};
