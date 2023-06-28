@@ -1,0 +1,90 @@
+aggregates:
+  Article:
+    metadata:
+      Preprocessors: ["MOVE_CRUD_IT"]
+    id:
+      name: Id
+      type: ObjectID
+
+    properties:
+      Title:
+        type: String
+        length: 200
+      Body:
+        type: String
+        length: 2000
+      Comments:
+        itemType: Comment
+
+    entities:
+      Comment:
+        metadata:
+          Preprocessors: ["MOVE_CRUD_IT"]
+        id:
+          name: CommentSeqId
+          type: u64
+        properties:
+          Commenter:
+            type: String
+            length: 100
+          Body:
+            type: String
+            length: 500
+
+    methods:
+#      Create:
+#        isCreationCommand: true
+#        event:
+#          name: ArticleCreated
+#        parameters:
+#          Title:
+#            type: String
+#            length: 200
+#          Body:
+#            type: String
+#            length: 2000
+#      Update:
+#        event:
+#          name: ArticleUpdated
+#        parameters:
+#          Title:
+#            type: String
+#            length: 200
+#          Body:
+#            type: String
+#            length: 2000
+#      Delete:
+#        isDeletionCommand: true
+#        event:
+#          name: ArticleDeleted
+
+#      AddComment:
+#        event:
+#          name: CommentAdded
+#        parameters:
+#          CommentSeqId:
+#            type: u64
+#          Commenter:
+#            type: String
+#            length: 100
+#          Body:
+#            type: String
+#            length: 500
+#      RemoveComment:
+#        event:
+#          name: CommentRemoved
+#        parameters:
+#          CommentSeqId:
+#            type: u64
+#      UpdateComment:
+#        event:
+#          name: CommentUpdated
+#        parameters:
+#          CommentSeqId:
+#            type: u64
+#          Commenter:
+#            type: String
+#            length: 100
+#          Body:
+#            type: String
+#            length: 500
