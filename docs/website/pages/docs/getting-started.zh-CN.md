@@ -1,21 +1,21 @@
 # Getting started with Rooch
 
-## 什么是 Rooch
+## 1. 什么是 Rooch
 
 
-## 创建新的 Rooch 项目
+## 2. 创建新的 Rooch 项目
 
 这部分将引导你如何安装 Rooch，以及创建 Hello World 程序。
 
-### 1. 安装 Rooch
+### 2.1 安装 Rooch
 
-- 下载
+#### 2.1.1 下载
 
 ```shell
 wget https://github.com/rooch-network/rooch/releases/download/v0.1-preview/rooch-ubuntu-latest.zip
 ```
 
-- 解压
+#### 2.1.2 解压
 
 ```shell
 unzip rooch-ubuntu-latest.zip
@@ -29,7 +29,7 @@ rooch-artifacts
 └── rooch
 ```
 
-- 运行
+#### 2.1.3 运行
 
 ```shell
 ./rooch
@@ -61,20 +61,20 @@ SUBCOMMANDS:
     transaction
 ```
 
-- 加入 PATH
+#### 2.1.4 加入 PATH
 
 为了方便后续使用，建议将 `rooch` 放入能被系统环境变量 `PATH` 检索的路径，或者将当前的解压目录通过 `export` 导出到 `PATH` 中。
 
 
-### 2. Hello Rooch
+### 2.2 Hello Rooch
 
-- 初始化 Rooch 配置
+#### 2.2.1 初始化 Rooch 配置
 
 ```shell
 rooch init
 ```
 
-- 创建一个 Move 项目
+#### 2.2.2 创建一个 Move 项目
 
 ```shell
 move move new hello_rooch
@@ -107,4 +107,7 @@ moveos_std =  "0x2"
 rooch_framework =  "0x3"
 ```
 
-  - 分
+- 在 TOML 文件中包含三个表：`package`、`dependencies` 和 `addresses`，存放项目所需的一些元信息。
+- `package` 表用来存放项目的一些描述信息，这里包含两个键值对 `name` 和 `version` 来描述项目名和项目的版本号。
+- `dependencies` 表用来存放项目所需依赖的元数据。
+- `addresses` 表用来存放项目地址以及模块地址，第一个地址是初始化 Rooch 配置时，生成在 `$HOME/.rooch/rooch_config/rooch.yaml` 中的地址。
