@@ -1,5 +1,5 @@
 [package]
-name = "RoochDemo"
+name = "RoochExamples"
 version = "0.0.1"
 
 [dependencies]
@@ -7,7 +7,10 @@ MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "m
 #MoveosStdlib = { local = "../../rooch/moveos/moveos-stdlib/moveos-stdlib" }
 
 [addresses]
-rooch_demo = "_"
+rooch_examples = "_"
 
 moveos_std = "0x2"
 rooch_framework = "0x3"
+
+[dev-addresses]
+rooch_examples = "0x42"

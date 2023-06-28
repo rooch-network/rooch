@@ -1,10 +1,10 @@
-module rooch_demo::article_remove_comment_logic {
+module rooch_examples::article_remove_comment_logic {
     use moveos_std::object::Object;
     use moveos_std::storage_context::StorageContext;
-    use rooch_demo::article;
-    use rooch_demo::comment_removed;
+    use rooch_examples::article;
+    use rooch_examples::comment_removed;
 
-    friend rooch_demo::article_aggregate;
+    friend rooch_examples::article_aggregate;
 
     public(friend) fun verify(
         storage_ctx: &mut StorageContext,

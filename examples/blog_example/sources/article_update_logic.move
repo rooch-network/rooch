@@ -1,12 +1,12 @@
-module rooch_demo::article_update_logic {
+module rooch_examples::article_update_logic {
     use std::string::String;
 
     use moveos_std::object::Object;
     use moveos_std::storage_context::StorageContext;
-    use rooch_demo::article;
-    use rooch_demo::article_updated;
+    use rooch_examples::article;
+    use rooch_examples::article_updated;
 
-    friend rooch_demo::article_aggregate;
+    friend rooch_examples::article_aggregate;
 
     public(friend) fun verify(
         storage_ctx: &mut StorageContext,
