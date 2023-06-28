@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::metadata::{
     check_metadata_format, check_storage_context_struct_tag, get_metadata_from_compiled_module,
     is_allowed_input_struct, is_defined_or_allowed_in_current_module,

@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::metadata::{run_extended_checks, RuntimeModuleMetadataV1};
 use codespan_reporting::diagnostic::Severity;
 use move_command_line_common::files::MOVE_COMPILED_EXTENSION;

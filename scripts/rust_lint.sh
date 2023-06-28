@@ -1,4 +1,7 @@
-#!/bin/sh
+#!/bin/bash
+# Copyright (c) RoochNetwork
+# SPDX-License-Identifier: Apache-2.0
+
 
 # This assumes you have already installed cargo-sort:
 # cargo install cargo-sort

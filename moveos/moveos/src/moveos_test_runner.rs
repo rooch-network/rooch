@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 #![allow(clippy::type_complexity)]
 
 use anyhow::{anyhow, bail, Result};

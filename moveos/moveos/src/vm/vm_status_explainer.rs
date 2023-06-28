@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use anyhow::Result;
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::FunctionHandleIndex;
