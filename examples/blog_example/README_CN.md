@@ -120,14 +120,14 @@ docker run \
 -v /PATH/TO/test:/myapp \
 wubuku/dddappp-rooch:0.0.1 \
 --dddmlDirectoryPath /myapp/dddml \
---boundedContextName Test.RoochExamples \
+--boundedContextName Test.RoochBlogDemo \
 --roochMoveProjectDirectoryPath /myapp/move \
---boundedContextRoochPackageName RoochExamples \
+--boundedContextRoochPackageName RoochBlogDemo \
 --boundedContextRoochNamedAddress rooch_examples \
---boundedContextJavaPackageName org.test.roochexamples \
+--boundedContextJavaPackageName org.test.roochblogdemo \
 --javaProjectsDirectoryPath /myapp/rooch-java-service \
---javaProjectNamePrefix roochexamples \
---pomGroupId test.roochexamples
+--javaProjectNamePrefix roochblogdemo \
+--pomGroupId test.roochblogdemo
 ```
 
 上面的命令参数很直白：
@@ -162,7 +162,7 @@ rooch move build --named-addresses rooch_examples={ACCOUNT_ADDRESS}
 
 在 `move/sources` 目录中，包含了链上合约项目的所有 Move 源代码。我们先忽略以 `_logic.move` 结尾的文件，介绍一下其他文件。
 
-* `rooch_examples_init.move`。它包含了链上合约的初始化（`initialize`）函数。一般来说，在合约项目部署到链上后，需要首先调用它（只需要调用一次）。不过，因为我们的示例项目比较简单，所以目前工具生成的 `initialize` 函数内没有包含什么有意义的初始化逻辑，我们可以先忽略它。
+* `rooch_blog_demo_init.move`。它包含了链上合约的初始化（`initialize`）函数。一般来说，在合约项目部署到链上后，需要首先调用它（只需要调用一次）。不过，因为我们的示例项目比较简单，所以目前工具生成的 `initialize` 函数内没有包含什么有意义的初始化逻辑，我们可以先忽略它。
 * `article_aggregate.move`。这是 entry functions 所在的地方。现在它包含的对文章和评论进行 Create、Update、Delete 操作的函数。你可以看到，创建评论这个聚合内实体的函数被命名为 `add_comment` 而不是 `create_comment`，删除评论的函数被命名为 `remove_comment` 而不是 `delete_comment`，这其实是为了更容易在阅读时分辨出这些函数是对聚合内部实体的操作，而不是对聚合本身的操作。
 * `article.move`。这个文件包含了“文章”这个聚合根实体的“数据模型”的定义，以及“文章”聚合相关的事件的定义。
 * `comment.move`。这个文件包含了“评论”这个聚合内部实体的“数据模型”的定义。
@@ -233,7 +233,7 @@ rooch move publish --named-addresses rooch_examples={ACCOUNT_ADDRESS}
 使用 `rooch move run` 命令提及一个交易，初始化合约（请注意替换占位符 `{ACCOUNT_ADDRESS}` 为你拥有账户的地址）：
 
 ```shell
-rooch move run --function {ACCOUNT_ADDRESS}::rooch_examples_init::initialize --sender-account {ACCOUNT_ADDRESS}
+rooch move run --function {ACCOUNT_ADDRESS}::rooch_blog_demo_init::initialize --sender-account {ACCOUNT_ADDRESS}
 ```
 
 #### CRUD 文章

@@ -1,5 +1,5 @@
 [package]
-name = "RoochExamples"
+name = "RoochBlogDemo"
 version = "0.0.1"
 
 [dependencies]
