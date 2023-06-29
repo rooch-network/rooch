@@ -517,7 +517,7 @@ where
                             init_function_modules.push(module.self_id())
                         }
                     }
-                    Err(err) => return Err(err.into()),
+                    Err(err) => return Err(err),
                 }
             }
 
