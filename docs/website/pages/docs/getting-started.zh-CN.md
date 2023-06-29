@@ -76,14 +76,16 @@ rooch init
 
 #### 2.2.2 创建一个 Move 项目
 
+使用 `rooch` 封装的 `move new` 命令来创建一个名为 `rooch_counter` 的计数器应用。
+
 ```shell
-move move new hello_rooch
+rooch move new rooch_counter
 ```
 
 生成的 Move 项目里包含一个配置文件 `Move.toml` 和一个用于存放 Move 源代码的 `sources` 目录。
 
 ```shell
-hello_rooch
+rooch_counter
 ├── Move.toml
 └── sources
 ```
@@ -92,7 +94,7 @@ hello_rooch
 
 ```toml
 [package]
-name = "hello_rooch"
+name = "rooch_counter"
 version = "0.0.1"
 
 [dependencies]
@@ -101,7 +103,7 @@ MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "m
 RoochFramework = { git = "https://github.com/rooch-network/rooch.git", subdir = "crates/rooch-framework", rev = "main" }
 
 [addresses]
-hello_rooch =  "0x1b13ecd47456f506874dbf60a9c4856f7a38782463f28f2506b8006a8f3f8064"
+rooch_counter =  "0x1b13ecd47456f506874dbf60a9c4856f7a38782463f28f2506b8006a8f3f8064"
 std =  "0x1"
 moveos_std =  "0x2"
 rooch_framework =  "0x3"
@@ -111,3 +113,38 @@ rooch_framework =  "0x3"
 - `package` 表用来存放项目的一些描述信息，这里包含两个键值对 `name` 和 `version` 来描述项目名和项目的版本号。
 - `dependencies` 表用来存放项目所需依赖的元数据。
 - `addresses` 表用来存放项目地址以及模块地址，第一个地址是初始化 Rooch 配置时，生成在 `$HOME/.rooch/rooch_config/rooch.yaml` 中的地址。
+
+#### 2.2.3 构建合约代码
+
+在 `sources` 目录里创建一个名为 `rooch_counter.move` 的合约文件，就
+
+```move
+module rooch_counter::counter {
+   use moveos_std::account_storage;
+   use moveos_std::storage_context::{StorageContext};
+
+   struct Counter has key, store {
+      value:u64,
+   }
+
+   fun init(ctx: &mut StorageContext, account: &signer){
+      account_storage::global_move_to(ctx, account, Counter{value:0});
+   }
+
+   public fun increase_(ctx: &mut StorageContext) {
+      let counter = account_storage::global_borrow_mut<Counter>(ctx, @rooch_counter);
+      counter.value = counter.value + 1;
+   }
+
+   public entry fun increase(ctx: &mut StorageContext) {
+      Self::increase_(ctx)
+   }
+
+   public fun value(ctx: &StorageContext): u64 {
+      let counter = account_storage::global_borrow<Counter>(ctx, @rooch_counter);
+      counter.value
+   }
+}
+```
+
+<++>
