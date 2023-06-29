@@ -399,9 +399,11 @@ Publish modules to the account's storage
     <b>let</b> i = 0;
     <b>let</b> len = <a href="_length">vector::length</a>(&modules);
     <b>let</b> module_bytes = <a href="_empty">vector::empty</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;();
+
     <b>while</b> (i &lt; len) {
         <b>let</b> m = <a href="_pop_back">vector::pop_back</a>(&<b>mut</b> modules);
         <a href="_push_back">vector::push_back</a>(&<b>mut</b> module_bytes, <a href="move_module.md#0x2_move_module_module_bytes">move_module::module_bytes</a>(m));
+        i = i + 1;
     };
     <a href="account_storage.md#0x2_account_storage_request_publish">request_publish</a>(account_address, module_bytes);
 }

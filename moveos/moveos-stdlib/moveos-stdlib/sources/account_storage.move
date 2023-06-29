@@ -166,16 +166,17 @@ module moveos_std::account_storage {
         let account_storage = borrow_account_storage(storage_context::object_storage(ctx), account);
         exists_module_at_account_storage(account_storage, name) 
     }
-
     /// Publish modules to the account's storage
     public fun publish_modules(_ctx: &mut StorageContext, account: &signer, modules: vector<MoveModule>) {
         let account_address = signer::address_of(account);
         let i = 0;
         let len = vector::length(&modules);
         let module_bytes = vector::empty<vector<u8>>();
+        
         while (i < len) {
             let m = vector::pop_back(&mut modules);
             vector::push_back(&mut module_bytes, move_module::module_bytes(m));
+            i = i + 1;
         };
         request_publish(account_address, module_bytes);
     }
