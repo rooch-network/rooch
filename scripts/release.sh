@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright (c) RoochNetwork
+# SPDX-License-Identifier: Apache-2.0
+
 rm -rf rooch-artifacts/*
 mkdir -p rooch-artifacts/
 cp -v target/release/rooch rooch-artifacts/

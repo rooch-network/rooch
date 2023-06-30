@@ -2,6 +2,11 @@
 
 [Rooch](https://rooch.network) is a modular DApp container with the [Move language](https://github.com/move-language/move).
 
+
+[![Check-Build-Test](https://github.com/rooch-network/rooch/actions/workflows/check_build_test.yml/badge.svg)](https://github.com/rooch-network/rooch/actions/workflows/check_build_test.yml)
+[![License](https://img.shields.io/badge/license-Apache-green.svg)](LICENSE)
+[![LoC](https://tokei.rs/b1/github/rooch-network/rooch?category=lines)](https://github.com/rooch-network/rooch)
+
 ## Usage
 
 1. Rooch Ethereum Layer2: Rooch(Execution) + Layer1s(Settlement) + Ethereum(Arbitration) + DA

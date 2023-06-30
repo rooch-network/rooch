@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::metadata::{
     check_metadata_format, check_storage_context_struct_tag, get_metadata_from_compiled_module,
     is_allowed_input_struct, is_defined_or_allowed_in_current_module,
@@ -6,7 +9,7 @@ use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMError, VMResult};
 use move_binary_format::file_format::{
     Bytecode, FunctionDefinition, FunctionDefinitionIndex, FunctionInstantiation,
-    FunctionInstantiationIndex, SignatureToken, Visibility,
+    FunctionInstantiationIndex, SignatureToken, StructHandleIndex, Visibility,
 };
 use move_binary_format::{access::ModuleAccess, CompiledModule};
 use move_core_types::language_storage::ModuleId;
@@ -26,6 +29,7 @@ where
     Resolver: ModuleResolver,
 {
     verify_private_generics(module, &db)?;
+    verify_entry_function_at_publish(module)?;
     verify_init_function(module)
 }
 
@@ -147,6 +151,44 @@ fn is_allowed_init_func_param(
     }
 }
 
+pub fn verify_entry_function_at_publish(module: &CompiledModule) -> VMResult<bool> {
+    let module_bin_view = BinaryIndexedView::Module(module);
+
+    for fdef in module.function_defs.iter() {
+        if !fdef.is_entry {
+            continue;
+        }
+
+        let function_handle = module_bin_view.function_handle_at(fdef.function);
+        let return_types = module_bin_view
+            .signature_at(function_handle.return_)
+            .0
+            .clone();
+        if !return_types.is_empty() {
+            return Err(
+                PartialVMError::new(StatusCode::INVALID_MAIN_FUNCTION_SIGNATURE)
+                    .with_message("function should not return values".to_string())
+                    .finish(Location::Module(module.self_id())),
+            );
+        }
+
+        let func_parameters_types = module_bin_view
+            .signature_at(function_handle.parameters)
+            .0
+            .clone();
+
+        for ty in &func_parameters_types {
+            if !check_transaction_input_type_at_publish(ty, &module_bin_view) {
+                return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
+                    .with_message(format!("parameter type {:?} is not allowed", ty))
+                    .finish(Location::Module(module.self_id())));
+            }
+        }
+    }
+
+    Ok(true)
+}
+
 pub fn verify_entry_function<S>(
     func: &LoadedFunctionInstantiation,
     session: &Session<S>,
@@ -169,6 +211,78 @@ where
     }
 
     Ok(true)
+}
+
+fn check_transaction_input_type_at_publish(
+    ety: &SignatureToken,
+    module_bin_view: &BinaryIndexedView,
+) -> bool {
+    use SignatureToken::*;
+    match ety {
+        Bool | U8 | U16 | U32 | U64 | U128 | U256 | Address | Signer => true,
+        Vector(ety) => check_transaction_input_type_at_publish(ety.deref(), module_bin_view),
+        Reference(bt)
+            if matches!(bt.as_ref(), Signer)
+                || is_allowed_reference_types_at_publish(bt.as_ref(), module_bin_view) =>
+        {
+            true
+        }
+        MutableReference(bt)
+            if is_allowed_reference_types_at_publish(bt.as_ref(), module_bin_view) =>
+        {
+            true
+        }
+        Struct(sid) | StructInstantiation(sid, _) => {
+            let struct_full_name = struct_full_name_from_sid(sid, module_bin_view);
+            if is_allowed_input_struct(struct_full_name) {
+                return true;
+            }
+            false
+        }
+
+        _ => {
+            // Everything else is disallowed.
+            false
+        }
+    }
+}
+
+fn is_allowed_reference_types_at_publish(
+    bt: &SignatureToken,
+    module_bin_view: &BinaryIndexedView,
+) -> bool {
+    match bt {
+        SignatureToken::Struct(sid) => {
+            let struct_full_name = struct_full_name_from_sid(sid, module_bin_view);
+            if is_allowed_input_struct(struct_full_name) {
+                return true;
+            }
+
+            false
+        }
+        _ => false,
+    }
+}
+
+fn struct_full_name_from_sid(
+    sid: &StructHandleIndex,
+    module_bin_view: &BinaryIndexedView,
+) -> String {
+    let struct_handle = module_bin_view.struct_handle_at(*sid);
+    let struct_name = module_bin_view
+        .identifier_at(struct_handle.name)
+        .to_string();
+    let module_name = module_bin_view
+        .identifier_at(module_bin_view.module_handle_at(struct_handle.module).name)
+        .to_string();
+    let module_address = module_bin_view
+        .address_identifier_at(
+            module_bin_view
+                .module_handle_at(struct_handle.module)
+                .address,
+        )
+        .short_str_lossless();
+    format!("0x{}::{}::{}", module_address, module_name, struct_name)
 }
 
 fn check_transaction_input_type<S>(ety: &Type, session: &Session<S>) -> bool
