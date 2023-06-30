@@ -183,12 +183,12 @@ However, we use a preprocessor called `MOVE_CRUD_IT` above to go one step furthe
 
 After generating a project using the above model, there are already existing "business logic" code files:
 
-* `article_add_comment_logic.move`
-* `article_delete_logic.move`
-* `article_update_comment_logic.move`
 * `article_create_logic.move`
-* `article_remove_comment_logic.move`
+* `article_delete_logic.move`
 * `article_update_logic.move`
+* `article_add_comment_logic.move`
+* `article_remove_comment_logic.move`
+* `article_update_comment_logic.move`
 
 Now open them and remove those redundant `use` statements. If your IDE has some Move language plugins installed, you may only need to use the "format" feature to reformat these source files.
 

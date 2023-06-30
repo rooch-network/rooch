@@ -145,7 +145,6 @@ wubuku/dddappp-rooch:0.0.1 \
 
 上面的命令执行成功后，在本地目录 `/PATH/TO/test` 下应该会增加两个目录 `move` 以及 `rooch-java-service`。
 
-
 ### 项目源代码结构
 
 进入 `move` 目录，这里放置的是从模型生成的 Move 合约项目。执行 Move 编译命令：
@@ -163,10 +162,10 @@ rooch move build --named-addresses rooch_examples={ACCOUNT_ADDRESS}
 在 `move/sources` 目录中，包含了链上合约项目的所有 Move 源代码。我们先忽略以 `_logic.move` 结尾的文件，介绍一下其他文件。
 
 * `rooch_blog_demo_init.move`。它包含了链上合约的初始化（`initialize`）函数。一般来说，在合约项目部署到链上后，需要首先调用它（只需要调用一次）。不过，因为我们的示例项目比较简单，所以目前工具生成的 `initialize` 函数内没有包含什么有意义的初始化逻辑，我们可以先忽略它。
-* `article_aggregate.move`。这是 entry functions 所在的地方。现在它包含的对文章和评论进行 Create、Update、Delete 操作的函数。你可以看到，创建评论这个聚合内实体的函数被命名为 `add_comment` 而不是 `create_comment`，删除评论的函数被命名为 `remove_comment` 而不是 `delete_comment`，这其实是为了更容易在阅读时分辨出这些函数是对聚合内部实体的操作，而不是对聚合本身的操作。
+* `article_aggregate.move`。这是入口函数（entry functions）所在的地方。现在它包含的对文章和评论进行创建、更新、删除操作的函数。你可以看到，创建评论这个聚合内实体的函数被命名为 `add_comment` 而不是 `create_comment`，删除评论的函数被命名为 `remove_comment` 而不是 `delete_comment`，这其实是为了更容易在阅读时分辨出这些函数是对聚合内部实体的操作，而不是对聚合本身的操作。
 * `article.move`。这个文件包含了“文章”这个聚合根实体的“数据模型”的定义，以及“文章”聚合相关的事件的定义。
 * `comment.move`。这个文件包含了“评论”这个聚合内部实体的“数据模型”的定义。
-* 下面列出的几个 Move 文件没有什么复杂的逻辑，只是提供了一些让你可以更便捷地获取事件属性（字段）值的 functions。
+* 下面列出的几个 Move 文件没有什么复杂的逻辑，只是提供了一些让你可以更便捷地获取事件属性（字段）值的函数。
   * `article_created.move`
   * `article_deleted.move`
   * `article_updated.move`
@@ -178,18 +177,18 @@ rooch move build --named-addresses rooch_examples={ACCOUNT_ADDRESS}
 
 以 `_logic.move` 结尾的 Move 源文件是“业务逻辑”实现代码所在之处。
 
-如果你在 DDDML 文件中为聚合定义了一个方法（method），那么 dddappp 工具就会为你生成对应的一个名为 `{聚合名_方法名}_logic.move` 的 Move 代码文件，然后你需要在这个文件各种填充“业务逻辑”的实现代码。
+如果你在 DDDML 文件中为聚合定义了一个方法（method），那么 dddappp 工具就会为你生成对应的一个名为 `{聚合名_方法名}_logic.move` 的 Move 代码文件，然后你需要在这个文件中填充“业务逻辑”的实现代码。
 
 不过，上面我们使用的 `MOVE_CRUD_IT` 预处理器更进一步，直接为我们生成简单的 CRUD 方法的默认实现。当然，我们可以检查一下这些“填充好的默认逻辑”，视自己的需要修改它们。
 
 使用上面的模型生成项目后，已经存在的“业务逻辑”代码文件是（可执行命令 `ls sources/*_logic.move` 列出）：
 
-* article_add_comment_logic.move
-* article_delete_logic.move
-* article_update_comment_logic.move
-* article_create_logic.move
-* article_remove_comment_logic.move
-* article_update_logic.move
+* `article_create_logic.move`
+* `article_delete_logic.move`
+* `article_update_logic.move`
+* `article_add_comment_logic.move`
+* `article_remove_comment_logic.move`
+* `article_update_comment_logic.move`
 
 现在就打开它们，移除那些多余的 `use` 语句。如果你的 IDE 安装了一些 Move 语言的插件，可能你只需要使用“格式化”功能对这几个源文件重新格式化一下即可。
 
@@ -230,7 +229,7 @@ rooch move publish --named-addresses rooch_examples={ACCOUNT_ADDRESS}
 
 我们下面将会使用 Rooch CLI 以及其他命令行工具（`curl`、`jq`）来测试已发布的合约。
 
-使用 `rooch move run` 命令提及一个交易，初始化合约（请注意替换占位符 `{ACCOUNT_ADDRESS}` 为你拥有账户的地址）：
+使用 `rooch move run` 命令提交一个交易，初始化合约（请注意替换占位符 `{ACCOUNT_ADDRESS}` 为你拥有账户的地址）：
 
 ```shell
 rooch move run --function {ACCOUNT_ADDRESS}::rooch_blog_demo_init::initialize --sender-account {ACCOUNT_ADDRESS}
