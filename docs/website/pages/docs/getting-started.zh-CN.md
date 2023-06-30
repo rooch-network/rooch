@@ -8,14 +8,16 @@ Rooch 于2023年06月28日，发布了第一个版本，版本名为 Sprout，�
 
 ## 2. 创建新的 Rooch 项目
 
-这部分将引导你如何安装 Rooch，以及创建 Hello World 程序。
+这部分将引导你安装 Rooch，以及创建程序。
 
 ### 2.1 安装 Rooch
 
 #### 2.1.1 下载
 
+在 [Rooch 的 GitHub 发布页面](https://github.com/rooch-network/rooch/releases)可以找到预构建的二进制文件压缩包和相应版本的源码压缩包。如果想要体验 Git 版本，可以参考这个页面来[编译安装 Rooch](https://github.com/rooch-network/rooch#getting-started)，下面引导你安装 Rooch 的 Release 版本。
+
 ```shell
-wget https://github.com/rooch-network/rooch/releases/download/v0.1-preview/rooch-ubuntu-latest.zip
+wget https://github.com/rooch-network/rooch/releases/download/v0.1/rooch-ubuntu-latest.zip
 ```
 
 #### 2.1.2 解压
@@ -34,11 +36,14 @@ rooch-artifacts
 
 #### 2.1.3 运行
 
+进入解压文件夹 `rooch-artifacts` 并测试程序是否正常。
+
 ```shell
+cd rooch-artifacts
 ./rooch
 ```
 
-你将看到下面的输出内容，说明程序一切正常。
+如果你能看到下面的输出内容，说明程序一切正常。
 
 ```shell
 rooch 0.1.0
@@ -68,6 +73,12 @@ SUBCOMMANDS:
 
 为了方便后续使用，建议将 `rooch` 放入能被系统环境变量 `PATH` 检索的路径，或者将当前的解压目录通过 `export` 导出到 `PATH` 中。
 
+使用下面这段小脚本将 `rooch` 添加到 Bash shell 的 `PATH`。
+
+```shell
+echo "export PATH=\$PATH:$PWD" >> ~/.bashrc
+source ~/.bashrc
+```
 
 ### 2.2 Hello Rooch
 
