@@ -2,9 +2,9 @@
 
 [English](README.md) | 中文
 
-本文主要介绍使用如果使用低代码工具来开发一个 blog 示例应用。
+本文主要介绍使用如何使用低代码工具来开发一个博客示例应用。
 
-## Prerequisites
+## 前提条件
 
 目前 dddappp 低代码工具以 Docker 镜像的方式发布，供开发者体验。
 
@@ -22,7 +22,7 @@
 
 * （可选）安装 JDK 和 Maven。用于构建和测试链下服务。
 
-## 编码（Programing）
+## 编码
 
 你可以按照下面的介绍重现本示例应用的“编码”过程。你会发现要开发一个完整的应用，你只需要编写很少的代码。如果你的应用的业务逻辑只是对一些实体进行简单的 CRUD 操作，那么你甚至可能不需要编写除了“模型”之外的任何代码。
 
@@ -36,7 +36,7 @@
 
 你可以创建一个目录，比如叫做 `test`，来放置应用的所有代码，然后在该目录下面创建一个子目录 `dddml`。我们一般在这个目录下放置按照 DDDML 的规范编写的模型文件。
 
-在 dddml 目录下创建一个纯文本文件，命名为 `blog.yaml`，文件内容如下：
+在 `dddml` 目录下创建一个纯文本文件，命名为 `blog.yaml`，文件内容如下：
 
 ```yaml
 aggregates:
@@ -83,7 +83,7 @@ aggregates:
 
 #### “文章”聚合
 
-在 `/aggregates/Article/metadata` 这个键结点下，我们定义了一些元数据，用来指示生成代码时应用的一些预处理器。这里我们使用了 `MOVE_CRUD_IT` 这个预处理器，它的作用是自动实体的 CRUD 操作逻辑。
+在 `/aggregates/Article/metadata` 这个键结点下，我们定义了一些元数据，用来指示生成代码时应用的一些预处理器。这里我们使用了 `MOVE_CRUD_IT` 这个预处理器，它的作用是自动实现实体的 CRUD 操作逻辑。
 
 在 `/aggregates/Article/id` 这个键结点下，我们定义了文章聚合根的 ID。文章的 ID 的名字为 `Id`，类型为 `ObjectID`。这里的 `ObjectID` 是一个平台特定的类型，我们假设现在正在开发一个基于 Rooch 的去中心化应用。
 
@@ -99,7 +99,7 @@ aggregates:
 
 在 `/aggregates/Article/entities/Comment` 这个键结点下，我们定义了“评论”这个聚合内部实体。
 
-在这里定义的评论（聚合内部实体）的 `id` 是个 local ID（局部 ID），同样只要保证在同一篇文章内不同的评论之间这个 ID 的值具备唯一性就可以了。
+在这里定义的评论（聚合内部实体）的 `id` 是个局部 ID（local ID），同样只要保证在同一篇文章内不同的评论之间这个 ID 的值具备唯一性就可以了。
 
 我们将评论的 ID 命名为 `CommentSeqId`，声明其类型为 u64。
 
@@ -107,9 +107,9 @@ aggregates:
 
 在 `/aggregates/Article/entities/Comment/properties` 结点下我们定义了评论的属性，分别表示评论者和评论内容。
 
-评论者（Commenter）属性是一个类型为 String 的属性，长度限制为 100 个字符。
+评论者（Commenter）属性是一个类型为 `String` 的属性，长度限制为 100 个字符。
 
-评论内容（Body）属性是一个类型为 String 的属性，长度限制为 500 个字符。
+评论内容（Body）属性是一个类型为 `String` 的属性，长度限制为 500 个字符。
 
 ### 运行 dddappp 项目创建工具
 
@@ -133,15 +133,15 @@ wubuku/dddappp-rooch:0.0.1 \
 上面的命令参数很直白：
 
 * 注意将 `/PATH/TO/test` 替换为你实际放置应用代码的本机目录的路径。这一行表示将该本机目录挂载到容器内的 `/myapp` 目录。
-* dddmlDirectoryPath 是 DDDML 模型文件所在的目录。它应该是容器内可以读取的目录路径。
-* 把参数 boundedContextName 的值理解为你要开发的应用的名称即可。名称有多个部分时请使用点号分隔，每个部分使用 PascalCase 命名风格。Bounded-context 是领域驱动设计（DDD）中的一个术语，指的是一个特定的问题域范围，包含了特定的业务边界、约束和语言，这个概念你暂时不能理解也没有太大的关系。
-* roochMoveProjectDirectoryPath 是放置链上 Rooch 合约代码的目录路径。它应该使用容器内可以读写的目录路径。
-* boundedContextRoochPackageName 是链上 Rooch 合约的包名。建议采用 PascalCase 命名风格。
-* boundedContextRoochNamedAddress 是链上 Rooch 合约默认的命名地址。建议采用 snake_case 命名风格。
-* boundedContextJavaPackageName 是链下服务的 Java 包名。按照 Java 的命名规范，它应该全小写、各部分以点号分隔。
-* javaProjectsDirectoryPath 是放置链下服务代码的目录路径。链下服务由多个模块（项目）组成。它应该使用容器内的可以读写的目录路径。
-* javaProjectNamePrefix 是组成链下服务的各模块的名称前缀。建议使用一个全小写的名称。
-* pomGroupId 链下服务的 GroupId，我们使用 Maven 作为链下服务的项目管理工具。它应该全小写、各部分以点号分隔。
+* `dddmlDirectoryPath` 是 DDDML 模型文件所在的目录。它应该是容器内可以读取的目录路径。
+* 把参数 `boundedContextName` 的值理解为你要开发的应用的名称即可。名称有多个部分时请使用点号分隔，每个部分使用 PascalCase 命名风格。Bounded-context 是领域驱动设计（DDD）中的一个术语，指的是一个特定的问题域范围，包含了特定的业务边界、约束和语言，这个概念你暂时不能理解也没有太大的关系。
+* `roochMoveProjectDirectoryPath` 是放置链上 Rooch 合约代码的目录路径。它应该使用容器内可以读写的目录路径。
+* `boundedContextRoochPackageName` 是链上 Rooch 合约的包名。建议采用 PascalCase 命名风格。
+* `boundedContextRoochNamedAddress` 是链上 Rooch 合约默认的命名地址。建议采用 snake_case 命名风格。
+* `boundedContextJavaPackageName` 是链下服务的 Java 包名。按照 Java 的命名规范，它应该全小写、各部分以点号分隔。
+* `javaProjectsDirectoryPath` 是放置链下服务代码的目录路径。链下服务由多个模块（项目）组成。它应该使用容器内的可以读写的目录路径。
+* `javaProjectNamePrefix` 是组成链下服务的各模块的名称前缀。建议使用一个全小写的名称。
+* `pomGroupId` 链下服务的 GroupId，我们使用 Maven 作为链下服务的项目管理工具。它应该全小写、各部分以点号分隔。
 
 上面的命令执行成功后，在本地目录 `/PATH/TO/test` 下应该会增加两个目录 `move` 以及 `rooch-java-service`。
 

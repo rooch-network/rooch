@@ -22,7 +22,7 @@ So before you start experiencing, you need to:
 
 * (Optional) Install JDK and Maven. Used to build and test off-chain services.
 
-## Programing
+## Programming
 
 You can follow the introduction below to reproduce the "programming" process of this sample application. You will find that to develop a complete application, you only need to write very little code. If your application's business logic is just simple CRUD operations on some entities, then you may not even need to write any code other than the "model".
 
