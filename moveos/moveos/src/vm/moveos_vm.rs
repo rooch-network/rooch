@@ -17,6 +17,7 @@ use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
+    resolver::ModuleResolver,
     value::MoveTypeLayout,
     vm_status::{KeptVMStatus, VMStatus},
 };
@@ -32,7 +33,10 @@ use move_vm_types::{
     gas::{GasMeter, UnmeteredGasMeter},
     loaded_data::runtime_types::{CachedStructIndex, StructType, Type},
 };
-use moveos_stdlib::natives::moveos_stdlib::raw_table::{NativeTableContext, TableData};
+use moveos_stdlib::natives::moveos_stdlib::{
+    move_module::NativeModuleContext,
+    raw_table::{NativeTableContext, TableData},
+};
 use moveos_types::{
     event::{Event, EventID},
     function_return_value::FunctionReturnValue,
@@ -181,6 +185,7 @@ where
         let mut extensions = NativeContextExtensions::default();
 
         extensions.add(NativeTableContext::new(remote, table_data.clone()));
+        extensions.add(NativeModuleContext::new(remote));
 
         // The VM code loader has bugs around module upgrade. After a module upgrade, the internal
         // cache needs to be flushed to work around those bugs.
