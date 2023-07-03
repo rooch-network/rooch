@@ -1,6 +1,6 @@
 ---
 title: Rooch v0.1 发布，完成“萌芽｜Sprouting”里程碑
-description: "该版本提供了 Rooch 容器预览版、开发者工具、Move标准库和框架、JSON RPC等关键特性。下一步计划完善开发者工具、实现多链结算、Token/NFT标准以及多链资产映射。探索更多的应用场景，致力于成为 Web3 基础设施"
+description: "该版本提供了 Rooch 容器预览版、开发者工具、Move 标准库和框架、JSON RPC 等关键特性。下一步计划完善开发者工具、实现多链结算、Token/NFT 标准以及多链资产映射。探索更多的应用场景，致力于成为 Web3 基础设施"
 author: jolestar
 category: News
 date: 2023/07/03
@@ -20,28 +20,28 @@ Rooch v0.1 发布，完成“萌芽｜Sprouting”里程碑，这是 Rooch 主�
 
 ### Rooch 命令行工具
 
-用来启动 Rooch 容器，创建，编译，部署 Move 项目，查询应用合约的状态，交易以及交易执行结果等。可以支撑一个应用的完整开发周期和需求。
+用来启动 Rooch 容器，创建，编译，部署 Move 项目，查询应用合约的状态、交易以及交易执行结果等。可以支撑一个应用的完整开发周期和需求。
 CLI 支持的命令以及参数请参看：[Rooch 命令行工具](/docs/reference/cli)。
 
 ### MoveOS
 
-MoveOS 是对 MoveVM 的封装，给 MoveVM 提供了标准化对状态树以及状态证明，封装了交易的验证以及执行流程。未来，MoveOS 还可以用在其他的想支持 Move 运行环境的使用场景中。
+MoveOS 是对 MoveVM 的封装，给 MoveVM 提供了标准化的状态树以及状态证明，封装了交易的验证以及执行流程。未来，MoveOS 还可以用在其他的想支持 Move 运行环境的使用场景中。
 
 ### Move 标准库以及框架
 
-Rooch 内置了 `MoveStdlib`，`MoveosStdlib`，`RoochFramework` 三个 Move 标准库，其中 MoveStdlib 是 Move 语言的标准库，MoveosStdlib 是 MoveOS 的标准库，RoochFramework 是 Rooch 的应用框架。
+Rooch 内置了 `MoveStdlib`、`MoveosStdlib` 和 `RoochFramework` 三个 Move 标准库，其中 MoveStdlib 是 Move 语言的标准库，MoveosStdlib 是 MoveOS 的标准库，RoochFramework 是 Rooch 的应用框架。
 
 1. `MoveStdlib` 使用地址 `0x1`。直接复用 Move 语言的标准库。
-2. `MoveosStdlib` 使用地址 `0x2`，提供了对 MoveStdlib 的扩展，以及应用状态存储的抽象，和数据结构封装：`Table`，`TypeTable`，`Object`，`ObjectStorage`，`AccountStorage`等。  关于 MoveOS 的状态存储的详细设计请参看：[存储抽象](/docs/tech-highlights/storage_abstraction)。
-3. `RoochFramework` 使用地址 `0x3`，包含 Rooch 的 `Account`，交易验证，多链地址映射等模块。
+2. `MoveosStdlib` 使用地址 `0x2`，提供了对 MoveStdlib 的扩展，以及应用状态存储的抽象，和数据结构封装：`Table`、`TypeTable`、`Object`、`ObjectStorage`、`AccountStorage` 等。关于 MoveOS 的状态存储的详细设计请参看：[存储抽象](/docs/tech-highlights/storage_abstraction)。
+3. `RoochFramework` 使用地址 `0x3`，包含 Rooch 的账户（`Account`）、交易验证、多链地址映射等模块。
 
-Rooch 的这种基础库地址分配方式，一方面避免了模块的命名冲突，方便扩展。另外一方面也提供了这样一种可能，生态项目也可以直接给 Rooch 内置 Framework，比如 DAO，DeFi，Gaming，Social 等。下个阶段 Rooch 会发布 Framework 共建的计划，敬请关注。
+Rooch 的这种基础库地址分配方式，一方面避免了模块的命名冲突，方便扩展。另外一方面也提供了这样一种可能，生态项目也可以直接给 Rooch 内置 Framework，比如 DAO、DeFi、Gaming、Social 等。下个阶段 Rooch 会发布 Framework 共建的计划，敬请关注。
 
 ### Rooch 的 JSON RPC
 
 应用可以通过 JSON RPC 来提交交易以及查询应用合约的状态。
 
-Rooch 提供一种基于统一的访问路径（AccessPath）的状态查询接口（rooch_getStates），返回 Move 状态的 BCS 序列化结果。同时，Rooch 还提供 `rooch_getAnnotatedStates` 接口，返回 Move 状态的 JSON 结构，方便不支持 BCS 的编程语言直接使用。
+Rooch 提供一种基于统一的访问路径（AccessPath）的状态查询接口 `rooch_getStates`，返回 Move 状态的 BCS 序列化结果。同时，Rooch 还提供 `rooch_getAnnotatedStates` 接口，返回 Move 状态的 JSON 结构，方便不支持 BCS 的编程语言直接使用。
 
 这个版本提供了 Ethereum RPC Proxy 的演示版本，用户可以通过 MetaMask 和 Rooch Container 进行交互，发送交易。
 
@@ -56,11 +56,10 @@ Sequencer 以及 Proposer 这个版本中只包含了一个原型实现，主要
 下一步，Rooch 主要从三个方向进行改进：
 
 1. 继续完善开发者工具，改进 Rooch 的存储和检索接口，探索支持 SQL 查询的检索接口，让 Rooch 成为最高效易用的 Web3 原生应用开发框架。
-2. 实现多链结算，让 Rooch 的合约中可以直接校验并处理其他链上的交易。进一步完善多链的 RPC Proxy 接口，改进钱包使用体验。
+2. 实现多链结算，让 Rooch 的合约可以直接校验并处理其他链上的交易。进一步完善多链的 RPC Proxy 接口，改进钱包使用体验。
 3. 实现 Token/NFT 标准以及多链资产映射，完成账户抽象（AccountAbstraction），实现 Gas 代付，SessionKey，以及 Web2 账户登陆。
 
-基于以上特性，Rooch 这个阶段主要从 **Rooch as Backend Service** 角度探索可落地的应用场景。让任何想接入区块链的应用直接使用 Rooch 作为后端服务，开发者只需要掌握前端技能以及 Move 语言。
-虽然当前只是一个中心化的方案，但未来应用可以通过接入 Rooch 主网来实现去中心化。
+基于以上特性，Rooch 这个阶段主要从 **Rooch 即后端服务（Rooch as a Backend Service）** 角度探索可落地的应用场景。让任何想接入区块链的应用直接使用 Rooch 作为后端服务，开发者只需要掌握前端技能以及 Move 语言。虽然当前只是一个中心化的方案，但未来应用可以通过接入 Rooch 主网来实现去中心化。
 
 它比基于 Web2 的开发框架有以下优势：
 
@@ -107,4 +106,4 @@ Rooch 在主网启动之前一共有五个里程碑，我们通过植物的生�
 
 ## 总结
 
-Rooch 的里程碑遵循应用场景驱动的原则，以开发者和用户的使用体验为中心，尝试拓展 Web3 应用的边界，探索 Web3 大规模采用落地的可能。Rooch v0.1 详细的 release notes 请参看:[Rooch v0.1](https://github.com/rooch-network/rooch/releases/tag/v0.1)。感谢参与贡献的十多位开发者，如果想进一步了解和参与 Rooch，请加入 [Rooch Discord](https://discord.gg/rooch)。
+Rooch 的里程碑遵循应用场景驱动的原则，以开发者和用户的使用体验为中心，尝试拓展 Web3 应用的边界，探索 Web3 大规模采用落地的可能。Rooch v0.1 详细的 release notes 请参看：[Rooch v0.1](https://github.com/rooch-network/rooch/releases/tag/v0.1)。感谢参与贡献的十多位开发者，如果想进一步了解和参与 Rooch，请加入 [Rooch Discord](https://discord.gg/rooch)。
