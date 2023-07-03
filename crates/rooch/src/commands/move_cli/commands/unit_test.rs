@@ -2,16 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::Parser;
+use codespan_reporting::diagnostic::Severity;
 use move_cli::base::test;
+use move_command_line_common::address::NumericalAddress;
+use move_command_line_common::parser::NumberFormat;
 use move_core_types::account_address::AccountAddress;
 use move_package::BuildConfig;
 use move_unit_test::extensions::set_extension_hook;
 use move_vm_runtime::native_extensions::NativeContextExtensions;
 use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
 use moveos_store::state_store::StateDB;
+use moveos_verifier::build::build_model_with_test_attr;
+use moveos_verifier::metadata::run_extended_checks;
 use once_cell::sync::Lazy;
 use rooch_framework::natives::{all_natives, GasParameters};
 use std::{collections::BTreeMap, path::PathBuf};
+use termcolor::Buffer;
 
 #[derive(Parser)]
 pub struct Test {
@@ -36,6 +42,41 @@ impl Test {
             .into_iter()
             .map(|(key, value)| (key, AccountAddress::from_hex_literal(&value).unwrap()))
             .collect();
+
+        let root_path = path.clone().unwrap_or_else(|| PathBuf::from("."));
+
+        build_config.dev_mode = true;
+
+        let resolution_graph = build_config
+            .clone()
+            .resolution_graph_for_package(&root_path, &mut Vec::new())
+            .expect("resolve package dep failed");
+
+        let mut additional_named_address = BTreeMap::new();
+        let _: Vec<_> = resolution_graph
+            .extract_named_address_mapping()
+            .map(|(name, addr)| {
+                (additional_named_address.insert(
+                    name.to_string(),
+                    NumericalAddress::new(addr.into_bytes(), NumberFormat::Hex).into_inner(),
+                ),)
+            })
+            .collect();
+
+        let global_env = build_model_with_test_attr(&root_path, additional_named_address, None)?;
+
+        let _ = run_extended_checks(&global_env);
+
+        if global_env.diag_count(Severity::Warning) > 0 {
+            let mut buffer = Buffer::ansi();
+            global_env.report_diag(&mut buffer, Severity::Warning);
+            let buffer_output = String::from_utf8_lossy(buffer.as_slice()).to_string();
+            eprintln!("{}", buffer_output);
+            if global_env.has_errors() {
+                return Err(anyhow::Error::msg("extended checks failed"));
+            }
+        }
+
         //TODO define gas metering
         let cost_table = move_vm_test_utils::gas_schedule::INITIAL_COST_SCHEDULE.clone();
         let natives = all_natives(GasParameters::zeros());
