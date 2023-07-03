@@ -1,0 +1,27 @@
+name: Check Licenses
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-licenses:
+    name: Check-Licenses
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Run SPDX-License-Identifier checks
+        run: |
+          find . -type f \( -name '*.rs' -o -name '*.sh' \) -exec sh -c '
+            for FILE do
+              if ! grep -q "SPDX-License-Identifier: Apache-2.0" "$FILE"; then
+                echo "ERROR: SPDX-License-Identifier is not Apache-2.0 in $FILE"
+                exit 1
+              fi
+            done' sh {} +
