@@ -92,7 +92,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         let mut moveos =
             MoveOS::new(db, genesis.all_natives(), genesis.config_for_test.clone()).unwrap();
 
-        moveos.init_genesis(genesis.genesis_txs.clone()).unwrap();
+        moveos.init_genesis(genesis.genesis_txs()).unwrap();
 
         let mut named_address_mapping = rooch_framework::rooch_framework_named_addresses();
         for (name, addr) in additional_mapping {
@@ -154,7 +154,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         };
 
         //Auto generate interface to Framework modules
-        let stdlib_modules = genesis.stdlib.all_modules().unwrap();
+        let stdlib_modules = genesis.modules().unwrap();
 
         for module in stdlib_modules
             .iter()

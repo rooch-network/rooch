@@ -31,7 +31,24 @@ pub struct MoveOSConfig {
     pub post_execute_function: Option<FunctionId>,
 }
 
-//TODO make VMConfig cloneable
+impl std::fmt::Debug for MoveOSConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MoveOSConfig")
+            .field(
+                "vm_config.max_binary_format_version",
+                &self.vm_config.max_binary_format_version,
+            )
+            .field(
+                "vm_config.paranoid_type_checks",
+                &self.vm_config.paranoid_type_checks,
+            )
+            .field("pre_execute_function", &self.pre_execute_function)
+            .field("post_execute_function", &self.post_execute_function)
+            .finish()
+    }
+}
+
+//TODO make VMConfig cloneable and debug
 impl Clone for MoveOSConfig {
     fn clone(&self) -> Self {
         Self {
