@@ -3,35 +3,58 @@
 
 use anyhow::{ensure, Result};
 use dependency_order::sort_by_dependency_order;
-use move_binary_format::CompiledModule;
+use move_binary_format::{errors::Location, CompiledModule};
 use move_cli::base::docgen::Docgen;
 use move_core_types::account_address::AccountAddress;
 use move_package::{compilation::compiled_package::CompiledPackage, BuildConfig};
 use moveos_verifier::build::run_verifier;
+use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
     io::stderr,
     path::{Path, PathBuf},
 };
+
 pub mod dependency_order;
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Stdlib {
     packages: Vec<StdlibPackage>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct StdlibPackage {
     pub genesis_account: AccountAddress,
-    pub path: PathBuf,
-    pub package: CompiledPackage,
+    pub modules: Vec<Vec<u8>>,
 }
 
 impl StdlibPackage {
-    pub fn modules(&self) -> Result<Vec<CompiledModule>> {
+    pub fn new(genesis_account: AccountAddress, compiled_package: CompiledPackage) -> Result<Self> {
         //include all root module, but do not include dependency modules
-        let modules = self.package.root_modules_map();
-        sort_by_dependency_order(modules.iter_modules())
+        let modules = compiled_package.root_modules_map();
+        let modules = sort_by_dependency_order(modules.iter_modules())?
+            .into_iter()
+            .map(|module| {
+                let mut bytes = vec![];
+                module.serialize(&mut bytes)?;
+                Ok(bytes)
+            })
+            .collect::<Result<Vec<Vec<u8>>>>()?;
+        Ok(Self {
+            genesis_account,
+            modules,
+        })
+    }
+
+    pub fn modules(&self) -> Result<Vec<CompiledModule>> {
+        self.modules
+            .iter()
+            .map(|module| {
+                let compiled_module = CompiledModule::deserialize(module.as_slice())
+                    .map_err(|e| e.finish(Location::Undefined))?;
+                Ok(compiled_module)
+            })
+            .collect::<Result<Vec<CompiledModule>>>()
     }
 }
 
@@ -108,11 +131,7 @@ impl Stdlib {
             );
         }
         Self::build_doc(package_path.as_path(), build_config)?;
-        Ok(StdlibPackage {
-            genesis_account,
-            path: package_path,
-            package: compiled_package,
-        })
+        StdlibPackage::new(genesis_account, compiled_package)
     }
 
     fn build_doc(package_path: &Path, build_config: BuildConfig) -> Result<()> {
@@ -165,11 +184,13 @@ impl Stdlib {
     }
 }
 
-pub fn path_in_crate<S>(relative: S) -> PathBuf
+fn path_in_crate<S>(relative: S) -> PathBuf
 where
-    S: Into<String>,
+    S: AsRef<Path>,
 {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(relative.into())
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    path.push(relative);
+    path
 }
 
 #[cfg(test)]
@@ -181,9 +202,8 @@ mod tests {
         let moveos_stdlib = Stdlib::build(BuildOptions::default()).unwrap();
         for stdlib_package in moveos_stdlib.packages {
             println!(
-                "stdlib package: {}, path: {:?}, modules_count:{}",
+                "stdlib package: {}, modules_count:{}",
                 stdlib_package.genesis_account.short_str_lossless(),
-                stdlib_package.path,
                 stdlib_package.modules().unwrap().len()
             );
         }

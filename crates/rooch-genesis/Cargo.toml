@@ -15,6 +15,7 @@ rust-version = { workspace = true }
 
 [dependencies]
 anyhow = { workspace = true }
+bcs = { workspace = true }
 better_any = { workspace = true }
 fastcrypto = { workspace = true }
 linked-hash-map = { workspace = true }
