@@ -8,7 +8,7 @@ Rooch 于2023年06月28日，发布了第一个版本，版本名为 Sprout，�
 
 ## 2. 创建新的 Rooch 项目
 
-这部分将引导你安装 Rooch，以及创建程序。
+这部分将引导你安装 Rooch，以及创建一个博客合约，在 Rooch 里体验基本的**增查改删**功能。
 
 ### 2.1 安装 Rooch
 
@@ -133,7 +133,13 @@ rooch_framework =  "0x3"
 
 #### 2.3.2 编写合约
 
-- 
+[下载博客源码](https://github.com/rooch-network/rooch/archive/refs/heads/main.zip)，解压，并切换到博客合约项目的根目录。
+
+```shell
+wget https://github.com/rooch-network/rooch/archive/refs/heads/main.zip
+unzip main.zip
+cd rooch-main/docs/website/public/codes/rooch_blog
+```
 
 #### 2.3.3 编译合约
 
@@ -230,7 +236,7 @@ rooch move run --function 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba23393
 rooch move run --function 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::article_aggregate::create --sender-account 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc --args 'string:Hello Rooch' "string:Accelerating World's Transition to Decentralization"
 ```
 
-`--function` 指定执行发布在 `0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc` 地址上的 `article_aggregate` 模块中的 `create` 函数，即新建一篇博客文章。这个函数要求我们必须给它传递两个参数，通过 `--args` 来指定，第一个是文章的标题，我取名为 `Hello Rooch`；第二个是文章的内容，我写上 Rooch 的标语（slogan）`Accelerating World's Transition to Decentralization`。
+`--function` 指定执行发布在 `0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc` 地址上的 `article_aggregate` 模块中的 `create` 函数，即新建一篇博客文章。`--sender-account` 指定谁来提交这个交易。这个函数要求我们必须给它传递两个参数，通过 `--args` 来指定，第一个是文章的标题，我取名为 `Hello Rooch`；第二个是文章的内容，我写上 Rooch 的标语（slogan）`Accelerating World's Transition to Decentralization`。
 
 参数传递的是字符串，需要使用引号将内容包裹起来，并且通过 `string:` 来显示指定，在第二个参数的内容中有单引号，所以使用双引号包裹，否则必须使用转义符（`\`）。
 
@@ -323,3 +329,52 @@ rooch object --id 0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4
 ```
 
 注意观察输出中，`title` 和 `body` 这两个键值对，能看到这个对象确实“存储着”刚刚写的那篇博客文章。
+
+#### 2.4.3 更新文章
+
+`--function` 指定执行发布在 `0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc` 地址上的 `article_aggregate` 模块中的 `update` 函数，即更新一篇博客文章。同样也需要使用 `--sender-account` 来指定发送这个更新文章交易的账户。这个函数要求我们必须给它传递三个参数，通过 `--args` 来指定，第一个参数是要修改文章的对象 ID，后面的两个参数分别对应文章的标题和正文。
+
+将文章的标题修改为 `Foo`，文章正文修改为 `Bar`：
+
+```shell
+rooch move run --function 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::article_aggregate::update --sender-account 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc --args 'object_id:0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b' 'string:Foo' 'string:Bar'
+```
+
+除了使用 Rooch CLI，你还可以通过调用 JSON RPC 来查询对象的状态：
+
+```shell
+curl --location --request POST 'http://127.0.0.1:50051/' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+ "id":101,
+ "jsonrpc":"2.0",
+ "method":"rooch_getAnnotatedStates",
+ "params":["/object/0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b"]
+}'
+```
+
+在输出中，可以观察到文章的标题和正文已成功修改：
+
+```shell
+{"jsonrpc":"2.0","result":[{"state":{"value":"0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc010000000000000003466f6f03426172fd1a25121453bfa91136bb7c089142f6a1aeb5d6ea13f23c238eade83f3ad31d","value_type":"0x2::object::Object<0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::article::Article>"},"move_value":{"abilities":0,"type":"0x2::object::Object<0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::article::Article>","value":{"id":"0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b","owner":"0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc","value":{"abilities":8,"type":"0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::article::Article","value":{"body":"Bar","comments":{"abilities":4,"type":"0x2::table::Table<u64, 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::comment::Comment>","value":{"handle":"0xfd1a25121453bfa91136bb7c089142f6a1aeb5d6ea13f23c238eade83f3ad31d"}},"title":"Foo","version":"1"}}}}}],"id":101}[joe@mx rooch_blog]$
+```
+
+#### 2.4.4 删除文章
+
+可以这样提交一个交易，删除文章：
+
+```shell
+rooch move run --function 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::article_aggregate::delete --sender-account 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc --args 'object_id:0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b'
+```
+
+`--function` 指定执行发布在 `0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc` 地址上的 `article_aggregate` 模块中的 `update` 函数，即删除一篇博客文章。同样也需要使用 `--sender-account` 来指定发送这个删除文章交易的账户。这个函数只需给它传递一个参数，即文章对应的对象 ID，通过 `--args` 来指定。
+
+#### 检查文章是否正常删除
+
+```shell
+rooch object --id 0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b
+
+null
+```
+
+可以看到，查询文章的对象 ID 时，结果反回 `null`。说明文章已经被删除了。
