@@ -97,7 +97,7 @@ impl RoochGenesis {
     }
 }
 
-static GENESIS_PACKAGE_BYTES: &'static [u8] = include_bytes!("../genesis/genesis");
+static GENESIS_PACKAGE_BYTES: &[u8] = include_bytes!("../genesis/genesis");
 
 impl GenesisPackage {
     pub const GENESIS_FILE_NAME: &'static str = "genesis";
