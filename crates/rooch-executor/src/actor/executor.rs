@@ -44,7 +44,7 @@ impl ExecutorActor {
 
         let mut moveos = MoveOS::new(moveosdb, genesis.all_natives(), genesis.config.clone())?;
         if moveos.state().is_genesis() {
-            moveos.init_genesis(genesis.genesis_txs.clone())?;
+            moveos.init_genesis(genesis.genesis_txs())?;
         }
         Ok(Self { moveos, rooch_db })
     }
