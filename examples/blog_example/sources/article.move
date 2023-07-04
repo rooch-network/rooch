@@ -16,12 +16,12 @@ module rooch_examples::article {
     use std::option;
     use std::signer;
     use std::string::String;
-    friend rooch_examples::article_create_logic;
     friend rooch_examples::article_update_logic;
     friend rooch_examples::article_delete_logic;
-    friend rooch_examples::article_add_comment_logic;
-    friend rooch_examples::article_remove_comment_logic;
     friend rooch_examples::article_update_comment_logic;
+    friend rooch_examples::article_remove_comment_logic;
+    friend rooch_examples::article_create_logic;
+    friend rooch_examples::article_add_comment_logic;
     friend rooch_examples::article_aggregate;
 
     const EID_DATA_TOO_LONG: u64 = 102;
@@ -43,6 +43,7 @@ module rooch_examples::article {
         version: u64,
         title: String,
         body: String,
+        owner: address,
         comments: Table<u64, Comment>,
     }
 
@@ -60,6 +61,7 @@ module rooch_examples::article {
     }
 
     public(friend) fun set_title(article_obj: &mut Object<Article>, title: String) {
+        assert!(std::string::length(&title) <= 200, EID_DATA_TOO_LONG);
         object::borrow_mut(article_obj).title = title;
     }
 
@@ -68,7 +70,16 @@ module rooch_examples::article {
     }
 
     public(friend) fun set_body(article_obj: &mut Object<Article>, body: String) {
+        assert!(std::string::length(&body) <= 2000, EID_DATA_TOO_LONG);
         object::borrow_mut(article_obj).body = body;
+    }
+
+    public fun owner(article_obj: &Object<Article>): address {
+        object::borrow(article_obj).owner
+    }
+
+    public(friend) fun set_owner(article_obj: &mut Object<Article>, owner: address) {
+        object::borrow_mut(article_obj).owner = owner;
     }
 
     public(friend) fun add_comment(storage_ctx: &mut StorageContext, article_obj: &mut Object<Article>, comment: Comment) {
@@ -101,6 +112,7 @@ module rooch_examples::article {
         tx_ctx: &mut tx_context::TxContext,
         title: String,
         body: String,
+        owner: address,
     ): Article {
         assert!(std::string::length(&title) <= 200, EID_DATA_TOO_LONG);
         assert!(std::string::length(&body) <= 2000, EID_DATA_TOO_LONG);
@@ -108,40 +120,8 @@ module rooch_examples::article {
             version: 0,
             title,
             body,
+            owner,
             comments: table::new<u64, Comment>(tx_ctx),
-        }
-    }
-
-    struct ArticleCreated has key {
-        id: option::Option<ObjectID>,
-        title: String,
-        body: String,
-    }
-
-    public fun article_created_id(article_created: &ArticleCreated): option::Option<ObjectID> {
-        article_created.id
-    }
-
-    public(friend) fun set_article_created_id(article_created: &mut ArticleCreated, id: ObjectID) {
-        article_created.id = option::some(id);
-    }
-
-    public fun article_created_title(article_created: &ArticleCreated): String {
-        article_created.title
-    }
-
-    public fun article_created_body(article_created: &ArticleCreated): String {
-        article_created.body
-    }
-
-    public(friend) fun new_article_created(
-        title: String,
-        body: String,
-    ): ArticleCreated {
-        ArticleCreated {
-            id: option::none(),
-            title,
-            body,
         }
     }
 
@@ -150,6 +130,7 @@ module rooch_examples::article {
         version: u64,
         title: String,
         body: String,
+        owner: address,
     }
 
     public fun article_updated_id(article_updated: &ArticleUpdated): ObjectID {
@@ -164,16 +145,22 @@ module rooch_examples::article {
         article_updated.body
     }
 
+    public fun article_updated_owner(article_updated: &ArticleUpdated): address {
+        article_updated.owner
+    }
+
     public(friend) fun new_article_updated(
         article_obj: &Object<Article>,
         title: String,
         body: String,
+        owner: address,
     ): ArticleUpdated {
         ArticleUpdated {
             id: id(article_obj),
             version: version(article_obj),
             title,
             body,
+            owner,
         }
     }
 
@@ -195,42 +182,49 @@ module rooch_examples::article {
         }
     }
 
-    struct CommentAdded has key {
+    struct CommentUpdated has key {
         id: ObjectID,
         version: u64,
         comment_seq_id: u64,
         commenter: String,
         body: String,
+        owner: address,
     }
 
-    public fun comment_added_id(comment_added: &CommentAdded): ObjectID {
-        comment_added.id
+    public fun comment_updated_id(comment_updated: &CommentUpdated): ObjectID {
+        comment_updated.id
     }
 
-    public fun comment_added_comment_seq_id(comment_added: &CommentAdded): u64 {
-        comment_added.comment_seq_id
+    public fun comment_updated_comment_seq_id(comment_updated: &CommentUpdated): u64 {
+        comment_updated.comment_seq_id
     }
 
-    public fun comment_added_commenter(comment_added: &CommentAdded): String {
-        comment_added.commenter
+    public fun comment_updated_commenter(comment_updated: &CommentUpdated): String {
+        comment_updated.commenter
     }
 
-    public fun comment_added_body(comment_added: &CommentAdded): String {
-        comment_added.body
+    public fun comment_updated_body(comment_updated: &CommentUpdated): String {
+        comment_updated.body
     }
 
-    public(friend) fun new_comment_added(
+    public fun comment_updated_owner(comment_updated: &CommentUpdated): address {
+        comment_updated.owner
+    }
+
+    public(friend) fun new_comment_updated(
         article_obj: &Object<Article>,
         comment_seq_id: u64,
         commenter: String,
         body: String,
-    ): CommentAdded {
-        CommentAdded {
+        owner: address,
+    ): CommentUpdated {
+        CommentUpdated {
             id: id(article_obj),
             version: version(article_obj),
             comment_seq_id,
             commenter,
             body,
+            owner,
         }
     }
 
@@ -259,42 +253,89 @@ module rooch_examples::article {
         }
     }
 
-    struct CommentUpdated has key {
+    struct ArticleCreated has key {
+        id: option::Option<ObjectID>,
+        title: String,
+        body: String,
+        owner: address,
+    }
+
+    public fun article_created_id(article_created: &ArticleCreated): option::Option<ObjectID> {
+        article_created.id
+    }
+
+    public(friend) fun set_article_created_id(article_created: &mut ArticleCreated, id: ObjectID) {
+        article_created.id = option::some(id);
+    }
+
+    public fun article_created_title(article_created: &ArticleCreated): String {
+        article_created.title
+    }
+
+    public fun article_created_body(article_created: &ArticleCreated): String {
+        article_created.body
+    }
+
+    public fun article_created_owner(article_created: &ArticleCreated): address {
+        article_created.owner
+    }
+
+    public(friend) fun new_article_created(
+        title: String,
+        body: String,
+        owner: address,
+    ): ArticleCreated {
+        ArticleCreated {
+            id: option::none(),
+            title,
+            body,
+            owner,
+        }
+    }
+
+    struct CommentAdded has key {
         id: ObjectID,
         version: u64,
         comment_seq_id: u64,
         commenter: String,
         body: String,
+        owner: address,
     }
 
-    public fun comment_updated_id(comment_updated: &CommentUpdated): ObjectID {
-        comment_updated.id
+    public fun comment_added_id(comment_added: &CommentAdded): ObjectID {
+        comment_added.id
     }
 
-    public fun comment_updated_comment_seq_id(comment_updated: &CommentUpdated): u64 {
-        comment_updated.comment_seq_id
+    public fun comment_added_comment_seq_id(comment_added: &CommentAdded): u64 {
+        comment_added.comment_seq_id
     }
 
-    public fun comment_updated_commenter(comment_updated: &CommentUpdated): String {
-        comment_updated.commenter
+    public fun comment_added_commenter(comment_added: &CommentAdded): String {
+        comment_added.commenter
     }
 
-    public fun comment_updated_body(comment_updated: &CommentUpdated): String {
-        comment_updated.body
+    public fun comment_added_body(comment_added: &CommentAdded): String {
+        comment_added.body
     }
 
-    public(friend) fun new_comment_updated(
+    public fun comment_added_owner(comment_added: &CommentAdded): address {
+        comment_added.owner
+    }
+
+    public(friend) fun new_comment_added(
         article_obj: &Object<Article>,
         comment_seq_id: u64,
         commenter: String,
         body: String,
-    ): CommentUpdated {
-        CommentUpdated {
+        owner: address,
+    ): CommentAdded {
+        CommentAdded {
             id: id(article_obj),
             version: version(article_obj),
             comment_seq_id,
             commenter,
             body,
+            owner,
         }
     }
 
@@ -303,12 +344,14 @@ module rooch_examples::article {
         storage_ctx: &mut StorageContext,
         title: String,
         body: String,
+        owner: address,
     ): Object<Article> {
         let tx_ctx = storage_context::tx_context_mut(storage_ctx);
         let article = new_article(
             tx_ctx,
             title,
             body,
+            owner,
         );
         let obj_owner = tx_context::sender(tx_ctx);
         let article_obj = object::new(
@@ -356,13 +399,10 @@ module rooch_examples::article {
             version: _version,
             title: _title,
             body: _body,
+            owner: _owner,
             comments,
         } = article;
         table::destroy_empty(comments);
-    }
-
-    public(friend) fun emit_article_created(storage_ctx: &mut StorageContext, article_created: ArticleCreated) {
-        event::emit_event(storage_ctx, article_created);
     }
 
     public(friend) fun emit_article_updated(storage_ctx: &mut StorageContext, article_updated: ArticleUpdated) {
@@ -373,16 +413,20 @@ module rooch_examples::article {
         event::emit_event(storage_ctx, article_deleted);
     }
 
-    public(friend) fun emit_comment_added(storage_ctx: &mut StorageContext, comment_added: CommentAdded) {
-        event::emit_event(storage_ctx, comment_added);
+    public(friend) fun emit_comment_updated(storage_ctx: &mut StorageContext, comment_updated: CommentUpdated) {
+        event::emit_event(storage_ctx, comment_updated);
     }
 
     public(friend) fun emit_comment_removed(storage_ctx: &mut StorageContext, comment_removed: CommentRemoved) {
         event::emit_event(storage_ctx, comment_removed);
     }
 
-    public(friend) fun emit_comment_updated(storage_ctx: &mut StorageContext, comment_updated: CommentUpdated) {
-        event::emit_event(storage_ctx, comment_updated);
+    public(friend) fun emit_article_created(storage_ctx: &mut StorageContext, article_created: ArticleCreated) {
+        event::emit_event(storage_ctx, article_created);
+    }
+
+    public(friend) fun emit_comment_added(storage_ctx: &mut StorageContext, comment_added: CommentAdded) {
+        event::emit_event(storage_ctx, comment_added);
     }
 
 }

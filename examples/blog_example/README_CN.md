@@ -2,11 +2,11 @@
 
 [English](README.md) | 中文
 
-本文主要介绍使用如何使用低代码工具来开发一个博客示例应用。
+本文主要介绍如何使用低代码工具来开发一个博客示例应用。
 
 ## 前提条件
 
-目前 dddappp 低代码工具以 Docker 镜像的方式发布，供开发者体验。
+目前 [dddappp](https://www.dddappp.org) 低代码工具以 Docker 镜像的方式发布，供开发者体验。
 
 该工具所生成应用的链下服务使用 Java 语言编写，默认使用了 MySQL 数据库。但是本文不打算详细讲解链下服务的部署和测试，而是主要介绍如何使用 Rooch CLI 以及 jq 等命令行工具进行链上状态的查询以及对合约进行测试。
 
@@ -242,10 +242,10 @@ rooch move run --function {ACCOUNT_ADDRESS}::rooch_blog_demo_init::initialize --
 可以像下面这样，使用 Rooch CLI 提交一个交易，创建一篇测试文章：
 
 ```shell
-rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::create --sender-account {ACCOUNT_ADDRESS} --args 'string:Hello' 'string:World!'
+rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::create --sender-account {ACCOUNT_ADDRESS} --args 'string:Hello' 'string:World!' 'address:{ACCOUNT_ADDRESS}'
 ```
 
-然后你可以更换一下 `--args` 后面的第一个参数（`title`）和第二个参数（`body`）的内容，多创建几篇文章。
+然后你可以更换一下 `--args` 后面的第一个参数（`title`）和第二个参数（`body`）的内容，多创建几篇文章。第三个参数表示文章的 Owner，只有 Owner 才能对文章进行更新和删除操作。
 
 ##### 查询文章
 
@@ -292,7 +292,7 @@ rooch object --id {ARTICLE_OBJECT_ID}
 可以这样提交一个交易，更新文章：
 
 ```shell
-rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::update --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'string:Foo' 'string:Bar'
+rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::update --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'string:Foo' 'string:Bar' 'address:{ACCOUNT_ADDRESS}'
 ```
 
 除了使用 Rooch CLI，你还可以通过调用 JSON RPC 来查询对象的状态：
@@ -336,13 +336,13 @@ curl --location --request POST 'http://localhost:50051' \
 然后，我们可以使用这个文章的 ID，给它添加一个评论（注意替换占位符 `{ARTICLE_OBJECT_ID}` 为上面获取到的“第二篇”文章的 ObjectID）：
 
 ```shell
-rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::add_comment --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'u64:1' 'string:Anonymous' 'string:"A test comment"'
+rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::add_comment --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'u64:1' 'string:Anonymous' 'string:"A test comment"' 'address:{ACCOUNT_ADDRESS}'
 ```
 
 我们可以给这篇文章多添加几条评论，像下面这样执行命令（需要注意修改 `--args` 后面的第二个参数，该参数是评论的序号）：
 
 ```shell
-rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::add_comment --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'u64:2' 'string:Anonymous2' 'string:"A test comment2"'
+rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::add_comment --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'u64:2' 'string:Anonymous2' 'string:"A test comment2"' 'address:{ACCOUNT_ADDRESS}'
 ```
 
 ##### 查询评论
@@ -403,7 +403,7 @@ curl --location --request POST 'http://127.0.0.1:50051/' \
 我们可以这样提交一个交易，更新评论：
 
 ```shell
-rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::update_comment --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'u64:1' 'string:Anonymous' 'string:"Updated test comment"'
+rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::update_comment --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'u64:1' 'string:Anonymous' 'string:"Updated test comment"' 'address:{ACCOUNT_ADDRESS}'
 ```
 
 然后我们可以再次查询评论的状态，看看评论内容是否已经更新：
@@ -445,9 +445,103 @@ rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::delete --sender-
 //[TBD]
 ```
 
-### One more thing
-
-如果你有兴趣，可以参考 ["A Rooch Demo"](https://github.com/dddappp/A-Rooch-Demo#configure-off-chain-service) 的介绍，配置目录 `rooch-java-service` 下的 Java 链下服务，然后将服务运行起来。
+## 使用链下服务
 
 通过查询链下服务的 RESTful API，你可以更容易地查询到文章和评论的具体信息，而不需要使用上面介绍的 curl 和 jp 命令。
+
+> **提示**
+>
+> 由于链下服务的代码可以通过 dddml 工具快速重新生成，所以在这个代码库里，我们并没有包含链下服务的代码。
+
+### 配置和启动链下服务
+
+#### 修改配置文件
+
+打开位于目录 `rooch-java-service/roochblogdemo-service-rest/src/main/resources` 下的 `application-test.yml` 文件，找到类似下面的几行，将占位符 `{ACCOUNT_ADDRESS}` 替换为你的账户地址：
+
+```yaml
+rooch:
+  contract:
+    address: "{ACCOUNT_ADDRESS}"
+    jsonrpc:
+      url: "http://127.0.0.1:50051"
+```
+
+这是链下服务唯一必需配置的地方，就是这么简单。
+
+
+#### 创建链下服务的数据库
+
+如果你已经安装了 Docker，可以使用 Docker 来运行一个 MySQL 数据库服务。比如：
+
+```shell
+sudo docker run -p 3306:3306 --name mysql \
+-v ~/docker/mysql/conf:/etc/mysql \
+-v ~/docker/mysql/logs:/var/log/mysql \
+-v ~/docker/mysql/data:/var/lib/mysql \
+-e MYSQL_ROOT_PASSWORD=123456 \
+-d mysql:5.7
+```
+
+注意，上面的命令中我们将数据库 `root` 账号的密码为 `123456`。下面示例的 shell 命令和 Off-chain 服务的配置中我们直接使用这个 root 账号/密码。你可以视你的运行环境修改它们。
+
+使用 MySQL 客户端连接本地的 MySQL 服务器，执行以下脚本创建一个空的数据库（假设名称为 `test2`）：
+
+```sql
+CREATE SCHEMA `test2` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+```
+
+进入 `rooch-java-service` 目录，打包 Java 项目：
+
+```shell
+mvn package
+```
+
+然后运行一个命令行工具，初始化数据库：
+
+```shell
+java -jar ./roochblogdemo-service-cli/target/roochblogdemo-service-cli-0.0.1-SNAPSHOT.jar ddl -d "./scripts" -c "jdbc:mysql://127.0.0.1:3306/test2?enabledTLSProtocols=TLSv1.2&characterEncoding=utf8&serverTimezone=GMT%2b0&useLegacyDatetimeCode=false" -u root -p 123456
+```
+
+#### 启动链下服务
+
+在 `rooch-java-service` 目录下，执行以下命令启动链下服务：
+
+```shell
+mvn -pl roochblogdemo-service-rest -am spring-boot:run
+```
+
+> **提示**
+>
+> 你可以使用这个 Rooch Move CLI 速查表！
+> 
+> 在链下服务启动后，你可以访问这个网址，得到一个如何使用 Rooch Move CLI 调用链上合约的速查表（Cheatsheet）：http://localhost:1023/api/rooch.contract/RoochMoveCLICheatsheet.md
+>
+> 在 Cheatsheet 中已经把刚才发布的 Move 合约的地址帮你填好了。你需要填写的参数是一些“有名字”的占位符。 你可以拷贝这些命令，视你的需要稍作修改，然后在命令行终端中直接执行。
+
+### 链下服务的 RESTful API
+
+现在，你可以访问这个 RESTful API 获取已创建的文章的列表：
+
+```shell
+curl http://localhost:1023/api/Articles
+```
+
+可以使用参数过滤文章列表，比如：
+
+```shell
+curl 'http://localhost:1023/api/Articles?title=Hello'
+```
+
+你可以这样访问单篇文章的信息：
+
+```shell
+curl 'http://localhost:1023/api/Articles/{ARTICLE_OBJECT_ID}'
+```
+
+## 其他
+
+### 更复杂的 Rooch Demo
+
+如果你有兴趣，可以在这里找到一个更复杂的 Rooch Demo：["A Rooch Demo"](https://github.com/dddappp/A-Rooch-Demo#configure-off-chain-service)。
 

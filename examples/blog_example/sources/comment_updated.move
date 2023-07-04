@@ -25,4 +25,8 @@ module rooch_examples::comment_updated {
         article::comment_updated_body(comment_updated)
     }
 
+    public fun owner(comment_updated: &CommentUpdated): address {
+        article::comment_updated_owner(comment_updated)
+    }
+
 }
