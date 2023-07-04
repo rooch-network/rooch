@@ -115,6 +115,33 @@ module rooch_examples::article_aggregate {
     }
 
 
+    public entry fun add_comment(
+        storage_ctx: &mut StorageContext,
+        account: &signer,
+        id: ObjectID,
+        comment_seq_id: u64,
+        commenter: String,
+        body: String,
+    ) {
+        let article_obj = article::remove_article(storage_ctx, id);
+        let comment_added = article_add_comment_logic::verify(
+            storage_ctx,
+            account,
+            comment_seq_id,
+            commenter,
+            body,
+            &article_obj,
+        );
+        let updated_article_obj = article_add_comment_logic::mutate(
+            storage_ctx,
+            &comment_added,
+            article_obj,
+        );
+        article::update_version_and_add(storage_ctx, updated_article_obj);
+        article::emit_comment_added(storage_ctx, comment_added);
+    }
+
+
     public entry fun create(
         storage_ctx: &mut StorageContext,
         account: &signer,
@@ -136,35 +163,6 @@ module rooch_examples::article_aggregate {
         article::set_article_created_id(&mut article_created, article::id(&article_obj));
         article::add_article(storage_ctx, article_obj);
         article::emit_article_created(storage_ctx, article_created);
-    }
-
-
-    public entry fun add_comment(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
-        id: ObjectID,
-        comment_seq_id: u64,
-        commenter: String,
-        body: String,
-        owner: address,
-    ) {
-        let article_obj = article::remove_article(storage_ctx, id);
-        let comment_added = article_add_comment_logic::verify(
-            storage_ctx,
-            account,
-            comment_seq_id,
-            commenter,
-            body,
-            owner,
-            &article_obj,
-        );
-        let updated_article_obj = article_add_comment_logic::mutate(
-            storage_ctx,
-            &comment_added,
-            article_obj,
-        );
-        article::update_version_and_add(storage_ctx, updated_article_obj);
-        article::emit_comment_added(storage_ctx, comment_added);
     }
 
 }

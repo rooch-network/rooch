@@ -20,8 +20,8 @@ module rooch_examples::article {
     friend rooch_examples::article_delete_logic;
     friend rooch_examples::article_update_comment_logic;
     friend rooch_examples::article_remove_comment_logic;
-    friend rooch_examples::article_create_logic;
     friend rooch_examples::article_add_comment_logic;
+    friend rooch_examples::article_create_logic;
     friend rooch_examples::article_aggregate;
 
     const EID_DATA_TOO_LONG: u64 = 102;
@@ -253,46 +253,6 @@ module rooch_examples::article {
         }
     }
 
-    struct ArticleCreated has key {
-        id: option::Option<ObjectID>,
-        title: String,
-        body: String,
-        owner: address,
-    }
-
-    public fun article_created_id(article_created: &ArticleCreated): option::Option<ObjectID> {
-        article_created.id
-    }
-
-    public(friend) fun set_article_created_id(article_created: &mut ArticleCreated, id: ObjectID) {
-        article_created.id = option::some(id);
-    }
-
-    public fun article_created_title(article_created: &ArticleCreated): String {
-        article_created.title
-    }
-
-    public fun article_created_body(article_created: &ArticleCreated): String {
-        article_created.body
-    }
-
-    public fun article_created_owner(article_created: &ArticleCreated): address {
-        article_created.owner
-    }
-
-    public(friend) fun new_article_created(
-        title: String,
-        body: String,
-        owner: address,
-    ): ArticleCreated {
-        ArticleCreated {
-            id: option::none(),
-            title,
-            body,
-            owner,
-        }
-    }
-
     struct CommentAdded has key {
         id: ObjectID,
         version: u64,
@@ -334,6 +294,46 @@ module rooch_examples::article {
             version: version(article_obj),
             comment_seq_id,
             commenter,
+            body,
+            owner,
+        }
+    }
+
+    struct ArticleCreated has key {
+        id: option::Option<ObjectID>,
+        title: String,
+        body: String,
+        owner: address,
+    }
+
+    public fun article_created_id(article_created: &ArticleCreated): option::Option<ObjectID> {
+        article_created.id
+    }
+
+    public(friend) fun set_article_created_id(article_created: &mut ArticleCreated, id: ObjectID) {
+        article_created.id = option::some(id);
+    }
+
+    public fun article_created_title(article_created: &ArticleCreated): String {
+        article_created.title
+    }
+
+    public fun article_created_body(article_created: &ArticleCreated): String {
+        article_created.body
+    }
+
+    public fun article_created_owner(article_created: &ArticleCreated): address {
+        article_created.owner
+    }
+
+    public(friend) fun new_article_created(
+        title: String,
+        body: String,
+        owner: address,
+    ): ArticleCreated {
+        ArticleCreated {
+            id: option::none(),
+            title,
             body,
             owner,
         }
@@ -421,12 +421,12 @@ module rooch_examples::article {
         event::emit_event(storage_ctx, comment_removed);
     }
 
-    public(friend) fun emit_article_created(storage_ctx: &mut StorageContext, article_created: ArticleCreated) {
-        event::emit_event(storage_ctx, article_created);
-    }
-
     public(friend) fun emit_comment_added(storage_ctx: &mut StorageContext, comment_added: CommentAdded) {
         event::emit_event(storage_ctx, comment_added);
+    }
+
+    public(friend) fun emit_article_created(storage_ctx: &mut StorageContext, article_created: ArticleCreated) {
+        event::emit_event(storage_ctx, article_created);
     }
 
 }

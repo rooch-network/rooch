@@ -14,17 +14,15 @@ module rooch_examples::article_add_comment_logic {
         comment_seq_id: u64,
         commenter: String,
         body: String,
-        owner: address,
         article_obj: &Object<article::Article>,
     ): article::CommentAdded {
         let _ = storage_ctx;
-        let _ = account;
         article::new_comment_added(
             article_obj,
             comment_seq_id,
             commenter,
             body,
-            owner,
+            std::signer::address_of(account),
         )
     }
 
