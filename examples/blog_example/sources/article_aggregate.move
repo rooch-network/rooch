@@ -15,34 +15,13 @@ module rooch_examples::article_aggregate {
     use rooch_examples::article_update_logic;
     use std::string::String;
 
-    public entry fun create(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
-        title: String,
-        body: String,
-    ) {
-        let article_created = article_create_logic::verify(
-            storage_ctx,
-            account,
-            title,
-            body,
-        );
-        let article_obj = article_create_logic::mutate(
-            storage_ctx,
-            &article_created,
-        );
-        article::set_article_created_id(&mut article_created, article::id(&article_obj));
-        article::add_article(storage_ctx, article_obj);
-        article::emit_article_created(storage_ctx, article_created);
-    }
-
-
     public entry fun update(
         storage_ctx: &mut StorageContext,
         account: &signer,
         id: ObjectID,
         title: String,
         body: String,
+        owner: address,
     ) {
         let article_obj = article::remove_article(storage_ctx, id);
         let article_updated = article_update_logic::verify(
@@ -50,6 +29,7 @@ module rooch_examples::article_aggregate {
             account,
             title,
             body,
+            owner,
             &article_obj,
         );
         let updated_article_obj = article_update_logic::mutate(
@@ -83,30 +63,32 @@ module rooch_examples::article_aggregate {
     }
 
 
-    public entry fun add_comment(
+    public entry fun update_comment(
         storage_ctx: &mut StorageContext,
         account: &signer,
         id: ObjectID,
         comment_seq_id: u64,
         commenter: String,
         body: String,
+        owner: address,
     ) {
         let article_obj = article::remove_article(storage_ctx, id);
-        let comment_added = article_add_comment_logic::verify(
+        let comment_updated = article_update_comment_logic::verify(
             storage_ctx,
             account,
             comment_seq_id,
             commenter,
             body,
+            owner,
             &article_obj,
         );
-        let updated_article_obj = article_add_comment_logic::mutate(
+        let updated_article_obj = article_update_comment_logic::mutate(
             storage_ctx,
-            &comment_added,
+            &comment_updated,
             article_obj,
         );
         article::update_version_and_add(storage_ctx, updated_article_obj);
-        article::emit_comment_added(storage_ctx, comment_added);
+        article::emit_comment_updated(storage_ctx, comment_updated);
     }
 
 
@@ -133,30 +115,56 @@ module rooch_examples::article_aggregate {
     }
 
 
-    public entry fun update_comment(
+    public entry fun create(
+        storage_ctx: &mut StorageContext,
+        account: &signer,
+        title: String,
+        body: String,
+        owner: address,
+    ) {
+        let article_created = article_create_logic::verify(
+            storage_ctx,
+            account,
+            title,
+            body,
+            owner,
+        );
+        let article_obj = article_create_logic::mutate(
+            storage_ctx,
+            &article_created,
+        );
+        article::set_article_created_id(&mut article_created, article::id(&article_obj));
+        article::add_article(storage_ctx, article_obj);
+        article::emit_article_created(storage_ctx, article_created);
+    }
+
+
+    public entry fun add_comment(
         storage_ctx: &mut StorageContext,
         account: &signer,
         id: ObjectID,
         comment_seq_id: u64,
         commenter: String,
         body: String,
+        owner: address,
     ) {
         let article_obj = article::remove_article(storage_ctx, id);
-        let comment_updated = article_update_comment_logic::verify(
+        let comment_added = article_add_comment_logic::verify(
             storage_ctx,
             account,
             comment_seq_id,
             commenter,
             body,
+            owner,
             &article_obj,
         );
-        let updated_article_obj = article_update_comment_logic::mutate(
+        let updated_article_obj = article_add_comment_logic::mutate(
             storage_ctx,
-            &comment_updated,
+            &comment_added,
             article_obj,
         );
         article::update_version_and_add(storage_ctx, updated_article_obj);
-        article::emit_comment_updated(storage_ctx, comment_updated);
+        article::emit_comment_added(storage_ctx, comment_added);
     }
 
 }

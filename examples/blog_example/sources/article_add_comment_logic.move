@@ -1,11 +1,10 @@
 module rooch_examples::article_add_comment_logic {
-    use std::string::String;
-
     use moveos_std::object::Object;
     use moveos_std::storage_context::StorageContext;
     use rooch_examples::article;
     use rooch_examples::comment;
     use rooch_examples::comment_added;
+    use std::string::String;
 
     friend rooch_examples::article_aggregate;
 
@@ -15,6 +14,7 @@ module rooch_examples::article_add_comment_logic {
         comment_seq_id: u64,
         commenter: String,
         body: String,
+        owner: address,
         article_obj: &Object<article::Article>,
     ): article::CommentAdded {
         let _ = storage_ctx;
@@ -24,6 +24,7 @@ module rooch_examples::article_add_comment_logic {
             comment_seq_id,
             commenter,
             body,
+            owner,
         )
     }
 
@@ -35,6 +36,7 @@ module rooch_examples::article_add_comment_logic {
         let comment_seq_id = comment_added::comment_seq_id(comment_added);
         let commenter = comment_added::commenter(comment_added);
         let body = comment_added::body(comment_added);
+        let owner = comment_added::owner(comment_added);
         let id = article::id(&article_obj);
         let _ = storage_ctx;
         let _ = id;
@@ -42,8 +44,10 @@ module rooch_examples::article_add_comment_logic {
             comment_seq_id,
             commenter,
             body,
+            owner,
         );
         article::add_comment(storage_ctx, &mut article_obj, comment);
         article_obj
     }
+
 }
