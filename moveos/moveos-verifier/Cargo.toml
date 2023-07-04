@@ -12,6 +12,7 @@ codespan-reporting = { workspace = true }
 termcolor = { workspace = true }
 bcs = { workspace = true }
 thiserror = { workspace = true }
+itertools = { workspace = true }
 
 move-core-types = { workspace = true }
 move-model = { workspace = true }
@@ -21,5 +22,6 @@ move-compiler = { workspace = true }
 move-command-line-common = { workspace = true }
 move-vm-runtime = { workspace = true }
 move-vm-types = { workspace = true }
+move-symbol-pool = { workspace = true }
 
 moveos-types = { workspace = true }
