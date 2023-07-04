@@ -9,8 +9,8 @@ module rooch_examples::comment {
     friend rooch_examples::article_delete_logic;
     friend rooch_examples::article_update_comment_logic;
     friend rooch_examples::article_remove_comment_logic;
-    friend rooch_examples::article_create_logic;
     friend rooch_examples::article_add_comment_logic;
+    friend rooch_examples::article_create_logic;
     friend rooch_examples::article;
 
     const EID_DATA_TOO_LONG: u64 = 102;

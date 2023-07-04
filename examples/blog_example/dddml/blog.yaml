@@ -58,3 +58,16 @@ aggregates:
           Move:
             "assert!(std::signer::address_of(account) == comment::owner(comment), 111);"
 
+      AddComment:
+        event:
+          name: CommentAdded
+          properties:
+            Owner:
+              type: address
+        parameters:
+          CommentSeqId:
+            type: u64
+          Commenter:
+            type: String
+          Body:
+            type: String
