@@ -2,6 +2,7 @@ module rooch_examples::article_remove_comment_logic {
     use moveos_std::object::Object;
     use moveos_std::storage_context::StorageContext;
     use rooch_examples::article;
+    use rooch_examples::comment;
     use rooch_examples::comment_removed;
 
     friend rooch_examples::article_aggregate;
@@ -14,6 +15,9 @@ module rooch_examples::article_remove_comment_logic {
     ): article::CommentRemoved {
         let _ = storage_ctx;
         let _ = account;
+        let comment = article::borrow_comment(article_obj, comment_seq_id);
+        let _ = comment;
+        assert!(std::signer::address_of(account) == comment::owner(comment), 111);
         article::new_comment_removed(
             article_obj,
             comment_seq_id,
@@ -32,4 +36,5 @@ module rooch_examples::article_remove_comment_logic {
         article::remove_comment(&mut article_obj, comment_seq_id);
         article_obj
     }
+
 }

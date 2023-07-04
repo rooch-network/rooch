@@ -12,6 +12,7 @@ module rooch_examples::article_delete_logic {
     ): article::ArticleDeleted {
         let _ = storage_ctx;
         let _ = account;
+        assert!(std::signer::address_of(account) == article::owner(article_obj), 111);
         article::new_article_deleted(
             article_obj,
         )
@@ -28,4 +29,5 @@ module rooch_examples::article_delete_logic {
         let _ = article_deleted;
         article_obj
     }
+
 }

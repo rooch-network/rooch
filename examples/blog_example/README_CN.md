@@ -2,11 +2,11 @@
 
 [English](README.md) | 中文
 
-本文主要介绍使用如果使用低代码工具来开发一个 blog 示例应用。
+本文主要介绍如何使用低代码工具来开发一个博客示例应用。
 
-## Prerequisites
+## 前提条件
 
-目前 dddappp 低代码工具以 Docker 镜像的方式发布，供开发者体验。
+目前 [dddappp](https://www.dddappp.org) 低代码工具以 Docker 镜像的方式发布，供开发者体验。
 
 该工具所生成应用的链下服务使用 Java 语言编写，默认使用了 MySQL 数据库。但是本文不打算详细讲解链下服务的部署和测试，而是主要介绍如何使用 Rooch CLI 以及 jq 等命令行工具进行链上状态的查询以及对合约进行测试。
 
@@ -22,7 +22,7 @@
 
 * （可选）安装 JDK 和 Maven。用于构建和测试链下服务。
 
-## 编码（Programing）
+## 编码
 
 你可以按照下面的介绍重现本示例应用的“编码”过程。你会发现要开发一个完整的应用，你只需要编写很少的代码。如果你的应用的业务逻辑只是对一些实体进行简单的 CRUD 操作，那么你甚至可能不需要编写除了“模型”之外的任何代码。
 
@@ -36,7 +36,7 @@
 
 你可以创建一个目录，比如叫做 `test`，来放置应用的所有代码，然后在该目录下面创建一个子目录 `dddml`。我们一般在这个目录下放置按照 DDDML 的规范编写的模型文件。
 
-在 dddml 目录下创建一个纯文本文件，命名为 `blog.yaml`，文件内容如下：
+在 `dddml` 目录下创建一个纯文本文件，命名为 `blog.yaml`，文件内容如下：
 
 ```yaml
 aggregates:
@@ -83,7 +83,7 @@ aggregates:
 
 #### “文章”聚合
 
-在 `/aggregates/Article/metadata` 这个键结点下，我们定义了一些元数据，用来指示生成代码时应用的一些预处理器。这里我们使用了 `MOVE_CRUD_IT` 这个预处理器，它的作用是自动实体的 CRUD 操作逻辑。
+在 `/aggregates/Article/metadata` 这个键结点下，我们定义了一些元数据，用来指示生成代码时应用的一些预处理器。这里我们使用了 `MOVE_CRUD_IT` 这个预处理器，它的作用是自动实现实体的 CRUD 操作逻辑。
 
 在 `/aggregates/Article/id` 这个键结点下，我们定义了文章聚合根的 ID。文章的 ID 的名字为 `Id`，类型为 `ObjectID`。这里的 `ObjectID` 是一个平台特定的类型，我们假设现在正在开发一个基于 Rooch 的去中心化应用。
 
@@ -99,7 +99,7 @@ aggregates:
 
 在 `/aggregates/Article/entities/Comment` 这个键结点下，我们定义了“评论”这个聚合内部实体。
 
-在这里定义的评论（聚合内部实体）的 `id` 是个 local ID（局部 ID），同样只要保证在同一篇文章内不同的评论之间这个 ID 的值具备唯一性就可以了。
+在这里定义的评论（聚合内部实体）的 `id` 是个局部 ID（local ID），同样只要保证在同一篇文章内不同的评论之间这个 ID 的值具备唯一性就可以了。
 
 我们将评论的 ID 命名为 `CommentSeqId`，声明其类型为 u64。
 
@@ -107,9 +107,9 @@ aggregates:
 
 在 `/aggregates/Article/entities/Comment/properties` 结点下我们定义了评论的属性，分别表示评论者和评论内容。
 
-评论者（Commenter）属性是一个类型为 String 的属性，长度限制为 100 个字符。
+评论者（Commenter）属性是一个类型为 `String` 的属性，长度限制为 100 个字符。
 
-评论内容（Body）属性是一个类型为 String 的属性，长度限制为 500 个字符。
+评论内容（Body）属性是一个类型为 `String` 的属性，长度限制为 500 个字符。
 
 ### 运行 dddappp 项目创建工具
 
@@ -133,18 +133,17 @@ wubuku/dddappp-rooch:0.0.1 \
 上面的命令参数很直白：
 
 * 注意将 `/PATH/TO/test` 替换为你实际放置应用代码的本机目录的路径。这一行表示将该本机目录挂载到容器内的 `/myapp` 目录。
-* dddmlDirectoryPath 是 DDDML 模型文件所在的目录。它应该是容器内可以读取的目录路径。
-* 把参数 boundedContextName 的值理解为你要开发的应用的名称即可。名称有多个部分时请使用点号分隔，每个部分使用 PascalCase 命名风格。Bounded-context 是领域驱动设计（DDD）中的一个术语，指的是一个特定的问题域范围，包含了特定的业务边界、约束和语言，这个概念你暂时不能理解也没有太大的关系。
-* roochMoveProjectDirectoryPath 是放置链上 Rooch 合约代码的目录路径。它应该使用容器内可以读写的目录路径。
-* boundedContextRoochPackageName 是链上 Rooch 合约的包名。建议采用 PascalCase 命名风格。
-* boundedContextRoochNamedAddress 是链上 Rooch 合约默认的命名地址。建议采用 snake_case 命名风格。
-* boundedContextJavaPackageName 是链下服务的 Java 包名。按照 Java 的命名规范，它应该全小写、各部分以点号分隔。
-* javaProjectsDirectoryPath 是放置链下服务代码的目录路径。链下服务由多个模块（项目）组成。它应该使用容器内的可以读写的目录路径。
-* javaProjectNamePrefix 是组成链下服务的各模块的名称前缀。建议使用一个全小写的名称。
-* pomGroupId 链下服务的 GroupId，我们使用 Maven 作为链下服务的项目管理工具。它应该全小写、各部分以点号分隔。
+* `dddmlDirectoryPath` 是 DDDML 模型文件所在的目录。它应该是容器内可以读取的目录路径。
+* 把参数 `boundedContextName` 的值理解为你要开发的应用的名称即可。名称有多个部分时请使用点号分隔，每个部分使用 PascalCase 命名风格。Bounded-context 是领域驱动设计（DDD）中的一个术语，指的是一个特定的问题域范围，包含了特定的业务边界、约束和语言，这个概念你暂时不能理解也没有太大的关系。
+* `roochMoveProjectDirectoryPath` 是放置链上 Rooch 合约代码的目录路径。它应该使用容器内可以读写的目录路径。
+* `boundedContextRoochPackageName` 是链上 Rooch 合约的包名。建议采用 PascalCase 命名风格。
+* `boundedContextRoochNamedAddress` 是链上 Rooch 合约默认的命名地址。建议采用 snake_case 命名风格。
+* `boundedContextJavaPackageName` 是链下服务的 Java 包名。按照 Java 的命名规范，它应该全小写、各部分以点号分隔。
+* `javaProjectsDirectoryPath` 是放置链下服务代码的目录路径。链下服务由多个模块（项目）组成。它应该使用容器内的可以读写的目录路径。
+* `javaProjectNamePrefix` 是组成链下服务的各模块的名称前缀。建议使用一个全小写的名称。
+* `pomGroupId` 链下服务的 GroupId，我们使用 Maven 作为链下服务的项目管理工具。它应该全小写、各部分以点号分隔。
 
 上面的命令执行成功后，在本地目录 `/PATH/TO/test` 下应该会增加两个目录 `move` 以及 `rooch-java-service`。
-
 
 ### 项目源代码结构
 
@@ -163,10 +162,10 @@ rooch move build --named-addresses rooch_examples={ACCOUNT_ADDRESS}
 在 `move/sources` 目录中，包含了链上合约项目的所有 Move 源代码。我们先忽略以 `_logic.move` 结尾的文件，介绍一下其他文件。
 
 * `rooch_blog_demo_init.move`。它包含了链上合约的初始化（`initialize`）函数。一般来说，在合约项目部署到链上后，需要首先调用它（只需要调用一次）。不过，因为我们的示例项目比较简单，所以目前工具生成的 `initialize` 函数内没有包含什么有意义的初始化逻辑，我们可以先忽略它。
-* `article_aggregate.move`。这是 entry functions 所在的地方。现在它包含的对文章和评论进行 Create、Update、Delete 操作的函数。你可以看到，创建评论这个聚合内实体的函数被命名为 `add_comment` 而不是 `create_comment`，删除评论的函数被命名为 `remove_comment` 而不是 `delete_comment`，这其实是为了更容易在阅读时分辨出这些函数是对聚合内部实体的操作，而不是对聚合本身的操作。
+* `article_aggregate.move`。这是入口函数（entry functions）所在的地方。现在它包含的对文章和评论进行创建、更新、删除操作的函数。你可以看到，创建评论这个聚合内实体的函数被命名为 `add_comment` 而不是 `create_comment`，删除评论的函数被命名为 `remove_comment` 而不是 `delete_comment`，这其实是为了更容易在阅读时分辨出这些函数是对聚合内部实体的操作，而不是对聚合本身的操作。
 * `article.move`。这个文件包含了“文章”这个聚合根实体的“数据模型”的定义，以及“文章”聚合相关的事件的定义。
 * `comment.move`。这个文件包含了“评论”这个聚合内部实体的“数据模型”的定义。
-* 下面列出的几个 Move 文件没有什么复杂的逻辑，只是提供了一些让你可以更便捷地获取事件属性（字段）值的 functions。
+* 下面列出的几个 Move 文件没有什么复杂的逻辑，只是提供了一些让你可以更便捷地获取事件属性（字段）值的函数。
   * `article_created.move`
   * `article_deleted.move`
   * `article_updated.move`
@@ -178,22 +177,57 @@ rooch move build --named-addresses rooch_examples={ACCOUNT_ADDRESS}
 
 以 `_logic.move` 结尾的 Move 源文件是“业务逻辑”实现代码所在之处。
 
-如果你在 DDDML 文件中为聚合定义了一个方法（method），那么 dddappp 工具就会为你生成对应的一个名为 `{聚合名_方法名}_logic.move` 的 Move 代码文件，然后你需要在这个文件各种填充“业务逻辑”的实现代码。
+如果你在 DDDML 文件中为聚合定义了一个方法（method），那么 dddappp 工具就会为你生成对应的一个名为 `{聚合名_方法名}_logic.move` 的 Move 代码文件，然后你需要在这个文件中填充“业务逻辑”的实现代码。
 
 不过，上面我们使用的 `MOVE_CRUD_IT` 预处理器更进一步，直接为我们生成简单的 CRUD 方法的默认实现。当然，我们可以检查一下这些“填充好的默认逻辑”，视自己的需要修改它们。
 
 使用上面的模型生成项目后，已经存在的“业务逻辑”代码文件是（可执行命令 `ls sources/*_logic.move` 列出）：
 
-* article_add_comment_logic.move
-* article_delete_logic.move
-* article_update_comment_logic.move
-* article_create_logic.move
-* article_remove_comment_logic.move
-* article_update_logic.move
+* `article_create_logic.move`
+* `article_delete_logic.move`
+* `article_update_logic.move`
+* `article_add_comment_logic.move`
+* `article_remove_comment_logic.move`
+* `article_update_comment_logic.move`
 
 现在就打开它们，移除那些多余的 `use` 语句。如果你的 IDE 安装了一些 Move 语言的插件，可能你只需要使用“格式化”功能对这几个源文件重新格式化一下即可。
 
 然后使用 `rooch move build` 命令重新编译 Move 项目，现在应该没有警告信息了。
+
+
+### 实现自定义业务逻辑（在必要时）
+
+在这个例子中，`MOVE_CRUD_IT` 预处理器已经为我们生成了完整的 CRUD 方法。如果 CRUD 是你需要的所有业务逻辑，那么你不需要再写一行代码。
+
+有可能你觉得默认生成的 CRUD 逻辑不符合你的需求，比如，你可能想要添加评论时不需要传递 `Owner` 参数给 `entry fun add_comment`，而是直接使用发送者的账户地址作为 Owner，那么这个需求目前可以这样满足：
+
+首先，在模型文件中像这样自定义一个方法：
+
+```yaml
+aggregates:
+  Article:
+    # ...
+    methods:
+      AddComment:
+        event:
+          name: CommentAdded
+          properties:
+            Owner:
+              type: address
+        parameters:
+          CommentSeqId:
+            type: u64
+          Commenter:
+            type: String
+          Body:
+            type: String
+```
+
+注意，上面的方法参数列表中已经没有 `Owner` 参数。
+
+然后，删除 `article_add_comment_logic.move` 文件，再次运行 dddappp 工具。（注意，因为工具默认不会覆盖已经存在的 `*_logic.move` 文件，所以你需要手动删除它。）
+
+打开重新生成的 `article_add_comment_logic.move` 文件中，找到 `verify` 函数，在函数体中填充你想要的业务逻辑代码。
 
 ## 测试应用
 
@@ -230,7 +264,7 @@ rooch move publish --named-addresses rooch_examples={ACCOUNT_ADDRESS}
 
 我们下面将会使用 Rooch CLI 以及其他命令行工具（`curl`、`jq`）来测试已发布的合约。
 
-使用 `rooch move run` 命令提及一个交易，初始化合约（请注意替换占位符 `{ACCOUNT_ADDRESS}` 为你拥有账户的地址）：
+使用 `rooch move run` 命令提交一个交易，初始化合约（请注意替换占位符 `{ACCOUNT_ADDRESS}` 为你拥有账户的地址）：
 
 ```shell
 rooch move run --function {ACCOUNT_ADDRESS}::rooch_blog_demo_init::initialize --sender-account {ACCOUNT_ADDRESS}
@@ -243,10 +277,10 @@ rooch move run --function {ACCOUNT_ADDRESS}::rooch_blog_demo_init::initialize --
 可以像下面这样，使用 Rooch CLI 提交一个交易，创建一篇测试文章：
 
 ```shell
-rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::create --sender-account {ACCOUNT_ADDRESS} --args 'string:Hello' 'string:World!'
+rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::create --sender-account {ACCOUNT_ADDRESS} --args 'string:Hello' 'string:World!' 'address:{ACCOUNT_ADDRESS}'
 ```
 
-然后你可以更换一下 `--args` 后面的第一个参数（`title`）和第二个参数（`body`）的内容，多创建几篇文章。
+然后你可以更换一下 `--args` 后面的第一个参数（`title`）和第二个参数（`body`）的内容，多创建几篇文章。第三个参数表示文章的 Owner，只有 Owner 才能对文章进行更新和删除操作。
 
 ##### 查询文章
 
@@ -293,7 +327,7 @@ rooch object --id {ARTICLE_OBJECT_ID}
 可以这样提交一个交易，更新文章：
 
 ```shell
-rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::update --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'string:Foo' 'string:Bar'
+rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::update --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'string:Foo' 'string:Bar' 'address:{ACCOUNT_ADDRESS}'
 ```
 
 除了使用 Rooch CLI，你还可以通过调用 JSON RPC 来查询对象的状态：
@@ -337,13 +371,13 @@ curl --location --request POST 'http://localhost:50051' \
 然后，我们可以使用这个文章的 ID，给它添加一个评论（注意替换占位符 `{ARTICLE_OBJECT_ID}` 为上面获取到的“第二篇”文章的 ObjectID）：
 
 ```shell
-rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::add_comment --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'u64:1' 'string:Anonymous' 'string:"A test comment"'
+rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::add_comment --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'u64:1' 'string:Anonymous' 'string:"A test comment"' 'address:{ACCOUNT_ADDRESS}'
 ```
 
 我们可以给这篇文章多添加几条评论，像下面这样执行命令（需要注意修改 `--args` 后面的第二个参数，该参数是评论的序号）：
 
 ```shell
-rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::add_comment --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'u64:2' 'string:Anonymous2' 'string:"A test comment2"'
+rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::add_comment --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'u64:2' 'string:Anonymous2' 'string:"A test comment2"' 'address:{ACCOUNT_ADDRESS}'
 ```
 
 ##### 查询评论
@@ -404,7 +438,7 @@ curl --location --request POST 'http://127.0.0.1:50051/' \
 我们可以这样提交一个交易，更新评论：
 
 ```shell
-rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::update_comment --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'u64:1' 'string:Anonymous' 'string:"Updated test comment"'
+rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::update_comment --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'u64:1' 'string:Anonymous' 'string:"Updated test comment"' 'address:{ACCOUNT_ADDRESS}'
 ```
 
 然后我们可以再次查询评论的状态，看看评论内容是否已经更新：
@@ -446,9 +480,103 @@ rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::delete --sender-
 //[TBD]
 ```
 
-### One more thing
-
-如果你有兴趣，可以参考 ["A Rooch Demo"](https://github.com/dddappp/A-Rooch-Demo#configure-off-chain-service) 的介绍，配置目录 `rooch-java-service` 下的 Java 链下服务，然后将服务运行起来。
+## 使用链下服务
 
 通过查询链下服务的 RESTful API，你可以更容易地查询到文章和评论的具体信息，而不需要使用上面介绍的 curl 和 jp 命令。
+
+> **提示**
+>
+> 由于链下服务的代码可以通过 dddml 工具快速重新生成，所以在这个代码库里，我们并没有包含链下服务的代码。
+
+### 配置和启动链下服务
+
+#### 修改配置文件
+
+打开位于目录 `rooch-java-service/roochblogdemo-service-rest/src/main/resources` 下的 `application-test.yml` 文件，找到类似下面的几行，将占位符 `{ACCOUNT_ADDRESS}` 替换为你的账户地址：
+
+```yaml
+rooch:
+  contract:
+    address: "{ACCOUNT_ADDRESS}"
+    jsonrpc:
+      url: "http://127.0.0.1:50051"
+```
+
+这是链下服务唯一必需配置的地方，就是这么简单。
+
+
+#### 创建链下服务的数据库
+
+如果你已经安装了 Docker，可以使用 Docker 来运行一个 MySQL 数据库服务。比如：
+
+```shell
+sudo docker run -p 3306:3306 --name mysql \
+-v ~/docker/mysql/conf:/etc/mysql \
+-v ~/docker/mysql/logs:/var/log/mysql \
+-v ~/docker/mysql/data:/var/lib/mysql \
+-e MYSQL_ROOT_PASSWORD=123456 \
+-d mysql:5.7
+```
+
+注意，上面的命令中我们将数据库 `root` 账号的密码为 `123456`。下面示例的 shell 命令和 Off-chain 服务的配置中我们直接使用这个 root 账号/密码。你可以视你的运行环境修改它们。
+
+使用 MySQL 客户端连接本地的 MySQL 服务器，执行以下脚本创建一个空的数据库（假设名称为 `test2`）：
+
+```sql
+CREATE SCHEMA `test2` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+```
+
+进入 `rooch-java-service` 目录，打包 Java 项目：
+
+```shell
+mvn package
+```
+
+然后运行一个命令行工具，初始化数据库：
+
+```shell
+java -jar ./roochblogdemo-service-cli/target/roochblogdemo-service-cli-0.0.1-SNAPSHOT.jar ddl -d "./scripts" -c "jdbc:mysql://127.0.0.1:3306/test2?enabledTLSProtocols=TLSv1.2&characterEncoding=utf8&serverTimezone=GMT%2b0&useLegacyDatetimeCode=false" -u root -p 123456
+```
+
+#### 启动链下服务
+
+在 `rooch-java-service` 目录下，执行以下命令启动链下服务：
+
+```shell
+mvn -pl roochblogdemo-service-rest -am spring-boot:run
+```
+
+> **提示**
+>
+> 你可以使用这个 Rooch Move CLI 速查表！
+> 
+> 在链下服务启动后，你可以访问这个网址，得到一个如何使用 Rooch Move CLI 调用链上合约的速查表（Cheatsheet）：http://localhost:1023/api/rooch.contract/RoochMoveCLICheatsheet.md
+>
+> 在 Cheatsheet 中已经把刚才发布的 Move 合约的地址帮你填好了。你需要填写的参数是一些“有名字”的占位符。 你可以拷贝这些命令，视你的需要稍作修改，然后在命令行终端中直接执行。
+
+### 链下服务的 RESTful API
+
+现在，你可以访问这个 RESTful API 获取已创建的文章的列表：
+
+```shell
+curl http://localhost:1023/api/Articles
+```
+
+可以使用参数过滤文章列表，比如：
+
+```shell
+curl 'http://localhost:1023/api/Articles?title=Hello'
+```
+
+你可以这样访问单篇文章的信息：
+
+```shell
+curl 'http://localhost:1023/api/Articles/{ARTICLE_OBJECT_ID}'
+```
+
+## 其他
+
+### 更复杂的 Rooch Demo
+
+如果你有兴趣，可以在这里找到一个更复杂的 Rooch Demo：["A Rooch Demo"](https://github.com/dddappp/A-Rooch-Demo#configure-off-chain-service)。
 

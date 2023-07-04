@@ -21,4 +21,8 @@ module rooch_examples::article_updated {
         article::article_updated_body(article_updated)
     }
 
+    public fun owner(article_updated: &ArticleUpdated): address {
+        article::article_updated_owner(article_updated)
+    }
+
 }

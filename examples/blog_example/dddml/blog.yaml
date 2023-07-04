@@ -13,6 +13,8 @@ aggregates:
       Body:
         type: String
         length: 2000
+      Owner:
+        type: address
       Comments:
         itemType: Comment
 
@@ -30,61 +32,42 @@ aggregates:
           Body:
             type: String
             length: 500
+          Owner:
+            type: address
 
     methods:
-#      Create:
-#        isCreationCommand: true
-#        event:
-#          name: ArticleCreated
-#        parameters:
-#          Title:
-#            type: String
-#            length: 200
-#          Body:
-#            type: String
-#            length: 2000
-#      Update:
-#        event:
-#          name: ArticleUpdated
-#        parameters:
-#          Title:
-#            type: String
-#            length: 200
-#          Body:
-#            type: String
-#            length: 2000
-#      Delete:
-#        isDeletionCommand: true
-#        event:
-#          name: ArticleDeleted
+      # ------------------------------------------------------------------------------------------------------
+      # The verification logic written here is inserted into the `{aggregate_name_method_name}_logic.move` file.
+      # Once the `*_logic.move` files are generated, the tool does not overwrite them by default.
+      # By writing the simple verification logic here, the `*_logic.move` file can be deleted and regenerated when the model changes.
+      # ------------------------------------------------------------------------------------------------------
+      Update:
+        verificationLogic:
+          Move:
+            "assert!(std::signer::address_of(account) == article::owner(article_obj), 111);"
+      Delete:
+        verificationLogic:
+          Move:
+            "assert!(std::signer::address_of(account) == article::owner(article_obj), 111);"
+      UpdateComment:
+        verificationLogic:
+          Move:
+            "assert!(std::signer::address_of(account) == comment::owner(comment), 111);"
+      RemoveComment:
+        verificationLogic:
+          Move:
+            "assert!(std::signer::address_of(account) == comment::owner(comment), 111);"
 
-#      AddComment:
-#        event:
-#          name: CommentAdded
-#        parameters:
-#          CommentSeqId:
-#            type: u64
-#          Commenter:
-#            type: String
-#            length: 100
-#          Body:
-#            type: String
-#            length: 500
-#      RemoveComment:
-#        event:
-#          name: CommentRemoved
-#        parameters:
-#          CommentSeqId:
-#            type: u64
-#      UpdateComment:
-#        event:
-#          name: CommentUpdated
-#        parameters:
-#          CommentSeqId:
-#            type: u64
-#          Commenter:
-#            type: String
-#            length: 100
-#          Body:
-#            type: String
-#            length: 500
+      AddComment:
+        event:
+          name: CommentAdded
+          properties:
+            Owner:
+              type: address
+        parameters:
+          CommentSeqId:
+            type: u64
+          Commenter:
+            type: String
+          Body:
+            type: String

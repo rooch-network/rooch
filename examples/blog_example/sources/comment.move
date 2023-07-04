@@ -5,12 +5,12 @@
 
 module rooch_examples::comment {
     use std::string::String;
-    friend rooch_examples::article_create_logic;
     friend rooch_examples::article_update_logic;
     friend rooch_examples::article_delete_logic;
-    friend rooch_examples::article_add_comment_logic;
-    friend rooch_examples::article_remove_comment_logic;
     friend rooch_examples::article_update_comment_logic;
+    friend rooch_examples::article_remove_comment_logic;
+    friend rooch_examples::article_add_comment_logic;
+    friend rooch_examples::article_create_logic;
     friend rooch_examples::article;
 
     const EID_DATA_TOO_LONG: u64 = 102;
@@ -19,6 +19,7 @@ module rooch_examples::comment {
         comment_seq_id: u64,
         commenter: String,
         body: String,
+        owner: address,
     }
 
     public fun comment_seq_id(comment: &Comment): u64 {
@@ -30,6 +31,7 @@ module rooch_examples::comment {
     }
 
     public(friend) fun set_commenter(comment: &mut Comment, commenter: String) {
+        assert!(std::string::length(&commenter) <= 100, EID_DATA_TOO_LONG);
         comment.commenter = commenter;
     }
 
@@ -38,13 +40,23 @@ module rooch_examples::comment {
     }
 
     public(friend) fun set_body(comment: &mut Comment, body: String) {
+        assert!(std::string::length(&body) <= 500, EID_DATA_TOO_LONG);
         comment.body = body;
+    }
+
+    public fun owner(comment: &Comment): address {
+        comment.owner
+    }
+
+    public(friend) fun set_owner(comment: &mut Comment, owner: address) {
+        comment.owner = owner;
     }
 
     public(friend) fun new_comment(
         comment_seq_id: u64,
         commenter: String,
         body: String,
+        owner: address,
     ): Comment {
         assert!(std::string::length(&commenter) <= 100, EID_DATA_TOO_LONG);
         assert!(std::string::length(&body) <= 500, EID_DATA_TOO_LONG);
@@ -52,6 +64,7 @@ module rooch_examples::comment {
             comment_seq_id,
             commenter,
             body,
+            owner,
         }
     }
 
@@ -60,6 +73,7 @@ module rooch_examples::comment {
             comment_seq_id: _,
             commenter: _,
             body: _,
+            owner: _,
         } = comment;
     }
 
