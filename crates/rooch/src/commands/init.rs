@@ -33,11 +33,11 @@ impl CommandAction<String> for Init {
         };
         // Prompt user for connect to devnet fullnode if config does not exist.
         if !client_config_path.exists() {
-            let env = match std::env::var_os("ROOCH_CONFIG_WITH_RPC_URL") {
+            let env = match std::env::var_os("ROOCH_CONFIG_WITH_RPC_WS_URL") {
                 Some(v) => Some(Env {
-                    alias: "custom".to_string(),
-                    rpc: v.into_string().unwrap(),
-                    ws: None,
+                    alias: "custom".to_owned(),
+                    rpc: v.clone().into_string().unwrap(),
+                    ws: Some(v.into_string().unwrap()),
                 }),
                 None => {
                     if self.accept_defaults {
@@ -63,16 +63,17 @@ impl CommandAction<String> for Init {
                             Env::default()
                         } else {
                             print!("Environment alias for [{url}] : ");
+                            let cloned_url = url.clone();
                             let alias = read_line()?;
                             let alias = if alias.trim().is_empty() {
-                                "custom".to_string()
+                                "custom".to_owned()
                             } else {
                                 alias
                             };
                             Env {
                                 alias,
                                 rpc: url,
-                                ws: None,
+                                ws: Some(cloned_url),
                             }
                         })
                     } else {
