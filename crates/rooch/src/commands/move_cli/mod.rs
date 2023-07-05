@@ -53,47 +53,47 @@ impl CommandAction<String> for MoveCli {
             MoveCommand::Build(c) => c
                 .execute(move_args.package_path, move_args.build_config)
                 .await
-                .map(|_| "Success".to_string())
+                .map(|_| "Success".to_owned())
                 .map_err(RoochError::from),
             MoveCommand::Coverage(c) => c
                 .execute(move_args.package_path, move_args.build_config)
-                .map(|_| "Success".to_string())
+                .map(|_| "Success".to_owned())
                 .map_err(RoochError::from),
             MoveCommand::Disassemble(c) => c
                 .execute(move_args.package_path, move_args.build_config)
-                .map(|_| "Success".to_string())
+                .map(|_| "Success".to_owned())
                 .map_err(RoochError::from),
             MoveCommand::Docgen(c) => c
                 .execute(move_args.package_path, move_args.build_config)
-                .map(|_| "Success".to_string())
+                .map(|_| "Success".to_owned())
                 .map_err(RoochError::from),
             MoveCommand::Errmap(c) => c
                 .execute(move_args.package_path, move_args.build_config)
-                .map(|_| "Success".to_string())
+                .map(|_| "Success".to_owned())
                 .map_err(RoochError::from),
             MoveCommand::Info(c) => c
                 .execute(move_args.package_path, move_args.build_config)
-                .map(|_| "Success".to_string())
+                .map(|_| "Success".to_owned())
                 .map_err(RoochError::from),
             MoveCommand::New(c) => c
                 .execute(move_args.package_path)
                 .await
-                .map(|_| "Success".to_string())
+                .map(|_| "Success".to_owned())
                 .map_err(RoochError::from),
             MoveCommand::Prove(c) => c
                 .execute(move_args.package_path, move_args.build_config)
-                .map(|_| "Success".to_string())
+                .map(|_| "Success".to_owned())
                 .map_err(RoochError::from),
             MoveCommand::Test(c) => c
                 .execute(move_args.package_path, move_args.build_config)
-                .map(|_| "Success".to_string())
+                .map(|_| "Success".to_owned())
                 .map_err(RoochError::from),
             MoveCommand::Publish(c) => c.execute_serialized().await,
             MoveCommand::Run(c) => c.execute_serialized().await,
             MoveCommand::View(c) => c.execute_serialized().await,
             MoveCommand::IntegrationTest(c) => c
                 .execute(move_args)
-                .map(|_| "Success".to_string())
+                .map(|_| "Success".to_owned())
                 .map_err(RoochError::from),
         }
     }

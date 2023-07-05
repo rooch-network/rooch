@@ -39,7 +39,7 @@ impl Project {
         license: &str,
         license_url: &str,
     ) -> Self {
-        let openrpc: String = "1.2.6".to_string();
+        let openrpc: String = "1.2.6".to_owned();
         Self {
             openrpc,
             info: Info {
@@ -230,7 +230,7 @@ impl ExamplePairing {
                 })
                 .collect(),
             result: Example {
-                name: "Result".to_string(),
+                name: "Result".to_owned(),
                 summary: None,
                 description: None,
                 value: result,
@@ -309,7 +309,7 @@ impl Default for RpcModuleDocBuilder {
     fn default() -> Self {
         let schema_generator = SchemaSettings::default()
             .with(|s| {
-                s.definitions_path = "#/components/schemas/".to_string();
+                s.definitions_path = "#/components/schemas/".to_owned();
             })
             .into_generator();
 

@@ -27,8 +27,8 @@ impl CommandAction<String> for Account {
             AccountCommand::Create(create) => create.execute().await.map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
-            AccountCommand::List(list) => list.execute().await.map(|_| "".to_string()),
-            AccountCommand::Import(import) => import.execute().await.map(|_| "".to_string()),
+            AccountCommand::List(list) => list.execute().await.map(|_| "".to_owned()),
+            AccountCommand::Import(import) => import.execute().await.map(|_| "".to_owned()),
         }
         .map_err(RoochError::from)
     }

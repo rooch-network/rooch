@@ -55,10 +55,10 @@ async fn run_cmd(world: &mut World, args: String) {
 
         match context.config.active_address {
             Some(addr) => AccountAddress::from(addr).to_hex_literal(),
-            None => "".to_string(),
+            None => "".to_owned(),
         }
     } else {
-        "".to_string()
+        "".to_owned()
     };
 
     let args = args.replace("{default}", &default);
@@ -71,8 +71,8 @@ async fn run_cmd(world: &mut World, args: String) {
 
     let mut args = split_string_with_quotes(&args).expect("Invalid commands");
     let cmd_name = args[0].clone();
-    args.insert(0, "rooch".to_string());
-    args.push("--config-dir".to_string());
+    args.insert(0, "rooch".to_owned());
+    args.push("--config-dir".to_owned());
     args.push(config_dir.to_str().unwrap().to_string());
     let opts: RoochCli = RoochCli::parse_from(args);
     let output = rooch::run_cli(opts)

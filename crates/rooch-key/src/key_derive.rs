@@ -54,17 +54,17 @@ pub fn validate_path(
                 {
                     Ok(p)
                 } else {
-                    Err(RoochError::SignatureKeyGenError("Invalid path".to_string()))
+                    Err(RoochError::SignatureKeyGenError("Invalid path".to_owned()))
                 }
             } else {
-                Err(RoochError::SignatureKeyGenError("Invalid path".to_string()))
+                Err(RoochError::SignatureKeyGenError("Invalid path".to_owned()))
             }
         }
         None => Ok(format!(
             "m/{DERVIATION_PATH_PURPOSE_ED25519}'/{DERIVATION_PATH_COIN_TYPE}'/0'/0'/0'"
         )
         .parse()
-        .map_err(|_| RoochError::SignatureKeyGenError("Cannot parse path".to_string()))?),
+        .map_err(|_| RoochError::SignatureKeyGenError("Cannot parse path".to_owned()))?),
     }
 }
 
