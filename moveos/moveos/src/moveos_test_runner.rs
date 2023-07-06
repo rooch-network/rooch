@@ -911,7 +911,7 @@ pub fn taskify<Command: Debug + Parser>(filename: &Path) -> Result<Vec<TaskInput
 
         let start_line = commands.first().unwrap().0;
         let command_lines_stop = commands.last().unwrap().0;
-        let mut command_text = "task ".to_string();
+        let mut command_text = "task ".to_owned();
         for (line_number, text) in commands {
             assert!(!text.is_empty(), "{}: {}", line_number, text);
             command_text = format!("{} {}", command_text, text);

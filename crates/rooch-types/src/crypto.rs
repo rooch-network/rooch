@@ -62,7 +62,7 @@ impl BuiltinScheme {
     pub fn from_flag(flag: &str) -> Result<BuiltinScheme, RoochError> {
         let byte_int = flag
             .parse::<u8>()
-            .map_err(|_| RoochError::KeyConversionError("Invalid key scheme".to_string()))?;
+            .map_err(|_| RoochError::KeyConversionError("Invalid key scheme".to_owned()))?;
         Self::from_flag_byte(&byte_int)
     }
 
@@ -72,7 +72,7 @@ impl BuiltinScheme {
             0x01 => Ok(BuiltinScheme::MultiEd25519),
             0x02 => Ok(BuiltinScheme::Secp256k1),
             _ => Err(RoochError::KeyConversionError(
-                "Invalid key scheme".to_string(),
+                "Invalid key scheme".to_owned(),
             )),
         }
     }
@@ -319,7 +319,7 @@ pub trait RoochSignatureInner: Sized + ToFromBytes + PartialEq + Eq + Hash {
         // Is this signature emitted by the expected author?
         let bytes = self.public_key_bytes();
         let pk = Self::PubKey::from_bytes(bytes)
-            .map_err(|_| RoochError::KeyConversionError("Invalid public key".to_string()))?;
+            .map_err(|_| RoochError::KeyConversionError("Invalid public key".to_owned()))?;
 
         let received_addr = RoochAddress::from(&pk);
         if received_addr != author {
@@ -331,7 +331,7 @@ pub trait RoochSignatureInner: Sized + ToFromBytes + PartialEq + Eq + Hash {
         // deserialize the signature
         let signature = Self::Sig::from_bytes(self.signature_bytes()).map_err(|_| {
             RoochError::InvalidSignature {
-                error: "Fail to get pubkey and sig".to_string(),
+                error: "Fail to get pubkey and sig".to_owned(),
             }
         })?;
 
@@ -418,7 +418,7 @@ impl Signature {
             BuiltinScheme::Ed25519 => Ok(CompressedSignature::Ed25519(
                 (&Ed25519Signature::from_bytes(bytes).map_err(|_| {
                     RoochError::InvalidSignature {
-                        error: "Cannot parse sig".to_string(),
+                        error: "Cannot parse sig".to_owned(),
                     }
                 })?)
                     .into(),
@@ -426,13 +426,13 @@ impl Signature {
             BuiltinScheme::Secp256k1 => Ok(CompressedSignature::Secp256k1(
                 (&Secp256k1Signature::from_bytes(bytes).map_err(|_| {
                     RoochError::InvalidSignature {
-                        error: "Cannot parse sig".to_string(),
+                        error: "Cannot parse sig".to_owned(),
                     }
                 })?)
                     .into(),
             )),
             _ => Err(RoochError::UnsupportedFeatureError {
-                error: "Unsupported signature scheme in MultiSig".to_string(),
+                error: "Unsupported signature scheme in MultiSig".to_owned(),
             }),
         }
     }
@@ -444,16 +444,16 @@ impl Signature {
         match self.scheme() {
             BuiltinScheme::Ed25519 => Ok(PublicKey::Ed25519(
                 (&Ed25519PublicKey::from_bytes(bytes)
-                    .map_err(|_| RoochError::KeyConversionError("Cannot parse pk".to_string()))?)
+                    .map_err(|_| RoochError::KeyConversionError("Cannot parse pk".to_owned()))?)
                     .into(),
             )),
             BuiltinScheme::Secp256k1 => Ok(PublicKey::Secp256k1(
                 (&Secp256k1PublicKey::from_bytes(bytes)
-                    .map_err(|_| RoochError::KeyConversionError("Cannot parse pk".to_string()))?)
+                    .map_err(|_| RoochError::KeyConversionError("Cannot parse pk".to_owned()))?)
                     .into(),
             )),
             _ => Err(RoochError::UnsupportedFeatureError {
-                error: "Unsupported signature scheme in MultiSig".to_string(),
+                error: "Unsupported signature scheme in MultiSig".to_owned(),
             }),
         }
     }

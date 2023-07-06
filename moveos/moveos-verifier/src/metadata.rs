@@ -503,20 +503,20 @@ pub fn is_defined_or_allowed_in_current_module(
 
             (false, struct_name)
         }
-        SignatureToken::TypeParameter(_) => (true, "TypeParameter".to_string()),
+        SignatureToken::TypeParameter(_) => (true, "TypeParameter".to_owned()),
         // Other types are not allowed.
-        SignatureToken::Bool => (false, "Bool".to_string()),
-        SignatureToken::U8 => (false, "U8".to_string()),
-        SignatureToken::U16 => (false, "U16".to_string()),
-        SignatureToken::U32 => (false, "U32".to_string()),
-        SignatureToken::U64 => (false, "U64".to_string()),
-        SignatureToken::U128 => (false, "U128".to_string()),
-        SignatureToken::U256 => (false, "U256".to_string()),
-        SignatureToken::Signer => (false, "Signer".to_string()),
-        SignatureToken::Address => (false, "Address".to_string()),
-        SignatureToken::Vector(_) => (false, "Vector".to_string()),
-        SignatureToken::Reference(_) => (false, "Reference".to_string()),
-        SignatureToken::MutableReference(_) => (false, "MutableReference".to_string()),
+        SignatureToken::Bool => (false, "Bool".to_owned()),
+        SignatureToken::U8 => (false, "U8".to_owned()),
+        SignatureToken::U16 => (false, "U16".to_owned()),
+        SignatureToken::U32 => (false, "U32".to_owned()),
+        SignatureToken::U64 => (false, "U64".to_owned()),
+        SignatureToken::U128 => (false, "U128".to_owned()),
+        SignatureToken::U256 => (false, "U256".to_owned()),
+        SignatureToken::Signer => (false, "Signer".to_owned()),
+        SignatureToken::Address => (false, "Address".to_owned()),
+        SignatureToken::Vector(_) => (false, "Vector".to_owned()),
+        SignatureToken::Reference(_) => (false, "Reference".to_owned()),
+        SignatureToken::MutableReference(_) => (false, "MutableReference".to_owned()),
     }
 }
 

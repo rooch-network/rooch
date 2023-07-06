@@ -217,33 +217,33 @@ impl IntegrationTest {
                     data,
                 )
             },
-            "integration-test333".to_string(),
+            "integration-test333".to_owned(),
             tests_dir.display().to_string(),
-            r".*\.move".to_string(),
+            r".*\.move".to_owned(),
             named_address_string_map,
         );
         if self.update_baseline {
             std::env::set_var(UPDATE_BASELINE, "true");
         }
         let mut test_args = vec![
-            "test_runner".to_string(),
-            "--format".to_string(),
+            "test_runner".to_owned(),
+            "--format".to_owned(),
             self.test_opts.format.to_string(),
-            "--test-threads".to_string(),
+            "--test-threads".to_owned(),
             self.test_opts.test_threads.to_string(),
         ];
         if self.test_opts.list {
-            test_args.push("--list".to_string());
+            test_args.push("--list".to_owned());
         }
         if self.test_opts.quiet {
-            test_args.push("--quiet".to_string());
+            test_args.push("--quiet".to_owned());
         }
         if self.test_opts.filter_exact {
-            test_args.push("--exact".to_string());
+            test_args.push("--exact".to_owned());
         }
 
         if let Some(filter) = self.test_opts.filter {
-            test_args.push("--".to_string());
+            test_args.push("--".to_owned());
             test_args.push(filter);
         }
 

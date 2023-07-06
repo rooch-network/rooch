@@ -120,7 +120,7 @@ impl WalletContext {
             let address = match account.as_str() {
                 "default" => AccountAddress::from(self.config.active_address.unwrap()),
                 _ => Err(RoochError::CommandArgumentError(
-                    "Use rooch init configuration".to_string(),
+                    "Use rooch init configuration".to_owned(),
                 ))?,
             };
 

@@ -63,7 +63,7 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
 
         if self.tx_options.sender_account.is_none() {
             return Err(RoochError::CommandArgumentError(
-                "--sender-account required".to_string(),
+                "--sender-account required".to_owned(),
             ));
         }
 

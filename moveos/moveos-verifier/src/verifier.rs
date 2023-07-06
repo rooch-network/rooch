@@ -167,7 +167,7 @@ pub fn verify_entry_function_at_publish(module: &CompiledModule) -> VMResult<boo
         if !return_types.is_empty() {
             return Err(
                 PartialVMError::new(StatusCode::INVALID_MAIN_FUNCTION_SIGNATURE)
-                    .with_message("function should not return values".to_string())
+                    .with_message("function should not return values".to_owned())
                     .finish(Location::Module(module.self_id())),
             );
         }
@@ -199,14 +199,14 @@ where
     if !func.return_.is_empty() {
         return Err(
             PartialVMError::new(StatusCode::INVALID_MAIN_FUNCTION_SIGNATURE)
-                .with_message("function should not return values".to_string()),
+                .with_message("function should not return values".to_owned()),
         );
     }
 
     for ty in &func.parameters {
         if !check_transaction_input_type(ty, session) {
             return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
-                .with_message("parameter type is not allowed".to_string()));
+                .with_message("parameter type is not allowed".to_owned()));
         }
     }
 

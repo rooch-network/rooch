@@ -79,7 +79,7 @@ pub fn load_account_arg(str: &str) -> RoochResult<AccountAddress> {
     } else {
         Err(RoochError::UnableToParse(
             "Address",
-            "Address should be in hex format".to_string(),
+            "Address should be in hex format".to_owned(),
         ))
     }
 }
@@ -264,11 +264,11 @@ impl FromStr for FunctionArgType {
 
                     if arg == FunctionArgType::Raw {
                         return Err(RoochError::CommandArgumentError(
-                            "vector<raw> is not supported".to_string(),
+                            "vector<raw> is not supported".to_owned(),
                         ));
                     } else if matches!(arg, FunctionArgType::Vector(_)) {
                         return Err(RoochError::CommandArgumentError(
-                            "nested vector<vector<_>> is not supported".to_string(),
+                            "nested vector<vector<_>> is not supported".to_owned(),
                         ));
                     }
 
@@ -370,7 +370,7 @@ impl ArgWithType {
                 }
                 FunctionArgType::Raw | FunctionArgType::Vector(_) => {
                     return Err(RoochError::UnexpectedError(
-                        "Nested vectors not supported".to_string(),
+                        "Nested vectors not supported".to_owned(),
                     ));
                 }
             },
@@ -396,7 +396,7 @@ impl FromStr for ArgWithType {
                 let u = s.splitn(2, 'u').collect::<Vec<_>>();
                 if u.len() != 2 {
                     return Err(RoochError::CommandArgumentError(
-                        "Arguments must be pairs of <type>:<arg> e.g. bool:true".to_string(),
+                        "Arguments must be pairs of <type>:<arg> e.g. bool:true".to_owned(),
                     ));
                 } else {
                     let ty_str = String::from("u") + u[1];
@@ -411,7 +411,7 @@ impl FromStr for ArgWithType {
             (ty, arg)
         } else {
             return Err(RoochError::CommandArgumentError(
-                "Arguments must be pairs of <type>:<arg> e.g. bool:true".to_string(),
+                "Arguments must be pairs of <type>:<arg> e.g. bool:true".to_owned(),
             ));
         };
         let arg = ty.parse_arg(arg)?;

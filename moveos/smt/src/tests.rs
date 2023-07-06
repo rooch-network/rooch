@@ -17,10 +17,10 @@ fn test_smt() {
         .verify(state_root, key.to_string(), Some(value.to_string()))
         .is_ok());
 
-    let (result, proof) = smt.get_with_proof("key2".to_string()).unwrap();
+    let (result, proof) = smt.get_with_proof("key2".to_owned()).unwrap();
     assert_eq!(result, None);
     assert!(proof
-        .verify::<String, String>(state_root, "key2".to_string(), None)
+        .verify::<String, String>(state_root, "key2".to_owned(), None)
         .is_ok());
 
     let mut iter = smt.iter(None).unwrap();
@@ -28,10 +28,10 @@ fn test_smt() {
     let item = iter.next();
     assert_eq!(item.unwrap().unwrap(), (key.to_string(), value.to_string()));
 
-    let key2 = "key2".to_string();
-    let value2 = "value2".to_string();
-    let key3 = "key3".to_string();
-    let value3 = "value3".to_string();
+    let key2 = "key2".to_owned();
+    let value2 = "value2".to_owned();
+    let key3 = "key3".to_owned();
+    let value3 = "value3".to_owned();
 
     let state_root = smt
         .puts(vec![
@@ -40,7 +40,7 @@ fn test_smt() {
         ])
         .unwrap();
 
-    let (result, proof) = smt.get_with_proof("key2".to_string()).unwrap();
+    let (result, proof) = smt.get_with_proof("key2".to_owned()).unwrap();
     assert_eq!(result, Some(value2.clone()));
     assert!(proof
         .verify::<String, String>(state_root, key2.clone(), Some(value2))
