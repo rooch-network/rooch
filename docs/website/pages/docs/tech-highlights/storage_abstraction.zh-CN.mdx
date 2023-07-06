@@ -21,7 +21,7 @@ EVM 中，合约的状态是通过合约的字段变量来存储，虚拟机直�
 
 Move 对智能合约状态存储做了改进，应用需要通过全局存储指令进行显式操作，它主要提供以下指令：
 
-1. `move_to<T:key>(signer)`：将 `T` 类型的资源存储在 `signer` 的用户状态空间内，这个只能通过用户自己发起的交易执行。
+1. `move_to<T:key>(&signer,T)`：将 `T` 类型的资源存储在 `signer` 的用户状态空间内，这个只能通过用户自己发起的交易执行。
 2. `move_from<T:key>(address):T`：将 `T` 类型的资源从用户状态空间中取出来。
 3. `borrow_global<T:key>(address):&T`：从用户空间中读取 `T` 类型的的不可变引用。
 4. `borrow_global_mut<T:key>(address):&mut T`：从用户空间中读取 `T` 类型的的可变引用。
