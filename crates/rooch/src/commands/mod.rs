@@ -8,5 +8,6 @@ pub mod move_cli;
 pub mod object;
 pub mod resource;
 pub mod server;
+pub mod relay;
 pub mod state;
 pub mod transaction;
