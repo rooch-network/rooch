@@ -75,3 +75,29 @@ async fn main() {
         }
     }
 }
+
+#[test]
+fn test_json_rpc_spec() {
+    // If this test breaks and you intended a json rpc schema change, you need to run to get the fresh schema:
+    // # cargo run --package rooch-open-rpc-spec --bin rooch-open-rpc-spec -- record
+    let status = std::process::Command::new("cargo")
+        .args([
+            "run",
+            "--package",
+            "rooch-open-rpc-spec",
+            "--bin",
+            "rooch-open-rpc-spec",
+            "--",
+        ])
+        .arg("test")
+        .status()
+        .expect("msg");
+
+    assert!(
+        status.success(),
+            "\n\
+    If this test breaks and you intended a json rpc schema change, you need to run to get the fresh schema:\n\
+    ./scripts/generate_json_rpc_spec.sh
+            "
+        );
+}
