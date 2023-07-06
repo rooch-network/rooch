@@ -44,7 +44,7 @@ struct Options {
     action: Action,
 }
 
-const FILE_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/spec/openrpc.json",);
+const FILE_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/schemas/openrpc.json",);
 
 // TODO: This currently always use workspace version, which is not ideal.
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -59,10 +59,6 @@ async fn main() {
     // open_rpc.add_examples(RpcExampleProvider::new().examples());
 
     match options.action {
-        Action::Print => {
-            let content = serde_json::to_string_pretty(&open_rpc).unwrap();
-            println!("{content}");
-        }
         Action::Record => {
             let content = serde_json::to_string_pretty(&open_rpc).unwrap();
             let mut f = File::create(FILE_PATH).unwrap();
@@ -72,6 +68,10 @@ async fn main() {
             let reference = std::fs::read_to_string(FILE_PATH).unwrap();
             let content = serde_json::to_string_pretty(&open_rpc).unwrap() + "\n";
             assert_str_eq!(&reference, &content);
+        }
+        _ => {
+            let content = serde_json::to_string_pretty(&open_rpc).unwrap();
+            println!("{content}");
         }
     }
 }
