@@ -13,6 +13,8 @@ use move_core_types::{
 };
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
+use proptest::prelude::*;
+use proptest::arbitrary::{ Arbitrary, BoxedStrategy };
 
 /// Call a Move script
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -22,6 +24,18 @@ pub struct ScriptCall {
     pub ty_args: Vec<TypeTag>,
     //TOOD custom serialize
     pub args: Vec<Vec<u8>>,
+}
+
+// Generates random ScriptCall
+impl Arbitrary for ScriptCall {
+    type Parameters = ();
+    type Strategy = BoxedStrategy<Self>;
+
+    fn arbitrary_with(_args: ()) -> Self::Strategy {
+        (any::<Vec<u8>>(), Vec::arbitrary(), Vec::<u8>::arbitrary())
+            .prop_map(|(code, ty_args, args)| ScriptCall { code, ty_args, args })
+            .boxed()
+    }
 }
 
 /// Call a Move function
@@ -39,6 +53,20 @@ impl FunctionCall {
             function_id,
             ty_args,
             args,
+        }
+    }
+}
+
+proptest::proptest! {
+    // Generates random FunctionCall
+    impl Arbitrary for FunctionCall {
+        type Parameters = ();
+        type Strategy = BoxedStrategy<Self>;
+
+        fn arbitrary_with(_args: ()) -> Self::Strategy {
+            (any::<FunctionId>(), Vec::arbitrary(), Vec::<u8>::arbitrary())
+                .prop_map(|(function_id, ty_args, args)| FunctionCall { function_id, ty_args, args })
+                .boxed()
         }
     }
 }
@@ -74,6 +102,23 @@ impl MoveAction {
             ty_args,
             args,
         })
+    }
+}
+
+proptest::proptest! {
+    // Generates random MoveAction
+    impl Arbitrary for MoveAction {
+        type Parameters = ();
+        type Strategy = BoxedStrategy<Self>;
+
+        fn arbitrary_with(_args: ()) -> Self::Strategy {
+            prop_oneof![
+                any::<ScriptCall>().prop_map(MoveAction::Script),
+                any::<FunctionCall>().prop_map(MoveAction::Function),
+                any::<Vec<Vec<u8>>>().prop_map(MoveAction::ModuleBundle),
+            ]
+            .boxed()
+        }
     }
 }
 
@@ -206,5 +251,12 @@ impl TransactionExecutionInfo {
 
     pub fn id(&self) -> H256 {
         h256::sha3_256_of(bcs::to_bytes(self).unwrap().as_slice())
+    }
+}
+
+proptest! {
+    #[test]
+    fn mock_move_action(_ in any::<MoveAction>()) {
+        // Your test case here.
     }
 }

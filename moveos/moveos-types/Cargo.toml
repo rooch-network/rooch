@@ -35,3 +35,17 @@ move-bytecode-utils = { workspace = true }
 fastcrypto = { workspace = true }
 
 smt = { workspace = true }
+
+proptest = { default-features = false, optional = true, workspace = true }
+proptest-derive = { default-features = false, optional = true, workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+proptest-derive = { workspace = true }
+
+[features]
+default = []
+fuzzing = [
+    "proptest",
+    "proptest-derive",
+]

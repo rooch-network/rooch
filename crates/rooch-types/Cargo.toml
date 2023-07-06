@@ -22,8 +22,6 @@ ethers = { workspace = true }
 enum_dispatch = { workspace = true }
 hex = { workspace = true }
 once_cell = { workspace = true }
-proptest = { default-features = false, optional = true, workspace = true }
-proptest-derive = { default-features = false, optional = true, workspace = true }
 rand = { workspace = true }
 thiserror = { workspace = true }
 smt = { workspace = true }
@@ -46,6 +44,9 @@ move-command-line-common = { workspace = true }
 moveos-types = { workspace = true }
 moveos-stdlib = { workspace = true }
 moveos = { workspace = true }
+
+proptest = { default-features = false, optional = true, workspace = true }
+proptest-derive = { default-features = false, optional = true, workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
