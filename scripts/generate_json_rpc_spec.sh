@@ -6,4 +6,4 @@ BASE=$(git rev-parse --show-toplevel)
 
 cd $BASE/crates/rooch-open-rpc
 
-cargo -q run --example generate-json-rpc-spec -- record
+cargo run --package rooch-open-rpc-spec --bin rooch-open-rpc-spec -- record
