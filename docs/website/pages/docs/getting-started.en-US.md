@@ -73,6 +73,14 @@ SUBCOMMANDS:
 
 For the convenience of subsequent use, it is recommended to put `rooch` into a path that can be retrieved by the system environment variable `PATH`, or `export` the current decompressed directory to `PATH` through export.
 
+- Method 1, copy the `rooch` program to the `/usr/local/bin` directory (recommended)
+
+```shell
+sudo cp rooch /usr/local/bin
+```
+
+- Method 2, export path (not recommended)
+
 Use the following small script to add `rooch` to the Bash shell's `PATH`.
 
 ```shell

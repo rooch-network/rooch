@@ -73,6 +73,14 @@ SUBCOMMANDS:
 
 为了方便后续使用，建议将 `rooch` 放入能被系统环境变量 `PATH` 检索的路径，或者将当前的解压目录通过 `export` 导出到 `PATH` 中。
 
+- 方法一，复制 `rooch` 这个程序复制到 `/usr/local/bin` 目录中（推荐）
+
+```shell
+sudo cp rooch /usr/local/bin
+```
+
+- 方法二，导出路径（不推荐）
+
 使用下面这段小脚本将 `rooch` 添加到 Bash shell 的 `PATH`。
 
 ```shell
