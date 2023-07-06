@@ -7,11 +7,11 @@ module rooch_blog::article_aggregate {
     use moveos_std::object_id::ObjectID;
     use moveos_std::storage_context::StorageContext;
     use rooch_blog::article;
-    use rooch_blog::article_add_comment_logic;
+    // use rooch_blog::article_add_comment_logic;
     use rooch_blog::article_create_logic;
     use rooch_blog::article_delete_logic;
-    use rooch_blog::article_remove_comment_logic;
-    use rooch_blog::article_update_comment_logic;
+    // use rooch_blog::article_remove_comment_logic;
+    // use rooch_blog::article_update_comment_logic;
     use rooch_blog::article_update_logic;
     use std::string::String;
 
@@ -83,80 +83,80 @@ module rooch_blog::article_aggregate {
     }
 
 
-    public entry fun add_comment(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
-        id: ObjectID,
-        comment_seq_id: u64,
-        commenter: String,
-        body: String,
-    ) {
-        let article_obj = article::remove_article(storage_ctx, id);
-        let comment_added = article_add_comment_logic::verify(
-            storage_ctx,
-            account,
-            comment_seq_id,
-            commenter,
-            body,
-            &article_obj,
-        );
-        let updated_article_obj = article_add_comment_logic::mutate(
-            storage_ctx,
-            &comment_added,
-            article_obj,
-        );
-        article::update_version_and_add(storage_ctx, updated_article_obj);
-        article::emit_comment_added(storage_ctx, comment_added);
-    }
+    // public entry fun add_comment(
+    //     storage_ctx: &mut StorageContext,
+    //     account: &signer,
+    //     id: ObjectID,
+    //     comment_seq_id: u64,
+    //     commenter: String,
+    //     body: String,
+    // ) {
+    //     let article_obj = article::remove_article(storage_ctx, id);
+    //     let comment_added = article_add_comment_logic::verify(
+    //         storage_ctx,
+    //         account,
+    //         comment_seq_id,
+    //         commenter,
+    //         body,
+    //         &article_obj,
+    //     );
+    //     let updated_article_obj = article_add_comment_logic::mutate(
+    //         storage_ctx,
+    //         &comment_added,
+    //         article_obj,
+    //     );
+    //     article::update_version_and_add(storage_ctx, updated_article_obj);
+    //     article::emit_comment_added(storage_ctx, comment_added);
+    // }
 
 
-    public entry fun remove_comment(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
-        id: ObjectID,
-        comment_seq_id: u64,
-    ) {
-        let article_obj = article::remove_article(storage_ctx, id);
-        let comment_removed = article_remove_comment_logic::verify(
-            storage_ctx,
-            account,
-            comment_seq_id,
-            &article_obj,
-        );
-        let updated_article_obj = article_remove_comment_logic::mutate(
-            storage_ctx,
-            &comment_removed,
-            article_obj,
-        );
-        article::update_version_and_add(storage_ctx, updated_article_obj);
-        article::emit_comment_removed(storage_ctx, comment_removed);
-    }
+    // public entry fun remove_comment(
+    //     storage_ctx: &mut StorageContext,
+    //     account: &signer,
+    //     id: ObjectID,
+    //     comment_seq_id: u64,
+    // ) {
+    //     let article_obj = article::remove_article(storage_ctx, id);
+    //     let comment_removed = article_remove_comment_logic::verify(
+    //         storage_ctx,
+    //         account,
+    //         comment_seq_id,
+    //         &article_obj,
+    //     );
+    //     let updated_article_obj = article_remove_comment_logic::mutate(
+    //         storage_ctx,
+    //         &comment_removed,
+    //         article_obj,
+    //     );
+    //     article::update_version_and_add(storage_ctx, updated_article_obj);
+    //     article::emit_comment_removed(storage_ctx, comment_removed);
+    // }
 
 
-    public entry fun update_comment(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
-        id: ObjectID,
-        comment_seq_id: u64,
-        commenter: String,
-        body: String,
-    ) {
-        let article_obj = article::remove_article(storage_ctx, id);
-        let comment_updated = article_update_comment_logic::verify(
-            storage_ctx,
-            account,
-            comment_seq_id,
-            commenter,
-            body,
-            &article_obj,
-        );
-        let updated_article_obj = article_update_comment_logic::mutate(
-            storage_ctx,
-            &comment_updated,
-            article_obj,
-        );
-        article::update_version_and_add(storage_ctx, updated_article_obj);
-        article::emit_comment_updated(storage_ctx, comment_updated);
-    }
+    // public entry fun update_comment(
+    //     storage_ctx: &mut StorageContext,
+    //     account: &signer,
+    //     id: ObjectID,
+    //     comment_seq_id: u64,
+    //     commenter: String,
+    //     body: String,
+    // ) {
+    //     let article_obj = article::remove_article(storage_ctx, id);
+    //     let comment_updated = article_update_comment_logic::verify(
+    //         storage_ctx,
+    //         account,
+    //         comment_seq_id,
+    //         commenter,
+    //         body,
+    //         &article_obj,
+    //     );
+    //     let updated_article_obj = article_update_comment_logic::mutate(
+    //         storage_ctx,
+    //         &comment_updated,
+    //         article_obj,
+    //     );
+    //     article::update_version_and_add(storage_ctx, updated_article_obj);
+    //     article::emit_comment_updated(storage_ctx, comment_updated);
+    // }
 
 }

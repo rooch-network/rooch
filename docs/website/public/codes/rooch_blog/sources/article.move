@@ -11,7 +11,7 @@ module rooch_blog::article {
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::table::{Self, Table};
     use moveos_std::tx_context;
-    use rooch_blog::comment::{Self, Comment};
+    // use rooch_blog::comment::{Self, Comment};
     use std::error;
     use std::option;
     use std::signer;
@@ -19,19 +19,19 @@ module rooch_blog::article {
     friend rooch_blog::article_create_logic;
     friend rooch_blog::article_update_logic;
     friend rooch_blog::article_delete_logic;
-    friend rooch_blog::article_add_comment_logic;
-    friend rooch_blog::article_remove_comment_logic;
-    friend rooch_blog::article_update_comment_logic;
+    // friend rooch_blog::article_add_comment_logic;
+    // friend rooch_blog::article_remove_comment_logic;
+    // friend rooch_blog::article_update_comment_logic;
     friend rooch_blog::article_aggregate;
 
     const EID_DATA_TOO_LONG: u64 = 102;
     const EINAPPROPRIATE_VERSION: u64 = 103;
     const ENOT_GENESIS_ACCOUNT: u64 = 105;
 
-    struct CommentTableItemAdded has key {
-        article_id: ObjectID,
-        comment_seq_id: u64,
-    }
+    // struct CommentTableItemAdded has key {
+    //     article_id: ObjectID,
+    //     comment_seq_id: u64,
+    // }
 
     public fun initialize(storage_ctx: &mut StorageContext, account: &signer) {
         assert!(signer::address_of(account) == @rooch_blog, error::invalid_argument(ENOT_GENESIS_ACCOUNT));
@@ -43,7 +43,7 @@ module rooch_blog::article {
         version: u64,
         title: String,
         body: String,
-        comments: Table<u64, Comment>,
+        // comments: Table<u64, Comment>,
     }
 
     /// get object id
@@ -71,31 +71,31 @@ module rooch_blog::article {
         object::borrow_mut(article_obj).body = body;
     }
 
-    public(friend) fun add_comment(storage_ctx: &mut StorageContext, article_obj: &mut Object<Article>, comment: Comment) {
-        let comment_seq_id = comment::comment_seq_id(&comment);
-        table::add(&mut object::borrow_mut(article_obj).comments, comment_seq_id, comment);
-        event::emit_event(storage_ctx, CommentTableItemAdded {
-            article_id: id(article_obj),
-            comment_seq_id,
-        });
-    }
+    // public(friend) fun add_comment(storage_ctx: &mut StorageContext, article_obj: &mut Object<Article>, comment: Comment) {
+    //     let comment_seq_id = comment::comment_seq_id(&comment);
+    //     table::add(&mut object::borrow_mut(article_obj).comments, comment_seq_id, comment);
+    //     event::emit_event(storage_ctx, CommentTableItemAdded {
+    //         article_id: id(article_obj),
+    //         comment_seq_id,
+    //     });
+    // }
 
-    public(friend) fun remove_comment(article_obj: &mut Object<Article>, comment_seq_id: u64) {
-        let comment = table::remove(&mut object::borrow_mut(article_obj).comments, comment_seq_id);
-        comment::drop_comment(comment);
-    }
+    // public(friend) fun remove_comment(article_obj: &mut Object<Article>, comment_seq_id: u64) {
+    //     let comment = table::remove(&mut object::borrow_mut(article_obj).comments, comment_seq_id);
+    //     comment::drop_comment(comment);
+    // }
 
-    public(friend) fun borrow_mut_comment(article_obj: &mut Object<Article>, comment_seq_id: u64): &mut Comment {
-        table::borrow_mut(&mut object::borrow_mut(article_obj).comments, comment_seq_id)
-    }
+    // public(friend) fun borrow_mut_comment(article_obj: &mut Object<Article>, comment_seq_id: u64): &mut Comment {
+    //     table::borrow_mut(&mut object::borrow_mut(article_obj).comments, comment_seq_id)
+    // }
 
-    public fun borrow_comment(article_obj: &Object<Article>, comment_seq_id: u64): &Comment {
-        table::borrow(&object::borrow(article_obj).comments, comment_seq_id)
-    }
+    // public fun borrow_comment(article_obj: &Object<Article>, comment_seq_id: u64): &Comment {
+    //     table::borrow(&object::borrow(article_obj).comments, comment_seq_id)
+    // }
 
-    public fun comments_contains(article_obj: &Object<Article>, comment_seq_id: u64): bool {
-        table::contains(&object::borrow(article_obj).comments, comment_seq_id)
-    }
+    // public fun comments_contains(article_obj: &Object<Article>, comment_seq_id: u64): bool {
+    //     table::contains(&object::borrow(article_obj).comments, comment_seq_id)
+    // }
 
     fun new_article(
         tx_ctx: &mut tx_context::TxContext,
@@ -108,7 +108,7 @@ module rooch_blog::article {
             version: 0,
             title,
             body,
-            comments: table::new<u64, Comment>(tx_ctx),
+            // comments: table::new<u64, Comment>(tx_ctx),
         }
     }
 
@@ -195,108 +195,108 @@ module rooch_blog::article {
         }
     }
 
-    struct CommentAdded has key {
-        id: ObjectID,
-        version: u64,
-        comment_seq_id: u64,
-        commenter: String,
-        body: String,
-    }
+    // struct CommentAdded has key {
+    //     id: ObjectID,
+    //     version: u64,
+    //     comment_seq_id: u64,
+    //     commenter: String,
+    //     body: String,
+    // }
 
-    public fun comment_added_id(comment_added: &CommentAdded): ObjectID {
-        comment_added.id
-    }
+    // public fun comment_added_id(comment_added: &CommentAdded): ObjectID {
+    //     comment_added.id
+    // }
 
-    public fun comment_added_comment_seq_id(comment_added: &CommentAdded): u64 {
-        comment_added.comment_seq_id
-    }
+    // public fun comment_added_comment_seq_id(comment_added: &CommentAdded): u64 {
+    //     comment_added.comment_seq_id
+    // }
 
-    public fun comment_added_commenter(comment_added: &CommentAdded): String {
-        comment_added.commenter
-    }
+    // public fun comment_added_commenter(comment_added: &CommentAdded): String {
+    //     comment_added.commenter
+    // }
 
-    public fun comment_added_body(comment_added: &CommentAdded): String {
-        comment_added.body
-    }
+    // public fun comment_added_body(comment_added: &CommentAdded): String {
+    //     comment_added.body
+    // }
 
-    public(friend) fun new_comment_added(
-        article_obj: &Object<Article>,
-        comment_seq_id: u64,
-        commenter: String,
-        body: String,
-    ): CommentAdded {
-        CommentAdded {
-            id: id(article_obj),
-            version: version(article_obj),
-            comment_seq_id,
-            commenter,
-            body,
-        }
-    }
+    // public(friend) fun new_comment_added(
+    //     article_obj: &Object<Article>,
+    //     comment_seq_id: u64,
+    //     commenter: String,
+    //     body: String,
+    // ): CommentAdded {
+    //     CommentAdded {
+    //         id: id(article_obj),
+    //         version: version(article_obj),
+    //         comment_seq_id,
+    //         commenter,
+    //         body,
+    //     }
+    // }
 
-    struct CommentRemoved has key {
-        id: ObjectID,
-        version: u64,
-        comment_seq_id: u64,
-    }
+    // struct CommentRemoved has key {
+    //     id: ObjectID,
+    //     version: u64,
+    //     comment_seq_id: u64,
+    // }
 
-    public fun comment_removed_id(comment_removed: &CommentRemoved): ObjectID {
-        comment_removed.id
-    }
+    // public fun comment_removed_id(comment_removed: &CommentRemoved): ObjectID {
+    //     comment_removed.id
+    // }
 
-    public fun comment_removed_comment_seq_id(comment_removed: &CommentRemoved): u64 {
-        comment_removed.comment_seq_id
-    }
+    // public fun comment_removed_comment_seq_id(comment_removed: &CommentRemoved): u64 {
+    //     comment_removed.comment_seq_id
+    // }
 
-    public(friend) fun new_comment_removed(
-        article_obj: &Object<Article>,
-        comment_seq_id: u64,
-    ): CommentRemoved {
-        CommentRemoved {
-            id: id(article_obj),
-            version: version(article_obj),
-            comment_seq_id,
-        }
-    }
+    // public(friend) fun new_comment_removed(
+    //     article_obj: &Object<Article>,
+    //     comment_seq_id: u64,
+    // ): CommentRemoved {
+    //     CommentRemoved {
+    //         id: id(article_obj),
+    //         version: version(article_obj),
+    //         comment_seq_id,
+    //     }
+    // }
 
-    struct CommentUpdated has key {
-        id: ObjectID,
-        version: u64,
-        comment_seq_id: u64,
-        commenter: String,
-        body: String,
-    }
+    // struct CommentUpdated has key {
+    //     id: ObjectID,
+    //     version: u64,
+    //     comment_seq_id: u64,
+    //     commenter: String,
+    //     body: String,
+    // }
 
-    public fun comment_updated_id(comment_updated: &CommentUpdated): ObjectID {
-        comment_updated.id
-    }
+    // public fun comment_updated_id(comment_updated: &CommentUpdated): ObjectID {
+    //     comment_updated.id
+    // }
 
-    public fun comment_updated_comment_seq_id(comment_updated: &CommentUpdated): u64 {
-        comment_updated.comment_seq_id
-    }
+    // public fun comment_updated_comment_seq_id(comment_updated: &CommentUpdated): u64 {
+    //     comment_updated.comment_seq_id
+    // }
 
-    public fun comment_updated_commenter(comment_updated: &CommentUpdated): String {
-        comment_updated.commenter
-    }
+    // public fun comment_updated_commenter(comment_updated: &CommentUpdated): String {
+    //     comment_updated.commenter
+    // }
 
-    public fun comment_updated_body(comment_updated: &CommentUpdated): String {
-        comment_updated.body
-    }
+    // public fun comment_updated_body(comment_updated: &CommentUpdated): String {
+    //     comment_updated.body
+    // }
 
-    public(friend) fun new_comment_updated(
-        article_obj: &Object<Article>,
-        comment_seq_id: u64,
-        commenter: String,
-        body: String,
-    ): CommentUpdated {
-        CommentUpdated {
-            id: id(article_obj),
-            version: version(article_obj),
-            comment_seq_id,
-            commenter,
-            body,
-        }
-    }
+    // public(friend) fun new_comment_updated(
+    //     article_obj: &Object<Article>,
+    //     comment_seq_id: u64,
+    //     commenter: String,
+    //     body: String,
+    // ): CommentUpdated {
+    //     CommentUpdated {
+    //         id: id(article_obj),
+    //         version: version(article_obj),
+    //         comment_seq_id,
+    //         commenter,
+    //         body,
+    //     }
+    // }
 
 
     public(friend) fun create_article(
@@ -356,9 +356,9 @@ module rooch_blog::article {
             version: _version,
             title: _title,
             body: _body,
-            comments,
+            // comments,
         } = article;
-        table::destroy_empty(comments);
+        // table::destroy_empty(comments);
     }
 
     public(friend) fun emit_article_created(storage_ctx: &mut StorageContext, article_created: ArticleCreated) {
@@ -373,16 +373,16 @@ module rooch_blog::article {
         event::emit_event(storage_ctx, article_deleted);
     }
 
-    public(friend) fun emit_comment_added(storage_ctx: &mut StorageContext, comment_added: CommentAdded) {
-        event::emit_event(storage_ctx, comment_added);
-    }
+    // public(friend) fun emit_comment_added(storage_ctx: &mut StorageContext, comment_added: CommentAdded) {
+    //     event::emit_event(storage_ctx, comment_added);
+    // }
 
-    public(friend) fun emit_comment_removed(storage_ctx: &mut StorageContext, comment_removed: CommentRemoved) {
-        event::emit_event(storage_ctx, comment_removed);
-    }
+    // public(friend) fun emit_comment_removed(storage_ctx: &mut StorageContext, comment_removed: CommentRemoved) {
+    //     event::emit_event(storage_ctx, comment_removed);
+    // }
 
-    public(friend) fun emit_comment_updated(storage_ctx: &mut StorageContext, comment_updated: CommentUpdated) {
-        event::emit_event(storage_ctx, comment_updated);
-    }
+    // public(friend) fun emit_comment_updated(storage_ctx: &mut StorageContext, comment_updated: CommentUpdated) {
+    //     event::emit_event(storage_ctx, comment_updated);
+    // }
 
 }
