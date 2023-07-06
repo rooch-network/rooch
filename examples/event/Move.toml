@@ -1,5 +1,5 @@
 [package]
-name = "basic_object_example"
+name = "event"
 version = "0.0.1"
 
 [dependencies]
