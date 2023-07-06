@@ -1,5 +1,5 @@
 [package]
-name = "module_init_example"
+name = "basic_object"
 version = "0.0.1"
 
 [dependencies]
