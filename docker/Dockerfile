@@ -11,6 +11,7 @@ RUN set -eux; \
         wget \
         pkg-config \
         libclang-dev clang \
+        llvm \
         protobuf-compiler; \
     rm -rf /var/lib/apt/lists/*
 
