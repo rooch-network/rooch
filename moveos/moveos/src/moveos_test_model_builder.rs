@@ -24,6 +24,21 @@ pub fn build_file_to_module_env(
     let mut env = GlobalEnv::new();
     env.set_extension(options);
 
+    if let Some(fully_compiled_prog) = pre_compiled_deps {
+        for package_def in fully_compiled_prog.parser.source_definitions.iter() {
+            let fhash = package_def.def.file_hash();
+            let (fname, fsrc) = fully_compiled_prog.files.get(&fhash).unwrap();
+            let aliases = fully_compiled_prog
+                .parser
+                .named_address_maps
+                .get(package_def.named_address_map)
+                .iter()
+                .map(|(symbol, addr)| (env.symbol_pool().make(symbol.as_str()), *addr))
+                .collect();
+            env.add_source(fhash, Rc::new(aliases), fname.as_str(), fsrc, false);
+        }
+    }
+
     use move_compiler::command_line::compiler::PASS_PARSER;
 
     // Step 1: parse the program to get comments and a separation of targets and dependencies.

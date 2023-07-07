@@ -12,13 +12,13 @@ use move_compiler::shared::PackagePaths;
 use move_compiler::FullyCompiledProgram;
 use move_core_types::account_address::AccountAddress;
 use move_package::source_package::layout::SourcePackageLayout;
-use move_stdlib::path_in_crate;
 use moveos_types::addresses::MOVEOS_NAMED_ADDRESS_MAPPING;
 use once_cell::sync::Lazy;
 use rooch_integration_test_runner;
 use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::num::NonZeroUsize;
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Mutex;
 
@@ -131,6 +131,33 @@ pub struct IntegrationTest {
     pub(crate) named_addresses: BTreeMap<String, String>,
 }
 
+pub fn builtin_packages() -> [&'static str; 2] {
+    [
+        "../../moveos/moveos-stdlib/move-stdlib",
+        "../../moveos/moveos-stdlib/moveos-stdlib",
+    ]
+}
+
+pub fn path_in_crate<S>(relative: S) -> PathBuf
+where
+    S: Into<String>,
+{
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    path.push(relative.into());
+    path
+}
+
+fn stdlib_files() -> Vec<String> {
+    let mut stdlib_files_vec = Vec::new();
+    for stdlib in builtin_packages().into_iter() {
+        let lib_path = PathBuf::from(stdlib);
+        let path = path_in_crate(lib_path.join("sources").to_str().unwrap());
+        let files = find_filenames(&[path], |p| extension_equals(p, MOVE_EXTENSION)).unwrap();
+        stdlib_files_vec.extend(files);
+    }
+    stdlib_files_vec
+}
+
 impl IntegrationTest {
     pub fn execute(self, move_arg: Move) -> anyhow::Result<()> {
         let rerooted_path = {
@@ -153,7 +180,8 @@ impl IntegrationTest {
             build_config.resolution_graph_for_package(&rerooted_path, &mut std::io::stdout())?;
 
         let path = path_in_crate(rerooted_path.join("sources").to_str().unwrap());
-        let files = find_filenames(&[path], |p| extension_equals(p, MOVE_EXTENSION)).unwrap();
+        let mut files = find_filenames(&[path], |p| extension_equals(p, MOVE_EXTENSION)).unwrap();
+        files.extend(stdlib_files());
         let targets = vec![PackagePaths {
             name: None,
             paths: files,
@@ -171,7 +199,7 @@ impl IntegrationTest {
                         .collect(),
                     None => BTreeMap::new(),
                 };
-                // address_mapping.extend(named_addresses());
+                address_mapping.extend(named_addresses());
                 address_mapping.extend(
                     self.named_addresses
                         .into_iter()

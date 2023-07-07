@@ -6,6 +6,6 @@ script {
     use rooch_examples::counter;
 
     fun main(sender: &signer) {
-        counter::init_(sender);
+        counter::test_init(sender);
     }
 }

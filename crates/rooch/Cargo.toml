@@ -32,6 +32,7 @@ termcolor = { workspace = true }
 itertools = { workspace = true }
 hex = { workspace = true }
 regex = { workspace = true }
+walkdir = { workspace = true }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }
