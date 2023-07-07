@@ -18,7 +18,7 @@ use rooch_ws_relay::server::config;
 use console_subscriber::ConsoleLayer;
 
 #[derive(Debug, Parser)]
-pub struct StartCommand {
+pub struct ServeCommand {
     #[clap(long = "database")]
     /// Use a directory as the location of the database
     db: Option<String>,
@@ -29,7 +29,7 @@ pub struct StartCommand {
 }
 
 #[async_trait]
-impl CommandAction<()> for StartCommand {
+impl CommandAction<()> for ServeCommand {
     async fn execute(self) -> RoochResult<()> {
         // get config file name from args
         let config_file_arg = self.config;
@@ -68,7 +68,7 @@ impl CommandAction<()> for StartCommand {
                 tracing_subscriber::fmt::try_init().unwrap();
             }
         }
-        info!("Starting up ws relay");
+        info!("Serving Rooch ws relay");
 
         // get database directory from args
         let db_dir_arg = self.db;

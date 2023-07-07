@@ -6,7 +6,7 @@ pub mod commands;
 use crate::cli_types::CommandAction;
 use async_trait::async_trait;
 use clap::Parser;
-use commands::start::StartCommand;
+use commands::serve::ServeCommand;
 use rooch_types::error::RoochResult;
 
 #[derive(Parser)]
@@ -19,7 +19,7 @@ pub struct Relay {
 impl CommandAction<String> for Relay {
     async fn execute(self) -> RoochResult<String> {
         match self.cmd {
-            RelayCommand::Start(start) => start.execute_serialized().await,
+            RelayCommand::Serve(serve) => serve.execute_serialized().await,
         }
     }
 }
@@ -27,5 +27,5 @@ impl CommandAction<String> for Relay {
 #[derive(clap::Subcommand)]
 #[clap(name = "relay")]
 pub enum RelayCommand {
-    Start(StartCommand),
+    Serve(ServeCommand),
 }
