@@ -6,13 +6,13 @@ use async_trait::async_trait;
 use rooch_rpc_api::jsonrpc_types::TransactionView;
 use rooch_types::{error::RoochResult, H256};
 
+/// Get transaction by hash
 #[derive(Debug, clap::Parser)]
 pub struct GetByHashCommand {
+    /// H56
     #[clap(long)]
     pub hash: H256,
 
-    // filter?
-    // pub options:...
     #[clap(flatten)]
     pub(crate) context_options: WalletContextOptions,
 }

@@ -9,6 +9,8 @@ use rooch_rpc_api::jsonrpc_types::AnnotatedStateView;
 use rooch_types::error::RoochResult;
 
 #[derive(Debug, clap::Parser)]
+
+/// Get account resource by tag
 pub struct ResourceCommand {
     /// Account address where the resource stored.
     #[clap(long)]

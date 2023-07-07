@@ -21,7 +21,7 @@ Feature: Rooch CLI integration tests
       Then cmd: "resource --address {default} --resource {default}::counter::Counter"
 
       Then cmd: "transaction get-by-hash --hash {{$.account[0].execution_info.tx_hash}}"
-      Then cmd: "transaction get-by-index --start 0 --limit 10"
+      Then cmd: "transaction get-by-index --cursor 0 --limit 10"
 
       # event example
       Then cmd: "move publish -p ../../examples/event_example --sender-account {default} --named-addresses rooch_examples={default}"

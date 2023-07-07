@@ -9,6 +9,7 @@ use rooch_types::error::RoochResult;
 
 pub mod commands;
 
+/// Start Rooch network
 #[derive(Parser)]
 pub struct Server {
     #[clap(subcommand)]

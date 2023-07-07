@@ -6,10 +6,14 @@ use async_trait::async_trait;
 use rooch_rpc_api::jsonrpc_types::TransactionView;
 use rooch_types::error::RoochResult;
 
+/// Get transaction by index
 #[derive(Debug, clap::Parser)]
 pub struct GetByIndexCommand {
+    /// start position
     #[clap(long)]
-    pub start: u64,
+    pub cursor: u64,
+
+    /// end position
     #[clap(long)]
     pub limit: u64,
 
@@ -23,7 +27,7 @@ impl CommandAction<Vec<TransactionView>> for GetByIndexCommand {
         let client = self.context_options.build().await?.get_client().await?;
 
         let resp = client
-            .get_transaction_by_index(self.start, self.limit)
+            .get_transaction_by_index(self.cursor, self.limit)
             .await?;
 
         Ok(resp)

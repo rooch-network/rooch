@@ -7,6 +7,7 @@ use moveos_types::{access_path::AccessPath, object::ObjectID};
 use rooch_rpc_api::jsonrpc_types::AnnotatedStateView;
 use rooch_types::error::RoochResult;
 
+/// Get object by object id
 #[derive(Debug, clap::Parser)]
 pub struct ObjectCommand {
     /// Object id.

@@ -8,6 +8,7 @@ use rooch_key::keystore::AccountKeystore;
 use rooch_types::{address::RoochAddress, crypto::EncodeDecodeBase64, error::RoochResult};
 use std::fmt::Debug;
 
+/// List all keys by its Rooch address, Base64 encoded public key
 #[derive(Debug, Parser)]
 pub struct ListCommand {
     #[clap(flatten)]
