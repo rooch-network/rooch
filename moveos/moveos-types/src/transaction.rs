@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    event::Event, h256, h256::H256, move_types::FunctionId, state::StateChangeSet,
+    event::Event, h256, h256::H256, move_types::FunctionId, move_types::Identifier, state::StateChangeSet,
     tx_context::TxContext,
 };
 use move_core_types::{
@@ -13,8 +13,11 @@ use move_core_types::{
 };
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
-use proptest::prelude::*;
-use proptest::arbitrary::{ Arbitrary, BoxedStrategy };
+
+#[cfg(any(test, feature = "fuzzing"))]
+use proptest::{collection::vec, prelude::*};
+#[cfg(any(test, feature = "fuzzing"))]
+use proptest_derive::Arbitrary;
 
 /// Call a Move script
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -27,12 +30,13 @@ pub struct ScriptCall {
 }
 
 // Generates random ScriptCall
+#[cfg(any(test, feature = "fuzzing"))]
 impl Arbitrary for ScriptCall {
     type Parameters = ();
     type Strategy = BoxedStrategy<Self>;
 
     fn arbitrary_with(_args: ()) -> Self::Strategy {
-        (any::<Vec<u8>>(), Vec::arbitrary(), Vec::<u8>::arbitrary())
+        (any::<Vec<u8>>(), Just(vec![]), Vec::<Vec<u8>>::arbitrary())
             .prop_map(|(code, ty_args, args)| ScriptCall { code, ty_args, args })
             .boxed()
     }
@@ -57,21 +61,28 @@ impl FunctionCall {
     }
 }
 
-proptest::proptest! {
-    // Generates random FunctionCall
-    impl Arbitrary for FunctionCall {
-        type Parameters = ();
-        type Strategy = BoxedStrategy<Self>;
+// Generates random FunctionCall
+#[cfg(any(test, feature = "fuzzing"))]
+impl Arbitrary for FunctionCall {
+    type Parameters = ();
+    type Strategy = BoxedStrategy<Self>;
 
-        fn arbitrary_with(_args: ()) -> Self::Strategy {
-            (any::<FunctionId>(), Vec::arbitrary(), Vec::<u8>::arbitrary())
-                .prop_map(|(function_id, ty_args, args)| FunctionCall { function_id, ty_args, args })
-                .boxed()
-        }
+    fn arbitrary_with(_args: ()) -> Self::Strategy {
+        let function_id_strategy = (any::<ModuleId>(), any::<Identifier>())
+        .prop_map(|(module_id, identifier)| FunctionId::new(module_id, identifier));
+
+        (function_id_strategy, Just(vec![]), any::<Vec<u8>>())
+            .prop_map(|(function_id, ty_args, args)| FunctionCall {
+                function_id,
+                ty_args,
+                args,
+            })
+            .boxed()
     }
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub enum MoveAction {
     //Execute a Move script
     Script(ScriptCall),
@@ -102,23 +113,6 @@ impl MoveAction {
             ty_args,
             args,
         })
-    }
-}
-
-proptest::proptest! {
-    // Generates random MoveAction
-    impl Arbitrary for MoveAction {
-        type Parameters = ();
-        type Strategy = BoxedStrategy<Self>;
-
-        fn arbitrary_with(_args: ()) -> Self::Strategy {
-            prop_oneof![
-                any::<ScriptCall>().prop_map(MoveAction::Script),
-                any::<FunctionCall>().prop_map(MoveAction::Function),
-                any::<Vec<Vec<u8>>>().prop_map(MoveAction::ModuleBundle),
-            ]
-            .boxed()
-        }
     }
 }
 
@@ -254,9 +248,17 @@ impl TransactionExecutionInfo {
     }
 }
 
-proptest! {
-    #[test]
-    fn mock_move_action(_ in any::<MoveAction>()) {
-        // Your test case here.
+
+
+#[cfg(test)]
+mod tests {
+    use super::MoveAction;
+    use proptest::prelude::*;
+
+    proptest! {
+        #[test]
+        fn mock_move_action(_ in any::<MoveAction>()) {
+            // Your test case here.
+        }
     }
 }
