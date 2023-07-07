@@ -6,13 +6,9 @@
 
 Rooch 于2023年06月28日，发布了第一个版本，版本名为 Sprout，版本号为 v0.1。
 
-## 2. 创建新的 Rooch 项目
+## 2. 安装 Rooch
 
-这部分将引导你安装 Rooch，以及创建一个博客合约，在 Rooch 里体验基本的**增查改删**功能。
-
-### 2.1 安装 Rooch
-
-#### 2.1.1 下载
+### 2.1 下载
 
 在 [Rooch 的 GitHub 发布页面](https://github.com/rooch-network/rooch/releases)可以找到预构建的二进制文件压缩包和相应版本的源码压缩包。如果想要体验 Git 版本，可以参考这个页面来[编译安装 Rooch](https://github.com/rooch-network/rooch#getting-started)，下面引导你安装 Rooch 的 Release 版本。
 
@@ -20,7 +16,7 @@ Rooch 于2023年06月28日，发布了第一个版本，版本名为 Sprout，�
 wget https://github.com/rooch-network/rooch/releases/download/v0.1/rooch-ubuntu-latest.zip
 ```
 
-#### 2.1.2 解压
+### 2.2 解压
 
 ```shell
 unzip rooch-ubuntu-latest.zip
@@ -34,7 +30,7 @@ rooch-artifacts
 └── rooch
 ```
 
-#### 2.1.3 运行
+### 2.3 运行
 
 进入解压文件夹 `rooch-artifacts` 并测试程序是否正常。
 
@@ -69,7 +65,7 @@ SUBCOMMANDS:
     transaction
 ```
 
-#### 2.1.4 加入 PATH
+### 2.4 加入 PATH
 
 为了方便后续使用，建议将 `rooch` 放入能被系统环境变量 `PATH` 检索的路径，或者将当前的解压目录通过 `export` 导出到 `PATH` 中。
 
@@ -88,7 +84,7 @@ echo "export PATH=\$PATH:$PWD" >> ~/.bashrc
 source ~/.bashrc
 ```
 
-### 2.2 初始化 Rooch 配置
+## 3. 初始化 Rooch 配置
 
 ```shell
 rooch init
@@ -96,9 +92,11 @@ rooch init
 
 运行初始化配置的命令后，会在用户的主目录（`$HOME`）创建一个 `.rooch` 目录，并生成 Rooch 账户的相关配置信息。
 
-### 2.3 创建博客合约应用
+## 4. 创建新的 Rooch 项目
 
-#### 2.3.1 创建 Move 项目
+这部分将引导你如何在 Rooch 上创建一个博客的合约应用，并实现基本的**增查改删**功能。
+
+### 4.1 创建 Move 项目
 
 使用 `rooch` 封装的 `move new` 命令来创建一个名为 `rooch_blog` 的博客应用。
 
@@ -138,528 +136,51 @@ rooch_framework =  "0x3"
 - `dependencies` 表用来存放项目所需依赖的元数据。
 - `addresses` 表用来存放项目地址以及模块地址，第一个地址是初始化 Rooch 配置时，生成在 `$HOME/.rooch/rooch_config/rooch.yaml` 中的地址。
 
-#### 2.3.2 编写合约
+### 4.2 快速体验
 
-- `article.move`
+这小节里，将引导你编写一个博客的初始化函数，并在 Rooch 中运行起来，体验`编写->编译->发布->调用`合约这样一个基本流程。
+
+我们在 `sources` 目录里新建一个 `blog.move` 文件，并开始编写我们的博客合约。
+
+#### 4.2.1 编写初始化函数
+
+在合约项目部署（发布）到链上后，首先需要进行初始化，即调用初始化函数（只需要调用一次）。
+
+我们在 `blog.move` 文件里编写下面的初始化合约的代码：
 
 ```move
-module rooch_blog::article {
-    use moveos_std::event;
-    use moveos_std::object::{Self, Object};
-    use moveos_std::object_id::ObjectID;
-    use moveos_std::object_storage;
-    use moveos_std::storage_context::{Self, StorageContext};
-    use moveos_std::tx_context;
+module rooch_blog::rooch_blog {
     use std::error;
-    use std::option;
     use std::signer;
-    use std::string::String;
-    friend rooch_blog::article_create_logic;
-    friend rooch_blog::article_update_logic;
-    friend rooch_blog::article_delete_logic;
-    friend rooch_blog::article_aggregate;
+    use moveos_std::storage_context::StorageContext;
 
     const EID_DATA_TOO_LONG: u64 = 102;
     const EINAPPROPRIATE_VERSION: u64 = 103;
     const ENOT_GENESIS_ACCOUNT: u64 = 105;
 
-    public fun initialize(storage_ctx: &mut StorageContext, account: &signer) {
+    // Define a function that initialize the blog
+    fun init_blog(storage_ctx: &mut StorageContext, account: &signer) {
         assert!(signer::address_of(account) == @rooch_blog, error::invalid_argument(ENOT_GENESIS_ACCOUNT));
         let _ = storage_ctx;
         let _ = account;
     }
 
-    struct Article has key {
-        version: u64,
-        title: String,
-        body: String,
-    }
-
-    /// get object id
-    public fun id(article_obj: &Object<Article>): ObjectID {
-        object::id(article_obj)
-    }
-
-    public fun version(article_obj: &Object<Article>): u64 {
-        object::borrow(article_obj).version
-    }
-
-    public fun title(article_obj: &Object<Article>): String {
-        object::borrow(article_obj).title
-    }
-
-    public(friend) fun set_title(article_obj: &mut Object<Article>, title: String) {
-        object::borrow_mut(article_obj).title = title;
-    }
-
-    public fun body(article_obj: &Object<Article>): String {
-        object::borrow(article_obj).body
-    }
-
-    public(friend) fun set_body(article_obj: &mut Object<Article>, body: String) {
-        object::borrow_mut(article_obj).body = body;
-    }
-
-    fun new_article(
-        _tx_ctx: &mut tx_context::TxContext,
-        title: String,
-        body: String,
-    ): Article {
-        assert!(std::string::length(&title) <= 200, EID_DATA_TOO_LONG);
-        assert!(std::string::length(&body) <= 2000, EID_DATA_TOO_LONG);
-        Article {
-            version: 0,
-            title,
-            body,
-        }
-    }
-
-    struct ArticleCreated has key {
-        id: option::Option<ObjectID>,
-        title: String,
-        body: String,
-    }
-
-    public fun article_created_id(article_created: &ArticleCreated): option::Option<ObjectID> {
-        article_created.id
-    }
-
-    public(friend) fun set_article_created_id(article_created: &mut ArticleCreated, id: ObjectID) {
-        article_created.id = option::some(id);
-    }
-
-    public fun article_created_title(article_created: &ArticleCreated): String {
-        article_created.title
-    }
-
-    public fun article_created_body(article_created: &ArticleCreated): String {
-        article_created.body
-    }
-
-    public(friend) fun new_article_created(
-        title: String,
-        body: String,
-    ): ArticleCreated {
-        ArticleCreated {
-            id: option::none(),
-            title,
-            body,
-        }
-    }
-
-    struct ArticleUpdated has key {
-        id: ObjectID,
-        version: u64,
-        title: String,
-        body: String,
-    }
-
-    public fun article_updated_id(article_updated: &ArticleUpdated): ObjectID {
-        article_updated.id
-    }
-
-    public fun article_updated_title(article_updated: &ArticleUpdated): String {
-        article_updated.title
-    }
-
-    public fun article_updated_body(article_updated: &ArticleUpdated): String {
-        article_updated.body
-    }
-
-    public(friend) fun new_article_updated(
-        article_obj: &Object<Article>,
-        title: String,
-        body: String,
-    ): ArticleUpdated {
-        ArticleUpdated {
-            id: id(article_obj),
-            version: version(article_obj),
-            title,
-            body,
-        }
-    }
-
-    struct ArticleDeleted has key {
-        id: ObjectID,
-        version: u64,
-    }
-
-    public fun article_deleted_id(article_deleted: &ArticleDeleted): ObjectID {
-        article_deleted.id
-    }
-
-    public(friend) fun new_article_deleted(
-        article_obj: &Object<Article>,
-    ): ArticleDeleted {
-        ArticleDeleted {
-            id: id(article_obj),
-            version: version(article_obj),
-        }
-    }
-
-    public(friend) fun create_article(
-        storage_ctx: &mut StorageContext,
-        title: String,
-        body: String,
-    ): Object<Article> {
-        let tx_ctx = storage_context::tx_context_mut(storage_ctx);
-        let article = new_article(
-            tx_ctx,
-            title,
-            body,
-        );
-        let obj_owner = tx_context::sender(tx_ctx);
-        let article_obj = object::new(
-            tx_ctx,
-            obj_owner,
-            article,
-        );
-        article_obj
-    }
-
-    public(friend) fun update_version_and_add(storage_ctx: &mut StorageContext, article_obj: Object<Article>) {
-        object::borrow_mut(&mut article_obj).version = object::borrow( &mut article_obj).version + 1;
-        //assert!(object::borrow(&article_obj).version != 0, EINAPPROPRIATE_VERSION);
-        private_add_article(storage_ctx, article_obj);
-    }
-
-    public(friend) fun remove_article(storage_ctx: &mut StorageContext, obj_id: ObjectID): Object<Article> {
-        let obj_store = storage_context::object_storage_mut(storage_ctx);
-        object_storage::remove<Article>(obj_store, obj_id)
-    }
-
-    public(friend) fun add_article(storage_ctx: &mut StorageContext, article_obj: Object<Article>) {
-        assert!(object::borrow(&article_obj).version == 0, EINAPPROPRIATE_VERSION);
-        private_add_article(storage_ctx, article_obj);
-    }
-
-    fun private_add_article(storage_ctx: &mut StorageContext, article_obj: Object<Article>) {
-        assert!(std::string::length(&object::borrow(&article_obj).title) <= 200, EID_DATA_TOO_LONG);
-        assert!(std::string::length(&object::borrow(&article_obj).body) <= 2000, EID_DATA_TOO_LONG);
-        let obj_store = storage_context::object_storage_mut(storage_ctx);
-        object_storage::add(obj_store, article_obj);
-    }
-
-    public fun get_article(storage_ctx: &mut StorageContext, obj_id: ObjectID): Object<Article> {
-        remove_article(storage_ctx, obj_id)
-    }
-
-    public fun return_article(storage_ctx: &mut StorageContext, article_obj: Object<Article>) {
-        private_add_article(storage_ctx, article_obj);
-    }
-
-    public(friend) fun drop_article(article_obj: Object<Article>) {
-        let (_id, _owner, article) =  object::unpack(article_obj);
-        let Article {
-            version: _version,
-            title: _title,
-            body: _body,
-        } = article;
-    }
-
-    public(friend) fun emit_article_created(storage_ctx: &mut StorageContext, article_created: ArticleCreated) {
-        event::emit_event(storage_ctx, article_created);
-    }
-
-    public(friend) fun emit_article_updated(storage_ctx: &mut StorageContext, article_updated: ArticleUpdated) {
-        event::emit_event(storage_ctx, article_updated);
-    }
-
-    public(friend) fun emit_article_deleted(storage_ctx: &mut StorageContext, article_deleted: ArticleDeleted) {
-        event::emit_event(storage_ctx, article_deleted);
+    // The entry function that initializes.
+    entry fun initialize(storage_ctx: &mut StorageContext, account: &signer) {
+        init_blog(storage_ctx, account);
     }
 }
 ```
 
-- `article_aggregate.move`
+- `module rooch_blog::rooch_blog` 用来声明我们的合约属于哪个模块，它的语法是 `module 地址::模块名`，花括号 `{}` 里编写的就是合约的逻辑（功能）。
+- `use` 语句导入我们编写合约时需要依赖的库。
+- `const` 定义合约中使用的常量，通常用来定义一些错误代码。
+- `fun` 是用来定义函数的关键字，通常在这里定义函数的功能。为了安全，这类函数禁止直接在命令行中调用，需要在入口函数中封装调用逻辑。
+- `entry fun` 用来定义入口函数，`entry` 修饰符修饰的函数可以像脚本一样直接在命令行中调用。
 
-```move
-module rooch_blog::article_aggregate {
-    use moveos_std::object_id::ObjectID;
-    use moveos_std::storage_context::StorageContext;
-    use rooch_blog::article;
-    use rooch_blog::article_create_logic;
-    use rooch_blog::article_delete_logic;
-    use rooch_blog::article_update_logic;
-    use std::string::String;
+#### 4.2.2 编译 Move 合约
 
-    public entry fun create(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
-        title: String,
-        body: String,
-    ) {
-        let article_created = article_create_logic::verify(
-            storage_ctx,
-            account,
-            title,
-            body,
-        );
-        let article_obj = article_create_logic::mutate(
-            storage_ctx,
-            &article_created,
-        );
-        article::set_article_created_id(&mut article_created, article::id(&article_obj));
-        article::add_article(storage_ctx, article_obj);
-        article::emit_article_created(storage_ctx, article_created);
-    }
-
-
-    public entry fun update(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
-        id: ObjectID,
-        title: String,
-        body: String,
-    ) {
-        let article_obj = article::remove_article(storage_ctx, id);
-        let article_updated = article_update_logic::verify(
-            storage_ctx,
-            account,
-            title,
-            body,
-            &article_obj,
-        );
-        let updated_article_obj = article_update_logic::mutate(
-            storage_ctx,
-            &article_updated,
-            article_obj,
-        );
-        article::update_version_and_add(storage_ctx, updated_article_obj);
-        article::emit_article_updated(storage_ctx, article_updated);
-    }
-
-
-    public entry fun delete(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
-        id: ObjectID,
-    ) {
-        let article_obj = article::remove_article(storage_ctx, id);
-        let article_deleted = article_delete_logic::verify(
-            storage_ctx,
-            account,
-            &article_obj,
-        );
-        let updated_article_obj = article_delete_logic::mutate(
-            storage_ctx,
-            &article_deleted,
-            article_obj,
-        );
-        article::drop_article(updated_article_obj);
-        article::emit_article_deleted(storage_ctx, article_deleted);
-    }
-}
-```
-
-- `article_create_logic.move`
-
-```move
-module rooch_blog::article_create_logic {
-    use std::string::String;
-
-    use moveos_std::object::Object;
-    use moveos_std::storage_context::StorageContext;
-    use rooch_blog::article;
-    use rooch_blog::article_created;
-
-    friend rooch_blog::article_aggregate;
-
-    public(friend) fun verify(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
-        title: String,
-        body: String,
-    ): article::ArticleCreated {
-        let _ = storage_ctx;
-        let _ = account;
-        article::new_article_created(
-            title,
-            body,
-        )
-    }
-
-    public(friend) fun mutate(
-        storage_ctx: &mut StorageContext,
-        article_created: &article::ArticleCreated,
-    ): Object<article::Article> {
-        let title = article_created::title(article_created);
-        let body = article_created::body(article_created);
-        article::create_article(
-            storage_ctx,
-            title,
-            body,
-        )
-    }
-}
-```
-
-- `article_created.move`
-
-```move
-module rooch_blog::article_created {
-
-    use moveos_std::object_id::ObjectID;
-    use rooch_blog::article::{Self, ArticleCreated};
-    use std::option;
-    use std::string::String;
-
-    public fun id(article_created: &ArticleCreated): option::Option<ObjectID> {
-        article::article_created_id(article_created)
-    }
-
-    public fun title(article_created: &ArticleCreated): String {
-        article::article_created_title(article_created)
-    }
-
-    public fun body(article_created: &ArticleCreated): String {
-        article::article_created_body(article_created)
-    }
-}
-```
-
-- `article_delete_logic.move`
-
-```move
-module rooch_blog::article_delete_logic {
-    use moveos_std::object::Object;
-    use moveos_std::storage_context::StorageContext;
-    use rooch_blog::article;
-
-    friend rooch_blog::article_aggregate;
-
-    public(friend) fun verify(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
-        article_obj: &Object<article::Article>,
-    ): article::ArticleDeleted {
-        let _ = storage_ctx;
-        let _ = account;
-        article::new_article_deleted(
-            article_obj,
-        )
-    }
-
-    public(friend) fun mutate(
-        storage_ctx: &mut StorageContext,
-        article_deleted: &article::ArticleDeleted,
-        article_obj: Object<article::Article>,
-    ): Object<article::Article> {
-        let id = article::id(&article_obj);
-        let _ = storage_ctx;
-        let _ = id;
-        let _ = article_deleted;
-        article_obj
-    }
-}
-```
-
-- `article_deleted.move`
-
-```move
-module rooch_blog::article_deleted {
-
-    use moveos_std::object_id::ObjectID;
-    use rooch_blog::article::{Self, ArticleDeleted};
-
-    public fun id(article_deleted: &ArticleDeleted): ObjectID {
-        article::article_deleted_id(article_deleted)
-    }
-
-}
-```
-
-- `article_update_logic.move`
-
-```move
-module rooch_blog::article_update_logic {
-    use std::string::String;
-
-    use moveos_std::object::Object;
-    use moveos_std::storage_context::StorageContext;
-    use rooch_blog::article;
-    use rooch_blog::article_updated;
-
-    friend rooch_blog::article_aggregate;
-
-    public(friend) fun verify(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
-        title: String,
-        body: String,
-        article_obj: &Object<article::Article>,
-    ): article::ArticleUpdated {
-        let _ = storage_ctx;
-        let _ = account;
-        article::new_article_updated(
-            article_obj,
-            title,
-            body,
-        )
-    }
-
-    public(friend) fun mutate(
-        storage_ctx: &mut StorageContext,
-        article_updated: &article::ArticleUpdated,
-        article_obj: Object<article::Article>,
-    ): Object<article::Article> {
-        let title = article_updated::title(article_updated);
-        let body = article_updated::body(article_updated);
-        let id = article::id(&article_obj);
-        let _ = storage_ctx;
-        let _ = id;
-        article::set_title(&mut article_obj, title);
-        article::set_body(&mut article_obj, body);
-        article_obj
-    }
-}
-```
-
-- `article_updated.move`
-
-```move
-module rooch_blog::article_updated {
-
-    use moveos_std::object_id::ObjectID;
-    use rooch_blog::article::{Self, ArticleUpdated};
-    use std::string::String;
-
-    public fun id(article_updated: &ArticleUpdated): ObjectID {
-        article::article_updated_id(article_updated)
-    }
-
-    public fun title(article_updated: &ArticleUpdated): String {
-        article::article_updated_title(article_updated)
-    }
-
-    public fun body(article_updated: &ArticleUpdated): String {
-        article::article_updated_body(article_updated)
-    }
-}
-```
-
-- `rooch_blog_demo_init.move`
-
-```move
-module rooch_blog::rooch_blog_demo_init {
-    use moveos_std::storage_context::StorageContext;
-    use rooch_blog::article;
-
-    public entry fun initialize(storage_ctx: &mut StorageContext, account: &signer) {
-        article::initialize(storage_ctx, account);
-    }
-}
-```
-
-[下载博客源码](https://github.com/rooch-network/rooch/archive/refs/heads/main.zip)，解压，并切换到博客合约项目的根目录。
-
-```shell
-wget https://github.com/rooch-network/rooch/archive/refs/heads/main.zip
-unzip main.zip
-cd rooch-main/docs/website/public/codes/rooch_blog
-```
-
-#### 2.3.3 编译合约
+在发布到链上前，需要编译我们的合约：
 
 ```shell
 rooch move build
@@ -681,11 +202,11 @@ BUILDING rooch_blog
 Success
 ```
 
-此时，项目文件夹会多出一个 `build` 目录，里面存放的就是 Move 编译器生成的合约字节码文件以及合约的完整代码。
+此时，项目文件夹会多出一个 `build` 目录，里面存放的就是 Move 编译器生成的合约字节码文件以及合约完整的源代码。
 
-#### 2.3.4 运行 Rooch 服务器
+#### 4.2.3 运行 Rooch 服务器
 
-我们再打开另外一个终端，运行下面这条命令，Rooch 服务器会在本地启动 Rooch 服务，用于处理并响应合约的相关行为。
+我们再打开另外一个终端，运行下面这条命令，Rooch 服务器会在本地启动 Rooch 服务（模拟链的行为），用于处理并响应合约的相关行为。
 
 ```shell
 rooch server start
@@ -700,7 +221,7 @@ rooch server start
 
 > 提示：我们在前一个终端窗口操作合约相关的逻辑（功能）时，可以观察这个终端窗口的输出。
 
-#### 2.3.5 发布 Move 合约
+#### 4.2.4 发布 Move 合约
 
 ```shell
 rooch move publish
@@ -728,23 +249,50 @@ rooch move publish
 2023-07-03T16:02:13.690733Z  INFO rooch_proposer::actor::proposer: [ProposeBlock] block_number: 0, batch_size: 1
 ```
 
-### 2.4 与博客合约交互
+#### 4.2.5 调用 Move 合约
 
-我们接下来将会使用 Rooch CLI 以及其他命令行工具（`curl`、`jq`）来测试已发布的合约。
+此时，我们的博客合约已经发布到链上了，我门尝试调用刚刚编写的 `initialize` 函数来初始化我们的合约。
 
-使用 `rooch move run` 命令提交一个交易，初始化合约（请注意替换占位符 `{ACCOUNT_ADDRESS}` 为你拥有账户的地址）：
+调用合约入口函数的语法是：
 
 ```shell
-rooch move run --function {ACCOUNT_ADDRESS}::rooch_blog_demo_init::initialize --sender-account {ACCOUNT_ADDRESS}
+rooch move run --function {ACCOUNT_ADDRESS}::{MODULE_NAME}::{FUNCTION_NAME} --sender-account {ACCOUNT_ADDRESS}
 ```
+
+使用 `rooch move run` 命令运行一个函数。`--function` 指定函数名，需要传递一个完整的函数名，即`发布合约的地址::模块名::函数名`，才能够准确识别需要调用的函数。`--sender-account` 指定调用这个函数的账户地址，即使用哪个账户来调用这个函数，任何人都可以调用链上的合约。
 
 我们可以查看 `$HOME/.rooch/rooch_config/rooch.yaml` 文件中的 `active_address` 这个键对应的值，即操作合约的默认账户地址。
 
 我的地址为 `0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc`，后续将继续使用这个地址来演示相关操作。
 
 ```shell
-rooch move run --function 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::rooch_blog_demo_init::initialize --sender-account 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc
+rooch move run --function 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::rooch_blog::initialize --sender-account 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc
 ```
+
+这条命令执行时，会向链发送一笔交易，交易的内容就是就是调用博客合约中的 `initialize` 函数。
+
+当然，如果使用 Rooch 的默认账户来调用函数，命令可以简化为：
+
+```shell
+rooch move run --function 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::rooch_blog::initialize --sender-account default
+```
+
+至此，我们体验了在 Rooch 中从零到一地安装，初始化配置，创建项目，编写合约，编译合约，发布合约，调用合约。
+
+### 4.3 完善博客合约
+
+接下来我们继续完善博客合约，增加博客文章的**增查改删**功能。
+
+#### 4.3.1 创建文章
+<++>
+
+<!-- [下载博客源码](https://github.com/rooch-network/rooch/archive/refs/heads/main.zip)，解压，并切换到博客合约项目的根目录。 -->
+
+<!-- ```shell -->
+<!-- wget https://github.com/rooch-network/rooch/archive/refs/heads/main.zip -->
+<!-- unzip main.zip -->
+<!-- cd rooch-main/docs/website/public/codes/rooch_blog -->
+<!-- ``` -->
 
 #### 2.4.1 创建文章
 
