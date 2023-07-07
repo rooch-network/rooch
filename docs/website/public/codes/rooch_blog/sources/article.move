@@ -9,10 +9,7 @@ module rooch_blog::article {
     use std::option;
     use std::signer;
     use std::string::String;
-    friend rooch_blog::article_create_logic;
-    friend rooch_blog::article_update_logic;
-    friend rooch_blog::article_delete_logic;
-    friend rooch_blog::article_aggregate;
+    friend rooch_blog::rooch_blog;
 
     const EID_DATA_TOO_LONG: u64 = 102;
     const EINAPPROPRIATE_VERSION: u64 = 103;
@@ -91,7 +88,7 @@ module rooch_blog::article {
         article_created.body
     }
 
-    public(friend) fun new_article_created(
+    public fun new_article_created(
         title: String,
         body: String,
     ): ArticleCreated {
@@ -143,7 +140,7 @@ module rooch_blog::article {
         article_deleted.id
     }
 
-    public(friend) fun new_article_deleted(
+    public fun new_article_deleted(
         article_obj: &Object<Article>,
     ): ArticleDeleted {
         ArticleDeleted {
@@ -152,7 +149,7 @@ module rooch_blog::article {
         }
     }
 
-    public(friend) fun create_article(
+    public fun create_article(
         storage_ctx: &mut StorageContext,
         title: String,
         body: String,
