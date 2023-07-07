@@ -27,10 +27,10 @@ impl CommandAction<String> for EventCommand {
 pub enum EventSubCommand {
     GetEventsByEventHandle(GetEventsByEventHandle),
 }
-
+/// Retrieves events based on their event handle.
 #[derive(Debug, clap::Parser)]
 pub struct GetEventsByEventHandle {
-    /// Struct name as `<ADDRESS>::<MODULE_ID>::<STRUCT_NAME><TypeParam1?, TypeParam2?>`
+    /// Struct name as `ADDRESS::MODULE_NAME::STRUCT_NAME<TypeParam1?, TypeParam2?>`
     /// Example: `0x123::event_test::WithdrawEvent --cursor 0 --limit 1`
     #[clap(long = "event_handle_type")]
     event_handle_type: StructTag,

@@ -9,7 +9,7 @@ use rooch_types::{error::RoochResult, H256};
 /// Get transaction by hash
 #[derive(Debug, clap::Parser)]
 pub struct GetByHashCommand {
-    /// H56
+    /// Transaction's hash
     #[clap(long)]
     pub hash: H256,
 
