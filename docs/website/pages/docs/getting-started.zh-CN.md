@@ -94,7 +94,7 @@ rooch init
 
 ## 4. 创建新的 Rooch 项目
 
-这部分将引导你如何在 Rooch 上创建一个博客的合约应用，并实现基本的**增查改删**功能。
+这部分将引导你如何在 Rooch 上创建一个博客的合约应用，并实现基本的**增查改删（CRUD）**功能。
 
 ### 4.1 创建 Move 项目
 
@@ -138,7 +138,7 @@ rooch_framework =  "0x3"
 
 ### 4.2 快速体验
 
-这小节里，将引导你编写一个博客的初始化函数，并在 Rooch 中运行起来，体验`编写->编译->发布->调用`合约这样一个基本流程。
+这小节里，将引导你编写一个博客的初始化函数，并在 Rooch 中运行起来，体验`编写 -> 编译 -> 发布 -> 调用`合约这样一个基本流程。
 
 我们在 `sources` 目录里新建一个 `blog.move` 文件，并开始编写我们的博客合约。
 
@@ -737,7 +737,7 @@ rooch object --id 0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4
 将文章的标题修改为 `Foo`，文章正文修改为 `Bar`：
 
 ```shell
-rooch move run --function 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::rooch_blog::update --sender-account 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc --args 'object_id:0x884f95b2bcab56b73a436fc0ac2ae38d376b83d54e9a9d88d0a63306ed5b7cc6' 'string:Foo' 'string:Bar'
+rooch move run --function 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::rooch_blog::update --sender-account 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc --args 'object_id:0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b' 'string:Foo' 'string:Bar'
 ```
 
 除了使用 Rooch CLI，你还可以通过调用 JSON RPC 来查询对象的状态：
@@ -814,7 +814,7 @@ curl --location --request POST 'http://127.0.0.1:50051/' \
 可以这样提交一个交易，删除文章：
 
 ```shell
-rooch move run --function 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::rooch_blog::delete --sender-account 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc --args 'object_id:0x884f95b2bcab56b73a436fc0ac2ae38d376b83d54e9a9d88d0a63306ed5b7cc6'
+rooch move run --function 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::rooch_blog::delete --sender-account 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc --args 'object_id:0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b'
 ```
 
 `--function` 指定执行发布在 `0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc` 地址上的 `rooch_blog` 模块中的 `delete` 函数，即删除一篇博客文章。同样也需要使用 `--sender-account` 来指定发送这个删除文章交易的账户。这个函数只需给它传递一个参数，即文章对应的对象 ID，通过 `--args` 来指定。
