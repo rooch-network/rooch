@@ -24,7 +24,7 @@ Feature: Rooch CLI integration tests
       Then cmd: "transaction get-by-index --cursor 0 --limit 10"
 
       # event example
-      Then cmd: "move publish -p ../../examples/event_example --sender-account {default} --named-addresses rooch_examples={default}"
+      Then cmd: "move publish -p ../../examples/event --sender-account {default} --named-addresses rooch_examples={default}"
       Then cmd: "move run --function {default}::event_test::emit_event --sender-account {default} --args 10u64"
       Then cmd: "event get-events-by-event-handle --event_handle_type {default}::event_test::WithdrawEvent --cursor 0 --limit 1"
 

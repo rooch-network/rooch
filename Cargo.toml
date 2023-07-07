@@ -26,6 +26,7 @@ members = [
     "crates/rooch-executor",
     "crates/rooch-proposer",
     "crates/rooch-open-rpc",
+    "crates/rooch-open-rpc-spec",
     "crates/rooch-open-rpc-macros",
     "crates/rooch-store"
 ]
@@ -78,6 +79,7 @@ rooch-sequencer = { path = "crates/rooch-sequencer" }
 rooch-executor = { path = "crates/rooch-executor" }
 rooch-proposer = { path = "crates/rooch-proposer" }
 rooch-open-rpc = { path = "crates/rooch-open-rpc" }
+rooch-open-rpc-spec = { path = "crates/rooch-open-rpc-spec" }
 rooch-open-rpc-macros = { path = "crates/rooch-open-rpc-macros" }
 rooch-store = { path = "crates/rooch-store" }
 

@@ -44,7 +44,7 @@ struct Options {
     action: Action,
 }
 
-const FILE_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/spec/openrpc.json",);
+const FILE_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/schemas/openrpc.json",);
 
 // TODO: This currently always use workspace version, which is not ideal.
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -59,10 +59,6 @@ async fn main() {
     // open_rpc.add_examples(RpcExampleProvider::new().examples());
 
     match options.action {
-        Action::Print => {
-            let content = serde_json::to_string_pretty(&open_rpc).unwrap();
-            println!("{content}");
-        }
         Action::Record => {
             let content = serde_json::to_string_pretty(&open_rpc).unwrap();
             let mut f = File::create(FILE_PATH).unwrap();
@@ -73,5 +69,35 @@ async fn main() {
             let content = serde_json::to_string_pretty(&open_rpc).unwrap() + "\n";
             assert_str_eq!(&reference, &content);
         }
+        _ => {
+            let content = serde_json::to_string_pretty(&open_rpc).unwrap();
+            println!("{content}");
+        }
     }
+}
+
+#[test]
+fn test_json_rpc_spec() {
+    // If this test breaks and you intended a json rpc schema change, you need to run to get the fresh schema:
+    // # cargo run --package rooch-open-rpc-spec --bin rooch-open-rpc-spec -- record
+    let status = std::process::Command::new("cargo")
+        .args([
+            "run",
+            "--package",
+            "rooch-open-rpc-spec",
+            "--bin",
+            "rooch-open-rpc-spec",
+            "--",
+        ])
+        .arg("test")
+        .status()
+        .expect("msg");
+
+    assert!(
+        status.success(),
+            "\n\
+    If this test breaks and you intended a json rpc schema change, you need to run to get the fresh schema:\n\
+    ./scripts/generate_json_rpc_spec.sh
+            "
+        );
 }
