@@ -12,6 +12,7 @@ RUN set -eux; \
         pkg-config \
         libclang-dev clang \
         llvm \
+        lld \
         protobuf-compiler; \
     rm -rf /var/lib/apt/lists/*
 
