@@ -37,7 +37,7 @@ pub struct GetEventsByEventHandle {
     /// start position
     #[clap(long)]
     cursor: Option<u64>,
-    /// end position
+    /// Max number of items returned per page
     #[clap(long)]
     limit: Option<u64>,
 
