@@ -41,6 +41,7 @@ pub struct TransactionOptions {
 
 #[derive(Debug, Parser)]
 pub struct WalletContextOptions {
+    /// rooch config path
     #[clap(long)]
     pub config_dir: Option<PathBuf>,
 }

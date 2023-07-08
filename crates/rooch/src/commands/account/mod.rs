@@ -9,6 +9,7 @@ use std::path::PathBuf;
 
 pub mod commands;
 
+/// Tool for interacting with accounts
 #[derive(clap::Parser)]
 pub struct Account {
     #[clap(subcommand)]

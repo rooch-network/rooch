@@ -7,6 +7,7 @@ use commands::{get_tx_by_hash::GetByHashCommand, get_tx_by_index::GetByIndexComm
 use rooch_types::error::RoochResult;
 pub mod commands;
 
+/// Tool for interacting with transaction
 #[derive(clap::Parser)]
 pub struct Transaction {
     #[clap(subcommand)]

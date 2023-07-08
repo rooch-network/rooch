@@ -7,6 +7,7 @@ use move_core_types::language_storage::StructTag;
 use rooch_rpc_api::jsonrpc_types::EventPageView;
 use rooch_types::error::{RoochError, RoochResult};
 
+/// Tool for interacting with event
 #[derive(clap::Parser)]
 pub struct EventCommand {
     #[clap(subcommand)]
@@ -26,13 +27,17 @@ impl CommandAction<String> for EventCommand {
 pub enum EventSubCommand {
     GetEventsByEventHandle(GetEventsByEventHandle),
 }
-
+/// Retrieves events based on their event handle.
 #[derive(Debug, clap::Parser)]
 pub struct GetEventsByEventHandle {
+    /// Struct name as `ADDRESS::MODULE_NAME::STRUCT_NAME<TypeParam1?, TypeParam2?>`
+    /// Example: `0x123::event_test::WithdrawEvent --cursor 0 --limit 1`
     #[clap(long = "event_handle_type")]
     event_handle_type: StructTag,
+    /// start position
     #[clap(long)]
     cursor: Option<u64>,
+    /// Max number of items returned per page
     #[clap(long)]
     limit: Option<u64>,
 

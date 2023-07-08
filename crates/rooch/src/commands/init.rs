@@ -11,8 +11,10 @@ use rooch_rpc_client::client_config::{ClientConfig, Env};
 use rooch_types::{crypto::BuiltinScheme, error::RoochResult};
 use std::fs;
 
+/// Tool for init with rooch
 #[derive(Parser)]
 pub struct Init {
+    /// Accept defaults config, default true
     #[clap(short = 'y', long = "yes", default_value_t = true)]
     pub accept_defaults: bool,
     #[clap(flatten)]

@@ -7,9 +7,13 @@ use moveos_types::access_path::AccessPath;
 use rooch_rpc_api::jsonrpc_types::AnnotatedStateView;
 use rooch_types::error::{RoochError, RoochResult};
 
-/// Get States by AccessPath
+/// Get states by accessPath
 #[derive(clap::Parser)]
 pub struct StateCommand {
+    /// /object/$object_id1[,$object_id2]
+    /// /resource/$account_address/$resource_type1[,$resource_type2]
+    /// /module/$account_address/$module_name1[,$module_name2]
+    /// /table/$table_handle/$key1[,$key2]
     #[clap(long = "access-path", short = 'a')]
     pub access_path: AccessPath,
 
