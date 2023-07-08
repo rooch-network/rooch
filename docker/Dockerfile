@@ -55,4 +55,5 @@ ENV RELEASE_PATH="/rooch/target/release"
 COPY --from=builder $RELEASE_PATH/rooch \
      /rooch/
 
-CMD ["/rooch/rooch"]
+ENTRYPOINT [ "/rooch/rooch" ]
+CMD [ "server", "start" ]
