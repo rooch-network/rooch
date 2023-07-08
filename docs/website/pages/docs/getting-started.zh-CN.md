@@ -165,7 +165,7 @@ module rooch_blog::rooch_blog {
         let _ = account;
     }
 
-    // The entry function that initializes.
+    // The entry function that initializes
     entry fun initialize(storage_ctx: &mut StorageContext, account: &signer) {
         init_blog(storage_ctx, account);
     }
@@ -283,7 +283,32 @@ rooch move run --function 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba23393
 
 接下来我们继续完善博客合约，增加博客文章的**增查改删**功能。
 
-#### 4.3.1 创建博客合约库文件
+#### 4.3.1 改进初始化函数
+
+Move 语言提供了标准化的初始化函数来对合约进行初始化，如果使用默认的标准化函数 `init` 而非上面演示的 `init_blog` 函数，那么可以省略入口函数。使用标准化的初始化函数，将合约发布到链上后会直接进行初始化，省去了手动调用初始化函数的步骤。
+
+```move
+module rooch_blog::rooch_blog {
+    use std::error;
+    use std::signer;
+    use moveos_std::storage_context::StorageContext;
+
+    const EID_DATA_TOO_LONG: u64 = 102;
+    const EINAPPROPRIATE_VERSION: u64 = 103;
+    const ENOT_GENESIS_ACCOUNT: u64 = 105;
+
+    // Define a function that initialize the blog app
+    fun init(storage_ctx: &mut StorageContext, account: &signer) {
+        assert!(signer::address_of(account) == @rooch_blog, error::invalid_argument(ENOT_GENESIS_ACCOUNT));
+        let _ = storage_ctx;
+        let _ = account;
+    }
+}
+```
+
+> 或许你在学习 Move 合约时，会看到使用 `entry` 修饰的初始化函数，这通常是旧版本的行为。如果你开始写 Move 合约了，那么推荐你使用标准化的初始化函数 `init`，希望这里可以帮助你理解手动初始化和自动初始化的区别。
+
+#### 4.3.2 创建博客合约库文件
 
 我们在 `sources` 目录再创建一个 `article.move` 文件，这个文件中存放文章的数据类型以及对文章进行 CRUD 操作的相关事件的定义。
 
@@ -513,7 +538,7 @@ module rooch_blog::article {
 }
 ```
 
-#### 4.3.2 创建文章
+#### 4.3.3 创建文章
 
 接下来，我们在 `blog.move` 中编写创建文章的功能：
 
@@ -581,7 +606,7 @@ rooch move run --function 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba23393
 
 你可以随意更换 `--args` 后面的第一个参数（`title`）和第二个参数（`body`）的内容，多创建几篇文章。
 
-#### 4.3.3 查询文章
+#### 4.3.4 查询文章
 
 现在，你可以通过查询事件，得到已创建好的文章的 `ObjectID`：
 
@@ -667,7 +692,7 @@ rooch object --id 0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4
 
 注意观察输出中，`title` 和 `body` 这两个键值对，能看到这个对象确实“存储着”刚刚写的那篇博客文章。
 
-#### 4.3.4 更新文章
+#### 4.3.5 更新文章
 
 我们继续编写 `blog.move` 文件，增加更新文章的功能：
 
@@ -759,7 +784,7 @@ curl --location --request POST 'http://127.0.0.1:50051/' \
 {"jsonrpc":"2.0","result":[{"state":{"value":"0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc010000000000000003466f6f03426172fd1a25121453bfa91136bb7c089142f6a1aeb5d6ea13f23c238eade83f3ad31d","value_type":"0x2::object::Object<0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::article::Article>"},"move_value":{"abilities":0,"type":"0x2::object::Object<0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::article::Article>","value":{"id":"0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b","owner":"0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc","value":{"abilities":8,"type":"0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::article::Article","value":{"body":"Bar","comments":{"abilities":4,"type":"0x2::table::Table<u64, 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::comment::Comment>","value":{"handle":"0xfd1a25121453bfa91136bb7c089142f6a1aeb5d6ea13f23c238eade83f3ad31d"}},"title":"Foo","version":"1"}}}}}],"id":101}[joe@mx rooch_blog]$
 ```
 
-#### 4.3.5 删除文章
+#### 4.3.6 删除文章
 
 我们继续编写 `blog.move` 文件，增加删除文章的功能：
 
@@ -819,7 +844,7 @@ rooch move run --function 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba23393
 
 `--function` 指定执行发布在 `0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc` 地址上的 `rooch_blog` 模块中的 `delete` 函数，即删除一篇博客文章。同样也需要使用 `--sender-account` 来指定发送这个删除文章交易的账户。这个函数只需给它传递一个参数，即文章对应的对象 ID，通过 `--args` 来指定。
 
-#### 4.3.6 检查文章是否正常删除
+#### 4.3.7 检查文章是否正常删除
 
 ```shell
 rooch object --id 0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b

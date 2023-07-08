@@ -282,7 +282,32 @@ So far, we have experienced the zero-to-one installation in Rooch, initial confi
 
 Next, we will continue to improve the blog contract and increase the function of **CRUD** blog posts.
 
-#### 4.3.1 Create a blog contract library file
+#### 4.3.1 Improved initialization function
+
+The Move language provides a standardized initialization function to initialize the contract. If the default standardized function `init` is used instead of the `init_blog` function demonstrated above, the entry function can be omitted. Using a standardized initialization function, the contract will be initialized directly after it is released to the chain, eliminating the need to manually call the initialization function.
+
+```move
+module rooch_blog::rooch_blog {
+    use std::error;
+    use std::signer;
+    use moveos_std::storage_context::StorageContext;
+
+    const EID_DATA_TOO_LONG: u64 = 102;
+    const EINAPPROPRIATE_VERSION: u64 = 103;
+    const ENOT_GENESIS_ACCOUNT: u64 = 105;
+
+    // Define a function that initialize the blog app
+    fun init(storage_ctx: &mut StorageContext, account: &signer) {
+        assert!(signer::address_of(account) == @rooch_blog, error::invalid_argument(ENOT_GENESIS_ACCOUNT));
+        let _ = storage_ctx;
+        let _ = account;
+    }
+}
+```
+
+Maybe when you study the Move contract, you will see the initialization function decorated with `entry`, which is usually the behavior of the old version. If you start writing a Move contract, it is recommended that you use the standardized initialization function `init`. I hope this can help you understand the difference between manual initialization and automatic initialization.
+
+#### 4.3.2 Create a blog contract library file
 
 We create another `article.move` file in the `sources` directory, which stores the data type of the article and the definition of related events for CRUD operations on the article.
 
@@ -512,7 +537,7 @@ module rooch_blog::article {
 }
 ```
 
-#### 4.3.2 Creating Articles
+#### 4.3.3 Creating Articles
 
 Next, we write the function to create a post in `blog.move`:
 
@@ -580,7 +605,7 @@ The parameter passed is a string, which needs to be wrapped in quotation marks a
 
 You can freely change the content of the first parameter (`title`) and the second parameter (`body`) after `--args` to create more articles.
 
-#### 4.3.3 Query Articles
+#### 4.3.4 Query Articles
 
 Now, you can get the `ObjectID` of the created article by querying the event:
 
@@ -666,7 +691,7 @@ rooch object --id 0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4
 
 Pay attention to the two key-value pairs `title` and `body` in the output, and you can see that this object does "store" the blog post you just wrote.
 
-#### 4.3.4 Updating Articles
+#### 4.3.5 Updating Articles
 
 We continue to write the `blog.move` file and add the function of updating articles:
 
@@ -758,7 +783,7 @@ In the output, it can be observed that the title and body of the article are suc
 {"jsonrpc":"2.0","result":[{"state":{"value":"0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc010000000000000003466f6f03426172fd1a25121453bfa91136bb7c089142f6a1aeb5d6ea13f23c238eade83f3ad31d","value_type":"0x2::object::Object<0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::article::Article>"},"move_value":{"abilities":0,"type":"0x2::object::Object<0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::article::Article>","value":{"id":"0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b","owner":"0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc","value":{"abilities":8,"type":"0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::article::Article","value":{"body":"Bar","comments":{"abilities":4,"type":"0x2::table::Table<u64, 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::comment::Comment>","value":{"handle":"0xfd1a25121453bfa91136bb7c089142f6a1aeb5d6ea13f23c238eade83f3ad31d"}},"title":"Foo","version":"1"}}}}}],"id":101}[joe@mx rooch_blog]$
 ```
 
-#### 4.3.5 Delete Article
+#### 4.3.6 Delete Article
 
 We continue to write the blog.move file and add the function of deleting articles:
 
@@ -818,7 +843,7 @@ rooch move run --function 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba23393
 
 `--function` specifies to execute the `delete` function in the `rooch_blog` module published at the address `0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc`, that is, to delete a blog post. Also need to use `--sender-account` to specify the account to send this delete article transaction. This function only needs to pass one parameter to it, which is the object ID corresponding to the article, specified by `--args`.
 
-#### 4.3.6 Check whether the article is deleted normally
+#### 4.3.7 Check whether the article is deleted normally
 
 ```shell
 rooch object --id 0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b
