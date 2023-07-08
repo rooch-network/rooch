@@ -10,6 +10,9 @@ use serde::{Deserialize, Serialize, Serializer};
 use std::fmt;
 use std::str::FromStr;
 
+#[cfg(any(test, feature = "fuzzing"))]
+use proptest::prelude::*;
+
 /// Identifier of a module function
 /// The FunctionId is of the form <address>::<module>::<function>
 #[derive(Clone, Debug, Eq, Ord, PartialOrd, PartialEq, Serialize, Deserialize, Hash)]
@@ -223,4 +226,51 @@ pub fn as_struct_tag(type_tag: TypeTag) -> Result<StructTag> {
     } else {
         bail!("invalid struct tag: {:?}", type_tag)
     }
+}
+
+#[cfg(any(test, feature = "fuzzing"))]
+pub fn type_tag_prop_strategy() -> impl Strategy<Value = TypeTag> {
+    let leaf = prop_oneof![
+        Just(TypeTag::Bool),
+        Just(TypeTag::U8),
+        Just(TypeTag::U16),
+        Just(TypeTag::U32),
+        Just(TypeTag::U64),
+        Just(TypeTag::U128),
+        Just(TypeTag::U256),
+        Just(TypeTag::Address),
+        Just(TypeTag::Signer),
+    ];
+
+    let type_tag_strategy = leaf.prop_recursive(
+        8,   // Arbitrarily chosen depth, adjust to suit your needs
+        256, // Arbitrarily chosen size limit, adjust to suit your needs
+        10,  // Per-vec limit, adjust to suit your needs
+        |elem| {
+            prop_oneof![
+                // Recursively generate TypeTag for Vector
+                elem.clone().prop_map(|t| TypeTag::Vector(Box::new(t))),
+                // Recursively generate TypeTag for StructTag
+                any::<Vec<TypeTag>>()
+                    .prop_flat_map(move |type_params| {
+                        (
+                            any::<Identifier>(),
+                            any::<Identifier>(),
+                            Just(AccountAddress::random()),
+                            Just(type_params),
+                        )
+                    })
+                    .prop_map(|(module, name, address, type_params)| {
+                        TypeTag::Struct(Box::new(StructTag {
+                            address,
+                            module,
+                            name,
+                            type_params,
+                        }))
+                    }),
+            ]
+        },
+    );
+
+    type_tag_strategy
 }

@@ -8,15 +8,18 @@ use crate::{
 use move_core_types::{
     account_address::AccountAddress,
     effects::ChangeSet,
-    language_storage::{ModuleId, TypeTag, StructTag},
-    identifier::Identifier,
+    language_storage::{ModuleId, TypeTag},
     vm_status::KeptVMStatus,
 };
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
 #[cfg(any(test, feature = "fuzzing"))]
-use proptest::{collection::vec, prelude::*};
+use crate::move_types::type_tag_prop_strategy;
+#[cfg(any(test, feature = "fuzzing"))]
+use move_core_types::identifier::Identifier;
+#[cfg(any(test, feature = "fuzzing"))]
+use proptest::prelude::*;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 
@@ -37,8 +40,18 @@ impl Arbitrary for ScriptCall {
     type Strategy = BoxedStrategy<Self>;
 
     fn arbitrary_with(_args: ()) -> Self::Strategy {
-        (any::<Vec<u8>>(), Just(vec![]), Vec::<Vec<u8>>::arbitrary())
-            .prop_map(|(code, ty_args, args)| ScriptCall { code, ty_args, args })
+        let ty_args_strategy = prop::collection::vec(type_tag_prop_strategy(), 0..10);
+
+        (
+            any::<Vec<u8>>(),
+            ty_args_strategy,
+            Vec::<Vec<u8>>::arbitrary(),
+        )
+            .prop_map(|(code, ty_args, args)| ScriptCall {
+                code,
+                ty_args,
+                args,
+            })
             .boxed()
     }
 }
@@ -72,45 +85,13 @@ impl Arbitrary for FunctionCall {
     fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
         let function_id_strategy = (any::<ModuleId>(), any::<Identifier>())
             .prop_map(|(module_id, identifier)| FunctionId::new(module_id, identifier));
-        
-        let leaf = prop_oneof![
-            Just(TypeTag::Bool),
-            Just(TypeTag::U8),
-            Just(TypeTag::U16),
-            Just(TypeTag::U32),
-            Just(TypeTag::U64),
-            Just(TypeTag::U128),
-            Just(TypeTag::U256),
-            Just(TypeTag::Address),
-            Just(TypeTag::Signer),
-        ];
+        let ty_args_strategy = prop::collection::vec(type_tag_prop_strategy(), 0..10);
 
-        let ty_args_strategy = leaf.prop_recursive(
-            8,  // Arbitrarily chosen depth, adjust to suit your needs
-            256,  // Arbitrarily chosen size limit, adjust to suit your needs
-            10,  // Per-vec limit, adjust to suit your needs
-            |elem| {
-                prop_oneof![
-                    // Recursively generate TypeTag for Vector
-                    elem.clone().prop_map(|t| TypeTag::Vector(Box::new(t))),
-                    // Recursively generate TypeTag for StructTag
-                    any::<Vec<TypeTag>>()
-                        .prop_flat_map(move |type_params| {
-                            (any::<Identifier>(), any::<Identifier>(), Just(AccountAddress::random()), Just(type_params))
-                        })
-                        .prop_map(|(module, name, address, type_params)| {
-                            TypeTag::Struct(Box::new(StructTag {
-                                address,
-                                module,
-                                name,
-                                type_params,
-                            }))
-                        }),
-                ]
-            },
-        );
-    
-        (function_id_strategy, prop::collection::vec(ty_args_strategy,0..10), any::<Vec<Vec<u8>>>())
+        (
+            function_id_strategy,
+            ty_args_strategy,
+            any::<Vec<Vec<u8>>>(),
+        )
             .prop_map(|(function_id, ty_args, args)| FunctionCall {
                 function_id,
                 ty_args,
@@ -119,7 +100,6 @@ impl Arbitrary for FunctionCall {
             .boxed()
     }
 }
-
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
@@ -288,8 +268,6 @@ impl TransactionExecutionInfo {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::MoveAction;
@@ -297,8 +275,10 @@ mod tests {
 
     proptest! {
         #[test]
-        fn mock_move_action(_ in any::<MoveAction>()) {
-            // Your test case here.
+        fn test_move_action_bcs_serde(input in any::<MoveAction>()) {
+            let serialized = bcs::to_bytes(&input).unwrap();
+            let deserialized: MoveAction = bcs::from_bytes(&serialized).unwrap();
+            assert_eq!(input, deserialized);
         }
     }
 }
