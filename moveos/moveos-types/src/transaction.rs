@@ -14,6 +14,15 @@ use move_core_types::{
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
+#[cfg(any(test, feature = "fuzzing"))]
+use crate::move_types::type_tag_prop_strategy;
+#[cfg(any(test, feature = "fuzzing"))]
+use move_core_types::identifier::Identifier;
+#[cfg(any(test, feature = "fuzzing"))]
+use proptest::prelude::*;
+#[cfg(any(test, feature = "fuzzing"))]
+use proptest_derive::Arbitrary;
+
 /// Call a Move script
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ScriptCall {
@@ -22,6 +31,29 @@ pub struct ScriptCall {
     pub ty_args: Vec<TypeTag>,
     //TOOD custom serialize
     pub args: Vec<Vec<u8>>,
+}
+
+// Generates random ScriptCall
+#[cfg(any(test, feature = "fuzzing"))]
+impl Arbitrary for ScriptCall {
+    type Parameters = ();
+    type Strategy = BoxedStrategy<Self>;
+
+    fn arbitrary_with(_args: ()) -> Self::Strategy {
+        let ty_args_strategy = prop::collection::vec(type_tag_prop_strategy(), 0..10);
+
+        (
+            any::<Vec<u8>>(),
+            ty_args_strategy,
+            Vec::<Vec<u8>>::arbitrary(),
+        )
+            .prop_map(|(code, ty_args, args)| ScriptCall {
+                code,
+                ty_args,
+                args,
+            })
+            .boxed()
+    }
 }
 
 /// Call a Move function
@@ -43,7 +75,34 @@ impl FunctionCall {
     }
 }
 
+// Generates random FunctionCall
+#[cfg(any(test, feature = "fuzzing"))]
+#[cfg(any(test, feature = "fuzzing"))]
+impl Arbitrary for FunctionCall {
+    type Parameters = ();
+    type Strategy = BoxedStrategy<Self>;
+
+    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+        let function_id_strategy = (any::<ModuleId>(), any::<Identifier>())
+            .prop_map(|(module_id, identifier)| FunctionId::new(module_id, identifier));
+        let ty_args_strategy = prop::collection::vec(type_tag_prop_strategy(), 0..10);
+
+        (
+            function_id_strategy,
+            ty_args_strategy,
+            any::<Vec<Vec<u8>>>(),
+        )
+            .prop_map(|(function_id, ty_args, args)| FunctionCall {
+                function_id,
+                ty_args,
+                args,
+            })
+            .boxed()
+    }
+}
+
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub enum MoveAction {
     //Execute a Move script
     Script(ScriptCall),
@@ -206,5 +265,20 @@ impl TransactionExecutionInfo {
 
     pub fn id(&self) -> H256 {
         h256::sha3_256_of(bcs::to_bytes(self).unwrap().as_slice())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::MoveAction;
+    use proptest::prelude::*;
+
+    proptest! {
+        #[test]
+        fn test_move_action_bcs_serde(input in any::<MoveAction>()) {
+            let serialized = bcs::to_bytes(&input).unwrap();
+            let deserialized: MoveAction = bcs::from_bytes(&serialized).unwrap();
+            assert_eq!(input, deserialized);
+        }
     }
 }
