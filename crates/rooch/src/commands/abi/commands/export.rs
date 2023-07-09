@@ -5,6 +5,7 @@ use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
 use std::fmt::Debug;
+use std::str::FromStr;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 use moveos_types::move_types::{FunctionId};
@@ -26,7 +27,7 @@ impl CommandAction<()> for ExportCommand {
 }
 
 use serde::{Deserialize, Serialize};
-use serde_reflection::{Tracer, TracerConfig};
+use serde_reflection::{Tracer, TracerConfig, Samples};
 
 #[derive(Serialize, Deserialize)]
 struct Test {
@@ -81,18 +82,27 @@ fn export_typescript() -> RoochResult<()>{
     // Create a store to hold samples of Rust values.
     let mut samples = Samples::new();
 
-    let accountAddress = AccountAddress::random();
-    tracer.trace_value(samples, &accountAddress).unwrap();
+    let account_address = AccountAddress::random();
+    tracer.trace_value(&mut samples, &account_address).unwrap();
 
-    let id = Identifier::random();
-    tracer.trace_value(samples, &id).unwrap();
+    let id = Identifier::from_str("account").unwrap();
+    tracer.trace_value(&mut samples, &id).unwrap();
+
+    let tag = StructTag{
+        address: AccountAddress::from_str("0x1").unwrap(),
+        module: Identifier::from_str("account").unwrap(),
+        name: Identifier::from_str("init").unwrap(),
+        type_params: TypeTag::U16,
+    };
+    
+    tracer.trace_value(&mut samples, &tag).unwrap();
+    tracer.trace_type::<StructTag>(&mut samples).unwrap();
 
     tracer.trace_simple_type::<MoveAction>().unwrap();
     tracer.trace_simple_type::<ScriptCall>().unwrap();
     tracer.trace_simple_type::<FunctionCall>().unwrap();
     tracer.trace_simple_type::<FunctionId>().unwrap();
     tracer.trace_simple_type::<TypeTag>().unwrap();
-    tracer.trace_simple_type::<StructTag>().unwrap();
 
     let registry = tracer.registry().unwrap();
 
