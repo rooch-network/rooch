@@ -78,6 +78,14 @@ pub struct StructTag {
 fn export_typescript() -> RoochResult<()>{
     // Obtain the Serde format of `Test`. (In practice, formats are more likely read from a file.)
     let mut tracer = Tracer::new(TracerConfig::default());
+    // Create a store to hold samples of Rust values.
+    let mut samples = Samples::new();
+
+    let accountAddress = AccountAddress::random();
+    tracer.trace_value(samples, &accountAddress).unwrap();
+
+    let id = Identifier::random();
+    tracer.trace_value(samples, &id).unwrap();
 
     tracer.trace_simple_type::<MoveAction>().unwrap();
     tracer.trace_simple_type::<ScriptCall>().unwrap();
@@ -85,21 +93,11 @@ fn export_typescript() -> RoochResult<()>{
     tracer.trace_simple_type::<FunctionId>().unwrap();
     tracer.trace_simple_type::<TypeTag>().unwrap();
     tracer.trace_simple_type::<StructTag>().unwrap();
-    tracer.trace_simple_type::<AccountAddress>().unwrap();
-    tracer.trace_simple_type::<Identifier>().unwrap();
-
 
     let registry = tracer.registry().unwrap();
 
-    // Create Python class definitions.
-    let mut source = Vec::new();
-    let config = serde_generate::CodeGeneratorConfig::new("testing".to_string())
-        .with_encodings(vec![serde_generate::Encoding::Bcs]);
-    let generator = serde_generate::typescript::CodeGenerator::new(&config);
-    generator.output(&mut source, &registry)?;
-
-    let code = String::from_utf8_lossy(&source);
-    println!("export command execute: {code}");
+    let data: String = serde_yaml::to_string(&registry).unwrap();
+    println!("export rooch_types.yaml: {data}");
 
     Ok(())
 }
