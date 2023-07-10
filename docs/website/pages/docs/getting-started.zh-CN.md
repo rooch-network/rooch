@@ -136,7 +136,7 @@ rooch_framework =  "0x3"
 - `dependencies` 表用来存放项目所需依赖的元数据。
 - `addresses` 表用来存放项目地址以及模块地址，第一个地址是初始化 Rooch 配置时，生成在 `$HOME/.rooch/rooch_config/rooch.yaml` 中的地址。
 
-为了方便其他开发者部署，我们把 simple_blog 的地址用 `_` 替代，然后部署的时候通过 `--named--addresses` 来指定。
+为了方便其他开发者部署，我们把 `simple_blog` 的地址用 `_` 替代，然后部署的时候通过 `--named--addresses` 来指定。
 
 ### 4.2 快速体验
 
@@ -195,7 +195,6 @@ fun init(storage_ctx: &mut StorageContext, owner: &signer) {
 ```
 
 然后，再提供一个查询博客列表的方法和添加删除文章的方法，全部代码如下：
-
 
 ```move
 module simple_blog::blog {
@@ -354,7 +353,7 @@ rooch move publish --named-addresses simple_blog=default
 此时，我们的博客合约已经发布到链上了，并且默认账户下已经初始化了博客。我们可以用状态查询命令来查看该账户下的博客 Resource：
 
 ```shell
-rooch state --access-path /resource/{ACCOUNT_ADDRESS}/{RESOURCE_TYPE}
+rooch state --access-path /resource/{ACCOUNT_ADDRESS}/{MODULE_ADDRESS}/{RESOURCE_TYPE}
 ```
 
 其中，`{ACCOUNT_ADDRESS}` 是账户地址，`{RESOURCE_TYPE}` 是资源类型，这里是 `{MODULE_ADDRESS}::blog::MyBlog`。这里 `{ACCOUNT_ADDRESS}` 和 `{MODULE_ADDRESS}` 都是我本机的默认账户地址。
@@ -362,6 +361,7 @@ rooch state --access-path /resource/{ACCOUNT_ADDRESS}/{RESOURCE_TYPE}
 我们可以查看 `$HOME/.rooch/rooch_config/rooch.yaml` 文件中的 `active_address` 这个键对应的值，即操作合约的默认账户地址。
 
 我的地址为 `0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01`，后续将继续使用这个地址来演示相关操作。
+
 所以我这里实际执行的命令应该是：
 
 ```shell
@@ -398,8 +398,6 @@ rooch move run --function {ACCOUNT_ADDRESS}::{MODULE_NAME}::{FUNCTION_NAME} --se
 ```
 
 使用 `rooch move run` 命令运行一个函数。`--function` 指定函数名，需要传递一个完整的函数名，即`发布合约的地址::模块名::函数名`，才能够准确识别需要调用的函数。`--sender-account` 指定调用这个函数的账户地址，即使用哪个账户来调用这个函数，任何人都可以调用链上的合约。
-
-
 
 ```shell
 rooch move run --function 0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::set_blog_name --sender-account default --args 'string:Rooch blog'
@@ -733,10 +731,7 @@ module simple_blog::article {
     public fun body(article_obj: &Object<Article>): String {
         object::borrow(article_obj).body
     }
-    
 }
-
-
 ```
 
 #### 4.3.2 博客合约集成文章合约
@@ -812,7 +807,6 @@ curl --location --request POST 'http://localhost:50051' \
 ```
 
 由于输出的内容比较多，可以在上面的命令最尾添加一个管道操作（` | jq '.result.data[0].parsed_event_data.value.id'`），来快速筛选出第一篇文章的 `ObjectID`。 
-
 > 提示：在使用 `jp` 命令（jq - commandline JSON processor）之前，你可能需要先安装它。
 
 添加 `jp` 处理后的命令像下面这样：
@@ -954,6 +948,7 @@ rooch state --access-path /object/0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc
 ```shell
 rooch state --access-path /resource/0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01/0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog        
 ```
+
 ```json
 [
   {
@@ -974,6 +969,7 @@ rooch state --access-path /resource/0xbbfc33692c7d57839fde9643681fb64c83b377e4c7
 ```
 
 可以看到，`articles` 数组为空，说明文章列表也已经更新。
+
 ## 5. 总结
 
 到这里，相信你已经对 Rooch v1.0 如何运行，如何发布合约，以及如何跟合约交互有了基本的了解。想要在 Rooch 上体验更多的合约例子，请参见 [`rooch/examples`](https://github.com/rooch-network/rooch/tree/main/examples)。
