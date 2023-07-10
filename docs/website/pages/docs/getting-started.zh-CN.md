@@ -53,16 +53,16 @@ OPTIONS:
     -V, --version    Print version information
 
 SUBCOMMANDS:
-    account
-    event
+    account        Tool for interacting with accounts
+    event          Tool for interacting with event
     help           Print this message or the help of the given subcommand(s)
-    init
+    init           Tool for init with rooch
     move           CLI frontend for the Move compiler and VM
-    object
-    resource
-    server
-    state          Get States by AccessPath
-    transaction
+    object         Get object by object id
+    resource       Get account resource by tag
+    server         Start Rooch network
+    state          Get states by accessPath
+    transaction    Tool for interacting with transaction
 ```
 
 ### 2.4 加入 PATH
@@ -98,16 +98,16 @@ rooch init
 
 ### 4.1 创建 Move 项目
 
-使用 `rooch` 封装的 `move new` 命令来创建一个名为 `rooch_blog` 的博客应用。
+使用 `rooch` 封装的 `move new` 命令来创建一个名为 `simple_blog` 的博客应用。
 
 ```shell
-rooch move new rooch_blog
+rooch move new simple_blog
 ```
 
 生成的 Move 项目里包含一个配置文件 `Move.toml` 和一个用于存放 Move 源代码的 `sources` 目录。
 
 ```shell
-rooch_blog
+simple_blog
 ├── Move.toml
 └── sources
 ```
@@ -116,7 +116,7 @@ rooch_blog
 
 ```toml
 [package]
-name = "rooch_blog"
+name = "simple_blog"
 version = "0.0.1"
 
 [dependencies]
@@ -125,7 +125,7 @@ MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "m
 RoochFramework = { git = "https://github.com/rooch-network/rooch.git", subdir = "crates/rooch-framework", rev = "main" }
 
 [addresses]
-rooch_blog =  "0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc"
+simple_blog =  "_"
 std =  "0x1"
 moveos_std =  "0x2"
 rooch_framework =  "0x3"
@@ -136,43 +136,143 @@ rooch_framework =  "0x3"
 - `dependencies` 表用来存放项目所需依赖的元数据。
 - `addresses` 表用来存放项目地址以及模块地址，第一个地址是初始化 Rooch 配置时，生成在 `$HOME/.rooch/rooch_config/rooch.yaml` 中的地址。
 
+为了方便其他开发者部署，我们把 simple_blog 的地址用 `_` 替代，然后部署的时候通过 `--named--addresses` 来指定。
+
 ### 4.2 快速体验
 
 这小节里，将引导你编写一个博客的初始化函数，并在 Rooch 中运行起来，体验`编写 -> 编译 -> 发布 -> 调用`合约这样一个基本流程。
 
 我们在 `sources` 目录里新建一个 `blog.move` 文件，并开始编写我们的博客合约。
 
-#### 4.2.1 编写初始化函数
+#### 4.2.1 定义博客的结构
 
-在合约项目部署（发布）到链上后，首先需要进行初始化，即调用初始化函数（只需要调用一次）。
-
-我们在 `blog.move` 文件里编写下面的初始化合约的代码：
+我们的博客系统允许每个人创建自己的博客，并保存自己的博客列表。首先，我们定义一个博客结构体：
 
 ```move
-module rooch_blog::rooch_blog {
+struct MyBlog has key {
+    name: String,
+    articles: vector<ObjectID>,
+}
+```
+
+这个结构体包含两个字段，一个是博客的名字，另一个是博客的文章列表。文章列表我们只保存文章 Object 的 ID。
+
+然后定义一个创建博客的方法：
+
+```move
+public fun create_blog(ctx: &mut StorageContext, owner: &signer) {
+    let articles = vector::empty();
+    let myblog = MyBlog{
+        name: string::utf8(b"MyBlog"),
+        articles,
+    };
+    account_storage::global_move_to(ctx, owner, myblog);
+}
+
+public entry fun set_blog_name(ctx: &mut StorageContext, owner: &signer, blog_name: String) {
+    assert!(std::string::length(&blog_name) <= 200, error::invalid_argument(EDATA_TOO_LONG));
+    let owner_address = signer::address_of(owner);
+    // if blog not exist, create it
+    if(!account_storage::global_exists<MyBlog>(ctx, owner_address)){
+        create_blog(ctx, owner);
+    };
+    let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
+    myblog.name = blog_name;
+}
+```
+
+创建博客就是初始化 `MyBlog` 数据结构，并把 `MyBlog` 保存在用户的存储空间内。同时提供了一个设置博客名称的入口方法，如果博客不存在，则先创建博客，然后设置博客名称。
+
+然后再提供一个合约初始化方法，合约发布的时候会自动执行这个初始化方法，给发布合约的用户先自动初始化博客。
+
+```move
+/// This init function is called when the module is published
+/// The owner is the address of the account that publishes the module
+fun init(storage_ctx: &mut StorageContext, owner: &signer) {
+    // auto create blog for module publisher 
+    create_blog(storage_ctx, owner);
+}
+```
+
+然后，再提供一个查询博客列表的方法和添加删除文章的方法，全部代码如下：
+
+
+```move
+module simple_blog::blog {
     use std::error;
     use std::signer;
+    use std::string::{Self,String};
+    use std::vector;
+    use moveos_std::object_id::ObjectID;
     use moveos_std::storage_context::StorageContext;
+    use moveos_std::account_storage;
 
-    const EID_DATA_TOO_LONG: u64 = 102;
-    const EINAPPROPRIATE_VERSION: u64 = 103;
-    const ENOT_GENESIS_ACCOUNT: u64 = 105;
+    const EDATA_TOO_LONG: u64 = 1;
+    const ENOT_FOUND: u64 = 2;
 
-    // Define a function that initialize the blog
-    fun init_blog(storage_ctx: &mut StorageContext, account: &signer) {
-        assert!(signer::address_of(account) == @rooch_blog, error::invalid_argument(ENOT_GENESIS_ACCOUNT));
-        let _ = storage_ctx;
-        let _ = account;
+    struct MyBlog has key {
+        name: String,
+        articles: vector<ObjectID>,
     }
 
-    // The entry function that initializes
-    entry fun initialize(storage_ctx: &mut StorageContext, account: &signer) {
-        init_blog(storage_ctx, account);
+    /// This init function is called when the module is published
+    /// The owner is the address of the account that publishes the module
+    fun init(storage_ctx: &mut StorageContext, owner: &signer) {
+        // auto create blog for module publisher 
+        create_blog(storage_ctx, owner);
+    }
+
+    public fun create_blog(ctx: &mut StorageContext, owner: &signer) {
+        let articles = vector::empty();
+        let myblog = MyBlog{
+            name: string::utf8(b"MyBlog"),
+            articles,
+        };
+        account_storage::global_move_to(ctx, owner, myblog);
+    }
+
+    public entry fun set_blog_name(ctx: &mut StorageContext, owner: &signer, blog_name: String) {
+        assert!(std::string::length(&blog_name) <= 200, error::invalid_argument(EDATA_TOO_LONG));
+        let owner_address = signer::address_of(owner);
+        // if blog not exist, create it
+        if(!account_storage::global_exists<MyBlog>(ctx, owner_address)){
+            create_blog(ctx, owner);
+        };
+        let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
+        myblog.name = blog_name;
+    }
+
+    fun add_article_to_myblog(ctx: &mut StorageContext, owner: &signer, article_id: ObjectID) {
+        let owner_address = signer::address_of(owner);
+        // if blog not exist, create it
+        if(!account_storage::global_exists<MyBlog>(ctx, owner_address)){
+            create_blog(ctx, owner);
+        };
+        let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
+        vector::push_back(&mut myblog.articles, article_id);
+    }
+
+    fun delete_article_from_myblog(ctx: &mut StorageContext, owner: &signer, article_id: ObjectID) {
+        let owner_address = signer::address_of(owner);
+        let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
+        let (contains, index) = vector::index_of(&myblog.articles, &article_id);
+        assert!(contains, error::not_found(ENOT_FOUND));
+        vector::remove(&mut myblog.articles, index); 
+    }
+
+    /// Get owner's blog's articles
+    public fun get_blog_articles(ctx: &StorageContext, owner_address: address): vector<ObjectID> {
+        if(!account_storage::global_exists<MyBlog>(ctx, owner_address)){
+            vector::empty()
+        }else{
+            let myblog = account_storage::global_borrow<MyBlog>(ctx, owner_address);
+            myblog.articles
+        }
     }
 }
 ```
 
-- `module rooch_blog::rooch_blog` 用来声明我们的合约属于哪个模块，它的语法是 `module 地址::模块名`，花括号 `{}` 里编写的就是合约的逻辑（功能）。
+- `module simple_blog::blog` 用来声明我们的合约属于哪个模块，它的语法是 `module 地址::模块名`，花括号 `{}` 里编写的就是合约的逻辑（功能）。
 - `use` 语句导入我们编写合约时需要依赖的库。
 - `const` 定义合约中使用的常量，通常用来定义一些错误代码。
 - `fun` 是用来定义函数的关键字，通常在这里定义函数的功能。为了安全，这类函数禁止直接在命令行中调用，需要在入口函数中封装调用逻辑。
@@ -180,10 +280,10 @@ module rooch_blog::rooch_blog {
 
 #### 4.2.2 编译 Move 合约
 
-在发布到链上前，需要编译我们的合约：
+在发布合约前，需要编译我们的合约。这里通过 `--named-addresses` 来指定 `simple_blog` 模块的地址为当前设备上的 `default` 地址。  
 
 ```shell
-rooch move build
+rooch move build --named-addresses simple_blog=default
 ```
 
 编译结束后，如果没有错误，会在最后看到 `Success` 的提示信息。
@@ -198,7 +298,7 @@ UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
 INCLUDING DEPENDENCY MoveStdlib
 INCLUDING DEPENDENCY MoveosStdlib
 INCLUDING DEPENDENCY RoochFramework
-BUILDING rooch_blog
+BUILDING simple_blog
 Success
 ```
 
@@ -206,7 +306,7 @@ Success
 
 #### 4.2.3 运行 Rooch 服务器
 
-我们再打开另外一个终端，运行下面这条命令，Rooch 服务器会在本地启动 Rooch 服务（模拟链的行为），用于处理并响应合约的相关行为。
+我们再打开另外一个终端，运行下面这条命令，Rooch 服务器会在本地启动 Rooch 容器服务，用于处理并响应合约的相关行为。
 
 ```shell
 rooch server start
@@ -224,7 +324,7 @@ rooch server start
 #### 4.2.4 发布 Move 合约
 
 ```shell
-rooch move publish
+rooch move publish --named-addresses simple_blog=default
 ```
 
 当你看到类似这样的输出（`status` 为 `executed`），就可以确认发布操作已经成功执行了：
@@ -251,9 +351,47 @@ rooch move publish
 
 #### 4.2.5 调用 Move 合约
 
-此时，我们的博客合约已经发布到链上了，我门尝试调用刚刚编写的 `initialize` 函数来初始化我们的合约。
+此时，我们的博客合约已经发布到链上了，并且默认账户下已经初始化了博客。我们可以用状态查询命令来查看该账户下的博客 Resource：
 
-调用合约入口函数的语法是：
+```shell
+rooch state --access-path /resource/{ACCOUNT_ADDRESS}/{RESOURCE_TYPE}
+```
+
+其中，`{ACCOUNT_ADDRESS}` 是账户地址，`{RESOURCE_TYPE}` 是资源类型，这里是 `{MODULE_ADDRESS}::blog::MyBlog`。这里 `{ACCOUNT_ADDRESS}` 和 `{MODULE_ADDRESS}` 都是我本机的默认账户地址。
+
+我们可以查看 `$HOME/.rooch/rooch_config/rooch.yaml` 文件中的 `active_address` 这个键对应的值，即操作合约的默认账户地址。
+
+我的地址为 `0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01`，后续将继续使用这个地址来演示相关操作。
+所以我这里实际执行的命令应该是：
+
+```shell
+rooch state --access-path /resource/0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01/0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog
+```
+
+返回结果：
+
+```json
+[
+  {
+    "state": {
+      "value": "0x064d79426c6f6700",
+      "value_type": "0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog"
+    },
+    "move_value": {
+      "abilities": 8,
+      "type": "0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog",
+      "value": {
+        "articles": [],
+        "name": "MyBlog"
+      }
+    }
+  }
+]
+```
+
+可以看到，`MyBlog` Resource 已经存在，名称是默认的 `MyBlog`，文章列表为空。
+
+然后我们通过 `set_blog_name` 方法来设置博客名。调用合约入口函数的语法是：
 
 ```shell
 rooch move run --function {ACCOUNT_ADDRESS}::{MODULE_NAME}::{FUNCTION_NAME} --sender-account {ACCOUNT_ADDRESS}
@@ -261,80 +399,198 @@ rooch move run --function {ACCOUNT_ADDRESS}::{MODULE_NAME}::{FUNCTION_NAME} --se
 
 使用 `rooch move run` 命令运行一个函数。`--function` 指定函数名，需要传递一个完整的函数名，即`发布合约的地址::模块名::函数名`，才能够准确识别需要调用的函数。`--sender-account` 指定调用这个函数的账户地址，即使用哪个账户来调用这个函数，任何人都可以调用链上的合约。
 
-我们可以查看 `$HOME/.rooch/rooch_config/rooch.yaml` 文件中的 `active_address` 这个键对应的值，即操作合约的默认账户地址。
 
-我的地址为 `0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc`，后续将继续使用这个地址来演示相关操作。
 
 ```shell
-rooch move run --function 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::rooch_blog::initialize --sender-account 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc
+rooch move run --function 0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::set_blog_name --sender-account default --args 'string:Rooch blog'
 ```
 
-这条命令执行时，会向链发送一笔交易，交易的内容就是就是调用博客合约中的 `initialize` 函数。
+这条命令执行时，会向链发送一笔交易，交易的内容就是就是调用博客合约中的 `set_blog_name` 函数。
 
-当然，如果使用 Rooch 的默认账户来调用函数，命令可以简化为：
+执行成功后，再次运行前面的状态查询命令，查看博客 Resource：
 
-```shell
-rooch move run --function 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::rooch_blog::initialize --sender-account default
+```json
+[
+  {
+    "state": {
+      "value": "0x0a526f6f636820626c6f6700",
+      "value_type": "0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog"
+    },
+    "move_value": {
+      "abilities": 8,
+      "type": "0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog",
+      "value": {
+        "articles": [],
+        "name": "Rooch blog"
+      }
+    }
+  }
+]
 ```
 
-至此，我们体验了在 Rooch 中从零到一地安装，初始化配置，创建项目，编写合约，编译合约，发布合约，调用合约。
+可以看到，博客名已经修改成功。至此，我们体验了在 Rooch 中从零到一地安装，初始化配置，创建项目，编写合约，编译合约，发布合约，调用合约。
 
 ### 4.3 完善博客合约
 
 接下来我们继续完善博客合约，增加博客文章的**增查改删**功能。
 
-#### 4.3.1 改进初始化函数
-
-Move 语言提供了标准化的初始化函数来对合约进行初始化，如果使用默认的标准化函数 `init` 而非上面演示的 `init_blog` 函数，那么可以省略入口函数。使用标准化的初始化函数，将合约发布到链上后会直接进行初始化，省去了手动调用初始化函数的步骤。
-
-```move
-module rooch_blog::rooch_blog {
-    use std::error;
-    use std::signer;
-    use moveos_std::storage_context::StorageContext;
-
-    const EID_DATA_TOO_LONG: u64 = 102;
-    const EINAPPROPRIATE_VERSION: u64 = 103;
-    const ENOT_GENESIS_ACCOUNT: u64 = 105;
-
-    // Define a function that initialize the blog app
-    fun init(storage_ctx: &mut StorageContext, account: &signer) {
-        assert!(signer::address_of(account) == @rooch_blog, error::invalid_argument(ENOT_GENESIS_ACCOUNT));
-        let _ = storage_ctx;
-        let _ = account;
-    }
-}
-```
-
-> 或许你在学习 Move 合约时，会看到使用 `entry` 修饰的初始化函数，这通常是旧版本的行为。如果你开始写 Move 合约了，那么推荐你使用标准化的初始化函数 `init`，希望这里可以帮助你理解手动初始化和自动初始化的区别。
-
-#### 4.3.2 创建博客合约库文件
+#### 4.3.1 创建博客文章合约
 
 我们在 `sources` 目录再创建一个 `article.move` 文件，这个文件中存放文章的数据类型以及对文章进行 CRUD 操作的相关事件的定义。
 
+定义文章数据类型，以及文章事件类型：
+
 ```move
-module rooch_blog::article {
+struct Article has key {
+    version: u64,
+    title: String,
+    body: String,
+}
+
+struct ArticleCreatedEvent has key,copy,store {
+    id: ObjectID,
+}
+
+struct ArticleUpdatedEvent has key,copy,store {
+    id: ObjectID,
+    version: u64,
+}
+
+struct ArticleDeletedEvent has key,copy,store {
+    id: ObjectID,
+    version: u64,
+}
+```
+
+文章数据结构包含三个字段，`version` 用来记录文章的版本号，`title` 用来记录文章标题，`body` 用来记录文章内容。
+
+定义创建文章的方法：
+
+```move
+/// Create article
+public fun create_article(
+    ctx: &mut StorageContext,
+    owner: &signer,
+    title: String,
+    body: String,
+): ObjectID {
+    assert!(std::string::length(&title) <= 200, error::invalid_argument(EDATA_TOO_LONG));
+    assert!(std::string::length(&body) <= 2000, error::invalid_argument(EDATA_TOO_LONG));
+
+    let tx_ctx = storage_context::tx_context_mut(ctx);
+    let article = Article {
+        version: 0,
+        title,
+        body,
+    };
+    let owner_address = signer::address_of(owner);
+    let article_obj = object::new(
+        tx_ctx,
+        owner_address,
+        article,
+    );
+    let id = object::id(&article_obj);
+    let object_storage = storage_context::object_storage_mut(ctx);
+    object_storage::add(object_storage, article_obj);
+
+    let article_created_event = ArticleCreatedEvent {
+        id,
+    };
+    event::emit_event(ctx, article_created_event);
+    id
+}
+```
+
+这个方法中，先检查文章标题和内容的长度是否超过限制。然后创建文章对象，将文章对象添加到对象存储中，最后发送文章创建事件，返回文章的 ID。
+
+然后定义修改方法：
+
+```move
+public fun update_article(
+        ctx: &mut StorageContext,
+        owner: &signer,
+        id: ObjectID,
+        new_title: String,
+        new_body: String,
+) {
+    assert!(std::string::length(&new_title) <= 200, error::invalid_argument(EDATA_TOO_LONG));
+    assert!(std::string::length(&new_body) <= 2000, error::invalid_argument(EDATA_TOO_LONG));
+
+    let object_storage = storage_context::object_storage_mut(ctx);
+    let article_obj = object_storage::borrow_mut<Article>(object_storage, id);
+    let owner_address = signer::address_of(owner);
+    
+    // only article owner can update the article 
+    assert!(object::owner(article_obj) == owner_address, error::permission_denied(ENOT_OWNER_ACCOUNT));
+
+    let article = object::borrow_mut(article_obj);
+    article.version = article.version + 1;
+    article.title = new_title;
+    article.body = new_body;
+
+    let article_update_event = ArticleUpdatedEvent {
+        id,
+        version: article.version,
+    };
+    event::emit_event(ctx, article_update_event);
+}
+```
+
+这个方法中，先检查新的文章标题和内容的长度是否超过限制。然后从对象存储中获取文章对象，检查调用者是否是文章的所有者，如果不是，则抛出异常。最后更新文章对象的版本号，标题和内容，发送文章更新事件。
+
+然后再定义删除方法：
+
+```move
+ /// Delete article
+public fun delete_article(
+    ctx: &mut StorageContext,
+    owner: &signer,
+    id: ObjectID,
+) {
+    let object_storage = storage_context::object_storage_mut(ctx);
+    let article_obj = object_storage::remove<Article>(object_storage, id);
+    let owner_address = signer::address_of(owner);
+    
+    // only article owner can delete the article 
+    assert!(object::owner(&article_obj) == owner_address, error::permission_denied(ENOT_OWNER_ACCOUNT));
+
+    let article_deleted_event = ArticleDeletedEvent {
+        id,
+        version: object::borrow(&article_obj).version,
+    };
+    event::emit_event(ctx, article_deleted_event);
+    drop_article(article_obj);
+}
+```
+
+这个方法中，先从对象存储中删除文章对象，检查调用者是否是文章的所有者，如果不是，则抛出异常。最后发送文章删除事件并销毁文章对象。
+
+最后，我们还需要提供一个根据 ID 查询文章的方法，供其他合约使用：
+
+```move
+/// get article object by id
+public fun get_article(ctx: &StorageContext, article_id: ObjectID): &Object<Article> {
+    let obj_store = storage_context::object_storage(ctx);
+    object_storage::borrow(obj_store, article_id)
+}
+```
+
+完整的合约代码如下：
+
+```move
+module simple_blog::article {
+
+    use std::error;
+    use std::signer;
+    use std::string::String; 
     use moveos_std::event;
     use moveos_std::object::{Self, Object};
     use moveos_std::object_id::ObjectID;
     use moveos_std::object_storage;
     use moveos_std::storage_context::{Self, StorageContext};
-    use moveos_std::tx_context;
-    use std::error;
-    use std::option;
-    use std::signer;
-    use std::string::String;
-    friend rooch_blog::rooch_blog;
 
-    const EID_DATA_TOO_LONG: u64 = 102;
-    const EINAPPROPRIATE_VERSION: u64 = 103;
-    const ENOT_GENESIS_ACCOUNT: u64 = 105;
-
-    public fun initialize(storage_ctx: &mut StorageContext, account: &signer) {
-        assert!(signer::address_of(account) == @rooch_blog, error::invalid_argument(ENOT_GENESIS_ACCOUNT));
-        let _ = storage_ctx;
-        let _ = account;
-    }
+    const EDATA_TOO_LONG: u64 = 1;
+    const ENOT_OWNER_ACCOUNT: u64 = 2;
 
     struct Article has key {
         version: u64,
@@ -342,180 +598,106 @@ module rooch_blog::article {
         body: String,
     }
 
-    /// get object id
-    public fun id(article_obj: &Object<Article>): ObjectID {
-        object::id(article_obj)
+    struct ArticleCreatedEvent has key,copy,store {
+        id: ObjectID,
     }
 
-    public fun version(article_obj: &Object<Article>): u64 {
-        object::borrow(article_obj).version
+    struct ArticleUpdatedEvent has key,copy,store {
+        id: ObjectID,
+        version: u64,
     }
 
-    public fun title(article_obj: &Object<Article>): String {
-        object::borrow(article_obj).title
+    struct ArticleDeletedEvent has key,copy,store {
+        id: ObjectID,
+        version: u64,
     }
 
-    public(friend) fun set_title(article_obj: &mut Object<Article>, title: String) {
-        object::borrow_mut(article_obj).title = title;
-    }
 
-    public fun body(article_obj: &Object<Article>): String {
-        object::borrow(article_obj).body
-    }
-
-    public(friend) fun set_body(article_obj: &mut Object<Article>, body: String) {
-        object::borrow_mut(article_obj).body = body;
-    }
-
-    fun new_article(
-        _tx_ctx: &mut tx_context::TxContext,
+    /// Create article
+    public fun create_article(
+        ctx: &mut StorageContext,
+        owner: &signer,
         title: String,
         body: String,
-    ): Article {
-        assert!(std::string::length(&title) <= 200, EID_DATA_TOO_LONG);
-        assert!(std::string::length(&body) <= 2000, EID_DATA_TOO_LONG);
-        Article {
+    ): ObjectID {
+        assert!(std::string::length(&title) <= 200, error::invalid_argument(EDATA_TOO_LONG));
+        assert!(std::string::length(&body) <= 2000, error::invalid_argument(EDATA_TOO_LONG));
+
+        let tx_ctx = storage_context::tx_context_mut(ctx);
+        let article = Article {
             version: 0,
             title,
             body,
-        }
-    }
-
-    struct ArticleCreated has key {
-        id: option::Option<ObjectID>,
-        title: String,
-        body: String,
-    }
-
-    public fun article_created_id(article_created: &ArticleCreated): option::Option<ObjectID> {
-        article_created.id
-    }
-
-    public(friend) fun set_article_created_id(article_created: &mut ArticleCreated, id: ObjectID) {
-        article_created.id = option::some(id);
-    }
-
-    public fun article_created_title(article_created: &ArticleCreated): String {
-        article_created.title
-    }
-
-    public fun article_created_body(article_created: &ArticleCreated): String {
-        article_created.body
-    }
-
-    public fun new_article_created(
-        title: String,
-        body: String,
-    ): ArticleCreated {
-        ArticleCreated {
-            id: option::none(),
-            title,
-            body,
-        }
-    }
-
-    struct ArticleUpdated has key {
-        id: ObjectID,
-        version: u64,
-        title: String,
-        body: String,
-    }
-
-    public fun article_updated_id(article_updated: &ArticleUpdated): ObjectID {
-        article_updated.id
-    }
-
-    public fun article_updated_title(article_updated: &ArticleUpdated): String {
-        article_updated.title
-    }
-
-    public fun article_updated_body(article_updated: &ArticleUpdated): String {
-        article_updated.body
-    }
-
-    public(friend) fun new_article_updated(
-        article_obj: &Object<Article>,
-        title: String,
-        body: String,
-    ): ArticleUpdated {
-        ArticleUpdated {
-            id: id(article_obj),
-            version: version(article_obj),
-            title,
-            body,
-        }
-    }
-
-    struct ArticleDeleted has key {
-        id: ObjectID,
-        version: u64,
-    }
-
-    public fun article_deleted_id(article_deleted: &ArticleDeleted): ObjectID {
-        article_deleted.id
-    }
-
-    public fun new_article_deleted(
-        article_obj: &Object<Article>,
-    ): ArticleDeleted {
-        ArticleDeleted {
-            id: id(article_obj),
-            version: version(article_obj),
-        }
-    }
-
-    public fun create_article(
-        storage_ctx: &mut StorageContext,
-        title: String,
-        body: String,
-    ): Object<Article> {
-        let tx_ctx = storage_context::tx_context_mut(storage_ctx);
-        let article = new_article(
-            tx_ctx,
-            title,
-            body,
-        );
-        let obj_owner = tx_context::sender(tx_ctx);
+        };
+        let owner_address = signer::address_of(owner);
         let article_obj = object::new(
             tx_ctx,
-            obj_owner,
+            owner_address,
             article,
         );
-        article_obj
+        let id = object::id(&article_obj);
+        let object_storage = storage_context::object_storage_mut(ctx);
+        object_storage::add(object_storage, article_obj);
+
+        let article_created_event = ArticleCreatedEvent {
+            id,
+        };
+        event::emit_event(ctx, article_created_event);
+        id
     }
 
-    public(friend) fun update_version_and_add(storage_ctx: &mut StorageContext, article_obj: Object<Article>) {
-        object::borrow_mut(&mut article_obj).version = object::borrow( &mut article_obj).version + 1;
-        //assert!(object::borrow(&article_obj).version != 0, EINAPPROPRIATE_VERSION);
-        private_add_article(storage_ctx, article_obj);
+    /// Update article
+    public fun update_article(
+        ctx: &mut StorageContext,
+        owner: &signer,
+        id: ObjectID,
+        new_title: String,
+        new_body: String,
+    ) {
+        assert!(std::string::length(&new_title) <= 200, error::invalid_argument(EDATA_TOO_LONG));
+        assert!(std::string::length(&new_body) <= 2000, error::invalid_argument(EDATA_TOO_LONG));
+
+        let object_storage = storage_context::object_storage_mut(ctx);
+        let article_obj = object_storage::borrow_mut<Article>(object_storage, id);
+        let owner_address = signer::address_of(owner);
+        
+        // only article owner can update the article 
+        assert!(object::owner(article_obj) == owner_address, error::permission_denied(ENOT_OWNER_ACCOUNT));
+
+        let article = object::borrow_mut(article_obj);
+        article.version = article.version + 1;
+        article.title = new_title;
+        article.body = new_body;
+
+        let article_update_event = ArticleUpdatedEvent {
+            id,
+            version: article.version,
+        };
+        event::emit_event(ctx, article_update_event);
     }
 
-    public(friend) fun remove_article(storage_ctx: &mut StorageContext, obj_id: ObjectID): Object<Article> {
-        let obj_store = storage_context::object_storage_mut(storage_ctx);
-        object_storage::remove<Article>(obj_store, obj_id)
+    /// Delete article
+    public fun delete_article(
+        ctx: &mut StorageContext,
+        owner: &signer,
+        id: ObjectID,
+    ) {
+        let object_storage = storage_context::object_storage_mut(ctx);
+        let article_obj = object_storage::remove<Article>(object_storage, id);
+        let owner_address = signer::address_of(owner);
+        
+        // only article owner can delete the article 
+        assert!(object::owner(&article_obj) == owner_address, error::permission_denied(ENOT_OWNER_ACCOUNT));
+
+        let article_deleted_event = ArticleDeletedEvent {
+            id,
+            version: object::borrow(&article_obj).version,
+        };
+        event::emit_event(ctx, article_deleted_event);
+        drop_article(article_obj);
     }
 
-    public(friend) fun add_article(storage_ctx: &mut StorageContext, article_obj: Object<Article>) {
-        assert!(object::borrow(&article_obj).version == 0, EINAPPROPRIATE_VERSION);
-        private_add_article(storage_ctx, article_obj);
-    }
-
-    fun private_add_article(storage_ctx: &mut StorageContext, article_obj: Object<Article>) {
-        assert!(std::string::length(&object::borrow(&article_obj).title) <= 200, EID_DATA_TOO_LONG);
-        assert!(std::string::length(&object::borrow(&article_obj).body) <= 2000, EID_DATA_TOO_LONG);
-        let obj_store = storage_context::object_storage_mut(storage_ctx);
-        object_storage::add(obj_store, article_obj);
-    }
-
-    public fun get_article(storage_ctx: &mut StorageContext, obj_id: ObjectID): Object<Article> {
-        remove_article(storage_ctx, obj_id)
-    }
-
-    public fun return_article(storage_ctx: &mut StorageContext, article_obj: Object<Article>) {
-        private_add_article(storage_ctx, article_obj);
-    }
-
-    public(friend) fun drop_article(article_obj: Object<Article>) {
+    fun drop_article(article_obj: Object<Article>) {
         let (_id, _owner, article) =  object::unpack(article_obj);
         let Article {
             version: _version,
@@ -524,83 +706,85 @@ module rooch_blog::article {
         } = article;
     }
 
-    public(friend) fun emit_article_created(storage_ctx: &mut StorageContext, article_created: ArticleCreated) {
-        event::emit_event(storage_ctx, article_created);
+    /// Read function of article
+
+    /// get article object by id
+    public fun get_article(ctx: &StorageContext, article_id: ObjectID): &Object<Article> {
+        let obj_store = storage_context::object_storage(ctx);
+        object_storage::borrow(obj_store, article_id)
     }
 
-    public(friend) fun emit_article_updated(storage_ctx: &mut StorageContext, article_updated: ArticleUpdated) {
-        event::emit_event(storage_ctx, article_updated);
+    /// get article id
+    public fun id(article_obj: &Object<Article>): ObjectID {
+        object::id(article_obj)
     }
 
-    public(friend) fun emit_article_deleted(storage_ctx: &mut StorageContext, article_deleted: ArticleDeleted) {
-        event::emit_event(storage_ctx, article_deleted);
+    /// get article version
+    public fun version(article_obj: &Object<Article>): u64 {
+        object::borrow(article_obj).version
     }
+
+    /// get article title
+    public fun title(article_obj: &Object<Article>): String {
+        object::borrow(article_obj).title
+    }
+
+    /// get article body
+    public fun body(article_obj: &Object<Article>): String {
+        object::borrow(article_obj).body
+    }
+    
 }
+
+
 ```
 
-#### 4.3.3 创建文章
+#### 4.3.2 博客合约集成文章合约
 
-接下来，我们在 `blog.move` 中编写创建文章的功能：
+接下来，我们在 `blog.move` 中集成文章合约，并提供入口方法：
 
 ```move
-    // === Create ===
-
-    fun create_verify(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
-        title: String,
-        body: String,
-    ): article::ArticleCreated {
-        let _ = storage_ctx;
-        let _ = account;
-        article::new_article_created(
-            title,
-            body,
-        )
-    }
-
-    fun create_mutate(
-        storage_ctx: &mut StorageContext,
-        article_created: &article::ArticleCreated,
-    ): Object<article::Article> {
-        let title = article::article_created_title(article_created);
-        let body = article::article_created_body(article_created);
-        article::create_article(
-            storage_ctx,
-            title,
-            body,
-        )
-    }
-
-    public entry fun create(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
+    public entry fun create_article(
+        ctx: &mut StorageContext,
+        owner: signer,
         title: String,
         body: String,
     ) {
-        let article_created = create_verify(
-            storage_ctx,
-            account,
-            title,
-            body,
-        );
-        let article_obj = create_mutate(
-            storage_ctx,
-            &article_created,
-        );
-        article::set_article_created_id(&mut article_created, article::id(&article_obj));
-        article::add_article(storage_ctx, article_obj);
-        article::emit_article_created(storage_ctx, article_created);
+        let article_id = article::create_article(ctx, &owner, title, body);
+        add_article_to_myblog(ctx, &owner, article_id);
+    }
+
+    public entry fun update_article(
+        ctx: &mut StorageContext,
+        owner: signer,
+        id: ObjectID,
+        new_title: String,
+        new_body: String,
+    ) {
+        article::update_article(ctx, &owner, id, new_title, new_body);
+    }
+
+    public entry fun delete_article(
+        ctx: &mut StorageContext,
+        owner: signer,
+        id: ObjectID,
+    ) {
+        article::delete_article(ctx, &owner, id);
+        delete_article_from_myblog(ctx, &owner, id);
     }
 ```
+
+创建和删除文章的时候，同时更新博客中的文章列表。
+
+#### 4.3.3 创建博客文章
 
 可以像下面这样，使用 Rooch CLI 提交一个交易，创建一篇测试文章：
 
 ```shell
-rooch move run --function 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::rooch_blog::create --sender-account 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc --args 'string:Hello Rooch' "string:Accelerating World's Transition to Decentralization"
+rooch move run --function 0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::create_article --sender-account default --args 'string:Hello Rooch' "string:Accelerating World's Transition to Decentralization"
 ```
 
-`--function` 指定执行发布在 `0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc` 地址上的 `rooch_blog` 模块中的 `create` 函数，即新建一篇博客文章。`--sender-account` 指定谁来提交这个交易。这个函数要求我们必须给它传递两个参数，通过 `--args` 来指定，第一个是文章的标题，我取名为 `Hello Rooch`；第二个是文章的内容，我写上 Rooch 的标语（slogan）：`Accelerating World's Transition to Decentralization`。
+`--function` 指定执行发布在 `0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01` 地址上的 `blog` 模块中的 `create_article` 函数，即新建一篇博客文章。`--sender-account` 指定谁来提交这个交易。这个函数要求我们必须给它传递两个参数，通过 `--args` 来指定，第一个是文章的标题，我取名为 `Hello Rooch`；第二个是文章的内容，我写上 Rooch 的标语（slogan）：`Accelerating World's Transition to Decentralization`。
 
 参数传递的是字符串，需要使用引号将内容包裹起来，并且通过 `string:` 来显示指定，在第二个参数的内容中有单引号，所以使用双引号包裹，否则必须使用转义符（`\`）。
 
@@ -617,17 +801,17 @@ curl --location --request POST 'http://localhost:50051' \
  "id":101,
  "jsonrpc":"2.0",
  "method":"rooch_getEventsByEventHandle",
- "params":["0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::article::ArticleCreated", null, 1000]
+ "params":["0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::article::ArticleCreatedEvent", null, 1000]
 }'
 ```
 
 返回的响应内容：
 
-```shell
-{"jsonrpc":"2.0","result":{"data":[{"event":{"event_id":{"event_handle_id":"0xf73d11468373bfcb25c0f6cc283f127a8dc8074da8bd9ba1ffe1c6f59c835404","event_seq":0},"type_tag":"0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::article::ArticleCreated","event_data":"0x01884f95b2bcab56b73a436fc0ac2ae38d376b83d54e9a9d88d0a63306ed5b7cc60b48656c6c6f20526f6f636833416363656c65726174696e6720576f726c642773205472616e736974696f6e20746f20446563656e7472616c697a6174696f6e","event_index":0},"sender":"0x0000000000000000000000000000000000000000000000000000000000000000","tx_hash":null,"timestamp_ms":null,"parsed_event_data":{"abilities":8,"type":"0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::article::ArticleCreated","value":{"body":"Accelerating World's Transition to Decentralization","id":{"abilities":7,"type":"0x1::option::Option<0x2::object_id::ObjectID>","value":{"vec":["0x884f95b2bcab56b73a436fc0ac2ae38d376b83d54e9a9d88d0a63306ed5b7cc6"]}},"title":"Hello Rooch"}}}],"next_cursor":0,"has_next_page":false},"id":101}
+```json
+{"jsonrpc":"2.0","result":{"data":[{"event":{"event_id":{"event_handle_id":"0xc48dc675718370db4273a419875967e7c32615f907262d475730d8faf0afca44","event_seq":0},"type_tag":"0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::article::ArticleCreatedEvent","event_data":"0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41","event_index":0},"sender":"0x0000000000000000000000000000000000000000000000000000000000000000","tx_hash":null,"timestamp_ms":null,"parsed_event_data":{"abilities":13,"type":"0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::article::ArticleCreatedEvent","value":{"id":"0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41"}}}],"next_cursor":0,"has_next_page":false},"id":101}
 ```
 
-由于输出的内容比较多，可以在上面的命令最尾添加一个管道操作（` | jq '.result.data[0].parsed_event_data.value.id.value.vec[0]'`），来快速筛选出第一篇文章的 `ObjectID`。 
+由于输出的内容比较多，可以在上面的命令最尾添加一个管道操作（` | jq '.result.data[0].parsed_event_data.value.id'`），来快速筛选出第一篇文章的 `ObjectID`。 
 
 > 提示：在使用 `jp` 命令（jq - commandline JSON processor）之前，你可能需要先安装它。
 
@@ -640,129 +824,90 @@ curl --location --request POST 'http://localhost:50051' \
  "id":101,
  "jsonrpc":"2.0",
  "method":"rooch_getEventsByEventHandle",
- "params":["0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::article::ArticleCreated", null, 1000]
-}' | jq '.result.data[0].parsed_event_data.value.id.value.vec[0]'
+ "params":["0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::article::ArticleCreatedEvent", null, 1000]
+}' | jq '.result.data[0].parsed_event_data.value.id'
 ```
 
 通过 `jp` 来筛选出的博客的对象 ID 为：
 
 ```shell
-"0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b"
+"0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41"
 ```
 
 然后，你可以使用 Rooch CLI 来查询对象的状态，通过 `--id` 来指定文章对象的 ID（注意替换为你的文章的 ObjectID）：
 
 ```shell
-rooch object --id 0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b
+rooch state --access-path /object/0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41
 ```
 
-```shell
-[joe@mx rooch_blog]$ rooch object --id 0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b
-{
-  "state": {
-    "value": "0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc00000000000000000b48656c6c6f20526f6f636833416363656c65726174696e6720576f726c642773205472616e736974696f6e20746f20446563656e7472616c697a6174696f6efd1a25121453bfa91136bb7c089142f6a1aeb5d6ea13f23c238eade83f3ad31d",
-    "value_type": "0x2::object::Object<0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::article::Article>"
-  },
-  "move_value": {
-    "abilities": 0,
-    "type": "0x2::object::Object<0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::article::Article>",
-    "value": {
-      "id": "0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b",
-      "owner": "0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc",
+```json
+[
+  {
+    "state": {
+      "value": "0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41bbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d0100000000000000000b48656c6c6f20526f6f636833416363656c65726174696e6720576f726c642773205472616e736974696f6e20746f20446563656e7472616c697a6174696f6e",
+      "value_type": "0x2::object::Object<0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::article::Article>"
+    },
+    "move_value": {
+      "abilities": 0,
+      "type": "0x2::object::Object<0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::article::Article>",
       "value": {
-        "abilities": 8,
-        "type": "0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::article::Article",
+        "id": "0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41",
+        "owner": "0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01",
         "value": {
-          "body": "Accelerating World's Transition to Decentralization",
-          "comments": {
-            "abilities": 4,
-            "type": "0x2::table::Table<u64, 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::comment::Comment>",
-            "value": {
-              "handle": "0xfd1a25121453bfa91136bb7c089142f6a1aeb5d6ea13f23c238eade83f3ad31d"
-            }
-          },
-          "title": "Hello Rooch",
-          "version": "0"
+          "abilities": 8,
+          "type": "0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::article::Article",
+          "value": {
+            "body": "Accelerating World's Transition to Decentralization",
+            "title": "Hello Rooch",
+            "version": "0"
+          }
         }
       }
     }
   }
-}
+]
 ```
 
 注意观察输出中，`title` 和 `body` 这两个键值对，能看到这个对象确实“存储着”刚刚写的那篇博客文章。
 
-#### 4.3.5 更新文章
+我们也可以用前面的命令来查询账户下的 `MyBlog` Resource：
 
-我们继续编写 `blog.move` 文件，增加更新文章的功能：
-
-```move
-    // === Update ===
-
-    fun update_verify(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
-        title: String,
-        body: String,
-        article_obj: &Object<article::Article>,
-    ): article::ArticleUpdated {
-        let _ = storage_ctx;
-        let _ = account;
-        article::new_article_updated(
-            article_obj,
-            title,
-            body,
-        )
+```shell
+rooch state --access-path /resource/0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01/0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog        
+```
+```json
+[
+  {
+    "state": {
+      "value": "0x0a526f6f636820626c6f67011f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41",
+      "value_type": "0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog"
+    },
+    "move_value": {
+      "abilities": 8,
+      "type": "0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog",
+      "value": {
+        "articles": [
+          "0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41"
+        ],
+        "name": "Rooch blog"
+      }
     }
-
-    fun update_mutate(
-        storage_ctx: &mut StorageContext,
-        article_updated: &article::ArticleUpdated,
-        article_obj: Object<article::Article>,
-    ): Object<article::Article> {
-        let title = article::article_updated_title(article_updated);
-        let body = article::article_updated_body(article_updated);
-        let id = article::article_updated_id(article_updated);
-        let _ = storage_ctx;
-        let _ = id;
-        article::set_title(&mut article_obj, title);
-        article::set_body(&mut article_obj, body);
-        article_obj
-    }
-
-    public entry fun update(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
-        id: ObjectID,
-        title: String,
-        body: String,
-    ) {
-        let article_obj = article::remove_article(storage_ctx, id);
-        let article_updated = update_verify(
-            storage_ctx,
-            account,
-            title,
-            body,
-            &article_obj,
-        );
-        let updated_article_obj = update_mutate(
-            storage_ctx,
-            &article_updated,
-            article_obj,
-        );
-        article::update_version_and_add(storage_ctx, updated_article_obj);
-        article::emit_article_updated(storage_ctx, article_updated);
-    }
+  }
+]
 ```
 
-重新运行 `rooch server start`，编译合约，再次将合约发布到链上，根据上面创建文章的步骤新建一篇文章后，我们尝试使用 `update` 函数来更新文章的内容。
+可以看到，`MyBlog` 中的 `articles` 字段，存储着我们刚刚创建的那篇文章的对象 ID。
 
-`--function` 指定执行发布在 `0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc` 地址上的 `rooch_blog` 模块中的 `update` 函数，即更新一篇博客文章。同样也需要使用 `--sender-account` 来指定发送这个更新文章交易的账户。这个函数要求我们必须给它传递三个参数，通过 `--args` 来指定，第一个参数是要修改文章的对象 ID，后面的两个参数分别对应文章的标题和正文。
+#### 4.3.5 更新文章
+
+我们尝试使用 `update_article` 函数来更新文章的内容。
+
+`--function` 指定执行发布在 `0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01` 地址上的 `blog` 模块中的 `update` 函数，即更新一篇博客文章。同样也需要使用 `--sender-account` 来指定发送这个更新文章交易的账户。这个函数要求我们必须给它传递三个参数，通过 `--args` 来指定，第一个参数是要修改文章的对象 ID，后面的两个参数分别对应文章的标题和正文。
 
 将文章的标题修改为 `Foo`，文章正文修改为 `Bar`：
 
 ```shell
-rooch move run --function 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::rooch_blog::update --sender-account 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc --args 'object_id:0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b' 'string:Foo' 'string:Bar'
+rooch move run --function 0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::update_article --sender-account default --args 'object_id:0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41' 'string:Foo' 'string:Bar'
 ```
 
 除了使用 Rooch CLI，你还可以通过调用 JSON RPC 来查询对象的状态：
@@ -774,86 +919,61 @@ curl --location --request POST 'http://127.0.0.1:50051/' \
  "id":101,
  "jsonrpc":"2.0",
  "method":"rooch_getAnnotatedStates",
- "params":["/object/0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b"]
+ "params":["/object/0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41"]
 }'
 ```
 
 在输出中，可以观察到文章的标题和正文已成功修改：
 
-```shell
-{"jsonrpc":"2.0","result":[{"state":{"value":"0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc010000000000000003466f6f03426172fd1a25121453bfa91136bb7c089142f6a1aeb5d6ea13f23c238eade83f3ad31d","value_type":"0x2::object::Object<0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::article::Article>"},"move_value":{"abilities":0,"type":"0x2::object::Object<0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::article::Article>","value":{"id":"0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b","owner":"0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc","value":{"abilities":8,"type":"0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::article::Article","value":{"body":"Bar","comments":{"abilities":4,"type":"0x2::table::Table<u64, 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::comment::Comment>","value":{"handle":"0xfd1a25121453bfa91136bb7c089142f6a1aeb5d6ea13f23c238eade83f3ad31d"}},"title":"Foo","version":"1"}}}}}],"id":101}[joe@mx rooch_blog]$
+```json
+{"jsonrpc":"2.0","result":[{"state":{"value":"0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41bbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01010000000000000003466f6f03426172","value_type":"0x2::object::Object<0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::article::Article>"},"move_value":{"abilities":0,"type":"0x2::object::Object<0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::article::Article>","value":{"id":"0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41","owner":"0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01","value":{"abilities":8,"type":"0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::article::Article","value":{"body":"Bar","title":"Foo","version":"1"}}}}}],"id":101}
 ```
 
 #### 4.3.6 删除文章
 
-我们继续编写 `blog.move` 文件，增加删除文章的功能：
-
-```move
-    // === Delete ===
-
-    fun delete_verify(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
-        article_obj: &Object<article::Article>,
-    ): article::ArticleDeleted {
-        let _ = storage_ctx;
-        let _ = account;
-        article::new_article_deleted(
-            article_obj,
-        )
-    }
-
-    fun delete_mutate(
-        storage_ctx: &mut StorageContext,
-        article_deleted: &article::ArticleDeleted,
-        article_obj: Object<article::Article>,
-    ): Object<article::Article> {
-        let id = article::id(&article_obj);
-        let _ = storage_ctx;
-        let _ = id;
-        let _ = article_deleted;
-        article_obj
-    }
-
-    public entry fun delete(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
-        id: ObjectID,
-    ) {
-        let article_obj = article::remove_article(storage_ctx, id);
-        let article_deleted = delete_verify(
-            storage_ctx,
-            account,
-            &article_obj,
-        );
-        let updated_article_obj = delete_mutate(
-            storage_ctx,
-            &article_deleted,
-            article_obj,
-        );
-        article::drop_article(updated_article_obj);
-        article::emit_article_deleted(storage_ctx, article_deleted);
-    }
-```
-
-可以这样提交一个交易，删除文章：
+可以这样提交一个交易，调用 `blog::delete_article` 删除文章：
 
 ```shell
-rooch move run --function 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc::rooch_blog::delete --sender-account 0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc --args 'object_id:0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b'
+rooch move run --function 0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::delete_article --sender-account default --args 'object_id:0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41'
 ```
 
-`--function` 指定执行发布在 `0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc` 地址上的 `rooch_blog` 模块中的 `delete` 函数，即删除一篇博客文章。同样也需要使用 `--sender-account` 来指定发送这个删除文章交易的账户。这个函数只需给它传递一个参数，即文章对应的对象 ID，通过 `--args` 来指定。
+`--function` 指定执行发布在 `0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01` 地址上的 `blog` 模块中的 `delete_article` 函数，即删除一篇博客文章。同样也需要使用 `--sender-account` 来指定发送这个删除文章交易的账户。这个函数只需给它传递一个参数，即文章对应的对象 ID，通过 `--args` 来指定。
 
 #### 4.3.7 检查文章是否正常删除
 
 ```shell
-rooch object --id 0x90ba9f94b397111c779ab18647d5305c0c42843c33622f029da9093254b4f84b
+rooch state --access-path /object/0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41
 
-null
+[
+  null
+]
 ```
 
-可以看到，查询文章的对象 ID 时，结果反回 `null`。说明文章已经被删除了。
+可以看到，查询文章的对象 ID 时，结果反回 `null`。说明文章已经被删除了。再查询 `MyBlog` Resource：
 
+```shell
+rooch state --access-path /resource/0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01/0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog        
+```
+```json
+[
+  {
+    "state": {
+      "value": "0x0a526f6f636820626c6f6700",
+      "value_type": "0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog"
+    },
+    "move_value": {
+      "abilities": 8,
+      "type": "0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog",
+      "value": {
+        "articles": [],
+        "name": "Rooch blog"
+      }
+    }
+  }
+]
+```
+
+可以看到，`articles` 数组为空，说明文章列表也已经更新。
 ## 5. 总结
 
 到这里，相信你已经对 Rooch v1.0 如何运行，如何发布合约，以及如何跟合约交互有了基本的了解。想要在 Rooch 上体验更多的合约例子，请参见 [`rooch/examples`](https://github.com/rooch-network/rooch/tree/main/examples)。
@@ -863,5 +983,5 @@ null
 ```shell
 wget https://github.com/rooch-network/rooch/archive/refs/heads/main.zip
 unzip main.zip
-cd rooch-main/examples/rooch_blog
+cd rooch-main/examples/simple_blog
 ```
