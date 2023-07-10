@@ -73,14 +73,18 @@ impl RoochTransaction {
     //TODO use protest Arbitrary to generate mock data
     #[cfg(test)]
     pub fn mock() -> RoochTransaction {
-        use crate::address::RoochSupportedAddress;
+        use crate::address::{Protocols, RoochSupportedAddress};
         use crate::crypto::Signature;
         use fastcrypto::ed25519::Ed25519KeyPair;
         use fastcrypto::traits::KeyPair;
         use move_core_types::{identifier::Identifier, language_storage::ModuleId};
         use moveos_types::move_types::FunctionId;
 
-        let sender = RoochAddress::random();
+        // Randomly select a bitcoin protocol
+        let bitcoin_protocols = [Protocols::P2PKH, Protocols::P2SH, Protocols::SegWit];
+        let selected_protocol =
+            &bitcoin_protocols[rand::random::<usize>() % bitcoin_protocols.len()];
+        let sender: RoochAddress = RoochAddress::random(selected_protocol);
         let sequence_number = 0;
         let payload = MoveAction::new_function_call(
             FunctionId::new(
