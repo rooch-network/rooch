@@ -1,25 +1,16 @@
-module rooch_blog::article {
+module rooch_examples::article {
+
+    use std::error;
+    use std::signer;
+    use std::string::String; 
     use moveos_std::event;
     use moveos_std::object::{Self, Object};
     use moveos_std::object_id::ObjectID;
     use moveos_std::object_storage;
     use moveos_std::storage_context::{Self, StorageContext};
-    use moveos_std::tx_context;
-    use std::error;
-    use std::option;
-    use std::signer;
-    use std::string::String;
-    friend rooch_blog::rooch_blog;
 
-    const EID_DATA_TOO_LONG: u64 = 102;
-    const EINAPPROPRIATE_VERSION: u64 = 103;
-    const ENOT_GENESIS_ACCOUNT: u64 = 105;
-
-    public fun initialize(storage_ctx: &mut StorageContext, account: &signer) {
-        assert!(signer::address_of(account) == @rooch_blog, error::invalid_argument(ENOT_GENESIS_ACCOUNT));
-        let _ = storage_ctx;
-        let _ = account;
-    }
+    const EDATA_TOO_LONG: u64 = 1;
+    const ENOT_OWNER_ACCOUNT: u64 = 2;
 
     struct Article has key {
         version: u64,
@@ -27,180 +18,106 @@ module rooch_blog::article {
         body: String,
     }
 
-    /// get object id
-    public fun id(article_obj: &Object<Article>): ObjectID {
-        object::id(article_obj)
+    struct ArticleCreatedEvent has key,copy,store {
+        id: ObjectID,
     }
 
-    public fun version(article_obj: &Object<Article>): u64 {
-        object::borrow(article_obj).version
+    struct ArticleUpdatedEvent has key,copy,store {
+        id: ObjectID,
+        version: u64,
     }
 
-    public fun title(article_obj: &Object<Article>): String {
-        object::borrow(article_obj).title
+    struct ArticleDeletedEvent has key,copy,store {
+        id: ObjectID,
+        version: u64,
     }
 
-    public(friend) fun set_title(article_obj: &mut Object<Article>, title: String) {
-        object::borrow_mut(article_obj).title = title;
-    }
 
-    public fun body(article_obj: &Object<Article>): String {
-        object::borrow(article_obj).body
-    }
-
-    public(friend) fun set_body(article_obj: &mut Object<Article>, body: String) {
-        object::borrow_mut(article_obj).body = body;
-    }
-
-    fun new_article(
-        _tx_ctx: &mut tx_context::TxContext,
+    /// Create article
+    public fun create_article(
+        ctx: &mut StorageContext,
+        owner: &signer,
         title: String,
         body: String,
-    ): Article {
-        assert!(std::string::length(&title) <= 200, EID_DATA_TOO_LONG);
-        assert!(std::string::length(&body) <= 2000, EID_DATA_TOO_LONG);
-        Article {
+    ): ObjectID {
+        assert!(std::string::length(&title) <= 200, error::invalid_argument(EDATA_TOO_LONG));
+        assert!(std::string::length(&body) <= 2000, error::invalid_argument(EDATA_TOO_LONG));
+
+        let tx_ctx = storage_context::tx_context_mut(ctx);
+        let article = Article {
             version: 0,
             title,
             body,
-        }
-    }
-
-    struct ArticleCreated has key {
-        id: option::Option<ObjectID>,
-        title: String,
-        body: String,
-    }
-
-    public fun article_created_id(article_created: &ArticleCreated): option::Option<ObjectID> {
-        article_created.id
-    }
-
-    public(friend) fun set_article_created_id(article_created: &mut ArticleCreated, id: ObjectID) {
-        article_created.id = option::some(id);
-    }
-
-    public fun article_created_title(article_created: &ArticleCreated): String {
-        article_created.title
-    }
-
-    public fun article_created_body(article_created: &ArticleCreated): String {
-        article_created.body
-    }
-
-    public fun new_article_created(
-        title: String,
-        body: String,
-    ): ArticleCreated {
-        ArticleCreated {
-            id: option::none(),
-            title,
-            body,
-        }
-    }
-
-    struct ArticleUpdated has key {
-        id: ObjectID,
-        version: u64,
-        title: String,
-        body: String,
-    }
-
-    public fun article_updated_id(article_updated: &ArticleUpdated): ObjectID {
-        article_updated.id
-    }
-
-    public fun article_updated_title(article_updated: &ArticleUpdated): String {
-        article_updated.title
-    }
-
-    public fun article_updated_body(article_updated: &ArticleUpdated): String {
-        article_updated.body
-    }
-
-    public(friend) fun new_article_updated(
-        article_obj: &Object<Article>,
-        title: String,
-        body: String,
-    ): ArticleUpdated {
-        ArticleUpdated {
-            id: id(article_obj),
-            version: version(article_obj),
-            title,
-            body,
-        }
-    }
-
-    struct ArticleDeleted has key {
-        id: ObjectID,
-        version: u64,
-    }
-
-    public fun article_deleted_id(article_deleted: &ArticleDeleted): ObjectID {
-        article_deleted.id
-    }
-
-    public fun new_article_deleted(
-        article_obj: &Object<Article>,
-    ): ArticleDeleted {
-        ArticleDeleted {
-            id: id(article_obj),
-            version: version(article_obj),
-        }
-    }
-
-    public fun create_article(
-        storage_ctx: &mut StorageContext,
-        title: String,
-        body: String,
-    ): Object<Article> {
-        let tx_ctx = storage_context::tx_context_mut(storage_ctx);
-        let article = new_article(
-            tx_ctx,
-            title,
-            body,
-        );
-        let obj_owner = tx_context::sender(tx_ctx);
+        };
+        let owner_address = signer::address_of(owner);
         let article_obj = object::new(
             tx_ctx,
-            obj_owner,
+            owner_address,
             article,
         );
-        article_obj
+        let id = object::id(&article_obj);
+        let object_storage = storage_context::object_storage_mut(ctx);
+        object_storage::add(object_storage, article_obj);
+
+        let article_created_event = ArticleCreatedEvent {
+            id,
+        };
+        event::emit_event(ctx, article_created_event);
+        id
     }
 
-    public(friend) fun update_version_and_add(storage_ctx: &mut StorageContext, article_obj: Object<Article>) {
-        object::borrow_mut(&mut article_obj).version = object::borrow( &mut article_obj).version + 1;
-        //assert!(object::borrow(&article_obj).version != 0, EINAPPROPRIATE_VERSION);
-        private_add_article(storage_ctx, article_obj);
+    /// Update article
+    public fun update_article(
+        ctx: &mut StorageContext,
+        owner: &signer,
+        id: ObjectID,
+        new_title: String,
+        new_body: String,
+    ) {
+        assert!(std::string::length(&new_title) <= 200, error::invalid_argument(EDATA_TOO_LONG));
+        assert!(std::string::length(&new_body) <= 2000, error::invalid_argument(EDATA_TOO_LONG));
+
+        let object_storage = storage_context::object_storage_mut(ctx);
+        let article_obj = object_storage::borrow_mut<Article>(object_storage, id);
+        let owner_address = signer::address_of(owner);
+        
+        // only article owner can update the article 
+        assert!(object::owner(article_obj) == owner_address, error::permission_denied(ENOT_OWNER_ACCOUNT));
+
+        let article = object::borrow_mut(article_obj);
+        article.version = article.version + 1;
+        article.title = new_title;
+        article.body = new_body;
+
+        let article_update_event = ArticleUpdatedEvent {
+            id,
+            version: article.version,
+        };
+        event::emit_event(ctx, article_update_event);
     }
 
-    public(friend) fun remove_article(storage_ctx: &mut StorageContext, obj_id: ObjectID): Object<Article> {
-        let obj_store = storage_context::object_storage_mut(storage_ctx);
-        object_storage::remove<Article>(obj_store, obj_id)
+    /// Delete article
+    public fun delete_article(
+        ctx: &mut StorageContext,
+        owner: &signer,
+        id: ObjectID,
+    ) {
+        let object_storage = storage_context::object_storage_mut(ctx);
+        let article_obj = object_storage::remove<Article>(object_storage, id);
+        let owner_address = signer::address_of(owner);
+        
+        // only article owner can delete the article 
+        assert!(object::owner(&article_obj) == owner_address, error::permission_denied(ENOT_OWNER_ACCOUNT));
+
+        let article_deleted_event = ArticleDeletedEvent {
+            id,
+            version: object::borrow(&article_obj).version,
+        };
+        event::emit_event(ctx, article_deleted_event);
+        drop_article(article_obj);
     }
 
-    public(friend) fun add_article(storage_ctx: &mut StorageContext, article_obj: Object<Article>) {
-        assert!(object::borrow(&article_obj).version == 0, EINAPPROPRIATE_VERSION);
-        private_add_article(storage_ctx, article_obj);
-    }
-
-    fun private_add_article(storage_ctx: &mut StorageContext, article_obj: Object<Article>) {
-        assert!(std::string::length(&object::borrow(&article_obj).title) <= 200, EID_DATA_TOO_LONG);
-        assert!(std::string::length(&object::borrow(&article_obj).body) <= 2000, EID_DATA_TOO_LONG);
-        let obj_store = storage_context::object_storage_mut(storage_ctx);
-        object_storage::add(obj_store, article_obj);
-    }
-
-    public fun get_article(storage_ctx: &mut StorageContext, obj_id: ObjectID): Object<Article> {
-        remove_article(storage_ctx, obj_id)
-    }
-
-    public fun return_article(storage_ctx: &mut StorageContext, article_obj: Object<Article>) {
-        private_add_article(storage_ctx, article_obj);
-    }
-
-    public(friend) fun drop_article(article_obj: Object<Article>) {
+    fun drop_article(article_obj: Object<Article>) {
         let (_id, _owner, article) =  object::unpack(article_obj);
         let Article {
             version: _version,
@@ -209,15 +126,32 @@ module rooch_blog::article {
         } = article;
     }
 
-    public(friend) fun emit_article_created(storage_ctx: &mut StorageContext, article_created: ArticleCreated) {
-        event::emit_event(storage_ctx, article_created);
+    /// Read function of article
+
+    /// get article object by id
+    public fun borrow_article(ctx: &StorageContext, article_id: ObjectID): &Object<Article> {
+        let obj_store = storage_context::object_storage(ctx);
+        object_storage::borrow(obj_store, article_id)
     }
 
-    public(friend) fun emit_article_updated(storage_ctx: &mut StorageContext, article_updated: ArticleUpdated) {
-        event::emit_event(storage_ctx, article_updated);
+    /// get article id
+    public fun id(article_obj: &Object<Article>): ObjectID {
+        object::id(article_obj)
     }
 
-    public(friend) fun emit_article_deleted(storage_ctx: &mut StorageContext, article_deleted: ArticleDeleted) {
-        event::emit_event(storage_ctx, article_deleted);
+    /// get article version
+    public fun version(article_obj: &Object<Article>): u64 {
+        object::borrow(article_obj).version
     }
+
+    /// get article title
+    public fun title(article_obj: &Object<Article>): String {
+        object::borrow(article_obj).title
+    }
+
+    /// get article body
+    public fun body(article_obj: &Object<Article>): String {
+        object::borrow(article_obj).body
+    }
+    
 }

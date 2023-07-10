@@ -1,175 +1,87 @@
-module rooch_blog::rooch_blog {
+module rooch_examples::rooch_blog {
     use std::error;
     use std::signer;
-    use std::string::String;
+    use std::string::{Self,String};
+    use std::vector;
     use moveos_std::object_id::ObjectID;
-    use moveos_std::object::Object;
     use moveos_std::storage_context::StorageContext;
-    use rooch_blog::article;
+    use moveos_std::account_storage;
+    use rooch_examples::article;
 
-    const EID_DATA_TOO_LONG: u64 = 102;
-    const EINAPPROPRIATE_VERSION: u64 = 103;
-    const ENOT_GENESIS_ACCOUNT: u64 = 105;
+    const EDATA_TOO_LONG: u64 = 1;
+    const ENOT_FOUND: u64 = 2;
 
-    // === Initialize ===
-
-    // Define a function that initialize the blog app
-    fun init(storage_ctx: &mut StorageContext, account: &signer) {
-        assert!(signer::address_of(account) == @rooch_blog, error::invalid_argument(ENOT_GENESIS_ACCOUNT));
-        let _ = storage_ctx;
-        let _ = account;
+    struct MyBlog has key {
+        name: String,
+        articles: vector<ObjectID>,
     }
 
-    // === Create ===
-
-    fun create_verify(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
-        title: String,
-        body: String,
-    ): article::ArticleCreated {
-        let _ = storage_ctx;
-        let _ = account;
-        article::new_article_created(
-            title,
-            body,
-        )
+    public entry fun set_blog_title(ctx: &mut StorageContext, owner: &signer, blog_name: String) {
+        assert!(std::string::length(&blog_name) <= 200, error::invalid_argument(EDATA_TOO_LONG));
+        let owner_address = signer::address_of(owner);
+        let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
+        myblog.name = blog_name;
     }
 
-    fun create_mutate(
-        storage_ctx: &mut StorageContext,
-        article_created: &article::ArticleCreated,
-    ): Object<article::Article> {
-        let title = article::article_created_title(article_created);
-        let body = article::article_created_body(article_created);
-        article::create_article(
-            storage_ctx,
-            title,
-            body,
-        )
+    fun add_article_to_myblog(ctx: &mut StorageContext, owner: &signer, article_id: ObjectID) {
+        let owner_address = signer::address_of(owner);
+        if(account_storage::global_exists<MyBlog>(ctx, owner_address)){
+            let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
+            vector::push_back(&mut myblog.articles, article_id);
+        }else{
+            let articles = vector::singleton(article_id);
+            let myblog = MyBlog{
+                name: string::utf8(b"MyBlog"),
+                articles,
+            };
+            account_storage::global_move_to(ctx, owner, myblog);
+        }
     }
 
-    public entry fun create(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
+    fun delete_article_from_myblog(ctx: &mut StorageContext, owner: &signer, article_id: ObjectID) {
+        let owner_address = signer::address_of(owner);
+        let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
+        let (contains, index) = vector::index_of(&myblog.articles, &article_id);
+        assert!(contains, error::not_found(ENOT_FOUND));
+        vector::remove(&mut myblog.articles, index); 
+    }
+
+    /// Get owner's blog's articles
+    public fun get_blog_articles(ctx: &StorageContext, owner_address: address): vector<ObjectID> {
+        if(!account_storage::global_exists<MyBlog>(ctx, owner_address)){
+            vector::empty()
+        }else{
+            let myblog = account_storage::global_borrow<MyBlog>(ctx, owner_address);
+            myblog.articles
+        }
+    }
+
+    public entry fun create_article(
+        ctx: &mut StorageContext,
+        owner: signer,
         title: String,
         body: String,
     ) {
-        let article_created = create_verify(
-            storage_ctx,
-            account,
-            title,
-            body,
-        );
-        let article_obj = create_mutate(
-            storage_ctx,
-            &article_created,
-        );
-        article::set_article_created_id(&mut article_created, article::id(&article_obj));
-        article::add_article(storage_ctx, article_obj);
-        article::emit_article_created(storage_ctx, article_created);
+        let article_id = article::create_article(ctx, &owner, title, body);
+        add_article_to_myblog(ctx, &owner, article_id);
     }
 
-    // === Update ===
-
-    fun update_verify(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
-        title: String,
-        body: String,
-        article_obj: &Object<article::Article>,
-    ): article::ArticleUpdated {
-        let _ = storage_ctx;
-        let _ = account;
-        article::new_article_updated(
-            article_obj,
-            title,
-            body,
-        )
-    }
-
-    fun update_mutate(
-        storage_ctx: &mut StorageContext,
-        article_updated: &article::ArticleUpdated,
-        article_obj: Object<article::Article>,
-    ): Object<article::Article> {
-        let title = article::article_updated_title(article_updated);
-        let body = article::article_updated_body(article_updated);
-        let id = article::article_updated_id(article_updated);
-        let _ = storage_ctx;
-        let _ = id;
-        article::set_title(&mut article_obj, title);
-        article::set_body(&mut article_obj, body);
-        article_obj
-    }
-
-    public entry fun update(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
+    public entry fun update_article(
+        ctx: &mut StorageContext,
+        owner: signer,
         id: ObjectID,
-        title: String,
-        body: String,
+        new_title: String,
+        new_body: String,
     ) {
-        let article_obj = article::remove_article(storage_ctx, id);
-        let article_updated = update_verify(
-            storage_ctx,
-            account,
-            title,
-            body,
-            &article_obj,
-        );
-        let updated_article_obj = update_mutate(
-            storage_ctx,
-            &article_updated,
-            article_obj,
-        );
-        article::update_version_and_add(storage_ctx, updated_article_obj);
-        article::emit_article_updated(storage_ctx, article_updated);
+        article::update_article(ctx, &owner, id, new_title, new_body);
     }
 
-    // === Delete ===
-
-    fun delete_verify(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
-        article_obj: &Object<article::Article>,
-    ): article::ArticleDeleted {
-        let _ = storage_ctx;
-        let _ = account;
-        article::new_article_deleted(
-            article_obj,
-        )
-    }
-
-    fun delete_mutate(
-        storage_ctx: &mut StorageContext,
-        article_deleted: &article::ArticleDeleted,
-        article_obj: Object<article::Article>,
-    ): Object<article::Article> {
-        let id = article::id(&article_obj);
-        let _ = storage_ctx;
-        let _ = id;
-        let _ = article_deleted;
-        article_obj
-    }
-
-    public entry fun delete(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
+    public entry fun delete_article(
+        ctx: &mut StorageContext,
+        owner: signer,
         id: ObjectID,
     ) {
-        let article_obj = article::remove_article(storage_ctx, id);
-        let article_deleted = delete_verify(
-            storage_ctx,
-            account,
-            &article_obj,
-        );
-        let updated_article_obj = delete_mutate(
-            storage_ctx,
-            &article_deleted,
-            article_obj,
-        );
-        article::drop_article(updated_article_obj);
-        article::emit_article_deleted(storage_ctx, article_deleted);
+        article::delete_article(ctx, &owner, id);
+        delete_article_from_myblog(ctx, &owner, id);
     }
 }
