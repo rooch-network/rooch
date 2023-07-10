@@ -351,7 +351,7 @@ pub fn run_integration_test_with_extended_check(
         })
         .collect::<Vec<_>>();
 
-    let global_env = build_model(dep_package_path, named_account_address_map, None).unwrap();
+    let global_env = build_model(dep_package_path, named_account_address_map, false, None).unwrap();
 
     let _ = run_extended_checks(&global_env);
 

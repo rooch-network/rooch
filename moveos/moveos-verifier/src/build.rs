@@ -244,10 +244,11 @@ pub static ROOCH_METADATA_KEY: &[u8] = "rooch::metadata_v0".as_bytes();
 pub fn build_model(
     package_path: &Path,
     additional_named_addresses: BTreeMap<String, AccountAddress>,
+    dev_mode: bool,
     target_filter: Option<String>,
 ) -> anyhow::Result<GlobalEnv> {
     let build_config = BuildConfig {
-        dev_mode: false,
+        dev_mode,
         additional_named_addresses,
         architecture: None,
         generate_abis: false,
@@ -299,10 +300,16 @@ pub fn build_model_with_test_attr(
 
 pub fn run_verifier<P: AsRef<Path>>(
     package_path: P,
-    additional_named_address: BTreeMap<String, AccountAddress>,
+    build_config: BuildConfig,
     package: &mut CompiledPackage,
 ) -> anyhow::Result<bool> {
-    let model = build_model(package_path.as_ref(), additional_named_address, None).unwrap();
+    let model = build_model(
+        package_path.as_ref(),
+        build_config.additional_named_addresses,
+        build_config.dev_mode,
+        None,
+    )
+    .unwrap();
 
     let runtime_metadata = run_extended_checks(&model);
 

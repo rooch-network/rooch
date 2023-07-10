@@ -60,8 +60,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         let mut config = config.clone();
 
         config.additional_named_addresses = context.parse_account_args(self.named_addresses)?;
-
-        let additional_named_address = config.additional_named_addresses.clone();
+        let config_cloned = config.clone();
 
         let package_path = match package_path {
             Some(package_path) => package_path,
@@ -69,7 +68,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         };
         let mut package = config.compile_package_no_exit(&package_path, &mut stderr())?;
 
-        run_verifier(package_path, additional_named_address, &mut package)?;
+        run_verifier(package_path, config_cloned, &mut package)?;
 
         // let modules = package.root_modules_map().iter_modules_owned();
         let modules = package.root_modules_map();
