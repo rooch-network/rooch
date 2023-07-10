@@ -860,5 +860,5 @@ If you want to directly experience the functions of this blog contract, you can 
 ```shell
 wget https://github.com/rooch-network/rooch/archive/refs/heads/main.zip
 unzip main.zip
-cd rooch-main/docs/website/public/codes/rooch_blog
+cd rooch-main/examples/rooch_blog
 ```
