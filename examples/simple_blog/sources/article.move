@@ -1,4 +1,4 @@
-module rooch_examples::article {
+module simple_blog::article {
 
     use std::error;
     use std::signer;
@@ -129,7 +129,7 @@ module rooch_examples::article {
     /// Read function of article
 
     /// get article object by id
-    public fun borrow_article(ctx: &StorageContext, article_id: ObjectID): &Object<Article> {
+    public fun get_article(ctx: &StorageContext, article_id: ObjectID): &Object<Article> {
         let obj_store = storage_context::object_storage(ctx);
         object_storage::borrow(obj_store, article_id)
     }

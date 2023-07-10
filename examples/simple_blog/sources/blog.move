@@ -1,4 +1,4 @@
-module rooch_examples::rooch_blog {
+module simple_blog::blog {
     use std::error;
     use std::signer;
     use std::string::{Self,String};
@@ -6,7 +6,7 @@ module rooch_examples::rooch_blog {
     use moveos_std::object_id::ObjectID;
     use moveos_std::storage_context::StorageContext;
     use moveos_std::account_storage;
-    use rooch_examples::article;
+    use simple_blog::article;
 
     const EDATA_TOO_LONG: u64 = 1;
     const ENOT_FOUND: u64 = 2;
@@ -16,26 +16,41 @@ module rooch_examples::rooch_blog {
         articles: vector<ObjectID>,
     }
 
-    public entry fun set_blog_title(ctx: &mut StorageContext, owner: &signer, blog_name: String) {
+    /// This init function is called when the module is published
+    /// The owner is the address of the account that publishes the module
+    fun init(storage_ctx: &mut StorageContext, owner: &signer) {
+        // auto create blog for module publisher 
+        create_blog(storage_ctx, owner);
+    }
+
+    public fun create_blog(ctx: &mut StorageContext, owner: &signer) {
+        let articles = vector::empty();
+        let myblog = MyBlog{
+            name: string::utf8(b"MyBlog"),
+            articles,
+        };
+        account_storage::global_move_to(ctx, owner, myblog);
+    }
+
+    public entry fun set_blog_name(ctx: &mut StorageContext, owner: &signer, blog_name: String) {
         assert!(std::string::length(&blog_name) <= 200, error::invalid_argument(EDATA_TOO_LONG));
         let owner_address = signer::address_of(owner);
+        // if blog not exist, create it
+        if(!account_storage::global_exists<MyBlog>(ctx, owner_address)){
+            create_blog(ctx, owner);
+        };
         let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
         myblog.name = blog_name;
     }
 
     fun add_article_to_myblog(ctx: &mut StorageContext, owner: &signer, article_id: ObjectID) {
         let owner_address = signer::address_of(owner);
-        if(account_storage::global_exists<MyBlog>(ctx, owner_address)){
-            let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
-            vector::push_back(&mut myblog.articles, article_id);
-        }else{
-            let articles = vector::singleton(article_id);
-            let myblog = MyBlog{
-                name: string::utf8(b"MyBlog"),
-                articles,
-            };
-            account_storage::global_move_to(ctx, owner, myblog);
-        }
+        // if blog not exist, create it
+        if(!account_storage::global_exists<MyBlog>(ctx, owner_address)){
+            create_blog(ctx, owner);
+        };
+        let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
+        vector::push_back(&mut myblog.articles, article_id);
     }
 
     fun delete_article_from_myblog(ctx: &mut StorageContext, owner: &signer, article_id: ObjectID) {

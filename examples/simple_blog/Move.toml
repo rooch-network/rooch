@@ -11,7 +11,7 @@ RoochFramework = { git = "https://github.com/rooch-network/rooch.git", subdir = 
 std =  "0x1"
 moveos_std =  "0x2"
 rooch_framework =  "0x3"
-rooch_examples =  "_"
+simple_blog =  "_"
 
 [dev-addresses]
-rooch_examples = "0x42"
+simple_blog = "0x42"
