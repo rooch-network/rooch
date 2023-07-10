@@ -38,8 +38,6 @@ impl Build {
         let mut config = config;
         config.additional_named_addresses = context.parse_account_args(self.named_addresses)?;
 
-        let additional_named_address = config.additional_named_addresses.clone();
-
         let rerooted_path = reroot_path(path)?;
         if config.fetch_deps_only {
             if config.test_mode {
@@ -49,9 +47,11 @@ impl Build {
             return Ok(());
         }
 
+        let config_cloned = config.clone();
+
         let mut package = config.compile_package_no_exit(&rerooted_path, &mut std::io::stdout())?;
 
-        run_verifier(rerooted_path, additional_named_address, &mut package)?;
+        run_verifier(rerooted_path, config_cloned, &mut package)?;
 
         Ok(())
     }

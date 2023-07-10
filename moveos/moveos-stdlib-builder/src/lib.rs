@@ -110,12 +110,7 @@ impl Stdlib {
             .clone()
             .compile_package_no_exit(&package_path, &mut stderr())?;
 
-        let additional_named_address = options.named_addresses;
-        run_verifier(
-            &package_path,
-            additional_named_address,
-            &mut compiled_package,
-        )?;
+        run_verifier(&package_path, build_config.clone(), &mut compiled_package)?;
         let module_map = compiled_package.root_modules_map();
         let mut modules = module_map.iter_modules().into_iter();
 
