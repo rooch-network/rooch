@@ -13,6 +13,7 @@ module rooch_framework::address_mapping{
     //Please keep consistent with rust ChainID
     const COIN_TYPE_BTC: u32 = 0;
     const COIN_TYPE_ETH: u32 = 60;
+    const COIN_TYPE_NOSTR: u32 = 1237;
     const COIN_TYPE_ROH: u32 = 20230101;
 
     struct MultiChainAddress has copy, store, drop {

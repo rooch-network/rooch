@@ -22,6 +22,8 @@ use moveos_types::{
     h256::H256,
     state::{MoveStructState, MoveStructType},
 };
+use nostr::secp256k1::XOnlyPublicKey;
+use nostr::Keys;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::{collection::vec, prelude::*};
 #[cfg(any(test, feature = "fuzzing"))]
@@ -365,6 +367,35 @@ impl TryFrom<MultiChainAddress> for BitcoinAddress {
     }
 }
 
+/// Nostr address type
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct NostrAddress(pub XOnlyPublicKey);
+
+impl RoochSupportedAddress for NostrAddress {
+    fn random() -> Self {
+        Self(Keys::generate().public_key())
+    }
+}
+
+impl From<NostrAddress> for MultiChainAddress {
+    fn from(address: NostrAddress) -> Self {
+        Self::new(CoinID::NOSTR, address.0.serialize().to_vec())
+            .expect("NostrAddress to MultiChainAddress should succeed")
+    }
+}
+
+impl TryFrom<MultiChainAddress> for NostrAddress {
+    type Error = anyhow::Error;
+
+    fn try_from(value: MultiChainAddress) -> Result<Self, Self::Error> {
+        if value.coin_id != CoinID::NOSTR {
+            return Err(anyhow::anyhow!("coin id {} is invalid", value.coin_id));
+        }
+        let addr = XOnlyPublicKey::from_slice(&value.raw_address)?;
+        Ok(Self(addr))
+    }
+}
+
 #[cfg(test)]
 mod test {
 
@@ -392,6 +423,7 @@ mod test {
         test_rooch_supported_address_roundtrip::<RoochAddress>();
         test_rooch_supported_address_roundtrip::<EthereumAddress>();
         test_rooch_supported_address_roundtrip::<BitcoinAddress>();
+        test_rooch_supported_address_roundtrip::<NostrAddress>();
     }
 
     fn test_rooch_address_roundtrip(rooch_address: RoochAddress) {

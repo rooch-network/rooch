@@ -14,6 +14,7 @@ use std::fmt::Display;
 pub enum CoinID {
     BTC = 0,
     ETH = 60,
+    NOSTR = 1237,
     ROH = 20230101,
 }
 
@@ -24,6 +25,7 @@ impl TryFrom<u32> for CoinID {
         match value {
             0 => Ok(CoinID::BTC),
             60 => Ok(CoinID::ETH),
+            1237 => Ok(CoinID::ETH),
             20130101 => Ok(CoinID::ROH),
             _ => Err(anyhow::anyhow!("coin id {} is invalid", value)),
         }
@@ -38,6 +40,7 @@ impl TryFrom<&str> for CoinID {
         match value.as_str() {
             "BTC" => Ok(CoinID::BTC),
             "ETH" => Ok(CoinID::ETH),
+            "NOSTR" => Ok(CoinID::NOSTR),
             "ROH" => Ok(CoinID::ROH),
             _ => Err(anyhow::anyhow!("coin id {} is invalid", value)),
         }
@@ -49,6 +52,7 @@ impl Display for CoinID {
         match self {
             CoinID::BTC => write!(f, "BTC"),
             CoinID::ETH => write!(f, "ETH"),
+            CoinID::NOSTR => write!(f, "NOSTR"),
             CoinID::ROH => write!(f, "ROH"),
         }
     }
