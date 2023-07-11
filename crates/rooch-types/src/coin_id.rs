@@ -25,7 +25,7 @@ impl TryFrom<u32> for CoinID {
         match value {
             0 => Ok(CoinID::BTC),
             60 => Ok(CoinID::ETH),
-            1237 => Ok(CoinID::ETH),
+            1237 => Ok(CoinID::NOSTR),
             20130101 => Ok(CoinID::ROH),
             _ => Err(anyhow::anyhow!("coin id {} is invalid", value)),
         }
