@@ -79,24 +79,24 @@ module moveos_std::account_storage {
 
     /// Borrow a resource from the AccountStorage
     fun borrow_resource_from_account_storage<T: key>(self: &AccountStorage): &T {
-        type_table::borrow_internal<T>(&self.resources)
+        type_table::borrow<T>(&self.resources)
     }
 
     /// Borrow a mut resource from the AccountStorage
     fun borrow_mut_resource_from_account_storage<T: key>(self: &mut AccountStorage): &mut T {
-        type_table::borrow_mut_internal<T>(&mut self.resources)
+        type_table::borrow_mut<T>(&mut self.resources)
     }
 
     /// Add a resource to the account storage
     fun add_resource_to_account_storage<T: key>(self: &mut AccountStorage, resource: T){
         //TODO should let the type_table native add function to check the resource is exists?
-        assert!(!type_table::contains_internal<T>(&self.resources), EResourceAlreadyExists);
-        type_table::add_internal(&mut self.resources, resource);
+        assert!(!type_table::contains<T>(&self.resources), EResourceAlreadyExists);
+        type_table::add(&mut self.resources, resource);
     }
 
     /// Remove a resource from the account storage
     fun remove_resource_from_account_storage<T: key>(self: &mut AccountStorage): T {
-        assert!(type_table::contains_internal<T>(&self.resources), EResourceNotExists);
+        assert!(type_table::contains<T>(&self.resources), EResourceNotExists);
         type_table::remove<T>(&mut self.resources)
     }
 

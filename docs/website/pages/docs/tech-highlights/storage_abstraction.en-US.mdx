@@ -197,24 +197,17 @@ TypeTable is a special type of Table that simulates Move's global storage instru
 ```move
 module moveos_std::type_table {
 
-    #[private_generics(V)]
     public fun add<V: key>(table: &mut TypeTable, val: V);
 
-    #[private_generics(V)]
     public fun borrow<V: key>(table: &TypeTable): &V;
 
-    #[private_generics(V)]
     public fun borrow_mut<V: key>(table: &mut TypeTable): &mut V;
 
-    #[private_generics(V)]
     public fun remove<V: key>(table: &mut TypeTable): V;
 
-    #[private_generics(V)]
     public fun contains<V: key>(table: &TypeTable): bool;
 }
 ```
-
-The methods in TypeTable rely on the type safety guarantee of `private_generics`, with constraints similar to Move's global storage instructions.
 
 ### AccountStorage
 

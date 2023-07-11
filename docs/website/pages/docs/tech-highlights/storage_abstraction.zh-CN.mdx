@@ -196,24 +196,17 @@ TypeTable 是一种特殊的 Table，它模拟 Move 全局存储指令，以类�
 ```move
 module moveos_std::type_table {
 
-    #[private_generics(V)]
     public fun add<V: key>(table: &mut TypeTable, val: V);
 
-    #[private_generics(V)]
     public fun borrow<V: key>(table: &TypeTable): &V;
 
-    #[private_generics(V)]
     public fun borrow_mut<V: key>(table: &mut TypeTable): &mut V;
 
-    #[private_generics(V)]
     public fun remove<V: key>(table: &mut TypeTable): V;
 
-    #[private_generics(V)]
     public fun contains<V: key>(table: &TypeTable): bool;
 }
 ```
-
-TypeTable 的方法需要依赖 `private_generics` 的类型安全保证，和 Move 全局存储指令一样的约束。
 
 ### AccountStorage
 
