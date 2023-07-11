@@ -1,29 +1,27 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use rooch_types::address::RoochAddress;
 use serde::Deserialize;
 use serde::Serialize;
 use std::fmt::{Display, Formatter, Result, Write};
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
-pub struct ServerConfig {
+pub struct RelayConfig {
     pub host: String,
     pub port: u16,
-    pub proposer_address: Option<RoochAddress>,
-    pub sequencer_address: Option<RoochAddress>,
-    pub block_propose_duration_in_seconds: u16,
+    pub remote_ip_header: Option<String>,
+    pub ping_interval_seconds: u32,
 }
 
-impl ServerConfig {
-    pub fn rpc_url(&self, https: bool) -> String {
-        let schema = if https { "https" } else { "http" };
+impl RelayConfig {
+    pub fn ws_url(&self, https: bool) -> String {
+        let schema = if https { "wss" } else { "ws" };
 
         format!("{}://{}:{}", schema, self.host, self.port)
     }
 }
 
-impl Display for ServerConfig {
+impl Display for RelayConfig {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let mut writer = String::new();
 
@@ -34,14 +32,13 @@ impl Display for ServerConfig {
     }
 }
 
-impl Default for ServerConfig {
+impl Default for RelayConfig {
     fn default() -> Self {
         Self {
             host: "0.0.0.0".to_owned(),
-            port: 50051,
-            proposer_address: None,
-            sequencer_address: None,
-            block_propose_duration_in_seconds: 5,
+            port: 8080,
+            remote_ip_header: None,
+            ping_interval_seconds: 300,
         }
     }
 }

@@ -1,0 +1,83 @@
+[package]
+name = "rooch-ws-relay"
+version = "0.1.0"
+
+# Workspace inherited keys
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+clap = { workspace = true }
+tracing = { workspace = true }
+tracing-appender = { workspace = true }
+tracing-subscriber = { workspace = true }
+tokio = { workspace = true }
+prost = { workspace = true }
+tonic = { workspace = true }
+console-subscriber = { workspace = true }
+futures = { workspace = true }
+futures-util = { workspace = true }
+tokio-tungstenite = { workspace = true }
+tungstenite = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
+config = { workspace = true }
+bitcoin_hashes = { workspace = true }
+secp256k1 = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+hex = { workspace = true }
+rusqlite = { workspace = true }
+r2d2 = { workspace = true }
+r2d2_sqlite = { workspace = true }
+lazy_static = { workspace = true }
+governor = { workspace = true }
+nonzero_ext = { workspace = true }
+hyper = { workspace = true }
+hyper-tls = { workspace = true }
+http = { workspace = true }
+parse_duration = { workspace = true }
+rand = { workspace = true }
+const_format = { workspace = true }
+regex = { workspace = true }
+async-trait = { workspace = true }
+async-std = { workspace = true }
+sqlx = { workspace = true }
+chrono = { workspace = true }
+prometheus = { workspace = true }
+indicatif = { workspace = true }
+bech32 = { workspace = true }
+url = { workspace = true }
+qrcode = { workspace = true }
+nostr = { workspace = true }
+anyhow = { workspace = true }
+sha3 = { workspace = true }
+jsonrpsee = { workspace = true }
+coerce = { workspace = true }
+
+move-core-types = { workspace = true }
+move-resource-viewer = { workspace = true }
+move-binary-format = { workspace = true }
+
+moveos-store = { workspace = true }
+moveos-types = { workspace = true }
+move-bytecode-utils = { workspace = true }
+
+rooch-config = { workspace = true }
+rooch-types = { workspace = true }
+rooch-executor = { workspace = true }
+rooch-sequencer = { workspace = true }
+rooch-proposer = { workspace = true }
+rooch-key = { workspace = true }
+rooch-open-rpc = { workspace = true }
+rooch-open-rpc-macros = { workspace = true }
+rooch-store = { workspace = true }
+rooch-rpc-api = { workspace = true }
+
+[build-dependencies]
+tonic-build = { workspace = true }

@@ -4,6 +4,7 @@
 use crate::{Client, ClientBuilder};
 use anyhow::anyhow;
 use rooch_config::rpc::server_config::ServerConfig;
+use rooch_config::ws::relay_config::RelayConfig;
 use rooch_config::Config;
 use rooch_key::keystore::{AccountKeystore, Keystore};
 use rooch_types::address::RoochAddress;
@@ -91,9 +92,9 @@ impl Env {
 impl Default for Env {
     fn default() -> Self {
         Env {
-            alias: "default".to_string(),
-            rpc: ServerConfig::default().url(false),
-            ws: None,
+            alias: "default".to_owned(),
+            rpc: ServerConfig::default().rpc_url(false),
+            ws: Some(RelayConfig::default().ws_url(false)),
         }
     }
 }

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod rpc;
+pub mod ws;
 
 use anyhow::{Context, Result};
 use serde::{de::DeserializeOwned, Serialize};
@@ -11,6 +12,7 @@ pub const ROOCH_DIR: &str = ".rooch";
 pub const ROOCH_CONFIG_DIR: &str = "rooch_config";
 pub const ROOCH_CLIENT_CONFIG: &str = "rooch.yaml";
 pub const ROOCH_SERVER_CONFIG: &str = "server.yaml";
+pub const ROOCH_RELAY_CONFIG: &str = "relay.yaml";
 pub const ROOCH_KEYSTORE_FILENAME: &str = "rooch.keystore";
 
 pub fn rooch_config_dir() -> anyhow::Result<PathBuf, anyhow::Error> {

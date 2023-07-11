@@ -32,6 +32,9 @@ termcolor = { workspace = true }
 itertools = { workspace = true }
 hex = { workspace = true }
 regex = { workspace = true }
+tracing-appender = { workspace = true }
+tracing-subscriber = { workspace = true }
+console-subscriber = { workspace = true }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }
@@ -65,3 +68,4 @@ rooch-rpc-api = { workspace = true }
 rooch-rpc-server = { workspace = true }
 rooch-rpc-client = { workspace = true }
 rooch-integration-test-runner = { workspace = true }
+rooch-ws-relay = { workspace = true }

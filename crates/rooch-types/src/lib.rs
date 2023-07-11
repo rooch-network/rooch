@@ -11,3 +11,4 @@ pub mod error;
 pub mod transaction;
 
 pub use ethers::types::{H160, H256, H512};
+pub use bitcoin::secp256k1::{XOnlyPublicKey, SecretKey, KeyPair};

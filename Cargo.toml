@@ -28,7 +28,8 @@ members = [
     "crates/rooch-open-rpc",
     "crates/rooch-open-rpc-spec",
     "crates/rooch-open-rpc-macros",
-    "crates/rooch-store"
+    "crates/rooch-store",
+    "crates/rooch-ws-relay"
 ]
 
 default-members = [
@@ -82,6 +83,7 @@ rooch-open-rpc = { path = "crates/rooch-open-rpc" }
 rooch-open-rpc-spec = { path = "crates/rooch-open-rpc-spec" }
 rooch-open-rpc-macros = { path = "crates/rooch-open-rpc-macros" }
 rooch-store = { path = "crates/rooch-store" }
+rooch-ws-relay = { path = "crates/rooch-ws-relay" }
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.
@@ -150,7 +152,7 @@ thiserror = "1.0.34"
 tiny-keccak = { version = "2", features = ["keccak", "sha3"] }
 tiny-bip39 = "1.0.0"
 tokio = { version = "1", features = ["full"] }
-tonic = { version = "0.8", features = ["gzip"] }
+tonic = { version = "0.8.3", features = ["gzip"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
 codespan-reporting = "0.11.1"
@@ -166,7 +168,33 @@ unescape = "0.1.0"
 tempfile = "3.2.0"
 regex = "1.8.4"
 walkdir = "2.3.3"
-
+futures-util = "0.3"
+tracing-appender = "0.2.2"
+console-subscriber = "0.1.8"
+tokio-tungstenite = "0.17"
+tungstenite = "0.17"
+uuid = { version = "1.1.2", features = ["v4"] }
+config = { version = "0.12", features = ["toml"] }
+bitcoin_hashes = { version = "0.10", features = ["serde"] }
+secp256k1 = {version = "0.21", features = ["rand", "rand-std", "serde", "bitcoin_hashes"] }
+rusqlite = { version = "0.26", features = ["limits","bundled","modern_sqlite", "trace"]}
+r2d2 = "0.8"
+r2d2_sqlite = "0.19"
+governor = "0.4"
+nonzero_ext = "0.3"
+hyper = { version="0.14", features=["client", "server","http1","http2","tcp"] }
+hyper-tls = "0.5"
+http = { version = "0.2" }
+parse_duration = "2"
+const_format = "0.2.28"
+async-std = "1.12.0"
+sqlx = { version ="0.6.2", features=["runtime-tokio-rustls", "postgres", "chrono"]}
+prometheus = "0.13.3"
+indicatif = "0.17.3"
+url = "2.3.1"
+qrcode = { version = "0.12.0", default-features = false, features = ["svg"] }
+nostr = { version = "0.18.0", default-features = false, features = ["base", "nip04", "nip19"] }
+tonic-build = { version="0.8.3", features = ["prost"] }
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES
