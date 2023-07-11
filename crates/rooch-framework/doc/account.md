@@ -512,7 +512,7 @@ Return the current TokenType balance of the account at <code>addr</code>.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_get_authentication_key">get_authentication_key</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_get_authentication_key">get_authentication_key</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -521,8 +521,13 @@ Return the current TokenType balance of the account at <code>addr</code>.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_get_authentication_key">get_authentication_key</a>(ctx: &<b>mut</b> StorageContext, addr: <b>address</b>): <a href="">vector</a>&lt;u8&gt; {
-   *&<a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, addr).authentication_key
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_get_authentication_key">get_authentication_key</a>(ctx: &StorageContext, addr: <b>address</b>): <a href="">vector</a>&lt;u8&gt; {
+   //<b>if</b> <a href="account.md#0x3_account">account</a> does not exist, <b>return</b> addr <b>as</b> authentication key
+   <b>if</b>(!<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, addr)){
+      <a href="_to_bytes">bcs::to_bytes</a>(&addr)
+   }<b>else</b>{
+      <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, addr).authentication_key
+   }
 }
 </code></pre>
 
@@ -560,7 +565,7 @@ Return the current TokenType balance of the account at <code>addr</code>.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_is_resource_account">is_resource_account</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_is_resource_account">is_resource_account</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): bool
 </code></pre>
 
 
@@ -569,7 +574,7 @@ Return the current TokenType balance of the account at <code>addr</code>.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_is_resource_account">is_resource_account</a>(ctx: &<b>mut</b> StorageContext, addr: <b>address</b>): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_is_resource_account">is_resource_account</a>(ctx: &StorageContext, addr: <b>address</b>): bool {
    // for resource <a href="account.md#0x3_account">account</a> , <a href="account.md#0x3_account">account</a> storage maybe not exist when create,
    // so need check <a href="account.md#0x3_account">account</a> storage eixst befor call <b>global</b> exist function
    <b>if</b>(<a href="_exist_account_storage">account_storage::exist_account_storage</a>(ctx, addr)){

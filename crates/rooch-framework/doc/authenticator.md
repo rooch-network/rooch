@@ -17,12 +17,16 @@
 -  [Function `decode_ed25519_authenticator`](#0x3_authenticator_decode_ed25519_authenticator)
 -  [Function `ed25519_public`](#0x3_authenticator_ed25519_public)
 -  [Function `ed25519_signature`](#0x3_authenticator_ed25519_signature)
+-  [Function `ed25519_authentication_key`](#0x3_authenticator_ed25519_authentication_key)
+-  [Function `ed25519_public_key_to_address`](#0x3_authenticator_ed25519_public_key_to_address)
 -  [Function `decode_multied25519_authenticator`](#0x3_authenticator_decode_multied25519_authenticator)
 -  [Function `decode_secp256k1_authenticator`](#0x3_authenticator_decode_secp256k1_authenticator)
 -  [Function `secp256k1_signature`](#0x3_authenticator_secp256k1_signature)
 
 
-<pre><code><b>use</b> <a href="">0x2::bcs</a>;
+<pre><code><b>use</b> <a href="">0x1::vector</a>;
+<b>use</b> <a href="">0x2::bcs</a>;
+<b>use</b> <a href="hash.md#0x3_hash">0x3::hash</a>;
 </code></pre>
 
 
@@ -406,6 +410,60 @@ If not, just abort
    };
 
    sign
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_authenticator_ed25519_authentication_key"></a>
+
+## Function `ed25519_authentication_key`
+
+Get the authentication key of the given authenticator.
+For ed25519, it is the sha3_256 hash of the public key.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_ed25519_authentication_key">ed25519_authentication_key</a>(self: &<a href="authenticator.md#0x3_authenticator_Ed25519Authenticator">authenticator::Ed25519Authenticator</a>): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_ed25519_authentication_key">ed25519_authentication_key</a>(self: &<a href="authenticator.md#0x3_authenticator_Ed25519Authenticator">Ed25519Authenticator</a>): <a href="">vector</a>&lt;u8&gt; {
+   <b>let</b> public_key = <a href="authenticator.md#0x3_authenticator_ed25519_public">ed25519_public</a>(self);
+   <b>let</b> addr = <a href="authenticator.md#0x3_authenticator_ed25519_public_key_to_address">ed25519_public_key_to_address</a>(public_key);
+   moveos_std::bcs::to_bytes(&addr)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_authenticator_ed25519_public_key_to_address"></a>
+
+## Function `ed25519_public_key_to_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_ed25519_public_key_to_address">ed25519_public_key_to_address</a>(public_key: <a href="">vector</a>&lt;u8&gt;): <b>address</b>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_ed25519_public_key_to_address">ed25519_public_key_to_address</a>(public_key: <a href="">vector</a>&lt;u8&gt;): <b>address</b> {
+   <b>let</b> bytes = <a href="_singleton">vector::singleton</a>((<a href="authenticator.md#0x3_authenticator_SCHEME_ED25519">SCHEME_ED25519</a> <b>as</b> u8));
+   <a href="_append">vector::append</a>(&<b>mut</b> bytes, public_key);
+   moveos_std::bcs::to_address(hash::blake2b256(&bytes))
 }
 </code></pre>
 
