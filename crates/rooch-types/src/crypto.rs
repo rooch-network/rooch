@@ -643,3 +643,21 @@ where
     let kp = KP::generate(&mut StdRng::from_rng(csprng).unwrap());
     (kp.public().into(), kp)
 }
+
+#[cfg(test)]
+mod tests{
+    use fastcrypto::{ed25519::{Ed25519KeyPair, Ed25519PrivateKey}, traits::{ToFromBytes, KeyPair}};
+    use crate::address::RoochAddress;
+
+    // this test ensure the public key to address keep the same as the old version
+    // we should also keep the public key to address algorithm the same as the move version
+    #[test]
+    fn test_public_key_to_address(){
+        let private_key = Ed25519PrivateKey::from_bytes(&[0u8; 32]).unwrap();
+        let keypair: Ed25519KeyPair = private_key.into();
+        //println!("public_key: {}", hex::encode(keypair.public().as_bytes()));
+        let address:RoochAddress = keypair.public().into();
+        //println!("address: {:?}", address);
+        assert_eq!(address.to_string(), "0x7a1378aafadef8ce743b72e8b248295c8f61c102c94040161146ea4d51a182b6");
+    }
+}

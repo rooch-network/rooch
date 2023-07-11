@@ -19,22 +19,23 @@ module rooch_framework::transaction_validator {
     /// Transaction exceeded its allocated max gas
     const EOUT_OF_GAS: u64 = 6;
 
-    /// Prologue errors. These are separated out from the other errors in this
+    /// Validate errors. These are separated out from the other errors in this
     /// module since they are mapped separately to major VM statuses, and are
     /// important to the semantics of the system.
-    const EPrologueInvalidAccountAuthKey: u64 = 1001;
-    const EPrologueSequenceNuberTooOld: u64 = 1002;
-    const EPrologueSequenceNumberTooNew: u64 = 1003;
-    const EPrologueAccountDoesNotExist: u64 = 1004;
-    const EPrologueCantPayGasDeposit: u64 = 1005;
-    const EPrologueTransactionExpired: u64 = 1006;
-    const EPrologueBadChainId: u64 = 1007;
-    const EPrologueSequenceNumberTooBig: u64 = 1008;
-    const EPrologueSecondaryKeysAddressesCountMismatch: u64 = 1009;
 
-    /// InvalidAuthenticator, incloude invalid signature
-    const EInvalidAuthenticator: u64 = 1010;
+    /// The AuthKey in transaction's authenticator do not match with the sender's account auth key
+    const EValidateInvalidAccountAuthKey: u64 = 1001;
+    /// InvalidAuthenticator, include invalid signature
+    const EInvalidAuthenticator: u64 = 1002;
+    const EValidateSequenceNuberTooOld: u64 = 1003;
+    const EValidateSequenceNumberTooNew: u64 = 1004;
+    const EValidateAccountDoesNotExist: u64 = 1005;
+    const EValidateCantPayGasDeposit: u64 = 1006;
+    const EValidateTransactionExpired: u64 = 1007;
+    const EValidateBadChainId: u64 = 1008;
+    const EValidateSequenceNumberTooBig: u64 = 1009;
 
+   
     #[view]
     /// This function is for Rooch to validate the transaction sender's authenticator.
     /// If the authenticator is invaid, abort this function.
@@ -44,15 +45,19 @@ module rooch_framework::transaction_validator {
         let scheme = authenticator::scheme(&authenticator);
         if (scheme == ED25519_SCHEME) {
             let ed25519_authenicator = authenticator::decode_ed25519_authenticator(authenticator);
-            //FIXME we need to check the public key and address relationship
-            //The address is the public key's hash
-            //We also need to check the public key via account's auth key, if the user rotate the auth key. 
+            let auth_key = authenticator::ed25519_authentication_key(&ed25519_authenicator);
+            let auth_key_in_account = account::get_authentication_key(ctx, storage_context::sender(ctx));
+            assert!(
+                auth_key_in_account == auth_key,
+                error::invalid_argument(EValidateInvalidAccountAuthKey)
+            );
             assert!(
             ed25519::verify(&authenticator::ed25519_signature(&ed25519_authenicator),
                 &authenticator::ed25519_public(&ed25519_authenicator),
                 &storage_context::tx_hash(ctx)),
             error::invalid_argument(EInvalidAuthenticator));
         } else if (scheme == SECP256K1_SCHEME) {
+            //FIXME check the address and public key relationship
             let ecdsa_k1_authenicator = authenticator::decode_secp256k1_authenticator(authenticator);
             assert!(
             ecdsa_k1::verify(
@@ -65,20 +70,20 @@ module rooch_framework::transaction_validator {
 
         assert!(
             (tx_sequence_number as u128) < MAX_U64,
-            error::out_of_range(EPrologueSequenceNumberTooBig)
+            error::out_of_range(EValidateSequenceNumberTooBig)
         );
 
         let account_sequence_number = account::sequence_number_for_sender(ctx);
         assert!(
             tx_sequence_number >= account_sequence_number,
-            error::invalid_argument(EPrologueSequenceNuberTooOld)
+            error::invalid_argument(EValidateSequenceNuberTooOld)
         );
 
         // [PCA12]: Check that the transaction's sequence number matches the
         // current sequence number. Otherwise sequence number is too new by [PCA11].
         assert!(
             tx_sequence_number == account_sequence_number,
-            error::invalid_argument(EPrologueSequenceNumberTooNew)
+            error::invalid_argument(EValidateSequenceNumberTooNew)
         );
     }
 

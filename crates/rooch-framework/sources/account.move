@@ -163,15 +163,20 @@ module rooch_framework::account{
    }
 
    #[view]
-   public fun get_authentication_key(ctx: &mut StorageContext, addr: address): vector<u8> {
-      *&account_storage::global_borrow<Account>(ctx, addr).authentication_key
+   public fun get_authentication_key(ctx: &StorageContext, addr: address): vector<u8> {
+      //if account does not exist, return addr as authentication key
+      if(!account_storage::global_exists<Account>(ctx, addr)){
+         bcs::to_bytes(&addr)
+      }else{
+         account_storage::global_borrow<Account>(ctx, addr).authentication_key
+      }
    }
 
    public fun signer_address(cap: &SignerCapability): address {
       cap.addr
    }
 
-   public fun is_resource_account(ctx: &mut StorageContext, addr: address): bool {
+   public fun is_resource_account(ctx: &StorageContext, addr: address): bool {
       // for resource account , account storage maybe not exist when create,
       // so need check account storage eixst befor call global exist function
       if(account_storage::exist_account_storage(ctx, addr)){
@@ -227,7 +232,7 @@ module rooch_framework::account{
    }
 
    /// This is a helper function to generate seed for resource address
-   fun generate_seed_bytes(ctx: &mut StorageContext, addr: &address): vector<u8> {
+   fun generate_seed_bytes(ctx: &StorageContext, addr: &address): vector<u8> {
       let sequence_number = Self::sequence_number(ctx, *addr);
       // use rooch token balance as part of seed, just for new address more random.
       // TODO token standar
