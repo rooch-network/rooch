@@ -86,7 +86,6 @@ module rooch_framework::authenticator {
    }
 
    /// Get the authentication key of the given authenticator.
-   /// For ed25519, it is the sha3_256 hash of the public key.
    public fun ed25519_authentication_key(self: &Ed25519Authenticator): vector<u8> {
       let public_key = ed25519_public(self);
       let addr = ed25519_public_key_to_address(public_key);

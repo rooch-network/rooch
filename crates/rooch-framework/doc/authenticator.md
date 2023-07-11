@@ -422,7 +422,6 @@ If not, just abort
 ## Function `ed25519_authentication_key`
 
 Get the authentication key of the given authenticator.
-For ed25519, it is the sha3_256 hash of the public key.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_ed25519_authentication_key">ed25519_authentication_key</a>(self: &<a href="authenticator.md#0x3_authenticator_Ed25519Authenticator">authenticator::Ed25519Authenticator</a>): <a href="">vector</a>&lt;u8&gt;
