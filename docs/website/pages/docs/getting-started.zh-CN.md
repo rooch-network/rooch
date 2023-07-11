@@ -353,7 +353,7 @@ rooch move publish --named-addresses simple_blog=default
 此时，我们的博客合约已经发布到链上了，并且默认账户下已经初始化了博客。我们可以用状态查询命令来查看该账户下的博客 Resource：
 
 ```shell
-rooch state --access-path /resource/{ACCOUNT_ADDRESS}/{MODULE_ADDRESS}/{RESOURCE_TYPE}
+rooch state --access-path /resource/{ACCOUNT_ADDRESS}/{RESOURCE_TYPE}
 ```
 
 其中，`{ACCOUNT_ADDRESS}` 是账户地址，`{RESOURCE_TYPE}` 是资源类型，这里是 `{MODULE_ADDRESS}::blog::MyBlog`。这里 `{ACCOUNT_ADDRESS}` 和 `{MODULE_ADDRESS}` 都是我本机的默认账户地址。
