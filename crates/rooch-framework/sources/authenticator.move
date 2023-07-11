@@ -1,6 +1,7 @@
 module rooch_framework::authenticator {
 
    use std::vector;
+   use rooch_framework::hash;
 
    const SCHEME_ED25519: u64 = 0;
    const SCHEME_MULTIED25519: u64 = 1;
@@ -84,6 +85,19 @@ module rooch_framework::authenticator {
       sign
    }
 
+   /// Get the authentication key of the given authenticator.
+   public fun ed25519_authentication_key(self: &Ed25519Authenticator): vector<u8> {
+      let public_key = ed25519_public(self);
+      let addr = ed25519_public_key_to_address(public_key);
+      moveos_std::bcs::to_bytes(&addr)
+   }
+
+   public fun ed25519_public_key_to_address(public_key: vector<u8>): address {
+      let bytes = vector::singleton((SCHEME_ED25519 as u8));
+      vector::append(&mut bytes, public_key);
+      moveos_std::bcs::to_address(hash::blake2b256(&bytes))
+   }
+
    public fun decode_multied25519_authenticator(authenticator: Authenticator): MultiEd25519Authenticator {
       assert!(authenticator.scheme == SCHEME_MULTIED25519, EUnsupportedScheme);
       moveos_std::bcs::from_bytes<MultiEd25519Authenticator>(authenticator.payload)
@@ -98,4 +112,11 @@ module rooch_framework::authenticator {
       self.signature
    }
 
+   // this test ensures that the ed25519_public_key_to_address function is compatible with the one in the rust code
+   #[test]
+   fun test_ed25519_public_key_to_address(){
+      let public_key = x"3b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29";
+      let addr = ed25519_public_key_to_address(public_key);
+      assert!(addr == @0x7a1378aafadef8ce743b72e8b248295c8f61c102c94040161146ea4d51a182b6, 1000)
+   }
 }

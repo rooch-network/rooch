@@ -47,10 +47,10 @@ Scheme identifier for Ed25519 signatures used to derive authentication keys for 
 
 <a name="0x3_transaction_validator_EInvalidAuthenticator"></a>
 
-InvalidAuthenticator, incloude invalid signature
+InvalidAuthenticator, include invalid signature
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EInvalidAuthenticator">EInvalidAuthenticator</a>: u64 = 1010;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EInvalidAuthenticator">EInvalidAuthenticator</a>: u64 = 1002;
 </code></pre>
 
 
@@ -65,86 +65,78 @@ Transaction exceeded its allocated max gas
 
 
 
-<a name="0x3_transaction_validator_EPrologueAccountDoesNotExist"></a>
+<a name="0x3_transaction_validator_EValidateAccountDoesNotExist"></a>
 
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EPrologueAccountDoesNotExist">EPrologueAccountDoesNotExist</a>: u64 = 1004;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateAccountDoesNotExist">EValidateAccountDoesNotExist</a>: u64 = 1005;
 </code></pre>
 
 
 
-<a name="0x3_transaction_validator_EPrologueBadChainId"></a>
+<a name="0x3_transaction_validator_EValidateBadChainId"></a>
 
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EPrologueBadChainId">EPrologueBadChainId</a>: u64 = 1007;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateBadChainId">EValidateBadChainId</a>: u64 = 1008;
 </code></pre>
 
 
 
-<a name="0x3_transaction_validator_EPrologueCantPayGasDeposit"></a>
+<a name="0x3_transaction_validator_EValidateCantPayGasDeposit"></a>
 
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EPrologueCantPayGasDeposit">EPrologueCantPayGasDeposit</a>: u64 = 1005;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateCantPayGasDeposit">EValidateCantPayGasDeposit</a>: u64 = 1006;
 </code></pre>
 
 
 
-<a name="0x3_transaction_validator_EPrologueInvalidAccountAuthKey"></a>
+<a name="0x3_transaction_validator_EValidateInvalidAccountAuthKey"></a>
 
-Prologue errors. These are separated out from the other errors in this
+Validate errors. These are separated out from the other errors in this
 module since they are mapped separately to major VM statuses, and are
 important to the semantics of the system.
+The AuthKey in transaction's authenticator do not match with the sender's account auth key
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EPrologueInvalidAccountAuthKey">EPrologueInvalidAccountAuthKey</a>: u64 = 1001;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateInvalidAccountAuthKey">EValidateInvalidAccountAuthKey</a>: u64 = 1001;
 </code></pre>
 
 
 
-<a name="0x3_transaction_validator_EPrologueSecondaryKeysAddressesCountMismatch"></a>
+<a name="0x3_transaction_validator_EValidateSequenceNuberTooOld"></a>
 
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EPrologueSecondaryKeysAddressesCountMismatch">EPrologueSecondaryKeysAddressesCountMismatch</a>: u64 = 1009;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNuberTooOld">EValidateSequenceNuberTooOld</a>: u64 = 1003;
 </code></pre>
 
 
 
-<a name="0x3_transaction_validator_EPrologueSequenceNuberTooOld"></a>
+<a name="0x3_transaction_validator_EValidateSequenceNumberTooBig"></a>
 
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EPrologueSequenceNuberTooOld">EPrologueSequenceNuberTooOld</a>: u64 = 1002;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNumberTooBig">EValidateSequenceNumberTooBig</a>: u64 = 1009;
 </code></pre>
 
 
 
-<a name="0x3_transaction_validator_EPrologueSequenceNumberTooBig"></a>
+<a name="0x3_transaction_validator_EValidateSequenceNumberTooNew"></a>
 
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EPrologueSequenceNumberTooBig">EPrologueSequenceNumberTooBig</a>: u64 = 1008;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNumberTooNew">EValidateSequenceNumberTooNew</a>: u64 = 1004;
 </code></pre>
 
 
 
-<a name="0x3_transaction_validator_EPrologueSequenceNumberTooNew"></a>
+<a name="0x3_transaction_validator_EValidateTransactionExpired"></a>
 
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EPrologueSequenceNumberTooNew">EPrologueSequenceNumberTooNew</a>: u64 = 1003;
-</code></pre>
-
-
-
-<a name="0x3_transaction_validator_EPrologueTransactionExpired"></a>
-
-
-
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EPrologueTransactionExpired">EPrologueTransactionExpired</a>: u64 = 1006;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateTransactionExpired">EValidateTransactionExpired</a>: u64 = 1007;
 </code></pre>
 
 
@@ -191,15 +183,19 @@ If the authenticator is invaid, abort this function.
     <b>let</b> scheme = <a href="authenticator.md#0x3_authenticator_scheme">authenticator::scheme</a>(&<a href="authenticator.md#0x3_authenticator">authenticator</a>);
     <b>if</b> (scheme == <a href="transaction_validator.md#0x3_transaction_validator_ED25519_SCHEME">ED25519_SCHEME</a>) {
         <b>let</b> ed25519_authenicator = <a href="authenticator.md#0x3_authenticator_decode_ed25519_authenticator">authenticator::decode_ed25519_authenticator</a>(<a href="authenticator.md#0x3_authenticator">authenticator</a>);
-        //FIXME we need <b>to</b> check the <b>public</b> key and <b>address</b> relationship
-        //The <b>address</b> is the <b>public</b> key's <a href="../doc/hash.md#0x1_hash">hash</a>
-        //We also need <b>to</b> check the <b>public</b> key via <a href="account.md#0x3_account">account</a>'s auth key, <b>if</b> the user rotate the auth key.
+        <b>let</b> auth_key = <a href="authenticator.md#0x3_authenticator_ed25519_authentication_key">authenticator::ed25519_authentication_key</a>(&ed25519_authenicator);
+        <b>let</b> auth_key_in_account = <a href="account.md#0x3_account_get_authentication_key">account::get_authentication_key</a>(ctx, <a href="_sender">storage_context::sender</a>(ctx));
+        <b>assert</b>!(
+            auth_key_in_account == auth_key,
+            <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateInvalidAccountAuthKey">EValidateInvalidAccountAuthKey</a>)
+        );
         <b>assert</b>!(
         <a href="ed25519.md#0x3_ed25519_verify">ed25519::verify</a>(&<a href="authenticator.md#0x3_authenticator_ed25519_signature">authenticator::ed25519_signature</a>(&ed25519_authenicator),
             &<a href="authenticator.md#0x3_authenticator_ed25519_public">authenticator::ed25519_public</a>(&ed25519_authenicator),
             &<a href="_tx_hash">storage_context::tx_hash</a>(ctx)),
         <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EInvalidAuthenticator">EInvalidAuthenticator</a>));
     } <b>else</b> <b>if</b> (scheme == <a href="transaction_validator.md#0x3_transaction_validator_SECP256K1_SCHEME">SECP256K1_SCHEME</a>) {
+        //FIXME check the <b>address</b> and <b>public</b> key relationship
         <b>let</b> ecdsa_k1_authenicator = <a href="authenticator.md#0x3_authenticator_decode_secp256k1_authenticator">authenticator::decode_secp256k1_authenticator</a>(<a href="authenticator.md#0x3_authenticator">authenticator</a>);
         <b>assert</b>!(
         <a href="ecdsa_k1.md#0x3_ecdsa_k1_verify">ecdsa_k1::verify</a>(
@@ -212,20 +208,20 @@ If the authenticator is invaid, abort this function.
 
     <b>assert</b>!(
         (tx_sequence_number <b>as</b> u128) &lt; <a href="transaction_validator.md#0x3_transaction_validator_MAX_U64">MAX_U64</a>,
-        <a href="_out_of_range">error::out_of_range</a>(<a href="transaction_validator.md#0x3_transaction_validator_EPrologueSequenceNumberTooBig">EPrologueSequenceNumberTooBig</a>)
+        <a href="_out_of_range">error::out_of_range</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNumberTooBig">EValidateSequenceNumberTooBig</a>)
     );
 
     <b>let</b> account_sequence_number = <a href="account.md#0x3_account_sequence_number_for_sender">account::sequence_number_for_sender</a>(ctx);
     <b>assert</b>!(
         tx_sequence_number &gt;= account_sequence_number,
-        <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EPrologueSequenceNuberTooOld">EPrologueSequenceNuberTooOld</a>)
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNuberTooOld">EValidateSequenceNuberTooOld</a>)
     );
 
     // [PCA12]: Check that the transaction's sequence number matches the
     // current sequence number. Otherwise sequence number is too new by [PCA11].
     <b>assert</b>!(
         tx_sequence_number == account_sequence_number,
-        <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EPrologueSequenceNumberTooNew">EPrologueSequenceNumberTooNew</a>)
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNumberTooNew">EValidateSequenceNumberTooNew</a>)
     );
 }
 </code></pre>
