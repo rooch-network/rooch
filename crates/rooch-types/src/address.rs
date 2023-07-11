@@ -5,8 +5,9 @@ use crate::{addresses::ROOCH_FRAMEWORK_ADDRESS, coin_id::CoinID};
 use anyhow::Result;
 use bech32::{FromBase32, ToBase32};
 use bitcoin::{
+    address::{Address, Payload, WitnessProgram, WitnessVersion},
     hashes::{hash160, Hash},
-    PubkeyHash,
+    network::constants::Network,
 };
 use ethers::types::H160;
 use move_core_types::{
@@ -25,6 +26,7 @@ use moveos_types::{
 use proptest::{collection::vec, prelude::*};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
+use rand::{seq::SliceRandom, thread_rng};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use std::str::FromStr;
@@ -303,23 +305,48 @@ impl TryFrom<MultiChainAddress> for EthereumAddress {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct BitcoinAddress(pub bitcoin::Address);
+pub struct BitcoinAddress(pub Address);
 
 impl RoochSupportedAddress for BitcoinAddress {
     fn random() -> Self {
-        Self(bitcoin::Address::new(
-            bitcoin::Network::Bitcoin,
-            bitcoin::address::Payload::PubkeyHash(PubkeyHash::from_raw_hash(
-                hash160::Hash::from_slice(H160::random().as_bytes()).unwrap(),
-            )),
-        ))
+        // Generate a random public key hash
+        let pubkey_hash = hash160::Hash::from_slice(H160::random().as_bytes()).unwrap();
+        // Create a P2PKH address using the public key hash
+        let p2pkh_address = Address::new(Network::Bitcoin, Payload::PubkeyHash(pubkey_hash.into()));
+        // Create a redeem script from the P2PKH address
+        let redeem_script =
+            Address::new(Network::Bitcoin, Payload::PubkeyHash(pubkey_hash.into())).script_pubkey();
+        // Create a P2SH address using the redeem script
+        let p2sh_address = Address::new(
+            Network::Bitcoin,
+            Payload::ScriptHash(redeem_script.script_hash()),
+        );
+        // Create a witness program for the SegWit address
+        let witness_program = vec![0x00]
+            .into_iter()
+            .chain(pubkey_hash.as_byte_array().to_vec())
+            .collect::<Vec<u8>>();
+        // Create a SegWit address using the witness program
+        let segwit_address = Address::new(
+            Network::Bitcoin,
+            Payload::WitnessProgram(
+                WitnessProgram::new(WitnessVersion::V16, witness_program.to_vec()).unwrap(),
+            ),
+        );
+        // Create an array of addresses of bitcoin protocols
+        let addresses = [p2pkh_address, p2sh_address, segwit_address];
+        // Randomly select one of the addresses
+        let mut rng = thread_rng();
+        let selected_address = addresses.choose(&mut rng).unwrap().clone();
+        // Return the randomly selected Bitcoin address
+        BitcoinAddress(selected_address)
     }
 }
 
 impl From<BitcoinAddress> for MultiChainAddress {
     fn from(address: BitcoinAddress) -> Self {
         Self::new(CoinID::BTC, address.0.to_string().into_bytes())
-            .expect("BitcoinAddress to MultiChainAddress should success")
+            .expect("BitcoinAddress to MultiChainAddress should succeed")
     }
 }
 
@@ -330,8 +357,9 @@ impl TryFrom<MultiChainAddress> for BitcoinAddress {
         if value.coin_id != CoinID::BTC {
             return Err(anyhow::anyhow!("coin id {} is invalid", value.coin_id));
         }
-        let addr = bitcoin::Address::from_str(&String::from_utf8(value.raw_address)?)
-            .map_err(|e| anyhow::anyhow!("invalid bitcoin address, {}", e))?;
+
+        let addr = Address::from_str(&String::from_utf8(value.raw_address)?)
+            .map_err(|e| anyhow::anyhow!("invalid bitcoin address: {}", e))?;
 
         Ok(Self(addr.require_network(bitcoin::Network::Bitcoin)?))
     }

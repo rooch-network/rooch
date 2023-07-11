@@ -80,7 +80,7 @@ impl RoochTransaction {
         use move_core_types::{identifier::Identifier, language_storage::ModuleId};
         use moveos_types::move_types::FunctionId;
 
-        let sender = RoochAddress::random();
+        let sender: RoochAddress = RoochAddress::random();
         let sequence_number = 0;
         let payload = MoveAction::new_function_call(
             FunctionId::new(
