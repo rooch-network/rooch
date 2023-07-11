@@ -26,22 +26,16 @@ use moveos_types::{
 use proptest::{collection::vec, prelude::*};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
+use rand::{seq::SliceRandom, thread_rng};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use std::str::FromStr;
-
-// The definition of blockchain protocols
-pub enum Protocols {
-    P2PKH,
-    P2SH,
-    SegWit,
-}
 
 /// The address type that Rooch supports
 pub trait RoochSupportedAddress:
     Into<MultiChainAddress> + TryFrom<MultiChainAddress, Error = anyhow::Error>
 {
-    fn random(_: &Protocols) -> Self;
+    fn random() -> Self;
 }
 
 /// Multi chain address representation
@@ -176,7 +170,7 @@ impl MoveStructState for MultiChainAddress {
 pub struct RoochAddress(pub H256);
 
 impl RoochSupportedAddress for RoochAddress {
-    fn random(_: &Protocols) -> Self {
+    fn random() -> Self {
         Self(H256::random())
     }
 }
@@ -287,7 +281,7 @@ prop_compose! {
 pub struct EthereumAddress(pub H160);
 
 impl RoochSupportedAddress for EthereumAddress {
-    fn random(_: &Protocols) -> Self {
+    fn random() -> Self {
         Self(H160::random())
     }
 }
@@ -314,38 +308,38 @@ impl TryFrom<MultiChainAddress> for EthereumAddress {
 pub struct BitcoinAddress(pub Address);
 
 impl RoochSupportedAddress for BitcoinAddress {
-    fn random(protocols: &Protocols) -> Self {
+    fn random() -> Self {
+        // Generate a random public key hash
         let pubkey_hash = hash160::Hash::from_slice(&H160::random().as_bytes()).unwrap();
-
+        // Create a P2PKH address using the public key hash
         let p2pkh_address = Address::new(Network::Bitcoin, Payload::PubkeyHash(pubkey_hash.into()));
-
+        // Create a redeem script from the P2PKH address
         let redeem_script =
             Address::new(Network::Bitcoin, Payload::PubkeyHash(pubkey_hash.into())).script_pubkey();
-
+        // Create a P2SH address using the redeem script
         let p2sh_address = Address::new(
             Network::Bitcoin,
             Payload::ScriptHash(redeem_script.script_hash().into()),
         );
-
+        // Create a witness program for the SegWit address
         let witness_program = vec![0x00]
             .into_iter()
             .chain(pubkey_hash.as_byte_array().to_vec())
             .collect::<Vec<u8>>();
-
+        // Create a SegWit address using the witness program
         let segwit_address = Address::new(
             Network::Bitcoin,
             Payload::WitnessProgram(
                 WitnessProgram::new(WitnessVersion::V16, witness_program.to_vec()).unwrap(),
             ),
         );
-
-        let address = match protocols {
-            Protocols::P2PKH => BitcoinAddress(p2pkh_address),
-            Protocols::P2SH => BitcoinAddress(p2sh_address),
-            Protocols::SegWit => BitcoinAddress(segwit_address),
-        };
-
-        address
+        // Create an array of addresses of bitcoin protocols
+        let addresses = [p2pkh_address, p2sh_address, segwit_address];
+        // Randomly select one of the addresses
+        let mut rng = thread_rng();
+        let selected_address = addresses.choose(&mut rng).unwrap().clone();
+        // Return the randomly selected Bitcoin address
+        BitcoinAddress(selected_address)
     }
 }
 
@@ -380,11 +374,7 @@ mod test {
     where
         T: RoochSupportedAddress + Clone + std::fmt::Debug + PartialEq + Eq + std::hash::Hash,
     {
-        // Randomly select a bitcoin protocol
-        let bitcoin_protocols = [Protocols::P2PKH, Protocols::P2SH, Protocols::SegWit];
-        let selected_protocol =
-            &bitcoin_protocols[rand::random::<usize>() % bitcoin_protocols.len()];
-        let address = T::random(selected_protocol);
+        let address = T::random();
         println!("{:?}", address);
         let multi_chain_address: MultiChainAddress = address.clone().into();
         let address2 = T::try_from(multi_chain_address.clone()).unwrap();
@@ -428,11 +418,7 @@ mod test {
     fn test_rooch_address_to_string() {
         test_rooch_address_roundtrip(RoochAddress::from(AccountAddress::ZERO));
         test_rooch_address_roundtrip(RoochAddress::from(AccountAddress::ONE));
-        // Randomly select a bitcoin protocol
-        let bitcoin_protocols = [Protocols::P2PKH, Protocols::P2SH, Protocols::SegWit];
-        let selected_protocol =
-            &bitcoin_protocols[rand::random::<usize>() % bitcoin_protocols.len()];
-        test_rooch_address_roundtrip(RoochAddress::random(selected_protocol));
+        test_rooch_address_roundtrip(RoochAddress::random());
     }
 
     proptest! {
