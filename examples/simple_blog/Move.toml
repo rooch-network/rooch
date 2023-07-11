@@ -1,5 +1,5 @@
 [package]
-name = "rooch_blog"
+name = "simple_blog"
 version = "0.0.1"
 
 [dependencies]
@@ -8,7 +8,10 @@ MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "m
 RoochFramework = { git = "https://github.com/rooch-network/rooch.git", subdir = "crates/rooch-framework", rev = "main" }
 
 [addresses]
-rooch_blog =  "0x36a1c5014cb1771fb0689e041875c83a31675693301a9ba233932abc0b7e68dc"
 std =  "0x1"
 moveos_std =  "0x2"
 rooch_framework =  "0x3"
+simple_blog =  "_"
+
+[dev-addresses]
+simple_blog = "0x42"

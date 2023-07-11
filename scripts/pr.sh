@@ -23,7 +23,7 @@ fi
 # Run only tests which would also be run on CI
 export ENV_TEST_ON_CI=1
 
-while getopts "hcxtdgma" opt; do
+while getopts "hcxtdgmea" opt; do
   case $opt in
     h)
       cat <<EOF
@@ -41,6 +41,7 @@ Flags:
     -g   Run the Move git checks script (whitespace check). This works
          only for committed clients.
     -m   Run the Move unit and verification tests.
+    -e   Run the examples tests.
     -a   Run all of the above
 EOF
       exit 1
@@ -65,6 +66,9 @@ EOF
     m)
       MOVE_TESTS=1
       ;;
+    e)
+      EXAMPLES_TESTS=1
+      ;;
     a)
       CHECK=1
       CHECK_MORE=1
@@ -73,6 +77,7 @@ EOF
       ALSO_TEST=1
       MOVE_TESTS=1
       MOVE_E2E_TESTS=1
+      EXAMPLES_TESTS=1
       ;;
   esac
 done
@@ -104,3 +109,11 @@ if [ ! -z "$MOVE_TESTS" ]; then
   done
 fi
 
+if [ ! -z "$EXAMPLES_TESTS" ]; then
+  for dir in examples/*/; 
+  do dir=${dir%*/};  
+    name_addr=$(basename $dir); 
+    cargo run --bin rooch move build -p "$dir" --named-addresses rooch_examples=default,$name_addr=default;
+    cargo run --bin rooch move test -p "$dir"; 
+  done
+fi
