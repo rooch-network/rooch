@@ -310,7 +310,7 @@ pub struct BitcoinAddress(pub Address);
 impl RoochSupportedAddress for BitcoinAddress {
     fn random() -> Self {
         // Generate a random public key hash
-        let pubkey_hash = hash160::Hash::from_slice(&H160::random().as_bytes()).unwrap();
+        let pubkey_hash = hash160::Hash::from_slice(H160::random().as_bytes()).unwrap();
         // Create a P2PKH address using the public key hash
         let p2pkh_address = Address::new(Network::Bitcoin, Payload::PubkeyHash(pubkey_hash.into()));
         // Create a redeem script from the P2PKH address
@@ -319,7 +319,7 @@ impl RoochSupportedAddress for BitcoinAddress {
         // Create a P2SH address using the redeem script
         let p2sh_address = Address::new(
             Network::Bitcoin,
-            Payload::ScriptHash(redeem_script.script_hash().into()),
+            Payload::ScriptHash(redeem_script.script_hash()),
         );
         // Create a witness program for the SegWit address
         let witness_program = vec![0x00]
