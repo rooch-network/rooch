@@ -1,0 +1,107 @@
+---
+title: Rooch Weekly 2023-07-11
+description: "Rooch v0.1 (Sprouting) released!"
+author: geometryolife
+category: Rooch Weekly
+date: 2023/07/11
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch's Development Progress
+
+### Summary
+
+In the past half a month, the Rooch team has done a lot of preparatory work for the `v0.1` version, cleaned up and refactored the code in the `rooch` repository, merged the website repository, added some Rooch examples and [Rooch getting started tutorials](https://rooch.network/docs/getting-started), fixed some common issues.
+
+Finally, the second phase of the Rooch milestone was successfully completed, and we released the [`Rooch v0.1`](https://github.com/rooch-network/rooch/releases/tag/v0.1) version, which is called **Sprouting**.
+
+### New features
+
+- **[Std] Add a map to TxContext for pass value between MoveAction (#316)** (2023-06-17) @jolestar
+- **[cli] add rooch move new --address var. (#310)** (2023-06-18) @feliciss
+- **add unit tests for moveos_stdlib::table and  moveos_stdlib::type_table (#319)** (2023-06-19) @0xPause
+- **Checking of private_generics in the testing framework. (#327)** (2023-06-20) @steelgeek091
+- **add object and object storage testcase (#326)** (2023-06-21) @Bai Chuan
+- **[Testing] rooch_framework::account (#333)** (2023-06-21) @WGB5445
+- **Feature owen eth rooch address mapping (#348)** (2023-06-25) @Owen Wu
+- **[Testing] moveos_stdlib::account_storage (#355)** (2023-06-26) @WGB5445
+- **[Framework Testing] Add test to account_storage exists and move_from (#358)** (2023-06-27) @jolestar
+- **[testing] draft cases for private generics (#285)** (2023-06-27) @feliciss
+- **[integration-test-runner] private_generics tests. (#354)** (2023-06-27) @feliciss
+- **migration rooch network (#364)** (2023-06-27) @sven Tan
+- **check entry function at module publish (#379)** (2023-06-28) @steelgeek091
+- **Add blog example (#377)** (2023-06-28) @wubuku
+- **Compile and check private_generics during the execution of rooch move test (#398)** (2023-07-04) @steelgeek091
+- **Docker img (#415)** (2023-07-07) @yourmoonlight
+- **Feature owen mock move action (#436)** (2023-07-09) @Owen Wu
+- **[docs] add rooch getting started (#389)** (2023-07-10) @Joe Chen
+- **[Framework] Implement authentication_key validate (#450)** (2023-07-11) @jolestar
+
+### Major refactoring
+
+- **[MoveOS] Execute `pre_execute` function before transaction execute  (#322)** (2023-06-19) @jolestar
+- **[types] Unify the ObjectID and AccountAddress json output (#328)** (2023-06-21) @jolestar
+- **[MoveosStdlib] Public the `destory_empty` function in table,type_table,object_storage module (#344)** (2023-06-24) @jolestar
+- **Remove TxContext from the check in the entry function. (#360)** (2023-06-27) @steelgeek091
+- **Rename framework modules (#361)** (2023-06-27) @jolestar
+- **Remove the TxContext in the move test file. (#362)** (2023-06-27) @steelgeek091
+- **rename rooch-server rooch-client and extract rooch-rpc-api (#370)** (2023-06-27) @Bai Chuan
+- (tag: v0.1) **[compliance] add SPDX identifiers. (#383)** (2023-06-28) @feliciss
+- **[Genesis] includes genesis binary to rooch binary (#400)** (2023-07-04) @jolestar
+- **[refactor] to_string to to_owned str literals. (#410)** (2023-07-05) @feliciss
+- **[examples] Rename same examples (#414)** (2023-07-06) @jolestar
+- **Refactor getting started and blog example (#447)** (2023-07-11) @jolestar
+
+### Improvements and fixes
+
+- **[Document] Generate Framework documents (#317)** (2023-06-18) @WGB5445
+- **fix 284 (#321)** (2023-06-18) @sven Tan
+- **[Documents] Transaction flow doc (#325)** (2023-06-20) @jolestar
+- **[documents] Export diagram with background color (#329)** (2023-06-20) @jolestar
+- **Handle the path of temporary files on macOS. (#332)** (2023-06-21) @steelgeek091
+- **Output error messages when the build fails. (#337)** (2023-06-21) @steelgeek091
+- **add rules (#334)** (2023-06-21) @sven Tan
+- **Fix readme link (#338)** (2023-06-21) @jolestar
+- **Fix account_storage::remove_resource_from_account_storage (#339)** (2023-06-22) @WGB5445
+- **Format code from this to self, add docs. (#341)** (2023-06-23) @feliciss
+- **Fix the issue of illegal invocation of private_generics in the module without throwing an error. (#345)** (2023-06-24) @steelgeek091
+- **[cli] return a string for init command. (#347)** (2023-06-25) @feliciss
+- **add release workflow (#343)** (2023-06-26) @yourmoonlight
+- **Fix the issue of illegal invocation of private_generics in the module without throwing an error. (#345) (#351)** (2023-06-27) @steelgeek091
+- **add rust setup to workflow (#356)** (2023-06-27) @yourmoonlight
+- **fix README typo (#359)** (2023-06-27) @Joe Chen
+- **[FrameworkDoc] rename the overview.md to README.md (#368)** (2023-06-27) @jolestar
+- **fix readme.md (#373)** (2023-06-27) @sven Tan
+- **[Build] Change release config, make debug false (#372)** (2023-06-27) @jolestar
+- **fix branding typo and update pkgs (#374)** (2023-06-27) @Joe Chen
+- **fix ubuntu release (#376)** (2023-06-27) @yourmoonlight
+- **Update LICENSE (#380)** (2023-06-27) @feliciss
+- **only code changes trigger the build test action (#371)** (2023-06-28) @yourmoonlight
+- **[Doc] add rpc and framework page to dev docs (#375)** (2023-06-28) @jolestar
+- **[README] Update readme, add some badge (#382)** (2023-06-28) @jolestar
+- **debug release change to false (#385)** (2023-06-28) @yourmoonlight
+- **[ci] add SPDX-License-Identifier license checks. (#387)** (2023-07-02) @feliciss
+- **[diagram] Bring back rooch-design.drawio and add container diagram (#394)** (2023-07-03) @jolestar
+- **use paths-ignore instead (#395)** (2023-07-03) @yourmoonlight
+- **review blog_example and fix typo (#390)** (2023-07-04) @Joe Chen
+- **update_blog_example (#403)** (2023-07-04) @wubuku
+- **Added instructions for "Implementing Custom Business Logic" in blog_example README. (#405)** (2023-07-04) @wubuku
+- **extract open-rpc-spec and fix the cyclic deps (#413)** (2023-07-06) @sven Tan
+- **use rustup 1.26.0 in dockerfile (#425)** (2023-07-07) @yourmoonlight
+- **install lld (#434)** (2023-07-07) @yourmoonlight
+- **Temporarily remove the integration-test command. (#435)** (2023-07-08) @steelgeek091
+- **Improve CLI doc (#429)** (2023-07-08) @sven Tan
+- **add default entrypoint and cmd (#437)** (2023-07-08) @yourmoonlight
+- **Fix: typos (#442)** (2023-07-10) @omahs
+- **Fix issues with rooch move build in development mode. (#443)** (2023-07-10) @steelgeek091
+- **[MoveosStd] Remove private_generics from TypeTable's function (#453)** (2023-07-11) @jolestar
+
+### Rooch Community Dev Meeting
+
+- Summarize the content released by v0.1, discuss the development plan of v0.2 and v0.3, and assign related issues.
+- Discuss game scene support methods, research solutions, see #420
+- Discuss index storage and its design
+- [Conference recording](https://drive.google.com/file/d/1Rea11KCyeueIYmHd8kwarU1CZnRgCSxR/view?usp=sharing)
