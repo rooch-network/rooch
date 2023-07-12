@@ -157,7 +157,7 @@ struct MyBlog has key {
 
 这个结构体包含两个字段，一个是博客的名字，另一个是博客的文章列表。文章列表我们只保存文章 Object 的 ID。
 
-然后定义一个创建博客的方法：
+然后定义一个创建博客的函数：
 
 ```move
 public fun create_blog(ctx: &mut StorageContext, owner: &signer) {
@@ -181,9 +181,9 @@ public entry fun set_blog_name(ctx: &mut StorageContext, owner: &signer, blog_na
 }
 ```
 
-创建博客就是初始化 `MyBlog` 数据结构，并把 `MyBlog` 保存在用户的存储空间内。同时提供了一个设置博客名称的入口方法，如果博客不存在，则先创建博客，然后设置博客名称。
+创建博客就是初始化 `MyBlog` 数据结构，并把 `MyBlog` 保存在用户的存储空间内。同时提供了一个设置博客名称的入口函数，如果博客不存在，则先创建博客，然后设置博客名称。
 
-然后再提供一个合约初始化方法，合约发布的时候会自动执行这个初始化方法，给发布合约的用户先自动初始化博客。
+然后再提供一个合约初始化函数，合约发布的时候会自动执行这个初始化函数，给发布合约的用户先自动初始化博客。
 
 ```move
 /// This init function is called when the module is published
@@ -194,7 +194,7 @@ fun init(storage_ctx: &mut StorageContext, owner: &signer) {
 }
 ```
 
-然后，再提供一个查询博客列表的方法和添加删除文章的方法，全部代码如下：
+然后，再提供一个查询博客列表的函数和添加删除文章的函数，全部代码如下：
 
 ```move
 module simple_blog::blog {
@@ -391,7 +391,7 @@ rooch state --access-path /resource/0xbbfc33692c7d57839fde9643681fb64c83b377e4c7
 
 可以看到，`MyBlog` Resource 已经存在，名称是默认的 `MyBlog`，文章列表为空。
 
-然后我们通过 `set_blog_name` 方法来设置博客名。调用合约入口函数的语法是：
+然后我们通过 `set_blog_name` 函数来设置博客名。调用合约入口函数的语法是：
 
 ```shell
 rooch move run --function {ACCOUNT_ADDRESS}::{MODULE_NAME}::{FUNCTION_NAME} --sender-account {ACCOUNT_ADDRESS}
@@ -462,7 +462,7 @@ struct ArticleDeletedEvent has key,copy,store {
 
 文章数据结构包含三个字段，`version` 用来记录文章的版本号，`title` 用来记录文章标题，`body` 用来记录文章内容。
 
-定义创建文章的方法：
+定义创建文章的函数：
 
 ```move
 /// Create article
@@ -499,9 +499,9 @@ public fun create_article(
 }
 ```
 
-这个方法中，先检查文章标题和内容的长度是否超过限制。然后创建文章对象，将文章对象添加到对象存储中，最后发送文章创建事件，返回文章的 ID。
+这个函数中，先检查文章标题和内容的长度是否超过限制。然后创建文章对象，将文章对象添加到对象存储中，最后发送文章创建事件，返回文章的 ID。
 
-然后定义修改方法：
+然后定义修改函数：
 
 ```move
 public fun update_article(
@@ -534,9 +534,9 @@ public fun update_article(
 }
 ```
 
-这个方法中，先检查新的文章标题和内容的长度是否超过限制。然后从对象存储中获取文章对象，检查调用者是否是文章的所有者，如果不是，则抛出异常。最后更新文章对象的版本号，标题和内容，发送文章更新事件。
+这个函数中，先检查新的文章标题和内容的长度是否超过限制。然后从对象存储中获取文章对象，检查调用者是否是文章的所有者，如果不是，则抛出异常。最后更新文章对象的版本号，标题和内容，发送文章更新事件。
 
-然后再定义删除方法：
+然后再定义删除函数：
 
 ```move
  /// Delete article
@@ -561,9 +561,9 @@ public fun delete_article(
 }
 ```
 
-这个方法中，先从对象存储中删除文章对象，检查调用者是否是文章的所有者，如果不是，则抛出异常。最后发送文章删除事件并销毁文章对象。
+这个函数中，先从对象存储中删除文章对象，检查调用者是否是文章的所有者，如果不是，则抛出异常。最后发送文章删除事件并销毁文章对象。
 
-最后，我们还需要提供一个根据 ID 查询文章的方法，供其他合约使用：
+最后，我们还需要提供一个根据 ID 查询文章的函数，供其他合约使用：
 
 ```move
 /// get article object by id
@@ -736,7 +736,7 @@ module simple_blog::article {
 
 #### 4.3.2 博客合约集成文章合约
 
-接下来，我们在 `blog.move` 中集成文章合约，并提供入口方法：
+接下来，我们在 `blog.move` 中集成文章合约，并提供入口函数：
 
 ```move
     public entry fun create_article(
