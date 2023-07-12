@@ -3,11 +3,8 @@
 
 use move_command_line_common::address::NumericalAddress;
 use move_compiler::command_line::compiler::PASS_COMPILATION;
-
 use move_compiler::expansion::ast::{self as E};
-
 use move_compiler::{compiled_unit, FullyCompiledProgram};
-
 use move_model::model::GlobalEnv;
 use move_model::options::ModelBuilderOptions;
 use move_model::{add_move_lang_diagnostics, collect_related_modules_recursive, run_spec_checker};
@@ -23,6 +20,21 @@ pub fn build_file_to_module_env(
 ) -> anyhow::Result<GlobalEnv> {
     let mut env = GlobalEnv::new();
     env.set_extension(options);
+
+    if let Some(fully_compiled_prog) = pre_compiled_deps {
+        for package_def in fully_compiled_prog.parser.source_definitions.iter() {
+            let fhash = package_def.def.file_hash();
+            let (fname, fsrc) = fully_compiled_prog.files.get(&fhash).unwrap();
+            let aliases = fully_compiled_prog
+                .parser
+                .named_address_maps
+                .get(package_def.named_address_map)
+                .iter()
+                .map(|(symbol, addr)| (env.symbol_pool().make(symbol.as_str()), *addr))
+                .collect();
+            env.add_source(fhash, Rc::new(aliases), fname.as_str(), fsrc, false);
+        }
+    }
 
     use move_compiler::command_line::compiler::PASS_PARSER;
 
@@ -194,8 +206,22 @@ pub fn build_file_to_module_env(
         return Ok(env);
     }
 
+    let mut ordered_units = vec![];
+    let mut ea = expansion_ast;
+    if let Some(pre_compiled) = pre_compiled_deps {
+        ordered_units.extend(pre_compiled.clone().compiled);
+        let dep_expansion_ast = pre_compiled.clone().expansion.modules;
+
+        for (m_ident, m_def) in dep_expansion_ast {
+            ea.modules
+                .add(m_ident, m_def)
+                .expect("expansion modules: duplicate item");
+        }
+    }
+    ordered_units.extend(units);
+
     // Now that it is known that the program has no errors, run the spec checker on verified units
     // plus expanded AST. This will populate the environment including any errors.
-    run_spec_checker(&mut env, units, expansion_ast);
+    run_spec_checker(&mut env, ordered_units, ea);
     Ok(env)
 }

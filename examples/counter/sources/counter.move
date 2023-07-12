@@ -6,8 +6,12 @@ module rooch_examples::counter {
       value:u64,
    }
 
-   fun init(ctx: &mut StorageContext, account: &signer){
-      account_storage::global_move_to(ctx, account, Counter{value:0});
+   public fun init_for_test(ctx: &mut StorageContext, account: &signer) {
+      account_storage::global_move_to(ctx, account, Counter { value: 0 });
+   }
+
+   fun init(ctx: &mut StorageContext, account: &signer) {
+      account_storage::global_move_to(ctx, account, Counter { value: 0 });
    }
 
    public fun increase_(ctx: &mut StorageContext) {
