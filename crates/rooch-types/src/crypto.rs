@@ -27,6 +27,8 @@ use fastcrypto::{
         Secp256k1SignatureAsBytes,
     },
 };
+use bitcoin::secp256k1::{KeyPair, schnorr::Signature as SchnorrSignature, XOnlyPublicKey, Secp256k1};
+use bitcoin::key::constants::{SCHNORR_PUBLIC_KEY_SIZE, SCHNORR_SIGNATURE_SIZE};
 use moveos_types::{h256::H256, serde::Readable};
 use rand::{rngs::StdRng, SeedableRng};
 use schemars::JsonSchema;
@@ -48,6 +50,7 @@ pub enum BuiltinScheme {
     Ed25519,
     MultiEd25519,
     Ecdsa,
+    Schnorr,
 }
 
 impl BuiltinScheme {
@@ -56,6 +59,7 @@ impl BuiltinScheme {
             BuiltinScheme::Ed25519 => 0x00,
             BuiltinScheme::MultiEd25519 => 0x01,
             BuiltinScheme::Ecdsa => 0x02,
+            BuiltinScheme::Schnorr => 0x03,
         }
     }
 
@@ -71,6 +75,7 @@ impl BuiltinScheme {
             0x00 => Ok(BuiltinScheme::Ed25519),
             0x01 => Ok(BuiltinScheme::MultiEd25519),
             0x02 => Ok(BuiltinScheme::Ecdsa),
+            0x03 => Ok(BuiltinScheme::Schnorr),
             _ => Err(RoochError::KeyConversionError(
                 "Invalid key scheme".to_owned(),
             )),
@@ -83,6 +88,7 @@ impl BuiltinScheme {
 pub enum RoochKeyPair {
     Ed25519(Ed25519KeyPair),
     Ecdsa(Secp256k1KeyPair),
+    Schnorr(KeyPair),
 }
 
 impl RoochKeyPair {
@@ -90,6 +96,7 @@ impl RoochKeyPair {
         match self {
             RoochKeyPair::Ed25519(kp) => PublicKey::Ed25519(kp.public().into()),
             RoochKeyPair::Ecdsa(kp) => PublicKey::Ecdsa(kp.public().into()),
+            RoochKeyPair::Schnorr(kp) => PublicKey::Schnorr(kp.x_only_public_key().0.into()),
         }
     }
 }
@@ -99,6 +106,7 @@ impl Signer<Signature> for RoochKeyPair {
         match self {
             RoochKeyPair::Ed25519(kp) => kp.sign(msg),
             RoochKeyPair::Ecdsa(kp) => kp.sign(msg),
+            RoochKeyPair::Schnorr(kp) => kp.sign(msg),
         }
     }
 }
@@ -125,6 +133,9 @@ impl EncodeDecodeBase64 for RoochKeyPair {
             RoochKeyPair::Ecdsa(kp) => {
                 bytes.extend_from_slice(kp.as_bytes());
             }
+            RoochKeyPair::Schnorr(kp) => {
+                bytes.extend_from_slice(&kp.secret_bytes());
+            }
         }
         Base64::encode(&bytes[..])
     }
@@ -138,6 +149,10 @@ impl EncodeDecodeBase64 for RoochKeyPair {
                     bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
                 )?)),
                 BuiltinScheme::Ecdsa => Ok(RoochKeyPair::Ecdsa(Secp256k1KeyPair::from_bytes(
+                    bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
+                )?)),
+                BuiltinScheme::Schnorr => Ok(RoochKeyPair::Schnorr(KeyPair::from_seckey_slice(
+                    &Secp256k1::new(),
                     bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
                 )?)),
                 _ => Err(eyre!("Invalid flag byte")),
@@ -169,10 +184,11 @@ impl<'de> Deserialize<'de> for RoochKeyPair {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, From, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, From)]
 pub enum PublicKey {
     Ed25519(Ed25519PublicKeyAsBytes),
     Ecdsa(Secp256k1PublicKeyAsBytes),
+    Schnorr(XOnlyPublicKey),
 }
 
 impl AsRef<[u8]> for PublicKey {
@@ -180,6 +196,7 @@ impl AsRef<[u8]> for PublicKey {
         match self {
             PublicKey::Ed25519(pk) => &pk.0,
             PublicKey::Ecdsa(pk) => &pk.0,
+            PublicKey::Schnorr(pk) => &pk.serialize(),
         }
     }
 }
@@ -194,7 +211,6 @@ impl EncodeDecodeBase64 for PublicKey {
 
     fn decode_base64(value: &str) -> Result<Self, eyre::Report> {
         let bytes = Base64::decode(value).map_err(|e| eyre!("{}", e.to_string()))?;
-
         match bytes.first() {
             Some(x) => {
                 if x == &BuiltinScheme::Ed25519.flag() {
@@ -207,6 +223,11 @@ impl EncodeDecodeBase64 for PublicKey {
                         bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
                     )?;
                     Ok(PublicKey::Ecdsa((&pk).into()))
+                } else if x == &BuiltinScheme::Schnorr.flag() {
+                    let pk: XOnlyPublicKey = XOnlyPublicKey::from_slice(
+                        bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
+                    )?;
+                    Ok(PublicKey::Schnorr(pk.into()))
                 } else {
                     Err(eyre!("Invalid flag byte"))
                 }
@@ -253,6 +274,9 @@ impl PublicKey {
             BuiltinScheme::Ecdsa => Ok(PublicKey::Ecdsa(
                 (&Secp256k1PublicKey::from_bytes(key_bytes)?).into(),
             )),
+            BuiltinScheme::Schnorr => Ok(PublicKey::Schnorr(
+                (XOnlyPublicKey::from_slice(key_bytes)?).into(),
+            )),
             _ => Err(eyre!("Unsupported scheme")),
         }
     }
@@ -261,11 +285,12 @@ impl PublicKey {
         match self {
             PublicKey::Ed25519(_) => Ed25519RoochSignature::SCHEME,
             PublicKey::Ecdsa(_) => EcdsaRoochSignature::SCHEME,
+            PublicKey::Schnorr(_) => SchnorrRoochSignature::SCHEME,
         }
     }
 }
 
-pub trait RoochPublicKey: VerifyingKey {
+pub trait RoochPublicKey {
     const SIGNATURE_SCHEME: BuiltinScheme;
 }
 
@@ -273,11 +298,16 @@ impl RoochPublicKey for Ed25519PublicKey {
     const SIGNATURE_SCHEME: BuiltinScheme = BuiltinScheme::Ed25519;
 }
 
+
 impl RoochPublicKey for Secp256k1PublicKey {
     const SIGNATURE_SCHEME: BuiltinScheme = BuiltinScheme::Ecdsa;
 }
 
-impl<T: RoochPublicKey> From<&T> for RoochAddress {
+impl RoochPublicKey for XOnlyPublicKey {
+    const SIGNATURE_SCHEME: BuiltinScheme = BuiltinScheme::Schnorr;
+}
+
+impl<T: RoochPublicKey + std::convert::AsRef<[u8]>> From<&T> for RoochAddress {
     fn from(pk: &T) -> Self {
         let mut hasher = DefaultHash::default();
         hasher.update([T::SIGNATURE_SCHEME.flag()]);
@@ -356,6 +386,7 @@ pub trait RoochSignatureInner: Sized + ToFromBytes + PartialEq + Eq + Hash {
 pub enum Signature {
     Ed25519RoochSignature,
     EcdsaRoochSignature,
+    SchnorrRoochSignature,
 }
 
 impl Serialize for Signature {
@@ -429,6 +460,13 @@ impl Signature {
                 })?)
                     .into(),
             )),
+            BuiltinScheme::Schnorr => Ok(CompressedSignature::Schnorr(
+                SchnorrSignature::from_slice(bytes).map_err(|_| {
+                    RoochError::InvalidSignature {
+                        error: "Cannot parse sig".to_owned(),
+                    }
+                })?,
+            )),
             _ => Err(RoochError::UnsupportedFeatureError {
                 error: "Unsupported signature scheme in MultiSig".to_owned(),
             }),
@@ -450,6 +488,11 @@ impl Signature {
                     .map_err(|_| RoochError::KeyConversionError("Cannot parse pk".to_owned()))?)
                     .into(),
             )),
+            BuiltinScheme::Schnorr => Ok(PublicKey::Schnorr(
+                (XOnlyPublicKey::from_slice(bytes)
+                    .map_err(|_| RoochError::KeyConversionError("Cannot parse pk".to_owned()))?)
+                    .into(),
+            )),
             _ => Err(RoochError::UnsupportedFeatureError {
                 error: "Unsupported signature scheme in MultiSig".to_owned(),
             }),
@@ -462,6 +505,7 @@ impl AsRef<[u8]> for Signature {
         match self {
             Signature::Ed25519RoochSignature(sig) => sig.as_ref(),
             Signature::EcdsaRoochSignature(sig) => sig.as_ref(),
+            Signature::SchnorrRoochSignature(sig) => sig.as_ref(),
         }
     }
 }
@@ -470,6 +514,7 @@ impl AsMut<[u8]> for Signature {
         match self {
             Signature::Ed25519RoochSignature(sig) => sig.as_mut(),
             Signature::EcdsaRoochSignature(sig) => sig.as_mut(),
+            Signature::SchnorrRoochSignature(sig) => sig.as_mut(),
         }
     }
 }
@@ -482,6 +527,8 @@ impl ToFromBytes for Signature {
                     Ok(<Ed25519RoochSignature as ToFromBytes>::from_bytes(bytes)?.into())
                 } else if x == &EcdsaRoochSignature::SCHEME.flag() {
                     Ok(<EcdsaRoochSignature as ToFromBytes>::from_bytes(bytes)?.into())
+                } else if x == &SchnorrRoochSignature::SCHEME.flag() {
+                    Ok(<SchnorrRoochSignature as ToFromBytes>::from_bytes(bytes)?.into())
                 } else {
                     Err(FastCryptoError::InvalidInput)
                 }
@@ -492,10 +539,11 @@ impl ToFromBytes for Signature {
 }
 
 /// Unlike [enum Signature], [enum CompressedSignature] does not contain public key.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum CompressedSignature {
     Ed25519(Ed25519SignatureAsBytes),
     Ecdsa(Secp256k1SignatureAsBytes),
+    Schnorr(SchnorrSignature),
 }
 
 impl AsRef<[u8]> for CompressedSignature {
@@ -503,6 +551,7 @@ impl AsRef<[u8]> for CompressedSignature {
         match self {
             CompressedSignature::Ed25519(sig) => &sig.0,
             CompressedSignature::Ecdsa(sig) => &sig.0,
+            CompressedSignature::Schnorr(sig) => sig.as_ref(),
         }
     }
 }
@@ -549,6 +598,50 @@ impl<S: RoochSignatureInner + Sized> RoochSignature for S {
                 error: format!("Fail to verify user sig {}", e),
             })
     }
+}
+
+//
+// Schnorr Rooch Signature port
+//
+#[serde_as]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq, Hash, AsRef, AsMut)]
+#[as_ref(forward)]
+#[as_mut(forward)]
+pub struct SchnorrRoochSignature(
+    #[schemars(with = "Base64")]
+    #[serde_as(as = "Readable<Base64, Bytes>")]
+    [u8; SCHNORR_PUBLIC_KEY_SIZE + SCHNORR_SIGNATURE_SIZE + 1],
+);
+
+// Implementation useful for simplify testing when mock signature is needed
+impl Default for SchnorrRoochSignature {
+    fn default() -> Self {
+        Self([0; SCHNORR_PUBLIC_KEY_SIZE + SCHNORR_SIGNATURE_SIZE + 1])
+    }
+}
+
+impl ToFromBytes for SchnorrRoochSignature {
+    fn from_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
+        if bytes.len() != Self::LENGTH {
+            return Err(FastCryptoError::InputLengthWrong(Self::LENGTH));
+        }
+        let mut sig_bytes = [0; Self::LENGTH];
+        sig_bytes.copy_from_slice(bytes);
+        Ok(Self(sig_bytes))
+    }
+}
+
+impl Signer<Signature> for KeyPair {
+    fn sign(&self, msg: &[u8]) -> Signature {
+        SchnorrRoochSignature::new(self, msg).into()
+    }
+}
+
+impl RoochSignatureInner for SchnorrRoochSignature {
+    type Sig = SchnorrSignature;
+    type PubKey = XOnlyPublicKey;
+    type KeyPair = KeyPair;
+    const LENGTH: usize = SCHNORR_PUBLIC_KEY_SIZE + SCHNORR_SIGNATURE_SIZE + 1;
 }
 
 //
@@ -644,11 +737,12 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::address::RoochAddress;
+    use crate::address::{RoochAddress, NostrAddress, self};
     use fastcrypto::{
         ed25519::{Ed25519KeyPair, Ed25519PrivateKey},
         traits::{KeyPair, ToFromBytes},
     };
+    use bitcoin::secp256k1::{SecretKey, KeyPair as BitcoinKeyPair, Secp256k1};
 
     // this test ensure the public key to address keep the same as the old version
     // we should also keep the public key to address algorithm the same as the move version
@@ -661,6 +755,20 @@ mod tests {
         //println!("address: {:?}", address);
         assert_eq!(
             address.to_string(),
+            "0x7a1378aafadef8ce743b72e8b248295c8f61c102c94040161146ea4d51a182b6"
+        );
+    }
+
+    #[test]
+    fn test_x_only_public_key_to_address() {
+        let secret_key: SecretKey = SecretKey::from_slice(&[0u8; 32]).unwrap();
+        let secp = Secp256k1::new();
+        let keypair: BitcoinKeyPair = secret_key.keypair(&secp);
+        println!("public_key: {}", hex::encode(keypair.x_only_public_key().0.serialize()));
+        let address: NostrAddress = address::NostrAddress(keypair.x_only_public_key().0);
+        println!("address: {:?}", address);
+        assert_eq!(
+            address.0.to_string(),
             "0x7a1378aafadef8ce743b72e8b248295c8f61c102c94040161146ea4d51a182b6"
         );
     }
