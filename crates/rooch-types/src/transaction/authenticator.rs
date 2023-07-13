@@ -11,15 +11,12 @@ use crate::crypto::{BuiltinScheme, Signature};
 use anyhow::Result;
 
 #[cfg(any(test, feature = "fuzzing"))]
+use ed25519_dalek::Keypair;
+#[cfg(any(test, feature = "fuzzing"))]
 use ethers::types::U256;
-#[cfg(any(test, feature = "fuzzing"))]
-use fastcrypto::ed25519::Ed25519KeyPair;
-#[cfg(any(test, feature = "fuzzing"))]
-use fastcrypto::traits::KeyPair;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::{collection::vec, prelude::*};
 #[cfg(any(test, feature = "fuzzing"))]
-use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use std::{convert::TryFrom, fmt, str::FromStr};
 
@@ -56,13 +53,12 @@ impl Arbitrary for Ed25519Authenticator {
 #[cfg(any(test, feature = "fuzzing"))]
 prop_compose! {
     fn arb_ed25519_authenticator()(
-        seed in any::<u64>(),
         message in vec(any::<u8>(), 1..1000)
     ) -> Ed25519Authenticator {
-        let mut rng = StdRng::seed_from_u64(seed);
-        let ed25519_keypair: Ed25519KeyPair = Ed25519KeyPair::generate(&mut rng);
+        let mut csprng = OsRng{};
+        let keypair: Keypair = Keypair::generate(&mut csprng);
         Ed25519Authenticator {
-            signature: Signature::new_hashed(&message, &ed25519_keypair)
+            signature: Signature::new_hashed(&message, &keypair.into())
         }
     }
 }
@@ -140,6 +136,74 @@ prop_compose! {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct SchnorrAuthenticator {
+    pub signature: secp256k1::schnorr::Signature,
+}
+
+impl BuiltinAuthenticator for SchnorrAuthenticator {
+    fn scheme(&self) -> BuiltinScheme {
+        BuiltinScheme::Schnorr
+    }
+    fn encode(&self) -> Vec<u8> {
+        bcs::to_bytes(self).expect("encode should success.")
+    }
+}
+
+impl Serialize for SchnorrAuthenticator {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(::serde::Serialize)]
+        #[serde(rename = "SchnorrAuthenticator")]
+        struct Value {
+            signature: secp256k1::schnorr::Signature,
+        }
+        Value {
+            signature: self.signature.into(),
+        }
+        .serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for SchnorrAuthenticator {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(::serde::Deserialize)]
+        #[serde(rename = "SchnorrAuthenticator")]
+        struct Value {
+            signature: secp256k1::schnorr::Signature,
+        }
+        let value = Value::deserialize(deserializer)?;
+        let signature = secp256k1::schnorr::Signature::try_from(value.signature)
+            .map_err(|e| serde::de::Error::custom(e.to_string()))?;
+        Ok(SchnorrAuthenticator { signature })
+    }
+}
+
+#[cfg(any(test, feature = "fuzzing"))]
+impl Arbitrary for SchnorrAuthenticator {
+    type Parameters = ();
+    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+        arb_schnorr_authenticator().boxed()
+    }
+    type Strategy = BoxedStrategy<Self>;
+}
+
+#[cfg(any(test, feature = "fuzzing"))]
+prop_compose! {
+    fn arb_schnorr_authenticator()(
+     sig in vec(any::<u8>(), 4..=4).prop_map(|v| (v)),
+    ) -> SchnorrAuthenticator {
+        SchnorrAuthenticator {
+            signature: secp256k1::schnorr::Signature::from_slice(&sig).unwrap(),
+        }
+    }
+}
+
 impl<T> From<T> for Authenticator
 where
     T: BuiltinAuthenticator,
@@ -157,6 +221,7 @@ impl From<Signature> for Authenticator {
             BuiltinScheme::Ed25519 => Authenticator::ed25519(sign),
             BuiltinScheme::Ecdsa => todo!(),
             BuiltinScheme::MultiEd25519 => todo!(),
+            BuiltinScheme::Schnorr => todo!(),
         }
     }
 }
@@ -226,6 +291,13 @@ mod tests {
         fn test_ed25519_authenticator_serialize_deserialize(authenticator in any::<super::Ed25519Authenticator>()) {
             let serialized = serde_json::to_string(&authenticator).unwrap();
             let deserialized: super::Ed25519Authenticator = serde_json::from_str(&serialized).unwrap();
+            assert_eq!(authenticator.signature, deserialized.signature);
+        }
+
+        #[test]
+        fn test_schnorr_authenticator_serialize_deserialize(authenticator in any::<super::SchnorrAuthenticator>()) {
+            let serialized = serde_json::to_string(&authenticator).unwrap();
+            let deserialized: super::SchnorrAuthenticator = serde_json::from_str(&serialized).unwrap();
             assert_eq!(authenticator.signature, deserialized.signature);
         }
     }

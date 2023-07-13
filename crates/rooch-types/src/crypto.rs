@@ -6,30 +6,31 @@ use crate::{
     error::{RoochError, RoochResult},
 };
 use derive_more::{AsMut, AsRef, From};
+use ed25519_dalek::{
+    Keypair as Ed25519KeyPair, PublicKey as Ed25519PublicKey, Signature as Ed25519Signature,
+    PUBLIC_KEY_LENGTH, SIGNATURE_LENGTH,
+};
 pub use enum_dispatch::enum_dispatch;
 use eyre::eyre;
-use fastcrypto::{encoding::{Base64, Encoding}, traits::AllowedRng};
-use fastcrypto::hash::{Blake2b256, HashFunction};
+use fastcrypto::encoding::{Base64, Encoding};
 use fastcrypto::error::FastCryptoError;
-pub use fastcrypto::traits::{
-    EncodeDecodeBase64, ToFromBytes,
-};
-use ed25519_dalek::{Keypair as Ed25519KeyPair, PublicKey as Ed25519PublicKey, Signature as Ed25519Signature, PUBLIC_KEY_LENGTH, SIGNATURE_LENGTH};
-use secp256k1::{Secp256k1, KeyPair as Secp256k1KeyPair, PublicKey as Secp256k1PublicKey, schnorr::Signature as SchnorrSignature, ecdsa::Signature as ECDSASignature, XOnlyPublicKey};
-use secp256k1::constants::{SCHNORR_PUBLIC_KEY_SIZE, SCHNORR_SIGNATURE_SIZE, PUBLIC_KEY_SIZE, COMPACT_SIGNATURE_SIZE};
+use fastcrypto::hash::{Blake2b256, HashFunction};
 use moveos_types::{h256::H256, serde::Readable};
-use rand::{rngs::StdRng, SeedableRng};
+use rand::{rngs::StdRng, CryptoRng, RngCore, SeedableRng};
 use schemars::JsonSchema;
-use serde::{ser::Serializer, de::DeserializeOwned};
+use secp256k1::constants::{
+    COMPACT_SIGNATURE_SIZE, PUBLIC_KEY_SIZE, SCHNORR_PUBLIC_KEY_SIZE, SCHNORR_SIGNATURE_SIZE,
+};
+use secp256k1::{
+    ecdsa::Signature as ECDSASignature, schnorr::Signature as SchnorrSignature,
+    KeyPair as Secp256k1KeyPair, Message, PublicKey as Secp256k1PublicKey, Secp256k1,
+    XOnlyPublicKey,
+};
+use serde::{de::DeserializeOwned, ser::Serializer};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_with::{serde_as, Bytes};
-use std::{hash::Hash, str::FromStr, fmt::Display, borrow::Borrow};
+use std::{fmt::Display, hash::Hash, str::FromStr};
 use strum_macros::EnumString;
-// pub use dyn_clone::DynClone;
-// pub use traitobject::traitobject;
-// pub use dyn_trait::dyn_trait;
-// use anyhow::anyhow;
-// use std::any::Any;
 
 pub type DefaultHash = Blake2b256;
 
@@ -254,7 +255,7 @@ impl<'de> Deserialize<'de> for PublicKey {
 
 impl PublicKey {
     pub fn flag(&self) -> u8 {
-        Ed25519RoochSignature::SCHEME.flag()
+        BuiltinScheme::Ed25519.flag()
     }
     pub fn try_from_bytes(
         scheme: BuiltinScheme,
@@ -319,7 +320,6 @@ impl From<&PublicKey> for RoochAddress {
         RoochAddress(H256(g_arr.digest))
     }
 }
-
 pub trait Authenticator:
     ToFromBytes + Display + Serialize + DeserializeOwned + Send + Sync + 'static + Clone
 {
@@ -328,40 +328,39 @@ pub trait Authenticator:
     const LENGTH: usize;
 }
 
-
 pub trait VerifyingKey:
     Serialize
     + DeserializeOwned
     + std::hash::Hash
     + Display
-    + Eq  // required to make some cached bytes representations explicit.
-    + Ord // required to put keys in BTreeMap.
+    + Eq
+    + Ord
     + ToFromBytes
-    + for<'a> From<&'a Self::PrivKey> // conversion PrivateKey -> PublicKey.
+    + for<'a> From<&'a Self::PrivKey>
     + Send
     + Sync
     + 'static
     + Clone
 {
-    type PrivKey: SigningKey<PubKey=Self>;
-    type Sig: Authenticator<PubKey=Self>;
+    type PrivKey: SigningKey<PubKey = Self>;
+    type Sig: Authenticator<PubKey = Self>;
     const LENGTH: usize;
 
-    /// Use Self to verify that the provided signature for a given message bytestring is authentic.
-    /// Returns Error if it is inauthentic, or otherwise returns ().
     fn verify(&self, msg: &[u8], signature: &Self::Sig) -> Result<(), FastCryptoError>;
 
-    // Expected to be overridden by implementations
-    /// Batch verification over the same message. Implementations of this method can be fast,
-    /// assuming rogue key checks have already been performed.
-    /// TODO: take as input a flag to denote if rogue key protection already took place.
     #[cfg(any(test, feature = "experimental"))]
-    fn verify_batch_empty_fail(msg: &[u8], pks: &[Self], sigs: &[Self::Sig]) -> Result<(), eyre::Report> {
+    fn verify_batch_empty_fail(
+        msg: &[u8],
+        pks: &[Self],
+        sigs: &[Self::Sig],
+    ) -> Result<(), eyre::Report> {
         if sigs.is_empty() {
             return Err(eyre!("Critical Error! This behaviour can signal something dangerous, and that someone may be trying to bypass signature verification through providing empty batches."));
         }
         if pks.len() != sigs.len() {
-            return Err(eyre!("Mismatch between number of signatures and public keys provided"));
+            return Err(eyre!(
+                "Mismatch between number of signatures and public keys provided"
+            ));
         }
         pks.iter()
             .zip(sigs)
@@ -369,17 +368,22 @@ pub trait VerifyingKey:
             .map_err(|_| eyre!("Signature verification failed"))
     }
 
-    // Expected to be overridden by implementations
-    /// Batch verification over different messages. Implementations of this method can be fast,
-    /// assuming rogue key checks have already been performed.
-    /// TODO: take as input a flag to denote if rogue key protection already took place.
     #[cfg(any(test, feature = "experimental"))]
-    fn verify_batch_empty_fail_different_msg<'a, M>(msgs: &[M], pks: &[Self], sigs: &[Self::Sig]) -> Result<(), eyre::Report> where M: Borrow<[u8]> + 'a {
+    fn verify_batch_empty_fail_different_msg<'a, M>(
+        msgs: &[M],
+        pks: &[Self],
+        sigs: &[Self::Sig],
+    ) -> Result<(), eyre::Report>
+    where
+        M: std::borrow::Borrow<[u8]> + 'a,
+    {
         if sigs.is_empty() {
             return Err(eyre!("Critical Error! This behaviour can signal something dangerous, and that someone may be trying to bypass signature verification through providing empty batches."));
         }
         if pks.len() != sigs.len() || pks.len() != msgs.len() {
-            return Err(eyre!("Mismatch between number of messages, signatures and public keys provided"));
+            return Err(eyre!(
+                "Mismatch between number of messages, signatures and public keys provided"
+            ));
         }
         pks.iter()
             .zip(sigs)
@@ -396,61 +400,85 @@ pub trait SigningKey: ToFromBytes + Serialize + DeserializeOwned + Send + Sync +
 }
 
 pub trait Signer<Sig> {
-    /// Create a new signature over a message.
     fn sign(&self, msg: &[u8]) -> Sig;
 }
 
-pub trait KeypairTraits: Sized + From<Self::PrivKey> + Signer<Self::Sig> + EncodeDecodeBase64 + FromStr
-{
-    // Define the methods required for the KeypairTraits trait
-    /// Trait impl'd by a public / private key pair in asymmetric cryptography.
+pub trait ToFromBytes: AsRef<[u8]> + Sized {
+    /// Parse an object from its byte representation
+    fn from_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError>;
 
+    /// Borrow a byte slice representing the serialized form of this object
+    fn as_bytes(&self) -> &[u8] {
+        self.as_ref()
+    }
+}
+
+pub trait EncodeDecodeBase64: Sized {
+    fn encode_base64(&self) -> String;
+    fn decode_base64(value: &str) -> Result<Self, eyre::Report>;
+}
+
+pub trait AllowedRng: CryptoRng + RngCore {}
+
+pub trait KeypairTraits:
+    Sized + From<Self::PrivKey> + Signer<Self::Sig> + EncodeDecodeBase64 + FromStr
+{
     type PubKey: VerifyingKey<PrivKey = Self::PrivKey, Sig = Self::Sig>;
     type PrivKey: SigningKey<PubKey = Self::PubKey, Sig = Self::Sig>;
     type Sig: Authenticator<PubKey = Self::PubKey, PrivKey = Self::PrivKey>;
 
-    /// Get the public key.
     fn public(&'_ self) -> &'_ Self::PubKey;
-    /// Get the private key.
     fn private(self) -> Self::PrivKey;
 
     #[cfg(feature = "copy_key")]
     fn copy(&self) -> Self;
 
-    /// Generate a new keypair using the given RNG.
     fn generate<R: AllowedRng>(rng: &mut R) -> Self;
 }
 
-// #[enum_dispatch(RoochSignatureInner)]
-// pub enum RoochSignatureWrapper {
-//     // Define the possible wrapper variants
-// }
+pub trait RoochSignatureInner<Sig, PubKey, KeyPair>:
+    Sized + ToFromBytes + PartialEq + Eq + Hash
+{
+    fn get_verification_inputs(&self, author: RoochAddress) -> RoochResult<(Sig, PubKey)>;
+    fn new(kp: &KeyPair, message: &[u8]) -> Self;
+}
 
-// impl RoochSignatureInner for RoochSignatureWrapper {
-//     type Sig = dyn Authenticator<PubKey = Self::PubKey>;
-//     type PubKey = dyn VerifyingKey<Sig = Self::Sig> + RoochPublicKey;
-//     type KeyPair = dyn KeypairTraits<PubKey = Self::PubKey, Sig = Self::Sig>;
+// //
+// // Account Signatures
+// //
+// // This struct exists due to the limitations of the `enum_dispatch` library.
+// //
+// pub trait RoochSignatureInner: Sized + ToFromBytes + PartialEq + Eq + Hash {
+//     type Sig: Authenticator<PubKey = Self::PubKey>;
+//     type PubKey: VerifyingKey<Sig = Self::Sig> + RoochPublicKey;
+//     type KeyPair: KeypairTraits<PubKey = Self::PubKey, Sig = Self::Sig>;
 
-//     fn get_verification_inputs(&self, author: RoochAddress) -> RoochResult<(Self::Sig, Self::PubKey)> {
+//     const LENGTH: usize = Self::Sig::LENGTH + Self::PubKey::LENGTH + 1;
+//     const SCHEME: BuiltinScheme = Self::PubKey::SIGNATURE_SCHEME;
+
+//     fn get_verification_inputs(
+//         &self,
+//         author: RoochAddress,
+//     ) -> RoochResult<(Self::Sig, Self::PubKey)> {
 //         // Is this signature emitted by the expected author?
 //         let bytes = self.public_key_bytes();
 //         let pk = Self::PubKey::from_bytes(bytes)
 //             .map_err(|_| RoochError::KeyConversionError("Invalid public key".to_owned()))?;
-    
+
 //         let received_addr = RoochAddress::from(&pk);
 //         if received_addr != author {
 //             return Err(RoochError::IncorrectSigner {
 //                 error: format!("Signature get_verification_inputs() failure. Author is {}, received address is {}", author, received_addr)
 //             });
 //         }
-    
+
 //         // deserialize the signature
 //         let signature = Self::Sig::from_bytes(self.signature_bytes()).map_err(|_| {
 //             RoochError::InvalidSignature {
 //                 error: "Fail to get pubkey and sig".to_owned(),
 //             }
 //         })?;
-    
+
 //         Ok((signature, pk))
 //     }
 
@@ -459,7 +487,7 @@ pub trait KeypairTraits: Sized + From<Self::PrivKey> + Signer<Self::Sig> + Encod
 
 //         let mut signature_bytes: Vec<u8> = Vec::new();
 //         signature_bytes
-//             .extend_from_slice(&[<Self::PubKey as RoochPublicKey>::SIGNATURE_SCHEME.flag()]);
+//             .extend_from_slice(&[<PubKey as RoochPublicKey>::SIGNATURE_SCHEME.flag()]);
 
 //         signature_bytes.extend_from_slice(sig.as_ref());
 //         signature_bytes.extend_from_slice(kp.public().as_ref());
@@ -467,68 +495,6 @@ pub trait KeypairTraits: Sized + From<Self::PrivKey> + Signer<Self::Sig> + Encod
 //             .expect("Serialized signature did not have expected size")
 //     }
 // }
-
-// impl<T> From<T> for RoochSignatureWrapper
-// where
-//     T: RoochSignatureInner,
-// {
-//     fn from(inner: T) -> Self {
-//         RoochSignatureWrapper::Inner(inner)
-//     }
-// }
-
-//
-// Account Signatures
-//
-// This struct exists due to the limitations of the `enum_dispatch` library.
-//
-pub trait RoochSignatureInner: Sized + ToFromBytes + PartialEq + Eq + Hash {
-    type Sig: Authenticator<PubKey = Self::PubKey>;
-    type PubKey: VerifyingKey<Sig = Self::Sig> + RoochPublicKey;
-    type KeyPair: KeypairTraits<PubKey = Self::PubKey, Sig = Self::Sig>;
-
-    const LENGTH: usize = Self::Sig::LENGTH + Self::PubKey::LENGTH + 1;
-    const SCHEME: BuiltinScheme = Self::PubKey::SIGNATURE_SCHEME;
-
-    fn get_verification_inputs(
-        &self,
-        author: RoochAddress,
-    ) -> RoochResult<(Self::Sig, Self::PubKey)> {
-        // Is this signature emitted by the expected author?
-        let bytes = self.public_key_bytes();
-        let pk = Self::PubKey::from_bytes(bytes)
-            .map_err(|_| RoochError::KeyConversionError("Invalid public key".to_owned()))?;
-    
-        let received_addr = RoochAddress::from(&pk);
-        if received_addr != author {
-            return Err(RoochError::IncorrectSigner {
-                error: format!("Signature get_verification_inputs() failure. Author is {}, received address is {}", author, received_addr)
-            });
-        }
-    
-        // deserialize the signature
-        let signature = Self::Sig::from_bytes(self.signature_bytes()).map_err(|_| {
-            RoochError::InvalidSignature {
-                error: "Fail to get pubkey and sig".to_owned(),
-            }
-        })?;
-    
-        Ok((signature, pk))
-    }
-
-    fn new(kp: &Self::KeyPair, message: &[u8]) -> Self {
-        let sig = Signer::sign(kp, message);
-
-        let mut signature_bytes: Vec<u8> = Vec::new();
-        signature_bytes
-            .extend_from_slice(&[<Self::PubKey as RoochPublicKey>::SIGNATURE_SCHEME.flag()]);
-
-        signature_bytes.extend_from_slice(sig.as_ref());
-        signature_bytes.extend_from_slice(kp.public().as_ref());
-        Self::from_bytes(&signature_bytes[..])
-            .expect("Serialized signature did not have expected size")
-    }
-}
 
 // Enums for signature scheme signatures
 #[enum_dispatch]
@@ -595,26 +561,22 @@ impl Signature {
         let bytes = self.signature_bytes();
         match self.scheme() {
             BuiltinScheme::Ed25519 => Ok(CompressedSignature::Ed25519(
-                (&Ed25519Signature::from_bytes(bytes).map_err(|_| {
-                    RoochError::InvalidSignature {
+                Ed25519Signature::from_bytes(bytes)
+                    .map_err(|_| RoochError::InvalidSignature {
                         error: "Cannot parse sig".to_owned(),
-                    }
-                })?)
+                    })?
                     .into(),
             )),
             BuiltinScheme::Ecdsa => Ok(CompressedSignature::Ecdsa(
                 (&Secp256k1Signature::from_bytes(bytes).map_err(|_| {
                     RoochError::InvalidSignature {
                         error: "Cannot parse sig".to_owned(),
-                    }
-                })?)
+                    })?
                     .into(),
             )),
             BuiltinScheme::Schnorr => Ok(CompressedSignature::Schnorr(
-                SchnorrSignature::from_slice(bytes).map_err(|_| {
-                    RoochError::InvalidSignature {
-                        error: "Cannot parse sig".to_owned(),
-                    }
+                SchnorrSignature::from_slice(bytes).map_err(|_| RoochError::InvalidSignature {
+                    error: "Cannot parse sig".to_owned(),
                 })?,
             )),
             _ => Err(RoochError::UnsupportedFeatureError {
@@ -639,10 +601,10 @@ impl Signature {
                     .into(),
             )),
             BuiltinScheme::Schnorr => Ok(PublicKey::Schnorr(
-                (XOnlyPublicKey::from_slice(bytes)
-                    .map_err(|_| RoochError::KeyConversionError("Cannot parse pk".to_owned()))?)
-                    .into(),
-            )),
+                XOnlyPublicKey::from_slice(bytes)
+                    .map_err(|_| RoochError::KeyConversionError("Cannot parse pk".to_owned()))?,
+            )
+            .into()),
             _ => Err(RoochError::UnsupportedFeatureError {
                 error: "Unsupported signature scheme in MultiSig".to_owned(),
             }),
@@ -673,7 +635,7 @@ impl ToFromBytes for Signature {
     fn from_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
         match bytes.first() {
             Some(x) => {
-                if x == &Ed25519RoochSignature::SCHEME.flag() {
+                if x == &BuiltinScheme::Ed25519.flag() {
                     Ok(<Ed25519RoochSignature as ToFromBytes>::from_bytes(bytes)?.into())
                 } else if x == &EcdsaRoochSignature::SCHEME.flag() {
                     Ok(<EcdsaRoochSignature as ToFromBytes>::from_bytes(bytes)?.into())
@@ -717,21 +679,21 @@ pub trait RoochSignature: Sized + ToFromBytes {
         T: Serialize;
 }
 
-impl<S: RoochSignatureInner + Sized> RoochSignature for S {
+impl RoochSignature for ECDSARoochSignature {
     fn signature_bytes(&self) -> &[u8] {
         // Access array slice is safe because the array bytes is initialized as
         // flag || signature || pubkey with its defined length.
-        &self.as_ref()[1..1 + S::Sig::LENGTH]
+        &self.as_bytes()[1..1 + PUBLIC_KEY_SIZE + COMPACT_SIGNATURE_SIZE]
     }
 
     fn public_key_bytes(&self) -> &[u8] {
         // Access array slice is safe because the array bytes is initialized as
         // flag || signature || pubkey with its defined length.
-        &self.as_ref()[S::Sig::LENGTH + 1..]
+        &self.as_bytes()[PUBLIC_KEY_SIZE + COMPACT_SIGNATURE_SIZE + 1..]
     }
 
     fn scheme(&self) -> BuiltinScheme {
-        S::PubKey::SIGNATURE_SCHEME
+        BuiltinScheme::ECDSA
     }
 
     fn verify_secure<T>(&self, value: &T, author: RoochAddress) -> Result<(), RoochError>
@@ -743,10 +705,80 @@ impl<S: RoochSignatureInner + Sized> RoochSignature for S {
         let digest = hasher.finalize().digest;
 
         let (sig, pk) = &self.get_verification_inputs(author)?;
-        pk.verify(&digest, sig)
+        let message = Message::from_slice(&digest).unwrap();
+        Secp256k1::verify_ecdsa(&Secp256k1::new(), &message, sig, pk).map_err(|e| {
+            RoochError::InvalidSignature {
+                error: format!("Fail to verify user sig {}", e),
+            }
+        })
+    }
+}
+
+impl RoochSignature for Ed25519RoochSignature {
+    fn signature_bytes(&self) -> &[u8] {
+        // Access array slice is safe because the array bytes is initialized as
+        // flag || signature || pubkey with its defined length.
+        &self.as_bytes()[1..1 + PUBLIC_KEY_LENGTH + SIGNATURE_LENGTH]
+    }
+
+    fn public_key_bytes(&self) -> &[u8] {
+        // Access array slice is safe because the array bytes is initialized as
+        // flag || signature || pubkey with its defined length.
+        &self.as_bytes()[PUBLIC_KEY_LENGTH + SIGNATURE_LENGTH + 1..]
+    }
+
+    fn scheme(&self) -> BuiltinScheme {
+        BuiltinScheme::Ed25519
+    }
+
+    fn verify_secure<T>(&self, value: &T, author: RoochAddress) -> Result<(), RoochError>
+    where
+        T: Serialize,
+    {
+        let mut hasher = DefaultHash::default();
+        hasher.update(&bcs::to_bytes(&value).expect("Message serialization should not fail"));
+        let digest = hasher.finalize().digest;
+
+        let (sig, pk) = &self.get_verification_inputs(author)?;
+        pk.verify_strict(&digest, sig)
             .map_err(|e| RoochError::InvalidSignature {
                 error: format!("Fail to verify user sig {}", e),
             })
+    }
+}
+
+impl RoochSignature for SchnorrRoochSignature {
+    fn signature_bytes(&self) -> &[u8] {
+        // Access array slice is safe because the array bytes is initialized as
+        // flag || signature || pubkey with its defined length.
+        &self.as_bytes()[1..1 + SCHNORR_PUBLIC_KEY_SIZE + SCHNORR_SIGNATURE_SIZE]
+    }
+
+    fn public_key_bytes(&self) -> &[u8] {
+        // Access array slice is safe because the array bytes is initialized as
+        // flag || signature || pubkey with its defined length.
+        &self.as_bytes()[SCHNORR_PUBLIC_KEY_SIZE + SCHNORR_SIGNATURE_SIZE + 1..]
+    }
+
+    fn scheme(&self) -> BuiltinScheme {
+        BuiltinScheme::Schnorr
+    }
+
+    fn verify_secure<T>(&self, value: &T, author: RoochAddress) -> Result<(), RoochError>
+    where
+        T: Serialize,
+    {
+        let mut hasher = DefaultHash::default();
+        hasher.update(&bcs::to_bytes(&value).expect("Message serialization should not fail"));
+        let digest = hasher.finalize().digest;
+
+        let (sig, pk) = &self.get_verification_inputs(author)?;
+        let message = Message::from_slice(&digest).unwrap();
+        Secp256k1::verify_schnorr(&Secp256k1::new(), sig, &message, pk.into()).map_err(|e| {
+            RoochError::InvalidSignature {
+                error: format!("Fail to verify user sig {}", e),
+            }
+        })
     }
 }
 
@@ -772,20 +804,65 @@ impl Default for SchnorrRoochSignature {
 
 impl ToFromBytes for SchnorrRoochSignature {
     fn from_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
-        if bytes.len() != Self::LENGTH {
-            return Err(FastCryptoError::InputLengthWrong(Self::LENGTH));
+        if bytes.len() != SCHNORR_PUBLIC_KEY_SIZE + SCHNORR_SIGNATURE_SIZE + 1 {
+            return Err(FastCryptoError::InputLengthWrong(
+                SCHNORR_PUBLIC_KEY_SIZE + SCHNORR_SIGNATURE_SIZE + 1,
+            ));
         }
-        let mut sig_bytes = [0; Self::LENGTH];
+        let mut sig_bytes = [0; SCHNORR_PUBLIC_KEY_SIZE + SCHNORR_SIGNATURE_SIZE + 1];
         sig_bytes.copy_from_slice(bytes);
         Ok(Self(sig_bytes))
     }
 }
 
-impl RoochSignatureInner for SchnorrRoochSignature {
-    type Sig = SchnorrSignature;
-    type PubKey = XOnlyPublicKey;
-    type KeyPair = Secp256k1KeyPair;
-    const LENGTH: usize = SCHNORR_PUBLIC_KEY_SIZE + SCHNORR_SIGNATURE_SIZE + 1;
+impl Signer<Signature> for Secp256k1KeyPair {
+    fn sign(&self, msg: &[u8]) -> Signature {
+        SchnorrRoochSignature::new(self, msg).into()
+    }
+}
+
+impl RoochSignatureInner<SchnorrSignature, XOnlyPublicKey, Secp256k1KeyPair>
+    for SchnorrRoochSignature
+{
+    fn get_verification_inputs(
+        &self,
+        author: RoochAddress,
+    ) -> RoochResult<(SchnorrSignature, XOnlyPublicKey)> {
+        // Is this signature emitted by the expected author?
+        let bytes = self.public_key_bytes();
+
+        let pk = XOnlyPublicKey::from_slice(bytes)
+            .map_err(|_| RoochError::KeyConversionError("Invalid public key".to_owned()))?;
+
+        let received_addr = RoochAddress::from(&pk);
+        if received_addr != author {
+            return Err(RoochError::IncorrectSigner {
+                error: format!("Signature get_verification_inputs() failure. Author is {}, received address is {}", author, received_addr)
+            });
+        }
+
+        // deserialize the signature
+        let signature = SchnorrSignature::from_slice(self.signature_bytes()).map_err(|_| {
+            RoochError::InvalidSignature {
+                error: "Fail to get pubkey and sig".to_owned(),
+            }
+        })?;
+
+        Ok((signature, pk))
+    }
+
+    fn new(kp: &Secp256k1KeyPair, message: &[u8]) -> Self {
+        let sig: SchnorrSignature = SchnorrSignature::from_slice(message).unwrap().into();
+
+        let mut signature_bytes: Vec<u8> = Vec::new();
+        signature_bytes
+            .extend_from_slice(&[<XOnlyPublicKey as RoochPublicKey>::SIGNATURE_SCHEME.flag()]);
+
+        signature_bytes.extend_from_slice(sig.as_ref());
+        signature_bytes.extend_from_slice(kp.x_only_public_key().0.serialize().as_ref());
+        Self::from_bytes(&signature_bytes[..])
+            .expect("Serialized signature did not have expected size")
+    }
 }
 
 //
@@ -810,10 +887,12 @@ impl Default for Ed25519RoochSignature {
 
 impl ToFromBytes for Ed25519RoochSignature {
     fn from_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
-        if bytes.len() != Self::LENGTH {
-            return Err(FastCryptoError::InputLengthWrong(Self::LENGTH));
+        if bytes.len() != PUBLIC_KEY_LENGTH + SIGNATURE_LENGTH + 1 {
+            return Err(FastCryptoError::InputLengthWrong(
+                PUBLIC_KEY_LENGTH + SIGNATURE_LENGTH + 1,
+            ));
         }
-        let mut sig_bytes = [0; Self::LENGTH];
+        let mut sig_bytes = [0; PUBLIC_KEY_LENGTH + SIGNATURE_LENGTH + 1];
         sig_bytes.copy_from_slice(bytes);
         Ok(Self(sig_bytes))
     }
@@ -825,11 +904,48 @@ impl Signer<Signature> for Ed25519KeyPair {
     }
 }
 
-impl RoochSignatureInner for Ed25519RoochSignature {
-    type Sig = Ed25519Signature;
-    type PubKey = Ed25519PublicKey;
-    type KeyPair = Ed25519KeyPair;
-    const LENGTH: usize = Ed25519PublicKey::LENGTH + Ed25519Signature::LENGTH + 1;
+impl RoochSignatureInner<Ed25519Signature, Ed25519PublicKey, Ed25519KeyPair>
+    for Ed25519RoochSignature
+{
+    fn get_verification_inputs(
+        &self,
+        author: RoochAddress,
+    ) -> RoochResult<(Ed25519Signature, Ed25519PublicKey)> {
+        // Is this signature emitted by the expected author?
+        let bytes = self.public_key_bytes();
+
+        let pk = Ed25519PublicKey::from_bytes(bytes)
+            .map_err(|_| RoochError::KeyConversionError("Invalid public key".to_owned()))?;
+
+        let received_addr = RoochAddress::from(&pk);
+        if received_addr != author {
+            return Err(RoochError::IncorrectSigner {
+                error: format!("Signature get_verification_inputs() failure. Author is {}, received address is {}", author, received_addr)
+            });
+        }
+
+        // deserialize the signature
+        let signature = Ed25519Signature::from_bytes(self.signature_bytes()).map_err(|_| {
+            RoochError::InvalidSignature {
+                error: "Fail to get pubkey and sig".to_owned(),
+            }
+        })?;
+
+        Ok((signature, pk))
+    }
+
+    fn new(kp: &Ed25519KeyPair, message: &[u8]) -> Self {
+        let sig: Ed25519Signature = Ed25519Signature::from_bytes(message).unwrap().into();
+
+        let mut signature_bytes: Vec<u8> = Vec::new();
+        signature_bytes
+            .extend_from_slice(&[<Ed25519PublicKey as RoochPublicKey>::SIGNATURE_SCHEME.flag()]);
+
+        signature_bytes.extend_from_slice(sig.to_bytes().as_ref());
+        signature_bytes.extend_from_slice(kp.public.as_ref());
+        Self::from_bytes(&signature_bytes[..])
+            .expect("Serialized signature did not have expected size")
+    }
 }
 
 //
@@ -854,10 +970,12 @@ impl RoochSignatureInner for EcdsaRoochSignature {
 
 impl ToFromBytes for EcdsaRoochSignature {
     fn from_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
-        if bytes.len() != Self::LENGTH {
-            return Err(FastCryptoError::InputLengthWrong(Self::LENGTH));
+        if bytes.len() != PUBLIC_KEY_SIZE + COMPACT_SIGNATURE_SIZE + 1 {
+            return Err(FastCryptoError::InputLengthWrong(
+                PUBLIC_KEY_SIZE + COMPACT_SIGNATURE_SIZE + 1,
+            ));
         }
-        let mut sig_bytes = [0; Self::LENGTH];
+        let mut sig_bytes = [0; PUBLIC_KEY_SIZE + COMPACT_SIGNATURE_SIZE + 1];
         sig_bytes.copy_from_slice(bytes);
         Ok(Self(sig_bytes))
     }
@@ -882,21 +1000,16 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::address::{RoochAddress, NostrAddress, self};
-    use fastcrypto::{
-        ed25519::{Ed25519KeyPair, Ed25519PrivateKey},
-        traits::{KeyPair, ToFromBytes},
-    };
-    use secp256k1::{SecretKey, KeyPair as Secp256k1KeyPair, Secp256k1};
+    use crate::address::{self, NostrAddress, RoochAddress};
+    use secp256k1::{KeyPair as Secp256k1KeyPair, Secp256k1, SecretKey};
 
     // this test ensure the public key to address keep the same as the old version
     // we should also keep the public key to address algorithm the same as the move version
     #[test]
     fn test_public_key_to_address() {
-        let private_key = Ed25519PrivateKey::from_bytes(&[0u8; 32]).unwrap();
-        let keypair: Ed25519KeyPair = private_key.into();
+        let keypair = Secp256k1KeyPair::from_seckey_slice(&Secp256k1::new(), &[0u8; 32]).unwrap();
         //println!("public_key: {}", hex::encode(keypair.public().as_bytes()));
-        let address: RoochAddress = keypair.public().into();
+        let address: RoochAddress = keypair.public_key().into();
         //println!("address: {:?}", address);
         assert_eq!(
             address.to_string(),
@@ -905,11 +1018,14 @@ mod tests {
     }
 
     #[test]
-    fn test_x_only_public_key_to_address() {
+    fn test_x_only_public_key_to_nostr_address() {
         let secret_key: SecretKey = SecretKey::from_slice(&[0u8; 32]).unwrap();
         let secp = Secp256k1::new();
         let keypair: Secp256k1KeyPair = secret_key.keypair(&secp);
-        println!("public_key: {}", hex::encode(keypair.x_only_public_key().0.serialize()));
+        println!(
+            "public_key: {}",
+            hex::encode(keypair.x_only_public_key().0.serialize())
+        );
         let address: NostrAddress = address::NostrAddress(keypair.x_only_public_key().0);
         println!("address: {:?}", address);
         assert_eq!(

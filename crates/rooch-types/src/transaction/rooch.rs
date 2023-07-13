@@ -75,10 +75,10 @@ impl RoochTransaction {
     pub fn mock() -> RoochTransaction {
         use crate::address::RoochSupportedAddress;
         use crate::crypto::Signature;
-        use fastcrypto::ed25519::Ed25519KeyPair;
-        use fastcrypto::traits::KeyPair;
+        use ed25519_dalek::Keypair;
         use move_core_types::{identifier::Identifier, language_storage::ModuleId};
         use moveos_types::move_types::FunctionId;
+        use rand::rngs::OsRng;
 
         let sender: RoochAddress = RoochAddress::random();
         let sequence_number = 0;
@@ -92,10 +92,10 @@ impl RoochTransaction {
         );
 
         let transaction_data = RoochTransactionData::new(sender, sequence_number, payload);
-        let mut rng = rand::thread_rng();
-        let ed25519_keypair: Ed25519KeyPair = Ed25519KeyPair::generate(&mut rng);
+        let mut csprng = OsRng {};
+        let keypair: Keypair = Keypair::generate(&mut csprng);
         let auth =
-            Signature::new_hashed(transaction_data.hash().as_bytes(), &ed25519_keypair).into();
+            Signature::new_hashed(transaction_data.hash().as_bytes(), &keypair.into()).into();
         RoochTransaction::new(transaction_data, auth)
     }
 }
