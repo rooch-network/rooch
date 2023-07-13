@@ -8,35 +8,28 @@ use crate::{
 use derive_more::{AsMut, AsRef, From};
 pub use enum_dispatch::enum_dispatch;
 use eyre::eyre;
-use fastcrypto::encoding::{Base64, Encoding};
-use fastcrypto::error::FastCryptoError;
+use fastcrypto::{encoding::{Base64, Encoding}, traits::AllowedRng};
 use fastcrypto::hash::{Blake2b256, HashFunction};
-pub use fastcrypto::traits::KeyPair as KeypairTraits;
-pub use fastcrypto::traits::Signer;
+use fastcrypto::error::FastCryptoError;
 pub use fastcrypto::traits::{
-    AggregateAuthenticator, Authenticator, EncodeDecodeBase64, SigningKey, ToFromBytes,
-    VerifyingKey,
+    EncodeDecodeBase64, ToFromBytes,
 };
-use fastcrypto::{
-    ed25519::{
-        Ed25519KeyPair, Ed25519PublicKey, Ed25519PublicKeyAsBytes, Ed25519Signature,
-        Ed25519SignatureAsBytes,
-    },
-    secp256k1::{
-        Secp256k1KeyPair, Secp256k1PublicKey, Secp256k1PublicKeyAsBytes, Secp256k1Signature,
-        Secp256k1SignatureAsBytes,
-    },
-};
-use bitcoin::secp256k1::{KeyPair, schnorr::Signature as SchnorrSignature, XOnlyPublicKey, Secp256k1};
-use bitcoin::key::constants::{SCHNORR_PUBLIC_KEY_SIZE, SCHNORR_SIGNATURE_SIZE};
+use ed25519_dalek::{Keypair as Ed25519KeyPair, PublicKey as Ed25519PublicKey, Signature as Ed25519Signature, PUBLIC_KEY_LENGTH, SIGNATURE_LENGTH};
+use secp256k1::{Secp256k1, KeyPair as Secp256k1KeyPair, PublicKey as Secp256k1PublicKey, schnorr::Signature as SchnorrSignature, ecdsa::Signature as ECDSASignature, XOnlyPublicKey};
+use secp256k1::constants::{SCHNORR_PUBLIC_KEY_SIZE, SCHNORR_SIGNATURE_SIZE, PUBLIC_KEY_SIZE, COMPACT_SIGNATURE_SIZE};
 use moveos_types::{h256::H256, serde::Readable};
 use rand::{rngs::StdRng, SeedableRng};
 use schemars::JsonSchema;
-use serde::ser::Serializer;
+use serde::{ser::Serializer, de::DeserializeOwned};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_with::{serde_as, Bytes};
-use std::{hash::Hash, str::FromStr};
+use std::{hash::Hash, str::FromStr, fmt::Display, borrow::Borrow};
 use strum_macros::EnumString;
+// pub use dyn_clone::DynClone;
+// pub use traitobject::traitobject;
+// pub use dyn_trait::dyn_trait;
+// use anyhow::anyhow;
+// use std::any::Any;
 
 pub type DefaultHash = Blake2b256;
 
@@ -84,11 +77,11 @@ impl BuiltinScheme {
 }
 
 #[allow(clippy::large_enum_variant)]
-#[derive(Debug, From, PartialEq, Eq)]
+#[derive(Debug)]
 pub enum RoochKeyPair {
     Ed25519(Ed25519KeyPair),
     Ecdsa(Secp256k1KeyPair),
-    Schnorr(KeyPair),
+    Schnorr(Secp256k1KeyPair),
 }
 
 impl RoochKeyPair {
@@ -128,7 +121,7 @@ impl EncodeDecodeBase64 for RoochKeyPair {
 
         match self {
             RoochKeyPair::Ed25519(kp) => {
-                bytes.extend_from_slice(kp.as_bytes());
+                bytes.extend_from_slice(&kp.to_bytes());
             }
             RoochKeyPair::Ecdsa(kp) => {
                 bytes.extend_from_slice(kp.as_bytes());
@@ -269,13 +262,13 @@ impl PublicKey {
     ) -> Result<PublicKey, eyre::Report> {
         match scheme {
             BuiltinScheme::Ed25519 => Ok(PublicKey::Ed25519(
-                (&Ed25519PublicKey::from_bytes(key_bytes)?).into(),
+                Ed25519PublicKey::from_bytes(key_bytes)?.into(),
             )),
             BuiltinScheme::Ecdsa => Ok(PublicKey::Ecdsa(
                 (&Secp256k1PublicKey::from_bytes(key_bytes)?).into(),
             )),
             BuiltinScheme::Schnorr => Ok(PublicKey::Schnorr(
-                (XOnlyPublicKey::from_slice(key_bytes)?).into(),
+                XOnlyPublicKey::from_slice(key_bytes)?.into(),
             )),
             _ => Err(eyre!("Unsupported scheme")),
         }
@@ -327,6 +320,163 @@ impl From<&PublicKey> for RoochAddress {
     }
 }
 
+pub trait Authenticator:
+    ToFromBytes + Display + Serialize + DeserializeOwned + Send + Sync + 'static + Clone
+{
+    type PubKey: VerifyingKey<Sig = Self>;
+    type PrivKey: SigningKey<Sig = Self>;
+    const LENGTH: usize;
+}
+
+
+pub trait VerifyingKey:
+    Serialize
+    + DeserializeOwned
+    + std::hash::Hash
+    + Display
+    + Eq  // required to make some cached bytes representations explicit.
+    + Ord // required to put keys in BTreeMap.
+    + ToFromBytes
+    + for<'a> From<&'a Self::PrivKey> // conversion PrivateKey -> PublicKey.
+    + Send
+    + Sync
+    + 'static
+    + Clone
+{
+    type PrivKey: SigningKey<PubKey=Self>;
+    type Sig: Authenticator<PubKey=Self>;
+    const LENGTH: usize;
+
+    /// Use Self to verify that the provided signature for a given message bytestring is authentic.
+    /// Returns Error if it is inauthentic, or otherwise returns ().
+    fn verify(&self, msg: &[u8], signature: &Self::Sig) -> Result<(), FastCryptoError>;
+
+    // Expected to be overridden by implementations
+    /// Batch verification over the same message. Implementations of this method can be fast,
+    /// assuming rogue key checks have already been performed.
+    /// TODO: take as input a flag to denote if rogue key protection already took place.
+    #[cfg(any(test, feature = "experimental"))]
+    fn verify_batch_empty_fail(msg: &[u8], pks: &[Self], sigs: &[Self::Sig]) -> Result<(), eyre::Report> {
+        if sigs.is_empty() {
+            return Err(eyre!("Critical Error! This behaviour can signal something dangerous, and that someone may be trying to bypass signature verification through providing empty batches."));
+        }
+        if pks.len() != sigs.len() {
+            return Err(eyre!("Mismatch between number of signatures and public keys provided"));
+        }
+        pks.iter()
+            .zip(sigs)
+            .try_for_each(|(pk, sig)| pk.verify(msg, sig))
+            .map_err(|_| eyre!("Signature verification failed"))
+    }
+
+    // Expected to be overridden by implementations
+    /// Batch verification over different messages. Implementations of this method can be fast,
+    /// assuming rogue key checks have already been performed.
+    /// TODO: take as input a flag to denote if rogue key protection already took place.
+    #[cfg(any(test, feature = "experimental"))]
+    fn verify_batch_empty_fail_different_msg<'a, M>(msgs: &[M], pks: &[Self], sigs: &[Self::Sig]) -> Result<(), eyre::Report> where M: Borrow<[u8]> + 'a {
+        if sigs.is_empty() {
+            return Err(eyre!("Critical Error! This behaviour can signal something dangerous, and that someone may be trying to bypass signature verification through providing empty batches."));
+        }
+        if pks.len() != sigs.len() || pks.len() != msgs.len() {
+            return Err(eyre!("Mismatch between number of messages, signatures and public keys provided"));
+        }
+        pks.iter()
+            .zip(sigs)
+            .zip(msgs)
+            .try_for_each(|((pk, sig), msg)| pk.verify(msg.borrow(), sig))
+            .map_err(|_| eyre!("Signature verification failed"))
+    }
+}
+
+pub trait SigningKey: ToFromBytes + Serialize + DeserializeOwned + Send + Sync + 'static {
+    type PubKey: VerifyingKey<PrivKey = Self>;
+    type Sig: Authenticator<PrivKey = Self>;
+    const LENGTH: usize;
+}
+
+pub trait Signer<Sig> {
+    /// Create a new signature over a message.
+    fn sign(&self, msg: &[u8]) -> Sig;
+}
+
+pub trait KeypairTraits: Sized + From<Self::PrivKey> + Signer<Self::Sig> + EncodeDecodeBase64 + FromStr
+{
+    // Define the methods required for the KeypairTraits trait
+    /// Trait impl'd by a public / private key pair in asymmetric cryptography.
+
+    type PubKey: VerifyingKey<PrivKey = Self::PrivKey, Sig = Self::Sig>;
+    type PrivKey: SigningKey<PubKey = Self::PubKey, Sig = Self::Sig>;
+    type Sig: Authenticator<PubKey = Self::PubKey, PrivKey = Self::PrivKey>;
+
+    /// Get the public key.
+    fn public(&'_ self) -> &'_ Self::PubKey;
+    /// Get the private key.
+    fn private(self) -> Self::PrivKey;
+
+    #[cfg(feature = "copy_key")]
+    fn copy(&self) -> Self;
+
+    /// Generate a new keypair using the given RNG.
+    fn generate<R: AllowedRng>(rng: &mut R) -> Self;
+}
+
+// #[enum_dispatch(RoochSignatureInner)]
+// pub enum RoochSignatureWrapper {
+//     // Define the possible wrapper variants
+// }
+
+// impl RoochSignatureInner for RoochSignatureWrapper {
+//     type Sig = dyn Authenticator<PubKey = Self::PubKey>;
+//     type PubKey = dyn VerifyingKey<Sig = Self::Sig> + RoochPublicKey;
+//     type KeyPair = dyn KeypairTraits<PubKey = Self::PubKey, Sig = Self::Sig>;
+
+//     fn get_verification_inputs(&self, author: RoochAddress) -> RoochResult<(Self::Sig, Self::PubKey)> {
+//         // Is this signature emitted by the expected author?
+//         let bytes = self.public_key_bytes();
+//         let pk = Self::PubKey::from_bytes(bytes)
+//             .map_err(|_| RoochError::KeyConversionError("Invalid public key".to_owned()))?;
+    
+//         let received_addr = RoochAddress::from(&pk);
+//         if received_addr != author {
+//             return Err(RoochError::IncorrectSigner {
+//                 error: format!("Signature get_verification_inputs() failure. Author is {}, received address is {}", author, received_addr)
+//             });
+//         }
+    
+//         // deserialize the signature
+//         let signature = Self::Sig::from_bytes(self.signature_bytes()).map_err(|_| {
+//             RoochError::InvalidSignature {
+//                 error: "Fail to get pubkey and sig".to_owned(),
+//             }
+//         })?;
+    
+//         Ok((signature, pk))
+//     }
+
+//     fn new(kp: &Self::KeyPair, message: &[u8]) -> Self {
+//         let sig = Signer::sign(kp, message);
+
+//         let mut signature_bytes: Vec<u8> = Vec::new();
+//         signature_bytes
+//             .extend_from_slice(&[<Self::PubKey as RoochPublicKey>::SIGNATURE_SCHEME.flag()]);
+
+//         signature_bytes.extend_from_slice(sig.as_ref());
+//         signature_bytes.extend_from_slice(kp.public().as_ref());
+//         Self::from_bytes(&signature_bytes[..])
+//             .expect("Serialized signature did not have expected size")
+//     }
+// }
+
+// impl<T> From<T> for RoochSignatureWrapper
+// where
+//     T: RoochSignatureInner,
+// {
+//     fn from(inner: T) -> Self {
+//         RoochSignatureWrapper::Inner(inner)
+//     }
+// }
+
 //
 // Account Signatures
 //
@@ -348,21 +498,21 @@ pub trait RoochSignatureInner: Sized + ToFromBytes + PartialEq + Eq + Hash {
         let bytes = self.public_key_bytes();
         let pk = Self::PubKey::from_bytes(bytes)
             .map_err(|_| RoochError::KeyConversionError("Invalid public key".to_owned()))?;
-
+    
         let received_addr = RoochAddress::from(&pk);
         if received_addr != author {
             return Err(RoochError::IncorrectSigner {
-                error: format!("Signature get_verification_inputs() failure. Author is {author}, received address is {received_addr}")
+                error: format!("Signature get_verification_inputs() failure. Author is {}, received address is {}", author, received_addr)
             });
         }
-
+    
         // deserialize the signature
         let signature = Self::Sig::from_bytes(self.signature_bytes()).map_err(|_| {
             RoochError::InvalidSignature {
                 error: "Fail to get pubkey and sig".to_owned(),
             }
         })?;
-
+    
         Ok((signature, pk))
     }
 
@@ -631,16 +781,10 @@ impl ToFromBytes for SchnorrRoochSignature {
     }
 }
 
-impl Signer<Signature> for KeyPair {
-    fn sign(&self, msg: &[u8]) -> Signature {
-        SchnorrRoochSignature::new(self, msg).into()
-    }
-}
-
 impl RoochSignatureInner for SchnorrRoochSignature {
     type Sig = SchnorrSignature;
     type PubKey = XOnlyPublicKey;
-    type KeyPair = KeyPair;
+    type KeyPair = Secp256k1KeyPair;
     const LENGTH: usize = SCHNORR_PUBLIC_KEY_SIZE + SCHNORR_SIGNATURE_SIZE + 1;
 }
 
@@ -654,13 +798,13 @@ impl RoochSignatureInner for SchnorrRoochSignature {
 pub struct Ed25519RoochSignature(
     #[schemars(with = "Base64")]
     #[serde_as(as = "Readable<Base64, Bytes>")]
-    [u8; Ed25519PublicKey::LENGTH + Ed25519Signature::LENGTH + 1],
+    [u8; PUBLIC_KEY_LENGTH + SIGNATURE_LENGTH + 1],
 );
 
 // Implementation useful for simplify testing when mock signature is needed
 impl Default for Ed25519RoochSignature {
     fn default() -> Self {
-        Self([0; Ed25519PublicKey::LENGTH + Ed25519Signature::LENGTH + 1])
+        Self([0; PUBLIC_KEY_LENGTH + SIGNATURE_LENGTH + 1])
     }
 }
 
@@ -698,14 +842,14 @@ impl RoochSignatureInner for Ed25519RoochSignature {
 pub struct EcdsaRoochSignature(
     #[schemars(with = "Base64")]
     #[serde_as(as = "Readable<Base64, Bytes>")]
-    [u8; Secp256k1PublicKey::LENGTH + Secp256k1Signature::LENGTH + 1],
+    [u8; PUBLIC_KEY_SIZE + COMPACT_SIGNATURE_SIZE + 1],
 );
 
 impl RoochSignatureInner for EcdsaRoochSignature {
     type Sig = Secp256k1Signature;
     type PubKey = Secp256k1PublicKey;
     type KeyPair = Secp256k1KeyPair;
-    const LENGTH: usize = Secp256k1PublicKey::LENGTH + Secp256k1Signature::LENGTH + 1;
+    const LENGTH: usize = PUBLIC_KEY_SIZE + COMPACT_SIGNATURE_SIZE + 1;
 }
 
 impl ToFromBytes for EcdsaRoochSignature {
@@ -719,6 +863,7 @@ impl ToFromBytes for EcdsaRoochSignature {
     }
 }
 
+// TODO decide keypair sig ECDSA or Schnorr?
 impl Signer<Signature> for Secp256k1KeyPair {
     fn sign(&self, msg: &[u8]) -> Signature {
         EcdsaRoochSignature::new(self, msg).into()
@@ -742,7 +887,7 @@ mod tests {
         ed25519::{Ed25519KeyPair, Ed25519PrivateKey},
         traits::{KeyPair, ToFromBytes},
     };
-    use bitcoin::secp256k1::{SecretKey, KeyPair as BitcoinKeyPair, Secp256k1};
+    use secp256k1::{SecretKey, KeyPair as Secp256k1KeyPair, Secp256k1};
 
     // this test ensure the public key to address keep the same as the old version
     // we should also keep the public key to address algorithm the same as the move version
@@ -763,7 +908,7 @@ mod tests {
     fn test_x_only_public_key_to_address() {
         let secret_key: SecretKey = SecretKey::from_slice(&[0u8; 32]).unwrap();
         let secp = Secp256k1::new();
-        let keypair: BitcoinKeyPair = secret_key.keypair(&secp);
+        let keypair: Secp256k1KeyPair = secret_key.keypair(&secp);
         println!("public_key: {}", hex::encode(keypair.x_only_public_key().0.serialize()));
         let address: NostrAddress = address::NostrAddress(keypair.x_only_public_key().0);
         println!("address: {:?}", address);

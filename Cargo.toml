@@ -179,8 +179,6 @@ hdrhistogram = "7.5.1"
 ouroboros = "0.15.5"
 rstest = "0.16.0"
 nostr = "0.22"
-serde-reflection = "0.3.6"
-serde-generate = "0.25.1"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES
