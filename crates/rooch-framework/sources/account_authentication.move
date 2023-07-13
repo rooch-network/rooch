@@ -10,7 +10,13 @@ module rooch_framework::account_authentication{
    use moveos_std::storage_context::StorageContext;
    use rooch_framework::auth_validator_registry;
 
-   const EAuthValidatorAlreadyInstalled: u64 = 1; 
+    /// max authentication key length
+   const MAX_AUTHENTICATION_KEY_LENGTH: u64 = 256;
+
+   
+   const EAuthValidatorAlreadyInstalled: u64 = 1;
+   /// The provided authentication key has an invalid length
+   const EMalformedAuthenticationKey: u64 = 2; 
 
    /// A resource that holds the authentication key for this account.
    /// ValidatorType is a phantom type parameter that is used to distinguish between different auth validator types.
@@ -28,6 +34,31 @@ module rooch_framework::account_authentication{
          option::none<vector<u8>>()
       }else{
          option::some(account_storage::global_borrow<AuthenticationKey<ValidatorType>>(ctx, account_addr).authentication_key)
+      }
+   }
+
+   #[private_generics(ValidatorType)]
+   /// This function is used to rotate a resource account's authentication key, only the module which define the `ValidatorType` can call this function.
+   public fun rotate_authentication_key<ValidatorType>(ctx: &mut StorageContext, account: &signer, new_auth_key: vector<u8>) {
+      rotate_authentication_key_internal<ValidatorType>(ctx, account, new_auth_key);
+   }
+
+   public(friend) fun rotate_authentication_key_internal<ValidatorType>(ctx: &mut StorageContext, account: &signer, new_auth_key: vector<u8>) {
+      let account_addr = signer::address_of(account);
+      
+      assert!(
+         vector::length(&new_auth_key) <= MAX_AUTHENTICATION_KEY_LENGTH,
+         error::invalid_argument(EMalformedAuthenticationKey)
+      );
+   
+      if(account_storage::global_exists<AuthenticationKey<ValidatorType>>(ctx, account_addr)){
+         let authentication_key = account_storage::global_borrow_mut<AuthenticationKey<ValidatorType>>(ctx, account_addr);
+         authentication_key.authentication_key = new_auth_key;
+      }else{
+         let authentication_key = AuthenticationKey<ValidatorType> {
+            authentication_key: new_auth_key,
+         };
+         account_storage::global_move_to(ctx, account, authentication_key);
       }
    }
 
@@ -64,5 +95,18 @@ module rooch_framework::account_authentication{
    public entry fun install_auth_validator_entry<ValidatorType: store>(ctx: &mut StorageContext, account_signer: &signer) {
       install_auth_validator<ValidatorType>(ctx, account_signer);
    }
- 
+
+   #[test_only]
+   struct TestValidator has store {
+   }
+   
+   #[test(sender=@0x42)]
+   fun test_rotate_authentication_key_internal(sender: address){
+      let ctx = moveos_std::storage_context::new_test_context(@std);
+      let sender_signer = rooch_framework::account::create_signer_for_test(sender);
+      rotate_authentication_key_internal<TestValidator>(&mut ctx, &sender_signer, x"0123");
+      moveos_std::storage_context::drop_test_context(ctx);
+   }
+
+
 }

@@ -8,12 +8,13 @@ This module implements the secp256k1 validator scheme.
 
 -  [Struct `Secp256k1Validator`](#0x3_secp256k1_validator_Secp256k1Validator)
 -  [Constants](#@Constants_0)
+-  [Function `scheme`](#0x3_secp256k1_validator_scheme)
 -  [Function `validate`](#0x3_secp256k1_validator_validate)
 
 
 <pre><code><b>use</b> <a href="">0x2::storage_context</a>;
+<b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 <b>use</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1">0x3::ecdsa_k1</a>;
-<b>use</b> <a href="transaction_validator.md#0x3_transaction_validator">0x3::transaction_validator</a>;
 </code></pre>
 
 
@@ -59,6 +60,30 @@ This module implements the secp256k1 validator scheme.
 
 
 
+<a name="0x3_secp256k1_validator_scheme"></a>
+
+## Function `scheme`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="secp256k1_validator.md#0x3_secp256k1_validator_scheme">scheme</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="secp256k1_validator.md#0x3_secp256k1_validator_scheme">scheme</a>(): u64 {
+   <a href="secp256k1_validator.md#0x3_secp256k1_validator_SCHEME_SECP256K1">SCHEME_SECP256K1</a>
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x3_secp256k1_validator_validate"></a>
 
 ## Function `validate`
@@ -80,9 +105,9 @@ This module implements the secp256k1 validator scheme.
    <a href="ecdsa_k1.md#0x3_ecdsa_k1_verify">ecdsa_k1::verify</a>(
          &payload,
          &<a href="_tx_hash">storage_context::tx_hash</a>(ctx),
-         0 // KECCAK256:0, SHA256:1, TODO: The <a href="../doc/hash.md#0x1_hash">hash</a> type may need <b>to</b> be passed through the <a href="authenticator.md#0x3_authenticator">authenticator</a>
+         0 // KECCAK256:0, SHA256:1, TODO: The <a href="../doc/hash.md#0x1_hash">hash</a> type may need <b>to</b> be passed through the authenticator
    ),
-   <a href="transaction_validator.md#0x3_transaction_validator_error_invalid_authenticator">transaction_validator::error_invalid_authenticator</a>());
+   <a href="auth_validator.md#0x3_auth_validator_error_invalid_authenticator">auth_validator::error_invalid_authenticator</a>());
 }
 </code></pre>
 

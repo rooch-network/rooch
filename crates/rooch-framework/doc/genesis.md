@@ -8,12 +8,9 @@
 -  [Constants](#@Constants_0)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x2::storage_context</a>;
+<pre><code><b>use</b> <a href="">0x2::storage_context</a>;
 <b>use</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry">0x3::auth_validator_registry</a>;
-<b>use</b> <a href="ed25519_validator.md#0x3_ed25519_validator">0x3::ed25519_validator</a>;
-<b>use</b> <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator">0x3::multi_ed25519_validator</a>;
-<b>use</b> <a href="secp256k1_validator.md#0x3_secp256k1_validator">0x3::secp256k1_validator</a>;
+<b>use</b> <a href="builtin_validators.md#0x3_builtin_validators">0x3::builtin_validators</a>;
 </code></pre>
 
 

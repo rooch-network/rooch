@@ -8,7 +8,6 @@
 -  [Struct `AuthenticatorInfo`](#0x3_authenticator_AuthenticatorInfo)
 -  [Struct `Authenticator`](#0x3_authenticator_Authenticator)
 -  [Constants](#@Constants_0)
--  [Function `is_builtin_scheme`](#0x3_authenticator_is_builtin_scheme)
 
 
 <pre><code></code></pre>
@@ -92,56 +91,3 @@
 
 <pre><code><b>const</b> <a href="authenticator.md#0x3_authenticator_EUnsupportedScheme">EUnsupportedScheme</a>: u64 = 1000;
 </code></pre>
-
-
-
-<a name="0x3_authenticator_SCHEME_ED25519"></a>
-
-
-
-<pre><code><b>const</b> <a href="authenticator.md#0x3_authenticator_SCHEME_ED25519">SCHEME_ED25519</a>: u64 = 0;
-</code></pre>
-
-
-
-<a name="0x3_authenticator_SCHEME_MULTIED25519"></a>
-
-
-
-<pre><code><b>const</b> <a href="authenticator.md#0x3_authenticator_SCHEME_MULTIED25519">SCHEME_MULTIED25519</a>: u64 = 1;
-</code></pre>
-
-
-
-<a name="0x3_authenticator_SCHEME_SECP256K1"></a>
-
-
-
-<pre><code><b>const</b> <a href="authenticator.md#0x3_authenticator_SCHEME_SECP256K1">SCHEME_SECP256K1</a>: u64 = 2;
-</code></pre>
-
-
-
-<a name="0x3_authenticator_is_builtin_scheme"></a>
-
-## Function `is_builtin_scheme`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_is_builtin_scheme">is_builtin_scheme</a>(scheme: u64): bool
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="authenticator.md#0x3_authenticator_is_builtin_scheme">is_builtin_scheme</a>(scheme: u64): bool {
-   scheme == <a href="authenticator.md#0x3_authenticator_SCHEME_ED25519">SCHEME_ED25519</a> || scheme == <a href="authenticator.md#0x3_authenticator_SCHEME_MULTIED25519">SCHEME_MULTIED25519</a> || scheme == <a href="authenticator.md#0x3_authenticator_SCHEME_SECP256K1">SCHEME_SECP256K1</a>
-}
-</code></pre>
-
-
-
-</details>

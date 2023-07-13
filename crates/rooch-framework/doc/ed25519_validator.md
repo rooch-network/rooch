@@ -8,6 +8,7 @@ This module implements the ed25519 validator scheme.
 
 -  [Struct `Ed25519Validator`](#0x3_ed25519_validator_Ed25519Validator)
 -  [Constants](#@Constants_0)
+-  [Function `scheme`](#0x3_ed25519_validator_scheme)
 -  [Function `ed25519_public_key`](#0x3_ed25519_validator_ed25519_public_key)
 -  [Function `ed25519_signature`](#0x3_ed25519_validator_ed25519_signature)
 -  [Function `ed25519_authentication_key`](#0x3_ed25519_validator_ed25519_authentication_key)
@@ -21,9 +22,9 @@ This module implements the ed25519 validator scheme.
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
 <b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
+<b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 <b>use</b> <a href="ed25519.md#0x3_ed25519">0x3::ed25519</a>;
 <b>use</b> <a href="hash.md#0x3_hash">0x3::hash</a>;
-<b>use</b> <a href="transaction_validator.md#0x3_transaction_validator">0x3::transaction_validator</a>;
 </code></pre>
 
 
@@ -60,15 +61,6 @@ This module implements the ed25519 validator scheme.
 ## Constants
 
 
-<a name="0x3_ed25519_validator_SCHEME_ED25519"></a>
-
-
-
-<pre><code><b>const</b> <a href="ed25519_validator.md#0x3_ed25519_validator_SCHEME_ED25519">SCHEME_ED25519</a>: u64 = 0;
-</code></pre>
-
-
-
 <a name="0x3_ed25519_validator_ED25519_PUBKEY_LENGTH"></a>
 
 
@@ -95,6 +87,39 @@ This module implements the ed25519 validator scheme.
 </code></pre>
 
 
+
+<a name="0x3_ed25519_validator_SCHEME_ED25519"></a>
+
+
+
+<pre><code><b>const</b> <a href="ed25519_validator.md#0x3_ed25519_validator_SCHEME_ED25519">SCHEME_ED25519</a>: u64 = 0;
+</code></pre>
+
+
+
+<a name="0x3_ed25519_validator_scheme"></a>
+
+## Function `scheme`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_scheme">scheme</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_scheme">scheme</a>(): u64 {
+   <a href="ed25519_validator.md#0x3_ed25519_validator_SCHEME_ED25519">SCHEME_ED25519</a>
+}
+</code></pre>
+
+
+
+</details>
 
 <a name="0x3_ed25519_validator_ed25519_public_key"></a>
 
@@ -264,13 +289,13 @@ Get the authentication key of the given authenticator.
      <b>let</b> auth_key_in_account = <a href="ed25519_validator.md#0x3_ed25519_validator_get_authentication_key">get_authentication_key</a>(ctx, <a href="_sender">storage_context::sender</a>(ctx));
      <b>assert</b>!(
          auth_key_in_account == auth_key,
-         <a href="transaction_validator.md#0x3_transaction_validator_error_invalid_account_auth_key">transaction_validator::error_invalid_account_auth_key</a>()
+         <a href="auth_validator.md#0x3_auth_validator_error_invalid_account_auth_key">auth_validator::error_invalid_account_auth_key</a>()
      );
      <b>assert</b>!(
      <a href="ed25519.md#0x3_ed25519_verify">ed25519::verify</a>(&<a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_signature">ed25519_signature</a>(&payload),
          &<a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_public_key">ed25519_public_key</a>(&payload),
          &<a href="_tx_hash">storage_context::tx_hash</a>(ctx)),
-    <a href="transaction_validator.md#0x3_transaction_validator_error_invalid_account_auth_key">transaction_validator::error_invalid_account_auth_key</a>());
+    <a href="auth_validator.md#0x3_auth_validator_error_invalid_account_auth_key">auth_validator::error_invalid_account_auth_key</a>());
 }
 </code></pre>
 

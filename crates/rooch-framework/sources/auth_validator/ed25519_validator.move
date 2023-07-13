@@ -7,7 +7,7 @@ module rooch_framework::ed25519_validator {
    use rooch_framework::hash;
    use rooch_framework::account_authentication;
    use rooch_framework::ed25519;
-   use rooch_framework::transaction_validator;
+   use rooch_framework::auth_validator;
 
    const SCHEME_ED25519: u64 = 0;
 
@@ -15,7 +15,12 @@ module rooch_framework::ed25519_validator {
    const ED25519_PUBKEY_LENGTH: u64 = 32;
    const ED25519_SIG_LENGTH: u64 = 64;
 
+
    struct Ed25519Validator has store{
+   }
+
+   public fun scheme(): u64 {
+      SCHEME_ED25519
    }
 
    public fun ed25519_public_key(payload: &vector<u8>): vector<u8> {
@@ -71,13 +76,13 @@ module rooch_framework::ed25519_validator {
         let auth_key_in_account = get_authentication_key(ctx, storage_context::sender(ctx));
         assert!(
             auth_key_in_account == auth_key,
-            transaction_validator::error_invalid_account_auth_key()
+            auth_validator::error_invalid_account_auth_key()
         );
         assert!(
         ed25519::verify(&ed25519_signature(&payload),
             &ed25519_public_key(&payload),
             &storage_context::tx_hash(ctx)),
-       transaction_validator::error_invalid_account_auth_key());
+       auth_validator::error_invalid_account_auth_key());
    }
 
    // this test ensures that the ed25519_public_key_to_address function is compatible with the one in the rust code

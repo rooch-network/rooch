@@ -8,8 +8,10 @@ module rooch_framework::auth_validator_registry{
     use moveos_std::storage_context::{Self, StorageContext};
 
     friend rooch_framework::genesis;
+    friend rooch_framework::builtin_validators;
 
-    const E_VALIDATOR_UNREGISTERED: u64 = 1;
+    const EValidatorUnregistered: u64 = 1;
+    const EValidatorAlreadyRegistered: u64 = 2;
 
     struct AuthValidator has store {
         id: u64,
@@ -52,6 +54,8 @@ module rooch_framework::auth_validator_registry{
         let registry = account_storage::global_borrow_mut<ValidatorRegistry>(ctx, @rooch_framework);
         let id = registry.validator_num;
 
+        assert!(!type_table::contains<AuthValidatorWithType<ValidatorType>>(&registry.validators_with_type), error::already_exists(EValidatorAlreadyRegistered));
+        
         let validator_with_type = AuthValidatorWithType<ValidatorType>{
             id,
         };
@@ -75,9 +79,9 @@ module rooch_framework::auth_validator_registry{
 
     public fun borrow_validator_by_type<ValidatorType: store>(ctx: &StorageContext): &AuthValidator {
         let registry = account_storage::global_borrow<ValidatorRegistry>(ctx, @rooch_framework);
-        assert!(type_table::contains<AuthValidatorWithType<ValidatorType>>(&registry.validators_with_type), error::not_found(E_VALIDATOR_UNREGISTERED));
+        assert!(type_table::contains<AuthValidatorWithType<ValidatorType>>(&registry.validators_with_type), error::not_found(EValidatorUnregistered));
         let validator_with_type = type_table::borrow<AuthValidatorWithType<ValidatorType>>(&registry.validators_with_type);
-        assert!(table::contains(&registry.validators, validator_with_type.id), error::not_found(E_VALIDATOR_UNREGISTERED));
+        assert!(table::contains(&registry.validators, validator_with_type.id), error::not_found(EValidatorUnregistered));
         table::borrow(&registry.validators, validator_with_type.id)
     }
 

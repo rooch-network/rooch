@@ -8,6 +8,10 @@ module rooch_framework::multi_ed25519_validator {
    struct MultiEd25519Validator has store{
    }
 
+   public fun scheme(): u64 {
+      SCHEME_MULTIED25519
+   }
+
    public fun validate(_ctx: &StorageContext, _payload: vector<u8>){
       //TODO
       abort std::error::not_implemented(1)

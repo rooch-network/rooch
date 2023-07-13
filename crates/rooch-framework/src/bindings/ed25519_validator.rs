@@ -24,9 +24,7 @@ impl<'a> Ed25519Validator<'a> {
         let auth_validator_call = FunctionCall::new(
             Self::function_id(Self::VALIDATE_FUNCTION_NAME),
             vec![],
-            vec![MoveValue::vector_u8(payload.clone())
-                .simple_serialize()
-                .unwrap()],
+            vec![MoveValue::vector_u8(payload).simple_serialize().unwrap()],
         );
         self.caller
             .call_function(ctx, auth_validator_call)

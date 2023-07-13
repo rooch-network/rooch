@@ -7,8 +7,6 @@
 
 -  [Constants](#@Constants_0)
 -  [Function `validate`](#0x3_transaction_validator_validate)
--  [Function `error_invalid_account_auth_key`](#0x3_transaction_validator_error_invalid_account_auth_key)
--  [Function `error_invalid_authenticator`](#0x3_transaction_validator_error_invalid_authenticator)
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
@@ -18,7 +16,7 @@
 <b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
 <b>use</b> <a href="address_mapping.md#0x3_address_mapping">0x3::address_mapping</a>;
 <b>use</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry">0x3::auth_validator_registry</a>;
-<b>use</b> <a href="authenticator.md#0x3_authenticator">0x3::authenticator</a>;
+<b>use</b> <a href="builtin_validators.md#0x3_builtin_validators">0x3::builtin_validators</a>;
 </code></pre>
 
 
@@ -70,26 +68,6 @@ Transaction exceeded its allocated max gas
 
 
 <pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateCantPayGasDeposit">EValidateCantPayGasDeposit</a>: u64 = 1004;
-</code></pre>
-
-
-
-<a name="0x3_transaction_validator_EValidateInvalidAccountAuthKey"></a>
-
-The AuthKey in transaction's authenticator do not match with the sender's account auth key
-
-
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateInvalidAccountAuthKey">EValidateInvalidAccountAuthKey</a>: u64 = 1008;
-</code></pre>
-
-
-
-<a name="0x3_transaction_validator_EValidateInvalidAuthenticator"></a>
-
-InvalidAuthenticator, include invalid signature
-
-
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateInvalidAuthenticator">EValidateInvalidAuthenticator</a>: u64 = 1009;
 </code></pre>
 
 
@@ -181,64 +159,16 @@ If the authenticator is invaid, abort this function.
         <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNumberTooNew">EValidateSequenceNumberTooNew</a>)
     );
 
-    // === validate the <a href="authenticator.md#0x3_authenticator">authenticator</a> ===
+    // === validate the authenticator ===
 
     <b>let</b> sender = <a href="_sender">storage_context::sender</a>(ctx);
-    <b>let</b> auth_validator = <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator">auth_validator_registry::borrow_validator</a>(ctx, scheme);
-    <b>let</b> validator_id = <a href="auth_validator_registry.md#0x3_auth_validator_registry_validator_id">auth_validator_registry::validator_id</a>(auth_validator);
-    // buildin scheme do not need <b>to</b> install
-    <b>if</b>(!rooch_framework::authenticator::is_builtin_scheme(scheme)){
+    <b>let</b> <a href="auth_validator.md#0x3_auth_validator">auth_validator</a> = <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator">auth_validator_registry::borrow_validator</a>(ctx, scheme);
+    <b>let</b> validator_id = <a href="auth_validator_registry.md#0x3_auth_validator_registry_validator_id">auth_validator_registry::validator_id</a>(<a href="auth_validator.md#0x3_auth_validator">auth_validator</a>);
+    // builtin scheme do not need <b>to</b> install
+    <b>if</b>(!rooch_framework::builtin_validators::is_builtin(scheme)){
         <b>assert</b>!(<a href="account_authentication.md#0x3_account_authentication_is_auth_validator_installed">account_authentication::is_auth_validator_installed</a>(ctx, sender, validator_id), <a href="_invalid_state">error::invalid_state</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateNotInstalledAuthValidator">EValidateNotInstalledAuthValidator</a>));
     };
-    auth_validator
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_transaction_validator_error_invalid_account_auth_key"></a>
-
-## Function `error_invalid_account_auth_key`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_error_invalid_account_auth_key">error_invalid_account_auth_key</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_error_invalid_account_auth_key">error_invalid_account_auth_key</a>(): u64 {
-   <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateInvalidAccountAuthKey">EValidateInvalidAccountAuthKey</a>)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_transaction_validator_error_invalid_authenticator"></a>
-
-## Function `error_invalid_authenticator`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_error_invalid_authenticator">error_invalid_authenticator</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_error_invalid_authenticator">error_invalid_authenticator</a>(): u64 {
-   <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateInvalidAuthenticator">EValidateInvalidAuthenticator</a>)
+    <a href="auth_validator.md#0x3_auth_validator">auth_validator</a>
 }
 </code></pre>
 

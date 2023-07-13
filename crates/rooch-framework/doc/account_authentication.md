@@ -11,6 +11,8 @@ Migrate their from the account module for simplyfying the account module.
 -  [Resource `InstalledAuthValidator`](#0x3_account_authentication_InstalledAuthValidator)
 -  [Constants](#@Constants_0)
 -  [Function `get_authentication_key`](#0x3_account_authentication_get_authentication_key)
+-  [Function `rotate_authentication_key`](#0x3_account_authentication_rotate_authentication_key)
+-  [Function `rotate_authentication_key_internal`](#0x3_account_authentication_rotate_authentication_key_internal)
 -  [Function `is_auth_validator_installed`](#0x3_account_authentication_is_auth_validator_installed)
 -  [Function `install_auth_validator`](#0x3_account_authentication_install_auth_validator)
 -  [Function `install_auth_validator_entry`](#0x3_account_authentication_install_auth_validator_entry)
@@ -98,6 +100,26 @@ A resource tha holds the auth validator ids for this account has installed.
 
 
 
+<a name="0x3_account_authentication_EMalformedAuthenticationKey"></a>
+
+The provided authentication key has an invalid length
+
+
+<pre><code><b>const</b> <a href="account_authentication.md#0x3_account_authentication_EMalformedAuthenticationKey">EMalformedAuthenticationKey</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x3_account_authentication_MAX_AUTHENTICATION_KEY_LENGTH"></a>
+
+max authentication key length
+
+
+<pre><code><b>const</b> <a href="account_authentication.md#0x3_account_authentication_MAX_AUTHENTICATION_KEY_LENGTH">MAX_AUTHENTICATION_KEY_LENGTH</a>: u64 = 256;
+</code></pre>
+
+
+
 <a name="0x3_account_authentication_get_authentication_key"></a>
 
 ## Function `get_authentication_key`
@@ -118,6 +140,70 @@ A resource tha holds the auth validator ids for this account has installed.
       <a href="_none">option::none</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;()
    }<b>else</b>{
       <a href="_some">option::some</a>(<a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="account_authentication.md#0x3_account_authentication_AuthenticationKey">AuthenticationKey</a>&lt;ValidatorType&gt;&gt;(ctx, account_addr).authentication_key)
+   }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_account_authentication_rotate_authentication_key"></a>
+
+## Function `rotate_authentication_key`
+
+This function is used to rotate a resource account's authentication key, only the module which define the <code>ValidatorType</code> can call this function.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_rotate_authentication_key">rotate_authentication_key</a>&lt;ValidatorType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, new_auth_key: <a href="">vector</a>&lt;u8&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_rotate_authentication_key">rotate_authentication_key</a>&lt;ValidatorType&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, new_auth_key: <a href="">vector</a>&lt;u8&gt;) {
+   <a href="account_authentication.md#0x3_account_authentication_rotate_authentication_key_internal">rotate_authentication_key_internal</a>&lt;ValidatorType&gt;(ctx, <a href="account.md#0x3_account">account</a>, new_auth_key);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_account_authentication_rotate_authentication_key_internal"></a>
+
+## Function `rotate_authentication_key_internal`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_rotate_authentication_key_internal">rotate_authentication_key_internal</a>&lt;ValidatorType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, new_auth_key: <a href="">vector</a>&lt;u8&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_rotate_authentication_key_internal">rotate_authentication_key_internal</a>&lt;ValidatorType&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, new_auth_key: <a href="">vector</a>&lt;u8&gt;) {
+   <b>let</b> account_addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
+
+   <b>assert</b>!(
+      <a href="_length">vector::length</a>(&new_auth_key) &lt;= <a href="account_authentication.md#0x3_account_authentication_MAX_AUTHENTICATION_KEY_LENGTH">MAX_AUTHENTICATION_KEY_LENGTH</a>,
+      <a href="_invalid_argument">error::invalid_argument</a>(<a href="account_authentication.md#0x3_account_authentication_EMalformedAuthenticationKey">EMalformedAuthenticationKey</a>)
+   );
+
+   <b>if</b>(<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account_authentication.md#0x3_account_authentication_AuthenticationKey">AuthenticationKey</a>&lt;ValidatorType&gt;&gt;(ctx, account_addr)){
+      <b>let</b> authentication_key = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="account_authentication.md#0x3_account_authentication_AuthenticationKey">AuthenticationKey</a>&lt;ValidatorType&gt;&gt;(ctx, account_addr);
+      authentication_key.authentication_key = new_auth_key;
+   }<b>else</b>{
+      <b>let</b> authentication_key = <a href="account_authentication.md#0x3_account_authentication_AuthenticationKey">AuthenticationKey</a>&lt;ValidatorType&gt; {
+         authentication_key: new_auth_key,
+      };
+      <a href="_global_move_to">account_storage::global_move_to</a>(ctx, <a href="account.md#0x3_account">account</a>, authentication_key);
    }
 }
 </code></pre>

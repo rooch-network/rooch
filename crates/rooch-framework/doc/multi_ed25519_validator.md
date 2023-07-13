@@ -8,6 +8,7 @@ This module implements the multi-ed25519 validator scheme.
 
 -  [Struct `MultiEd25519Validator`](#0x3_multi_ed25519_validator_MultiEd25519Validator)
 -  [Constants](#@Constants_0)
+-  [Function `scheme`](#0x3_multi_ed25519_validator_scheme)
 -  [Function `validate`](#0x3_multi_ed25519_validator_validate)
 
 
@@ -57,6 +58,30 @@ This module implements the multi-ed25519 validator scheme.
 </code></pre>
 
 
+
+<a name="0x3_multi_ed25519_validator_scheme"></a>
+
+## Function `scheme`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_scheme">scheme</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_scheme">scheme</a>(): u64 {
+   <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_SCHEME_MULTIED25519">SCHEME_MULTIED25519</a>
+}
+</code></pre>
+
+
+
+</details>
 
 <a name="0x3_multi_ed25519_validator_validate"></a>
 

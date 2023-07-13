@@ -141,11 +141,20 @@ How many validators are registered
 ## Constants
 
 
-<a name="0x3_auth_validator_registry_E_VALIDATOR_UNREGISTERED"></a>
+<a name="0x3_auth_validator_registry_EValidatorAlreadyRegistered"></a>
 
 
 
-<pre><code><b>const</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_E_VALIDATOR_UNREGISTERED">E_VALIDATOR_UNREGISTERED</a>: u64 = 1;
+<pre><code><b>const</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_EValidatorAlreadyRegistered">EValidatorAlreadyRegistered</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x3_auth_validator_registry_EValidatorUnregistered"></a>
+
+
+
+<pre><code><b>const</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_EValidatorUnregistered">EValidatorUnregistered</a>: u64 = 1;
 </code></pre>
 
 
@@ -228,6 +237,8 @@ Init function called by genesis.
     <b>let</b> registry = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="auth_validator_registry.md#0x3_auth_validator_registry_ValidatorRegistry">ValidatorRegistry</a>&gt;(ctx, @rooch_framework);
     <b>let</b> id = registry.validator_num;
 
+    <b>assert</b>!(!<a href="_contains">type_table::contains</a>&lt;<a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidatorWithType">AuthValidatorWithType</a>&lt;ValidatorType&gt;&gt;(&registry.validators_with_type), <a href="_already_exists">error::already_exists</a>(<a href="auth_validator_registry.md#0x3_auth_validator_registry_EValidatorAlreadyRegistered">EValidatorAlreadyRegistered</a>));
+
     <b>let</b> validator_with_type = <a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidatorWithType">AuthValidatorWithType</a>&lt;ValidatorType&gt;{
         id,
     };
@@ -291,9 +302,9 @@ Init function called by genesis.
 
 <pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator_by_type">borrow_validator_by_type</a>&lt;ValidatorType: store&gt;(ctx: &StorageContext): &<a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidator">AuthValidator</a> {
     <b>let</b> registry = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="auth_validator_registry.md#0x3_auth_validator_registry_ValidatorRegistry">ValidatorRegistry</a>&gt;(ctx, @rooch_framework);
-    <b>assert</b>!(<a href="_contains">type_table::contains</a>&lt;<a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidatorWithType">AuthValidatorWithType</a>&lt;ValidatorType&gt;&gt;(&registry.validators_with_type), <a href="_not_found">error::not_found</a>(<a href="auth_validator_registry.md#0x3_auth_validator_registry_E_VALIDATOR_UNREGISTERED">E_VALIDATOR_UNREGISTERED</a>));
+    <b>assert</b>!(<a href="_contains">type_table::contains</a>&lt;<a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidatorWithType">AuthValidatorWithType</a>&lt;ValidatorType&gt;&gt;(&registry.validators_with_type), <a href="_not_found">error::not_found</a>(<a href="auth_validator_registry.md#0x3_auth_validator_registry_EValidatorUnregistered">EValidatorUnregistered</a>));
     <b>let</b> validator_with_type = <a href="_borrow">type_table::borrow</a>&lt;<a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidatorWithType">AuthValidatorWithType</a>&lt;ValidatorType&gt;&gt;(&registry.validators_with_type);
-    <b>assert</b>!(<a href="_contains">table::contains</a>(&registry.validators, validator_with_type.id), <a href="_not_found">error::not_found</a>(<a href="auth_validator_registry.md#0x3_auth_validator_registry_E_VALIDATOR_UNREGISTERED">E_VALIDATOR_UNREGISTERED</a>));
+    <b>assert</b>!(<a href="_contains">table::contains</a>(&registry.validators, validator_with_type.id), <a href="_not_found">error::not_found</a>(<a href="auth_validator_registry.md#0x3_auth_validator_registry_EValidatorUnregistered">EValidatorUnregistered</a>));
     <a href="_borrow">table::borrow</a>(&registry.validators, validator_with_type.id)
 }
 </code></pre>

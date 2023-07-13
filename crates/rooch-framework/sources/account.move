@@ -11,10 +11,7 @@ module rooch_framework::account{
 
    /// Resource representing an account.
    struct Account has key, store {
-      authentication_key: vector<u8>,
       sequence_number: u64,
-      //TODO do we need a global unique identifiers?
-      //guid_creation_num: u64,
    }
 
    /// A resource that holds the tokens stored in this account
@@ -41,17 +38,13 @@ module rooch_framework::account{
    /// authentication keys. Without such separation, an adversary could create (and get a signer for) a resource account
    /// whose address matches an existing address of a MultiEd25519 wallet.
    const DERIVE_RESOURCE_ACCOUNT_SCHEME: u8 = 255;
-   /// authentication key length
-   const AUTHENTICATION_KEY_LENGTH: u64 = 32;
-
+   
    /// Account already exists
    const EAccountAlreadyExists: u64 = 1;
    /// Account does not exist
    const EAccountNotExist: u64 = 2;
    /// Sequence number exceeds the maximum value for a u64
-   const ESequenceNumberTooBig: u64 = 3;
-   /// The provided authentication key has an invalid length
-   const EMalformedAuthenticationKey: u64 = 4;
+   const ESequenceNumberTooBig: u64 = 3; 
    /// Cannot create account because address is reserved
    const EAddressReseved: u64 = 5;
    /// An attempt to create a resource account on an account that has a committed transaction
@@ -84,17 +77,11 @@ module rooch_framework::account{
 
    fun create_account_unchecked(ctx: &mut StorageContext, new_address: address): signer {
       let new_account = create_signer(new_address);
-      let authentication_key = bcs::to_bytes(&new_address);
-      assert!(
-         vector::length(&authentication_key) == AUTHENTICATION_KEY_LENGTH,
-         error::invalid_argument(EMalformedAuthenticationKey)
-      );
 
       account_storage::ensure_account_storage(ctx, new_address);
       account_storage::global_move_to<Account>(ctx,
          &new_account,
          Account {
-            authentication_key,
             sequence_number: 0,
       });
 
@@ -162,16 +149,6 @@ module rooch_framework::account{
       0u128
    }
 
-   // #[view]
-   // public fun get_authentication_key(ctx: &StorageContext, addr: address): vector<u8> {
-   //    //if account does not exist, return addr as authentication key
-   //    if(!account_storage::global_exists<Account>(ctx, addr)){
-   //       bcs::to_bytes(&addr)
-   //    }else{
-   //       account_storage::global_borrow<Account>(ctx, addr).authentication_key
-   //    }
-   // }
-
    public fun signer_address(cap: &SignerCapability): address {
       cap.addr
    }
@@ -217,11 +194,6 @@ module rooch_framework::account{
          create_account_unchecked(ctx, resource_addr)
       };
 
-      // By default, only the SignerCapability should have control over the resource account and not the auth key.
-      // If the source account wants direct control via auth key, they would need to explicitly rotate the auth key
-      // of the resource account using the SignerCapability.
-      rotate_authentication_key_internal(ctx,&resource_signer, ZERO_AUTH_KEY);
-      // move_to(&resource_signer, ResourceAccount {});
       account_storage::global_move_to<ResourceAccount>(ctx,
          &resource_signer,
          ResourceAccount {}
@@ -252,19 +224,6 @@ module rooch_framework::account{
       vector::append(&mut bytes, seed);
       vector::push_back(&mut bytes, DERIVE_RESOURCE_ACCOUNT_SCHEME);
       bcs::to_address(hash::sha3_256(bytes))
-   }
-
-   /// This function is used to rotate a resource account's authentication key to 0, so that no private key can control
-   /// the resource account.
-   public(friend) fun rotate_authentication_key_internal(ctx: &mut StorageContext, account: &signer, new_auth_key: vector<u8>) {
-      let addr = signer::address_of(account);
-      assert!(exists_at(ctx, addr), error::not_found(EAccountNotExist));
-      assert!(
-         vector::length(&new_auth_key) == AUTHENTICATION_KEY_LENGTH,
-         error::invalid_argument(EMalformedAuthenticationKey)
-      );
-      let account_resource = account_storage::global_borrow_mut<Account>(ctx, addr);
-      account_resource.authentication_key = new_auth_key;
    }
 
    public fun create_signer_with_capability(capability: &SignerCapability): signer {
@@ -355,24 +314,6 @@ module rooch_framework::account{
       let ctx = storage_context::new_test_context(sender);
       create_account_entry(&mut ctx, sender);
       create_account_entry(&mut ctx, sender);
-      storage_context::drop_test_context(ctx);
-   }
-
-   #[test(sender=@0x42)]
-   #[expected_failure(abort_code = 0x60002, location = Self)]
-   fun test_failure_rotate_authentication_key_internal(sender: address){
-      let ctx = storage_context::new_test_context(@std);
-      let sender_signer = create_signer_for_test(sender);
-      rotate_authentication_key_internal(&mut ctx, &sender_signer, ZERO_AUTH_KEY);
-      storage_context::drop_test_context(ctx);
-   }
-
-   #[test(sender=@0x42)]
-   #[expected_failure(abort_code = 0x10004, location = Self)]
-   fun test_failure_rotate_authentication_key_internal_wrong_auth(sender: address){
-      let ctx = storage_context::new_test_context(@std);
-      let sender_signer = create_account_for_test(&mut ctx, sender);
-      rotate_authentication_key_internal(&mut ctx, &sender_signer, vector[]);
       storage_context::drop_test_context(ctx);
    }
 

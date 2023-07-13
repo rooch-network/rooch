@@ -26,10 +26,6 @@ module rooch_framework::transaction_validator {
     const EValidateBadChainId: u64 = 1006;
     const EValidateSequenceNumberTooBig: u64 = 1007;
 
-    /// The AuthKey in transaction's authenticator do not match with the sender's account auth key
-    const EValidateInvalidAccountAuthKey: u64 = 1008;
-    /// InvalidAuthenticator, include invalid signature
-    const EValidateInvalidAuthenticator: u64 = 1009;
     /// The authenticator's scheme is not installed to the sender's account
     const EValidateNotInstalledAuthValidator: u64 = 1010;
 
@@ -64,19 +60,11 @@ module rooch_framework::transaction_validator {
         let sender = storage_context::sender(ctx);
         let auth_validator = auth_validator_registry::borrow_validator(ctx, scheme);
         let validator_id = auth_validator_registry::validator_id(auth_validator);
-        // buildin scheme do not need to install
-        if(!rooch_framework::authenticator::is_builtin_scheme(scheme)){
+        // builtin scheme do not need to install
+        if(!rooch_framework::builtin_validators::is_builtin(scheme)){
             assert!(account_authentication::is_auth_validator_installed(ctx, sender, validator_id), error::invalid_state(EValidateNotInstalledAuthValidator));
         };
         auth_validator
-    }
-
-    public fun error_invalid_account_auth_key(): u64 {
-       error::invalid_argument(EValidateInvalidAccountAuthKey) 
-    }
-
-    public fun error_invalid_authenticator(): u64 {
-       error::invalid_argument(EValidateInvalidAuthenticator) 
     }
 
     /// Transaction pre_execute function.
