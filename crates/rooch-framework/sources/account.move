@@ -162,15 +162,15 @@ module rooch_framework::account{
       0u128
    }
 
-   #[view]
-   public fun get_authentication_key(ctx: &StorageContext, addr: address): vector<u8> {
-      //if account does not exist, return addr as authentication key
-      if(!account_storage::global_exists<Account>(ctx, addr)){
-         bcs::to_bytes(&addr)
-      }else{
-         account_storage::global_borrow<Account>(ctx, addr).authentication_key
-      }
-   }
+   // #[view]
+   // public fun get_authentication_key(ctx: &StorageContext, addr: address): vector<u8> {
+   //    //if account does not exist, return addr as authentication key
+   //    if(!account_storage::global_exists<Account>(ctx, addr)){
+   //       bcs::to_bytes(&addr)
+   //    }else{
+   //       account_storage::global_borrow<Account>(ctx, addr).authentication_key
+   //    }
+   // }
 
    public fun signer_address(cap: &SignerCapability): address {
       cap.addr
@@ -300,7 +300,7 @@ module rooch_framework::account{
       let alice = create_account_for_test(&mut ctx, alice_addr);
       let alice_addr_actual = signer::address_of(&alice);
       let sequence_number = sequence_number(&mut ctx, alice_addr);
-      std::debug::print(&get_authentication_key(&mut ctx, alice_addr));
+      //std::debug::print(&get_authentication_key(&mut ctx, alice_addr));
       std::debug::print(&sequence_number);
       assert!(alice_addr_actual == alice_addr, 103);
       assert!(sequence_number >= 0, 104);

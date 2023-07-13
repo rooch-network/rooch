@@ -7,16 +7,18 @@
 
 -  [Constants](#@Constants_0)
 -  [Function `validate`](#0x3_transaction_validator_validate)
+-  [Function `error_invalid_account_auth_key`](#0x3_transaction_validator_error_invalid_account_auth_key)
+-  [Function `error_invalid_authenticator`](#0x3_transaction_validator_error_invalid_authenticator)
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
 <b>use</b> <a href="account.md#0x3_account">0x3::account</a>;
+<b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
 <b>use</b> <a href="address_mapping.md#0x3_address_mapping">0x3::address_mapping</a>;
+<b>use</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry">0x3::auth_validator_registry</a>;
 <b>use</b> <a href="authenticator.md#0x3_authenticator">0x3::authenticator</a>;
-<b>use</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1">0x3::ecdsa_k1</a>;
-<b>use</b> <a href="ed25519.md#0x3_ed25519">0x3::ed25519</a>;
 </code></pre>
 
 
@@ -35,26 +37,6 @@
 
 
 
-<a name="0x3_transaction_validator_ED25519_SCHEME"></a>
-
-Scheme identifier for Ed25519 signatures used to derive authentication keys for Ed25519 public keys.
-
-
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_ED25519_SCHEME">ED25519_SCHEME</a>: u64 = 0;
-</code></pre>
-
-
-
-<a name="0x3_transaction_validator_EInvalidAuthenticator"></a>
-
-InvalidAuthenticator, include invalid signature
-
-
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EInvalidAuthenticator">EInvalidAuthenticator</a>: u64 = 1002;
-</code></pre>
-
-
-
 <a name="0x3_transaction_validator_EOUT_OF_GAS"></a>
 
 Transaction exceeded its allocated max gas
@@ -69,7 +51,7 @@ Transaction exceeded its allocated max gas
 
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateAccountDoesNotExist">EValidateAccountDoesNotExist</a>: u64 = 1005;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateAccountDoesNotExist">EValidateAccountDoesNotExist</a>: u64 = 1003;
 </code></pre>
 
 
@@ -78,7 +60,7 @@ Transaction exceeded its allocated max gas
 
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateBadChainId">EValidateBadChainId</a>: u64 = 1008;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateBadChainId">EValidateBadChainId</a>: u64 = 1006;
 </code></pre>
 
 
@@ -87,29 +69,49 @@ Transaction exceeded its allocated max gas
 
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateCantPayGasDeposit">EValidateCantPayGasDeposit</a>: u64 = 1006;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateCantPayGasDeposit">EValidateCantPayGasDeposit</a>: u64 = 1004;
 </code></pre>
 
 
 
 <a name="0x3_transaction_validator_EValidateInvalidAccountAuthKey"></a>
 
-Validate errors. These are separated out from the other errors in this
-module since they are mapped separately to major VM statuses, and are
-important to the semantics of the system.
 The AuthKey in transaction's authenticator do not match with the sender's account auth key
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateInvalidAccountAuthKey">EValidateInvalidAccountAuthKey</a>: u64 = 1001;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateInvalidAccountAuthKey">EValidateInvalidAccountAuthKey</a>: u64 = 1008;
+</code></pre>
+
+
+
+<a name="0x3_transaction_validator_EValidateInvalidAuthenticator"></a>
+
+InvalidAuthenticator, include invalid signature
+
+
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateInvalidAuthenticator">EValidateInvalidAuthenticator</a>: u64 = 1009;
+</code></pre>
+
+
+
+<a name="0x3_transaction_validator_EValidateNotInstalledAuthValidator"></a>
+
+The authenticator's scheme is not installed to the sender's account
+
+
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateNotInstalledAuthValidator">EValidateNotInstalledAuthValidator</a>: u64 = 1010;
 </code></pre>
 
 
 
 <a name="0x3_transaction_validator_EValidateSequenceNuberTooOld"></a>
 
+Validate errors. These are separated out from the other errors in this
+module since they are mapped separately to major VM statuses, and are
+important to the semantics of the system.
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNuberTooOld">EValidateSequenceNuberTooOld</a>: u64 = 1003;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNuberTooOld">EValidateSequenceNuberTooOld</a>: u64 = 1001;
 </code></pre>
 
 
@@ -118,7 +120,7 @@ The AuthKey in transaction's authenticator do not match with the sender's accoun
 
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNumberTooBig">EValidateSequenceNumberTooBig</a>: u64 = 1009;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNumberTooBig">EValidateSequenceNumberTooBig</a>: u64 = 1007;
 </code></pre>
 
 
@@ -127,7 +129,7 @@ The AuthKey in transaction's authenticator do not match with the sender's accoun
 
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNumberTooNew">EValidateSequenceNumberTooNew</a>: u64 = 1004;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNumberTooNew">EValidateSequenceNumberTooNew</a>: u64 = 1002;
 </code></pre>
 
 
@@ -136,26 +138,7 @@ The AuthKey in transaction's authenticator do not match with the sender's accoun
 
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateTransactionExpired">EValidateTransactionExpired</a>: u64 = 1007;
-</code></pre>
-
-
-
-<a name="0x3_transaction_validator_MULTI_ED25519_SCHEME"></a>
-
-Scheme identifier for MultiEd25519 signatures used to derive authentication keys for MultiEd25519 public keys.
-
-
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_MULTI_ED25519_SCHEME">MULTI_ED25519_SCHEME</a>: u64 = 1;
-</code></pre>
-
-
-
-<a name="0x3_transaction_validator_SECP256K1_SCHEME"></a>
-
-
-
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_SECP256K1_SCHEME">SECP256K1_SCHEME</a>: u64 = 2;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateTransactionExpired">EValidateTransactionExpired</a>: u64 = 1005;
 </code></pre>
 
 
@@ -168,7 +151,7 @@ This function is for Rooch to validate the transaction sender's authenticator.
 If the authenticator is invaid, abort this function.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_validate">validate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, authenticator_info_bytes: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_validate">validate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, tx_sequence_number: u64, scheme: u64, _authenticator_payload: <a href="">vector</a>&lt;u8&gt;): &<a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidator">auth_validator_registry::AuthValidator</a>
 </code></pre>
 
 
@@ -177,34 +160,8 @@ If the authenticator is invaid, abort this function.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_validate">validate</a>(ctx: &StorageContext, authenticator_info_bytes: <a href="">vector</a>&lt;u8&gt;){
-    <b>let</b> (tx_sequence_number, <a href="authenticator.md#0x3_authenticator">authenticator</a>) = <a href="authenticator.md#0x3_authenticator_decode_authenticator_info">authenticator::decode_authenticator_info</a>(authenticator_info_bytes);
-    <a href="authenticator.md#0x3_authenticator_check_authenticator">authenticator::check_authenticator</a>(&<a href="authenticator.md#0x3_authenticator">authenticator</a>);
-    <b>let</b> scheme = <a href="authenticator.md#0x3_authenticator_scheme">authenticator::scheme</a>(&<a href="authenticator.md#0x3_authenticator">authenticator</a>);
-    <b>if</b> (scheme == <a href="transaction_validator.md#0x3_transaction_validator_ED25519_SCHEME">ED25519_SCHEME</a>) {
-        <b>let</b> ed25519_authenicator = <a href="authenticator.md#0x3_authenticator_decode_ed25519_authenticator">authenticator::decode_ed25519_authenticator</a>(<a href="authenticator.md#0x3_authenticator">authenticator</a>);
-        <b>let</b> auth_key = <a href="authenticator.md#0x3_authenticator_ed25519_authentication_key">authenticator::ed25519_authentication_key</a>(&ed25519_authenicator);
-        <b>let</b> auth_key_in_account = <a href="account.md#0x3_account_get_authentication_key">account::get_authentication_key</a>(ctx, <a href="_sender">storage_context::sender</a>(ctx));
-        <b>assert</b>!(
-            auth_key_in_account == auth_key,
-            <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateInvalidAccountAuthKey">EValidateInvalidAccountAuthKey</a>)
-        );
-        <b>assert</b>!(
-        <a href="ed25519.md#0x3_ed25519_verify">ed25519::verify</a>(&<a href="authenticator.md#0x3_authenticator_ed25519_signature">authenticator::ed25519_signature</a>(&ed25519_authenicator),
-            &<a href="authenticator.md#0x3_authenticator_ed25519_public">authenticator::ed25519_public</a>(&ed25519_authenicator),
-            &<a href="_tx_hash">storage_context::tx_hash</a>(ctx)),
-        <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EInvalidAuthenticator">EInvalidAuthenticator</a>));
-    } <b>else</b> <b>if</b> (scheme == <a href="transaction_validator.md#0x3_transaction_validator_SECP256K1_SCHEME">SECP256K1_SCHEME</a>) {
-        //FIXME check the <b>address</b> and <b>public</b> key relationship
-        <b>let</b> ecdsa_k1_authenicator = <a href="authenticator.md#0x3_authenticator_decode_secp256k1_authenticator">authenticator::decode_secp256k1_authenticator</a>(<a href="authenticator.md#0x3_authenticator">authenticator</a>);
-        <b>assert</b>!(
-        <a href="ecdsa_k1.md#0x3_ecdsa_k1_verify">ecdsa_k1::verify</a>(
-            &<a href="authenticator.md#0x3_authenticator_secp256k1_signature">authenticator::secp256k1_signature</a>(&ecdsa_k1_authenicator),
-            &<a href="_tx_hash">storage_context::tx_hash</a>(ctx),
-            0 // KECCAK256:0, SHA256:1, TODO: The <a href="../doc/hash.md#0x1_hash">hash</a> type may need <b>to</b> be passed through the <a href="authenticator.md#0x3_authenticator">authenticator</a>
-        ),
-        <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EInvalidAuthenticator">EInvalidAuthenticator</a>));
-    };
+<pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_validate">validate</a>(ctx: &StorageContext, tx_sequence_number: u64, scheme: u64, _authenticator_payload: <a href="">vector</a>&lt;u8&gt;): &AuthValidator {
+    // === validate the sequence number ===
 
     <b>assert</b>!(
         (tx_sequence_number <b>as</b> u128) &lt; <a href="transaction_validator.md#0x3_transaction_validator_MAX_U64">MAX_U64</a>,
@@ -223,6 +180,65 @@ If the authenticator is invaid, abort this function.
         tx_sequence_number == account_sequence_number,
         <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNumberTooNew">EValidateSequenceNumberTooNew</a>)
     );
+
+    // === validate the <a href="authenticator.md#0x3_authenticator">authenticator</a> ===
+
+    <b>let</b> sender = <a href="_sender">storage_context::sender</a>(ctx);
+    <b>let</b> auth_validator = <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator">auth_validator_registry::borrow_validator</a>(ctx, scheme);
+    <b>let</b> validator_id = <a href="auth_validator_registry.md#0x3_auth_validator_registry_validator_id">auth_validator_registry::validator_id</a>(auth_validator);
+    // buildin scheme do not need <b>to</b> install
+    <b>if</b>(!rooch_framework::authenticator::is_builtin_scheme(scheme)){
+        <b>assert</b>!(<a href="account_authentication.md#0x3_account_authentication_is_auth_validator_installed">account_authentication::is_auth_validator_installed</a>(ctx, sender, validator_id), <a href="_invalid_state">error::invalid_state</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateNotInstalledAuthValidator">EValidateNotInstalledAuthValidator</a>));
+    };
+    auth_validator
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_transaction_validator_error_invalid_account_auth_key"></a>
+
+## Function `error_invalid_account_auth_key`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_error_invalid_account_auth_key">error_invalid_account_auth_key</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_error_invalid_account_auth_key">error_invalid_account_auth_key</a>(): u64 {
+   <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateInvalidAccountAuthKey">EValidateInvalidAccountAuthKey</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_transaction_validator_error_invalid_authenticator"></a>
+
+## Function `error_invalid_authenticator`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_error_invalid_authenticator">error_invalid_authenticator</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_error_invalid_authenticator">error_invalid_authenticator</a>(): u64 {
+   <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateInvalidAuthenticator">EValidateInvalidAuthenticator</a>)
 }
 </code></pre>
 

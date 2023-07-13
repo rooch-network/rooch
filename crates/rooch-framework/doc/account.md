@@ -17,7 +17,6 @@
 -  [Function `sequence_number_for_sender`](#0x3_account_sequence_number_for_sender)
 -  [Function `increment_sequence_number`](#0x3_account_increment_sequence_number)
 -  [Function `balance`](#0x3_account_balance)
--  [Function `get_authentication_key`](#0x3_account_get_authentication_key)
 -  [Function `signer_address`](#0x3_account_signer_address)
 -  [Function `is_resource_account`](#0x3_account_is_resource_account)
 -  [Function `exists_at`](#0x3_account_exists_at)
@@ -499,35 +498,6 @@ Return the current TokenType balance of the account at <code>addr</code>.
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_balance">balance</a>&lt;TokenType: store&gt;(_addr: <b>address</b>): u128 {
    //TODO token standard, <b>with</b> balance precesion(u64|u128|u256)
    0u128
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_account_get_authentication_key"></a>
-
-## Function `get_authentication_key`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_get_authentication_key">get_authentication_key</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): <a href="">vector</a>&lt;u8&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_get_authentication_key">get_authentication_key</a>(ctx: &StorageContext, addr: <b>address</b>): <a href="">vector</a>&lt;u8&gt; {
-   //<b>if</b> <a href="account.md#0x3_account">account</a> does not exist, <b>return</b> addr <b>as</b> authentication key
-   <b>if</b>(!<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, addr)){
-      <a href="_to_bytes">bcs::to_bytes</a>(&addr)
-   }<b>else</b>{
-      <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, addr).authentication_key
-   }
 }
 </code></pre>
 

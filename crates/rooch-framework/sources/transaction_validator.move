@@ -3,18 +3,12 @@ module rooch_framework::transaction_validator {
     use std::option;
     use moveos_std::storage_context::{Self,StorageContext};
     use rooch_framework::account;
-    use rooch_framework::authenticator;
-    use rooch_framework::ed25519;
-    use rooch_framework::ecdsa_k1;
     use rooch_framework::address_mapping::{Self,MultiChainAddress};
+    use rooch_framework::account_authentication;
+    use rooch_framework::auth_validator_registry::{Self, AuthValidator};
 
     const MAX_U64: u128 = 18446744073709551615;
 
-    /// Scheme identifier for Ed25519 signatures used to derive authentication keys for Ed25519 public keys.
-    const ED25519_SCHEME: u64 = 0;
-    /// Scheme identifier for MultiEd25519 signatures used to derive authentication keys for MultiEd25519 public keys.
-    const MULTI_ED25519_SCHEME: u64 = 1;
-    const SECP256K1_SCHEME: u64 = 2;
 
     /// Transaction exceeded its allocated max gas
     const EOUT_OF_GAS: u64 = 6;
@@ -23,51 +17,30 @@ module rooch_framework::transaction_validator {
     /// module since they are mapped separately to major VM statuses, and are
     /// important to the semantics of the system.
 
+
+    const EValidateSequenceNuberTooOld: u64 = 1001;
+    const EValidateSequenceNumberTooNew: u64 = 1002;
+    const EValidateAccountDoesNotExist: u64 = 1003;
+    const EValidateCantPayGasDeposit: u64 = 1004;
+    const EValidateTransactionExpired: u64 = 1005;
+    const EValidateBadChainId: u64 = 1006;
+    const EValidateSequenceNumberTooBig: u64 = 1007;
+
     /// The AuthKey in transaction's authenticator do not match with the sender's account auth key
-    const EValidateInvalidAccountAuthKey: u64 = 1001;
+    const EValidateInvalidAccountAuthKey: u64 = 1008;
     /// InvalidAuthenticator, include invalid signature
-    const EInvalidAuthenticator: u64 = 1002;
-    const EValidateSequenceNuberTooOld: u64 = 1003;
-    const EValidateSequenceNumberTooNew: u64 = 1004;
-    const EValidateAccountDoesNotExist: u64 = 1005;
-    const EValidateCantPayGasDeposit: u64 = 1006;
-    const EValidateTransactionExpired: u64 = 1007;
-    const EValidateBadChainId: u64 = 1008;
-    const EValidateSequenceNumberTooBig: u64 = 1009;
+    const EValidateInvalidAuthenticator: u64 = 1009;
+    /// The authenticator's scheme is not installed to the sender's account
+    const EValidateNotInstalledAuthValidator: u64 = 1010;
 
    
     #[view]
     /// This function is for Rooch to validate the transaction sender's authenticator.
     /// If the authenticator is invaid, abort this function.
-    public fun validate(ctx: &StorageContext, authenticator_info_bytes: vector<u8>){
-        let (tx_sequence_number, authenticator) = authenticator::decode_authenticator_info(authenticator_info_bytes);
-        authenticator::check_authenticator(&authenticator);
-        let scheme = authenticator::scheme(&authenticator);
-        if (scheme == ED25519_SCHEME) {
-            let ed25519_authenicator = authenticator::decode_ed25519_authenticator(authenticator);
-            let auth_key = authenticator::ed25519_authentication_key(&ed25519_authenicator);
-            let auth_key_in_account = account::get_authentication_key(ctx, storage_context::sender(ctx));
-            assert!(
-                auth_key_in_account == auth_key,
-                error::invalid_argument(EValidateInvalidAccountAuthKey)
-            );
-            assert!(
-            ed25519::verify(&authenticator::ed25519_signature(&ed25519_authenicator),
-                &authenticator::ed25519_public(&ed25519_authenicator),
-                &storage_context::tx_hash(ctx)),
-            error::invalid_argument(EInvalidAuthenticator));
-        } else if (scheme == SECP256K1_SCHEME) {
-            //FIXME check the address and public key relationship
-            let ecdsa_k1_authenicator = authenticator::decode_secp256k1_authenticator(authenticator);
-            assert!(
-            ecdsa_k1::verify(
-                &authenticator::secp256k1_signature(&ecdsa_k1_authenicator),
-                &storage_context::tx_hash(ctx),
-                0 // KECCAK256:0, SHA256:1, TODO: The hash type may need to be passed through the authenticator
-            ),
-            error::invalid_argument(EInvalidAuthenticator));
-        };
-
+    //TODO should we need the authenticator_payload?
+    public fun validate(ctx: &StorageContext, tx_sequence_number: u64, scheme: u64, _authenticator_payload: vector<u8>): &AuthValidator {
+        // === validate the sequence number ===
+        
         assert!(
             (tx_sequence_number as u128) < MAX_U64,
             error::out_of_range(EValidateSequenceNumberTooBig)
@@ -85,6 +58,25 @@ module rooch_framework::transaction_validator {
             tx_sequence_number == account_sequence_number,
             error::invalid_argument(EValidateSequenceNumberTooNew)
         );
+
+        // === validate the authenticator ===
+
+        let sender = storage_context::sender(ctx);
+        let auth_validator = auth_validator_registry::borrow_validator(ctx, scheme);
+        let validator_id = auth_validator_registry::validator_id(auth_validator);
+        // buildin scheme do not need to install
+        if(!rooch_framework::authenticator::is_builtin_scheme(scheme)){
+            assert!(account_authentication::is_auth_validator_installed(ctx, sender, validator_id), error::invalid_state(EValidateNotInstalledAuthValidator));
+        };
+        auth_validator
+    }
+
+    public fun error_invalid_account_auth_key(): u64 {
+       error::invalid_argument(EValidateInvalidAccountAuthKey) 
+    }
+
+    public fun error_invalid_authenticator(): u64 {
+       error::invalid_argument(EValidateInvalidAuthenticator) 
     }
 
     /// Transaction pre_execute function.

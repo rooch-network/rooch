@@ -28,7 +28,7 @@ use std::{convert::TryFrom, fmt, str::FromStr};
 
 pub trait BuiltinAuthenticator {
     fn scheme(&self) -> BuiltinScheme;
-    fn encode(&self) -> Vec<u8>;
+    fn payload(&self) -> Vec<u8>;
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -40,8 +40,8 @@ impl BuiltinAuthenticator for Ed25519Authenticator {
     fn scheme(&self) -> BuiltinScheme {
         BuiltinScheme::Ed25519
     }
-    fn encode(&self) -> Vec<u8> {
-        bcs::to_bytes(self).expect("encode should success.")
+    fn payload(&self) -> Vec<u8> {
+        self.signature.as_ref().to_vec()
     }
 }
 #[cfg(any(test, feature = "fuzzing"))]
@@ -78,8 +78,8 @@ impl BuiltinAuthenticator for Secp256k1Authenticator {
     fn scheme(&self) -> BuiltinScheme {
         BuiltinScheme::Secp256k1
     }
-    fn encode(&self) -> Vec<u8> {
-        bcs::to_bytes(self).expect("encode should success.")
+    fn payload(&self) -> Vec<u8> {
+        self.signature.to_vec()
     }
 }
 
@@ -146,7 +146,7 @@ where
 {
     fn from(value: T) -> Self {
         let scheme = value.scheme() as u64;
-        let payload = value.encode();
+        let payload = value.payload();
         Authenticator { scheme, payload }
     }
 }
