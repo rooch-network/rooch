@@ -72,12 +72,16 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
 
         // let modules = package.root_modules_map().iter_modules_owned();
         let modules = package.root_modules_map();
-
-        // let pkg_address = modules..iter_modules_owned() modules[0].self_id().address().to_owned();
-        let pkg_address = modules.iter_modules_owned()[0]
-            .self_id()
-            .address()
-            .to_owned();
+        let empty_modules = modules.iter_modules_owned().is_empty();
+        let pkg_address = if !empty_modules {
+            let first_module = &modules.iter_modules_owned()[0];
+            first_module.self_id().address().to_owned()
+        } else {
+            return Err(RoochError::MoveCompilationError(format!(
+                "compiling move modules error! Is the project or module empty: {:?}",
+                empty_modules,
+            )));
+        };
         let mut bundles: Vec<Vec<u8>> = vec![];
         // let sorted_modules = Self::order_modules(modules)?;
         let sorted_modules = sort_by_dependency_order(modules.iter_modules())?;
