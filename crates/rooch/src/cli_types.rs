@@ -278,7 +278,9 @@ fn parse_vector_arg<T: Serialize, F: Fn(&str) -> RoochResult<T>>(
     let mut parsed_args = vec![];
     let args = args.split(',');
     for arg in args {
-        parsed_args.push(parse(arg)?);
+        if !arg.is_empty() {
+            parsed_args.push(parse(arg)?);
+        }
     }
 
     bcs::to_bytes(&parsed_args).map_err(|err| RoochError::BcsError(err.to_string()))
