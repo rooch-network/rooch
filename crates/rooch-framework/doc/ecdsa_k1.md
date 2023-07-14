@@ -71,7 +71,7 @@ The accepted v values are {0, 1, 2, 3}.
 
 If the signature is valid, return the corresponding recovered Secpk256k1 public
 key, otherwise throw error. This is similar to ecrecover in Ethereum, can only be
-applied to Secp256k1 signatures.
+applied to Ecdsa signatures.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_ecrecover">ecrecover</a>(signature: &<a href="">vector</a>&lt;u8&gt;, msg: &<a href="">vector</a>&lt;u8&gt;, <a href="../doc/hash.md#0x1_hash">hash</a>: u8): <a href="">vector</a>&lt;u8&gt;
@@ -121,7 +121,7 @@ otherwise throw error.
 ## Function `verify`
 
 @param signature: A 65-bytes signature in form (r, s, v) that is signed using
-Secp256k1. This is an non-recoverable signature without recovery id.
+Ecdsa. This is an non-recoverable signature without recovery id.
 @param msg: The message that the signature is signed against.
 @param hash: The hash function used to hash the message when signing.
 

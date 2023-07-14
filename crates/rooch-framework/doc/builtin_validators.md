@@ -13,9 +13,9 @@
 <pre><code><b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
 <b>use</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry">0x3::auth_validator_registry</a>;
+<b>use</b> <a href="ecdsa_validator.md#0x3_ecdsa_validator">0x3::ecdsa_validator</a>;
 <b>use</b> <a href="ed25519_validator.md#0x3_ed25519_validator">0x3::ed25519_validator</a>;
 <b>use</b> <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator">0x3::multi_ed25519_validator</a>;
-<b>use</b> <a href="secp256k1_validator.md#0x3_secp256k1_validator">0x3::secp256k1_validator</a>;
 </code></pre>
 
 
@@ -56,9 +56,9 @@
     //SCHEME_MULTIED25519: u64 = 1;
     <b>let</b> id = <a href="auth_validator_registry.md#0x3_auth_validator_registry_register_internal">auth_validator_registry::register_internal</a>&lt;<a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_MultiEd25519Validator">multi_ed25519_validator::MultiEd25519Validator</a>&gt;(ctx);
     <b>assert</b>!(id == <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_scheme">multi_ed25519_validator::scheme</a>(), std::error::internal(<a href="builtin_validators.md#0x3_builtin_validators_E_GENESIS_INIT">E_GENESIS_INIT</a>));
-    //SCHEME_SECP256K1: u64 = 2;
-    <b>let</b> id = <a href="auth_validator_registry.md#0x3_auth_validator_registry_register_internal">auth_validator_registry::register_internal</a>&lt;<a href="secp256k1_validator.md#0x3_secp256k1_validator_Secp256k1Validator">secp256k1_validator::Secp256k1Validator</a>&gt;(ctx);
-    <b>assert</b>!(id == <a href="secp256k1_validator.md#0x3_secp256k1_validator_scheme">secp256k1_validator::scheme</a>(), std::error::internal(<a href="builtin_validators.md#0x3_builtin_validators_E_GENESIS_INIT">E_GENESIS_INIT</a>));
+    //SCHEME_ECDSA: u64 = 2;
+    <b>let</b> id = <a href="auth_validator_registry.md#0x3_auth_validator_registry_register_internal">auth_validator_registry::register_internal</a>&lt;<a href="ecdsa_validator.md#0x3_ecdsa_validator_EcdsaValidator">ecdsa_validator::EcdsaValidator</a>&gt;(ctx);
+    <b>assert</b>!(id == <a href="ecdsa_validator.md#0x3_ecdsa_validator_scheme">ecdsa_validator::scheme</a>(), std::error::internal(<a href="builtin_validators.md#0x3_builtin_validators_E_GENESIS_INIT">E_GENESIS_INIT</a>));
 }
 </code></pre>
 
@@ -82,7 +82,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="builtin_validators.md#0x3_builtin_validators_is_builtin">is_builtin</a>(scheme: u64): bool {
-    scheme == <a href="ed25519_validator.md#0x3_ed25519_validator_scheme">ed25519_validator::scheme</a>() || scheme == <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_scheme">multi_ed25519_validator::scheme</a>() || scheme == <a href="secp256k1_validator.md#0x3_secp256k1_validator_scheme">secp256k1_validator::scheme</a>()
+    scheme == <a href="ed25519_validator.md#0x3_ed25519_validator_scheme">ed25519_validator::scheme</a>() || scheme == <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_scheme">multi_ed25519_validator::scheme</a>() || scheme == <a href="ecdsa_validator.md#0x3_ecdsa_validator_scheme">ecdsa_validator::scheme</a>()
 }
 </code></pre>
 
