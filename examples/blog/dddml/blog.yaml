@@ -1,7 +1,7 @@
 aggregates:
   Article:
     metadata:
-      Preprocessors: ["MOVE_CRUD_IT"]
+      Preprocessors: [ "MOVE_CRUD_IT" ]
     id:
       name: Id
       type: ObjectID
@@ -13,15 +13,15 @@ aggregates:
       Body:
         type: String
         length: 2000
-      Owner:
-        type: address
       Comments:
         itemType: Comment
+#      Owner:
+#        type: address
 
     entities:
       Comment:
         metadata:
-          Preprocessors: ["MOVE_CRUD_IT"]
+          Preprocessors: [ "MOVE_CRUD_IT" ]
         id:
           name: CommentSeqId
           type: u64
@@ -41,14 +41,6 @@ aggregates:
       # Once the `*_logic.move` files are generated, the tool does not overwrite them by default.
       # By writing the simple verification logic here, the `*_logic.move` file can be deleted and regenerated when the model changes.
       # ------------------------------------------------------------------------------------------------------
-      Update:
-        verificationLogic:
-          Move:
-            "assert!(std::signer::address_of(account) == article::owner(article_obj), 111);"
-      Delete:
-        verificationLogic:
-          Move:
-            "assert!(std::signer::address_of(account) == article::owner(article_obj), 111);"
       UpdateComment:
         verificationLogic:
           Move:
@@ -71,3 +63,36 @@ aggregates:
             type: String
           Body:
             type: String
+
+#      Update:
+#        verificationLogic:
+#          Move:
+#            "assert!(std::signer::address_of(account) == article::owner(article_obj), 111);"
+#      Delete:
+#        verificationLogic:
+#          Move:
+#            "assert!(std::signer::address_of(account) == article::owner(article_obj), 111);"
+
+singletonObjects:
+  Blog:
+    metadata:
+      Preprocessors: [ "MOVE_CRUD_IT" ]
+    properties:
+      Name:
+        type: String
+        length: 200
+      Articles:
+        itemType: ObjectID
+    methods:
+      AddArticle:
+        event:
+          name: ArticleAddedToBlog
+        parameters:
+          ArticleId:
+            type: ObjectID
+      RemoveArticle:
+        event:
+          name: ArticleRemovedFromBlog
+        parameters:
+          ArticleId:
+            type: ObjectID
