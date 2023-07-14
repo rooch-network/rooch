@@ -9,6 +9,7 @@ use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, TypeTagView};
 use rooch_types::{
     address::RoochAddress,
     error::{RoochError, RoochResult},
+    transaction::rooch::RoochTransaction,
 };
 
 /// Run a Move function
@@ -77,7 +78,15 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
             self.type_args.into_iter().map(Into::into).collect(),
             args,
         );
-
-        context.sign_and_execute(sender, action).await
+        match self.tx_options.authenticator {
+            Some(authenticator) => {
+                let tx_data = context.build_tx_data(sender, action).await?;
+                //TODO the authenticator usually is associalted with the RoochTransactinData
+                //So we need to find a way to let user generate the authenticator based on the tx_data.
+                let tx = RoochTransaction::new(tx_data, authenticator.into());
+                context.execute(tx).await
+            }
+            None => context.sign_and_execute(sender, action).await,
+        }
     }
 }

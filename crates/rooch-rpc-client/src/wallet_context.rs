@@ -79,15 +79,11 @@ impl WalletContext {
         })
     }
 
-    pub async fn sign_and_execute(
+    pub async fn build_tx_data(
         &self,
         sender: RoochAddress,
         action: MoveAction,
-    ) -> RoochResult<ExecuteTransactionResponseView> {
-        let pk = self.config.keystore.get_key(&sender).ok().ok_or_else(|| {
-            RoochError::SignMessageError(format!("Cannot find key for address: [{sender}]"))
-        })?;
-
+    ) -> RoochResult<RoochTransactionData> {
         let client = self.get_client().await?;
 
         let sequence_number = client
@@ -96,17 +92,46 @@ impl WalletContext {
             .map_err(RoochError::from)?;
         log::debug!("use sequence_number: {}", sequence_number);
         let tx_data = RoochTransactionData::new(sender, sequence_number, action);
+        Ok(tx_data)
+    }
+
+    pub async fn sign(
+        &self,
+        sender: RoochAddress,
+        action: MoveAction,
+    ) -> RoochResult<RoochTransaction> {
+        let pk = self.config.keystore.get_key(&sender).ok().ok_or_else(|| {
+            RoochError::SignMessageError(format!("Cannot find key for address: [{sender}]"))
+        })?;
+
+        let tx_data = self.build_tx_data(sender, action).await?;
         let signature = Signature::new_hashed(tx_data.hash().as_bytes(), pk);
         let auth = match pk.public().scheme() {
             BuiltinScheme::Ed25519 => Authenticator::ed25519(signature),
             BuiltinScheme::Ecdsa => todo!(),
             BuiltinScheme::MultiEd25519 => todo!(),
         };
+        Ok(RoochTransaction::new(tx_data, auth))
+    }
 
+    pub async fn execute(
+        &self,
+        tx: RoochTransaction,
+    ) -> RoochResult<ExecuteTransactionResponseView> {
+        let client = self.get_client().await?;
         client
-            .execute_tx(RoochTransaction::new(tx_data, auth))
+            .execute_tx(tx)
             .await
             .map_err(|e| RoochError::TransactionError(e.to_string()))
+    }
+
+    pub async fn sign_and_execute(
+        &self,
+        sender: RoochAddress,
+        action: MoveAction,
+    ) -> RoochResult<ExecuteTransactionResponseView> {
+        let tx = self.sign(sender, action).await?;
+        self.execute(tx).await
     }
 
     fn parse(&self, account: String) -> Result<AccountAddress, RoochError> {
