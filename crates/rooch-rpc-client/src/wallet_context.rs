@@ -99,7 +99,7 @@ impl WalletContext {
         let signature = Signature::new_hashed(tx_data.hash().as_bytes(), pk);
         let auth = match pk.public().scheme() {
             BuiltinScheme::Ed25519 => Authenticator::ed25519(signature),
-            BuiltinScheme::Secp256k1 => todo!(),
+            BuiltinScheme::Ecdsa => todo!(),
             BuiltinScheme::MultiEd25519 => todo!(),
         };
 
