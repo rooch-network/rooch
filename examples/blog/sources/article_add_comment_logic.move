@@ -28,6 +28,7 @@ module rooch_examples::article_add_comment_logic {
 
     public(friend) fun mutate(
         storage_ctx: &mut StorageContext,
+        _account: &signer,
         comment_added: &article::CommentAdded,
         article_obj: Object<article::Article>,
     ): Object<article::Article> {

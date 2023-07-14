@@ -8,6 +8,8 @@ module rooch_examples::article_update_comment_logic {
 
     friend rooch_examples::article_aggregate;
 
+    const ENOT_OWNER_ACCOUNT: u64 = 113;
+
     public(friend) fun verify(
         storage_ctx: &mut StorageContext,
         account: &signer,
@@ -18,10 +20,8 @@ module rooch_examples::article_update_comment_logic {
         article_obj: &Object<article::Article>,
     ): article::CommentUpdated {
         let _ = storage_ctx;
-        let _ = account;
         let comment = article::borrow_comment(article_obj, comment_seq_id);
-        let _ = comment;
-        assert!(std::signer::address_of(account) == comment::owner(comment), 111);
+        assert!(std::signer::address_of(account) == comment::owner(comment), ENOT_OWNER_ACCOUNT);
         article::new_comment_updated(
             article_obj,
             comment_seq_id,
@@ -33,6 +33,7 @@ module rooch_examples::article_update_comment_logic {
 
     public(friend) fun mutate(
         storage_ctx: &mut StorageContext,
+        _account: &signer,
         comment_updated: &article::CommentUpdated,
         article_obj: Object<article::Article>,
     ): Object<article::Article> {
