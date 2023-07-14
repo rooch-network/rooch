@@ -711,7 +711,7 @@ singletonObjects:
 在增加了 Blog 这个单例对象后，在添加文章之前，需要先将它初始化：
 
 ```shell
-rooch move run --function {ARTICLE_OBJECT_ID}::blog_aggregate::create --sender-account {ARTICLE_OBJECT_ID} --args 'string:My Blog' 'vector<object_id>:{ARTICLE_OBJECT_ID}'
+rooch move run --function {ACCOUNT_ADDRESS}::blog_aggregate::create --sender-account {ACCOUNT_ADDRESS} --args 'string:My Blog' 'vector<object_id>:{ACCOUNT_ADDRESS}'
 ```
 
 另外，添加评论时不再需要传入 `Owner` 参数：

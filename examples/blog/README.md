@@ -711,7 +711,7 @@ Open the file `article_remove_comment_logic.move`, find the `verify` function an
 After adding `Blog` as a singleton object, you need to initialize it before creating articles:
 
 ```shell
-rooch move run --function {ARTICLE_OBJECT_ID}::blog_aggregate::create --sender-account {ARTICLE_OBJECT_ID} --args 'string:My Blog' 'vector<object_id>:{ARTICLE_OBJECT_ID}'
+rooch move run --function {ACCOUNT_ADDRESS}::blog_aggregate::create --sender-account {ACCOUNT_ADDRESS} --args 'string:My Blog' 'vector<object_id>:{ACCOUNT_ADDRESS}'
 ```
 
 Also, you no longer need to pass in the `Owner` argument when adding a comment:
