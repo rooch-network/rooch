@@ -1,17 +1,17 @@
-/// This module implements the secp256k1 validator scheme.
-module rooch_framework::secp256k1_validator {
+/// This module implements the ecdsa validator scheme.
+module rooch_framework::ecdsa_validator {
 
    use moveos_std::storage_context::{Self, StorageContext};
    use rooch_framework::ecdsa_k1;
    use rooch_framework::auth_validator;
 
-   const SCHEME_SECP256K1: u64 = 2;
+   const SCHEME_ECDSA: u64 = 2;
 
-   struct Secp256k1Validator has store{
+   struct EcdsaValidator has store{
    }
 
    public fun scheme(): u64 {
-      SCHEME_SECP256K1
+      SCHEME_ECDSA
    }
 
    public fun validate(ctx: &StorageContext, payload: vector<u8>){

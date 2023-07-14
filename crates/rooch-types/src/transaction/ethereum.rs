@@ -49,7 +49,7 @@ impl AbstractTransaction for EthereumTransaction {
         AuthenticatorInfo {
             //TODO should change the seqence_number to u256?
             seqence_number: self.0.nonce.as_u64(),
-            authenticator: Authenticator::secp256k1(ethers::core::types::Signature {
+            authenticator: Authenticator::ecdsa(ethers::core::types::Signature {
                 r: self.0.r,
                 s: self.0.s,
                 v: self.0.v.as_u64(),
