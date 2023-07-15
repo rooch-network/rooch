@@ -163,6 +163,7 @@ module rooch_examples::blog {
 
     public(friend) fun update_version_and_add(storage_ctx: &mut StorageContext, account: &signer, blog: Blog) {
         assert!(signer::address_of(account) == @rooch_examples, error::invalid_argument(ENOT_GENESIS_ACCOUNT));
+        blog.version = blog.version + 1;
         private_add_blog(storage_ctx, account, blog);
     }
 
@@ -195,6 +196,10 @@ module rooch_examples::blog {
 
     public fun borrow_blog(storage_ctx: &mut StorageContext): &Blog {
         account_storage::global_borrow<Blog>(storage_ctx, @rooch_examples)
+    }
+
+    public(friend) fun update_version(blog: &mut Blog) {
+        blog.version = blog.version + 1;
     }
 
     public(friend) fun emit_article_added_to_blog(storage_ctx: &mut StorageContext, article_added_to_blog: ArticleAddedToBlog) {

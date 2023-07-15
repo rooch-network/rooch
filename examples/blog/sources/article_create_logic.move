@@ -35,7 +35,7 @@ module rooch_examples::article_create_logic {
             body,
         );
         // ///////////////////////////
-        blog_aggregate::add_article(storage_ctx, _account, article::id(&article_obj));
+        blog_aggregate::add_article(storage_ctx, article::id(&article_obj));
         // ///////////////////////////
         article_obj
     }

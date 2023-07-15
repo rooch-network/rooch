@@ -75,6 +75,7 @@ aggregates:
 
 singletonObjects:
   Blog:
+    friends: [ "Article.Create", "Article.Delete" ]
     metadata:
       Preprocessors: [ "MOVE_CRUD_IT" ]
     properties:
@@ -85,12 +86,18 @@ singletonObjects:
         itemType: ObjectID
     methods:
       AddArticle:
+        isInternal: true
+        metadata:
+          NoSigner: true
         event:
           name: ArticleAddedToBlog
         parameters:
           ArticleId:
             type: ObjectID
       RemoveArticle:
+        isInternal: true
+        metadata:
+          NoSigner: true
         event:
           name: ArticleRemovedFromBlog
         parameters:
