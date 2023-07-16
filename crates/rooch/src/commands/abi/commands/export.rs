@@ -79,35 +79,42 @@ pub struct StructTag {
 fn export_typescript() -> RoochResult<()>{
     // Obtain the Serde format of `Test`. (In practice, formats are more likely read from a file.)
     let mut tracer = Tracer::new(TracerConfig::default());
-    // Create a store to hold samples of Rust values.
-    let mut samples = Samples::new();
 
-    let account_address = AccountAddress::random();
-    tracer.trace_value(&mut samples, &account_address).unwrap();
-
-    let id = Identifier::from_str("account").unwrap();
-    tracer.trace_value(&mut samples, &id).unwrap();
-
-    let tag = StructTag{
-        address: AccountAddress::from_str("0x1").unwrap(),
-        module: Identifier::from_str("account").unwrap(),
-        name: Identifier::from_str("init").unwrap(),
-        type_params: TypeTag::U16,
-    };
-    
-    tracer.trace_value(&mut samples, &tag).unwrap();
-    tracer.trace_type::<StructTag>(&mut samples).unwrap();
-
-    tracer.trace_simple_type::<MoveAction>().unwrap();
-    tracer.trace_simple_type::<ScriptCall>().unwrap();
-    tracer.trace_simple_type::<FunctionCall>().unwrap();
     tracer.trace_simple_type::<FunctionId>().unwrap();
     tracer.trace_simple_type::<TypeTag>().unwrap();
+    tracer.trace_simple_type::<StructTag>().unwrap();
 
-    let registry = tracer.registry().unwrap();
+    // Create a store to hold samples of Rust values.
+    let mut samples = Samples::new();
+    let example_struct_tag = StructTag {
+        address: AccountAddress::random(), 
+        module: Identifier::new("Module").unwrap(),
+        name: Identifier::new("Name").unwrap(),
+        type_params: TypeTag::Bool
+    };
 
-    let data: String = serde_yaml::to_string(&registry).unwrap();
-    println!("export rooch_types.yaml: {data}");
+    match tracer.trace_value(&mut samples, &example_struct_tag) {
+        Ok(_) => (),  
+        Err(e) => {
+            println!("Error occurred: {}", e.explanation());
+            println!("{:#?}", e);
+            std::process::exit(1);
+        }
+    }
+
+    let example_type_tag = TypeTag::Struct(Box::new(example_struct_tag));
+    tracer.trace_value(&mut samples, &example_type_tag).unwrap();
+
+    match tracer.registry() {
+        Ok(registry)=>{
+            let data: String = serde_yaml::to_string(&registry).unwrap();
+            println!("export rooch_types.yaml: {data}");
+        },
+        Err(e)=>{
+            let msg = e.explanation();
+            println!("export rooch_types.yaml error: {msg}");
+        }
+    }
 
     Ok(())
 }
