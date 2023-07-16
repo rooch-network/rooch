@@ -548,8 +548,6 @@ curl 'http://localhost:1023/api/Articles/{ARTICLE_OBJECT_ID}'
 
 当然，在开发一个真实的应用时，事情往往不会这么简单。下面我们接着探讨一下，如何从几个方面改进上面的例子，使它更接近“实际的业务需求”。
 
-最终修改后的模型文件和 Move 合约代码，已经上传到了本代码库。模型文件见 [dddml/blog.yaml](./dddml/blog.yaml)，代码见 [sources/](./sources/) 目录。
-
 ### 修改添加评论的方法
 
 有可能你觉得默认生成的 CRUD 逻辑不符合你的需求，比如，你可能想要添加评论时不需要传递 `Owner` 参数给 `entry fun add_comment`，而是直接使用发送者的账户地址作为 Owner，那么这个需求目前可以这样满足：
@@ -614,7 +612,62 @@ singletonObjects:
             type: ObjectID
 ```
 
-再次运行 dddappp 工具。打开生成的 `blog_add_article_logic.move` 和 `blog_remove_article_logic.move` 文件，填充业务逻辑代码。
+再次运行 dddappp 工具。
+
+打开生成的 `blog_add_article_logic.move` 文件，填充业务逻辑代码：
+
+```
+    public(friend) fun verify(
+        _storage_ctx: &mut StorageContext, _account: &signer,
+        article_id: ObjectID, blog: &blog::Blog,
+    ): blog::ArticleAddedToBlog {
+        blog::new_article_added_to_blog(
+            blog, article_id,
+        )
+    }
+
+    public(friend) fun mutate(
+        _storage_ctx: &mut StorageContext, _account: &signer,
+        article_added_to_blog: &blog::ArticleAddedToBlog,
+        blog: blog::Blog,
+    ): blog::Blog {
+        let article_id = article_added_to_blog::article_id(article_added_to_blog);
+        let articles = blog::articles(&blog);
+        if (!vector::contains(&articles, &article_id)) {
+            vector::push_back(&mut articles, article_id);
+            blog::set_articles(&mut blog, articles);
+        };
+        blog
+    }
+```
+
+打开生成的 `blog_remove_article_logic.move` 文件，填充业务逻辑代码：
+
+```
+    public(friend) fun verify(
+        _storage_ctx: &mut StorageContext, _account: &signer,
+        article_id: ObjectID, blog: &blog::Blog,
+    ): blog::ArticleRemovedFromBlog {
+        blog::new_article_removed_from_blog(
+            blog, article_id,
+        )
+    }
+
+    public(friend) fun mutate(
+        _storage_ctx: &mut StorageContext, _account: &signer,
+        article_removed_from_blog: &blog::ArticleRemovedFromBlog,
+        blog: blog::Blog,
+    ): blog::Blog {
+        let article_id = article_removed_from_blog::article_id(article_removed_from_blog);
+        let articles = blog::articles(&blog);
+        let (found, idx) = vector::index_of(&articles, &article_id);
+        if (found) {
+            vector::remove(&mut articles, idx);
+            blog::set_articles(&mut blog, articles);
+        };
+        blog
+    }
+```
 
 ### 修改创建文章的逻辑
 
@@ -711,7 +764,7 @@ singletonObjects:
 在增加了 Blog 这个单例对象后，在添加文章之前，需要先将它初始化：
 
 ```shell
-rooch move run --function {ACCOUNT_ADDRESS}::blog_aggregate::create --sender-account {ACCOUNT_ADDRESS} --args 'string:My Blog' 'vector<object_id>:{ACCOUNT_ADDRESS}'
+rooch move run --function {ACCOUNT_ADDRESS}::blog_aggregate::create --sender-account {ACCOUNT_ADDRESS} --args 'string:My Blog' 'vector<object_id>:'
 ```
 
 另外，添加评论时不再需要传入 `Owner` 参数：
@@ -719,6 +772,148 @@ rooch move run --function {ACCOUNT_ADDRESS}::blog_aggregate::create --sender-acc
 ```shell
 rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::add_comment --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'u64:1' 'string:Anonymous' 'string:"A test comment"'
 ```
+
+## 再次改进应用
+
+现在，添加文章之后，你可以这样查询 Blog 的状态：
+
+```shell
+rooch state --access-path /resource/{ACCOUNT_ADDRESS}/{ACCOUNT_ADDRESS}::blog::Blog
+```
+
+在返回的结果中，应该可以看到博客文章的 `ObjectID` 的列表。
+
+但是，你可能已经发现，这个应用目前还有一些地方不如人意：
+
+* 我们在 `Blog` 对象内定义 `AddArticle` 和 `RemoveArticle` 只是打算供内部使用，没有必要在 `blog_aggregate.move` 文件中把它们对应的 `add_article` 和 `remove_article` 函数声明为 `public entry fun`。
+* 现在我们无法使用另外一个账户来创建博客文章。我们检视一下 `add_article` 和 `remove_article` 函数的实现，发现生成的代码默认使用了类型为 `&signer` 的参数来操作签名者的账户资源中的 `Blog` 对象；然而，想要实现这个两个方法的业务逻辑（在已有的 `Blog` 对象中添加和删除文章的 `ObjectID`），代码完全可以采用另外一种写法。
+
+现在让我们来解决这两个问题。
+
+### 修改单例对象 Blog
+
+打开 `blog.yaml` 模型文件，按照下面注释的提示，修改 `Blog` 这个单例对象的定义：
+
+```yaml
+singletonObjects:
+  Blog:
+    # 下面这行代码是新增的
+    friends: [ "Article.Create", "Article.Delete" ]
+    metadata:
+      # ...
+    methods:
+      AddArticle:
+        # 下面三行代码是新增的
+        isInternal: true
+        metadata:
+          NoSigner: true
+        event:
+            # ...
+      RemoveArticle:
+        # 下面三行代码是新增的
+        isInternal: true
+        metadata:
+          NoSigner: true
+        event:
+          # ...
+```
+
+删除 `blog_add_article_logic.move` 和 `blog_remove_article_logic.move` 这两个文件。重新运行 dddappp 工具重新生成代码。
+
+打开 `blog_add_article_logic.move` 文件，填充业务逻辑代码：
+
+```
+    public(friend) fun verify(
+        article_id: ObjectID,
+        blog: &blog::Blog,
+    ): blog::ArticleAddedToBlog {
+        blog::new_article_added_to_blog(
+            blog,
+            article_id,
+        )
+    }
+
+    public(friend) fun mutate(
+        article_added_to_blog: &blog::ArticleAddedToBlog,
+        blog: &mut blog::Blog,
+    ) {
+        let article_id = article_added_to_blog::article_id(article_added_to_blog);
+        let articles = blog::articles(blog);
+        if (!vector::contains(&articles, &article_id)) {
+            vector::push_back(&mut articles, article_id);
+            blog::set_articles(blog, articles);
+        };
+    }
+```
+
+打开 `blog_remove_article_logic.move` 文件，填充业务逻辑代码：
+
+```
+    public(friend) fun verify(
+        article_id: ObjectID,
+        blog: &blog::Blog,
+    ): blog::ArticleRemovedFromBlog {
+        blog::new_article_removed_from_blog(
+            blog,
+            article_id,
+        )
+    }
+
+    public(friend) fun mutate(
+        article_removed_from_blog: &blog::ArticleRemovedFromBlog,
+        blog: &mut blog::Blog,
+    ) {
+        let article_id = article_removed_from_blog::article_id(article_removed_from_blog);
+        let articles = blog::articles(blog);
+        let (found, idx) = vector::index_of(&articles, &article_id);
+        if (found) {
+            vector::remove(&mut articles, idx);
+            blog::set_articles(blog, articles);
+        };
+    }
+```
+
+### 修改创建文章的逻辑
+
+打开文件 `article_create_logic.move`，将下面这行代码：
+
+```
+        blog_aggregate::add_article(storage_ctx, _account, article::id(&article_obj));
+```
+
+修改为：
+
+```
+        blog_aggregate::add_article(storage_ctx, article::id(&article_obj));
+```
+
+### 修改删除文章的逻辑
+
+打开文件 `article_delete_logic.move`，将下面这行代码：
+
+```
+        blog_aggregate::remove_article(storage_ctx, _account, article::id(&article_obj));
+```
+
+修改为：
+
+```
+        blog_aggregate::remove_article(storage_ctx, article::id(&article_obj));
+```
+
+### 测试再次改进后的应用
+
+重启 Rooch Server，重新发布应用。
+
+现在，你可以使用另外一个账户来创建博客文章了（将下面的占位符 `{ANOTHER_ACCOUNT_ADDRESS}` 替换为你的另一个账户的地址）：
+
+```shell
+rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::create --sender-account {ANOTHER_ACCOUNT_ADDRESS} --args 'string:Hello' 'string:World2!'
+```
+
+---
+
+最终修改后的模型文件和 Move 合约代码，已经上传到了本代码库。模型文件见 [dddml/blog.yaml](./dddml/blog.yaml)，代码见 [sources/](./sources/) 目录。
 
 ## 其他
 

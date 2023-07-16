@@ -14,51 +14,44 @@ module rooch_examples::blog_aggregate {
     use rooch_examples::blog_update_logic;
     use std::string::String;
 
-    public entry fun add_article(
+    friend rooch_examples::article_create_logic;
+    friend rooch_examples::article_delete_logic;
+
+    public(friend) fun add_article(
         storage_ctx: &mut StorageContext,
-        account: &signer,
         article_id: ObjectID,
     ) {
-        let blog = blog::remove_blog(storage_ctx);
+        let blog = blog::borrow_blog(storage_ctx);
         let article_added_to_blog = blog_add_article_logic::verify(
-            storage_ctx,
-            account,
             article_id,
-            &blog,
-        );
-        let updated_blog = blog_add_article_logic::mutate(
-            storage_ctx,
-            account,
-            &article_added_to_blog,
             blog,
         );
-        blog::update_version_and_add(storage_ctx, account, updated_blog);
+        let mut_blog = blog::borrow_mut_blog(storage_ctx);
+        blog_add_article_logic::mutate(
+            &article_added_to_blog,
+            mut_blog,
+        );
+        blog::update_version(mut_blog);
         blog::emit_article_added_to_blog(storage_ctx, article_added_to_blog);
     }
 
-
-    public entry fun remove_article(
+    public(friend) fun remove_article(
         storage_ctx: &mut StorageContext,
-        account: &signer,
         article_id: ObjectID,
     ) {
-        let blog = blog::remove_blog(storage_ctx);
+        let blog = blog::borrow_blog(storage_ctx);
         let article_removed_from_blog = blog_remove_article_logic::verify(
-            storage_ctx,
-            account,
             article_id,
-            &blog,
-        );
-        let updated_blog = blog_remove_article_logic::mutate(
-            storage_ctx,
-            account,
-            &article_removed_from_blog,
             blog,
         );
-        blog::update_version_and_add(storage_ctx, account, updated_blog);
+        let mut_blog = blog::borrow_mut_blog(storage_ctx);
+        blog_remove_article_logic::mutate(
+            &article_removed_from_blog,
+            mut_blog,
+        );
+        blog::update_version(mut_blog);
         blog::emit_article_removed_from_blog(storage_ctx, article_removed_from_blog);
     }
-
 
     public entry fun create(
         storage_ctx: &mut StorageContext,
@@ -80,7 +73,6 @@ module rooch_examples::blog_aggregate {
         blog::add_blog(storage_ctx, account, blog);
         blog::emit_blog_created(storage_ctx, blog_created);
     }
-
 
     public entry fun update(
         storage_ctx: &mut StorageContext,
@@ -105,7 +97,6 @@ module rooch_examples::blog_aggregate {
         blog::update_version_and_add(storage_ctx, account, updated_blog);
         blog::emit_blog_updated(storage_ctx, blog_updated);
     }
-
 
     public entry fun delete(
         storage_ctx: &mut StorageContext,

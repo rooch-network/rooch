@@ -44,7 +44,6 @@ module rooch_examples::article_aggregate {
         article::emit_comment_updated(storage_ctx, comment_updated);
     }
 
-
     public entry fun remove_comment(
         storage_ctx: &mut StorageContext,
         account: &signer,
@@ -67,7 +66,6 @@ module rooch_examples::article_aggregate {
         article::update_version_and_add(storage_ctx, updated_article_obj);
         article::emit_comment_removed(storage_ctx, comment_removed);
     }
-
 
     public entry fun add_comment(
         storage_ctx: &mut StorageContext,
@@ -96,7 +94,6 @@ module rooch_examples::article_aggregate {
         article::emit_comment_added(storage_ctx, comment_added);
     }
 
-
     public entry fun create(
         storage_ctx: &mut StorageContext,
         account: &signer,
@@ -118,7 +115,6 @@ module rooch_examples::article_aggregate {
         article::add_article(storage_ctx, article_obj);
         article::emit_article_created(storage_ctx, article_created);
     }
-
 
     public entry fun update(
         storage_ctx: &mut StorageContext,
@@ -144,7 +140,6 @@ module rooch_examples::article_aggregate {
         article::update_version_and_add(storage_ctx, updated_article_obj);
         article::emit_article_updated(storage_ctx, article_updated);
     }
-
 
     public entry fun delete(
         storage_ctx: &mut StorageContext,
