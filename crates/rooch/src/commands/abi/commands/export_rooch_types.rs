@@ -21,7 +21,7 @@ pub struct ExportRoochTypesCommand {
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
 
-    #[clap(long, default_value = "./rooch_types.yaml")]
+    #[clap(long, default_value = "./target/rooch_types.yaml")]
     pub file_path: String,
 }
 

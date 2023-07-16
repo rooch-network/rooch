@@ -24,7 +24,7 @@ pub struct ABI {
 impl CommandAction<String> for ABI {
     async fn execute(self) -> RoochResult<String> {
         match self.cmd {
-            ABICommand::Export(export) => export.execute().await.map(|resp| {
+            ABICommand::ExportRoochTypes(export) => export.execute().await.map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
         }
@@ -35,5 +35,5 @@ impl CommandAction<String> for ABI {
 #[derive(Debug, clap::Subcommand)]
 #[clap(name = "abi")]
 pub enum ABICommand {
-    Export(ExportRoochTypesCommand),
+    ExportRoochTypes(ExportRoochTypesCommand),
 }
