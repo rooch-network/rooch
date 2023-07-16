@@ -5,7 +5,7 @@ pub mod commands;
 
 use crate::cli_types::CommandAction;
 use async_trait::async_trait;
-use commands::{export_rooch_types::ExportRoochTypesCommand};
+use commands::export_rooch_types::ExportRoochTypesCommand;
 use rooch_types::error::{RoochError, RoochResult};
 use std::path::PathBuf;
 
