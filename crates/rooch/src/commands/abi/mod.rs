@@ -5,7 +5,7 @@ pub mod commands;
 
 use crate::cli_types::CommandAction;
 use async_trait::async_trait;
-use commands::{export::ExportCommand};
+use commands::{export_rooch_types::ExportRoochTypesCommand};
 use rooch_types::error::{RoochError, RoochResult};
 use std::path::PathBuf;
 
@@ -35,5 +35,5 @@ impl CommandAction<String> for ABI {
 #[derive(Debug, clap::Subcommand)]
 #[clap(name = "abi")]
 pub enum ABICommand {
-    Export(ExportCommand),
+    Export(ExportRoochTypesCommand),
 }
