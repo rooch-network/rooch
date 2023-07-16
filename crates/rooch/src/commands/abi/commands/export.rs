@@ -81,10 +81,11 @@ fn export_typescript() -> RoochResult<()>{
     let mut tracer = Tracer::new(TracerConfig::default());
 
     tracer.trace_simple_type::<FunctionId>().unwrap();
-    tracer.trace_simple_type::<TypeTag>().unwrap();
-    tracer.trace_simple_type::<StructTag>().unwrap();
+    //
+    //tracer.trace_simple_type::<StructTag>().unwrap();
 
     // Create a store to hold samples of Rust values.
+
     let mut samples = Samples::new();
     let example_struct_tag = StructTag {
         address: AccountAddress::random(), 
@@ -105,9 +106,12 @@ fn export_typescript() -> RoochResult<()>{
     let example_type_tag = TypeTag::Struct(Box::new(example_struct_tag));
     tracer.trace_value(&mut samples, &example_type_tag).unwrap();
 
+    tracer.trace_type::<TypeTag>(&mut samples).unwrap();
+    tracer.trace_type::<MoveAction>(&mut samples).unwrap();
+
     match tracer.registry() {
         Ok(registry)=>{
-            let data: String = serde_yaml::to_string(&registry).unwrap();
+            let data: String = serde_json::to_string_pretty(&registry).unwrap();
             println!("export rooch_types.yaml: {data}");
         },
         Err(e)=>{
