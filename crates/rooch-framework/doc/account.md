@@ -17,13 +17,11 @@
 -  [Function `sequence_number_for_sender`](#0x3_account_sequence_number_for_sender)
 -  [Function `increment_sequence_number`](#0x3_account_increment_sequence_number)
 -  [Function `balance`](#0x3_account_balance)
--  [Function `get_authentication_key`](#0x3_account_get_authentication_key)
 -  [Function `signer_address`](#0x3_account_signer_address)
 -  [Function `is_resource_account`](#0x3_account_is_resource_account)
 -  [Function `exists_at`](#0x3_account_exists_at)
 -  [Function `create_resource_account`](#0x3_account_create_resource_account)
 -  [Function `create_resource_address`](#0x3_account_create_resource_address)
--  [Function `rotate_authentication_key_internal`](#0x3_account_rotate_authentication_key_internal)
 -  [Function `create_signer_with_capability`](#0x3_account_create_signer_with_capability)
 -  [Function `get_signer_capability_address`](#0x3_account_get_signer_capability_address)
 
@@ -56,12 +54,6 @@ Resource representing an account.
 
 
 <dl>
-<dt>
-<code>authentication_key: <a href="">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
 <dt>
 <code>sequence_number: u64</code>
 </dt>
@@ -179,16 +171,6 @@ Account already exists
 
 
 
-<a name="0x3_account_AUTHENTICATION_KEY_LENGTH"></a>
-
-authentication key length
-
-
-<pre><code><b>const</b> <a href="account.md#0x3_account_AUTHENTICATION_KEY_LENGTH">AUTHENTICATION_KEY_LENGTH</a>: u64 = 32;
-</code></pre>
-
-
-
 <a name="0x3_account_CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER"></a>
 
 
@@ -238,16 +220,6 @@ Cannot create account because address is reserved
 
 
 <pre><code><b>const</b> <a href="account.md#0x3_account_EAddressReseved">EAddressReseved</a>: u64 = 5;
-</code></pre>
-
-
-
-<a name="0x3_account_EMalformedAuthenticationKey"></a>
-
-The provided authentication key has an invalid length
-
-
-<pre><code><b>const</b> <a href="account.md#0x3_account_EMalformedAuthenticationKey">EMalformedAuthenticationKey</a>: u64 = 4;
 </code></pre>
 
 
@@ -506,35 +478,6 @@ Return the current TokenType balance of the account at <code>addr</code>.
 
 </details>
 
-<a name="0x3_account_get_authentication_key"></a>
-
-## Function `get_authentication_key`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_get_authentication_key">get_authentication_key</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): <a href="">vector</a>&lt;u8&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_get_authentication_key">get_authentication_key</a>(ctx: &StorageContext, addr: <b>address</b>): <a href="">vector</a>&lt;u8&gt; {
-   //<b>if</b> <a href="account.md#0x3_account">account</a> does not exist, <b>return</b> addr <b>as</b> authentication key
-   <b>if</b>(!<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, addr)){
-      <a href="_to_bytes">bcs::to_bytes</a>(&addr)
-   }<b>else</b>{
-      <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, addr).authentication_key
-   }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_account_signer_address"></a>
 
 ## Function `signer_address`
@@ -648,11 +591,6 @@ A resource account can only be created once
       <a href="account.md#0x3_account_create_account_unchecked">create_account_unchecked</a>(ctx, resource_addr)
    };
 
-   // By default, only the <a href="account.md#0x3_account_SignerCapability">SignerCapability</a> should have control over the resource <a href="account.md#0x3_account">account</a> and not the auth key.
-   // If the source <a href="account.md#0x3_account">account</a> wants direct control via auth key, they would need <b>to</b> explicitly rotate the auth key
-   // of the resource <a href="account.md#0x3_account">account</a> using the <a href="account.md#0x3_account_SignerCapability">SignerCapability</a>.
-   <a href="account.md#0x3_account_rotate_authentication_key_internal">rotate_authentication_key_internal</a>(ctx,&resource_signer, <a href="account.md#0x3_account_ZERO_AUTH_KEY">ZERO_AUTH_KEY</a>);
-   // <b>move_to</b>(&resource_signer, <a href="account.md#0x3_account_ResourceAccount">ResourceAccount</a> {});
    <a href="_global_move_to">account_storage::global_move_to</a>&lt;<a href="account.md#0x3_account_ResourceAccount">ResourceAccount</a>&gt;(ctx,
       &resource_signer,
       <a href="account.md#0x3_account_ResourceAccount">ResourceAccount</a> {}
@@ -689,39 +627,6 @@ involves the use of a cryptographic hash operation and should be use thoughtfull
    <a href="_append">vector::append</a>(&<b>mut</b> bytes, seed);
    <a href="_push_back">vector::push_back</a>(&<b>mut</b> bytes, <a href="account.md#0x3_account_DERIVE_RESOURCE_ACCOUNT_SCHEME">DERIVE_RESOURCE_ACCOUNT_SCHEME</a>);
    bcs::to_address(<a href="../doc/hash.md#0x1_hash_sha3_256">hash::sha3_256</a>(bytes))
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_account_rotate_authentication_key_internal"></a>
-
-## Function `rotate_authentication_key_internal`
-
-This function is used to rotate a resource account's authentication key to 0, so that no private key can control
-the resource account.
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_rotate_authentication_key_internal">rotate_authentication_key_internal</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, new_auth_key: <a href="">vector</a>&lt;u8&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_rotate_authentication_key_internal">rotate_authentication_key_internal</a>(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, new_auth_key: <a href="">vector</a>&lt;u8&gt;) {
-   <b>let</b> addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
-   <b>assert</b>!(<a href="account.md#0x3_account_exists_at">exists_at</a>(ctx, addr), <a href="_not_found">error::not_found</a>(<a href="account.md#0x3_account_EAccountNotExist">EAccountNotExist</a>));
-   <b>assert</b>!(
-      <a href="_length">vector::length</a>(&new_auth_key) == <a href="account.md#0x3_account_AUTHENTICATION_KEY_LENGTH">AUTHENTICATION_KEY_LENGTH</a>,
-      <a href="_invalid_argument">error::invalid_argument</a>(<a href="account.md#0x3_account_EMalformedAuthenticationKey">EMalformedAuthenticationKey</a>)
-   );
-   <b>let</b> account_resource = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, addr);
-   account_resource.authentication_key = new_auth_key;
 }
 </code></pre>
 

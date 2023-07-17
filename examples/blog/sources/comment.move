@@ -5,15 +5,15 @@
 
 module rooch_examples::comment {
     use std::string::String;
-    friend rooch_examples::article_update_logic;
-    friend rooch_examples::article_delete_logic;
     friend rooch_examples::article_update_comment_logic;
     friend rooch_examples::article_remove_comment_logic;
     friend rooch_examples::article_add_comment_logic;
     friend rooch_examples::article_create_logic;
+    friend rooch_examples::article_update_logic;
+    friend rooch_examples::article_delete_logic;
     friend rooch_examples::article;
 
-    const EID_DATA_TOO_LONG: u64 = 102;
+    const EDATA_TOO_LONG: u64 = 102;
 
     struct Comment has store {
         comment_seq_id: u64,
@@ -31,7 +31,7 @@ module rooch_examples::comment {
     }
 
     public(friend) fun set_commenter(comment: &mut Comment, commenter: String) {
-        assert!(std::string::length(&commenter) <= 100, EID_DATA_TOO_LONG);
+        assert!(std::string::length(&commenter) <= 100, EDATA_TOO_LONG);
         comment.commenter = commenter;
     }
 
@@ -40,7 +40,7 @@ module rooch_examples::comment {
     }
 
     public(friend) fun set_body(comment: &mut Comment, body: String) {
-        assert!(std::string::length(&body) <= 500, EID_DATA_TOO_LONG);
+        assert!(std::string::length(&body) <= 500, EDATA_TOO_LONG);
         comment.body = body;
     }
 
@@ -58,8 +58,8 @@ module rooch_examples::comment {
         body: String,
         owner: address,
     ): Comment {
-        assert!(std::string::length(&commenter) <= 100, EID_DATA_TOO_LONG);
-        assert!(std::string::length(&body) <= 500, EID_DATA_TOO_LONG);
+        assert!(std::string::length(&commenter) <= 100, EDATA_TOO_LONG);
+        assert!(std::string::length(&body) <= 500, EDATA_TOO_LONG);
         Comment {
             comment_seq_id,
             commenter,

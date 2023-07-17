@@ -2,6 +2,7 @@ module rooch_examples::article_delete_logic {
     use moveos_std::object::Object;
     use moveos_std::storage_context::StorageContext;
     use rooch_examples::article;
+    use rooch_examples::blog_aggregate;
 
     friend rooch_examples::article_aggregate;
 
@@ -12,7 +13,6 @@ module rooch_examples::article_delete_logic {
     ): article::ArticleDeleted {
         let _ = storage_ctx;
         let _ = account;
-        assert!(std::signer::address_of(account) == article::owner(article_obj), 111);
         article::new_article_deleted(
             article_obj,
         )
@@ -20,13 +20,12 @@ module rooch_examples::article_delete_logic {
 
     public(friend) fun mutate(
         storage_ctx: &mut StorageContext,
+        _account: &signer,
         article_deleted: &article::ArticleDeleted,
         article_obj: Object<article::Article>,
     ): Object<article::Article> {
-        let id = article::id(&article_obj);
-        let _ = storage_ctx;
-        let _ = id;
         let _ = article_deleted;
+        blog_aggregate::remove_article(storage_ctx, article::id(&article_obj));
         article_obj
     }
 

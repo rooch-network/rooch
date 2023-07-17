@@ -353,7 +353,14 @@ where
                 // let type_tag :TypeTag = TryInto::try_into(&layout)?
                 // to get TypeTag from MoveTypeLayout, because this MoveTypeLayout not MoveLayoutType::WithTypes
                 // Invalid MoveTypeLayout -> StructTag conversion--needed MoveLayoutType::WithTypes
-                let type_tag = self.session.get_type_tag(ty)?;
+
+                let type_tag = match ty {
+                    Type::Reference(ty) | Type::MutableReference(ty) => {
+                        self.session.get_type_tag(ty)?
+                    }
+                    _ => self.session.get_type_tag(ty)?,
+                };
+
                 Ok(FunctionReturnValue::new(type_tag, v))
             })
             .collect()

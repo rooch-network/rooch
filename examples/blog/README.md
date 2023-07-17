@@ -42,7 +42,7 @@ Create a plain text file in the `dddml` directory, named `blog.yaml`, with the f
 aggregates:
   Article:
     metadata:
-      Preprocessors: ["MOVE_CRUD_IT"]
+      Preprocessors: [ "MOVE_CRUD_IT" ]
     id:
       name: Id
       type: ObjectID
@@ -56,11 +56,10 @@ aggregates:
         length: 2000
       Comments:
         itemType: Comment
-
     entities:
       Comment:
         metadata:
-          Preprocessors: ["MOVE_CRUD_IT"]
+          Preprocessors: [ "MOVE_CRUD_IT" ]
         id:
           name: CommentSeqId
           type: u64
@@ -71,6 +70,8 @@ aggregates:
           Body:
             type: String
             length: 500
+          Owner:
+            type: address
 ```
 
 The meaning of this DDDML model should be very clear to developers, but we will still explain it briefly below.
@@ -194,41 +195,9 @@ Now open them and remove those redundant `use` statements. If your IDE has some 
 
 Then use `rooch move build` command to recompile Move project. Now there should be no warning messages.
 
-### Implementing Custom Business Logic (when necessary)
+Now you can start testing this app.
 
-In this example, the `MOVE_CRUD_IT` preprocessor already generates the full CRUD methods for us. If CRUD is all the business logic you need, then you don't have to write another line of code.
-
-It is possible that you feel that the default generated CRUD logic does not meet your needs, for example, you may want to add comment without passing the `Owner` argument to `entry fun add_comment` and directly use the sender account address as the owner, then this requirement can currently be satisfied as follows.
-
-First, define a custom method in the model file like this:
-
-```yaml
-aggregates:
-  Article:
-    # ...
-    methods:
-      AddComment:
-        event:
-          name: CommentAdded
-          properties:
-            Owner:
-              type: address
-        parameters:
-          CommentSeqId:
-            type: u64
-          Commenter:
-            type: String
-          Body:
-            type: String
-```
-
-Note that the `Owner` parameter is no longer present in the method parameters above.
-
-Then, delete `article_add_comment_logic.move`, run the dddappp tool again. (Note that since the tool does not overwrite the already existing `*_logic.move` file by default, you will need to delete it manually.)
-
-Open the regenerated `article_add_comment_logic.move` file, find the `verify` function, fill the function body with the business logic code you want.
-
-## Test Application
+## Test the Application
 
 ### Run Rooch Server and Publish Contracts
 
@@ -269,19 +238,19 @@ Use `rooch move run` command to submit a transaction and initialize the contract
 rooch move run --function {ACCOUNT_ADDRESS}::rooch_blog_demo_init::initialize --sender-account {ACCOUNT_ADDRESS}
 ```
 
-#### CRUD Article
+#### CRUD Articles
 
-##### Create Article
+##### Create Articles
 
 You can use Rooch CLI to submit a transaction like this to create a test article:
 
 ```shell
-rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::create --sender-account {ACCOUNT_ADDRESS} --args 'string:Hello' 'string:World!' 'address:{ACCOUNT_ADDRESS}'
+rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::create --sender-account {ACCOUNT_ADDRESS} --args 'string:Hello' 'string:World!''
 ```
 
 Then you can change the content of the first parameter (title) and the second parameter (body) after `--args`, and create a few more articles. The third argument indicates the owner of the article, only the owner can update and delete the article.
 
-##### READ Article
+##### READ Articles
 
 Now, you can query events and get the `ObjectID` of the created article:
 
@@ -321,12 +290,12 @@ Then, you can use Rooch CLI to query the object state (note to replace the place
 rooch object --id {ARTICLE_OBJECT_ID}
 ```
 
-##### Update Article
+##### Update Articles
 
 You can submit a transaction like this to update an article:
 
 ```shell
-rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::update --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'string:Foo' 'string:Bar' 'address:{ACCOUNT_ADDRESS}'
+rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::update --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'string:Foo' 'string:Bar''
 ```
 
 In addition to using Rooch CLI, you can also query the object state by calling JSON RPC:
@@ -342,7 +311,7 @@ curl --location --request POST 'http://127.0.0.1:50051/' \
 }'
 ```
 
-##### Delete Article
+##### Delete Articles
 
 You can submit a transaction like this to delete an article:
 
@@ -350,9 +319,9 @@ You can submit a transaction like this to delete an article:
 rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::delete --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}'
 ```
 
-#### CRUD Comment
+#### CRUD Comments
 
-##### Add Comment
+##### Add Comments
 
 Let's get the ObjectID of another article (note the path parameter `.result.data[1]` in the `jq` command below, we intend to get the information of the "second" ArticleCreated event):
 
@@ -379,7 +348,7 @@ We can add a few more comments to this article by executing commands like this (
 rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::add_comment --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'u64:2' 'string:Anonymous2' 'string:"A test comment2"' 'address:{ACCOUNT_ADDRESS}'
 ```
 
-##### Read Comment
+##### Read Comments
 
 In our contract code, when a comment is added to an article, a `CommentTableItemAdded` event is emitted, which contains the ObjectID of the current article and the key (i.e. `comment_seq_id`) added to its comment table.
 
@@ -432,7 +401,7 @@ Note that in the above command, the table key in the path parameter (the part af
 
 For example, the BCS serialization result of a `u64` integer value `1`, represented as a hexadecimal string, is `0x0100000000000000`.
 
-##### Update Comment
+##### Update Comments
 
 We can submit a transaction like this to update a comment:
 
@@ -453,7 +422,7 @@ curl --location --request POST 'http://127.0.0.1:50051/' \
 }'
 ```
 
-##### Remove Comment
+##### Remove Comments
 
 Submit a transaction to remove a comment:
 
@@ -571,6 +540,381 @@ You can access information about a single article like this:
 ```shell
 curl 'http://localhost:1023/api/Articles/{ARTICLE_OBJECT_ID}'
 ```
+
+## Improve the Application
+
+In the above process, the `MOVE_CRUD_IT` preprocessor already generates the full CRUD methods for us. If CRUD is all the business logic you need, then you don't have to write another line of code.
+
+Of course, when developing a real application, things are often not so simple. Let's move on to explore how we can improve the above example in several points to bring it closer to "actual business requirements".
+
+### Modify the AddComment Method
+
+It is possible that you feel that the default generated CRUD logic does not meet your needs, for example, you may want to add comment without passing the `Owner` argument to `entry fun add_comment` and directly use the sender account address as the owner, then this requirement can currently be satisfied as follows.
+
+First, define a custom method in the model file like this:
+
+```yaml
+aggregates:
+  Article:
+    # ...
+    methods:
+      AddComment:
+        event:
+          name: CommentAdded
+          properties:
+            Owner:
+              type: address
+        parameters:
+          CommentSeqId:
+            type: u64
+          Commenter:
+            type: String
+          Body:
+            type: String
+```
+
+Note that the `Owner` parameter is no longer present in the method parameters above.
+
+Then, delete `article_add_comment_logic.move`, run the dddappp tool again. (Note that since the tool does not overwrite the already existing `*_logic.move` file by default, you will need to delete it manually.)
+
+Open the regenerated `article_add_comment_logic.move` file, find the `verify` function, fill the function body with the business logic code you want.
+
+
+### Add a Singleton Object: Blog
+
+We intend to add a singleton object `Blog`, which has a property `Name`, and a property `Articles`, `Articles` being an array of `ObjectID`s representing the posts contained in the blog.
+
+In the `dddml/blog.yaml` file, add the definition of the singleton object:
+
+```yaml
+singletonObjects:
+  Blog:
+    metadata:
+      Preprocessors: [ "MOVE_CRUD_IT" ]
+    properties:
+      Name:
+        type: String
+        length: 200
+      Articles:
+        itemType: ObjectID
+    methods:
+      AddArticle:
+        event:
+          name: ArticleAddedToBlog
+        parameters:
+          ArticleId:
+            type: ObjectID
+      RemoveArticle:
+        event:
+          name: ArticleRemovedFromBlog
+        parameters:
+          ArticleId:
+            type: ObjectID
+```
+
+Run the dddappp tool again.
+
+Open the generated file `blog_add_article_logic.move` and fill in the business logic code:
+
+```
+    public(friend) fun verify(
+        _storage_ctx: &mut StorageContext, _account: &signer,
+        article_id: ObjectID, blog: &blog::Blog,
+    ): blog::ArticleAddedToBlog {
+        blog::new_article_added_to_blog(
+            blog, article_id,
+        )
+    }
+
+    public(friend) fun mutate(
+        _storage_ctx: &mut StorageContext, _account: &signer,
+        article_added_to_blog: &blog::ArticleAddedToBlog,
+        blog: blog::Blog,
+    ): blog::Blog {
+        let article_id = article_added_to_blog::article_id(article_added_to_blog);
+        let articles = blog::articles(&blog);
+        if (!vector::contains(&articles, &article_id)) {
+            vector::push_back(&mut articles, article_id);
+            blog::set_articles(&mut blog, articles);
+        };
+        blog
+    }
+```
+
+Open the generated file `blog_remove_article_logic.move` and fill in the business logic code:
+
+```
+    public(friend) fun verify(
+        _storage_ctx: &mut StorageContext, _account: &signer,
+        article_id: ObjectID, blog: &blog::Blog,
+    ): blog::ArticleRemovedFromBlog {
+        blog::new_article_removed_from_blog(
+            blog, article_id,
+        )
+    }
+
+    public(friend) fun mutate(
+        _storage_ctx: &mut StorageContext, _account: &signer,
+        article_removed_from_blog: &blog::ArticleRemovedFromBlog,
+        blog: blog::Blog,
+    ): blog::Blog {
+        let article_id = article_removed_from_blog::article_id(article_removed_from_blog);
+        let articles = blog::articles(&blog);
+        let (found, idx) = vector::index_of(&articles, &article_id);
+        if (found) {
+            vector::remove(&mut articles, idx);
+            blog::set_articles(&mut blog, articles);
+        };
+        blog
+    }
+```
+
+### Modify the Logic of Creating Articles
+
+Open the file `article_create_logic.move`, find the `mutate` function, and modify its implementation so that it adds the newly created article to the `Articles` property of the `Blog` object.
+
+```
+    public(friend) fun mutate(
+        //...
+    ): Object<article::Article> {
+        let title = article_created::title(article_created);
+        let body = article_created::body(article_created);
+        let article_obj = article::create_article(
+            storage_ctx,
+            title,
+            body,
+        );
+        blog_aggregate::add_article(storage_ctx, _account, article::id(&article_obj));
+        article_obj
+    }
+```
+
+### Modify the Logic of Deleting Articles
+
+Open the file `article_delete_logic.move`, find the `mutate` function, and modify its implementation so that it removes the deleted article from the `Articles` property of the `Blog` object.
+
+```
+    public(friend) fun mutate(
+        //...
+    ): Object<article::Article> {
+        let _ = article_deleted;
+        blog_aggregate::remove_article(storage_ctx, _account, article::id(&article_obj));
+        article_obj
+    }
+```
+
+### Modify the Logic of Updating Articles
+
+Open the file `article_update_logic.move`, find the `verify` function and modify its implementation to check if the caller is the owner of the article.
+
+```
+    const ENOT_OWNER_ACCOUNT: u64 = 113;
+
+    public(friend) fun verify(
+        //...
+    ): article::ArticleUpdated {
+        let _ = storage_ctx;
+        assert!(signer::address_of(account) == object::owner(article_obj), ENOT_OWNER_ACCOUNT);
+        article::new_article_updated(
+            article_obj,
+            title,
+            body,
+        )
+    }
+```
+
+### Modify Logic of Removing Comments and Updating Comments
+
+Open the file `article_update_comment_logic.move`, find the `verify` function and modify its implementation to check if the caller is the owner of the comment.
+
+```
+    const ENOT_OWNER_ACCOUNT: u64 = 113;
+
+    public(friend) fun verify(
+        //...
+    ): article::CommentUpdated {
+        let _ = storage_ctx;
+        let comment = article::borrow_comment(article_obj, comment_seq_id);
+        assert!(std::signer::address_of(account) == comment::owner(comment), ENOT_OWNER_ACCOUNT);
+        article::new_comment_updated(
+            //...
+        )
+    }
+```
+
+Open the file `article_remove_comment_logic.move`, find the `verify` function and modify its implementation to check if the caller is the owner of the comment.
+
+```
+    const ENOT_OWNER_ACCOUNT: u64 = 113;
+
+    public(friend) fun verify(
+        //...
+    ): article::CommentRemoved {
+        let _ = storage_ctx;
+        let comment = article::borrow_comment(article_obj, comment_seq_id);
+        assert!(std::signer::address_of(account) == comment::owner(comment), 111);
+        article::new_comment_removed(
+            //...
+        )
+    }
+```
+
+### Testing the Improved Application
+
+After adding `Blog` as a singleton object, you need to initialize it before creating articles:
+
+```shell
+rooch move run --function {ACCOUNT_ADDRESS}::blog_aggregate::create --sender-account {ACCOUNT_ADDRESS} --args 'string:My Blog' 'vector<object_id>:'
+```
+
+Also, you no longer need to pass in the `Owner` argument when adding a comment:
+
+```shell
+rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::add_comment --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'u64:1' 'string:Anonymous' 'string:"A test comment"'
+```
+
+## Re-improving the Application
+
+Now, after adding an article, you can query the state of the `Blog` like this:
+
+```shell
+rooch state --access-path /resource/{ACCOUNT_ADDRESS}/{ACCOUNT_ADDRESS}::blog::Blog
+```
+
+In the returned result, you should see a list of `ObjectID`s of the blog articles.
+
+However, as you may have noticed, there are a few things about this application that are currently not as good as they could be:
+
+* We defined `AddArticle` and `RemoveArticle` within the `Blog` object only with the intention of using them internally, and there was no need to declare their corresponding `add_article` and `remove_article` functions in the `blog_aggregate.move` file as `public entry fun`.
+* Now we can't use another account to create blog articles. If we review the implementation of the `add_article` and `remove_article` functions, we find that the generated code by default uses a parameter of type `&signer` to manipulate the `Blog` object in the signer's account resource;
+  however, to implement the business logic of these two methods (adding and removing the `ObjectID` of a article from an existing `Blog` object), the code could have been written in a different way.
+
+Now let's solve these two issues.
+
+### Modify the singleton object Blog
+
+Open the `blog.yaml` model file and modify the definition of the `Blog` singleton object as suggested in the following comment:
+
+```yaml
+singletonObjects:
+  Blog:
+    # The following line is added
+    friends: [ "Article.Create", "Article.Delete" ]
+    metadata:
+      # ...
+    methods:
+      AddArticle:
+        # The following 3 lines are added
+        isInternal: true
+        metadata:
+          NoSigner: true
+        event:
+            # ...
+      RemoveArticle:
+        # The following 3 lines are added
+        isInternal: true
+        metadata:
+          NoSigner: true
+        event:
+          # ...
+```
+
+Delete the files `blog_add_article_logic.move` and `blog_remove_article_logic.move`. Re-run the dddappp tool to regenerate the code.
+
+Open the `blog_add_article_logic.move` file and fill in the business logic code:
+
+```
+    public(friend) fun verify(
+        article_id: ObjectID,
+        blog: &blog::Blog,
+    ): blog::ArticleAddedToBlog {
+        blog::new_article_added_to_blog(
+            blog,
+            article_id,
+        )
+    }
+
+    public(friend) fun mutate(
+        article_added_to_blog: &blog::ArticleAddedToBlog,
+        blog: &mut blog::Blog,
+    ) {
+        let article_id = article_added_to_blog::article_id(article_added_to_blog);
+        let articles = blog::articles(blog);
+        if (!vector::contains(&articles, &article_id)) {
+            vector::push_back(&mut articles, article_id);
+            blog::set_articles(blog, articles);
+        };
+    }
+```
+
+Open the `blog_remove_article_logic.move` file and fill in the business logic code:
+
+```
+    public(friend) fun verify(
+        article_id: ObjectID,
+        blog: &blog::Blog,
+    ): blog::ArticleRemovedFromBlog {
+        blog::new_article_removed_from_blog(
+            blog,
+            article_id,
+        )
+    }
+
+    public(friend) fun mutate(
+        article_removed_from_blog: &blog::ArticleRemovedFromBlog,
+        blog: &mut blog::Blog,
+    ) {
+        let article_id = article_removed_from_blog::article_id(article_removed_from_blog);
+        let articles = blog::articles(blog);
+        let (found, idx) = vector::index_of(&articles, &article_id);
+        if (found) {
+            vector::remove(&mut articles, idx);
+            blog::set_articles(blog, articles);
+        };
+    }
+```
+
+### Modify the logic of Creating Articles
+
+Open the file `article_create_logic.move` and find the following line of code:
+
+```
+        blog_aggregate::add_article(storage_ctx, _account, article::id(&article_obj));
+```
+
+Modify it to:
+
+```
+        blog_aggregate::add_article(storage_ctx, article::id(&article_obj));
+```
+
+### Modify the logic of Deleting Articles
+
+Open the file `article_delete_logic.move` and find the following line of code:
+
+```
+        blog_aggregate::remove_article(storage_ctx, _account, article::id(&article_obj));
+```
+
+Modify it to:
+
+```
+        blog_aggregate::remove_article(storage_ctx, article::id(&article_obj));
+```
+
+### Test the Re-improved Application
+
+Restart Rooch Server and republish the app.
+
+Now you can use another account to create blog articles (replace the placeholder `{ANOTHER_ACCOUNT_ADDRESS}` below with the address of your other account):
+
+```shell
+rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::create --sender-account {ANOTHER_ACCOUNT_ADDRESS} --args 'string:Hello' 'string:World2!'
+```
+
+---
+
+The final modified model file and Move contract code have been uploaded to this code base. The model file is available at [dddml/blog.yaml](./dddml/blog.yaml) and the code is in the [sources/](./sources/) directory.
 
 ## Other
 
