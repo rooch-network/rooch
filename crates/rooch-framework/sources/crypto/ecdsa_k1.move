@@ -17,7 +17,7 @@ module rooch_framework::ecdsa_k1 {
    ///
    /// If the signature is valid, return the corresponding recovered Secpk256k1 public
    /// key, otherwise throw error. This is similar to ecrecover in Ethereum, can only be
-   /// applied to Secp256k1 signatures.
+   /// applied to Ecdsa signatures.
    public native fun ecrecover(signature: &vector<u8>, msg: &vector<u8>, hash: u8): vector<u8>;
 
    /// @param pubkey: A 33-bytes compressed public key, a prefix either 0x02 or 0x03 and a 256-bit integer.
@@ -27,7 +27,7 @@ module rooch_framework::ecdsa_k1 {
    public native fun decompress_pubkey(pubkey: &vector<u8>): vector<u8>;
 
    /// @param signature: A 65-bytes signature in form (r, s, v) that is signed using
-   /// Secp256k1. This is an non-recoverable signature without recovery id.
+   /// Ecdsa. This is an non-recoverable signature without recovery id.
    /// @param msg: The message that the signature is signed against.
    /// @param hash: The hash function used to hash the message when signing.
    ///
@@ -86,7 +86,7 @@ module rooch_framework::ecdsa_k1 {
    }
 
    #[test]
-   fun test_secp256k1_invalid() {
+   fun test_ecdsa_invalid() {
 
    }
 

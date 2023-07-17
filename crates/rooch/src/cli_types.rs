@@ -8,6 +8,7 @@ use move_core_types::transaction_argument::TransactionArgument;
 use move_core_types::u256::U256;
 use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::transaction::authenticator::Authenticator;
 use serde::Serialize;
 use std::fmt::{Display, Formatter};
 use std::ops::Deref;
@@ -29,14 +30,55 @@ pub trait CommandAction<T: Serialize + Send>: Sized + Send {
     }
 }
 
+#[derive(Debug)]
+pub struct AuthenticatorOptions {
+    pub scheme: u64,
+    pub payload: Vec<u8>,
+}
+
+impl FromStr for AuthenticatorOptions {
+    type Err = RoochError;
+    fn from_str(s: &str) -> RoochResult<Self> {
+        let mut split = s.split(':');
+        let scheme = split.next().ok_or_else(|| {
+            RoochError::CommandArgumentError(format!("Invalid authenticator argument: {}", s))
+        })?;
+        let scheme = scheme.parse::<u64>().map_err(|_| {
+            RoochError::CommandArgumentError(format!("Invalid authenticator argument: {}", s))
+        })?;
+        let payload = split.next().ok_or_else(|| {
+            RoochError::CommandArgumentError(format!("Invalid authenticator argument: {}", s))
+        })?;
+        let payload = hex::decode(payload.strip_prefix("0x").unwrap_or(payload)).map_err(|_| {
+            RoochError::CommandArgumentError(format!("Invalid authenticator argument: {}", s))
+        })?;
+        Ok(AuthenticatorOptions { scheme, payload })
+    }
+}
+
+impl From<AuthenticatorOptions> for Authenticator {
+    fn from(options: AuthenticatorOptions) -> Self {
+        Authenticator {
+            scheme: options.scheme,
+            payload: options.payload,
+        }
+    }
+}
+
 /// Common options for interacting with an account for a validator
 #[derive(Debug, Default, Parser)]
 pub struct TransactionOptions {
     /// Sender account address.
     /// This allows you to override the account address from the derived account address
     /// in the event that the authentication key was rotated or for a resource account
-    #[clap(long)]
+    #[clap(long, alias = "sender")]
     pub(crate) sender_account: Option<String>,
+
+    /// Custom the transaction's authenticator
+    /// format: `scheme:payload`, scheme is u64, payload is hex string
+    /// example: 123:0x2abc
+    #[clap(long)]
+    pub(crate) authenticator: Option<AuthenticatorOptions>,
 }
 
 #[derive(Debug, Parser)]
@@ -236,7 +278,9 @@ fn parse_vector_arg<T: Serialize, F: Fn(&str) -> RoochResult<T>>(
     let mut parsed_args = vec![];
     let args = args.split(',');
     for arg in args {
-        parsed_args.push(parse(arg)?);
+        if !arg.is_empty() {
+            parsed_args.push(parse(arg)?);
+        }
     }
 
     bcs::to_bytes(&parsed_args).map_err(|err| RoochError::BcsError(err.to_string()))

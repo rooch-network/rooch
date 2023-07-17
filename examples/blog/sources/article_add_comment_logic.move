@@ -11,12 +11,13 @@ module rooch_examples::article_add_comment_logic {
     public(friend) fun verify(
         storage_ctx: &mut StorageContext,
         account: &signer,
-        comment_seq_id: u64,
         commenter: String,
         body: String,
         article_obj: &Object<article::Article>,
     ): article::CommentAdded {
         let _ = storage_ctx;
+        let _ = account;
+        let comment_seq_id = article::current_comment_seq_id(article_obj) + 1;
         article::new_comment_added(
             article_obj,
             comment_seq_id,
@@ -28,10 +29,11 @@ module rooch_examples::article_add_comment_logic {
 
     public(friend) fun mutate(
         storage_ctx: &mut StorageContext,
+        _account: &signer,
         comment_added: &article::CommentAdded,
         article_obj: Object<article::Article>,
     ): Object<article::Article> {
-        let comment_seq_id = comment_added::comment_seq_id(comment_added);
+        let comment_seq_id = article::next_comment_seq_id(&mut article_obj);
         let commenter = comment_added::commenter(comment_added);
         let body = comment_added::body(comment_added);
         let owner = comment_added::owner(comment_added);

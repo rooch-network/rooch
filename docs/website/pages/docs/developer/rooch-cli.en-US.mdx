@@ -1,0 +1,74 @@
+# Rooch CLI
+
+Learn how to set up, configure, and use the Rooch Command Line Interface (CLI). You can use the Rooch CLI to experiment with Rooch features using a command line interface.
+
+## Set up
+
+The Rooch CLI installs when you install Rooch. See the [Install](./installation.en-US.mdx) topic for prerequisites and installation instructions.
+
+## Using the Rooch CLI
+
+The Rooch CLI supports the following commands:
+
+```shell
+rooch 0.1.0
+Rooch Contributors <opensource@rooch.network>
+
+USAGE:
+rooch <SUBCOMMAND>
+
+    OPTIONS:
+    -h, --help       Print help information
+    -V, --version    Print version information
+
+    SUBCOMMANDS:
+    account        Tool for interacting with accounts
+    event          Tool for interacting with event
+    help           Print this message or the help of the given subcommand(s)
+    init           Tool for init with rooch
+    move           CLI frontend for the Move compiler and VM
+    object         Get object by object id
+    resource       Get account resource by tag
+    server         Start Rooch network
+    state          Get states by accessPath
+    transaction    Tool for interacting with transaction
+```
+Use `rooch -h` to see a list of supported commands.
+
+Use `rooch help <command>` to see more information on each command.
+    
+
+## Initialize CLI
+
+By default, The configuration file is saved in your home directory.
+
+Use `rooch init` to Initialize Rooch CLI, The configuration file location is specified through `--config-dir`
+
+The response resembles the following:
+
+```
+Creating config file ["/Users/sven/.rooch/rooch_config/rooch.yaml"] with default (local) server and ed25519 key scheme.
+Generated new keypair for address with scheme "ed25519" [0xeb417f9091c77c8c1a9c6a7683ee1eb5883fbae5128eae5ab414c0de5f050d08]
+Secret Recovery Phrase : [grab infant behave ugly erosion grief file arrange unit ship iron garage]
+"Rooch config file generated at /Users/sven/.rooch/rooch_config/rooch.yaml"
+```
+
+## Start the local network
+
+Use `rooch server start` to start the local network.
+
+**Important**: Each time you start the Rooch server, the network starts as a new network with no previous data. The local network is not persistent.
+
+The response resembles the following:
+
+```
+Documentation generation successful!
+2023-07-17T05:34:49.963869Z  INFO rooch_rpc_server: JSON-RPC HTTP Server start listening 0.0.0.0:50051
+2023-07-17T05:34:49.963893Z  INFO rooch_rpc_server: Available JSON-RPC methods : ["wallet_accounts", "eth_blockNumber", "eth_getBalance", "eth_gasPrice", "net_version", "eth_getTransactionCount", "eth_sendTransaction", "rooch_sendRawTransaction", "rooch_getAnnotatedStates", "eth_sendRawTransaction", "rooch_getTransactionByIndex", "rooch_executeRawTransaction", "rooch_getEventsByEventHandle", "rooch_getTransactionByHash", "rooch_executeViewFunction", "eth_getBlockByNumber", "rooch_getEvents", "eth_feeHistory", "eth_getTransactionByHash", "eth_getBlockByHash", "eth_getTransactionReceipt", "rooch_getTransactionInfosByTxOrder", "eth_estimateGas", "eth_chainId", "rooch_getTransactionInfosByTxHash", "wallet_sign", "rooch_getStates"]
+```
+
+## More Examples
+
+TODO
+
+

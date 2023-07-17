@@ -4,7 +4,7 @@
 
 [Rooch](https://rooch.network) 是一个快速、模块化、安全、开发人员友好的基础架构解决方案，用于构建 Web3 原生应用程序。
 
-Rooch 于2023年06月28日，发布了第一个版本，版本名为 Sprout，版本号为 v0.1。
+Rooch 于2023年06月28日，发布了第一个版本，版本名为 **萌芽（Sprouting）**，版本号为 `v0.1`。
 
 ## 2. 安装 Rooch
 
@@ -15,6 +15,8 @@ Rooch 于2023年06月28日，发布了第一个版本，版本名为 Sprout，�
 ```shell
 wget https://github.com/rooch-network/rooch/releases/download/v0.1/rooch-ubuntu-latest.zip
 ```
+
+> 注意：请选择对应自己系统的版本，我这里使用 Linux 的版本来演示。
 
 ### 2.2 解压
 
@@ -69,7 +71,7 @@ SUBCOMMANDS:
 
 为了方便后续使用，建议将 `rooch` 放入能被系统环境变量 `PATH` 检索的路径，或者将当前的解压目录通过 `export` 导出到 `PATH` 中。
 
-- 方法一，复制 `rooch` 这个程序复制到 `/usr/local/bin` 目录中（推荐）
+- 方法一，复制 `rooch` 这个程序复制到 `/usr/local/bin` 目录中（**推荐**）
 
 ```shell
 sudo cp rooch /usr/local/bin
@@ -98,7 +100,7 @@ rooch init
 
 ### 4.1 创建 Move 项目
 
-使用 `rooch` 封装的 `move new` 命令来创建一个名为 `simple_blog` 的博客应用。
+使用 `rooch` 集成的 `move new` 命令来创建一个名为 `simple_blog` 的博客应用。
 
 ```shell
 rooch move new simple_blog
@@ -134,7 +136,7 @@ rooch_framework =  "0x3"
 - 在 TOML 文件中包含三个表：`package`、`dependencies` 和 `addresses`，存放项目所需的一些元信息。
 - `package` 表用来存放项目的一些描述信息，这里包含两个键值对 `name` 和 `version` 来描述项目名和项目的版本号。
 - `dependencies` 表用来存放项目所需依赖的元数据。
-- `addresses` 表用来存放项目地址以及模块地址，第一个地址是初始化 Rooch 配置时，生成在 `$HOME/.rooch/rooch_config/rooch.yaml` 中的地址。
+- `addresses` 表用来存放项目地址以及项目所依赖模块的地址，第一个地址是初始化 Rooch 配置时，生成在 `$HOME/.rooch/rooch_config/rooch.yaml` 中的地址。
 
 为了方便其他开发者部署，我们把 `simple_blog` 的地址用 `_` 替代，然后部署的时候通过 `--named--addresses` 来指定。
 
@@ -157,7 +159,7 @@ struct MyBlog has key {
 
 这个结构体包含两个字段，一个是博客的名字，另一个是博客的文章列表。文章列表我们只保存文章 Object 的 ID。
 
-然后定义一个创建博客的方法：
+然后定义一个创建博客的函数：
 
 ```move
 public fun create_blog(ctx: &mut StorageContext, owner: &signer) {
@@ -181,9 +183,9 @@ public entry fun set_blog_name(ctx: &mut StorageContext, owner: &signer, blog_na
 }
 ```
 
-创建博客就是初始化 `MyBlog` 数据结构，并把 `MyBlog` 保存在用户的存储空间内。同时提供了一个设置博客名称的入口方法，如果博客不存在，则先创建博客，然后设置博客名称。
+创建博客就是初始化 `MyBlog` 数据结构，并把 `MyBlog` 保存在用户的存储空间内。同时提供了一个设置博客名称的入口函数，如果博客不存在，则先创建博客，然后设置博客名称。
 
-然后再提供一个合约初始化方法，合约发布的时候会自动执行这个初始化方法，给发布合约的用户先自动初始化博客。
+然后再提供一个合约初始化函数，合约发布的时候会自动执行这个初始化函数，给发布合约的用户先自动初始化博客。
 
 ```move
 /// This init function is called when the module is published
@@ -194,7 +196,7 @@ fun init(storage_ctx: &mut StorageContext, owner: &signer) {
 }
 ```
 
-然后，再提供一个查询博客列表的方法和添加删除文章的方法，全部代码如下：
+然后，再提供一个查询博客列表的函数和添加删除文章的函数，全部代码如下：
 
 ```move
 module simple_blog::blog {
@@ -301,7 +303,7 @@ BUILDING simple_blog
 Success
 ```
 
-此时，项目文件夹会多出一个 `build` 目录，里面存放的就是 Move 编译器生成的合约字节码文件以及合约完整的源代码。
+此时，项目文件夹会多出一个 `build` 目录，里面存放的就是 Move 编译器生成的合约字节码文件以及合约**完整的**源代码。
 
 #### 4.2.3 运行 Rooch 服务器
 
@@ -391,7 +393,7 @@ rooch state --access-path /resource/0xbbfc33692c7d57839fde9643681fb64c83b377e4c7
 
 可以看到，`MyBlog` Resource 已经存在，名称是默认的 `MyBlog`，文章列表为空。
 
-然后我们通过 `set_blog_name` 方法来设置博客名。调用合约入口函数的语法是：
+然后我们通过 `set_blog_name` 函数来设置博客名。调用合约入口函数的语法是：
 
 ```shell
 rooch move run --function {ACCOUNT_ADDRESS}::{MODULE_NAME}::{FUNCTION_NAME} --sender-account {ACCOUNT_ADDRESS}
@@ -462,7 +464,7 @@ struct ArticleDeletedEvent has key,copy,store {
 
 文章数据结构包含三个字段，`version` 用来记录文章的版本号，`title` 用来记录文章标题，`body` 用来记录文章内容。
 
-定义创建文章的方法：
+定义创建文章的函数：
 
 ```move
 /// Create article
@@ -499,9 +501,9 @@ public fun create_article(
 }
 ```
 
-这个方法中，先检查文章标题和内容的长度是否超过限制。然后创建文章对象，将文章对象添加到对象存储中，最后发送文章创建事件，返回文章的 ID。
+这个函数中，先检查文章标题和内容的长度是否超过限制。然后创建文章对象，将文章对象添加到对象存储中，最后发送文章创建事件，返回文章的 ID。
 
-然后定义修改方法：
+然后定义修改函数：
 
 ```move
 public fun update_article(
@@ -534,9 +536,9 @@ public fun update_article(
 }
 ```
 
-这个方法中，先检查新的文章标题和内容的长度是否超过限制。然后从对象存储中获取文章对象，检查调用者是否是文章的所有者，如果不是，则抛出异常。最后更新文章对象的版本号，标题和内容，发送文章更新事件。
+这个函数中，先检查新的文章标题和内容的长度是否超过限制。然后从对象存储中获取文章对象，检查调用者是否是文章的所有者，如果不是，则抛出异常。最后更新文章对象的版本号，标题和内容，发送文章更新事件。
 
-然后再定义删除方法：
+然后再定义删除函数：
 
 ```move
  /// Delete article
@@ -561,9 +563,9 @@ public fun delete_article(
 }
 ```
 
-这个方法中，先从对象存储中删除文章对象，检查调用者是否是文章的所有者，如果不是，则抛出异常。最后发送文章删除事件并销毁文章对象。
+这个函数中，先从对象存储中删除文章对象，检查调用者是否是文章的所有者，如果不是，则抛出异常。最后发送文章删除事件并销毁文章对象。
 
-最后，我们还需要提供一个根据 ID 查询文章的方法，供其他合约使用：
+最后，我们还需要提供一个根据 ID 查询文章的函数，供其他合约使用：
 
 ```move
 /// get article object by id
@@ -736,7 +738,7 @@ module simple_blog::article {
 
 #### 4.3.2 博客合约集成文章合约
 
-接下来，我们在 `blog.move` 中集成文章合约，并提供入口方法：
+接下来，我们在 `blog.move` 中集成文章合约，并提供入口函数：
 
 ```move
     public entry fun create_article(
@@ -807,6 +809,7 @@ curl --location --request POST 'http://localhost:50051' \
 ```
 
 由于输出的内容比较多，可以在上面的命令最尾添加一个管道操作（` | jq '.result.data[0].parsed_event_data.value.id'`），来快速筛选出第一篇文章的 `ObjectID`。 
+
 > 提示：在使用 `jp` 命令（jq - commandline JSON processor）之前，你可能需要先安装它。
 
 添加 `jp` 处理后的命令像下面这样：

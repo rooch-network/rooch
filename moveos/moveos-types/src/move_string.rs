@@ -11,7 +11,7 @@ use anyhow::ensure;
 use move_core_types::{
     account_address::AccountAddress,
     ident_str,
-    identifier::IdentStr,
+    identifier::{IdentStr, Identifier},
     value::{MoveStructLayout, MoveTypeLayout},
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
@@ -102,6 +102,14 @@ impl TryFrom<AnnotatedMoveStruct> for MoveString {
     }
 }
 
+impl TryFrom<MoveString> for Identifier {
+    type Error = anyhow::Error;
+
+    fn try_from(value: MoveString) -> Result<Self, Self::Error> {
+        Identifier::new(value.to_string())
+    }
+}
+
 #[derive(Debug, Eq, PartialEq, Clone, PartialOrd, Ord, Hash, JsonSchema)]
 pub struct MoveAsciiString {
     bytes: Vec<u8>,
@@ -179,6 +187,14 @@ impl TryFrom<AnnotatedMoveStruct> for MoveAsciiString {
             _ => return Err(anyhow::anyhow!("Invalid MoveAsciiString")),
         };
         Ok(MoveAsciiString { bytes })
+    }
+}
+
+impl TryFrom<MoveAsciiString> for Identifier {
+    type Error = anyhow::Error;
+
+    fn try_from(value: MoveAsciiString) -> Result<Self, Self::Error> {
+        Identifier::new(value.to_string())
     }
 }
 

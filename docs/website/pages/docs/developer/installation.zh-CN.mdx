@@ -1,0 +1,59 @@
+# 安装
+
+## 编译安装
+
+### Ubuntu
+
+#### 安装依赖
+
+```shell
+sudo apt install git curl gcc lld pkg-config libssl-dev libclang-dev g++
+```
+
+#### 安装 Rust
+
+```shell
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+#### 克隆源码
+
+```shell
+git clone https://github.com/rooch-network/rooch.git
+```
+
+#### 编译并安装 Rooch
+
+```shell
+cd rooch && cargo build && cp target/debug/rooch ~/.cargo/bin/
+```
+
+### Windows
+
+TODO
+
+### macOS
+
+TODO
+
+## 二进制安装
+
+### Linux
+
+#### 下载
+
+```shell
+wget https://github.com/rooch-network/rooch/releases/download/v0.1/rooch-ubuntu-latest.zip
+```
+
+#### 解压
+
+```shell
+unzip rooch-ubuntu-latest.zip
+```
+
+#### 安装
+
+```shell
+sudo cp rooch /usr/local/bin
+```

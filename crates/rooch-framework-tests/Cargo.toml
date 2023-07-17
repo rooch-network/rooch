@@ -38,9 +38,15 @@ move-vm-types = { workspace = true }
 move-package = { workspace = true }
 move-prover = { workspace = true }
 
-
+moveos = { workspace = true }
 moveos-types = { workspace = true }
 moveos-verifier = { workspace = true }
+moveos-store = { workspace = true }
+
+rooch-framework = { workspace = true }
+rooch-genesis = { workspace = true }
+rooch-types = { workspace = true }
+rooch-key = { workspace = true }
 
 [dev-dependencies]
 rooch-integration-test-runner = { workspace = true }

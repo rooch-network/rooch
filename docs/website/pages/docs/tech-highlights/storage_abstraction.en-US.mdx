@@ -21,7 +21,7 @@ In EVM, the state of a contract is stored through its field variables, and the v
 
 Move has made improvements to smart contract state storage. Applications need to perform explicit operations through global storage instructions. It mainly provides the following instructions:
 
-1. `move_to<T:key>(signer)`: Stores a resource of type `T` in the user state space of `signer`, which can only be executed by transactions initiated by the user.
+1. `move_to<T:key>(&signer,T)`: Stores a resource of type `T` in the user state space of `signer`, which can only be executed by transactions initiated by the user.
 2. `move_from<T:key>(address):T`: Retrieves a resource of type `T` from the user state space.
 3. `borrow_global<T:key>(address):&T`: Reads an immutable reference of type `T` from the user space.
 4. `borrow_global_mut<T:key>(address):&mut T`: Reads a mutable reference of type `T` from the user space.
