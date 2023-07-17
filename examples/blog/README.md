@@ -577,8 +577,19 @@ Note that the `Owner` parameter is no longer present in the method parameters ab
 
 Then, delete `article_add_comment_logic.move`, run the dddappp tool again. (Note that since the tool does not overwrite the already existing `*_logic.move` file by default, you will need to delete it manually.)
 
-Open the regenerated `article_add_comment_logic.move` file, find the `verify` function, fill the function body with the business logic code you want.
+Open the regenerated `article_add_comment_logic.move` file, find the `verify` function, fill the function body with the business logic code you want. In fact, all you have to do is probably add a line of code like this at the end of the `verify` function:
 
+```
+    public(friend) fun verify(
+        // ...
+    ): article::CommentAdded {
+        // ...
+            body,
+            // Add the following line of code
+            std::signer::address_of(account),
+        )
+    }
+```
 
 ### Add a Singleton Object: Blog
 
@@ -788,10 +799,13 @@ However, as you may have noticed, there are a few things about this application 
 * We defined `AddArticle` and `RemoveArticle` within the `Blog` object only with the intention of using them internally, and there was no need to declare their corresponding `add_article` and `remove_article` functions in the `blog_aggregate.move` file as `public entry fun`.
 * Now we can't use another account to create blog articles. If we review the implementation of the `add_article` and `remove_article` functions, we find that the generated code by default uses a parameter of type `&signer` to manipulate the `Blog` object in the signer's account resource;
   however, to implement the business logic of these two methods (adding and removing the `ObjectID` of a article from an existing `Blog` object), the code could have been written in a different way.
+* When adding a comment, you need to pass in the `CommentSeqId` parameter as the local ID of the comment, the value of which is specified by the caller. It would be nice if the comment ID could be generated automatically.
 
-Now let's solve these two issues.
+Now let's solve these issues.
 
-### Modify the singleton object Blog
+### Modifying the Model File
+
+#### Modify the Singleton Object Blog
 
 Open the `blog.yaml` model file and modify the definition of the `Blog` singleton object as suggested in the following comment:
 
@@ -819,7 +833,40 @@ singletonObjects:
           # ...
 ```
 
-Delete the files `blog_add_article_logic.move` and `blog_remove_article_logic.move`. Re-run the dddappp tool to regenerate the code.
+
+#### Modifying the Comment Entity
+
+Locate the definition of the `Comment` entity in the model file and add a few lines of code as suggested by the comment below:
+
+```yaml
+    entities:
+      Comment:
+        # ...
+        id:
+          name: CommentSeqId
+          type: u64
+          # The following 3 lines are added
+          generator:
+            class: sequence
+            structName: CommentSeqIdGenerator
+```
+
+Then, remove or comment out the definition of the `CommentSeqId` parameter in the `AddComment` method, as suggested in the comment below:
+
+```yaml
+      AddComment:
+        # ...
+        parameters:
+          # Remove or comment out the following two lines
+          # CommentSeqId:
+          #   type: u64
+          Commenter:
+            type: String
+```
+
+### Re-generate, Fill in Business Logic
+
+Delete the files `blog_add_article_logic.move`, `blog_remove_article_logic.move` and `article_add_comment_logic.move`. Re-run the dddappp tool to regenerate the code.
 
 Open the `blog_add_article_logic.move` file and fill in the business logic code:
 
@@ -874,7 +921,22 @@ Open the `blog_remove_article_logic.move` file and fill in the business logic co
     }
 ```
 
-### Modify the logic of Creating Articles
+Open the regenerated `article_add_comment_logic.move` file, find the `verify` function, fill the function body with the business logic code you want. In fact, all you have to do is probably add a line of code like this at the end of the `verify` function:
+
+```
+    public(friend) fun verify(
+        // ...
+    ): article::CommentAdded {
+        // ...
+            body,
+            // Add the following line of code
+            std::signer::address_of(account),
+        )
+    }
+```
+
+
+### Modify the Logic of Creating Articles
 
 Open the file `article_create_logic.move` and find the following line of code:
 
@@ -888,7 +950,7 @@ Modify it to:
         blog_aggregate::add_article(storage_ctx, article::id(&article_obj));
 ```
 
-### Modify the logic of Deleting Articles
+### Modify the Logic of Deleting Articles
 
 Open the file `article_delete_logic.move` and find the following line of code:
 

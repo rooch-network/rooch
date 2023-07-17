@@ -71,7 +71,6 @@ module rooch_examples::article_aggregate {
         storage_ctx: &mut StorageContext,
         account: &signer,
         id: ObjectID,
-        comment_seq_id: u64,
         commenter: String,
         body: String,
     ) {
@@ -79,7 +78,6 @@ module rooch_examples::article_aggregate {
         let comment_added = article_add_comment_logic::verify(
             storage_ctx,
             account,
-            comment_seq_id,
             commenter,
             body,
             &article_obj,

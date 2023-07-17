@@ -46,6 +46,20 @@ module rooch_examples::article {
         title: String,
         body: String,
         comments: Table<u64, Comment>,
+        comment_seq_id_generator: CommentSeqIdGenerator,
+    }
+
+    struct CommentSeqIdGenerator has store {
+        sequence: u64,
+    }
+
+    public(friend) fun current_comment_seq_id(article_obj: &Object<Article>): u64 {
+        object::borrow(article_obj).comment_seq_id_generator.sequence
+    }
+
+    public(friend) fun next_comment_seq_id(article_obj: &mut Object<Article>): u64 {
+        object::borrow_mut(article_obj).comment_seq_id_generator.sequence = object::borrow(article_obj).comment_seq_id_generator.sequence + 1;
+        object::borrow(article_obj).comment_seq_id_generator.sequence
     }
 
     /// get object id
@@ -115,6 +129,7 @@ module rooch_examples::article {
             title,
             body,
             comments: table::new<u64, Comment>(tx_ctx),
+            comment_seq_id_generator: CommentSeqIdGenerator { sequence: 0, },
         }
     }
 
@@ -377,7 +392,11 @@ module rooch_examples::article {
             title: _title,
             body: _body,
             comments,
+            comment_seq_id_generator,
         } = article;
+        let CommentSeqIdGenerator {
+            sequence: _,
+        } = comment_seq_id_generator;
         table::destroy_empty(comments);
     }
 
