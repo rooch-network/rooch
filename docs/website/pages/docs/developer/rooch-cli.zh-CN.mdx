@@ -39,7 +39,36 @@ rooch <SUBCOMMAND>
 使用 ```rooch -h``` 来查看支持的命令列表。
 
 使用 ```rooch help <command>``` 来查看每个命令的更多信息。
-    
-## 示例
+
+## 初始化CLI（命令行）
+
+默认情况下，配置文件保存在您的 Home 目录。
+
+使用 ```rooch init``` 来初始化Rooch CLI（命令行），配置文件的位置通过 ``` --config-dir``` 指定。
+
+响应类似于以下内容:
+
+```
+Creating config file ["/Users/sven/.rooch/rooch_config/rooch.yaml"] with default (local) server and ed25519 key scheme.
+Generated new keypair for address with scheme "ed25519" [0xeb417f9091c77c8c1a9c6a7683ee1eb5883fbae5128eae5ab414c0de5f050d08]
+Secret Recovery Phrase : [grab infant behave ugly erosion grief file arrange unit ship iron garage]
+"Rooch config file generated at /Users/sven/.rooch/rooch_config/rooch.yaml"
+```
+
+## 启动本地服务
+
+使用 ```rooch server start``` 来启动一个本地服务。
+
+**重要提示**:每次启动Rooch服务器时，该网络都作为一个新网络启动，没有以前的数据。
+
+响应类似于以下内容:
+
+```
+Documentation generation successful!
+2023-07-17T05:34:49.963869Z  INFO rooch_rpc_server: JSON-RPC HTTP Server start listening 0.0.0.0:50051
+2023-07-17T05:34:49.963893Z  INFO rooch_rpc_server: Available JSON-RPC methods : ["wallet_accounts", "eth_blockNumber", "eth_getBalance", "eth_gasPrice", "net_version", "eth_getTransactionCount", "eth_sendTransaction", "rooch_sendRawTransaction", "rooch_getAnnotatedStates", "eth_sendRawTransaction", "rooch_getTransactionByIndex", "rooch_executeRawTransaction", "rooch_getEventsByEventHandle", "rooch_getTransactionByHash", "rooch_executeViewFunction", "eth_getBlockByNumber", "rooch_getEvents", "eth_feeHistory", "eth_getTransactionByHash", "eth_getBlockByHash", "eth_getTransactionReceipt", "rooch_getTransactionInfosByTxOrder", "eth_estimateGas", "eth_chainId", "rooch_getTransactionInfosByTxHash", "wallet_sign", "rooch_getStates"]
+```
+
+## 更多示例
 
 TODO
