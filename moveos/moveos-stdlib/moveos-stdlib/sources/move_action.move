@@ -49,6 +49,24 @@ module moveos_std::move_action{
         option::extract(&mut move_action.script_call)
     }
 
+    public fun is_function_call(move_action: &MoveAction): bool {
+        option::is_some(&move_action.function_call)
+    }
+
+    public fun into_function_call(move_action: MoveAction): FunctionCall {
+        assert!(is_function_call(&move_action), error::invalid_argument(EInvalidType));
+        option::extract(&mut move_action.function_call)
+    }
+
+    public fun is_module_bundle(move_action: &MoveAction): bool {
+        option::is_some(&move_action.module_bundle)
+    }
+
+    public fun into_module_bundle(move_action: MoveAction): ModuleBundle {
+        assert!(is_module_bundle(&move_action), error::invalid_argument(EInvalidType));
+        option::extract(&mut move_action.module_bundle)
+    }
+
     /// We provide a native function to decode MoveAction from bytes
     /// We can not use the `bcs::from_bytes` directly
     /// because we can not define a `MoveAction` which has same bcs layout with the MoveAction in Rust
