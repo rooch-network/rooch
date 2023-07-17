@@ -6,8 +6,10 @@
 # Usage ./ubuntu_dev.sh
 
 if [ "$(whoami)" != 'root' ]; then
+  sudo apt update
   sudo apt install git curl clang lld pkg-config libssl-dev 
 else
+  apt update
   apt install git curl clang lld pkg-config libssl-dev 
 fi
 
