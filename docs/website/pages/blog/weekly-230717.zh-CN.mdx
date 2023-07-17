@@ -1,6 +1,6 @@
 ---
 title: Rooch 周报 2023-07-17
-description: "<++>"
+description: "完善 Getting started with Rooch，实现验证抽象，提供存储实现"
 author: geometryolife
 category: Rooch Weekly
 date: 2023/07/17
@@ -12,23 +12,34 @@ import PostHeader from "/components/blog/postHeader";
 
 ## Rooch 的开发进展
 
-### 概要
-
-
 ### 新特性
 
-
-### 重大重构
-
+- **provide raw store component base on RocksDB (#454)** (2023-07-11) @Bai Chuan
+- **[gh-438] add btc address supports for random() case. (#448)** (2023-07-11) @feliciss
+- **[gh-444] add nostr address mapping for Rooch. (#451)** (2023-07-11) @feliciss
+- **[AccountAbstraction] Implement AuthenticatorAbstraction (#466)** (2023-07-14) @jolestar
 
 ### 改进和修复
 
+- **add weekly 2023-07-11 (#455)** (2023-07-12) @Joe Chen
+- **[getting-started] use function instead of method terminology (#458)** (2023-07-12) @Joe Chen
+- **update getting started with Rooch en and fix some zh contents (#462)** (2023-07-12) @Joe Chen
+- **[gh-472] add helper function if modules are empty. (#473)** (2023-07-13) @feliciss
+- **Update blog example. (#478)** (2023-07-14) @wubuku
+- **[gh-470] rename secp256k1 to ECDSA. (#471)** (2023-07-14) @feliciss
+- **fix (#480)** (2023-07-14) @0xPause
+- **[Example] NoOpAuthValidator (#475)** (2023-07-14) @jolestar
+- **Update blog example (#484)** (2023-07-16) @wubuku
 
 ### Rooch 社区开发会议
 
-- [会议录屏](<++>)
-
-- (HEAD -> weekly4, upstream/main, origin/main, origin/HEAD, main) **[gh-438] add btc address supports for random() case. (#448)** (2023-07-11) @feliciss
-- **add weekly 2023-07-11 (#455)** (2023-07-12) @Joe Chen
-- **provide raw store component base on RocksDB (#454)** (2023-07-11) @Bai Chuan
-
+- 讨论集成测试的特性和相关问题，目前支持引入第三方库，[相关 PR](https://github.com/rooch-network/rooch/pull/464)
+  - 发布当前项目的模块，然后运行集成测试
+  - 修复依赖使用问题
+- 讨论`交易缓存（TransactionCache）`的实现方案，[参见代码](https://github.com/rooch-network/move/compare/move_os...pause125:move:txn_cache?expand=1)
+  - 自定义 DataStore 和 TransactionCache 的 trait。
+- 介绍验证器抽象的实现
+- 讨论 Developer 文档设计
+- 讨论存储相关的实现，RocksDB
+- 讨论 Nostr 的相关内容
+- [会议录屏](https://drive.google.com/file/d/1KD1-CThZB3IMWji6yVCf8V93yY0RbMHr/view?usp=sharing)
