@@ -578,7 +578,19 @@ aggregates:
 
 然后，删除 `article_add_comment_logic.move` 文件，再次运行 dddappp 工具。（注意，因为工具默认不会覆盖已经存在的 `*_logic.move` 文件，所以你需要手动删除它。）
 
-打开重新生成的 `article_add_comment_logic.move` 文件中，找到 `verify` 函数，在函数体中填充你想要的业务逻辑代码。
+打开重新生成的 `article_add_comment_logic.move` 文件中，找到 `verify` 函数，在函数体中填充你想要的业务逻辑代码。事实上你要做的可能只是在 `verify` 函数的最后添加这样一行代码：
+
+```
+    public(friend) fun verify(
+        // ...
+    ): article::CommentAdded {
+        // ...
+            body,
+            // 添加下面这行代码
+            std::signer::address_of(account),
+        )
+    }
+```
 
 ### 增加一个单例对象 Blog
 
@@ -787,10 +799,13 @@ rooch state --access-path /resource/{ACCOUNT_ADDRESS}/{ACCOUNT_ADDRESS}::blog::B
 
 * 我们在 `Blog` 对象内定义 `AddArticle` 和 `RemoveArticle` 只是打算供内部使用，没有必要在 `blog_aggregate.move` 文件中把它们对应的 `add_article` 和 `remove_article` 函数声明为 `public entry fun`。
 * 现在我们无法使用另外一个账户来创建博客文章。我们检视一下 `add_article` 和 `remove_article` 函数的实现，发现生成的代码默认使用了类型为 `&signer` 的参数来操作签名者的账户资源中的 `Blog` 对象；然而，想要实现这个两个方法的业务逻辑（在已有的 `Blog` 对象中添加和删除文章的 `ObjectID`），代码完全可以采用另外一种写法。
+* 在添加评论的时候，需要传入 `CommentSeqId` 参数作为评论的局部 ID，这个参数的值是由调用者自己指定的。要是评论的 ID 能够自动生成就更好了。
 
-现在让我们来解决这两个问题。
+现在让我们来解决这些问题。
 
-### 修改单例对象 Blog
+### 修改模型文件
+
+#### 修改单例对象 Blog
 
 打开 `blog.yaml` 模型文件，按照下面注释的提示，修改 `Blog` 这个单例对象的定义：
 
@@ -818,7 +833,39 @@ singletonObjects:
           # ...
 ```
 
-删除 `blog_add_article_logic.move` 和 `blog_remove_article_logic.move` 这两个文件。重新运行 dddappp 工具重新生成代码。
+#### 修改评论实体
+
+找到模型文件中的 `Comment` 实体的定义，按照下面注释的提示，添加几行代码：
+
+```yaml
+    entities:
+      Comment:
+        # ...
+        id:
+          name: CommentSeqId
+          type: u64
+          # 下面这三行代码是新增的
+          generator:
+            class: sequence
+            structName: CommentSeqIdGenerator
+```
+
+然后，按照下面注释的提示，移除或者注释掉 `AddComment` 方法中的 `CommentSeqId` 参数的定义：
+
+```yaml
+      AddComment:
+        # ...
+        parameters:
+          # 移除或者注释掉下面这两行代码
+          # CommentSeqId:
+          #   type: u64
+          Commenter:
+            type: String
+```
+
+### 重新生成代码、填充业务逻辑
+
+删除 `blog_add_article_logic.move`，`blog_remove_article_logic.move` 和 `article_add_comment_logic.move` 这三个文件。重新运行 dddappp 工具重新生成代码。
 
 打开 `blog_add_article_logic.move` 文件，填充业务逻辑代码：
 
@@ -870,6 +917,21 @@ singletonObjects:
             vector::remove(&mut articles, idx);
             blog::set_articles(blog, articles);
         };
+    }
+```
+
+
+打开重新生成的 `article_add_comment_logic.move` 文件中，找到 `verify` 函数，在函数体中填充你想要的业务逻辑代码。事实上你要做的可能只是在 `verify` 函数的最后添加这样一行代码：
+
+```
+    public(friend) fun verify(
+        // ...
+    ): article::CommentAdded {
+        // ...
+            body,
+            // 添加下面这行代码
+            std::signer::address_of(account),
+        )
     }
 ```
 
