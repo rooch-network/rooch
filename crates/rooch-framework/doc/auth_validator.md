@@ -6,6 +6,8 @@
 This module contains the error code for auth_validator module
 The auth_validator implementation should contain the following functions
 public fun validate(ctx: &StorageContext, payload: vector<u8>)
+fun pre_execute(ctx: &mut StorageContext)
+fun post_execute(ctx: &mut StorageContext)
 
 
 -  [Constants](#@Constants_0)

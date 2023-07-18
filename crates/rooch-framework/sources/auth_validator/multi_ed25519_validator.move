@@ -17,4 +17,13 @@ module rooch_framework::multi_ed25519_validator {
       abort std::error::not_implemented(1)
    }
 
+   fun pre_execute(
+        _ctx: &mut StorageContext,
+   ) { 
+   }
+   
+   fun post_execute(
+      _ctx: &mut StorageContext,
+   ) {
+   }
 }
