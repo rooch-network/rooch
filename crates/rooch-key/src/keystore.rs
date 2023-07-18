@@ -185,6 +185,7 @@ impl AccountKeystore for FileBasedKeystore {
             BuiltinScheme::Ed25519 => authenticator::Authenticator::ed25519(signature),
             BuiltinScheme::Ecdsa => todo!(),
             BuiltinScheme::MultiEd25519 => todo!(),
+            BuiltinScheme::Schnorr => todo!(),
         };
 
         Ok(RoochTransaction::new(msg, auth))
@@ -299,6 +300,7 @@ impl AccountKeystore for InMemKeystore {
             BuiltinScheme::Ed25519 => authenticator::Authenticator::ed25519(signature),
             BuiltinScheme::Ecdsa => todo!(),
             BuiltinScheme::MultiEd25519 => todo!(),
+            BuiltinScheme::Schnorr => todo!(),
         };
 
         Ok(RoochTransaction::new(msg, auth))

@@ -37,9 +37,6 @@ strum = { workspace = true }
 strum_macros = { workspace = true }
 async-trait ={ workspace = true }
 nostr = { workspace = true }
-secp256k1 = { workspace = true }
-ed25519-dalek = { workspace = true }
-
 
 move-core-types = { workspace = true }
 move-stdlib = { workspace = true }

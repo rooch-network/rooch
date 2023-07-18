@@ -11,12 +11,15 @@ use crate::crypto::{BuiltinScheme, Signature};
 use anyhow::Result;
 
 #[cfg(any(test, feature = "fuzzing"))]
-use ed25519_dalek::Keypair;
-#[cfg(any(test, feature = "fuzzing"))]
 use ethers::types::U256;
+#[cfg(any(test, feature = "fuzzing"))]
+use fastcrypto::ed25519::Ed25519KeyPair;
+#[cfg(any(test, feature = "fuzzing"))]
+use fastcrypto::traits::KeyPair;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::{collection::vec, prelude::*};
 #[cfg(any(test, feature = "fuzzing"))]
+use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use std::{convert::TryFrom, fmt, str::FromStr};
 
@@ -53,12 +56,49 @@ impl Arbitrary for Ed25519Authenticator {
 #[cfg(any(test, feature = "fuzzing"))]
 prop_compose! {
     fn arb_ed25519_authenticator()(
+        seed in any::<u64>(),
         message in vec(any::<u8>(), 1..1000)
     ) -> Ed25519Authenticator {
-        let mut csprng = OsRng{};
-        let keypair: Keypair = Keypair::generate(&mut csprng);
+        let mut rng = StdRng::seed_from_u64(seed);
+        let ed25519_keypair: Ed25519KeyPair = Ed25519KeyPair::generate(&mut rng);
         Ed25519Authenticator {
-            signature: Signature::new_hashed(&message, &keypair.into())
+            signature: Signature::new_hashed(&message, &ed25519_keypair)
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SchnorrAuthenticator {
+    pub signature: Signature,
+}
+
+impl BuiltinAuthenticator for SchnorrAuthenticator {
+    fn scheme(&self) -> BuiltinScheme {
+        BuiltinScheme::Schnorr
+    }
+    fn payload(&self) -> Vec<u8> {
+        self.signature.as_ref().to_vec()
+    }
+}
+#[cfg(any(test, feature = "fuzzing"))]
+impl Arbitrary for SchnorrAuthenticator {
+    type Parameters = ();
+    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+        arb_schnorr_authenticator().boxed()
+    }
+    type Strategy = BoxedStrategy<Self>;
+}
+
+#[cfg(any(test, feature = "fuzzing"))]
+prop_compose! {
+    fn arb_schnorr_authenticator()(
+        seed in any::<u64>(),
+        message in vec(any::<u8>(), 1..1000)
+    ) -> SchnorrAuthenticator {
+        let mut rng = StdRng::seed_from_u64(seed);
+        let schnorr_keypair: SchnorrKeyPair = SchnorrKeyPair::generate(&mut rng);
+        SchnorrAuthenticator {
+            signature: Signature::new_hashed(&message, &schnorr_keypair)
         }
     }
 }
@@ -136,74 +176,6 @@ prop_compose! {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct SchnorrAuthenticator {
-    pub signature: secp256k1::schnorr::Signature,
-}
-
-impl BuiltinAuthenticator for SchnorrAuthenticator {
-    fn scheme(&self) -> BuiltinScheme {
-        BuiltinScheme::Schnorr
-    }
-    fn encode(&self) -> Vec<u8> {
-        bcs::to_bytes(self).expect("encode should success.")
-    }
-}
-
-impl Serialize for SchnorrAuthenticator {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        #[derive(::serde::Serialize)]
-        #[serde(rename = "SchnorrAuthenticator")]
-        struct Value {
-            signature: secp256k1::schnorr::Signature,
-        }
-        Value {
-            signature: self.signature.into(),
-        }
-        .serialize(serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for SchnorrAuthenticator {
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        #[derive(::serde::Deserialize)]
-        #[serde(rename = "SchnorrAuthenticator")]
-        struct Value {
-            signature: secp256k1::schnorr::Signature,
-        }
-        let value = Value::deserialize(deserializer)?;
-        let signature = secp256k1::schnorr::Signature::try_from(value.signature)
-            .map_err(|e| serde::de::Error::custom(e.to_string()))?;
-        Ok(SchnorrAuthenticator { signature })
-    }
-}
-
-#[cfg(any(test, feature = "fuzzing"))]
-impl Arbitrary for SchnorrAuthenticator {
-    type Parameters = ();
-    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
-        arb_schnorr_authenticator().boxed()
-    }
-    type Strategy = BoxedStrategy<Self>;
-}
-
-#[cfg(any(test, feature = "fuzzing"))]
-prop_compose! {
-    fn arb_schnorr_authenticator()(
-     sig in vec(any::<u8>(), 4..=4).prop_map(|v| (v)),
-    ) -> SchnorrAuthenticator {
-        SchnorrAuthenticator {
-            signature: secp256k1::schnorr::Signature::from_slice(&sig).unwrap(),
-        }
-    }
-}
-
 impl<T> From<T> for Authenticator
 where
     T: BuiltinAuthenticator,
@@ -246,6 +218,11 @@ impl Authenticator {
     /// Create a single-signature ecdsa authenticator
     pub fn ecdsa(signature: ethers::core::types::Signature) -> Self {
         EcdsaAuthenticator { signature }.into()
+    }
+
+    /// Create a single-signature schnorr authenticator
+    pub fn schnorr(signature: Signature) -> Self {
+        SchnorrAuthenticator { signature }.into()
     }
 
     /// Create a custom authenticator
