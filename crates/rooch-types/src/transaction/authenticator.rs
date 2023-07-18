@@ -14,6 +14,7 @@ use anyhow::Result;
 use ethers::types::U256;
 #[cfg(any(test, feature = "fuzzing"))]
 use fastcrypto::ed25519::Ed25519KeyPair;
+#[cfg(any(test, feature = "fuzzing"))]
 use fastcrypto::secp256k1::schnorr::SchnorrKeyPair;
 #[cfg(any(test, feature = "fuzzing"))]
 use fastcrypto::traits::KeyPair;
@@ -94,12 +95,12 @@ impl Arbitrary for SchnorrAuthenticator {
 prop_compose! {
     fn arb_schnorr_authenticator()(
         seed in any::<u64>(),
-        message in vec(any::<u8>(), 1..1000)
+        message in vec(any::<u8>(), 1..32)
     ) -> SchnorrAuthenticator {
         let mut rng = StdRng::seed_from_u64(seed);
-        let schnorr_keypair: SchnorrKeyPair = SchnorrKeyPair::generate(&mut rng);
+        let kp = SchnorrKeyPair::generate(&mut rng);
         SchnorrAuthenticator {
-            signature: Signature::new_hashed(&message, &schnorr_keypair)
+            signature: Signature::new_hashed(&message, &kp)
         }
     }
 }

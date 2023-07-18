@@ -8,6 +8,7 @@ use crate::{
 use derive_more::{AsMut, AsRef, From};
 pub use enum_dispatch::enum_dispatch;
 use eyre::eyre;
+use fastcrypto::encoding::{Base64, Encoding};
 use fastcrypto::error::FastCryptoError;
 use fastcrypto::hash::{Blake2b256, HashFunction};
 pub use fastcrypto::traits::KeyPair as KeypairTraits;
@@ -34,7 +35,6 @@ use fastcrypto::{
         Secp256k1SignatureAsBytes,
     },
 };
-use fastcrypto::encoding::{Base64, Encoding};
 use moveos_types::{h256::H256, serde::Readable};
 use rand::{rngs::StdRng, SeedableRng};
 use schemars::JsonSchema;
