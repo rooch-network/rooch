@@ -14,6 +14,7 @@ use anyhow::Result;
 use ethers::types::U256;
 #[cfg(any(test, feature = "fuzzing"))]
 use fastcrypto::ed25519::Ed25519KeyPair;
+use fastcrypto::secp256k1::schnorr::SchnorrKeyPair;
 #[cfg(any(test, feature = "fuzzing"))]
 use fastcrypto::traits::KeyPair;
 #[cfg(any(test, feature = "fuzzing"))]

@@ -34,10 +34,7 @@ use fastcrypto::{
         Secp256k1SignatureAsBytes,
     },
 };
-use fastcrypto::{
-    encoding::{Base64, Encoding},
-    serde_helpers::BytesRepresentation,
-};
+use fastcrypto::encoding::{Base64, Encoding};
 use moveos_types::{h256::H256, serde::Readable};
 use rand::{rngs::StdRng, SeedableRng};
 use schemars::JsonSchema;
@@ -193,18 +190,23 @@ impl<'de> Deserialize<'de> for RoochKeyPair {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, JsonSchema)]
-// TODO From here
-// #[derive(Debug, Clone, PartialEq, Eq, From, JsonSchema)]
 pub enum PublicKey {
     Ed25519(Ed25519PublicKeyAsBytes),
     Ecdsa(Secp256k1PublicKeyAsBytes),
     Schnorr(SchnorrPublicKeyAsBytes),
 }
 
-// TODO resolve From conflicts
-impl From<BytesRepresentation<32>> for PublicKey {
-    fn from(pk: BytesRepresentation<32>) -> Self {
+impl PublicKey {
+    pub fn from_ed25519(pk: Ed25519PublicKeyAsBytes) -> Self {
         PublicKey::Ed25519(pk)
+    }
+
+    pub fn from_ecdsa(pk: Secp256k1PublicKeyAsBytes) -> Self {
+        PublicKey::Ecdsa(pk)
+    }
+
+    pub fn from_schnorr(pk: SchnorrPublicKeyAsBytes) -> Self {
+        PublicKey::Schnorr(pk)
     }
 }
 
