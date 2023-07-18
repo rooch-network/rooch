@@ -1,0 +1,5 @@
+node_modules
+packages/**/node_modules/
+dist/**
+**/*.test.ts
+vite.config.ts
