@@ -10,9 +10,9 @@ The Rooch TypeScript SDK provides APIs and interfaces you can use to interact wi
 
 The Rooch TypeScript SDK has three logical layers:
 
-Client layer – Responsible on communication with the blockchain server.
+Plugins layer Implementation of different use cases such as Token etc.
 Core layer – Exposes the functionalities needed by most applications.
-Plugins layer – Implementation of different use cases such as Token etc.
+Transport Layer Responsible on communication with the blockchain server.
 
 See below a high-level architecture diagram of the Rooch TypeScript SDK.
 
