@@ -25,7 +25,8 @@
     "eslint:check": "eslint --max-warnings=0 .",
     "eslint:fix": "pnpm run eslint:check --fix",
     "lint": "pnpm run eslint:check && pnpm run prettier:check",
-    "lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix"
+    "lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix",
+    "gen:client": "open-rpc-generator generate -c open-rpc-generator-config.json"
   },
   "repository": {
     "type": "git",
@@ -57,7 +58,13 @@
     "@iarna/toml": "^2.2.5",
     "@size-limit/preset-small-lib": "^8.2.4",
     "@types/node": "^18.15.11",
+    "eslint": "8.23.0",
+    "eslint-config-airbnb-base": "15.0.0",
+    "eslint-config-airbnb-typescript": "17.0.0",
+    "eslint-config-prettier": "8.5.0",
+    "eslint-plugin-import": "2.26.0",
     "msw": "^1.2.1",
+    "prettier": "2.6.2",
     "ts-retry-promise": "^0.7.0",
     "tsx": "^3.12.7",
     "typedoc": "^0.24.1",
@@ -66,12 +73,7 @@
     "vite-plugin-dts": "^3.3.1",
     "vitest": "^0.32.0",
     "wait-on": "^7.0.1",
-    "eslint": "8.23.0",
-    "eslint-config-airbnb-base": "15.0.0",
-    "eslint-config-airbnb-typescript": "17.0.0",
-    "eslint-config-prettier": "8.5.0",
-    "eslint-plugin-import": "2.26.0",
-    "prettier": "2.6.2"
+    "@open-rpc/generator": "^1.22.3"
   },
   "dependencies": {
     "@noble/curves": "^1.0.0",

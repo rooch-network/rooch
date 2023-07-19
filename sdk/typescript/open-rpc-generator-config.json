@@ -1,0 +1,11 @@
+{
+    "openrpcDocument": "../../crates/rooch-open-rpc-spec/schemas/openrpc.json",
+    "outDir": "generated",
+    "components": [
+        {
+            "type": "client",
+            "language": "typescript",
+            "name": "rooch-client"
+        }
+    ]
+}
