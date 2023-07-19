@@ -109,7 +109,7 @@ enum_dispatch = "^0.3"
 ethereum-types = "0.14.1"
 ethers = { version = "2.0.7", features = ["legacy"] }
 eyre = "0.6.8"
-fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", rev = "c27e87fb539c88b6fe1eac7dd82561254bb1e07a" }
+fastcrypto = { git = "https://github.com/rooch-network/fastcrypto", branch = "main" }
 futures = "0.3"
 hex = "0.4.3"
 rustc-hex = "1.0"
@@ -181,6 +181,7 @@ rstest = "0.16.0"
 nostr = "0.22"
 serde-reflection = "0.3.6"
 serde-generate = "0.25.1"
+rust_secp256k1 = { version = "0.27.0", package = "secp256k1", features = ["recovery", "rand-std", "bitcoin_hashes", "global-context"] }
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES

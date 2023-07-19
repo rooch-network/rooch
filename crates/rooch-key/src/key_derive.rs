@@ -17,6 +17,8 @@ use std::string::String;
 
 pub const DERIVATION_PATH_COIN_TYPE: u32 = 784;
 pub const DERVIATION_PATH_PURPOSE_ED25519: u32 = 44;
+// BIP32 is used to derive the path m/44'/1237'/<account>'/0/0 (according to the Nostr entry on SLIP44).
+pub const DERVIATION_PATH_PURPOSE_SCHNORR: u32 = 44;
 pub const DERVIATION_PATH_PURPOSE_ECDSA: u32 = 54;
 pub const DERVIATION_PATH_PURPOSE_SECP256R1: u32 = 74;
 

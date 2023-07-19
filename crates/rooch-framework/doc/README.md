@@ -27,6 +27,7 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::genesis`](genesis.md#0x3_genesis)
 -  [`0x3::hash`](hash.md#0x3_hash)
 -  [`0x3::multi_ed25519_validator`](multi_ed25519_validator.md#0x3_multi_ed25519_validator)
+-  [`0x3::schnorr`](schnorr.md#0x3_schnorr)
 -  [`0x3::transaction_validator`](transaction_validator.md#0x3_transaction_validator)
 
 

@@ -16,6 +16,7 @@ pub struct GasParameters {
     hash: rooch_framework::crypto::hash::GasParameters,
     ed25519: rooch_framework::crypto::ed25519::GasParameters,
     ecdsa_k1: rooch_framework::crypto::ecdsa_k1::GasParameters,
+    schnorr: rooch_framework::crypto::schnorr::GasParameters,
 }
 
 impl GasParameters {
@@ -26,6 +27,7 @@ impl GasParameters {
             hash: rooch_framework::crypto::hash::GasParameters::zeros(),
             ed25519: rooch_framework::crypto::ed25519::GasParameters::zeros(),
             ecdsa_k1: rooch_framework::crypto::ecdsa_k1::GasParameters::zeros(),
+            schnorr: rooch_framework::crypto::schnorr::GasParameters::zeros(),
         }
     }
 }
@@ -59,6 +61,10 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
     add_natives!(
         "ecdsa_k1",
         rooch_framework::crypto::ecdsa_k1::make_all(gas_params.ecdsa_k1)
+    );
+    add_natives!(
+        "schnorr",
+        rooch_framework::crypto::schnorr::make_all(gas_params.schnorr)
     );
 
     let rooch_native_fun_table = make_table_from_iter(ROOCH_FRAMEWORK_ADDRESS, natives);
