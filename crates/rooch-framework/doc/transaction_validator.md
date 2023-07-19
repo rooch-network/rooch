@@ -165,7 +165,7 @@ If the authenticator is invaid, abort this function.
     <b>let</b> <a href="auth_validator.md#0x3_auth_validator">auth_validator</a> = <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator">auth_validator_registry::borrow_validator</a>(ctx, scheme);
     <b>let</b> validator_id = <a href="auth_validator_registry.md#0x3_auth_validator_registry_validator_id">auth_validator_registry::validator_id</a>(<a href="auth_validator.md#0x3_auth_validator">auth_validator</a>);
     // builtin scheme do not need <b>to</b> install
-    <b>if</b>(!rooch_framework::builtin_validators::is_builtin(scheme)){
+    <b>if</b>(!rooch_framework::builtin_validators::is_builtin_scheme(scheme)){
         <b>assert</b>!(<a href="account_authentication.md#0x3_account_authentication_is_auth_validator_installed">account_authentication::is_auth_validator_installed</a>(ctx, sender, validator_id), <a href="_invalid_state">error::invalid_state</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateNotInstalledAuthValidator">EValidateNotInstalledAuthValidator</a>));
     };
     <a href="auth_validator.md#0x3_auth_validator">auth_validator</a>
