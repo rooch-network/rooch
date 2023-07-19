@@ -32,13 +32,12 @@ pub fn native_verify(
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     debug_assert!(ty_args.is_empty());
-    debug_assert!(args.len() == 3);
+    debug_assert!(args.len() == 4);
 
     let hash = pop_arg!(args, u8);
-
     let msg = pop_arg!(args, VectorRef);
-    let signature_bytes = pop_arg!(args, VectorRef);
     let public_key_bytes = pop_arg!(args, VectorRef);
+    let signature_bytes = pop_arg!(args, VectorRef);
 
     let msg_ref = msg.as_bytes_ref();
     let signature_bytes_ref = signature_bytes.as_bytes_ref();
