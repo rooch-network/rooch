@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::natives::helpers::{make_module_natives, make_native};
+// TODO #511 add a ripemd 160 hash here
 use fastcrypto::hash::{Blake2b256, HashFunction, Keccak256};
 use move_binary_format::errors::PartialVMResult;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};

@@ -2,6 +2,8 @@
 /// Move standard library and wrap the functions at here.
 module rooch_framework::hash {
    
+   // TODO #511 add a ripemd 160 hash here
+
    public fun sha2_256(data: vector<u8>): vector<u8> {
       std::hash::sha2_256(data)
    }
