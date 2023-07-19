@@ -7,8 +7,24 @@ use parking_lot::RwLock;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+use raw_store::derive_store;
+use raw_store::ValueCodec;
+use crate::TRANSACTION_PREFIX_NAME;
+
+derive_store!(TransactionDBStore, H256, TransactionExecutionInfo, TRANSACTION_PREFIX_NAME);
+
+impl ValueCodec for TransactionExecutionInfo {
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        Self::decode(data)
+    }
+}
+
 pub trait TransactionStore {
-    fn save_tx_exec_info(&self, tx_exec_info: TransactionExecutionInfo);
+    fn save_tx_exec_info(&self, tx_exec_info: TransactionExecutionInfo) -> Result<()> ;
     fn get_tx_exec_info(&self, tx_hash: H256) -> Option<TransactionExecutionInfo>;
     fn multi_get_tx_exec_infos(
         &self,
@@ -48,10 +64,12 @@ pub struct InMemoryStore {
     inner_tx_exec_info: Arc<RwLock<BTreeMap<H256, TransactionExecutionInfo>>>,
 }
 
-impl TransactionStore for InMemoryStore {
-    fn save_tx_exec_info(&self, tx_exec_info: TransactionExecutionInfo) {
-        let mut locked = self.inner_tx_exec_info.write();
-        locked.insert(tx_exec_info.tx_hash, tx_exec_info);
+impl TransactionStore for TransactionDBStore {
+    fn save_tx_exec_info(&self, tx_exec_info: TransactionExecutionInfo) -> Result<()> {
+        // let mut locked = self.inner_tx_exec_info.write();
+        // locked.insert(tx_exec_info.tx_hash, tx_exec_info);
+
+        self.put(txn_info.id(), txn_info)
     }
 
     fn get_tx_exec_info(&self, tx_hash: H256) -> Option<TransactionExecutionInfo> {
@@ -72,4 +90,23 @@ impl TransactionStore for InMemoryStore {
             .collect::<Vec<_>>();
         data
     }
+
+
+    // fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>> {
+    //     self.get(txn_hash)
+    // }
+    //
+    // fn save_transaction(&self, txn_info: Transaction) -> Result<()> {
+    //     self.put(txn_info.id(), txn_info)
+    // }
+    //
+    // fn save_transaction_batch(&self, txn_vec: Vec<Transaction>) -> Result<()> {
+    //     let batch =
+    //         CodecWriteBatch::new_puts(txn_vec.into_iter().map(|txn| (txn.id(), txn)).collect());
+    //     self.write_batch(batch)
+    // }
+    //
+    // fn get_transactions(&self, txn_hash_vec: Vec<HashValue>) -> Result<Vec<Option<Transaction>>> {
+    //     self.multiple_get(txn_hash_vec)
+    // }
 }

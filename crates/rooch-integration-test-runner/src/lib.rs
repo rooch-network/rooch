@@ -86,7 +86,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             None => BTreeMap::new(),
         };
 
-        let db = moveos_store::MoveOSDB::new_with_memory_store();
+        let db = moveos_store::MoveOSStore::new_with_memory_store();
 
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
         let mut moveos =

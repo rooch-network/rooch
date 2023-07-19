@@ -23,6 +23,7 @@ pub(crate) mod tests;
 mod update_set;
 
 pub use jellyfish_merkle::{hash::SPARSE_MERKLE_PLACEHOLDER_HASH, proof::SparseMerkleProof};
+// use raw_store::rocks::DBMap;
 pub use smt_object::{DecodeToObject, EncodeToObject, Key, SMTObject, Value};
 pub use update_set::UpdateSet;
 

@@ -8,8 +8,11 @@ members = [
     "moveos/moveos-stdlib",
     "moveos/moveos-stdlib-builder",
     "moveos/moveos",
-    "moveos/moveos-common",
+    "moveos/moveos-commons/commons",
+    "moveos/moveos-commons/timeout-join-handler",
     "moveos/raw-store",
+    "moveos/raw-store-2",
+    "moveos/metrics",
     "crates/rooch-key",
     "crates/rooch-types",
     "crates/rooch-framework",
@@ -60,9 +63,12 @@ moveos-stdlib = { path = "moveos/moveos-stdlib" }
 moveos-stdlib-builder = { path = "moveos/moveos-stdlib-builder" }
 moveos = { path = "moveos/moveos" }
 moveos-cli = { path = "moveos/moveos-cli" }
-moveos-common = { path = "moveos/moveos-common" }
+commons = { path = "moveos/moveos-commons/commons" }
+timeout-join-handler = { path = "moveos/moveos-commons/timeout-join-handler" }
 moveos-verifier = { path = "moveos/moveos-verifier" }
+raw-store-2 = { path = "moveos/raw-store-2" }
 raw-store = { path = "moveos/raw-store" }
+metrics = { path = "moveos/metrics" }
 
 # crates for Rooch
 rooch = { path = "crates/rooch" }
@@ -178,6 +184,9 @@ prometheus = "0.13.3"
 hdrhistogram = "7.5.1"
 ouroboros = "0.15.5"
 rstest = "0.16.0"
+coarsetime = "0.1.22"
+hyper = { version = "0.14.12", features = ["full"] }
+num_enum = "0.5.7"
 nostr = "0.22"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.

@@ -202,7 +202,7 @@ mod tests {
     #[test]
     fn test_genesis_init() {
         let genesis = super::RoochGenesis::build().expect("build rooch framework failed");
-        let db = moveos_store::MoveOSDB::new_with_memory_store();
+        let db = moveos_store::MoveOSStore::new_with_memory_store();
         let mut moveos = MoveOS::new(db, all_natives(genesis.gas_params), genesis.config)
             .expect("init moveos failed");
         moveos

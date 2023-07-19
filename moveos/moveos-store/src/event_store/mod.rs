@@ -12,13 +12,14 @@ use parking_lot::RwLock;
 use std::{collections::BTreeMap, sync::Arc};
 
 #[derive(Debug)]
-pub struct EventStore {
+// #[derive(DBMapUtils)]
+pub struct EventDB {
     indexer_store: Arc<RwLock<BTreeMap<(H256, u64), Event>>>,
     store: Arc<RwLock<BTreeMap<(ObjectID, u64), Event>>>,
 }
 
-impl EventStore {
-    /// Init EventStore with memory store, just for test
+impl EventDB {
+    /// Init EventDB with memory store, just for test
     pub fn new_with_memory_store() -> Self {
         Self {
             store: Arc::new(RwLock::new(BTreeMap::new())),

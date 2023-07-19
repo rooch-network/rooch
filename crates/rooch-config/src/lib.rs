@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod rpc;
+pub mod store_config;
 
 use anyhow::{Context, Result};
 use serde::{de::DeserializeOwned, Serialize};
@@ -14,6 +15,15 @@ pub const ROOCH_SERVER_CONFIG: &str = "server.yaml";
 pub const ROOCH_KEYSTORE_FILENAME: &str = "rooch.keystore";
 
 pub fn rooch_config_dir() -> anyhow::Result<PathBuf, anyhow::Error> {
+    get_rooch_config_dir().and_then(|dir| {
+        if !dir.exists() {
+            fs::create_dir_all(dir.clone())?;
+        }
+        Ok(dir)
+    })
+}
+
+pub fn get_rooch_config_dir() -> anyhow::Result<PathBuf, anyhow::Error> {
     match std::env::var_os("ROOCH_CONFIG_DIR") {
         Some(config_env) => Ok(config_env.into()),
         None => match dirs::home_dir() {
@@ -21,12 +31,6 @@ pub fn rooch_config_dir() -> anyhow::Result<PathBuf, anyhow::Error> {
             None => anyhow::bail!("Cannot obtain home directory path"),
         },
     }
-    .and_then(|dir| {
-        if !dir.exists() {
-            fs::create_dir_all(dir.clone())?;
-        }
-        Ok(dir)
-    })
 }
 
 pub trait Config

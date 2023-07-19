@@ -15,7 +15,7 @@ use move_core_types::account_address::AccountAddress;
 use move_resource_viewer::MoveValueAnnotator;
 use moveos::moveos::MoveOS;
 use moveos_common::accumulator::InMemoryAccumulator;
-use moveos_store::MoveOSDB;
+use moveos_store::MoveOSStore;
 use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event::EventHandle;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
@@ -25,6 +25,7 @@ use moveos_types::state::{AnnotatedState, State};
 use moveos_types::state_resolver::{AnnotatedStateReader, StateReader};
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
+use rooch_config::store_config::StoreConfig;
 use rooch_framework::bindings::address_mapping::AddressMapping;
 use rooch_framework::bindings::transaction_validator::TransactionValidator;
 use rooch_genesis::RoochGenesis;
@@ -38,8 +39,8 @@ pub struct ExecutorActor {
 }
 
 impl ExecutorActor {
-    pub fn new(rooch_db: RoochDB) -> Result<Self> {
-        let moveosdb = MoveOSDB::new_with_memory_store();
+    pub fn new(rooch_db: RoochDB, store_config: StoreConfig) -> Result<Self> {
+        let moveosdb = MoveOSStore::new_with_db_store(store_config.get_store_dir());
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
 
         let mut moveos = MoveOS::new(moveosdb, genesis.all_natives(), genesis.config.clone())?;

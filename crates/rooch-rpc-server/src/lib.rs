@@ -12,6 +12,7 @@ use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
 use rooch_config::rpc::server_config::ServerConfig;
+use rooch_config::store_config::StoreConfig;
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_key::key_derive::generate_new_key;
@@ -107,13 +108,14 @@ pub async fn start_server() -> Result<ServerHandle> {
     tracing_subscriber::fmt::init();
 
     let config = ServerConfig::default();
+    let store_config = StoreConfig::default();
 
     let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
-    let rooch_db = RoochDB::new_with_memory_store();
+    let rooch_db = RoochDB::new_with_db_store(config.db_path.clone());
     let actor_system = ActorSystem::global_system();
 
     // Init executor
-    let executor = ExecutorActor::new(rooch_db.clone())?
+    let executor = ExecutorActor::new(rooch_db.clone(), store_config)?
         .into_actor(Some("Executor"), &actor_system)
         .await?;
     let executor_proxy = ExecutorProxy::new(executor.into());

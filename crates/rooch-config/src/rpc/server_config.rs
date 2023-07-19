@@ -13,6 +13,7 @@ pub struct ServerConfig {
     pub proposer_address: Option<RoochAddress>,
     pub sequencer_address: Option<RoochAddress>,
     pub block_propose_duration_in_seconds: u16,
+    // pub db_path: String,
 }
 
 impl ServerConfig {
@@ -42,6 +43,7 @@ impl Default for ServerConfig {
             proposer_address: None,
             sequencer_address: None,
             block_propose_duration_in_seconds: 5,
+            // db_path: "roochdb".to_string(),
         }
     }
 }

@@ -13,8 +13,8 @@ use move_vm_runtime::config::VMConfig;
 use move_vm_runtime::native_functions::NativeFunction;
 use move_vm_types::gas::UnmeteredGasMeter;
 use moveos_store::transaction_store::TransactionDB;
-use moveos_store::MoveOSDB;
-use moveos_store::{event_store::EventStore, state_store::StateDB};
+use moveos_store::MoveOSStore;
+use moveos_store::{event_store::EventDB, state_store::StateDB};
 use moveos_types::function_return_value::FunctionReturnValue;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::FunctionId;
@@ -65,12 +65,12 @@ impl Clone for MoveOSConfig {
 
 pub struct MoveOS {
     vm: MoveOSVM,
-    db: MoveOSResolverProxy<MoveOSDB>,
+    db: MoveOSResolverProxy<MoveOSStore>,
 }
 
 impl MoveOS {
     pub fn new(
-        db: MoveOSDB,
+        db: MoveOSStore,
         natives: impl IntoIterator<Item = (AccountAddress, Identifier, Identifier, NativeFunction)>,
         config: MoveOSConfig,
     ) -> Result<Self> {
@@ -119,11 +119,11 @@ impl MoveOS {
         self.db.0.get_state_store()
     }
 
-    pub fn moveos_resolver(&self) -> &MoveOSResolverProxy<MoveOSDB> {
+    pub fn moveos_resolver(&self) -> &MoveOSResolverProxy<MoveOSStore> {
         &self.db
     }
 
-    pub fn event_store(&self) -> &EventStore {
+    pub fn event_store(&self) -> &EventDB {
         self.db.0.get_event_store()
     }
 
