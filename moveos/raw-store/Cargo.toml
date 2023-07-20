@@ -16,7 +16,6 @@ rust-version = { workspace = true }
 [dependencies]
 anyhow = { workspace = true }
 bcs = { workspace = true }
-#smt = { workspace = true }
 serde = { workspace = true }
 serde_bytes = { workspace = true }
 hex = { workspace = true }
@@ -25,28 +24,22 @@ parking_lot = { workspace = true }
 rocksdb = { workspace = true }
 prometheus = { workspace = true }
 tokio = { workspace = true }
-bincode = { workspace = true }
-collectable = { workspace = true }
 once_cell = { workspace = true }
 eyre = { workspace = true }
-fdlimit = { workspace = true }
-tap = { workspace = true }
-num_cpus = { workspace = true }
-hdrhistogram = { workspace = true }
-ouroboros = { workspace = true }
 rand = { workspace = true }
 async-trait = { workspace = true }
 itertools = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 futures = { workspace = true }
-rstest = { workspace = true }
 tempfile = { workspace = true }
 byteorder = { workspace = true }
 coarsetime = { workspace = true }
 
 move-core-types = { workspace = true }
 move-resource-viewer = { workspace = true }
+
 metrics = { workspace = true }
 commons = { workspace = true }
+moveos-config = { workspace = true }
 

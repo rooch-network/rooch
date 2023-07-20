@@ -1,5 +1,5 @@
 [package]
-name = "commons"
+name = "moveos-config"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,13 +9,10 @@ edition = "2021"
 anyhow = { workspace = true }
 serde = { workspace = true }
 serde_yaml = { workspace = true }
-jsonrpsee = { workspace = true }
+serde_with = { workspace = true }
 thiserror = { workspace = true }
 tonic = { workspace = true }
 coerce = { workspace = true }
-itertools = { workspace = true }
-bcs = { workspace = true }
-log = { workspace = true }
-libc = { workspace = true }
-
-moveos-types = { workspace = true }
+dirs  = { workspace = true }
+once_cell  = { workspace = true }
+clap  = { workspace = true }

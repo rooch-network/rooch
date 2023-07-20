@@ -1,22 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::borrow::Borrow;
-// use std::error::Error;
-// pub use crate::batch::WriteBatch;
-// use crate::cache_store::CacheStore;
-// use crate::rocks::{RocksDB, SchemaIterator};
-// use crate::upgrade::DBUpgrade;
-use anyhow::{bail, format_err, Result};
-use byteorder::{BigEndian, ReadBytesExt};
-// use starcoin_config::NodeConfig;
-// use starcoin_crypto::HashValue;
-// use starcoin_logger::prelude::info;
-// use starcoin_vm_types::state_store::table::TableHandle;
 use crate::rocks::batch::WriteBatch;
-use std::fmt::Debug;
-// use serde::de::DeserializeOwned;
-// use serde::Serialize;
+use anyhow::Result;
 
 /// Type alias to improve readability.
 pub type ColumnFamilyName = &'static str;

@@ -2,16 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Error;
-use serde::{Deserialize, Serialize};
-use thiserror::Error;
+// use serde::{Deserialize, Serialize};
+// use thiserror::Error;
 
 // #[derive(Debug, Error)]
-// pub enum StoreInitError {
+// pub enum RawStoreError {
 //     #[error("Store check error {0:?}.")]
 //     StoreCheckError(Error),
 // }
 
-#[derive(Error, Debug, Serialize, Deserialize)]
+// #[derive(Error, Debug, Serialize, Deserialize)]
+#[derive(thiserror::Error, Debug)]
 pub enum RawStoreError {
     #[error("Store check error {0:?}.")]
     StoreCheckError(Error),

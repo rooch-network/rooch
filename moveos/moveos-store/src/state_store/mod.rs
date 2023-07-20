@@ -22,19 +22,17 @@ use moveos_types::{
     state::StateChangeSet,
     state_resolver::{self, module_name_to_key, resource_tag_to_key, StateResolver},
 };
-use smt::{InMemoryNodeStore, NodeStore, SMTree, UpdateSet};
+use smt::{NodeStore, SMTree, UpdateSet};
 use std::collections::BTreeMap;
-use std::sync::Arc;
 
 #[cfg(test)]
 mod tests;
 
-
-use raw_store::derive_store;
-use raw_store::ValueCodec;
 use crate::STATE_NODE_PREFIX_NAME;
+use raw_store::ValueCodec;
+use raw_store::{derive_store, StoreInstance};
 
-derive_store!(NodeDBStore, H256, Vec<U8>, STATE_NODE_PREFIX_NAME);
+derive_store!(NodeDBStore, H256, Vec<u8>, STATE_NODE_PREFIX_NAME);
 
 struct AccountStorageTables<NS> {
     pub resources: (Object<TableInfo>, TreeTable<NS>),
@@ -116,24 +114,38 @@ where
     }
 }
 
+// /// StateDB provide state storage and state proof
+// pub struct StateDB {
+//     // node_store: InMemoryNodeStore,
+//     node_store: Arc<dyn NodeStore>,
+//     global_table: TreeTable<dyn NodeStore>,
+// }
 /// StateDB provide state storage and state proof
-pub struct StateDB {
+pub struct StateDBStore {
     // node_store: InMemoryNodeStore,
-    node_store: Arc<dyn NodeStore>,
+    pub node_store: NodeDBStore,
     global_table: TreeTable<dyn NodeStore>,
 }
 
-impl StateDB {
+impl StateDBStore {
     /// Init stateDB with memory store, just for test
-    pub fn new_with_memory_store() -> Self {
-        let node_store = InMemoryNodeStore::default();
-        Self {
-            node_store: Arc::new(node_store.clone()),
-            global_table: TreeTable::new(node_store),
-        }
-    }
+    // pub fn new_with_memory_store() -> Self {
+    //     let node_store = InMemoryNodeStore::default();
+    //     Self {
+    //         node_store: Arc::new(node_store.clone()),
+    //         global_table: TreeTable::new(node_store),
+    //     }
+    // }
 
-    pub fn new_with_db_store(store: Arc<dyn NodeStore>) -> Self {
+    // pub fn new_with_db_store(store: Arc<dyn NodeStore>) -> Self {
+    //     Self {
+    //         node_store: store.clone(),
+    //         global_table: TreeTable::new(store),
+    //     }
+    // }
+
+    pub fn new(instance: StoreInstance) -> Self {
+        let store = NodeDBStore::new(instance.clone());
         Self {
             node_store: store.clone(),
             global_table: TreeTable::new(store),
@@ -168,10 +180,7 @@ impl StateDB {
     fn get_as_account_storage_or_create(
         &self,
         account: AccountAddress,
-    ) -> Result<(
-        Object<AccountStorage>,
-        AccountStorageTables<dyn NodeStore>,
-    )> {
+    ) -> Result<(Object<AccountStorage>, AccountStorageTables<dyn NodeStore>)> {
         let account_storage = self
             .get_as_account_storage(account)?
             .unwrap_or_else(|| Object::new_account_storage_object(account));
@@ -303,7 +312,7 @@ impl StateResolver for MoveOSStore {
     }
 }
 
-impl StateResolver for StateDB {
+impl StateResolver for StateDBStore {
     fn resolve_state(
         &self,
         handle: &ObjectID,

@@ -6,25 +6,27 @@
 
 pub mod batch;
 
-use crate::errors::StoreInitError;
+use crate::errors::RawStoreError;
 use crate::metrics::{record_metrics, StoreMetrics};
 use crate::rocks::batch::WriteBatch;
-use crate::{ColumnFamilyName, WriteOp};
-// use crate::{StoreVersion, DEFAULT_PREFIX_NAME, ColumnFamilyName, KeyCodec, ValueCodec, WriteOp};
-use anyhow::{ensure, format_err, Error, Result};
-use rocksdb::{Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB, BoundColumnFamily};
-// use starcoin_config::{check_open_fds_limit, RocksdbConfig};
 use crate::traits::DBStore;
+use crate::{ColumnFamilyName, WriteOp};
+use anyhow::{ensure, format_err, Error, Result};
+use commons::utils::{check_open_fds_limit, from_bytes};
+use moveos_config::store_config::RocksdbConfig;
+use rocksdb::{
+    BoundColumnFamily, Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB,
+};
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use std::collections::HashSet;
 use std::iter;
 use std::marker::PhantomData;
 use std::path::Path;
 use std::sync::Arc;
-use serde::de::DeserializeOwned;
-use serde::Serialize;
-use commons::utils::from_bytes;
 
-const RES_FDS: u64 = 4096;
+pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
+pub const RES_FDS: u64 = 4096;
 
 #[allow(clippy::upper_case_acronyms)]
 pub struct RocksDB {
@@ -36,20 +38,13 @@ pub struct RocksDB {
 impl RocksDB {
     pub fn new<P: AsRef<Path> + Clone>(
         db_root_path: P,
+        column_families: Vec<ColumnFamilyName>,
         rocksdb_config: RocksdbConfig,
         metrics: Option<StoreMetrics>,
     ) -> Result<Self> {
         //TODO find a compat way to remove the `roochdb` path
         let path = db_root_path.as_ref().join("roochdb");
-        Self::open_with_cfs(
-            path,
-            StoreVersion::current_version()
-                .get_column_family_names()
-                .to_vec(),
-            false,
-            rocksdb_config,
-            metrics,
-        )
+        Self::open_with_cfs(path, column_families, false, rocksdb_config, metrics)
     }
 
     pub fn open_with_cfs(
@@ -74,7 +69,7 @@ impl RocksDB {
             db_cfs_set.remove(&DEFAULT_PREFIX_NAME.to_string());
             ensure!(
                 db_cfs_set.len() <= cfs_set.len(),
-                StoreInitError::StoreCheckError(format_err!(
+                RawStoreError::StoreCheckError(format_err!(
                     "ColumnFamily in db ({:?}) not same as ColumnFamily in code {:?}.",
                     column_families,
                     cf_vec
@@ -88,7 +83,7 @@ impl RocksDB {
             });
             ensure!(
                 remove_cf_vec.is_empty(),
-                StoreInitError::StoreCheckError(format_err!(
+                RawStoreError::StoreCheckError(format_err!(
                     "Can not remove ColumnFamily, ColumnFamily in db ({:?}) not in code {:?}.",
                     remove_cf_vec,
                     cf_vec
@@ -171,8 +166,8 @@ impl RocksDB {
     /// tests.
     pub fn flush_all(&self) -> Result<()> {
         for cf_name in &self.cfs {
-            let cf_handle = self.get_cf_handle(cf_name)?;
-            self.db.flush_cf(cf_handle)?;
+            let cf_handle = self.get_cf_handle(cf_name);
+            self.db.flush_cf(&cf_handle)?;
         }
         Ok(())
     }
@@ -187,24 +182,14 @@ impl RocksDB {
         rocksdb_current_file.is_file()
     }
 
-    // fn get_cf_handle(&self, cf_name: &str) -> Result<&rocksdb::ColumnFamily> {
-    //     self.db.cf_handle(cf_name).ok_or_else(|| {
-    //         format_err!(
-    //             "DB::cf_handle not found for column family name: {}",
-    //             cf_name
-    //         )
-    //     })
-    // }
     fn get_cf_handle(&self, cf_name: &str) -> Arc<BoundColumnFamily> {
-        self.db
-            .cf_handle(cf_name)
-            .expect(format!("DB::cf_handle not found for column family name: {}", cf_name).as_str())
-    }
-
-    pub fn cf(&self) -> Arc<rocksdb::BoundColumnFamily<'_>> {
-        self.rocksdb
-            .cf_handle(&self.cf)
-            .expect("Map-keying column family should have been checked at DB creation")
+        self.db.cf_handle(cf_name).expect(
+            format!(
+                "DB::cf_handle not found for column family name: {}",
+                cf_name
+            )
+            .as_str(),
+        )
     }
 
     fn default_write_options() -> WriteOptions {
@@ -237,10 +222,10 @@ impl RocksDB {
         K: Serialize + DeserializeOwned,
         V: Serialize + DeserializeOwned,
     {
-        let cf_handle = self.get_cf_handle(prefix_name)?;
+        let cf_handle = self.get_cf_handle(prefix_name);
         Ok(SchemaIterator::new(
             self.db
-                .raw_iterator_cf_opt(cf_handle, ReadOptions::default()),
+                .raw_iterator_cf_opt(&cf_handle, ReadOptions::default()),
             direction,
         ))
     }
@@ -337,10 +322,6 @@ where
 
         Ok(Some((key, value)))
     }
-
-    // fn iter(&mut self) -> rocksdb::DBRawIterator{
-    //     self.db_iter
-    // }
 }
 
 impl<'a, K, V> Iterator for SchemaIterator<'a, K, V>
@@ -358,8 +339,8 @@ where
 impl DBStore for RocksDB {
     fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
         record_metrics("db", prefix_name, "get", self.metrics.as_ref()).call(|| {
-            let cf_handle = self.get_cf_handle(prefix_name)?;
-            let result = self.db.get_cf(cf_handle, key.as_slice())?;
+            let cf_handle = self.get_cf_handle(prefix_name);
+            let result = self.db.get_cf(&cf_handle, key.as_slice())?;
             Ok(result)
         })
     }
@@ -373,9 +354,9 @@ impl DBStore for RocksDB {
         }
 
         record_metrics("db", prefix_name, "put", self.metrics.as_ref()).call(|| {
-            let cf_handle = self.get_cf_handle(prefix_name)?;
+            let cf_handle = self.get_cf_handle(prefix_name);
             self.db
-                .put_cf_opt(cf_handle, &key, &value, &Self::default_write_options())?;
+                .put_cf_opt(&cf_handle, &key, &value, &Self::default_write_options())?;
             Ok(())
         })
     }
@@ -390,8 +371,8 @@ impl DBStore for RocksDB {
     }
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
         record_metrics("db", prefix_name, "remove", self.metrics.as_ref()).call(|| {
-            let cf_handle = self.get_cf_handle(prefix_name)?;
-            self.db.delete_cf(cf_handle, &key)?;
+            let cf_handle = self.get_cf_handle(prefix_name);
+            self.db.delete_cf(&cf_handle, &key)?;
             Ok(())
         })
     }
@@ -400,11 +381,11 @@ impl DBStore for RocksDB {
     fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
         record_metrics("db", prefix_name, "write_batch", self.metrics.as_ref()).call(|| {
             let mut db_batch = DBWriteBatch::default();
-            let cf_handle = self.get_cf_handle(prefix_name)?;
+            let cf_handle = self.get_cf_handle(prefix_name);
             for (key, write_op) in &batch.rows {
                 match write_op {
-                    WriteOp::Value(value) => db_batch.put_cf(cf_handle, key, value),
-                    WriteOp::Deletion => db_batch.delete_cf(cf_handle, key),
+                    WriteOp::Value(value) => db_batch.put_cf(&cf_handle, key, value),
+                    WriteOp::Deletion => db_batch.delete_cf(&cf_handle, key),
                 };
             }
             self.db
@@ -430,9 +411,9 @@ impl DBStore for RocksDB {
         }
 
         record_metrics("db", prefix_name, "put_sync", self.metrics.as_ref()).call(|| {
-            let cf_handle = self.get_cf_handle(prefix_name)?;
+            let cf_handle = self.get_cf_handle(prefix_name);
             self.db
-                .put_cf_opt(cf_handle, &key, &value, &Self::sync_write_options())?;
+                .put_cf_opt(&cf_handle, &key, &value, &Self::sync_write_options())?;
             Ok(())
         })
     }
@@ -440,11 +421,11 @@ impl DBStore for RocksDB {
     fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
         record_metrics("db", prefix_name, "write_batch_sync", self.metrics.as_ref()).call(|| {
             let mut db_batch = DBWriteBatch::default();
-            let cf_handle = self.get_cf_handle(prefix_name)?;
+            let cf_handle = self.get_cf_handle(prefix_name);
             for (key, write_op) in &batch.rows {
                 match write_op {
-                    WriteOp::Value(value) => db_batch.put_cf(cf_handle, key, value),
-                    WriteOp::Deletion => db_batch.delete_cf(cf_handle, key),
+                    WriteOp::Value(value) => db_batch.put_cf(&cf_handle, key, value),
+                    WriteOp::Deletion => db_batch.delete_cf(&cf_handle, key),
                 };
             }
             self.db.write_opt(db_batch, &Self::sync_write_options())?;
@@ -454,7 +435,7 @@ impl DBStore for RocksDB {
 
     fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
         record_metrics("db", prefix_name, "multi_get", self.metrics.as_ref()).call(|| {
-            let cf_handle = self.get_cf_handle(prefix_name)?;
+            let cf_handle = self.get_cf_handle(prefix_name);
             let cf_handles = iter::repeat(&cf_handle)
                 .take(keys.len())
                 .collect::<Vec<_>>();

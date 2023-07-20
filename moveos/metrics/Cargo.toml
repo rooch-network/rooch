@@ -17,9 +17,9 @@ rust-version = { workspace = true }
 anyhow = { workspace = true }
 prometheus = { default-features = false, workspace = true }
 serde_json = { features = ["arbitrary_precision"], workspace = true }
-#starcoin-logger = { workspace = true }
 futures = { optional = true, workspace = true }
 hyper = { features = ["full"], optional = true, workspace = true }
+log = { workspace = true }
 
 [features]
 server = ["prometheus/push", "hyper", "futures"]

@@ -5,11 +5,11 @@
 // SPDX-License-Identifier: Apache-2
 
 use anyhow::Result;
+use coarsetime::Instant;
 use metrics::{
     self, register, HistogramOpts, HistogramVec, Opts, PrometheusError, Registry, UIntCounterVec,
     UIntGauge,
 };
-use coarsetime::Instant;
 
 #[derive(Clone)]
 pub struct StoreMetrics {
@@ -23,10 +23,7 @@ impl StoreMetrics {
     pub fn register(registry: &Registry) -> Result<Self, PrometheusError> {
         let store_rw_total = register(
             UIntCounterVec::new(
-                Opts::new(
-                    "store_rw_total",
-                    "Counters of how many store read/write",
-                ),
+                Opts::new("store_rw_total", "Counters of how many store read/write"),
                 &["store_type", "key_type", "method", "result"],
             )?,
             registry,

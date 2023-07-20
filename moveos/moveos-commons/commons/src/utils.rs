@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use anyhow::{Error, Result};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, str::FromStr};
@@ -52,4 +52,37 @@ where
     T: Deserialize<'a>,
 {
     bcs::from_bytes(bytes).map_err(|e| e.into())
+}
+
+#[cfg(unix)]
+pub fn check_open_fds_limit(max_files: u64) -> Result<(), Error> {
+    use std::mem;
+
+    unsafe {
+        let mut fd_limit = mem::zeroed();
+        let mut err = libc::getrlimit(libc::RLIMIT_NOFILE, &mut fd_limit);
+        if err != 0 {
+            return Err(anyhow::anyhow!("check_open_fds_limit failed".to_owned()));
+        }
+        if fd_limit.rlim_cur >= max_files {
+            return Ok(());
+        }
+
+        let prev_limit = fd_limit.rlim_cur;
+        fd_limit.rlim_cur = max_files;
+        if fd_limit.rlim_max < max_files {
+            // If the process is not started by privileged user, this will fail.
+            fd_limit.rlim_max = max_files;
+        }
+        err = libc::setrlimit(libc::RLIMIT_NOFILE, &fd_limit);
+        log::info!("set max open fds {}", max_files);
+        if err == 0 {
+            return Ok(());
+        }
+        return Err(anyhow::anyhow!(format!(
+            "the maximum number of open file descriptors is too \
+             small, got {}, expect greater or equal to {}",
+            prev_limit, max_files
+        )));
+    }
 }
