@@ -9,7 +9,6 @@ use moveos::moveos::MoveOSConfig;
 use moveos_stdlib_builder::BuildOptions;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use once_cell::sync::Lazy;
-use rooch_framework::bindings::transaction_validator;
 use serde::{Deserialize, Serialize};
 use std::{
     fs::File,
@@ -52,22 +51,10 @@ impl RoochGenesis {
     pub fn build_with_option(option: BuildOption) -> Result<Self> {
         let config = MoveOSConfig {
             vm_config: VMConfig::default(),
-            pre_execute_function: Some(
-                transaction_validator::TransactionValidator::pre_execute_function_id(),
-            ),
-            post_execute_function: Some(
-                transaction_validator::TransactionValidator::post_execute_function_id(),
-            ),
         };
 
         let config_for_test = MoveOSConfig {
             vm_config: VMConfig::default(),
-            pre_execute_function: Some(
-                transaction_validator::TransactionValidator::pre_execute_function_id(),
-            ),
-            post_execute_function: Some(
-                transaction_validator::TransactionValidator::post_execute_function_id(),
-            ),
         };
 
         let gas_params = rooch_framework::natives::GasParameters::zeros();

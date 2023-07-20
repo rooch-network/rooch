@@ -61,7 +61,7 @@ module rooch_framework::transaction_validator {
         let auth_validator = auth_validator_registry::borrow_validator(ctx, scheme);
         let validator_id = auth_validator_registry::validator_id(auth_validator);
         // builtin scheme do not need to install
-        if(!rooch_framework::builtin_validators::is_builtin(scheme)){
+        if(!rooch_framework::builtin_validators::is_builtin_scheme(scheme)){
             assert!(account_authentication::is_auth_validator_installed(ctx, sender, validator_id), error::invalid_state(EValidateNotInstalledAuthValidator));
         };
         auth_validator

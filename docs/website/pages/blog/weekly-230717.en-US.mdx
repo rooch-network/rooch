@@ -1,0 +1,45 @@
+---
+title: Rooch Weekly 2023-07-17
+description: "Improve Getting started with Rooch, implement verification abstraction, and provide storage implementation"
+author: geometryolife
+category: Rooch Weekly
+date: 2023/07/17
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch's Development Progress
+
+### New features
+
+- **provide raw store component base on RocksDB (#454)** (2023-07-11) @Bai Chuan
+- **[gh-438] add btc address supports for random() case. (#448)** (2023-07-11) @feliciss
+- **[gh-444] add nostr address mapping for Rooch. (#451)** (2023-07-11) @feliciss
+- **[AccountAbstraction] Implement AuthenticatorAbstraction (#466)** (2023-07-14) @jolestar
+
+### Improvements and fixes
+
+- **add weekly 2023-07-11 (#455)** (2023-07-12) @Joe Chen
+- **[getting-started] use function instead of method terminology (#458)** (2023-07-12) @Joe Chen
+- **update getting started with Rooch en and fix some zh contents (#462)** (2023-07-12) @Joe Chen
+- **[gh-472] add helper function if modules are empty. (#473)** (2023-07-13) @feliciss
+- **Update blog example. (#478)** (2023-07-14) @wubuku
+- **[gh-470] rename secp256k1 to ECDSA. (#471)** (2023-07-14) @feliciss
+- **fix (#480)** (2023-07-14) @0xPause
+- **[Example] NoOpAuthValidator (#475)** (2023-07-14) @jolestar
+- **Update blog example (#484)** (2023-07-16) @wubuku
+
+### Rooch Community Dev Meeting
+
+- Discuss the characteristics and related issues of integration testing, currently supports the introduction of third-party libraries, [related PR](https://github.com/rooch-network/rooch/pull/464)
+  - Publish the current project’s modules, then run the integration test
+  - Fix the dependencies `use` issues
+- Discuss the implementation of transaction cache (TransactionCache), [see code](https://github.com/rooch-network/move/compare/move_os...pause125:move:txn_cache?expand=1)
+  - Custom DataStore and TransactionCache’s trait.
+- Introducing the implementation of the validator abstraction
+- Discuss Developer documentation design
+- Discuss storage-related implementations, RocksDB
+- Discuss about Nostr
+- [Conference recording](https://drive.google.com/file/d/1KD1-CThZB3IMWji6yVCf8V93yY0RbMHr/view?usp=sharing)

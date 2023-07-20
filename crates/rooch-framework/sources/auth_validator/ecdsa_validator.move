@@ -25,4 +25,13 @@ module rooch_framework::ecdsa_validator {
       auth_validator::error_invalid_authenticator());
    }
 
+   fun pre_execute(
+      _ctx: &mut StorageContext,
+   ) { 
+   }
+   
+   fun post_execute(
+      _ctx: &mut StorageContext,
+   ) {
+   }
 }

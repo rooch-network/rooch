@@ -85,6 +85,16 @@ module rooch_framework::ed25519_validator {
        auth_validator::error_invalid_account_auth_key());
    }
 
+   fun pre_execute(
+      _ctx: &mut StorageContext,
+   ) { 
+   }
+   
+   fun post_execute(
+      _ctx: &mut StorageContext,
+   ) {
+   }
+
    // this test ensures that the ed25519_public_key_to_address function is compatible with the one in the rust code
    #[test]
    fun test_ed25519_public_key_to_address(){

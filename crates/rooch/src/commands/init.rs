@@ -92,7 +92,7 @@ impl CommandAction<String> for Init {
                 let key_scheme = if self.accept_defaults {
                     BuiltinScheme::Ed25519
                 } else {
-                    println!("Select key scheme to generate keypair (0 for ed25519, 1 for Ecdsa):");
+                    println!("Select key scheme to generate keypair (0 for Ed25519, 1 for MultiEd25519, 2 for Ecdsa, 3 for Schnorr):");
                     BuiltinScheme::from_flag(read_line()?.trim())?
                 };
                 let (new_address, phrase, scheme) =
