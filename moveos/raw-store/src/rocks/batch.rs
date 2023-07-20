@@ -1,9 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{CodecWriteBatch, KeyCodec, ValueCodec, WriteOp};
+use crate::{CodecWriteBatch, WriteOp};
 use anyhow::Result;
 use std::convert::TryFrom;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
+use commons::utils::{from_bytes, to_bytes};
 
 #[derive(Debug, Default, Clone)]
 pub struct WriteBatch {
@@ -41,15 +44,15 @@ impl WriteBatch {
 
 impl<K, V> TryFrom<CodecWriteBatch<K, V>> for WriteBatch
 where
-    K: KeyCodec,
-    V: ValueCodec,
+    K: Serialize + DeserializeOwned,
+    V: Serialize + DeserializeOwned,
 {
     type Error = anyhow::Error;
 
     fn try_from(batch: CodecWriteBatch<K, V>) -> Result<Self, Self::Error> {
         let rows: Result<Vec<(Vec<u8>, WriteOp<Vec<u8>>)>> = batch
             .into_iter()
-            .map(|(key, op)| Ok((KeyCodec::encode_key(&key)?, op.into_raw_op()?)))
+            .map(|(key, op)| Ok((to_bytes(key)?, op.into_raw_op()?)))
             .collect();
         Ok(WriteBatch::new_with_rows(rows?))
     }

@@ -21,9 +21,12 @@ use std::convert::TryInto;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::sync::Arc;
+// use bcs::{from_bytes, to_bytes};
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use crate::rocks::{RocksDB, SchemaIterator};
 use crate::traits::{DBStore, KVStore};
-
+use commons::utils::{from_bytes, to_bytes};
 
 /// Type alias to improve readability.
 pub type ColumnFamilyName = &'static str;
@@ -266,19 +269,19 @@ pub trait SchemaStore: Sized + ColumnFamily {
     fn get_store(&self) -> &InnerStore<Self>;
 }
 
-pub trait KeyCodec: Clone + Sized + Debug + std::marker::Send + std::marker::Sync {
-    /// Converts `self` to bytes to be stored in DB.
-    fn encode_key(&self) -> Result<Vec<u8>>;
-    /// Converts bytes fetched from DB to `Self`.
-    fn decode_key(data: &[u8]) -> Result<Self>;
-}
-
-pub trait ValueCodec: Clone + Sized + Debug + std::marker::Send + std::marker::Sync {
-    /// Converts `self` to bytes to be stored in DB.
-    fn encode_value(&self) -> Result<Vec<u8>>;
-    /// Converts bytes fetched from DB to `Self`.
-    fn decode_value(data: &[u8]) -> Result<Self>;
-}
+// pub trait KeyCodec: Clone + Sized + Debug + Send + Sync {
+//     /// Converts `self` to bytes to be stored in DB.
+//     fn encode_key(&self) -> Result<Vec<u8>>;
+//     /// Converts bytes fetched from DB to `Self`.
+//     fn decode_key(data: &[u8]) -> Result<Self>;
+// }
+//
+// pub trait ValueCodec: Clone + Sized + Debug + Send + Sync {
+//     /// Converts `self` to bytes to be stored in DB.
+//     fn encode_value(&self) -> Result<Vec<u8>>;
+//     /// Converts bytes fetched from DB to `Self`.
+//     fn decode_value(data: &[u8]) -> Result<Self>;
+// }
 
 #[derive(Debug, Clone)]
 pub enum WriteOp<V> {
@@ -288,11 +291,11 @@ pub enum WriteOp<V> {
 
 impl<V> WriteOp<V>
     where
-        V: ValueCodec,
+        V: Serialize + DeserializeOwned,
 {
     pub fn into_raw_op(self) -> Result<WriteOp<Vec<u8>>> {
         Ok(match self {
-            WriteOp::Value(v) => WriteOp::Value(v.encode_value()?),
+            WriteOp::Value(v) => WriteOp::Value(to_bytes(v)?),
             WriteOp::Deletion => WriteOp::Deletion,
         })
     }
@@ -301,16 +304,16 @@ impl<V> WriteOp<V>
 #[derive(Debug, Clone)]
 pub struct CodecWriteBatch<K, V>
     where
-        K: KeyCodec,
-        V: ValueCodec,
+        K: Serialize + DeserializeOwned,
+        V: Serialize + DeserializeOwned,
 {
     rows: Vec<(K, WriteOp<V>)>,
 }
 
 impl<K, V> Default for CodecWriteBatch<K, V>
     where
-        K: KeyCodec,
-        V: ValueCodec,
+        K: Serialize + DeserializeOwned,
+        V: Serialize + DeserializeOwned,
 {
     fn default() -> Self {
         Self { rows: Vec::new() }
@@ -319,8 +322,8 @@ impl<K, V> Default for CodecWriteBatch<K, V>
 
 impl<K, V> CodecWriteBatch<K, V>
     where
-        K: KeyCodec,
-        V: ValueCodec,
+        K: Serialize + DeserializeOwned,
+        V: Serialize + DeserializeOwned,
 {
     /// Creates an empty batch.
     pub fn new() -> Self {
@@ -360,8 +363,8 @@ impl<K, V> CodecWriteBatch<K, V>
 
 impl<K, V> IntoIterator for CodecWriteBatch<K, V>
     where
-        K: KeyCodec,
-        V: ValueCodec,
+        K: Serialize + DeserializeOwned,
+        V: Serialize + DeserializeOwned,
 {
     type Item = (K, WriteOp<V>);
     type IntoIter = std::vec::IntoIter<(K, WriteOp<V>)>;
@@ -372,10 +375,10 @@ impl<K, V> IntoIterator for CodecWriteBatch<K, V>
 }
 
 #[allow(clippy::upper_case_acronyms)]
-pub trait CodecKVStore<K, V>: std::marker::Send + std::marker::Sync
+pub trait CodecKVStore<K, V>: Send + Sync
     where
-        K: KeyCodec,
-        V: ValueCodec,
+        K: Serialize + DeserializeOwned,
+        V: Serialize + DeserializeOwned,
 {
     fn get(&self, key: K) -> Result<Option<V>>;
 
@@ -408,87 +411,17 @@ pub trait CodecKVStore<K, V>: std::marker::Send + std::marker::Sync
     fn iter(&self) -> Result<SchemaIterator<K, V>>;
 }
 
-impl KeyCodec for u64 {
-    fn encode_key(&self) -> Result<Vec<u8>> {
-        Ok(self.to_be_bytes().to_vec())
-    }
-
-    #[allow(clippy::redundant_slicing)]
-    fn decode_key(data: &[u8]) -> Result<Self> {
-        Ok((&data[..]).read_u64::<BigEndian>()?)
-    }
-}
-
-impl KeyCodec for HashValue {
-    fn encode_key(&self) -> Result<Vec<u8>> {
-        Ok(self.to_vec())
-    }
-
-    fn decode_key(data: &[u8]) -> Result<Self> {
-        Ok(HashValue::from_slice(data)?)
-    }
-}
-
-impl ValueCodec for HashValue {
-    fn encode_value(&self) -> Result<Vec<u8>> {
-        Ok(self.to_vec())
-    }
-
-    fn decode_value(data: &[u8]) -> Result<Self> {
-        Ok(HashValue::from_slice(data)?)
-    }
-}
-
-impl ValueCodec for Vec<HashValue> {
-    fn encode_value(&self) -> Result<Vec<u8>> {
-        bcs_ext::to_bytes(self)
-    }
-
-    fn decode_value(data: &[u8]) -> Result<Self> {
-        bcs_ext::from_bytes(data)
-    }
-}
-
-impl KeyCodec for Vec<u8> {
-    fn encode_key(&self) -> Result<Vec<u8>> {
-        Ok(self.to_vec())
-    }
-
-    fn decode_key(data: &[u8]) -> Result<Self> {
-        Ok(data.to_vec())
-    }
-}
-
-impl ValueCodec for Vec<u8> {
-    fn encode_value(&self) -> Result<Vec<u8>> {
-        Ok(self.to_vec())
-    }
-
-    fn decode_value(data: &[u8]) -> Result<Self> {
-        Ok(data.to_vec())
-    }
-}
-
-impl KeyCodec for TableHandle {
-    fn encode_key(&self) -> Result<Vec<u8>> {
-        bcs_ext::to_bytes(self)
-    }
-
-    fn decode_key(data: &[u8]) -> Result<Self> {
-        bcs_ext::from_bytes(data)
-    }
-}
-
 impl<K, V, S> CodecKVStore<K, V> for S
     where
-        K: KeyCodec,
-        V: ValueCodec,
+        K: Serialize + DeserializeOwned,
+        V: Serialize + DeserializeOwned,
         S: SchemaStore,
         S: ColumnFamily<Key = K, Value = V>,
 {
     fn get(&self, key: K) -> Result<Option<V>> {
-        match KVStore::get(self.get_store(), key.encode_key()?.as_slice())? {
-            Some(value) => Ok(Some(<V>::decode_value(value.as_slice())?)),
+        // let encode_key = from_bytes()
+        match KVStore::get(self.get_store(), to_bytes(key)?.as_slice())? {
+            Some(value) => Ok(Some(from_bytes::<V>(value.as_slice())?)),
             None => Ok(None),
         }
     }
@@ -500,22 +433,22 @@ impl<K, V, S> CodecKVStore<K, V> for S
         values
             .into_iter()
             .map(|value| match value {
-                Some(value) => Ok(Some(<V>::decode_value(value.as_slice())?)),
+                Some(value) => Ok(Some(from_bytes::<V>(value.as_slice())?)),
                 None => Ok(None),
             })
             .collect()
     }
 
     fn put(&self, key: K, value: V) -> Result<()> {
-        KVStore::put(self.get_store(), key.encode_key()?, value.encode_value()?)
+        KVStore::put(self.get_store(), to_bytes(key)?, to_bytes(value)?)
     }
 
     fn contains_key(&self, key: K) -> Result<bool> {
-        KVStore::contains_key(self.get_store(), key.encode_key()?)
+        KVStore::contains_key(self.get_store(), to_bytes(key)?)
     }
 
     fn remove(&self, key: K) -> Result<()> {
-        KVStore::remove(self.get_store(), key.encode_key()?)
+        KVStore::remove(self.get_store(), to_bytes(key)?)
     }
 
     fn write_batch(&self, batch: CodecWriteBatch<K, V>) -> Result<()> {
@@ -534,11 +467,11 @@ impl<K, V, S> CodecKVStore<K, V> for S
     }
 
     fn put_raw(&self, key: K, value: Vec<u8>) -> Result<()> {
-        KVStore::put(self.get_store(), key.encode_key()?, value)
+        KVStore::put(self.get_store(), to_bytes(key)?, value)
     }
 
     fn get_raw(&self, key: K) -> Result<Option<Vec<u8>>> {
-        KVStore::get(self.get_store(), key.encode_key()?.as_slice())
+        KVStore::get(self.get_store(), to_bytes(key)?.as_slice())
     }
 
     fn iter(&self) -> Result<SchemaIterator<K, V>> {

@@ -9,16 +9,19 @@ pub mod batch;
 use crate::errors::StoreInitError;
 use crate::metrics::{record_metrics, StoreMetrics};
 use crate::rocks::batch::WriteBatch;
-use crate::{ColumnFamilyName, KeyCodec, ValueCodec, WriteOp};
+use crate::{ColumnFamilyName, WriteOp};
 // use crate::{StoreVersion, DEFAULT_PREFIX_NAME, ColumnFamilyName, KeyCodec, ValueCodec, WriteOp};
 use anyhow::{ensure, format_err, Error, Result};
-use rocksdb::{Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB};
+use rocksdb::{Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB, BoundColumnFamily};
 // use starcoin_config::{check_open_fds_limit, RocksdbConfig};
 use crate::traits::DBStore;
 use std::collections::HashSet;
 use std::iter;
 use std::marker::PhantomData;
 use std::path::Path;
+use std::sync::Arc;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 
 const RES_FDS: u64 = 4096;
 
@@ -194,13 +197,24 @@ impl RocksDB {
         rocksdb_current_file.is_file()
     }
 
-    fn get_cf_handle(&self, cf_name: &str) -> Result<&rocksdb::ColumnFamily> {
-        self.db.cf_handle(cf_name).ok_or_else(|| {
-            format_err!(
-                "DB::cf_handle not found for column family name: {}",
-                cf_name
-            )
-        })
+    // fn get_cf_handle(&self, cf_name: &str) -> Result<&rocksdb::ColumnFamily> {
+    //     self.db.cf_handle(cf_name).ok_or_else(|| {
+    //         format_err!(
+    //             "DB::cf_handle not found for column family name: {}",
+    //             cf_name
+    //         )
+    //     })
+    // }
+    fn get_cf_handle(&self, cf_name: &str) -> Arc<BoundColumnFamily> {
+        self.db
+            .cf_handle(cf_name)
+            .expect(format!("DB::cf_handle not found for column family name: {}", cf_name).as_str())
+    }
+
+    pub fn cf(&self) -> Arc<rocksdb::BoundColumnFamily<'_>> {
+        self.rocksdb
+            .cf_handle(&self.cf)
+            .expect("Map-keying column family should have been checked at DB creation")
     }
 
     fn default_write_options() -> WriteOptions {
@@ -230,8 +244,8 @@ impl RocksDB {
         direction: ScanDirection,
     ) -> Result<SchemaIterator<K, V>>
     where
-        K: KeyCodec,
-        V: ValueCodec,
+        K: Serialize + DeserializeOwned,
+        V: Serialize + DeserializeOwned,
     {
         let cf_handle = self.get_cf_handle(prefix_name)?;
         Ok(SchemaIterator::new(
@@ -244,8 +258,8 @@ impl RocksDB {
     /// Returns a forward [`SchemaIterator`] on a certain schema.
     pub fn iter<K, V>(&self, prefix_name: &str) -> Result<SchemaIterator<K, V>>
     where
-        K: KeyCodec,
-        V: ValueCodec,
+        K: Serialize + DeserializeOwned,
+        V: Serialize + DeserializeOwned,
     {
         self.iter_with_direction(prefix_name, ScanDirection::Forward)
     }
@@ -253,8 +267,8 @@ impl RocksDB {
     /// Returns a backward [`SchemaIterator`] on a certain schema.
     pub fn rev_iter<K, V>(&self, prefix_name: &str) -> Result<SchemaIterator<K, V>>
     where
-        K: KeyCodec,
-        V: ValueCodec,
+        K: Serialize + DeserializeOwned,
+        V: Serialize + DeserializeOwned,
     {
         self.iter_with_direction(prefix_name, ScanDirection::Backward)
     }
@@ -280,8 +294,8 @@ pub struct SchemaIterator<'a, K, V> {
 
 impl<'a, K, V> SchemaIterator<'a, K, V>
 where
-    K: KeyCodec,
-    V: ValueCodec,
+    K: Serialize + DeserializeOwned,
+    V: Serialize + DeserializeOwned,
 {
     fn new(db_iter: rocksdb::DBRawIterator<'a>, direction: ScanDirection) -> Self {
         SchemaIterator {
@@ -337,8 +351,8 @@ where
 
 impl<'a, K, V> Iterator for SchemaIterator<'a, K, V>
 where
-    K: KeyCodec,
-    V: ValueCodec,
+    K: Serialize + DeserializeOwned,
+    V: Serialize + DeserializeOwned,
 {
     type Item = Result<(K, V)>;
 

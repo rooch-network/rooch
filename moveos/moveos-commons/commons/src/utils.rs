@@ -1,7 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use anyhow::Result;
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, str::FromStr};
 
 /// Error message for parsing a map
@@ -36,4 +38,18 @@ where
         map.insert(key, value);
     }
     Ok(map)
+}
+
+pub fn to_bytes<T>(value: &T) -> Result<Vec<u8>>
+where
+    T: ?Sized + Serialize,
+{
+    bcs::to_bytes(value).map_err(|e| e.into())
+}
+
+pub fn from_bytes<'a, T>(bytes: &'a [u8]) -> Result<T>
+where
+    T: Deserialize<'a>,
+{
+    bcs::from_bytes(bytes).map_err(|e| e.into())
 }

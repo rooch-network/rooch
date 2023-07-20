@@ -36,15 +36,6 @@ use crate::STATE_NODE_PREFIX_NAME;
 
 derive_store!(NodeDBStore, H256, Vec<U8>, STATE_NODE_PREFIX_NAME);
 
-// impl ValueCodec for StateNode {
-//     fn encode_value(&self) -> Result<Vec<u8>> {
-//         Ok(self.0.clone())
-//     }
-//     fn decode_value(data: &[u8]) -> Result<Self> {
-//         Ok(StateNode(data.to_vec()))
-//     }
-// }
-
 struct AccountStorageTables<NS> {
     pub resources: (Object<TableInfo>, TreeTable<NS>),
     pub modules: (Object<TableInfo>, TreeTable<NS>),
