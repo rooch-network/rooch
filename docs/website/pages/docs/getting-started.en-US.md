@@ -975,7 +975,7 @@ As you can see, the `articles` array is empty, indicating that the article list 
 
 ## 5. Summary
 
-At this point, I believe you have a basic understanding of how Rooch v1.0 works, how to publish contracts, and how to interact with contracts. To experience more contract examples on Rooch, see [`rooch/examples`](https://github.com/rooch-network/rooch/tree/main/examples).
+At this point, I believe you have a basic understanding of how Rooch v0.1 works, how to publish contracts, and how to interact with contracts. To experience more contract examples on Rooch, see [`rooch/examples`](https://github.com/rooch-network/rooch/tree/main/examples).
 
 If you want to directly experience the functions of this blog contract, you can directly [download the blog source code](https://github.com/rooch-network/rooch/archive/refs/heads/main.zip), decompress it, and switch to the root directory of the blog contract project. For the interactive method, please refer to the above.
 
