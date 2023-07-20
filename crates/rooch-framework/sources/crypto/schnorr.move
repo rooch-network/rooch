@@ -10,8 +10,8 @@ module rooch_framework::schnorr {
     const KECCAK256: u8 = 0;
     const SHA256: u8 = 1;
 
-    /// @param signature: A 65-bytes signature that is signed using Schnorr over Secpk256k1 key pairs.
-    /// @param public_key: A 64-bytes public key that is used to sign messages.
+    /// @param signature: A 64-bytes signature that is signed using Schnorr over Secpk256k1 key pairs.
+    /// @param public_key: A 32-bytes public key that is used to sign messages.
     /// @param msg: The message that the signature is signed against.
     /// @param hash: The hash function used to hash the message when signing.
     ///

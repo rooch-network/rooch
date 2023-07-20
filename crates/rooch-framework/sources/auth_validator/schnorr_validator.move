@@ -11,7 +11,7 @@ module rooch_framework::schnorr_validator {
 
    const SCHEME_SCHNORR: u64 = 3;
    const SCHNORR_SCHEME_LENGTH: u64 = 1;
-   const SCHNORR_PUBKEY_LENGTH: u64 = 64;
+   const SCHNORR_PUBKEY_LENGTH: u64 = 32;
    const SCHNORR_SIG_LENGTH: u64 = 64;
    const SCHNORR_HASH_LENGTH: u64 = 1;
 
@@ -23,12 +23,17 @@ module rooch_framework::schnorr_validator {
    }
 
    public fun schnorr_hash(payload: &vector<u8>): u8 {
-      let vector_size: u64 = vector::length(payload);
-      assert!(vector_size > 0, 101); // Ensure the vector is not empty
-      // Get the last element by using vector_size - 1 as the index
-      let hash: u8 = *vector::borrow(payload, vector_size - 1);
+      let hash = vector::empty<u8>();
+      let i = SCHNORR_SCHEME_LENGTH + SCHNORR_SIG_LENGTH + SCHNORR_PUBKEY_LENGTH;
+      while (i < SCHNORR_SCHEME_LENGTH + SCHNORR_SIG_LENGTH + SCHNORR_PUBKEY_LENGTH + SCHNORR_HASH_LENGTH) {
+         let value = vector::borrow(payload, i);
+         vector::push_back(&mut hash, *value);
+         i = i + 1;
+      };
+      let vector_size: u64 = vector::length(&hash);
+      let hash_value: u8 = *vector::borrow(&hash, vector_size - 1);
 
-      hash
+      hash_value
    }
 
    public fun schnorr_public_key(payload: &vector<u8>): vector<u8> {
@@ -86,11 +91,14 @@ module rooch_framework::schnorr_validator {
          auth_validator::error_invalid_account_auth_key()
       );
       assert!(
-         schnorr::verify(&schnorr_signature(&payload),
+         schnorr::verify(
+         &schnorr_signature(&payload),
          &schnorr_public_key(&payload),
          &storage_context::tx_hash(ctx),
-         schnorr_hash(&payload)),
-         auth_validator::error_invalid_account_auth_key());
+         schnorr_hash(&payload),
+         ),
+         auth_validator::error_invalid_account_auth_key()
+      );
    }
 
    fun pre_execute(
