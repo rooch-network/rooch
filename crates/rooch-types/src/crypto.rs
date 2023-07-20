@@ -753,6 +753,7 @@ mod tests {
     use fastcrypto::{
         ed25519::{Ed25519KeyPair, Ed25519PrivateKey},
         secp256k1::{Secp256k1KeyPair, Secp256k1PrivateKey},
+        secp256k1::schnorr::{SchnorrKeyPair, SchnorrPrivateKey},
         traits::{KeyPair, ToFromBytes},
     };
 
@@ -762,9 +763,7 @@ mod tests {
     fn test_ed25519_public_key_to_address() {
         let private_key = Ed25519PrivateKey::from_bytes(&[0u8; 32]).unwrap();
         let keypair: Ed25519KeyPair = private_key.into();
-        //println!("public_key: {}", hex::encode(keypair.public().as_bytes()));
         let address: RoochAddress = keypair.public().into();
-        //println!("address: {:?}", address);
         assert_eq!(
             address.to_string(),
             "0x7a1378aafadef8ce743b72e8b248295c8f61c102c94040161146ea4d51a182b6"
@@ -781,6 +780,19 @@ mod tests {
         assert_eq!(
             address.to_string(),
             "0x92718e81a52369b4bc3169161737318ddf022945391a69263e8d4289c79a0c67"
+        );
+    }
+
+    // this test ensure the public key to address keep the same as the old version
+    // we should also keep the public key to address algorithm the same as the move version
+    #[test]
+    fn test_schnorr_public_key_to_address() {
+        let private_key = SchnorrPrivateKey::from_bytes(&[1u8; 32]).unwrap(); // ensure not leave 0, use 1u8
+        let keypair: SchnorrKeyPair = private_key.into();
+        let address: RoochAddress = keypair.public().into();
+        assert_eq!(
+            address.to_string(),
+            "0x7ef99ee767314ccb4726be579ab3eabd212741b3796db40405ff421c47b0ae85"
         );
     }
 }

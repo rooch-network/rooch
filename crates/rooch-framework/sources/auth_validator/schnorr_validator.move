@@ -1,11 +1,19 @@
 /// This module implements the schnorr validator scheme.
 module rooch_framework::schnorr_validator {
 
+   use std::vector;
+   use std::option;
    use moveos_std::storage_context::{Self, StorageContext};
+   use rooch_framework::account_authentication;
+   use rooch_framework::hash;
    use rooch_framework::schnorr;
    use rooch_framework::auth_validator;
 
    const SCHEME_SCHNORR: u64 = 3;
+   const SCHNORR_SCHEME_LENGTH: u64 = 1;
+   const SCHNORR_PUBKEY_LENGTH: u64 = 64;
+   const SCHNORR_SIG_LENGTH: u64 = 64;
+   const SCHNORR_HASH_LENGTH: u64 = 1;
 
    struct SchnorrValidator has store{
    }
@@ -14,15 +22,75 @@ module rooch_framework::schnorr_validator {
       SCHEME_SCHNORR
    }
 
+   public fun schnorr_hash(payload: &vector<u8>): u8 {
+      let vector_size: u64 = vector::length(payload);
+      assert!(vector_size > 0, 101); // Ensure the vector is not empty
+      // Get the last element by using vector_size - 1 as the index
+      let hash: u8 = *vector::borrow(payload, vector_size - 1);
+
+      hash
+   }
+
+   public fun schnorr_public_key(payload: &vector<u8>): vector<u8> {
+      let public_key = vector::empty<u8>();
+      let i = SCHNORR_SCHEME_LENGTH + SCHNORR_SIG_LENGTH;
+      while (i < SCHNORR_SCHEME_LENGTH + SCHNORR_SIG_LENGTH + SCHNORR_PUBKEY_LENGTH) {
+         let value = vector::borrow(payload, i);
+         vector::push_back(&mut public_key, *value);
+         i = i + 1;
+      };
+
+      public_key
+   }
+
+   public fun schnorr_signature(payload: &vector<u8>): vector<u8> {
+      let sign = vector::empty<u8>();
+      let i = SCHNORR_SCHEME_LENGTH;
+      while (i < SCHNORR_SIG_LENGTH + 1) {
+         let value = vector::borrow(payload, i);
+         vector::push_back(&mut sign, *value);
+         i = i + 1;
+      };
+
+      sign
+   }
+
+   /// Get the authentication key of the given authenticator.
+   public fun schnorr_authentication_key(payload: &vector<u8>): vector<u8> {
+      let public_key = schnorr_public_key(payload);
+      let addr = schnorr_public_key_to_address(public_key);
+      moveos_std::bcs::to_bytes(&addr)
+   }
+
+   public fun schnorr_public_key_to_address(public_key: vector<u8>): address {
+      let bytes = vector::singleton((SCHEME_SCHNORR as u8));
+      vector::append(&mut bytes, public_key);
+      moveos_std::bcs::to_address(hash::blake2b256(&bytes))
+   }
+
+   public fun get_authentication_key(ctx: &StorageContext, addr: address): vector<u8> {
+      let auth_key_option = account_authentication::get_authentication_key<SchnorrValidator>(ctx, addr);
+      if(option::is_some(&auth_key_option)){
+         option::extract(&mut auth_key_option)
+      }else{
+        //if AuthenticationKey does not exist, return addr as authentication key
+        moveos_std::bcs::to_bytes(&addr)
+      }
+   }
+
    public fun validate(ctx: &StorageContext, payload: vector<u8>){
-      //FIXME check the address and public key relationship
+      let auth_key = schnorr_authentication_key(&payload);
+      let auth_key_in_account = get_authentication_key(ctx, storage_context::sender(ctx));
       assert!(
-      schnorr::verify(
-            &payload,
-            &storage_context::tx_hash(ctx),
-            1 // KECCAK256:0, SHA256:1, TODO: The hash type may need to be passed through the authenticator
-      ),
-      auth_validator::error_invalid_authenticator());
+         auth_key_in_account == auth_key,
+         auth_validator::error_invalid_account_auth_key()
+      );
+      assert!(
+         schnorr::verify(&schnorr_signature(&payload),
+         &schnorr_public_key(&payload),
+         &storage_context::tx_hash(ctx),
+         schnorr_hash(&payload)),
+         auth_validator::error_invalid_account_auth_key());
    }
 
    fun pre_execute(
@@ -33,5 +101,13 @@ module rooch_framework::schnorr_validator {
    fun post_execute(
       _ctx: &mut StorageContext,
    ) {
+   }
+
+   // this test ensures that the schnorr_public_key_to_address function is compatible with the one in the rust code
+   #[test]
+   fun test_schnorr_public_key_to_address(){
+      let public_key = x"1b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
+      let addr = schnorr_public_key_to_address(public_key);
+      assert!(addr == @0x7ef99ee767314ccb4726be579ab3eabd212741b3796db40405ff421c47b0ae85, 1000);
    }
 }
