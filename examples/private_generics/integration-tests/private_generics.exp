@@ -1,10 +1,59 @@
+warning: unused alias
+   ┌─ /tmp/tempfile.move:33:32
+   │
+33 │     use rooch_examples::Test1::Box;
+   │                                ^^^ Unused 'use' of alias 'Box'. Consider removing it
+
+warning: unused alias
+   ┌─ /Users/system/Downloads/rooch/examples/private_generics/sources/private_generics.move:35:32
+   │
+35 │     use rooch_examples::Test1::box_value;
+   │                                ^^^^^^^^^ Unused 'use' of alias 'box_value'. Consider removing it
+
+warning: unused alias
+   ┌─ /Users/system/Downloads/rooch/examples/private_generics/sources/private_generics.move:34:32
+   │
+34 │     use rooch_examples::Test1::create_box;
+   │                                ^^^^^^^^^^ Unused 'use' of alias 'create_box'. Consider removing it
+
+error: resource type "Data" in function "0x34141::Test1::create_box" not defined in current module or not allowed
+   ┌─ /Users/system/Downloads/rooch/examples/private_generics/sources/private_generics.move:64:23
+   │
+64 │         let box_val = create_box<Data, Data, Box<u32>>(data);
+   │                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
 processed 4 tasks
 
 task 1 'run'. lines 3-10:
-status EXECUTED
+Error: error[E03003]: unbound module member
+  ┌─ /tmp/tempfile:7:9
+  │
+7 │         Test1::test();
+  │         ^^^^^^^^^^^ Invalid module access. Unbound function 'test' in module '(rooch_examples=0x34141)::Test1'
+
+
 
 task 2 'run'. lines 12-19:
-status EXECUTED
+Error: error[E03003]: unbound module member
+   ┌─ /tmp/tempfile:16:9
+   │
+16 │         Test2::run();
+   │         ^^^^^^^^^^ Invalid module access. Unbound function 'run' in module '(rooch_examples=0x34141)::Test2'
+
+
 
 task 3 'run'. lines 21-29:
-status EXECUTED
+Error: error: unresolved spec target
+    ┌─ /Users/system/Downloads/rooch/examples/private_generics/../../moveos/moveos-stdlib/moveos-stdlib/sources/type_info.move:140:10
+    │
+140 │     spec verify_type_of_generic {
+    │          ^^^^^^^^^^^^^^^^^^^^^^
+
+error: resource type "Data" in function "0x34141::Test1::create_box" not defined in current module or not allowed
+   ┌─ /Users/system/Downloads/rooch/examples/private_generics/sources/private_generics.move:64:23
+   │
+64 │         let box_val = create_box<Data, Data, Box<u32>>(data);
+   │                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
