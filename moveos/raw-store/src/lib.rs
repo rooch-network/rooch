@@ -419,7 +419,6 @@ impl<K, V, S> CodecKVStore<K, V> for S
         S: ColumnFamily<Key = K, Value = V>,
 {
     fn get(&self, key: K) -> Result<Option<V>> {
-        // let encode_key = from_bytes()
         match KVStore::get(self.get_store(), to_bytes(key)?.as_slice())? {
             Some(value) => Ok(Some(from_bytes::<V>(value.as_slice())?)),
             None => Ok(None),
@@ -428,7 +427,7 @@ impl<K, V, S> CodecKVStore<K, V> for S
 
     fn multiple_get(&self, keys: Vec<K>) -> Result<Vec<Option<V>>> {
         let encoded_keys: Result<Vec<Vec<u8>>> =
-            keys.into_iter().map(|key| key.encode_key()).collect();
+            keys.into_iter().map(|key| to_bytes(key)?).collect();
         let values = KVStore::multiple_get(self.get_store(), encoded_keys?)?;
         values
             .into_iter()
@@ -462,7 +461,7 @@ impl<K, V, S> CodecKVStore<K, V> for S
     fn keys(&self) -> Result<Vec<K>> {
         let keys = KVStore::keys(self.get_store())?;
         keys.into_iter()
-            .map(|key| <K>::decode_key(key.as_slice()))
+            .map(|key| from_bytes::<K>(key.as_slice())?)
             .collect()
     }
 

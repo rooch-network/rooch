@@ -22,6 +22,7 @@ use std::path::Path;
 use std::sync::Arc;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+use commons::utils::from_bytes;
 
 const RES_FDS: u64 = 4096;
 
@@ -38,8 +39,8 @@ impl RocksDB {
         rocksdb_config: RocksdbConfig,
         metrics: Option<StoreMetrics>,
     ) -> Result<Self> {
-        //TODO find a compat way to remove the `starcoindb` path
-        let path = db_root_path.as_ref().join("starcoindb");
+        //TODO find a compat way to remove the `roochdb` path
+        let path = db_root_path.as_ref().join("roochdb");
         Self::open_with_cfs(
             path,
             StoreVersion::current_version()
@@ -123,17 +124,6 @@ impl RocksDB {
             column_families.iter().map(|cf_name| {
                 let mut cf_opts = rocksdb::Options::default();
                 cf_opts.set_compression_type(rocksdb::DBCompressionType::Lz4);
-                /*
-                cf_opts.set_compression_per_level(&[
-                    rocksdb::DBCompressionType::None,
-                    rocksdb::DBCompressionType::None,
-                    rocksdb::DBCompressionType::Lz4,
-                    rocksdb::DBCompressionType::Lz4,
-                    rocksdb::DBCompressionType::Lz4,
-                    rocksdb::DBCompressionType::Lz4,
-                    rocksdb::DBCompressionType::Lz4,
-                ]);
-                */
                 rocksdb::ColumnFamilyDescriptor::new((*cf_name).to_string(), cf_opts)
             }),
         )?;
@@ -338,8 +328,8 @@ where
 
         let raw_key = self.db_iter.key().expect("Iterator must be valid.");
         let raw_value = self.db_iter.value().expect("Iterator must be valid.");
-        let key = K::decode_key(raw_key)?;
-        let value = V::decode_value(raw_value)?;
+        let key = from_bytes::<K>(raw_key)?;
+        let value = from_bytes::<V>(raw_value)?;
         match self.direction {
             ScanDirection::Forward => self.db_iter.next(),
             ScanDirection::Backward => self.db_iter.prev(),
@@ -347,6 +337,10 @@ where
 
         Ok(Some((key, value)))
     }
+
+    // fn iter(&mut self) -> rocksdb::DBRawIterator{
+    //     self.db_iter
+    // }
 }
 
 impl<'a, K, V> Iterator for SchemaIterator<'a, K, V>

@@ -17,9 +17,9 @@ use std::sync::Arc;
 
 
 // use crate::db_store::DBStore;
-use crate::event_store::EventDB;
-use crate::state_store::{StateDB, StateDBStore};
-use crate::transaction_store::{TransactionDB, TransactionStore};
+use crate::event_store::{EventDB, EventDBStore};
+use crate::state_store::{NodeDBStore, StateDB, StateDBStore};
+use crate::transaction_store::{TransactionDB, TransactionDBStore, TransactionStore};
 use base_store::rocks::default_db_options;
 use std::path::PathBuf;
 use moveos_types::h256::H256;
@@ -34,6 +34,7 @@ pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
 pub const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
 pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction";
 pub const EVENT_PREFIX_NAME: ColumnFamilyName = "event";
+pub const EVENT_INDEX_PREFIX_NAME: ColumnFamilyName = "event_index";
 
 ///db store use prefix_name vec to init
 /// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
@@ -42,6 +43,7 @@ static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         STATE_NODE_PREFIX_NAME,
         TRANSACTION_PREFIX_NAME,
         EVENT_PREFIX_NAME,
+        EVENT_INDEX_PREFIX_NAME
     ]
 });
 
