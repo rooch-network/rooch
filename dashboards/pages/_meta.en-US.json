@@ -1,0 +1,22 @@
+{
+  "index": {
+    "title": "Homepage",
+    "type": "page",
+    "display": "hidden",
+    "theme": {
+      "timestamp": false,
+      "layout": "raw"
+    }
+  },
+  "docs": {
+    "title": "Connect Wallet",
+    "type": "page"
+  },
+  "404": {
+    "type": "page",
+    "theme": {
+      "sidebar": false,
+      "typesetting": "article"
+    }
+  }
+}
