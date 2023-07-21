@@ -10,7 +10,7 @@ use move_compiler::diagnostics::report_diagnostics;
 use move_compiler::shared::unique_map::UniqueMap;
 use move_compiler::shared::{NamedAddressMapIndex, NamedAddressMaps};
 use move_compiler::{
-    cfgir, expansion, hlir, naming, parser, typing, Compiler, FullyCompiledProgram,
+    cfgir, expansion, hlir, naming, parser, typing, Compiler, Flags, FullyCompiledProgram,
 };
 use move_package::compilation::build_plan::BuildPlan;
 use move_package::source_package::layout::SourcePackageLayout;
@@ -196,6 +196,8 @@ impl IntegrationTest {
                 &mut std::io::stdout(),
                 Some(6),
                 |compiler: Compiler| {
+                    let compiler =
+                        compiler.set_flags(Flags::empty().set_keep_testing_functions(true));
                     let full_program = match construct_pre_compiled_lib_from_compiler(compiler)? {
                         Ok(full_program) => full_program,
                         Err((file, s)) => report_diagnostics(&file, s),
