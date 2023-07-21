@@ -6,6 +6,7 @@ module rooch_examples::counter {
       value:u64,
    }
 
+   #[test_only]
    public fun init_for_test(ctx: &mut StorageContext, account: &signer) {
       account_storage::global_move_to(ctx, account, Counter { value: 0 });
    }
