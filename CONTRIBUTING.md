@@ -27,9 +27,9 @@ First, create a fork of the `rooch` repository in your own account so that you c
 1. Log in to your Github account.
 2. Browse the [Rooch repo](https://github.com/rooch-network/rooch) on GitHub.
 3. Select `Fork` in the upper right corner, then select `Create a new fork`.
-4. For **Owner**, choose your username.
+4. For **Owner**, select your username.
 5. For the **Repository name**, we recommend keeping the name `rooch`, but you can use any name.
-6. Optional. To contribute, you only need the master branch of the repository. To include all branches, uncheck the checkbox for **Copy the `main` branch only**.
+6. Optional. To contribute, you only need the main branch of the repository. To include all branches, uncheck the checkbox for **Copy the `main` branch only**.
 7. Click `Create fork`.
 
 ### Clone your fork
