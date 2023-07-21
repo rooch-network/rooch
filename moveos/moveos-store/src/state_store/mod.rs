@@ -22,6 +22,7 @@ use moveos_types::{
     state::StateChangeSet,
     state_resolver::{self, module_name_to_key, resource_tag_to_key, StateResolver},
 };
+use raw_store::{CodecKVStore, CodecWriteBatch};
 use smt::{NodeStore, SMTree, UpdateSet};
 use std::collections::BTreeMap;
 
@@ -32,6 +33,21 @@ use crate::STATE_NODE_PREFIX_NAME;
 use raw_store::{derive_store, StoreInstance};
 
 derive_store!(NodeDBStore, H256, Vec<u8>, STATE_NODE_PREFIX_NAME);
+
+impl NodeStore for NodeDBStore {
+    fn get(&self, hash: &H256) -> Result<Option<Vec<u8>>> {
+        self.kv_get(*hash)
+    }
+
+    fn put(&self, key: H256, node: Vec<u8>) -> Result<()> {
+        self.kv_put(key, node)
+    }
+
+    fn write_nodes(&self, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {
+        let batch = CodecWriteBatch::new_puts(nodes.into_iter().collect());
+        self.write_batch(batch)
+    }
+}
 
 struct AccountStorageTables<NS> {
     pub resources: (Object<TableInfo>, TreeTable<NS>),
@@ -120,10 +136,12 @@ where
 //     global_table: TreeTable<dyn NodeStore>,
 // }
 /// StateDB provide state storage and state proof
+// #[derive(Clone)]
 pub struct StateDBStore {
     // node_store: InMemoryNodeStore,
     pub node_store: NodeDBStore,
-    global_table: TreeTable<dyn NodeStore>,
+    // global_table: TreeTable<dyn NodeStore>,
+    global_table: TreeTable<NodeDBStore>,
 }
 
 impl StateDBStore {
@@ -179,7 +197,7 @@ impl StateDBStore {
     fn get_as_account_storage_or_create(
         &self,
         account: AccountAddress,
-    ) -> Result<(Object<AccountStorage>, AccountStorageTables<dyn NodeStore>)> {
+    ) -> Result<(Object<AccountStorage>, AccountStorageTables<NodeDBStore>)> {
         let account_storage = self
             .get_as_account_storage(account)?
             .unwrap_or_else(|| Object::new_account_storage_object(account));
@@ -193,7 +211,7 @@ impl StateDBStore {
     fn get_as_table(
         &self,
         id: ObjectID,
-    ) -> Result<Option<(Object<TableInfo>, TreeTable<dyn NodeStore>)>> {
+    ) -> Result<Option<(Object<TableInfo>, TreeTable<NodeDBStore>)>> {
         let object = self.get_as_object::<TableInfo>(id)?;
         match object {
             Some(object) => {
@@ -213,7 +231,7 @@ impl StateDBStore {
     fn get_as_table_or_create(
         &self,
         id: ObjectID,
-    ) -> Result<(Object<TableInfo>, TreeTable<dyn NodeStore>)> {
+    ) -> Result<(Object<TableInfo>, TreeTable<NodeDBStore>)> {
         Ok(self.get_as_table(id)?.unwrap_or_else(|| {
             let table = TreeTable::new(self.node_store.clone());
             let table_info = TableInfo::new(AccountAddress::new(table.state_root().into()));

@@ -18,11 +18,11 @@ derive_store!(
 
 pub trait TransactionStore {
     fn save_tx_exec_info(&self, tx_exec_info: TransactionExecutionInfo) -> Result<()>;
-    fn get_tx_exec_info(&self, tx_hash: H256) -> Option<TransactionExecutionInfo>;
+    fn get_tx_exec_info(&self, tx_hash: H256) -> Result<Option<TransactionExecutionInfo>>;
     fn multi_get_tx_exec_infos(
         &self,
         tx_hashes: Vec<H256>,
-    ) -> Vec<Option<TransactionExecutionInfo>>;
+    ) -> Result<Vec<Option<TransactionExecutionInfo>>>;
 }
 
 // pub struct TransactionDB {
@@ -61,20 +61,20 @@ impl TransactionStore for TransactionDBStore {
     fn save_tx_exec_info(&self, tx_exec_info: TransactionExecutionInfo) -> Result<()> {
         // let mut locked = self.inner_tx_exec_info.write();
         // locked.insert(tx_exec_info.tx_hash, tx_exec_info);
-        self.put(tx_exec_info.id(), tx_exec_info)
+        self.kv_put(tx_exec_info.id(), tx_exec_info)
     }
 
-    fn get_tx_exec_info(&self, tx_hash: H256) -> Option<TransactionExecutionInfo> {
+    fn get_tx_exec_info(&self, tx_hash: H256) -> Result<Option<TransactionExecutionInfo>> {
         // let rw_locks = self.inner_tx_exec_info.read();
         // let data = rw_locks.get(&tx_hash);
         // data.cloned()
-        self.get(tx_hash)?
+        self.kv_get(tx_hash)
     }
 
     fn multi_get_tx_exec_infos(
         &self,
         tx_hashes: Vec<H256>,
-    ) -> Vec<Option<TransactionExecutionInfo>> {
+    ) -> Result<Vec<Option<TransactionExecutionInfo>>> {
         // let rw_locks = self.inner_tx_exec_info.read();
         //
         // let data = tx_hashes
@@ -82,6 +82,6 @@ impl TransactionStore for TransactionDBStore {
         //     .map(|tx_hash| rw_locks.get(tx_hash).cloned())
         //     .collect::<Vec<_>>();
         // data
-        self.multiple_get(tx_hashes)?
+        self.multiple_get(tx_hashes)
     }
 }

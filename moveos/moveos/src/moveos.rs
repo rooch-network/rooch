@@ -12,9 +12,10 @@ use move_core_types::{
 use move_vm_runtime::config::VMConfig;
 use move_vm_runtime::native_functions::NativeFunction;
 use move_vm_types::gas::UnmeteredGasMeter;
-use moveos_store::transaction_store::TransactionDB;
+use moveos_store::event_store::EventDBStore;
+use moveos_store::state_store::StateDBStore;
+use moveos_store::transaction_store::{TransactionDBStore};
 use moveos_store::MoveOSStore;
-use moveos_store::{event_store::EventDB, state_store::StateDB};
 use moveos_types::function_return_value::FunctionReturnValue;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::state_resolver::MoveOSResolverProxy;
@@ -106,7 +107,7 @@ impl MoveOS {
         Ok(())
     }
 
-    pub fn state(&self) -> &StateDB {
+    pub fn state(&self) -> &StateDBStore {
         self.db.0.get_state_store()
     }
 
@@ -114,11 +115,11 @@ impl MoveOS {
         &self.db
     }
 
-    pub fn event_store(&self) -> &EventDB {
+    pub fn event_store(&self) -> &EventDBStore {
         self.db.0.get_event_store()
     }
 
-    pub fn transaction_store(&self) -> &TransactionDB {
+    pub fn transaction_store(&self) -> &TransactionDBStore {
         self.db.0.get_transaction_store()
     }
 

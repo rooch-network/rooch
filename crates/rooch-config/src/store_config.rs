@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{get_rooch_config_dir, Config};
-use std::fs;
-// use anyhow::Result;
+use anyhow::Result;
 use clap::Parser;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use std::fs;
 use std::path::PathBuf;
 
 #[derive(Copy, Clone, Debug, Deserialize, PartialEq, Eq, Serialize, Parser)]
@@ -23,7 +23,7 @@ impl Default for RocksdbConfig {
 
 static R_DEFAULT_DB_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("roochdb"));
 
-#[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
 pub struct StoreConfig {
     pub db_path: PathBuf,
@@ -33,22 +33,27 @@ pub struct StoreConfig {
 impl Default for StoreConfig {
     fn default() -> Self {
         StoreConfig {
-            db_path: R_DEFAULT_DB_DIR,
+            db_path: R_DEFAULT_DB_DIR.clone(),
         }
     }
 }
 
 impl StoreConfig {
-    pub fn init(&self) {
-        let db_dir = get_rooch_config_dir()?.join(R_DEFAULT_DB_DIR.as_path());
+    pub fn init(&self) -> Result<()> {
+        let db_dir = get_rooch_config_dir()
+            .unwrap()
+            .join(R_DEFAULT_DB_DIR.as_path());
         if !db_dir.exists() {
-            fs::create_dir_all(db_dir.clone())?
+            fs::create_dir_all(db_dir.clone())?;
         }
         println!("StoreConfig init store dir {:?}", db_dir);
+        Ok(())
     }
 
     pub fn get_store_dir(&self) -> PathBuf {
-        get_rooch_config_dir()?.join(R_DEFAULT_DB_DIR.as_path())
+        get_rooch_config_dir()
+            .unwrap()
+            .join(R_DEFAULT_DB_DIR.as_path())
     }
 
     pub fn rocksdb_config(&self) -> RocksdbConfig {

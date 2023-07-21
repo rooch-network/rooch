@@ -82,7 +82,7 @@ impl EventDBStore {
         // locked.insert(key, event);
         // Ok(())
         let key = (event.event_id.event_handle_id, event.event_id.event_seq);
-        self.event_store.put(key, event)
+        self.event_store.kv_put(key, event)
     }
 
     pub fn save_events(&self, events: Vec<Event>) -> Result<()> {
@@ -118,10 +118,9 @@ impl EventDBStore {
         // let result = rw_locks.get(&key);
         // Ok(result.cloned())
         let key = (event_id.event_handle_id, event_id.event_seq);
-        self.event_store.get(key)
+        self.event_store.kv_get(key)
     }
 
-    //TODO implement event indexer for query by tx hash
     pub fn get_events_by_tx_hash(&self, tx_hash: &H256) -> Result<Vec<Event>> {
         // let rw_locks = self.indexer_store.read();
         // let data = rw_locks
@@ -131,25 +130,18 @@ impl EventDBStore {
         //     .collect::<Vec<_>>();
         // Ok(data)
 
-        let mut iter = self.indexer_store.iter()?;
-
-        // for item in iter {
-        //     let (k, v) = item?;
-        // }
+        let iter = self.indexer_store.iter()?;
         let data: Vec<Event> = iter
-            .filter(|((tx_hash_key, _), _)| *tx_hash_key == *tx_hash)
-            .map(|(_, e)| e.clone())
+            .filter_map(|item| {
+                let ((tx_hash_key, _), event) = item.unwrap_or_else(|_| panic!("Get item from store shoule hava a value."));
+                if tx_hash_key == *tx_hash {
+                    Some(event)
+                } else {
+                    None
+                }
+            })
             .collect::<Vec<_>>();
         Ok(data)
-
-        // iter.skip_to(&(tx_seq, event_seq))?
-        //     .take(limit)
-        //     .map(|((_, event_seq), (digest, tx_digest, time))| {
-        //         (digest, tx_digest, event_seq, time)
-        //     })
-        //     .collect()
-
-        // Ok(vec![])
     }
 
     pub fn get_events_by_event_handle_id(
@@ -178,17 +170,22 @@ impl EventDBStore {
         //  will not cross the boundary even if the size exceeds the storage capacity,
         let start = cursor.unwrap_or(0);
         let end = start + limit;
-        let mut iter = self.event_store.iter()?;
+        let iter = self.event_store.iter()?;
 
         let data: Vec<Event> = iter
-            .filter(|((handle_id, event_seq), _)| {
+            .filter_map(|item| {
+                let ((handle_id, event_seq), event) = item.unwrap_or_else(|_| panic!("Get item from store shoule hava a value."));
                 if Option::is_some(&cursor) {
-                    *handle_id == *event_handle_id && (*event_seq > start && *event_seq <= end)
+                    if handle_id == *event_handle_id && (event_seq > start && event_seq <= end) {
+                        return Some(event)
+                    }
                 } else {
-                    *handle_id == *event_handle_id && (*event_seq >= start && *event_seq < end)
+                    if handle_id == *event_handle_id && (event_seq >= start && event_seq < end) {
+                        return Some(event)
+                    }
                 }
+                None
             })
-            .map(|(_, e)| e.clone())
             .collect::<Vec<_>>();
         Ok(data)
     }
@@ -210,14 +207,15 @@ impl EventDBStore {
         //     .collect::<Vec<_>>();
         // Ok(data)
 
-        let mut iter = self.event_store.iter()?;
-
+        let iter = self.event_store.iter()?;
         let data: Vec<Event> = iter
-            .filter_map(|((_event_handle_id, _event_seq), event)| {
+            .filter_map(|item| {
+                let ((_event_handle_id, _event_seq), event) = item.unwrap_or_else(|_| panic!("Get item from store shoule hava a value."));
                 if type_tag_match(event.type_tag(), event_handle_type) {
-                    return Some(event.clone());
+                    Some(event)
+                }else {
+                    None
                 }
-                None
             })
             .collect::<Vec<_>>();
         Ok(data)

@@ -362,11 +362,11 @@ where
     K: Serialize + DeserializeOwned,
     V: Serialize + DeserializeOwned,
 {
-    fn get(&self, key: K) -> Result<Option<V>>;
+    fn kv_get(&self, key: K) -> Result<Option<V>>;
 
     fn multiple_get(&self, keys: Vec<K>) -> Result<Vec<Option<V>>>;
 
-    fn put(&self, key: K, value: V) -> Result<()>;
+    fn kv_put(&self, key: K, value: V) -> Result<()>;
 
     fn contains_key(&self, key: K) -> Result<bool>;
 
@@ -400,7 +400,7 @@ where
     S: SchemaStore,
     S: ColumnFamily<Key = K, Value = V>,
 {
-    fn get(&self, key: K) -> Result<Option<V>> {
+    fn kv_get(&self, key: K) -> Result<Option<V>> {
         match KVStore::get(self.get_store(), to_bytes(&key)?.as_slice())? {
             Some(value) => Ok(Some(from_bytes::<V>(value.as_slice())?)),
             None => Ok(None),
@@ -422,7 +422,7 @@ where
             .collect()
     }
 
-    fn put(&self, key: K, value: V) -> Result<()> {
+    fn kv_put(&self, key: K, value: V) -> Result<()> {
         KVStore::put(self.get_store(), to_bytes(&key)?, to_bytes(&value)?)
     }
 

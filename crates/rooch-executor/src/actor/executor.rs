@@ -15,6 +15,7 @@ use move_core_types::account_address::AccountAddress;
 use move_resource_viewer::MoveValueAnnotator;
 use moveos::moveos::MoveOS;
 use moveos_common::accumulator::InMemoryAccumulator;
+use moveos_store::transaction_store::TransactionStore;
 use moveos_store::MoveOSStore;
 use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event::EventHandle;
@@ -324,8 +325,8 @@ impl Handler<GetTransactionInfosByTxHashMessage> for ExecutorActor {
         _ctx: &mut ActorContext,
     ) -> Result<Vec<Option<TransactionExecutionInfo>>> {
         let GetTransactionInfosByTxHashMessage { tx_hashes } = msg;
-        let moveos_tx_store = self.moveos.transaction_store();
-        let result = moveos_tx_store.multi_get_tx_exec_infos(tx_hashes);
-        Ok(result)
+        self.moveos
+            .transaction_store()
+            .multi_get_tx_exec_infos(tx_hashes)
     }
 }

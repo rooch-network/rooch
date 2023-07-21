@@ -7,7 +7,7 @@
 use anyhow::Result;
 // use anyhow::{bail, format_err, Error, Result};
 use once_cell::sync::Lazy;
-use raw_store::{CodecKVStore, CodecWriteBatch, ColumnFamilyName, StoreInstance};
+use raw_store::{ColumnFamilyName, StoreInstance};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::sync::Arc;
@@ -44,7 +44,7 @@ static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     ]
 });
 
-#[derive(Clone)]
+// #[derive(Clone)]
 pub struct MoveOSStore {
     pub state_store: StateDBStore,
     pub event_store: EventDBStore,
@@ -98,9 +98,24 @@ impl Debug for MoveOSStore {
     }
 }
 
+// impl NodeStore for MoveOSStore {
+//     fn get(&self, hash: &H256) -> Result<Option<Vec<u8>>> {
+//         self.state_store.node_store.get(*hash)
+//     }
+//
+//     fn put(&self, key: H256, node: Vec<u8>) -> Result<()> {
+//         self.state_store.node_store.put(key, node)
+//     }
+//
+//     fn write_nodes(&self, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {
+//         let batch = CodecWriteBatch::new_puts(nodes.into_iter().collect());
+//         self.state_store.node_store.write_batch(batch)
+//     }
+// }
+
 impl NodeStore for MoveOSStore {
     fn get(&self, hash: &H256) -> Result<Option<Vec<u8>>> {
-        self.state_store.node_store.get(*hash)
+        self.state_store.node_store.get(hash)
     }
 
     fn put(&self, key: H256, node: Vec<u8>) -> Result<()> {
@@ -108,8 +123,7 @@ impl NodeStore for MoveOSStore {
     }
 
     fn write_nodes(&self, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {
-        let batch = CodecWriteBatch::new_puts(nodes.into_iter().collect());
-        self.state_store.node_store.write_batch(batch)
+        self.state_store.node_store.write_nodes(nodes)
     }
 }
 
@@ -155,14 +169,14 @@ impl TransactionStore for MoveOSStore {
         self.transaction_store.save_tx_exec_info(tx_exec_info)
     }
 
-    fn get_tx_exec_info(&self, tx_hash: H256) -> Option<TransactionExecutionInfo> {
+    fn get_tx_exec_info(&self, tx_hash: H256) -> Result<Option<TransactionExecutionInfo>> {
         self.transaction_store.get_tx_exec_info(tx_hash)
     }
 
     fn multi_get_tx_exec_infos(
         &self,
         tx_hashes: Vec<H256>,
-    ) -> Vec<Option<TransactionExecutionInfo>> {
+    ) -> Result<Vec<Option<TransactionExecutionInfo>>> {
         self.transaction_store.multi_get_tx_exec_infos(tx_hashes)
     }
 }
