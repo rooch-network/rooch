@@ -24,33 +24,33 @@ module moveos_std::event {
     }
 
     /// A globally unique ID for this event stream. event handler id equal to guid.
-    public fun derive_event_handle_id<T: key>(): ObjectID {
+    public fun derive_event_handle_id<T>(): ObjectID {
         let type_info = type_info::type_of<T>();
         let event_handle_address = bcs::to_address(hash::sha3_256(bcs::to_bytes(&type_info)));
         object_id::address_to_object_id(event_handle_address)
     }
 
-    fun exists_event_handle<T: key>(object_storage: &ObjectStorage): bool {
+    fun exists_event_handle<T>(object_storage: &ObjectStorage): bool {
         let event_handle_id = derive_event_handle_id<T>();
         object_storage::contains(object_storage, event_handle_id)
     }
 
     /// Borrow a mut event handle from the object storage
-    fun borrow_event_handle<T: key>(object_storage: &ObjectStorage): &EventHandle {
+    fun borrow_event_handle<T>(object_storage: &ObjectStorage): &EventHandle {
         let event_handle_id = derive_event_handle_id<T>();
         let object = object_storage::borrow<EventHandle>(object_storage, event_handle_id);
         object::borrow(object)
     }
 
     /// Borrow a mut event handle from the object storage
-    fun borrow_event_handle_mut<T: key>(object_storage: &mut ObjectStorage): &mut EventHandle {
+    fun borrow_event_handle_mut<T>(object_storage: &mut ObjectStorage): &mut EventHandle {
         let event_handle_id = derive_event_handle_id<T>();
         let object = object_storage::borrow_mut<EventHandle>(object_storage, event_handle_id);
         object::borrow_mut(object)
     }
 
     /// Get event handle owner
-    fun get_event_handle_owner<T: key>(object_storage: &ObjectStorage): address {
+    fun get_event_handle_owner<T>(object_storage: &ObjectStorage): address {
         let event_handle_id = derive_event_handle_id<T>();
         let object = object_storage::borrow<EventHandle>(object_storage, event_handle_id);
         object::owner(object)
@@ -58,7 +58,7 @@ module moveos_std::event {
 
     /// use query this method to get event handle Metadata
     /// is event_handle_id doesn't exist, sender will default 0x0
-    public fun get_event_handle<T: key>(ctx: &StorageContext): (ObjectID, address, u64) {
+    public fun get_event_handle<T>(ctx: &StorageContext): (ObjectID, address, u64) {
         let event_handle_id = derive_event_handle_id<T>();
         let sender = @0x0;
         let event_seq = 0;
@@ -74,7 +74,7 @@ module moveos_std::event {
 
     /// Use EventHandle to generate a unique event handle
     /// user doesn't need to call this method directly
-    fun new_event_handle<T: key>(ctx: &mut StorageContext) {
+    fun new_event_handle<T>(ctx: &mut StorageContext) {
         let account_addr = tx_context::sender(storage_context::tx_context(ctx));
         let event_handle_id = derive_event_handle_id<T>();
         let event_handle = EventHandle {
@@ -84,12 +84,13 @@ module moveos_std::event {
         object_storage::add(storage_context::object_storage_mut(ctx), object)
     }
 
-    public fun ensure_event_handle<T: key>(ctx: &mut StorageContext) {
+    public fun ensure_event_handle<T>(ctx: &mut StorageContext) {
         if (!exists_event_handle<T>(storage_context::object_storage(ctx))) {
             new_event_handle<T>(ctx);
         }
     }
 
+    #[private_generics(T)]
     /// Emit a custom Move event, sending the data offchain.
     ///
     /// Used for creating custom indexes and tracking onchain
@@ -97,18 +98,18 @@ module moveos_std::event {
     ///
     /// The type T is the main way to index the event, and can contain
     /// phantom parameters, eg emit(MyEvent<phantom T>).
-    public fun emit_event<T: key>(ctx: &mut StorageContext, event: T) {
+    public fun emit<T>(ctx: &mut StorageContext, event: T) {
         ensure_event_handle<T>(ctx);
         let event_handle_id = derive_event_handle_id<T>();
         let event_handle_ref = borrow_event_handle_mut<T>(
             storage_context::object_storage_mut(ctx)
         );
-        emit<T>(&event_handle_id, event_handle_ref.counter, event);
+        native_emit<T>(&event_handle_id, event_handle_ref.counter, event);
         event_handle_ref.counter = event_handle_ref.counter + 1;
     }
 
     /// Native procedure that writes to the actual event stream in Event store
-    native fun emit<T: key>(event_handle_id: &ObjectID, count: u64, event: T);
+    native fun native_emit<T>(event_handle_id: &ObjectID, count: u64, event: T);
 
     #[test_only]
     struct WithdrawEvent has key {
@@ -121,11 +122,11 @@ module moveos_std::event {
         let sender_addr = signer::address_of(&sender);
         let ctx = storage_context::new_test_context(sender_addr);
 
-        emit_event<WithdrawEvent>(&mut ctx, WithdrawEvent {
+        emit<WithdrawEvent>(&mut ctx, WithdrawEvent {
             addr: signer::address_of(&sender),
             amount: 100,
         });
-        emit_event<WithdrawEvent>(&mut ctx, WithdrawEvent {
+        emit<WithdrawEvent>(&mut ctx, WithdrawEvent {
             addr: signer::address_of(&sender),
             amount: 102,
         });

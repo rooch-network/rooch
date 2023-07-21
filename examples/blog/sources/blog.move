@@ -203,23 +203,23 @@ module rooch_examples::blog {
     }
 
     public(friend) fun emit_article_added_to_blog(storage_ctx: &mut StorageContext, article_added_to_blog: ArticleAddedToBlog) {
-        event::emit_event(storage_ctx, article_added_to_blog);
+        event::emit(storage_ctx, article_added_to_blog);
     }
 
     public(friend) fun emit_article_removed_from_blog(storage_ctx: &mut StorageContext, article_removed_from_blog: ArticleRemovedFromBlog) {
-        event::emit_event(storage_ctx, article_removed_from_blog);
+        event::emit(storage_ctx, article_removed_from_blog);
     }
 
     public(friend) fun emit_blog_created(storage_ctx: &mut StorageContext, blog_created: BlogCreated) {
-        event::emit_event(storage_ctx, blog_created);
+        event::emit(storage_ctx, blog_created);
     }
 
     public(friend) fun emit_blog_updated(storage_ctx: &mut StorageContext, blog_updated: BlogUpdated) {
-        event::emit_event(storage_ctx, blog_updated);
+        event::emit(storage_ctx, blog_updated);
     }
 
     public(friend) fun emit_blog_deleted(storage_ctx: &mut StorageContext, blog_deleted: BlogDeleted) {
-        event::emit_event(storage_ctx, blog_deleted);
+        event::emit(storage_ctx, blog_deleted);
     }
 
 }

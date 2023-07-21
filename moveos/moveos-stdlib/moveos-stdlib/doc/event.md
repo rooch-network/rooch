@@ -12,7 +12,7 @@ events emitted to a handle and emit events to the event store.
 -  [Function `derive_event_handle_id`](#0x2_event_derive_event_handle_id)
 -  [Function `get_event_handle`](#0x2_event_get_event_handle)
 -  [Function `ensure_event_handle`](#0x2_event_ensure_event_handle)
--  [Function `emit_event`](#0x2_event_emit_event)
+-  [Function `emit`](#0x2_event_emit)
 
 
 <pre><code><b>use</b> <a href="">0x1::hash</a>;
@@ -64,7 +64,7 @@ A handle for an event such that:
 A globally unique ID for this event stream. event handler id equal to guid.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_derive_event_handle_id">derive_event_handle_id</a>&lt;T: key&gt;(): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_derive_event_handle_id">derive_event_handle_id</a>&lt;T&gt;(): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
 </code></pre>
 
 
@@ -73,7 +73,7 @@ A globally unique ID for this event stream. event handler id equal to guid.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_derive_event_handle_id">derive_event_handle_id</a>&lt;T: key&gt;(): ObjectID {
+<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_derive_event_handle_id">derive_event_handle_id</a>&lt;T&gt;(): ObjectID {
     <b>let</b> <a href="type_info.md#0x2_type_info">type_info</a> = <a href="type_info.md#0x2_type_info_type_of">type_info::type_of</a>&lt;T&gt;();
     <b>let</b> event_handle_address = bcs::to_address(<a href="_sha3_256">hash::sha3_256</a>(<a href="../doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(&<a href="type_info.md#0x2_type_info">type_info</a>)));
     <a href="object_id.md#0x2_object_id_address_to_object_id">object_id::address_to_object_id</a>(event_handle_address)
@@ -92,7 +92,7 @@ use query this method to get event handle Metadata
 is event_handle_id doesn't exist, sender will default 0x0
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_get_event_handle">get_event_handle</a>&lt;T: key&gt;(ctx: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): (<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, <b>address</b>, u64)
+<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_get_event_handle">get_event_handle</a>&lt;T&gt;(ctx: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): (<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, <b>address</b>, u64)
 </code></pre>
 
 
@@ -101,7 +101,7 @@ is event_handle_id doesn't exist, sender will default 0x0
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_get_event_handle">get_event_handle</a>&lt;T: key&gt;(ctx: &StorageContext): (ObjectID, <b>address</b>, u64) {
+<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_get_event_handle">get_event_handle</a>&lt;T&gt;(ctx: &StorageContext): (ObjectID, <b>address</b>, u64) {
     <b>let</b> event_handle_id = <a href="event.md#0x2_event_derive_event_handle_id">derive_event_handle_id</a>&lt;T&gt;();
     <b>let</b> sender = @0x0;
     <b>let</b> event_seq = 0;
@@ -126,7 +126,7 @@ is event_handle_id doesn't exist, sender will default 0x0
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_ensure_event_handle">ensure_event_handle</a>&lt;T: key&gt;(ctx: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_ensure_event_handle">ensure_event_handle</a>&lt;T&gt;(ctx: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>)
 </code></pre>
 
 
@@ -135,7 +135,7 @@ is event_handle_id doesn't exist, sender will default 0x0
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_ensure_event_handle">ensure_event_handle</a>&lt;T: key&gt;(ctx: &<b>mut</b> StorageContext) {
+<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_ensure_event_handle">ensure_event_handle</a>&lt;T&gt;(ctx: &<b>mut</b> StorageContext) {
     <b>if</b> (!<a href="event.md#0x2_event_exists_event_handle">exists_event_handle</a>&lt;T&gt;(<a href="storage_context.md#0x2_storage_context_object_storage">storage_context::object_storage</a>(ctx))) {
         <a href="event.md#0x2_event_new_event_handle">new_event_handle</a>&lt;T&gt;(ctx);
     }
@@ -146,9 +146,9 @@ is event_handle_id doesn't exist, sender will default 0x0
 
 </details>
 
-<a name="0x2_event_emit_event"></a>
+<a name="0x2_event_emit"></a>
 
-## Function `emit_event`
+## Function `emit`
 
 Emit a custom Move event, sending the data offchain.
 
@@ -159,7 +159,7 @@ The type T is the main way to index the event, and can contain
 phantom parameters, eg emit(MyEvent<phantom T>).
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_emit_event">emit_event</a>&lt;T: key&gt;(ctx: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="event.md#0x2_event">event</a>: T)
+<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_emit">emit</a>&lt;T&gt;(ctx: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="event.md#0x2_event">event</a>: T)
 </code></pre>
 
 
@@ -168,13 +168,13 @@ phantom parameters, eg emit(MyEvent<phantom T>).
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_emit_event">emit_event</a>&lt;T: key&gt;(ctx: &<b>mut</b> StorageContext, <a href="event.md#0x2_event">event</a>: T) {
+<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_emit">emit</a>&lt;T&gt;(ctx: &<b>mut</b> StorageContext, <a href="event.md#0x2_event">event</a>: T) {
     <a href="event.md#0x2_event_ensure_event_handle">ensure_event_handle</a>&lt;T&gt;(ctx);
     <b>let</b> event_handle_id = <a href="event.md#0x2_event_derive_event_handle_id">derive_event_handle_id</a>&lt;T&gt;();
     <b>let</b> event_handle_ref = <a href="event.md#0x2_event_borrow_event_handle_mut">borrow_event_handle_mut</a>&lt;T&gt;(
         <a href="storage_context.md#0x2_storage_context_object_storage_mut">storage_context::object_storage_mut</a>(ctx)
     );
-    <a href="event.md#0x2_event_emit">emit</a>&lt;T&gt;(&event_handle_id, event_handle_ref.counter, <a href="event.md#0x2_event">event</a>);
+    <a href="event.md#0x2_event_native_emit">native_emit</a>&lt;T&gt;(&event_handle_id, event_handle_ref.counter, <a href="event.md#0x2_event">event</a>);
     event_handle_ref.counter = event_handle_ref.counter + 1;
 }
 </code></pre>

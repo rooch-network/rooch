@@ -93,7 +93,7 @@ module rooch_examples::article {
         let comment_seq_id = comment::comment_seq_id(&comment);
         assert!(!table::contains(&object::borrow_mut(article_obj).comments, comment_seq_id), EID_ALREADY_EXISTS);
         table::add(&mut object::borrow_mut(article_obj).comments, comment_seq_id, comment);
-        event::emit_event(storage_ctx, CommentTableItemAdded {
+        event::emit(storage_ctx, CommentTableItemAdded {
             article_id: id(article_obj),
             comment_seq_id,
         });
@@ -401,27 +401,27 @@ module rooch_examples::article {
     }
 
     public(friend) fun emit_comment_updated(storage_ctx: &mut StorageContext, comment_updated: CommentUpdated) {
-        event::emit_event(storage_ctx, comment_updated);
+        event::emit(storage_ctx, comment_updated);
     }
 
     public(friend) fun emit_comment_removed(storage_ctx: &mut StorageContext, comment_removed: CommentRemoved) {
-        event::emit_event(storage_ctx, comment_removed);
+        event::emit(storage_ctx, comment_removed);
     }
 
     public(friend) fun emit_comment_added(storage_ctx: &mut StorageContext, comment_added: CommentAdded) {
-        event::emit_event(storage_ctx, comment_added);
+        event::emit(storage_ctx, comment_added);
     }
 
     public(friend) fun emit_article_created(storage_ctx: &mut StorageContext, article_created: ArticleCreated) {
-        event::emit_event(storage_ctx, article_created);
+        event::emit(storage_ctx, article_created);
     }
 
     public(friend) fun emit_article_updated(storage_ctx: &mut StorageContext, article_updated: ArticleUpdated) {
-        event::emit_event(storage_ctx, article_updated);
+        event::emit(storage_ctx, article_updated);
     }
 
     public(friend) fun emit_article_deleted(storage_ctx: &mut StorageContext, article_deleted: ArticleDeleted) {
-        event::emit_event(storage_ctx, article_deleted);
+        event::emit(storage_ctx, article_deleted);
     }
 
 }

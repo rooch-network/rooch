@@ -18,16 +18,16 @@ module simple_blog::article {
         body: String,
     }
 
-    struct ArticleCreatedEvent has key,copy,store {
+    struct ArticleCreatedEvent has copy,store {
         id: ObjectID,
     }
 
-    struct ArticleUpdatedEvent has key,copy,store {
+    struct ArticleUpdatedEvent has copy,store {
         id: ObjectID,
         version: u64,
     }
 
-    struct ArticleDeletedEvent has key,copy,store {
+    struct ArticleDeletedEvent has copy,store {
         id: ObjectID,
         version: u64,
     }
@@ -62,7 +62,7 @@ module simple_blog::article {
         let article_created_event = ArticleCreatedEvent {
             id,
         };
-        event::emit_event(ctx, article_created_event);
+        event::emit(ctx, article_created_event);
         id
     }
 
@@ -93,7 +93,7 @@ module simple_blog::article {
             id,
             version: article.version,
         };
-        event::emit_event(ctx, article_update_event);
+        event::emit(ctx, article_update_event);
     }
 
     /// Delete article
@@ -113,7 +113,7 @@ module simple_blog::article {
             id,
             version: object::borrow(&article_obj).version,
         };
-        event::emit_event(ctx, article_deleted_event);
+        event::emit(ctx, article_deleted_event);
         drop_article(article_obj);
     }
 

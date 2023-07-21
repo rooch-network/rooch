@@ -7,7 +7,7 @@ module rooch_examples::event_test {
     use std::debug;
 
 
-    struct WithdrawEvent has key {
+    struct WithdrawEvent {
         addr: address,
         amount: u64
     }
@@ -18,7 +18,7 @@ module rooch_examples::event_test {
         amount: u64,
     ) {
         let addr = tx_context::sender(storage_context::tx_context(ctx));
-        event::emit_event<WithdrawEvent>(ctx, WithdrawEvent {
+        event::emit<WithdrawEvent>(ctx, WithdrawEvent {
             addr,
             amount,
         });
@@ -36,7 +36,7 @@ module rooch_examples::event_test {
     //     let sender_addr = signer::address_of(&sender);
     //     let ctx = storage_context::new_test_context(sender_addr);
     //
-    //     event::emit_event<WithdrawEvent>(&mut ctx, WithdrawEvent {
+    //     event::emit<WithdrawEvent>(&mut ctx, WithdrawEvent {
     //         addr: signer::address_of(&sender),
     //         amount: 100,
     //     });
