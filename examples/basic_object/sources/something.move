@@ -42,7 +42,7 @@ module rooch_examples::something {
         object::borrow_mut(obj).j = j;
     }
 
-    struct SomethingCreated has key {
+    struct SomethingCreated {
         obj_id: ObjectID,
         i: u32,
         j: u128,
@@ -70,7 +70,7 @@ module rooch_examples::something {
             owner,
             value,
         );
-        event::emit_event(storage_ctx, SomethingCreated {
+        event::emit(storage_ctx, SomethingCreated {
             obj_id: object::id(&obj),
             i,
             j,
@@ -102,7 +102,7 @@ module rooch_examples::something {
                            val: u128
     ) {
         table::add(table, key, val);
-        event::emit_event(storage_ctx, BarTableItemAdded {
+        event::emit(storage_ctx, BarTableItemAdded {
             item: KeyValuePair {
                 key,
                 value: val,
@@ -117,7 +117,7 @@ module rooch_examples::something {
         val: String
     ) {
         table::add(&mut object::borrow_mut(obj).fooTable, key, val);
-        // event::emit_event(storage_ctx, FooTableItemAdded {
+        // event::emit(storage_ctx, FooTableItemAdded {
         //     key
         // });
         let _ = storage_ctx;

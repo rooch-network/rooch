@@ -26,6 +26,6 @@ script {
     fun main(ctx: &mut StorageContext) {
         let sender_addr = tx_context::sender(storage_context::tx_context(ctx));
         let withdraw_event = m::new_test_struct(sender_addr, 100);
-        event::emit_event<WithdrawEvent>(ctx, withdraw_event);
+        event::emit<WithdrawEvent>(ctx, withdraw_event);
     }
 }

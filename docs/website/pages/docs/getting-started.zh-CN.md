@@ -447,16 +447,16 @@ struct Article has key {
     body: String,
 }
 
-struct ArticleCreatedEvent has key,copy,store {
+struct ArticleCreatedEvent has copy,store {
     id: ObjectID,
 }
 
-struct ArticleUpdatedEvent has key,copy,store {
+struct ArticleUpdatedEvent has copy,store {
     id: ObjectID,
     version: u64,
 }
 
-struct ArticleDeletedEvent has key,copy,store {
+struct ArticleDeletedEvent has copy,store {
     id: ObjectID,
     version: u64,
 }
