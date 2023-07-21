@@ -122,11 +122,11 @@ module moveos_std::event {
         let sender_addr = signer::address_of(&sender);
         let ctx = storage_context::new_test_context(sender_addr);
 
-        emit_event<WithdrawEvent>(&mut ctx, WithdrawEvent {
+        emit<WithdrawEvent>(&mut ctx, WithdrawEvent {
             addr: signer::address_of(&sender),
             amount: 100,
         });
-        emit_event<WithdrawEvent>(&mut ctx, WithdrawEvent {
+        emit<WithdrawEvent>(&mut ctx, WithdrawEvent {
             addr: signer::address_of(&sender),
             amount: 102,
         });
