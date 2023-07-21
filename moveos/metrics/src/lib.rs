@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
@@ -13,7 +16,6 @@ use prometheus::{
     proto::MetricType,
     Encoder, TextEncoder,
 };
-// use starcoin_logger::prelude::*;
 use std::{
     collections::HashMap,
     fs::{create_dir_all, File, OpenOptions},

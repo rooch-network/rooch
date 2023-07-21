@@ -4,15 +4,16 @@
 use clap::{Args, Parser};
 use move_cli::Move;
 use move_command_line_common::address::NumericalAddress;
-use move_command_line_common::files::{extension_equals, find_filenames, MOVE_EXTENSION};
-use move_command_line_common::parser::NumberFormat;
 use move_command_line_common::testing::UPDATE_BASELINE;
-use move_compiler::command_line::compiler::construct_pre_compiled_lib;
-use move_compiler::shared::PackagePaths;
-use move_compiler::FullyCompiledProgram;
-use move_core_types::account_address::AccountAddress;
+use move_compiler::command_line::compiler::construct_pre_compiled_lib_from_compiler;
+use move_compiler::diagnostics::report_diagnostics;
+use move_compiler::shared::unique_map::UniqueMap;
+use move_compiler::shared::{NamedAddressMapIndex, NamedAddressMaps};
+use move_compiler::{
+    cfgir, expansion, hlir, naming, parser, typing, Compiler, FullyCompiledProgram,
+};
+use move_package::compilation::build_plan::BuildPlan;
 use move_package::source_package::layout::SourcePackageLayout;
-use move_stdlib::path_in_crate;
 use moveos_types::addresses::MOVEOS_NAMED_ADDRESS_MAPPING;
 use once_cell::sync::Lazy;
 use rooch_integration_test_runner;
@@ -142,52 +143,137 @@ impl IntegrationTest {
             SourcePackageLayout::try_find_root(&path.as_ref().unwrap().canonicalize()?)?
         };
 
+        // force move to rebuild all packages, so that we can use compile_driver to generate the full compiled program.
         let mut build_config = move_arg.build_config;
-        build_config.additional_named_addresses = self
+        let _ = self
             .named_addresses
-            .clone()
-            .into_iter()
-            .map(|(key, value)| (key, AccountAddress::from_hex_literal(&value).unwrap()))
-            .collect();
+            .iter()
+            .map(|(key, value)| {
+                build_config.additional_named_addresses.insert(
+                    key.clone(),
+                    NumericalAddress::parse_str(value.as_str())
+                        .unwrap()
+                        .into_inner(),
+                )
+            })
+            .collect::<Vec<_>>();
+        build_config.force_recompilation = true;
+
         let resolved_graph =
             build_config.resolution_graph_for_package(&rerooted_path, &mut std::io::stdout())?;
 
-        let path = path_in_crate(rerooted_path.join("sources").to_str().unwrap());
-        let files = find_filenames(&[path], |p| extension_equals(p, MOVE_EXTENSION)).unwrap();
-        let targets = vec![PackagePaths {
-            name: None,
-            paths: files,
-            named_address_map: {
-                let mut address_mapping = match &resolved_graph.root_package.addresses {
-                    Some(named_address_map) => named_address_map
-                        .iter()
-                        .filter(|(_, v)| v.is_some())
-                        .map(|(k, v)| {
-                            (
-                                k.clone().as_str().to_string(),
-                                NumericalAddress::new(v.unwrap().into_bytes(), NumberFormat::Hex),
-                            )
-                        })
-                        .collect(),
-                    None => BTreeMap::new(),
-                };
-                // address_mapping.extend(named_addresses());
-                address_mapping.extend(
-                    self.named_addresses
-                        .into_iter()
-                        .map(|(key, value)| (key, NumericalAddress::parse_str(&value).unwrap()))
-                        .collect::<BTreeMap<String, NumericalAddress>>(),
-                );
-                address_mapping
-            },
-        }];
+        let (pre_compiled_lib, _compiled_package) = {
+            let mut pre_compiled_lib = FullyCompiledProgram {
+                files: Default::default(),
+                parser: parser::ast::Program {
+                    named_address_maps: NamedAddressMaps::new(),
+                    source_definitions: vec![],
+                    lib_definitions: vec![],
+                },
+                expansion: expansion::ast::Program {
+                    modules: UniqueMap::new(),
+                    scripts: Default::default(),
+                },
+                naming: naming::ast::Program {
+                    modules: UniqueMap::new(),
+                    scripts: Default::default(),
+                },
+                typing: typing::ast::Program {
+                    modules: UniqueMap::new(),
+                    scripts: Default::default(),
+                },
+                hlir: hlir::ast::Program {
+                    modules: UniqueMap::new(),
+                    scripts: Default::default(),
+                },
+                cfgir: cfgir::ast::Program {
+                    modules: UniqueMap::new(),
+                    scripts: Default::default(),
+                },
+                compiled: vec![],
+            };
+            let compiled = BuildPlan::create(resolved_graph)?.compile_with_driver(
+                &mut std::io::stdout(),
+                Some(6),
+                |compiler: Compiler| {
+                    let full_program = match construct_pre_compiled_lib_from_compiler(compiler)? {
+                        Ok(full_program) => full_program,
+                        Err((file, s)) => report_diagnostics(&file, s),
+                    };
+                    pre_compiled_lib.files.extend(full_program.files.clone());
+                    pre_compiled_lib
+                        .parser
+                        .source_definitions
+                        .extend(full_program.parser.source_definitions);
+                    pre_compiled_lib.parser.named_address_maps =
+                        full_program.parser.named_address_maps.clone();
+                    pre_compiled_lib.expansion.modules =
+                        pre_compiled_lib.expansion.modules.union_with(
+                            &full_program.expansion.modules.filter_map(|_k, v| {
+                                if v.is_source_module {
+                                    Some(v)
+                                } else {
+                                    None
+                                }
+                            }),
+                            |_k, v1, _v2| v1.clone(),
+                        );
+                    pre_compiled_lib.naming.modules = pre_compiled_lib.naming.modules.union_with(
+                        &full_program.naming.modules.filter_map(|_k, v| {
+                            if v.is_source_module {
+                                Some(v)
+                            } else {
+                                None
+                            }
+                        }),
+                        |_k, v1, _v2| v1.clone(),
+                    );
+                    pre_compiled_lib.typing.modules = pre_compiled_lib.typing.modules.union_with(
+                        &full_program.typing.modules.filter_map(|_k, v| {
+                            if v.is_source_module {
+                                Some(v)
+                            } else {
+                                None
+                            }
+                        }),
+                        |_k, v1, _v2| v1.clone(),
+                    );
+                    pre_compiled_lib.hlir.modules = pre_compiled_lib.hlir.modules.union_with(
+                        &full_program.hlir.modules.filter_map(|_k, v| {
+                            if v.is_source_module {
+                                Some(v)
+                            } else {
+                                None
+                            }
+                        }),
+                        |_k, v1, _v2| v1.clone(),
+                    );
+                    pre_compiled_lib.cfgir.modules = pre_compiled_lib.cfgir.modules.union_with(
+                        &full_program.cfgir.modules.filter_map(|_k, v| {
+                            if v.is_source_module {
+                                Some(v)
+                            } else {
+                                None
+                            }
+                        }),
+                        |_k, v1, _v2| v1.clone(),
+                    );
+                    pre_compiled_lib
+                        .compiled
+                        .extend(full_program.compiled.clone());
 
-        let program_res =
-            construct_pre_compiled_lib(targets.clone(), None, move_compiler::Flags::empty())?;
-        let pre_compiled_lib = match program_res {
-            Ok(af) => af,
-            Err((files, errors)) => move_compiler::diagnostics::report_diagnostics(&files, errors),
+                    Ok((full_program.files, full_program.compiled))
+                },
+            )?;
+            (pre_compiled_lib, compiled)
         };
+
+        let named_addresses_maps = pre_compiled_lib
+            .parser
+            .named_address_maps
+            .get(NamedAddressMapIndex(0))
+            .clone();
+
         {
             // update the global
             *G_PRE_COMPILED_LIB.lock().unwrap() = Some(pre_compiled_lib);
@@ -200,12 +286,11 @@ impl IntegrationTest {
             return Ok(());
         }
 
-        let named_address_map = targets.get(0).unwrap().named_address_map.clone();
         let mut named_address_string_map = BTreeMap::new();
-        let _ = named_address_map
+        let _ = named_addresses_maps
             .iter()
             .map(|(key, value)| {
-                named_address_string_map.insert(key.clone(), value.to_string());
+                named_address_string_map.insert(key.to_string(), value.to_string());
             })
             .collect::<Vec<_>>();
 
@@ -249,6 +334,7 @@ impl IntegrationTest {
 
         let test_opts = datatest_stable::TestOpts::try_parse_from(test_args.as_slice())?;
         datatest_stable::runner_with_opts(&[requirements], test_opts);
+
         Ok(())
     }
 }

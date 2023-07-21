@@ -17,7 +17,6 @@ use moveos_store::MoveOSStore;
 use moveos_store::{event_store::EventDB, state_store::StateDB};
 use moveos_types::function_return_value::FunctionReturnValue;
 use moveos_types::module_binding::MoveFunctionCaller;
-use moveos_types::move_types::FunctionId;
 use moveos_types::state_resolver::MoveOSResolverProxy;
 use moveos_types::transaction::{MoveOSTransaction, TransactionOutput, VerifiedMoveOSTransaction};
 use moveos_types::tx_context::TxContext;
@@ -25,10 +24,6 @@ use moveos_types::{h256::H256, transaction::FunctionCall};
 
 pub struct MoveOSConfig {
     pub vm_config: VMConfig,
-    /// if the pre_execute_function is set, the MoveOS will call the function before the transaction is executed.
-    pub pre_execute_function: Option<FunctionId>,
-    /// if the post_execute_function is set, the MoveOS will call the function after the transaction is executed.
-    pub post_execute_function: Option<FunctionId>,
 }
 
 impl std::fmt::Debug for MoveOSConfig {
@@ -42,8 +37,6 @@ impl std::fmt::Debug for MoveOSConfig {
                 "vm_config.paranoid_type_checks",
                 &self.vm_config.paranoid_type_checks,
             )
-            .field("pre_execute_function", &self.pre_execute_function)
-            .field("post_execute_function", &self.post_execute_function)
             .finish()
     }
 }
@@ -57,8 +50,6 @@ impl Clone for MoveOSConfig {
                 max_binary_format_version: self.vm_config.max_binary_format_version,
                 paranoid_type_checks: self.vm_config.paranoid_type_checks,
             },
-            pre_execute_function: self.pre_execute_function.clone(),
-            post_execute_function: self.post_execute_function.clone(),
         }
     }
 }
@@ -74,12 +65,7 @@ impl MoveOS {
         natives: impl IntoIterator<Item = (AccountAddress, Identifier, Identifier, NativeFunction)>,
         config: MoveOSConfig,
     ) -> Result<Self> {
-        let vm = MoveOSVM::new(
-            natives,
-            config.vm_config,
-            config.pre_execute_function,
-            config.post_execute_function,
-        )?;
+        let vm = MoveOSVM::new(natives, config.vm_config)?;
         Ok(Self {
             vm,
             db: MoveOSResolverProxy(db),
@@ -101,7 +87,12 @@ impl MoveOS {
     }
 
     fn verify_and_execute_genesis_tx(&mut self, tx: MoveOSTransaction) -> Result<()> {
-        let MoveOSTransaction { ctx, action } = tx;
+        let MoveOSTransaction {
+            ctx,
+            action,
+            pre_execute_functions: _,
+            post_execute_functions: _,
+        } = tx;
 
         let mut session = self.vm.new_genesis_session(&self.db, ctx);
         let verified_action = session.verify_move_action(action)?;
@@ -132,7 +123,12 @@ impl MoveOS {
     }
 
     pub fn verify(&self, tx: MoveOSTransaction) -> Result<VerifiedMoveOSTransaction> {
-        let MoveOSTransaction { ctx, action } = tx;
+        let MoveOSTransaction {
+            ctx,
+            action,
+            pre_execute_functions,
+            post_execute_functions,
+        } = tx;
 
         let gas_meter = UnmeteredGasMeter;
         let session = self
@@ -144,11 +140,18 @@ impl MoveOS {
         Ok(VerifiedMoveOSTransaction {
             ctx,
             action: verified_action,
+            pre_execute_functions,
+            post_execute_functions,
         })
     }
 
     pub fn execute(&mut self, tx: VerifiedMoveOSTransaction) -> Result<(H256, TransactionOutput)> {
-        let VerifiedMoveOSTransaction { ctx, action } = tx;
+        let VerifiedMoveOSTransaction {
+            ctx,
+            action,
+            pre_execute_functions,
+            post_execute_functions,
+        } = tx;
         let tx_hash = ctx.tx_hash();
         if log::log_enabled!(log::Level::Debug) {
             log::debug!(
@@ -160,7 +163,13 @@ impl MoveOS {
         }
         //TODO define the gas meter.
         let gas_meter = UnmeteredGasMeter;
-        let mut session = self.vm.new_session(&self.db, ctx, gas_meter);
+        let mut session = self.vm.new_session(
+            &self.db,
+            ctx,
+            pre_execute_functions,
+            post_execute_functions,
+            gas_meter,
+        );
         let execute_result = session.execute_move_action(action);
         if execute_result.is_err() {
             log::warn!("execute tx({}) error: {:?}", tx_hash, execute_result);

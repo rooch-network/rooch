@@ -1,0 +1,147 @@
+---
+title: Rooch v0.1 Release, Completing "Sprouting" Milestone
+description: "This milestone includes the introduction of the Rooch Container preview version, developer tools, Move standard library and framework, JSON RPC, and other essential features. The next steps include further refining the developer tools, implementing multi-chain settlement, establishing Token/NFT standards, and enabling cross-chain asset mapping. Rooch aims to explore additional application scenarios and strives to become a fundamental infrastructure in the Web3 ecosystem."
+author: jolestar
+category: News
+date: 2023/07/17
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+Rooch v0.1 Release, Completing "**Sprouting**" Milestone is the second milestone on the path to Rooch mainnet.
+
+The objective of the "**Sprouting**" milestone is to release the first preview version of the Rooch Container, providing essential developer tools for developers to build applications on the Rooch platform.
+
+## Key Features of Rooch v0.1
+
+This version primarily provides the following key features:
+
+### Rooch Command Line Tool
+
+The Rooch Command Line Tool allows users to start the Rooch Container, create, compile, and deploy Move projects, and query the state, transactions, and execution results of application contracts. It supports the complete development cycle and requirements of an application. For a list of supported commands and parameters, please refer to the [Rooch Command Line Tool documentation](/docs/developer/rooch-cli).
+
+### MoveOS
+
+MoveOS is a wrapper for MoveVM that provides a standardized state tree and state proofs. It encapsulates transaction validation and execution processes for MoveVM. In the future, MoveOS can be used in other scenarios that require support for the Move execution environment.
+
+### Move Standard Library and Framework
+
+Rooch includes three Move standard libraries: `MoveStdlib`, `MoveosStdlib`, and `RoochFramework`. `MoveStdlib` is the standard library for the Move language, `MoveosStdlib` is the standard library for MoveOS, and `RoochFramework` is the application framework for Rooch.
+
+1. `MoveStdlib` is located at address `0x1` and directly reuses the standard Move language library.
+2. `MoveosStdlib` is located at address `0x2` and extends `MoveStdlib`. It provides state storage abstraction and encapsulates data structures such as `Table`, `TypeTable`, `Object`, `ObjectStorage`, `AccountStorage`, and more.
+3. `RoochFramework` is located at address `0x3` and includes modules for Rooch accounts, transaction validation, multi-chain address mapping, and more.
+
+This address allocation solution for foundational libraries in Rooch avoids naming conflicts and facilitates extensibility. It also allows ecosystem projects to directly integrate frameworks into Rooch, such as DAO, DeFi, Gaming, Social, etc. In the next phase, Rooch will publish plans for collaborative framework development, so stay tuned.
+
+### Move Storage Abstraction
+
+Rooch extends Move by introducing storage abstraction. It provides two modes of state storage: `ObjectStorage` and `AccountStorage`. Rooch deprecates the global storage instructions in Move and replaces them with corresponding functions in `AccountStorage`. The mapping table below shows the correlation between the two.
+
+| Move Global Storage Instruction | Function in AccountStorage |
+| ------------------------------- | ------------------------ |
+| `move_to<T:key>(&signer,T)` | `account_storage::global_move_to<T:key>(&mut StorageContext,&signer,T)` |
+| `move_from<T:key>(address)` | `account_storage::global_move_from<T:key>(&mut StorageContext,address)` |
+| `borrow_global<T:key>(address)` | `account_storage::global_borrow<T:key>(&mut StorageContext,address)` |
+| `borrow_global_mut<T:key>(address)` | `account_storage::global_borrow_mut<T:key>(&mut StorageContext,address)` |
+
+The introduction of these changes serves two main purposes:
+
+1. Defining state storage through contracts and unifying `ObjectStorage` and `AccountStorage` with a low-level Key-Value interface. This opens up possibilities for future extension in state storage, such as providing dedicated storage spaces for applications.
+2. Resolving the referencing challenge in Move. Developers previously faced difficulties in returning references borrowed through the `borrow_global<T>` instruction within their own methods, as these references were created out of thin air and could not be returned as function results. By borrowing through the `StorageContext`, this issue is solved, as the reference's lifetime becomes tied to the `StorageContext`'s lifetime.
+
+To ensure the security of state storage, and to enforce type safety rules similar to Move's global state instructions, Rooch introduces the `#[private_generics(T)]` annotation. This annotation can be added to function and indicates that the generic parameter `T` must be defined in the current contract of the caller, adhering to the constraints of Move's global storage instructions.
+
+For more detailed design on storage abstraction, please refer to the [Storage Abstraction](/docs/tech-highlights/storage_abstraction) documentation.
+
+### Rooch JSON RPC
+
+Applications can submit transactions and query the state of application contracts using JSON RPC in Rooch.
+
+Rooch provides a state query API `rooch_getStates` based on a unified access path, which returns the BCS serialized result of Move states. Additionally, Rooch offers the `rooch_getAnnotatedStates` API, which returns Move states in a JSON structure, making it convenient for programming languages that do not support BCS directly.
+
+This version includes a demonstration version of the Ethereum RPC Proxy, allowing users to interact with Rooch Container using MetaMask.
+
+For the currently supported API in Rooch, please refer to the [Rooch JSON RPC documentation](/docs/reference/rpc).
+
+### Sequencer and Proposer Prototype Implementation
+
+In this version, the Sequencer and Proposer are represented by a prototype implementation. The purpose is to illustrate the transaction execution flow and the instant confirmation feature in Rooch. For more information on the transaction execution flow in Rooch, please refer to the [Transaction Flow](/docs/tech-highlights/transaction_flow) documentation.
+
+### Examples
+
+In this version, there are several simple example projects provided, including:
+
+1. [counter](https://github.com/rooch-network/rooch/tree/main/examples/counter): A simple counter that has preliminary integration with `MetaMask` for interaction.
+2. [basic_object](https://github.com/rooch-network/rooch/tree/main/examples/basic_object): A basic example showcasing the use of `Object`.
+3. [complex_struct](https://github.com/rooch-network/rooch/tree/main/examples/complex_struct): Demonstrates the output results in JSON RPC for complex `struct` structures.
+4. [event](https://github.com/rooch-network/rooch/tree/main/examples/event): Demonstrates the usage of `Event`.
+5. [entry_function_arguments](https://github.com/rooch-network/rooch/tree/main/examples/entry_function_arguments): Showcases the supported argument types in entry function.
+6. [kv_store](https://github.com/rooch-network/rooch/tree/main/examples/kv_store): A simple key-value store.
+7. [blog](https://github.com/rooch-network/rooch/tree/main/examples/blog): A simple blog application with commenting functionality.
+
+Feel free to explore these examples to get a better understanding of how different features and functionalities can be implemented using Rooch.
+
+
+## Next Steps and Objectives
+
+In the next steps, Rooch will focus on the following areas for improvement:
+
+1. Continuing to refine developer tools, enhancing the storage and retrieval API in Rooch, and exploring support for SQL queries to make Rooch the most efficient and user-friendly Web3 native application development framework.
+2. Implementing multi-chain settlement, allowing Rooch contracts to directly verify and process transactions from other chains. Further improving the RPC proxy interface for multi-chain support and enhancing the wallet user experience.
+3. Implementing Token/NFT standards and cross-chain asset mapping, completing the account abstraction , implementing gas fee delegation, session keys, and Web2 account login.
+
+Based on the aforementioned features, Rooch will primarily explore practical use cases from the perspective of **Rooch as a Backend Service**. This allows any application wanting to integrate blockchain to use Rooch as a backend service, where developers only need to master frontend skills and Move language. Although it is currently a centralized solution, applications can eventually achieve decentralization by integrating with the Rooch mainnet.
+
+Rooch offers several advantages over web2-based development frameworks:
+
+1. Built-in multi-chain support, including signature verification, block header verification, address mapping, and wallet support.
+2. Rich querying API that do not require additional developing.
+3. Support for gas-based protection against DDoS attacks.
+4. Support for instant confirmation and session keys for a user experience similar to web2.
+
+Some specific use cases include:
+
+1. Web3 blogs and forums, such as Rooch can serve as an implementation of the nostr protocol.
+2. Rooch as an index service for the Bitcoin inscriptions protocol(BRC20 etc.).
+3. Rooch as a public data platform for wiki-like applications, with data updates achieved through governance.
+4. Rooch as the backend platform for the fully on-chain gaming.
+
+These are just a few examples, and there are countless possibilities for developers to explore. We will soon launch the Rooch Brainstorming Contest, so stay tuned.
+By leveraging Rooch as a backend service, developers can benefit from its built-in blockchain capabilities and focus on building applications with seamless integration with the blockchain. It provides a streamlined development experience and opens up a new world of possibilities for Web3 native applications.
+
+
+## Rooch Milestones
+
+Before the launch of the mainnet, Rooch has five milestones. We have named these milestones via the stages of plant growth, aiming for Rooch to grow from a seed to a towering tree, becoming the infrastructure for Web3.
+
+### Seeding -- 2023 Q1
+
+Complete technical design and team formation.
+
+### Sprouting -- 2023 Q2
+
+Release the first preview version of Rooch Container, providing basic developer tools for building applications on Rooch.
+
+### Rooting -- 2023 Q3
+
+Connect to different L1 public chains and DA chains, providing support for multi-chain settlement. Release a stable version of the Move Framework. Run a public developer test network.
+
+### Branching -- 2023 Q4
+
+Collaborate with ecosystem teams to build frameworks and Layer2 infrastructure, providing app-specific containers and storage solutions. Run a permanent incentive test network.
+
+### Strengthening -- 2024 Q1
+
+Enhance security and optimize performance. Run a pre-main network.
+
+### Foliage -- 2024 Q1
+
+Numerous applications thrive on the Rooch network. Run the mainnet.
+
+## Conclusion
+
+Rooch's milestones are driven by application scenarios, focusing on the experience of developers and users. The goal is to expand the boundaries of Web3 applications and explore the possibilities of mass adoption. To learn more and try Rooch, please refer to the [Getting Started](/docs/getting-started) documentation.
+For more detailed information on Rooch v0.1, please refer to the [Rooch v0.1 release notes](https://github.com/rooch-network/rooch/releases/tag/v0.1). We would like to thank the over ten developers who have contributed to Rooch so far. If you want to learn more and get involved in Rooch, please join the [Rooch Discord](https://discord.gg/rooch).

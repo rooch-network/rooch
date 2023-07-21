@@ -1,0 +1,22 @@
+{
+  "index": {
+    "title": "主页",
+    "type": "page",
+    "display": "hidden",
+    "theme": {
+      "timestamp": false,
+      "layout": "raw"
+    }
+  },
+  "docs": {
+    "title": "连接钱包",
+    "type": "page"
+  },
+  "404": {
+    "type": "page",
+    "theme": {
+      "sidebar": false,
+      "typesetting": "article"
+    }
+  }
+}

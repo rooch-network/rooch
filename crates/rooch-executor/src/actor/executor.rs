@@ -23,14 +23,18 @@ use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::as_struct_tag;
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::state_resolver::{AnnotatedStateReader, StateReader};
+use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
+use moveos_types::tx_context::TxContext;
 use rooch_config::store_config::StoreConfig;
 use rooch_framework::bindings::address_mapping::AddressMapping;
+use rooch_framework::bindings::auth_validator::AuthValidatorCaller;
 use rooch_framework::bindings::transaction_validator::TransactionValidator;
 use rooch_genesis::RoochGenesis;
 use rooch_store::RoochDB;
 use rooch_types::address::MultiChainAddress;
+use rooch_types::transaction::AuthenticatorInfo;
 use rooch_types::transaction::{AbstractTransaction, TransactionSequenceMapping};
 
 pub struct ExecutorActor {
@@ -77,18 +81,17 @@ impl ExecutorActor {
 
         let mut moveos_tx = tx.construct_moveos_transaction(resolved_sender?)?;
 
-        let result = {
-            let tx_validator = self.moveos.as_module_bundle::<TransactionValidator>();
-            tx_validator.validate(&moveos_tx.ctx, authenticator)
-        };
+        let result = self.validate_authenticator(&moveos_tx.ctx, authenticator);
 
         match result {
-            Ok(_) => {
+            Ok((pre_execute_functions, post_execute_functions)) => {
                 // Add the original multichain address to the context
                 moveos_tx
                     .ctx
                     .add(multi_chain_address_sender)
                     .expect("add sender to context failed");
+                moveos_tx.append_pre_execute_functions(pre_execute_functions);
+                moveos_tx.append_post_execute_functions(post_execute_functions);
                 Ok(self.moveos.verify(moveos_tx)?)
             }
             Err(e) => {
@@ -100,6 +103,28 @@ impl ExecutorActor {
                 bail!("validate failed: {:?}", e)
             }
         }
+    }
+
+    pub fn validate_authenticator(
+        &self,
+        ctx: &TxContext,
+        authenticator: AuthenticatorInfo,
+    ) -> Result<(Vec<FunctionCall>, Vec<FunctionCall>)> {
+        let tx_validator = self.moveos.as_module_bundle::<TransactionValidator>();
+        let auth_validator = tx_validator.validate(ctx, authenticator.clone())?;
+        let auth_validator_caller = AuthValidatorCaller::new(&self.moveos, auth_validator);
+        auth_validator_caller.validate(ctx, authenticator.authenticator.payload)?;
+        // pre_execute_function: TransactionValidator first, then AuthValidator
+        let pre_execute_functions = vec![
+            TransactionValidator::pre_execute_function_call(),
+            auth_validator_caller.pre_execute_function_call(),
+        ];
+        // post_execute_function: AuthValidator first, then TransactionValidator
+        let post_execute_functions = vec![
+            auth_validator_caller.post_execute_function_call(),
+            TransactionValidator::post_execute_function_call(),
+        ];
+        Ok((pre_execute_functions, post_execute_functions))
     }
 }
 

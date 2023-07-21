@@ -29,7 +29,6 @@ use std::collections::BTreeMap;
 mod tests;
 
 use crate::STATE_NODE_PREFIX_NAME;
-use raw_store::ValueCodec;
 use raw_store::{derive_store, StoreInstance};
 
 derive_store!(NodeDBStore, H256, Vec<u8>, STATE_NODE_PREFIX_NAME);

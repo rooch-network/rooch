@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 #[macro_export]
 macro_rules! register_uint_gauge_vec {
     ($OPTS:expr, $LABELS_NAMES:expr) => {{

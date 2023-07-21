@@ -79,10 +79,10 @@ pub fn check_open_fds_limit(max_files: u64) -> Result<(), Error> {
         if err == 0 {
             return Ok(());
         }
-        return Err(anyhow::anyhow!(format!(
+        Err(anyhow::anyhow!(format!(
             "the maximum number of open file descriptors is too \
              small, got {}, expect greater or equal to {}",
             prev_limit, max_files
-        )));
+        )))
     }
 }

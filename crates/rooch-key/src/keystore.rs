@@ -183,8 +183,9 @@ impl AccountKeystore for FileBasedKeystore {
 
         let auth = match pk.public().scheme() {
             BuiltinScheme::Ed25519 => authenticator::Authenticator::ed25519(signature),
-            BuiltinScheme::Secp256k1 => todo!(),
+            BuiltinScheme::Ecdsa => todo!(),
             BuiltinScheme::MultiEd25519 => todo!(),
+            BuiltinScheme::Schnorr => todo!(),
         };
 
         Ok(RoochTransaction::new(msg, auth))
@@ -297,8 +298,9 @@ impl AccountKeystore for InMemKeystore {
 
         let auth = match pk.public().scheme() {
             BuiltinScheme::Ed25519 => authenticator::Authenticator::ed25519(signature),
-            BuiltinScheme::Secp256k1 => todo!(),
+            BuiltinScheme::Ecdsa => todo!(),
             BuiltinScheme::MultiEd25519 => todo!(),
+            BuiltinScheme::Schnorr => todo!(),
         };
 
         Ok(RoochTransaction::new(msg, auth))

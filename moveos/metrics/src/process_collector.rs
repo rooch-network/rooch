@@ -1,9 +1,11 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use anyhow::{bail, Result};
 use prometheus::core::{Collector, Desc, Opts};
 use prometheus::proto;
 use prometheus::Gauge;
 use psutil::process;
-// use starcoin_logger::prelude::*;
 use std::sync::Mutex;
 
 #[derive(Debug)]
@@ -74,7 +76,8 @@ impl Collector for ProcessCollector {
             Err(e) => {
                 log::error!(
                     "fail to collect memory usage of pid {}, err: {:?}",
-                    self.pid, e
+                    self.pid,
+                    e
                 );
             }
             Ok(mem_info) => {
@@ -88,7 +91,8 @@ impl Collector for ProcessCollector {
             Err(e) => {
                 log::error!(
                     "fail to collect cpu usage of pid {}, err: {:?}",
-                    self.pid, e
+                    self.pid,
+                    e
                 );
             }
             Ok(percent) => {

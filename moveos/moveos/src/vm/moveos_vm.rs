@@ -46,21 +46,15 @@ use std::{borrow::Borrow, sync::Arc};
 /// MoveOSVM is a wrapper of MoveVM with MoveOS specific features.
 pub struct MoveOSVM {
     inner: MoveVM,
-    pre_execute_function: Option<FunctionId>,
-    post_execute_function: Option<FunctionId>,
 }
 
 impl MoveOSVM {
     pub fn new(
         natives: impl IntoIterator<Item = (AccountAddress, Identifier, Identifier, NativeFunction)>,
         vm_config: VMConfig,
-        pre_execute_function: Option<FunctionId>,
-        post_execute_function: Option<FunctionId>,
     ) -> VMResult<Self> {
         Ok(Self {
             inner: MoveVM::new_with_config(natives, vm_config)?,
-            pre_execute_function,
-            post_execute_function,
         })
     }
 
@@ -68,14 +62,16 @@ impl MoveOSVM {
         &self,
         remote: &'r S,
         ctx: TxContext,
+        pre_execute_functions: Vec<FunctionCall>,
+        post_execute_functions: Vec<FunctionCall>,
         gas_meter: G,
     ) -> MoveOSSession<'r, '_, S, G> {
         MoveOSSession::new(
             &self.inner,
             remote,
             ctx,
-            self.pre_execute_function.clone(),
-            self.post_execute_function.clone(),
+            pre_execute_functions,
+            post_execute_functions,
             gas_meter,
             false,
         )
@@ -89,7 +85,7 @@ impl MoveOSVM {
         //Do not charge gas for genesis session
         let gas_meter = UnmeteredGasMeter;
         // Genesis session do not need to execute pre_execute and post_execute function
-        MoveOSSession::new(&self.inner, remote, ctx, None, None, gas_meter, false)
+        MoveOSSession::new(&self.inner, remote, ctx, vec![], vec![], gas_meter, false)
     }
 
     pub fn new_readonly_session<'r, S: MoveOSResolver, G: GasMeter>(
@@ -98,7 +94,7 @@ impl MoveOSVM {
         ctx: TxContext,
         gas_meter: G,
     ) -> MoveOSSession<'r, '_, S, G> {
-        MoveOSSession::new(&self.inner, remote, ctx, None, None, gas_meter, true)
+        MoveOSSession::new(&self.inner, remote, ctx, vec![], vec![], gas_meter, true)
     }
 }
 
@@ -110,8 +106,8 @@ pub struct MoveOSSession<'r, 'l, S, G> {
     remote: &'r S,
     session: Session<'r, 'l, S>,
     ctx: StorageContext,
-    pre_execute_function: Option<FunctionId>,
-    post_execute_function: Option<FunctionId>,
+    pre_execute_functions: Vec<FunctionCall>,
+    post_execute_functions: Vec<FunctionCall>,
     gas_meter: G,
     read_only: bool,
 }
@@ -125,18 +121,18 @@ where
         vm: &'l MoveVM,
         remote: &'r S,
         ctx: TxContext,
-        pre_execute_function: Option<FunctionId>,
-        post_execute_function: Option<FunctionId>,
+        pre_execute_functions: Vec<FunctionCall>,
+        post_execute_functions: Vec<FunctionCall>,
         gas_meter: G,
         read_only: bool,
     ) -> Self {
         if read_only {
             assert!(
-                pre_execute_function.is_none(),
+                pre_execute_functions.is_empty(),
                 "pre_execute_function is not allowed in read only session"
             );
             assert!(
-                post_execute_function.is_none(),
+                post_execute_functions.is_empty(),
                 "post_execute_function is not allowed in read only session"
             );
         }
@@ -146,8 +142,8 @@ where
             remote,
             session: Self::new_inner_session(vm, remote),
             ctx,
-            pre_execute_function,
-            post_execute_function,
+            pre_execute_functions,
+            post_execute_functions,
             gas_meter,
             read_only,
         };
@@ -353,7 +349,14 @@ where
                 // let type_tag :TypeTag = TryInto::try_into(&layout)?
                 // to get TypeTag from MoveTypeLayout, because this MoveTypeLayout not MoveLayoutType::WithTypes
                 // Invalid MoveTypeLayout -> StructTag conversion--needed MoveLayoutType::WithTypes
-                let type_tag = self.session.get_type_tag(ty)?;
+
+                let type_tag = match ty {
+                    Type::Reference(ty) | Type::MutableReference(ty) => {
+                        self.session.get_type_tag(ty)?
+                    }
+                    _ => self.session.get_type_tag(ty)?,
+                };
+
                 Ok(FunctionReturnValue::new(type_tag, v))
             })
             .collect()
@@ -442,13 +445,11 @@ where
         // the read_only function should not execute pre_execute function
         // this ensure via the check in new_session
         let mut pre_execute_session = self;
-        if let Some(pre_execute_function) = &pre_execute_session.pre_execute_function {
+        for function_call in pre_execute_session.pre_execute_functions.clone() {
+            //TODO handle pre_execute function error
+            //Because if we allow user to write pre_execute function, we need to handle the error
             pre_execute_session
-                .execute_function_bypass_visibility(FunctionCall::new(
-                    pre_execute_function.clone(),
-                    vec![],
-                    vec![],
-                ))
+                .execute_function_bypass_visibility(function_call)
                 .expect("pre_execute function should always success");
         }
         pre_execute_session
@@ -466,13 +467,10 @@ where
                     self.respawn()
                 }
             };
-            if let Some(post_execute_function) = &post_execute_session.post_execute_function {
+            for function_call in post_execute_session.post_execute_functions.clone() {
+                //TODO handle post_execute function error
                 post_execute_session
-                    .execute_function_bypass_visibility(FunctionCall::new(
-                        post_execute_function.clone(),
-                        vec![],
-                        vec![],
-                    ))
+                    .execute_function_bypass_visibility(function_call)
                     .expect("post_execute function should always success");
             }
             (post_execute_session, execute_status)

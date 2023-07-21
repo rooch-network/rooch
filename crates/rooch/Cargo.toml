@@ -32,6 +32,8 @@ termcolor = { workspace = true }
 itertools = { workspace = true }
 hex = { workspace = true }
 regex = { workspace = true }
+serde-reflection = { workspace = true }
+serde-generate = { workspace = true }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }

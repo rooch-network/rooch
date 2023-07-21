@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
@@ -10,7 +13,6 @@ use hyper::{
 };
 use prometheus::{hostname_grouping_key, BasicAuthentication, Registry};
 use prometheus::{Encoder, TextEncoder};
-// use starcoin_logger::prelude::*;
 use std::net::SocketAddr;
 
 fn encode_metrics(encoder: impl Encoder, registry: &Registry) -> Vec<u8> {
@@ -85,7 +87,7 @@ pub fn push_metrics(push_server_url: String, auth_username: Option<String>, auth
     ) {
         Ok(_) => {}
         Err(e) => {
-            debug!("push metrics error: {:?}", e);
+            log::debug!("push metrics error: {:?}", e);
         }
     };
 }

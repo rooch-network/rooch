@@ -39,16 +39,13 @@ impl StoreInstance {
 
     pub fn db(&self) -> Option<&RocksDB> {
         match self {
-            StoreInstance::DB { db } => { Some(db.as_ref()) }
-            // _ => None,
+            StoreInstance::DB { db } => Some(db.as_ref()),
         }
-
     }
 
     pub fn db_mut(&mut self) -> Option<&mut RocksDB> {
         match self {
-            StoreInstance::DB { db } => { Arc::get_mut(db)}
-            // _ => None,
+            StoreInstance::DB { db } => Arc::get_mut(db),
         }
     }
 }
@@ -126,12 +123,8 @@ impl DBStore for StoreInstance {
             // }
         }
     }
+
     fn get_len(&self) -> Result<u64> {
-        // match self {
-        //     // StoreInstance::CACHE { cache } => cache.get_len(),
-        //     // StoreInstance::CacheAndDb { cache, db: _ } => cache.get_len(),
-        //     _ => bail!("DB instance not support get length method!"),
-        // }
         bail!("DB instance not support get length method!")
     }
 

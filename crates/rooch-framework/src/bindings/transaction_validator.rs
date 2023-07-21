@@ -12,6 +12,7 @@ use moveos_types::{
     transaction::FunctionCall,
     tx_context::TxContext,
 };
+use rooch_types::framework::auth_validator_registry::AuthValidator;
 use rooch_types::transaction::AuthenticatorInfo;
 
 /// Rust bindings for RoochFramework transaction_validator module
@@ -20,31 +21,51 @@ pub struct TransactionValidator<'a> {
 }
 
 impl<'a> TransactionValidator<'a> {
-    const VALIDATE_FUNCTION_NAME: &'static IdentStr = ident_str!("validate");
-    const PRE_EXECUTE_FUNCTION_NAME: &IdentStr = ident_str!("pre_execute");
-    const POST_EXECUTE_FUNCTION_NAME: &IdentStr = ident_str!("post_execute");
+    pub const VALIDATE_FUNCTION_NAME: &'static IdentStr = ident_str!("validate");
+    pub const PRE_EXECUTE_FUNCTION_NAME: &IdentStr = ident_str!("pre_execute");
+    pub const POST_EXECUTE_FUNCTION_NAME: &IdentStr = ident_str!("post_execute");
 
-    pub fn validate(&self, ctx: &TxContext, auth: AuthenticatorInfo) -> Result<()> {
-        let call = FunctionCall::new(
+    pub fn validate(&self, ctx: &TxContext, auth: AuthenticatorInfo) -> Result<AuthValidator> {
+        let tx_validator_call = FunctionCall::new(
             Self::function_id(Self::VALIDATE_FUNCTION_NAME),
             vec![],
-            vec![MoveValue::vector_u8(
-                bcs::to_bytes(&auth).expect("serialize authenticator should success"),
-            )
-            .simple_serialize()
-            .expect("serialize authenticator should success")],
+            vec![
+                MoveValue::U64(auth.seqence_number)
+                    .simple_serialize()
+                    .unwrap(),
+                MoveValue::U64(auth.authenticator.scheme)
+                    .simple_serialize()
+                    .unwrap(),
+                MoveValue::vector_u8(auth.authenticator.payload)
+                    .simple_serialize()
+                    .unwrap(),
+            ],
         );
-        self.caller.call_function(ctx, call).map(|values| {
-            debug_assert!(values.is_empty(), "Expected no return value");
-        })
+        let auth_validator =
+            self.caller
+                .call_function(ctx, tx_validator_call)
+                .map(|mut values| {
+                    let value = values.pop().expect("should have one return value");
+                    bcs::from_bytes::<AuthValidator>(&value.value)
+                        .expect("should be a valid auth validator")
+                })?;
+        Ok(auth_validator)
     }
 
     pub fn pre_execute_function_id() -> FunctionId {
         Self::function_id(Self::PRE_EXECUTE_FUNCTION_NAME)
     }
 
+    pub fn pre_execute_function_call() -> FunctionCall {
+        FunctionCall::new(Self::pre_execute_function_id(), vec![], vec![])
+    }
+
     pub fn post_execute_function_id() -> FunctionId {
         Self::function_id(Self::POST_EXECUTE_FUNCTION_NAME)
+    }
+
+    pub fn post_execute_function_call() -> FunctionCall {
+        FunctionCall::new(Self::post_execute_function_id(), vec![], vec![])
     }
 }
 

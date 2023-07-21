@@ -7,6 +7,8 @@ module rooch_examples::article_remove_comment_logic {
 
     friend rooch_examples::article_aggregate;
 
+    const ENOT_OWNER_ACCOUNT: u64 = 113;
+
     public(friend) fun verify(
         storage_ctx: &mut StorageContext,
         account: &signer,
@@ -14,9 +16,7 @@ module rooch_examples::article_remove_comment_logic {
         article_obj: &Object<article::Article>,
     ): article::CommentRemoved {
         let _ = storage_ctx;
-        let _ = account;
         let comment = article::borrow_comment(article_obj, comment_seq_id);
-        let _ = comment;
         assert!(std::signer::address_of(account) == comment::owner(comment), 111);
         article::new_comment_removed(
             article_obj,
@@ -26,6 +26,7 @@ module rooch_examples::article_remove_comment_logic {
 
     public(friend) fun mutate(
         storage_ctx: &mut StorageContext,
+        _account: &signer,
         comment_removed: &article::CommentRemoved,
         article_obj: Object<article::Article>,
     ): Object<article::Article> {

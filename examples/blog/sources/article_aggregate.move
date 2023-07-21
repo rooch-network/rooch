@@ -15,54 +15,6 @@ module rooch_examples::article_aggregate {
     use rooch_examples::article_update_logic;
     use std::string::String;
 
-    public entry fun update(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
-        id: ObjectID,
-        title: String,
-        body: String,
-        owner: address,
-    ) {
-        let article_obj = article::remove_article(storage_ctx, id);
-        let article_updated = article_update_logic::verify(
-            storage_ctx,
-            account,
-            title,
-            body,
-            owner,
-            &article_obj,
-        );
-        let updated_article_obj = article_update_logic::mutate(
-            storage_ctx,
-            &article_updated,
-            article_obj,
-        );
-        article::update_version_and_add(storage_ctx, updated_article_obj);
-        article::emit_article_updated(storage_ctx, article_updated);
-    }
-
-
-    public entry fun delete(
-        storage_ctx: &mut StorageContext,
-        account: &signer,
-        id: ObjectID,
-    ) {
-        let article_obj = article::remove_article(storage_ctx, id);
-        let article_deleted = article_delete_logic::verify(
-            storage_ctx,
-            account,
-            &article_obj,
-        );
-        let updated_article_obj = article_delete_logic::mutate(
-            storage_ctx,
-            &article_deleted,
-            article_obj,
-        );
-        article::drop_article(updated_article_obj);
-        article::emit_article_deleted(storage_ctx, article_deleted);
-    }
-
-
     public entry fun update_comment(
         storage_ctx: &mut StorageContext,
         account: &signer,
@@ -84,13 +36,13 @@ module rooch_examples::article_aggregate {
         );
         let updated_article_obj = article_update_comment_logic::mutate(
             storage_ctx,
+            account,
             &comment_updated,
             article_obj,
         );
         article::update_version_and_add(storage_ctx, updated_article_obj);
         article::emit_comment_updated(storage_ctx, comment_updated);
     }
-
 
     public entry fun remove_comment(
         storage_ctx: &mut StorageContext,
@@ -107,6 +59,7 @@ module rooch_examples::article_aggregate {
         );
         let updated_article_obj = article_remove_comment_logic::mutate(
             storage_ctx,
+            account,
             &comment_removed,
             article_obj,
         );
@@ -114,12 +67,10 @@ module rooch_examples::article_aggregate {
         article::emit_comment_removed(storage_ctx, comment_removed);
     }
 
-
     public entry fun add_comment(
         storage_ctx: &mut StorageContext,
         account: &signer,
         id: ObjectID,
-        comment_seq_id: u64,
         commenter: String,
         body: String,
     ) {
@@ -127,13 +78,13 @@ module rooch_examples::article_aggregate {
         let comment_added = article_add_comment_logic::verify(
             storage_ctx,
             account,
-            comment_seq_id,
             commenter,
             body,
             &article_obj,
         );
         let updated_article_obj = article_add_comment_logic::mutate(
             storage_ctx,
+            account,
             &comment_added,
             article_obj,
         );
@@ -141,28 +92,72 @@ module rooch_examples::article_aggregate {
         article::emit_comment_added(storage_ctx, comment_added);
     }
 
-
     public entry fun create(
         storage_ctx: &mut StorageContext,
         account: &signer,
         title: String,
         body: String,
-        owner: address,
     ) {
         let article_created = article_create_logic::verify(
             storage_ctx,
             account,
             title,
             body,
-            owner,
         );
         let article_obj = article_create_logic::mutate(
             storage_ctx,
+            account,
             &article_created,
         );
         article::set_article_created_id(&mut article_created, article::id(&article_obj));
         article::add_article(storage_ctx, article_obj);
         article::emit_article_created(storage_ctx, article_created);
+    }
+
+    public entry fun update(
+        storage_ctx: &mut StorageContext,
+        account: &signer,
+        id: ObjectID,
+        title: String,
+        body: String,
+    ) {
+        let article_obj = article::remove_article(storage_ctx, id);
+        let article_updated = article_update_logic::verify(
+            storage_ctx,
+            account,
+            title,
+            body,
+            &article_obj,
+        );
+        let updated_article_obj = article_update_logic::mutate(
+            storage_ctx,
+            account,
+            &article_updated,
+            article_obj,
+        );
+        article::update_version_and_add(storage_ctx, updated_article_obj);
+        article::emit_article_updated(storage_ctx, article_updated);
+    }
+
+    public entry fun delete(
+        storage_ctx: &mut StorageContext,
+        account: &signer,
+        id: ObjectID,
+    ) {
+        let article_obj = article::remove_article(storage_ctx, id);
+        let article_deleted = article_delete_logic::verify(
+            storage_ctx,
+            account,
+            &article_obj,
+        );
+        let updated_article_obj = article_delete_logic::mutate(
+            storage_ctx,
+            account,
+            &article_deleted,
+            article_obj,
+        );
+        article::drop_article(updated_article_obj);
+        article::emit_article_deleted(storage_ctx, article_deleted);
     }
 
 }

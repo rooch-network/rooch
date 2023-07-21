@@ -7,7 +7,6 @@ on:
       - 'docs/**'
       - 'fixtures/**'
       - 'kube/**'
-      - 'scripts/**'
       - '**.md'
   pull_request:
     branches: ["main"]
@@ -15,7 +14,6 @@ on:
       - 'docs/**'
       - 'fixtures/**'
       - 'kube/**'
-      - 'scripts/**'
       - '**.md'
 
 env:
@@ -44,6 +42,8 @@ jobs:
         # Use cargo test to run CLI integration tests.
         # TODO: FIXME
         run: cargo test -p testsuite --test integration
+      - name: Export rooch_types.yaml
+        run: cargo run --bin rooch abi export-rooch-types
       - name: Run Rooch init
         run: cargo run --bin rooch init
       - name: Execute stdlib tests

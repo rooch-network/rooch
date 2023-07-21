@@ -4,7 +4,7 @@
 
 [Rooch](https://rooch.network) 是一个快速、模块化、安全、开发人员友好的基础架构解决方案，用于构建 Web3 原生应用程序。
 
-Rooch 于2023年06月28日，发布了第一个版本，版本名为 Sprout，版本号为 v0.1。
+Rooch 于2023年06月28日，发布了第一个版本，版本名为 **萌芽（Sprouting）**，版本号为 `v0.1`。
 
 ## 2. 安装 Rooch
 
@@ -15,6 +15,8 @@ Rooch 于2023年06月28日，发布了第一个版本，版本名为 Sprout，�
 ```shell
 wget https://github.com/rooch-network/rooch/releases/download/v0.1/rooch-ubuntu-latest.zip
 ```
+
+> 注意：请选择对应自己系统的版本，我这里使用 Linux 的版本来演示。
 
 ### 2.2 解压
 
@@ -69,7 +71,7 @@ SUBCOMMANDS:
 
 为了方便后续使用，建议将 `rooch` 放入能被系统环境变量 `PATH` 检索的路径，或者将当前的解压目录通过 `export` 导出到 `PATH` 中。
 
-- 方法一，复制 `rooch` 这个程序复制到 `/usr/local/bin` 目录中（推荐）
+- 方法一，复制 `rooch` 这个程序复制到 `/usr/local/bin` 目录中（**推荐**）
 
 ```shell
 sudo cp rooch /usr/local/bin
@@ -98,7 +100,7 @@ rooch init
 
 ### 4.1 创建 Move 项目
 
-使用 `rooch` 封装的 `move new` 命令来创建一个名为 `simple_blog` 的博客应用。
+使用 `rooch` 集成的 `move new` 命令来创建一个名为 `simple_blog` 的博客应用。
 
 ```shell
 rooch move new simple_blog
@@ -134,7 +136,7 @@ rooch_framework =  "0x3"
 - 在 TOML 文件中包含三个表：`package`、`dependencies` 和 `addresses`，存放项目所需的一些元信息。
 - `package` 表用来存放项目的一些描述信息，这里包含两个键值对 `name` 和 `version` 来描述项目名和项目的版本号。
 - `dependencies` 表用来存放项目所需依赖的元数据。
-- `addresses` 表用来存放项目地址以及模块地址，第一个地址是初始化 Rooch 配置时，生成在 `$HOME/.rooch/rooch_config/rooch.yaml` 中的地址。
+- `addresses` 表用来存放项目地址以及项目所依赖模块的地址，第一个地址是初始化 Rooch 配置时，生成在 `$HOME/.rooch/rooch_config/rooch.yaml` 中的地址。
 
 为了方便其他开发者部署，我们把 `simple_blog` 的地址用 `_` 替代，然后部署的时候通过 `--named--addresses` 来指定。
 
@@ -301,7 +303,7 @@ BUILDING simple_blog
 Success
 ```
 
-此时，项目文件夹会多出一个 `build` 目录，里面存放的就是 Move 编译器生成的合约字节码文件以及合约完整的源代码。
+此时，项目文件夹会多出一个 `build` 目录，里面存放的就是 Move 编译器生成的合约字节码文件以及合约**完整的**源代码。
 
 #### 4.2.3 运行 Rooch 服务器
 
@@ -807,6 +809,7 @@ curl --location --request POST 'http://localhost:50051' \
 ```
 
 由于输出的内容比较多，可以在上面的命令最尾添加一个管道操作（` | jq '.result.data[0].parsed_event_data.value.id'`），来快速筛选出第一篇文章的 `ObjectID`。 
+
 > 提示：在使用 `jp` 命令（jq - commandline JSON processor）之前，你可能需要先安装它。
 
 添加 `jp` 处理后的命令像下面这样：
@@ -972,7 +975,7 @@ rooch state --access-path /resource/0xbbfc33692c7d57839fde9643681fb64c83b377e4c7
 
 ## 5. 总结
 
-到这里，相信你已经对 Rooch v1.0 如何运行，如何发布合约，以及如何跟合约交互有了基本的了解。想要在 Rooch 上体验更多的合约例子，请参见 [`rooch/examples`](https://github.com/rooch-network/rooch/tree/main/examples)。
+到这里，相信你已经对 Rooch v0.1 如何运行，如何发布合约，以及如何跟合约交互有了基本的了解。想要在 Rooch 上体验更多的合约例子，请参见 [`rooch/examples`](https://github.com/rooch-network/rooch/tree/main/examples)。
 
 如果想直接体验这个博客合约的功能，可以直接[下载博客源码](https://github.com/rooch-network/rooch/archive/refs/heads/main.zip)，解压，并切换到博客合约项目的根目录，交互方式请参照上文。
 

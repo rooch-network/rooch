@@ -183,13 +183,12 @@ impl RocksDB {
     }
 
     fn get_cf_handle(&self, cf_name: &str) -> Arc<BoundColumnFamily> {
-        self.db.cf_handle(cf_name).expect(
-            format!(
+        self.db.cf_handle(cf_name).unwrap_or_else(|| {
+            panic!(
                 "DB::cf_handle not found for column family name: {}",
                 cf_name
             )
-            .as_str(),
-        )
+        })
     }
 
     fn default_write_options() -> WriteOptions {
