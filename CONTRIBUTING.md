@@ -1,59 +1,72 @@
+# Contributing to Rooch
 
-# Contributing
+Thank you for your interest in contributing to Rooch! There are many ways to contribute and we appreciate all of them.
 
-Our goal is to make contributing to Rooch Network easy and transparent.
+- Communicating in our [Discord channel](https://discord.gg/kgXEmHGB), share your new ideas, talk technologies
+- Learning Rooch
+- Reporting bugs
+- Requesting new features
+- Submitting PRs
 
-## Install Rooch to contribute
+## Contributing via GitHub
 
-To contribute to Rooch source code or documentation, you need only a GitHub account. You can commit updates and then submit a PR directly from the Github website, or create a fork of the repo to your local environment and use your favorite tools to make changes. Always submit PRs to the `main` branch.
+To contribute to the Rooch source code or documentation, you need a GitHub account.
 
-### Create a fork
+There are usually two ways to submit a PR:
 
-First, create a fork of the Rooch Network Rooch repo in your own account so that you can work with your own copy.
+- One is to edit directly in the repository on the GitHub website, and after submitting the changes, push them directly to the main branch. This method is especially suitable for submitting simple PRs such as correcting typos. It is not recommended to use this method when multiple files are involved or there are many changes.
 
-**To create a fork using the website**
+- Another way is to `fork` the Rooch repository under your own account, and `clone` it locally, and then push it to the upstream `main` branch (referring to the Rooch organization) after the modification is completed. The branch on your own GitHub is called a remote branch.
+
+## Detailed operation process of method 2
+
+### Create a new fork
+
+First, create a fork of the `rooch` repository in your own account so that you can use your own copy.
 
 1. Log in to your Github account.
-1. Browse to the [Rooch repo](https://github.com/rooch-network/rooch) on GitHub.
-1. Choose **Fork** in the top-right, then choose **Create new fork**.
-1. For **Owner**, select your username.
-1. For **Repository name**, we suggest keeping the name rooch, but you can use any name. 
-1. Optional. To contribute you need only the main branch of the repo. To include all branches, unselect the checkbox for **Copy the `main` branch only**.
-1. Click **Create fork**.
+2. Browse the [Rooch repo](https://github.com/rooch-network/rooch) on GitHub.
+3. Select `Fork` in the upper right corner, then select `Create a new fork`.
+4. For **Owner**, select your username.
+5. For the **Repository name**, we recommend keeping the name `rooch`, but you can use any name.
+6. Optional. To contribute, you only need the main branch of the repository. To include all branches, uncheck the checkbox for **Copy the `main` branch only**.
+7. Click `Create fork`.
 
 ### Clone your fork
 
-Next, clone your fork of the repo to your local workspace.
+Next, clone the fork of the repository to your local repository.
 
-**To clone your fork to your local workspace**
-1. Open the GitHub page for your fork of the repo, then click **Sync fork**.
-1. Click **Code**, then click **HTTPS** and copy the web URL displayed.
-1. Open a terminal session and navigate to the folder to use, then run the following command, replacing the URL with the URL you copied from the Git page:
+1. Open the repository page of your fork, and click the `Sync fork` button (no operation is usually required for the fork just now, and synchronization is only required if your forked repository commits lags behind the upstream repository).
+2. Click on `Code`, then click on `HTTPS` and copy the displayed web URL.
+3. Open a terminal session and navigate to the folder you want to use, then run the following command, replacing the URL with the one you copied from the GitHub page:
 
-`git clone https://github.com/github-user-name/rooch.git`
+```shell
+git clone https://github.com/<GITHUB-USER-NAME>/rooch.git` 
+```
 
-The repo is automatically cloned into the `rooch` folder in your workspace.
-Create a branch of your fork with following command (or follow the [GitHub topic on branching](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-and-deleting-branches-within-your-repository))
+### Create a new branch
 
-`git checkout -b your-branch-name`
+After cloning is completed, you can modify any file in the `rooch` directory. By default, the clone is the default branch (can be set in GitHub), usually the `main` branch.
 
-Use the following command to set the [remote upstream repo](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/configuring-a-remote-repository-for-a-fork):
+Before making corresponding changes to Rooch's project, you need to perform **the most important step**: creating a new topic branch.
 
-`git remote add upstream https://github.com/rooch-network/rooch.git`
+In general, it is not recommended to submit a PR to Rooch's upstream directly using the `main` branch, which is not conducive to the collaboration of Rooch maintainers with you.
 
-When you're under the rooch dir, you can locally run `./scripts/dev_setup.sh` to ensure you have all development dependencies required for our workflows.
-
-## Issues
-
-Rooch Network uses [GitHub issues](https://github.com/rooch-network/rooch/issues) to track bugs. Please include necessary information and instructions to reproduce your issue.
+## Create a new pull request
 
 
-## Pull Request Requirements
+When you have completed the modification, submitted and pushed the changes to the remote repository, you can usually see a `Compare & pull request` pop-up button on the GitHub page, just click and fill in the corresponding information.
 
-You now have a fork of the Rooch repo set up in your local workspace. You can make changes to the files in the workspace, add commits, then push your changes to your fork of the repo to then create a Pull Request.
+The content is usually filled in automatically. If you feel that the title or the content description of this PR is not accurate enough, you can continue to modify it.
 
-Rooch Network welcomes everyone to participate and contribute, after reading the contribution guidelines, we also invite you to take a look at the requirements for Pull Requests [PR-Guidelines](./docs/contribute/pr-requirements.md). 
+After the modification is complete, click the `Create pull request` button below, and your PR will appear on Rooch's `Pull requests` page.
 
-## Coding Guidelines for Move Language
+## Submitting new issues
 
-Please refer to [Move Coding Conventions](./docs/contribute/coding-conventions.md).
+Reporting issues and submitting feature requests is usually done by submitting corresponding issue posts on the `Issues` page.
+
+**When you want to report a bug**, please open [Rooch's GitHub Issues page](https://github.com/rooch-network/rooch/issues). In the search bar above, simply search for your question, maybe the question you found may have been submitted by others, so avoid duplicating submissions.If there is no bug post you want to report, please click the `New issue` button on the upper right, enter a brief description of the current bug as the title, and fill in the **detailed description** of the current bug in the content box, including *your operating (system) environment*, *the version of Rooch used*, and *the process of reproducing the problem*, etc.
+
+**When you want to request a new feature**, fill in the brief description of the feature on the title bar of the current Issues page as the title, and add `[Feature Request]` as the identifier before the title.
+
+After filling in the relevant information, click on `Lables` on the right, label it accordingly, and click on the `Submit new issue` button below.
