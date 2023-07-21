@@ -14,4 +14,8 @@ thiserror = { workspace = true }
 tonic = { workspace = true }
 coerce = { workspace = true }
 itertools = { workspace = true }
+bcs = { workspace = true }
+log = { workspace = true }
+libc = { workspace = true }
+
 moveos-types = { workspace = true }
