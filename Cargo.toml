@@ -8,7 +8,7 @@ members = [
     "moveos/moveos-stdlib",
     "moveos/moveos-stdlib-builder",
     "moveos/moveos",
-    "moveos/moveos-commons/commons",
+    "moveos/moveos-commons/moveos-common",
     "moveos/moveos-commons/timeout-join-handler",
     "moveos/raw-store",
     "moveos/metrics",
@@ -63,7 +63,7 @@ moveos-stdlib = { path = "moveos/moveos-stdlib" }
 moveos-stdlib-builder = { path = "moveos/moveos-stdlib-builder" }
 moveos = { path = "moveos/moveos" }
 moveos-cli = { path = "moveos/moveos-cli" }
-commons = { path = "moveos/moveos-commons/commons" }
+moveos-common = { path = "moveos/moveos-commons/moveos-common" }
 timeout-join-handler = { path = "moveos/moveos-commons/timeout-join-handler" }
 moveos-verifier = { path = "moveos/moveos-verifier" }
 raw-store = { path = "moveos/raw-store" }

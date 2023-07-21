@@ -12,7 +12,7 @@ use crate::rocks::batch::WriteBatch;
 use crate::traits::DBStore;
 use crate::{ColumnFamilyName, WriteOp};
 use anyhow::{ensure, format_err, Error, Result};
-use commons::utils::{check_open_fds_limit, from_bytes};
+use moveos_common::utils::{check_open_fds_limit, from_bytes};
 use moveos_config::store_config::RocksdbConfig;
 use rocksdb::{
     BoundColumnFamily, Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB,

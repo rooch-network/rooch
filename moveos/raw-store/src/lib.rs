@@ -14,7 +14,7 @@ use crate::rocks::batch::WriteBatch;
 use crate::rocks::{RocksDB, SchemaIterator};
 use crate::traits::{DBStore, KVStore};
 use anyhow::{bail, format_err, Result};
-use commons::utils::{from_bytes, to_bytes};
+use moveos_common::utils::{from_bytes, to_bytes};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::convert::TryInto;
@@ -40,7 +40,7 @@ impl StoreInstance {
     pub fn db(&self) -> Option<&RocksDB> {
         match self {
             StoreInstance::DB { db } => { Some(db.as_ref()) }
-            _ => None,
+            // _ => None,
         }
 
     }
@@ -48,7 +48,7 @@ impl StoreInstance {
     pub fn db_mut(&mut self) -> Option<&mut RocksDB> {
         match self {
             StoreInstance::DB { db } => { Arc::get_mut(db)}
-            _ => None,
+            // _ => None,
         }
     }
 }
@@ -127,19 +127,21 @@ impl DBStore for StoreInstance {
         }
     }
     fn get_len(&self) -> Result<u64> {
-        match self {
-            // StoreInstance::CACHE { cache } => cache.get_len(),
-            // StoreInstance::CacheAndDb { cache, db: _ } => cache.get_len(),
-            _ => bail!("DB instance not support get length method!"),
-        }
+        // match self {
+        //     // StoreInstance::CACHE { cache } => cache.get_len(),
+        //     // StoreInstance::CacheAndDb { cache, db: _ } => cache.get_len(),
+        //     _ => bail!("DB instance not support get length method!"),
+        // }
+        bail!("DB instance not support get length method!")
     }
 
     fn keys(&self) -> Result<Vec<Vec<u8>>> {
-        match self {
-            // StoreInstance::CACHE { cache } => cache.keys(),
-            // StoreInstance::CacheAndDb { cache, db: _ } => cache.keys(),
-            _ => bail!("DB instance not support keys method!"),
-        }
+        // match self {
+        //     // StoreInstance::CACHE { cache } => cache.keys(),
+        //     // StoreInstance::CacheAndDb { cache, db: _ } => cache.keys(),
+        //     _ => bail!("DB instance not support keys method!"),
+        // }
+        bail!("DB instance not support keys method!")
     }
 
     fn put_sync(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {

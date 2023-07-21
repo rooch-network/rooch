@@ -40,6 +40,6 @@ move-core-types = { workspace = true }
 move-resource-viewer = { workspace = true }
 
 metrics = { workspace = true }
-commons = { workspace = true }
+moveos-common = { workspace = true }
 moveos-config = { workspace = true }
 

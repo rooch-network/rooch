@@ -34,4 +34,4 @@ move-resource-viewer = { workspace = true }
 moveos-types = { workspace = true }
 moveos-stdlib = { workspace = true }
 raw-store = { workspace = true }
-commons = { workspace = true }
+moveos-common = { workspace = true }

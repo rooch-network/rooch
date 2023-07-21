@@ -23,7 +23,7 @@ move-core-types = { workspace = true }
 
 moveos = { workspace = true }
 moveos-types = { workspace = true }
-commons = { workspace = true }
+moveos-common = { workspace = true }
 
 rooch-key = { workspace = true }
 rooch-types = { workspace = true }
