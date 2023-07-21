@@ -54,7 +54,12 @@ In general, it is not recommended to submit a PR to Rooch's upstream directly us
 
 ## Create a new pull request
 
-When you have completed the modification, submitted the changes and pushed them to the remote repository, you can usually see a `Pull Request` button on the GitHub page, just click and fill in the corresponding information.
+
+When you have completed the modification, submitted and pushed the changes to the remote repository, you can usually see a `Compare & pull request` pop-up button on the GitHub page, just click and fill in the corresponding information.
+
+The content is usually filled in automatically. If you feel that the title or the content description of this PR is not accurate enough, you can continue to modify it.
+
+After the modification is complete, click the `Create pull request` button below, and your PR will appear on Rooch's `Pull requests` page.
 
 ## Submitting new issues
 

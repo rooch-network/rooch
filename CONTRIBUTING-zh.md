@@ -54,7 +54,11 @@ git clone https://github.com/<GITHUB-USER-NAME>/rooch.git`
 
 ## 新建拉取请求
 
-当你完成了修改，将更改提交并推送到远程仓库后，你通常可以在 GitHub 的页面上看到一个 `Pull Request` 的按钮，点击并填写相应信息即可。
+当你完成了修改，将更改提交并推送到远程仓库后，你通常可以在 GitHub 的页面上看到一个 `Compare & pull request` 的弹出按钮，点击并填写相应信息即可。
+
+内容通常会自动填充，如果你觉得标题或者这次 PR 的内容描述不够准确，可以继续修改。
+
+修改完成后，点击下方的 `Create pull request` 按钮后，你的 PR 就会出现在 Rooch 的 `Pull requests` 页面了。
 
 ## 提交新问题
 
