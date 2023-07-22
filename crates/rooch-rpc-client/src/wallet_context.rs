@@ -110,7 +110,7 @@ impl WalletContext {
             BuiltinScheme::Ed25519 => Authenticator::ed25519(signature),
             BuiltinScheme::Ecdsa => todo!(),
             BuiltinScheme::MultiEd25519 => todo!(),
-            BuiltinScheme::Schnorr => todo!(),
+            BuiltinScheme::Schnorr => Authenticator::schnorr(signature),
         };
         Ok(RoochTransaction::new(tx_data, auth))
     }
