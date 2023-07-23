@@ -37,14 +37,12 @@ pub struct RocksDB {
 
 impl RocksDB {
     pub fn new<P: AsRef<Path> + Clone>(
-        db_root_path: P,
+        db_path: P,
         column_families: Vec<ColumnFamilyName>,
         rocksdb_config: RocksdbConfig,
         metrics: Option<StoreMetrics>,
     ) -> Result<Self> {
-        //TODO find a compat way to remove the `roochdb` path
-        let path = db_root_path.as_ref().join("roochdb");
-        Self::open_with_cfs(path, column_families, false, rocksdb_config, metrics)
+        Self::open_with_cfs(db_path, column_families, false, rocksdb_config, metrics)
     }
 
     pub fn open_with_cfs(

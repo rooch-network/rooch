@@ -20,3 +20,4 @@ clap  = { workspace = true }
 
 rooch-key = { workspace = true }
 rooch-types = { workspace = true }
+moveos-config = { workspace = true }

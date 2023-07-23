@@ -44,6 +44,16 @@ static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     ]
 });
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub struct StoreMeta {
+}
+
+impl StoreMeta {
+    pub fn get_column_family_names() -> &'static [ColumnFamilyName] {
+            &VEC_PREFIX_NAME
+    }
+}
+
 // #[derive(Clone)]
 pub struct MoveOSStore {
     pub state_store: StateDBStore,

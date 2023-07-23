@@ -18,6 +18,8 @@ use move_vm_runtime::session::SerializedReturnValues;
 use moveos::moveos::MoveOS;
 use moveos::moveos_test_runner::MoveOSTestAdapter;
 use moveos::moveos_test_runner::{CompiledState, TaskInput};
+use moveos_config::store_config::RocksdbConfig;
+use moveos_store::{MoveOSStore, StoreMeta};
 use moveos_types::move_types::FunctionId;
 use moveos_types::object::ObjectID;
 use moveos_types::state::StateChangeSet;
@@ -25,6 +27,8 @@ use moveos_types::state_resolver::AnnotatedStateReader;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction, TransactionOutput};
 use moveos_verifier::build::build_model;
 use moveos_verifier::metadata::run_extended_checks;
+use raw_store::rocks::RocksDB;
+use raw_store::StoreInstance;
 use regex::Regex;
 use rooch_genesis::RoochGenesis;
 use std::path::PathBuf;
@@ -86,11 +90,25 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             None => BTreeMap::new(),
         };
 
-        let db = moveos_store::MoveOSStore::new_with_memory_store();
+        let tmpdir = moveos_config::temp_dir();
+        let moveosdb = MoveOSStore::new(StoreInstance::new_db_instance(
+            RocksDB::new(
+                tmpdir.path(),
+                StoreMeta::get_column_family_names().to_vec(),
+                RocksdbConfig::default(),
+                None,
+            )
+            .unwrap(),
+        ))
+        .unwrap();
 
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
-        let mut moveos =
-            MoveOS::new(db, genesis.all_natives(), genesis.config_for_test.clone()).unwrap();
+        let mut moveos = MoveOS::new(
+            moveosdb,
+            genesis.all_natives(),
+            genesis.config_for_test.clone(),
+        )
+        .unwrap();
 
         moveos.init_genesis(genesis.genesis_txs()).unwrap();
 

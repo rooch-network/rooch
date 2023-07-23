@@ -22,7 +22,7 @@ use rooch_proposer::proxy::ProposerProxy;
 use rooch_rpc_api::api::RoochRpcModule;
 use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
-use rooch_store::RoochDB;
+// use rooch_store::RoochStore;
 use serde_json::json;
 use std::fmt::Debug;
 use std::net::SocketAddr;
@@ -111,11 +111,13 @@ pub async fn start_server() -> Result<ServerHandle> {
     let store_config = StoreConfig::default();
 
     let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
-    let rooch_db = RoochDB::new_with_db_store(config.db_path.clone());
+    // let rooch_store = RoochStore::new_with_db_store(config.db_path.clone());
     let actor_system = ActorSystem::global_system();
 
     // Init executor
-    let executor = ExecutorActor::new(rooch_db.clone(), store_config)?
+    // let executor = ExecutorActor::new(rooch_store.clone(), store_config)?
+    let executor_actor = ExecutorActor::new(store_config)?;
+    let executor = executor_actor
         .into_actor(Some("Executor"), &actor_system)
         .await?;
     let executor_proxy = ExecutorProxy::new(executor.into());
@@ -124,8 +126,8 @@ pub async fn start_server() -> Result<ServerHandle> {
     //TODO load from config
 
     let (_, kp, _, _) = generate_new_key(rooch_types::crypto::BuiltinScheme::Ed25519, None, None)?;
-    // let rooch_db = RoochDB::new_with_memory_store();
-    let sequencer = SequencerActor::new(kp, rooch_db)
+    // let rooch_store = RoochStore::new_with_memory_store();
+    let sequencer = SequencerActor::new(kp, executor_actor.get_rooch_store())
         .into_actor(Some("Sequencer"), &actor_system)
         .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());

@@ -1,23 +1,148 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::transaction_store::TransactionDB;
+use crate::transaction_store::{TransactionDBStore, TransactionStore};
+use anyhow::Result;
+use once_cell::sync::Lazy;
+use raw_store::{ColumnFamilyName, StoreInstance};
+use rooch_types::transaction::{
+    TransactionSequenceInfo, TransactionSequenceMapping, TypedTransaction,
+};
+use rooch_types::H256;
+use std::fmt::{Debug, Display, Formatter};
 
 pub mod transaction_store;
 
-#[derive(Clone)]
-pub struct RoochDB {
-    pub transaction_store: TransactionDB,
+// #[derive(Clone)]
+// pub struct RoochStore {
+//     pub transaction_store: TransactionDB,
+// }
+//
+// impl RoochStore {
+//     pub fn new_with_memory_store() -> Self {
+//         Self {
+//             transaction_store: TransactionDB::new_with_memory_store(),
+//         }
+//     }
+//
+//     pub fn get_transaction_store(&self) -> &TransactionDB {
+//         &self.transaction_store
+//     }
+// }
+
+// pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
+pub const TYPED_TRANSACTION_PREFIX_NAME: ColumnFamilyName = "typed_transaction";
+pub const SEQ_TRANSACTION_PREFIX_NAME: ColumnFamilyName = "seq_transaction";
+pub const TX_SEQ_MAPPING_PREFIX_NAME: ColumnFamilyName = "tx_seq_mapping";
+
+///db store use prefix_name vec to init
+/// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
+static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
+    vec![
+        TYPED_TRANSACTION_PREFIX_NAME,
+        SEQ_TRANSACTION_PREFIX_NAME,
+        TX_SEQ_MAPPING_PREFIX_NAME,
+    ]
+});
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub struct StoreMeta {}
+
+impl StoreMeta {
+    pub fn get_column_family_names() -> &'static [ColumnFamilyName] {
+        &VEC_PREFIX_NAME
+    }
 }
 
-impl RoochDB {
-    pub fn new_with_memory_store() -> Self {
-        Self {
-            transaction_store: TransactionDB::new_with_memory_store(),
-        }
+#[derive(Clone)]
+pub struct RoochStore {
+    pub transaction_store: TransactionDBStore,
+}
+// // TODO: remove Arc<dyn Store>, we can clone Store directly.
+
+impl RoochStore {
+    // pub fn new_with_memory_store() -> Self {
+    //     Self {
+    //         state_store: StateDB::new_with_memory_store(),
+    //         event_store: EventDB::new_with_memory_store(),
+    //         transaction_store: TransactionDB::new_with_memory_store(),
+    //     }
+    // }
+
+    pub fn new(instance: StoreInstance) -> Result<Self> {
+        let store = Self {
+            transaction_store: TransactionDBStore::new(instance.clone()),
+        };
+        Ok(store)
     }
 
-    pub fn get_transaction_store(&self) -> &TransactionDB {
+    pub fn get_transaction_store(&self) -> &TransactionDBStore {
         &self.transaction_store
+    }
+}
+
+impl Display for RoochStore {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.clone())
+    }
+}
+impl Debug for RoochStore {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
+impl TransactionStore for RoochStore {
+    // fn save_tx_exec_info(&self, tx_exec_info: TransactionExecutionInfo) -> Result<()> {
+    //     self.transaction_store.save_tx_exec_info(tx_exec_info)
+    // }
+    //
+    // fn get_tx_exec_info(&self, tx_hash: H256) -> Result<Option<TransactionExecutionInfo>> {
+    //     self.transaction_store.get_tx_exec_info(tx_hash)
+    // }
+    //
+    // fn multi_get_tx_exec_infos(
+    //     &self,
+    //     tx_hashes: Vec<H256>,
+    // ) -> Result<Vec<Option<TransactionExecutionInfo>>> {
+    //     self.transaction_store.multi_get_tx_exec_infos(tx_hashes)
+    // }
+
+    fn save_transaction(&mut self, transaction: TypedTransaction) -> Result<()> {
+        self.transaction_store.save_transaction(transaction)
+    }
+
+    fn get_tx_by_hash(&self, hash: H256) -> Result<Option<TypedTransaction>> {
+        self.transaction_store.get_tx_by_hash(hash)
+    }
+
+    fn get_tx_by_index(&self, start: u64, limit: u64) -> Result<Vec<TypedTransaction>> {
+        self.transaction_store.get_tx_by_index(start, limit)
+    }
+
+    fn save_tx_seq_info(&self, tx_seq_info: TransactionSequenceInfo) -> Result<()> {
+        self.transaction_store.save_tx_seq_info(tx_seq_info)
+    }
+
+    fn get_tx_seq_infos_by_tx_order(
+        &self,
+        cursor: Option<u128>,
+        limit: u64,
+    ) -> Result<Vec<TransactionSequenceInfo>> {
+        self.transaction_store.get_tx_seq_infos_by_tx_order(cursor, limit)
+    }
+
+    fn save_tx_seq_info_mapping(&self, tx_order: u128, tx_hash: H256) -> Result<()> {
+        self.transaction_store
+            .save_tx_seq_info_mapping(tx_order, tx_hash)
+    }
+
+    fn get_tx_seq_mapping_by_tx_order(
+        &self,
+        cursor: Option<u128>,
+        limit: u64,
+    ) -> Result<Vec<TransactionSequenceMapping>> {
+        self.transaction_store
+            .get_tx_seq_mapping_by_tx_order(cursor, limit)
     }
 }
