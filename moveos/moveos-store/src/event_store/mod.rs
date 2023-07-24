@@ -187,7 +187,10 @@ impl EventDBStore {
             .filter_map(|item| {
                 let ((handle_id, event_seq), event) =
                     item.unwrap_or_else(|_| panic!("Get item from store shoule hava a value."));
-                println!("get_events_by_event_handle_id {} {} {:?}", handle_id, event_seq, event);
+                println!(
+                    "get_events_by_event_handle_id {} {} {:?}",
+                    handle_id, event_seq, event
+                );
                 if Option::is_some(&cursor) {
                     if handle_id == *event_handle_id && (event_seq > start && event_seq <= end) {
                         return Some(event);

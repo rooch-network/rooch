@@ -4,8 +4,12 @@
 extern crate chrono;
 
 use crate::{MoveOSStore, StoreMeta};
+use move_core_types::account_address::AccountAddress;
+use move_core_types::identifier::Identifier;
+use move_core_types::language_storage::{StructTag, TypeTag};
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_config::store_config::RocksdbConfig;
+use moveos_types::event::{Event, EventID};
 use moveos_types::h256::H256;
 use moveos_types::transaction::TransactionExecutionInfo;
 use raw_store::rocks::{RocksDB, DEFAULT_PREFIX_NAME};
@@ -97,6 +101,37 @@ fn test_store() {
 }
 
 #[test]
+fn test_event_store() {
+    let tmpdir = moveos_config::temp_dir();
+    let cfs = StoreMeta::get_column_family_names().to_vec();
+    let store = MoveOSStore::new(StoreInstance::new_db_instance(
+        RocksDB::new(tmpdir.path(), cfs, RocksdbConfig::default(), None).unwrap(),
+    ))
+    .unwrap();
+
+    let test_struct_tag = StructTag {
+        address: AccountAddress::random(),
+        module: Identifier::new("Module").unwrap(),
+        name: Identifier::new("Name").unwrap(),
+        type_params: vec![TypeTag::Bool],
+    };
+    let test_type_tag = TypeTag::Struct(Box::new(test_struct_tag));
+    let event1 = Event::new(
+        EventID::new(AccountAddress::random().into(), rand::random()),
+        test_type_tag,
+        b"testeventdata".to_vec(),
+        rand::random(),
+    );
+
+    let _id = (event1.event_id.event_handle_id, event1.event_id.event_seq);
+    store.event_store.save_event(event1.clone()).unwrap();
+    let event2 = store.event_store.get_event(event1.event_id).unwrap();
+    println!("Debug test_event_store event {:?}", event2.clone());
+    assert!(event2.is_some());
+    assert_eq!(event1, event2.unwrap());
+}
+
+#[test]
 fn test_iter() {
     let tmpdir = moveos_config::temp_dir();
     let cfs = StoreMeta::get_column_family_names().to_vec();
@@ -118,7 +153,6 @@ fn test_iter() {
         .unwrap();
     let mut iter = store.transaction_store.iter().unwrap();
     iter.seek_to_first();
-    // let (_, transaction_info2) = iter.next().and_then(|item| item.ok());
     let item2 = iter.next().and_then(|item| item.ok());
     assert!(item2.is_some());
     let (_, transaction_info2) = item2.unwrap();

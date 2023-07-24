@@ -381,10 +381,7 @@ impl DBStore for RocksDB {
             let cf_handle = self.get_cf_handle(prefix_name);
             for (key, write_op) in &batch.rows {
                 match write_op {
-                    WriteOp::Value(value) => {
-                        // println!("Debug write_batch key {:?}", key);
-                        // println!("Debug write_batch value {:?}", value);
-                        db_batch.put_cf(&cf_handle, key, value)},
+                    WriteOp::Value(value) => db_batch.put_cf(&cf_handle, key, value),
                     WriteOp::Deletion => db_batch.delete_cf(&cf_handle, key),
                 };
             }

@@ -10,7 +10,6 @@ use crate::MoveOSStore;
 
 #[test]
 fn test_statedb() {
-    // let db = MoveOSStore::new_with_memory_store();
     let moveos_store = MoveOSStore::mock().unwrap();
 
     let change_set = ChangeSet::new();
