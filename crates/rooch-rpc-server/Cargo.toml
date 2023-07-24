@@ -44,6 +44,8 @@ move-binary-format = { workspace = true }
 moveos-store = { workspace = true }
 moveos-types = { workspace = true }
 move-bytecode-utils = { workspace = true }
+raw-store = { workspace = true }
+moveos-config = { workspace = true }
 
 rooch-config = { workspace = true }
 rooch-types = { workspace = true }

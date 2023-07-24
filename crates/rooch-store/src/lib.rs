@@ -71,7 +71,7 @@ impl RoochStore {
 
     pub fn new(instance: StoreInstance) -> Result<Self> {
         let store = Self {
-            transaction_store: TransactionDBStore::new(instance.clone()),
+            transaction_store: TransactionDBStore::new(instance),
         };
         Ok(store)
     }
@@ -129,7 +129,8 @@ impl TransactionStore for RoochStore {
         cursor: Option<u128>,
         limit: u64,
     ) -> Result<Vec<TransactionSequenceInfo>> {
-        self.transaction_store.get_tx_seq_infos_by_tx_order(cursor, limit)
+        self.transaction_store
+            .get_tx_seq_infos_by_tx_order(cursor, limit)
     }
 
     fn save_tx_seq_info_mapping(&self, tx_order: u128, tx_hash: H256) -> Result<()> {

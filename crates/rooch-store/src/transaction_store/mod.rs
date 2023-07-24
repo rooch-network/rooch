@@ -60,7 +60,7 @@ impl TransactionDBStore {
         TransactionDBStore {
             typed_tx_store: TypedTransactionStore::new(instance.clone()),
             seq_tx_store: SeqTransactionStore::new(instance.clone()),
-            tx_seq_mapping: TxSeqMappingStore::new(instance.clone()),
+            tx_seq_mapping: TxSeqMappingStore::new(instance),
         }
     }
 
@@ -123,10 +123,8 @@ impl TransactionDBStore {
                     if tx_order > start && tx_order <= end {
                         return Some(seq_info);
                     }
-                } else {
-                    if tx_order >= start && tx_order < end {
-                        return Some(seq_info);
-                    }
+                } else if tx_order >= start && tx_order < end {
+                    return Some(seq_info);
                 }
                 None
             })
@@ -175,10 +173,8 @@ impl TransactionDBStore {
                     if tx_order > start && tx_order <= end {
                         return Some(TransactionSequenceMapping::new(tx_order, tx_hash));
                     }
-                } else {
-                    if tx_order >= start && tx_order < end {
-                        return Some(TransactionSequenceMapping::new(tx_order, tx_hash));
-                    }
+                } else if tx_order >= start && tx_order < end {
+                    return Some(TransactionSequenceMapping::new(tx_order, tx_hash));
                 }
                 None
             })

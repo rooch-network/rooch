@@ -7,14 +7,15 @@
 use crate::get_rooch_config_dir;
 use anyhow::Result;
 use clap::Parser;
+use moveos_config::store_config::RocksdbConfig;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
-use moveos_config::store_config::RocksdbConfig;
-
 
 static R_DEFAULT_DB_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("roochdb"));
+static R_DEFAULT_DB_MOVEOS_SUBDIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("moveosstore"));
+static R_DEFAULT_DB_ROOCH_SUBDIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("roochstore"));
 pub const DEFAULT_CACHE_SIZE: usize = 20000;
 
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser)]
@@ -50,27 +51,40 @@ pub struct StoreConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(name = "rocksdb-bytes-per-sync", long, help = "rocksdb bytes per sync")]
     pub bytes_per_sync: Option<u64>,
-
-    pub db_path: PathBuf,
-    pub rooch_store_path: PathBuf,
+    // pub db_path: PathBuf,
+    // pub rooch_store_path: PathBuf,
 }
 
+//TODO implement store dir
 impl StoreConfig {
-    pub fn init(&self) -> Result<()> {
-        let db_dir = get_rooch_config_dir()
-            .unwrap()
-            .join(R_DEFAULT_DB_DIR.as_path());
-        if !db_dir.exists() {
-            fs::create_dir_all(db_dir.clone())?;
+    pub fn init() -> Result<()> {
+        let rooch_db_dir = Self::get_rooch_store_dir();
+        let moveos_db_dir = Self::get_moveos_store_dir();
+        if !rooch_db_dir.exists() {
+            fs::create_dir_all(rooch_db_dir.clone())?;
         }
-        println!("StoreConfig init store dir {:?}", db_dir);
+        if !moveos_db_dir.exists() {
+            fs::create_dir_all(moveos_db_dir.clone())?;
+        }
+        println!(
+            "StoreConfig init store dir {:?} {:?}",
+            rooch_db_dir, moveos_db_dir
+        );
         Ok(())
     }
 
-    pub fn get_store_dir(&self) -> PathBuf {
+    pub fn get_moveos_store_dir() -> PathBuf {
         get_rooch_config_dir()
             .unwrap()
             .join(R_DEFAULT_DB_DIR.as_path())
+            .join(R_DEFAULT_DB_MOVEOS_SUBDIR.as_path())
+    }
+
+    pub fn get_rooch_store_dir() -> PathBuf {
+        get_rooch_config_dir()
+            .unwrap()
+            .join(R_DEFAULT_DB_DIR.as_path())
+            .join(R_DEFAULT_DB_ROOCH_SUBDIR.as_path())
     }
 
     pub fn rocksdb_config(&self) -> RocksdbConfig {

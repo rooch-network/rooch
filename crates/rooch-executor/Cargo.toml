@@ -37,10 +37,8 @@ move-resource-viewer = { workspace = true }
 
 moveos = { workspace = true }
 moveos-store = { workspace = true }
-raw-store = { workspace = true }
 moveos-types = { workspace = true }
 moveos-common = { workspace = true }
-moveos-config = { workspace = true }
 
 rooch-types = { workspace = true }
 rooch-framework = { workspace = true }

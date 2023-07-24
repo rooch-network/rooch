@@ -35,3 +35,4 @@ moveos-types = { workspace = true }
 moveos-stdlib = { workspace = true }
 raw-store = { workspace = true }
 moveos-common = { workspace = true }
+moveos-config = { workspace = true }

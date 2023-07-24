@@ -72,7 +72,7 @@ impl EventDBStore {
     pub fn new(instance: StoreInstance) -> Self {
         EventDBStore {
             event_store: EventDBBaseStore::new(instance.clone()),
-            indexer_store: EventIndexDBStore::new(instance.clone()),
+            indexer_store: EventIndexDBStore::new(instance),
         }
     }
 
@@ -133,7 +133,8 @@ impl EventDBStore {
         let iter = self.indexer_store.iter()?;
         let data: Vec<Event> = iter
             .filter_map(|item| {
-                let ((tx_hash_key, _), event) = item.unwrap_or_else(|_| panic!("Get item from store shoule hava a value."));
+                let ((tx_hash_key, _), event) =
+                    item.unwrap_or_else(|_| panic!("Get item from store shoule hava a value."));
                 if tx_hash_key == *tx_hash {
                     Some(event)
                 } else {
@@ -174,15 +175,14 @@ impl EventDBStore {
 
         let data: Vec<Event> = iter
             .filter_map(|item| {
-                let ((handle_id, event_seq), event) = item.unwrap_or_else(|_| panic!("Get item from store shoule hava a value."));
+                let ((handle_id, event_seq), event) =
+                    item.unwrap_or_else(|_| panic!("Get item from store shoule hava a value."));
                 if Option::is_some(&cursor) {
                     if handle_id == *event_handle_id && (event_seq > start && event_seq <= end) {
-                        return Some(event)
+                        return Some(event);
                     }
-                } else {
-                    if handle_id == *event_handle_id && (event_seq >= start && event_seq < end) {
-                        return Some(event)
-                    }
+                } else if handle_id == *event_handle_id && (event_seq >= start && event_seq < end) {
+                    return Some(event);
                 }
                 None
             })
@@ -210,10 +210,11 @@ impl EventDBStore {
         let iter = self.event_store.iter()?;
         let data: Vec<Event> = iter
             .filter_map(|item| {
-                let ((_event_handle_id, _event_seq), event) = item.unwrap_or_else(|_| panic!("Get item from store shoule hava a value."));
+                let ((_event_handle_id, _event_seq), event) =
+                    item.unwrap_or_else(|_| panic!("Get item from store shoule hava a value."));
                 if type_tag_match(event.type_tag(), event_handle_type) {
                     Some(event)
-                }else {
+                } else {
                     None
                 }
             })

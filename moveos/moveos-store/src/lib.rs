@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-// use anyhow::{bail, format_err, Error, Result};
 use once_cell::sync::Lazy;
 use raw_store::{ColumnFamilyName, StoreInstance};
 use std::collections::BTreeMap;
@@ -13,14 +12,16 @@ use std::fmt::{Debug, Display, Formatter};
 use std::sync::Arc;
 
 use crate::event_store::{EventDBStore, EventStore};
-use crate::state_store::{StateDBStore};
+use crate::state_store::StateDBStore;
 use crate::transaction_store::{TransactionDBStore, TransactionStore};
 use move_core_types::language_storage::TypeTag;
+use moveos_config::store_config::RocksdbConfig;
 use moveos_types::event::{Event, EventID};
 use moveos_types::event_filter::EventFilter;
 use moveos_types::h256::H256;
 use moveos_types::object::ObjectID;
 use moveos_types::transaction::TransactionExecutionInfo;
+use raw_store::rocks::RocksDB;
 use smt::NodeStore;
 
 pub mod event_store;
@@ -45,12 +46,11 @@ static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
 });
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
-pub struct StoreMeta {
-}
+pub struct StoreMeta {}
 
 impl StoreMeta {
     pub fn get_column_family_names() -> &'static [ColumnFamilyName] {
-            &VEC_PREFIX_NAME
+        &VEC_PREFIX_NAME
     }
 }
 
@@ -63,19 +63,26 @@ pub struct MoveOSStore {
 // // TODO: remove Arc<dyn Store>, we can clone Store directly.
 
 impl MoveOSStore {
-    // pub fn new_with_memory_store() -> Self {
-    //     Self {
-    //         state_store: StateDB::new_with_memory_store(),
-    //         event_store: EventDB::new_with_memory_store(),
-    //         transaction_store: TransactionDB::new_with_memory_store(),
-    //     }
-    // }
+    pub fn mock() -> Result<Self> {
+        let tmpdir = moveos_config::temp_dir();
+        let mock_instance = StoreInstance::new_db_instance(
+            RocksDB::new(
+                tmpdir.path(),
+                StoreMeta::get_column_family_names().to_vec(),
+                RocksdbConfig::default(),
+                None,
+            )
+            .unwrap(),
+        );
+
+        Self::new(mock_instance)
+    }
 
     pub fn new(instance: StoreInstance) -> Result<Self> {
         let store = Self {
             state_store: StateDBStore::new(instance.clone()),
             event_store: EventDBStore::new(instance.clone()),
-            transaction_store: TransactionDBStore::new(instance.clone()),
+            transaction_store: TransactionDBStore::new(instance),
         };
         Ok(store)
     }
@@ -99,9 +106,15 @@ impl MoveOSStore {
 
 impl Display for MoveOSStore {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.clone())
+        // write!(f, "{}", self.clone())
+
+        write!(f, "state_store")?;
+        write!(f, "event_store")?;
+        write!(f, "transaction_store")?;
+        Ok(())
     }
 }
+
 impl Debug for MoveOSStore {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "{}", self)

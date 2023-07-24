@@ -81,6 +81,7 @@ impl NodeStore for InMemoryNodeStore {
 }
 
 /// Sparse Merkle Tree
+// #[derive(Clone)]
 pub struct SMTree<K, V, NS> {
     node_store: NS,
     root_hash: RwLock<H256>,

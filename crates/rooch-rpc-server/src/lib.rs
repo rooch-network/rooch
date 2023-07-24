@@ -11,6 +11,10 @@ use coerce::actor::{system::ActorSystem, IntoActor};
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
+use moveos_config::store_config::RocksdbConfig;
+use moveos_store::{MoveOSStore, StoreMeta};
+use raw_store::rocks::RocksDB;
+use raw_store::StoreInstance;
 use rooch_config::rpc::server_config::ServerConfig;
 use rooch_config::store_config::StoreConfig;
 use rooch_executor::actor::executor::ExecutorActor;
@@ -22,7 +26,7 @@ use rooch_proposer::proxy::ProposerProxy;
 use rooch_rpc_api::api::RoochRpcModule;
 use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
-// use rooch_store::RoochStore;
+use rooch_store::RoochStore;
 use serde_json::json;
 use std::fmt::Debug;
 use std::net::SocketAddr;
@@ -68,8 +72,8 @@ impl Service {
         Self { handle: None }
     }
 
-    pub async fn start(&mut self) -> Result<()> {
-        self.handle = Some(start_server().await?);
+    pub async fn start(&mut self, is_mock: bool) -> Result<()> {
+        self.handle = Some(start_server(is_mock).await?);
         Ok(())
     }
 
@@ -104,20 +108,53 @@ impl RpcModuleBuilder {
 }
 
 // Start json-rpc server
-pub async fn start_server() -> Result<ServerHandle> {
+pub async fn start_server(is_mock: bool) -> Result<ServerHandle> {
     tracing_subscriber::fmt::init();
 
     let config = ServerConfig::default();
-    let store_config = StoreConfig::default();
+    // let store_config = StoreConfig::default();
 
     let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
     // let rooch_store = RoochStore::new_with_db_store(config.db_path.clone());
     let actor_system = ActorSystem::global_system();
 
+    let (rooch_db_path, moveos_db_path) = if !is_mock {
+        (
+            StoreConfig::get_rooch_store_dir(),
+            StoreConfig::get_moveos_store_dir(),
+        )
+    } else {
+        (
+            moveos_config::temp_dir().path().to_path_buf(),
+            moveos_config::temp_dir().path().to_path_buf(),
+        )
+    };
+
+    //Init store
+    let moveos_store = MoveOSStore::new(StoreInstance::new_db_instance(
+        RocksDB::new(
+            moveos_db_path,
+            StoreMeta::get_column_family_names().to_vec(),
+            RocksdbConfig::default(),
+            None,
+        )
+        .unwrap(),
+    ))
+    .unwrap();
+    let rooch_store = RoochStore::new(StoreInstance::new_db_instance(
+        RocksDB::new(
+            rooch_db_path,
+            rooch_store::StoreMeta::get_column_family_names().to_vec(),
+            RocksdbConfig::default(),
+            None,
+        )
+        .unwrap(),
+    ))
+    .unwrap();
+
     // Init executor
     // let executor = ExecutorActor::new(rooch_store.clone(), store_config)?
-    let executor_actor = ExecutorActor::new(store_config)?;
-    let executor = executor_actor
+    let executor = ExecutorActor::new(moveos_store, rooch_store.clone())?
         .into_actor(Some("Executor"), &actor_system)
         .await?;
     let executor_proxy = ExecutorProxy::new(executor.into());
@@ -127,7 +164,7 @@ pub async fn start_server() -> Result<ServerHandle> {
 
     let (_, kp, _, _) = generate_new_key(rooch_types::crypto::BuiltinScheme::Ed25519, None, None)?;
     // let rooch_store = RoochStore::new_with_memory_store();
-    let sequencer = SequencerActor::new(kp, executor_actor.get_rooch_store())
+    let sequencer = SequencerActor::new(kp, rooch_store)
         .into_actor(Some("Sequencer"), &actor_system)
         .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());

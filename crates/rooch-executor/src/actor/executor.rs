@@ -15,9 +15,8 @@ use move_core_types::account_address::AccountAddress;
 use move_resource_viewer::MoveValueAnnotator;
 use moveos::moveos::MoveOS;
 use moveos_common::accumulator::InMemoryAccumulator;
-use moveos_config::store_config::RocksdbConfig;
 use moveos_store::transaction_store::TransactionStore;
-use moveos_store::{MoveOSStore, StoreMeta};
+use moveos_store::MoveOSStore;
 use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event::EventHandle;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
@@ -29,9 +28,9 @@ use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::tx_context::TxContext;
-use raw_store::rocks::RocksDB;
-use raw_store::StoreInstance;
-use rooch_config::store_config::StoreConfig;
+// use raw_store::rocks::RocksDB;
+// use raw_store::StoreInstance;
+// use rooch_config::store_config::StoreConfig;
 use rooch_framework::bindings::address_mapping::AddressMapping;
 use rooch_framework::bindings::auth_validator::AuthValidatorCaller;
 use rooch_framework::bindings::transaction_validator::TransactionValidator;
@@ -48,33 +47,31 @@ pub struct ExecutorActor {
 
 impl ExecutorActor {
     // pub fn new(rooch_store: RoochStore, store_config: StoreConfig) -> Result<Self> {
-    pub fn new(store_config: StoreConfig) -> Result<Self> {
-        let moveosdb = MoveOSStore::new(StoreInstance::new_db_instance(
-            RocksDB::new(
-                //TODO db_path or db_store_path ???
-                store_config.db_path,
-                StoreMeta::get_column_family_names().to_vec(),
-                RocksdbConfig::default(),
-                None,
-            )
-            .unwrap(),
-        ))
-        .unwrap();
-        let rooch_store = RoochStore::new(StoreInstance::new_db_instance(
-            RocksDB::new(
-                //TODO db_path or db_store_path ???
-                store_config.rooch_store_path,
-                rooch_store::StoreMeta::get_column_family_names().to_vec(),
-                RocksdbConfig::default(),
-                None,
-            )
-            .unwrap(),
-        ))
-        .unwrap();
+    pub fn new(moveos_store: MoveOSStore, rooch_store: RoochStore) -> Result<Self> {
+        // let moveos_store = MoveOSStore::new(StoreInstance::new_db_instance(
+        //     RocksDB::new(
+        //         store_config.db_path,
+        //         StoreMeta::get_column_family_names().to_vec(),
+        //         RocksdbConfig::default(),
+        //         None,
+        //     )
+        //     .unwrap(),
+        // ))
+        // .unwrap();
+        // let rooch_store = RoochStore::new(StoreInstance::new_db_instance(
+        //     RocksDB::new(
+        //         store_config.rooch_store_path,
+        //         rooch_store::StoreMeta::get_column_family_names().to_vec(),
+        //         RocksdbConfig::default(),
+        //         None,
+        //     )
+        //     .unwrap(),
+        // ))
+        // .unwrap();
 
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
 
-        let mut moveos = MoveOS::new(moveosdb, genesis.all_natives(), genesis.config.clone())?;
+        let mut moveos = MoveOS::new(moveos_store, genesis.all_natives(), genesis.config.clone())?;
         if moveos.state().is_genesis() {
             moveos.init_genesis(genesis.genesis_txs())?;
         }
@@ -199,7 +196,14 @@ impl Handler<ExecuteTransactionMessage> for ExecutorActor {
         );
         self.moveos
             .transaction_store()
-            .save_tx_exec_info(transaction_info.clone());
+            .save_tx_exec_info(transaction_info.clone())
+            .map_err(|e| {
+                anyhow::anyhow!(
+                    "ExecuteTransactionMessage handler save tx info failed: {:?} {}",
+                    transaction_info,
+                    e
+                )
+            })?;
         Ok(ExecuteTransactionResult {
             output,
             transaction_info,

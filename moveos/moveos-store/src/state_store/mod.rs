@@ -54,6 +54,7 @@ struct AccountStorageTables<NS> {
     pub modules: (Object<TableInfo>, TreeTable<NS>),
 }
 
+// #[derive(Clone)]
 pub struct TreeTable<NS> {
     smt: SMTree<Vec<u8>, State, NS>,
 }
@@ -162,7 +163,7 @@ impl StateDBStore {
     // }
 
     pub fn new(instance: StoreInstance) -> Self {
-        let store = NodeDBStore::new(instance.clone());
+        let store = NodeDBStore::new(instance);
         Self {
             node_store: store.clone(),
             global_table: TreeTable::new(store),

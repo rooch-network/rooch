@@ -114,9 +114,10 @@ impl CommandAction<String> for Init {
                 .save()?;
 
                 //Store config init
-                let store_config = StoreConfig::default();
-                store_config.init();
-                store_config.persisted(config_path.as_path()).save()?;
+                // let store_config = StoreConfig::default();
+                StoreConfig::init()
+                    .map_err(|e| anyhow::anyhow!("Init stroe config failed:{}", e))?;
+                // store_config.persisted(config_path.as_path()).save()?;
             }
 
             let message = format!("Rooch config file generated at {}", config_path.display());

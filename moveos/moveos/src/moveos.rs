@@ -14,7 +14,7 @@ use move_vm_runtime::native_functions::NativeFunction;
 use move_vm_types::gas::UnmeteredGasMeter;
 use moveos_store::event_store::EventDBStore;
 use moveos_store::state_store::StateDBStore;
-use moveos_store::transaction_store::{TransactionDBStore};
+use moveos_store::transaction_store::TransactionDBStore;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionReturnValue;
 use moveos_types::module_binding::MoveFunctionCaller;

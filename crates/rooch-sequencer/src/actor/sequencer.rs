@@ -53,8 +53,21 @@ impl Handler<TransactionSequenceMessage> for SequencerActor {
         let tx_order_signature = Signature::new_hashed(&witness_hash.0, &self.sequencer_key).into();
         self.last_order = tx_order;
 
-        let _ = self.rooch_store.save_transaction(tx).map_err(|e| anyhow::anyhow!("TransactionSequenceMessage handler save transaction failed: {}", e));
-        let _ = self.rooch_store.save_tx_seq_info_mapping(tx_order, hash).map_err(|e| anyhow::anyhow!("TransactionSequenceMessage handler save tx seq mapping failed: {}", e));
+        let _ = self.rooch_store.save_transaction(tx).map_err(|e| {
+            anyhow::anyhow!(
+                "TransactionSequenceMessage handler save transaction failed: {}",
+                e
+            )
+        });
+        let _ = self
+            .rooch_store
+            .save_tx_seq_info_mapping(tx_order, hash)
+            .map_err(|e| {
+                anyhow::anyhow!(
+                    "TransactionSequenceMessage handler save tx seq mapping failed: {}",
+                    e
+                )
+            });
 
         let tx_accumulator_root = H256::random();
         Ok(TransactionSequenceInfo {
