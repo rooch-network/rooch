@@ -61,7 +61,7 @@ impl TransactionStore for TransactionDBStore {
     fn save_tx_exec_info(&self, tx_exec_info: TransactionExecutionInfo) -> Result<()> {
         // let mut locked = self.inner_tx_exec_info.write();
         // locked.insert(tx_exec_info.tx_hash, tx_exec_info);
-        self.kv_put(tx_exec_info.id(), tx_exec_info)
+        self.kv_put(tx_exec_info.tx_hash, tx_exec_info)
     }
 
     fn get_tx_exec_info(&self, tx_hash: H256) -> Result<Option<TransactionExecutionInfo>> {

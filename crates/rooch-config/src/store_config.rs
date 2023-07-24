@@ -51,8 +51,6 @@ pub struct StoreConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(name = "rocksdb-bytes-per-sync", long, help = "rocksdb bytes per sync")]
     pub bytes_per_sync: Option<u64>,
-    // pub db_path: PathBuf,
-    // pub rooch_store_path: PathBuf,
 }
 
 //TODO implement store dir
@@ -73,6 +71,7 @@ impl StoreConfig {
         Ok(())
     }
 
+    //TODO load from config
     pub fn get_moveos_store_dir() -> PathBuf {
         get_rooch_config_dir()
             .unwrap()

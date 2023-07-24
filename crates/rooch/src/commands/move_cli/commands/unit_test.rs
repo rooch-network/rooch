@@ -87,14 +87,11 @@ impl Test {
     }
 }
 
-// static MOVEOSSTORE: Lazy<Box<MoveOSStore>> = Lazy::new(|| Box::new(MoveOSStore::mock()?));
 static STATEDBSTORE: Lazy<Box<StateDBStore>> =
     Lazy::new(|| Box::new(MoveOSStore::mock().unwrap().state_store));
 
 fn new_moveos_natives_runtime(ext: &mut NativeContextExtensions) {
     let statedb_store = Lazy::force(&STATEDBSTORE).as_ref();
-    // let moveos_store = Lazy::force(&MOVEOSSTORE).as_ref();
-    // let statedb = Lazy::force(&STATEDB).as_ref();
     let table_ext = NativeTableContext::new(statedb_store);
 
     ext.add(table_ext);

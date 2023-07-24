@@ -26,6 +26,8 @@ use smt::NodeStore;
 
 pub mod event_store;
 pub mod state_store;
+#[cfg(test)]
+mod tests;
 pub mod transaction_store;
 
 // pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
@@ -87,10 +89,6 @@ impl MoveOSStore {
         Ok(store)
     }
 
-    // pub fn get_node_store(&self) -> &NodeDBStore {
-    //     &self.node_store
-    // }
-
     pub fn get_event_store(&self) -> &EventDBStore {
         &self.event_store
     }
@@ -120,21 +118,6 @@ impl Debug for MoveOSStore {
         write!(f, "{}", self)
     }
 }
-
-// impl NodeStore for MoveOSStore {
-//     fn get(&self, hash: &H256) -> Result<Option<Vec<u8>>> {
-//         self.state_store.node_store.get(*hash)
-//     }
-//
-//     fn put(&self, key: H256, node: Vec<u8>) -> Result<()> {
-//         self.state_store.node_store.put(key, node)
-//     }
-//
-//     fn write_nodes(&self, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {
-//         let batch = CodecWriteBatch::new_puts(nodes.into_iter().collect());
-//         self.state_store.node_store.write_batch(batch)
-//     }
-// }
 
 impl NodeStore for MoveOSStore {
     fn get(&self, hash: &H256) -> Result<Option<Vec<u8>>> {
@@ -205,23 +188,7 @@ impl TransactionStore for MoveOSStore {
 }
 
 /// Moveos store define
-pub trait Store: NodeStore + TransactionStore + EventStore + IntoSuper<dyn NodeStore> {
-    // fn get_block_transaction_infos(
-    //     &self,
-    //     block_id: H256,
-    // ) -> Result<Vec<RichTransactionInfo>, Error> {
-    //     let txn_info_ids = self.get_block_txn_info_ids(block_id)?;
-    //     let mut txn_infos = vec![];
-    //     let txn_opt_infos = self.get_transaction_infos(txn_info_ids.clone())?;
-
-    //     Ok(txn_infos)
-    // }
-    //
-    // fn get_accumulator_store(
-    //     &self,
-    //     accumulator_type: AccumulatorStoreType,
-    // ) -> Arc<dyn AccumulatorTreeStore>;
-}
+pub trait Store: NodeStore + TransactionStore + EventStore + IntoSuper<dyn NodeStore> {}
 
 pub trait IntoSuper<Super: ?Sized> {
     fn as_super(&self) -> &Super;
@@ -245,16 +212,4 @@ impl<'a, T: 'a + NodeStore> IntoSuper<dyn NodeStore + 'a> for T {
     }
 }
 
-impl Store for MoveOSStore {
-    // fn get_accumulator_store(
-    //     &self,
-    //     accumulator_type: AccumulatorStoreType,
-    // ) -> Arc<dyn AccumulatorTreeStore> {
-    //     match accumulator_type {
-    //         AccumulatorStoreType::Block => Arc::new(self.block_accumulator_store.clone()),
-    //         AccumulatorStoreType::Transaction => {
-    //             Arc::new(self.transaction_accumulator_store.clone())
-    //         }
-    //     }
-    // }
-}
+impl Store for MoveOSStore {}

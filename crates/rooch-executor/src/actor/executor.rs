@@ -46,29 +46,7 @@ pub struct ExecutorActor {
 }
 
 impl ExecutorActor {
-    // pub fn new(rooch_store: RoochStore, store_config: StoreConfig) -> Result<Self> {
     pub fn new(moveos_store: MoveOSStore, rooch_store: RoochStore) -> Result<Self> {
-        // let moveos_store = MoveOSStore::new(StoreInstance::new_db_instance(
-        //     RocksDB::new(
-        //         store_config.db_path,
-        //         StoreMeta::get_column_family_names().to_vec(),
-        //         RocksdbConfig::default(),
-        //         None,
-        //     )
-        //     .unwrap(),
-        // ))
-        // .unwrap();
-        // let rooch_store = RoochStore::new(StoreInstance::new_db_instance(
-        //     RocksDB::new(
-        //         store_config.rooch_store_path,
-        //         rooch_store::StoreMeta::get_column_family_names().to_vec(),
-        //         RocksdbConfig::default(),
-        //         None,
-        //     )
-        //     .unwrap(),
-        // ))
-        // .unwrap();
-
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
 
         let mut moveos = MoveOS::new(moveos_store, genesis.all_natives(), genesis.config.clone())?;

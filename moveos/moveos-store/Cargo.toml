@@ -27,6 +27,8 @@ parking_lot = { workspace = true }
 quote = { workspace = true }
 num_enum = { workspace = true }
 once_cell = { workspace = true }
+chrono = { workspace = true }
+rand = { workspace = true }
 
 move-core-types = { workspace = true }
 move-resource-viewer = { workspace = true }

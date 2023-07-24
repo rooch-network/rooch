@@ -53,74 +53,31 @@ impl StoreInstance {
 impl DBStore for StoreInstance {
     fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
         match self {
-            // StoreInstance::CACHE { cache } => cache.get(prefix_name, key),
             StoreInstance::DB { db } => db.get(prefix_name, key),
-            // StoreInstance::CacheAndDb { cache, db } => {
-            //     // first get from cache
-            //     // if from cache get non-existent, query from db
-            //     if let Ok(Some(value)) = cache.get(prefix_name, key.clone()) {
-            //         Ok(Some(value))
-            //     } else {
-            //         match db.get(prefix_name, key)? {
-            //             Some(value) => {
-            //                 // cache.put_obj(prefix_name, key, CacheObject::Value(value.clone()))?;
-            //                 Ok(Some(value))
-            //             }
-            //             None => {
-            //                 // put null vec to cache for avoid repeatedly querying non-existent data from db
-            //                 // cache.put_obj(prefix_name, key, CACHE_NONE_OBJECT.clone())?;
-            //                 Ok(None)
-            //             }
-            //         }
-            //     }
-            // }
         }
     }
 
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
         match self {
-            // StoreInstance::CACHE { cache } => cache.put(prefix_name, key, value),
             StoreInstance::DB { db } => db.put(prefix_name, key, value),
-            // StoreInstance::CacheAndDb { cache, db } => db
-            //     .put(prefix_name, key.clone(), value.clone())
-            //     .and_then(|_| cache.put(prefix_name, key, value)),
         }
     }
 
     fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool> {
         match self {
-            // StoreInstance::CACHE { cache } => cache.contains_key(prefix_name, key),
             StoreInstance::DB { db } => db.contains_key(prefix_name, key),
-            // StoreInstance::CacheAndDb { cache, db } => {
-            //     match cache.contains_key(prefix_name, key.clone()) {
-            //         Ok(true) => Ok(true),
-            //         _ => db.contains_key(prefix_name, key),
-            //     }
-            // }
         }
     }
 
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
         match self {
-            // StoreInstance::CACHE { cache } => cache.remove(prefix_name, key),
             StoreInstance::DB { db } => db.remove(prefix_name, key),
-            // StoreInstance::CacheAndDb { cache, db } => match db.remove(prefix_name, key.clone()) {
-            //     Ok(_) => cache.remove(prefix_name, key),
-            //     _ => bail!("db store remove error."),
-            // },
         }
     }
 
     fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
         match self {
-            // StoreInstance::CACHE { cache } => cache.write_batch(prefix_name, batch),
             StoreInstance::DB { db } => db.write_batch(prefix_name, batch),
-            // StoreInstance::CacheAndDb { cache, db } => {
-            //     match db.write_batch(prefix_name, batch.clone()) {
-            //         Ok(_) => cache.write_batch(prefix_name, batch),
-            //         Err(err) => bail!("write batch db error: {}", err),
-            //     }
-            // }
         }
     }
 
@@ -129,40 +86,23 @@ impl DBStore for StoreInstance {
     }
 
     fn keys(&self) -> Result<Vec<Vec<u8>>> {
-        // match self {
-        //     // StoreInstance::CACHE { cache } => cache.keys(),
-        //     // StoreInstance::CacheAndDb { cache, db: _ } => cache.keys(),
-        //     _ => bail!("DB instance not support keys method!"),
-        // }
         bail!("DB instance not support keys method!")
     }
 
     fn put_sync(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
         match self {
-            // StoreInstance::CACHE { cache } => cache.put(prefix_name, key, value),
             StoreInstance::DB { db } => db.put_sync(prefix_name, key, value),
-            // StoreInstance::CacheAndDb { cache, db } => db
-            //     .put_sync(prefix_name, key.clone(), value.clone())
-            //     .and_then(|_| cache.put(prefix_name, key, value)),
         }
     }
 
     fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
         match self {
-            // StoreInstance::CACHE { cache } => cache.write_batch(prefix_name, batch),
             StoreInstance::DB { db } => db.write_batch_sync(prefix_name, batch),
-            // StoreInstance::CacheAndDb { cache, db } => {
-            //     match db.write_batch_sync(prefix_name, batch.clone()) {
-            //         Ok(_) => cache.write_batch(prefix_name, batch),
-            //         Err(err) => bail!("write batch db error: {}", err),
-            //     }
-            // }
         }
     }
 
     fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
         match self {
-            // StoreInstance::CACHE { cache } => cache.multi_get(prefix_name, keys),
             StoreInstance::DB { db } => db.multi_get(prefix_name, keys),
         }
     }
@@ -250,20 +190,6 @@ where
 pub trait SchemaStore: Sized + ColumnFamily {
     fn get_store(&self) -> &InnerStore<Self>;
 }
-
-// pub trait KeyCodec: Clone + Sized + Debug + Send + Sync {
-//     /// Converts `self` to bytes to be stored in DB.
-//     fn encode_key(&self) -> Result<Vec<u8>>;
-//     /// Converts bytes fetched from DB to `Self`.
-//     fn decode_key(data: &[u8]) -> Result<Self>;
-// }
-//
-// pub trait ValueCodec: Clone + Sized + Debug + Send + Sync {
-//     /// Converts `self` to bytes to be stored in DB.
-//     fn encode_value(&self) -> Result<Vec<u8>>;
-//     /// Converts bytes fetched from DB to `Self`.
-//     fn decode_value(data: &[u8]) -> Result<Self>;
-// }
 
 #[derive(Debug, Clone)]
 pub enum WriteOp<V> {

@@ -12,7 +12,7 @@ use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
 use moveos_config::store_config::RocksdbConfig;
-use moveos_store::{MoveOSStore, StoreMeta};
+use moveos_store::MoveOSStore;
 use raw_store::rocks::RocksDB;
 use raw_store::StoreInstance;
 use rooch_config::rpc::server_config::ServerConfig;
@@ -112,10 +112,8 @@ pub async fn start_server(is_mock: bool) -> Result<ServerHandle> {
     tracing_subscriber::fmt::init();
 
     let config = ServerConfig::default();
-    // let store_config = StoreConfig::default();
 
     let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
-    // let rooch_store = RoochStore::new_with_db_store(config.db_path.clone());
     let actor_system = ActorSystem::global_system();
 
     let (rooch_db_path, moveos_db_path) = if !is_mock {
@@ -134,7 +132,7 @@ pub async fn start_server(is_mock: bool) -> Result<ServerHandle> {
     let moveos_store = MoveOSStore::new(StoreInstance::new_db_instance(
         RocksDB::new(
             moveos_db_path,
-            StoreMeta::get_column_family_names().to_vec(),
+            moveos_store::StoreMeta::get_column_family_names().to_vec(),
             RocksdbConfig::default(),
             None,
         )
@@ -153,7 +151,6 @@ pub async fn start_server(is_mock: bool) -> Result<ServerHandle> {
     .unwrap();
 
     // Init executor
-    // let executor = ExecutorActor::new(rooch_store.clone(), store_config)?
     let executor = ExecutorActor::new(moveos_store, rooch_store.clone())?
         .into_actor(Some("Executor"), &actor_system)
         .await?;
@@ -161,9 +158,7 @@ pub async fn start_server(is_mock: bool) -> Result<ServerHandle> {
 
     // Init sequencer
     //TODO load from config
-
     let (_, kp, _, _) = generate_new_key(rooch_types::crypto::BuiltinScheme::Ed25519, None, None)?;
-    // let rooch_store = RoochStore::new_with_memory_store();
     let sequencer = SequencerActor::new(kp, rooch_store)
         .into_actor(Some("Sequencer"), &actor_system)
         .await?;

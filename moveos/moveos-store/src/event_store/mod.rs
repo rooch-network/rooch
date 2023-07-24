@@ -98,8 +98,9 @@ impl EventDBStore {
         //     .collect::<Vec<_>>();
         // locked.extend(data);
         // Ok(())
+        println!("save_events events {:?}", events);
 
-        self.event_store.put_all(
+        let result = self.event_store.put_all(
             events
                 .into_iter()
                 .map(|event| {
@@ -109,7 +110,9 @@ impl EventDBStore {
                     )
                 })
                 .collect(),
-        )
+        );
+        println!("save_events result {:?}", result);
+        result
     }
 
     pub fn get_event(&self, event_id: EventID) -> Result<Option<Event>> {
@@ -173,10 +176,18 @@ impl EventDBStore {
         let end = start + limit;
         let iter = self.event_store.iter()?;
 
+        // println!("get_events_by_event_handle_id {:?}", iter.last().unwrap());
+        println!("get_events_by_event_handle_id 111");
+
+        // let first = iter.seek_to_first();
+        // let keys = self.event_store.keys();
+        // println!("get_events_by_event_handle_id keys {:?}", keys);
+
         let data: Vec<Event> = iter
             .filter_map(|item| {
                 let ((handle_id, event_seq), event) =
                     item.unwrap_or_else(|_| panic!("Get item from store shoule hava a value."));
+                println!("get_events_by_event_handle_id {} {} {:?}", handle_id, event_seq, event);
                 if Option::is_some(&cursor) {
                     if handle_id == *event_handle_id && (event_seq > start && event_seq <= end) {
                         return Some(event);
