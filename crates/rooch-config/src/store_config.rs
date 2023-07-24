@@ -14,8 +14,8 @@ use std::fs;
 use std::path::PathBuf;
 
 static R_DEFAULT_DB_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("roochdb"));
-static R_DEFAULT_DB_MOVEOS_SUBDIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("moveosstore"));
-static R_DEFAULT_DB_ROOCH_SUBDIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("roochstore"));
+static R_DEFAULT_DB_MOVEOS_SUBDIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("moveos_store"));
+static R_DEFAULT_DB_ROOCH_SUBDIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("rooch_store"));
 pub const DEFAULT_CACHE_SIZE: usize = 20000;
 
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser)]
@@ -76,12 +76,16 @@ impl StoreConfig {
     pub fn get_moveos_store_dir() -> PathBuf {
         get_rooch_config_dir()
             .unwrap()
+            .parent()
+            .unwrap()
             .join(R_DEFAULT_DB_DIR.as_path())
             .join(R_DEFAULT_DB_MOVEOS_SUBDIR.as_path())
     }
 
     pub fn get_rooch_store_dir() -> PathBuf {
         get_rooch_config_dir()
+            .unwrap()
+            .parent()
             .unwrap()
             .join(R_DEFAULT_DB_DIR.as_path())
             .join(R_DEFAULT_DB_ROOCH_SUBDIR.as_path())
