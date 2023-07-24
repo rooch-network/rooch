@@ -78,12 +78,10 @@ impl CreateCommand {
 
                 context.sign_and_execute(new_address, action).await
             }
-            Err(error) => {
-                return Err(RoochError::CommandArgumentError(format!(
-                    "Invalid crypto scheme: {}",
-                    error
-                )))
-            }
+            Err(error) => Err(RoochError::CommandArgumentError(format!(
+                "Invalid crypto scheme: {}",
+                error
+            ))),
         }
     }
 }
