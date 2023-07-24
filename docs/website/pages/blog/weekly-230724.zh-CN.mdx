@@ -1,0 +1,55 @@
+---
+title: Rooch 周报 2023-07-24
+description: "设计 Rooch 账户如何处理多链地址，实现 Rooch Dashboard 的基础版本，重构以及完善相开发者关文档。"
+author: geometryolife
+category: Rooch Weekly
+date: 2023/07/24
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch 的开发进展
+
+
+### 新特性
+
+* a3e1d34 - **Feature owen auto generate rooch types (#485)** (2023-07-17) @Owen Wu
+* ffcbde9 - **[gh-457] add Schnorr signature support. (#461)** (2023-07-18) @feliciss
+* 055c4d2 - **[gh-481] add schnorr as a built-in validator. (#483)** (2023-07-19) @feliciss
+* afc57b1 - **Rooch dashboard scaffold (#515)** (2023-07-21) @sven Tan
+* 13ced75 - **[gh-511] add ripemd-160 support for hashs. (#512)** (2023-07-20) @feliciss
+* 6378874 - **Add test_only attribute to integration test functions. (#525)** (2023-07-21) @steelgeek091
+
+### 重大重构
+
+* c275c2e - **[MoveOS] Refactor MoveOS, make the pre_execute and post_execute functions be pre-transaction config (#504)** (2023-07-18) @jolestar
+* 62cd768 - **Refactor the integration-test to allow it to import moveos_stdlib and other third-party Move Packages. (#464)** (2023-07-20) @steelgeek091
+* 8da0817 - **refactor and simplify raw store (#526)** (2023-07-21) @Bai Chuan
+* 641c242 - **[MoveosStd]Refactor event (#527)** (2023-07-22) @jolestar
+
+### 改进和修复
+
+* 93c4c1e - **[developer-docs] add installation (#465)** (2023-07-17) @Joe Chen
+* 93c28b0 - **init cli doc (#489)** (2023-07-17) @sven Tan
+* 55c12a8 - **[scripts] add ubuntu installation script for rooch dev environment (#490)** (2023-07-17) @Joe Chen
+* 92d5490 - **[blog] release v0.1 (#397)** (2023-07-17) @jolestar
+* 1323a40 - **Update installation.en-US.mdx and installation.zh-CN.mdx (#492)** (2023-07-17) @Elisha Paul Okai(Shinnoks)
+* 2b3059d - **Update blog example (#488)** (2023-07-17) @wubuku
+* 0288bf5 - **fix code highlight for rooch-cli file  en & zh (#494)** (2023-07-17) @Joe Chen
+* 9495138 - **the scripts dir should not be ignored (#497)** (2023-07-18) @yourmoonlight
+* 488e1fe - **add weekly 2023-07-17 (#459)** (2023-07-18) @Joe Chen
+* dad9d04 - **init scaffolding (#505)** (2023-07-18) @sven Tan
+* 5ad28f6 - **Update getting-started.en-US.md (#520)** (2023-07-20) @Elisha Paul Okai(Shinnoks)
+* 10501ac - **fix typo for getting-started zh (#521)** (2023-07-20) @Joe Chen
+* ecc2682 - **docs: Condense the discourse concerning Sequence Verification (#516)** (2023-07-21) @y17b
+* aa496b5 - **update CONTRIBUTING.md and add CONTRIBUTING-zh.md (#530)** (2023-07-21) @Joe Chen
+
+### Rooch 社区开发会议
+
+- 讨论 Rooch Dashboard 的实现方案，[相关代码](https://github.com/rooch-network/rooch/pull/515)
+- 讨论 Rooch 多链地址使用哪一种映射方案，[相关 issue](https://github.com/rooch-network/rooch/issues/449)
+- 讨论重构的 `pre_execute` 和 `post_execute` 函数，可以在较以前进行配置
+- 讨论存储方案的实现
+- [会议录屏](https://drive.google.com/file/d/1JOmBmBWPfvSJBNUa5NgsXvXUJUPZurwp/view?usp=sharing)
