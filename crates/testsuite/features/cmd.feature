@@ -2,6 +2,13 @@ Feature: Rooch CLI integration tests
     Scenario: Init
       Then cmd: "init"
 
+      # init example
+      Then cmd: "init --default"
+      Then cmd: "init --scheme 0"
+      # TODO implement MultiEd25519 "init --scheme 1"
+      Then cmd: "init --scheme 2"
+      Then cmd: "init --scheme 3"
+
     Scenario: account
       Given the server
 

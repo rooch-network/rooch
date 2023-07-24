@@ -41,7 +41,7 @@ pub fn derive_key_pair_from_path(
     derivation_path: Option<DerivationPath>,
     crypto_scheme: &BuiltinScheme,
 ) -> Result<(RoochAddress, RoochKeyPair), RoochError> {
-    let path = validate_path(&crypto_scheme, derivation_path)?;
+    let path = validate_path(crypto_scheme, derivation_path)?;
     match crypto_scheme {
         BuiltinScheme::Ed25519 => {
             let indexes = path.into_iter().map(|i| i.into()).collect::<Vec<_>>();

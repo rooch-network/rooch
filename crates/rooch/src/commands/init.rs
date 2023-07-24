@@ -31,9 +31,9 @@ pub struct Init {
 impl CommandAction<String> for Init {
     async fn execute(self) -> RoochResult<String> {
         if !(self.accept_defaults || self.crypto_schemes.is_some()) {
-            return Err(RoochError::CommandArgumentError(format!(
-                "At least one of the options --default or --scheme is required."
-            )));
+            return Err(RoochError::CommandArgumentError(
+                "At least one of the options --default or --scheme is required.".to_owned(),
+            ));
         }
         let client_config_path = match self.context_options.config_dir {
             Some(v) => {
@@ -56,7 +56,7 @@ impl CommandAction<String> for Init {
                     if self.accept_defaults {
                         println!("Creating config file [{:?}] with default server and ed25519 crypto scheme.", client_config_path);
                     } else {
-                        match BuiltinScheme::from_flag(&self.crypto_schemes.clone().unwrap().trim())
+                        match BuiltinScheme::from_flag(self.crypto_schemes.clone().unwrap().trim())
                         {
                             Ok(scheme) => {
                                 println!("Creating config file [{:?}] with custom server and {:?} crypto scheme.", client_config_path, scheme);
@@ -81,7 +81,7 @@ impl CommandAction<String> for Init {
                         if address_and_port_regex.is_match(&input) {
                             input
                         } else {
-                            return Err(RoochError::CommandArgumentError(format!("Invalid input format. Please provide a valid URL (e.g., http://0.0.0.0:50051).")));
+                            return Err(RoochError::CommandArgumentError("Invalid input format. Please provide a valid URL (e.g., http://0.0.0.0:50051).".to_owned()));
                         }
                     };
                     Some(if url.trim().is_empty() {
@@ -112,7 +112,7 @@ impl CommandAction<String> for Init {
                 let crypto_scheme = if self.accept_defaults {
                     BuiltinScheme::Ed25519
                 } else {
-                    match BuiltinScheme::from_flag(&self.crypto_schemes.clone().unwrap().trim()) {
+                    match BuiltinScheme::from_flag(self.crypto_schemes.clone().unwrap().trim()) {
                         Ok(scheme) => scheme,
                         Err(error) => {
                             return Err(RoochError::CommandArgumentError(format!(
