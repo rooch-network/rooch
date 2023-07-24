@@ -1,4 +1,4 @@
-module steal_split::coin {
+module rooch_examples::coin {
     use std::error;
     use std::signer;
 

@@ -1,7 +1,9 @@
-module steal_split::timestamp {
+module rooch_examples::timestamp {
     use std::signer;
+
     use moveos_std::account_storage;
     use moveos_std::storage_context::StorageContext;
+
     #[test_only]
     use rooch_framework::account;
 

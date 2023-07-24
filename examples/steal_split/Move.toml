@@ -3,12 +3,12 @@ name = "examples/steal_split"
 version = "0.0.1"
 
 [dependencies]
-MoveStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "moveos/moveos-stdlib/move-stdlib", rev = "main" }
-MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "moveos/moveos-stdlib/moveos-stdlib", rev = "main" }
-RoochFramework = { git = "https://github.com/rooch-network/rooch.git", subdir = "crates/rooch-framework", rev = "main" }
+RoochFramework = { local = "../../crates/rooch-framework" }
 
 [addresses]
-steal_split =  "0x1b1272eece1923fa84926d5c54ed2b3bd00d55713ba41c6d2d398c3cfada4b2"
-std =  "0x1"
-moveos_std =  "0x2"
+rooch_examples = "_"
+moveos_std = "0x2"
 rooch_framework =  "0x3"
+
+[dev-addresses]
+rooch_examples = "0x42"

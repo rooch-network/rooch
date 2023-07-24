@@ -1,4 +1,4 @@
-module steal_split::steal_split {
+module rooch_examples::rooch_examples {
     use std::bcs;
     use std::hash;
     use std::option::{Self, Option};
@@ -10,9 +10,9 @@ module steal_split::steal_split {
     use moveos_std::event::Self;
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::storage_context::StorageContext;
+    use rooch_examples::coin;
+    use rooch_examples::timestamp;
     use rooch_framework::account::{Self, SignerCapability};
-    use steal_split::coin;
-    use steal_split::timestamp;
 
     #[test_only]
     use moveos_std::storage_context;
@@ -126,12 +126,6 @@ module steal_split::steal_split {
             games: simple_map::create(),
             cap
         });
-
-        event::ensure_event_handle<CreateGameEvent>(ctx);
-        event::ensure_event_handle<SubmitDecisionEvent>(ctx);
-        event::ensure_event_handle<RevealDecisionEvent>(ctx);
-        event::ensure_event_handle<ConcludeGameEvent>(ctx);
-        event::ensure_event_handle<ReleaseFundsAfterExpirationEvent>(ctx);
     }
 
     public entry fun create_game(
@@ -144,7 +138,7 @@ module steal_split::steal_split {
         check_if_state_exists(ctx);
         let now = timestamp::now_seconds(ctx);
         check_if_signer_is_contract_deployer(account);
-        let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(ctx, @steal_split).addr;
+        let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(ctx, @rooch_examples).addr;
         let next_game_id = {
             let state_mut_ref = account_storage::global_borrow_mut<State>(ctx, resouce_address);
             get_next_game_id(&mut state_mut_ref.next_game_id)
@@ -192,7 +186,7 @@ module steal_split::steal_split {
     ) {
         check_if_state_exists(ctx);
         let now = timestamp::now_seconds(ctx);
-        let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(ctx, @steal_split).addr;
+        let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(ctx, @rooch_examples).addr;
         let state_mut_ref = account_storage::global_borrow_mut<State>(ctx, resouce_address);
         check_if_game_exists(&state_mut_ref.games, &game_id);
         let game_mut_ref = simple_map::borrow_mut(&mut state_mut_ref.games, &game_id);
@@ -227,7 +221,7 @@ module steal_split::steal_split {
     ) {
         check_if_state_exists(ctx);
         let now = timestamp::now_seconds(ctx);
-        let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(ctx, @steal_split).addr;
+        let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(ctx, @rooch_examples).addr;
         let (game_id, player_address, decision) = {
             let state_mut_ref = account_storage::global_borrow_mut<State>(ctx, resouce_address);
 
@@ -272,7 +266,7 @@ module steal_split::steal_split {
                     };
                     coin::transfer<WGBCOIN>(resouce_account_signer, steal_player_address, game.prize_pool_amount, ctx);
                 }else {
-                    coin::transfer<WGBCOIN>(resouce_account_signer, @steal_split, game.prize_pool_amount, ctx);
+                    coin::transfer<WGBCOIN>(resouce_account_signer, @rooch_examples, game.prize_pool_amount, ctx);
                 };
                 event::emit(ctx,
                     ConcludeGameEvent {
@@ -302,7 +296,7 @@ module steal_split::steal_split {
                                                     ctx: &mut StorageContext) {
         check_if_state_exists(ctx);
         let now = timestamp::now_seconds(ctx);
-        let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(ctx, @steal_split).addr;
+        let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(ctx, @rooch_examples).addr;
         let (game, resouce_account_signer) = {
             let state_mut_ref = account_storage::global_borrow_mut<State>(ctx, resouce_address);
             check_if_game_exists(&state_mut_ref.games, &game_id);
@@ -315,7 +309,7 @@ module steal_split::steal_split {
         check_if_game_expired(&game, ctx);
 
         if (game.player_one.decision == game.player_two.decision) {
-            coin::transfer<WGBCOIN>(resouce_account_signer, @steal_split, game.prize_pool_amount, ctx);
+            coin::transfer<WGBCOIN>(resouce_account_signer, @rooch_examples, game.prize_pool_amount, ctx);
         }else if (game.player_one.decision != DECISION_NOT_MADE) {
             coin::transfer<WGBCOIN>(
                 resouce_account_signer,
@@ -375,13 +369,13 @@ module steal_split::steal_split {
     }
 
     fun check_if_state_exists(ctx: &mut StorageContext) {
-        assert!(account_storage::global_exists<ResouceAccountAddress>(ctx, @steal_split), EStateIsNotInitialized);
-        let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(ctx, @steal_split).addr;
+        assert!(account_storage::global_exists<ResouceAccountAddress>(ctx, @rooch_examples), EStateIsNotInitialized);
+        let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(ctx, @rooch_examples).addr;
         assert!(account_storage::global_exists<State>(ctx, resouce_address), EStateIsNotInitialized);
     }
 
     fun check_if_signer_is_contract_deployer(signer: &signer) {
-        assert!(signer::address_of(signer) == @steal_split, ESignerIsNotDeployer);
+        assert!(signer::address_of(signer) == @rooch_examples, ESignerIsNotDeployer);
     }
 
     fun check_if_account_has_enough_apt_coins(account: &signer, amount: u64, ctx: &StorageContext, ) {
@@ -436,14 +430,14 @@ module steal_split::steal_split {
 
     #[test]
     fun test_init() {
-        let storage_context = storage_context::new_test_context(@steal_split);
+        let storage_context = storage_context::new_test_context(@rooch_examples);
         let ctx = &mut storage_context;
 
-        let account = &account::create_account_for_test(ctx, @steal_split);
+        let account = &account::create_account_for_test(ctx, @rooch_examples);
         timestamp::set_time_has_started_for_testing(ctx);
 
         init(account, ctx);
-        let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(ctx, @steal_split).addr;
+        let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(ctx, @rooch_examples).addr;
 
         let state = account_storage::global_borrow_mut<State>(ctx, resouce_address);
         assert!(state.next_game_id == 0, 0);
@@ -460,9 +454,9 @@ module steal_split::steal_split {
     #[test]
     #[expected_failure(abort_code = 196615, location = rooch_framework::account)]
     fun test_init_again() {
-        let storage_context = storage_context::new_test_context(@steal_split);
+        let storage_context = storage_context::new_test_context(@rooch_examples);
         let ctx = &mut storage_context;
-        let account = &account::create_account_for_test(ctx, @steal_split);
+        let account = &account::create_account_for_test(ctx, @rooch_examples);
         let _move_os = &account::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
 
@@ -473,10 +467,10 @@ module steal_split::steal_split {
 
     #[test]
     fun test_create_game() {
-        let storage_context = storage_context::new_test_context(@steal_split);
+        let storage_context = storage_context::new_test_context(@rooch_examples);
         let ctx = &mut storage_context;
 
-        let account = &account::create_account_for_test(ctx, @steal_split);
+        let account = &account::create_account_for_test(ctx, @rooch_examples);
         let _move_os = &account::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
 
@@ -488,7 +482,7 @@ module steal_split::steal_split {
 
         timestamp::update_global_time_for_test_secs(10, ctx);
         create_game(account, prize_pool_amount, player_one_address, player_two_address, ctx);
-        let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(ctx, @steal_split).addr;
+        let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(ctx, @rooch_examples).addr;
 
         let state = account_storage::global_borrow_mut<State>(ctx, resouce_address);
         assert!(state.next_game_id == 1, 0);
@@ -517,10 +511,10 @@ module steal_split::steal_split {
 
     #[test]
     fun test_submit_decision() {
-        let storage_context = storage_context::new_test_context(@steal_split);
+        let storage_context = storage_context::new_test_context(@rooch_examples);
         let ctx = &mut storage_context;
 
-        let account = &account::create_account_for_test(ctx, @steal_split);
+        let account = &account::create_account_for_test(ctx, @rooch_examples);
         let _move_os = &account::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
 
@@ -541,7 +535,7 @@ module steal_split::steal_split {
         create_game(account, prize_pool_amount, player_one_address, player_two_address, ctx);
 
 
-        let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(ctx, @steal_split).addr;
+        let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(ctx, @rooch_examples).addr;
 
         let salt = b"saltsaltsalt";
         let decision = bcs::to_bytes(&DECISION_SPLIT);
@@ -580,10 +574,10 @@ module steal_split::steal_split {
     #[test]
     #[expected_failure(abort_code = 8, location = Self)]
     fun test_submit_decision_player_one_has_a_decision_submitted() {
-        let storage_context = storage_context::new_test_context(@steal_split);
+        let storage_context = storage_context::new_test_context(@rooch_examples);
         let ctx = &mut storage_context;
 
-        let account = &account::create_account_for_test(ctx, @steal_split);
+        let account = &account::create_account_for_test(ctx, @rooch_examples);
         let _move_os = &account::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
 
@@ -617,10 +611,10 @@ module steal_split::steal_split {
 
     #[test]
     fun test_reveal_decision_split() {
-        let storage_context = storage_context::new_test_context(@steal_split);
+        let storage_context = storage_context::new_test_context(@rooch_examples);
         let ctx = &mut storage_context;
 
-        let account = &account::create_account_for_test(ctx, @steal_split);
+        let account = &account::create_account_for_test(ctx, @rooch_examples);
         let _move_os = &account::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
 
@@ -663,7 +657,7 @@ module steal_split::steal_split {
 
         reveal_decision(&player_one, 0, string::utf8(player_one_salt), ctx);
         {
-            let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(ctx, @steal_split).addr;
+            let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(ctx, @rooch_examples).addr;
             {
                 let state = account_storage::global_borrow_mut<State>(ctx, resouce_address);
                 assert!(state.next_game_id == 1, 0);
@@ -707,10 +701,10 @@ module steal_split::steal_split {
 
     #[test]
     fun test_reveal_decision_player_one_steals() {
-        let storage_context = storage_context::new_test_context(@steal_split);
+        let storage_context = storage_context::new_test_context(@rooch_examples);
         let ctx = &mut storage_context;
 
-        let account = &account::create_account_for_test(ctx, @steal_split);
+        let account = &account::create_account_for_test(ctx, @rooch_examples);
         let _move_os = &account::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
 
@@ -756,7 +750,7 @@ module steal_split::steal_split {
         {
             let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(
                 ctx,
-                @steal_split
+                @rooch_examples
             ).addr;
 
             {
@@ -772,10 +766,10 @@ module steal_split::steal_split {
 
     #[test]
     fun test_reveal_decision_player_two_steals() {
-        let storage_context = storage_context::new_test_context(@steal_split);
+        let storage_context = storage_context::new_test_context(@rooch_examples);
         let ctx = &mut storage_context;
 
-        let account = &account::create_account_for_test(ctx, @steal_split);
+        let account = &account::create_account_for_test(ctx, @rooch_examples);
         let _move_os = &account::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
 
@@ -823,7 +817,7 @@ module steal_split::steal_split {
         {
             let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(
                 ctx,
-                @steal_split
+                @rooch_examples
             ).addr;
 
             {
@@ -839,10 +833,10 @@ module steal_split::steal_split {
 
     #[test]
     fun test_reveal_decision_both_players_steal() {
-        let storage_context = storage_context::new_test_context(@steal_split);
+        let storage_context = storage_context::new_test_context(@rooch_examples);
         let ctx = &mut storage_context;
 
-        let account = &account::create_account_for_test(ctx, @steal_split);
+        let account = &account::create_account_for_test(ctx, @rooch_examples);
         let _move_os = &account::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
 
@@ -889,7 +883,7 @@ module steal_split::steal_split {
         {
             let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(
                 ctx,
-                @steal_split
+                @rooch_examples
             ).addr;
 
             {
@@ -907,10 +901,10 @@ module steal_split::steal_split {
     #[test]
     #[expected_failure(abort_code = 7, location = Self)]
     fun test_reveal_decision_player_one_does_not_have_a_decision_submitted() {
-        let storage_context = storage_context::new_test_context(@steal_split);
+        let storage_context = storage_context::new_test_context(@rooch_examples);
         let ctx = &mut storage_context;
 
-        let account = &account::create_account_for_test(ctx, @steal_split);
+        let account = &account::create_account_for_test(ctx, @rooch_examples);
         let _move_os = &account::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
 
@@ -947,10 +941,10 @@ module steal_split::steal_split {
 
     #[test]
     fun test_release_funds_after_expiration_transfer_to_creator() {
-        let storage_context = storage_context::new_test_context(@steal_split);
+        let storage_context = storage_context::new_test_context(@rooch_examples);
         let ctx = &mut storage_context;
 
-        let account = &account::create_account_for_test(ctx, @steal_split);
+        let account = &account::create_account_for_test(ctx, @rooch_examples);
         let _move_os = &account::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
 
@@ -978,7 +972,7 @@ module steal_split::steal_split {
         {
             let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(
                 ctx,
-                @steal_split
+                @rooch_examples
             ).addr;
 
             {
@@ -994,10 +988,10 @@ module steal_split::steal_split {
 
     #[test]
     fun test_release_funds_after_expiration_transfer_to_player_one() {
-        let storage_context = storage_context::new_test_context(@steal_split);
+        let storage_context = storage_context::new_test_context(@rooch_examples);
         let ctx = &mut storage_context;
 
-        let account = &account::create_account_for_test(ctx, @steal_split);
+        let account = &account::create_account_for_test(ctx, @rooch_examples);
         let _move_os = &account::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
 
@@ -1044,7 +1038,7 @@ module steal_split::steal_split {
         {
             let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(
                 ctx,
-                @steal_split
+                @rooch_examples
             ).addr;
 
             {
