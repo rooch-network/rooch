@@ -13,10 +13,15 @@ Feature: Rooch CLI integration tests
       Given the server
 
       Then cmd: "object --id {default}"
-      Then cmd: "account create"
+      Then cmd: "account create --scheme 0"
+      # TODO implement MultiEd25519 "account create --scheme 1"
+      Then cmd: "account create --scheme 2"
+      Then cmd: "account create --scheme 3"
       Then cmd: "account list"
-      Then cmd: "account import "fiber tube acid imitate frost coffee choose crowd grass topple donkey submit""
-    
+      Then cmd: "account import --scheme 0 "fiber tube acid imitate frost coffee choose crowd grass topple donkey submit""
+      # TODO implement MultiEd25519 "account import --scheme 1"
+      Then cmd: "account import --scheme 2 "arrive scheme chunk mutual hip twenty tunnel correct fee sign bag high""
+      Then cmd: "account import --scheme 3 "census sudden knife document sick disease flush brand sport head genius warrior""
       # TODO split Scenario for every example
       # counter example
       Then cmd: "move publish -p ../../examples/counter --sender-account {default} --named-addresses rooch_examples={default}"

@@ -66,12 +66,12 @@ pub trait AccountKeystore: Send + Sync {
 
     fn generate_and_add_new_key(
         &mut self,
-        key_scheme: BuiltinScheme,
+        crypto_scheme: BuiltinScheme,
         derivation_path: Option<DerivationPath>,
         word_length: Option<String>,
     ) -> Result<(RoochAddress, String, BuiltinScheme), anyhow::Error> {
         let (address, kp, scheme, phrase) =
-            generate_new_key(key_scheme, derivation_path, word_length)?;
+            generate_new_key(crypto_scheme, derivation_path, word_length)?;
         self.add_key(kp)?;
         Ok((address, phrase, scheme))
     }
@@ -79,13 +79,13 @@ pub trait AccountKeystore: Send + Sync {
     fn import_from_mnemonic(
         &mut self,
         phrase: &str,
-        key_scheme: BuiltinScheme,
+        crypto_scheme: BuiltinScheme,
         derivation_path: Option<DerivationPath>,
     ) -> Result<RoochAddress, anyhow::Error> {
         let mnemonic = Mnemonic::from_phrase(phrase, Language::English)
             .map_err(|e| anyhow::anyhow!("Invalid mnemonic phrase: {:?}", e))?;
         let seed = Seed::new(&mnemonic, "");
-        match derive_key_pair_from_path(seed.as_bytes(), derivation_path, &key_scheme) {
+        match derive_key_pair_from_path(seed.as_bytes(), derivation_path, &crypto_scheme) {
             Ok((address, kp)) => {
                 self.add_key(kp)?;
                 Ok(address)
@@ -337,11 +337,31 @@ impl AccountKeystore for InMemKeystore {
 }
 
 impl InMemKeystore {
-    pub fn new_insecure_for_tests(initial_key_number: usize) -> Self {
+    pub fn new_ed25519_insecure_for_tests(initial_key_number: usize) -> Self {
         let mut rng = StdRng::from_seed([0; 32]);
         let keys = (0..initial_key_number)
             .map(|_| get_key_pair_from_rng(&mut rng))
             .map(|(ad, k)| (ad, RoochKeyPair::Ed25519(k)))
+            .collect::<BTreeMap<RoochAddress, RoochKeyPair>>();
+
+        Self { keys }
+    }
+
+    pub fn new_ecdsa_insecure_for_tests(initial_key_number: usize) -> Self {
+        let mut rng = StdRng::from_seed([0; 32]);
+        let keys = (0..initial_key_number)
+            .map(|_| get_key_pair_from_rng(&mut rng))
+            .map(|(ad, k)| (ad, RoochKeyPair::Ecdsa(k)))
+            .collect::<BTreeMap<RoochAddress, RoochKeyPair>>();
+
+        Self { keys }
+    }
+
+    pub fn new_schnorr_insecure_for_tests(initial_key_number: usize) -> Self {
+        let mut rng = StdRng::from_seed([0; 32]);
+        let keys = (0..initial_key_number)
+            .map(|_| get_key_pair_from_rng(&mut rng))
+            .map(|(ad, k)| (ad, RoochKeyPair::Schnorr(k)))
             .collect::<BTreeMap<RoochAddress, RoochKeyPair>>();
 
         Self { keys }

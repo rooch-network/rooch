@@ -95,7 +95,7 @@ impl Arbitrary for SchnorrAuthenticator {
 prop_compose! {
     fn arb_schnorr_authenticator()(
         seed in any::<u64>(),
-        message in vec(any::<u8>(), 1..32)
+        message in vec(any::<u8>(), 32)
     ) -> SchnorrAuthenticator {
         let mut rng = StdRng::seed_from_u64(seed);
         let kp = SchnorrKeyPair::generate(&mut rng);

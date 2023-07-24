@@ -713,11 +713,11 @@ pub struct SchnorrRoochSignature(
     [u8; SchnorrPublicKey::LENGTH + SchnorrSignature::LENGTH + 1],
 );
 
-impl RoochSignatureInner for SchnorrRoochSignature {
-    type Sig = SchnorrSignature;
-    type PubKey = SchnorrPublicKey;
-    type KeyPair = SchnorrKeyPair;
-    const LENGTH: usize = SchnorrPublicKey::LENGTH + SchnorrSignature::LENGTH + 1;
+// Implementation useful for simplify testing when mock signature is needed
+impl Default for SchnorrRoochSignature {
+    fn default() -> Self {
+        Self([0; SchnorrPublicKey::LENGTH + SchnorrSignature::LENGTH + 1])
+    }
 }
 
 impl ToFromBytes for SchnorrRoochSignature {
@@ -735,6 +735,13 @@ impl Signer<Signature> for SchnorrKeyPair {
     fn sign(&self, msg: &[u8]) -> Signature {
         SchnorrRoochSignature::new(self, msg).into()
     }
+}
+
+impl RoochSignatureInner for SchnorrRoochSignature {
+    type Sig = SchnorrSignature;
+    type PubKey = SchnorrPublicKey;
+    type KeyPair = SchnorrKeyPair;
+    const LENGTH: usize = SchnorrPublicKey::LENGTH + SchnorrSignature::LENGTH + 1;
 }
 
 /// Generate a keypair from the specified RNG (useful for testing with seedable rngs).

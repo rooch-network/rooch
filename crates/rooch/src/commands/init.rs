@@ -73,7 +73,7 @@ impl CommandAction<String> for Init {
                         String::new()
                     } else {
                         let address_and_port_regex =
-                            Regex::new(r"^(https?://\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{1,5})$")
+                            Regex::new(r"^(https?://(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|localhost):\d{1,5})$")
                                 .unwrap();
                         print!("Rooch server URL: ");
                         let input = read_line().unwrap();
