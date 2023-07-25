@@ -4,10 +4,21 @@
 use crate::commands::event::EventCommand;
 use cli_types::CommandAction;
 use commands::{
-    abi::ABI, account::Account, init::Init, move_cli::MoveCli, object::ObjectCommand,
-    resource::ResourceCommand, server::Server, state::StateCommand, transaction::Transaction,
+    abi::ABI,
+    account::Account,
+    dashboard::{self, Dashboard},
+    init::Init,
+    move_cli::MoveCli,
+    object::ObjectCommand,
+    resource::ResourceCommand,
+    server::Server,
+    state::StateCommand,
+    transaction::Transaction,
 };
 use rooch_types::error::RoochResult;
+
+#[macro_use]
+extern crate rocket;
 
 pub mod cli_types;
 pub mod commands;
@@ -31,6 +42,7 @@ pub enum Command {
     Resource(ResourceCommand),
     Transaction(Transaction),
     Event(EventCommand),
+    Dashboard(Dashboard),
     ABI(ABI),
 }
 
@@ -39,6 +51,7 @@ pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
         Command::Account(account) => account.execute().await,
         Command::Move(move_cli) => move_cli.execute().await,
         Command::Server(server) => server.execute().await,
+        Command::Dashboard(dashboard) => dashboard.execute().await,
         Command::Init(init) => init.execute_serialized().await,
         Command::State(state) => state.execute_serialized().await,
         Command::Object(object) => object.execute_serialized().await,
