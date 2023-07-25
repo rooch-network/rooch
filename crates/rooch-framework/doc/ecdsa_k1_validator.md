@@ -9,7 +9,6 @@ This module implements the ECDSA over Secpk256k1 validator scheme.
 -  [Struct `EcdsaK1Validator`](#0x3_ecdsa_k1_validator_EcdsaK1Validator)
 -  [Constants](#@Constants_0)
 -  [Function `scheme`](#0x3_ecdsa_k1_validator_scheme)
--  [Function `ecdsa_k1_hash`](#0x3_ecdsa_k1_validator_ecdsa_k1_hash)
 -  [Function `ecdsa_k1_public_key`](#0x3_ecdsa_k1_validator_ecdsa_k1_public_key)
 -  [Function `ecdsa_k1_signature`](#0x3_ecdsa_k1_validator_ecdsa_k1_signature)
 -  [Function `ecdsa_k1_authentication_key`](#0x3_ecdsa_k1_validator_ecdsa_k1_authentication_key)
@@ -60,6 +59,25 @@ This module implements the ECDSA over Secpk256k1 validator scheme.
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="0x3_ecdsa_k1_validator_KECCAK256"></a>
+
+Hash function name that are valid for ecrecover and verify.
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_KECCAK256">KECCAK256</a>: u8 = 0;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_validator_SHA256"></a>
+
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_SHA256">SHA256</a>: u8 = 1;
+</code></pre>
+
 
 
 <a name="0x3_ecdsa_k1_validator_ECDSA_HASH_LENGTH"></a>
@@ -124,40 +142,6 @@ This module implements the ECDSA over Secpk256k1 validator scheme.
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_scheme">scheme</a>(): u64 {
    <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_SCHEME_ECDSA">SCHEME_ECDSA</a>
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_ecdsa_k1_validator_ecdsa_k1_hash"></a>
-
-## Function `ecdsa_k1_hash`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ecdsa_k1_hash">ecdsa_k1_hash</a>(payload: &<a href="">vector</a>&lt;u8&gt;): u8
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ecdsa_k1_hash">ecdsa_k1_hash</a>(payload: &<a href="">vector</a>&lt;u8&gt;): u8 {
-   <b>let</b> <a href="../doc/hash.md#0x1_hash">hash</a> = <a href="_empty">vector::empty</a>&lt;u8&gt;();
-   <b>let</b> i = <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ECDSA_SCHEME_LENGTH">ECDSA_SCHEME_LENGTH</a> + <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ECDSA_SIG_LENGTH">ECDSA_SIG_LENGTH</a> + <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ECDSA_PUBKEY_LENGTH">ECDSA_PUBKEY_LENGTH</a>;
-   <b>while</b> (i &lt; <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ECDSA_SCHEME_LENGTH">ECDSA_SCHEME_LENGTH</a> + <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ECDSA_SIG_LENGTH">ECDSA_SIG_LENGTH</a> + <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ECDSA_PUBKEY_LENGTH">ECDSA_PUBKEY_LENGTH</a> + <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ECDSA_HASH_LENGTH">ECDSA_HASH_LENGTH</a>) {
-      <b>let</b> value = <a href="_borrow">vector::borrow</a>(payload, i);
-      <a href="_push_back">vector::push_back</a>(&<b>mut</b> <a href="../doc/hash.md#0x1_hash">hash</a>, *value);
-      i = i + 1;
-   };
-   <b>let</b> vector_size: u64 = <a href="_length">vector::length</a>(&<a href="../doc/hash.md#0x1_hash">hash</a>);
-   <b>let</b> hash_value: u8 = *<a href="_borrow">vector::borrow</a>(&<a href="../doc/hash.md#0x1_hash">hash</a>, vector_size - 1);
-
-   hash_value
 }
 </code></pre>
 
@@ -328,17 +312,18 @@ Get the authentication key of the given authenticator.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_validate">validate</a>(ctx: &StorageContext, payload: <a href="">vector</a>&lt;u8&gt;){
-   <b>let</b> auth_key = <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ecdsa_k1_authentication_key">ecdsa_k1_authentication_key</a>(&payload);
-   <b>let</b> auth_key_in_account = <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_get_authentication_key">get_authentication_key</a>(ctx, <a href="_sender">storage_context::sender</a>(ctx));
-   <b>assert</b>!(
-      auth_key_in_account == auth_key,
-      <a href="auth_validator.md#0x3_auth_validator_error_invalid_account_auth_key">auth_validator::error_invalid_account_auth_key</a>()
-   );
+   // TODO handle non-<a href="ed25519.md#0x3_ed25519">ed25519</a> auth key and <b>address</b> relationship
+   // <b>let</b> auth_key = <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ecdsa_k1_authentication_key">ecdsa_k1_authentication_key</a>(&payload);
+   // <b>let</b> auth_key_in_account = <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_get_authentication_key">get_authentication_key</a>(ctx, <a href="_sender">storage_context::sender</a>(ctx));
+   // <b>assert</b>!(
+   //    auth_key_in_account == auth_key,
+   //    <a href="auth_validator.md#0x3_auth_validator_error_invalid_account_auth_key">auth_validator::error_invalid_account_auth_key</a>()
+   // );
    <b>assert</b>!(
    <a href="ecdsa_k1.md#0x3_ecdsa_k1_verify_recoverable">ecdsa_k1::verify_recoverable</a>(
       &<a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ecdsa_k1_signature">ecdsa_k1_signature</a>(&payload),
       &<a href="_tx_hash">storage_context::tx_hash</a>(ctx),
-      <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ecdsa_k1_hash">ecdsa_k1_hash</a>(&payload), // KECCAK256:0, SHA256:1, TODO: The <a href="../doc/hash.md#0x1_hash">hash</a> type may need <b>to</b> be passed through the authenticator
+      <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_SHA256">SHA256</a>, // <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_KECCAK256">KECCAK256</a>:0, <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_SHA256">SHA256</a>:1, TODO: The <a href="../doc/hash.md#0x1_hash">hash</a> type may need <b>to</b> be passed through the authenticator
    ),
    <a href="auth_validator.md#0x3_auth_validator_error_invalid_authenticator">auth_validator::error_invalid_authenticator</a>()
    );
@@ -347,7 +332,7 @@ Get the authentication key of the given authenticator.
       &<a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ecdsa_k1_signature">ecdsa_k1_signature</a>(&payload),
       &<a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ecdsa_k1_public_key">ecdsa_k1_public_key</a>(&payload),
       &<a href="_tx_hash">storage_context::tx_hash</a>(ctx),
-      <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ecdsa_k1_hash">ecdsa_k1_hash</a>(&payload), // KECCAK256:0, SHA256:1, TODO: The <a href="../doc/hash.md#0x1_hash">hash</a> type may need <b>to</b> be passed through the authenticator
+      <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_KECCAK256">KECCAK256</a>, // <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_KECCAK256">KECCAK256</a>:0, <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_SHA256">SHA256</a>:1, TODO: The <a href="../doc/hash.md#0x1_hash">hash</a> type may need <b>to</b> be passed through the authenticator
    ),
    <a href="auth_validator.md#0x3_auth_validator_error_invalid_authenticator">auth_validator::error_invalid_authenticator</a>()
    );
