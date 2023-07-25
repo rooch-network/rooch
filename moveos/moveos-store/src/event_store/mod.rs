@@ -62,7 +62,7 @@ impl EventDBStore {
     }
 
     pub fn save_events(&self, events: Vec<Event>) -> Result<()> {
-        let result = self.event_store.put_all(
+        self.event_store.put_all(
             events
                 .into_iter()
                 .map(|event| {
@@ -72,8 +72,7 @@ impl EventDBStore {
                     )
                 })
                 .collect(),
-        );
-        result
+        )
     }
 
     pub fn get_event(&self, event_id: EventID) -> Result<Option<Event>> {
@@ -83,7 +82,7 @@ impl EventDBStore {
 
     pub fn get_events_by_tx_hash(&self, tx_hash: &H256) -> Result<Vec<Event>> {
         let mut iter = self.indexer_store.iter()?;
-        let seek_key = (tx_hash.clone(), 0u64);
+        let seek_key = (*tx_hash, 0u64);
         iter.seek(bcs::to_bytes(&seek_key)?)
             .map_err(|e| anyhow::anyhow!("EventStore get_events_by_tx_hash seek: {:?}", e))?;
         let data: Vec<Event> = iter
@@ -110,7 +109,7 @@ impl EventDBStore {
         let start = cursor.unwrap_or(0);
         let end = start + limit;
         let mut iter = self.event_store.iter()?;
-        let seek_key = (event_handle_id.clone(), start);
+        let seek_key = (*event_handle_id, start);
         iter.seek(bcs::to_bytes(&seek_key)?).map_err(|e| {
             anyhow::anyhow!("EventStore get_events_by_event_handle_id seek: {:?}", e)
         })?;
