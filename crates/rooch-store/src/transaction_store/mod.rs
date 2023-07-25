@@ -91,7 +91,12 @@ impl TransactionDBStore {
         let start = cursor.unwrap_or(0);
         let end = start + (limit as u128);
         let mut iter = self.seq_tx_store.iter()?;
-        iter.seek(bcs::to_bytes(&start)?).map_err(|e| anyhow::anyhow!("Rooch TransactionStore get_tx_seq_infos_by_tx_order seek: {:?}", e))?;
+        iter.seek(bcs::to_bytes(&start)?).map_err(|e| {
+            anyhow::anyhow!(
+                "Rooch TransactionStore get_tx_seq_infos_by_tx_order seek: {:?}",
+                e
+            )
+        })?;
 
         let data: Vec<TransactionSequenceInfo> = iter
             .filter_map(|item| {
@@ -123,7 +128,12 @@ impl TransactionDBStore {
         let start = cursor.unwrap_or(0);
         let end = start + (limit as u128);
         let mut iter = self.tx_seq_mapping.iter()?;
-        iter.seek(bcs::to_bytes(&start)?).map_err(|e| anyhow::anyhow!("Rooch TransactionStore get_tx_seq_mapping_by_tx_order seek: {:?}", e))?;
+        iter.seek(bcs::to_bytes(&start)?).map_err(|e| {
+            anyhow::anyhow!(
+                "Rooch TransactionStore get_tx_seq_mapping_by_tx_order seek: {:?}",
+                e
+            )
+        })?;
 
         let data: Vec<TransactionSequenceMapping> = iter
             .filter_map(|item| {
