@@ -22,16 +22,6 @@
 ## Constants
 
 
-<a name="0x3_ecdsa_k1_EFailToRecoverPubKey"></a>
-
-Error if the public key cannot be recovered from the signature.
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_EFailToRecoverPubKey">EFailToRecoverPubKey</a>: u64 = 0;
-</code></pre>
-
-
-
 <a name="0x3_ecdsa_k1_EInvalidPubKey"></a>
 
 Error if the public key is invalid.

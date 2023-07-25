@@ -752,8 +752,8 @@ mod tests {
     use crate::address::RoochAddress;
     use fastcrypto::{
         ed25519::{Ed25519KeyPair, Ed25519PrivateKey},
-        secp256k1::{Secp256k1KeyPair, Secp256k1PrivateKey},
         secp256k1::schnorr::{SchnorrKeyPair, SchnorrPrivateKey},
+        secp256k1::{Secp256k1KeyPair, Secp256k1PrivateKey},
         traits::{KeyPair, ToFromBytes},
     };
 
