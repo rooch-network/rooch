@@ -144,7 +144,10 @@ impl CommandAction<String> for Init {
                     .map_err(|e| anyhow::anyhow!("Init stroe config failed:{}", e))?;
             }
 
-            let message = format!("Rooch config file generated at {}", client_config_path.display());
+            let message = format!(
+                "Rooch config file generated at {}",
+                client_config_path.display()
+            );
 
             return Ok(message);
         }

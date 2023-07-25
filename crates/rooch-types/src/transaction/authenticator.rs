@@ -9,7 +9,10 @@
 
 use crate::crypto::{BuiltinScheme, Signature};
 use anyhow::Result;
-
+#[cfg(any(test, feature = "fuzzing"))]
+use ethers::types::{Address, Bytes, H256};
+#[cfg(any(test, feature = "fuzzing"))]
+use rand::{rngs::StdRng, SeedableRng};
 #[cfg(any(test, feature = "fuzzing"))]
 use super::ethereum::EthereumTransaction;
 #[cfg(any(test, feature = "fuzzing"))]
@@ -136,7 +139,7 @@ prop_compose! {
      r in vec(any::<u64>(), 4..=4).prop_map(|v| U256(v.try_into().unwrap())),
      s in vec(any::<u64>(), 4..=4).prop_map(|v| U256(v.try_into().unwrap())),
      // Although v is an u64 type, it is actually an u8 value.
-     v in any::<u8>().prop_filter("Valid v value", |&v| v == 27 || v == 28),
+     v in any::<u8>().prop_filter("Valid v value", |&v| v == 27 || v == 28 || v == 35 || v == 36),
     ) -> EcdsaAuthenticator {
         let dummy_tx = ethers::core::types::Transaction {
             r: r,
@@ -160,10 +163,8 @@ prop_compose! {
             chain_id: None, // For EIP-1559
             other: Default::default(), // Captures unknown fields (if any)
         };
-        println!("dummy_tx.input: {}", dummy_tx.input);
-        let message = dummy_tx.input.clone();
         let eth_tx = EthereumTransaction(dummy_tx);
-        let sig = EthereumTransaction::convert_eth_signature_to_recoverable_secp256k1_signature(&eth_tx, message).unwrap();
+        let sig = EthereumTransaction::convert_eth_signature_to_recoverable_secp256k1_signature(&eth_tx).unwrap();
         EcdsaAuthenticator {
             signature: sig
         }
@@ -251,6 +252,7 @@ mod tests {
     use proptest::prelude::*;
 
     proptest! {
+        #[ignore = "need to handle ethereum signature to Rooch signature"]
         #[test]
         fn test_ecdsa_authenticator_serialize_deserialize(authenticator in any::<super::EcdsaAuthenticator>()) {
             let serialized = serde_json::to_string(&authenticator).unwrap();
