@@ -8,7 +8,8 @@
 -  [Constants](#@Constants_0)
 -  [Function `ecrecover`](#0x3_ecdsa_k1_ecrecover)
 -  [Function `decompress_pubkey`](#0x3_ecdsa_k1_decompress_pubkey)
--  [Function `verify`](#0x3_ecdsa_k1_verify)
+-  [Function `verify_recoverable`](#0x3_ecdsa_k1_verify_recoverable)
+-  [Function `verify_nonrecoverable`](#0x3_ecdsa_k1_verify_nonrecoverable)
 
 
 <pre><code><b>use</b> <a href="hash.md#0x3_hash">0x3::hash</a>;
@@ -27,6 +28,16 @@ Error if the public key cannot be recovered from the signature.
 
 
 <pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_EFailToRecoverPubKey">EFailToRecoverPubKey</a>: u64 = 0;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_EInvalidPubKey"></a>
+
+Error if the public key is invalid.
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_EInvalidPubKey">EInvalidPubKey</a>: u64 = 2;
 </code></pre>
 
 
@@ -116,19 +127,19 @@ otherwise throw error.
 
 </details>
 
-<a name="0x3_ecdsa_k1_verify"></a>
+<a name="0x3_ecdsa_k1_verify_recoverable"></a>
 
-## Function `verify`
+## Function `verify_recoverable`
 
 @param signature: A 65-bytes signature in form (r, s, v) that is signed using
-Ecdsa. This is an non-recoverable signature without recovery id.
+Ecdsa. This is a recoverable signature with a recovery id.
 @param msg: The message that the signature is signed against.
 @param hash: The hash function used to hash the message when signing.
 
 If the signature is valid to the pubkey and hashed message, return true. Else false.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_verify">verify</a>(signature: &<a href="">vector</a>&lt;u8&gt;, msg: &<a href="">vector</a>&lt;u8&gt;, <a href="../doc/hash.md#0x1_hash">hash</a>: u8): bool
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_verify_recoverable">verify_recoverable</a>(signature: &<a href="">vector</a>&lt;u8&gt;, msg: &<a href="">vector</a>&lt;u8&gt;, <a href="../doc/hash.md#0x1_hash">hash</a>: u8): bool
 </code></pre>
 
 
@@ -137,8 +148,42 @@ If the signature is valid to the pubkey and hashed message, return true. Else fa
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>native</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_verify">verify</a>(
+<pre><code><b>public</b> <b>native</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_verify_recoverable">verify_recoverable</a>(
    signature: &<a href="">vector</a>&lt;u8&gt;,
+   msg: &<a href="">vector</a>&lt;u8&gt;,
+   <a href="../doc/hash.md#0x1_hash">hash</a>: u8
+): bool;
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_ecdsa_k1_verify_nonrecoverable"></a>
+
+## Function `verify_nonrecoverable`
+
+@param signature: A 64-bytes signature in form (r, s, v) that is signed using
+Ecdsa. This is an non-recoverable signature without recovery id.
+@param public_key: A 32-bytes public key that is used to sign messages.
+@param msg: The message that the signature is signed against.
+@param hash: The hash function used to hash the message when signing.
+
+If the signature is valid to the pubkey and hashed message, return true. Else false.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_verify_nonrecoverable">verify_nonrecoverable</a>(signature: &<a href="">vector</a>&lt;u8&gt;, public_key: &<a href="">vector</a>&lt;u8&gt;, msg: &<a href="">vector</a>&lt;u8&gt;, <a href="../doc/hash.md#0x1_hash">hash</a>: u8): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>native</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_verify_nonrecoverable">verify_nonrecoverable</a>(
+   signature: &<a href="">vector</a>&lt;u8&gt;,
+   public_key: &<a href="">vector</a>&lt;u8&gt;,
    msg: &<a href="">vector</a>&lt;u8&gt;,
    <a href="../doc/hash.md#0x1_hash">hash</a>: u8
 ): bool;

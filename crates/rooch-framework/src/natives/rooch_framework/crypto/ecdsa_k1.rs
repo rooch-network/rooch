@@ -94,7 +94,7 @@ pub fn native_decompress_pubkey(
     }
 }
 
-pub fn native_verify(
+pub fn native_verify_recoverable(
     _gas_params: &FromBytesGasParameters,
     _context: &mut NativeContext,
     ty_args: Vec<Type>,
@@ -147,6 +147,50 @@ pub fn native_verify(
     Ok(NativeResult::ok(cost, smallvec![Value::bool(result)]))
 }
 
+pub fn native_verify_nonrecoverable(
+    _gas_params: &FromBytesGasParameters,
+    _context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert!(ty_args.is_empty());
+    debug_assert!(args.len() == 4);
+
+    let hash = pop_arg!(args, u8);
+
+    let msg = pop_arg!(args, VectorRef);
+    let public_key_bytes = pop_arg!(args, VectorRef);
+    let signature_bytes = pop_arg!(args, VectorRef);
+
+    let msg_ref = msg.as_bytes_ref();
+    let public_key_bytes_ref = public_key_bytes.as_bytes_ref();
+    let signature_bytes_ref = signature_bytes.as_bytes_ref();
+
+    // TODO(Gas): Charge the arg size dependent costs
+
+    let cost = 0.into();
+
+    let Ok(sig) = <Secp256k1Signature as ToFromBytes>::from_bytes(&signature_bytes_ref) else {
+        return Ok(NativeResult::err(cost, INVALID_SIGNATURE));
+    };
+
+    let Ok(public_key) = <Secp256k1PublicKey as ToFromBytes>::from_bytes(&public_key_bytes_ref) else {
+        return Ok(NativeResult::err(cost, INVALID_PUBKEY));
+    };
+
+    let result = match hash {
+        KECCAK256 => public_key
+            .verify_with_hash::<Keccak256>(&msg_ref, &sig)
+            .is_ok(),
+        SHA256 => public_key
+            .verify_with_hash::<Sha256>(&msg_ref, &sig)
+            .is_ok(),
+        _ => false,
+    };
+
+    Ok(NativeResult::ok(cost, smallvec![Value::bool(result)]))
+}
+
 #[derive(Debug, Clone)]
 pub struct FromBytesGasParameters {}
 
@@ -164,13 +208,15 @@ impl FromBytesGasParameters {
 pub struct GasParameters {
     pub ecrecover: FromBytesGasParameters,
     pub decompress_pubkey: FromBytesGasParameters,
-    pub verify: FromBytesGasParameters,
+    pub verify_recoverable: FromBytesGasParameters,
+    pub verify_nonrecoverable: FromBytesGasParameters,
 }
 
 impl GasParameters {
     pub fn zeros() -> Self {
         Self {
-            verify: FromBytesGasParameters::zeros(),
+            verify_nonrecoverable: FromBytesGasParameters::zeros(),
+            verify_recoverable: FromBytesGasParameters::zeros(),
             decompress_pubkey: FromBytesGasParameters::zeros(),
             ecrecover: FromBytesGasParameters::zeros(),
         }
@@ -187,7 +233,17 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
             "decompress_pubkey",
             make_native(gas_params.decompress_pubkey, native_decompress_pubkey),
         ),
-        ("verify", make_native(gas_params.verify, native_verify)),
+        (
+            "verify_recoverable",
+            make_native(gas_params.verify_recoverable, native_verify_recoverable),
+        ),
+        (
+            "verify_nonrecoverable",
+            make_native(
+                gas_params.verify_nonrecoverable,
+                native_verify_nonrecoverable,
+            ),
+        ),
     ];
 
     make_module_natives(natives)
