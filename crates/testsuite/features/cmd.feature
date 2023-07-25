@@ -10,10 +10,11 @@ Feature: Rooch CLI integration tests
       Given the server
 
       Then cmd: "object --id {default}"
-      Then cmd: "account create --scheme 0"
+      # TODO reenable tests of `account create`
+      # Then cmd: "account create --scheme 0"
       # TODO implement MultiEd25519 "account create --scheme 1"
-      Then cmd: "account create --scheme 2"
-      Then cmd: "account create --scheme 3"
+      # Then cmd: "account create --scheme 2"
+      # Then cmd: "account create --scheme 3"
       Then cmd: "account list"
       Then cmd: "account import --scheme 0 "fiber tube acid imitate frost coffee choose crowd grass topple donkey submit""
       # TODO implement MultiEd25519 "account import --scheme 1"

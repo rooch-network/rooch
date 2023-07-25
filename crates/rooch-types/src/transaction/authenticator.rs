@@ -7,16 +7,14 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(any(test, feature = "fuzzing"))]
+use super::ethereum::EthereumTransaction;
 use crate::crypto::{BuiltinScheme, Signature};
 use anyhow::Result;
 #[cfg(any(test, feature = "fuzzing"))]
-use ethers::types::{Address, Bytes, H256};
-#[cfg(any(test, feature = "fuzzing"))]
-use rand::{rngs::StdRng, SeedableRng};
-#[cfg(any(test, feature = "fuzzing"))]
-use super::ethereum::EthereumTransaction;
-#[cfg(any(test, feature = "fuzzing"))]
 use ethers::types::U256;
+#[cfg(any(test, feature = "fuzzing"))]
+use ethers::types::{Address, Bytes, H256};
 #[cfg(any(test, feature = "fuzzing"))]
 use fastcrypto::ed25519::Ed25519KeyPair;
 #[cfg(any(test, feature = "fuzzing"))]
@@ -25,6 +23,8 @@ use fastcrypto::secp256k1::schnorr::SchnorrKeyPair;
 use fastcrypto::traits::KeyPair;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::{collection::vec, prelude::*};
+#[cfg(any(test, feature = "fuzzing"))]
+use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
 
