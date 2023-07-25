@@ -14,26 +14,15 @@ module rooch_framework::schnorr_validator {
    const SCHNORR_PUBKEY_LENGTH: u64 = 32;
    const SCHNORR_SIG_LENGTH: u64 = 64;
    const SCHNORR_HASH_LENGTH: u64 = 1;
+   /// Hash function name that are valid for verify.
+    const KECCAK256: u8 = 0;
+    const SHA256: u8 = 1;
 
    struct SchnorrValidator has store{
    }
 
    public fun scheme(): u64 {
       SCHEME_SCHNORR
-   }
-
-   public fun schnorr_hash(payload: &vector<u8>): u8 {
-      let hash = vector::empty<u8>();
-      let i = SCHNORR_SCHEME_LENGTH + SCHNORR_SIG_LENGTH + SCHNORR_PUBKEY_LENGTH;
-      while (i < SCHNORR_SCHEME_LENGTH + SCHNORR_SIG_LENGTH + SCHNORR_PUBKEY_LENGTH + SCHNORR_HASH_LENGTH) {
-         let value = vector::borrow(payload, i);
-         vector::push_back(&mut hash, *value);
-         i = i + 1;
-      };
-      let vector_size: u64 = vector::length(&hash);
-      let hash_value: u8 = *vector::borrow(&hash, vector_size - 1);
-
-      hash_value
    }
 
    public fun schnorr_public_key(payload: &vector<u8>): vector<u8> {
@@ -84,18 +73,19 @@ module rooch_framework::schnorr_validator {
    }
 
    public fun validate(ctx: &StorageContext, payload: vector<u8>){
-      let auth_key = schnorr_authentication_key(&payload);
-      let auth_key_in_account = get_authentication_key(ctx, storage_context::sender(ctx));
-      assert!(
-         auth_key_in_account == auth_key,
-         auth_validator::error_invalid_account_auth_key()
-      );
+      // TODO handle non-ed25519 auth key and address relationship
+      // let auth_key = schnorr_authentication_key(&payload);
+      // let auth_key_in_account = get_authentication_key(ctx, storage_context::sender(ctx));
+      // assert!(
+      //    auth_key_in_account == auth_key,
+      //    auth_validator::error_invalid_account_auth_key()
+      // );
       assert!(
          schnorr::verify(
          &schnorr_signature(&payload),
          &schnorr_public_key(&payload),
          &storage_context::tx_hash(ctx),
-         schnorr_hash(&payload),
+         SHA256,
          ),
          auth_validator::error_invalid_account_auth_key()
       );

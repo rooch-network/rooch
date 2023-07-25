@@ -61,6 +61,25 @@ This module implements the schnorr validator scheme.
 ## Constants
 
 
+<a name="0x3_schnorr_validator_KECCAK256"></a>
+
+Hash function name that are valid for verify.
+
+
+<pre><code><b>const</b> <a href="schnorr_validator.md#0x3_schnorr_validator_KECCAK256">KECCAK256</a>: u8 = 0;
+</code></pre>
+
+
+
+<a name="0x3_schnorr_validator_SHA256"></a>
+
+
+
+<pre><code><b>const</b> <a href="schnorr_validator.md#0x3_schnorr_validator_SHA256">SHA256</a>: u8 = 1;
+</code></pre>
+
+
+
 <a name="0x3_schnorr_validator_SCHEME_SCHNORR"></a>
 
 
@@ -293,18 +312,19 @@ Get the authentication key of the given authenticator.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_validate">validate</a>(ctx: &StorageContext, payload: <a href="">vector</a>&lt;u8&gt;){
-   <b>let</b> auth_key = <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_authentication_key">schnorr_authentication_key</a>(&payload);
-   <b>let</b> auth_key_in_account = <a href="schnorr_validator.md#0x3_schnorr_validator_get_authentication_key">get_authentication_key</a>(ctx, <a href="_sender">storage_context::sender</a>(ctx));
-   <b>assert</b>!(
-      auth_key_in_account == auth_key,
-      <a href="auth_validator.md#0x3_auth_validator_error_invalid_account_auth_key">auth_validator::error_invalid_account_auth_key</a>()
-   );
+   // TODO handle non-<a href="ed25519.md#0x3_ed25519">ed25519</a> auth key and <b>address</b> relationship
+   // <b>let</b> auth_key = <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_authentication_key">schnorr_authentication_key</a>(&payload);
+   // <b>let</b> auth_key_in_account = <a href="schnorr_validator.md#0x3_schnorr_validator_get_authentication_key">get_authentication_key</a>(ctx, <a href="_sender">storage_context::sender</a>(ctx));
+   // <b>assert</b>!(
+   //    auth_key_in_account == auth_key,
+   //    <a href="auth_validator.md#0x3_auth_validator_error_invalid_account_auth_key">auth_validator::error_invalid_account_auth_key</a>()
+   // );
    <b>assert</b>!(
       <a href="schnorr.md#0x3_schnorr_verify">schnorr::verify</a>(
       &<a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_signature">schnorr_signature</a>(&payload),
       &<a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_public_key">schnorr_public_key</a>(&payload),
       &<a href="_tx_hash">storage_context::tx_hash</a>(ctx),
-      0,
+      <a href="schnorr_validator.md#0x3_schnorr_validator_SHA256">SHA256</a>,
       ),
       <a href="auth_validator.md#0x3_auth_validator_error_invalid_account_auth_key">auth_validator::error_invalid_account_auth_key</a>()
    );
