@@ -16,3 +16,4 @@ coerce = { workspace = true }
 dirs  = { workspace = true }
 once_cell  = { workspace = true }
 clap  = { workspace = true }
+tempfile  = { workspace = true }

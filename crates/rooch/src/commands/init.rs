@@ -5,6 +5,7 @@ use crate::cli_types::{CommandAction, WalletContextOptions};
 use crate::utils::read_line;
 use async_trait::async_trait;
 use clap::Parser;
+use rooch_config::store_config::StoreConfig;
 use rooch_config::{rooch_config_dir, Config, ROOCH_CLIENT_CONFIG, ROOCH_KEYSTORE_FILENAME};
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use rooch_rpc_client::client_config::{ClientConfig, Env};
@@ -24,7 +25,7 @@ pub struct Init {
 #[async_trait]
 impl CommandAction<String> for Init {
     async fn execute(self) -> RoochResult<String> {
-        let client_config_path = match self.context_options.config_dir {
+        let config_path = match self.context_options.config_dir {
             Some(v) => {
                 if !v.exists() {
                     fs::create_dir_all(v.clone())?
@@ -34,7 +35,7 @@ impl CommandAction<String> for Init {
             None => rooch_config_dir()?.join(ROOCH_CLIENT_CONFIG),
         };
         // Prompt user for connect to devnet fullnode if config does not exist.
-        if !client_config_path.exists() {
+        if !config_path.exists() {
             let env = match std::env::var_os("ROOCH_CONFIG_WITH_RPC_URL") {
                 Some(v) => Some(Env {
                     alias: "custom".to_string(),
@@ -43,11 +44,11 @@ impl CommandAction<String> for Init {
                 }),
                 None => {
                     if self.accept_defaults {
-                        println!("Creating config file [{:?}] with default (local) server and ed25519 key scheme.", client_config_path);
+                        println!("Creating config file [{:?}] with default (local) server and ed25519 key scheme.", config_path);
                     } else {
                         print!(
                                 "Config file [{:?}] doesn't exist, do you want to connect to a rooch server [y/N]?",
-                                client_config_path
+                                config_path
                             );
                     }
                     if self.accept_defaults
@@ -84,7 +85,7 @@ impl CommandAction<String> for Init {
             };
 
             if let Some(env) = env {
-                let keystore_path = client_config_path
+                let keystore_path = config_path
                     .parent()
                     .unwrap_or(&rooch_config_dir()?)
                     .join(ROOCH_KEYSTORE_FILENAME);
@@ -109,21 +110,22 @@ impl CommandAction<String> for Init {
                     active_address: Some(new_address),
                     active_env: Some(alias),
                 }
-                .persisted(client_config_path.as_path())
+                .persisted(config_path.as_path())
                 .save()?;
+
+                //Store config init
+                StoreConfig::init()
+                    .map_err(|e| anyhow::anyhow!("Init stroe config failed:{}", e))?;
             }
 
-            let message = format!(
-                "Rooch config file generated at {}",
-                client_config_path.display()
-            );
+            let message = format!("Rooch config file generated at {}", config_path.display());
 
             return Ok(message);
         }
 
         let message = format!(
             "Rooch config file already exists at {}",
-            client_config_path.display()
+            config_path.display()
         );
 
         Ok(message)

@@ -4,9 +4,6 @@
 use crate::rocks::batch::WriteBatch;
 use anyhow::Result;
 
-/// Type alias to improve readability.
-pub type ColumnFamilyName = &'static str;
-
 #[allow(clippy::upper_case_acronyms)]
 pub trait KVStore: Send + Sync {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;

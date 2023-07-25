@@ -3,7 +3,7 @@
 
 use anyhow::Result;
 use moveos::moveos::MoveOS;
-use moveos_store::MoveOSDB;
+use moveos_store::MoveOSStore;
 use moveos_types::module_binding::{ModuleBundle, MoveFunctionCaller};
 use rooch_genesis::RoochGenesis;
 
@@ -13,10 +13,11 @@ pub struct RustBindingTest {
 
 impl RustBindingTest {
     pub fn new() -> Result<Self> {
-        let moveosdb = MoveOSDB::new_with_memory_store();
+        // let moveos_store = MoveOSDB::new_with_memory_store();
+        let moveos_store = MoveOSStore::mock().unwrap();
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
 
-        let mut moveos = MoveOS::new(moveosdb, genesis.all_natives(), genesis.config.clone())?;
+        let mut moveos = MoveOS::new(moveos_store, genesis.all_natives(), genesis.config.clone())?;
         if moveos.state().is_genesis() {
             moveos.init_genesis(genesis.genesis_txs())?;
         }

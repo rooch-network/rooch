@@ -167,6 +167,7 @@ where
 mod tests {
     use crate::GenesisPackage;
     use moveos::moveos::MoveOS;
+    use moveos_store::MoveOSStore;
     use rooch_framework::natives::all_natives;
 
     #[test]
@@ -189,9 +190,14 @@ mod tests {
     #[test]
     fn test_genesis_init() {
         let genesis = super::RoochGenesis::build().expect("build rooch framework failed");
-        let db = moveos_store::MoveOSDB::new_with_memory_store();
-        let mut moveos = MoveOS::new(db, all_natives(genesis.gas_params), genesis.config)
-            .expect("init moveos failed");
+        // let db = moveos_store::MoveOSStore::new_with_memory_store();
+        let moveos_store = MoveOSStore::mock().unwrap();
+        let mut moveos = MoveOS::new(
+            moveos_store,
+            all_natives(genesis.gas_params),
+            genesis.config,
+        )
+        .expect("init moveos failed");
         moveos
             .init_genesis(genesis.genesis_package.genesis_txs)
             .expect("init genesis failed");

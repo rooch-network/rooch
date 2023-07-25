@@ -224,7 +224,7 @@ impl EventHandle {
         }
     }
 
-    /// Return the event_id to where this event is stored in EventStore.
+    /// Return the event_id to where this event is stored in EventDB.
     pub fn event_handle_id(&self) -> &ObjectID {
         &self.event_handle_id
     }

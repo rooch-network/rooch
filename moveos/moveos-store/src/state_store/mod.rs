@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::MoveOSDB;
+use crate::MoveOSStore;
 use anyhow::{Error, Result};
 use move_core_types::{
     account_address::AccountAddress,
@@ -22,11 +22,32 @@ use moveos_types::{
     state::StateChangeSet,
     state_resolver::{self, module_name_to_key, resource_tag_to_key, StateResolver},
 };
-use smt::{InMemoryNodeStore, NodeStore, SMTree, UpdateSet};
+use raw_store::{CodecKVStore, CodecWriteBatch};
+use smt::{NodeStore, SMTree, UpdateSet};
 use std::collections::BTreeMap;
 
 #[cfg(test)]
 mod tests;
+
+use crate::STATE_NODE_PREFIX_NAME;
+use raw_store::{derive_store, StoreInstance};
+
+derive_store!(NodeDBStore, H256, Vec<u8>, STATE_NODE_PREFIX_NAME);
+
+impl NodeStore for NodeDBStore {
+    fn get(&self, hash: &H256) -> Result<Option<Vec<u8>>> {
+        self.kv_get(*hash)
+    }
+
+    fn put(&self, key: H256, node: Vec<u8>) -> Result<()> {
+        self.kv_put(key, node)
+    }
+
+    fn write_nodes(&self, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {
+        let batch = CodecWriteBatch::new_puts(nodes.into_iter().collect());
+        self.write_batch(batch)
+    }
+}
 
 struct AccountStorageTables<NS> {
     pub resources: (Object<TableInfo>, TreeTable<NS>),
@@ -109,18 +130,17 @@ where
 }
 
 /// StateDB provide state storage and state proof
-pub struct StateDB {
-    node_store: InMemoryNodeStore,
-    global_table: TreeTable<InMemoryNodeStore>,
+pub struct StateDBStore {
+    pub node_store: NodeDBStore,
+    global_table: TreeTable<NodeDBStore>,
 }
 
-impl StateDB {
-    /// Init stateDB with memory store, just for test
-    pub fn new_with_memory_store() -> Self {
-        let node_store = InMemoryNodeStore::default();
+impl StateDBStore {
+    pub fn new(instance: StoreInstance) -> Self {
+        let store = NodeDBStore::new(instance);
         Self {
-            node_store: node_store.clone(),
-            global_table: TreeTable::new(node_store),
+            node_store: store.clone(),
+            global_table: TreeTable::new(store),
         }
     }
 
@@ -152,10 +172,7 @@ impl StateDB {
     fn get_as_account_storage_or_create(
         &self,
         account: AccountAddress,
-    ) -> Result<(
-        Object<AccountStorage>,
-        AccountStorageTables<InMemoryNodeStore>,
-    )> {
+    ) -> Result<(Object<AccountStorage>, AccountStorageTables<NodeDBStore>)> {
         let account_storage = self
             .get_as_account_storage(account)?
             .unwrap_or_else(|| Object::new_account_storage_object(account));
@@ -169,7 +186,7 @@ impl StateDB {
     fn get_as_table(
         &self,
         id: ObjectID,
-    ) -> Result<Option<(Object<TableInfo>, TreeTable<InMemoryNodeStore>)>> {
+    ) -> Result<Option<(Object<TableInfo>, TreeTable<NodeDBStore>)>> {
         let object = self.get_as_object::<TableInfo>(id)?;
         match object {
             Some(object) => {
@@ -189,7 +206,7 @@ impl StateDB {
     fn get_as_table_or_create(
         &self,
         id: ObjectID,
-    ) -> Result<(Object<TableInfo>, TreeTable<InMemoryNodeStore>)> {
+    ) -> Result<(Object<TableInfo>, TreeTable<NodeDBStore>)> {
         Ok(self.get_as_table(id)?.unwrap_or_else(|| {
             let table = TreeTable::new(self.node_store.clone());
             let table_info = TableInfo::new(AccountAddress::new(table.state_root().into()));
@@ -277,7 +294,7 @@ impl StateDB {
     }
 }
 
-impl StateResolver for MoveOSDB {
+impl StateResolver for MoveOSStore {
     fn resolve_state(
         &self,
         handle: &ObjectID,
@@ -287,7 +304,7 @@ impl StateResolver for MoveOSDB {
     }
 }
 
-impl StateResolver for StateDB {
+impl StateResolver for StateDBStore {
     fn resolve_state(
         &self,
         handle: &ObjectID,

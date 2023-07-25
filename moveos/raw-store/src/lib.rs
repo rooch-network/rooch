@@ -80,6 +80,7 @@ impl DBStore for StoreInstance {
             StoreInstance::DB { db } => db.write_batch(prefix_name, batch),
         }
     }
+
     fn get_len(&self) -> Result<u64> {
         bail!("DB instance not support get length method!")
     }
@@ -102,7 +103,6 @@ impl DBStore for StoreInstance {
 
     fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
         match self {
-            // StoreInstance::CACHE { cache } => cache.multi_get(prefix_name, keys),
             StoreInstance::DB { db } => db.multi_get(prefix_name, keys),
         }
     }
@@ -190,20 +190,6 @@ where
 pub trait SchemaStore: Sized + ColumnFamily {
     fn get_store(&self) -> &InnerStore<Self>;
 }
-
-// pub trait KeyCodec: Clone + Sized + Debug + Send + Sync {
-//     /// Converts `self` to bytes to be stored in DB.
-//     fn encode_key(&self) -> Result<Vec<u8>>;
-//     /// Converts bytes fetched from DB to `Self`.
-//     fn decode_key(data: &[u8]) -> Result<Self>;
-// }
-//
-// pub trait ValueCodec: Clone + Sized + Debug + Send + Sync {
-//     /// Converts `self` to bytes to be stored in DB.
-//     fn encode_value(&self) -> Result<Vec<u8>>;
-//     /// Converts bytes fetched from DB to `Self`.
-//     fn decode_value(data: &[u8]) -> Result<Self>;
-// }
 
 #[derive(Debug, Clone)]
 pub enum WriteOp<V> {
@@ -302,11 +288,11 @@ where
     K: Serialize + DeserializeOwned,
     V: Serialize + DeserializeOwned,
 {
-    fn get(&self, key: K) -> Result<Option<V>>;
+    fn kv_get(&self, key: K) -> Result<Option<V>>;
 
     fn multiple_get(&self, keys: Vec<K>) -> Result<Vec<Option<V>>>;
 
-    fn put(&self, key: K, value: V) -> Result<()>;
+    fn kv_put(&self, key: K, value: V) -> Result<()>;
 
     fn contains_key(&self, key: K) -> Result<bool>;
 
@@ -340,7 +326,7 @@ where
     S: SchemaStore,
     S: ColumnFamily<Key = K, Value = V>,
 {
-    fn get(&self, key: K) -> Result<Option<V>> {
+    fn kv_get(&self, key: K) -> Result<Option<V>> {
         match KVStore::get(self.get_store(), to_bytes(&key)?.as_slice())? {
             Some(value) => Ok(Some(from_bytes::<V>(value.as_slice())?)),
             None => Ok(None),
@@ -362,7 +348,7 @@ where
             .collect()
     }
 
-    fn put(&self, key: K, value: V) -> Result<()> {
+    fn kv_put(&self, key: K, value: V) -> Result<()> {
         KVStore::put(self.get_store(), to_bytes(&key)?, to_bytes(&value)?)
     }
 

@@ -15,5 +15,9 @@ thiserror = { workspace = true }
 tonic = { workspace = true }
 coerce = { workspace = true }
 dirs  = { workspace = true }
+once_cell  = { workspace = true }
+clap  = { workspace = true }
+
 rooch-key = { workspace = true }
 rooch-types = { workspace = true }
+moveos-config = { workspace = true }

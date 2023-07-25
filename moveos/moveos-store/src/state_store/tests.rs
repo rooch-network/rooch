@@ -6,11 +6,11 @@ use std::str::FromStr;
 use moveos_types::{move_string::MoveString, state::TableChange};
 
 use super::*;
-use crate::MoveOSDB;
+use crate::MoveOSStore;
 
 #[test]
 fn test_statedb() {
-    let db = MoveOSDB::new_with_memory_store();
+    let moveos_store = MoveOSStore::mock().unwrap();
 
     let change_set = ChangeSet::new();
 
@@ -25,11 +25,12 @@ fn test_statedb() {
         .insert(key.to_bytes(), Op::New(value.clone().into()));
 
     table_change_set.changes.insert(table_handle, table_change);
-    db.state_store
+    moveos_store
+        .state_store
         .apply_change_set(change_set, table_change_set)
         .unwrap();
 
-    let state = db
+    let state = moveos_store
         .get_state_store()
         .resolve_state(&table_handle, &key.to_bytes())
         .unwrap();
