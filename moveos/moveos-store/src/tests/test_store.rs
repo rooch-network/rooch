@@ -3,6 +3,7 @@
 
 extern crate chrono;
 
+use crate::event_store::EventStore;
 use crate::{MoveOSStore, StoreMeta};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
@@ -124,8 +125,8 @@ fn test_event_store() {
     );
 
     let _id = (event1.event_id.event_handle_id, event1.event_id.event_seq);
-    store.event_store.save_event(event1.clone()).unwrap();
-    let event2 = store.event_store.get_event(event1.event_id).unwrap();
+    store.save_event(event1.clone()).unwrap();
+    let event2 = store.get_event(event1.event_id).unwrap();
     println!("Debug test_event_store event {:?}", event2.clone());
     assert!(event2.is_some());
     assert_eq!(event1, event2.unwrap());

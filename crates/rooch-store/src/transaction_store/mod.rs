@@ -75,17 +75,10 @@ impl TransactionDBStore {
 
     //TODO implements get type tx by index
     pub fn get_tx_by_index(&self, _cursor: u64, _limit: u64) -> Result<Vec<TypedTransaction>> {
-        // let inner = self.inner_tx.read();
-        // let end = std::cmp::min((start + limit) as usize, inner.len());
-        // inner[start as usize..end].to_vec()
-
         Ok(vec![])
     }
 
     pub fn save_tx_seq_info(&self, tx_seq_info: TransactionSequenceInfo) -> Result<()> {
-        // let mut locked = self.inner_tx_seq_info.write();
-        // locked.insert(tx_seq_info.tx_order, tx_seq_info);
-
         self.seq_tx_store.kv_put(tx_seq_info.tx_order, tx_seq_info)
     }
 
@@ -94,26 +87,11 @@ impl TransactionDBStore {
         cursor: Option<u128>,
         limit: u64,
     ) -> Result<Vec<TransactionSequenceInfo>> {
-        // let start = cursor.unwrap_or(0);
-        // let end = start + (limit as u128);
-        // let rw_locks = self.inner_tx_seq_info.read();
-        // let data = rw_locks
-        //     .iter()
-        //     .filter(|(tx_order, _)| {
-        //         if Option::is_some(&cursor) {
-        //             **tx_order > start && **tx_order <= end
-        //         } else {
-        //             **tx_order >= start && **tx_order < end
-        //         }
-        //     })
-        //     .map(|(_, e)| e.clone())
-        //     .collect::<Vec<_>>();
-        // data
-
         //  will not cross the boundary even if the size exceeds the storage capacity,
         let start = cursor.unwrap_or(0);
         let end = start + (limit as u128);
-        let iter = self.seq_tx_store.iter()?;
+        let mut iter = self.seq_tx_store.iter()?;
+        iter.seek(bcs::to_bytes(&start)?).map_err(|e| anyhow::anyhow!("Rooch TransactionStore get_tx_seq_infos_by_tx_order seek: {:?}", e))?;
 
         let data: Vec<TransactionSequenceInfo> = iter
             .filter_map(|item| {
@@ -133,9 +111,6 @@ impl TransactionDBStore {
     }
 
     pub fn save_tx_seq_info_mapping(&self, tx_order: u128, tx_hash: H256) -> Result<()> {
-        // let mut locked = self.inner_tx_index.write();
-        // locked.insert(tx_order, tx_hash);
-
         self.tx_seq_mapping.kv_put(tx_order, tx_hash)
     }
 
@@ -144,26 +119,11 @@ impl TransactionDBStore {
         cursor: Option<u128>,
         limit: u64,
     ) -> Result<Vec<TransactionSequenceMapping>> {
-        // let start = cursor.unwrap_or(0);
-        // let end = start + (limit as u128);
-        // let rw_locks = self.inner_tx_index.read();
-        // let data = rw_locks
-        //     .iter()
-        //     .filter(|(tx_order, _)| {
-        //         if Option::is_some(&cursor) {
-        //             **tx_order > start && **tx_order <= end
-        //         } else {
-        //             **tx_order >= start && **tx_order < end
-        //         }
-        //     })
-        //     .map(|(tx_order, tx_hash)| TransactionSequenceMapping::new(*tx_order, *tx_hash))
-        //     .collect::<Vec<_>>();
-        // data
-
         //  will not cross the boundary even if the size exceeds the storage capacity,
         let start = cursor.unwrap_or(0);
         let end = start + (limit as u128);
-        let iter = self.tx_seq_mapping.iter()?;
+        let mut iter = self.tx_seq_mapping.iter()?;
+        iter.seek(bcs::to_bytes(&start)?).map_err(|e| anyhow::anyhow!("Rooch TransactionStore get_tx_seq_mapping_by_tx_order seek: {:?}", e))?;
 
         let data: Vec<TransactionSequenceMapping> = iter
             .filter_map(|item| {

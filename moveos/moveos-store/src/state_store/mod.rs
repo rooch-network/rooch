@@ -54,7 +54,6 @@ struct AccountStorageTables<NS> {
     pub modules: (Object<TableInfo>, TreeTable<NS>),
 }
 
-// #[derive(Clone)]
 pub struct TreeTable<NS> {
     smt: SMTree<Vec<u8>, State, NS>,
 }
@@ -130,38 +129,13 @@ where
     }
 }
 
-// /// StateDB provide state storage and state proof
-// pub struct StateDB {
-//     // node_store: InMemoryNodeStore,
-//     node_store: Arc<dyn NodeStore>,
-//     global_table: TreeTable<dyn NodeStore>,
-// }
 /// StateDB provide state storage and state proof
-// #[derive(Clone)]
 pub struct StateDBStore {
-    // node_store: InMemoryNodeStore,
     pub node_store: NodeDBStore,
-    // global_table: TreeTable<dyn NodeStore>,
     global_table: TreeTable<NodeDBStore>,
 }
 
 impl StateDBStore {
-    /// Init stateDB with memory store, just for test
-    // pub fn new_with_memory_store() -> Self {
-    //     let node_store = InMemoryNodeStore::default();
-    //     Self {
-    //         node_store: Arc::new(node_store.clone()),
-    //         global_table: TreeTable::new(node_store),
-    //     }
-    // }
-
-    // pub fn new_with_db_store(store: Arc<dyn NodeStore>) -> Self {
-    //     Self {
-    //         node_store: store.clone(),
-    //         global_table: TreeTable::new(store),
-    //     }
-    // }
-
     pub fn new(instance: StoreInstance) -> Self {
         let store = NodeDBStore::new(instance);
         Self {

@@ -13,23 +13,6 @@ use std::fmt::{Debug, Display, Formatter};
 
 pub mod transaction_store;
 
-// #[derive(Clone)]
-// pub struct RoochStore {
-//     pub transaction_store: TransactionDB,
-// }
-//
-// impl RoochStore {
-//     pub fn new_with_memory_store() -> Self {
-//         Self {
-//             transaction_store: TransactionDB::new_with_memory_store(),
-//         }
-//     }
-//
-//     pub fn get_transaction_store(&self) -> &TransactionDB {
-//         &self.transaction_store
-//     }
-// }
-
 // pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
 pub const TYPED_TRANSACTION_PREFIX_NAME: ColumnFamilyName = "typed_transaction";
 pub const SEQ_TRANSACTION_PREFIX_NAME: ColumnFamilyName = "seq_transaction";
@@ -58,17 +41,8 @@ impl StoreMeta {
 pub struct RoochStore {
     pub transaction_store: TransactionDBStore,
 }
-// // TODO: remove Arc<dyn Store>, we can clone Store directly.
 
 impl RoochStore {
-    // pub fn new_with_memory_store() -> Self {
-    //     Self {
-    //         state_store: StateDB::new_with_memory_store(),
-    //         event_store: EventDB::new_with_memory_store(),
-    //         transaction_store: TransactionDB::new_with_memory_store(),
-    //     }
-    // }
-
     pub fn new(instance: StoreInstance) -> Result<Self> {
         let store = Self {
             transaction_store: TransactionDBStore::new(instance),
@@ -93,21 +67,6 @@ impl Debug for RoochStore {
 }
 
 impl TransactionStore for RoochStore {
-    // fn save_tx_exec_info(&self, tx_exec_info: TransactionExecutionInfo) -> Result<()> {
-    //     self.transaction_store.save_tx_exec_info(tx_exec_info)
-    // }
-    //
-    // fn get_tx_exec_info(&self, tx_hash: H256) -> Result<Option<TransactionExecutionInfo>> {
-    //     self.transaction_store.get_tx_exec_info(tx_hash)
-    // }
-    //
-    // fn multi_get_tx_exec_infos(
-    //     &self,
-    //     tx_hashes: Vec<H256>,
-    // ) -> Result<Vec<Option<TransactionExecutionInfo>>> {
-    //     self.transaction_store.multi_get_tx_exec_infos(tx_hashes)
-    // }
-
     fn save_transaction(&mut self, transaction: TypedTransaction) -> Result<()> {
         self.transaction_store.save_transaction(transaction)
     }
