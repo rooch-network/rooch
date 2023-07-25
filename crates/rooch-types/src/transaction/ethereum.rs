@@ -57,23 +57,25 @@ impl EthereumTransaction {
                 "Invalid recovery ID.".to_owned(),
             ));
         };
-        println!("r: {:?}", &r);
-        println!("s: {:?}", &s);
-        println!("v: {:?}", &v);
 
         // Prepare the signed message (RLP encoding of the transaction)
         let message = self.tx_hash().to_fixed_bytes();
 
-        // Concatenate "r" and "s" signatures to form the 64-byte "rs" signature
+        // Convert `U256` values `r` and `s` to arrays of `u8`
+        let mut r_bytes = [0u8; 32];
+        r.to_big_endian(&mut r_bytes);
+        let mut s_bytes = [0u8; 32];
+        s.to_big_endian(&mut s_bytes);
+
+        // Create a new array to store the 65-byte "rsv" signature
         let mut rsv_signature = [0u8; 65];
-        for i in 0..32 {
-            rsv_signature[i] = r.byte(i.try_into().unwrap());
-        }
-        for i in 0..32 {
-            rsv_signature[32 + i] = s.byte(i.try_into().unwrap());
-        }
-        // Append the recovery id (v) to form the 65-byte "rsv" signature
+        rsv_signature[..32].copy_from_slice(&r_bytes);
+        rsv_signature[32..64].copy_from_slice(&s_bytes);
         rsv_signature[64] = recovery_byte as u8;
+
+        println!("r: {:?}", &r_bytes);
+        println!("s: {:?}", &s_bytes);
+        println!("v: {:?}", &recovery_byte);
         println!("rsv_signature length: {:?}", &rsv_signature.len());
 
         // Create the recoverable signature from the rsv signature
@@ -91,7 +93,7 @@ impl EthereumTransaction {
 
         // Combine the recoverable signature and public key to construct the final signature
         let mut pubkey_and_rsv_signature = Vec::new();
-        pubkey_and_rsv_signature.extend_from_slice(&public_key.as_bytes());
+        pubkey_and_rsv_signature.extend_from_slice(public_key.as_bytes());
         pubkey_and_rsv_signature.extend_from_slice(&rsv_signature);
         println!(
             "pubkey_and_rsv_signature length: {:?}",
@@ -112,16 +114,20 @@ impl EthereumTransaction {
     pub fn convert_eth_signature_to_non_recoverable_secp256k1_signature(
         &self,
     ) -> Result<Signature, RoochError> {
-        // Concatenate "r" and "s" signatures to form the 64-byte "rs" signature
-        let mut rs_signature = [0u8; 64];
-        for i in 0..32 {
-            rs_signature[i] = self.0.r.byte(i.try_into().unwrap());
-        }
-        for i in 0..32 {
-            rs_signature[32 + i] = self.0.s.byte(i.try_into().unwrap());
-        }
+        let r = self.0.r;
+        let s = self.0.s;
+        // Convert `U256` values `r` and `s` to arrays of `u8`
+        let mut r_bytes = [0u8; 32];
+        r.to_big_endian(&mut r_bytes);
+        let mut s_bytes = [0u8; 32];
+        s.to_big_endian(&mut s_bytes);
 
-        // Create a non-recoverable secp256k1 signature struct without the recovery ID (v)
+        // Create a new array to store the 64-byte "rs" signature
+        let mut rs_signature = [0u8; 64];
+        rs_signature[..32].copy_from_slice(&r_bytes);
+        rs_signature[32..].copy_from_slice(&s_bytes);
+
+        // Create a non-recoverable secp256k1 signature without the recovery ID (v)
         let signature: Signature = <EcdsaRoochSignature as ToFromBytes>::from_bytes(&rs_signature)
             .unwrap()
             .into();
