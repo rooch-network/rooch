@@ -1,8 +1,5 @@
 Feature: Rooch CLI integration tests
     Scenario: Init
-      Then cmd: "init"
-
-      # init example
       Then cmd: "init --default"
       Then cmd: "init --scheme 0"
       # TODO implement MultiEd25519 "init --scheme 1"

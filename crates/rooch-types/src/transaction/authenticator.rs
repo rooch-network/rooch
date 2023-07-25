@@ -11,6 +11,8 @@ use crate::crypto::{BuiltinScheme, Signature};
 use anyhow::Result;
 
 #[cfg(any(test, feature = "fuzzing"))]
+use super::ethereum::EthereumTransaction;
+#[cfg(any(test, feature = "fuzzing"))]
 use ethers::types::U256;
 #[cfg(any(test, feature = "fuzzing"))]
 use fastcrypto::ed25519::Ed25519KeyPair;
@@ -20,10 +22,8 @@ use fastcrypto::secp256k1::schnorr::SchnorrKeyPair;
 use fastcrypto::traits::KeyPair;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::{collection::vec, prelude::*};
-#[cfg(any(test, feature = "fuzzing"))]
-use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
-use std::{convert::TryFrom, fmt, str::FromStr};
+use std::{fmt, str::FromStr};
 
 /// A `Authenticator` is an an abstraction of a account authenticator.
 /// It is a part of `AccountAbstraction`
@@ -107,9 +107,9 @@ prop_compose! {
 
 // TODO: MultiEd25519
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct EcdsaAuthenticator {
-    pub signature: ethers::core::types::Signature,
+    pub signature: Signature,
 }
 
 impl BuiltinAuthenticator for EcdsaAuthenticator {
@@ -117,41 +117,7 @@ impl BuiltinAuthenticator for EcdsaAuthenticator {
         BuiltinScheme::Ecdsa
     }
     fn payload(&self) -> Vec<u8> {
-        self.signature.to_vec()
-    }
-}
-
-impl Serialize for EcdsaAuthenticator {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        #[derive(::serde::Serialize)]
-        #[serde(rename = "EcdsaAuthenticator")]
-        struct Value {
-            signature: Vec<u8>,
-        }
-        Value {
-            signature: self.signature.to_vec(),
-        }
-        .serialize(serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for EcdsaAuthenticator {
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        #[derive(::serde::Deserialize)]
-        #[serde(rename = "EcdsaAuthenticator")]
-        struct Value {
-            signature: Vec<u8>,
-        }
-        let value = Value::deserialize(deserializer)?;
-        let signature = ethers::core::types::Signature::try_from(value.signature.as_slice())
-            .map_err(|e| serde::de::Error::custom(e.to_string()))?;
-        Ok(EcdsaAuthenticator { signature })
+        self.signature.as_ref().to_vec()
     }
 }
 
@@ -170,10 +136,36 @@ prop_compose! {
      r in vec(any::<u64>(), 4..=4).prop_map(|v| U256(v.try_into().unwrap())),
      s in vec(any::<u64>(), 4..=4).prop_map(|v| U256(v.try_into().unwrap())),
      // Although v is an u64 type, it is actually an u8 value.
-     v in any::<u8>().prop_map(<u64>::from),
+     v in any::<u8>().prop_filter("Valid v value", |&v| v == 27 || v == 28),
     ) -> EcdsaAuthenticator {
+        let dummy_tx = ethers::core::types::Transaction {
+            r: r,
+            s: s,
+            v: v.into(),
+            hash: H256::zero(),
+            nonce: U256::zero(),
+            block_hash: None,
+            block_number: None,
+            transaction_index: None,
+            from: Address::zero(),
+            to: None,
+            value: U256::zero(),
+            gas_price: None,
+            gas: U256::zero(),
+            input: Bytes::new().into(),
+            transaction_type: None, // For EIP-2718
+            access_list: None, // For EIP-2930
+            max_priority_fee_per_gas: None, // For EIP-1559
+            max_fee_per_gas: None, // For EIP-1559
+            chain_id: None, // For EIP-1559
+            other: Default::default(), // Captures unknown fields (if any)
+        };
+        println!("dummy_tx.input: {}", dummy_tx.input);
+        let message = dummy_tx.input.clone();
+        let eth_tx = EthereumTransaction(dummy_tx);
+        let sig = EthereumTransaction::convert_eth_signature_to_recoverable_secp256k1_signature(&eth_tx, message).unwrap();
         EcdsaAuthenticator {
-            signature: ethers::core::types::Signature {r, s, v},
+            signature: sig
         }
     }
 }
@@ -193,7 +185,7 @@ impl From<Signature> for Authenticator {
     fn from(sign: Signature) -> Self {
         match sign.to_public_key().unwrap().scheme() {
             BuiltinScheme::Ed25519 => Authenticator::ed25519(sign),
-            BuiltinScheme::Ecdsa => todo!(),
+            BuiltinScheme::Ecdsa => Authenticator::ecdsa(sign),
             BuiltinScheme::MultiEd25519 => todo!(),
             BuiltinScheme::Schnorr => Authenticator::schnorr(sign),
         }
@@ -218,7 +210,7 @@ impl Authenticator {
     }
 
     /// Create a single-signature ecdsa authenticator
-    pub fn ecdsa(signature: ethers::core::types::Signature) -> Self {
+    pub fn ecdsa(signature: Signature) -> Self {
         EcdsaAuthenticator { signature }.into()
     }
 

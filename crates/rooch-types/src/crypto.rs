@@ -196,20 +196,6 @@ pub enum PublicKey {
     Schnorr(SchnorrPublicKeyAsBytes),
 }
 
-impl PublicKey {
-    pub fn from_ed25519(pk: Ed25519PublicKeyAsBytes) -> Self {
-        PublicKey::Ed25519(pk)
-    }
-
-    pub fn from_ecdsa(pk: Secp256k1PublicKeyAsBytes) -> Self {
-        PublicKey::Ecdsa(pk)
-    }
-
-    pub fn from_schnorr(pk: SchnorrPublicKeyAsBytes) -> Self {
-        PublicKey::Schnorr(pk)
-    }
-}
-
 impl AsRef<[u8]> for PublicKey {
     fn as_ref(&self) -> &[u8] {
         match self {
@@ -280,7 +266,11 @@ impl<'de> Deserialize<'de> for PublicKey {
 
 impl PublicKey {
     pub fn flag(&self) -> u8 {
-        Ed25519RoochSignature::SCHEME.flag()
+        match self {
+            PublicKey::Ed25519(_) => Ed25519RoochSignature::SCHEME.flag(),
+            PublicKey::Ecdsa(_) => EcdsaRoochSignature::SCHEME.flag(),
+            PublicKey::Schnorr(_) => SchnorrRoochSignature::SCHEME.flag(),
+        }
     }
     pub fn try_from_bytes(
         scheme: BuiltinScheme,
@@ -299,7 +289,6 @@ impl PublicKey {
             _ => Err(eyre!("Unsupported scheme")),
         }
     }
-
     pub fn scheme(&self) -> BuiltinScheme {
         match self {
             PublicKey::Ed25519(_) => Ed25519RoochSignature::SCHEME,
