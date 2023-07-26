@@ -7,10 +7,18 @@ use std::collections::BTreeMap;
 
 pub mod natives;
 
-const ERROR_DESCRIPTIONS: &[u8] = include_bytes!("../error_description.errmap");
+const MOVE_STD_ERROR_DESCRIPTIONS: &[u8] =
+    include_bytes!("../move-stdlib/error_description.errmap");
 
-pub fn error_descriptions() -> &'static [u8] {
-    ERROR_DESCRIPTIONS
+pub fn move_std_error_descriptions() -> &'static [u8] {
+    MOVE_STD_ERROR_DESCRIPTIONS
+}
+
+const MOVEOS_STD_ERROR_DESCRIPTIONS: &[u8] =
+    include_bytes!("../moveos-stdlib/error_description.errmap");
+
+pub fn moveos_std_error_descriptions() -> &'static [u8] {
+    MOVEOS_STD_ERROR_DESCRIPTIONS
 }
 
 pub fn moveos_stdlib_named_addresses() -> BTreeMap<String, NumericalAddress> {

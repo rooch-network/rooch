@@ -1,0 +1,9 @@
+[dependencies]
+anyhow = { workspace = true }
+bcs = { workspace = true }
+serde = { workspace = true }
+
+[package]
+name = "bcs-ext"
+version = "1.13.6"
+edition = "2021"

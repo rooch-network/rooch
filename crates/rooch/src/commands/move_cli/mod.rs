@@ -15,6 +15,7 @@ use move_cli::{
 };
 use rooch_types::error::{RoochError, RoochResult};
 
+use crate::commands::move_cli::commands::explain::Explain;
 use crate::CommandAction;
 
 pub mod commands;
@@ -43,6 +44,7 @@ pub enum MoveCommand {
     Run(RunFunction),
     View(RunViewFunction),
     IntegrationTest(IntegrationTest),
+    Explain(Explain),
 }
 
 #[async_trait]
@@ -93,6 +95,11 @@ impl CommandAction<String> for MoveCli {
             MoveCommand::View(c) => c.execute_serialized().await,
             MoveCommand::IntegrationTest(c) => c
                 .execute(move_args)
+                .map(|_| "Success".to_owned())
+                .map_err(RoochError::from),
+            MoveCommand::Explain(c) => c
+                .execute()
+                .await
                 .map(|_| "Success".to_owned())
                 .map_err(RoochError::from),
         }
