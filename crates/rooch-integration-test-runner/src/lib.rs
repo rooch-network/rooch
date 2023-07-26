@@ -87,7 +87,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             None => BTreeMap::new(),
         };
 
-        let moveos_store = MoveOSStore::mock().unwrap();
+        let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
 
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
         let mut moveos = MoveOS::new(

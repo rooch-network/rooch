@@ -294,6 +294,8 @@ where
 
     fn kv_put(&self, key: K, value: V) -> Result<()>;
 
+    fn put_sync(&self, key: K, value: V) -> Result<()>;
+
     fn contains_key(&self, key: K) -> Result<bool>;
 
     fn remove(&self, key: K) -> Result<()>;
@@ -350,6 +352,10 @@ where
 
     fn kv_put(&self, key: K, value: V) -> Result<()> {
         KVStore::put(self.get_store(), to_bytes(&key)?, to_bytes(&value)?)
+    }
+
+    fn put_sync(&self, key: K, value: V) -> Result<()> {
+        KVStore::put_sync(self.get_store(), to_bytes(&key)?, to_bytes(&value)?)
     }
 
     fn contains_key(&self, key: K) -> Result<bool> {

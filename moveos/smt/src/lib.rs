@@ -177,7 +177,7 @@ where
 
         self.node_store.write_nodes(node_map)?;
         let new_state_root: H256 = new_state_root.into();
-        //TODO handle change_set's stale_node_index
+        //TODO handle change_set's state_node_index
         *self.root_hash.write() = new_state_root;
 
         Ok(new_state_root)

@@ -14,7 +14,7 @@ pub struct RustBindingTest {
 impl RustBindingTest {
     pub fn new() -> Result<Self> {
         // let moveos_store = MoveOSDB::new_with_memory_store();
-        let moveos_store = MoveOSStore::mock().unwrap();
+        let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
 
         let mut moveos = MoveOS::new(moveos_store, genesis.all_natives(), genesis.config.clone())?;
