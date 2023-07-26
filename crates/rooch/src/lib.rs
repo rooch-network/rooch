@@ -4,15 +4,8 @@
 use crate::commands::event::EventCommand;
 use cli_types::CommandAction;
 use commands::{
-    abi::ABI,
-    account::Account,
-    dashboard::{self, Dashboard},
-    init::Init,
-    move_cli::MoveCli,
-    object::ObjectCommand,
-    resource::ResourceCommand,
-    server::Server,
-    state::StateCommand,
+    abi::ABI, account::Account, dashboard::Dashboard, init::Init, move_cli::MoveCli,
+    object::ObjectCommand, resource::ResourceCommand, server::Server, state::StateCommand,
     transaction::Transaction,
 };
 use rooch_types::error::RoochResult;
