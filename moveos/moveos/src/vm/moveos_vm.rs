@@ -183,16 +183,14 @@ where
     /// Verify a move action.
     /// The caller should call this function when validate a transaction.
     /// If the result is error, the transaction should be rejected.
-    pub fn verify_move_action(
-        &self,
-        action: MoveAction,
-    ) -> Result<VerifiedMoveAction, anyhow::Error> {
+    pub fn verify_move_action(&self, action: MoveAction) -> VMResult<VerifiedMoveAction> {
         match action {
             MoveAction::Script(script) => {
                 let loaded_function = self
                     .session
                     .load_script(script.code.as_slice(), script.ty_args.clone())?;
-                moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)?;
+                moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)
+                    .map_err(|e| e.finish(Location::Undefined))?;
                 let resolved_args = self
                     .ctx
                     .resolve_argument(&self.session, &loaded_function, script.args.clone())
@@ -208,7 +206,8 @@ where
                     &function.function_id.function_name,
                     function.ty_args.as_slice(),
                 )?;
-                moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)?;
+                moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)
+                    .map_err(|e| e.finish(Location::Undefined))?;
                 let resolved_args = self
                     .ctx
                     .resolve_argument(&self.session, &loaded_function, function.args.clone())
@@ -230,7 +229,7 @@ where
                                 init_function_modules.push(module.self_id())
                             }
                         }
-                        Err(err) => return Err(err.into()),
+                        Err(err) => return Err(err),
                     }
                 }
 
@@ -335,7 +334,9 @@ where
         let resolved_args = self
             .ctx
             .resolve_argument(&self.session, &loaded_function, call.args)
-            .map_err(|e| e.finish(Location::Undefined))?;
+            .map_err(|e: move_binary_format::errors::PartialVMError| {
+                e.finish(Location::Undefined)
+            })?;
 
         let return_values = self.session.execute_function_bypass_visibility(
             &call.function_id.module_id,
