@@ -80,47 +80,47 @@ Hash function name that are valid for ecrecover and verify.
 
 
 
-<a name="0x3_ecdsa_k1_validator_ECDSA_HASH_LENGTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ECDSA_HASH_LENGTH">ECDSA_HASH_LENGTH</a>: u64 = 1;
-</code></pre>
-
-
-
-<a name="0x3_ecdsa_k1_validator_ECDSA_PUBKEY_LENGTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ECDSA_PUBKEY_LENGTH">ECDSA_PUBKEY_LENGTH</a>: u64 = 32;
-</code></pre>
-
-
-
-<a name="0x3_ecdsa_k1_validator_ECDSA_SCHEME_LENGTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ECDSA_SCHEME_LENGTH">ECDSA_SCHEME_LENGTH</a>: u64 = 1;
-</code></pre>
-
-
-
-<a name="0x3_ecdsa_k1_validator_ECDSA_SIG_LENGTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ECDSA_SIG_LENGTH">ECDSA_SIG_LENGTH</a>: u64 = 64;
-</code></pre>
-
-
-
 <a name="0x3_ecdsa_k1_validator_SCHEME_ECDSA"></a>
 
 
 
 <pre><code><b>const</b> <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_SCHEME_ECDSA">SCHEME_ECDSA</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_validator_V_ECDSA_HASH_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_V_ECDSA_HASH_LENGTH">V_ECDSA_HASH_LENGTH</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_validator_V_ECDSA_PUBKEY_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_V_ECDSA_PUBKEY_LENGTH">V_ECDSA_PUBKEY_LENGTH</a>: u64 = 32;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_validator_V_ECDSA_SCHEME_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_V_ECDSA_SCHEME_LENGTH">V_ECDSA_SCHEME_LENGTH</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_validator_V_ECDSA_SIG_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_V_ECDSA_SIG_LENGTH">V_ECDSA_SIG_LENGTH</a>: u64 = 64;
 </code></pre>
 
 
@@ -166,8 +166,8 @@ Hash function name that are valid for ecrecover and verify.
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ecdsa_k1_public_key">ecdsa_k1_public_key</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
    <b>let</b> public_key = <a href="_empty">vector::empty</a>&lt;u8&gt;();
-   <b>let</b> i = <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ECDSA_SCHEME_LENGTH">ECDSA_SCHEME_LENGTH</a> + <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ECDSA_SIG_LENGTH">ECDSA_SIG_LENGTH</a>;
-   <b>while</b> (i &lt; <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ECDSA_SCHEME_LENGTH">ECDSA_SCHEME_LENGTH</a> + <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ECDSA_SIG_LENGTH">ECDSA_SIG_LENGTH</a> + <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ECDSA_PUBKEY_LENGTH">ECDSA_PUBKEY_LENGTH</a>) {
+   <b>let</b> i = <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_V_ECDSA_SCHEME_LENGTH">V_ECDSA_SCHEME_LENGTH</a> + <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_V_ECDSA_SIG_LENGTH">V_ECDSA_SIG_LENGTH</a>;
+   <b>while</b> (i &lt; <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_V_ECDSA_SCHEME_LENGTH">V_ECDSA_SCHEME_LENGTH</a> + <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_V_ECDSA_SIG_LENGTH">V_ECDSA_SIG_LENGTH</a> + <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_V_ECDSA_PUBKEY_LENGTH">V_ECDSA_PUBKEY_LENGTH</a>) {
       <b>let</b> value = <a href="_borrow">vector::borrow</a>(payload, i);
       <a href="_push_back">vector::push_back</a>(&<b>mut</b> public_key, *value);
       i = i + 1;
@@ -198,8 +198,8 @@ Hash function name that are valid for ecrecover and verify.
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ecdsa_k1_signature">ecdsa_k1_signature</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
    <b>let</b> sign = <a href="_empty">vector::empty</a>&lt;u8&gt;();
-   <b>let</b> i = <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ECDSA_SCHEME_LENGTH">ECDSA_SCHEME_LENGTH</a>;
-   <b>while</b> (i &lt; <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_ECDSA_SIG_LENGTH">ECDSA_SIG_LENGTH</a> + 1) {
+   <b>let</b> i = <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_V_ECDSA_SCHEME_LENGTH">V_ECDSA_SCHEME_LENGTH</a>;
+   <b>while</b> (i &lt; <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_V_ECDSA_HASH_LENGTH">V_ECDSA_HASH_LENGTH</a> + 1) {
       <b>let</b> value = <a href="_borrow">vector::borrow</a>(payload, i);
       <a href="_push_back">vector::push_back</a>(&<b>mut</b> sign, *value);
       i = i + 1;
