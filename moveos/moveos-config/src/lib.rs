@@ -1,58 +1,42 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-// Copyright (c) The Starcoin Core Contributors
-// SPDX-License-Identifier: Apache-2.0
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use tempfile::TempDir;
 
-use clap::Parser;
-use serde::{Deserialize, Serialize};
+pub mod store_config;
 
-#[derive(Copy, Clone, Debug, Deserialize, PartialEq, Eq, Serialize, Parser)]
-#[serde(default, deny_unknown_fields)]
-pub struct RocksdbConfig {
-    #[clap(name = "rocksdb-max-open-files", long, help = "rocksdb max open files")]
-    pub max_open_files: i32,
-    #[clap(
-        name = "rocksdb-max-total-wal-sizes",
-        long,
-        help = "rocksdb max total WAL sizes"
-    )]
-    pub max_total_wal_size: u64,
-    #[clap(
-        name = "rocksdb-wal-bytes-per-sync",
-        long,
-        help = "rocksdb wal bytes per sync"
-    )]
-    pub wal_bytes_per_sync: u64,
-    #[clap(name = "rocksdb-bytes-per-sync", long, help = "rocksdb bytes per sync")]
-    pub bytes_per_sync: u64,
+#[derive(Clone, Debug)]
+pub enum DataDirPath {
+    PathBuf(PathBuf),
+    TempPath(Arc<TempDir>),
 }
 
-impl RocksdbConfig {
-    #[cfg(unix)]
-    fn default_max_open_files() -> i32 {
-        40960
-    }
+pub fn temp_dir() -> DataDirPath {
+    let temp_dir = TempDir::new().expect("Create temp dir fail.");
+    DataDirPath::TempPath(Arc::from(temp_dir))
+}
 
-    #[cfg(windows)]
-    fn default_max_open_files() -> i32 {
-        256
+pub fn temp_dir_in(dir: PathBuf) -> DataDirPath {
+    let temp_dir = TempDir::new_in(dir).expect("Create temp dir fail.");
+    DataDirPath::TempPath(Arc::from(temp_dir))
+}
+
+impl DataDirPath {
+    pub fn path(&self) -> &Path {
+        self.as_ref()
+    }
+    pub fn is_temp(&self) -> bool {
+        matches!(self, DataDirPath::TempPath(_))
     }
 }
 
-impl Default for RocksdbConfig {
-    fn default() -> Self {
-        Self {
-            // Set max_open_files to 4096 instead of -1 to avoid keep-growing memory in accordance
-            // with the number of files.
-            max_open_files: Self::default_max_open_files(),
-            // For now we set the max total WAL size to be 1G. This config can be useful when column
-            // families are updated at non-uniform frequencies.
-            max_total_wal_size: 1u64 << 30,
-            // For sst table sync every size to be 1MB
-            bytes_per_sync: 1u64 << 20,
-            // For wal sync every size to be 1MB
-            wal_bytes_per_sync: 1u64 << 20,
+impl AsRef<Path> for DataDirPath {
+    fn as_ref(&self) -> &Path {
+        match self {
+            DataDirPath::PathBuf(path) => path.as_ref(),
+            DataDirPath::TempPath(path) => path.as_ref().as_ref(),
         }
     }
 }

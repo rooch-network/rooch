@@ -13,7 +13,7 @@ use crate::traits::DBStore;
 use crate::{ColumnFamilyName, WriteOp};
 use anyhow::{ensure, format_err, Error, Result};
 use moveos_common::utils::{check_open_fds_limit, from_bytes};
-use moveos_config::RocksdbConfig;
+use moveos_config::store_config::RocksdbConfig;
 use rocksdb::{
     BoundColumnFamily, Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB,
 };
@@ -37,14 +37,12 @@ pub struct RocksDB {
 
 impl RocksDB {
     pub fn new<P: AsRef<Path> + Clone>(
-        db_root_path: P,
+        db_path: P,
         column_families: Vec<ColumnFamilyName>,
         rocksdb_config: RocksdbConfig,
         metrics: Option<StoreMetrics>,
     ) -> Result<Self> {
-        //TODO find a compat way to remove the `roochdb` path
-        let path = db_root_path.as_ref().join("roochdb");
-        Self::open_with_cfs(path, column_families, false, rocksdb_config, metrics)
+        Self::open_with_cfs(db_path, column_families, false, rocksdb_config, metrics)
     }
 
     pub fn open_with_cfs(
@@ -193,7 +191,8 @@ impl RocksDB {
 
     fn default_write_options() -> WriteOptions {
         let mut opts = WriteOptions::new();
-        opts.set_sync(false);
+        // opts.set_sync(false);
+        opts.set_sync(true);
         opts
     }
 

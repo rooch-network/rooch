@@ -18,6 +18,7 @@ use move_vm_runtime::session::SerializedReturnValues;
 use moveos::moveos::MoveOS;
 use moveos::moveos_test_runner::MoveOSTestAdapter;
 use moveos::moveos_test_runner::{CompiledState, TaskInput};
+use moveos_store::MoveOSStore;
 use moveos_types::move_types::FunctionId;
 use moveos_types::object::ObjectID;
 use moveos_types::state::StateChangeSet;
@@ -86,11 +87,15 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             None => BTreeMap::new(),
         };
 
-        let db = moveos_store::MoveOSDB::new_with_memory_store();
+        let moveos_store = MoveOSStore::mock().unwrap();
 
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
-        let mut moveos =
-            MoveOS::new(db, genesis.all_natives(), genesis.config_for_test.clone()).unwrap();
+        let mut moveos = MoveOS::new(
+            moveos_store,
+            genesis.all_natives(),
+            genesis.config_for_test.clone(),
+        )
+        .unwrap();
 
         moveos.init_genesis(genesis.genesis_txs()).unwrap();
 

@@ -195,7 +195,7 @@ impl From<Signature> for Authenticator {
             BuiltinScheme::Ed25519 => Authenticator::ed25519(sign),
             BuiltinScheme::Ecdsa => todo!(),
             BuiltinScheme::MultiEd25519 => todo!(),
-            BuiltinScheme::Schnorr => todo!(),
+            BuiltinScheme::Schnorr => Authenticator::schnorr(sign),
         }
     }
 }

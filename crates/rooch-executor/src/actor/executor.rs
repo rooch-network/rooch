@@ -15,7 +15,8 @@ use move_core_types::account_address::AccountAddress;
 use move_resource_viewer::MoveValueAnnotator;
 use moveos::moveos::MoveOS;
 use moveos_common::accumulator::InMemoryAccumulator;
-use moveos_store::MoveOSDB;
+use moveos_store::transaction_store::TransactionStore;
+use moveos_store::MoveOSStore;
 use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event::EventHandle;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
@@ -27,30 +28,35 @@ use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::tx_context::TxContext;
+// use raw_store::rocks::RocksDB;
+// use raw_store::StoreInstance;
+// use rooch_config::store_config::StoreConfig;
 use rooch_framework::bindings::address_mapping::AddressMapping;
 use rooch_framework::bindings::auth_validator::AuthValidatorCaller;
 use rooch_framework::bindings::transaction_validator::TransactionValidator;
 use rooch_genesis::RoochGenesis;
-use rooch_store::RoochDB;
+use rooch_store::RoochStore;
 use rooch_types::address::MultiChainAddress;
 use rooch_types::transaction::AuthenticatorInfo;
 use rooch_types::transaction::{AbstractTransaction, TransactionSequenceMapping};
 
 pub struct ExecutorActor {
     moveos: MoveOS,
-    rooch_db: RoochDB,
+    rooch_store: RoochStore,
 }
 
 impl ExecutorActor {
-    pub fn new(rooch_db: RoochDB) -> Result<Self> {
-        let moveosdb = MoveOSDB::new_with_memory_store();
+    pub fn new(moveos_store: MoveOSStore, rooch_store: RoochStore) -> Result<Self> {
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
 
-        let mut moveos = MoveOS::new(moveosdb, genesis.all_natives(), genesis.config.clone())?;
+        let mut moveos = MoveOS::new(moveos_store, genesis.all_natives(), genesis.config.clone())?;
         if moveos.state().is_genesis() {
             moveos.init_genesis(genesis.genesis_txs())?;
         }
-        Ok(Self { moveos, rooch_db })
+        Ok(Self {
+            moveos,
+            rooch_store,
+        })
     }
 
     pub fn resolve_address(
@@ -125,6 +131,10 @@ impl ExecutorActor {
         ];
         Ok((pre_execute_functions, post_execute_functions))
     }
+
+    pub fn get_rooch_store(&self) -> RoochStore {
+        self.rooch_store.clone()
+    }
 }
 
 impl Actor for ExecutorActor {}
@@ -164,7 +174,14 @@ impl Handler<ExecuteTransactionMessage> for ExecutorActor {
         );
         self.moveos
             .transaction_store()
-            .save_tx_exec_info(transaction_info.clone());
+            .save_tx_exec_info(transaction_info.clone())
+            .map_err(|e| {
+                anyhow::anyhow!(
+                    "ExecuteTransactionMessage handler save tx info failed: {:?} {}",
+                    transaction_info,
+                    e
+                )
+            })?;
         Ok(ExecuteTransactionResult {
             output,
             transaction_info,
@@ -309,9 +326,8 @@ impl Handler<GetTxSeqMappingByTxOrderMessage> for ExecutorActor {
         _ctx: &mut ActorContext,
     ) -> Result<Vec<TransactionSequenceMapping>> {
         let GetTxSeqMappingByTxOrderMessage { cursor, limit } = msg;
-        let rooch_tx_store = self.rooch_db.get_transaction_store();
-        let result = rooch_tx_store.get_tx_seq_mapping_by_tx_order(cursor, limit);
-        Ok(result)
+        let rooch_tx_store = self.rooch_store.get_transaction_store();
+        rooch_tx_store.get_tx_seq_mapping_by_tx_order(cursor, limit)
     }
 }
 
@@ -323,8 +339,8 @@ impl Handler<GetTransactionInfosByTxHashMessage> for ExecutorActor {
         _ctx: &mut ActorContext,
     ) -> Result<Vec<Option<TransactionExecutionInfo>>> {
         let GetTransactionInfosByTxHashMessage { tx_hashes } = msg;
-        let moveos_tx_store = self.moveos.transaction_store();
-        let result = moveos_tx_store.multi_get_tx_exec_infos(tx_hashes);
-        Ok(result)
+        self.moveos
+            .transaction_store()
+            .multi_get_tx_exec_infos(tx_hashes)
     }
 }

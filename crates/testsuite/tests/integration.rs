@@ -22,7 +22,7 @@ struct World {
 #[given(expr = "the server")] // Cucumber Expression
 async fn start_server(w: &mut World) {
     let mut service = Service::new();
-    service.start().await.unwrap();
+    service.start(true).await.unwrap();
 
     w.service = Some(service);
 }

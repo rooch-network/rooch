@@ -8,7 +8,8 @@ use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_types::h256;
-use rooch_store::RoochDB;
+use rooch_store::transaction_store::TransactionStore;
+use rooch_store::RoochStore;
 use rooch_types::{
     crypto::{RoochKeyPair, Signature},
     transaction::AbstractTransaction,
@@ -21,15 +22,15 @@ use rooch_types::{
 pub struct SequencerActor {
     last_order: u128,
     sequencer_key: RoochKeyPair,
-    rooch_db: RoochDB,
+    rooch_store: RoochStore,
 }
 
 impl SequencerActor {
-    pub fn new(sequencer_key: RoochKeyPair, rooch_db: RoochDB) -> Self {
+    pub fn new(sequencer_key: RoochKeyPair, rooch_store: RoochStore) -> Self {
         Self {
             last_order: 0,
             sequencer_key,
-            rooch_db,
+            rooch_store,
         }
     }
 }
@@ -52,10 +53,21 @@ impl Handler<TransactionSequenceMessage> for SequencerActor {
         let tx_order_signature = Signature::new_hashed(&witness_hash.0, &self.sequencer_key).into();
         self.last_order = tx_order;
 
-        self.rooch_db.transaction_store.save_transaction(tx);
-        self.rooch_db
-            .transaction_store
-            .save_tx_seq_info_mapping(tx_order, hash);
+        let _ = self.rooch_store.save_transaction(tx).map_err(|e| {
+            anyhow::anyhow!(
+                "TransactionSequenceMessage handler save transaction failed: {}",
+                e
+            )
+        });
+        let _ = self
+            .rooch_store
+            .save_tx_seq_info_mapping(tx_order, hash)
+            .map_err(|e| {
+                anyhow::anyhow!(
+                    "TransactionSequenceMessage handler save tx seq mapping failed: {}",
+                    e
+                )
+            });
 
         let tx_accumulator_root = H256::random();
         Ok(TransactionSequenceInfo {
@@ -73,7 +85,7 @@ impl Handler<TransactionByHashMessage> for SequencerActor {
         msg: TransactionByHashMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Option<TypedTransaction>> {
-        Ok(self.rooch_db.transaction_store.get_tx_by_hash(msg.hash))
+        self.rooch_store.get_tx_by_hash(msg.hash)
     }
 }
 
@@ -84,9 +96,6 @@ impl Handler<TransactionByIndexMessage> for SequencerActor {
         msg: TransactionByIndexMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<TypedTransaction>> {
-        Ok(self
-            .rooch_db
-            .transaction_store
-            .get_tx_by_index(msg.start, msg.limit))
+        self.rooch_store.get_tx_by_index(msg.start, msg.limit)
     }
 }

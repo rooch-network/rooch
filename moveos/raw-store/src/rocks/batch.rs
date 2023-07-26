@@ -53,7 +53,6 @@ where
     type Error = anyhow::Error;
 
     fn try_from(batch: CodecWriteBatch<K, V>) -> Result<Self, Self::Error> {
-        // let rows: Result<Vec<(Vec<u8>, WriteOp<Vec<u8>>)>> = batch
         let rows: Vec<_> = batch
             .into_iter()
             .map(|(key, op)| (to_bytes(&key).unwrap(), op.into_raw_op().unwrap()))
