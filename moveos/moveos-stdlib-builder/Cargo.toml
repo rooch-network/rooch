@@ -39,6 +39,7 @@ move-vm-test-utils = { workspace = true }
 move-vm-types = { workspace = true }
 move-package = { workspace = true }
 move-prover = { workspace = true }
+move-errmapgen = { workspace = true }
 
 
 moveos-types = { workspace = true }
