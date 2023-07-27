@@ -122,7 +122,7 @@ public fun tx_hash(self: &StorageContext): vector<u8> {
 
 ```move
 #[test_only]
-/// Create a StorageContext and AccountStorage for unit test
+/// Create a StorageContext for unit test
 public fun new_test_context(sender: address): StorageContext {
     let tx_context = tx_context::new_test_context(sender);
     let object_storage = object_storage::new_with_id(object_storage::global_object_storage_handle());
@@ -141,7 +141,7 @@ public fun new_test_context(sender: address): StorageContext {
 
 ```move
 #[test_only]
-/// Testing only: allow to drop oject storage
+/// Testing only: allow to drop StorageContext
 public fun drop_test_context(self: StorageContext) {
     test_helper::destroy<StorageContext>(self);
 }
