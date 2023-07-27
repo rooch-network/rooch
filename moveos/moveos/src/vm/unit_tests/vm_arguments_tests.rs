@@ -570,12 +570,14 @@ fn mismatched_cases() -> Vec<(Signature, Vec<MoveValue>, StatusCode)> {
     ]
 }
 
-fn general_cases() -> Vec<(
+type TestCases = Vec<(
     Signature,
     Vec<MoveValue>,
     Vec<AccountAddress>,
     Option<StatusCode>,
-)> {
+)>;
+
+fn general_cases() -> TestCases {
     // In Moveos, the `StorageContext` will auto resolve singers,
     // so we don't need to pass a signer argument.
     vec![

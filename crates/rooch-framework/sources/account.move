@@ -70,7 +70,10 @@ module rooch_framework::account{
       );
 
       // there cannot be an Account resource under new_addr already.
-      assert!(!exists<Account>(new_address), error::already_exists(EAccountAlreadyExists));      
+      assert!(
+         !account_storage::global_exists<Account>(ctx, new_address),
+         error::already_exists(EAccountAlreadyExists)
+      ); 
 
       create_account_unchecked(ctx, new_address)
    }
@@ -309,7 +312,7 @@ module rooch_framework::account{
    }
 
    #[test(sender=@0x42)]
-   #[expected_failure(abort_code = 0x1, location = moveos_std::account_storage)]
+   #[expected_failure(abort_code = 0x80001, location = Self)]
    fun test_failure_entry_account_redundant_creation(sender: address){
       let ctx = storage_context::new_test_context(sender);
       create_account_entry(&mut ctx, sender);

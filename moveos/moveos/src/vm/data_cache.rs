@@ -169,6 +169,7 @@ impl<'r, 'l, S: MoveResolver> DataStore for MoveosDataCache<'r, 'l, S> {
     // Retrieve data from the local cache or loads it from the remote cache into the local cache.
     // All operations on the global data are based on this API and they all load the data
     // into the cache.
+    /// In Rooch, all global operations are disable, so this function is never called.
     fn load_resource(
         &mut self,
         addr: AccountAddress,
@@ -297,7 +298,8 @@ impl<'r, 'l, S: MoveResolver> DataStore for MoveosDataCache<'r, 'l, S> {
         val: Value,
     ) -> PartialVMResult<()> {
         let ty_layout = self.loader.type_to_type_layout(&ty)?;
-        Ok(self.event_data.push((guid, seq_num, ty, ty_layout, val)))
+        self.event_data.push((guid, seq_num, ty, ty_layout, val));
+        Ok(())
     }
 
     fn events(&self) -> &Vec<(Vec<u8>, u64, Type, MoveTypeLayout, Value)> {
