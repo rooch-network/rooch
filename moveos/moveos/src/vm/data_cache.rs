@@ -11,7 +11,7 @@ use move_core_types::{
     effects::{AccountChangeSet, ChangeSet, Event, Op},
     gas_algebra::NumBytes,
     identifier::Identifier,
-    language_storage::{ModuleId, TypeTag},
+    language_storage::ModuleId,
     resolver::MoveResolver,
     value::MoveTypeLayout,
     vm_status::StatusCode,
@@ -24,14 +24,12 @@ use move_vm_types::{
 use std::collections::btree_map::BTreeMap;
 
 pub struct AccountDataCache {
-    data_map: BTreeMap<Type, (MoveTypeLayout, GlobalValue)>,
     module_map: BTreeMap<Identifier, (Vec<u8>, bool)>,
 }
 
 impl AccountDataCache {
     fn new() -> Self {
         Self {
-            data_map: BTreeMap::new(),
             module_map: BTreeMap::new(),
         }
     }
@@ -100,36 +98,8 @@ impl<'r, 'l, S: MoveResolver> TransactionCache for MoveosDataCache<'r, 'l, S> {
                 modules.insert(module_name, op);
             }
 
-            let mut resources = BTreeMap::new();
-            for (ty, (layout, gv)) in account_data_cache.data_map {
-                let op = match gv.into_effect() {
-                    Some(op) => op,
-                    None => continue,
-                };
-
-                let struct_tag = match self.loader.type_to_type_tag(&ty)? {
-                    TypeTag::Struct(struct_tag) => *struct_tag,
-                    _ => return Err(PartialVMError::new(StatusCode::INTERNAL_TYPE_ERROR)),
-                };
-
-                match op {
-                    Op::New(val) => {
-                        let resource_blob = val
-                            .simple_serialize(&layout)
-                            .ok_or_else(|| PartialVMError::new(StatusCode::INTERNAL_TYPE_ERROR))?;
-                        resources.insert(struct_tag, Op::New(resource_blob));
-                    }
-                    Op::Modify(val) => {
-                        let resource_blob = val
-                            .simple_serialize(&layout)
-                            .ok_or_else(|| PartialVMError::new(StatusCode::INTERNAL_TYPE_ERROR))?;
-                        resources.insert(struct_tag, Op::Modify(resource_blob));
-                    }
-                    Op::Delete => {
-                        resources.insert(struct_tag, Op::Delete);
-                    }
-                }
-            }
+            // No resources updated in TransactionDataCache as global operations are disabled.
+            let resources = BTreeMap::new();
             if !modules.is_empty() || !resources.is_empty() {
                 change_set
                     .add_account_changeset(
@@ -152,14 +122,11 @@ impl<'r, 'l, S: MoveResolver> TransactionCache for MoveosDataCache<'r, 'l, S> {
         Ok((change_set, events))
     }
 
-    fn num_mutated_accounts(&self, sender: &AccountAddress) -> u64 {
+    fn num_mutated_accounts(&self, _sender: &AccountAddress) -> u64 {
         // The sender's account will always be mutated.
-        let mut total_mutated_accounts: u64 = 1;
-        for (addr, entry) in self.account_map.iter() {
-            if addr != sender && entry.data_map.values().any(|(_, v)| v.is_mutated()) {
-                total_mutated_accounts += 1;
-            }
-        }
+        let total_mutated_accounts: u64 = 1;
+
+        // No accounts mutated in global operations are disabled.
         total_mutated_accounts
     }
 }
@@ -172,67 +139,10 @@ impl<'r, 'l, S: MoveResolver> DataStore for MoveosDataCache<'r, 'l, S> {
     /// In Rooch, all global operations are disable, so this function is never called.
     fn load_resource(
         &mut self,
-        addr: AccountAddress,
-        ty: &Type,
+        _addr: AccountAddress,
+        _ty: &Type,
     ) -> PartialVMResult<(&mut GlobalValue, Option<Option<NumBytes>>)> {
-        let account_cache = Self::get_mut_or_insert_with(&mut self.account_map, &addr, || {
-            (addr, AccountDataCache::new())
-        });
-
-        let mut load_res = None;
-        if !account_cache.data_map.contains_key(ty) {
-            let ty_tag = match self.loader.type_to_type_tag(ty)? {
-                TypeTag::Struct(s_tag) => s_tag,
-                _ =>
-                // non-struct top-level value; can't happen
-                {
-                    return Err(PartialVMError::new(StatusCode::INTERNAL_TYPE_ERROR))
-                }
-            };
-            // TODO(Gas): Shall we charge for this?
-            let ty_layout = self.loader.type_to_type_layout(ty)?;
-
-            let gv = match self.remote.get_resource(&addr, &ty_tag) {
-                Ok(Some(blob)) => {
-                    load_res = Some(Some(NumBytes::new(blob.len() as u64)));
-                    let val = match Value::simple_deserialize(&blob, &ty_layout) {
-                        Some(val) => val,
-                        None => {
-                            let msg =
-                                format!("Failed to deserialize resource {} at {}!", ty_tag, addr);
-                            return Err(PartialVMError::new(
-                                StatusCode::FAILED_TO_DESERIALIZE_RESOURCE,
-                            )
-                            .with_message(msg));
-                        }
-                    };
-
-                    GlobalValue::cached(val)?
-                }
-                Ok(None) => {
-                    load_res = Some(None);
-                    GlobalValue::none()
-                }
-                Err(err) => {
-                    let msg = format!("Unexpected storage error: {:?}", err);
-                    return Err(
-                        PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
-                            .with_message(msg),
-                    );
-                }
-            };
-
-            account_cache.data_map.insert(ty.clone(), (ty_layout, gv));
-        }
-
-        Ok((
-            account_cache
-                .data_map
-                .get_mut(ty)
-                .map(|(_ty_layout, gv)| gv)
-                .expect("global value must exist"),
-            load_res,
-        ))
+        unreachable!("Global operations are disabled")
     }
 
     fn load_module(&self, module_id: &ModuleId) -> VMResult<Vec<u8>> {
