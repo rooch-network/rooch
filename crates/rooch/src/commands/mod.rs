@@ -3,6 +3,7 @@
 
 pub mod abi;
 pub mod account;
+pub mod dashboard;
 pub mod event;
 pub mod init;
 pub mod move_cli;
