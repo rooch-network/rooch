@@ -35,6 +35,8 @@ regex = { workspace = true }
 serde-reflection = { workspace = true }
 serde-generate = { workspace = true }
 bcs-ext = { package = "bcs-ext", workspace = true }
+rust-embed = { workspace = true }
+rocket = { workspace = true }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }
