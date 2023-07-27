@@ -10,9 +10,15 @@ events emitted to a handle and emit events to the event store.
 
 -  [Resource `EventHandle`](#0x2_event_EventHandle)
 -  [Function `derive_event_handle_id`](#0x2_event_derive_event_handle_id)
+-  [Function `exists_event_handle`](#0x2_event_exists_event_handle)
+-  [Function `borrow_event_handle`](#0x2_event_borrow_event_handle)
+-  [Function `borrow_event_handle_mut`](#0x2_event_borrow_event_handle_mut)
+-  [Function `get_event_handle_owner`](#0x2_event_get_event_handle_owner)
 -  [Function `get_event_handle`](#0x2_event_get_event_handle)
+-  [Function `new_event_handle`](#0x2_event_new_event_handle)
 -  [Function `ensure_event_handle`](#0x2_event_ensure_event_handle)
 -  [Function `emit`](#0x2_event_emit)
+-  [Function `native_emit`](#0x2_event_native_emit)
 
 
 <pre><code><b>use</b> <a href="">0x1::hash</a>;
@@ -84,6 +90,112 @@ A globally unique ID for this event stream. event handler id equal to guid.
 
 </details>
 
+<a name="0x2_event_exists_event_handle"></a>
+
+## Function `exists_event_handle`
+
+
+
+<pre><code><b>fun</b> <a href="event.md#0x2_event_exists_event_handle">exists_event_handle</a>&lt;T&gt;(<a href="object_storage.md#0x2_object_storage">object_storage</a>: &<a href="object_storage.md#0x2_object_storage_ObjectStorage">object_storage::ObjectStorage</a>): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="event.md#0x2_event_exists_event_handle">exists_event_handle</a>&lt;T&gt;(<a href="object_storage.md#0x2_object_storage">object_storage</a>: &ObjectStorage): bool {
+    <b>let</b> event_handle_id = <a href="event.md#0x2_event_derive_event_handle_id">derive_event_handle_id</a>&lt;T&gt;();
+    <a href="object_storage.md#0x2_object_storage_contains">object_storage::contains</a>(<a href="object_storage.md#0x2_object_storage">object_storage</a>, event_handle_id)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_event_borrow_event_handle"></a>
+
+## Function `borrow_event_handle`
+
+Borrow a mut event handle from the object storage
+
+
+<pre><code><b>fun</b> <a href="event.md#0x2_event_borrow_event_handle">borrow_event_handle</a>&lt;T&gt;(<a href="object_storage.md#0x2_object_storage">object_storage</a>: &<a href="object_storage.md#0x2_object_storage_ObjectStorage">object_storage::ObjectStorage</a>): &<a href="event.md#0x2_event_EventHandle">event::EventHandle</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="event.md#0x2_event_borrow_event_handle">borrow_event_handle</a>&lt;T&gt;(<a href="object_storage.md#0x2_object_storage">object_storage</a>: &ObjectStorage): &<a href="event.md#0x2_event_EventHandle">EventHandle</a> {
+    <b>let</b> event_handle_id = <a href="event.md#0x2_event_derive_event_handle_id">derive_event_handle_id</a>&lt;T&gt;();
+    <b>let</b> <a href="object.md#0x2_object">object</a> = <a href="object_storage.md#0x2_object_storage_borrow">object_storage::borrow</a>&lt;<a href="event.md#0x2_event_EventHandle">EventHandle</a>&gt;(<a href="object_storage.md#0x2_object_storage">object_storage</a>, event_handle_id);
+    <a href="object.md#0x2_object_borrow">object::borrow</a>(<a href="object.md#0x2_object">object</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_event_borrow_event_handle_mut"></a>
+
+## Function `borrow_event_handle_mut`
+
+Borrow a mut event handle from the object storage
+
+
+<pre><code><b>fun</b> <a href="event.md#0x2_event_borrow_event_handle_mut">borrow_event_handle_mut</a>&lt;T&gt;(<a href="object_storage.md#0x2_object_storage">object_storage</a>: &<b>mut</b> <a href="object_storage.md#0x2_object_storage_ObjectStorage">object_storage::ObjectStorage</a>): &<b>mut</b> <a href="event.md#0x2_event_EventHandle">event::EventHandle</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="event.md#0x2_event_borrow_event_handle_mut">borrow_event_handle_mut</a>&lt;T&gt;(<a href="object_storage.md#0x2_object_storage">object_storage</a>: &<b>mut</b> ObjectStorage): &<b>mut</b> <a href="event.md#0x2_event_EventHandle">EventHandle</a> {
+    <b>let</b> event_handle_id = <a href="event.md#0x2_event_derive_event_handle_id">derive_event_handle_id</a>&lt;T&gt;();
+    <b>let</b> <a href="object.md#0x2_object">object</a> = <a href="object_storage.md#0x2_object_storage_borrow_mut">object_storage::borrow_mut</a>&lt;<a href="event.md#0x2_event_EventHandle">EventHandle</a>&gt;(<a href="object_storage.md#0x2_object_storage">object_storage</a>, event_handle_id);
+    <a href="object.md#0x2_object_borrow_mut">object::borrow_mut</a>(<a href="object.md#0x2_object">object</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_event_get_event_handle_owner"></a>
+
+## Function `get_event_handle_owner`
+
+Get event handle owner
+
+
+<pre><code><b>fun</b> <a href="event.md#0x2_event_get_event_handle_owner">get_event_handle_owner</a>&lt;T&gt;(<a href="object_storage.md#0x2_object_storage">object_storage</a>: &<a href="object_storage.md#0x2_object_storage_ObjectStorage">object_storage::ObjectStorage</a>): <b>address</b>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="event.md#0x2_event_get_event_handle_owner">get_event_handle_owner</a>&lt;T&gt;(<a href="object_storage.md#0x2_object_storage">object_storage</a>: &ObjectStorage): <b>address</b> {
+    <b>let</b> event_handle_id = <a href="event.md#0x2_event_derive_event_handle_id">derive_event_handle_id</a>&lt;T&gt;();
+    <b>let</b> <a href="object.md#0x2_object">object</a> = <a href="object_storage.md#0x2_object_storage_borrow">object_storage::borrow</a>&lt;<a href="event.md#0x2_event_EventHandle">EventHandle</a>&gt;(<a href="object_storage.md#0x2_object_storage">object_storage</a>, event_handle_id);
+    <a href="object.md#0x2_object_owner">object::owner</a>(<a href="object.md#0x2_object">object</a>)
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x2_event_get_event_handle"></a>
 
 ## Function `get_event_handle`
@@ -113,6 +225,38 @@ is event_handle_id doesn't exist, sender will default 0x0
         sender = <a href="event.md#0x2_event_get_event_handle_owner">get_event_handle_owner</a>&lt;T&gt;(<a href="storage_context.md#0x2_storage_context_object_storage">storage_context::object_storage</a>(ctx));
     };
     (event_handle_id, sender, event_seq)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_event_new_event_handle"></a>
+
+## Function `new_event_handle`
+
+Use EventHandle to generate a unique event handle
+user doesn't need to call this method directly
+
+
+<pre><code><b>fun</b> <a href="event.md#0x2_event_new_event_handle">new_event_handle</a>&lt;T&gt;(ctx: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="event.md#0x2_event_new_event_handle">new_event_handle</a>&lt;T&gt;(ctx: &<b>mut</b> StorageContext) {
+    <b>let</b> account_addr = <a href="tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(<a href="storage_context.md#0x2_storage_context_tx_context">storage_context::tx_context</a>(ctx));
+    <b>let</b> event_handle_id = <a href="event.md#0x2_event_derive_event_handle_id">derive_event_handle_id</a>&lt;T&gt;();
+    <b>let</b> event_handle = <a href="event.md#0x2_event_EventHandle">EventHandle</a> {
+        counter: 0,
+    };
+    <b>let</b> <a href="object.md#0x2_object">object</a> = <a href="object.md#0x2_object_new_with_id">object::new_with_id</a>&lt;<a href="event.md#0x2_event_EventHandle">EventHandle</a>&gt;(event_handle_id, account_addr, event_handle);
+    <a href="object_storage.md#0x2_object_storage_add">object_storage::add</a>(<a href="storage_context.md#0x2_storage_context_object_storage_mut">storage_context::object_storage_mut</a>(ctx), <a href="object.md#0x2_object">object</a>)
 }
 </code></pre>
 
@@ -177,6 +321,29 @@ phantom parameters, eg emit(MyEvent<phantom T>).
     <a href="event.md#0x2_event_native_emit">native_emit</a>&lt;T&gt;(&event_handle_id, event_handle_ref.counter, <a href="event.md#0x2_event">event</a>);
     event_handle_ref.counter = event_handle_ref.counter + 1;
 }
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_event_native_emit"></a>
+
+## Function `native_emit`
+
+Native procedure that writes to the actual event stream in Event store
+
+
+<pre><code><b>fun</b> <a href="event.md#0x2_event_native_emit">native_emit</a>&lt;T&gt;(event_handle_id: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, count: u64, <a href="event.md#0x2_event">event</a>: T)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>native</b> <b>fun</b> <a href="event.md#0x2_event_native_emit">native_emit</a>&lt;T&gt;(event_handle_id: &ObjectID, count: u64, <a href="event.md#0x2_event">event</a>: T);
 </code></pre>
 
 

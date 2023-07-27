@@ -52,7 +52,7 @@ module moveos_std::storage_context {
         tx_context::sender(&self.tx_context)
     } 
 
-    /// Generate a new unique address,
+    /// Generate a new unique address
     public fun fresh_address(self: &mut StorageContext): address {
         tx_context::fresh_address(&mut self.tx_context)
     }

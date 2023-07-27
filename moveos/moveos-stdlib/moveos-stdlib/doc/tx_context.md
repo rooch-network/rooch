@@ -12,6 +12,7 @@
 -  [Function `fresh_object_id`](#0x2_tx_context_fresh_object_id)
 -  [Function `derive_id`](#0x2_tx_context_derive_id)
 -  [Function `tx_hash`](#0x2_tx_context_tx_hash)
+-  [Function `ids_created`](#0x2_tx_context_ids_created)
 -  [Function `add`](#0x2_tx_context_add)
 -  [Function `get`](#0x2_tx_context_get)
 
@@ -227,6 +228,32 @@ Return the hash of the current transaction
 
 <pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_tx_hash">tx_hash</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): <a href="">vector</a>&lt;u8&gt; {
     self.tx_hash
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_tx_context_ids_created"></a>
+
+## Function `ids_created`
+
+Return the number of id's created by the current transaction.
+Hidden for now, but may expose later
+
+
+<pre><code><b>fun</b> <a href="tx_context.md#0x2_tx_context_ids_created">ids_created</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="tx_context.md#0x2_tx_context_ids_created">ids_created</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): u64 {
+    self.ids_created
 }
 </code></pre>
 
