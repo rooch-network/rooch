@@ -10,10 +10,10 @@ module rooch_framework::ecdsa_k1_validator {
    use rooch_framework::auth_validator;
 
    const SCHEME_ECDSA: u64 = 2;
-   const ECDSA_SCHEME_LENGTH: u64 = 1;
-   const ECDSA_PUBKEY_LENGTH: u64 = 32;
-   const ECDSA_SIG_LENGTH: u64 = 64;
-   const ECDSA_HASH_LENGTH: u64 = 1;
+   const V_ECDSA_SCHEME_LENGTH: u64 = 1;
+   const V_ECDSA_PUBKEY_LENGTH: u64 = 32;
+   const V_ECDSA_SIG_LENGTH: u64 = 64;
+   const V_ECDSA_HASH_LENGTH: u64 = 1;
    /// Hash function name that are valid for ecrecover and verify.
    const KECCAK256: u8 = 0;
    const SHA256: u8 = 1;
@@ -27,8 +27,8 @@ module rooch_framework::ecdsa_k1_validator {
 
    public fun ecdsa_k1_public_key(payload: &vector<u8>): vector<u8> {
       let public_key = vector::empty<u8>();
-      let i = ECDSA_SCHEME_LENGTH + ECDSA_SIG_LENGTH;
-      while (i < ECDSA_SCHEME_LENGTH + ECDSA_SIG_LENGTH + ECDSA_PUBKEY_LENGTH) {
+      let i = V_ECDSA_SCHEME_LENGTH + V_ECDSA_SIG_LENGTH;
+      while (i < V_ECDSA_SCHEME_LENGTH + V_ECDSA_SIG_LENGTH + V_ECDSA_PUBKEY_LENGTH) {
          let value = vector::borrow(payload, i);
          vector::push_back(&mut public_key, *value);
          i = i + 1;
@@ -39,8 +39,8 @@ module rooch_framework::ecdsa_k1_validator {
 
    public fun ecdsa_k1_signature(payload: &vector<u8>): vector<u8> {
       let sign = vector::empty<u8>();
-      let i = ECDSA_SCHEME_LENGTH;
-      while (i < ECDSA_SIG_LENGTH + 1) {
+      let i = V_ECDSA_SCHEME_LENGTH;
+      while (i < V_ECDSA_HASH_LENGTH + 1) {
          let value = vector::borrow(payload, i);
          vector::push_back(&mut sign, *value);
          i = i + 1;

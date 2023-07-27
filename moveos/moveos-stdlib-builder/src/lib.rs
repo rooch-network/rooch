@@ -6,7 +6,7 @@ use dependency_order::sort_by_dependency_order;
 use move_binary_format::{errors::Location, CompiledModule};
 use move_cli::base::docgen::Docgen;
 use move_core_types::account_address::AccountAddress;
-use move_package::{compilation::compiled_package::CompiledPackage, BuildConfig};
+use move_package::{compilation::compiled_package::CompiledPackage, BuildConfig, ModelConfig};
 use moveos_verifier::build::run_verifier;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -80,8 +80,7 @@ impl Stdlib {
     /// Build the MoveOS stdlib with exernal frameworks.
     /// The move_stdlib and moveos_stdlib packages are always built-in.
     pub fn build(option: BuildOptions) -> Result<Self> {
-        //TODO build error map
-        //Self::build_error_code_map();
+        Self::build_error_code_map(&option)?;
         let mut packages = vec![];
         for stdlib in Self::builtin_packages().into_iter() {
             packages.push(Self::build_package(path_in_crate(stdlib), option.clone())?);
@@ -151,9 +150,47 @@ impl Stdlib {
         Ok(())
     }
 
-    pub fn build_error_code_map() {
-        let _path = path_in_crate("error_description.errmap");
-        //TODO generate error code map
+    pub fn build_error_code_map(build_option: &BuildOptions) -> Result<()> {
+        let build_config = BuildConfig {
+            dev_mode: false,
+            additional_named_addresses: build_option.named_addresses.clone(),
+            architecture: None,
+            generate_abis: build_option.with_abis,
+            generate_docs: false,
+            install_dir: build_option.install_dir.clone(),
+            test_mode: false,
+            force_recompilation: false,
+            fetch_deps_only: false,
+            skip_fetch_latest_git_deps: build_option.skip_fetch_latest_git_deps,
+            lock_file: None,
+            //TODO set bytecode version
+            bytecode_version: None,
+        };
+
+        let mut error_map_gen_opt = move_errmapgen::ErrmapOptions::default();
+
+        for stdlib in Self::builtin_packages().into_iter() {
+            let package_path = path_in_crate(stdlib);
+            let model = build_config.clone().move_model_for_package(
+                &package_path,
+                ModelConfig {
+                    all_files_as_targets: true,
+                    target_filter: None,
+                },
+            )?;
+
+            error_map_gen_opt.output_file = package_path
+                .join("error_description.errmap")
+                .to_str()
+                .unwrap()
+                .to_string();
+
+            let mut errmap_gen = move_errmapgen::ErrmapGen::new(&model, &error_map_gen_opt);
+            errmap_gen.gen();
+            errmap_gen.save_result();
+        }
+
+        Ok(())
     }
 
     pub fn all_modules(&self) -> Result<Vec<CompiledModule>> {

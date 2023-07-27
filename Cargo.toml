@@ -186,6 +186,7 @@ nostr = "0.22"
 serde-reflection = "0.3.6"
 serde-generate = "0.25.1"
 rust_secp256k1 = { version = "0.27.0", package = "secp256k1", features = ["recovery", "rand-std", "bitcoin_hashes", "global-context"] }
+bcs-ext = { path = "moveos/moveos-commons/bcs_ext" }
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES
