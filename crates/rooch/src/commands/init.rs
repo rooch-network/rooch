@@ -48,8 +48,7 @@ impl CommandAction<String> for Init {
                     if self.crypto_schemes == BuiltinScheme::Ed25519 {
                         println!("Creating config file [{:?}] with default server and ed25519 crypto scheme.", client_config_path);
                     } else {
-                        match BuiltinScheme::from_flag_byte(&self.crypto_schemes.flag())
-                        {
+                        match BuiltinScheme::from_flag_byte(&self.crypto_schemes.flag()) {
                             Ok(scheme) => {
                                 println!("Creating config file [{:?}] with custom server and {:?} crypto scheme.", client_config_path, scheme);
                             }

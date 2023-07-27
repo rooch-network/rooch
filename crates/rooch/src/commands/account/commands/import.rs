@@ -39,7 +39,10 @@ impl CommandAction<()> for ImportCommand {
                     .import_from_mnemonic(&self.mnemonic_phrase, scheme, None)
                     .map_err(|e| RoochError::ImportAccountError(e.to_string()))?;
 
-                println!("Key imported for address on scheme {:?}: [{address}]", scheme.to_string());
+                println!(
+                    "Key imported for address on scheme {:?}: [{address}]",
+                    scheme.to_string()
+                );
 
                 Ok(())
             }

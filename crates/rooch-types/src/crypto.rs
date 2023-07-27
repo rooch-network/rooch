@@ -5,6 +5,7 @@ use crate::{
     address::RoochAddress,
     error::{RoochError, RoochResult},
 };
+use clap::ArgEnum;
 use derive_more::{AsMut, AsRef, From};
 pub use enum_dispatch::enum_dispatch;
 use eyre::eyre;
@@ -42,8 +43,7 @@ use serde::ser::Serializer;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_with::{serde_as, Bytes};
 use std::{hash::Hash, str::FromStr};
-use strum_macros::{EnumString, Display};
-use clap::ArgEnum;
+use strum_macros::{Display, EnumString};
 
 pub type DefaultHash = Blake2b256;
 
