@@ -42,7 +42,8 @@ use serde::ser::Serializer;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_with::{serde_as, Bytes};
 use std::{hash::Hash, str::FromStr};
-use strum_macros::EnumString;
+use strum_macros::{EnumString, Display};
+use clap::ArgEnum;
 
 pub type DefaultHash = Blake2b256;
 
@@ -50,7 +51,7 @@ pub type DefaultHash = Blake2b256;
 /// It is a part of `AccountAbstraction`
 
 /// The Authenticator scheme which builtin Rooch
-#[derive(Copy, Clone, Debug, EnumString, strum_macros::Display)]
+#[derive(Copy, Clone, Debug, EnumString, PartialEq, Eq, ArgEnum, Display)]
 #[strum(serialize_all = "lowercase")]
 pub enum BuiltinScheme {
     Ed25519,

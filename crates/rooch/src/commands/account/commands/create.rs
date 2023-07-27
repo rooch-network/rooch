@@ -47,15 +47,15 @@ use std::{
 pub struct CreateCommand {
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
-    /// Command line input of crypto schemes (0 for Ed25519, 1 for MultiEd25519, 2 for Ecdsa, 3 for Schnorr)
-    #[clap(short = 's', long = "scheme")]
-    pub crypto_schemes: String,
+    /// Command line input of crypto schemes (ed25519, multied25519, ecdsa, or schnorr)
+    #[clap(short = 's', long = "scheme", default_value = "ed25519", arg_enum)]
+    pub crypto_schemes: BuiltinScheme,
 }
 
 impl CreateCommand {
     pub async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
         let mut context = self.context_options.build().await?;
-        match BuiltinScheme::from_flag(self.crypto_schemes.clone().trim()) {
+        match BuiltinScheme::from_flag_byte(&self.crypto_schemes.flag()) {
             Ok(scheme) => {
                 let (new_address, phrase, scheme) = context
                     .config

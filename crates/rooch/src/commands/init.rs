@@ -17,12 +17,9 @@ use std::fs;
 /// Tool for init with rooch
 #[derive(Parser)]
 pub struct Init {
-    /// Accept defaults config
-    #[clap(short = 'd', long = "default")]
-    pub accept_defaults: bool,
-    /// Command line input of crypto schemes (0 for Ed25519, 1 for MultiEd25519, 2 for Ecdsa, 3 for Schnorr)
-    #[clap(short = 's', long = "scheme")]
-    pub crypto_schemes: Option<String>,
+    /// Command line input of crypto schemes (ed25519, multied25519, ecdsa, or schnorr)
+    #[clap(short = 's', long = "scheme", default_value = "ed25519", arg_enum)]
+    pub crypto_schemes: BuiltinScheme,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
 }
@@ -30,11 +27,6 @@ pub struct Init {
 #[async_trait]
 impl CommandAction<String> for Init {
     async fn execute(self) -> RoochResult<String> {
-        if !(self.accept_defaults || self.crypto_schemes.is_some()) {
-            return Err(RoochError::CommandArgumentError(
-                "At least one of the options --default or --scheme is required.".to_owned(),
-            ));
-        }
         let client_config_path = match self.context_options.config_dir {
             Some(v) => {
                 if !v.exists() {
@@ -53,10 +45,10 @@ impl CommandAction<String> for Init {
                     ws: None,
                 }),
                 None => {
-                    if self.accept_defaults {
+                    if self.crypto_schemes == BuiltinScheme::Ed25519 {
                         println!("Creating config file [{:?}] with default server and ed25519 crypto scheme.", client_config_path);
                     } else {
-                        match BuiltinScheme::from_flag(self.crypto_schemes.clone().unwrap().trim())
+                        match BuiltinScheme::from_flag_byte(&self.crypto_schemes.flag())
                         {
                             Ok(scheme) => {
                                 println!("Creating config file [{:?}] with custom server and {:?} crypto scheme.", client_config_path, scheme);
@@ -69,7 +61,7 @@ impl CommandAction<String> for Init {
                             }
                         }
                     }
-                    let url = if self.accept_defaults {
+                    let url = if self.crypto_schemes == BuiltinScheme::Ed25519 {
                         String::new()
                     } else {
                         let address_and_port_regex =
@@ -109,10 +101,10 @@ impl CommandAction<String> for Init {
                     .unwrap_or(&rooch_config_dir()?)
                     .join(ROOCH_KEYSTORE_FILENAME);
                 let mut keystore = Keystore::from(FileBasedKeystore::new(&keystore_path)?);
-                let crypto_scheme = if self.accept_defaults {
-                    BuiltinScheme::Ed25519
+                let crypto_scheme = if self.crypto_schemes == BuiltinScheme::Ed25519 {
+                    self.crypto_schemes
                 } else {
-                    match BuiltinScheme::from_flag(self.crypto_schemes.clone().unwrap().trim()) {
+                    match BuiltinScheme::from_flag_byte(&self.crypto_schemes.flag()) {
                         Ok(scheme) => scheme,
                         Err(error) => {
                             return Err(RoochError::CommandArgumentError(format!(

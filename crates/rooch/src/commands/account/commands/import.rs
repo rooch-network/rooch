@@ -19,9 +19,9 @@ pub struct ImportCommand {
     mnemonic_phrase: String,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
-    /// Command line input of crypto schemes (0 for Ed25519, 1 for MultiEd25519, 2 for Ecdsa, 3 for Schnorr)
-    #[clap(short = 's', long = "scheme")]
-    pub crypto_schemes: String,
+    /// Command line input of crypto schemes (ed25519, multied25519, ecdsa, or schnorr)
+    #[clap(short = 's', long = "scheme", default_value = "ed25519", arg_enum)]
+    pub crypto_schemes: BuiltinScheme,
 }
 
 #[async_trait]
@@ -31,7 +31,7 @@ impl CommandAction<()> for ImportCommand {
 
         let mut context = self.context_options.build().await?;
 
-        match BuiltinScheme::from_flag(self.crypto_schemes.clone().trim()) {
+        match BuiltinScheme::from_flag_byte(&self.crypto_schemes.flag()) {
             Ok(scheme) => {
                 let address = context
                     .config
@@ -39,7 +39,7 @@ impl CommandAction<()> for ImportCommand {
                     .import_from_mnemonic(&self.mnemonic_phrase, scheme, None)
                     .map_err(|e| RoochError::ImportAccountError(e.to_string()))?;
 
-                println!("Key imported for address [{address}]");
+                println!("Key imported for address on scheme {:?}: [{address}]", scheme.to_string());
 
                 Ok(())
             }
