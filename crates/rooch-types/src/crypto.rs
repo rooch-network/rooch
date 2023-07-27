@@ -5,6 +5,7 @@ use crate::{
     address::RoochAddress,
     error::{RoochError, RoochResult},
 };
+use clap::ArgEnum;
 use derive_more::{AsMut, AsRef, From};
 pub use enum_dispatch::enum_dispatch;
 use eyre::eyre;
@@ -42,7 +43,7 @@ use serde::ser::Serializer;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_with::{serde_as, Bytes};
 use std::{hash::Hash, str::FromStr};
-use strum_macros::EnumString;
+use strum_macros::{Display, EnumString};
 
 pub type DefaultHash = Blake2b256;
 
@@ -50,7 +51,7 @@ pub type DefaultHash = Blake2b256;
 /// It is a part of `AccountAbstraction`
 
 /// The Authenticator scheme which builtin Rooch
-#[derive(Copy, Clone, Debug, EnumString, strum_macros::Display)]
+#[derive(Copy, Clone, Debug, EnumString, PartialEq, Eq, ArgEnum, Display)]
 #[strum(serialize_all = "lowercase")]
 pub enum BuiltinScheme {
     Ed25519,
@@ -196,20 +197,6 @@ pub enum PublicKey {
     Schnorr(SchnorrPublicKeyAsBytes),
 }
 
-impl PublicKey {
-    pub fn from_ed25519(pk: Ed25519PublicKeyAsBytes) -> Self {
-        PublicKey::Ed25519(pk)
-    }
-
-    pub fn from_ecdsa(pk: Secp256k1PublicKeyAsBytes) -> Self {
-        PublicKey::Ecdsa(pk)
-    }
-
-    pub fn from_schnorr(pk: SchnorrPublicKeyAsBytes) -> Self {
-        PublicKey::Schnorr(pk)
-    }
-}
-
 impl AsRef<[u8]> for PublicKey {
     fn as_ref(&self) -> &[u8] {
         match self {
@@ -280,7 +267,11 @@ impl<'de> Deserialize<'de> for PublicKey {
 
 impl PublicKey {
     pub fn flag(&self) -> u8 {
-        Ed25519RoochSignature::SCHEME.flag()
+        match self {
+            PublicKey::Ed25519(_) => Ed25519RoochSignature::SCHEME.flag(),
+            PublicKey::Ecdsa(_) => EcdsaRoochSignature::SCHEME.flag(),
+            PublicKey::Schnorr(_) => SchnorrRoochSignature::SCHEME.flag(),
+        }
     }
     pub fn try_from_bytes(
         scheme: BuiltinScheme,
@@ -299,7 +290,6 @@ impl PublicKey {
             _ => Err(eyre!("Unsupported scheme")),
         }
     }
-
     pub fn scheme(&self) -> BuiltinScheme {
         match self {
             PublicKey::Ed25519(_) => Ed25519RoochSignature::SCHEME,
@@ -713,11 +703,11 @@ pub struct SchnorrRoochSignature(
     [u8; SchnorrPublicKey::LENGTH + SchnorrSignature::LENGTH + 1],
 );
 
-impl RoochSignatureInner for SchnorrRoochSignature {
-    type Sig = SchnorrSignature;
-    type PubKey = SchnorrPublicKey;
-    type KeyPair = SchnorrKeyPair;
-    const LENGTH: usize = SchnorrPublicKey::LENGTH + SchnorrSignature::LENGTH + 1;
+// Implementation useful for simplify testing when mock signature is needed
+impl Default for SchnorrRoochSignature {
+    fn default() -> Self {
+        Self([0; SchnorrPublicKey::LENGTH + SchnorrSignature::LENGTH + 1])
+    }
 }
 
 impl ToFromBytes for SchnorrRoochSignature {
@@ -735,6 +725,13 @@ impl Signer<Signature> for SchnorrKeyPair {
     fn sign(&self, msg: &[u8]) -> Signature {
         SchnorrRoochSignature::new(self, msg).into()
     }
+}
+
+impl RoochSignatureInner for SchnorrRoochSignature {
+    type Sig = SchnorrSignature;
+    type PubKey = SchnorrPublicKey;
+    type KeyPair = SchnorrKeyPair;
+    const LENGTH: usize = SchnorrPublicKey::LENGTH + SchnorrSignature::LENGTH + 1;
 }
 
 /// Generate a keypair from the specified RNG (useful for testing with seedable rngs).

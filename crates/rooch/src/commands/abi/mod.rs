@@ -16,8 +16,6 @@ pub struct ABI {
     /// Sets the file storing the state of our user accounts (an empty one will be created if missing)
     #[clap(long = "client.config")]
     config: Option<PathBuf>,
-    #[clap(short = 'y', long = "yes")]
-    accept_defaults: bool,
 }
 
 #[async_trait]

@@ -15,7 +15,7 @@ fn test_validate() {
         .as_module_bundle::<rooch_framework::bindings::ed25519_validator::Ed25519Validator>(
     );
 
-    let keystore = InMemKeystore::new_insecure_for_tests(1);
+    let keystore = InMemKeystore::new_ed25519_insecure_for_tests(1);
     let sender = keystore.addresses()[0];
     let sequence_number = 0;
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);

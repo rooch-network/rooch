@@ -37,6 +37,7 @@ strum = { workspace = true }
 strum_macros = { workspace = true }
 async-trait ={ workspace = true }
 nostr = { workspace = true }
+clap = { workspace = true }
 
 move-core-types = { workspace = true }
 move-stdlib = { workspace = true }

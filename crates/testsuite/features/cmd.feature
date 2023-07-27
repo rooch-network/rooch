@@ -1,15 +1,27 @@
 Feature: Rooch CLI integration tests
     Scenario: Init
       Then cmd: "init"
+      Then cmd: "init --scheme ed25519"
+      # TODO implement multied25519 "init --scheme multied25519"
+      Then cmd: "init --scheme ecdsa"
+      Then cmd: "init --scheme schnorr"
 
     Scenario: account
       Given the server
 
       Then cmd: "object --id {default}"
       Then cmd: "account create"
+      Then cmd: "account create --scheme ed25519"
+      # TODO re-enable tests of `account create --scheme ecdsa` and `account create --scheme schnorr`
+      # TODO implement multied25519 "account create --scheme multied25519"
+      # Then cmd: "account create --scheme ecdsa"
+      # Then cmd: "account create --scheme schnorr"
       Then cmd: "account list"
       Then cmd: "account import "fiber tube acid imitate frost coffee choose crowd grass topple donkey submit""
-    
+      Then cmd: "account import --scheme ed25519 "fiber tube acid imitate frost coffee choose crowd grass topple donkey submit""
+      # TODO implement multied25519 "account import --scheme multied25519"
+      Then cmd: "account import --scheme ecdsa "arrive scheme chunk mutual hip twenty tunnel correct fee sign bag high""
+      Then cmd: "account import --scheme schnorr "census sudden knife document sick disease flush brand sport head genius warrior""
       # TODO split Scenario for every example
       # counter example
       Then cmd: "move publish -p ../../examples/counter --sender-account {default} --named-addresses rooch_examples={default}"

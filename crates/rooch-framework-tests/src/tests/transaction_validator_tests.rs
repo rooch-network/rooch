@@ -9,11 +9,11 @@ use rooch_types::transaction::{rooch::RoochTransactionData, AbstractTransaction}
 use crate::binding_test;
 
 #[test]
-fn test_validate() {
+fn test_validate_ed25519() {
     let binding_test = binding_test::RustBindingTest::new().unwrap();
     let transaction_validator = binding_test.as_module_bundle::<rooch_framework::bindings::transaction_validator::TransactionValidator>();
 
-    let keystore = InMemKeystore::new_insecure_for_tests(1);
+    let keystore = InMemKeystore::new_ed25519_insecure_for_tests(1);
     let sender = keystore.addresses()[0];
     let sequence_number = 0;
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
