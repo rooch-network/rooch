@@ -4,7 +4,7 @@
 extern crate chrono;
 
 use crate::event_store::EventStore;
-use crate::{MoveOSStore, StoreMeta};
+use crate::MoveOSStore;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::{StructTag, TypeTag};
@@ -15,7 +15,7 @@ use moveos_types::h256::H256;
 use moveos_types::transaction::TransactionExecutionInfo;
 use raw_store::rocks::{RocksDB, DEFAULT_PREFIX_NAME};
 use raw_store::traits::DBStore;
-use raw_store::{CodecKVStore, StoreInstance};
+use raw_store::CodecKVStore;
 
 #[test]
 fn test_reopen() {
@@ -60,7 +60,6 @@ fn test_open_read_only() {
         bcs::to_bytes(&value).unwrap(),
     );
     assert!(result.is_ok());
-    // let path = tmpdir.as_ref().join("roochdb");
     let path = tmpdir.as_ref();
     let db = RocksDB::open_with_cfs(path, cfs, true, RocksdbConfig::default(), None).unwrap();
     let result = db.put(
@@ -77,12 +76,7 @@ fn test_open_read_only() {
 
 #[test]
 fn test_store() {
-    let tmpdir = moveos_config::temp_dir();
-    let cfs = StoreMeta::get_column_family_names().to_vec();
-    let store = MoveOSStore::new(StoreInstance::new_db_instance(
-        RocksDB::new(tmpdir.path(), cfs, RocksdbConfig::default(), None).unwrap(),
-    ))
-    .unwrap();
+    let store = MoveOSStore::mock_moveos_store().unwrap();
 
     let transaction_info1 = TransactionExecutionInfo::new(
         H256::random(),
@@ -93,22 +87,17 @@ fn test_store() {
     );
     let id = transaction_info1.tx_hash;
     store
-        .transaction_store
+        .get_transaction_store()
         .kv_put(id, transaction_info1.clone())
         .unwrap();
-    let transaction_info2 = store.transaction_store.kv_get(id).unwrap();
+    let transaction_info2 = store.get_transaction_store().kv_get(id).unwrap();
     assert!(transaction_info2.is_some());
     assert_eq!(transaction_info1, transaction_info2.unwrap());
 }
 
 #[test]
 fn test_event_store() {
-    let tmpdir = moveos_config::temp_dir();
-    let cfs = StoreMeta::get_column_family_names().to_vec();
-    let store = MoveOSStore::new(StoreInstance::new_db_instance(
-        RocksDB::new(tmpdir.path(), cfs, RocksdbConfig::default(), None).unwrap(),
-    ))
-    .unwrap();
+    let store = MoveOSStore::mock_moveos_store().unwrap();
 
     let test_struct_tag = StructTag {
         address: AccountAddress::random(),
@@ -134,12 +123,7 @@ fn test_event_store() {
 
 #[test]
 fn test_iter() {
-    let tmpdir = moveos_config::temp_dir();
-    let cfs = StoreMeta::get_column_family_names().to_vec();
-    let store = MoveOSStore::new(StoreInstance::new_db_instance(
-        RocksDB::new(tmpdir.path(), cfs, RocksdbConfig::default(), None).unwrap(),
-    ))
-    .unwrap();
+    let store = MoveOSStore::mock_moveos_store().unwrap();
     let transaction_info1 = TransactionExecutionInfo::new(
         H256::random(),
         H256::random(),
@@ -149,10 +133,10 @@ fn test_iter() {
     );
     let id = transaction_info1.tx_hash;
     store
-        .transaction_store
+        .get_transaction_store()
         .kv_put(id, transaction_info1.clone())
         .unwrap();
-    let mut iter = store.transaction_store.iter().unwrap();
+    let mut iter = store.get_transaction_store().iter().unwrap();
     iter.seek_to_first();
     let item2 = iter.next().and_then(|item| item.ok());
     assert!(item2.is_some());

@@ -12,12 +12,14 @@ use move_core_types::{
 use move_vm_runtime::config::VMConfig;
 use move_vm_runtime::native_functions::NativeFunction;
 use move_vm_types::gas::UnmeteredGasMeter;
+use moveos_store::config_store::ConfigStore;
 use moveos_store::event_store::EventDBStore;
-use moveos_store::state_store::StateDBStore;
+use moveos_store::state_store::statedb::StateDBStore;
 use moveos_store::transaction_store::TransactionDBStore;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionReturnValue;
 use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::startup_info::StartupInfo;
 use moveos_types::state_resolver::MoveOSResolverProxy;
 use moveos_types::transaction::{MoveOSTransaction, TransactionOutput, VerifiedMoveOSTransaction};
 use moveos_types::tx_context::TxContext;
@@ -205,6 +207,15 @@ impl MoveOS {
             .0
             .get_event_store()
             .save_events(events)
+            .map_err(|e| {
+                PartialVMError::new(StatusCode::STORAGE_ERROR)
+                    .with_message(e.to_string())
+                    .finish(Location::Undefined)
+            })?;
+        self.db
+            .0
+            .get_config_store()
+            .save_startup_info(StartupInfo::new(new_state_root))
             .map_err(|e| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR)
                     .with_message(e.to_string())

@@ -191,7 +191,7 @@ mod tests {
     fn test_genesis_init() {
         let genesis = super::RoochGenesis::build().expect("build rooch framework failed");
         // let db = moveos_store::MoveOSStore::new_with_memory_store();
-        let moveos_store = MoveOSStore::mock().unwrap();
+        let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
         let mut moveos = MoveOS::new(
             moveos_store,
             all_natives(genesis.gas_params),

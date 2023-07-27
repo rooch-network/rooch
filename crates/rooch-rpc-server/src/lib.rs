@@ -12,7 +12,8 @@ use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
 use moveos_config::store_config::RocksdbConfig;
-use moveos_store::MoveOSStore;
+use moveos_store::config_store::ConfigStore;
+use moveos_store::{MoveOSDB, MoveOSStore};
 use raw_store::rocks::RocksDB;
 use raw_store::StoreInstance;
 use rooch_config::rpc::server_config::ServerConfig;
@@ -72,8 +73,8 @@ impl Service {
         Self { handle: None }
     }
 
-    pub async fn start(&mut self, is_mock: bool) -> Result<()> {
-        self.handle = Some(start_server(is_mock).await?);
+    pub async fn start(&mut self, is_mock_storage: bool) -> Result<()> {
+        self.handle = Some(start_server(is_mock_storage).await?);
         Ok(())
     }
 
@@ -108,7 +109,7 @@ impl RpcModuleBuilder {
 }
 
 // Start json-rpc server
-pub async fn start_server(is_mock: bool) -> Result<ServerHandle> {
+pub async fn start_server(is_mock_storage: bool) -> Result<ServerHandle> {
     tracing_subscriber::fmt::init();
 
     let config = ServerConfig::default();
@@ -116,39 +117,8 @@ pub async fn start_server(is_mock: bool) -> Result<ServerHandle> {
     let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
     let actor_system = ActorSystem::global_system();
 
-    let (rooch_db_path, moveos_db_path) = if !is_mock {
-        (
-            StoreConfig::get_rooch_store_dir(),
-            StoreConfig::get_moveos_store_dir(),
-        )
-    } else {
-        (
-            moveos_config::temp_dir().path().to_path_buf(),
-            moveos_config::temp_dir().path().to_path_buf(),
-        )
-    };
-
     //Init store
-    let moveos_store = MoveOSStore::new(StoreInstance::new_db_instance(
-        RocksDB::new(
-            moveos_db_path,
-            moveos_store::StoreMeta::get_column_family_names().to_vec(),
-            RocksdbConfig::default(),
-            None,
-        )
-        .unwrap(),
-    ))
-    .unwrap();
-    let rooch_store = RoochStore::new(StoreInstance::new_db_instance(
-        RocksDB::new(
-            rooch_db_path,
-            rooch_store::StoreMeta::get_column_family_names().to_vec(),
-            RocksdbConfig::default(),
-            None,
-        )
-        .unwrap(),
-    ))
-    .unwrap();
+    let (moveos_store, rooch_store) = init_stroage(is_mock_storage)?;
 
     // Init executor
     let executor = ExecutorActor::new(moveos_store, rooch_store.clone())?
@@ -219,4 +189,45 @@ fn _build_rpc_api<M: Send + Sync + 'static>(mut rpc_module: RpcModule<M>) -> Rpc
         .expect("infallible all other methods have their own address space");
 
     rpc_module
+}
+
+fn init_stroage(is_mock_storage: bool) -> Result<(MoveOSStore, RoochStore)> {
+    let (rooch_db_path, moveos_db_path) = if !is_mock_storage {
+        (
+            StoreConfig::get_rooch_store_dir(),
+            StoreConfig::get_moveos_store_dir(),
+        )
+    } else {
+        (
+            moveos_config::temp_dir().path().to_path_buf(),
+            moveos_config::temp_dir().path().to_path_buf(),
+        )
+    };
+
+    //Init store
+    let moveosdb = MoveOSDB::new(StoreInstance::new_db_instance(
+        RocksDB::new(
+            moveos_db_path,
+            moveos_store::StoreMeta::get_column_family_names().to_vec(),
+            RocksdbConfig::default(),
+            None,
+        )
+        .unwrap(),
+    ))?;
+    let lastest_state_root = moveosdb
+        .config_store
+        .get_startup_info()?
+        .map(|info| info.state_root_hash);
+    let moveos_store = MoveOSStore::new_with_root(moveosdb, lastest_state_root).unwrap();
+
+    let rooch_store = RoochStore::new(StoreInstance::new_db_instance(
+        RocksDB::new(
+            rooch_db_path,
+            rooch_store::StoreMeta::get_column_family_names().to_vec(),
+            RocksdbConfig::default(),
+            None,
+        )
+        .unwrap(),
+    ))?;
+    Ok((moveos_store, rooch_store))
 }
