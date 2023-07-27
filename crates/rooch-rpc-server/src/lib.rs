@@ -118,7 +118,7 @@ pub async fn start_server(is_mock_storage: bool) -> Result<ServerHandle> {
     let actor_system = ActorSystem::global_system();
 
     //Init store
-    let (moveos_store, rooch_store) = init_stroage(is_mock_storage);
+    let (moveos_store, rooch_store) = init_stroage(is_mock_storage)?;
 
     // Init executor
     let executor = ExecutorActor::new(moveos_store, rooch_store.clone())?
@@ -191,7 +191,7 @@ fn _build_rpc_api<M: Send + Sync + 'static>(mut rpc_module: RpcModule<M>) -> Rpc
     rpc_module
 }
 
-fn init_stroage(is_mock_storage: bool) -> (MoveOSStore, RoochStore) {
+fn init_stroage(is_mock_storage: bool) -> Result<(MoveOSStore, RoochStore)> {
     let (rooch_db_path, moveos_db_path) = if !is_mock_storage {
         (
             StoreConfig::get_rooch_store_dir(),
@@ -213,14 +213,11 @@ fn init_stroage(is_mock_storage: bool) -> (MoveOSStore, RoochStore) {
             None,
         )
         .unwrap(),
-    ))
-    .unwrap();
-    let startup_info = moveosdb.config_store.get_startup_info().unwrap();
-    let lastest_state_root = if Option::is_some(&startup_info) {
-        Some(startup_info.unwrap().state_root_hash)
-    } else {
-        None
-    };
+    ))?;
+    let lastest_state_root = moveosdb
+        .config_store
+        .get_startup_info()?
+        .map(|info| info.state_root_hash);
     let moveos_store = MoveOSStore::new_with_root(moveosdb, lastest_state_root).unwrap();
 
     let rooch_store = RoochStore::new(StoreInstance::new_db_instance(
@@ -231,7 +228,6 @@ fn init_stroage(is_mock_storage: bool) -> (MoveOSStore, RoochStore) {
             None,
         )
         .unwrap(),
-    ))
-    .unwrap();
-    (moveos_store, rooch_store)
+    ))?;
+    Ok((moveos_store, rooch_store))
 }
