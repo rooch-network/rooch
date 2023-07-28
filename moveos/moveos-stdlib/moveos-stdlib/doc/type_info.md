@@ -15,8 +15,6 @@ https://github.com/starcoinorg/starcoin-framework/blob/952c51116e0ef5a97c119205d
 -  [Function `type_of`](#0x2_type_info_type_of)
 -  [Function `type_name`](#0x2_type_info_type_name)
 -  [Function `size_of_val`](#0x2_type_info_size_of_val)
--  [Function `verify_type_of`](#0x2_type_info_verify_type_of)
--  [Function `verify_type_of_generic`](#0x2_type_info_verify_type_of_generic)
 
 
 <pre><code><b>use</b> <a href="">0x1::ascii</a>;
@@ -174,13 +172,6 @@ https://github.com/starcoinorg/starcoin-framework/blob/952c51116e0ef5a97c119205d
 
 </details>
 
-<details>
-<summary>Specification</summary>
-
-
-
-</details>
-
 <a name="0x2_type_info_type_name"></a>
 
 ## Function `type_name`
@@ -200,22 +191,6 @@ https://github.com/starcoinorg/starcoin-framework/blob/952c51116e0ef5a97c119205d
     <b>let</b> <a href="">ascii</a> = std::type_name::into_string(std::type_name::get&lt;T&gt;());
     std::string::utf8(std::ascii::into_bytes(<a href="">ascii</a>))
 }
-</code></pre>
-
-
-
-</details>
-
-<details>
-<summary>Specification</summary>
-
-
-
-
-<a name="0x2_type_info_spec_chain_id_internal"></a>
-
-
-<pre><code><b>fun</b> <a href="type_info.md#0x2_type_info_spec_chain_id_internal">spec_chain_id_internal</a>(): u8;
 </code></pre>
 
 
@@ -248,91 +223,6 @@ analysis of vector size dynamism.
     // Return <a href="">vector</a> length of vectorized BCS representation.
     <a href="_length">vector::length</a>(&<a href="../doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(val_ref))
 }
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_type_info_verify_type_of"></a>
-
-## Function `verify_type_of`
-
-
-
-<pre><code><b>fun</b> <a href="type_info.md#0x2_type_info_verify_type_of">verify_type_of</a>()
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="type_info.md#0x2_type_info_verify_type_of">verify_type_of</a>() {
-    <b>let</b> <a href="type_info.md#0x2_type_info">type_info</a> = <a href="type_info.md#0x2_type_info_type_of">type_of</a>&lt;<a href="type_info.md#0x2_type_info_TypeInfo">TypeInfo</a>&gt;();
-    <b>let</b> account_address = <a href="type_info.md#0x2_type_info_account_address">account_address</a>(&<a href="type_info.md#0x2_type_info">type_info</a>);
-    <b>let</b> module_name = <a href="type_info.md#0x2_type_info_module_name">module_name</a>(&<a href="type_info.md#0x2_type_info">type_info</a>);
-    <b>let</b> struct_name = <a href="type_info.md#0x2_type_info_struct_name">struct_name</a>(&<a href="type_info.md#0x2_type_info">type_info</a>);
-    <b>spec</b> {
-        <b>assert</b> account_address == @moveos_std;
-        <b>assert</b> module_name == b"<a href="type_info.md#0x2_type_info">type_info</a>";
-        <b>assert</b> struct_name == b"<a href="type_info.md#0x2_type_info_TypeInfo">TypeInfo</a>";
-    };
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_type_info_verify_type_of_generic"></a>
-
-## Function `verify_type_of_generic`
-
-
-
-<pre><code><b>fun</b> <a href="type_info.md#0x2_type_info_verify_type_of_generic">verify_type_of_generic</a>&lt;T&gt;()
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="type_info.md#0x2_type_info_verify_type_of_generic">verify_type_of_generic</a>&lt;T&gt;() {
-    <b>let</b> <a href="type_info.md#0x2_type_info">type_info</a> = <a href="type_info.md#0x2_type_info_type_of">type_of</a>&lt;T&gt;();
-    <b>let</b> account_address = <a href="type_info.md#0x2_type_info_account_address">account_address</a>(&<a href="type_info.md#0x2_type_info">type_info</a>);
-    <b>let</b> module_name = <a href="type_info.md#0x2_type_info_module_name">module_name</a>(&<a href="type_info.md#0x2_type_info">type_info</a>);
-    <b>let</b> struct_name = <a href="type_info.md#0x2_type_info_struct_name">struct_name</a>(&<a href="type_info.md#0x2_type_info">type_info</a>);
-    <b>spec</b> {
-        <b>assert</b> account_address == <a href="type_info.md#0x2_type_info_type_of">type_of</a>&lt;T&gt;().account_address;
-        <b>assert</b> module_name == <a href="type_info.md#0x2_type_info_type_of">type_of</a>&lt;T&gt;().module_name;
-        <b>assert</b> struct_name == <a href="type_info.md#0x2_type_info_type_of">type_of</a>&lt;T&gt;().struct_name;
-    };
-}
-</code></pre>
-
-
-
-</details>
-
-<details>
-<summary>Specification</summary>
-
-
-
-<pre><code><b>aborts_if</b> !<a href="type_info.md#0x2_type_info_spec_is_struct">spec_is_struct</a>&lt;T&gt;();
-</code></pre>
-
-
-
-
-<a name="0x2_type_info_spec_is_struct"></a>
-
-
-<pre><code><b>native</b> <b>fun</b> <a href="type_info.md#0x2_type_info_spec_is_struct">spec_is_struct</a>&lt;T&gt;(): bool;
 </code></pre>
 
 

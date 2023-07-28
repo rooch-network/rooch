@@ -9,7 +9,6 @@ HEX (Base16) encoding utility.
 -  [Constants](#@Constants_0)
 -  [Function `encode`](#0x2_hex_encode)
 -  [Function `decode`](#0x2_hex_decode)
--  [Function `decode_byte`](#0x2_hex_decode_byte)
 -  [Module Specification](#@Module_Specification_1)
 
 
@@ -122,43 +121,6 @@ Aborts if the hex string contains non-valid hex characters (valid characters are
 
 </details>
 
-<a name="0x2_hex_decode_byte"></a>
-
-## Function `decode_byte`
-
-
-
-<pre><code><b>fun</b> <a href="hex.md#0x2_hex_decode_byte">decode_byte</a>(<a href="hex.md#0x2_hex">hex</a>: u8): u8
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="hex.md#0x2_hex_decode_byte">decode_byte</a>(<a href="hex.md#0x2_hex">hex</a>: u8): u8 {
-    <b>if</b> (/* 0 .. 9 */ 48 &lt;= <a href="hex.md#0x2_hex">hex</a> && <a href="hex.md#0x2_hex">hex</a> &lt; 58) {
-        <a href="hex.md#0x2_hex">hex</a> - 48
-    } <b>else</b> <b>if</b> (/* A .. F */ 65 &lt;= <a href="hex.md#0x2_hex">hex</a> && <a href="hex.md#0x2_hex">hex</a> &lt; 71) {
-        10 + <a href="hex.md#0x2_hex">hex</a> - 65
-    } <b>else</b> <b>if</b> (/* a .. f */ 97 &lt;= <a href="hex.md#0x2_hex">hex</a> && <a href="hex.md#0x2_hex">hex</a> &lt; 103) {
-        10 + <a href="hex.md#0x2_hex">hex</a> - 97
-    } <b>else</b> {
-        <b>abort</b> <a href="hex.md#0x2_hex_ENotValidHexCharacter">ENotValidHexCharacter</a>
-    }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="@Module_Specification_1"></a>
 
 ## Module Specification
-
-
-
-<pre><code><b>pragma</b> verify = <b>false</b>;
-</code></pre>

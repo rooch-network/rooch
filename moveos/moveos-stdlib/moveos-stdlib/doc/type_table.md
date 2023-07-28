@@ -9,7 +9,6 @@ TypeTable is a table use struct Type as Key, struct as Value
 -  [Struct `TypeTable`](#0x2_type_table_TypeTable)
 -  [Function `new`](#0x2_type_table_new)
 -  [Function `new_with_id`](#0x2_type_table_new_with_id)
--  [Function `key`](#0x2_type_table_key)
 -  [Function `add`](#0x2_type_table_add)
 -  [Function `borrow`](#0x2_type_table_borrow)
 -  [Function `borrow_mut`](#0x2_type_table_borrow_mut)
@@ -101,35 +100,6 @@ Create a new Table with a given handle.
     <a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a> {
         handle,
     }
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_type_table_key"></a>
-
-## Function `key`
-
-Note: We use Type name as key, the key will be serialized by bcs in the native function.
-
-
-<pre><code><b>fun</b> <a href="type_table.md#0x2_type_table_key">key</a>&lt;V&gt;(): <a href="_String">ascii::String</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="type_table.md#0x2_type_table_key">key</a>&lt;V&gt;(): String {
-    <b>let</b> <a href="">type_name</a> = std::type_name::get&lt;V&gt;();
-    <b>let</b> name_string = std::type_name::into_string(<a href="">type_name</a>);
-    //std::debug::print(&name_string);
-    //std::debug::print(&std::bcs::to_bytes(&name_string));
-    name_string
 }
 </code></pre>
 

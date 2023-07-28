@@ -28,7 +28,6 @@ This module provides a solution for unsorted maps, that is it has the properties
 -  [Function `values`](#0x2_simple_map_values)
 -  [Function `to_vec_pair`](#0x2_simple_map_to_vec_pair)
 -  [Function `remove`](#0x2_simple_map_remove)
--  [Function `find`](#0x2_simple_map_find)
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
@@ -488,42 +487,6 @@ Primarily used to destroy a map
     <b>let</b> placement = <a href="_extract">option::extract</a>(&<b>mut</b> maybe_idx);
     <b>let</b> <a href="simple_map.md#0x2_simple_map_Element">Element</a> { key, value } = <a href="_swap_remove">vector::swap_remove</a>(&<b>mut</b> map.data, placement);
     (key, value)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_simple_map_find"></a>
-
-## Function `find`
-
-
-
-<pre><code><b>fun</b> <a href="simple_map.md#0x2_simple_map_find">find</a>&lt;Key: store, Value: store&gt;(map: &<a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;, key: &Key): <a href="_Option">option::Option</a>&lt;u64&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="simple_map.md#0x2_simple_map_find">find</a>&lt;Key: store, Value: store&gt;(
-    map: &<a href="simple_map.md#0x2_simple_map_SimpleMap">SimpleMap</a>&lt;Key, Value&gt;,
-    key: &Key,
-): <a href="_Option">option::Option</a>&lt;u64&gt;{
-    <b>let</b> leng = <a href="_length">vector::length</a>(&map.data);
-    <b>let</b> i = 0;
-    <b>while</b> (i &lt; leng) {
-        <b>let</b> element = <a href="_borrow">vector::borrow</a>(&map.data, i);
-        <b>if</b> (&element.key == key){
-            <b>return</b> <a href="_some">option::some</a>(i)
-        };
-        i = i + 1;
-    };
-    <a href="_none">option::none</a>&lt;u64&gt;()
 }
 </code></pre>
 
