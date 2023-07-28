@@ -71,6 +71,7 @@ The StorageContext can not be <code>drop</code> or <code>store</code>, so develo
 
 ## Function `tx_context`
 
+Get an immutable reference to the transaction context from the storage context
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context">tx_context</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>
@@ -95,6 +96,7 @@ The StorageContext can not be <code>drop</code> or <code>store</code>, so develo
 
 ## Function `tx_context_mut`
 
+Get a mutable reference to the transaction context from the storage context
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_tx_context_mut">tx_context_mut</a>(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>
@@ -119,6 +121,7 @@ The StorageContext can not be <code>drop</code> or <code>store</code>, so develo
 
 ## Function `object_storage`
 
+Get an immutable reference to the object storage from the storage context
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object_storage.md#0x2_object_storage">object_storage</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): &<a href="object_storage.md#0x2_object_storage_ObjectStorage">object_storage::ObjectStorage</a>
@@ -143,6 +146,7 @@ The StorageContext can not be <code>drop</code> or <code>store</code>, so develo
 
 ## Function `object_storage_mut`
 
+Get a mutable reference to the object storage from the storage context
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_object_storage_mut">object_storage_mut</a>(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): &<b>mut</b> <a href="object_storage.md#0x2_object_storage_ObjectStorage">object_storage::ObjectStorage</a>
@@ -168,6 +172,7 @@ The StorageContext can not be <code>drop</code> or <code>store</code>, so develo
 ## Function `sender`
 
 Wrap functions for TxContext
+Return the address of the user that signed the current transaction
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_sender">sender</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): <b>address</b>
@@ -192,6 +197,7 @@ Wrap functions for TxContext
 
 ## Function `fresh_address`
 
+Generate a new unique address
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_fresh_address">fresh_address</a>(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): <b>address</b>
@@ -216,6 +222,7 @@ Wrap functions for TxContext
 
 ## Function `fresh_object_id`
 
+Generate a new unique object ID
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_fresh_object_id">fresh_object_id</a>(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
@@ -240,6 +247,7 @@ Wrap functions for TxContext
 
 ## Function `tx_hash`
 
+Return the hash of the current transaction
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_tx_hash">tx_hash</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): <a href="">vector</a>&lt;u8&gt;
