@@ -1,7 +1,7 @@
 processed 3 tasks
 
-task 1 'publish'. lines 3-17:
+task 1 'publish'. lines 3-20:
 status EXECUTED
 
-task 2 'run'. lines 19-26:
+task 2 'run'. lines 22-30:
 status EXECUTED

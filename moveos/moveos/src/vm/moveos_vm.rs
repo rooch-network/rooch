@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::tx_argument_resolver::TxArgumentResolver;
+use super::{data_cache::MoveosDataCache, tx_argument_resolver::TxArgumentResolver};
 use anyhow::ensure;
 use move_binary_format::{
     compatibility::Compatibility,
@@ -104,7 +104,7 @@ impl MoveOSVM {
 pub struct MoveOSSession<'r, 'l, S, G> {
     vm: &'l MoveVM,
     remote: &'r S,
-    session: Session<'r, 'l, S>,
+    session: Session<'r, 'l, MoveosDataCache<'r, 'l, S>>,
     ctx: StorageContext,
     pre_execute_functions: Vec<FunctionCall>,
     post_execute_functions: Vec<FunctionCall>,
@@ -164,7 +164,10 @@ where
         s.pre_execute()
     }
 
-    fn new_inner_session(vm: &'l MoveVM, remote: &'r S) -> Session<'r, 'l, S> {
+    fn new_inner_session(
+        vm: &'l MoveVM,
+        remote: &'r S,
+    ) -> Session<'r, 'l, MoveosDataCache<'r, 'l, S>> {
         let mut extensions = NativeContextExtensions::default();
 
         extensions.add(NativeTableContext::new(remote));
@@ -172,22 +175,22 @@ where
         // The VM code loader has bugs around module upgrade. After a module upgrade, the internal
         // cache needs to be flushed to work around those bugs.
         vm.flush_loader_cache_if_invalidated();
-        vm.new_session_with_extensions(remote, extensions)
+        let loader = vm.runtime().loader();
+        let data_store: MoveosDataCache<'r, 'l, S> = MoveosDataCache::new(remote, loader);
+        vm.new_session_with_cache_and_extensions(data_store, extensions)
     }
 
     /// Verify a move action.
     /// The caller should call this function when validate a transaction.
     /// If the result is error, the transaction should be rejected.
-    pub fn verify_move_action(
-        &self,
-        action: MoveAction,
-    ) -> Result<VerifiedMoveAction, anyhow::Error> {
+    pub fn verify_move_action(&self, action: MoveAction) -> VMResult<VerifiedMoveAction> {
         match action {
             MoveAction::Script(script) => {
                 let loaded_function = self
                     .session
                     .load_script(script.code.as_slice(), script.ty_args.clone())?;
-                moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)?;
+                moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)
+                    .map_err(|e| e.finish(Location::Undefined))?;
                 let resolved_args = self
                     .ctx
                     .resolve_argument(&self.session, &loaded_function, script.args.clone())
@@ -203,7 +206,8 @@ where
                     &function.function_id.function_name,
                     function.ty_args.as_slice(),
                 )?;
-                moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)?;
+                moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)
+                    .map_err(|e| e.finish(Location::Undefined))?;
                 let resolved_args = self
                     .ctx
                     .resolve_argument(&self.session, &loaded_function, function.args.clone())
@@ -225,7 +229,7 @@ where
                                 init_function_modules.push(module.self_id())
                             }
                         }
-                        Err(err) => return Err(err.into()),
+                        Err(err) => return Err(err),
                     }
                 }
 
@@ -330,7 +334,9 @@ where
         let resolved_args = self
             .ctx
             .resolve_argument(&self.session, &loaded_function, call.args)
-            .map_err(|e| e.finish(Location::Undefined))?;
+            .map_err(|e: move_binary_format::errors::PartialVMError| {
+                e.finish(Location::Undefined)
+            })?;
 
         let return_values = self.session.execute_function_bypass_visibility(
             &call.function_id.module_id,
@@ -531,7 +537,7 @@ where
         self.session.get_native_extensions()
     }
 
-    pub fn runtime_session(&self) -> &Session<'r, 'l, S> {
+    pub fn runtime_session(&self) -> &Session<'r, 'l, MoveosDataCache<'r, 'l, S>> {
         self.session.borrow()
     }
 }
