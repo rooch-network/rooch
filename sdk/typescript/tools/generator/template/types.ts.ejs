@@ -1,0 +1,34 @@
+<% Object.entries(schemas).forEach(([originalName, schema]) => { %>
+    <% if (originalName === 'alloc::vec::Vec<u8>') return; %>
+    <% let name = originalName; %>
+    <% if (originalName.indexOf('::') !== -1) { %>
+    <%   name = originalName.split('::').pop(); %>
+    <% } %>
+    <% if (schema.properties) { %>
+    export type <%= name %> = {<% Object.entries(schema.properties).forEach(([propName, propSpec]) => { %><%= propName %><%= schema.required && schema.required.includes(propName) ? '' : '?' %>: <%= getType(propSpec, schemas, originalName) %>; <% }) %>}
+    <% } else if (schema.type || schema.anyOf || schema.oneOf) { %>
+    <%   if (schema.oneOf) { %>
+      <% schema.oneOf.forEach((subSchema, index) => { %>
+        <% if (typeof subSchema === 'object' && !(subSchema instanceof Array) && subSchema !== null) { %>
+    export type <%= name %><%= index %> = <%= getType(subSchema, schemas, originalName) %>;
+        <% } %>
+      <% }) %>
+    export type <%= name %> = <%= schema.oneOf.map((_, index) => `${name}${index}`).join(' | ') %>;
+    <%   } else { %>
+    export type <%= name %> = <%= getType(schema, schemas, originalName) %>;
+    <%   } %>
+    <% } else { %>
+    // Missing properties and type: <%= originalName %>
+    <% } %>
+<% }) %>
+    
+
+
+
+    
+    
+    
+    
+
+    
+    
