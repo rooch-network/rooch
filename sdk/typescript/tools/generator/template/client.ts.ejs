@@ -1,0 +1,53 @@
+import { RequestManager, HTTPTransport, Client } from '@open-rpc/client-js';
+import {
+    AnnotatedMoveValueView
+} from "./types"
+
+/**
+ * Configuration options for the RoochClient
+ * You must provide either a `url` or a `transport`
+ */
+export type RoochClientOptions = {
+    url: string;
+    transport?: never;
+};
+
+export class RoochClient {
+    protected rpcClient: Client;
+
+    constructor(options: RoochClientOptions) {
+		const transport = new HTTPTransport(options?.url ?? url, {
+			headers: {
+				'Content-Type': 'application/json',
+				'Client-Sdk-Type': 'typescript',
+				'Client-Sdk-Version': PACKAGE_VERSION,
+				'Client-Target-Api-Version': TARGETED_RPC_VERSION,
+				...rpc?.headers,
+			},
+		});
+
+		this.rpcClient = new Client(new RequestManager([transport]));
+	}
+
+    async getRpcApiVersion(): Promise<string | undefined> {
+		const resp = await this.rpcClient.request<{ info: { version: string } }>({
+			method: 'rpc.discover',
+			params: [],
+		});
+
+		return resp.info.version;
+	}
+
+    // TOOD 使用EJS模版自动生成 method
+    <% methods.forEach((method) => { %> 
+    async <%= method.name %>(): Promise<string | undefined> {
+        const resp = await this.client.request<{ info: { version: string } }>({
+            method: 'rpc.discover',
+            params: [],
+        });
+
+        return resp.info.version;
+    }
+    <% }) %>
+    // TOOD 使用EJS模版自动生成 method
+}
