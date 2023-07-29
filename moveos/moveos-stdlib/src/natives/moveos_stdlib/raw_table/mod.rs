@@ -31,9 +31,9 @@ use moveos_types::{
     state::{State, StateChangeSet, TableChange, TableTypeInfo},
     state_resolver::StateResolver,
 };
+use parking_lot::Mutex;
 use smallvec::smallvec;
 use std::{
-    cell::RefCell,
     collections::{btree_map::Entry, BTreeMap, BTreeSet, VecDeque},
     sync::Arc,
 };
@@ -45,7 +45,7 @@ use std::{
 pub struct NativeTableContext<'a> {
     resolver: &'a dyn StateResolver,
     //tx_hash: [u8; 32],
-    table_data: RefCell<TableData>,
+    table_data: Arc<Mutex<TableData>>,
 }
 
 // See stdlib/Error.move
@@ -66,14 +66,14 @@ const NOT_EMPTY: u64 = (102 << 8) + _ECATEGORY_INVALID_STATE as u64;
 /// A structure representing mutable data of the NativeTableContext. This is in a RefCell
 /// of the overall context so we can mutate while still accessing the overall context.
 #[derive(Default)]
-struct TableData {
+pub struct TableData {
     new_tables: BTreeMap<ObjectID, TableTypeInfo>,
     removed_tables: BTreeSet<ObjectID>,
     tables: BTreeMap<ObjectID, Table>,
 }
 
 /// A structure representing runtime table value.
-struct TableRuntimeValue {
+pub struct TableRuntimeValue {
     /// This is the Layout and TypeTag of the value stored in Box<V>
     /// If the value is GlobalValue::None, the Layout and TypeTag are not known
     value_layout_and_type: Option<(MoveTypeLayout, TypeTag)>,
@@ -185,7 +185,7 @@ impl TableRuntimeValue {
 }
 
 /// A structure representing a single table.
-struct Table {
+pub struct Table {
     handle: ObjectID,
     key_layout: MoveTypeLayout,
     content: BTreeMap<Vec<u8>, TableRuntimeValue>,
@@ -197,65 +197,11 @@ struct Table {
 impl<'a> NativeTableContext<'a> {
     /// Create a new instance of a native table context. This must be passed in via an
     /// extension into VM session functions.
-    pub fn new(resolver: &'a dyn StateResolver) -> Self {
+    pub fn new(resolver: &'a dyn StateResolver, table_data: Arc<Mutex<TableData>>) -> Self {
         Self {
             resolver,
-            table_data: Default::default(),
+            table_data,
         }
-    }
-
-    /// Computes the change set from a NativeTableContext.
-    pub fn into_change_set(self) -> PartialVMResult<StateChangeSet> {
-        let NativeTableContext { table_data, .. } = self;
-        let TableData {
-            new_tables,
-            removed_tables,
-            tables,
-        } = table_data.into_inner();
-        let mut changes = BTreeMap::new();
-        for (handle, table) in tables {
-            let Table { content, .. } = table;
-            let mut entries = BTreeMap::new();
-            for (key, table_value) in content {
-                let (value_layout, value_type, op) = match table_value.into_effect() {
-                    Some((value_layout, value_type, op)) => (value_layout, value_type, op),
-                    None => continue,
-                };
-                match op {
-                    Op::New(box_val) => {
-                        let bytes = unbox_and_serialize(&value_layout, box_val)?;
-                        entries.insert(
-                            key,
-                            Op::New(State {
-                                value_type,
-                                value: bytes,
-                            }),
-                        );
-                    }
-                    Op::Modify(val) => {
-                        let bytes = unbox_and_serialize(&value_layout, val)?;
-                        entries.insert(
-                            key,
-                            Op::Modify(State {
-                                value_type,
-                                value: bytes,
-                            }),
-                        );
-                    }
-                    Op::Delete => {
-                        entries.insert(key, Op::Delete);
-                    }
-                }
-            }
-            if !entries.is_empty() {
-                changes.insert(handle, TableChange { entries });
-            }
-        }
-        Ok(StateChangeSet {
-            new_tables,
-            removed_tables,
-            changes,
-        })
     }
 }
 
@@ -280,6 +226,44 @@ impl TableData {
             }
             Entry::Occupied(e) => e.into_mut(),
         })
+    }
+
+    pub fn get_or_create_table_with_key_layout(
+        &mut self,
+        handle: ObjectID,
+        key_layout: MoveTypeLayout,
+    ) -> PartialVMResult<&mut Table> {
+        Ok(match self.tables.entry(handle) {
+            Entry::Vacant(e) => {
+                let table = Table {
+                    handle,
+                    key_layout,
+                    content: Default::default(),
+                };
+                e.insert(table)
+            }
+            Entry::Occupied(e) => e.into_mut(),
+        })
+    }
+
+    pub fn exist_table(&self, handle: &ObjectID) -> bool {
+        self.tables.contains_key(handle)
+    }
+
+    /// into inner
+    pub fn into_inner(
+        self,
+    ) -> (
+        BTreeMap<ObjectID, TableTypeInfo>,
+        BTreeSet<ObjectID>,
+        BTreeMap<ObjectID, Table>,
+    ) {
+        let TableData {
+            new_tables,
+            removed_tables,
+            tables,
+        } = self;
+        (new_tables, removed_tables, tables)
     }
 }
 
@@ -317,6 +301,71 @@ impl Table {
             }
             Entry::Occupied(entry) => (entry.into_mut(), None),
         })
+    }
+
+    pub fn get_or_create_global_value_with_closures(
+        &mut self,
+        resolver: &dyn StateResolver,
+        key: Vec<u8>,
+        f: impl FnOnce(&TypeTag) -> PartialVMResult<MoveTypeLayout>,
+    ) -> PartialVMResult<(&mut TableRuntimeValue, Option<Option<NumBytes>>)> {
+        Ok(match self.content.entry(key) {
+            Entry::Vacant(entry) => {
+                let (tv, loaded) =
+                    match resolver
+                        .resolve_state(&self.handle, entry.key())
+                        .map_err(|err| {
+                            partial_extension_error(format!(
+                                "remote table resolver failure: {}",
+                                err
+                            ))
+                        })? {
+                        Some(value_box) => {
+                            let value_layout = f(&value_box.value_type)?;
+
+                            let val = deserialize_and_box(&value_layout, &value_box.value)?;
+                            (
+                                TableRuntimeValue::new(
+                                    value_layout,
+                                    value_box.value_type,
+                                    GlobalValue::cached(val)?,
+                                ),
+                                Some(NumBytes::new(value_box.value.len() as u64)),
+                            )
+                        }
+                        None => (TableRuntimeValue::none(), None),
+                    };
+                (entry.insert(tv), Some(loaded))
+            }
+            Entry::Occupied(entry) => (entry.into_mut(), None),
+        })
+    }
+
+    pub fn get_global_value(&self, key: &Vec<u8>) -> Option<&TableRuntimeValue> {
+        self.content.get(key)
+    }
+
+    pub fn contains_key(&self, key: &Vec<u8>) -> bool {
+        self.content.contains_key(key)
+    }
+
+    pub fn into_inner(
+        self,
+    ) -> (
+        ObjectID,
+        MoveTypeLayout,
+        BTreeMap<Vec<u8>, TableRuntimeValue>,
+    ) {
+        let Table {
+            handle,
+            key_layout,
+            content,
+        } = self;
+        (handle, key_layout, content)
+    }
+
+    pub fn key_layout(&self) -> &MoveTypeLayout {
+        &self.key_layout
     }
 }
 
@@ -404,7 +453,7 @@ fn native_add_box(
     assert_eq!(args.len(), 3);
 
     let table_context = context.extensions().get::<NativeTableContext>();
-    let mut table_data = table_context.table_data.borrow_mut();
+    let mut table_data = table_context.table_data.lock();
 
     let val = args.pop_back().unwrap();
     let key = args.pop_back().unwrap();
@@ -455,7 +504,7 @@ fn native_borrow_box(
     assert_eq!(args.len(), 2);
 
     let table_context = context.extensions().get::<NativeTableContext>();
-    let mut table_data = table_context.table_data.borrow_mut();
+    let mut table_data = table_context.table_data.lock();
 
     let key = args.pop_back().unwrap();
     let handle = get_table_handle(pop_arg!(args, StructRef))?;
@@ -504,7 +553,7 @@ fn native_contains_box(
     assert_eq!(args.len(), 2);
 
     let table_context = context.extensions().get::<NativeTableContext>();
-    let mut table_data = table_context.table_data.borrow_mut();
+    let mut table_data = table_context.table_data.lock();
 
     let key = args.pop_back().unwrap();
     let handle = get_table_handle(pop_arg!(args, StructRef))?;
@@ -552,7 +601,7 @@ fn native_remove_box(
     assert_eq!(args.len(), 2);
 
     let table_context = context.extensions().get::<NativeTableContext>();
-    let mut table_data = table_context.table_data.borrow_mut();
+    let mut table_data = table_context.table_data.lock();
 
     let key = args.pop_back().unwrap();
     let handle = get_table_handle(pop_arg!(args, StructRef))?;
@@ -597,7 +646,7 @@ fn native_destroy_empty_box(
     assert_eq!(args.len(), 1);
 
     let table_context = context.extensions().get::<NativeTableContext>();
-    let mut table_data = table_context.table_data.borrow_mut();
+    let mut table_data = table_context.table_data.lock();
 
     let handle = get_table_handle(pop_arg!(args, StructRef))?;
     if table_data.tables.contains_key(&handle)
@@ -691,18 +740,9 @@ fn get_table_handle(table: StructRef) -> PartialVMResult<ObjectID> {
     helpers::get_object_id(table)
 }
 
-fn serialize(layout: &MoveTypeLayout, val: &Value) -> PartialVMResult<Vec<u8>> {
+pub fn serialize(layout: &MoveTypeLayout, val: &Value) -> PartialVMResult<Vec<u8>> {
     val.simple_serialize(layout)
         .ok_or_else(|| partial_extension_error("cannot serialize table key or value"))
-}
-
-// Unbox a value of `moveos_std::raw_table::Box<V>` to V and serialize it.
-fn unbox_and_serialize(layout: &MoveTypeLayout, box_val: Value) -> PartialVMResult<Vec<u8>> {
-    let mut fields = box_val.value_as::<Struct>()?.unpack()?;
-    let val = fields
-        .next()
-        .ok_or_else(|| partial_extension_error("Box<V> should have one field of type V"))?;
-    serialize(layout, &val)
 }
 
 // Deserialize a value and box it to `moveos_std::raw_table::Box<V>`.

@@ -5,7 +5,7 @@
 
 use move_vm_runtime::loader::Loader;
 
-use move_binary_format::errors::*;
+use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use move_core_types::{
     account_address::AccountAddress,
     effects::{AccountChangeSet, ChangeSet, Event, Op},
@@ -19,9 +19,25 @@ use move_core_types::{
 use move_vm_types::{
     data_store::{DataStore, TransactionCache},
     loaded_data::runtime_types::Type,
-    values::{GlobalValue, Value},
+    values::{GlobalValue, Struct, Value},
 };
+use moveos_stdlib::natives::moveos_stdlib::raw_table::{serialize, Table, TableData};
+use moveos_types::{
+    move_module::MoveModule,
+    move_string::MoveString,
+    state::{MoveStructState, State, StateChangeSet, TableChange},
+    state_resolver::{MoveOSResolver, StateResolver},
+};
+use parking_lot::Mutex;
 use std::collections::btree_map::BTreeMap;
+use std::sync::Arc;
+
+use anyhow;
+use move_core_types::language_storage::{StructTag, TypeTag};
+use moveos_types::object::{NamedTableID, ObjectID};
+use moveos_types::state::MoveStructType;
+use serde_json;
+use std::str::FromStr;
 
 pub struct AccountDataCache {
     module_map: BTreeMap<Identifier, (Vec<u8>, bool)>,
@@ -49,21 +65,23 @@ impl AccountDataCache {
 /// for a data store related to a transaction. Clients should create an instance of this type
 /// and pass it to the Move VM.
 pub struct MoveosDataCache<'r, 'l, S> {
-    remote: &'r S,
+    resolver: &'r S,
     loader: &'l Loader,
     account_map: BTreeMap<AccountAddress, AccountDataCache>,
     event_data: Vec<(Vec<u8>, u64, Type, MoveTypeLayout, Value)>,
+    table_data: Arc<Mutex<TableData>>,
 }
 
-impl<'r, 'l, S: MoveResolver> MoveosDataCache<'r, 'l, S> {
+impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
     /// Create a `MoveosDataCache` with a `RemoteCache` that provides access to data
     /// not updated in the transaction.
-    pub fn new(remote: &'r S, loader: &'l Loader) -> Self {
+    pub fn new(resolver: &'r S, loader: &'l Loader, table_data: Arc<Mutex<TableData>>) -> Self {
         MoveosDataCache {
-            remote,
+            resolver,
             loader,
             account_map: BTreeMap::new(),
             event_data: vec![],
+            table_data,
         }
     }
 
@@ -80,7 +98,7 @@ impl<'r, 'l, S: MoveResolver> MoveosDataCache<'r, 'l, S> {
     }
 }
 
-impl<'r, 'l, S: MoveResolver> TransactionCache for MoveosDataCache<'r, 'l, S> {
+impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> {
     /// Make a write set from the updated (dirty, deleted) global resources along with
     /// published modules.
     ///
@@ -132,8 +150,8 @@ impl<'r, 'l, S: MoveResolver> TransactionCache for MoveosDataCache<'r, 'l, S> {
 }
 
 // `DataStore` implementation for the `MoveosDataCache`
-impl<'r, 'l, S: MoveResolver> DataStore for MoveosDataCache<'r, 'l, S> {
-    // Retrieve data from the local cache or loads it from the remote cache into the local cache.
+impl<'r, 'l, S: MoveOSResolver> DataStore for MoveosDataCache<'r, 'l, S> {
+    // Retrieve data from the local cache or loads it from the resolver cache into the local cache.
     // All operations on the global data are based on this API and they all load the data
     // into the cache.
     /// In Rooch, all global operations are disable, so this function is never called.
@@ -151,7 +169,8 @@ impl<'r, 'l, S: MoveResolver> DataStore for MoveosDataCache<'r, 'l, S> {
                 return Ok(blob.clone());
             }
         }
-        match self.remote.get_module(module_id) {
+
+        match self.resolver.get_module(module_id) {
             Ok(Some(bytes)) => Ok(bytes),
             Ok(None) => Err(PartialVMError::new(StatusCode::LINKER_ERROR)
                 .with_message(format!("Cannot find {:?} in data cache", module_id))
@@ -167,6 +186,7 @@ impl<'r, 'l, S: MoveResolver> DataStore for MoveosDataCache<'r, 'l, S> {
         }
     }
 
+    /// Publish a module.
     fn publish_module(
         &mut self,
         module_id: &ModuleId,
@@ -192,7 +212,7 @@ impl<'r, 'l, S: MoveResolver> DataStore for MoveosDataCache<'r, 'l, S> {
             }
         }
         Ok(self
-            .remote
+            .resolver
             .get_module(module_id)
             .map_err(|_| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR).finish(Location::Undefined)
@@ -215,4 +235,67 @@ impl<'r, 'l, S: MoveResolver> DataStore for MoveosDataCache<'r, 'l, S> {
     fn events(&self) -> &Vec<(Vec<u8>, u64, Type, MoveTypeLayout, Value)> {
         &self.event_data
     }
+}
+
+pub fn into_change_set(table_data: Arc<Mutex<TableData>>) -> PartialVMResult<StateChangeSet> {
+    let table_data = Arc::try_unwrap(table_data).map_err(|e| {
+        PartialVMError::new(StatusCode::STORAGE_ERROR)
+            .with_message("TableData is referenced more than once".to_owned())
+    })?;
+    let data = table_data.into_inner();
+    let (new_tables, removed_tables, tables) = data.into_inner();
+    let mut changes = BTreeMap::new();
+    for (handle, table) in tables {
+        let (_, _, content) = table.into_inner();
+        let mut entries = BTreeMap::new();
+        for (key, table_value) in content {
+            let (value_layout, value_type, op) = match table_value.into_effect() {
+                Some((value_layout, value_type, op)) => (value_layout, value_type, op),
+                None => continue,
+            };
+            match op {
+                Op::New(box_val) => {
+                    let bytes = unbox_and_serialize(&value_layout, box_val)?;
+                    entries.insert(
+                        key,
+                        Op::New(State {
+                            value_type,
+                            value: bytes,
+                        }),
+                    );
+                }
+                Op::Modify(val) => {
+                    let bytes = unbox_and_serialize(&value_layout, val)?;
+                    entries.insert(
+                        key,
+                        Op::Modify(State {
+                            value_type,
+                            value: bytes,
+                        }),
+                    );
+                }
+                Op::Delete => {
+                    entries.insert(key, Op::Delete);
+                }
+            }
+        }
+        if !entries.is_empty() {
+            changes.insert(handle, TableChange { entries });
+        }
+    }
+    Ok(StateChangeSet {
+        new_tables,
+        removed_tables,
+        changes,
+    })
+}
+
+// Unbox a value of `moveos_std::raw_table::Box<V>` to V and serialize it.
+fn unbox_and_serialize(layout: &MoveTypeLayout, box_val: Value) -> PartialVMResult<Vec<u8>> {
+    let mut fields = box_val.value_as::<Struct>()?.unpack()?;
+    let val = fields.next().ok_or_else(|| {
+        PartialVMError::new(StatusCode::VM_EXTENSION_ERROR)
+            .with_message("Box<V> should have one field of type V".to_owned())
+    })?;
+    serialize(layout, &val)
 }
