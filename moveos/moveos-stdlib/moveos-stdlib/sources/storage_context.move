@@ -25,36 +25,44 @@ module moveos_std::storage_context {
         object_storage: ObjectStorage,
     }
 
+    /// Get an immutable reference to the transaction context from the storage context
     public fun tx_context(self: &StorageContext): &TxContext {
         &self.tx_context
     }
 
+    /// Get a mutable reference to the transaction context from the storage context
     public fun tx_context_mut(self: &mut StorageContext): &mut TxContext {
         &mut self.tx_context
     }
 
+    /// Get an immutable reference to the object storage from the storage context
     public fun object_storage(self: &StorageContext): &ObjectStorage {
         &self.object_storage
     }
 
+    /// Get a mutable reference to the object storage from the storage context
     public fun object_storage_mut(self: &mut StorageContext): &mut ObjectStorage {
         &mut self.object_storage
     }
 
     /// Wrap functions for TxContext
 
+    /// Return the address of the user that signed the current transaction
     public fun sender(self: &StorageContext): address {
         tx_context::sender(&self.tx_context)
     } 
 
+    /// Generate a new unique address
     public fun fresh_address(self: &mut StorageContext): address {
         tx_context::fresh_address(&mut self.tx_context)
     }
 
+    /// Generate a new unique object ID
     public fun fresh_object_id(self: &mut StorageContext): ObjectID {
         tx_context::fresh_object_id(&mut self.tx_context)
     }
 
+    /// Return the hash of the current transaction
     public fun tx_hash(self: &StorageContext): vector<u8> {
         tx_context::tx_hash(&self.tx_context)
     } 
@@ -70,7 +78,7 @@ module moveos_std::storage_context {
     }
 
     #[test_only]
-    /// Create a StorageContext and AccountStorage for unit test
+    /// Create a StorageContext for unit test
     public fun new_test_context(sender: address): StorageContext {
         let tx_context = tx_context::new_test_context(sender);
         let object_storage = object_storage::new_with_id(object_storage::global_object_storage_handle());
@@ -81,7 +89,7 @@ module moveos_std::storage_context {
     }
 
     #[test_only]
-    /// Testing only: allow to drop oject storage
+    /// Testing only: allow to drop StorageContext
     public fun drop_test_context(self: StorageContext) {
         test_helper::destroy<StorageContext>(self);
     }
