@@ -5,6 +5,10 @@
 pub mod dependency_order {
     pub use moveos_stdlib_builder::dependency_order::*;
 }
+pub mod data_cache;
 pub mod moveos_vm;
 pub mod tx_argument_resolver;
 pub mod vm_status_explainer;
+
+#[cfg(test)]
+mod unit_tests;

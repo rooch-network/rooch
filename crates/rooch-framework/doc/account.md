@@ -313,7 +313,10 @@ is returned. This way, the caller of this function can publish additional resour
    );
 
    // there cannot be an <a href="account.md#0x3_account_Account">Account</a> resource under new_addr already.
-   <b>assert</b>!(!<b>exists</b>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(new_address), <a href="_already_exists">error::already_exists</a>(<a href="account.md#0x3_account_EAccountAlreadyExists">EAccountAlreadyExists</a>));
+   <b>assert</b>!(
+      !<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, new_address),
+      <a href="_already_exists">error::already_exists</a>(<a href="account.md#0x3_account_EAccountAlreadyExists">EAccountAlreadyExists</a>)
+   );
 
    <a href="account.md#0x3_account_create_account_unchecked">create_account_unchecked</a>(ctx, new_address)
 }
