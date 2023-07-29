@@ -144,7 +144,7 @@ fn make_script_with_non_linking_structs(parameters: Signature) -> Vec<u8> {
     blob
 }
 
-fn make_module_with_function(
+pub(crate) fn make_module_with_function(
     visibility: Visibility,
     is_entry: bool,
     parameters: Signature,
@@ -231,7 +231,7 @@ fn make_module_with_function(
 }
 
 // make a script function with a given signature for main.
-fn make_script_function(signature: Signature) -> (CompiledModule, Identifier) {
+pub(crate) fn make_script_function(signature: Signature) -> (CompiledModule, Identifier) {
     make_module_with_function(
         Visibility::Public,
         true,
@@ -241,12 +241,12 @@ fn make_script_function(signature: Signature) -> (CompiledModule, Identifier) {
     )
 }
 
-struct RemoteStore {
+pub(crate) struct RemoteStore {
     modules: HashMap<ModuleId, Vec<u8>>,
 }
 
 impl RemoteStore {
-    fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             modules: HashMap::new(),
         }
