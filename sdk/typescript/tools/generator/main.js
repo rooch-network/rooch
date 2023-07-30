@@ -1,17 +1,16 @@
-import { promises as fs} from "fs";
 import { Generator } from "./generator.js"
 
-const main = async ()=>{
-    const roochOpenRPCText = await fs.readFile("../../crates/rooch-open-rpc-spec/schemas/openrpc.json", "utf-8");
-    const roochOpenRPC = JSON.parse(roochOpenRPCText);
+const main = async () => {
+    const generator = new Generator({
+        openrpcDocument: "../../crates/rooch-open-rpc-spec/schemas/openrpc.json",
+        outDir: "./src/client"
+    })
 
     try {
-        const generator = new Generator("typescript", "./src/client")
-        await generator.execute(roochOpenRPC)
-
-        console.log("gen ok!")
-    } catch(e) {
-        console.log("gen error:", e)
+        await generator.execute()
+        console.log("generate rooch typescript client ok!")
+    } catch (e) {
+        console.error("generate rooch typescript client error:", e)
     }
 }
 

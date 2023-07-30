@@ -1,53 +1,58 @@
-import { RequestManager, HTTPTransport, Client } from '@open-rpc/client-js';
-import {
-    AnnotatedMoveValueView
-} from "./types"
+import { RequestManager, Client } from "@open-rpc/client-js";
+import { 
+<% const allImportTypes = new Array(); %> 
+<% allImportTypes.push("boolean", "number", "string", "any", "Array", "Map", "Uint8Array") %> 
 
-/**
- * Configuration options for the RoochClient
- * You must provide either a `url` or a `transport`
- */
-export type RoochClientOptions = {
-    url: string;
-    transport?: never;
-};
+<% methods.forEach((method) => { %> 
+    <% method.params.forEach((param)=>{ %>
+        <% let paramType = getType(param.schema, schemas); %>
+        <% if (method.result.schema.type === "array") { %>
+        <%    paramType = paramType.split('|')[0].trim().replace("[]", "") %>
+        <% } else { %>
+        <%    paramType = paramType.split('|')[0].trim() %>
+        <% } %>
+        <% if (!allImportTypes.includes(paramType)) { %>
+        <%   allImportTypes.push(paramType);  %>
+        <%= paramType %>,
+        <% } %>
+    <% }) %>
 
-export class RoochClient {
-    protected rpcClient: Client;
+    <% let resultType = getType(method.result.schema, schemas); %>
+    <% if (method.result.schema.type === "array") { %>
+    <%    resultType = resultType.split('|')[0].trim().replace("[]", "") %>
+    <% } else { %>
+    <%    resultType = resultType.split('|')[0].trim() %>
+    <% } %>
+    <% if (!allImportTypes.includes(resultType)) { %>
+    <%   allImportTypes.push(resultType);  %>
+    <%= resultType %>,
+    <% } %>
+<% }) %>
+} from "./types";
 
-    constructor(options: RoochClientOptions) {
-		const transport = new HTTPTransport(options?.url ?? url, {
-			headers: {
-				'Content-Type': 'application/json',
-				'Client-Sdk-Type': 'typescript',
-				'Client-Sdk-Version': PACKAGE_VERSION,
-				'Client-Target-Api-Version': TARGETED_RPC_VERSION,
-				...rpc?.headers,
-			},
-		});
-
-		this.rpcClient = new Client(new RequestManager([transport]));
-	}
+export class RoochClient extends Client {
+    constructor(requestManager: RequestManager) {
+        super(requestManager)
+    }
 
     async getRpcApiVersion(): Promise<string | undefined> {
-		const resp = await this.rpcClient.request<{ info: { version: string } }>({
-			method: 'rpc.discover',
-			params: [],
-		});
-
-		return resp.info.version;
-	}
-
-    // TOOD 使用EJS模版自动生成 method
-    <% methods.forEach((method) => { %> 
-    async <%= method.name %>(): Promise<string | undefined> {
-        const resp = await this.client.request<{ info: { version: string } }>({
-            method: 'rpc.discover',
+        const resp = await this.request({
+            method: "rpc.discover",
             params: [],
         });
 
-        return resp.info.version;
+        return resp.info.version as string;
+    }
+
+    <% methods.forEach((method) => { %> 
+    <% if (method.description) { %>// <%= method.description %> <% } %>
+    async <%= method.name %>(<%= method.params.map(param=>param.name + ":" + getType(param.schema, schemas)) %>): Promise<<%= getType(method.result.schema, schemas) %>> {
+        const resp = await this.request({
+            method: '<%= method.name %>',
+            params: [<%= method.params.map(param=>param.name) %>],
+        });
+
+        return resp as <%= getType(method.result.schema, schemas) %>;
     }
     <% }) %>
-    // TOOD 使用EJS模版自动生成 method
 }
