@@ -1,10 +1,10 @@
 
 /**
- * 根据给定的值获取类型。
+ * Get the type from the given value.
  *
- * @param schema - 当前schema
- * @param schemas - 整个 schemas
- * @returns {string} - 返回表示输入值类型的字符串。
+ * @param schema - current schema
+ * @param schemas - entire schemas
+ * @returns {string} - Returns a string representing the type of the input value.
  */
 export function getType(schema, schemas) {
     if (typeof schema === "string" || typeof schema === "boolean") {
