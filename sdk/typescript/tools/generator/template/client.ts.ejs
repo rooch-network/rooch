@@ -1,0 +1,58 @@
+import { RequestManager, Client } from "@open-rpc/client-js";
+import { 
+<% const allImportTypes = new Array(); %> 
+<% allImportTypes.push("boolean", "number", "string", "any", "Array", "Map", "Uint8Array") %> 
+
+<% methods.forEach((method) => { %> 
+    <% method.params.forEach((param)=>{ %>
+        <% let paramType = getType(param.schema, schemas); %>
+        <% if (method.result.schema.type === "array") { %>
+        <%    paramType = paramType.split('|')[0].trim().replace("[]", "") %>
+        <% } else { %>
+        <%    paramType = paramType.split('|')[0].trim() %>
+        <% } %>
+        <% if (!allImportTypes.includes(paramType)) { %>
+        <%   allImportTypes.push(paramType);  %>
+        <%= paramType %>,
+        <% } %>
+    <% }) %>
+
+    <% let resultType = getType(method.result.schema, schemas); %>
+    <% if (method.result.schema.type === "array") { %>
+    <%    resultType = resultType.split('|')[0].trim().replace("[]", "") %>
+    <% } else { %>
+    <%    resultType = resultType.split('|')[0].trim() %>
+    <% } %>
+    <% if (!allImportTypes.includes(resultType)) { %>
+    <%   allImportTypes.push(resultType);  %>
+    <%= resultType %>,
+    <% } %>
+<% }) %>
+} from "./types";
+
+export class RoochClient extends Client {
+    constructor(requestManager: RequestManager) {
+        super(requestManager)
+    }
+
+    async getRpcApiVersion(): Promise<string | undefined> {
+        const resp = await this.request({
+            method: "rpc.discover",
+            params: [],
+        });
+
+        return resp.info.version as string;
+    }
+
+    <% methods.forEach((method) => { %> 
+    <% if (method.description) { %>// <%= method.description %> <% } %>
+    async <%= method.name %>(<%= method.params.map(param=>param.name + ":" + getType(param.schema, schemas)) %>): Promise<<%= getType(method.result.schema, schemas) %>> {
+        const resp = await this.request({
+            method: '<%= method.name %>',
+            params: [<%= method.params.map(param=>param.name) %>],
+        });
+
+        return resp as <%= getType(method.result.schema, schemas) %>;
+    }
+    <% }) %>
+}
