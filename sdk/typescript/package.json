@@ -57,7 +57,6 @@
   ],
   "devDependencies": {
     "@iarna/toml": "^2.2.5",
-    "@rooch/generator": "/Users/yubing/Workspace/rooch/open-rpc/generator",
     "@size-limit/preset-small-lib": "^8.2.4",
     "@types/node": "^18.15.11",
     "eslint": "8.23.0",
