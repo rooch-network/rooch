@@ -62,7 +62,7 @@ impl ExecutorActor {
     ) -> Result<AccountAddress> {
         let resolved_sender = {
             let address_mapping = self.moveos.as_module_bundle::<AddressMapping>();
-            address_mapping.resovle_or_generate(multi_chain_address_sender.clone())?
+            address_mapping.resovle_or_generate(multi_chain_address_sender)?
         };
 
         Ok(resolved_sender)

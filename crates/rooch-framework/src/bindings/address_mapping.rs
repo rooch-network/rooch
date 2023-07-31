@@ -58,9 +58,7 @@ impl<'a> AddressMapping<'a> {
             );
             self.caller.call_function(&ctx, call).map(|values| {
                 let value = values.get(0).expect("Expected return value");
-                let result =
-                    AccountAddress::from_bytes(&value.value).expect("Expected return address");
-                result
+                AccountAddress::from_bytes(&value.value).expect("Expected return address")
             })
         }
     }
