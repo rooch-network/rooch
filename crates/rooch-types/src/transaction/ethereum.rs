@@ -161,6 +161,7 @@ impl AbstractTransaction for EthereumTransaction {
             //TODO should change the seqence_number to u256?
             seqence_number: self.0.nonce.as_u64(),
             authenticator: Authenticator::ecdsa(
+                // TODO need to support handling ethereum signature to Rooch signature
                 self.convert_eth_signature_to_recoverable_secp256k1_signature()
                     .unwrap(),
             ),

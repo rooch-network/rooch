@@ -7,18 +7,14 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#[cfg(any(test, feature = "fuzzing"))]
-use super::ethereum::EthereumTransaction;
 use crate::crypto::{BuiltinScheme, Signature};
 use anyhow::Result;
-#[cfg(any(test, feature = "fuzzing"))]
-use ethers::types::U256;
-#[cfg(any(test, feature = "fuzzing"))]
-use ethers::types::{Address, Bytes, H256};
 #[cfg(any(test, feature = "fuzzing"))]
 use fastcrypto::ed25519::Ed25519KeyPair;
 #[cfg(any(test, feature = "fuzzing"))]
 use fastcrypto::secp256k1::schnorr::SchnorrKeyPair;
+#[cfg(any(test, feature = "fuzzing"))]
+use fastcrypto::secp256k1::Secp256k1KeyPair;
 #[cfg(any(test, feature = "fuzzing"))]
 use fastcrypto::traits::KeyPair;
 #[cfg(any(test, feature = "fuzzing"))]
@@ -136,37 +132,13 @@ impl Arbitrary for EcdsaAuthenticator {
 #[cfg(any(test, feature = "fuzzing"))]
 prop_compose! {
     fn arb_ecdsa_authenticator()(
-     r in vec(any::<u64>(), 4..=4).prop_map(|v| U256(v.try_into().unwrap())),
-     s in vec(any::<u64>(), 4..=4).prop_map(|v| U256(v.try_into().unwrap())),
-     // Although v is an u64 type, it is actually an u8 value.
-     v in any::<u8>().prop_filter("Valid v value", |&v| v == 27 || v == 28 || v == 35 || v == 36),
+     seed in any::<u64>(),
+     message in vec(any::<u8>(), 1..1000),
     ) -> EcdsaAuthenticator {
-        let dummy_tx = ethers::core::types::Transaction {
-            r: r,
-            s: s,
-            v: v.into(),
-            hash: H256::zero(),
-            nonce: U256::zero(),
-            block_hash: None,
-            block_number: None,
-            transaction_index: None,
-            from: Address::zero(),
-            to: None,
-            value: U256::zero(),
-            gas_price: None,
-            gas: U256::zero(),
-            input: Bytes::new().into(),
-            transaction_type: None, // For EIP-2718
-            access_list: None, // For EIP-2930
-            max_priority_fee_per_gas: None, // For EIP-1559
-            max_fee_per_gas: None, // For EIP-1559
-            chain_id: None, // For EIP-1559
-            other: Default::default(), // Captures unknown fields (if any)
-        };
-        let eth_tx = EthereumTransaction(dummy_tx);
-        let sig = EthereumTransaction::convert_eth_signature_to_recoverable_secp256k1_signature(&eth_tx).unwrap();
+        let mut rng = StdRng::seed_from_u64(seed);
+        let kp = Secp256k1KeyPair::generate(&mut rng);
         EcdsaAuthenticator {
-            signature: sig
+            signature: Signature::new_hashed(&message, &kp)
         }
     }
 }
@@ -252,7 +224,6 @@ mod tests {
     use proptest::prelude::*;
 
     proptest! {
-        #[ignore = "need to handle ethereum signature to Rooch signature"]
         #[test]
         fn test_ecdsa_authenticator_serialize_deserialize(authenticator in any::<super::EcdsaAuthenticator>()) {
             let serialized = serde_json::to_string(&authenticator).unwrap();
