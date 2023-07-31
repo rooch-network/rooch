@@ -20,6 +20,7 @@ pub struct AddressMapping<'a> {
 
 impl<'a> AddressMapping<'a> {
     const RESOLVE_FUNCTION_NAME: &'static IdentStr = ident_str!("resolve");
+    const RESOLVE_OR_GENERATE_FUNCTION_NAME: &'static IdentStr = ident_str!("resolve_or_generate");
 
     pub fn resolve(&self, multichain_address: MultiChainAddress) -> Result<Option<AccountAddress>> {
         if multichain_address.is_rooch_address() {
@@ -37,6 +38,29 @@ impl<'a> AddressMapping<'a> {
                 let result = MoveOption::<AccountAddress>::from_bytes(&value.value)
                     .expect("Expected Option<address>");
                 result.into()
+            })
+        }
+    }
+
+    pub fn resovle_or_generate(
+        &self,
+        multichain_address: MultiChainAddress,
+    ) -> Result<AccountAddress> {
+        if multichain_address.is_rooch_address() {
+            let rooch_address: RoochAddress = multichain_address.try_into()?;
+            Ok(rooch_address.into())
+        } else {
+            let ctx = TxContext::zero();
+            let call = FunctionCall::new(
+                Self::function_id(Self::RESOLVE_OR_GENERATE_FUNCTION_NAME),
+                vec![],
+                vec![multichain_address.to_bytes()],
+            );
+            self.caller.call_function(&ctx, call).map(|values| {
+                let value = values.get(0).expect("Expected return value");
+                let result =
+                    AccountAddress::from_bytes(&value.value).expect("Expected return address");
+                result
             })
         }
     }

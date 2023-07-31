@@ -56,20 +56,13 @@ impl ExecutorActor {
         })
     }
 
-    pub fn resolve_address(
+    pub fn resolve_or_generate(
         &self,
         multi_chain_address_sender: MultiChainAddress,
     ) -> Result<AccountAddress> {
         let resolved_sender = {
             let address_mapping = self.moveos.as_module_bundle::<AddressMapping>();
-            address_mapping
-                .resolve(multi_chain_address_sender.clone())?
-                .ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "the multiaddress sender({}) mapping record is not exists.",
-                        multi_chain_address_sender
-                    )
-                })?
+            address_mapping.resovle_or_generate(multi_chain_address_sender.clone())?
         };
 
         Ok(resolved_sender)
@@ -78,7 +71,7 @@ impl ExecutorActor {
     pub fn validate<T: AbstractTransaction>(&self, tx: T) -> Result<VerifiedMoveOSTransaction> {
         let multi_chain_address_sender = tx.sender();
 
-        let resolved_sender = self.resolve_address(multi_chain_address_sender.clone());
+        let resolved_sender = self.resolve_or_generate(multi_chain_address_sender.clone());
         let authenticator = tx.authenticator_info();
 
         let mut moveos_tx = tx.construct_moveos_transaction(resolved_sender?)?;
@@ -216,7 +209,7 @@ impl Handler<ResolveMessage> for ExecutorActor {
         msg: ResolveMessage,
         _ctx: &mut ActorContext,
     ) -> Result<AccountAddress, anyhow::Error> {
-        self.resolve_address(msg.address)
+        self.resolve_or_generate(msg.address)
     }
 }
 

@@ -10,6 +10,7 @@
 -  [Constants](#@Constants_0)
 -  [Function `is_rooch_address`](#0x3_address_mapping_is_rooch_address)
 -  [Function `resolve`](#0x3_address_mapping_resolve)
+-  [Function `resolve_or_generate`](#0x3_address_mapping_resolve_or_generate)
 -  [Function `exists_mapping`](#0x3_address_mapping_exists_mapping)
 -  [Function `bind`](#0x3_address_mapping_bind)
 -  [Function `bind_no_check`](#0x3_address_mapping_bind_no_check)
@@ -178,7 +179,37 @@ Resolve a multi-chain address to a rooch address
         <b>let</b> addr = <a href="_borrow">table::borrow</a>(&am.mapping, maddress);
         <a href="_some">option::some</a>(*addr)
     }<b>else</b>{
-        <a href="address_mapping.md#0x3_address_mapping_default_rooch_address">default_rooch_address</a>(maddress)
+        <a href="_none">option::none</a>()
+    }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_address_mapping_resolve_or_generate"></a>
+
+## Function `resolve_or_generate`
+
+Resolve a multi-chain address to a rooch address, if not exists, generate a new rooch address
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve_or_generate">resolve_or_generate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, maddress: <a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">address_mapping::MultiChainAddress</a>): <b>address</b>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve_or_generate">resolve_or_generate</a>(ctx: &StorageContext, maddress: <a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">MultiChainAddress</a>): <b>address</b> {
+    <b>let</b> addr = <a href="address_mapping.md#0x3_address_mapping_resolve">resolve</a>(ctx, maddress);
+    <b>if</b>(<a href="_is_none">option::is_none</a>(&addr)){
+        <a href="address_mapping.md#0x3_address_mapping_generate_rooch_address">generate_rooch_address</a>(maddress)
+    }<b>else</b>{
+        <a href="_extract">option::extract</a>(&<b>mut</b> addr)
     }
 }
 </code></pre>
