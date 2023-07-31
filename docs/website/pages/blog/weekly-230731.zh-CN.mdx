@@ -1,0 +1,38 @@
+---
+title: Rooch 周报 2023-07-31
+description: "新增游戏合约例子，实现存储 Rooch 的功能，新增一些生成算法，优抚错误代码提示。"
+author: geometryolife
+category: Rooch Weekly
+date: 2023/07/31
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch 的开发进展
+
+### 新特性
+
+- **[ Move Example ]Add Steal Or Split Example (#533)** (2023-07-24) @WGB5445
+- **[gh-519] add ECDSA validator over Secp256k1. (#524)** (2023-07-25) @feliciss
+- **implements storage base on Rocksdb (#523)** (2023-07-25) @Bai Chuan
+- **[gh-518] add Schnorr validator over Secp256k1. (#517)** (2023-07-25) @feliciss
+- **Experimental support for integrating dashboard into rooch (#537)** (2023-07-26) @sven Tan
+- **record state root hash to resolve statedb smt rebuild after server restart (#539)** (2023-07-27) @Bai Chuan
+- **Custom TransactionDataCache in Rooch (#522)** (2023-07-29) @0xPause
+- **Feature automatically generate Typescript client based on openRPC documentation (#545)** (2023-07-30) @Owen Wu
+
+### 改进和修复
+
+- **add weekly 2023-07-24 (#535)** (2023-07-24) @Joe Chen
+- **[gh-509 and gh-531] improve `rooch init`, `rooch account import`, and `rooch account create` to ECDSA and Schnorr, refactor ETH signature to Rooch signature. (#532)** (2023-07-26) @feliciss
+- **Compile error map for the stdlib library and explain the abort code. (#538)** (2023-07-27) @steelgeek091
+- **add doc comments for storage_context module (#542)** (2023-07-29) @Joe Chen
+
+### Rooch 社区开发会议
+
+- 详细讨论 Rooch 多链地址使用哪一种映射方案，直接使用哈希生成还是沿用以太坊相似的地址（通过补零前缀的方式达到 Rooch 地址长度），首选 Ed25519 生成地址，CLI 支持其他的加密算法。参见[多链地址转 Rooch 地址 #449](https://github.com/rooch-network/rooch/issues/449) 和[地址、认证密钥生成 #540](https://github.com/rooch-network/rooch/issues/540)。
+- 讨论定义一些处理 MoveAction 的策略，我们需要在 Move 中解码 MoveAction。使用场景：定义白名单身份验证验证器，只能执行白名单中的模块。函数返回 MoveAction，就像对该函数的动态调用一样，参见 [#487](https://github.com/rooch-network/rooch/issues/487)。
+- 关于多链结算设计的分享
+- [会议录屏](https://drive.google.com/file/d/1U3be_eridswv8CqU6pDv6idMRAh16bQq/view?usp=sharing)

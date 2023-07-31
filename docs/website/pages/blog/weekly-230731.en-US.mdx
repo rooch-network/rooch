@@ -1,0 +1,38 @@
+---
+title: Rooch Weekly 2023-07-31
+description: "Added a game contract example, implemented the function of storing Rooch, added some generation algorithms, and gave error code prompts"
+author: geometryolife
+category: Rooch Weekly
+date: 2023/07/31
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch's Development Progress
+
+### New features
+
+- **[ Move Example ]Add Steal Or Split Example (#533)** (2023-07-24) @WGB5445
+- **[gh-519] add ECDSA validator over Secp256k1. (#524)** (2023-07-25) @feliciss
+- **implements storage base on Rocksdb (#523)** (2023-07-25) @Bai Chuan
+- **[gh-518] add Schnorr validator over Secp256k1. (#517)** (2023-07-25) @feliciss
+- **Experimental support for integrating dashboard into rooch (#537)** (2023-07-26) @sven Tan
+- **record state root hash to resolve statedb smt rebuild after server restart (#539)** (2023-07-27) @Bai Chuan
+- **Custom TransactionDataCache in Rooch (#522)** (2023-07-29) @0xPause
+- **Feature automatically generate Typescript client based on openRPC documentation (#545)** (2023-07-30) @Owen Wu
+
+### Improvements and fixes
+
+- **add weekly 2023-07-24 (#535)** (2023-07-24) @Joe Chen
+- **[gh-509 and gh-531] improve `rooch init`, `rooch account import`, and `rooch account create` to ECDSA and Schnorr, refactor ETH signature to Rooch signature. (#532)** (2023-07-26) @feliciss
+- **Compile error map for the stdlib library and explain the abort code. (#538)** (2023-07-27) @steelgeek091
+- **add doc comments for storage_context module (#542)** (2023-07-29) @Joe Chen
+
+### Rooch Community Dev Meeting
+
+- Discuss in detail which mapping scheme to use for the Rooch multi-chain address, directly use the hash to generate or follow the address similar to Ethereum (by padding zero as the prefix to reach the length of the Rooch address), the preferred Ed25519 generated address, CLI supports other encryption algorithms. See [Multi-chain Address to Rooch Address #449](https://github.com/rooch-network/rooch/issues/449) and [Address, Authentication Key Generation #540](https://github.com/rooch-network/rooch/issues/540).
+- To discuss defining some strategies for handling MoveAction, we need to decode MoveAction in Move. Usage scenario: define a whitelist authentication validator, only the modules in the whitelist can be executed. The function returns MoveAction, just like a dynamic call to the function, see [#487](https://github.com/rooch-network/rooch/issues/487).
+- Sharing on multi-chain settlement design
+- [Conference recording](https://drive.google.com/file/d/1U3be_eridswv8CqU6pDv6idMRAh16bQq/view?usp=sharing)
