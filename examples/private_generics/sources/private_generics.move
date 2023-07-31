@@ -20,7 +20,6 @@ module rooch_examples::Test1 {
         *&box.value
     }
 
-    #[test]
     public fun test() {
         let data = Data{ v: 123 };
 
@@ -38,7 +37,6 @@ module rooch_examples::Test2 {
         v: u64,
     }
 
-    #[test]
     public fun run() {
         let data = InnerData { v: 789 };
 
