@@ -89,38 +89,38 @@ Hash function name that are valid for verify.
 
 
 
-<a name="0x3_schnorr_validator_SCHNORR_HASH_LENGTH"></a>
+<a name="0x3_schnorr_validator_V_SCHNORR_HASH_LENGTH"></a>
 
 
 
-<pre><code><b>const</b> <a href="schnorr_validator.md#0x3_schnorr_validator_SCHNORR_HASH_LENGTH">SCHNORR_HASH_LENGTH</a>: u64 = 1;
+<pre><code><b>const</b> <a href="schnorr_validator.md#0x3_schnorr_validator_V_SCHNORR_HASH_LENGTH">V_SCHNORR_HASH_LENGTH</a>: u64 = 1;
 </code></pre>
 
 
 
-<a name="0x3_schnorr_validator_SCHNORR_PUBKEY_LENGTH"></a>
+<a name="0x3_schnorr_validator_V_SCHNORR_PUBKEY_LENGTH"></a>
 
 
 
-<pre><code><b>const</b> <a href="schnorr_validator.md#0x3_schnorr_validator_SCHNORR_PUBKEY_LENGTH">SCHNORR_PUBKEY_LENGTH</a>: u64 = 32;
+<pre><code><b>const</b> <a href="schnorr_validator.md#0x3_schnorr_validator_V_SCHNORR_PUBKEY_LENGTH">V_SCHNORR_PUBKEY_LENGTH</a>: u64 = 32;
 </code></pre>
 
 
 
-<a name="0x3_schnorr_validator_SCHNORR_SCHEME_LENGTH"></a>
+<a name="0x3_schnorr_validator_V_SCHNORR_SCHEME_LENGTH"></a>
 
 
 
-<pre><code><b>const</b> <a href="schnorr_validator.md#0x3_schnorr_validator_SCHNORR_SCHEME_LENGTH">SCHNORR_SCHEME_LENGTH</a>: u64 = 1;
+<pre><code><b>const</b> <a href="schnorr_validator.md#0x3_schnorr_validator_V_SCHNORR_SCHEME_LENGTH">V_SCHNORR_SCHEME_LENGTH</a>: u64 = 1;
 </code></pre>
 
 
 
-<a name="0x3_schnorr_validator_SCHNORR_SIG_LENGTH"></a>
+<a name="0x3_schnorr_validator_V_SCHNORR_SIG_LENGTH"></a>
 
 
 
-<pre><code><b>const</b> <a href="schnorr_validator.md#0x3_schnorr_validator_SCHNORR_SIG_LENGTH">SCHNORR_SIG_LENGTH</a>: u64 = 64;
+<pre><code><b>const</b> <a href="schnorr_validator.md#0x3_schnorr_validator_V_SCHNORR_SIG_LENGTH">V_SCHNORR_SIG_LENGTH</a>: u64 = 64;
 </code></pre>
 
 
@@ -166,8 +166,8 @@ Hash function name that are valid for verify.
 
 <pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_public_key">schnorr_public_key</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
    <b>let</b> public_key = <a href="_empty">vector::empty</a>&lt;u8&gt;();
-   <b>let</b> i = <a href="schnorr_validator.md#0x3_schnorr_validator_SCHNORR_SCHEME_LENGTH">SCHNORR_SCHEME_LENGTH</a> + <a href="schnorr_validator.md#0x3_schnorr_validator_SCHNORR_SIG_LENGTH">SCHNORR_SIG_LENGTH</a>;
-   <b>while</b> (i &lt; <a href="schnorr_validator.md#0x3_schnorr_validator_SCHNORR_SCHEME_LENGTH">SCHNORR_SCHEME_LENGTH</a> + <a href="schnorr_validator.md#0x3_schnorr_validator_SCHNORR_SIG_LENGTH">SCHNORR_SIG_LENGTH</a> + <a href="schnorr_validator.md#0x3_schnorr_validator_SCHNORR_PUBKEY_LENGTH">SCHNORR_PUBKEY_LENGTH</a>) {
+   <b>let</b> i = <a href="schnorr_validator.md#0x3_schnorr_validator_V_SCHNORR_SCHEME_LENGTH">V_SCHNORR_SCHEME_LENGTH</a> + <a href="schnorr_validator.md#0x3_schnorr_validator_V_SCHNORR_SIG_LENGTH">V_SCHNORR_SIG_LENGTH</a>;
+   <b>while</b> (i &lt; <a href="schnorr_validator.md#0x3_schnorr_validator_V_SCHNORR_SCHEME_LENGTH">V_SCHNORR_SCHEME_LENGTH</a> + <a href="schnorr_validator.md#0x3_schnorr_validator_V_SCHNORR_SIG_LENGTH">V_SCHNORR_SIG_LENGTH</a> + <a href="schnorr_validator.md#0x3_schnorr_validator_V_SCHNORR_PUBKEY_LENGTH">V_SCHNORR_PUBKEY_LENGTH</a>) {
       <b>let</b> value = <a href="_borrow">vector::borrow</a>(payload, i);
       <a href="_push_back">vector::push_back</a>(&<b>mut</b> public_key, *value);
       i = i + 1;
@@ -198,8 +198,8 @@ Hash function name that are valid for verify.
 
 <pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_signature">schnorr_signature</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
    <b>let</b> sign = <a href="_empty">vector::empty</a>&lt;u8&gt;();
-   <b>let</b> i = <a href="schnorr_validator.md#0x3_schnorr_validator_SCHNORR_SCHEME_LENGTH">SCHNORR_SCHEME_LENGTH</a>;
-   <b>while</b> (i &lt; <a href="schnorr_validator.md#0x3_schnorr_validator_SCHNORR_SIG_LENGTH">SCHNORR_SIG_LENGTH</a> + 1) {
+   <b>let</b> i = <a href="schnorr_validator.md#0x3_schnorr_validator_V_SCHNORR_SCHEME_LENGTH">V_SCHNORR_SCHEME_LENGTH</a>;
+   <b>while</b> (i &lt; <a href="schnorr_validator.md#0x3_schnorr_validator_V_SCHNORR_SIG_LENGTH">V_SCHNORR_SIG_LENGTH</a> + 1) {
       <b>let</b> value = <a href="_borrow">vector::borrow</a>(payload, i);
       <a href="_push_back">vector::push_back</a>(&<b>mut</b> sign, *value);
       i = i + 1;
@@ -321,10 +321,10 @@ Get the authentication key of the given authenticator.
    // );
    <b>assert</b>!(
       <a href="schnorr.md#0x3_schnorr_verify">schnorr::verify</a>(
-      &<a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_signature">schnorr_signature</a>(&payload),
-      &<a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_public_key">schnorr_public_key</a>(&payload),
-      &<a href="_tx_hash">storage_context::tx_hash</a>(ctx),
-      <a href="schnorr_validator.md#0x3_schnorr_validator_SHA256">SHA256</a>,
+         &<a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_signature">schnorr_signature</a>(&payload),
+         &<a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_public_key">schnorr_public_key</a>(&payload),
+         &<a href="_tx_hash">storage_context::tx_hash</a>(ctx),
+         <a href="schnorr_validator.md#0x3_schnorr_validator_SHA256">SHA256</a>,
       ),
       <a href="auth_validator.md#0x3_auth_validator_error_invalid_account_auth_key">auth_validator::error_invalid_account_auth_key</a>()
    );

@@ -10,10 +10,10 @@ module rooch_framework::schnorr_validator {
    use rooch_framework::auth_validator;
 
    const SCHEME_SCHNORR: u64 = 3;
-   const SCHNORR_SCHEME_LENGTH: u64 = 1;
-   const SCHNORR_PUBKEY_LENGTH: u64 = 32;
-   const SCHNORR_SIG_LENGTH: u64 = 64;
-   const SCHNORR_HASH_LENGTH: u64 = 1;
+   const V_SCHNORR_SCHEME_LENGTH: u64 = 1;
+   const V_SCHNORR_PUBKEY_LENGTH: u64 = 32;
+   const V_SCHNORR_SIG_LENGTH: u64 = 64;
+   const V_SCHNORR_HASH_LENGTH: u64 = 1;
    /// Hash function name that are valid for verify.
     const KECCAK256: u8 = 0;
     const SHA256: u8 = 1;
@@ -27,8 +27,8 @@ module rooch_framework::schnorr_validator {
 
    public fun schnorr_public_key(payload: &vector<u8>): vector<u8> {
       let public_key = vector::empty<u8>();
-      let i = SCHNORR_SCHEME_LENGTH + SCHNORR_SIG_LENGTH;
-      while (i < SCHNORR_SCHEME_LENGTH + SCHNORR_SIG_LENGTH + SCHNORR_PUBKEY_LENGTH) {
+      let i = V_SCHNORR_SCHEME_LENGTH + V_SCHNORR_SIG_LENGTH;
+      while (i < V_SCHNORR_SCHEME_LENGTH + V_SCHNORR_SIG_LENGTH + V_SCHNORR_PUBKEY_LENGTH) {
          let value = vector::borrow(payload, i);
          vector::push_back(&mut public_key, *value);
          i = i + 1;
@@ -39,8 +39,8 @@ module rooch_framework::schnorr_validator {
 
    public fun schnorr_signature(payload: &vector<u8>): vector<u8> {
       let sign = vector::empty<u8>();
-      let i = SCHNORR_SCHEME_LENGTH;
-      while (i < SCHNORR_SIG_LENGTH + 1) {
+      let i = V_SCHNORR_SCHEME_LENGTH;
+      while (i < V_SCHNORR_SIG_LENGTH + 1) {
          let value = vector::borrow(payload, i);
          vector::push_back(&mut sign, *value);
          i = i + 1;
@@ -82,10 +82,10 @@ module rooch_framework::schnorr_validator {
       // );
       assert!(
          schnorr::verify(
-         &schnorr_signature(&payload),
-         &schnorr_public_key(&payload),
-         &storage_context::tx_hash(ctx),
-         SHA256,
+            &schnorr_signature(&payload),
+            &schnorr_public_key(&payload),
+            &storage_context::tx_hash(ctx),
+            SHA256,
          ),
          auth_validator::error_invalid_account_auth_key()
       );

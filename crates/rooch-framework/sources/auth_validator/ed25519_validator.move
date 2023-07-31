@@ -11,9 +11,9 @@ module rooch_framework::ed25519_validator {
 
    const SCHEME_ED25519: u64 = 0;
 
-   const ED25519_SCHEME_LENGTH: u64 = 1;
-   const ED25519_PUBKEY_LENGTH: u64 = 32;
-   const ED25519_SIG_LENGTH: u64 = 64;
+   const V_ED25519_SCHEME_LENGTH: u64 = 1;
+   const V_ED25519_PUBKEY_LENGTH: u64 = 32;
+   const V_ED25519_SIG_LENGTH: u64 = 64;
 
 
    struct Ed25519Validator has store{
@@ -25,8 +25,8 @@ module rooch_framework::ed25519_validator {
 
    public fun ed25519_public_key(payload: &vector<u8>): vector<u8> {
       let public_key = vector::empty<u8>();
-      let i = ED25519_SCHEME_LENGTH + ED25519_SIG_LENGTH;
-      while (i < ED25519_SCHEME_LENGTH + ED25519_SIG_LENGTH + ED25519_PUBKEY_LENGTH) {
+      let i = V_ED25519_SCHEME_LENGTH + V_ED25519_SIG_LENGTH;
+      while (i < V_ED25519_SCHEME_LENGTH + V_ED25519_SIG_LENGTH + V_ED25519_PUBKEY_LENGTH) {
          let value = vector::borrow(payload, i);
          vector::push_back(&mut public_key, *value);
          i = i + 1;
@@ -37,8 +37,8 @@ module rooch_framework::ed25519_validator {
 
    public fun ed25519_signature(payload: &vector<u8>): vector<u8> {
       let sign = vector::empty<u8>();
-      let i = ED25519_SCHEME_LENGTH;
-      while (i < ED25519_SIG_LENGTH + 1) {
+      let i = V_ED25519_SCHEME_LENGTH;
+      while (i < V_ED25519_SIG_LENGTH + 1) {
          let value = vector::borrow(payload, i);
          vector::push_back(&mut sign, *value);
          i = i + 1;

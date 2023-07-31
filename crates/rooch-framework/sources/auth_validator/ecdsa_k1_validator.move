@@ -11,8 +11,9 @@ module rooch_framework::ecdsa_k1_validator {
 
    const SCHEME_ECDSA: u64 = 2;
    const V_ECDSA_SCHEME_LENGTH: u64 = 1;
-   const V_ECDSA_PUBKEY_LENGTH: u64 = 32;
-   const V_ECDSA_SIG_LENGTH: u64 = 64;
+   const V_ECDSA_PUBKEY_LENGTH: u64 = 33;
+   const V_ECDSA_RECOVERABLE_SIG_LENGTH: u64 = 65;
+   const V_ECDSA_NONRECOVERABLE_SIG_LENGTH: u64 = 64;
    const V_ECDSA_HASH_LENGTH: u64 = 1;
    /// Hash function name that are valid for ecrecover and verify.
    const KECCAK256: u8 = 0;
@@ -25,10 +26,10 @@ module rooch_framework::ecdsa_k1_validator {
       SCHEME_ECDSA
    }
 
-   public fun ecdsa_k1_public_key(payload: &vector<u8>): vector<u8> {
+   public fun ecdsa_k1_recoverable_public_key(payload: &vector<u8>): vector<u8> {
       let public_key = vector::empty<u8>();
-      let i = V_ECDSA_SCHEME_LENGTH + V_ECDSA_SIG_LENGTH;
-      while (i < V_ECDSA_SCHEME_LENGTH + V_ECDSA_SIG_LENGTH + V_ECDSA_PUBKEY_LENGTH) {
+      let i = V_ECDSA_SCHEME_LENGTH + V_ECDSA_RECOVERABLE_SIG_LENGTH;
+      while (i < V_ECDSA_SCHEME_LENGTH + V_ECDSA_RECOVERABLE_SIG_LENGTH + V_ECDSA_PUBKEY_LENGTH) {
          let value = vector::borrow(payload, i);
          vector::push_back(&mut public_key, *value);
          i = i + 1;
@@ -37,21 +38,50 @@ module rooch_framework::ecdsa_k1_validator {
       public_key
    }
 
-   public fun ecdsa_k1_signature(payload: &vector<u8>): vector<u8> {
+   public fun ecdsa_k1_nonrecoverable_public_key(payload: &vector<u8>): vector<u8> {
+      let public_key = vector::empty<u8>();
+      let i = V_ECDSA_SCHEME_LENGTH + V_ECDSA_NONRECOVERABLE_SIG_LENGTH;
+      while (i < V_ECDSA_SCHEME_LENGTH + V_ECDSA_NONRECOVERABLE_SIG_LENGTH + V_ECDSA_PUBKEY_LENGTH) {
+         let value = vector::borrow(payload, i);
+         vector::push_back(&mut public_key, *value);
+         i = i + 1;
+      };
+      std::debug::print(&public_key);
+
+      public_key
+   }
+
+   public fun ecdsa_k1_recoverable_signature(payload: &vector<u8>): vector<u8> {
+      std::debug::print(payload);
       let sign = vector::empty<u8>();
       let i = V_ECDSA_SCHEME_LENGTH;
-      while (i < V_ECDSA_HASH_LENGTH + 1) {
+      while (i < V_ECDSA_RECOVERABLE_SIG_LENGTH + 1) {
          let value = vector::borrow(payload, i);
          vector::push_back(&mut sign, *value);
          i = i + 1;
       };
 
+      std::debug::print(&sign);
+      sign
+   }
+
+   public fun ecdsa_k1_nonrecoverable_signature(payload: &vector<u8>): vector<u8> {
+      std::debug::print(payload);
+      let sign = vector::empty<u8>();
+      let i = V_ECDSA_SCHEME_LENGTH;
+      while (i < V_ECDSA_NONRECOVERABLE_SIG_LENGTH + 1) {
+         let value = vector::borrow(payload, i);
+         vector::push_back(&mut sign, *value);
+         i = i + 1;
+      };
+
+      std::debug::print(&sign);
       sign
    }
 
    /// Get the authentication key of the given authenticator.
    public fun ecdsa_k1_authentication_key(payload: &vector<u8>): vector<u8> {
-      let public_key = ecdsa_k1_public_key(payload);
+      let public_key = ecdsa_k1_nonrecoverable_public_key(payload);
       let addr = ecdsa_k1_public_key_to_address(public_key);
       moveos_std::bcs::to_bytes(&addr)
    }
@@ -80,22 +110,24 @@ module rooch_framework::ecdsa_k1_validator {
       //    auth_key_in_account == auth_key,
       //    auth_validator::error_invalid_account_auth_key()
       // );
+      // TODO resolve payload supports for 65-byte recoverable signature. The payload is default to 64-byte signature.
+      // TODO extending it will give 1-byte of public key to the signature.
+      // assert!(
+      //    ecdsa_k1::verify_recoverable(
+      //       &ecdsa_k1_recoverable_signature(&payload),
+      //       &storage_context::tx_hash(ctx),
+      //       SHA256, // KECCAK256:0, SHA256:1, TODO: The hash type may need to be passed through the authenticator
+      //    ),
+      //    auth_validator::error_invalid_authenticator()
+      // );
       assert!(
-      ecdsa_k1::verify_recoverable(
-         &ecdsa_k1_signature(&payload),
-         &storage_context::tx_hash(ctx),
-         SHA256, // KECCAK256:0, SHA256:1, TODO: The hash type may need to be passed through the authenticator
-      ),
-      auth_validator::error_invalid_authenticator()
-      );
-      assert!(
-      ecdsa_k1::verify_nonrecoverable(
-         &ecdsa_k1_signature(&payload),
-         &ecdsa_k1_public_key(&payload),
-         &storage_context::tx_hash(ctx),
-         KECCAK256, // KECCAK256:0, SHA256:1, TODO: The hash type may need to be passed through the authenticator
-      ),
-      auth_validator::error_invalid_authenticator()
+         ecdsa_k1::verify_nonrecoverable(
+            &ecdsa_k1_nonrecoverable_signature(&payload),
+            &ecdsa_k1_nonrecoverable_public_key(&payload),
+            &storage_context::tx_hash(ctx),
+            SHA256, // KECCAK256:0, SHA256:1, TODO: The hash type may need to be passed through the authenticator
+         ),
+         auth_validator::error_invalid_authenticator()
       );
    }
 
