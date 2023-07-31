@@ -48,13 +48,23 @@ module rooch_framework::address_mapping{
             let addr = table::borrow(&am.mapping, maddress);
             option::some(*addr)
         }else{
-            default_rooch_address(maddress)
+            option::none()
+        }
+    }
+
+    /// Resolve a multi-chain address to a rooch address, if not exists, generate a new rooch address
+    public fun resolve_or_generate(ctx: &StorageContext, maddress: MultiChainAddress): address {
+        let addr = resolve(ctx, maddress);
+        if(option::is_none(&addr)){
+            generate_rooch_address(maddress)
+        }else{
+            option::extract(&mut addr)
         }
     }
     
-    fun default_rooch_address(maddress: MultiChainAddress): Option<address> {
+    fun generate_rooch_address(maddress: MultiChainAddress): address {
         let hash = blake2b256(&maddress.raw_address);
-        option::some(moveos_std::bcs::to_address(hash))
+        moveos_std::bcs::to_address(hash)
     }
 
     /// Check if a multi-chain address is bound to a rooch address
