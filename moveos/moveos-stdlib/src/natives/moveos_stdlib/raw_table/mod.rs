@@ -26,12 +26,8 @@ use move_vm_types::{
     pop_arg,
     values::{GlobalValue, Struct, StructRef, Value},
 };
-use moveos_types::{
-    object::ObjectID,
-    state::{State, StateChangeSet, TableChange, TableTypeInfo},
-    state_resolver::StateResolver,
-};
-use parking_lot::Mutex;
+use moveos_types::{object::ObjectID, state::TableTypeInfo, state_resolver::StateResolver};
+use parking_lot::RwLock;
 use smallvec::smallvec;
 use std::{
     collections::{btree_map::Entry, BTreeMap, BTreeSet, VecDeque},
@@ -45,7 +41,7 @@ use std::{
 pub struct NativeTableContext<'a> {
     resolver: &'a dyn StateResolver,
     //tx_hash: [u8; 32],
-    table_data: Arc<Mutex<TableData>>,
+    table_data: Arc<RwLock<TableData>>,
 }
 
 // See stdlib/Error.move
@@ -197,7 +193,7 @@ pub struct Table {
 impl<'a> NativeTableContext<'a> {
     /// Create a new instance of a native table context. This must be passed in via an
     /// extension into VM session functions.
-    pub fn new(resolver: &'a dyn StateResolver, table_data: Arc<Mutex<TableData>>) -> Self {
+    pub fn new(resolver: &'a dyn StateResolver, table_data: Arc<RwLock<TableData>>) -> Self {
         Self {
             resolver,
             table_data,
@@ -244,6 +240,12 @@ impl TableData {
             }
             Entry::Occupied(e) => e.into_mut(),
         })
+    }
+
+    pub fn borrow_table(&self, handle: &ObjectID) -> PartialVMResult<&Table> {
+        self.tables
+            .get(handle)
+            .ok_or_else(|| PartialVMError::new(StatusCode::STORAGE_ERROR))
     }
 
     pub fn exist_table(&self, handle: &ObjectID) -> bool {
@@ -453,7 +455,7 @@ fn native_add_box(
     assert_eq!(args.len(), 3);
 
     let table_context = context.extensions().get::<NativeTableContext>();
-    let mut table_data = table_context.table_data.lock();
+    let mut table_data = table_context.table_data.write();
 
     let val = args.pop_back().unwrap();
     let key = args.pop_back().unwrap();
@@ -504,7 +506,7 @@ fn native_borrow_box(
     assert_eq!(args.len(), 2);
 
     let table_context = context.extensions().get::<NativeTableContext>();
-    let mut table_data = table_context.table_data.lock();
+    let mut table_data = table_context.table_data.write();
 
     let key = args.pop_back().unwrap();
     let handle = get_table_handle(pop_arg!(args, StructRef))?;
@@ -553,7 +555,7 @@ fn native_contains_box(
     assert_eq!(args.len(), 2);
 
     let table_context = context.extensions().get::<NativeTableContext>();
-    let mut table_data = table_context.table_data.lock();
+    let mut table_data = table_context.table_data.write();
 
     let key = args.pop_back().unwrap();
     let handle = get_table_handle(pop_arg!(args, StructRef))?;
@@ -601,7 +603,7 @@ fn native_remove_box(
     assert_eq!(args.len(), 2);
 
     let table_context = context.extensions().get::<NativeTableContext>();
-    let mut table_data = table_context.table_data.lock();
+    let mut table_data = table_context.table_data.write();
 
     let key = args.pop_back().unwrap();
     let handle = get_table_handle(pop_arg!(args, StructRef))?;
@@ -646,7 +648,7 @@ fn native_destroy_empty_box(
     assert_eq!(args.len(), 1);
 
     let table_context = context.extensions().get::<NativeTableContext>();
-    let mut table_data = table_context.table_data.lock();
+    let mut table_data = table_context.table_data.write();
 
     let handle = get_table_handle(pop_arg!(args, StructRef))?;
     if table_data.tables.contains_key(&handle)

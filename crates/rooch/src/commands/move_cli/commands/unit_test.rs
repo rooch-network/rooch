@@ -16,7 +16,7 @@ use moveos_store::MoveOSStore;
 use moveos_verifier::build::build_model_with_test_attr;
 use moveos_verifier::metadata::run_extended_checks;
 use once_cell::sync::Lazy;
-use parking_lot::Mutex;
+use parking_lot::RwLock;
 use rooch_framework::natives::{all_natives, GasParameters};
 use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 use termcolor::Buffer;
@@ -93,7 +93,7 @@ static STATEDBSTORE: Lazy<Box<StateDBStore>> =
 
 fn new_moveos_natives_runtime(ext: &mut NativeContextExtensions) {
     let statedb = Lazy::force(&STATEDBSTORE).as_ref();
-    let table_data = Arc::new(Mutex::new(TableData::default()));
+    let table_data = Arc::new(RwLock::new(TableData::default()));
     let table_ext = NativeTableContext::new(statedb, table_data);
     ext.add(table_ext);
 }

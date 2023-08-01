@@ -44,7 +44,7 @@ use moveos_types::{
     tx_context::TxContext,
 };
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
-use parking_lot::Mutex;
+use parking_lot::RwLock;
 use std::{borrow::Borrow, sync::Arc};
 
 /// MoveOSVM is a wrapper of MoveVM with MoveOS specific features.
@@ -110,7 +110,7 @@ pub struct MoveOSSession<'r, 'l, S, G> {
     remote: &'r S,
     session: Session<'r, 'l, MoveosDataCache<'r, 'l, S>>,
     ctx: StorageContext,
-    table_data: Arc<Mutex<TableData>>,
+    table_data: Arc<RwLock<TableData>>,
     pre_execute_functions: Vec<FunctionCall>,
     post_execute_functions: Vec<FunctionCall>,
     gas_meter: G,
@@ -142,7 +142,7 @@ where
             );
         }
         let ctx = StorageContext::new(ctx);
-        let table_data = Arc::new(Mutex::new(TableData::default()));
+        let table_data = Arc::new(RwLock::new(TableData::default()));
         let s = Self {
             vm,
             remote,
@@ -174,7 +174,7 @@ where
     fn new_inner_session(
         vm: &'l MoveVM,
         remote: &'r S,
-        table_data: Arc<Mutex<TableData>>,
+        table_data: Arc<RwLock<TableData>>,
     ) -> Session<'r, 'l, MoveosDataCache<'r, 'l, S>> {
         let mut extensions = NativeContextExtensions::default();
 
