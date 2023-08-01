@@ -11,6 +11,7 @@ export default defineConfig({
       entry: resolve(__dirname, "src/index.ts"),
       name: "rooch",
       fileName: "rooch",
+      formats: ["es", "cjs"],
     },
   },
   plugins: [dts()],

@@ -8,6 +8,8 @@ use crate::service::RpcService;
 use anyhow::Result;
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::{system::ActorSystem, IntoActor};
+use hyper::header::HeaderValue;
+use hyper::Method;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
@@ -29,9 +31,11 @@ use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
 use serde_json::json;
+use std::env;
 use std::fmt::Debug;
 use std::net::SocketAddr;
 use std::time::Duration;
+use tower_http::cors::{AllowOrigin, CorsLayer};
 use tracing::info;
 
 pub mod server;
@@ -151,8 +155,33 @@ pub async fn start_server(is_mock_storage: bool) -> Result<ServerHandle> {
 
     let rpc_service = RpcService::new(executor_proxy, sequencer_proxy, proposer_proxy);
 
+    let acl = match env::var("ACCESS_CONTROL_ALLOW_ORIGIN") {
+        Ok(value) => {
+            let allow_hosts = value
+                .split(',')
+                .map(HeaderValue::from_str)
+                .collect::<Result<Vec<_>, _>>()?;
+            AllowOrigin::list(allow_hosts)
+        }
+        _ => AllowOrigin::any(),
+    };
+    info!(?acl);
+
+    let cors: CorsLayer = CorsLayer::new()
+        // Allow `POST` when accessing the resource
+        .allow_methods([Method::POST])
+        // Allow requests from any origin
+        .allow_origin(acl)
+        .allow_headers([hyper::header::CONTENT_TYPE]);
+
+    // TODO: tracing
+    let middleware = tower::ServiceBuilder::new().layer(cors);
+
     // Build server
-    let server = ServerBuilder::default().build(&addr).await?;
+    let server = ServerBuilder::default()
+        .set_middleware(middleware)
+        .build(&addr)
+        .await?;
 
     let mut rpc_module_builder = RpcModuleBuilder::new();
     rpc_module_builder
