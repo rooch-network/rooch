@@ -22,10 +22,10 @@ impl CommandAction<()> for ListCommand {
         let active_address = context.config.active_address;
 
         println!(
-            "{0: ^66} | {1: ^45} | {2: ^7} | {3: ^6}",
+            "{0: ^66} | {1: ^48} | {2: ^7} | {3: ^6}",
             "Rooch Address (Ed25519)", "Public Key (Base64)", "Scheme", "Active"
         );
-        println!("{}", ["-"; 134].join(""));
+        println!("{}", ["-"; 136].join(""));
         for (address, public_key) in context.config.keystore.get_address_public_keys() {
             let scheme = public_key.scheme().to_string();
             let mut active = "";
@@ -34,7 +34,7 @@ impl CommandAction<()> for ListCommand {
             };
 
             println!(
-                "{0: ^66} | {1: ^45} | {2: ^6} | {3: ^6}",
+                "{0: ^66} | {1: ^48} | {2: ^7} | {3: ^6}",
                 address,
                 public_key.encode_base64(),
                 scheme,
