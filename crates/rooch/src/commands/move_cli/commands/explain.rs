@@ -7,11 +7,13 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::errmap::{ErrorDescription, ErrorMapping};
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::ModuleId;
+use move_core_types::vm_status::AbortLocation;
 use moveos_stdlib::{move_std_error_descriptions, moveos_std_error_descriptions};
 use moveos_types::addresses::MOVEOS_STD_ADDRESS;
 use moveos_types::addresses::MOVE_STD_ADDRESS;
 use rooch_framework::rooch_framework_error_descriptions;
 use rooch_types::addresses::ROOCH_FRAMEWORK_ADDRESS;
+use serde::{Deserialize, Serialize};
 
 ///Explain Move abort codes. Errors are defined as
 ///a global category + module-specific reason for the error.
@@ -55,18 +57,25 @@ impl Explain {
         };
 
         match error_description_bytes {
-            Some(bytes) => match get_explanation(&module_id, self.abort_code, bytes) {
-                None => println!(
-                    "Unable to find a description for {}::{}",
-                    self.location, self.abort_code
-                ),
-                Some(error_desc) => println!(
-                    "Category:\n  Name: {}\n  Description: {}",
-                    error_desc.code_name, error_desc.code_description,
-                ),
-            },
+            Some(bytes) => {
+                let explain_result =
+                    explain_move_abort(AbortLocation::Module(module_id), self.abort_code, bytes);
+                match explain_result {
+                    None => {
+                        return Err(anyhow::Error::msg(format!(
+                            "Unable to find a description for {}::{}",
+                            self.location, self.abort_code
+                        )));
+                    }
+                    Some(error_desc) => println!(
+                        "Category:\n  Name: {}\n  Description: {}",
+                        error_desc.reason_name.unwrap(),
+                        error_desc.code_description.unwrap(),
+                    ),
+                }
+            }
             None => {
-                println!("Error map data not found.")
+                return Err(anyhow::Error::msg("Error map data not found."));
             }
         }
 
@@ -84,4 +93,48 @@ pub fn get_explanation(
     let error_descriptions: ErrorMapping =
         bcs_ext::from_bytes(data).expect("Decode err map failed");
     error_descriptions.get_explanation(module_id, abort_code)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, Eq, PartialEq)]
+pub struct MoveAbortExplain {
+    pub category_code: u64,
+    pub category_name: Option<String>,
+    pub reason_code: u64,
+    pub reason_name: Option<String>,
+    pub code_description: Option<String>,
+}
+
+pub fn explain_move_abort(
+    abort_location: AbortLocation,
+    abort_code: u64,
+    data: &[u8],
+) -> Option<MoveAbortExplain> {
+    let err_description = match abort_location {
+        AbortLocation::Module(module_id) => get_explanation(&module_id, abort_code, data),
+        AbortLocation::Script => None,
+    };
+    match err_description {
+        Some(description) => {
+            if abort_code > 0xffff {
+                let category = abort_code & 0xFFu64;
+                let reason_code = abort_code >> 8;
+                Some(MoveAbortExplain {
+                    category_code: category,
+                    category_name: Some(description.code_name.clone()),
+                    reason_code,
+                    reason_name: Some(description.code_name),
+                    code_description: Some(description.code_description),
+                })
+            } else {
+                Some(MoveAbortExplain {
+                    category_code: 0,
+                    category_name: None,
+                    reason_code: 0,
+                    reason_name: Some(description.code_name),
+                    code_description: Some(description.code_description),
+                })
+            }
+        }
+        None => None,
+    }
 }
