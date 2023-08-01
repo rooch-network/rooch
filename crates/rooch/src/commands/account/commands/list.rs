@@ -5,7 +5,7 @@ use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
 use rooch_key::keystore::AccountKeystore;
-use rooch_types::{address::RoochAddress, crypto::EncodeDecodeBase64, error::RoochResult};
+use rooch_types::{crypto::EncodeDecodeBase64, error::RoochResult};
 use std::fmt::Debug;
 
 /// List all keys by its Rooch address, Base64 encoded public key
@@ -26,9 +26,9 @@ impl CommandAction<()> for ListCommand {
             "Rooch Address (Ed25519)", "Public Key (Base64)", "Scheme", "Active"
         );
         println!("{}", ["-"; 134].join(""));
-        for pub_key in context.config.keystore.keys() {
+        for (address, public_key) in context.config.keystore.get_address_public_keys() {
+            let scheme = public_key.scheme().to_string();
             let mut active = "";
-            let address = Into::<RoochAddress>::into(&pub_key);
             if active_address == Some(address) {
                 active = "True";
             };
@@ -36,8 +36,8 @@ impl CommandAction<()> for ListCommand {
             println!(
                 "{0: ^66} | {1: ^45} | {2: ^6} | {3: ^6}",
                 address,
-                pub_key.encode_base64(),
-                pub_key.scheme().to_string(),
+                public_key.encode_base64(),
+                scheme,
                 active
             );
         }

@@ -49,8 +49,8 @@ impl CommandAction<()> for UpdateCommand {
                 let scheme = context
                     .config
                     .keystore
-                    .update_address_with_new_keypair_from_scheme(
-                        address,
+                    .update_address_with_key_pair_from_scheme(
+                        &address,
                         self.mnemonic_phrase,
                         scheme,
                         None,

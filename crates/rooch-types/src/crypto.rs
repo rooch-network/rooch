@@ -56,7 +56,20 @@ pub type DefaultHash = Blake2b256;
 /// It is a part of `AccountAbstraction`
 
 /// The Authenticator scheme which builtin Rooch
-#[derive(Copy, Clone, Debug, EnumString, PartialEq, Eq, ArgEnum, Display)]
+#[derive(
+    Copy,
+    Clone,
+    Debug,
+    EnumString,
+    PartialEq,
+    Eq,
+    ArgEnum,
+    Display,
+    Ord,
+    PartialOrd,
+    Serialize,
+    Deserialize,
+)]
 #[strum(serialize_all = "lowercase")]
 pub enum BuiltinScheme {
     Ed25519,
