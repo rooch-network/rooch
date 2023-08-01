@@ -39,6 +39,11 @@ pub trait AccountKeystore: Send + Sync {
     fn add_key(&mut self, keypair: RoochKeyPair) -> Result<(), anyhow::Error>;
     fn keys(&self) -> Vec<PublicKey>;
     fn get_key(&self, address: &RoochAddress) -> Result<&RoochKeyPair, anyhow::Error>;
+    fn update_key(
+        &mut self,
+        address: RoochAddress,
+        keypair: RoochKeyPair,
+    ) -> Result<(), anyhow::Error>;
 
     fn sign_hashed(
         &self,
@@ -89,6 +94,25 @@ pub trait AccountKeystore: Send + Sync {
             Ok((address, kp)) => {
                 self.add_key(kp)?;
                 Ok(address)
+            }
+            Err(e) => Err(anyhow!("error getting keypair {:?}", e)),
+        }
+    }
+
+    fn update_address_with_new_keypair_from_scheme(
+        &mut self,
+        address: RoochAddress,
+        phrase: String,
+        crypto_scheme: BuiltinScheme,
+        derivation_path: Option<DerivationPath>,
+    ) -> Result<BuiltinScheme, anyhow::Error> {
+        let mnemonic = Mnemonic::from_phrase(phrase.as_str(), Language::English)
+            .map_err(|e| anyhow::anyhow!("Invalid mnemonic phrase: {:?}", e))?;
+        let seed = Seed::new(&mnemonic, "");
+        match derive_key_pair_from_path(seed.as_bytes(), derivation_path, &crypto_scheme) {
+            Ok((_, kp)) => {
+                self.update_key(address, kp)?;
+                Ok(crypto_scheme)
             }
             Err(e) => Err(anyhow!("error getting keypair {:?}", e)),
         }
@@ -216,6 +240,21 @@ impl AccountKeystore for FileBasedKeystore {
             None => Err(anyhow!("Cannot find key for address: [{address}]")),
         }
     }
+
+    fn update_key(
+        &mut self,
+        address: RoochAddress,
+        keypair: RoochKeyPair,
+    ) -> Result<(), anyhow::Error> {
+        match std::env::var_os("TEST_ENV") {
+            Some(_) => {}
+            None => {
+                self.keys.insert(address, keypair);
+                self.save()?;
+            }
+        }
+        Ok(())
+    }
 }
 
 impl FileBasedKeystore {
@@ -339,6 +378,15 @@ impl AccountKeystore for InMemKeystore {
             Some(key) => Ok(key),
             None => Err(anyhow!("Cannot find key for address: [{address}]")),
         }
+    }
+
+    fn update_key(
+        &mut self,
+        address: RoochAddress,
+        keypair: RoochKeyPair,
+    ) -> Result<(), anyhow::Error> {
+        self.keys.insert(address, keypair);
+        Ok(())
     }
 }
 

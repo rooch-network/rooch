@@ -23,7 +23,7 @@ impl CommandAction<()> for ListCommand {
 
         println!(
             "{0: ^66} | {1: ^45} | {2: ^7} | {3: ^6}",
-            "Rooch Address", "Public Key (Base64)", "Scheme", "Active"
+            "Rooch Address (Ed25519)", "Public Key (Base64)", "Scheme", "Active"
         );
         println!("{}", ["-"; 134].join(""));
         for pub_key in context.config.keystore.keys() {

@@ -3,7 +3,9 @@
 
 use crate::cli_types::CommandAction;
 use async_trait::async_trait;
-use commands::{create::CreateCommand, import::ImportCommand, list::ListCommand};
+use commands::{
+    create::CreateCommand, import::ImportCommand, list::ListCommand, update::UpdateCommand,
+};
 use rooch_types::error::{RoochError, RoochResult};
 use std::path::PathBuf;
 
@@ -28,6 +30,7 @@ impl CommandAction<String> for Account {
             }),
             AccountCommand::List(list) => list.execute().await.map(|_| "".to_owned()),
             AccountCommand::Import(import) => import.execute().await.map(|_| "".to_owned()),
+            AccountCommand::Update(update) => update.execute().await.map(|_| "".to_owned()),
         }
         .map_err(RoochError::from)
     }
@@ -39,4 +42,5 @@ pub enum AccountCommand {
     Create(CreateCommand),
     List(ListCommand),
     Import(ImportCommand),
+    Update(UpdateCommand),
 }

@@ -53,6 +53,8 @@ pub enum RoochError {
     ViewFunctionError(String),
     #[error("Import account error: {0}")]
     ImportAccountError(String),
+    #[error("Update account error: {0}")]
+    UpdateAccountError(String),
     #[error("Generate key error: {0}")]
     GenerateKeyError(String),
 
