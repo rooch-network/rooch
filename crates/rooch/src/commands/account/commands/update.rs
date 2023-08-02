@@ -22,6 +22,7 @@ pub struct UpdateCommand {
     /// Rooch address in string format.
     #[clap(short = 'a', long = "address")]
     address: String,
+    #[clap(short = 'm', long = "mnemonic-phrase")]
     mnemonic_phrase: String,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
