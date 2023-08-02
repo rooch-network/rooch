@@ -3,7 +3,7 @@ import { Generator } from "./generator.js"
 const main = async () => {
     const generator = new Generator({
         openrpcDocument: "../../crates/rooch-open-rpc-spec/schemas/openrpc.json",
-        outDir: "./src/client"
+        outDir: "./src/generated/client"
     })
 
     try {

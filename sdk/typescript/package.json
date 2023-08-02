@@ -40,13 +40,13 @@
   "files": [
     "dist"
   ],
-  "main": "./dist/rooch.umd.cjs",
+  "main": "./dist/rooch.cjs",
   "module": "./dist/rooch.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/roosh.js",
-      "require": "./dist/rooch.umd.cjs",
+      "import": "./dist/rooch.js",
+      "require": "./dist/rooch.cjs",
       "types": "./dist/index.d.ts"
     }
   },
@@ -58,13 +58,14 @@
   "devDependencies": {
     "@iarna/toml": "^2.2.5",
     "@size-limit/preset-small-lib": "^8.2.4",
+    "@types/isomorphic-fetch": "^0.0.36",
     "@types/node": "^18.15.11",
+    "@types/ws": "^8.5.5",
     "eslint": "8.23.0",
     "eslint-config-airbnb-base": "15.0.0",
     "eslint-config-airbnb-typescript": "17.0.0",
     "eslint-config-prettier": "8.5.0",
     "eslint-plugin-import": "2.26.0",
-    "json-schema-ref-parser": "6.1.0",
     "msw": "^1.2.1",
     "prettier": "^3.0.0",
     "ts-retry-promise": "^0.7.0",
@@ -77,10 +78,8 @@
     "wait-on": "^7.0.1"
   },
   "dependencies": {
-    "@noble/curves": "^1.0.0",
     "@noble/hashes": "^1.3.0",
     "@open-rpc/client-js": "^1.8.1",
-    "@scure/bip32": "^1.3.0",
     "@scure/bip39": "^1.2.0",
     "@suchipi/femver": "^1.0.0",
     "ejs": "^3.1.9",
