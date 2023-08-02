@@ -60,6 +60,11 @@ module rooch_framework::account{
       Self::create_account(ctx, new_address);
    }
 
+   /// A entry function to update an account under `existing_address`
+   public entry fun update_account_entry(ctx: &mut StorageContext, existing_address: address){
+      Self::update_account(ctx, existing_address);
+   }
+
    /// Publishes a new `Account` resource under `new_address`. A signer representing `new_address`
    /// is returned. This way, the caller of this function can publish additional resources under
    /// `new_address`.
@@ -89,6 +94,30 @@ module rooch_framework::account{
       });
 
       new_account
+   }
+
+   /// Updates an existing `Account` resource under `existing_address`. A signer representing `existing_address`
+   /// is returned. This way, the caller of this function can publish additional resources under
+   /// `existing_address`.
+   public(friend) fun update_account(ctx: &mut StorageContext, existing_address: address): signer {
+      // there should be an Account resource under existing address already.
+      assert!(
+         account_storage::global_exists<Account>(ctx, existing_address),
+         error::not_found(EAccountNotExist)
+      ); 
+
+      update_account_unchecked(ctx, existing_address)
+   }
+
+   // TODO: update account should handle logics like installing auth validator with auth register
+   // for non-built-in custom validator scheme
+   fun update_account_unchecked(ctx: &mut StorageContext, existing_address: address): signer {
+      let existing_account = create_signer(existing_address);
+
+      account_storage::ensure_account_storage(ctx, existing_address);
+      Self::increment_sequence_number(ctx);
+
+      existing_account
    }
 
    /// create the account for system reserved addresses
@@ -317,6 +346,14 @@ module rooch_framework::account{
       let ctx = storage_context::new_test_context(sender);
       create_account_entry(&mut ctx, sender);
       create_account_entry(&mut ctx, sender);
+      storage_context::drop_test_context(ctx);
+   }
+
+   #[test(sender=@0x42)]
+   fun test_update_account_entry(sender: address){
+      let ctx = storage_context::new_test_context(sender);
+      create_account_entry(&mut ctx, sender);
+      update_account_entry(&mut ctx, sender);
       storage_context::drop_test_context(ctx);
    }
 
