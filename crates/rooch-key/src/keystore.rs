@@ -294,7 +294,7 @@ impl AccountKeystore for FileBasedKeystore {
     fn get_address_public_keys(&self) -> Vec<(RoochAddress, PublicKey)> {
         let mut result = Vec::new();
         for (address, inner_map) in &self.keys {
-            for (_scheme, keypair) in inner_map {
+            for keypair in inner_map.values() {
                 let public_key = keypair.public();
                 result.push((*address, public_key));
             }
@@ -521,7 +521,7 @@ impl AccountKeystore for InMemKeystore {
     fn get_address_public_keys(&self) -> Vec<(RoochAddress, PublicKey)> {
         let mut result = Vec::new();
         for (address, inner_map) in &self.keys {
-            for (_scheme, keypair) in inner_map {
+            for keypair in inner_map.values() {
                 let public_key = keypair.public();
                 result.push((*address, public_key));
             }

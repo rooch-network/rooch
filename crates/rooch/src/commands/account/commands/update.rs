@@ -42,7 +42,7 @@ impl CommandAction<()> for UpdateCommand {
                 let address = RoochAddress::from_str(self.address.as_str()).map_err(|e| {
                     RoochError::CommandArgumentError(format!(
                         "Invalid Rooch address String: {}",
-                        e.to_string()
+                        e
                     ))
                 })?;
 
