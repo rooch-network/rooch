@@ -65,7 +65,11 @@ export function addressToSCS(
 ): rooch_types.AccountAddress {
     // AccountAddress should be 16 bytes, in hex, it's 16 * 2.
     const bytes = fromHexString(addr, 16 * 2);
-    return rooch_types.AccountAddress.deserialize(new BcsDeserializer(bytes));
+    let data:[number][] = [];
+    for (let i=0; i<bytes.length; i++) {
+        data.push([bytes[i]])
+    }
+    return new rooch_types.AccountAddress(data);
 }
 
 export function encodeStructTypeTags(

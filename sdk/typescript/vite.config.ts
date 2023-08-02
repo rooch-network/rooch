@@ -23,5 +23,6 @@ export default defineConfig({
     env: {
       NODE_ENV: "test",
     },
+    includeSource: ['src/**/*.{js,ts}'],
   },
 })

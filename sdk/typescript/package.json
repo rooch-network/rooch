@@ -16,7 +16,7 @@
     "doc": "typedoc",
     "vitest": "vitest",
     "test": "pnpm test:unit",
-    "test:unit": "vitest run unit __tests__",
+    "test:unit": "vitest",
     "test:e2e": "wait-on http://127.0.0.1:9123 -l --timeout 120000 && vitest run e2e",
     "test:e2e:nowait": "vitest run e2e",
     "prepare:e2e": "cargo run --bin rooch",
