@@ -40,10 +40,7 @@ impl CommandAction<()> for UpdateCommand {
         match BuiltinScheme::from_flag_byte(&self.crypto_schemes.flag()) {
             Ok(scheme) => {
                 let address = RoochAddress::from_str(self.address.as_str()).map_err(|e| {
-                    RoochError::CommandArgumentError(format!(
-                        "Invalid Rooch address String: {}",
-                        e
-                    ))
+                    RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
                 })?;
 
                 let scheme = context
