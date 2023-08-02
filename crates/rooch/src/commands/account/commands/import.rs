@@ -16,12 +16,10 @@ use crate::cli_types::{CommandAction, WalletContextOptions};
 /// Add a new key to rooch.keystore based on the input mnemonic phrase
 #[derive(Debug, Parser)]
 pub struct ImportCommand {
+    #[clap(short = 'm', long = "mnemonic-phrase")]
     mnemonic_phrase: String,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
-    /// Command line input of crypto schemes (ed25519, multied25519, ecdsa, or schnorr)
-    #[clap(short = 's', long = "scheme", default_value = "ed25519", arg_enum)]
-    pub crypto_schemes: BuiltinScheme,
 }
 
 #[async_trait]
@@ -31,27 +29,17 @@ impl CommandAction<()> for ImportCommand {
 
         let mut context = self.context_options.build().await?;
 
-        match BuiltinScheme::from_flag_byte(&self.crypto_schemes.flag()) {
-            Ok(scheme) => {
-                let address = context
-                    .config
-                    .keystore
-                    .import_from_mnemonic(&self.mnemonic_phrase, scheme, None)
-                    .map_err(|e| RoochError::ImportAccountError(e.to_string()))?;
+        let address = context
+            .config
+            .keystore
+            .import_from_mnemonic(&self.mnemonic_phrase, BuiltinScheme::Ed25519, None)
+            .map_err(|e| RoochError::ImportAccountError(e.to_string()))?;
 
-                println!(
-                    "Key imported for address on scheme {:?}: [{address}]",
-                    scheme.to_string()
-                );
+        println!(
+            "Key imported for address on scheme {:?}: [{address}]",
+            BuiltinScheme::Ed25519.to_owned()
+        );
 
-                Ok(())
-            }
-            Err(error) => {
-                return Err(RoochError::CommandArgumentError(format!(
-                    "Invalid crypto scheme: {}",
-                    error
-                )))
-            }
-        }
+        Ok(())
     }
 }

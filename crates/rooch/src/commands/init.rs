@@ -17,9 +17,9 @@ use std::fs;
 /// Tool for init with rooch
 #[derive(Parser)]
 pub struct Init {
-    /// Command line input of crypto schemes (ed25519, multied25519, ecdsa, or schnorr)
-    #[clap(short = 's', long = "scheme", default_value = "ed25519", arg_enum)]
-    pub crypto_schemes: BuiltinScheme,
+    /// Command line input of custom server URL
+    #[clap(short = 's', long = "server-url")]
+    pub server_url: Option<String>,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
 }
@@ -45,32 +45,21 @@ impl CommandAction<String> for Init {
                     ws: None,
                 }),
                 None => {
-                    if self.crypto_schemes == BuiltinScheme::Ed25519 {
-                        println!("Creating config file [{:?}] with default server and ed25519 crypto scheme.", client_config_path);
-                    } else {
-                        match BuiltinScheme::from_flag_byte(&self.crypto_schemes.flag()) {
-                            Ok(scheme) => {
-                                println!("Creating config file [{:?}] with custom server and {:?} crypto scheme.", client_config_path, scheme);
-                            }
-                            Err(error) => {
-                                return Err(RoochError::CommandArgumentError(format!(
-                                    "Invalid crypto scheme: {}",
-                                    error
-                                )))
-                            }
-                        }
-                    }
-                    let url = if self.crypto_schemes == BuiltinScheme::Ed25519 {
+                    println!(
+                        "Creating config file [{:?}] with server and ed25519 crypto scheme.",
+                        client_config_path
+                    );
+                    let url = if self.server_url.is_none() {
                         String::new()
                     } else {
                         let address_and_port_regex =
                             Regex::new(r"^(https?://(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|localhost):\d{1,5})$")
                                 .unwrap();
-                        print!("Rooch server URL: ");
-                        let input = read_line().unwrap();
+                        let url = self.server_url.unwrap();
+                        print!("Rooch server URL: {:?} ", url);
                         // Check if input matches the regex pattern
-                        if address_and_port_regex.is_match(&input) {
-                            input
+                        if address_and_port_regex.is_match(&url) {
+                            url
                         } else {
                             return Err(RoochError::CommandArgumentError("Invalid input format. Please provide a valid URL (e.g., http://0.0.0.0:50051).".to_owned()));
                         }
@@ -100,21 +89,8 @@ impl CommandAction<String> for Init {
                     .unwrap_or(&rooch_config_dir()?)
                     .join(ROOCH_KEYSTORE_FILENAME);
                 let mut keystore = Keystore::from(FileBasedKeystore::new(&keystore_path)?);
-                let crypto_scheme = if self.crypto_schemes == BuiltinScheme::Ed25519 {
-                    self.crypto_schemes
-                } else {
-                    match BuiltinScheme::from_flag_byte(&self.crypto_schemes.flag()) {
-                        Ok(scheme) => scheme,
-                        Err(error) => {
-                            return Err(RoochError::CommandArgumentError(format!(
-                                "Invalid crypto scheme: {}",
-                                error
-                            )))
-                        }
-                    }
-                };
                 let (new_address, phrase, scheme) =
-                    keystore.generate_and_add_new_key(crypto_scheme, None, None)?;
+                    keystore.generate_and_add_new_key(BuiltinScheme::Ed25519, None, None)?;
                 println!(
                     "Generated new keypair for address with scheme {:?} [{new_address}]",
                     scheme.to_string()
