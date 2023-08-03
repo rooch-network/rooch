@@ -55,6 +55,11 @@ pub trait AccountKeystore: Send + Sync {
         keypair: RoochKeyPair,
         scheme: BuiltinScheme,
     ) -> Result<(), anyhow::Error>;
+    fn nullify_key_pair_by_scheme(
+        &mut self,
+        address: &RoochAddress,
+        scheme: BuiltinScheme,
+    ) -> Result<(), anyhow::Error>;
 
     fn sign_hashed(
         &self,
@@ -134,6 +139,15 @@ pub trait AccountKeystore: Send + Sync {
             }
             Err(e) => Err(anyhow!("error getting keypair {:?}", e)),
         }
+    }
+
+    fn nullify_address_with_key_pair_from_scheme(
+        &mut self,
+        address: &RoochAddress,
+        crypto_scheme: BuiltinScheme,
+    ) -> Result<(), anyhow::Error> {
+        self.nullify_key_pair_by_scheme(address, crypto_scheme)?;
+        Ok(())
     }
 }
 
@@ -294,6 +308,19 @@ impl AccountKeystore for BaseKeyStore {
         inner_map.insert(scheme, keypair);
         Ok(())
     }
+
+    fn nullify_key_pair_by_scheme(
+        &mut self,
+        address: &RoochAddress,
+        scheme: BuiltinScheme,
+    ) -> Result<(), anyhow::Error> {
+        // First, get the inner map associated with the address
+        let inner_map = self.keys.entry(*address).or_insert_with(BTreeMap::new);
+
+        // Insert or update the keypair for the specified scheme in the inner map
+        inner_map.remove(&scheme);
+        Ok(())
+    }
 }
 
 #[derive(Default)]
@@ -400,6 +427,20 @@ impl AccountKeystore for FileBasedKeystore {
     ) -> Result<(), anyhow::Error> {
         self.keystore
             .update_key_pair_by_scheme(address, keypair, scheme)?;
+        //TODO should check test env at here?
+        if std::env::var_os("TEST_ENV").is_none() {
+            self.save()?;
+        }
+        Ok(())
+    }
+
+    fn nullify_key_pair_by_scheme(
+        &mut self,
+        address: &RoochAddress,
+        scheme: BuiltinScheme,
+    ) -> Result<(), anyhow::Error> {
+        self.keystore
+            .nullify_key_pair_by_scheme(address, scheme)?;
         //TODO should check test env at here?
         if std::env::var_os("TEST_ENV").is_none() {
             self.save()?;
@@ -542,6 +583,15 @@ impl AccountKeystore for InMemKeystore {
     ) -> Result<(), anyhow::Error> {
         self.keystore
             .update_key_pair_by_scheme(address, keypair, scheme)
+    }
+
+    fn nullify_key_pair_by_scheme(
+        &mut self,
+        address: &RoochAddress,
+        scheme: BuiltinScheme,
+    ) -> Result<(), anyhow::Error> {
+        self.keystore
+            .nullify_key_pair_by_scheme(address, scheme)
     }
 
     fn get_key_pair_by_scheme(

@@ -57,6 +57,8 @@ pub enum RoochError {
     SwitchAccountError(String),
     #[error("Update account error: {0}")]
     UpdateAccountError(String),
+    #[error("Nullify account error: {0}")]
+    NullifyAccountError(String),
     #[error("Generate key error: {0}")]
     GenerateKeyError(String),
 
