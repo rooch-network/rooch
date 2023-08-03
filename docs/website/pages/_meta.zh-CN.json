@@ -44,9 +44,5 @@
       "timestamp": false,
       "typesetting": "article"
     }
-  },
-  "blog-template": {
-    "type": "page",
-    "display": "hidden"
   }
 }
