@@ -16,7 +16,7 @@ use rooch_types::{
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use std::str::FromStr;
 
-/// Update an address with a new keypair from scheme to rooch.keystore
+/// Nullify a keypair from a selected scheme with a Ed25519 generated address in rooch.keystore
 #[derive(Debug, Parser)]
 pub struct NullifyCommand {
     /// Rooch address in string format.
