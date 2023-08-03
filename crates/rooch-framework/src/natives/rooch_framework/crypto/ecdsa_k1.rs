@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+#![allow(unused_imports)]
 use crate::natives::helpers::{make_module_natives, make_native};
 use fastcrypto::{
     error::FastCryptoError,
