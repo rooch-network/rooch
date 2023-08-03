@@ -111,7 +111,7 @@ Create a new ObjectStorage with a given handle.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object_storage.md#0x2_object_storage_new_with_id">new_with_id</a>(handle: ObjectID): <a href="object_storage.md#0x2_object_storage_ObjectStorage">ObjectStorage</a>{
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object_storage.md#0x2_object_storage_new_with_id">new_with_id</a>(handle: ObjectID): <a href="object_storage.md#0x2_object_storage_ObjectStorage">ObjectStorage</a> {
     <a href="object_storage.md#0x2_object_storage_ObjectStorage">ObjectStorage</a> {
         handle,
     }
@@ -138,7 +138,7 @@ The global object storage's table handle should be 0x0
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object_storage.md#0x2_object_storage_global_object_storage_handle">global_object_storage_handle</a>() : ObjectID {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object_storage.md#0x2_object_storage_global_object_storage_handle">global_object_storage_handle</a>(): ObjectID {
     <a href="object_id.md#0x2_object_id_address_to_object_id">object_id::address_to_object_id</a>(<a href="object_storage.md#0x2_object_storage_GlobalObjectStorageHandle">GlobalObjectStorageHandle</a>)
 }
 </code></pre>
@@ -163,7 +163,7 @@ Borrow Object from object store with object_id
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object_storage.md#0x2_object_storage_borrow">borrow</a>&lt;T: key&gt;(self: &<a href="object_storage.md#0x2_object_storage_ObjectStorage">ObjectStorage</a>, <a href="object_id.md#0x2_object_id">object_id</a>: ObjectID): &Object&lt;T&gt;{
+<pre><code><b>public</b> <b>fun</b> <a href="object_storage.md#0x2_object_storage_borrow">borrow</a>&lt;T: key&gt;(self: &<a href="object_storage.md#0x2_object_storage_ObjectStorage">ObjectStorage</a>, <a href="object_id.md#0x2_object_id">object_id</a>: ObjectID): &Object&lt;T&gt; {
     <a href="raw_table.md#0x2_raw_table_borrow">raw_table::borrow</a>&lt;ObjectID, Object&lt;T&gt;&gt;(&self.handle, <a href="object_id.md#0x2_object_id">object_id</a>)
 }
 </code></pre>
@@ -188,7 +188,7 @@ Borrow mut Object from object store with object_id
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object_storage.md#0x2_object_storage_borrow_mut">borrow_mut</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object_storage.md#0x2_object_storage_ObjectStorage">ObjectStorage</a>, <a href="object_id.md#0x2_object_id">object_id</a>: ObjectID): &<b>mut</b> Object&lt;T&gt;{
+<pre><code><b>public</b> <b>fun</b> <a href="object_storage.md#0x2_object_storage_borrow_mut">borrow_mut</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object_storage.md#0x2_object_storage_ObjectStorage">ObjectStorage</a>, <a href="object_id.md#0x2_object_id">object_id</a>: ObjectID): &<b>mut</b> Object&lt;T&gt; {
     <a href="raw_table.md#0x2_raw_table_borrow_mut">raw_table::borrow_mut</a>&lt;ObjectID, Object&lt;T&gt;&gt;(&self.handle, <a href="object_id.md#0x2_object_id">object_id</a>)
 }
 </code></pre>
@@ -213,7 +213,7 @@ Remove object from object store
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object_storage.md#0x2_object_storage_remove">remove</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object_storage.md#0x2_object_storage_ObjectStorage">ObjectStorage</a>, <a href="object_id.md#0x2_object_id">object_id</a>: ObjectID): Object&lt;T&gt;{
+<pre><code><b>public</b> <b>fun</b> <a href="object_storage.md#0x2_object_storage_remove">remove</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object_storage.md#0x2_object_storage_ObjectStorage">ObjectStorage</a>, <a href="object_id.md#0x2_object_id">object_id</a>: ObjectID): Object&lt;T&gt; {
     <a href="raw_table.md#0x2_raw_table_remove">raw_table::remove</a>&lt;ObjectID, Object&lt;T&gt;&gt;(&self.handle, <a href="object_id.md#0x2_object_id">object_id</a>)
 }
 </code></pre>
@@ -262,7 +262,7 @@ Add object to object store
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object_storage.md#0x2_object_storage_contains">contains</a>(self: &<a href="object_storage.md#0x2_object_storage_ObjectStorage">ObjectStorage</a>, <a href="object_id.md#0x2_object_id">object_id</a>: ObjectID): bool{
+<pre><code><b>public</b> <b>fun</b> <a href="object_storage.md#0x2_object_storage_contains">contains</a>(self: &<a href="object_storage.md#0x2_object_storage_ObjectStorage">ObjectStorage</a>, <a href="object_id.md#0x2_object_id">object_id</a>: ObjectID): bool {
     <a href="raw_table.md#0x2_raw_table_contains">raw_table::contains</a>&lt;ObjectID&gt;(&self.handle, <a href="object_id.md#0x2_object_id">object_id</a>)
 }
 </code></pre>
@@ -288,7 +288,7 @@ Destroy a ObjectStroage. The ObjectStorage must be empty to succeed.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object_storage.md#0x2_object_storage_destroy_empty">destroy_empty</a>(self: <a href="object_storage.md#0x2_object_storage_ObjectStorage">ObjectStorage</a>) {
-    <b>let</b> <a href="object_storage.md#0x2_object_storage_ObjectStorage">ObjectStorage</a>{handle} = self;
+    <b>let</b> <a href="object_storage.md#0x2_object_storage_ObjectStorage">ObjectStorage</a> { handle } = self;
     <a href="raw_table.md#0x2_raw_table_destroy_empty">raw_table::destroy_empty</a>(&handle)
 }
 </code></pre>
