@@ -3,7 +3,8 @@
 
 use crate::jsonrpc_types::{
     move_types::{MoveActionTypeView, MoveActionView},
-    AnnotatedMoveStructView, EventView, H256View, StrView, TransactionExecutionInfoView,
+    AnnotatedMoveStructView, AnnotatedStateView, EventView, H256View, StateView, StrView,
+    TransactionExecutionInfoView,
 };
 use moveos_types::event::AnnotatedMoveOSEvent;
 use rooch_types::transaction::{AbstractTransaction, TransactionType, TypedTransaction};
@@ -14,6 +15,8 @@ use super::AccountAddressView;
 
 pub type EventPageView = PageView<Option<AnnotatedEventView>, u64>;
 pub type TransactionInfoPageView = PageView<Option<TransactionExecutionInfoView>, u128>;
+pub type ListStatesPageView = PageView<Option<StateView>, StrView<Vec<u8>>>;
+pub type ListAnnotatedStatesPageView = PageView<Option<AnnotatedStateView>, StrView<Vec<u8>>>;
 
 /// `next_cursor` points to the last item in the page;
 /// Reading with `next_cursor` will start from the next item after `next_cursor` if

@@ -8,6 +8,7 @@ use moveos_types::access_path::AccessPath;
 use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event_filter::EventFilter;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
+use moveos_types::list_access_path::AccessPathList;
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
 use rooch_executor::proxy::ExecutorProxy;
@@ -87,6 +88,26 @@ impl RpcService {
         access_path: AccessPath,
     ) -> Result<Vec<Option<AnnotatedState>>> {
         self.executor.get_annotated_states(access_path).await
+    }
+
+    pub async fn list_states(
+        &self,
+        access_path: AccessPathList,
+        cursor: Option<Vec<u8>>,
+        limit: usize,
+    ) -> Result<Vec<Option<(Vec<u8>, State)>>> {
+        self.executor.list_states(access_path, cursor, limit).await
+    }
+
+    pub async fn list_annotated_states(
+        &self,
+        access_path: AccessPathList,
+        cursor: Option<Vec<u8>>,
+        limit: usize,
+    ) -> Result<Vec<Option<(Vec<u8>, AnnotatedState)>>> {
+        self.executor
+            .list_annotated_states(access_path, cursor, limit)
+            .await
     }
 
     /// Sign a message with the private key of the given address.

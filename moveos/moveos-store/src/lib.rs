@@ -281,4 +281,13 @@ impl StateResolver for MoveOSStore {
     ) -> std::result::Result<Option<State>, Error> {
         self.statedb.resolve_state(handle, key)
     }
+
+    fn resolve_list_state(
+        &self,
+        handle: &ObjectID,
+        cursor: Option<Vec<u8>>,
+        limit: usize,
+    ) -> std::result::Result<Vec<Option<(Vec<u8>, State)>>, Error> {
+        self.statedb.resolve_list_state(handle, cursor, limit)
+    }
 }
