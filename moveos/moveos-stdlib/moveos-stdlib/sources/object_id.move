@@ -6,12 +6,14 @@ module moveos_std::object_id {
     friend moveos_std::account_storage;
     friend moveos_std::event;
 
+    /// An object ID
     struct ObjectID has store, copy, drop {
-        //TODO should use u256 to replace address?
+        // TODO should use u256 to replace address?
         id: address,
     }
 
+    /// Generate a new ObjectID from an address
     public(friend) fun address_to_object_id(address: address): ObjectID {
-        ObjectID{id: address}
+        ObjectID { id: address }
     }
 }

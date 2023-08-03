@@ -18,6 +18,7 @@ Move object identifiers
 
 ## Struct `ObjectID`
 
+An object ID
 
 
 <pre><code><b>struct</b> <a href="object_id.md#0x2_object_id_ObjectID">ObjectID</a> <b>has</b> <b>copy</b>, drop, store
@@ -45,6 +46,7 @@ Move object identifiers
 
 ## Function `address_to_object_id`
 
+Generate a new ObjectID from an address
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object_id.md#0x2_object_id_address_to_object_id">address_to_object_id</a>(<b>address</b>: <b>address</b>): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
@@ -57,7 +59,7 @@ Move object identifiers
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object_id.md#0x2_object_id_address_to_object_id">address_to_object_id</a>(<b>address</b>: <b>address</b>): <a href="object_id.md#0x2_object_id_ObjectID">ObjectID</a> {
-    <a href="object_id.md#0x2_object_id_ObjectID">ObjectID</a>{id: <b>address</b>}
+    <a href="object_id.md#0x2_object_id_ObjectID">ObjectID</a> { id: <b>address</b> }
 }
 </code></pre>
 
