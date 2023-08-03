@@ -27,6 +27,7 @@ use move_core_types::{
     vm_status::{StatusCode, StatusType},
 };
 use move_vm_types::gas::UnmeteredGasMeter;
+use moveos_types::state_resolver::ListState;
 use moveos_types::{
     move_types::FunctionId,
     object::ObjectID,
@@ -283,6 +284,15 @@ impl StateResolver for RemoteStore {
         _handle: &ObjectID,
         _key: &[u8],
     ) -> anyhow::Result<Option<State>, anyhow::Error> {
+        todo!()
+    }
+
+    fn resolve_list_state(
+        &self,
+        _handle: &ObjectID,
+        _cursor: Option<Vec<u8>>,
+        _limit: usize,
+    ) -> anyhow::Result<Vec<Option<ListState>>, anyhow::Error> {
         todo!()
     }
 }

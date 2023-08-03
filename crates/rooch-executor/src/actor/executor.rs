@@ -6,7 +6,10 @@ use super::messages::{
     ExecuteViewFunctionMessage, GetEventsByEventHandleMessage, GetEventsMessage, ResolveMessage,
     StatesMessage, ValidateTransactionMessage,
 };
-use crate::actor::messages::{GetTransactionInfosByTxHashMessage, GetTxSeqMappingByTxOrderMessage};
+use crate::actor::messages::{
+    GetTransactionInfosByTxHashMessage, GetTxSeqMappingByTxOrderMessage,
+    ListAnnotatedStatesMessage, ListStatesMessage,
+};
 use anyhow::bail;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -234,6 +237,30 @@ impl Handler<AnnotatedStatesMessage> for ExecutorActor {
     ) -> Result<Vec<Option<AnnotatedState>>, anyhow::Error> {
         let statedb = self.moveos.moveos_resolver();
         statedb.get_annotated_states(msg.access_path)
+    }
+}
+
+#[async_trait]
+impl Handler<ListStatesMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: ListStatesMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<Option<(Vec<u8>, State)>>, anyhow::Error> {
+        let statedb = self.moveos.moveos_resolver();
+        statedb.list_states(msg.access_path, msg.cursor, msg.limit)
+    }
+}
+
+#[async_trait]
+impl Handler<ListAnnotatedStatesMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: ListAnnotatedStatesMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<Option<(Vec<u8>, AnnotatedState)>>, anyhow::Error> {
+        let statedb = self.moveos.moveos_resolver();
+        statedb.list_annotated_states(msg.access_path, msg.cursor, msg.limit)
     }
 }
 

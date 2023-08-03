@@ -8,6 +8,7 @@ use move_core_types::{
     identifier::Identifier,
     language_storage::{StructTag, TypeTag},
 };
+use moveos_types::state_resolver::ListState;
 use moveos_types::{
     h256::H256,
     move_module::MoveModule,
@@ -51,6 +52,10 @@ where
 
     pub fn get(&self, key: Vec<u8>) -> Result<Option<State>> {
         self.smt.get(key)
+    }
+
+    pub fn list(&self, cursor: Option<Vec<u8>>, limit: usize) -> Result<Vec<Option<ListState>>> {
+        self.smt.list(cursor, limit)
     }
 
     pub fn puts<I>(&self, update_set: I) -> Result<H256>
@@ -131,6 +136,10 @@ impl StateDBStore {
         self.global_table.get(id.to_bytes())
     }
 
+    pub fn list(&self, cursor: Option<Vec<u8>>, limit: usize) -> Result<Vec<Option<ListState>>> {
+        self.global_table.list(cursor, limit)
+    }
+
     fn get_as_object<T: MoveStructState>(&self, id: ObjectID) -> Result<Option<Object<T>>> {
         self.get(id)?
             .map(|state| state.as_object::<T>())
@@ -201,6 +210,18 @@ impl StateDBStore {
     pub fn get_with_key(&self, id: ObjectID, key: Vec<u8>) -> Result<Option<State>> {
         self.get_as_table(id)
             .and_then(|res| res.map(|(_, table)| table.get(key)).unwrap_or(Ok(None)))
+    }
+
+    pub fn list_with_key(
+        &self,
+        id: ObjectID,
+        cursor: Option<Vec<u8>>,
+        limit: usize,
+    ) -> Result<Vec<Option<ListState>>> {
+        self.get_as_table(id).and_then(|res| {
+            res.map(|(_, table)| table.list(cursor, limit))
+                .unwrap_or(Ok(vec![]))
+        })
     }
 
     pub fn apply_change_set(
@@ -275,6 +296,19 @@ impl StateDBStore {
             self.get_with_key(*handle, key.to_vec())
         }
     }
+
+    pub fn resolve_list_state(
+        &self,
+        handle: &ObjectID,
+        cursor: Option<Vec<u8>>,
+        limit: usize,
+    ) -> Result<Vec<Option<ListState>>, Error> {
+        if handle == &state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
+            self.global_table.list(cursor, limit)
+        } else {
+            self.list_with_key(*handle, cursor, limit)
+        }
+    }
 }
 
 impl StateResolver for StateDBStore {
@@ -284,5 +318,14 @@ impl StateResolver for StateDBStore {
         key: &[u8],
     ) -> std::result::Result<Option<State>, Error> {
         self.resolve_state(handle, key)
+    }
+
+    fn resolve_list_state(
+        &self,
+        handle: &ObjectID,
+        cursor: Option<Vec<u8>>,
+        limit: usize,
+    ) -> std::result::Result<Vec<Option<ListState>>, Error> {
+        self.resolve_list_state(handle, cursor, limit)
     }
 }
