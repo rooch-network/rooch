@@ -165,7 +165,7 @@ If the signature is valid to the pubkey and hashed message, return true. Else fa
 
 @param signature: A 64-bytes signature in form (r, s, v) that is signed using
 Ecdsa. This is an non-recoverable signature without recovery id.
-@param public_key: A 32-bytes public key that is used to sign messages.
+@param public_key: A 33-bytes public key that is used to sign messages.
 @param msg: The message that the signature is signed against.
 @param hash: The hash function used to hash the message when signing.
 

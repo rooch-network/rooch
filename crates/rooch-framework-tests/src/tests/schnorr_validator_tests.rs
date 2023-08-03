@@ -8,7 +8,6 @@ use rooch_types::transaction::{rooch::RoochTransactionData, AbstractTransaction}
 
 use crate::binding_test;
 
-#[ignore = "https://github.com/rooch-network/rooch/pull/517#issuecomment-1648866482"]
 #[test]
 fn test_validate() {
     let binding_test = binding_test::RustBindingTest::new().unwrap();

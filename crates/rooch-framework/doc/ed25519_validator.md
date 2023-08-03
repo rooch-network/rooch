@@ -61,38 +61,38 @@ This module implements the ed25519 validator scheme.
 ## Constants
 
 
-<a name="0x3_ed25519_validator_ED25519_PUBKEY_LENGTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="ed25519_validator.md#0x3_ed25519_validator_ED25519_PUBKEY_LENGTH">ED25519_PUBKEY_LENGTH</a>: u64 = 32;
-</code></pre>
-
-
-
-<a name="0x3_ed25519_validator_ED25519_SCHEME_LENGTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="ed25519_validator.md#0x3_ed25519_validator_ED25519_SCHEME_LENGTH">ED25519_SCHEME_LENGTH</a>: u64 = 1;
-</code></pre>
-
-
-
-<a name="0x3_ed25519_validator_ED25519_SIG_LENGTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="ed25519_validator.md#0x3_ed25519_validator_ED25519_SIG_LENGTH">ED25519_SIG_LENGTH</a>: u64 = 64;
-</code></pre>
-
-
-
 <a name="0x3_ed25519_validator_SCHEME_ED25519"></a>
 
 
 
 <pre><code><b>const</b> <a href="ed25519_validator.md#0x3_ed25519_validator_SCHEME_ED25519">SCHEME_ED25519</a>: u64 = 0;
+</code></pre>
+
+
+
+<a name="0x3_ed25519_validator_V_ED25519_PUBKEY_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="ed25519_validator.md#0x3_ed25519_validator_V_ED25519_PUBKEY_LENGTH">V_ED25519_PUBKEY_LENGTH</a>: u64 = 32;
+</code></pre>
+
+
+
+<a name="0x3_ed25519_validator_V_ED25519_SCHEME_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="ed25519_validator.md#0x3_ed25519_validator_V_ED25519_SCHEME_LENGTH">V_ED25519_SCHEME_LENGTH</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x3_ed25519_validator_V_ED25519_SIG_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="ed25519_validator.md#0x3_ed25519_validator_V_ED25519_SIG_LENGTH">V_ED25519_SIG_LENGTH</a>: u64 = 64;
 </code></pre>
 
 
@@ -138,8 +138,8 @@ This module implements the ed25519 validator scheme.
 
 <pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_public_key">ed25519_public_key</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
    <b>let</b> public_key = <a href="_empty">vector::empty</a>&lt;u8&gt;();
-   <b>let</b> i = <a href="ed25519_validator.md#0x3_ed25519_validator_ED25519_SCHEME_LENGTH">ED25519_SCHEME_LENGTH</a> + <a href="ed25519_validator.md#0x3_ed25519_validator_ED25519_SIG_LENGTH">ED25519_SIG_LENGTH</a>;
-   <b>while</b> (i &lt; <a href="ed25519_validator.md#0x3_ed25519_validator_ED25519_SCHEME_LENGTH">ED25519_SCHEME_LENGTH</a> + <a href="ed25519_validator.md#0x3_ed25519_validator_ED25519_SIG_LENGTH">ED25519_SIG_LENGTH</a> + <a href="ed25519_validator.md#0x3_ed25519_validator_ED25519_PUBKEY_LENGTH">ED25519_PUBKEY_LENGTH</a>) {
+   <b>let</b> i = <a href="ed25519_validator.md#0x3_ed25519_validator_V_ED25519_SCHEME_LENGTH">V_ED25519_SCHEME_LENGTH</a> + <a href="ed25519_validator.md#0x3_ed25519_validator_V_ED25519_SIG_LENGTH">V_ED25519_SIG_LENGTH</a>;
+   <b>while</b> (i &lt; <a href="ed25519_validator.md#0x3_ed25519_validator_V_ED25519_SCHEME_LENGTH">V_ED25519_SCHEME_LENGTH</a> + <a href="ed25519_validator.md#0x3_ed25519_validator_V_ED25519_SIG_LENGTH">V_ED25519_SIG_LENGTH</a> + <a href="ed25519_validator.md#0x3_ed25519_validator_V_ED25519_PUBKEY_LENGTH">V_ED25519_PUBKEY_LENGTH</a>) {
       <b>let</b> value = <a href="_borrow">vector::borrow</a>(payload, i);
       <a href="_push_back">vector::push_back</a>(&<b>mut</b> public_key, *value);
       i = i + 1;
@@ -170,8 +170,8 @@ This module implements the ed25519 validator scheme.
 
 <pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_signature">ed25519_signature</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
    <b>let</b> sign = <a href="_empty">vector::empty</a>&lt;u8&gt;();
-   <b>let</b> i = <a href="ed25519_validator.md#0x3_ed25519_validator_ED25519_SCHEME_LENGTH">ED25519_SCHEME_LENGTH</a>;
-   <b>while</b> (i &lt; <a href="ed25519_validator.md#0x3_ed25519_validator_ED25519_SIG_LENGTH">ED25519_SIG_LENGTH</a> + 1) {
+   <b>let</b> i = <a href="ed25519_validator.md#0x3_ed25519_validator_V_ED25519_SCHEME_LENGTH">V_ED25519_SCHEME_LENGTH</a>;
+   <b>while</b> (i &lt; <a href="ed25519_validator.md#0x3_ed25519_validator_V_ED25519_SIG_LENGTH">V_ED25519_SIG_LENGTH</a> + 1) {
       <b>let</b> value = <a href="_borrow">vector::borrow</a>(payload, i);
       <a href="_push_back">vector::push_back</a>(&<b>mut</b> sign, *value);
       i = i + 1;
