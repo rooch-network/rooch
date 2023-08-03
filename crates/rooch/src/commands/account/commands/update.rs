@@ -49,7 +49,7 @@ pub struct UpdateCommand {
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
     /// Command line input of crypto schemes (ed25519, multied25519, ecdsa, or schnorr)
-    #[clap(short = 's', long = "scheme", default_value = "ed25519", arg_enum)]
+    #[clap(short = 's', long = "scheme", arg_enum)]
     pub crypto_schemes: BuiltinScheme,
 }
 
@@ -70,16 +70,16 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                         ))
                     })?;
 
-                let scheme = context
-                    .config
-                    .keystore
-                    .update_address_with_key_pair_from_scheme(
-                        &existing_address,
-                        self.mnemonic_phrase,
-                        scheme,
-                        None,
-                    )
-                    .map_err(|e| RoochError::UpdateAccountError(e.to_string()))?;
+                context
+                .config
+                .keystore
+                .update_address_with_key_pair_from_scheme(
+                    &existing_address,
+                    self.mnemonic_phrase,
+                    scheme,
+                    None,
+                )
+                .map_err(|e| RoochError::UpdateAccountError(e.to_string()))?;
 
                 println!(
                     "{}",
@@ -87,7 +87,7 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                 );
                 println!(
                     "Generated a new keypair for an existing address on scheme {:?} [{existing_address}]",
-                    scheme.to_string()
+                    scheme.to_owned()
                 );
 
                 // TODO leave room to handle it if it's not from a built-in scheme,

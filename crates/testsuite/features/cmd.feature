@@ -9,6 +9,7 @@ Feature: Rooch CLI integration tests
       Then cmd: "account create"
       Then cmd: "account list"
       Then cmd: "account import --mnemonic-phrase "fiber tube acid imitate frost coffee choose crowd grass topple donkey submit""
+      Then cmd: "account update --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --scheme ed25519 --mnemonic-phrase "spike air embody solid upper grow mule slender shrimp suggest pride young""
       Then cmd: "account update --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --scheme ecdsa --mnemonic-phrase "spike air embody solid upper grow mule slender shrimp suggest pride young""
       Then cmd: "account update --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --scheme schnorr --mnemonic-phrase "spike air embody solid upper grow mule slender shrimp suggest pride young""
 
