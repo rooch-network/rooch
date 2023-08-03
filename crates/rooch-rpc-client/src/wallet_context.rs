@@ -109,6 +109,7 @@ impl WalletContext {
         let auth = match pk.public().scheme() {
             BuiltinScheme::Ed25519 => Authenticator::ed25519(signature),
             BuiltinScheme::Ecdsa => Authenticator::ecdsa(signature),
+            BuiltinScheme::EcdsaRecoverable => Authenticator::ecdsa_recoverable(signature),
             BuiltinScheme::MultiEd25519 => todo!(),
             BuiltinScheme::Schnorr => Authenticator::schnorr(signature),
         };

@@ -5,6 +5,7 @@ module rooch_framework::builtin_validators{
     use rooch_framework::ed25519_validator;
     use rooch_framework::multi_ed25519_validator;
     use rooch_framework::ecdsa_k1_validator;
+    use rooch_framework::ecdsa_k1_recoverable_validator;
     use rooch_framework::schnorr_validator;
 
     friend rooch_framework::genesis;
@@ -21,12 +22,15 @@ module rooch_framework::builtin_validators{
         //SCHEME_ECDSA: u64 = 2;
         let id = auth_validator_registry::register_internal<ecdsa_k1_validator::EcdsaK1Validator>(ctx);
         assert!(id == ecdsa_k1_validator::scheme(), std::error::internal(E_GENESIS_INIT));
-        //SCHEME_SCHNORR: u64 = 3;
+        //SCHEME_ECDSA_RECOVERABLE: u64 = 3;
+        let id = auth_validator_registry::register_internal<ecdsa_k1_recoverable_validator::EcdsaK1RecoverableValidator>(ctx);
+        assert!(id == ecdsa_k1_recoverable_validator::scheme(), std::error::internal(E_GENESIS_INIT));
+        //SCHEME_SCHNORR: u64 = 4;
         let id = auth_validator_registry::register_internal<schnorr_validator::SchnorrValidator>(ctx);
         assert!(id == schnorr_validator::scheme(), std::error::internal(E_GENESIS_INIT));
     }
 
     public fun is_builtin_scheme(scheme: u64): bool {
-        scheme == ed25519_validator::scheme() || scheme == multi_ed25519_validator::scheme() || scheme == ecdsa_k1_validator::scheme() || scheme == schnorr_validator::scheme()
+        scheme == ed25519_validator::scheme() || scheme == multi_ed25519_validator::scheme() || scheme == ecdsa_k1_validator::scheme() || scheme == ecdsa_k1_recoverable_validator::scheme() || scheme == schnorr_validator::scheme()
     }
 }

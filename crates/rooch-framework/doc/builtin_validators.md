@@ -13,6 +13,7 @@
 <pre><code><b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
 <b>use</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry">0x3::auth_validator_registry</a>;
+<b>use</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator">0x3::ecdsa_k1_recoverable_validator</a>;
 <b>use</b> <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator">0x3::ecdsa_k1_validator</a>;
 <b>use</b> <a href="ed25519_validator.md#0x3_ed25519_validator">0x3::ed25519_validator</a>;
 <b>use</b> <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator">0x3::multi_ed25519_validator</a>;
@@ -60,7 +61,10 @@
     //SCHEME_ECDSA: u64 = 2;
     <b>let</b> id = <a href="auth_validator_registry.md#0x3_auth_validator_registry_register_internal">auth_validator_registry::register_internal</a>&lt;<a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_EcdsaK1Validator">ecdsa_k1_validator::EcdsaK1Validator</a>&gt;(ctx);
     <b>assert</b>!(id == <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_scheme">ecdsa_k1_validator::scheme</a>(), std::error::internal(<a href="builtin_validators.md#0x3_builtin_validators_E_GENESIS_INIT">E_GENESIS_INIT</a>));
-    //SCHEME_SCHNORR: u64 = 3;
+    //SCHEME_ECDSA_RECOVERABLE: u64 = 3;
+    <b>let</b> id = <a href="auth_validator_registry.md#0x3_auth_validator_registry_register_internal">auth_validator_registry::register_internal</a>&lt;<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EcdsaK1RecoverableValidator">ecdsa_k1_recoverable_validator::EcdsaK1RecoverableValidator</a>&gt;(ctx);
+    <b>assert</b>!(id == <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_scheme">ecdsa_k1_recoverable_validator::scheme</a>(), std::error::internal(<a href="builtin_validators.md#0x3_builtin_validators_E_GENESIS_INIT">E_GENESIS_INIT</a>));
+    //SCHEME_SCHNORR: u64 = 4;
     <b>let</b> id = <a href="auth_validator_registry.md#0x3_auth_validator_registry_register_internal">auth_validator_registry::register_internal</a>&lt;<a href="schnorr_validator.md#0x3_schnorr_validator_SchnorrValidator">schnorr_validator::SchnorrValidator</a>&gt;(ctx);
     <b>assert</b>!(id == <a href="schnorr_validator.md#0x3_schnorr_validator_scheme">schnorr_validator::scheme</a>(), std::error::internal(<a href="builtin_validators.md#0x3_builtin_validators_E_GENESIS_INIT">E_GENESIS_INIT</a>));
 }
@@ -86,7 +90,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="builtin_validators.md#0x3_builtin_validators_is_builtin_scheme">is_builtin_scheme</a>(scheme: u64): bool {
-    scheme == <a href="ed25519_validator.md#0x3_ed25519_validator_scheme">ed25519_validator::scheme</a>() || scheme == <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_scheme">multi_ed25519_validator::scheme</a>() || scheme == <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_scheme">ecdsa_k1_validator::scheme</a>() || scheme == <a href="schnorr_validator.md#0x3_schnorr_validator_scheme">schnorr_validator::scheme</a>()
+    scheme == <a href="ed25519_validator.md#0x3_ed25519_validator_scheme">ed25519_validator::scheme</a>() || scheme == <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_scheme">multi_ed25519_validator::scheme</a>() || scheme == <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_scheme">ecdsa_k1_validator::scheme</a>() || scheme == <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_scheme">ecdsa_k1_recoverable_validator::scheme</a>() || scheme == <a href="schnorr_validator.md#0x3_schnorr_validator_scheme">schnorr_validator::scheme</a>()
 }
 </code></pre>
 

@@ -15,8 +15,8 @@ use fastcrypto::hash::{Blake2b256, HashFunction};
 pub use fastcrypto::traits::KeyPair as KeypairTraits;
 pub use fastcrypto::traits::Signer;
 pub use fastcrypto::traits::{
-    AggregateAuthenticator, Authenticator, EncodeDecodeBase64, SigningKey, ToFromBytes,
-    VerifyingKey, RecoverableSignature, RecoverableSigner
+    AggregateAuthenticator, Authenticator, EncodeDecodeBase64, RecoverableSignature,
+    RecoverableSigner, SigningKey, ToFromBytes, VerifyingKey,
 };
 use fastcrypto::{
     ed25519::{
@@ -24,6 +24,11 @@ use fastcrypto::{
         Ed25519SignatureAsBytes,
     },
     secp256k1::{
+        recoverable::{
+            Secp256k1RecoverableKeyPair, Secp256k1RecoverablePublicKey,
+            Secp256k1RecoverablePublicKeyAsBytes, Secp256k1RecoverableSignature,
+            Secp256k1RecoverableSignatureAsBytes,
+        },
         schnorr::{
             SchnorrKeyPair, SchnorrPublicKey, SchnorrPublicKeyAsBytes, SchnorrSignature,
             SchnorrSignatureAsBytes,
@@ -34,10 +39,6 @@ use fastcrypto::{
         Secp256k1PublicKeyAsBytes,
         Secp256k1Signature,
         Secp256k1SignatureAsBytes,
-        recoverable::{
-            Secp256k1RecoverableSignature,
-            Secp256k1RecoverableSignatureAsBytes,
-        }
     },
 };
 use moveos_types::{h256::H256, serde::Readable};
@@ -171,9 +172,11 @@ impl EncodeDecodeBase64 for RoochKeyPair {
                 BuiltinScheme::Ecdsa => Ok(RoochKeyPair::Ecdsa(Secp256k1KeyPair::from_bytes(
                     bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
                 )?)),
-                BuiltinScheme::EcdsaRecoverable => Ok(RoochKeyPair::Ecdsa(Secp256k1RecoverableKeyPair::from_bytes(
-                    bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
-                )?)),
+                BuiltinScheme::EcdsaRecoverable => Ok(RoochKeyPair::EcdsaRecoverable(
+                    Secp256k1RecoverableKeyPair::from_bytes(
+                        bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
+                    )?,
+                )),
                 BuiltinScheme::Schnorr => Ok(RoochKeyPair::Schnorr(SchnorrKeyPair::from_bytes(
                     bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
                 )?)),
@@ -210,7 +213,7 @@ impl<'de> Deserialize<'de> for RoochKeyPair {
 pub enum PublicKey {
     Ed25519(Ed25519PublicKeyAsBytes),
     Ecdsa(Secp256k1PublicKeyAsBytes),
-    Ecdsa(Secp256k1RecoverablePublicKeyAsBytes),
+    EcdsaRecoverable(Secp256k1RecoverablePublicKeyAsBytes),
     Schnorr(SchnorrPublicKeyAsBytes),
 }
 
@@ -539,7 +542,7 @@ impl Signature {
                     .into(),
             )),
             BuiltinScheme::EcdsaRecoverable => Ok(PublicKey::EcdsaRecoverable(
-                (&Secp256k1PublicKey::from_bytes(bytes)
+                (&Secp256k1RecoverablePublicKey::from_bytes(bytes)
                     .map_err(|_| RoochError::KeyConversionError("Cannot parse pk".to_owned()))?)
                     .into(),
             )),
@@ -560,6 +563,7 @@ impl AsRef<[u8]> for Signature {
         match self {
             Signature::Ed25519RoochSignature(sig) => sig.as_ref(),
             Signature::EcdsaRoochSignature(sig) => sig.as_ref(),
+            Signature::EcdsaRecoverableRoochSignature(sig) => sig.as_ref(),
             Signature::SchnorrRoochSignature(sig) => sig.as_ref(),
         }
     }
@@ -569,6 +573,7 @@ impl AsMut<[u8]> for Signature {
         match self {
             Signature::Ed25519RoochSignature(sig) => sig.as_mut(),
             Signature::EcdsaRoochSignature(sig) => sig.as_mut(),
+            Signature::EcdsaRecoverableRoochSignature(sig) => sig.as_mut(),
             Signature::SchnorrRoochSignature(sig) => sig.as_mut(),
         }
     }
@@ -582,6 +587,8 @@ impl ToFromBytes for Signature {
                     Ok(<Ed25519RoochSignature as ToFromBytes>::from_bytes(bytes)?.into())
                 } else if x == &EcdsaRoochSignature::SCHEME.flag() {
                     Ok(<EcdsaRoochSignature as ToFromBytes>::from_bytes(bytes)?.into())
+                } else if x == &EcdsaRecoverableRoochSignature::SCHEME.flag() {
+                    Ok(<EcdsaRecoverableRoochSignature as ToFromBytes>::from_bytes(bytes)?.into())
                 } else if x == &SchnorrRoochSignature::SCHEME.flag() {
                     Ok(<SchnorrRoochSignature as ToFromBytes>::from_bytes(bytes)?.into())
                 } else {
@@ -748,14 +755,15 @@ impl Signer<Signature> for Secp256k1KeyPair {
 pub struct EcdsaRecoverableRoochSignature(
     #[schemars(with = "Base64")]
     #[serde_as(as = "Readable<Base64, Bytes>")]
-    [u8; Secp256k1PublicKey::LENGTH + Secp256k1RecoverableSignature::LENGTH + 1],
+    [u8; Secp256k1RecoverablePublicKey::LENGTH + Secp256k1RecoverableSignature::LENGTH + 1],
 );
 
 impl RoochSignatureInner for EcdsaRecoverableRoochSignature {
     type Sig = Secp256k1RecoverableSignature;
-    type PubKey = Secp256k1PublicKey;
-    type KeyPair = Secp256k1KeyPair;
-    const LENGTH: usize = Secp256k1PublicKey::LENGTH + Secp256k1RecoverableSignature::LENGTH + 1;
+    type PubKey = Secp256k1RecoverablePublicKey;
+    type KeyPair = Secp256k1RecoverableKeyPair;
+    const LENGTH: usize =
+        Secp256k1RecoverablePublicKey::LENGTH + Secp256k1RecoverableSignature::LENGTH + 1;
 }
 
 impl ToFromBytes for EcdsaRecoverableRoochSignature {
@@ -835,7 +843,10 @@ mod tests {
     use fastcrypto::{
         ed25519::{Ed25519KeyPair, Ed25519PrivateKey},
         secp256k1::schnorr::{SchnorrKeyPair, SchnorrPrivateKey},
-        secp256k1::{Secp256k1KeyPair, Secp256k1PrivateKey},
+        secp256k1::{
+            recoverable::{Secp256k1RecoverableKeyPair, Secp256k1RecoverablePrivateKey},
+            Secp256k1KeyPair, Secp256k1PrivateKey,
+        },
         traits::{KeyPair, ToFromBytes},
     };
 
@@ -852,8 +863,7 @@ mod tests {
         );
     }
 
-    // this test ensure the public key to address keep the same as the old version
-    // we should also keep the public key to address algorithm the same as the move version
+    // this test is to ensure that the other algorithms work for public key to address as well as ed25519
     #[test]
     fn test_ecdsa_k1_public_key_to_address() {
         let private_key = Secp256k1PrivateKey::from_bytes(&[1u8; 32]).unwrap(); // use 1u8.
@@ -865,8 +875,19 @@ mod tests {
         );
     }
 
-    // this test ensure the public key to address keep the same as the old version
-    // we should also keep the public key to address algorithm the same as the move version
+    // this test is to ensure that the other algorithms work for public key to address as well as ed25519
+    #[test]
+    fn test_ecdsa_k1_recoverable_public_key_to_address() {
+        let private_key = Secp256k1RecoverablePrivateKey::from_bytes(&[1u8; 32]).unwrap(); // use 1u8.
+        let keypair: Secp256k1RecoverableKeyPair = private_key.into();
+        let address: RoochAddress = keypair.public().into();
+        assert_eq!(
+            address.to_string(),
+            "0x8c891976da9498ec1d3ff778a5d6c40c217d63cc8c48539c959f8b683eedf5a4"
+        );
+    }
+
+    // this test is to ensure that the other algorithms work for public key to address as well as ed25519
     #[test]
     fn test_schnorr_public_key_to_address() {
         let private_key = SchnorrPrivateKey::from_bytes(&[1u8; 32]).unwrap(); // ensure not leave 0, use 1u8
@@ -874,7 +895,7 @@ mod tests {
         let address: RoochAddress = keypair.public().into();
         assert_eq!(
             address.to_string(),
-            "0x7ef99ee767314ccb4726be579ab3eabd212741b3796db40405ff421c47b0ae85"
+            "0xa519b36bbecc294726bbfd962ab46ca4e09baacca7cd90d5d2da2331afb363e6"
         );
     }
 }
