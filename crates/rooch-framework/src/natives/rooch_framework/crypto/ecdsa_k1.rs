@@ -137,13 +137,12 @@ pub fn native_verify_recoverable(
         }
     };
 
-    let sign = Secp256k1RecoverableSignature::from(sig);
     let result = match hash {
         KECCAK256 => pk
-            .verify_recoverable_with_hash::<Keccak256>(&msg_ref, &sign)
+            .verify_recoverable_with_hash::<Keccak256>(&msg_ref, &sig)
             .is_ok(),
         SHA256 => pk
-            .verify_recoverable_with_hash::<Sha256>(&msg_ref, &sign)
+            .verify_recoverable_with_hash::<Sha256>(&msg_ref, &sig)
             .is_ok(),
         _ => false,
     };
