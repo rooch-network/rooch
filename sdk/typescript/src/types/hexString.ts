@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils"
-import { HexEncodedBytes } from "../types/hex"
+import { HexEncodedBytes } from "./hex"
 
 export type MaybeHexString = HexString | string
 

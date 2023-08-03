@@ -4,4 +4,7 @@
 export * from "./account"
 export * from "./bcs"
 export * from "./provider"
-export * as Types from "./generated/client/types"
+export * from "./client";
+export * from "./utils";
+export * from "./types";
+export * as Types from "./generated/client/types";
