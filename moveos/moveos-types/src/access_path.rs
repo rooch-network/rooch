@@ -19,17 +19,17 @@ pub enum Path {
     /// Get account resources
     Resource {
         account: AccountAddress,
-        resource_types: Vec<StructTag>,
+        resource_types: Option<Vec<StructTag>>,
     },
     /// Get account modules
     Module {
         account: AccountAddress,
-        module_names: Vec<Identifier>,
+        module_names: Option<Vec<Identifier>>,
     },
     /// Get table values by keys
     Table {
         table_handle: ObjectID,
-        keys: Vec<Vec<u8>>,
+        keys: Option<Vec<Vec<u8>>>,
     },
 }
 
@@ -56,6 +56,8 @@ impl std::fmt::Display for Path {
                     "/resource/{}/{}",
                     account.to_hex_literal(),
                     resource_types
+                        .clone()
+                        .unwrap_or(vec![])
                         .iter()
                         .map(|struct_tag| struct_tag.to_string())
                         .collect::<Vec<_>>()
@@ -71,6 +73,8 @@ impl std::fmt::Display for Path {
                     "/module/{}/{}",
                     account.to_hex_literal(),
                     module_names
+                        .clone()
+                        .unwrap_or(vec![])
                         .iter()
                         .map(|module_name| module_name.to_string())
                         .collect::<Vec<_>>()
@@ -82,7 +86,9 @@ impl std::fmt::Display for Path {
                     f,
                     "/table/{}/{}",
                     table_handle,
-                    keys.iter()
+                    keys.clone()
+                        .unwrap_or(vec![])
+                        .iter()
                         .map(|key| {
                             let hex_key = hex::encode(key);
                             format!("0x{hex_key}")
@@ -115,11 +121,15 @@ impl FromStr for Path {
             "resource" => {
                 let account = iter.next().ok_or_else(|| anyhow::anyhow!("Invalid path"))?;
                 let account = AccountAddress::from_hex_literal(account)?;
-                let resource_types = iter.next().ok_or_else(|| anyhow::anyhow!("Invalid path"))?;
-                let resource_types = resource_types
-                    .split(',')
-                    .map(StructTag::from_str)
-                    .collect::<Result<Vec<_>, _>>()?;
+                let resource_types = match iter.next() {
+                    Some(v) => Some(
+                        v.split(',')
+                            .map(StructTag::from_str)
+                            .collect::<Result<Vec<_>, _>>()?,
+                    ),
+                    None => None,
+                };
+
                 Ok(Path::Resource {
                     account,
                     resource_types,
@@ -128,11 +138,15 @@ impl FromStr for Path {
             "module" => {
                 let account = iter.next().ok_or_else(|| anyhow::anyhow!("Invalid path"))?;
                 let account = AccountAddress::from_hex_literal(account)?;
-                let module_names = iter.next().ok_or_else(|| anyhow::anyhow!("Invalid path"))?;
-                let module_names = module_names
-                    .split(',')
-                    .map(Identifier::from_str)
-                    .collect::<Result<Vec<_>, _>>()?;
+                let module_names = match iter.next() {
+                    Some(v) => Some(
+                        v.split(',')
+                            .map(Identifier::from_str)
+                            .collect::<Result<Vec<_>, _>>()?,
+                    ),
+                    None => None,
+                };
+
                 Ok(Path::Module {
                     account,
                     module_names,
@@ -141,21 +155,23 @@ impl FromStr for Path {
             "table" => {
                 let table_handle = iter.next().ok_or_else(|| anyhow::anyhow!("Invalid path"))?;
                 let table_handle = ObjectID::from_str(table_handle)?;
-                let keys = iter.next().ok_or_else(|| anyhow::anyhow!("Invalid path"))?;
-                let keys = keys
-                    .split(',')
-                    .map(|key| {
-                        match key.strip_prefix("0x") {
-                            Some(key) => hex::decode(key)
-                                .map_err(|_| anyhow::anyhow!("Invalid path key: {}", key)),
-                            None => {
-                                //if key not start with `0x`, we think it is a utf8 string
-                                let move_str = MoveString::from_str(key)?;
-                                Ok(bcs::to_bytes(&move_str)?)
-                            }
-                        }
-                    })
-                    .collect::<Result<Vec<_>, _>>()?;
+
+                let keys = match iter.next() {
+                    Some(v) => Some(
+                        v.split(',')
+                            .map(|key| match key.strip_prefix("0x") {
+                                Some(key) => hex::decode(key)
+                                    .map_err(|_| anyhow::anyhow!("Invalid path key: {}", key)),
+                                None => {
+                                    let move_str = MoveString::from_str(key)?;
+                                    Ok(bcs::to_bytes(&move_str)?)
+                                }
+                            })
+                            .collect::<Result<Vec<_>, _>>()?,
+                    ),
+                    None => None,
+                };
+
                 Ok(Path::Table { table_handle, keys })
             }
             _ => Err(anyhow::anyhow!("Invalid path: {}", s)),
@@ -186,46 +202,51 @@ impl AccessPath {
     pub fn resource(account: AccountAddress, resource_type: StructTag) -> Self {
         AccessPath(Path::Resource {
             account,
-            resource_types: vec![resource_type],
+            resource_types: Some(vec![resource_type]),
         })
     }
 
     pub fn resources(account: AccountAddress, resource_types: Vec<StructTag>) -> Self {
         AccessPath(Path::Resource {
             account,
-            resource_types,
+            resource_types: Some(resource_types),
         })
     }
 
     pub fn module(account: AccountAddress, module_name: Identifier) -> Self {
         AccessPath(Path::Module {
             account,
-            module_names: vec![module_name],
+            module_names: Some(vec![module_name]),
         })
     }
 
     pub fn modules(account: AccountAddress, module_names: Vec<Identifier>) -> Self {
         AccessPath(Path::Module {
             account,
-            module_names,
+            module_names: Some(module_names),
         })
     }
 
     pub fn table(table_handle: ObjectID, keys: Vec<Vec<u8>>) -> Self {
-        AccessPath(Path::Table { table_handle, keys })
+        AccessPath(Path::Table {
+            table_handle,
+            keys: Some(keys),
+        })
     }
 
     /// Convert AccessPath to TableQuery, return the table handle and keys
     /// All other AccessPath is a shortcut for TableQuery
-    pub fn into_table_query(self) -> (ObjectID, Vec<Vec<u8>>) {
+    pub fn into_table_query(self) -> (ObjectID, Option<Vec<Vec<u8>>>) {
         match self.0 {
             Path::Table { table_handle, keys } => (table_handle, keys),
             Path::Object { object_ids } => {
                 let table_handle = state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE;
-                let keys = object_ids
-                    .iter()
-                    .map(|object_id| object_id.to_bytes())
-                    .collect();
+                let keys = Some(
+                    object_ids
+                        .iter()
+                        .map(|object_id| object_id.to_bytes())
+                        .collect(),
+                );
                 (table_handle, keys)
             }
             Path::Module {
@@ -233,10 +254,12 @@ impl AccessPath {
                 module_names,
             } => {
                 let table_handle = NamedTableID::Module(account).to_object_id();
-                let keys = module_names
-                    .into_iter()
-                    .map(|name| module_name_to_key(&name))
-                    .collect();
+                let keys = module_names.map(|s| {
+                    s.into_iter()
+                        .map(|name| module_name_to_key(&name))
+                        .collect()
+                });
+
                 (table_handle, keys)
             }
             Path::Resource {
@@ -245,9 +268,8 @@ impl AccessPath {
             } => {
                 let resource_table_id = NamedTableID::Resource(account).to_object_id();
                 let keys = resource_types
-                    .into_iter()
-                    .map(|tag| resource_tag_to_key(&tag))
-                    .collect();
+                    .map(|s| s.into_iter().map(|tag| resource_tag_to_key(&tag)).collect());
+
                 (resource_table_id, keys)
             }
         }

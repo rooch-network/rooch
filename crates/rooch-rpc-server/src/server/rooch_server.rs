@@ -7,16 +7,17 @@ use jsonrpsee::{
     RpcModule,
 };
 use moveos_types::h256::H256;
-use rooch_rpc_api::api::RoochRpcModule;
+use rooch_rpc_api::api::{RoochRpcModule, MAX_RESULT_LIMIT_USIZE};
 use rooch_rpc_api::jsonrpc_types::{
-    AccessPathListView, AccessPathView, AnnotatedEventView, AnnotatedFunctionReturnValueView,
-    AnnotatedStateView, EventFilterView, EventPageView, ExecuteTransactionResponseView,
-    FunctionCallView, H256View, ListAnnotatedStatesPageView, ListStatesPageView, StateView,
-    StrView, StructTagView, TransactionExecutionInfoView, TransactionInfoPageView, TransactionView,
+    AccessPathView, AnnotatedEventView, AnnotatedFunctionReturnValueView, AnnotatedStateView,
+    EventFilterView, EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
+    ListAnnotatedStatesPageView, ListStatesPageView, StateView, StrView, StructTagView,
+    TransactionExecutionInfoView, TransactionInfoPageView, TransactionView,
 };
 use rooch_rpc_api::{api::rooch_api::RoochAPIServer, api::MAX_RESULT_LIMIT};
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::{AbstractTransaction, TypedTransaction};
+use std::cmp::min;
 
 pub struct RoochServer {
     rpc_service: RpcService,
@@ -89,11 +90,14 @@ impl RoochAPIServer for RoochServer {
 
     async fn list_states(
         &self,
-        access_path: AccessPathListView,
+        access_path: AccessPathView,
         cursor: Option<StrView<Vec<u8>>>,
         limit: Option<usize>,
     ) -> RpcResult<ListStatesPageView> {
-        let limit_of = limit.unwrap_or(MAX_RESULT_LIMIT as usize);
+        let limit_of = min(
+            limit.unwrap_or(MAX_RESULT_LIMIT_USIZE),
+            MAX_RESULT_LIMIT_USIZE,
+        );
         let cursor_of = cursor.clone().map(|v| v.0);
         let mut data: Vec<Option<(Vec<u8>, StateView)>> = self
             .rpc_service
@@ -122,11 +126,14 @@ impl RoochAPIServer for RoochServer {
 
     async fn list_annotated_states(
         &self,
-        access_path: AccessPathListView,
+        access_path: AccessPathView,
         cursor: Option<StrView<Vec<u8>>>,
         limit: Option<usize>,
     ) -> RpcResult<ListAnnotatedStatesPageView> {
-        let limit_of = limit.unwrap_or(MAX_RESULT_LIMIT as usize);
+        let limit_of = min(
+            limit.unwrap_or(MAX_RESULT_LIMIT_USIZE),
+            MAX_RESULT_LIMIT_USIZE,
+        );
         let cursor_of = cursor.clone().map(|v| v.0);
         let mut data: Vec<Option<(Vec<u8>, AnnotatedStateView)>> = self
             .rpc_service
@@ -160,7 +167,7 @@ impl RoochAPIServer for RoochServer {
         limit: Option<u64>,
     ) -> RpcResult<EventPageView> {
         // NOTE: fetch one more object to check if there is next page
-        let limit_of = limit.unwrap_or(MAX_RESULT_LIMIT);
+        let limit_of = min(limit.unwrap_or(MAX_RESULT_LIMIT), MAX_RESULT_LIMIT);
         let mut data: Vec<Option<AnnotatedEventView>> = self
             .rpc_service
             .get_events_by_event_handle(event_handle_type.into(), cursor, limit_of + 1)

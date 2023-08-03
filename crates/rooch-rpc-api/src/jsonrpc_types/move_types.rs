@@ -26,7 +26,6 @@ use moveos_types::{
 use fastcrypto::encoding::Hex;
 use serde_with::serde_as;
 
-use moveos_types::list_access_path::AccessPathList;
 use moveos_types::{
     move_string::{MoveAsciiString, MoveString},
     state::MoveStructState,
@@ -43,9 +42,8 @@ pub type StructTagView = StrView<StructTag>;
 pub type FunctionIdView = StrView<FunctionId>;
 pub type AccessPathView = StrView<AccessPath>;
 pub type AccountAddressView = StrView<AccountAddress>;
-pub type AccessPathListView = StrView<AccessPathList>;
 
-impl_str_view_for! {TypeTag StructTag FunctionId AccessPath AccessPathList}
+impl_str_view_for! {TypeTag StructTag FunctionId AccessPath}
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct AnnotatedMoveStructView {

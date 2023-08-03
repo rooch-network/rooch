@@ -10,7 +10,6 @@ use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event_filter::EventFilter;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::h256::H256;
-use moveos_types::list_access_path::AccessPathList;
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
@@ -84,7 +83,7 @@ impl Message for AnnotatedStatesMessage {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ListStatesMessage {
-    pub access_path: AccessPathList,
+    pub access_path: AccessPath,
     pub cursor: Option<Vec<u8>>,
     pub limit: usize,
 }
@@ -95,7 +94,7 @@ impl Message for ListStatesMessage {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ListAnnotatedStatesMessage {
-    pub access_path: AccessPathList,
+    pub access_path: AccessPath,
     pub cursor: Option<Vec<u8>>,
     pub limit: usize,
 }

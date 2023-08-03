@@ -8,7 +8,6 @@ pub mod event;
 pub mod event_filter;
 pub mod function_return_value;
 pub mod h256;
-pub mod list_access_path;
 pub mod module_binding;
 pub mod move_any;
 pub mod move_module;
