@@ -122,14 +122,15 @@ pub trait AccountKeystore: Send + Sync {
         phrase: String,
         crypto_scheme: BuiltinScheme,
         derivation_path: Option<DerivationPath>,
-    ) -> Result<BuiltinScheme, anyhow::Error> {
+    ) -> Result<PublicKey, anyhow::Error> {
         let mnemonic = Mnemonic::from_phrase(phrase.as_str(), Language::English)
             .map_err(|e| anyhow::anyhow!("Invalid mnemonic phrase: {:?}", e))?;
         let seed = Seed::new(&mnemonic, "");
         match derive_key_pair_from_path(seed.as_bytes(), derivation_path, &crypto_scheme) {
             Ok((_, kp)) => {
+                let public_key = kp.public();
                 self.update_key_pair_by_scheme(address, kp, crypto_scheme)?;
-                Ok(crypto_scheme)
+                Ok(public_key)
             }
             Err(e) => Err(anyhow!("error getting keypair {:?}", e)),
         }
