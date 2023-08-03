@@ -115,7 +115,7 @@ enum_dispatch = "^0.3"
 ethereum-types = "0.14.1"
 ethers = { version = "2.0.7", features = ["legacy"] }
 eyre = "0.6.8"
-fastcrypto = { git = "https://github.com/rooch-network/fastcrypto", branch = "main" }
+fastcrypto = { git = "https://github.com/rooch-network/fastcrypto", rev = "f4cc43951736bfe8f755e002e327768f8c4fe8a5" }
 futures = "0.3"
 hex = "0.4.3"
 rustc-hex = "1.0"
