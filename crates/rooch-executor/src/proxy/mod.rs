@@ -1,7 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::actor::messages::{GetTransactionInfosByTxHashMessage, GetTxSeqMappingByTxOrderMessage};
+use crate::actor::messages::{
+    GetTransactionInfosByTxHashMessage, GetTxSeqMappingByTxOrderMessage,
+    ListAnnotatedStatesMessage, ListStatesMessage,
+};
 use crate::actor::{
     executor::ExecutorActor,
     messages::{
@@ -14,6 +17,7 @@ use coerce::actor::ActorRef;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use moveos_types::h256::H256;
+use moveos_types::list_access_path::AccessPathList;
 use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
@@ -79,6 +83,36 @@ impl ExecutorProxy {
     ) -> Result<Vec<Option<AnnotatedState>>> {
         self.actor
             .send(AnnotatedStatesMessage { access_path })
+            .await?
+    }
+
+    pub async fn list_states(
+        &self,
+        access_path: AccessPathList,
+        cursor: Option<Vec<u8>>,
+        limit: usize,
+    ) -> Result<Vec<Option<(Vec<u8>, State)>>> {
+        self.actor
+            .send(ListStatesMessage {
+                access_path,
+                cursor,
+                limit,
+            })
+            .await?
+    }
+
+    pub async fn list_annotated_states(
+        &self,
+        access_path: AccessPathList,
+        cursor: Option<Vec<u8>>,
+        limit: usize,
+    ) -> Result<Vec<Option<(Vec<u8>, AnnotatedState)>>> {
+        self.actor
+            .send(ListAnnotatedStatesMessage {
+                access_path,
+                cursor,
+                limit,
+            })
             .await?
     }
 
