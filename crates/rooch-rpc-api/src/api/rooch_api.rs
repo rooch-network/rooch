@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::{
-    AccessPathView, AnnotatedEventView, AnnotatedFunctionReturnValueView, AnnotatedStateView,
-    EventFilterView, EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
-    StateView, StrView, StructTagView, TransactionExecutionInfoView, TransactionInfoPageView,
-    TransactionView,
+    AccessPathListView, AccessPathView, AnnotatedEventView, AnnotatedFunctionReturnValueView,
+    AnnotatedStateView, EventFilterView, EventPageView, ExecuteTransactionResponseView,
+    FunctionCallView, H256View, ListAnnotatedStatesPageView, ListStatesPageView, StateView,
+    StrView, StructTagView, TransactionExecutionInfoView, TransactionInfoPageView, TransactionView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -46,6 +46,25 @@ pub trait RoochAPI {
         &self,
         access_path: AccessPathView,
     ) -> RpcResult<Vec<Option<AnnotatedStateView>>>;
+
+    /// List the states by access_path
+    #[method(name = "listStates")]
+    async fn list_states(
+        &self,
+        access_path: AccessPathListView,
+        cursor: Option<StrView<Vec<u8>>>,
+        limit: Option<usize>,
+    ) -> RpcResult<ListStatesPageView>;
+
+    /// List the annotated states by access_path
+    /// The annotated states include the decoded move value of the state
+    #[method(name = "listAnnotatedStates")]
+    async fn list_annotated_states(
+        &self,
+        access_path: AccessPathListView,
+        cursor: Option<StrView<Vec<u8>>>,
+        limit: Option<usize>,
+    ) -> RpcResult<ListAnnotatedStatesPageView>;
 
     /// Get the events by event handle id
     #[method(name = "getEventsByEventHandle")]

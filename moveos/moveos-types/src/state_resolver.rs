@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::list_access_path::AccessPathList;
 use crate::{
     access_path::AccessPath,
     move_module::MoveModule,
@@ -18,6 +19,9 @@ use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnn
 
 pub const GLOBAL_OBJECT_STORAGE_HANDLE: ObjectID = ObjectID::ZERO;
 
+pub type ListState = (Vec<u8>, State);
+pub type ListAnnotatedState = (Vec<u8>, AnnotatedState);
+
 /// A global state resolver which needs to be provided by the environment.
 /// This allows to lookup data in remote storage.
 /// If the handle is GLOBAL_OBJECT_STORAGE_HANDLE, it will get the data from the global state tree,
@@ -25,6 +29,12 @@ pub const GLOBAL_OBJECT_STORAGE_HANDLE: ObjectID = ObjectID::ZERO;
 /// The key can be an ObjectID or an arbitrary key of a table.
 pub trait StateResolver {
     fn resolve_state(&self, handle: &ObjectID, key: &[u8]) -> Result<Option<State>, anyhow::Error>;
+    fn resolve_list_state(
+        &self,
+        handle: &ObjectID,
+        cursor: Option<Vec<u8>>,
+        limit: usize,
+    ) -> Result<Vec<Option<ListState>>, anyhow::Error>;
 }
 
 /// A proxy type for proxy the StateResolver to MoveResolver
@@ -85,6 +95,15 @@ where
     fn resolve_state(&self, handle: &ObjectID, key: &[u8]) -> Result<Option<State>, anyhow::Error> {
         self.0.resolve_state(handle, key)
     }
+
+    fn resolve_list_state(
+        &self,
+        handle: &ObjectID,
+        cursor: Option<Vec<u8>>,
+        limit: usize,
+    ) -> Result<Vec<Option<ListState>>, anyhow::Error> {
+        self.0.resolve_list_state(handle, cursor, limit)
+    }
 }
 
 pub trait MoveOSResolver: MoveResolver + StateResolver {}
@@ -110,6 +129,17 @@ pub trait StateReader: StateResolver {
             .map(|key| self.resolve_state(&handle, &key))
             .collect()
     }
+
+    /// List states by AccessPathList
+    fn list_states(
+        &self,
+        path: AccessPathList,
+        cursor: Option<Vec<u8>>,
+        limit: usize,
+    ) -> Result<Vec<Option<ListState>>> {
+        let handle = path.into_table_query();
+        self.resolve_list_state(&handle, cursor, limit)
+    }
 }
 
 impl<R> StateReader for R where R: StateResolver {}
@@ -125,6 +155,30 @@ pub trait AnnotatedStateReader: StateReader + MoveResolver {
                     .transpose()
             })
             .collect()
+    }
+
+    fn list_annotated_states(
+        &self,
+        path: AccessPathList,
+        cursor: Option<Vec<u8>>,
+        limit: usize,
+    ) -> Result<Vec<Option<ListAnnotatedState>>> {
+        let annotator = MoveValueAnnotator::new(self);
+        Ok(self
+            .list_states(path, cursor, limit)?
+            .into_iter()
+            .map(|item| {
+                item.map(|(key, state)| {
+                    (
+                        key,
+                        state
+                            .into_annotated_state(&annotator)
+                            .expect("state into_annotated_state should success"),
+                    )
+                })
+                // .transpose()
+            })
+            .collect::<Vec<_>>())
     }
 
     fn get_annotated_object(&self, object_id: ObjectID) -> Result<Option<AnnotatedObject>> {
