@@ -8,7 +8,7 @@ use fastcrypto::{
     secp256k1::{
         recoverable::Secp256k1RecoverableSignature, Secp256k1PublicKey, Secp256k1Signature,
     },
-    traits::{RecoverableSignature, ToFromBytes},
+    traits::{RecoverableSignature, ToFromBytes, VerifyRecoverable},
 };
 use move_binary_format::errors::PartialVMResult;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
@@ -137,10 +137,14 @@ pub fn native_verify_recoverable(
         }
     };
 
-    let sign = Secp256k1Signature::from(&sig);
+    let sign = Secp256k1RecoverableSignature::from(sig);
     let result = match hash {
-        KECCAK256 => pk.verify_with_hash::<Keccak256>(&msg_ref, &sign).is_ok(),
-        SHA256 => pk.verify_with_hash::<Sha256>(&msg_ref, &sign).is_ok(),
+        KECCAK256 => pk
+            .verify_recoverable_with_hash::<Keccak256>(&msg_ref, &sign)
+            .is_ok(),
+        SHA256 => pk
+            .verify_recoverable_with_hash::<Sha256>(&msg_ref, &sign)
+            .is_ok(),
         _ => false,
     };
 
