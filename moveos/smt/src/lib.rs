@@ -146,7 +146,7 @@ where
 
     /// List the (key, value) from the tree.
     pub fn list(&self, starting_key: Option<K>, limit: usize) -> Result<Vec<Option<(K, V)>>> {
-        let mut iter = self.iter(starting_key.clone()).unwrap();
+        let mut iter = self.iter(starting_key.clone())?;
 
         let mut data = Vec::new();
         // skip the starting_key if starting_key not NONE

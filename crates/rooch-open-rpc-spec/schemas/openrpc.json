@@ -303,7 +303,7 @@
           "name": "access_path",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/moveos_types::list_access_path::AccessPathList"
+            "$ref": "#/components/schemas/moveos_types::access_path::AccessPath"
           }
         },
         {
@@ -337,7 +337,7 @@
           "name": "access_path",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/moveos_types::list_access_path::AccessPathList"
+            "$ref": "#/components/schemas/moveos_types::access_path::AccessPath"
           }
         },
         {
@@ -1452,9 +1452,6 @@
         "type": "string"
       },
       "moveos_types::access_path::AccessPath": {
-        "type": "string"
-      },
-      "moveos_types::list_access_path::AccessPathList": {
         "type": "string"
       },
       "moveos_types::move_types::FunctionId": {

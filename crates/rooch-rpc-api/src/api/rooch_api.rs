@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::{
-    AccessPathListView, AccessPathView, AnnotatedEventView, AnnotatedFunctionReturnValueView,
-    AnnotatedStateView, EventFilterView, EventPageView, ExecuteTransactionResponseView,
-    FunctionCallView, H256View, ListAnnotatedStatesPageView, ListStatesPageView, StateView,
-    StrView, StructTagView, TransactionExecutionInfoView, TransactionInfoPageView, TransactionView,
+    AccessPathView, AnnotatedEventView, AnnotatedFunctionReturnValueView, AnnotatedStateView,
+    EventFilterView, EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
+    ListAnnotatedStatesPageView, ListStatesPageView, StateView, StrView, StructTagView,
+    TransactionExecutionInfoView, TransactionInfoPageView, TransactionView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -51,7 +51,7 @@ pub trait RoochAPI {
     #[method(name = "listStates")]
     async fn list_states(
         &self,
-        access_path: AccessPathListView,
+        access_path: AccessPathView,
         cursor: Option<StrView<Vec<u8>>>,
         limit: Option<usize>,
     ) -> RpcResult<ListStatesPageView>;
@@ -61,7 +61,7 @@ pub trait RoochAPI {
     #[method(name = "listAnnotatedStates")]
     async fn list_annotated_states(
         &self,
-        access_path: AccessPathListView,
+        access_path: AccessPathView,
         cursor: Option<StrView<Vec<u8>>>,
         limit: Option<usize>,
     ) -> RpcResult<ListAnnotatedStatesPageView>;

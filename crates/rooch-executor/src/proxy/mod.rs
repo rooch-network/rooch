@@ -17,7 +17,6 @@ use coerce::actor::ActorRef;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use moveos_types::h256::H256;
-use moveos_types::list_access_path::AccessPathList;
 use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
@@ -88,7 +87,7 @@ impl ExecutorProxy {
 
     pub async fn list_states(
         &self,
-        access_path: AccessPathList,
+        access_path: AccessPath,
         cursor: Option<Vec<u8>>,
         limit: usize,
     ) -> Result<Vec<Option<(Vec<u8>, State)>>> {
@@ -103,7 +102,7 @@ impl ExecutorProxy {
 
     pub async fn list_annotated_states(
         &self,
-        access_path: AccessPathList,
+        access_path: AccessPath,
         cursor: Option<Vec<u8>>,
         limit: usize,
     ) -> Result<Vec<Option<(Vec<u8>, AnnotatedState)>>> {

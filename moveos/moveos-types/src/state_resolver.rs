@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::list_access_path::AccessPathList;
 use crate::{
     access_path::AccessPath,
     move_module::MoveModule,
@@ -125,19 +124,20 @@ pub trait StateReader: StateResolver {
     /// Get states by AccessPath
     fn get_states(&self, path: AccessPath) -> Result<Vec<Option<State>>> {
         let (handle, keys) = path.into_table_query();
+        let keys = keys.ok_or_else(|| anyhow::anyhow!("AccessPath invalid path"))?;
         keys.into_iter()
             .map(|key| self.resolve_state(&handle, &key))
             .collect()
     }
 
-    /// List states by AccessPathList
+    /// List states by AccessPath
     fn list_states(
         &self,
-        path: AccessPathList,
+        path: AccessPath,
         cursor: Option<Vec<u8>>,
         limit: usize,
     ) -> Result<Vec<Option<ListState>>> {
-        let handle = path.into_table_query();
+        let (handle, _keys) = path.into_table_query();
         self.resolve_list_state(&handle, cursor, limit)
     }
 }
@@ -159,7 +159,7 @@ pub trait AnnotatedStateReader: StateReader + MoveResolver {
 
     fn list_annotated_states(
         &self,
-        path: AccessPathList,
+        path: AccessPath,
         cursor: Option<Vec<u8>>,
         limit: usize,
     ) -> Result<Vec<Option<ListAnnotatedState>>> {
@@ -176,7 +176,6 @@ pub trait AnnotatedStateReader: StateReader + MoveResolver {
                             .expect("state into_annotated_state should success"),
                     )
                 })
-                // .transpose()
             })
             .collect::<Vec<_>>())
     }
