@@ -320,14 +320,6 @@ module rooch_framework::account{
       storage_context::drop_test_context(ctx);
    }
 
-   #[test(sender=@0x42)]
-   fun test_update_account_entry(sender: address){
-      let ctx = storage_context::new_test_context(sender);
-      create_account_entry(&mut ctx, sender);
-      update_account_entry(&mut ctx, sender);
-      storage_context::drop_test_context(ctx);
-   }
-
    #[test(sender=@0x42, resource_account=@0xbb6e573f7feb9d8474ac20813fc086cc3100b8b7d49c246b0f4aee8ea19eaef4)]
    #[expected_failure(abort_code = 0x30006, location = Self)]
    fun test_failure_create_resource_account_wrong_sequence_number(sender: address, resource_account: address){

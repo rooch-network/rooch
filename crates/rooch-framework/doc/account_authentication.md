@@ -11,6 +11,7 @@ Migrate their from the account module for simplyfying the account module.
 -  [Resource `InstalledAuthValidator`](#0x3_account_authentication_InstalledAuthValidator)
 -  [Constants](#@Constants_0)
 -  [Function `get_authentication_key`](#0x3_account_authentication_get_authentication_key)
+-  [Function `rotate_authentication_key_entry`](#0x3_account_authentication_rotate_authentication_key_entry)
 -  [Function `rotate_authentication_key`](#0x3_account_authentication_rotate_authentication_key)
 -  [Function `rotate_authentication_key_internal`](#0x3_account_authentication_rotate_authentication_key_internal)
 -  [Function `is_auth_validator_installed`](#0x3_account_authentication_is_auth_validator_installed)
@@ -141,6 +142,31 @@ max authentication key length
    }<b>else</b>{
       <a href="_some">option::some</a>(<a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="account_authentication.md#0x3_account_authentication_AuthenticationKey">AuthenticationKey</a>&lt;ValidatorType&gt;&gt;(ctx, account_addr).authentication_key)
    }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_account_authentication_rotate_authentication_key_entry"></a>
+
+## Function `rotate_authentication_key_entry`
+
+Entry function of rotate_authentication_key. Do we need to limit the scope using private_generics?
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_rotate_authentication_key_entry">rotate_authentication_key_entry</a>&lt;ValidatorType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, new_auth_key: <a href="">vector</a>&lt;u8&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_rotate_authentication_key_entry">rotate_authentication_key_entry</a>&lt;ValidatorType&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, new_auth_key: <a href="">vector</a>&lt;u8&gt;) {
+   <a href="account_authentication.md#0x3_account_authentication_rotate_authentication_key">rotate_authentication_key</a>&lt;ValidatorType&gt;(ctx, <a href="account.md#0x3_account">account</a>, new_auth_key);
 }
 </code></pre>
 

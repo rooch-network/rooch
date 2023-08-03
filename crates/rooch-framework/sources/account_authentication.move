@@ -38,6 +38,12 @@ module rooch_framework::account_authentication{
    }
 
    #[private_generics(ValidatorType)]
+   /// Entry function of rotate_authentication_key. Do we need to limit the scope using private_generics?
+   public entry fun rotate_authentication_key_entry<ValidatorType>(ctx: &mut StorageContext, account: &signer, new_auth_key: vector<u8>) {
+      rotate_authentication_key<ValidatorType>(ctx, account, new_auth_key);
+   }
+
+   #[private_generics(ValidatorType)]
    /// This function is used to rotate a resource account's authentication key, only the module which define the `ValidatorType` can call this function.
    public fun rotate_authentication_key<ValidatorType>(ctx: &mut StorageContext, account: &signer, new_auth_key: vector<u8>) {
       rotate_authentication_key_internal<ValidatorType>(ctx, account, new_auth_key);
@@ -108,5 +114,11 @@ module rooch_framework::account_authentication{
       moveos_std::storage_context::drop_test_context(ctx);
    }
 
-
+   #[test(sender=@0x42)]
+   fun test_rotate_authentication_key_entry(sender: address){
+      let ctx = moveos_std::storage_context::new_test_context(@std);
+      let sender_signer = rooch_framework::account::create_signer_for_test(sender);
+      rotate_authentication_key_entry<TestValidator>(&mut ctx, &sender_signer, x"4567");
+      moveos_std::storage_context::drop_test_context(ctx);
+   }
 }

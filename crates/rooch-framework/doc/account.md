@@ -11,9 +11,7 @@
 -  [Struct `SignerCapability`](#0x3_account_SignerCapability)
 -  [Constants](#@Constants_0)
 -  [Function `create_account_entry`](#0x3_account_create_account_entry)
--  [Function `update_account_entry`](#0x3_account_update_account_entry)
 -  [Function `create_account`](#0x3_account_create_account)
--  [Function `update_account`](#0x3_account_update_account)
 -  [Function `create_framework_reserved_account`](#0x3_account_create_framework_reserved_account)
 -  [Function `sequence_number`](#0x3_account_sequence_number)
 -  [Function `sequence_number_for_sender`](#0x3_account_sequence_number_for_sender)
@@ -290,31 +288,6 @@ A entry function to create an account under <code>new_address</code>
 
 </details>
 
-<a name="0x3_account_update_account_entry"></a>
-
-## Function `update_account_entry`
-
-A entry function to update an account under <code>existing_address</code>
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="account.md#0x3_account_update_account_entry">update_account_entry</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, existing_address: <b>address</b>)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="account.md#0x3_account_update_account_entry">update_account_entry</a>(ctx: &<b>mut</b> StorageContext, existing_address: <b>address</b>){
-   <a href="account.md#0x3_account_update_account">Self::update_account</a>(ctx, existing_address);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_account_create_account"></a>
 
 ## Function `create_account`
@@ -346,39 +319,6 @@ is returned. This way, the caller of this function can publish additional resour
    );
 
    <a href="account.md#0x3_account_create_account_unchecked">create_account_unchecked</a>(ctx, new_address)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_account_update_account"></a>
-
-## Function `update_account`
-
-Updates an existing <code><a href="account.md#0x3_account_Account">Account</a></code> resource under <code>existing_address</code>. A signer representing <code>existing_address</code>
-is returned. This way, the caller of this function can publish additional resources under
-<code>existing_address</code>.
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_update_account">update_account</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, existing_address: <b>address</b>): <a href="">signer</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_update_account">update_account</a>(ctx: &<b>mut</b> StorageContext, existing_address: <b>address</b>): <a href="">signer</a> {
-   // there should be an <a href="account.md#0x3_account_Account">Account</a> resource under existing <b>address</b> already.
-   <b>assert</b>!(
-      <a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, existing_address),
-      <a href="_not_found">error::not_found</a>(<a href="account.md#0x3_account_EAccountNotExist">EAccountNotExist</a>)
-   );
-
-   <a href="account.md#0x3_account_update_account_unchecked">update_account_unchecked</a>(ctx, existing_address)
 }
 </code></pre>
 
