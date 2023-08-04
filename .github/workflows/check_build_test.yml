@@ -64,13 +64,13 @@ jobs:
             ${{ runner.OS }}-pnpm-
       - name: Change to SDK directory
         run: cd sdk/typescript
-      - name: Install dependencies
-        run: pnpm install
-      - name: Gen dependencie Code
+      - name: Install SDK dependencies
+        run: npm install pnpm -g && pnpm install
+      - name: Gen SDK dependencie Code
         run: pnpm gen
-      - name: Build
+      - name: Build SDK
         run: pnpm run build
-      - name: Test
+      - name: Test SDK
         run: pnpm run test
       ## Build and test sdk end
       - uses: CatChen/check-git-status-action@v1
