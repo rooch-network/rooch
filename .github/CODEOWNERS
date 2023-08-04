@@ -1,0 +1,44 @@
+/ @jolestar @wow-sven @baichuan3 @templexxx @steelgeek091
+/.github @yourmoonlight @jolestar
+/scripts @yourmoonlight @jolestar
+/kube @yourmoonlight @jolestar
+/docker @yourmoonlight @jolestar
+
+/moveos @steelgeek091 @jolestar
+/moveos/metrics @baichuan3 @steelgeek091
+/moveos/moveos @steelgeek091 @jolestar
+/moveos/moveos-commons @baichuan3 @wow-sven
+/moveos/moveos-config @baichuan3 @wow-sven
+/moveos/moveos-stdlib @baichuan3 @wow-sven @jolestar
+/moveos/moveos-store @baichuan3 @templexxx
+/moveos/moveos-types @jolestar @baichuan3
+/moveos/moveos-verfier @steelgeek091 @jolestar
+/moveos/raw-store @baichuan3 @templexxx
+/moveos/smt @baichuan3 @templexxx @jolestar
+
+/crates @baichuan3 @jolestar
+/crates/rooch @wow-sven @pause125 
+/crates/rooch-config @wow-sven @baichuan3
+/crates/rooch-da @templexxx @jolestar 
+/crates/rooch-executor @templexxx @jolestar
+/crates/rooch-framework @jolestar @baichuan3 
+/crates/rooch-genesis @jolestar @baichuan3 
+/crates/rooch-integration-test-runner @steelgeek091 @jolestar
+/crates/rooch-key @wow-sven @templexxx
+/crates/rooch-open-rpc @wow-sven @baichuan3
+/crates/rooch-open-rpc-macros @wow-sven @baichuan3
+/crates/rooch-open-rpc-spec @wow-sven @baichuan3
+/crates/rooch-proposer @jolestar @templexxx
+/crates/rooch-rpc-api @wow-sven @baichuan3
+/crates/rooch-rpc-client @wow-sven @baichuan3
+/crates/rooch-rpc-server @wow-sven @baichuan3
+/crates/rooch-sequencer @templexxx @jolestar
+/crates/rooch-store @baichuan3 @templexxx
+/crates/rooch-types @jolestar @baichuan3
+/crates/testsuite @pause125 @jolestar
+
+/examples @jolestar @wow-sven
+/examples/blog @wubuku @jolestar
+/sdk @wow-sven @yubing744
+/dashboards @wow-sven @yubing744 @Mine77
+/docs @wow-sven @geometryolife @Mine77
