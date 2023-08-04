@@ -1,9 +1,10 @@
-import { Generator } from "./generator.js"
+import { Command } from 'commander';
+import { Generator } from "./generator.js";
 
-const main = async () => {
+const main = async (opts) => {
     const generator = new Generator({
         openrpcDocument: "../../crates/rooch-open-rpc-spec/schemas/openrpc.json",
-        outDir: "./src/generated/client"
+        outDir: opts.outputDir || "./src/generated/client"
     })
 
     try {
@@ -14,4 +15,9 @@ const main = async () => {
     }
 }
 
-main();
+const program = new Command();
+program
+    .option('-o, --output-dir <string>', 'Output dir for generated typescript code.')
+    .parse();
+
+main(program.opts());

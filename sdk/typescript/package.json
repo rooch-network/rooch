@@ -27,7 +27,8 @@
     "eslint:fix": "pnpm run eslint:check --fix",
     "lint": "pnpm run eslint:check && pnpm run prettier:check",
     "lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix",
-    "gen:client": "node ./tools/generator/main.js"
+    "gen:types": "node ./tools/serdegen/rooch_types_gen.js -o ./src/generated/runtime",
+    "gen:client": "node ./tools/generator/main.js -o ./src/generated/client"
   },
   "repository": {
     "type": "git",
@@ -75,7 +76,8 @@
     "vite": "^4.2.3",
     "vite-plugin-dts": "^3.3.1",
     "vitest": "^0.32.0",
-    "wait-on": "^7.0.1"
+    "wait-on": "^7.0.1",
+    "commander": "^11.0.0"
   },
   "dependencies": {
     "@noble/hashes": "^1.3.0",

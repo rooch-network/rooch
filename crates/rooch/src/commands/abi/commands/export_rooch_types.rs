@@ -32,6 +32,36 @@ impl CommandAction<()> for ExportRoochTypesCommand {
     }
 }
 
+use serde_yaml::Value;
+
+fn convert_enum(yaml_value: &mut Value) {
+    match yaml_value {
+        Value::Mapping(map) => {
+            for (k, v) in map.iter_mut() {
+                if k.as_str() == Some("ENUM") {
+                    if let Value::Mapping(enum_map) = v {
+                        let mut new_enum_map = serde_yaml::Mapping::new();
+                        for (k, v) in enum_map.iter() {
+                            if let Ok(num) = k.as_str().unwrap().parse::<i32>() {
+                                new_enum_map.insert(Value::Number(num.into()), v.clone());
+                            }
+                        }
+                        *enum_map = new_enum_map;
+                    }
+                } else {
+                    convert_enum(v);
+                }
+            }
+        },
+        Value::Sequence(seq) => {
+            for v in seq {
+                convert_enum(v);
+            }
+        },
+        _ => {},
+    }
+}
+
 fn export_rooch_types_yaml(file_path: &String) -> RoochResult<()> {
     let mut tracer = Tracer::new(TracerConfig::default());
 
@@ -60,14 +90,25 @@ fn export_rooch_types_yaml(file_path: &String) -> RoochResult<()> {
 
             // Since serde_yaml does not support nested enumerations, the registry is first converted to json and then converted to yaml.
             let json_value: serde_json::Value = serde_json::from_str(data.as_str()).unwrap();
+
+            // Change json_value to yaml
             let yaml_string = serde_yaml::to_string(&json_value).unwrap();
+
+            // Replace AccountAddress.NEWTYPESTRUCT.TUPLEARRAY.SIZE to 32
+            let mut yaml_value: serde_yaml::Value = serde_yaml::from_str(yaml_string.as_str()).unwrap();
+            yaml_value["AccountAddress"]["NEWTYPESTRUCT"]["TUPLEARRAY"]["SIZE"] = serde_yaml::Value::from(32);
+
+            // Convert ENUM key from string to number
+            convert_enum(&mut yaml_value);
+
+            let replaced_yaml_string = serde_yaml::to_string(&yaml_value).unwrap();
 
             let path = Path::new(file_path);
             if let Some(parent) = path.parent() {
                 fs::create_dir_all(parent)?; // 创建所有父目录
             }
-
-            fs::write(path, yaml_string)?; // 创建文件并写入数据
+        
+            fs::write(path, replaced_yaml_string)?; // 创建文件并写入数据
 
             println!("export rooch types to file: {file_path} ok!");
         }
