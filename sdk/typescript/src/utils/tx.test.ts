@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest"
 import { encodeFunctionCall, typeTagToSCS, structTagToSCS, addressToSCS, encodeStructTypeTags } from './tx';
 import { TypeTag, StructTag, AccountAddress } from "../types";
-import * as rooch_types from "../lib/runtime/rooch_types/mod";
-import { bytes } from '../lib/runtime/serde/mod';
+import * as rooch_types from "../generated/runtime/rooch_types/mod";
+import { bytes } from '../generated/runtime/serde/mod';
 
 describe('encodeFunctionCall', () => {
   it('should encode a function call correctly', () => {

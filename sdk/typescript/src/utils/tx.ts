@@ -1,9 +1,7 @@
-import { AccountAddress, FunctionId, TypeTag, StructTag, parseFunctionId } from '../types';
-
-import * as rooch_types from "../lib/runtime/rooch_types/mod"
-import { bytes } from '../lib/runtime/serde/mod';
-import { BcsDeserializer } from "../lib/runtime/bcs/mod";
 import { fromHexString } from './hex';
+import * as rooch_types from "../generated/runtime/rooch_types/mod"
+import { bytes, Seq } from '../generated/runtime/serde/mod';
+import { AccountAddress, FunctionId, TypeTag, StructTag, parseFunctionId } from '../types';
 
 export function encodeFunctionCall(functionId: FunctionId, tyArgs: TypeTag[], args: bytes[]): rooch_types.MoveActionVariantFunction {
     const funcId = parseFunctionId(functionId)
@@ -17,7 +15,7 @@ export function encodeFunctionCall(functionId: FunctionId, tyArgs: TypeTag[], ar
             new rooch_types.Identifier(funcId.functionName)
         ),
         tyArgs.map((t) => typeTagToSCS(t)),
-        args
+        bytesArrayToSeqSeq(args)
     )
 
     return new rooch_types.MoveActionVariantFunction(functionCall)
@@ -105,4 +103,8 @@ function encodeStructTypeTag(
         },
     }
     return result
+}
+
+function bytesArrayToSeqSeq(input: bytes[]): Seq<Seq<number>> {
+    return input.map((byteArray) => Array.from(byteArray));
 }
