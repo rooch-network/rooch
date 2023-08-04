@@ -62,16 +62,14 @@ jobs:
           key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.OS }}-pnpm-
-      - name: Change to SDK directory
-        run: cd sdk/typescript
       - name: Install SDK dependencies
-        run: npm install pnpm -g && pnpm install
+        run: cd sdk/typescript && npm install pnpm -g && pnpm install
       - name: Gen SDK dependencie Code
-        run: pnpm gen
+        run: cd sdk/typescript && pnpm gen
       - name: Build SDK
-        run: pnpm run build
+        run: cd sdk/typescript && pnpm run build
       - name: Test SDK
-        run: pnpm run test
+        run: cd sdk/typescript && pnpm run test
       ## Build and test sdk end
       - uses: CatChen/check-git-status-action@v1
         with:
