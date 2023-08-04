@@ -41,6 +41,9 @@ use fastcrypto::{
         Secp256k1SignatureAsBytes,
     },
 };
+use move_core_types::{
+    account_address::AccountAddress, identifier::Identifier, language_storage::StructTag,
+};
 use moveos_types::{h256::H256, serde::Readable};
 use rand::{rngs::StdRng, SeedableRng};
 use schemars::JsonSchema;
@@ -80,13 +83,19 @@ pub enum BuiltinScheme {
 }
 
 impl BuiltinScheme {
+    const ED25519_FLAG: u8 = 0x00;
+    const MULTIED25519_FLAG: u8 = 0x01;
+    const ECDSA_FLAG: u8 = 0x02;
+    const ECDSARECOVERABLE_FLAG: u8 = 0x03;
+    const SCHNORR_FLAG: u8 = 0x04;
+
     pub fn flag(&self) -> u8 {
         match self {
-            BuiltinScheme::Ed25519 => 0x00,
-            BuiltinScheme::MultiEd25519 => 0x01,
-            BuiltinScheme::Ecdsa => 0x02,
-            BuiltinScheme::EcdsaRecoverable => 0x03,
-            BuiltinScheme::Schnorr => 0x04,
+            BuiltinScheme::Ed25519 => Self::ED25519_FLAG,
+            BuiltinScheme::MultiEd25519 => Self::MULTIED25519_FLAG,
+            BuiltinScheme::Ecdsa => Self::ECDSA_FLAG,
+            BuiltinScheme::EcdsaRecoverable => Self::ECDSARECOVERABLE_FLAG,
+            BuiltinScheme::Schnorr => Self::SCHNORR_FLAG,
         }
     }
 
@@ -94,20 +103,48 @@ impl BuiltinScheme {
         let byte_int = flag
             .parse::<u8>()
             .map_err(|_| RoochError::KeyConversionError("Invalid key scheme".to_owned()))?;
-        Self::from_flag_byte(&byte_int)
+        Self::from_flag_byte(byte_int)
     }
 
-    pub fn from_flag_byte(byte_int: &u8) -> Result<BuiltinScheme, RoochError> {
+    pub fn from_flag_byte(byte_int: u8) -> Result<BuiltinScheme, RoochError> {
         match byte_int {
-            0x00 => Ok(BuiltinScheme::Ed25519),
-            0x01 => Ok(BuiltinScheme::MultiEd25519),
-            0x02 => Ok(BuiltinScheme::Ecdsa),
-            0x03 => Ok(BuiltinScheme::EcdsaRecoverable),
-            0x04 => Ok(BuiltinScheme::Schnorr),
+            Self::ED25519_FLAG => Ok(BuiltinScheme::Ed25519),
+            Self::MULTIED25519_FLAG => Ok(BuiltinScheme::MultiEd25519),
+            Self::ECDSA_FLAG => Ok(BuiltinScheme::Ecdsa),
+            Self::ECDSARECOVERABLE_FLAG => Ok(BuiltinScheme::EcdsaRecoverable),
+            Self::SCHNORR_FLAG => Ok(BuiltinScheme::Schnorr),
             _ => Err(RoochError::KeyConversionError(
                 "Invalid key scheme".to_owned(),
             )),
         }
+    }
+
+    pub fn get_validator_name(&self) -> Result<&'static str, RoochError> {
+        match self {
+            BuiltinScheme::Ed25519 => Ok(stringify!(Ed25519Validator)),
+            BuiltinScheme::MultiEd25519 => Ok(stringify!(MultiEd25519Validator)),
+            BuiltinScheme::Ecdsa => Ok(stringify!(EcdsaK1Validator)),
+            BuiltinScheme::EcdsaRecoverable => Ok(stringify!(EcdsaK1RecoverableValidator)),
+            BuiltinScheme::Schnorr => Ok(stringify!(SchnorrValidator)),
+            _ => Err(RoochError::KeyConversionError(
+                "Invalid validator scheme".to_owned(),
+            )),
+        }
+    }
+
+    pub fn create_validator_struct_tag(
+        &self,
+        address: AccountAddress,
+        module_name: &'static str,
+    ) -> Result<Box<StructTag>, RoochError> {
+        let tag_name = self.get_validator_name()?;
+
+        Ok(Box::new(StructTag {
+            address,
+            module: Identifier::new(module_name.to_string()).unwrap(),
+            name: Identifier::new(String::from(tag_name)).unwrap(),
+            type_params: vec![],
+        }))
     }
 }
 

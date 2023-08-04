@@ -12,6 +12,7 @@ use moveos_types::{move_types::FunctionId, transaction::MoveAction};
 use once_cell::sync::Lazy;
 use rooch_framework::{
     bindings::{
+        ecdsa_k1_recoverable_validator::EcdsaK1RecoverableValidator,
         ecdsa_k1_validator::EcdsaK1Validator, ed25519_validator::Ed25519Validator,
         schnorr_validator::SchnorrValidator,
     },
@@ -80,29 +81,34 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                     scheme.to_owned()
                 );
 
-                let validator_struct_arg: Box<StructTag> = match scheme {
-                    BuiltinScheme::Ed25519 => Ok(Box::new(StructTag {
-                        address: Ed25519Validator::MODULE_ADDRESS,
-                        module: Identifier::new(Ed25519Validator::MODULE_NAME.to_string()).unwrap(),
-                        name: Identifier::new(String::from(stringify!(Ed25519Validator))).unwrap(),
-                        type_params: vec![],
-                    })),
-                    BuiltinScheme::Ecdsa => Ok(Box::new(StructTag {
-                        address: EcdsaK1Validator::MODULE_ADDRESS,
-                        module: Identifier::new(EcdsaK1Validator::MODULE_NAME.to_string()).unwrap(),
-                        name: Identifier::new(String::from(stringify!(EcdsaK1Validator))).unwrap(),
-                        type_params: vec![],
-                    })),
-                    BuiltinScheme::Schnorr => Ok(Box::new(StructTag {
-                        address: SchnorrValidator::MODULE_ADDRESS,
-                        module: Identifier::new(SchnorrValidator::MODULE_NAME.to_string()).unwrap(),
-                        name: Identifier::new(String::from(stringify!(SchnorrValidator))).unwrap(),
-                        type_params: vec![],
-                    })),
-                    _ => Err(RoochError::CommandArgumentError(
-                        "Validator for this scheme is not implemented".to_owned(),
-                    )),
-                }?;
+                let address = match scheme {
+                    BuiltinScheme::Ed25519 => Ed25519Validator::MODULE_ADDRESS,
+                    BuiltinScheme::MultiEd25519 => todo!(),
+                    BuiltinScheme::Ecdsa => EcdsaK1Validator::MODULE_ADDRESS,
+                    BuiltinScheme::EcdsaRecoverable => EcdsaK1RecoverableValidator::MODULE_ADDRESS,
+                    BuiltinScheme::Schnorr => SchnorrValidator::MODULE_ADDRESS,
+                    _ => {
+                        return Err(RoochError::CommandArgumentError(
+                            "Validator for this scheme is not implemented".to_owned(),
+                        ))
+                    }
+                };
+
+                let module_name = match scheme {
+                    BuiltinScheme::Ed25519 => Ed25519Validator::MODULE_NAME,
+                    BuiltinScheme::MultiEd25519 => todo!(),
+                    BuiltinScheme::Ecdsa => EcdsaK1Validator::MODULE_NAME,
+                    BuiltinScheme::EcdsaRecoverable => EcdsaK1RecoverableValidator::MODULE_NAME,
+                    BuiltinScheme::Schnorr => SchnorrValidator::MODULE_NAME,
+                    _ => {
+                        return Err(RoochError::CommandArgumentError(
+                            "Validator for this scheme is not implemented".to_owned(),
+                        ))
+                    }
+                };
+
+                let validator_struct_arg: Box<StructTag> =
+                    scheme.create_validator_struct_tag(address, module_name)?;
 
                 let signer = bcs::to_bytes(&existing_address).unwrap();
                 let public_key_bytes_vec = public_key.as_ref().to_vec();
