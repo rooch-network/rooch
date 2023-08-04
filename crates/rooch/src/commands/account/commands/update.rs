@@ -81,20 +81,24 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                     scheme.to_owned()
                 );
 
-                let address = match scheme {
-                    BuiltinScheme::Ed25519 => Ed25519Validator::MODULE_ADDRESS,
+                let (address, module_name) = match scheme {
+                    BuiltinScheme::Ed25519 => (
+                        Ed25519Validator::MODULE_ADDRESS,
+                        Ed25519Validator::MODULE_NAME,
+                    ),
                     BuiltinScheme::MultiEd25519 => todo!(),
-                    BuiltinScheme::Ecdsa => EcdsaK1Validator::MODULE_ADDRESS,
-                    BuiltinScheme::EcdsaRecoverable => EcdsaK1RecoverableValidator::MODULE_ADDRESS,
-                    BuiltinScheme::Schnorr => SchnorrValidator::MODULE_ADDRESS,
-                };
-
-                let module_name = match scheme {
-                    BuiltinScheme::Ed25519 => Ed25519Validator::MODULE_NAME,
-                    BuiltinScheme::MultiEd25519 => todo!(),
-                    BuiltinScheme::Ecdsa => EcdsaK1Validator::MODULE_NAME,
-                    BuiltinScheme::EcdsaRecoverable => EcdsaK1RecoverableValidator::MODULE_NAME,
-                    BuiltinScheme::Schnorr => SchnorrValidator::MODULE_NAME,
+                    BuiltinScheme::Ecdsa => (
+                        EcdsaK1Validator::MODULE_ADDRESS,
+                        EcdsaK1Validator::MODULE_NAME,
+                    ),
+                    BuiltinScheme::EcdsaRecoverable => (
+                        EcdsaK1RecoverableValidator::MODULE_ADDRESS,
+                        EcdsaK1RecoverableValidator::MODULE_NAME,
+                    ),
+                    BuiltinScheme::Schnorr => (
+                        SchnorrValidator::MODULE_ADDRESS,
+                        SchnorrValidator::MODULE_NAME,
+                    ),
                 };
 
                 let validator_struct_arg: Box<StructTag> =
