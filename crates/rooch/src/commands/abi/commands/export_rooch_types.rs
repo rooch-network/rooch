@@ -52,13 +52,13 @@ fn convert_enum(yaml_value: &mut Value) {
                     convert_enum(v);
                 }
             }
-        },
+        }
         Value::Sequence(seq) => {
             for v in seq {
                 convert_enum(v);
             }
-        },
-        _ => {},
+        }
+        _ => {}
     }
 }
 
@@ -95,8 +95,10 @@ fn export_rooch_types_yaml(file_path: &String) -> RoochResult<()> {
             let yaml_string = serde_yaml::to_string(&json_value).unwrap();
 
             // Replace AccountAddress.NEWTYPESTRUCT.TUPLEARRAY.SIZE to 32
-            let mut yaml_value: serde_yaml::Value = serde_yaml::from_str(yaml_string.as_str()).unwrap();
-            yaml_value["AccountAddress"]["NEWTYPESTRUCT"]["TUPLEARRAY"]["SIZE"] = serde_yaml::Value::from(32);
+            let mut yaml_value: serde_yaml::Value =
+                serde_yaml::from_str(yaml_string.as_str()).unwrap();
+            yaml_value["AccountAddress"]["NEWTYPESTRUCT"]["TUPLEARRAY"]["SIZE"] =
+                serde_yaml::Value::from(32);
 
             // Convert ENUM key from string to number
             convert_enum(&mut yaml_value);
@@ -107,7 +109,7 @@ fn export_rooch_types_yaml(file_path: &String) -> RoochResult<()> {
             if let Some(parent) = path.parent() {
                 fs::create_dir_all(parent)?; // 创建所有父目录
             }
-        
+
             fs::write(path, replaced_yaml_string)?; // 创建文件并写入数据
 
             println!("export rooch types to file: {file_path} ok!");
