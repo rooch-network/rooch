@@ -37,7 +37,7 @@
 /crates/rooch-types @jolestar @baichuan3
 /crates/testsuite @pause125 @jolestar
 
-/examples @jolestar @wow-sven
+/examples @jolestar @wow-sven @geometryolife
 /examples/blog @wubuku @jolestar
 /sdk @wow-sven @yubing744
 /dashboards @wow-sven @yubing744 @Mine77
