@@ -47,42 +47,33 @@ use std::{
 pub struct CreateCommand {
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
-    /// Command line input of crypto schemes (ed25519, multied25519, ecdsa, or schnorr)
-    #[clap(short = 's', long = "scheme", default_value = "ed25519", arg_enum)]
-    pub crypto_schemes: BuiltinScheme,
 }
 
 impl CreateCommand {
     pub async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
         let mut context = self.context_options.build().await?;
-        match BuiltinScheme::from_flag_byte(&self.crypto_schemes.flag()) {
-            Ok(scheme) => {
-                let (new_address, phrase, scheme) = context
-                    .config
-                    .keystore
-                    .generate_and_add_new_key(scheme, None, None)?;
 
-                println!("{}", AccountAddress::from(new_address).to_hex_literal());
-                println!(
-                    "Generated new keypair for address with scheme {:?} [{new_address}]",
-                    scheme.to_string()
-                );
-                println!("Secret Recovery Phrase : [{phrase}]");
+        let (new_address, phrase, scheme) =
+            context
+                .config
+                .keystore
+                .generate_and_add_new_key(BuiltinScheme::Ed25519, None, None)?;
 
-                let create_account_entry_function = CREATE_ACCOUNT_ENTRY_FUNCTION.clone();
-                let action = MoveAction::new_function_call(
-                    create_account_entry_function,
-                    vec![],
-                    vec![bcs::to_bytes(&new_address).unwrap()],
-                );
+        println!("{}", AccountAddress::from(new_address).to_hex_literal());
+        println!(
+            "Generated new keypair for address with scheme {:?} [{new_address}]",
+            scheme.to_string()
+        );
+        println!("Secret Recovery Phrase : [{phrase}]");
 
-                context.sign_and_execute(new_address, action).await
-            }
-            Err(error) => Err(RoochError::CommandArgumentError(format!(
-                "Invalid crypto scheme: {}",
-                error
-            ))),
-        }
+        let create_account_entry_function = CREATE_ACCOUNT_ENTRY_FUNCTION.clone();
+        let action = MoveAction::new_function_call(
+            create_account_entry_function,
+            vec![],
+            vec![bcs::to_bytes(&new_address).unwrap()],
+        );
+
+        context.sign_and_execute(new_address, action).await
     }
 }
 
