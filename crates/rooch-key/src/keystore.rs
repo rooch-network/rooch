@@ -592,8 +592,16 @@ impl InMemKeystore {
         let mut rng = StdRng::from_seed([0; 32]);
         let keys = (0..initial_key_number)
             .map(|_| get_key_pair_from_rng(&mut rng))
-            .map(|(ad, k)| (ad, RoochKeyPair::EcdsaRecoverable(k)))
-            .collect::<BTreeMap<RoochAddress, RoochKeyPair>>();
+            .map(|(ad, k)| {
+                (
+                    ad,
+                    BTreeMap::from_iter(vec![(
+                        BuiltinScheme::EcdsaRecoverable,
+                        RoochKeyPair::EcdsaRecoverable(k),
+                    )]),
+                )
+            })
+            .collect::<BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, RoochKeyPair>>>();
 
         Self { keys }
     }

@@ -119,30 +119,29 @@ impl BuiltinScheme {
         }
     }
 
-    pub fn get_validator_name(&self) -> Result<&'static str, RoochError> {
+    pub fn get_validator_name(&self) -> Result<String, RoochError> {
         match self {
-            BuiltinScheme::Ed25519 => Ok(stringify!(Ed25519Validator)),
-            BuiltinScheme::MultiEd25519 => Ok(stringify!(MultiEd25519Validator)),
-            BuiltinScheme::Ecdsa => Ok(stringify!(EcdsaK1Validator)),
-            BuiltinScheme::EcdsaRecoverable => Ok(stringify!(EcdsaK1RecoverableValidator)),
-            BuiltinScheme::Schnorr => Ok(stringify!(SchnorrValidator)),
-            _ => Err(RoochError::KeyConversionError(
-                "Invalid validator scheme".to_owned(),
-            )),
+            BuiltinScheme::Ed25519 => Ok(String::from(stringify!(Ed25519Validator))),
+            BuiltinScheme::MultiEd25519 => Ok(String::from(stringify!(MultiEd25519Validator))),
+            BuiltinScheme::Ecdsa => Ok(String::from(stringify!(EcdsaK1Validator))),
+            BuiltinScheme::EcdsaRecoverable => {
+                Ok(String::from(stringify!(EcdsaK1RecoverableValidator)))
+            }
+            BuiltinScheme::Schnorr => Ok(String::from(stringify!(SchnorrValidator))),
         }
     }
 
     pub fn create_validator_struct_tag(
         &self,
         address: AccountAddress,
-        module_name: &'static str,
+        module_name: String,
     ) -> Result<Box<StructTag>, RoochError> {
-        let tag_name = self.get_validator_name()?;
+        let tag_name: String = self.get_validator_name()?;
 
         Ok(Box::new(StructTag {
             address,
-            module: Identifier::new(module_name.to_string()).unwrap(),
-            name: Identifier::new(String::from(tag_name)).unwrap(),
+            module: Identifier::new(module_name).unwrap(),
+            name: Identifier::new(tag_name).unwrap(),
             type_params: vec![],
         }))
     }
@@ -214,7 +213,8 @@ impl EncodeDecodeBase64 for RoochKeyPair {
     /// Decode a RoochKeyPair from `flag || privkey` in Base64. The public key is computed directly from the private key bytes.
     fn decode_base64(value: &str) -> Result<Self, eyre::Report> {
         let bytes = Base64::decode(value).map_err(|e| eyre!("{}", e.to_string()))?;
-        match BuiltinScheme::from_flag_byte(bytes.first().ok_or_else(|| eyre!("Invalid length"))?) {
+        match BuiltinScheme::from_flag_byte(*bytes.first().ok_or_else(|| eyre!("Invalid length"))?)
+        {
             Ok(x) => match x {
                 BuiltinScheme::Ed25519 => Ok(RoochKeyPair::Ed25519(Ed25519KeyPair::from_bytes(
                     bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,

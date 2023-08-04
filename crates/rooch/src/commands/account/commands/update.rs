@@ -51,7 +51,7 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
 
         let mut context = self.context_options.build().await?;
 
-        match BuiltinScheme::from_flag_byte(&self.crypto_schemes.flag()) {
+        match BuiltinScheme::from_flag_byte(self.crypto_schemes.flag()) {
             Ok(scheme) => {
                 let existing_address =
                     RoochAddress::from_str(self.address.as_str()).map_err(|e| {
@@ -87,11 +87,6 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                     BuiltinScheme::Ecdsa => EcdsaK1Validator::MODULE_ADDRESS,
                     BuiltinScheme::EcdsaRecoverable => EcdsaK1RecoverableValidator::MODULE_ADDRESS,
                     BuiltinScheme::Schnorr => SchnorrValidator::MODULE_ADDRESS,
-                    _ => {
-                        return Err(RoochError::CommandArgumentError(
-                            "Validator for this scheme is not implemented".to_owned(),
-                        ))
-                    }
                 };
 
                 let module_name = match scheme {
@@ -100,15 +95,10 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                     BuiltinScheme::Ecdsa => EcdsaK1Validator::MODULE_NAME,
                     BuiltinScheme::EcdsaRecoverable => EcdsaK1RecoverableValidator::MODULE_NAME,
                     BuiltinScheme::Schnorr => SchnorrValidator::MODULE_NAME,
-                    _ => {
-                        return Err(RoochError::CommandArgumentError(
-                            "Validator for this scheme is not implemented".to_owned(),
-                        ))
-                    }
                 };
 
                 let validator_struct_arg: Box<StructTag> =
-                    scheme.create_validator_struct_tag(address, module_name)?;
+                    scheme.create_validator_struct_tag(address, module_name.to_string())?;
 
                 let signer = bcs::to_bytes(&existing_address).unwrap();
                 let public_key_bytes_vec = public_key.as_ref().to_vec();
