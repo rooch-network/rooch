@@ -1,0 +1,49 @@
+name: Check-Build-Test-SDK
+
+on:
+  push:
+    branches: 
+      - main
+    paths:
+      - 'sdk/typescript/**'
+  pull_request:
+    branches: 
+      - main
+    paths:
+      - 'sdk/typescript/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Use Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '18.x'
+
+    - name: Cache Node.js modules
+      uses: actions/cache@v2
+      with:
+        path: ~/.pnpm-store
+        key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.OS }}-pnpm-
+
+    - name: Change to SDK directory
+      run: cd sdk/typescript
+
+    - name: Install dependencies
+      run: pnpm install
+
+    - name: Build
+      run: pnpm run build
+
+    - name: Test
+      run: pnpm run test
+
+    - name: Lint
+      run: pnpm run lint

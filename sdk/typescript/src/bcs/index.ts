@@ -3,4 +3,3 @@
 
 export * from "../generated/runtime/bcs/mod";
 export * from "../generated/runtime/serde/mod";
-export * as roochBcsTypes from "../generated/runtime/rooch_types/mod";
