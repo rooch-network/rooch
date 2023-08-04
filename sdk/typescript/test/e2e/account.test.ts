@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { test, expect } from "vitest"
-import { RoochAccount } from "../../account/rooch-account"
+import { RoochAccount } from "../../src/account/rooch-account"
 import { HTTPTransport, RequestManager } from "@open-rpc/client-js"
 import { Transport } from "@open-rpc/client-js/build/transports/Transport"
-import { JsonRpcProvider } from "../../provider/json-rpc-provider"
+import { JsonRpcProvider } from "../../src/provider/json-rpc-provider"
 // import { RoochClient } from "../../generated/client"
 
 test("account", async () => {

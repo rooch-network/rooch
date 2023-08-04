@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { Bytes, Deserializer, Serializer } from "../bcs"
+import { bytes as Bytes, BcsDeserializer as Deserializer, BcsSerializer as Serializer } from "../bcs"
 
 export class Ed25519PublicKey {
   static readonly LENGTH: number = 32

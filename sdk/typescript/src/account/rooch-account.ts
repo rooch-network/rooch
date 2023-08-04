@@ -5,7 +5,8 @@ import nacl from "tweetnacl"
 import * as bip39 from "@scure/bip39"
 import { bytesToHex } from "@noble/hashes/utils"
 import { blake2b } from "@noble/hashes/blake2b"
-import { HexString, MaybeHexString, derivePath } from "../utils"
+import { HexString, MaybeHexString } from "../types";
+import { derivePath } from "../utils"
 
 const PUBLIC_KEY_SIZE = 32
 export const ROOCH_ADDRESS_LENGTH = 32
