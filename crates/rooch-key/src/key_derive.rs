@@ -6,6 +6,9 @@ use bip32::XPrv;
 use bip32::{ChildNumber, DerivationPath};
 use bip39::{Language, Mnemonic, MnemonicType, Seed};
 use fastcrypto::ed25519::Ed25519KeyPair;
+use fastcrypto::secp256k1::recoverable::{
+    Secp256k1RecoverableKeyPair, Secp256k1RecoverablePrivateKey,
+};
 use fastcrypto::secp256k1::schnorr::{SchnorrKeyPair, SchnorrPrivateKey};
 use fastcrypto::secp256k1::{Secp256k1KeyPair, Secp256k1PrivateKey};
 use fastcrypto::{
@@ -63,6 +66,17 @@ pub fn derive_key_pair_from_path(
             );
             Ok((kp.public().into(), RoochKeyPair::Ecdsa(kp)))
         }
+        BuiltinScheme::EcdsaRecoverable => {
+            let child_xprv = XPrv::derive_from_path(seed, &path)
+                .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
+            let kp = Secp256k1RecoverableKeyPair::from(
+                Secp256k1RecoverablePrivateKey::from_bytes(
+                    child_xprv.private_key().to_bytes().as_slice(),
+                )
+                .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
+            );
+            Ok((kp.public().into(), RoochKeyPair::EcdsaRecoverable(kp)))
+        }
         BuiltinScheme::Schnorr => {
             let child_xprv = XPrv::derive_from_path(seed, &path)
                 .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
@@ -113,6 +127,34 @@ pub fn validate_path(
             todo!()
         }
         BuiltinScheme::Ecdsa => {
+            match path {
+                Some(p) => {
+                    // The derivation path must be hardened at all levels with purpose = 44, coin_type = 784
+                    if let &[purpose, coin_type, account, change, address] = p.as_ref() {
+                        if Some(purpose)
+                            == ChildNumber::new(DERVIATION_PATH_PURPOSE_ECDSA, true).ok()
+                            && Some(coin_type)
+                                == ChildNumber::new(DERIVATION_PATH_COIN_TYPE_SUI, true).ok()
+                            && account.is_hardened()
+                            && change.is_hardened()
+                            && address.is_hardened()
+                        {
+                            Ok(p)
+                        } else {
+                            Err(RoochError::SignatureKeyGenError("Invalid path".to_owned()))
+                        }
+                    } else {
+                        Err(RoochError::SignatureKeyGenError("Invalid path".to_owned()))
+                    }
+                }
+                None => Ok(format!(
+                    "m/{DERVIATION_PATH_PURPOSE_ECDSA}'/{DERIVATION_PATH_COIN_TYPE_SUI}'/0'/0'/0'"
+                )
+                .parse()
+                .map_err(|_| RoochError::SignatureKeyGenError("Cannot parse path".to_owned()))?),
+            }
+        }
+        BuiltinScheme::EcdsaRecoverable => {
             match path {
                 Some(p) => {
                     // The derivation path must be hardened at all levels with purpose = 44, coin_type = 784

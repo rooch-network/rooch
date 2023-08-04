@@ -9,7 +9,7 @@ module rooch_framework::schnorr_validator {
    use rooch_framework::schnorr;
    use rooch_framework::auth_validator;
 
-   const SCHEME_SCHNORR: u64 = 3;
+   const SCHEME_SCHNORR: u64 = 4;
    const V_SCHNORR_SCHEME_LENGTH: u64 = 1;
    const V_SCHNORR_PUBKEY_LENGTH: u64 = 32;
    const V_SCHNORR_SIG_LENGTH: u64 = 64;
@@ -106,6 +106,6 @@ module rooch_framework::schnorr_validator {
    fun test_schnorr_public_key_to_address(){
       let public_key = x"1b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
       let addr = schnorr_public_key_to_address(public_key);
-      assert!(addr == @0x7ef99ee767314ccb4726be579ab3eabd212741b3796db40405ff421c47b0ae85, 1000);
+      assert!(addr == @0xa519b36bbecc294726bbfd962ab46ca4e09baacca7cd90d5d2da2331afb363e6, 1000);
    }
 }

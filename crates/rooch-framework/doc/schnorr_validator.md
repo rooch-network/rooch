@@ -84,7 +84,7 @@ Hash function name that are valid for verify.
 
 
 
-<pre><code><b>const</b> <a href="schnorr_validator.md#0x3_schnorr_validator_SCHEME_SCHNORR">SCHEME_SCHNORR</a>: u64 = 3;
+<pre><code><b>const</b> <a href="schnorr_validator.md#0x3_schnorr_validator_SCHEME_SCHNORR">SCHEME_SCHNORR</a>: u64 = 4;
 </code></pre>
 
 

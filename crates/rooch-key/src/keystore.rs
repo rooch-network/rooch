@@ -184,6 +184,9 @@ impl AccountKeystore for FileBasedKeystore {
         let auth = match pk.public().scheme() {
             BuiltinScheme::Ed25519 => authenticator::Authenticator::ed25519(signature),
             BuiltinScheme::Ecdsa => authenticator::Authenticator::ecdsa(signature),
+            BuiltinScheme::EcdsaRecoverable => {
+                authenticator::Authenticator::ecdsa_recoverable(signature)
+            }
             BuiltinScheme::MultiEd25519 => todo!(),
             BuiltinScheme::Schnorr => authenticator::Authenticator::schnorr(signature),
         };
@@ -299,6 +302,9 @@ impl AccountKeystore for InMemKeystore {
         let auth = match pk.public().scheme() {
             BuiltinScheme::Ed25519 => authenticator::Authenticator::ed25519(signature),
             BuiltinScheme::Ecdsa => authenticator::Authenticator::ecdsa(signature),
+            BuiltinScheme::EcdsaRecoverable => {
+                authenticator::Authenticator::ecdsa_recoverable(signature)
+            }
             BuiltinScheme::MultiEd25519 => todo!(),
             BuiltinScheme::Schnorr => authenticator::Authenticator::schnorr(signature),
         };
@@ -352,6 +358,16 @@ impl InMemKeystore {
         let keys = (0..initial_key_number)
             .map(|_| get_key_pair_from_rng(&mut rng))
             .map(|(ad, k)| (ad, RoochKeyPair::Ecdsa(k)))
+            .collect::<BTreeMap<RoochAddress, RoochKeyPair>>();
+
+        Self { keys }
+    }
+
+    pub fn new_ecdsa_recoverable_insecure_for_tests(initial_key_number: usize) -> Self {
+        let mut rng = StdRng::from_seed([0; 32]);
+        let keys = (0..initial_key_number)
+            .map(|_| get_key_pair_from_rng(&mut rng))
+            .map(|(ad, k)| (ad, RoochKeyPair::EcdsaRecoverable(k)))
             .collect::<BTreeMap<RoochAddress, RoochKeyPair>>();
 
         Self { keys }

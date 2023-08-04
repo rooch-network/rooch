@@ -4,7 +4,7 @@
 use super::{authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo};
 use crate::{
     address::EthereumAddress,
-    crypto::{EcdsaRoochSignature, Signature},
+    crypto::{EcdsaRecoverableRoochSignature, EcdsaRoochSignature, Signature},
     error::RoochError,
 };
 use anyhow::Result;
@@ -103,7 +103,7 @@ impl EthereumTransaction {
         // Parse the "pubkey_and_rsv_signature" signature
         // 98 length with 65 bytes recoverable signature and 33 bytes public key, ignore the scheme length
         let signature: Signature =
-            <EcdsaRoochSignature as ToFromBytes>::from_bytes(&pubkey_and_rsv_signature)
+            <EcdsaRecoverableRoochSignature as ToFromBytes>::from_bytes(&pubkey_and_rsv_signature)
                 .unwrap()
                 .into();
 
@@ -160,7 +160,7 @@ impl AbstractTransaction for EthereumTransaction {
         AuthenticatorInfo {
             //TODO should change the seqence_number to u256?
             seqence_number: self.0.nonce.as_u64(),
-            authenticator: Authenticator::ecdsa(
+            authenticator: Authenticator::ecdsa_recoverable(
                 // TODO need to support handling ethereum signature to Rooch signature
                 self.convert_eth_signature_to_recoverable_secp256k1_signature()
                     .unwrap(),
