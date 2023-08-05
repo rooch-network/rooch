@@ -9,6 +9,7 @@ This module implements the ECDSA Recoverable over Secpk256k1 validator scheme.
 -  [Struct `EcdsaK1RecoverableValidator`](#0x3_ecdsa_k1_recoverable_validator_EcdsaK1RecoverableValidator)
 -  [Constants](#@Constants_0)
 -  [Function `scheme`](#0x3_ecdsa_k1_recoverable_validator_scheme)
+-  [Function `rotate_authentication_key_entry`](#0x3_ecdsa_k1_recoverable_validator_rotate_authentication_key_entry)
 -  [Function `ecdsa_k1_recoverable_public_key`](#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_public_key)
 -  [Function `ecdsa_k1_recoverable_signature`](#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_signature)
 -  [Function `ecdsa_k1_recoverable_authentication_key`](#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_authentication_key)
@@ -17,7 +18,9 @@ This module implements the ECDSA Recoverable over Secpk256k1 validator scheme.
 -  [Function `validate`](#0x3_ecdsa_k1_recoverable_validator_validate)
 
 
-<pre><code><b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::error</a>;
+<b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
@@ -61,6 +64,15 @@ This module implements the ECDSA Recoverable over Secpk256k1 validator scheme.
 ## Constants
 
 
+<a name="0x3_ecdsa_k1_recoverable_validator_EMalformedAuthenticationKey"></a>
+
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EMalformedAuthenticationKey">EMalformedAuthenticationKey</a>: u64 = 1002;
+</code></pre>
+
+
+
 <a name="0x3_ecdsa_k1_recoverable_validator_KECCAK256"></a>
 
 Hash function name that are valid for ecrecover and verify.
@@ -80,38 +92,12 @@ Hash function name that are valid for ecrecover and verify.
 
 
 
-<a name="0x3_ecdsa_k1_recoverable_validator_V_ECDSA_HASH_LENGTH"></a>
+<a name="0x3_ecdsa_k1_recoverable_validator_EMalformedAccount"></a>
+
+error code
 
 
-
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_HASH_LENGTH">V_ECDSA_HASH_LENGTH</a>: u64 = 1;
-</code></pre>
-
-
-
-<a name="0x3_ecdsa_k1_recoverable_validator_V_ECDSA_PUBKEY_LENGTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_PUBKEY_LENGTH">V_ECDSA_PUBKEY_LENGTH</a>: u64 = 33;
-</code></pre>
-
-
-
-<a name="0x3_ecdsa_k1_recoverable_validator_V_ECDSA_SCHEME_LENGTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_SCHEME_LENGTH">V_ECDSA_SCHEME_LENGTH</a>: u64 = 1;
-</code></pre>
-
-
-
-<a name="0x3_ecdsa_k1_recoverable_validator_V_ECDSA_SIG_LENGTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_SIG_LENGTH">V_ECDSA_SIG_LENGTH</a>: u64 = 65;
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EMalformedAccount">EMalformedAccount</a>: u64 = 1001;
 </code></pre>
 
 
@@ -121,6 +107,42 @@ Hash function name that are valid for ecrecover and verify.
 
 
 <pre><code><b>const</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_SCHEME_ECDSA_RECOVERABLE">SCHEME_ECDSA_RECOVERABLE</a>: u64 = 3;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_recoverable_validator_V_ECDSA_RECOVERABLE_HASH_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_RECOVERABLE_HASH_LENGTH">V_ECDSA_RECOVERABLE_HASH_LENGTH</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_recoverable_validator_V_ECDSA_RECOVERABLE_PUBKEY_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_RECOVERABLE_PUBKEY_LENGTH">V_ECDSA_RECOVERABLE_PUBKEY_LENGTH</a>: u64 = 33;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_recoverable_validator_V_ECDSA_RECOVERABLE_SCHEME_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_RECOVERABLE_SCHEME_LENGTH">V_ECDSA_RECOVERABLE_SCHEME_LENGTH</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_recoverable_validator_V_ECDSA_RECOVERABLE_SIG_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_RECOVERABLE_SIG_LENGTH">V_ECDSA_RECOVERABLE_SIG_LENGTH</a>: u64 = 65;
 </code></pre>
 
 
@@ -149,6 +171,45 @@ Hash function name that are valid for ecrecover and verify.
 
 </details>
 
+<a name="0x3_ecdsa_k1_recoverable_validator_rotate_authentication_key_entry"></a>
+
+## Function `rotate_authentication_key_entry`
+
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>&lt;<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EcdsaK1RecoverableValidator">EcdsaK1RecoverableValidator</a>&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, new_auth_key: <a href="">vector</a>&lt;u8&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>&lt;<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EcdsaK1RecoverableValidator">EcdsaK1RecoverableValidator</a>&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, new_auth_key: <a href="">vector</a>&lt;u8&gt;) {
+   // compare newly passed auth key <b>with</b> <b>public</b> key length <b>to</b> ensure it's compatible
+   <b>assert</b>!(
+      <a href="_length">vector::length</a>(&new_auth_key) == <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_RECOVERABLE_PUBKEY_LENGTH">V_ECDSA_RECOVERABLE_PUBKEY_LENGTH</a>,
+      <a href="_invalid_argument">error::invalid_argument</a>(<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EMalformedAuthenticationKey">EMalformedAuthenticationKey</a>)
+   );
+
+   // ensure that the ecdsa recoverable auth key <b>to</b> <b>address</b> isn't matched <b>with</b> the <a href="ed25519.md#0x3_ed25519">ed25519</a> <a href="account.md#0x3_account">account</a> <b>address</b>
+   <b>let</b> account_addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
+   <b>let</b> ecdsa_recoverable_addr = <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_public_key_to_address">ecdsa_k1_recoverable_public_key_to_address</a>(new_auth_key);
+   <b>assert</b>!(
+      account_addr != ecdsa_recoverable_addr,
+      <a href="_invalid_argument">error::invalid_argument</a>(<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EMalformedAccount">EMalformedAccount</a>)
+   );
+
+   // rotate the auth key by calling rotate_authentication_key
+   <a href="account_authentication.md#0x3_account_authentication_rotate_authentication_key">account_authentication::rotate_authentication_key</a>&lt;<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EcdsaK1RecoverableValidator">EcdsaK1RecoverableValidator</a>&gt;(ctx, <a href="account.md#0x3_account">account</a>, new_auth_key);
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_public_key"></a>
 
 ## Function `ecdsa_k1_recoverable_public_key`
@@ -166,8 +227,8 @@ Hash function name that are valid for ecrecover and verify.
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_public_key">ecdsa_k1_recoverable_public_key</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
    <b>let</b> public_key = <a href="_empty">vector::empty</a>&lt;u8&gt;();
-   <b>let</b> i = <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_SCHEME_LENGTH">V_ECDSA_SCHEME_LENGTH</a> + <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_SIG_LENGTH">V_ECDSA_SIG_LENGTH</a>;
-   <b>while</b> (i &lt; <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_SCHEME_LENGTH">V_ECDSA_SCHEME_LENGTH</a> + <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_SIG_LENGTH">V_ECDSA_SIG_LENGTH</a> + <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_PUBKEY_LENGTH">V_ECDSA_PUBKEY_LENGTH</a>) {
+   <b>let</b> i = <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_RECOVERABLE_SCHEME_LENGTH">V_ECDSA_RECOVERABLE_SCHEME_LENGTH</a> + <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_RECOVERABLE_SIG_LENGTH">V_ECDSA_RECOVERABLE_SIG_LENGTH</a>;
+   <b>while</b> (i &lt; <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_RECOVERABLE_SCHEME_LENGTH">V_ECDSA_RECOVERABLE_SCHEME_LENGTH</a> + <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_RECOVERABLE_SIG_LENGTH">V_ECDSA_RECOVERABLE_SIG_LENGTH</a> + <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_RECOVERABLE_PUBKEY_LENGTH">V_ECDSA_RECOVERABLE_PUBKEY_LENGTH</a>) {
       <b>let</b> value = <a href="_borrow">vector::borrow</a>(payload, i);
       <a href="_push_back">vector::push_back</a>(&<b>mut</b> public_key, *value);
       i = i + 1;
@@ -198,8 +259,8 @@ Hash function name that are valid for ecrecover and verify.
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_signature">ecdsa_k1_recoverable_signature</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
    <b>let</b> sign = <a href="_empty">vector::empty</a>&lt;u8&gt;();
-   <b>let</b> i = <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_SCHEME_LENGTH">V_ECDSA_SCHEME_LENGTH</a>;
-   <b>while</b> (i &lt; <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_SIG_LENGTH">V_ECDSA_SIG_LENGTH</a> + 1) {
+   <b>let</b> i = <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_RECOVERABLE_SCHEME_LENGTH">V_ECDSA_RECOVERABLE_SCHEME_LENGTH</a>;
+   <b>while</b> (i &lt; <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_RECOVERABLE_SCHEME_LENGTH">V_ECDSA_RECOVERABLE_SCHEME_LENGTH</a> + 1) {
       <b>let</b> value = <a href="_borrow">vector::borrow</a>(payload, i);
       <a href="_push_back">vector::push_back</a>(&<b>mut</b> sign, *value);
       i = i + 1;

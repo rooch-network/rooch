@@ -10,13 +10,10 @@ use move_core_types::{
 use moveos_types::module_binding::ModuleBundle;
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
 use once_cell::sync::Lazy;
-use rooch_framework::{
-    bindings::{
-        ecdsa_k1_recoverable_validator::EcdsaK1RecoverableValidator,
-        ecdsa_k1_validator::EcdsaK1Validator, ed25519_validator::Ed25519Validator,
-        schnorr_validator::SchnorrValidator,
-    },
-    ROOCH_FRAMEWORK_ADDRESS,
+use rooch_framework::bindings::{
+    ecdsa_k1_recoverable_validator::EcdsaK1RecoverableValidator,
+    ecdsa_k1_validator::EcdsaK1Validator, ed25519_validator::Ed25519Validator,
+    schnorr_validator::SchnorrValidator,
 };
 use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
@@ -107,8 +104,14 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                 let signer = bcs::to_bytes(&existing_address).unwrap();
                 let public_key_bytes_vec = public_key.as_ref().to_vec();
 
-                let rotate_authentication_key_entry_function =
-                    ROTATE_AUTHENTICATION_KEY_ENTRY_FUNCTION.clone();
+                let rotate_authentication_key_entry_function = Lazy::new(|| {
+                    create_function_id(
+                        address,
+                        module_name.as_str(),
+                        "rotate_authentication_key_entry",
+                    )
+                })
+                .clone();
                 let action = MoveAction::new_function_call(
                     rotate_authentication_key_entry_function,
                     vec![TypeTag::Struct(validator_struct_arg)],
@@ -129,12 +132,13 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
     }
 }
 
-static ROTATE_AUTHENTICATION_KEY_ENTRY_FUNCTION: Lazy<FunctionId> = Lazy::new(|| {
+fn create_function_id(
+    address: AccountAddress,
+    module_name: &str,
+    function_name: &str,
+) -> FunctionId {
     FunctionId::new(
-        ModuleId::new(
-            ROOCH_FRAMEWORK_ADDRESS,
-            Identifier::new("account_authentication").unwrap(),
-        ),
-        Identifier::new("rotate_authentication_key_entry").unwrap(),
+        ModuleId::new(address, Identifier::new(module_name).unwrap()),
+        Identifier::new(function_name).unwrap(),
     )
-});
+}

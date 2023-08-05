@@ -1,8 +1,10 @@
 /// This module implements the ed25519 validator scheme.
 module rooch_framework::ed25519_validator {
 
+   use std::error;
    use std::vector;
    use std::option;
+   use std::signer;
    use moveos_std::storage_context::{Self, StorageContext};
    use rooch_framework::hash;
    use rooch_framework::account_authentication;
@@ -14,7 +16,9 @@ module rooch_framework::ed25519_validator {
    const V_ED25519_SCHEME_LENGTH: u64 = 1;
    const V_ED25519_PUBKEY_LENGTH: u64 = 32;
    const V_ED25519_SIG_LENGTH: u64 = 64;
-
+   /// error code
+   const EMalformedAccount: u64 = 1001;
+   const EMalformedAuthenticationKey: u64 = 1002;
 
    struct Ed25519Validator has store{
    }
@@ -22,6 +26,26 @@ module rooch_framework::ed25519_validator {
    public fun scheme(): u64 {
       SCHEME_ED25519
    }
+
+   public entry fun rotate_authentication_key_entry<Ed25519Validator>(ctx: &mut StorageContext, account: &signer, new_auth_key: vector<u8>) {
+      // compare newly passed auth key with public key length to ensure it's compatible
+      assert!(
+         vector::length(&new_auth_key) == V_ED25519_PUBKEY_LENGTH,
+         error::invalid_argument(EMalformedAuthenticationKey)
+      );
+
+      // ensure that the ed25519 auth key to address matched with the ed25519 account address
+      let account_addr = signer::address_of(account);
+      let ed25519_addr = ed25519_public_key_to_address(new_auth_key);
+      assert!(
+         account_addr == ed25519_addr,
+         error::invalid_argument(EMalformedAccount)
+      );
+
+      // rotate the auth key by calling rotate_authentication_key
+      account_authentication::rotate_authentication_key<Ed25519Validator>(ctx, account, new_auth_key);
+   }
+
 
    public fun ed25519_public_key(payload: &vector<u8>): vector<u8> {
       let public_key = vector::empty<u8>();
@@ -61,7 +85,6 @@ module rooch_framework::ed25519_validator {
    }
 
    public fun get_authentication_key(ctx: &StorageContext, addr: address): vector<u8> {
-      
       let auth_key_option = account_authentication::get_authentication_key<Ed25519Validator>(ctx, addr);
       if(option::is_some(&auth_key_option)){
          option::extract(&mut auth_key_option)

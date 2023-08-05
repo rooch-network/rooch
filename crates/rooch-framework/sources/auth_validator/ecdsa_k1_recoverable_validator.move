@@ -1,8 +1,10 @@
 /// This module implements the ECDSA Recoverable over Secpk256k1 validator scheme.
 module rooch_framework::ecdsa_k1_recoverable_validator {
 
+   use std::error;
    use std::vector;
    use std::option;
+   use std::signer;
    use moveos_std::storage_context::{Self, StorageContext};
    use rooch_framework::account_authentication;
    use rooch_framework::hash;
@@ -10,13 +12,17 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
    use rooch_framework::auth_validator;
 
    const SCHEME_ECDSA_RECOVERABLE: u64 = 3;
-   const V_ECDSA_SCHEME_LENGTH: u64 = 1;
-   const V_ECDSA_PUBKEY_LENGTH: u64 = 33;
-   const V_ECDSA_SIG_LENGTH: u64 = 65;
-   const V_ECDSA_HASH_LENGTH: u64 = 1;
+
+   const V_ECDSA_RECOVERABLE_SCHEME_LENGTH: u64 = 1;
+   const V_ECDSA_RECOVERABLE_PUBKEY_LENGTH: u64 = 33;
+   const V_ECDSA_RECOVERABLE_SIG_LENGTH: u64 = 65;
+   const V_ECDSA_RECOVERABLE_HASH_LENGTH: u64 = 1;
    /// Hash function name that are valid for ecrecover and verify.
    const KECCAK256: u8 = 0;
    const SHA256: u8 = 1;
+   /// error code
+   const EMalformedAccount: u64 = 1001;
+   const EMalformedAuthenticationKey: u64 = 1002;
 
    struct EcdsaK1RecoverableValidator has store{
    }
@@ -25,10 +31,29 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
       SCHEME_ECDSA_RECOVERABLE
    }
 
+   public entry fun rotate_authentication_key_entry<EcdsaK1RecoverableValidator>(ctx: &mut StorageContext, account: &signer, new_auth_key: vector<u8>) {
+      // compare newly passed auth key with public key length to ensure it's compatible
+      assert!(
+         vector::length(&new_auth_key) == V_ECDSA_RECOVERABLE_PUBKEY_LENGTH,
+         error::invalid_argument(EMalformedAuthenticationKey)
+      );
+
+      // ensure that the ecdsa recoverable auth key to address isn't matched with the ed25519 account address
+      let account_addr = signer::address_of(account);
+      let ecdsa_recoverable_addr = ecdsa_k1_recoverable_public_key_to_address(new_auth_key);
+      assert!(
+         account_addr != ecdsa_recoverable_addr,
+         error::invalid_argument(EMalformedAccount)
+      );
+
+      // rotate the auth key by calling rotate_authentication_key
+      account_authentication::rotate_authentication_key<EcdsaK1RecoverableValidator>(ctx, account, new_auth_key);
+   }
+
    public fun ecdsa_k1_recoverable_public_key(payload: &vector<u8>): vector<u8> {
       let public_key = vector::empty<u8>();
-      let i = V_ECDSA_SCHEME_LENGTH + V_ECDSA_SIG_LENGTH;
-      while (i < V_ECDSA_SCHEME_LENGTH + V_ECDSA_SIG_LENGTH + V_ECDSA_PUBKEY_LENGTH) {
+      let i = V_ECDSA_RECOVERABLE_SCHEME_LENGTH + V_ECDSA_RECOVERABLE_SIG_LENGTH;
+      while (i < V_ECDSA_RECOVERABLE_SCHEME_LENGTH + V_ECDSA_RECOVERABLE_SIG_LENGTH + V_ECDSA_RECOVERABLE_PUBKEY_LENGTH) {
          let value = vector::borrow(payload, i);
          vector::push_back(&mut public_key, *value);
          i = i + 1;
@@ -39,8 +64,8 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
 
    public fun ecdsa_k1_recoverable_signature(payload: &vector<u8>): vector<u8> {
       let sign = vector::empty<u8>();
-      let i = V_ECDSA_SCHEME_LENGTH;
-      while (i < V_ECDSA_SIG_LENGTH + 1) {
+      let i = V_ECDSA_RECOVERABLE_SCHEME_LENGTH;
+      while (i < V_ECDSA_RECOVERABLE_SCHEME_LENGTH + 1) {
          let value = vector::borrow(payload, i);
          vector::push_back(&mut sign, *value);
          i = i + 1;
@@ -100,7 +125,7 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
    ) {
    }
 
-   // this test ensures that the ecdsa_k1_public_key_to_address function is compatible with the one in the rust code
+   // this test ensures that the ecdsa_k1_recoverable_public_key_to_address function is compatible with the one in the rust code
    #[test]
    fun test_ecdsa_k1_recoverable_public_key_to_address(){
       let public_key = x"031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
