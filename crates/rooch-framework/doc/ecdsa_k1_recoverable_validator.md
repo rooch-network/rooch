@@ -260,7 +260,7 @@ error code
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_signature">ecdsa_k1_recoverable_signature</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
    <b>let</b> sign = <a href="_empty">vector::empty</a>&lt;u8&gt;();
    <b>let</b> i = <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_RECOVERABLE_SCHEME_LENGTH">V_ECDSA_RECOVERABLE_SCHEME_LENGTH</a>;
-   <b>while</b> (i &lt; <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_RECOVERABLE_SCHEME_LENGTH">V_ECDSA_RECOVERABLE_SCHEME_LENGTH</a> + 1) {
+   <b>while</b> (i &lt; <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_RECOVERABLE_SIG_LENGTH">V_ECDSA_RECOVERABLE_SIG_LENGTH</a> + 1) {
       <b>let</b> value = <a href="_borrow">vector::borrow</a>(payload, i);
       <a href="_push_back">vector::push_back</a>(&<b>mut</b> sign, *value);
       i = i + 1;

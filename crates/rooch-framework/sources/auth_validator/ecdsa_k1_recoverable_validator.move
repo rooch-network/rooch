@@ -65,7 +65,7 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
    public fun ecdsa_k1_recoverable_signature(payload: &vector<u8>): vector<u8> {
       let sign = vector::empty<u8>();
       let i = V_ECDSA_RECOVERABLE_SCHEME_LENGTH;
-      while (i < V_ECDSA_RECOVERABLE_SCHEME_LENGTH + 1) {
+      while (i < V_ECDSA_RECOVERABLE_SIG_LENGTH + 1) {
          let value = vector::borrow(payload, i);
          vector::push_back(&mut sign, *value);
          i = i + 1;
