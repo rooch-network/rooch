@@ -53,7 +53,7 @@ pub struct RunFunction {
     #[clap(flatten)]
     tx_options: TransactionOptions,
 
-    /// Command line input of crypto schemes (ed25519, multied25519, ecdsa, or schnorr)
+    /// Command line input of crypto schemes (ed25519, multi-ed25519, ecdsa, ecdsa-recoverable, or schnorr)
     #[clap(short = 's', long = "scheme", default_value = "ed25519", arg_enum)]
     pub crypto_schemes: BuiltinScheme,
 }

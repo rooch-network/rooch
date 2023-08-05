@@ -39,7 +39,7 @@ pub struct Publish {
     #[clap(long, parse(try_from_str = crate::utils::parse_map), default_value = "")]
     pub(crate) named_addresses: BTreeMap<String, String>,
 
-    /// Command line input of crypto schemes (ed25519, multied25519, ecdsa, or schnorr)
+    /// Command line input of crypto schemes (ed25519, multi-ed25519, ecdsa, ecdsa-recoverable or schnorr)
     #[clap(short = 's', long = "scheme", default_value = "ed25519", arg_enum)]
     pub crypto_schemes: BuiltinScheme,
 }

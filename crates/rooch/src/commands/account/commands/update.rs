@@ -36,7 +36,7 @@ pub struct UpdateCommand {
     mnemonic_phrase: String,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
-    /// Command line input of crypto schemes (ed25519, multied25519, ecdsa, or schnorr)
+    /// Command line input of crypto schemes (ed25519, multi-ed25519, ecdsa, ecdsa-recoverable or schnorr)
     #[clap(short = 's', long = "scheme", arg_enum)]
     pub crypto_schemes: BuiltinScheme,
 }
