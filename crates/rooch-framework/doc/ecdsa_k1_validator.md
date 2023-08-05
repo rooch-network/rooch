@@ -18,8 +18,7 @@ This module implements the ECDSA over Secpk256k1 validator scheme.
 -  [Function `validate`](#0x3_ecdsa_k1_validator_validate)
 
 
-<pre><code><b>use</b> <a href="">0x1::debug</a>;
-<b>use</b> <a href="">0x1::error</a>;
+<pre><code><b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x1::vector</a>;
@@ -234,7 +233,6 @@ error code
       <a href="_push_back">vector::push_back</a>(&<b>mut</b> public_key, *value);
       i = i + 1;
    };
-   std::debug::print(&public_key);
 
    public_key
 }

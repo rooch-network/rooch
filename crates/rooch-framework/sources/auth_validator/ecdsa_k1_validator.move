@@ -58,7 +58,6 @@ module rooch_framework::ecdsa_k1_validator {
          vector::push_back(&mut public_key, *value);
          i = i + 1;
       };
-      std::debug::print(&public_key);
 
       public_key
    }
