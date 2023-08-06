@@ -1,6 +1,7 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import { readFile, writeFile } from 'fs/promises';
 
 export async function createTempFile() {
   return new Promise((resolve, reject) => {
@@ -27,4 +28,11 @@ export function deleteTempFile(filePath) {
             }
         });
     });
+}
+
+
+export async function replaceFile(filePath, oldImport, newImport) {
+  const fileContent = await readFile(filePath, 'utf8');
+  const newContent = fileContent.replace(oldImport, newImport);
+  await writeFile(filePath, newContent);
 }
