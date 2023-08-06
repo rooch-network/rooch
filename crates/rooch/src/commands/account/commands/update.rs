@@ -132,8 +132,7 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                             "Update authentication key failed for scheme {} on address {}. Reason: {}.",
                             scheme, existing_address, error
                         ))
-                    })
-                    .map(|response| response)?;
+                    })?;
 
                 // Transaction executed successfully
                 Ok(result)
