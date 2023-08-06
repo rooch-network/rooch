@@ -6,10 +6,10 @@ use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
     language_storage::{ModuleId, StructTag, TypeTag},
+    value::MoveValue,
 };
 use moveos_types::module_binding::ModuleBundle;
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
-use once_cell::sync::Lazy;
 use rooch_framework::bindings::{
     ecdsa_k1_recoverable_validator::EcdsaK1RecoverableValidator,
     ecdsa_k1_validator::EcdsaK1Validator, ed25519_validator::Ed25519Validator,
@@ -78,7 +78,7 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                     scheme.to_owned()
                 );
 
-                let (address, module_name) = match scheme {
+                let (module_address, module_name) = match scheme {
                     BuiltinScheme::Ed25519 => (
                         Ed25519Validator::MODULE_ADDRESS,
                         Ed25519Validator::MODULE_NAME,
@@ -98,29 +98,45 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                     ),
                 };
 
+                // Get validator struct
                 let validator_struct_arg: Box<StructTag> =
-                    scheme.create_validator_struct_tag(address, module_name.to_string())?;
+                    scheme.create_validator_struct_tag(module_address, module_name.to_string())?;
 
-                let signer = bcs::to_bytes(&existing_address).unwrap();
-                let public_key_bytes_vec = public_key.as_ref().to_vec();
+                // Get public key reference
+                let public_key_ref = public_key.as_ref().to_vec();
+                // Get public key serialization
+                let public_key_serialization = MoveValue::vector_u8(public_key_ref)
+                    .simple_serialize()
+                    .unwrap();
 
-                let rotate_authentication_key_entry_function = Lazy::new(|| {
-                    create_function_id(
-                        address,
-                        module_name.as_str(),
-                        "rotate_authentication_key_entry",
-                    )
-                })
-                .clone();
+                // Get the rotate_authentication_key_entry_function
+                let rotate_authentication_key_entry_function = create_function_id(
+                    module_address,
+                    module_name.as_str(),
+                    "rotate_authentication_key_entry",
+                );
+
+                // Construct a Move call
                 let action = MoveAction::new_function_call(
                     rotate_authentication_key_entry_function,
                     vec![TypeTag::Struct(validator_struct_arg)],
-                    vec![signer, public_key_bytes_vec],
+                    vec![public_key_serialization],
                 );
 
-                context
+                // Execute the Move call as a transaction
+                let result = context
                     .sign_and_execute(existing_address, action, scheme)
                     .await
+                    .map_err(|error| {
+                        RoochError::TransactionError(format!(
+                            "Update authentication key failed for scheme {} on address {}. Reason: {}.",
+                            scheme, existing_address, error
+                        ))
+                    })
+                    .map(|response| response)?;
+
+                // Transaction executed successfully
+                Ok(result)
             }
             Err(error) => {
                 return Err(RoochError::CommandArgumentError(format!(

@@ -31,23 +31,24 @@ module rooch_framework::ecdsa_k1_validator {
       SCHEME_ECDSA
    }
 
-   public entry fun rotate_authentication_key_entry<EcdsaK1Validator>(ctx: &mut StorageContext, account: &signer, new_auth_key: vector<u8>) {
-      // compare newly passed auth key with public key length to ensure it's compatible
+   public entry fun rotate_authentication_key_entry<EcdsaK1Validator>(ctx: &mut StorageContext, account: &signer, public_key: vector<u8>) {
+      // compare newly passed public key with ecdsa public key length to ensure it's compatible
       assert!(
-         vector::length(&new_auth_key) == V_ECDSA_PUBKEY_LENGTH,
+         vector::length(&public_key) == V_ECDSA_PUBKEY_LENGTH,
          error::invalid_argument(EMalformedAuthenticationKey)
       );
 
-      // ensure that the ecdsa auth key to address isn't matched with the ed25519 account address
+      // ensure that the ecdsa public key to address isn't matched with the ed25519 account address
       let account_addr = signer::address_of(account);
-      let ecdsa_addr = ecdsa_k1_public_key_to_address(new_auth_key);
+      let ecdsa_addr = ecdsa_k1_public_key_to_address(public_key);
       assert!(
          account_addr != ecdsa_addr,
          error::invalid_argument(EMalformedAccount)
       );
 
-      // rotate the auth key by calling rotate_authentication_key
-      account_authentication::rotate_authentication_key<EcdsaK1Validator>(ctx, account, new_auth_key);
+      // serialize the address to an auth key and rotate it by calling rotate_authentication_key
+      let ecdsa_k1_authentication_key = moveos_std::bcs::to_bytes(&ecdsa_addr);
+      account_authentication::rotate_authentication_key<EcdsaK1Validator>(ctx, account, ecdsa_k1_authentication_key);
    }
 
    public fun ecdsa_k1_public_key(payload: &vector<u8>): vector<u8> {

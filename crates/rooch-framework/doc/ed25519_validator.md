@@ -149,7 +149,7 @@ error code
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>&lt;<a href="ed25519_validator.md#0x3_ed25519_validator_Ed25519Validator">Ed25519Validator</a>&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, new_auth_key: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>&lt;<a href="ed25519_validator.md#0x3_ed25519_validator_Ed25519Validator">Ed25519Validator</a>&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, public_key: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -158,23 +158,24 @@ error code
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>&lt;<a href="ed25519_validator.md#0x3_ed25519_validator_Ed25519Validator">Ed25519Validator</a>&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, new_auth_key: <a href="">vector</a>&lt;u8&gt;) {
-   // compare newly passed auth key <b>with</b> <b>public</b> key length <b>to</b> ensure it's compatible
+<pre><code><b>public</b> entry <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>&lt;<a href="ed25519_validator.md#0x3_ed25519_validator_Ed25519Validator">Ed25519Validator</a>&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, public_key: <a href="">vector</a>&lt;u8&gt;) {
+   // compare newly passed <b>public</b> key <b>with</b> <a href="ed25519.md#0x3_ed25519">ed25519</a> <b>public</b> key length <b>to</b> ensure it's compatible
    <b>assert</b>!(
-      <a href="_length">vector::length</a>(&new_auth_key) == <a href="ed25519_validator.md#0x3_ed25519_validator_V_ED25519_PUBKEY_LENGTH">V_ED25519_PUBKEY_LENGTH</a>,
+      <a href="_length">vector::length</a>(&public_key) == <a href="ed25519_validator.md#0x3_ed25519_validator_V_ED25519_PUBKEY_LENGTH">V_ED25519_PUBKEY_LENGTH</a>,
       <a href="_invalid_argument">error::invalid_argument</a>(<a href="ed25519_validator.md#0x3_ed25519_validator_EMalformedAuthenticationKey">EMalformedAuthenticationKey</a>)
    );
 
-   // ensure that the <a href="ed25519.md#0x3_ed25519">ed25519</a> auth key <b>to</b> <b>address</b> matched <b>with</b> the <a href="ed25519.md#0x3_ed25519">ed25519</a> <a href="account.md#0x3_account">account</a> <b>address</b>
+   // ensure that the <a href="ed25519.md#0x3_ed25519">ed25519</a> <b>public</b> key <b>to</b> <b>address</b> matched <b>with</b> the <a href="ed25519.md#0x3_ed25519">ed25519</a> <a href="account.md#0x3_account">account</a> <b>address</b>
    <b>let</b> account_addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
-   <b>let</b> ed25519_addr = <a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_public_key_to_address">ed25519_public_key_to_address</a>(new_auth_key);
+   <b>let</b> ed25519_addr = <a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_public_key_to_address">ed25519_public_key_to_address</a>(public_key);
    <b>assert</b>!(
       account_addr == ed25519_addr,
       <a href="_invalid_argument">error::invalid_argument</a>(<a href="ed25519_validator.md#0x3_ed25519_validator_EMalformedAccount">EMalformedAccount</a>)
    );
 
-   // rotate the auth key by calling rotate_authentication_key
-   <a href="account_authentication.md#0x3_account_authentication_rotate_authentication_key">account_authentication::rotate_authentication_key</a>&lt;<a href="ed25519_validator.md#0x3_ed25519_validator_Ed25519Validator">Ed25519Validator</a>&gt;(ctx, <a href="account.md#0x3_account">account</a>, new_auth_key);
+   // serialize the <b>address</b> <b>to</b> an auth key and rotate it by calling rotate_authentication_key
+   <b>let</b> ed25519_authentication_key = moveos_std::bcs::to_bytes(&ed25519_addr);
+   <a href="account_authentication.md#0x3_account_authentication_rotate_authentication_key">account_authentication::rotate_authentication_key</a>&lt;<a href="ed25519_validator.md#0x3_ed25519_validator_Ed25519Validator">Ed25519Validator</a>&gt;(ctx, <a href="account.md#0x3_account">account</a>, ed25519_authentication_key);
 }
 </code></pre>
 
@@ -352,10 +353,13 @@ Get the authentication key of the given authenticator.
          <a href="auth_validator.md#0x3_auth_validator_error_invalid_account_auth_key">auth_validator::error_invalid_account_auth_key</a>()
      );
      <b>assert</b>!(
-     <a href="ed25519.md#0x3_ed25519_verify">ed25519::verify</a>(&<a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_signature">ed25519_signature</a>(&payload),
-         &<a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_public_key">ed25519_public_key</a>(&payload),
-         &<a href="_tx_hash">storage_context::tx_hash</a>(ctx)),
-    <a href="auth_validator.md#0x3_auth_validator_error_invalid_account_auth_key">auth_validator::error_invalid_account_auth_key</a>());
+         <a href="ed25519.md#0x3_ed25519_verify">ed25519::verify</a>(
+            &<a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_signature">ed25519_signature</a>(&payload),
+            &<a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_public_key">ed25519_public_key</a>(&payload),
+            &<a href="_tx_hash">storage_context::tx_hash</a>(ctx)
+         ),
+         <a href="auth_validator.md#0x3_auth_validator_error_invalid_account_auth_key">auth_validator::error_invalid_account_auth_key</a>()
+     );
 }
 </code></pre>
 

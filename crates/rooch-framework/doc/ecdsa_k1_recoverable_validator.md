@@ -177,7 +177,7 @@ error code
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>&lt;<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EcdsaK1RecoverableValidator">EcdsaK1RecoverableValidator</a>&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, new_auth_key: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>&lt;<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EcdsaK1RecoverableValidator">EcdsaK1RecoverableValidator</a>&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, public_key: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -186,23 +186,24 @@ error code
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>&lt;<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EcdsaK1RecoverableValidator">EcdsaK1RecoverableValidator</a>&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, new_auth_key: <a href="">vector</a>&lt;u8&gt;) {
-   // compare newly passed auth key <b>with</b> <b>public</b> key length <b>to</b> ensure it's compatible
+<pre><code><b>public</b> entry <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>&lt;<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EcdsaK1RecoverableValidator">EcdsaK1RecoverableValidator</a>&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, public_key: <a href="">vector</a>&lt;u8&gt;) {
+   // compare newly passed <b>public</b> key <b>with</b> ecdsa recoverable <b>public</b> key length <b>to</b> ensure it's compatible
    <b>assert</b>!(
-      <a href="_length">vector::length</a>(&new_auth_key) == <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_RECOVERABLE_PUBKEY_LENGTH">V_ECDSA_RECOVERABLE_PUBKEY_LENGTH</a>,
+      <a href="_length">vector::length</a>(&public_key) == <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_ECDSA_RECOVERABLE_PUBKEY_LENGTH">V_ECDSA_RECOVERABLE_PUBKEY_LENGTH</a>,
       <a href="_invalid_argument">error::invalid_argument</a>(<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EMalformedAuthenticationKey">EMalformedAuthenticationKey</a>)
    );
 
-   // ensure that the ecdsa recoverable auth key <b>to</b> <b>address</b> isn't matched <b>with</b> the <a href="ed25519.md#0x3_ed25519">ed25519</a> <a href="account.md#0x3_account">account</a> <b>address</b>
+   // ensure that the ecdsa recoverable <b>public</b> key <b>to</b> <b>address</b> isn't matched <b>with</b> the <a href="ed25519.md#0x3_ed25519">ed25519</a> <a href="account.md#0x3_account">account</a> <b>address</b>
    <b>let</b> account_addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
-   <b>let</b> ecdsa_recoverable_addr = <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_public_key_to_address">ecdsa_k1_recoverable_public_key_to_address</a>(new_auth_key);
+   <b>let</b> ecdsa_recoverable_addr = <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_public_key_to_address">ecdsa_k1_recoverable_public_key_to_address</a>(public_key);
    <b>assert</b>!(
       account_addr != ecdsa_recoverable_addr,
       <a href="_invalid_argument">error::invalid_argument</a>(<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EMalformedAccount">EMalformedAccount</a>)
    );
 
-   // rotate the auth key by calling rotate_authentication_key
-   <a href="account_authentication.md#0x3_account_authentication_rotate_authentication_key">account_authentication::rotate_authentication_key</a>&lt;<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EcdsaK1RecoverableValidator">EcdsaK1RecoverableValidator</a>&gt;(ctx, <a href="account.md#0x3_account">account</a>, new_auth_key);
+   // serialize the <b>address</b> <b>to</b> an auth key and rotate it by calling rotate_authentication_key
+   <b>let</b> ecdsa_k1_recoverable_authentication_key = moveos_std::bcs::to_bytes(&ecdsa_recoverable_addr);
+   <a href="account_authentication.md#0x3_account_authentication_rotate_authentication_key">account_authentication::rotate_authentication_key</a>&lt;<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EcdsaK1RecoverableValidator">EcdsaK1RecoverableValidator</a>&gt;(ctx, <a href="account.md#0x3_account">account</a>, ecdsa_k1_recoverable_authentication_key);
 }
 </code></pre>
 
