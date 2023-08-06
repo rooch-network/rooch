@@ -3,6 +3,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use move_model::model::FieldData;
 use move_vm_runtime::loader::Loader;
 
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
@@ -13,20 +14,22 @@ use move_core_types::{
     identifier::Identifier,
     language_storage::ModuleId,
     resolver::MoveResolver,
-    value::MoveTypeLayout,
+    value::{MoveStructLayout, MoveTypeLayout},
     vm_status::StatusCode,
 };
 use move_vm_types::{
     data_store::{DataStore, TransactionCache},
     loaded_data::runtime_types::Type,
-    values::{GlobalValue, Struct, Value},
+    values::{GlobalValue, Reference, Struct, Value},
 };
-use moveos_stdlib::natives::moveos_stdlib::raw_table::{serialize, Table, TableData};
+use moveos_stdlib::natives::moveos_stdlib::raw_table::{
+    serialize, Table, TableData, TableRuntimeValue,
+};
 use moveos_types::{
     move_module::MoveModule,
     move_string::MoveString,
     state::{MoveStructState, State, StateChangeSet, TableChange},
-    state_resolver::{MoveOSResolver, StateResolver},
+    state_resolver::{module_name_to_key, MoveOSResolver, StateResolver},
 };
 use parking_lot::RwLock;
 use std::collections::btree_map::BTreeMap;
@@ -38,18 +41,6 @@ use moveos_types::object::{NamedTableID, ObjectID};
 use moveos_types::state::MoveStructType;
 use serde_json;
 use std::str::FromStr;
-
-pub struct AccountDataCache {
-    module_map: BTreeMap<Identifier, (Vec<u8>, bool)>,
-}
-
-impl AccountDataCache {
-    fn new() -> Self {
-        Self {
-            module_map: BTreeMap::new(),
-        }
-    }
-}
 
 /// Transaction data cache. Keep updates within a transaction so they can all be published at
 /// once when the transaction succeeds.
@@ -67,7 +58,6 @@ impl AccountDataCache {
 pub struct MoveosDataCache<'r, 'l, S> {
     resolver: &'r S,
     loader: &'l Loader,
-    account_map: BTreeMap<AccountAddress, AccountDataCache>,
     event_data: Vec<(Vec<u8>, u64, Type, MoveTypeLayout, Value)>,
     table_data: Arc<RwLock<TableData>>,
 }
@@ -79,22 +69,9 @@ impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
         MoveosDataCache {
             resolver,
             loader,
-            account_map: BTreeMap::new(),
             event_data: vec![],
             table_data,
         }
-    }
-
-    fn get_mut_or_insert_with<'a, K, V, F>(map: &'a mut BTreeMap<K, V>, k: &K, gen: F) -> &'a mut V
-    where
-        F: FnOnce() -> (K, V),
-        K: Ord,
-    {
-        if !map.contains_key(k) {
-            let (k, v) = gen();
-            map.insert(k, v);
-        }
-        map.get_mut(k).unwrap()
     }
 
     /// Returns the key and value type tag of Rooch module table.
@@ -108,16 +85,8 @@ impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
     }
 
     fn module_key_bytes(&self, module_id: &ModuleId) -> VMResult<Vec<u8>> {
-        let key = MoveString::from_str(module_id.name().as_str()).map_err(|e| {
-            PartialVMError::new(StatusCode::STORAGE_ERROR)
-                .with_message(e.to_string())
-                .finish(Location::Undefined)
-        })?;
-        serde_json::to_vec(&key).map_err(|e| {
-            PartialVMError::new(StatusCode::STORAGE_ERROR)
-                .with_message(e.to_string())
-                .finish(Location::Undefined)
-        })
+        let key = module_name_to_key(module_id.name());
+        Ok(key)
     }
 }
 
@@ -127,29 +96,7 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
     ///
     /// Gives all proper guarantees on lifetime of global data as well.
     fn into_effects(self) -> PartialVMResult<(ChangeSet, Vec<Event>)> {
-        let mut change_set = ChangeSet::new();
-        for (addr, account_data_cache) in self.account_map.into_iter() {
-            let mut modules = BTreeMap::new();
-            for (module_name, (module_blob, is_republishing)) in account_data_cache.module_map {
-                let op = if is_republishing {
-                    Op::Modify(module_blob)
-                } else {
-                    Op::New(module_blob)
-                };
-                modules.insert(module_name, op);
-            }
-
-            // No resources updated in TransactionDataCache as global operations are disabled.
-            let resources = BTreeMap::new();
-            if !modules.is_empty() || !resources.is_empty() {
-                change_set
-                    .add_account_changeset(
-                        addr,
-                        AccountChangeSet::from_modules_resources(modules, resources),
-                    )
-                    .expect("accounts should be unique");
-            }
-        }
+        let change_set = ChangeSet::new();
 
         let mut events = vec![];
         for (guid, seq_num, ty, ty_layout, val) in self.event_data {
@@ -191,7 +138,7 @@ impl<'r, 'l, S: MoveOSResolver> DataStore for MoveosDataCache<'r, 'l, S> {
         let table_data = self.table_data.read();
         let sender = module_id.address();
         let table_handle = NamedTableID::Module(*sender).to_object_id();
-        let (key_type, value_type) = Self::module_table_typetag();
+        let (_, value_type) = Self::module_table_typetag();
         // TODO: check or ensure the module table exists.
         if table_data.exist_table(&table_handle) {
             let table = table_data
@@ -200,18 +147,9 @@ impl<'r, 'l, S: MoveOSResolver> DataStore for MoveosDataCache<'r, 'l, S> {
 
             let key_bytes = self.module_key_bytes(module_id)?;
             if let Some(global_value) = table.get_global_value(&key_bytes) {
-                let blob = global_value
-                    .borrow_global(value_type)
+                let byte_codes = load_module_from_table_runtime_value(global_value, value_type)
                     .map_err(|e| e.finish(Location::Undefined))?;
-                let module_bytes = blob
-                    .value_as::<Vec<u8>>()
-                    .map_err(|e| e.finish(Location::Undefined))?;
-                let module: MoveModule = serde_json::from_slice(&module_bytes).map_err(|e| {
-                    PartialVMError::new(StatusCode::STORAGE_ERROR)
-                        .with_message(e.to_string())
-                        .finish(Location::Undefined)
-                })?;
-                return Ok(module.byte_codes.clone());
+                return Ok(byte_codes);
             }
         }
 
@@ -238,15 +176,14 @@ impl<'r, 'l, S: MoveOSResolver> DataStore for MoveosDataCache<'r, 'l, S> {
         blob: Vec<u8>,
         is_republishing: bool,
     ) -> VMResult<()> {
-        let module = MoveModule::new(blob);
-
         let sender = module_id.address();
         let table_handle = NamedTableID::Module(*sender).to_object_id();
+
         // Key type: std::string::String
         // value type: moveos_std::move_module::MoveModule
-        let (key_type, value_type) = Self::module_table_typetag();
+        let (_, value_type) = Self::module_table_typetag();
 
-        let key_layout = self.loader.get_type_layout(&key_type, self)?;
+        let key_layout = MoveTypeLayout::Struct(MoveString::struct_layout());
         let mut table_data = self.table_data.write();
         // TODO: check or ensure the module table exists.
         let table = table_data
@@ -261,14 +198,13 @@ impl<'r, 'l, S: MoveOSResolver> DataStore for MoveosDataCache<'r, 'l, S> {
                 })
             })
             .map_err(|e| e.finish(Location::Undefined))?;
+        let module_layout = MoveTypeLayout::Struct(MoveModule::struct_layout());
 
-        let value_layout = self.loader.get_type_layout(&value_type, self)?;
-        let module_bytes = Value::vector_u8(serde_json::to_vec(&module).map_err(|e| {
-            PartialVMError::new(StatusCode::STORAGE_ERROR)
-                .with_message(e.to_string())
-                .finish(Location::Undefined)
-        })?);
-        match tv.move_to(module_bytes, value_layout, value_type) {
+        let byte_codes = Value::vector_u8(blob);
+        let module_value = Value::struct_(Struct::pack(vec![byte_codes]));
+        // wrap with moveos_std::raw_table::Box
+        let box_value = Value::struct_(Struct::pack(vec![module_value]));
+        match tv.move_to(box_value, module_layout, value_type) {
             Ok(_) => Ok(()),
             Err((err, _)) => Err(err.finish(Location::Undefined)),
         }
@@ -279,7 +215,6 @@ impl<'r, 'l, S: MoveOSResolver> DataStore for MoveosDataCache<'r, 'l, S> {
         let table_data = self.table_data.read();
         let sender = module_id.address();
         let table_handle = NamedTableID::Module(*sender).to_object_id();
-        let (key_type, _) = Self::module_table_typetag();
         if table_data.exist_table(&table_handle) {
             let table = table_data
                 .borrow_table(&table_handle)
@@ -377,4 +312,33 @@ fn unbox_and_serialize(layout: &MoveTypeLayout, box_val: Value) -> PartialVMResu
             .with_message("Box<V> should have one field of type V".to_owned())
     })?;
     serialize(layout, &val)
+}
+
+// load module bytes stored in `moveos_std::raw_table::Box<moveos_std::move_module::MoveModule>`
+fn load_module_from_table_runtime_value(
+    global_value: &TableRuntimeValue,
+    value_type: TypeTag,
+) -> PartialVMResult<Vec<u8>> {
+    let blob = global_value.borrow_global(value_type)?;
+    let box_value = blob
+        .value_as::<Reference>()?
+        .read_ref()?
+        .value_as::<Struct>()?;
+
+    let mut fields = box_value.unpack()?.collect::<Vec<Value>>();
+    assert!(fields.len() == 1, "Fields of Box struct must be 1");
+    let module_value = fields.pop().unwrap();
+    let mut module_fields = module_value
+        .value_as::<Struct>()?
+        .unpack()?
+        .collect::<Vec<Value>>();
+    assert!(
+        module_fields.len() == 1,
+        "Fields of Module struct must be 1, actual: {}",
+        module_fields.len()
+    );
+    let module = module_fields.pop().unwrap();
+
+    let byte_codes = module.value_as::<Vec<u8>>()?;
+    Ok(byte_codes)
 }

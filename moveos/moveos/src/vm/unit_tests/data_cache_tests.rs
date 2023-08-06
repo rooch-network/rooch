@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::vm::data_cache::MoveosDataCache;
+use crate::vm::data_cache::{into_change_set, MoveosDataCache};
 #[cfg(test)]
 use crate::vm::unit_tests::vm_arguments_tests::{make_script_function, RemoteStore};
 use move_binary_format::file_format::{Signature, SignatureToken};
@@ -24,7 +24,7 @@ fn publish_and_load_module() {
     let remote_view = RemoteStore::new();
     let loader = move_vm.runtime().loader();
     let table_data = Arc::new(RwLock::new(TableData::default()));
-    let mut data_cache = MoveosDataCache::new(&remote_view, loader, table_data);
+    let mut data_cache = MoveosDataCache::new(&remote_view, loader, table_data.clone());
 
     // check
     assert_eq!(data_cache.exists_module(&module_id).unwrap(), false);
@@ -34,4 +34,8 @@ fn publish_and_load_module() {
     assert_eq!(data_cache.exists_module(&module_id).unwrap(), true);
     let loaded_bytes = data_cache.load_module(&module_id).unwrap();
     assert_eq!(loaded_bytes, bytes);
+
+    drop(data_cache);
+    let changes = into_change_set(table_data).unwrap();
+    drop(changes);
 }

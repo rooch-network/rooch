@@ -285,7 +285,7 @@ impl StateResolver for RemoteStore {
         _handle: &ObjectID,
         _key: &[u8],
     ) -> anyhow::Result<Option<State>, anyhow::Error> {
-        todo!()
+        Ok(None)
     }
 
     fn resolve_list_state(
