@@ -2,7 +2,7 @@
     <% if (originalName === 'alloc::vec::Vec<u8>') return; %>
     <% let name = originalName; %>
     <% if (originalName.indexOf('::') !== -1) { %>
-    <%   name = originalName.split('::').pop(); %>
+    <%   name = originalName.replace(/::/g, "_").replace(/<u8>/g, "_U8Array"); %>
     <% } %>
     <% if (schema.properties) { %>
     export type <%= name %> = {<% Object.entries(schema.properties).forEach(([propName, propSpec]) => { %><%= propName %><%= schema.required && schema.required.includes(propName) ? '' : '?' %>: <%= getType(propSpec, schemas, originalName) %>; <% }) %>}

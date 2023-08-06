@@ -2,6 +2,8 @@
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
     "allowJs": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
     "declaration": true,
     "declarationMap": true,
     "esModuleInterop": true,
@@ -15,6 +17,6 @@
     "target": "es2020",
     "pretty": true
   },
-  "include": ["src"],
+  "include": ["src", "test"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

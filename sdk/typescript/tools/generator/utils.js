@@ -69,7 +69,7 @@ export function getType(schema, schemas) {
         const originalRefName = schema.$ref.split('/').pop();  // Extract the $ref name
         let refName = originalRefName;
         if (refName.indexOf('::') !== -1) {
-            refName = refName.split('::').pop(); // When $ref contains ::, we take the last part
+            refName = refName.replace(/::/g, "_").replace(/<u8>/g, "_U8Array"); // When $ref contains ::, we take the last part
         }
         if (originalRefName in schemas) {
             if (originalRefName === 'alloc::vec::Vec<u8>') {
