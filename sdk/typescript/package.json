@@ -27,7 +27,7 @@
     "eslint:fix": "pnpm run eslint:check --fix",
     "lint": "pnpm run eslint:check && pnpm run prettier:check",
     "lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix",
-    "gen": "pnpm run gen:types && pnpm run gen:client",
+    "gen": "rm -rf ./src/generated && pnpm run gen:types && pnpm run gen:client",
     "gen:types": "node ./tools/serdegen/rooch_types_gen.js -o ./src/generated/runtime",
     "gen:client": "node ./tools/generator/main.js -o ./src/generated/client"
   },

@@ -3,10 +3,10 @@ import os from 'os';
 import path from 'path';
 import { readFile, writeFile } from 'fs/promises';
 
-export async function createTempFile() {
+export async function createTempFile(pattern) {
   return new Promise((resolve, reject) => {
     const tempDir = os.tmpdir();
-    const filePath = path.join(tempDir, 'tempFile-' + Date.now());
+    const filePath = path.join(tempDir, pattern);
     
     fs.writeFile(filePath, '', (err) => {
       if (err) {
