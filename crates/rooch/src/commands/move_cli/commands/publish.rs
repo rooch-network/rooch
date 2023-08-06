@@ -9,6 +9,7 @@ use move_bytecode_utils::dependency_graph::DependencyGraph;
 use move_bytecode_utils::Modules;
 use move_cli::Move;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
+use rooch_types::crypto::BuiltinScheme;
 
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use moveos::vm::dependency_order::sort_by_dependency_order;
@@ -37,6 +38,10 @@ pub struct Publish {
     /// Note: This will fail if there are duplicates in the Move.toml file remove those first.
     #[clap(long, parse(try_from_str = crate::utils::parse_map), default_value = "")]
     pub(crate) named_addresses: BTreeMap<String, String>,
+
+    /// Command line input of crypto schemes (ed25519, multi-ed25519, ecdsa, ecdsa-recoverable or schnorr)
+    #[clap(short = 's', long = "scheme", default_value = "ed25519", arg_enum)]
+    pub crypto_schemes: BuiltinScheme,
 }
 
 impl Publish {
@@ -112,6 +117,8 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
 
         let sender: RoochAddress = pkg_address.into();
         eprintln!("Publish modules to address: {:?}", sender);
-        context.sign_and_execute(sender, action).await
+        context
+            .sign_and_execute(sender, action, self.crypto_schemes)
+            .await
     }
 }

@@ -99,14 +99,20 @@ impl WalletContext {
         &self,
         sender: RoochAddress,
         action: MoveAction,
+        scheme: BuiltinScheme,
     ) -> RoochResult<RoochTransaction> {
-        let pk = self.config.keystore.get_key(&sender).ok().ok_or_else(|| {
-            RoochError::SignMessageError(format!("Cannot find key for address: [{sender}]"))
-        })?;
+        let kp = self
+            .config
+            .keystore
+            .get_key_pair_by_scheme(&sender, scheme)
+            .ok()
+            .ok_or_else(|| {
+                RoochError::SignMessageError(format!("Cannot find key for address: [{sender}]"))
+            })?;
 
         let tx_data = self.build_tx_data(sender, action).await?;
-        let signature = Signature::new_hashed(tx_data.hash().as_bytes(), pk);
-        let auth = match pk.public().scheme() {
+        let signature = Signature::new_hashed(tx_data.hash().as_bytes(), kp);
+        let auth = match kp.public().scheme() {
             BuiltinScheme::Ed25519 => Authenticator::ed25519(signature),
             BuiltinScheme::Ecdsa => Authenticator::ecdsa(signature),
             BuiltinScheme::EcdsaRecoverable => Authenticator::ecdsa_recoverable(signature),
@@ -131,8 +137,9 @@ impl WalletContext {
         &self,
         sender: RoochAddress,
         action: MoveAction,
+        scheme: BuiltinScheme,
     ) -> RoochResult<ExecuteTransactionResponseView> {
-        let tx = self.sign(sender, action).await?;
+        let tx = self.sign(sender, action, scheme).await?;
         self.execute(tx).await
     }
 

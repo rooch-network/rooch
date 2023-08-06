@@ -1,8 +1,10 @@
 /// This module implements the schnorr validator scheme.
 module rooch_framework::schnorr_validator {
 
+   use std::error;
    use std::vector;
    use std::option;
+   use std::signer;
    use moveos_std::storage_context::{Self, StorageContext};
    use rooch_framework::account_authentication;
    use rooch_framework::hash;
@@ -15,14 +17,37 @@ module rooch_framework::schnorr_validator {
    const V_SCHNORR_SIG_LENGTH: u64 = 64;
    const V_SCHNORR_HASH_LENGTH: u64 = 1;
    /// Hash function name that are valid for verify.
-    const KECCAK256: u8 = 0;
-    const SHA256: u8 = 1;
+   const KECCAK256: u8 = 0;
+   const SHA256: u8 = 1;
+   /// error code
+   const EMalformedAccount: u64 = 1001;
+   const EMalformedAuthenticationKey: u64 = 1002;
 
    struct SchnorrValidator has store{
    }
 
    public fun scheme(): u64 {
       SCHEME_SCHNORR
+   }
+
+   public entry fun rotate_authentication_key_entry<SchnorrValidator>(ctx: &mut StorageContext, account: &signer, public_key: vector<u8>) {
+      // compare newly passed public key with schnorr public key length to ensure it's compatible
+      assert!(
+         vector::length(&public_key) == V_SCHNORR_PUBKEY_LENGTH,
+         error::invalid_argument(EMalformedAuthenticationKey)
+      );
+
+      // ensure that the schnorr public key to address isn't matched with the ed25519 account address
+      let account_addr = signer::address_of(account);
+      let schnorr_addr = schnorr_public_key_to_address(public_key);
+      assert!(
+         account_addr != schnorr_addr,
+         error::invalid_argument(EMalformedAccount)
+      );
+
+      // serialize the address to an auth key and rotate it by calling rotate_authentication_key
+      let schnorr_authentication_key = moveos_std::bcs::to_bytes(&schnorr_addr);
+      account_authentication::rotate_authentication_key<SchnorrValidator>(ctx, account, schnorr_authentication_key);
    }
 
    public fun schnorr_public_key(payload: &vector<u8>): vector<u8> {

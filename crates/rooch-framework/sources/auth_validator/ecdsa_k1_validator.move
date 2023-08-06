@@ -1,8 +1,10 @@
 /// This module implements the ECDSA over Secpk256k1 validator scheme.
 module rooch_framework::ecdsa_k1_validator {
 
+   use std::error;
    use std::vector;
    use std::option;
+   use std::signer;
    use moveos_std::storage_context::{Self, StorageContext};
    use rooch_framework::account_authentication;
    use rooch_framework::hash;
@@ -10,6 +12,7 @@ module rooch_framework::ecdsa_k1_validator {
    use rooch_framework::auth_validator;
 
    const SCHEME_ECDSA: u64 = 2;
+
    const V_ECDSA_SCHEME_LENGTH: u64 = 1;
    const V_ECDSA_PUBKEY_LENGTH: u64 = 33;
    const V_ECDSA_SIG_LENGTH: u64 = 64;
@@ -17,12 +20,35 @@ module rooch_framework::ecdsa_k1_validator {
    /// Hash function name that are valid for ecrecover and verify.
    const KECCAK256: u8 = 0;
    const SHA256: u8 = 1;
+   /// error code
+   const EMalformedAccount: u64 = 1001;
+   const EMalformedAuthenticationKey: u64 = 1002;
 
    struct EcdsaK1Validator has store{
    }
 
    public fun scheme(): u64 {
       SCHEME_ECDSA
+   }
+
+   public entry fun rotate_authentication_key_entry<EcdsaK1Validator>(ctx: &mut StorageContext, account: &signer, public_key: vector<u8>) {
+      // compare newly passed public key with ecdsa public key length to ensure it's compatible
+      assert!(
+         vector::length(&public_key) == V_ECDSA_PUBKEY_LENGTH,
+         error::invalid_argument(EMalformedAuthenticationKey)
+      );
+
+      // ensure that the ecdsa public key to address isn't matched with the ed25519 account address
+      let account_addr = signer::address_of(account);
+      let ecdsa_addr = ecdsa_k1_public_key_to_address(public_key);
+      assert!(
+         account_addr != ecdsa_addr,
+         error::invalid_argument(EMalformedAccount)
+      );
+
+      // serialize the address to an auth key and rotate it by calling rotate_authentication_key
+      let ecdsa_k1_authentication_key = moveos_std::bcs::to_bytes(&ecdsa_addr);
+      account_authentication::rotate_authentication_key<EcdsaK1Validator>(ctx, account, ecdsa_k1_authentication_key);
    }
 
    public fun ecdsa_k1_public_key(payload: &vector<u8>): vector<u8> {
@@ -33,7 +59,6 @@ module rooch_framework::ecdsa_k1_validator {
          vector::push_back(&mut public_key, *value);
          i = i + 1;
       };
-      std::debug::print(&public_key);
 
       public_key
    }

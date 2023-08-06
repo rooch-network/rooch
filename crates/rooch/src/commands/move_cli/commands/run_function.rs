@@ -8,6 +8,7 @@ use moveos_types::{move_types::FunctionId, transaction::MoveAction};
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, TypeTagView};
 use rooch_types::{
     address::RoochAddress,
+    crypto::BuiltinScheme,
     error::{RoochError, RoochResult},
     transaction::rooch::RoochTransaction,
 };
@@ -51,6 +52,10 @@ pub struct RunFunction {
 
     #[clap(flatten)]
     tx_options: TransactionOptions,
+
+    /// Command line input of crypto schemes (ed25519, multi-ed25519, ecdsa, ecdsa-recoverable, or schnorr)
+    #[clap(short = 's', long = "scheme", default_value = "ed25519", arg_enum)]
+    pub crypto_schemes: BuiltinScheme,
 }
 
 #[async_trait]
@@ -86,7 +91,11 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                 let tx = RoochTransaction::new(tx_data, authenticator.into());
                 context.execute(tx).await
             }
-            None => context.sign_and_execute(sender, action).await,
+            None => {
+                context
+                    .sign_and_execute(sender, action, self.crypto_schemes)
+                    .await
+            }
         }
     }
 }

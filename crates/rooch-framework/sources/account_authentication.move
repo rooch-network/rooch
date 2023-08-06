@@ -107,6 +107,4 @@ module rooch_framework::account_authentication{
       rotate_authentication_key_internal<TestValidator>(&mut ctx, &sender_signer, x"0123");
       moveos_std::storage_context::drop_test_context(ctx);
    }
-
-
 }

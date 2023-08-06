@@ -4,7 +4,10 @@
 use moveos_types::transaction::MoveAction;
 use rooch_framework::bindings::empty::Empty;
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
-use rooch_types::transaction::{rooch::RoochTransactionData, AbstractTransaction};
+use rooch_types::{
+    crypto::BuiltinScheme,
+    transaction::{rooch::RoochTransactionData, AbstractTransaction},
+};
 
 use crate::binding_test;
 
@@ -20,7 +23,9 @@ fn test_validate() {
     let sequence_number = 0;
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
     let tx_data = RoochTransactionData::new(sender, sequence_number, action);
-    let tx = keystore.sign_transaction(&sender, tx_data).unwrap();
+    let tx = keystore
+        .sign_transaction(&sender, tx_data, BuiltinScheme::Ecdsa)
+        .unwrap();
     let auth_info = tx.authenticator_info();
     let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
 

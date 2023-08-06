@@ -73,7 +73,7 @@ impl CreateCommand {
             vec![bcs::to_bytes(&new_address).unwrap()],
         );
 
-        context.sign_and_execute(new_address, action).await
+        context.sign_and_execute(new_address, action, scheme).await
     }
 }
 
