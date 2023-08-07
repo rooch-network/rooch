@@ -17,6 +17,7 @@ use move_core_types::{
 };
 use move_resource_viewer::{AnnotatedMoveValue, MoveValueAnnotator};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use smt::UpdateSet;
 use std::collections::{BTreeMap, BTreeSet};
 
 /// `State` is represent state in MoveOS statedb, it can be a Move module or a Move Object or a Move resource or a Table value
@@ -399,4 +400,20 @@ pub struct StateChangeSet {
 pub struct TableChange {
     //TODO should we keep the key's type here?
     pub entries: BTreeMap<Vec<u8>, Op<State>>,
+}
+
+/// StateSet is represent state dump result. Not include events and other stores
+#[derive(Clone, Debug, Default)]
+pub struct StateSet {
+    pub state_sets: BTreeMap<ObjectID, UpdateSet<Vec<u8>, State>>,
+}
+
+impl StateSet {
+    pub fn insert(
+        &mut self,
+        k: ObjectID,
+        v: UpdateSet<Vec<u8>, State>,
+    ) -> Option<UpdateSet<Vec<u8>, State>> {
+        self.state_sets.insert(k, v)
+    }
 }

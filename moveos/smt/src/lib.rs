@@ -205,6 +205,18 @@ where
     pub fn is_genesis(&self) -> bool {
         self.root_hash() == *SPARSE_MERKLE_PLACEHOLDER_HASH
     }
+
+    /// Dump all (key, value) from the tree
+    pub fn dump(&self) -> Result<Vec<(K, V)>> {
+        let iter = self.iter(None)?;
+
+        let mut data = Vec::new();
+        for (_data_size, item) in iter.enumerate() {
+            let (k, v) = item?;
+            data.push((k, v));
+        }
+        Ok(data)
+    }
 }
 
 pub struct SMTIterator<'a, K, V, R>

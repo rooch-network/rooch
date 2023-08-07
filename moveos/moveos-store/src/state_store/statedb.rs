@@ -8,6 +8,8 @@ use move_core_types::{
     identifier::Identifier,
     language_storage::{StructTag, TypeTag},
 };
+use moveos_types::move_types::is_table;
+use moveos_types::state::StateSet;
 use moveos_types::state_resolver::ListState;
 use moveos_types::{
     h256::H256,
@@ -108,6 +110,10 @@ where
             }
         }
         self.puts(update_set)
+    }
+
+    pub fn dump(&self) -> Result<Vec<(Vec<u8>, State)>> {
+        self.smt.dump()
     }
 }
 
@@ -308,6 +314,37 @@ impl StateDBStore {
         } else {
             self.list_with_key(*handle, cursor, limit)
         }
+    }
+
+    pub fn dump(&self) -> Result<StateSet> {
+        let global_states = self.global_table.dump()?;
+        let mut state_set = StateSet::default();
+        let mut golbal_update_set = UpdateSet::new();
+        for (key, state) in global_states.into_iter() {
+            // If the state is an Object, and the T's struct_tag of Object<T> is Table
+            let struct_tag = state.get_object_struct_tag();
+            if struct_tag.is_some() && is_table(&struct_tag.unwrap()) {
+                let table_handle = ObjectID::from_bytes(key.as_slice())?;
+                let result = self.get_as_table(table_handle)?;
+                if result.is_none() {
+                    continue;
+                }
+                let table_states = result.unwrap().1.dump()?;
+                let mut update_set = UpdateSet::new();
+                for (inner_key, inner_state) in table_states.into_iter() {
+                    update_set.put(inner_key, inner_state);
+                }
+                state_set.state_sets.insert(table_handle, update_set);
+            }
+
+            golbal_update_set.put(key, state);
+        }
+        state_set.state_sets.insert(
+            storage_context::GLOBAL_OBJECT_STORAGE_HANDLE,
+            golbal_update_set,
+        );
+
+        Ok(state_set)
     }
 }
 

@@ -256,10 +256,13 @@ impl TableInfo {
     }
 }
 
+pub const TABLE_INFO_MODULE_NAME: &IdentStr = ident_str!("raw_table");
+pub const TABLE_INFO_STRUCT_NAME: &IdentStr = ident_str!("TableInfo");
+
 impl MoveStructType for TableInfo {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = ident_str!("raw_table");
-    const STRUCT_NAME: &'static IdentStr = ident_str!("TableInfo");
+    const MODULE_NAME: &'static IdentStr = TABLE_INFO_MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = TABLE_INFO_STRUCT_NAME;
 
     fn type_params() -> Vec<TypeTag> {
         vec![]
