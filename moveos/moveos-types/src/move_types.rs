@@ -10,6 +10,8 @@ use serde::{Deserialize, Serialize, Serializer};
 use std::fmt;
 use std::str::FromStr;
 
+use crate::addresses::MOVEOS_STD_ADDRESS;
+use crate::object;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::prelude::*;
 
@@ -273,4 +275,10 @@ pub fn type_tag_prop_strategy() -> impl Strategy<Value = TypeTag> {
     );
 
     type_tag_strategy
+}
+
+pub fn is_table(struct_tag: &StructTag) -> bool {
+    struct_tag.address == MOVEOS_STD_ADDRESS
+        && struct_tag.module.as_ident_str() == object::TABLE_INFO_MODULE_NAME
+        && struct_tag.name.as_ident_str() == object::TABLE_INFO_STRUCT_NAME
 }
