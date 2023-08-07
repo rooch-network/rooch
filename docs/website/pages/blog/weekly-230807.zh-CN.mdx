@@ -1,0 +1,48 @@
+---
+title: Rooch 周报 2023-08-07
+description: "新增 TS SDK、支持状态列表迭代，更新账户的功能，重构多链地址的生成、重构 validator 的测试、重构访问路径的方法，增加 GitHub 仓库的 Owner 工作流"
+author: geometryolife
+category: Rooch Weekly
+date: 2023/08/07
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch 的开发进展
+
+### 新特性
+
+- **Abort code that supports values greater than 65535 and includes a category. (#553)** (2023-08-02) @steelgeek091
+- **sdk-typescript (#555)** (2023-08-02) @sven Tan
+- **support state list iterate (#561)** (2023-08-03) @Bai Chuan
+- **[gh-567] add ECDSA recoverable Rooch signature support. (#569)** (2023-08-03) @feliciss
+- **Feature owen sdk calldata encode (#572)** (2023-08-06) @Owen Wu
+- **[gh-548] add rooch account update command. (#552)** (2023-08-06) @feliciss
+
+### 重大重构
+
+- **[Framework] Refactor multi-chain address generate (#546)** (2023-07-31) @jolestar
+- **[gh-549 and gh-514] refactor and add auth and validator tests. (#551)** (2023-08-03) @feliciss
+- **refactor AccessPath to support Path with keys and without keys at the same time (#570)** (2023-08-03) @Bai Chuan
+
+### 改进和修复
+
+- **add weekly 2023-07-31 (#547)** (2023-07-31) @Joe Chen
+- **fix bug (#564)** (2023-08-03) @sven Tan
+- **fix object_storage code format (#560)** (2023-08-03) @Joe Chen
+- **add some comments for the object_id module (#562)** (2023-08-03) @Joe Chen
+- **[gh-556] clear schemes for init create and import. (#565)** (2023-08-03) @feliciss
+- **[Github] Setting code owners (#573)** (2023-08-05) @jolestar
+
+### Rooch 社区开发会议
+
+- 讨论设置 rooch 仓库的拥有者的功能
+- 讨论从自己定义的模块返回自己的 `signer` 的功能
+- 总结禁用 Move 中自带的一些全局存储操作指令的方式
+- 讨论翻页的功能
+- 讨论 Rooch 数据存储的功能
+- 讨论前端的实现进度
+- 讨论 MoveOS 中 DataCache 的实现问题
+- [会议录屏](https://drive.google.com/file/d/1zv_p_WOhjUjNzuyUCfXZeBFpdL6eEmBr/view?usp=sharing)

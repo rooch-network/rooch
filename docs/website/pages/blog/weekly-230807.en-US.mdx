@@ -1,0 +1,48 @@
+---
+title: Rooch Weekly 2023-08-07
+description: "Added TS SDK, support status list iteration, update the function of accounts, refactor the production of multi-chain addresses, refactor the method of Validator, and refactor the access path, and increase the OWNER workflow of the GitHub repo"
+author: geometryolife
+category: Rooch Weekly
+date: 2023/08/07
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch's Development Progress
+
+### New features
+
+- **Abort code that supports values greater than 65535 and includes a category. (#553)** (2023-08-02) @steelgeek091
+- **sdk-typescript (#555)** (2023-08-02) @sven Tan
+- **support state list iterate (#561)** (2023-08-03) @Bai Chuan
+- **[gh-567] add ECDSA recoverable Rooch signature support. (#569)** (2023-08-03) @feliciss
+- **Feature owen sdk calldata encode (#572)** (2023-08-06) @Owen Wu
+- **[gh-548] add rooch account update command. (#552)** (2023-08-06) @feliciss
+
+### Major refactoring
+
+- **[Framework] Refactor multi-chain address generate (#546)** (2023-07-31) @jolestar
+- **[gh-549 and gh-514] refactor and add auth and validator tests. (#551)** (2023-08-03) @feliciss
+- **refactor AccessPath to support Path with keys and without keys at the same time (#570)** (2023-08-03) @Bai Chuan
+
+### Improvements and fixes
+
+- **add weekly 2023-07-31 (#547)** (2023-07-31) @Joe Chen
+- **fix bug (#564)** (2023-08-03) @sven Tan
+- **fix object_storage code format (#560)** (2023-08-03) @Joe Chen
+- **add some comments for the object_id module (#562)** (2023-08-03) @Joe Chen
+- **[gh-556] clear schemes for init create and import. (#565)** (2023-08-03) @feliciss
+- **[Github] Setting code owners (#573)** (2023-08-05) @jolestar
+
+### Rooch Community Dev Meeting
+
+- Discuss the function of setting the owner of the Rooch repository
+- Discuss the function of returning your `signer` from your own module
+- Summarize the disable some global storage operation instructions that comes with the self-coming Move
+- Discuss the function of page turning
+- Discuss the function of Rooch data storage
+- Discuss the progress of the front-end implementation
+- Discuss the implementation of DataCache in Moveos
+- [Conference recording](https://drive.google.com/file/d/1zv_p_WOhjUjNzuyUCfXZeBFpdL6eEmBr/view?usp=sharing)
