@@ -30,16 +30,19 @@ impl CommandAction<()> for SwitchCommand {
         })?;
 
         if !context.config.keystore.addresses().contains(&rooch_address) {
-            RoochError::CommandArgumentError(format!(
-                "Address {} not found in keystore",
+            return Err(RoochError::SwitchAccountError(format!(
+                "Address `{}` does not in the Rooch keystore",
                 self.address
-            ));
+            )));
         }
 
         context.config.active_address = Some(rooch_address);
         context.config.save()?;
 
-        println!("Active account successfully switched to {}", self.address);
+        println!(
+            "The active account was successfully switched to `{}`",
+            self.address
+        );
 
         Ok(())
     }
