@@ -31,6 +31,7 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::multi_ed25519_validator`](multi_ed25519_validator.md#0x3_multi_ed25519_validator)
 -  [`0x3::schnorr`](schnorr.md#0x3_schnorr)
 -  [`0x3::schnorr_validator`](schnorr_validator.md#0x3_schnorr_validator)
+-  [`0x3::session_key`](session_key.md#0x3_session_key)
 -  [`0x3::transaction_validator`](transaction_validator.md#0x3_transaction_validator)
 
 

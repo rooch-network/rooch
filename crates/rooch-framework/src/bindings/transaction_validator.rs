@@ -12,7 +12,7 @@ use moveos_types::{
     transaction::FunctionCall,
     tx_context::TxContext,
 };
-use rooch_types::framework::auth_validator_registry::AuthValidator;
+use rooch_types::framework::auth_validator::TxValidateResult;
 use rooch_types::transaction::AuthenticatorInfo;
 
 /// Rust bindings for RoochFramework transaction_validator module
@@ -25,7 +25,7 @@ impl<'a> TransactionValidator<'a> {
     pub const PRE_EXECUTE_FUNCTION_NAME: &IdentStr = ident_str!("pre_execute");
     pub const POST_EXECUTE_FUNCTION_NAME: &IdentStr = ident_str!("post_execute");
 
-    pub fn validate(&self, ctx: &TxContext, auth: AuthenticatorInfo) -> Result<AuthValidator> {
+    pub fn validate(&self, ctx: &TxContext, auth: AuthenticatorInfo) -> Result<TxValidateResult> {
         let tx_validator_call = FunctionCall::new(
             Self::function_id(Self::VALIDATE_FUNCTION_NAME),
             vec![],
@@ -46,8 +46,8 @@ impl<'a> TransactionValidator<'a> {
                 .call_function(ctx, tx_validator_call)
                 .map(|mut values| {
                     let value = values.pop().expect("should have one return value");
-                    bcs::from_bytes::<AuthValidator>(&value.value)
-                        .expect("should be a valid auth validator")
+                    bcs::from_bytes::<TxValidateResult>(&value.value)
+                        .expect("should be a valid TxValidateResult")
                 })?;
         Ok(auth_validator)
     }

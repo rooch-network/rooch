@@ -24,6 +24,7 @@ Migrate their from the account module for simplyfying the account module.
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::account_storage</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
+<b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 <b>use</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry">0x3::auth_validator_registry</a>;
 </code></pre>
 
@@ -259,7 +260,7 @@ Return the authentication validator is installed for the account at <code>accoun
 
 <pre><code><b>public</b> <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_install_auth_validator">install_auth_validator</a>&lt;ValidatorType: store&gt;(ctx: &<b>mut</b> StorageContext, account_signer: &<a href="">signer</a>) {
    <b>let</b> validator = <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator_by_type">auth_validator_registry::borrow_validator_by_type</a>&lt;ValidatorType&gt;(ctx);
-   <b>let</b> validator_id = <a href="auth_validator_registry.md#0x3_auth_validator_registry_validator_id">auth_validator_registry::validator_id</a>(validator);
+   <b>let</b> validator_id = <a href="auth_validator.md#0x3_auth_validator_validator_id">auth_validator::validator_id</a>(validator);
    <b>let</b> account_addr = <a href="_address_of">signer::address_of</a>(account_signer);
 
    <b>assert</b>!(

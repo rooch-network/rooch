@@ -6,6 +6,7 @@ module rooch_framework::auth_validator_registry{
     use moveos_std::type_table::{Self, TypeTable};
     use moveos_std::account_storage;
     use moveos_std::storage_context::{Self, StorageContext};
+    use rooch_framework::auth_validator::{Self, AuthValidator};
 
     friend rooch_framework::genesis;
     friend rooch_framework::builtin_validators;
@@ -13,11 +14,7 @@ module rooch_framework::auth_validator_registry{
     const EValidatorUnregistered: u64 = 1;
     const EValidatorAlreadyRegistered: u64 = 2;
 
-    struct AuthValidator has store {
-        id: u64,
-        module_address: address,
-        module_name: std::ascii::String,
-    }
+    
 
     struct AuthValidatorWithType<phantom ValidatorType: store> has key {
         id: u64,
@@ -61,11 +58,11 @@ module rooch_framework::auth_validator_registry{
         };
         type_table::add(&mut registry.validators_with_type, validator_with_type);
 
-        let validator = AuthValidator {
+        let validator = auth_validator::new_auth_validator(
             id,
-            module_address: module_address,
-            module_name: module_name,
-        };
+            module_address,
+            module_name,
+        );
         table::add(&mut registry.validators, id, validator);
         
         registry.validator_num = registry.validator_num + 1;
@@ -85,17 +82,6 @@ module rooch_framework::auth_validator_registry{
         table::borrow(&registry.validators, validator_with_type.id)
     }
 
-    public fun validator_id(validator: &AuthValidator): u64 {
-        validator.id
-    }
-
-    public fun validator_module_address(validator: &AuthValidator): address {
-        validator.module_address
-    }
-
-    public fun validator_module_name(validator: &AuthValidator): std::ascii::String {
-        validator.module_name
-    }
 
     #[test_only]
     struct TestAuthValidator has store{
@@ -106,8 +92,10 @@ module rooch_framework::auth_validator_registry{
         genesis_init(&mut ctx, &sender);
         register<TestAuthValidator>(&mut ctx);
         let validator = borrow_validator_by_type<TestAuthValidator>(&ctx);
-        let validator2 = borrow_validator(&ctx, validator.id);
-        assert!(validator.id == validator2.id, 1000);
+        let validator_id = auth_validator::validator_id(validator);
+        let validator2 = borrow_validator(&ctx, validator_id);
+        let validator2_id = auth_validator::validator_id(validator2);
+        assert!(validator_id == validator2_id, 1000);
         storage_context::drop_test_context(ctx);
     }
 }

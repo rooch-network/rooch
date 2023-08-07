@@ -9,6 +9,7 @@ module rooch_framework::account_authentication{
    use moveos_std::account_storage;
    use moveos_std::storage_context::StorageContext;
    use rooch_framework::auth_validator_registry;
+   use rooch_framework::auth_validator;
 
     /// max authentication key length
    const MAX_AUTHENTICATION_KEY_LENGTH: u64 = 256;
@@ -74,7 +75,7 @@ module rooch_framework::account_authentication{
 
    public fun install_auth_validator<ValidatorType: store>(ctx: &mut StorageContext, account_signer: &signer) {
       let validator = auth_validator_registry::borrow_validator_by_type<ValidatorType>(ctx);
-      let validator_id = auth_validator_registry::validator_id(validator);
+      let validator_id = auth_validator::validator_id(validator);
       let account_addr = signer::address_of(account_signer);
 
       assert!(

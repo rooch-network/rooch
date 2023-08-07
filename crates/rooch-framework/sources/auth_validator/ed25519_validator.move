@@ -72,8 +72,8 @@ module rooch_framework::ed25519_validator {
       sign
    }
 
-   /// Get the authentication key of the given authenticator.
-   public fun ed25519_authentication_key(payload: &vector<u8>): vector<u8> {
+   /// Get the authentication key of the given authenticator payload.
+   public fun get_authentication_key_from_payload(payload: &vector<u8>): vector<u8> {
       let public_key = ed25519_public_key(payload);
       let addr = ed25519_public_key_to_address(public_key);
       moveos_std::bcs::to_bytes(&addr)
@@ -95,22 +95,32 @@ module rooch_framework::ed25519_validator {
       }
    }
 
-   public fun validate(ctx: &StorageContext, payload: vector<u8>){
-        let auth_key = ed25519_authentication_key(&payload);
-        let auth_key_in_account = get_authentication_key(ctx, storage_context::sender(ctx));
-        assert!(
-            auth_key_in_account == auth_key,
-            auth_validator::error_invalid_account_auth_key()
-        );
-        assert!(
+   /// Only validate the authenticator's signature.
+   public fun validate_signature(authenticator_payload: &vector<u8>, tx_hash: &vector<u8>){
+      assert!(
             ed25519::verify(
-               &ed25519_signature(&payload),
-               &ed25519_public_key(&payload),
-               &storage_context::tx_hash(ctx)
+               &ed25519_signature(authenticator_payload),
+               &ed25519_public_key(authenticator_payload),
+               tx_hash
             ),
-            auth_validator::error_invalid_account_auth_key()
+            auth_validator::error_invalid_authenticator()
         );
    }
+
+   public fun validate(ctx: &StorageContext, authenticator_payload: vector<u8>){
+      let tx_hash = storage_context::tx_hash(ctx);
+      validate_signature(&authenticator_payload, &tx_hash);
+        
+      let auth_key = get_authentication_key_from_payload(&authenticator_payload);
+      let auth_key_in_account = get_authentication_key(ctx, storage_context::sender(ctx));
+      assert!(
+         auth_key_in_account == auth_key,
+         auth_validator::error_invalid_account_auth_key()
+      );
+        
+   }
+
+
 
    fun pre_execute(
       _ctx: &mut StorageContext,

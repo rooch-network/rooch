@@ -3,4 +3,5 @@
 
 /// types mapping from Framework Move types to Rust types
 //TODO should be in the framework crate?
-pub mod auth_validator_registry;
+pub mod auth_validator;
+pub mod session_key;

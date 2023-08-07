@@ -191,7 +191,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             MoveAction::new_module_bundle(vec![module_bytes]),
         );
         let verified_tx = self.moveos.verify(tx)?;
-        let (_state_root, output) = self.moveos.execute(verified_tx)?;
+        let (_state_root, output) = self.moveos.execute_and_apply(verified_tx)?;
         Ok((Some(tx_output_to_str(output)), module))
     }
 
@@ -227,7 +227,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             MoveAction::new_script_call(script_bytes, type_args, args),
         );
         let verified_tx = self.moveos.verify(tx)?;
-        let (_state_root, output) = self.moveos.execute(verified_tx)?;
+        let (_state_root, output) = self.moveos.execute_and_apply(verified_tx)?;
         //TODO return values
         let value = SerializedReturnValues {
             mutable_reference_outputs: vec![],
@@ -266,7 +266,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             MoveAction::new_function_call(function_id, type_args, args),
         );
         let verified_tx = self.moveos.verify(tx)?;
-        let (_state_root, output) = self.moveos.execute(verified_tx)?;
+        let (_state_root, output) = self.moveos.execute_and_apply(verified_tx)?;
         debug_assert!(output.status == move_core_types::vm_status::KeptVMStatus::Executed);
         //TODO return values
         let value = SerializedReturnValues {

@@ -2,12 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    function_return_value::FunctionReturnValue, move_types::FunctionId, transaction::FunctionCall,
+    function_return_value::FunctionReturnValue,
+    move_types::FunctionId,
+    transaction::{FunctionCall, MoveAction},
     tx_context::TxContext,
 };
 use anyhow::Result;
 use move_core_types::{
-    account_address::AccountAddress, identifier::IdentStr, language_storage::ModuleId,
+    account_address::AccountAddress,
+    identifier::IdentStr,
+    language_storage::{ModuleId, TypeTag},
+    value::MoveValue,
 };
 
 pub trait MoveFunctionCaller {
@@ -48,6 +53,21 @@ pub trait ModuleBundle<'a> {
 
     fn function_id(function_name: &IdentStr) -> FunctionId {
         FunctionId::new(Self::module_id(), function_name.to_owned())
+    }
+
+    /// Construct a MoveAction for a function call
+    fn create_move_action(
+        function_name: &IdentStr,
+        ty_args: Vec<TypeTag>,
+        args: Vec<MoveValue>,
+    ) -> MoveAction {
+        MoveAction::Function(FunctionCall::new(
+            Self::function_id(function_name),
+            ty_args,
+            args.into_iter()
+                .map(|v| v.simple_serialize().expect("Failed to serialize MoveValue"))
+                .collect(),
+        ))
     }
 
     fn new(caller: &'a impl MoveFunctionCaller) -> Self

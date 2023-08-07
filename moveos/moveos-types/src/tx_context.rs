@@ -53,6 +53,11 @@ impl TxContext {
         }
     }
 
+    /// Create a new TxContext with a zero tx_hash for read-only function call cases
+    pub fn new_readonly_ctx(sender: AccountAddress) -> Self {
+        Self::new(sender, H256::zero())
+    }
+
     /// Spawn a new TxContext with a new `ids_created` counter and empty map
     pub fn spawn(self) -> Self {
         Self {
