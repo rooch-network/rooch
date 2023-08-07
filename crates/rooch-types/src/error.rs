@@ -71,6 +71,8 @@ pub enum RoochError {
 
     #[error("Switch env error: {0}")]
     SwitchEnvError(String),
+    #[error("Remove env error: {0}")]
+    RemoveEnvError(String),
 
     // Signature verification
     #[error("Signature is not valid: {}", error)]
