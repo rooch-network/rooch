@@ -427,7 +427,7 @@ where
         if read_only {
             ensure!(
                 changeset.accounts().is_empty(),
-                "ChangeSet should be empty when execute readonly function"
+                "ChangeSet should be empty as never used."
             );
             ensure!(
                 raw_events.is_empty(),

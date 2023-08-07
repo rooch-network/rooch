@@ -27,11 +27,11 @@ fn publish_and_load_module() {
     let mut data_cache = MoveosDataCache::new(&remote_view, loader, table_data.clone());
 
     // check
-    assert_eq!(data_cache.exists_module(&module_id).unwrap(), false);
+    assert!(!data_cache.exists_module(&module_id).unwrap());
     data_cache
         .publish_module(&module_id, bytes.clone(), false)
         .unwrap();
-    assert_eq!(data_cache.exists_module(&module_id).unwrap(), true);
+    assert!(data_cache.exists_module(&module_id).unwrap());
     let loaded_bytes = data_cache.load_module(&module_id).unwrap();
     assert_eq!(loaded_bytes, bytes);
 

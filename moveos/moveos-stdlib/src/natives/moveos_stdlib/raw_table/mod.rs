@@ -305,7 +305,7 @@ impl Table {
         })
     }
 
-    pub fn get_or_create_global_value_with_closures(
+    pub fn get_or_create_global_value_with_layout_fn(
         &mut self,
         resolver: &dyn StateResolver,
         key: Vec<u8>,
