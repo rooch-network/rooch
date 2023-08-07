@@ -69,6 +69,9 @@ pub enum RoochError {
     #[error("Key Conversion Error: {0}")]
     KeyConversionError(String),
 
+    #[error("Switch env error: {0}")]
+    SwitchEnvError(String),
+
     // Signature verification
     #[error("Signature is not valid: {}", error)]
     InvalidSignature { error: String },

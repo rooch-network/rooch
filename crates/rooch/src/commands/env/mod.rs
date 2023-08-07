@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use rooch_types::error::{RoochError, RoochResult};
 use std::path::PathBuf;
 
-use self::commands::{add::AddCommand, list::ListCommand};
+use self::commands::{add::AddCommand, list::ListCommand, switch::SwitchCommand};
 
 pub mod commands;
 
@@ -26,6 +26,7 @@ impl CommandAction<String> for Env {
         match self.cmd {
             EnvCommand::Add(add) => add.execute().await.map(|_| "".to_owned()),
             EnvCommand::List(list) => list.execute().await.map(|_| "".to_owned()),
+            EnvCommand::Switch(switch) => switch.execute().await.map(|_| "".to_owned()),
         }
         .map_err(RoochError::from)
     }
@@ -36,4 +37,5 @@ impl CommandAction<String> for Env {
 pub enum EnvCommand {
     Add(AddCommand),
     List(ListCommand),
+    Switch(SwitchCommand),
 }
