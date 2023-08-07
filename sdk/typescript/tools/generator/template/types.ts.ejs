@@ -4,27 +4,20 @@
     <% if (originalName.indexOf('::') !== -1) { %>
     <%   name = originalName.replace(/::/g, "_").replace(/<u8>/g, "_U8Array"); %>
     <% } %>
-    <% if (schema.properties) { %>
-    export type <%= name %> = {<% Object.entries(schema.properties).forEach(([propName, propSpec]) => { %><%= propName %><%= schema.required && schema.required.includes(propName) ? '' : '?' %>: <%= getType(propSpec, schemas, originalName) %>; <% }) %>}
+
+    <% if (schema.description) { %>// <%= schema.description %> <% } %>
+    <% if (schema.properties) { %>export type <%= alias(name) %> = {<% Object.entries(schema.properties).forEach(([propName, propSpec]) => { %><%= propName %><%= schema.required && schema.required.includes(propName) ? '' : '?' %>: <%= getType(propSpec, schemas, originalName) %>; <% }) %>}
     <% } else if (schema.type || schema.anyOf || schema.oneOf) { %>
     <%   if (schema.oneOf) { %>
       <% schema.oneOf.forEach((subSchema, index) => { %>
-        <% if (typeof subSchema === 'object' && !(subSchema instanceof Array) && subSchema !== null) { %>
-    export type <%= name %><%= index %> = <%= getType(subSchema, schemas, originalName) %>;
+        <% if (typeof subSchema === 'object' && !(subSchema instanceof Array) && subSchema !== null) { %>export type <%= alias(name) %><%= index %> = <%= getType(subSchema, schemas, originalName) %>;
         <% } %>
       <% }) %>
-    export type <%= name %> = <%= schema.oneOf.map((_, index) => `${name}${index}`).join(' | ') %>;
-    <%   } else { %>
-    export type <%= name %> = <%= getType(schema, schemas, originalName) %>;
-    <%   } %>
-    <% } else { %>
-    // Missing properties and type: <%= originalName %>
-    <% } %>
+      export type <%= alias(name) %> = <%= schema.oneOf.map((_, index) => `${name}${index}`).join(' | ') %>;
+    <% } else { %>export type <%= alias(name) %> = <%= getType(schema, schemas, originalName) %>;<%   } %>
+    <% } else { %>// Missing properties and type: <%= originalName %><% } %>
 <% }) %>
 
-
-
-    
     
     
     

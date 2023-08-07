@@ -5,6 +5,7 @@ import path, { dirname } from 'path';
 import ejs from "ejs";
 import prettier from 'prettier';
 import { getType } from "./utils.js";
+import { getMappingFunc } from "./mapping.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -20,10 +21,11 @@ export class Generator {
         const openRPCDoc = JSON.parse(roochOpenRPCText);
         const methods = openRPCDoc.methods;
         const schemas = openRPCDoc.components.schemas;
+        const mappingFunc = await getMappingFunc("name_mapping.json");
 
         await this.ensureOutputDir();
 
-        await this.renderTemplate('types.ts', { schemas, getType })
+        await this.renderTemplate('types.ts', { schemas, getType, alias: mappingFunc })
         await this.renderTemplate('client.ts', { methods, schemas, getType })
         await this.renderTemplate('index.ts', {})
     }
