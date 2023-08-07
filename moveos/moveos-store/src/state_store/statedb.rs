@@ -231,8 +231,8 @@ impl StateDBStore {
         let mut changed_objects = UpdateSet::new();
         //TODO
         //We want deprecate the global storage instructions https://github.com/rooch-network/rooch/issues/248
-        //So the ChangeSet should be empty, but the module publish still need it
-        //We need to figure out a way to make the module publish use raw table's StateChangeSet
+        //So the ChangeSet should be empty, but we need the mutated accounts to init the account storage
+        ////We need to figure out a way to init a fresh account.
         for (account, account_change_set) in change_set.into_inner() {
             let _ = self.get_as_account_storage_or_create(account)?;
 

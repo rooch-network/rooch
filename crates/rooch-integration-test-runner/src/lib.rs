@@ -30,6 +30,7 @@ use moveos_verifier::build::build_model;
 use moveos_verifier::metadata::run_extended_checks;
 use regex::Regex;
 use rooch_genesis::RoochGenesis;
+use std::collections::BTreeSet;
 use std::path::PathBuf;
 use std::{collections::BTreeMap, path::Path};
 
@@ -118,8 +119,8 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         }
 
         // Apply new modules and add precompiled address mapping
-        let mut change_set = ChangeSet::new();
         let mut table_change_set = StateChangeSet::default();
+        let mut mutated_accounts = BTreeSet::new();
         let module_value_type = TypeTag::Struct(Box::new(MoveModule::struct_tag()));
         if let Some(pre_compiled_lib) = pre_compiled_deps {
             for c in &pre_compiled_lib.compiled {
@@ -145,30 +146,28 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
                     let (_, module_id) = m.module_id();
                     let mut bytes = vec![];
                     m.named_module.module.serialize(&mut bytes).unwrap();
-                    let mut entries = BTreeMap::new();
-                    entries.insert(
+
+                    let handle = NamedTableID::Module(*module_id.address()).to_object_id();
+                    let table_change = table_change_set.get_or_insert_table_change(handle);
+                    table_change.entries.insert(
                         module_name_to_key(module_id.name()),
                         Op::New(State {
                             value_type: module_value_type.clone(),
                             value: bytes,
                         }),
                     );
-                    let (_, module_id) = m.module_id();
-                    let handle = NamedTableID::Module(*module_id.address()).to_object_id();
-                    table_change_set
-                        .changes
-                        .insert(handle, TableChange { entries });
-                    change_set
-                        .add_account_changeset(
-                            *module_id.address(),
-                            AccountChangeSet::from_modules_resources(
-                                BTreeMap::new(),
-                                BTreeMap::new(),
-                            ),
-                        )
-                        .expect("accounts should be unique");
+                    mutated_accounts.insert(*module_id.address());
                 }
             }
+        }
+        let mut change_set = ChangeSet::new();
+        for account in mutated_accounts {
+            change_set
+                .add_account_changeset(
+                    account,
+                    AccountChangeSet::from_modules_resources(BTreeMap::new(), BTreeMap::new()),
+                )
+                .expect("accounts should be unique");
         }
         moveos
             .state()
