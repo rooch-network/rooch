@@ -76,7 +76,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_module_name">module_name</a>(_move_module: &<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>): <a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_module_name">module_name</a>(<a href="move_module.md#0x2_move_module">move_module</a>: &<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>): <a href="_String">string::String</a>
 </code></pre>
 
 
@@ -85,9 +85,9 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_module_name">module_name</a>(_move_module: &<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>): String {
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_module_name">module_name</a>(<a href="move_module.md#0x2_move_module">move_module</a>: &<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>): String {
     //TODO implement <b>native</b> <b>module</b> name
-    <b>abort</b> 0
+    <a href="move_module.md#0x2_move_module_module_name_inner">module_name_inner</a>(&<a href="move_module.md#0x2_move_module">move_module</a>.byte_codes)
 }
 </code></pre>
 
@@ -101,7 +101,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_verify_modules">verify_modules</a>(_modules: &<a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, _account_address: <b>address</b>): <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_verify_modules">verify_modules</a>(modules: &<a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, account_address: <b>address</b>): <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
 
 
@@ -110,9 +110,15 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_verify_modules">verify_modules</a>(_modules: &<a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>&gt;, _account_address: <b>address</b>): <a href="">vector</a>&lt;String&gt; {
-    //TODO implement <b>native</b> verify modules
-    <b>abort</b> 0
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_verify_modules">verify_modules</a>(modules: &<a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>&gt;, account_address: <b>address</b>): <a href="">vector</a>&lt;String&gt; {
+    <b>let</b> bytes_vec = <a href="_empty">vector::empty</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;();
+    <b>let</b> i = 0u64;
+    <b>let</b> len = <a href="_length">vector::length</a>(modules);
+    <b>while</b> (i &lt; len) {
+        <a href="_push_back">vector::push_back</a>(&<b>mut</b> bytes_vec, <a href="_borrow">vector::borrow</a>(modules, i).byte_codes);
+        i = i + 1;
+    };
+    <a href="move_module.md#0x2_move_module_verify_modules_inner">verify_modules_inner</a>(bytes_vec, account_address)
 }
 </code></pre>
 

@@ -17,7 +17,6 @@ use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
-    resolver::ModuleResolver,
     value::MoveTypeLayout,
     vm_status::{KeptVMStatus, VMStatus},
 };

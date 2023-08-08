@@ -176,8 +176,9 @@ module moveos_std::account_storage {
         let module_names = move_module::verify_modules(&modules, account_address);
         while (i < len) {
             let name = vector::pop_back(&mut module_names);
-            let m = vector::pop_back(&mut modules);
+            let m = vector::pop_back(&mut modules);       
             table::add(&mut account_storage.modules, name, m);
+            i = i + 1;
         }
     }
     

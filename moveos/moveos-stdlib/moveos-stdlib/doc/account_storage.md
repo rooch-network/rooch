@@ -404,6 +404,7 @@ Publish modules to the account's storage
         <b>let</b> name = <a href="_pop_back">vector::pop_back</a>(&<b>mut</b> module_names);
         <b>let</b> m = <a href="_pop_back">vector::pop_back</a>(&<b>mut</b> modules);
         <a href="table.md#0x2_table_add">table::add</a>(&<b>mut</b> <a href="account_storage.md#0x2_account_storage">account_storage</a>.modules, name, m);
+        i = i + 1;
     }
 }
 </code></pre>
