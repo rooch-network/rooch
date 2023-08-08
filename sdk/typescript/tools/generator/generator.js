@@ -26,7 +26,7 @@ export class Generator {
         await this.ensureOutputDir();
 
         await this.renderTemplate('types.ts', { schemas, getType, alias: mappingFunc })
-        await this.renderTemplate('client.ts', { methods, schemas, getType })
+        await this.renderTemplate('client.ts', { methods, schemas, getType, alias: mappingFunc })
         await this.renderTemplate('index.ts', {})
     }
 

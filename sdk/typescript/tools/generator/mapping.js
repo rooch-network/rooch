@@ -11,6 +11,8 @@ export async function getMappingFunc(mappingFile) {
     const mappingFileStr = await fs.readFile(mappingFilePath, 'utf-8');
     const mapping = JSON.parse(mappingFileStr);
 
+    console.log("mapping:", mapping);
+
     return (key)=>{
         const val = mapping[key]
         if (val) {
