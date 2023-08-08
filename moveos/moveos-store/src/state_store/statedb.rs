@@ -234,10 +234,12 @@ impl StateDBStore {
         //So the ChangeSet should be empty, but we need the mutated accounts to init the account storage
         ////We need to figure out a way to init a fresh account.
         for (account, account_change_set) in change_set.into_inner() {
-            let _ = self.get_as_account_storage_or_create(account)?;
+            let account_storage = self.get_as_account_storage_or_create(account)?;
 
             let (modules, resources) = account_change_set.into_inner();
             debug_assert!(modules.is_empty() && resources.is_empty());
+            //TODO check if the account_storage and table is changed, if not changed, don't put it
+            changed_objects.put(ObjectID::from(account).to_bytes(), account_storage.into())
         }
 
         for (table_handle, table_change) in state_change_set.changes {

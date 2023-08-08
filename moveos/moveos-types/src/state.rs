@@ -410,6 +410,11 @@ impl StateChangeSet {
             btree_map::Entry::Vacant(entry) => entry.insert(TableChange::default()),
         }
     }
+
+    pub fn add_op(&mut self, handle: ObjectID, key: Vec<u8>, op: Op<State>) {
+        let table_change = self.get_or_insert_table_change(handle);
+        table_change.entries.insert(key, op);
+    }
 }
 /// A change of a single table.
 #[derive(Default, Clone, Debug)]
