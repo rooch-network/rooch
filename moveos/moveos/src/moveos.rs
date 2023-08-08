@@ -148,7 +148,7 @@ impl MoveOS {
         })
     }
 
-    pub fn execute(&mut self, tx: VerifiedMoveOSTransaction) -> Result<(H256, TransactionOutput)> {
+    pub fn execute(&self, tx: VerifiedMoveOSTransaction) -> Result<TransactionOutput> {
         let VerifiedMoveOSTransaction {
             ctx,
             action,
@@ -179,11 +179,19 @@ impl MoveOS {
         }
         let vm_status = vm_status_of_result(execute_result);
         let (_ctx, output) = session.finish_with_extensions(vm_status)?;
+        Ok(output)
+    }
+
+    pub fn execute_and_apply(
+        &mut self,
+        tx: VerifiedMoveOSTransaction,
+    ) -> Result<(H256, TransactionOutput)> {
+        let output = self.execute(tx)?;
         let state_root = self.apply_transaction_output(output.clone())?;
         Ok((state_root, output))
     }
 
-    fn apply_transaction_output(&self, output: TransactionOutput) -> Result<H256> {
+    fn apply_transaction_output(&mut self, output: TransactionOutput) -> Result<H256> {
         //TODO move apply change set to a suitable place, and make MoveOS stateless?
         let TransactionOutput {
             status: _,
@@ -229,9 +237,8 @@ impl MoveOS {
         &self,
         function_call: FunctionCall,
     ) -> Result<Vec<FunctionReturnValue>> {
-        //TODO allow user to specify the sender and hash
-        //View function use a fix address and fix hash
-        let tx_context = TxContext::new(AccountAddress::ZERO, H256::zero());
+        //TODO allow user to specify the sender
+        let tx_context = TxContext::new_readonly_ctx(AccountAddress::ZERO);
         //TODO verify the view function
         self.execute_readonly_function(&tx_context, function_call)
     }

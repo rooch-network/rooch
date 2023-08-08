@@ -17,7 +17,7 @@ pub struct Empty<'a> {
 }
 
 impl<'a> Empty<'a> {
-    const EMPTY_FUNCTION_NAME: &'static IdentStr = ident_str!("empty");
+    pub const EMPTY_FUNCTION_NAME: &'static IdentStr = ident_str!("empty");
 
     pub fn empty(&self, ctx: &TxContext) -> Result<()> {
         let empty_call =

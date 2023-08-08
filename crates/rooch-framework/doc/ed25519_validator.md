@@ -12,9 +12,10 @@ This module implements the ed25519 validator scheme.
 -  [Function `rotate_authentication_key_entry`](#0x3_ed25519_validator_rotate_authentication_key_entry)
 -  [Function `ed25519_public_key`](#0x3_ed25519_validator_ed25519_public_key)
 -  [Function `ed25519_signature`](#0x3_ed25519_validator_ed25519_signature)
--  [Function `ed25519_authentication_key`](#0x3_ed25519_validator_ed25519_authentication_key)
+-  [Function `get_authentication_key_from_payload`](#0x3_ed25519_validator_get_authentication_key_from_payload)
 -  [Function `ed25519_public_key_to_address`](#0x3_ed25519_validator_ed25519_public_key_to_address)
 -  [Function `get_authentication_key`](#0x3_ed25519_validator_get_authentication_key)
+-  [Function `validate_signature`](#0x3_ed25519_validator_validate_signature)
 -  [Function `validate`](#0x3_ed25519_validator_validate)
 
 
@@ -247,14 +248,14 @@ error code
 
 </details>
 
-<a name="0x3_ed25519_validator_ed25519_authentication_key"></a>
+<a name="0x3_ed25519_validator_get_authentication_key_from_payload"></a>
 
-## Function `ed25519_authentication_key`
+## Function `get_authentication_key_from_payload`
 
-Get the authentication key of the given authenticator.
+Get the authentication key of the given authenticator payload.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_authentication_key">ed25519_authentication_key</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_get_authentication_key_from_payload">get_authentication_key_from_payload</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -263,7 +264,7 @@ Get the authentication key of the given authenticator.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_authentication_key">ed25519_authentication_key</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_get_authentication_key_from_payload">get_authentication_key_from_payload</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
    <b>let</b> public_key = <a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_public_key">ed25519_public_key</a>(payload);
    <b>let</b> addr = <a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_public_key_to_address">ed25519_public_key_to_address</a>(public_key);
    moveos_std::bcs::to_bytes(&addr)
@@ -330,13 +331,14 @@ Get the authentication key of the given authenticator.
 
 </details>
 
-<a name="0x3_ed25519_validator_validate"></a>
+<a name="0x3_ed25519_validator_validate_signature"></a>
 
-## Function `validate`
+## Function `validate_signature`
+
+Only validate the authenticator's signature.
 
 
-
-<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_validate">validate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, payload: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_validate_signature">validate_signature</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;, tx_hash: &<a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -345,21 +347,48 @@ Get the authentication key of the given authenticator.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_validate">validate</a>(ctx: &StorageContext, payload: <a href="">vector</a>&lt;u8&gt;){
-     <b>let</b> auth_key = <a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_authentication_key">ed25519_authentication_key</a>(&payload);
-     <b>let</b> auth_key_in_account = <a href="ed25519_validator.md#0x3_ed25519_validator_get_authentication_key">get_authentication_key</a>(ctx, <a href="_sender">storage_context::sender</a>(ctx));
-     <b>assert</b>!(
-         auth_key_in_account == auth_key,
-         <a href="auth_validator.md#0x3_auth_validator_error_invalid_account_auth_key">auth_validator::error_invalid_account_auth_key</a>()
-     );
-     <b>assert</b>!(
+<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_validate_signature">validate_signature</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;, tx_hash: &<a href="">vector</a>&lt;u8&gt;){
+   <b>assert</b>!(
          <a href="ed25519.md#0x3_ed25519_verify">ed25519::verify</a>(
-            &<a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_signature">ed25519_signature</a>(&payload),
-            &<a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_public_key">ed25519_public_key</a>(&payload),
-            &<a href="_tx_hash">storage_context::tx_hash</a>(ctx)
+            &<a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_signature">ed25519_signature</a>(authenticator_payload),
+            &<a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_public_key">ed25519_public_key</a>(authenticator_payload),
+            tx_hash
          ),
-         <a href="auth_validator.md#0x3_auth_validator_error_invalid_account_auth_key">auth_validator::error_invalid_account_auth_key</a>()
+         <a href="auth_validator.md#0x3_auth_validator_error_invalid_authenticator">auth_validator::error_invalid_authenticator</a>()
      );
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_ed25519_validator_validate"></a>
+
+## Function `validate`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_validate">validate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, authenticator_payload: <a href="">vector</a>&lt;u8&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_validate">validate</a>(ctx: &StorageContext, authenticator_payload: <a href="">vector</a>&lt;u8&gt;){
+   <b>let</b> tx_hash = <a href="_tx_hash">storage_context::tx_hash</a>(ctx);
+   <a href="ed25519_validator.md#0x3_ed25519_validator_validate_signature">validate_signature</a>(&authenticator_payload, &tx_hash);
+
+   <b>let</b> auth_key = <a href="ed25519_validator.md#0x3_ed25519_validator_get_authentication_key_from_payload">get_authentication_key_from_payload</a>(&authenticator_payload);
+   <b>let</b> auth_key_in_account = <a href="ed25519_validator.md#0x3_ed25519_validator_get_authentication_key">get_authentication_key</a>(ctx, <a href="_sender">storage_context::sender</a>(ctx));
+   <b>assert</b>!(
+      auth_key_in_account == auth_key,
+      <a href="auth_validator.md#0x3_auth_validator_error_invalid_account_auth_key">auth_validator::error_invalid_account_auth_key</a>()
+   );
+
 }
 </code></pre>
 

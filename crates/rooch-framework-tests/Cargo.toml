@@ -47,6 +47,8 @@ rooch-framework = { workspace = true }
 rooch-genesis = { workspace = true }
 rooch-types = { workspace = true }
 rooch-key = { workspace = true }
+rooch-executor = { workspace = true }
+rooch-store = { workspace = true }
 
 [dev-dependencies]
 rooch-integration-test-runner = { workspace = true }

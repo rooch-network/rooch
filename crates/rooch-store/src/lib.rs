@@ -3,7 +3,10 @@
 
 use crate::transaction_store::{TransactionDBStore, TransactionStore};
 use anyhow::Result;
+use moveos_config::store_config::RocksdbConfig;
+use moveos_config::temp_dir;
 use once_cell::sync::Lazy;
+use raw_store::rocks::RocksDB;
 use raw_store::{ColumnFamilyName, StoreInstance};
 use rooch_types::transaction::{
     TransactionSequenceInfo, TransactionSequenceMapping, TypedTransaction,
@@ -48,6 +51,20 @@ impl RoochStore {
             transaction_store: TransactionDBStore::new(instance),
         };
         Ok(store)
+    }
+
+    //TODO implement a memory mock store
+    pub fn mock_rooch_store() -> Self {
+        Self::new(StoreInstance::new_db_instance(
+            RocksDB::new(
+                temp_dir().path(),
+                moveos_store::StoreMeta::get_column_family_names().to_vec(),
+                RocksdbConfig::default(),
+                None,
+            )
+            .expect("init db error"),
+        ))
+        .expect("init rooch store error")
     }
 
     pub fn get_transaction_store(&self) -> &TransactionDBStore {

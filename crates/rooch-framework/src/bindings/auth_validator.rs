@@ -7,7 +7,7 @@ use moveos_types::{
     module_binding::MoveFunctionCaller, move_types::FunctionId, transaction::FunctionCall,
     tx_context::TxContext,
 };
-use rooch_types::framework::auth_validator_registry::AuthValidator;
+use rooch_types::framework::auth_validator::AuthValidator;
 
 use super::transaction_validator::TransactionValidator;
 

@@ -37,6 +37,7 @@ use rooch_framework::bindings::transaction_validator::TransactionValidator;
 use rooch_genesis::RoochGenesis;
 use rooch_store::RoochStore;
 use rooch_types::address::MultiChainAddress;
+use rooch_types::framework::auth_validator::TxValidateResult;
 use rooch_types::transaction::AuthenticatorInfo;
 use rooch_types::transaction::{AbstractTransaction, TransactionSequenceMapping};
 
@@ -82,12 +83,18 @@ impl ExecutorActor {
         let result = self.validate_authenticator(&moveos_tx.ctx, authenticator);
 
         match result {
-            Ok((pre_execute_functions, post_execute_functions)) => {
+            Ok((tx_validate_result, pre_execute_functions, post_execute_functions)) => {
                 // Add the original multichain address to the context
                 moveos_tx
                     .ctx
                     .add(multi_chain_address_sender)
                     .expect("add sender to context failed");
+                // Add the tx_validate_result to the context
+                moveos_tx
+                    .ctx
+                    .add(tx_validate_result)
+                    .expect("add tx_validate_result failed");
+
                 moveos_tx.append_pre_execute_functions(pre_execute_functions);
                 moveos_tx.append_post_execute_functions(post_execute_functions);
                 Ok(self.moveos.verify(moveos_tx)?)
@@ -107,26 +114,78 @@ impl ExecutorActor {
         &self,
         ctx: &TxContext,
         authenticator: AuthenticatorInfo,
-    ) -> Result<(Vec<FunctionCall>, Vec<FunctionCall>)> {
+    ) -> Result<(TxValidateResult, Vec<FunctionCall>, Vec<FunctionCall>)> {
         let tx_validator = self.moveos.as_module_bundle::<TransactionValidator>();
-        let auth_validator = tx_validator.validate(ctx, authenticator.clone())?;
-        let auth_validator_caller = AuthValidatorCaller::new(&self.moveos, auth_validator);
-        auth_validator_caller.validate(ctx, authenticator.authenticator.payload)?;
-        // pre_execute_function: TransactionValidator first, then AuthValidator
-        let pre_execute_functions = vec![
-            TransactionValidator::pre_execute_function_call(),
-            auth_validator_caller.pre_execute_function_call(),
-        ];
-        // post_execute_function: AuthValidator first, then TransactionValidator
-        let post_execute_functions = vec![
-            auth_validator_caller.post_execute_function_call(),
-            TransactionValidator::post_execute_function_call(),
-        ];
-        Ok((pre_execute_functions, post_execute_functions))
+        let tx_validate_result = tx_validator.validate(ctx, authenticator.clone())?;
+        let auth_validator_option = tx_validate_result.auth_validator();
+        match auth_validator_option {
+            Some(auth_validator) => {
+                let auth_validator_caller = AuthValidatorCaller::new(&self.moveos, auth_validator);
+                auth_validator_caller.validate(ctx, authenticator.authenticator.payload)?;
+                // pre_execute_function: TransactionValidator first, then AuthValidator
+                let pre_execute_functions = vec![
+                    TransactionValidator::pre_execute_function_call(),
+                    auth_validator_caller.pre_execute_function_call(),
+                ];
+                // post_execute_function: AuthValidator first, then TransactionValidator
+                let post_execute_functions = vec![
+                    auth_validator_caller.post_execute_function_call(),
+                    TransactionValidator::post_execute_function_call(),
+                ];
+                Ok((
+                    tx_validate_result,
+                    pre_execute_functions,
+                    post_execute_functions,
+                ))
+            }
+            None => {
+                let pre_execute_functions = vec![TransactionValidator::pre_execute_function_call()];
+                let post_execute_functions =
+                    vec![TransactionValidator::post_execute_function_call()];
+                Ok((
+                    tx_validate_result,
+                    pre_execute_functions,
+                    post_execute_functions,
+                ))
+            }
+        }
     }
 
     pub fn get_rooch_store(&self) -> RoochStore {
         self.rooch_store.clone()
+    }
+
+    pub fn moveos(&self) -> &MoveOS {
+        &self.moveos
+    }
+
+    pub fn execute(&mut self, tx: VerifiedMoveOSTransaction) -> Result<ExecuteTransactionResult> {
+        let tx_hash = tx.ctx.tx_hash();
+        let (state_root, output) = self.moveos.execute_and_apply(tx)?;
+        let event_hashes: Vec<_> = output.events.iter().map(|e| e.hash()).collect();
+        let event_root = InMemoryAccumulator::from_leaves(event_hashes.as_slice()).root_hash();
+
+        let transaction_info = TransactionExecutionInfo::new(
+            tx_hash,
+            state_root,
+            event_root,
+            0,
+            output.status.clone(),
+        );
+        self.moveos
+            .transaction_store()
+            .save_tx_exec_info(transaction_info.clone())
+            .map_err(|e| {
+                anyhow::anyhow!(
+                    "ExecuteTransactionMessage handler save tx info failed: {:?} {}",
+                    transaction_info,
+                    e
+                )
+            })?;
+        Ok(ExecuteTransactionResult {
+            output,
+            transaction_info,
+        })
     }
 }
 
@@ -153,32 +212,7 @@ impl Handler<ExecuteTransactionMessage> for ExecutorActor {
         msg: ExecuteTransactionMessage,
         _ctx: &mut ActorContext,
     ) -> Result<ExecuteTransactionResult> {
-        let tx_hash = msg.tx.ctx.tx_hash();
-        let (state_root, output) = self.moveos.execute(msg.tx)?;
-        let event_hashes: Vec<_> = output.events.iter().map(|e| e.hash()).collect();
-        let event_root = InMemoryAccumulator::from_leaves(event_hashes.as_slice()).root_hash();
-
-        let transaction_info = TransactionExecutionInfo::new(
-            tx_hash,
-            state_root,
-            event_root,
-            0,
-            output.status.clone(),
-        );
-        self.moveos
-            .transaction_store()
-            .save_tx_exec_info(transaction_info.clone())
-            .map_err(|e| {
-                anyhow::anyhow!(
-                    "ExecuteTransactionMessage handler save tx info failed: {:?} {}",
-                    transaction_info,
-                    e
-                )
-            })?;
-        Ok(ExecuteTransactionResult {
-            output,
-            transaction_info,
-        })
+        self.execute(msg.tx)
     }
 }
 

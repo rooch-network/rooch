@@ -5,7 +5,6 @@
 
 
 
--  [Struct `AuthValidator`](#0x3_auth_validator_registry_AuthValidator)
 -  [Resource `AuthValidatorWithType`](#0x3_auth_validator_registry_AuthValidatorWithType)
 -  [Resource `ValidatorRegistry`](#0x3_auth_validator_registry_ValidatorRegistry)
 -  [Constants](#@Constants_0)
@@ -14,9 +13,6 @@
 -  [Function `register_internal`](#0x3_auth_validator_registry_register_internal)
 -  [Function `borrow_validator`](#0x3_auth_validator_registry_borrow_validator)
 -  [Function `borrow_validator_by_type`](#0x3_auth_validator_registry_borrow_validator_by_type)
--  [Function `validator_id`](#0x3_auth_validator_registry_validator_id)
--  [Function `validator_module_address`](#0x3_auth_validator_registry_validator_module_address)
--  [Function `validator_module_name`](#0x3_auth_validator_registry_validator_module_name)
 
 
 <pre><code><b>use</b> <a href="">0x1::ascii</a>;
@@ -27,48 +23,10 @@
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x2::type_table</a>;
+<b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 </code></pre>
 
 
-
-<a name="0x3_auth_validator_registry_AuthValidator"></a>
-
-## Struct `AuthValidator`
-
-
-
-<pre><code><b>struct</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidator">AuthValidator</a> <b>has</b> store
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>id: u64</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>module_address: <b>address</b></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>module_name: <a href="_String">ascii::String</a></code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
 
 <a name="0x3_auth_validator_registry_AuthValidatorWithType"></a>
 
@@ -120,7 +78,7 @@
 How many validators are registered
 </dd>
 <dt>
-<code>validators: <a href="_Table">table::Table</a>&lt;u64, <a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidator">auth_validator_registry::AuthValidator</a>&gt;</code>
+<code>validators: <a href="_Table">table::Table</a>&lt;u64, <a href="auth_validator.md#0x3_auth_validator_AuthValidator">auth_validator::AuthValidator</a>&gt;</code>
 </dt>
 <dd>
 
@@ -244,11 +202,11 @@ Init function called by genesis.
     };
     <a href="_add">type_table::add</a>(&<b>mut</b> registry.validators_with_type, validator_with_type);
 
-    <b>let</b> validator = <a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidator">AuthValidator</a> {
+    <b>let</b> validator = <a href="auth_validator.md#0x3_auth_validator_new_auth_validator">auth_validator::new_auth_validator</a>(
         id,
-        module_address: module_address,
-        module_name: module_name,
-    };
+        module_address,
+        module_name,
+    );
     <a href="_add">table::add</a>(&<b>mut</b> registry.validators, id, validator);
 
     registry.validator_num = registry.validator_num + 1;
@@ -266,7 +224,7 @@ Init function called by genesis.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator">borrow_validator</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, id: u64): &<a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidator">auth_validator_registry::AuthValidator</a>
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator">borrow_validator</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, id: u64): &<a href="auth_validator.md#0x3_auth_validator_AuthValidator">auth_validator::AuthValidator</a>
 </code></pre>
 
 
@@ -275,7 +233,7 @@ Init function called by genesis.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator">borrow_validator</a>(ctx: &StorageContext, id: u64): &<a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidator">AuthValidator</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator">borrow_validator</a>(ctx: &StorageContext, id: u64): &AuthValidator {
     <b>let</b> registry = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="auth_validator_registry.md#0x3_auth_validator_registry_ValidatorRegistry">ValidatorRegistry</a>&gt;(ctx, @rooch_framework);
     <a href="_borrow">table::borrow</a>(&registry.validators, id)
 }
@@ -291,7 +249,7 @@ Init function called by genesis.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator_by_type">borrow_validator_by_type</a>&lt;ValidatorType: store&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): &<a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidator">auth_validator_registry::AuthValidator</a>
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator_by_type">borrow_validator_by_type</a>&lt;ValidatorType: store&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): &<a href="auth_validator.md#0x3_auth_validator_AuthValidator">auth_validator::AuthValidator</a>
 </code></pre>
 
 
@@ -300,84 +258,12 @@ Init function called by genesis.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator_by_type">borrow_validator_by_type</a>&lt;ValidatorType: store&gt;(ctx: &StorageContext): &<a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidator">AuthValidator</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator_by_type">borrow_validator_by_type</a>&lt;ValidatorType: store&gt;(ctx: &StorageContext): &AuthValidator {
     <b>let</b> registry = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="auth_validator_registry.md#0x3_auth_validator_registry_ValidatorRegistry">ValidatorRegistry</a>&gt;(ctx, @rooch_framework);
     <b>assert</b>!(<a href="_contains">type_table::contains</a>&lt;<a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidatorWithType">AuthValidatorWithType</a>&lt;ValidatorType&gt;&gt;(&registry.validators_with_type), <a href="_not_found">error::not_found</a>(<a href="auth_validator_registry.md#0x3_auth_validator_registry_EValidatorUnregistered">EValidatorUnregistered</a>));
     <b>let</b> validator_with_type = <a href="_borrow">type_table::borrow</a>&lt;<a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidatorWithType">AuthValidatorWithType</a>&lt;ValidatorType&gt;&gt;(&registry.validators_with_type);
     <b>assert</b>!(<a href="_contains">table::contains</a>(&registry.validators, validator_with_type.id), <a href="_not_found">error::not_found</a>(<a href="auth_validator_registry.md#0x3_auth_validator_registry_EValidatorUnregistered">EValidatorUnregistered</a>));
     <a href="_borrow">table::borrow</a>(&registry.validators, validator_with_type.id)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_auth_validator_registry_validator_id"></a>
-
-## Function `validator_id`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_validator_id">validator_id</a>(validator: &<a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidator">auth_validator_registry::AuthValidator</a>): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_validator_id">validator_id</a>(validator: &<a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidator">AuthValidator</a>): u64 {
-    validator.id
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_auth_validator_registry_validator_module_address"></a>
-
-## Function `validator_module_address`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_validator_module_address">validator_module_address</a>(validator: &<a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidator">auth_validator_registry::AuthValidator</a>): <b>address</b>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_validator_module_address">validator_module_address</a>(validator: &<a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidator">AuthValidator</a>): <b>address</b> {
-    validator.module_address
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_auth_validator_registry_validator_module_name"></a>
-
-## Function `validator_module_name`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_validator_module_name">validator_module_name</a>(validator: &<a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidator">auth_validator_registry::AuthValidator</a>): <a href="_String">ascii::String</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_validator_module_name">validator_module_name</a>(validator: &<a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidator">AuthValidator</a>): std::ascii::String {
-    validator.module_name
 }
 </code></pre>
 
