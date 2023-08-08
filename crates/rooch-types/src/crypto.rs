@@ -913,9 +913,9 @@ mod tests {
         );
     }
 
-    // this test is to ensure that the other algorithms work for public key to address as well as ed25519
+    // this test is to ensure that the other algorithms work for public key to authentication key for the ed25519 schemed address
     #[test]
-    fn test_ecdsa_k1_public_key_to_address() {
+    fn test_ecdsa_k1_public_key_to_authentication_key() {
         let private_key = Secp256k1PrivateKey::from_bytes(&[1u8; 32]).unwrap(); // use 1u8.
         let keypair: Secp256k1KeyPair = private_key.into();
         let address: RoochAddress = keypair.public().into();
@@ -925,9 +925,9 @@ mod tests {
         );
     }
 
-    // this test is to ensure that the other algorithms work for public key to address as well as ed25519
+    // this test is to ensure that the other algorithms work for public key to authentication key for the ed25519 schemed address
     #[test]
-    fn test_ecdsa_k1_recoverable_public_key_to_address() {
+    fn test_ecdsa_k1_recoverable_public_key_to_authentication_key() {
         let private_key = Secp256k1RecoverablePrivateKey::from_bytes(&[1u8; 32]).unwrap(); // use 1u8.
         let keypair: Secp256k1RecoverableKeyPair = private_key.into();
         let address: RoochAddress = keypair.public().into();
@@ -937,9 +937,9 @@ mod tests {
         );
     }
 
-    // this test is to ensure that the other algorithms work for public key to address as well as ed25519
+    // this test is to ensure that the other algorithms work for public key to authentication key for the ed25519 schemed address
     #[test]
-    fn test_schnorr_public_key_to_address() {
+    fn test_schnorr_public_key_to_authentication_key() {
         let private_key = SchnorrPrivateKey::from_bytes(&[1u8; 32]).unwrap(); // ensure not leave 0, use 1u8
         let keypair: SchnorrKeyPair = private_key.into();
         let address: RoochAddress = keypair.public().into();

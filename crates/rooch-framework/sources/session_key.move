@@ -8,9 +8,10 @@ module rooch_framework::session_key {
     use moveos_std::table::{Self, Table};
     use rooch_framework::auth_validator;
     use rooch_framework::ed25519_validator;
-    // use rooch_framework::multi_ed25519_validator;
-    // use rooch_framework::ecdsa_validator;
-    // use rooch_framework::schnorr_validator;
+    use rooch_framework::multi_ed25519_validator;
+    use rooch_framework::ecdsa_validator;
+    use rooch_framework::ecdsa_recoverable_validator;
+    use rooch_framework::schnorr_validator;
 
     friend rooch_framework::transaction_validator;
 
@@ -18,6 +19,7 @@ module rooch_framework::session_key {
     const ESessionKeyAlreadyExists: u64 = 2;
     const ESessionKeyIsInvalid: u64 = 3;
     const ESessionIsExpired: u64 = 4;
+    const ESessionInvalidScheme: u64 = 5;
 
     /// The session's scope
     struct SessionScope has store,copy,drop {
@@ -109,8 +111,16 @@ module rooch_framework::session_key {
         };
         let auth_key = if(scheme == ed25519_validator::scheme()){
             ed25519_validator::get_authentication_key_from_payload(&authenticator_payload)
-        }else{
-            //TODO support other built-in validators
+        } else if (scheme == multi_ed25519_validator::scheme()) {
+            // TODO support MultiEd25519Validator scheme
+            return option::none()
+        } else if (scheme == ecdsa_k1_validator::scheme()) {
+            ecdsa_k1_validator::get_authentication_key_from_payload(&authenticator_payload)
+        } else if (scheme == ecdsa_k1_recoverable_validator::scheme()) {
+            ecdsa_k1_recoverable_validator::get_authentication_key_from_payload(&authenticator_payload)
+        } else if (scheme == schnorr_validator::scheme()) {
+            schnorr_validator::get_authentication_key_from_payload(&authenticator_payload)
+        } else{
             return option::none()
         };
         
@@ -125,9 +135,17 @@ module rooch_framework::session_key {
 
         if(scheme == ed25519_validator::scheme()){
             ed25519_validator::validate_signature(&authenticator_payload, &storage_context::tx_hash(ctx));
-        }else{ 
-            //TODO support other built-in validators
-            abort 1
+        } else if (scheme == multi_ed25519_validator::scheme()) {
+            // TODO support multi_ed25519_validator
+            abort 1001
+        } else if (scheme == ecdsa_k1_validator::scheme()) {
+            ecdsa_k1_validator::validate_signature(&authenticator_payload, &storage_context::tx_hash(ctx));
+        } else if (scheme == ecdsa_k1_recoverable_validator::scheme()) {
+            ecdsa_k1_recoverable_validator::validate_signature(&authenticator_payload, &storage_context::tx_hash(ctx));
+        } else if (scheme == schnorr_validator::scheme()) {
+            schnorr_validator::validate_signature(&authenticator_payload, &storage_context::tx_hash(ctx));
+        } else { 
+            abort ESessionInvalidScheme
         };
         option::some(auth_key)
     }

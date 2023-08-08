@@ -82,8 +82,8 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
         sign
     }
 
-    /// Get the authentication key of the given authenticator.
-    public fun ecdsa_k1_recoverable_authentication_key(authenticator_payload: &vector<u8>): vector<u8> {
+    /// Get the authentication key of the given authenticator payload.
+    public fun get_authentication_key_from_payload(authenticator_payload: &vector<u8>): vector<u8> {
         let public_key = ecdsa_k1_recoverable_public_key(authenticator_payload);
         let addr = ecdsa_k1_recoverable_public_key_to_address(public_key);
         moveos_std::bcs::to_bytes(&addr)
@@ -105,23 +105,29 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
         }
     }
 
-    public fun validate(ctx: &StorageContext, authenticator_payload: vector<u8>) {
-        // TODO handle non-ed25519 auth key and address relationship
-        // let auth_key = ecdsa_k1_recoverable_authentication_key(&authenticator_payload);
-        // let auth_key_in_account = get_authentication_key(ctx, storage_context::sender(ctx));
-        // assert!(
-        //    auth_key_in_account == auth_key,
-        //    auth_validator::error_invalid_account_auth_key()
-        // );
-        assert!(
-            ecdsa_k1_recoverable::verify(
-                &ecdsa_k1_recoverable_signature(&authenticator_payload),
-                &storage_context::tx_hash(ctx),
-                SHA256, // KECCAK256:0, SHA256:1, TODO: The hash type may need to be passed through the authenticator
+   /// Only validate the authenticator's signature.
+   public fun validate_signature(authenticator_payload: &vector<u8>, tx_hash: &vector<u8>){
+      assert!(
+            ecdsa_recoverable_k1::verify(
+               &ecdsa_recoverable_k1_signature(authenticator_payload),
+               &ecdsa_recoverable_k1_public_key(authenticator_payload),
+               tx_hash
             ),
             auth_validator::error_invalid_authenticator()
         );
-    }
+   }
+
+   public fun validate(ctx: &StorageContext, authenticator_payload: vector<u8>){
+      let tx_hash = storage_context::tx_hash(ctx);
+      validate_signature(&authenticator_payload, &tx_hash);
+        
+      let auth_key = get_authentication_key_from_payload(&authenticator_payload);
+      let auth_key_in_account = get_authentication_key(ctx, storage_context::sender(ctx));
+      assert!(
+         auth_key_in_account == auth_key,
+         auth_validator::error_invalid_account_auth_key()
+      );
+   }
 
     fun pre_execute(
         _ctx: &mut StorageContext,
@@ -131,9 +137,9 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
         _ctx: &mut StorageContext,
     ) {}
 
-    // this test ensures that the ecdsa_k1_recoverable_public_key_to_address function is compatible with the one in the rust code
+    // this test ensures that the test_ecdsa_k1_recoverable_public_key_to_authentication_key function is compatible with the one in the rust code
     #[test]
-    fun test_ecdsa_k1_recoverable_public_key_to_address() {
+    fun test_ecdsa_k1_recoverable_public_key_to_authentication_key() {
         let public_key = x"031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
         let addr = ecdsa_k1_recoverable_public_key_to_address(public_key);
         assert!(addr == @0x8c891976da9498ec1d3ff778a5d6c40c217d63cc8c48539c959f8b683eedf5a4, 1000);
