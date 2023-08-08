@@ -154,39 +154,12 @@ impl Display for Keystore {
     }
 }
 
-#[derive(Default)]
-pub struct FileBasedKeystore {
+#[derive(Default, Serialize, Deserialize)]
+pub(crate) struct BaseKeyStore {
     keys: BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, RoochKeyPair>>,
-    path: Option<PathBuf>,
 }
 
-impl Serialize for FileBasedKeystore {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(
-            self.path
-                .as_ref()
-                .unwrap_or(&PathBuf::default())
-                .to_str()
-                .unwrap_or(""),
-        )
-    }
-}
-
-impl<'de> Deserialize<'de> for FileBasedKeystore {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        use serde::de::Error;
-        FileBasedKeystore::new(&PathBuf::from(String::deserialize(deserializer)?))
-            .map_err(D::Error::custom)
-    }
-}
-
-impl AccountKeystore for FileBasedKeystore {
+impl AccountKeystore for BaseKeyStore {
     fn get_key_pair_by_scheme(
         &self,
         address: &RoochAddress,
@@ -269,239 +242,6 @@ impl AccountKeystore for FileBasedKeystore {
         keypair: RoochKeyPair,
         scheme: BuiltinScheme,
     ) -> Result<(), anyhow::Error> {
-        match std::env::var_os("TEST_ENV") {
-            Some(_) => {}
-            None => {
-                let address: RoochAddress = (&keypair.public()).into();
-                self.keys
-                    .entry(address)
-                    .or_insert_with(BTreeMap::new)
-                    .insert(scheme, keypair);
-                self.save()?;
-            }
-        }
-        Ok(())
-    }
-
-    fn get_public_key_by_scheme(&self, scheme: BuiltinScheme) -> Result<PublicKey, anyhow::Error> {
-        for inner_map in self.keys.values() {
-            if let Some(keypair) = inner_map.get(&scheme) {
-                return Ok(keypair.public());
-            }
-        }
-        Err(anyhow!("Cannot find key for scheme: [{:?}]", scheme))
-    }
-
-    fn get_address_public_keys(&self) -> Vec<(RoochAddress, PublicKey)> {
-        let mut result = Vec::new();
-        for (address, inner_map) in &self.keys {
-            for keypair in inner_map.values() {
-                let public_key = keypair.public();
-                result.push((*address, public_key));
-            }
-        }
-        result
-    }
-
-    fn get_key_pairs(&self, address: &RoochAddress) -> Result<Vec<&RoochKeyPair>, anyhow::Error> {
-        match self.keys.get(address) {
-            Some(key_map) => {
-                // Collect references to RoochKeyPair objects from the inner map into a Vec.
-                let key_pairs: Vec<&RoochKeyPair> = key_map.values().collect();
-                Ok(key_pairs)
-            }
-            None => Err(anyhow!("Cannot find key for address: [{address}]")),
-        }
-    }
-
-    fn update_key_pair_by_scheme(
-        &mut self,
-        address: &RoochAddress,
-        keypair: RoochKeyPair,
-        scheme: BuiltinScheme,
-    ) -> Result<(), anyhow::Error> {
-        match std::env::var_os("TEST_ENV") {
-            Some(_) => {}
-            None => {
-                // First, get the inner map associated with the address
-                let inner_map = self.keys.entry(*address).or_insert_with(BTreeMap::new);
-
-                // Insert or update the keypair for the specified scheme in the inner map
-                inner_map.insert(scheme, keypair);
-
-                // Call the save method to save the updated keys to storage
-                self.save()?;
-            }
-        }
-        Ok(())
-    }
-}
-
-impl FileBasedKeystore {
-    pub fn new(path: &PathBuf) -> Result<Self, anyhow::Error> {
-        let keys: BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, RoochKeyPair>> = if path.exists() {
-            let reader = BufReader::new(
-                File::open(path)
-                    .map_err(|e| anyhow!("Can't open FileBasedKeystore from {:?}: {}", path, e))?,
-            );
-            let kp_strings: BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, String>> =
-                serde_json::from_reader(reader).map_err(|e| {
-                    anyhow!("Can't deserialize FileBasedKeystore from {:?}: {}", path, e)
-                })?;
-
-            let keys: Result<_, anyhow::Error> = kp_strings
-                .into_iter()
-                .map(|(address, inner_map)| {
-                    let inner_map_decoded: Result<_, anyhow::Error> = inner_map
-                        .into_iter()
-                        .map(|(scheme, key_str)| {
-                            let keypair = match RoochKeyPair::decode_base64(&key_str) {
-                                Ok(kp) => kp,
-                                Err(err) => {
-                                    return Err(anyhow::anyhow!(
-                                        "Failed to decode base64: {}",
-                                        err
-                                    ));
-                                }
-                            };
-                            Ok((scheme, keypair))
-                        })
-                        .collect();
-                    inner_map_decoded.map(|inner_map| (address, inner_map))
-                })
-                .collect();
-            keys.map_err(|e| anyhow!("Invalid Keypair file {:#?} {:?}", e, path))?
-        } else {
-            BTreeMap::new()
-        };
-
-        Ok(Self {
-            keys,
-            path: Some(path.to_path_buf()),
-        })
-    }
-
-    pub fn set_path(&mut self, path: &Path) {
-        self.path = Some(path.to_path_buf());
-    }
-
-    pub fn save(&self) -> Result<(), anyhow::Error> {
-        if let Some(path) = &self.path {
-            let store = serde_json::to_string_pretty(&self.encode_keys())?;
-            fs::write(path, store)?;
-        }
-        Ok(())
-    }
-
-    fn encode_keys(&self) -> BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, String>> {
-        self.keys
-            .iter()
-            .map(|(address, inner_map)| {
-                let inner_map_encoded = inner_map
-                    .iter()
-                    .map(|(scheme, keypair)| (*scheme, EncodeDecodeBase64::encode_base64(keypair)))
-                    .collect();
-                (*address, inner_map_encoded)
-            })
-            .collect()
-    }
-
-    pub fn key_pairs(&self) -> Vec<&RoochKeyPair> {
-        self.keys
-            .values()
-            .flat_map(|inner_map| inner_map.values())
-            .collect()
-    }
-}
-
-#[derive(Default, Serialize, Deserialize)]
-pub struct InMemKeystore {
-    keys: BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, RoochKeyPair>>,
-}
-
-impl AccountKeystore for InMemKeystore {
-    fn get_key_pair_by_scheme(
-        &self,
-        address: &RoochAddress,
-        scheme: BuiltinScheme,
-    ) -> Result<&RoochKeyPair, signature::Error> {
-        if let Some(inner_map) = self.keys.get(address) {
-            if let Some(keypair) = inner_map.get(&scheme) {
-                Ok(keypair)
-            } else {
-                Err(signature::Error::from_source(format!(
-                    "Scheme not found for address: [{:?}]",
-                    scheme
-                )))
-            }
-        } else {
-            Err(signature::Error::from_source(format!(
-                "Cannot find key for address: [{:?}]",
-                address
-            )))
-        }
-    }
-
-    fn sign_hashed(
-        &self,
-        address: &RoochAddress,
-        msg: &[u8],
-        scheme: BuiltinScheme,
-    ) -> Result<Signature, signature::Error> {
-        Ok(Signature::new_hashed(
-            msg,
-            self.get_key_pair_by_scheme(address, scheme)?,
-        ))
-    }
-
-    fn sign_transaction(
-        &self,
-        address: &RoochAddress,
-        msg: RoochTransactionData,
-        scheme: BuiltinScheme,
-    ) -> Result<RoochTransaction, signature::Error> {
-        let pk = self
-            .get_key_pair_by_scheme(address, scheme)
-            .ok()
-            .ok_or_else(|| {
-                signature::Error::from_source(format!("Cannot find key for address: [{address}]"))
-            })?;
-
-        let signature = Signature::new_hashed(msg.hash().as_bytes(), pk);
-
-        let auth = match pk.public().scheme() {
-            BuiltinScheme::Ed25519 => authenticator::Authenticator::ed25519(signature),
-            BuiltinScheme::Ecdsa => authenticator::Authenticator::ecdsa(signature),
-            BuiltinScheme::EcdsaRecoverable => {
-                authenticator::Authenticator::ecdsa_recoverable(signature)
-            }
-            BuiltinScheme::MultiEd25519 => todo!(),
-            BuiltinScheme::Schnorr => authenticator::Authenticator::schnorr(signature),
-        };
-
-        Ok(RoochTransaction::new(msg, auth))
-    }
-
-    fn sign_secure<T>(
-        &self,
-        address: &RoochAddress,
-        msg: &T,
-        scheme: BuiltinScheme,
-    ) -> Result<Signature, signature::Error>
-    where
-        T: Serialize,
-    {
-        Ok(Signature::new_secure(
-            msg,
-            self.get_key_pair_by_scheme(address, scheme)?,
-        ))
-    }
-
-    fn add_key_pair_by_scheme(
-        &mut self,
-        keypair: RoochKeyPair,
-        scheme: BuiltinScheme,
-    ) -> Result<(), anyhow::Error> {
         let address: RoochAddress = (&keypair.public()).into();
         self.keys
             .entry(address)
@@ -552,8 +292,273 @@ impl AccountKeystore for InMemKeystore {
 
         // Insert or update the keypair for the specified scheme in the inner map
         inner_map.insert(scheme, keypair);
-
         Ok(())
+    }
+}
+
+#[derive(Default)]
+pub struct FileBasedKeystore {
+    keystore: BaseKeyStore,
+    path: Option<PathBuf>,
+}
+
+impl Serialize for FileBasedKeystore {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(
+            self.path
+                .as_ref()
+                .unwrap_or(&PathBuf::default())
+                .to_str()
+                .unwrap_or(""),
+        )
+    }
+}
+
+impl<'de> Deserialize<'de> for FileBasedKeystore {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        use serde::de::Error;
+        FileBasedKeystore::new(&PathBuf::from(String::deserialize(deserializer)?))
+            .map_err(D::Error::custom)
+    }
+}
+
+impl AccountKeystore for FileBasedKeystore {
+    fn get_key_pair_by_scheme(
+        &self,
+        address: &RoochAddress,
+        scheme: BuiltinScheme,
+    ) -> Result<&RoochKeyPair, signature::Error> {
+        self.keystore.get_key_pair_by_scheme(address, scheme)
+    }
+
+    fn sign_hashed(
+        &self,
+        address: &RoochAddress,
+        msg: &[u8],
+        scheme: BuiltinScheme,
+    ) -> Result<Signature, signature::Error> {
+        self.keystore.sign_hashed(address, msg, scheme)
+    }
+
+    fn sign_secure<T>(
+        &self,
+        address: &RoochAddress,
+        msg: &T,
+        scheme: BuiltinScheme,
+    ) -> Result<Signature, signature::Error>
+    where
+        T: Serialize,
+    {
+        self.keystore.sign_secure(address, msg, scheme)
+    }
+
+    fn sign_transaction(
+        &self,
+        address: &RoochAddress,
+        msg: RoochTransactionData,
+        scheme: BuiltinScheme,
+    ) -> Result<RoochTransaction, signature::Error> {
+        self.keystore.sign_transaction(address, msg, scheme)
+    }
+
+    fn add_key_pair_by_scheme(
+        &mut self,
+        keypair: RoochKeyPair,
+        scheme: BuiltinScheme,
+    ) -> Result<(), anyhow::Error> {
+        self.keystore.add_key_pair_by_scheme(keypair, scheme)?;
+        //TODO should check test env at here?
+        if std::env::var_os("TEST_ENV").is_none() {
+            self.save()?;
+        }
+        Ok(())
+    }
+
+    fn get_public_key_by_scheme(&self, scheme: BuiltinScheme) -> Result<PublicKey, anyhow::Error> {
+        self.keystore.get_public_key_by_scheme(scheme)
+    }
+
+    fn get_address_public_keys(&self) -> Vec<(RoochAddress, PublicKey)> {
+        self.keystore.get_address_public_keys()
+    }
+
+    fn get_key_pairs(&self, address: &RoochAddress) -> Result<Vec<&RoochKeyPair>, anyhow::Error> {
+        self.keystore.get_key_pairs(address)
+    }
+
+    fn update_key_pair_by_scheme(
+        &mut self,
+        address: &RoochAddress,
+        keypair: RoochKeyPair,
+        scheme: BuiltinScheme,
+    ) -> Result<(), anyhow::Error> {
+        self.keystore
+            .update_key_pair_by_scheme(address, keypair, scheme)?;
+        //TODO should check test env at here?
+        if std::env::var_os("TEST_ENV").is_none() {
+            self.save()?;
+        }
+        Ok(())
+    }
+}
+
+impl FileBasedKeystore {
+    pub fn new(path: &PathBuf) -> Result<Self, anyhow::Error> {
+        let keys: BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, RoochKeyPair>> = if path.exists() {
+            let reader = BufReader::new(
+                File::open(path)
+                    .map_err(|e| anyhow!("Can't open FileBasedKeystore from {:?}: {}", path, e))?,
+            );
+            let kp_strings: BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, String>> =
+                serde_json::from_reader(reader).map_err(|e| {
+                    anyhow!("Can't deserialize FileBasedKeystore from {:?}: {}", path, e)
+                })?;
+
+            let keys: Result<_, anyhow::Error> = kp_strings
+                .into_iter()
+                .map(|(address, inner_map)| {
+                    let inner_map_decoded: Result<_, anyhow::Error> = inner_map
+                        .into_iter()
+                        .map(|(scheme, key_str)| {
+                            let keypair = match RoochKeyPair::decode_base64(&key_str) {
+                                Ok(kp) => kp,
+                                Err(err) => {
+                                    return Err(anyhow::anyhow!(
+                                        "Failed to decode base64: {}",
+                                        err
+                                    ));
+                                }
+                            };
+                            Ok((scheme, keypair))
+                        })
+                        .collect();
+                    inner_map_decoded.map(|inner_map| (address, inner_map))
+                })
+                .collect();
+            keys.map_err(|e| anyhow!("Invalid Keypair file {:#?} {:?}", e, path))?
+        } else {
+            BTreeMap::new()
+        };
+
+        Ok(Self {
+            keystore: BaseKeyStore { keys },
+            path: Some(path.to_path_buf()),
+        })
+    }
+
+    pub fn set_path(&mut self, path: &Path) {
+        self.path = Some(path.to_path_buf());
+    }
+
+    pub fn save(&self) -> Result<(), anyhow::Error> {
+        if let Some(path) = &self.path {
+            let store = serde_json::to_string_pretty(&self.encode_keys())?;
+            fs::write(path, store)?;
+        }
+        Ok(())
+    }
+
+    fn encode_keys(&self) -> BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, String>> {
+        self.keystore
+            .keys
+            .iter()
+            .map(|(address, inner_map)| {
+                let inner_map_encoded = inner_map
+                    .iter()
+                    .map(|(scheme, keypair)| (*scheme, EncodeDecodeBase64::encode_base64(keypair)))
+                    .collect();
+                (*address, inner_map_encoded)
+            })
+            .collect()
+    }
+
+    pub fn key_pairs(&self) -> Vec<&RoochKeyPair> {
+        self.keystore
+            .keys
+            .values()
+            .flat_map(|inner_map| inner_map.values())
+            .collect()
+    }
+}
+
+#[derive(Default, Serialize, Deserialize)]
+pub struct InMemKeystore {
+    keystore: BaseKeyStore,
+}
+
+impl AccountKeystore for InMemKeystore {
+    fn sign_secure<T>(
+        &self,
+        address: &RoochAddress,
+        msg: &T,
+        scheme: BuiltinScheme,
+    ) -> Result<Signature, signature::Error>
+    where
+        T: Serialize,
+    {
+        self.keystore.sign_secure(address, msg, scheme)
+    }
+
+    fn sign_transaction(
+        &self,
+        address: &RoochAddress,
+        msg: RoochTransactionData,
+        scheme: BuiltinScheme,
+    ) -> Result<RoochTransaction, signature::Error> {
+        self.keystore.sign_transaction(address, msg, scheme)
+    }
+
+    fn add_key_pair_by_scheme(
+        &mut self,
+        keypair: RoochKeyPair,
+        scheme: BuiltinScheme,
+    ) -> Result<(), anyhow::Error> {
+        self.keystore.add_key_pair_by_scheme(keypair, scheme)
+    }
+
+    fn get_public_key_by_scheme(&self, scheme: BuiltinScheme) -> Result<PublicKey, anyhow::Error> {
+        self.keystore.get_public_key_by_scheme(scheme)
+    }
+
+    fn get_address_public_keys(&self) -> Vec<(RoochAddress, PublicKey)> {
+        self.keystore.get_address_public_keys()
+    }
+
+    fn get_key_pairs(&self, address: &RoochAddress) -> Result<Vec<&RoochKeyPair>, anyhow::Error> {
+        self.keystore.get_key_pairs(address)
+    }
+
+    fn update_key_pair_by_scheme(
+        &mut self,
+        address: &RoochAddress,
+        keypair: RoochKeyPair,
+        scheme: BuiltinScheme,
+    ) -> Result<(), anyhow::Error> {
+        self.keystore
+            .update_key_pair_by_scheme(address, keypair, scheme)
+    }
+
+    fn get_key_pair_by_scheme(
+        &self,
+        address: &RoochAddress,
+        scheme: BuiltinScheme,
+    ) -> Result<&RoochKeyPair, signature::Error> {
+        self.keystore.get_key_pair_by_scheme(address, scheme)
+    }
+
+    fn sign_hashed(
+        &self,
+        address: &RoochAddress,
+        msg: &[u8],
+        scheme: BuiltinScheme,
+    ) -> Result<Signature, signature::Error> {
+        self.keystore.sign_hashed(address, msg, scheme)
     }
 }
 
@@ -570,7 +575,9 @@ impl InMemKeystore {
             })
             .collect::<BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, RoochKeyPair>>>();
 
-        Self { keys }
+        Self {
+            keystore: BaseKeyStore { keys },
+        }
     }
 
     pub fn new_ecdsa_insecure_for_tests(initial_key_number: usize) -> Self {
@@ -585,7 +592,9 @@ impl InMemKeystore {
             })
             .collect::<BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, RoochKeyPair>>>();
 
-        Self { keys }
+        Self {
+            keystore: BaseKeyStore { keys },
+        }
     }
 
     pub fn new_ecdsa_recoverable_insecure_for_tests(initial_key_number: usize) -> Self {
@@ -603,7 +612,9 @@ impl InMemKeystore {
             })
             .collect::<BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, RoochKeyPair>>>();
 
-        Self { keys }
+        Self {
+            keystore: BaseKeyStore { keys },
+        }
     }
 
     pub fn new_schnorr_insecure_for_tests(initial_key_number: usize) -> Self {
@@ -618,6 +629,8 @@ impl InMemKeystore {
             })
             .collect::<BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, RoochKeyPair>>>();
 
-        Self { keys }
+        Self {
+            keystore: BaseKeyStore { keys },
+        }
     }
 }
