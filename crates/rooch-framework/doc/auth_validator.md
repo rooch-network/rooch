@@ -148,7 +148,7 @@ InvalidAuthenticator, include invalid signature
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_error_invalid_account_auth_key">error_invalid_account_auth_key</a>(): u64 {
-   <a href="_invalid_argument">error::invalid_argument</a>(<a href="auth_validator.md#0x3_auth_validator_EValidateInvalidAccountAuthKey">EValidateInvalidAccountAuthKey</a>)
+    <a href="_invalid_argument">error::invalid_argument</a>(<a href="auth_validator.md#0x3_auth_validator_EValidateInvalidAccountAuthKey">EValidateInvalidAccountAuthKey</a>)
 }
 </code></pre>
 
@@ -172,7 +172,7 @@ InvalidAuthenticator, include invalid signature
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_error_invalid_authenticator">error_invalid_authenticator</a>(): u64 {
-   <a href="_invalid_argument">error::invalid_argument</a>(<a href="auth_validator.md#0x3_auth_validator_EValidateInvalidAuthenticator">EValidateInvalidAuthenticator</a>)
+    <a href="_invalid_argument">error::invalid_argument</a>(<a href="auth_validator.md#0x3_auth_validator_EValidateInvalidAuthenticator">EValidateInvalidAuthenticator</a>)
 }
 </code></pre>
 
@@ -195,12 +195,16 @@ InvalidAuthenticator, include invalid signature
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_new_auth_validator">new_auth_validator</a>(id: u64, module_address: <b>address</b>, module_name: std::ascii::String): <a href="auth_validator.md#0x3_auth_validator_AuthValidator">AuthValidator</a> {
-   <a href="auth_validator.md#0x3_auth_validator_AuthValidator">AuthValidator</a> {
-      id: id,
-      module_address: module_address,
-      module_name: module_name,
-   }
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_new_auth_validator">new_auth_validator</a>(
+    id: u64,
+    module_address: <b>address</b>,
+    module_name: std::ascii::String
+): <a href="auth_validator.md#0x3_auth_validator_AuthValidator">AuthValidator</a> {
+    <a href="auth_validator.md#0x3_auth_validator_AuthValidator">AuthValidator</a> {
+        id: id,
+        module_address: module_address,
+        module_name: module_name,
+    }
 }
 </code></pre>
 
@@ -224,7 +228,7 @@ InvalidAuthenticator, include invalid signature
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_validator_id">validator_id</a>(validator: &<a href="auth_validator.md#0x3_auth_validator_AuthValidator">AuthValidator</a>): u64 {
-     validator.id
+    validator.id
 }
 </code></pre>
 
@@ -248,7 +252,7 @@ InvalidAuthenticator, include invalid signature
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_validator_module_address">validator_module_address</a>(validator: &<a href="auth_validator.md#0x3_auth_validator_AuthValidator">AuthValidator</a>): <b>address</b> {
-   validator.module_address
+    validator.module_address
 }
 </code></pre>
 
@@ -272,7 +276,7 @@ InvalidAuthenticator, include invalid signature
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_validator_module_name">validator_module_name</a>(validator: &<a href="auth_validator.md#0x3_auth_validator_AuthValidator">AuthValidator</a>): std::ascii::String {
-   validator.module_name
+    validator.module_name
 }
 </code></pre>
 
@@ -295,11 +299,14 @@ InvalidAuthenticator, include invalid signature
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_new_tx_validate_result">new_tx_validate_result</a>(<a href="auth_validator.md#0x3_auth_validator">auth_validator</a>: Option&lt;<a href="auth_validator.md#0x3_auth_validator_AuthValidator">AuthValidator</a>&gt;, <a href="session_key.md#0x3_session_key">session_key</a>: Option&lt;<a href="">vector</a>&lt;u8&gt;&gt;): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a> {
-   <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a> {
-      <a href="auth_validator.md#0x3_auth_validator">auth_validator</a>: <a href="auth_validator.md#0x3_auth_validator">auth_validator</a>,
-      <a href="session_key.md#0x3_session_key">session_key</a>: <a href="session_key.md#0x3_session_key">session_key</a>,
-   }
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_new_tx_validate_result">new_tx_validate_result</a>(
+    <a href="auth_validator.md#0x3_auth_validator">auth_validator</a>: Option&lt;<a href="auth_validator.md#0x3_auth_validator_AuthValidator">AuthValidator</a>&gt;,
+    <a href="session_key.md#0x3_session_key">session_key</a>: Option&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a> {
+    <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a> {
+        <a href="auth_validator.md#0x3_auth_validator">auth_validator</a>: <a href="auth_validator.md#0x3_auth_validator">auth_validator</a>,
+        <a href="session_key.md#0x3_session_key">session_key</a>: <a href="session_key.md#0x3_session_key">session_key</a>,
+    }
 }
 </code></pre>
 
@@ -323,8 +330,8 @@ The current tx is validate via the session key or not
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">is_validate_via_session_key</a>(ctx: &StorageContext) : bool {
-   <a href="_is_some">option::is_some</a>(&<a href="auth_validator.md#0x3_auth_validator_get_session_key">get_session_key</a>(ctx))
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">is_validate_via_session_key</a>(ctx: &StorageContext): bool {
+    <a href="_is_some">option::is_some</a>(&<a href="auth_validator.md#0x3_auth_validator_get_session_key">get_session_key</a>(ctx))
 }
 </code></pre>
 
@@ -348,14 +355,14 @@ Get the session key from the TxValidateResult in the TxContext
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key">get_session_key</a>(ctx: &StorageContext): Option&lt;<a href="">vector</a>&lt;u8&gt;&gt;{
-   <b>let</b> validate_result_opt = <a href="_get">storage_context::get</a>&lt;<a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a>&gt;(ctx);
-   <b>if</b>(<a href="_is_some">option::is_some</a>(&validate_result_opt)){
-      <b>let</b> validate_result = <a href="_extract">option::extract</a>(&<b>mut</b> validate_result_opt);
-      validate_result.<a href="session_key.md#0x3_session_key">session_key</a>
-   }<b>else</b>{
-      <a href="_none">option::none</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;()
-   }
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key">get_session_key</a>(ctx: &StorageContext): Option&lt;<a href="">vector</a>&lt;u8&gt;&gt; {
+    <b>let</b> validate_result_opt = <a href="_get">storage_context::get</a>&lt;<a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a>&gt;(ctx);
+    <b>if</b> (<a href="_is_some">option::is_some</a>(&validate_result_opt)) {
+        <b>let</b> validate_result = <a href="_extract">option::extract</a>(&<b>mut</b> validate_result_opt);
+        validate_result.<a href="session_key.md#0x3_session_key">session_key</a>
+    }<b>else</b> {
+        <a href="_none">option::none</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;()
+    }
 }
 </code></pre>
 
