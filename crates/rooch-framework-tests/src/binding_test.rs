@@ -25,6 +25,7 @@ impl RustBindingTest {
         self.executor.moveos().as_module_bundle::<M>()
     }
 
+    //TODO let the module bundle to execute the function
     pub fn execute<T: AbstractTransaction>(&mut self, tx: T) -> Result<()> {
         let verified_tx = self.executor.validate(tx)?;
         let execute_result = self.executor.execute(verified_tx)?;
