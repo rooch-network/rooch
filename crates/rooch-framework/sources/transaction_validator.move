@@ -57,7 +57,7 @@ module rooch_framework::transaction_validator {
 
         // === validate the authenticator ===
 
-        // if the authenticator payload is session key, validate the session key
+        // if the authenticator authenticator_payload is session key, validate the session key
         // otherwise return the authentication validator via the scheme
         let session_key_option = session_key::validate(ctx, scheme, authenticator_payload);
         if(option::is_some(&session_key_option)){

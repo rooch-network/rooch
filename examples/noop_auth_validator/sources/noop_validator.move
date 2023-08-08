@@ -13,8 +13,8 @@ module noop_auth_validator::noop_validator {
 
    /// NoOpValidator is an auth validator that does not validate anything.
    /// It is used for testing purposes, and should not be used in production.
-   /// It is only failed when the payload is empty.
-   public fun validate(_ctx: &StorageContext, payload: vector<u8>){
-      assert!(vector::length(&payload) > 0, auth_validator::error_invalid_authenticator());
+   /// It is only failed when the authenticator_payload is empty.
+   public fun validate(_ctx: &StorageContext, authenticator_payload: vector<u8>){
+      assert!(vector::length(&authenticator_payload) > 0, auth_validator::error_invalid_authenticator());
    }
 }

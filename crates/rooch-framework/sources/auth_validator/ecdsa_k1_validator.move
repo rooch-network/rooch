@@ -51,11 +51,11 @@ module rooch_framework::ecdsa_k1_validator {
       account_authentication::rotate_authentication_key<EcdsaK1Validator>(ctx, account, ecdsa_k1_authentication_key);
    }
 
-   public fun ecdsa_k1_public_key(payload: &vector<u8>): vector<u8> {
+   public fun ecdsa_k1_public_key(authenticator_payload: &vector<u8>): vector<u8> {
       let public_key = vector::empty<u8>();
       let i = V_ECDSA_SCHEME_LENGTH + V_ECDSA_SIG_LENGTH;
       while (i < V_ECDSA_SCHEME_LENGTH + V_ECDSA_SIG_LENGTH + V_ECDSA_PUBKEY_LENGTH) {
-         let value = vector::borrow(payload, i);
+         let value = vector::borrow(authenticator_payload, i);
          vector::push_back(&mut public_key, *value);
          i = i + 1;
       };
@@ -63,11 +63,11 @@ module rooch_framework::ecdsa_k1_validator {
       public_key
    }
 
-   public fun ecdsa_k1_signature(payload: &vector<u8>): vector<u8> {
+   public fun ecdsa_k1_signature(authenticator_payload: &vector<u8>): vector<u8> {
       let sign = vector::empty<u8>();
       let i = V_ECDSA_SCHEME_LENGTH;
       while (i < V_ECDSA_SIG_LENGTH + 1) {
-         let value = vector::borrow(payload, i);
+         let value = vector::borrow(authenticator_payload, i);
          vector::push_back(&mut sign, *value);
          i = i + 1;
       };
@@ -76,8 +76,8 @@ module rooch_framework::ecdsa_k1_validator {
    }
 
    /// Get the authentication key of the given authenticator.
-   public fun ecdsa_k1_authentication_key(payload: &vector<u8>): vector<u8> {
-      let public_key = ecdsa_k1_public_key(payload);
+   public fun ecdsa_k1_authentication_key(authenticator_payload: &vector<u8>): vector<u8> {
+      let public_key = ecdsa_k1_public_key(authenticator_payload);
       let addr = ecdsa_k1_public_key_to_address(public_key);
       moveos_std::bcs::to_bytes(&addr)
    }
@@ -98,9 +98,9 @@ module rooch_framework::ecdsa_k1_validator {
       }
    }
 
-   public fun validate(ctx: &StorageContext, payload: vector<u8>){
+   public fun validate(ctx: &StorageContext, authenticator_payload: vector<u8>){
       // TODO handle non-ed25519 auth key and address relationship
-      // let auth_key = ecdsa_k1_authentication_key(&payload);
+      // let auth_key = ecdsa_k1_authentication_key(&authenticator_payload);
       // let auth_key_in_account = get_authentication_key(ctx, storage_context::sender(ctx));
       // assert!(
       //    auth_key_in_account == auth_key,
@@ -108,8 +108,8 @@ module rooch_framework::ecdsa_k1_validator {
       // );
       assert!(
          ecdsa_k1::verify(
-            &ecdsa_k1_signature(&payload),
-            &ecdsa_k1_public_key(&payload),
+            &ecdsa_k1_signature(&authenticator_payload),
+            &ecdsa_k1_public_key(&authenticator_payload),
             &storage_context::tx_hash(ctx),
             SHA256, // KECCAK256:0, SHA256:1, TODO: The hash type may need to be passed through the authenticator
          ),

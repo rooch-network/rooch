@@ -190,7 +190,7 @@ error code
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_public_key">ed25519_public_key</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_public_key">ed25519_public_key</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -199,11 +199,11 @@ error code
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_public_key">ed25519_public_key</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_public_key">ed25519_public_key</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
    <b>let</b> public_key = <a href="_empty">vector::empty</a>&lt;u8&gt;();
    <b>let</b> i = <a href="ed25519_validator.md#0x3_ed25519_validator_V_ED25519_SCHEME_LENGTH">V_ED25519_SCHEME_LENGTH</a> + <a href="ed25519_validator.md#0x3_ed25519_validator_V_ED25519_SIG_LENGTH">V_ED25519_SIG_LENGTH</a>;
    <b>while</b> (i &lt; <a href="ed25519_validator.md#0x3_ed25519_validator_V_ED25519_SCHEME_LENGTH">V_ED25519_SCHEME_LENGTH</a> + <a href="ed25519_validator.md#0x3_ed25519_validator_V_ED25519_SIG_LENGTH">V_ED25519_SIG_LENGTH</a> + <a href="ed25519_validator.md#0x3_ed25519_validator_V_ED25519_PUBKEY_LENGTH">V_ED25519_PUBKEY_LENGTH</a>) {
-      <b>let</b> value = <a href="_borrow">vector::borrow</a>(payload, i);
+      <b>let</b> value = <a href="_borrow">vector::borrow</a>(authenticator_payload, i);
       <a href="_push_back">vector::push_back</a>(&<b>mut</b> public_key, *value);
       i = i + 1;
    };
@@ -222,7 +222,7 @@ error code
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_signature">ed25519_signature</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_signature">ed25519_signature</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -231,11 +231,11 @@ error code
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_signature">ed25519_signature</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_signature">ed25519_signature</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
    <b>let</b> sign = <a href="_empty">vector::empty</a>&lt;u8&gt;();
    <b>let</b> i = <a href="ed25519_validator.md#0x3_ed25519_validator_V_ED25519_SCHEME_LENGTH">V_ED25519_SCHEME_LENGTH</a>;
    <b>while</b> (i &lt; <a href="ed25519_validator.md#0x3_ed25519_validator_V_ED25519_SIG_LENGTH">V_ED25519_SIG_LENGTH</a> + 1) {
-      <b>let</b> value = <a href="_borrow">vector::borrow</a>(payload, i);
+      <b>let</b> value = <a href="_borrow">vector::borrow</a>(authenticator_payload, i);
       <a href="_push_back">vector::push_back</a>(&<b>mut</b> sign, *value);
       i = i + 1;
    };
@@ -252,10 +252,10 @@ error code
 
 ## Function `get_authentication_key_from_payload`
 
-Get the authentication key of the given authenticator payload.
+Get the authentication key of the given authenticator authenticator_payload.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_get_authentication_key_from_payload">get_authentication_key_from_payload</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_get_authentication_key_from_payload">get_authentication_key_from_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -264,8 +264,8 @@ Get the authentication key of the given authenticator payload.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_get_authentication_key_from_payload">get_authentication_key_from_payload</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
-   <b>let</b> public_key = <a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_public_key">ed25519_public_key</a>(payload);
+<pre><code><b>public</b> <b>fun</b> <a href="ed25519_validator.md#0x3_ed25519_validator_get_authentication_key_from_payload">get_authentication_key_from_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
+   <b>let</b> public_key = <a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_public_key">ed25519_public_key</a>(authenticator_payload);
    <b>let</b> addr = <a href="ed25519_validator.md#0x3_ed25519_validator_ed25519_public_key_to_address">ed25519_public_key_to_address</a>(public_key);
    moveos_std::bcs::to_bytes(&addr)
 }

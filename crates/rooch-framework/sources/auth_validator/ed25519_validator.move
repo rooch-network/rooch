@@ -48,11 +48,11 @@ module rooch_framework::ed25519_validator {
    }
 
 
-   public fun ed25519_public_key(payload: &vector<u8>): vector<u8> {
+   public fun ed25519_public_key(authenticator_payload: &vector<u8>): vector<u8> {
       let public_key = vector::empty<u8>();
       let i = V_ED25519_SCHEME_LENGTH + V_ED25519_SIG_LENGTH;
       while (i < V_ED25519_SCHEME_LENGTH + V_ED25519_SIG_LENGTH + V_ED25519_PUBKEY_LENGTH) {
-         let value = vector::borrow(payload, i);
+         let value = vector::borrow(authenticator_payload, i);
          vector::push_back(&mut public_key, *value);
          i = i + 1;
       };
@@ -60,11 +60,11 @@ module rooch_framework::ed25519_validator {
       public_key
    }
 
-   public fun ed25519_signature(payload: &vector<u8>): vector<u8> {
+   public fun ed25519_signature(authenticator_payload: &vector<u8>): vector<u8> {
       let sign = vector::empty<u8>();
       let i = V_ED25519_SCHEME_LENGTH;
       while (i < V_ED25519_SIG_LENGTH + 1) {
-         let value = vector::borrow(payload, i);
+         let value = vector::borrow(authenticator_payload, i);
          vector::push_back(&mut sign, *value);
          i = i + 1;
       };
@@ -72,9 +72,9 @@ module rooch_framework::ed25519_validator {
       sign
    }
 
-   /// Get the authentication key of the given authenticator payload.
-   public fun get_authentication_key_from_payload(payload: &vector<u8>): vector<u8> {
-      let public_key = ed25519_public_key(payload);
+   /// Get the authentication key of the given authenticator authenticator_payload.
+   public fun get_authentication_key_from_payload(authenticator_payload: &vector<u8>): vector<u8> {
+      let public_key = ed25519_public_key(authenticator_payload);
       let addr = ed25519_public_key_to_address(public_key);
       moveos_std::bcs::to_bytes(&addr)
    }

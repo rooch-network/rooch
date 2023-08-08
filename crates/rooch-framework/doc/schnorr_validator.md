@@ -217,7 +217,7 @@ error code
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_public_key">schnorr_public_key</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_public_key">schnorr_public_key</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -226,11 +226,11 @@ error code
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_public_key">schnorr_public_key</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_public_key">schnorr_public_key</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
    <b>let</b> public_key = <a href="_empty">vector::empty</a>&lt;u8&gt;();
    <b>let</b> i = <a href="schnorr_validator.md#0x3_schnorr_validator_V_SCHNORR_SCHEME_LENGTH">V_SCHNORR_SCHEME_LENGTH</a> + <a href="schnorr_validator.md#0x3_schnorr_validator_V_SCHNORR_SIG_LENGTH">V_SCHNORR_SIG_LENGTH</a>;
    <b>while</b> (i &lt; <a href="schnorr_validator.md#0x3_schnorr_validator_V_SCHNORR_SCHEME_LENGTH">V_SCHNORR_SCHEME_LENGTH</a> + <a href="schnorr_validator.md#0x3_schnorr_validator_V_SCHNORR_SIG_LENGTH">V_SCHNORR_SIG_LENGTH</a> + <a href="schnorr_validator.md#0x3_schnorr_validator_V_SCHNORR_PUBKEY_LENGTH">V_SCHNORR_PUBKEY_LENGTH</a>) {
-      <b>let</b> value = <a href="_borrow">vector::borrow</a>(payload, i);
+      <b>let</b> value = <a href="_borrow">vector::borrow</a>(authenticator_payload, i);
       <a href="_push_back">vector::push_back</a>(&<b>mut</b> public_key, *value);
       i = i + 1;
    };
@@ -249,7 +249,7 @@ error code
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_signature">schnorr_signature</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_signature">schnorr_signature</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -258,11 +258,11 @@ error code
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_signature">schnorr_signature</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_signature">schnorr_signature</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
    <b>let</b> sign = <a href="_empty">vector::empty</a>&lt;u8&gt;();
    <b>let</b> i = <a href="schnorr_validator.md#0x3_schnorr_validator_V_SCHNORR_SCHEME_LENGTH">V_SCHNORR_SCHEME_LENGTH</a>;
    <b>while</b> (i &lt; <a href="schnorr_validator.md#0x3_schnorr_validator_V_SCHNORR_SIG_LENGTH">V_SCHNORR_SIG_LENGTH</a> + 1) {
-      <b>let</b> value = <a href="_borrow">vector::borrow</a>(payload, i);
+      <b>let</b> value = <a href="_borrow">vector::borrow</a>(authenticator_payload, i);
       <a href="_push_back">vector::push_back</a>(&<b>mut</b> sign, *value);
       i = i + 1;
    };
@@ -282,7 +282,7 @@ error code
 Get the authentication key of the given authenticator.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_authentication_key">schnorr_authentication_key</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_authentication_key">schnorr_authentication_key</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -291,8 +291,8 @@ Get the authentication key of the given authenticator.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_authentication_key">schnorr_authentication_key</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
-   <b>let</b> public_key = <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_public_key">schnorr_public_key</a>(payload);
+<pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_authentication_key">schnorr_authentication_key</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
+   <b>let</b> public_key = <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_public_key">schnorr_public_key</a>(authenticator_payload);
    <b>let</b> addr = <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_public_key_to_address">schnorr_public_key_to_address</a>(public_key);
    moveos_std::bcs::to_bytes(&addr)
 }
@@ -364,7 +364,7 @@ Get the authentication key of the given authenticator.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_validate">validate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, payload: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_validate">validate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, authenticator_payload: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -373,9 +373,9 @@ Get the authentication key of the given authenticator.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_validate">validate</a>(ctx: &StorageContext, payload: <a href="">vector</a>&lt;u8&gt;){
+<pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_validate">validate</a>(ctx: &StorageContext, authenticator_payload: <a href="">vector</a>&lt;u8&gt;){
    // TODO handle non-<a href="ed25519.md#0x3_ed25519">ed25519</a> auth key and <b>address</b> relationship
-   // <b>let</b> auth_key = <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_authentication_key">schnorr_authentication_key</a>(&payload);
+   // <b>let</b> auth_key = <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_authentication_key">schnorr_authentication_key</a>(&authenticator_payload);
    // <b>let</b> auth_key_in_account = <a href="schnorr_validator.md#0x3_schnorr_validator_get_authentication_key">get_authentication_key</a>(ctx, <a href="_sender">storage_context::sender</a>(ctx));
    // <b>assert</b>!(
    //    auth_key_in_account == auth_key,
@@ -383,8 +383,8 @@ Get the authentication key of the given authenticator.
    // );
    <b>assert</b>!(
       <a href="schnorr.md#0x3_schnorr_verify">schnorr::verify</a>(
-         &<a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_signature">schnorr_signature</a>(&payload),
-         &<a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_public_key">schnorr_public_key</a>(&payload),
+         &<a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_signature">schnorr_signature</a>(&authenticator_payload),
+         &<a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_public_key">schnorr_public_key</a>(&authenticator_payload),
          &<a href="_tx_hash">storage_context::tx_hash</a>(ctx),
          <a href="schnorr_validator.md#0x3_schnorr_validator_SHA256">SHA256</a>,
       ),

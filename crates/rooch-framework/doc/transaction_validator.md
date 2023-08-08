@@ -163,7 +163,7 @@ If the authenticator is invaid, abort this function.
 
     // === validate the authenticator ===
 
-    // <b>if</b> the authenticator payload is session key, validate the session key
+    // <b>if</b> the authenticator authenticator_payload is session key, validate the session key
     // otherwise <b>return</b> the authentication validator via the scheme
     <b>let</b> session_key_option = <a href="session_key.md#0x3_session_key_validate">session_key::validate</a>(ctx, scheme, authenticator_payload);
     <b>if</b>(<a href="_is_some">option::is_some</a>(&session_key_option)){
