@@ -37,6 +37,25 @@
 
 
 
+<a name="0x3_transaction_validator_KECCAK256"></a>
+
+
+
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_KECCAK256">KECCAK256</a>: u8 = 1;
+</code></pre>
+
+
+
+<a name="0x3_transaction_validator_SHA256"></a>
+
+Hash used for verify signatures and messages
+
+
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_SHA256">SHA256</a>: u8 = 0;
+</code></pre>
+
+
+
 <a name="0x3_transaction_validator_EOUT_OF_GAS"></a>
 
 Transaction exceeded its allocated max gas
@@ -70,6 +89,15 @@ Transaction exceeded its allocated max gas
 
 
 <pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateCantPayGasDeposit">EValidateCantPayGasDeposit</a>: u64 = 1004;
+</code></pre>
+
+
+
+<a name="0x3_transaction_validator_EValidateHashFunctionDoesNotExist"></a>
+
+
+
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateHashFunctionDoesNotExist">EValidateHashFunctionDoesNotExist</a>: u64 = 1008;
 </code></pre>
 
 
@@ -159,6 +187,11 @@ If the authenticator is invaid, abort this function.
     <b>assert</b>!(
         tx_sequence_number == account_sequence_number,
         <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNumberTooNew">EValidateSequenceNumberTooNew</a>)
+    );
+
+    <b>assert</b>!(
+        <a href="../doc/hash.md#0x1_hash">hash</a> == <a href="transaction_validator.md#0x3_transaction_validator_SHA256">SHA256</a> || <a href="../doc/hash.md#0x1_hash">hash</a> == <a href="transaction_validator.md#0x3_transaction_validator_KECCAK256">KECCAK256</a>,
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateHashFunctionDoesNotExist">EValidateHashFunctionDoesNotExist</a>)
     );
 
     // === validate the authenticator ===

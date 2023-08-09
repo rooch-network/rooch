@@ -11,6 +11,9 @@ module rooch_framework::transaction_validator {
 
     const MAX_U64: u128 = 18446744073709551615;
 
+    /// Hash used for verify signatures and messages
+    const SHA256: u8 = 0;
+    const KECCAK256: u8 = 1;
 
     /// Transaction exceeded its allocated max gas
     const EOUT_OF_GAS: u64 = 6;
@@ -26,6 +29,7 @@ module rooch_framework::transaction_validator {
     const EValidateTransactionExpired: u64 = 1005;
     const EValidateBadChainId: u64 = 1006;
     const EValidateSequenceNumberTooBig: u64 = 1007;
+    const EValidateHashFunctionDoesNotExist: u64 = 1008;
 
     /// The authenticator's scheme is not installed to the sender's account
     const EValidateNotInstalledAuthValidator: u64 = 1010;
@@ -53,6 +57,11 @@ module rooch_framework::transaction_validator {
         assert!(
             tx_sequence_number == account_sequence_number,
             error::invalid_argument(EValidateSequenceNumberTooNew)
+        );
+
+        assert!(
+            hash == SHA256 || hash == KECCAK256,
+            error::invalid_argument(EValidateHashFunctionDoesNotExist)
         );
 
         // === validate the authenticator ===

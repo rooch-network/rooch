@@ -147,7 +147,7 @@ impl BuiltinScheme {
     }
 }
 
-/// The BuiltinHash used to verify and recover keys which builtin Rooch
+/// The BuiltinHash is used to verify and recover signatures using public key which builtin Rooch
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Display, Ord, PartialOrd, Serialize, Deserialize)]
 #[strum(serialize_all = "lowercase")]
 pub enum BuiltinHash {

@@ -5,7 +5,7 @@ use moveos_types::transaction::MoveAction;
 use rooch_framework::bindings::empty::Empty;
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
 use rooch_types::{
-    crypto::{BuiltinHash, BuiltinScheme},
+    crypto::BuiltinScheme,
     transaction::{rooch::RoochTransactionData, AbstractTransaction},
 };
 
@@ -33,7 +33,7 @@ fn test_validate() {
         .validate(
             &move_tx.ctx,
             auth_info.authenticator.payload,
-            BuiltinHash::Keccak256.flag(),
+            auth_info.authenticator.hash,
         )
         .unwrap()
 }
