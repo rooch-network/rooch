@@ -24,7 +24,7 @@ use moveos_types::{
     state::StateChangeSet,
     state_resolver::{self, module_name_to_key, resource_tag_to_key, StateResolver},
 };
-use smt::{NodeStore, SMTree, UpdateSet};
+use smt::{NodeStore, SMTIterator, SMTree, UpdateSet};
 use std::collections::BTreeMap;
 
 use crate::state_store::NodeDBStore;
@@ -114,6 +114,10 @@ where
 
     pub fn dump(&self) -> Result<Vec<(Vec<u8>, State)>> {
         self.smt.dump()
+    }
+
+    pub fn iter(&self) -> Result<SMTIterator<Vec<u8>, State, NS>> {
+        Ok(self.smt.iter(None)?)
     }
 }
 
@@ -316,6 +320,35 @@ impl StateDBStore {
         }
     }
 
+    // rebuild statedb via StateSet from dump
+    pub fn apply(&self, state_set: StateSet) -> Result<H256> {
+        let mut state_root = H256::zero();
+        for (k, v) in state_set.state_sets.into_iter() {
+            if &k == &state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
+                state_root = self.global_table.puts(v)?
+            } else {
+                let (_, table_store) = self
+                    .get_as_table_or_create(k)
+                    .expect("call get_as_table_or_create when statedb puts should succ");
+                state_root = table_store.puts(v)?
+            }
+        }
+        Ok(state_root)
+    }
+
+    // pub fn dump_iter(
+    //     &self,
+    //     handle: &ObjectID,
+    // ) -> Result<Option<SMTIterator<Vec<u8>, State, NodeDBStore>>> {
+    //     if handle == &state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
+    //         self.global_table.iter().map(|v| Some(v))
+    //     } else {
+    //         self.get_as_table(*handle)
+    //             .and_then(|res| res.map_or(Ok(None), |(_, table)| table.iter().map(|v| Some(v))))
+    //     }
+    // }
+
+    // dump all states
     pub fn dump(&self) -> Result<StateSet> {
         let global_states = self.global_table.dump()?;
         let mut state_set = StateSet::default();

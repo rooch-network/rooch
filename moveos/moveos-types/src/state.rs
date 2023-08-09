@@ -411,7 +411,7 @@ pub struct TableChange {
 }
 
 /// StateSet is represent state dump result. Not include events and other stores
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct StateSet {
     pub state_sets: BTreeMap<ObjectID, UpdateSet<Vec<u8>, State>>,
 }
