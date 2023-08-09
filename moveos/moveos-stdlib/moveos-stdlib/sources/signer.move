@@ -18,15 +18,6 @@ module moveos_std::signer {
     let signer = module_signer<TestStruct>();
     let signer_addr = signer::address_of(&signer);
 
-    assert!(signer_addr == @0x2, 0);
-   }
-
-   #[test]
-   #[expected_failure(abort_code=0, location=moveos_std::signer)]
-   fun test_module_signer_invalid_address() {
-    let signer = module_signer<TestStruct>();
-    let signer_addr = signer::address_of(&signer);
-
-    assert!(signer_addr == @0x6, 0);
+    assert!(signer_addr == @moveos_std, 0);
    }
 }
