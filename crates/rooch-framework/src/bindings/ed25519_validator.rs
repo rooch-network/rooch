@@ -20,11 +20,16 @@ pub struct Ed25519Validator<'a> {
 impl<'a> Ed25519Validator<'a> {
     const VALIDATE_FUNCTION_NAME: &'static IdentStr = ident_str!("validate");
 
-    pub fn validate(&self, ctx: &TxContext, payload: Vec<u8>) -> Result<()> {
+    pub fn validate(&self, ctx: &TxContext, payload: Vec<u8>, hash: Option<u8>) -> Result<()> {
         let auth_validator_call = FunctionCall::new(
             Self::function_id(Self::VALIDATE_FUNCTION_NAME),
             vec![],
-            vec![MoveValue::vector_u8(payload).simple_serialize().unwrap()],
+            vec![
+                MoveValue::vector_u8(payload).simple_serialize().unwrap(),
+                MoveValue::U8(hash.unwrap_or_default())
+                    .simple_serialize()
+                    .unwrap(),
+            ],
         );
         self.caller
             .call_function(ctx, auth_validator_call)

@@ -34,6 +34,7 @@ pub trait CommandAction<T: Serialize + Send>: Sized + Send {
 pub struct AuthenticatorOptions {
     pub scheme: u64,
     pub payload: Vec<u8>,
+    pub hash: u8,
 }
 
 impl FromStr for AuthenticatorOptions {
@@ -52,7 +53,17 @@ impl FromStr for AuthenticatorOptions {
         let payload = hex::decode(payload.strip_prefix("0x").unwrap_or(payload)).map_err(|_| {
             RoochError::CommandArgumentError(format!("Invalid authenticator argument: {}", s))
         })?;
-        Ok(AuthenticatorOptions { scheme, payload })
+        let hash = split.next().ok_or_else(|| {
+            RoochError::CommandArgumentError(format!("Invalid authenticator argument: {}", s))
+        })?;
+        let hash = hash.parse::<u8>().map_err(|_| {
+            RoochError::CommandArgumentError(format!("Invalid authenticator argument: {}", s))
+        })?;
+        Ok(AuthenticatorOptions {
+            scheme,
+            payload,
+            hash,
+        })
     }
 }
 
@@ -61,6 +72,7 @@ impl From<AuthenticatorOptions> for Authenticator {
         Authenticator {
             scheme: options.scheme,
             payload: options.payload,
+            hash: options.hash,
         }
     }
 }

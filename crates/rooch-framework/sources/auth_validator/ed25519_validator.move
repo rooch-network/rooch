@@ -110,17 +110,18 @@ module rooch_framework::ed25519_validator {
         );
     }
 
-    public fun validate(ctx: &StorageContext, authenticator_payload: vector<u8>) {
-        let tx_hash = storage_context::tx_hash(ctx);
-        validate_signature(&authenticator_payload, &tx_hash);
-
-        let auth_key = get_authentication_key_from_payload(&authenticator_payload);
-        let auth_key_in_account = get_authentication_key(ctx, storage_context::sender(ctx));
-        assert!(
-            auth_key_in_account == auth_key,
-            auth_validator::error_invalid_account_auth_key()
-        );
-    }
+   // TODO need to unify the hash variables for each scheme
+   public fun validate(ctx: &StorageContext, authenticator_payload: vector<u8>, _hash: u8){
+      let tx_hash = storage_context::tx_hash(ctx);
+      validate_signature(&authenticator_payload, &tx_hash);
+        
+      let auth_key = get_authentication_key_from_payload(&authenticator_payload);
+      let auth_key_in_account = get_authentication_key(ctx, storage_context::sender(ctx));
+      assert!(
+         auth_key_in_account == auth_key,
+         auth_validator::error_invalid_account_auth_key()
+      );
+   }
 
 
     fun pre_execute(

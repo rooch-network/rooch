@@ -7,7 +7,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::crypto::{BuiltinScheme, Signature};
+use crate::crypto::{BuiltinHash, BuiltinScheme, Signature};
 use anyhow::Result;
 #[cfg(any(test, feature = "fuzzing"))]
 use fastcrypto::ed25519::Ed25519KeyPair;
@@ -32,6 +32,7 @@ use std::{fmt, str::FromStr};
 pub trait BuiltinAuthenticator {
     fn scheme(&self) -> BuiltinScheme;
     fn payload(&self) -> Vec<u8>;
+    fn hash(&self) -> BuiltinHash;
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -45,6 +46,9 @@ impl BuiltinAuthenticator for Ed25519Authenticator {
     }
     fn payload(&self) -> Vec<u8> {
         self.signature.as_ref().to_vec()
+    }
+    fn hash(&self) -> BuiltinHash {
+        BuiltinHash::Sha256
     }
 }
 #[cfg(any(test, feature = "fuzzing"))]
@@ -81,6 +85,9 @@ impl BuiltinAuthenticator for SchnorrAuthenticator {
     }
     fn payload(&self) -> Vec<u8> {
         self.signature.as_ref().to_vec()
+    }
+    fn hash(&self) -> BuiltinHash {
+        BuiltinHash::Sha256
     }
 }
 #[cfg(any(test, feature = "fuzzing"))]
@@ -120,6 +127,9 @@ impl BuiltinAuthenticator for EcdsaAuthenticator {
     fn payload(&self) -> Vec<u8> {
         self.signature.as_ref().to_vec()
     }
+    fn hash(&self) -> BuiltinHash {
+        BuiltinHash::Sha256
+    }
 }
 
 #[cfg(any(test, feature = "fuzzing"))]
@@ -157,6 +167,9 @@ impl BuiltinAuthenticator for EcdsaRecoverableAuthenticator {
     fn payload(&self) -> Vec<u8> {
         self.signature.as_ref().to_vec()
     }
+    fn hash(&self) -> BuiltinHash {
+        BuiltinHash::Keccak256
+    }
 }
 
 #[cfg(any(test, feature = "fuzzing"))]
@@ -189,7 +202,12 @@ where
     fn from(value: T) -> Self {
         let scheme = value.scheme() as u64;
         let payload = value.payload();
-        Authenticator { scheme, payload }
+        let hash = value.hash() as u8;
+        Authenticator {
+            scheme,
+            payload,
+            hash,
+        }
     }
 }
 
@@ -209,6 +227,7 @@ impl From<Signature> for Authenticator {
 pub struct Authenticator {
     pub scheme: u64,
     pub payload: Vec<u8>,
+    pub hash: u8,
 }
 
 impl Authenticator {
@@ -238,8 +257,12 @@ impl Authenticator {
     }
 
     /// Create a custom authenticator
-    pub fn new(scheme: u64, payload: Vec<u8>) -> Self {
-        Self { scheme, payload }
+    pub fn new(scheme: u64, payload: Vec<u8>, hash: u8) -> Self {
+        Self {
+            scheme,
+            payload,
+            hash,
+        }
     }
 }
 

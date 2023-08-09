@@ -34,12 +34,7 @@ module rooch_framework::transaction_validator {
     #[view]
     /// This function is for Rooch to validate the transaction sender's authenticator.
     /// If the authenticator is invaid, abort this function.
-    public fun validate(
-        ctx: &StorageContext,
-        tx_sequence_number: u64,
-        scheme: u64,
-        authenticator_payload: vector<u8>
-    ): TxValidateResult {
+    public fun validate(ctx: &StorageContext, tx_sequence_number: u64, scheme: u64, authenticator_payload: vector<u8>, hash: u8): TxValidateResult {
         // === validate the sequence number ===
 
         assert!(
@@ -64,8 +59,8 @@ module rooch_framework::transaction_validator {
 
         // if the authenticator authenticator_payload is session key, validate the session key
         // otherwise return the authentication validator via the scheme
-        let session_key_option = session_key::validate(ctx, scheme, authenticator_payload);
-        if (option::is_some(&session_key_option)) {
+        let session_key_option = session_key::validate(ctx, scheme, authenticator_payload, hash);
+        if(option::is_some(&session_key_option)){
             auth_validator::new_tx_validate_result(option::none(), session_key_option)
         }else {
             let sender = storage_context::sender(ctx);

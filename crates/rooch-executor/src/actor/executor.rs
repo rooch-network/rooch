@@ -121,7 +121,11 @@ impl ExecutorActor {
         match auth_validator_option {
             Some(auth_validator) => {
                 let auth_validator_caller = AuthValidatorCaller::new(&self.moveos, auth_validator);
-                auth_validator_caller.validate(ctx, authenticator.authenticator.payload)?;
+                auth_validator_caller.validate(
+                    ctx,
+                    authenticator.authenticator.payload,
+                    authenticator.authenticator.hash,
+                )?;
                 // pre_execute_function: TransactionValidator first, then AuthValidator
                 let pre_execute_functions = vec![
                     TransactionValidator::pre_execute_function_call(),

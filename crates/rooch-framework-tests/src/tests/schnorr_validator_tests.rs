@@ -5,7 +5,7 @@ use moveos_types::transaction::MoveAction;
 use rooch_framework::bindings::empty::Empty;
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
 use rooch_types::{
-    crypto::BuiltinScheme,
+    crypto::{BuiltinHash, BuiltinScheme},
     transaction::{rooch::RoochTransactionData, AbstractTransaction},
 };
 
@@ -30,6 +30,10 @@ fn test_validate() {
     let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
 
     schnorr_validator
-        .validate(&move_tx.ctx, auth_info.authenticator.payload)
+        .validate(
+            &move_tx.ctx,
+            auth_info.authenticator.payload,
+            BuiltinHash::Sha256.flag(),
+        )
         .unwrap()
 }

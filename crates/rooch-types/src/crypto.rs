@@ -147,6 +147,43 @@ impl BuiltinScheme {
     }
 }
 
+/// The BuiltinHash used to verify and recover keys which builtin Rooch
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Display, Ord, PartialOrd, Serialize, Deserialize)]
+#[strum(serialize_all = "lowercase")]
+pub enum BuiltinHash {
+    Sha256,
+    Keccak256,
+}
+
+impl BuiltinHash {
+    const SHA256_FLAG: u8 = 0x00;
+    const KECCAK256_FLAG: u8 = 0x01;
+
+    pub fn flag(&self) -> u8 {
+        match self {
+            BuiltinHash::Sha256 => Self::SHA256_FLAG,
+            BuiltinHash::Keccak256 => Self::KECCAK256_FLAG,
+        }
+    }
+
+    pub fn from_flag(flag: &str) -> Result<BuiltinHash, RoochError> {
+        let byte_int = flag
+            .parse::<u8>()
+            .map_err(|_| RoochError::KeyConversionError("Invalid hash scheme".to_owned()))?;
+        Self::from_flag_byte(byte_int)
+    }
+
+    pub fn from_flag_byte(byte_int: u8) -> Result<BuiltinHash, RoochError> {
+        match byte_int {
+            Self::SHA256_FLAG => Ok(BuiltinHash::Sha256),
+            Self::KECCAK256_FLAG => Ok(BuiltinHash::Keccak256),
+            _ => Err(RoochError::KeyConversionError(
+                "Invalid hash scheme".to_owned(),
+            )),
+        }
+    }
+}
+
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, From, PartialEq, Eq)]
 pub enum RoochKeyPair {

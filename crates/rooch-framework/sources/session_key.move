@@ -9,8 +9,8 @@ module rooch_framework::session_key {
     use rooch_framework::auth_validator;
     use rooch_framework::ed25519_validator;
     use rooch_framework::multi_ed25519_validator;
-    use rooch_framework::ecdsa_validator;
-    use rooch_framework::ecdsa_recoverable_validator;
+    use rooch_framework::ecdsa_k1_validator;
+    use rooch_framework::ecdsa_k1_recoverable_validator;
     use rooch_framework::schnorr_validator;
 
     friend rooch_framework::transaction_validator;
@@ -104,7 +104,7 @@ module rooch_framework::session_key {
     /// Validate the current tx via the session key
     /// If the authentication key is not a session key, return option::none
     /// If the session key is expired or invalid, abort the tx, otherwise return option::some(authentication key)
-    public(friend) fun validate(ctx: &StorageContext, scheme: u64, authenticator_payload: vector<u8>) : Option<vector<u8>> {
+    public(friend) fun validate(ctx: &StorageContext, scheme: u64, authenticator_payload: vector<u8>, hash: u8) : Option<vector<u8>> {
         let sender_addr = storage_context::sender(ctx);
         if (!account_storage::global_exists<SessionKeys>(ctx, sender_addr)){
             return option::none()
@@ -139,11 +139,11 @@ module rooch_framework::session_key {
             // TODO support multi_ed25519_validator
             abort 1001
         } else if (scheme == ecdsa_k1_validator::scheme()) {
-            ecdsa_k1_validator::validate_signature(&authenticator_payload, &storage_context::tx_hash(ctx));
+            ecdsa_k1_validator::validate_signature(&authenticator_payload, &storage_context::tx_hash(ctx), hash);
         } else if (scheme == ecdsa_k1_recoverable_validator::scheme()) {
-            ecdsa_k1_recoverable_validator::validate_signature(&authenticator_payload, &storage_context::tx_hash(ctx));
+            ecdsa_k1_recoverable_validator::validate_signature(&authenticator_payload, &storage_context::tx_hash(ctx), hash);
         } else if (scheme == schnorr_validator::scheme()) {
-            schnorr_validator::validate_signature(&authenticator_payload, &storage_context::tx_hash(ctx));
+            schnorr_validator::validate_signature(&authenticator_payload, &storage_context::tx_hash(ctx), hash);
         } else { 
             abort ESessionInvalidScheme
         };

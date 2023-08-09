@@ -30,6 +30,6 @@ fn test_validate() {
     let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
 
     ed25519_validator
-        .validate(&move_tx.ctx, auth_info.authenticator.payload)
+        .validate(&move_tx.ctx, auth_info.authenticator.payload, None)
         .unwrap();
 }

@@ -12,9 +12,10 @@ This module implements the ECDSA Recoverable over Secpk256k1 validator scheme.
 -  [Function `rotate_authentication_key_entry`](#0x3_ecdsa_k1_recoverable_validator_rotate_authentication_key_entry)
 -  [Function `ecdsa_k1_recoverable_public_key`](#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_public_key)
 -  [Function `ecdsa_k1_recoverable_signature`](#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_signature)
--  [Function `ecdsa_k1_recoverable_authentication_key`](#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_authentication_key)
+-  [Function `get_authentication_key_from_payload`](#0x3_ecdsa_k1_recoverable_validator_get_authentication_key_from_payload)
 -  [Function `ecdsa_k1_recoverable_public_key_to_address`](#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_public_key_to_address)
 -  [Function `get_authentication_key`](#0x3_ecdsa_k1_recoverable_validator_get_authentication_key)
+-  [Function `validate_signature`](#0x3_ecdsa_k1_recoverable_validator_validate_signature)
 -  [Function `validate`](#0x3_ecdsa_k1_recoverable_validator_validate)
 
 
@@ -69,25 +70,6 @@ This module implements the ECDSA Recoverable over Secpk256k1 validator scheme.
 
 
 <pre><code><b>const</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EMalformedAuthenticationKey">EMalformedAuthenticationKey</a>: u64 = 1002;
-</code></pre>
-
-
-
-<a name="0x3_ecdsa_k1_recoverable_validator_KECCAK256"></a>
-
-Hash function name that are valid for ecrecover and verify.
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_KECCAK256">KECCAK256</a>: u8 = 0;
-</code></pre>
-
-
-
-<a name="0x3_ecdsa_k1_recoverable_validator_SHA256"></a>
-
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_SHA256">SHA256</a>: u8 = 1;
 </code></pre>
 
 
@@ -283,14 +265,14 @@ error code
 
 </details>
 
-<a name="0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_authentication_key"></a>
+<a name="0x3_ecdsa_k1_recoverable_validator_get_authentication_key_from_payload"></a>
 
-## Function `ecdsa_k1_recoverable_authentication_key`
+## Function `get_authentication_key_from_payload`
 
-Get the authentication key of the given authenticator.
+Get the authentication key of the given authenticator payload.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_authentication_key">ecdsa_k1_recoverable_authentication_key</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_get_authentication_key_from_payload">get_authentication_key_from_payload</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -299,10 +281,10 @@ Get the authentication key of the given authenticator.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_authentication_key">ecdsa_k1_recoverable_authentication_key</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
-    <b>let</b> public_key = <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_public_key">ecdsa_k1_recoverable_public_key</a>(authenticator_payload);
-    <b>let</b> addr = <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_public_key_to_address">ecdsa_k1_recoverable_public_key_to_address</a>(public_key);
-    moveos_std::bcs::to_bytes(&addr)
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_get_authentication_key_from_payload">get_authentication_key_from_payload</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
+   <b>let</b> public_key = <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_public_key">ecdsa_k1_recoverable_public_key</a>(payload);
+   <b>let</b> addr = <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_public_key_to_address">ecdsa_k1_recoverable_public_key_to_address</a>(public_key);
+   moveos_std::bcs::to_bytes(&addr)
 }
 </code></pre>
 
@@ -366,13 +348,14 @@ Get the authentication key of the given authenticator.
 
 </details>
 
-<a name="0x3_ecdsa_k1_recoverable_validator_validate"></a>
+<a name="0x3_ecdsa_k1_recoverable_validator_validate_signature"></a>
 
-## Function `validate`
+## Function `validate_signature`
+
+Only validate the authenticator's signature.
 
 
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_validate">validate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, authenticator_payload: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_validate_signature">validate_signature</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;, tx_hash: &<a href="">vector</a>&lt;u8&gt;, <a href="../doc/hash.md#0x1_hash">hash</a>: u8)
 </code></pre>
 
 
@@ -381,22 +364,47 @@ Get the authentication key of the given authenticator.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_validate">validate</a>(ctx: &StorageContext, authenticator_payload: <a href="">vector</a>&lt;u8&gt;) {
-    // TODO handle non-<a href="ed25519.md#0x3_ed25519">ed25519</a> auth key and <b>address</b> relationship
-    // <b>let</b> auth_key = <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_authentication_key">ecdsa_k1_recoverable_authentication_key</a>(&authenticator_payload);
-    // <b>let</b> auth_key_in_account = <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_get_authentication_key">get_authentication_key</a>(ctx, <a href="_sender">storage_context::sender</a>(ctx));
-    // <b>assert</b>!(
-    //    auth_key_in_account == auth_key,
-    //    <a href="auth_validator.md#0x3_auth_validator_error_invalid_account_auth_key">auth_validator::error_invalid_account_auth_key</a>()
-    // );
-    <b>assert</b>!(
-        <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_verify">ecdsa_k1_recoverable::verify</a>(
-            &<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_signature">ecdsa_k1_recoverable_signature</a>(&authenticator_payload),
-            &<a href="_tx_hash">storage_context::tx_hash</a>(ctx),
-            <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_SHA256">SHA256</a>, // <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_KECCAK256">KECCAK256</a>:0, <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_SHA256">SHA256</a>:1, TODO: The <a href="../doc/hash.md#0x1_hash">hash</a> type may need <b>to</b> be passed through the authenticator
-        ),
-        <a href="auth_validator.md#0x3_auth_validator_error_invalid_authenticator">auth_validator::error_invalid_authenticator</a>()
-    );
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_validate_signature">validate_signature</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;, tx_hash: &<a href="">vector</a>&lt;u8&gt;, <a href="../doc/hash.md#0x1_hash">hash</a>: u8){
+   <b>assert</b>!(
+         <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_verify">ecdsa_k1_recoverable::verify</a>(
+            &<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_signature">ecdsa_k1_recoverable_signature</a>(authenticator_payload),
+            tx_hash,
+            <a href="../doc/hash.md#0x1_hash">hash</a>,
+         ),
+         <a href="auth_validator.md#0x3_auth_validator_error_invalid_authenticator">auth_validator::error_invalid_authenticator</a>()
+     );
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_ecdsa_k1_recoverable_validator_validate"></a>
+
+## Function `validate`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_validate">validate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, authenticator_payload: <a href="">vector</a>&lt;u8&gt;, <a href="../doc/hash.md#0x1_hash">hash</a>: u8)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_validate">validate</a>(ctx: &StorageContext, authenticator_payload: <a href="">vector</a>&lt;u8&gt;, <a href="../doc/hash.md#0x1_hash">hash</a>: u8){
+   <b>let</b> tx_hash = <a href="_tx_hash">storage_context::tx_hash</a>(ctx);
+   <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_validate_signature">validate_signature</a>(&authenticator_payload, &tx_hash, <a href="../doc/hash.md#0x1_hash">hash</a>);
+
+   <b>let</b> auth_key = <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_get_authentication_key_from_payload">get_authentication_key_from_payload</a>(&authenticator_payload);
+   <b>let</b> auth_key_in_account = <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_get_authentication_key">get_authentication_key</a>(ctx, <a href="_sender">storage_context::sender</a>(ctx));
+   <b>assert</b>!(
+      auth_key_in_account == auth_key,
+      <a href="auth_validator.md#0x3_auth_validator_error_invalid_account_auth_key">auth_validator::error_invalid_account_auth_key</a>()
+   );
 }
 </code></pre>
 

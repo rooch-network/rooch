@@ -11,17 +11,14 @@ module rooch_framework::schnorr_validator {
     use rooch_framework::schnorr;
     use rooch_framework::auth_validator;
 
-    const SCHEME_SCHNORR: u64 = 4;
-    const V_SCHNORR_SCHEME_LENGTH: u64 = 1;
-    const V_SCHNORR_PUBKEY_LENGTH: u64 = 32;
-    const V_SCHNORR_SIG_LENGTH: u64 = 64;
-    const V_SCHNORR_HASH_LENGTH: u64 = 1;
-    /// Hash function name that are valid for verify.
-    const KECCAK256: u8 = 0;
-    const SHA256: u8 = 1;
-    /// error code
-    const EMalformedAccount: u64 = 1001;
-    const EMalformedAuthenticationKey: u64 = 1002;
+   const SCHEME_SCHNORR: u64 = 4;
+   const V_SCHNORR_SCHEME_LENGTH: u64 = 1;
+   const V_SCHNORR_PUBKEY_LENGTH: u64 = 32;
+   const V_SCHNORR_SIG_LENGTH: u64 = 64;
+   const V_SCHNORR_HASH_LENGTH: u64 = 1;
+   /// error code
+   const EMalformedAccount: u64 = 1001;
+   const EMalformedAuthenticationKey: u64 = 1002;
 
     struct SchnorrValidator has store {}
 
@@ -106,20 +103,21 @@ module rooch_framework::schnorr_validator {
     }
 
    /// Only validate the authenticator's signature.
-   public fun validate_signature(authenticator_payload: &vector<u8>, tx_hash: &vector<u8>){
+   public fun validate_signature(authenticator_payload: &vector<u8>, tx_hash: &vector<u8>, hash: u8){
       assert!(
             schnorr::verify(
                &schnorr_signature(authenticator_payload),
                &schnorr_public_key(authenticator_payload),
-               tx_hash
+               tx_hash,
+               hash
             ),
             auth_validator::error_invalid_authenticator()
         );
    }
 
-   public fun validate(ctx: &StorageContext, authenticator_payload: vector<u8>){
+   public fun validate(ctx: &StorageContext, authenticator_payload: vector<u8>, hash: u8){
       let tx_hash = storage_context::tx_hash(ctx);
-      validate_signature(&authenticator_payload, &tx_hash);
+      validate_signature(&authenticator_payload, &tx_hash, hash);
         
       let auth_key = get_authentication_key_from_payload(&authenticator_payload);
       let auth_key_in_account = get_authentication_key(ctx, storage_context::sender(ctx));

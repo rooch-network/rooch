@@ -26,11 +26,14 @@ impl<'a> AuthValidatorCaller<'a> {
         }
     }
 
-    pub fn validate(&self, ctx: &TxContext, payload: Vec<u8>) -> Result<()> {
+    pub fn validate(&self, ctx: &TxContext, payload: Vec<u8>, hash: u8) -> Result<()> {
         let auth_validator_call = FunctionCall::new(
             self.auth_validator.validator_function_id(),
             vec![],
-            vec![MoveValue::vector_u8(payload).simple_serialize().unwrap()],
+            vec![
+                MoveValue::vector_u8(payload).simple_serialize().unwrap(),
+                MoveValue::U8(hash).simple_serialize().unwrap(),
+            ],
         );
         self.caller
             .call_function(ctx, auth_validator_call)

@@ -13,16 +13,13 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
 
     const SCHEME_ECDSA_RECOVERABLE: u64 = 3;
 
-    const V_ECDSA_RECOVERABLE_SCHEME_LENGTH: u64 = 1;
-    const V_ECDSA_RECOVERABLE_PUBKEY_LENGTH: u64 = 33;
-    const V_ECDSA_RECOVERABLE_SIG_LENGTH: u64 = 65;
-    const V_ECDSA_RECOVERABLE_HASH_LENGTH: u64 = 1;
-    /// Hash function name that are valid for ecrecover and verify.
-    const KECCAK256: u8 = 0;
-    const SHA256: u8 = 1;
-    /// error code
-    const EMalformedAccount: u64 = 1001;
-    const EMalformedAuthenticationKey: u64 = 1002;
+   const V_ECDSA_RECOVERABLE_SCHEME_LENGTH: u64 = 1;
+   const V_ECDSA_RECOVERABLE_PUBKEY_LENGTH: u64 = 33;
+   const V_ECDSA_RECOVERABLE_SIG_LENGTH: u64 = 65;
+   const V_ECDSA_RECOVERABLE_HASH_LENGTH: u64 = 1;
+   /// error code
+   const EMalformedAccount: u64 = 1001;
+   const EMalformedAuthenticationKey: u64 = 1002;
 
     struct EcdsaK1RecoverableValidator has store {}
 
@@ -106,20 +103,20 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
     }
 
    /// Only validate the authenticator's signature.
-   public fun validate_signature(authenticator_payload: &vector<u8>, tx_hash: &vector<u8>){
+   public fun validate_signature(authenticator_payload: &vector<u8>, tx_hash: &vector<u8>, hash: u8){
       assert!(
-            ecdsa_recoverable_k1::verify(
-               &ecdsa_recoverable_k1_signature(authenticator_payload),
-               &ecdsa_recoverable_k1_public_key(authenticator_payload),
-               tx_hash
+            ecdsa_k1_recoverable::verify(
+               &ecdsa_k1_recoverable_signature(authenticator_payload),
+               tx_hash,
+               hash,
             ),
             auth_validator::error_invalid_authenticator()
         );
    }
 
-   public fun validate(ctx: &StorageContext, authenticator_payload: vector<u8>){
+   public fun validate(ctx: &StorageContext, authenticator_payload: vector<u8>, hash: u8){
       let tx_hash = storage_context::tx_hash(ctx);
-      validate_signature(&authenticator_payload, &tx_hash);
+      validate_signature(&authenticator_payload, &tx_hash, hash);
         
       let auth_key = get_authentication_key_from_payload(&authenticator_payload);
       let auth_key_in_account = get_authentication_key(ctx, storage_context::sender(ctx));

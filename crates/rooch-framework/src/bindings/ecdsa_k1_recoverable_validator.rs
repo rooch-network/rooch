@@ -20,11 +20,14 @@ pub struct EcdsaK1RecoverableValidator<'a> {
 impl<'a> EcdsaK1RecoverableValidator<'a> {
     const VALIDATE_FUNCTION_NAME: &'static IdentStr = ident_str!("validate");
 
-    pub fn validate(&self, ctx: &TxContext, payload: Vec<u8>) -> Result<()> {
+    pub fn validate(&self, ctx: &TxContext, payload: Vec<u8>, hash: u8) -> Result<()> {
         let auth_validator_call = FunctionCall::new(
             Self::function_id(Self::VALIDATE_FUNCTION_NAME),
             vec![],
-            vec![MoveValue::vector_u8(payload).simple_serialize().unwrap()],
+            vec![
+                MoveValue::vector_u8(payload).simple_serialize().unwrap(),
+                MoveValue::U8(hash).simple_serialize().unwrap(),
+            ],
         );
         self.caller
             .call_function(ctx, auth_validator_call)

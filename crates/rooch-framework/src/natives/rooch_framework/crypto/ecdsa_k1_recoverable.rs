@@ -23,8 +23,8 @@ pub const FAIL_TO_RECOVER_PUBKEY: u64 = 0;
 pub const INVALID_SIGNATURE: u64 = 1;
 pub const INVALID_PUBKEY: u64 = 2;
 
-pub const KECCAK256: u8 = 0;
-pub const SHA256: u8 = 1;
+pub const SHA256: u8 = 0;
+pub const KECCAK256: u8 = 1;
 
 pub fn native_ecrecover(
     _gas_params: &FromBytesGasParameters,

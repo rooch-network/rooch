@@ -39,6 +39,9 @@ impl<'a> TransactionValidator<'a> {
                 MoveValue::vector_u8(auth.authenticator.payload)
                     .simple_serialize()
                     .unwrap(),
+                MoveValue::U8(auth.authenticator.hash)
+                    .simple_serialize()
+                    .unwrap(),
             ],
         );
         let auth_validator =

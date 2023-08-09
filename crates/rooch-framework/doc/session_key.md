@@ -28,7 +28,11 @@
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
+<b>use</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator">0x3::ecdsa_k1_recoverable_validator</a>;
+<b>use</b> <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator">0x3::ecdsa_k1_validator</a>;
 <b>use</b> <a href="ed25519_validator.md#0x3_ed25519_validator">0x3::ed25519_validator</a>;
+<b>use</b> <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator">0x3::multi_ed25519_validator</a>;
+<b>use</b> <a href="schnorr_validator.md#0x3_schnorr_validator">0x3::schnorr_validator</a>;
 </code></pre>
 
 
@@ -160,6 +164,15 @@ The session's scope
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="0x3_session_key_ESessionInvalidScheme"></a>
+
+
+
+<pre><code><b>const</b> <a href="session_key.md#0x3_session_key_ESessionInvalidScheme">ESessionInvalidScheme</a>: u64 = 5;
+</code></pre>
+
 
 
 <a name="0x3_session_key_ESessionIsExpired"></a>
@@ -361,7 +374,7 @@ If the authentication key is not a session key, return option::none
 If the session key is expired or invalid, abort the tx, otherwise return option::some(authentication key)
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="session_key.md#0x3_session_key_validate">validate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, scheme: u64, authenticator_payload: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="session_key.md#0x3_session_key_validate">validate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, scheme: u64, authenticator_payload: <a href="">vector</a>&lt;u8&gt;, <a href="../doc/hash.md#0x1_hash">hash</a>: u8): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
 </code></pre>
 
 
@@ -370,15 +383,23 @@ If the session key is expired or invalid, abort the tx, otherwise return option:
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="session_key.md#0x3_session_key_validate">validate</a>(ctx: &StorageContext, scheme: u64, authenticator_payload: <a href="">vector</a>&lt;u8&gt;) : Option&lt;<a href="">vector</a>&lt;u8&gt;&gt; {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="session_key.md#0x3_session_key_validate">validate</a>(ctx: &StorageContext, scheme: u64, authenticator_payload: <a href="">vector</a>&lt;u8&gt;, <a href="../doc/hash.md#0x1_hash">hash</a>: u8) : Option&lt;<a href="">vector</a>&lt;u8&gt;&gt; {
     <b>let</b> sender_addr = <a href="_sender">storage_context::sender</a>(ctx);
     <b>if</b> (!<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender_addr)){
         <b>return</b> <a href="_none">option::none</a>()
     };
     <b>let</b> auth_key = <b>if</b>(scheme == <a href="ed25519_validator.md#0x3_ed25519_validator_scheme">ed25519_validator::scheme</a>()){
         <a href="ed25519_validator.md#0x3_ed25519_validator_get_authentication_key_from_payload">ed25519_validator::get_authentication_key_from_payload</a>(&authenticator_payload)
-    }<b>else</b>{
-        //TODO support other built-in validators
+    } <b>else</b> <b>if</b> (scheme == <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_scheme">multi_ed25519_validator::scheme</a>()) {
+        // TODO support MultiEd25519Validator scheme
+        <b>return</b> <a href="_none">option::none</a>()
+    } <b>else</b> <b>if</b> (scheme == <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_scheme">ecdsa_k1_validator::scheme</a>()) {
+        <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_get_authentication_key_from_payload">ecdsa_k1_validator::get_authentication_key_from_payload</a>(&authenticator_payload)
+    } <b>else</b> <b>if</b> (scheme == <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_scheme">ecdsa_k1_recoverable_validator::scheme</a>()) {
+        <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_get_authentication_key_from_payload">ecdsa_k1_recoverable_validator::get_authentication_key_from_payload</a>(&authenticator_payload)
+    } <b>else</b> <b>if</b> (scheme == <a href="schnorr_validator.md#0x3_schnorr_validator_scheme">schnorr_validator::scheme</a>()) {
+        <a href="schnorr_validator.md#0x3_schnorr_validator_get_authentication_key_from_payload">schnorr_validator::get_authentication_key_from_payload</a>(&authenticator_payload)
+    } <b>else</b>{
         <b>return</b> <a href="_none">option::none</a>()
     };
 
@@ -393,9 +414,17 @@ If the session key is expired or invalid, abort the tx, otherwise return option:
 
     <b>if</b>(scheme == <a href="ed25519_validator.md#0x3_ed25519_validator_scheme">ed25519_validator::scheme</a>()){
         <a href="ed25519_validator.md#0x3_ed25519_validator_validate_signature">ed25519_validator::validate_signature</a>(&authenticator_payload, &<a href="_tx_hash">storage_context::tx_hash</a>(ctx));
-    }<b>else</b>{
-        //TODO support other built-in validators
-        <b>abort</b> 1
+    } <b>else</b> <b>if</b> (scheme == <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_scheme">multi_ed25519_validator::scheme</a>()) {
+        // TODO support <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator">multi_ed25519_validator</a>
+        <b>abort</b> 1001
+    } <b>else</b> <b>if</b> (scheme == <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_scheme">ecdsa_k1_validator::scheme</a>()) {
+        <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_validate_signature">ecdsa_k1_validator::validate_signature</a>(&authenticator_payload, &<a href="_tx_hash">storage_context::tx_hash</a>(ctx), <a href="../doc/hash.md#0x1_hash">hash</a>);
+    } <b>else</b> <b>if</b> (scheme == <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_scheme">ecdsa_k1_recoverable_validator::scheme</a>()) {
+        <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_validate_signature">ecdsa_k1_recoverable_validator::validate_signature</a>(&authenticator_payload, &<a href="_tx_hash">storage_context::tx_hash</a>(ctx), <a href="../doc/hash.md#0x1_hash">hash</a>);
+    } <b>else</b> <b>if</b> (scheme == <a href="schnorr_validator.md#0x3_schnorr_validator_scheme">schnorr_validator::scheme</a>()) {
+        <a href="schnorr_validator.md#0x3_schnorr_validator_validate_signature">schnorr_validator::validate_signature</a>(&authenticator_payload, &<a href="_tx_hash">storage_context::tx_hash</a>(ctx), <a href="../doc/hash.md#0x1_hash">hash</a>);
+    } <b>else</b> {
+        <b>abort</b> <a href="session_key.md#0x3_session_key_ESessionInvalidScheme">ESessionInvalidScheme</a>
     };
     <a href="_some">option::some</a>(auth_key)
 }
