@@ -317,7 +317,7 @@ impl AccountKeystore for BaseKeyStore {
         // First, get the inner map associated with the address
         let inner_map = self.keys.entry(*address).or_insert_with(BTreeMap::new);
 
-        // Insert or update the keypair for the specified scheme in the inner map
+        // Remove or nullify the keypair for the specified scheme in the inner map
         inner_map.remove(&scheme);
         Ok(())
     }

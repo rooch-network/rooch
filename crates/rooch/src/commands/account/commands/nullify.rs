@@ -55,19 +55,9 @@ impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
                         ))
                     })?;
 
-                context
-                    .config
-                    .keystore
-                    .nullify_address_with_key_pair_from_scheme(&existing_address, scheme)
-                    .map_err(|e| RoochError::NullifyAccountError(e.to_string()))?;
-
                 println!(
                     "{}",
                     AccountAddress::from(existing_address).to_hex_literal()
-                );
-                println!(
-                    "Dropped a keypair from an existing address {:?} on scheme {:?}",
-                    existing_address, scheme.to_owned()
                 );
 
                 let (module_address, module_name) = match scheme {
@@ -119,7 +109,20 @@ impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
                         ))
                     })?;
 
-                // Transaction executed successfully
+                // Remove keypair by scheme from key store after executing transaction
+                context
+                    .config
+                    .keystore
+                    .nullify_address_with_key_pair_from_scheme(&existing_address, scheme)
+                    .map_err(|e| RoochError::NullifyAccountError(e.to_string()))?;
+
+                println!(
+                    "Dropped a keypair from an existing address {:?} on scheme {:?}",
+                    existing_address,
+                    scheme.to_owned()
+                );
+
+                // Return transaction result
                 Ok(result)
             }
             Err(error) => {

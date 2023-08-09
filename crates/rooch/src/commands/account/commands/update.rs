@@ -75,7 +75,8 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                 );
                 println!(
                     "Generated a new keypair for an existing address {:?} on scheme {:?}",
-                    existing_address, scheme.to_owned()
+                    existing_address,
+                    scheme.to_owned()
                 );
 
                 let (module_address, module_name) = match scheme {

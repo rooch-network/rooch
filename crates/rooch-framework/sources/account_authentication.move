@@ -128,4 +128,15 @@ module rooch_framework::account_authentication{
       rotate_authentication_key_internal<TestValidator>(&mut ctx, &sender_signer, x"0123");
       moveos_std::storage_context::drop_test_context(ctx);
    }
+
+   #[test(sender=@0x42)]
+   fun test_remove_authentication_key_internal(sender: address){
+      let ctx = moveos_std::storage_context::new_test_context(@std);
+      let sender_signer = rooch_framework::account::create_signer_for_test(sender);
+      let authentication_key = x"1234";
+      rotate_authentication_key_internal<TestValidator>(&mut ctx, &sender_signer, authentication_key);
+      let removed_authentication_key = remove_authentication_key_internal<TestValidator>(&mut ctx, &sender_signer);
+      assert!(removed_authentication_key.authentication_key == authentication_key, EMalformedAuthenticationKey);
+      moveos_std::storage_context::drop_test_context(ctx);
+   }
 }
