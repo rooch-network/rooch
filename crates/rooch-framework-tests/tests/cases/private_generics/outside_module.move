@@ -7,8 +7,8 @@ module creator::test {
     }
 
     #[private_generics(T)]
-    public fun publish_foo<T: key>(s: &signer) {
-        move_to<Foo>(s, Foo { x: 500 })
+    public fun publish_foo<T: key>(_s: &signer) {
+        // move_to<Foo>(s, Foo { x: 500 })
     }
 }
 
@@ -21,8 +21,8 @@ module A::m {
     }
 
     #[private_generics(V)]
-    fun publish_bar<V: drop>(s: &signer) {
-        move_to<Bar>(s, Bar { v: 100 })
+    fun publish_bar<V: drop>(_s: &signer) {
+        // move_to<Bar>(s, Bar { v: 100 })
     }
 
     public fun invoke_publish_bar(s: &signer) {

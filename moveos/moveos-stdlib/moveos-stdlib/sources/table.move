@@ -111,7 +111,7 @@ module moveos_std::table {
         upsert(&mut t, key, 23);
         assert!(*borrow(&t, key) == 23, error_code);
 
-        move_to(&account, TableHolder { t });
+        drop_unchecked(t);
     }
 
     #[test(account = @0x1)]
@@ -126,7 +126,7 @@ module moveos_std::table {
         add(&mut t, key, 1);
         assert!(*borrow_with_default(&t, key, &12) == 1, error_code);
 
-        move_to(&account, TableHolder{ t });
+        drop_unchecked(t);
     }
 
     #[test(account = @0x1)]
