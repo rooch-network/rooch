@@ -268,7 +268,7 @@ error code
 Get the authentication key of the given authenticator payload.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_get_authentication_key_from_payload">get_authentication_key_from_payload</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_get_authentication_key_from_payload">get_authentication_key_from_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -277,8 +277,8 @@ Get the authentication key of the given authenticator payload.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_get_authentication_key_from_payload">get_authentication_key_from_payload</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
-   <b>let</b> public_key = <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_public_key">schnorr_public_key</a>(payload);
+<pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_get_authentication_key_from_payload">get_authentication_key_from_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
+   <b>let</b> public_key = <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_public_key">schnorr_public_key</a>(authenticator_payload);
    <b>let</b> addr = <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_public_key_to_address">schnorr_public_key_to_address</a>(public_key);
    moveos_std::bcs::to_bytes(&addr)
 }
@@ -304,9 +304,9 @@ Get the authentication key of the given authenticator payload.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_schnorr_public_key_to_address">schnorr_public_key_to_address</a>(public_key: <a href="">vector</a>&lt;u8&gt;): <b>address</b> {
-    <b>let</b> bytes = <a href="_singleton">vector::singleton</a>((<a href="schnorr_validator.md#0x3_schnorr_validator_SCHEME_SCHNORR">SCHEME_SCHNORR</a> <b>as</b> u8));
-    <a href="_append">vector::append</a>(&<b>mut</b> bytes, public_key);
-    moveos_std::bcs::to_address(hash::blake2b256(&bytes))
+   <b>let</b> bytes = <a href="_singleton">vector::singleton</a>((<a href="schnorr_validator.md#0x3_schnorr_validator_SCHEME_SCHNORR">SCHEME_SCHNORR</a> <b>as</b> u8));
+   <a href="_append">vector::append</a>(&<b>mut</b> bytes, public_key);
+   moveos_std::bcs::to_address(hash::blake2b256(&bytes))
 }
 </code></pre>
 
@@ -330,13 +330,13 @@ Get the authentication key of the given authenticator payload.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_get_authentication_key">get_authentication_key</a>(ctx: &StorageContext, addr: <b>address</b>): <a href="">vector</a>&lt;u8&gt; {
-    <b>let</b> auth_key_option = <a href="account_authentication.md#0x3_account_authentication_get_authentication_key">account_authentication::get_authentication_key</a>&lt;<a href="schnorr_validator.md#0x3_schnorr_validator_SchnorrValidator">SchnorrValidator</a>&gt;(ctx, addr);
-    <b>if</b> (<a href="_is_some">option::is_some</a>(&auth_key_option)) {
-        <a href="_extract">option::extract</a>(&<b>mut</b> auth_key_option)
-    }<b>else</b> {
-        //<b>if</b> AuthenticationKey does not exist, <b>return</b> addr <b>as</b> authentication key
-        moveos_std::bcs::to_bytes(&addr)
-    }
+   <b>let</b> auth_key_option = <a href="account_authentication.md#0x3_account_authentication_get_authentication_key">account_authentication::get_authentication_key</a>&lt;<a href="schnorr_validator.md#0x3_schnorr_validator_SchnorrValidator">SchnorrValidator</a>&gt;(ctx, addr);
+   <b>if</b>(<a href="_is_some">option::is_some</a>(&auth_key_option)){
+      <a href="_extract">option::extract</a>(&<b>mut</b> auth_key_option)
+   }<b>else</b>{
+     //<b>if</b> AuthenticationKey does not exist, <b>return</b> addr <b>as</b> authentication key
+     moveos_std::bcs::to_bytes(&addr)
+   }
 }
 </code></pre>
 

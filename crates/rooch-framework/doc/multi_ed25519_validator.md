@@ -89,7 +89,7 @@ This module implements the multi-ed25519 validator scheme.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_validate">validate</a>(_ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, _payload: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_validate">validate</a>(_ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, _authenticator_payload: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -98,7 +98,7 @@ This module implements the multi-ed25519 validator scheme.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_validate">validate</a>(_ctx: &StorageContext, _payload: <a href="">vector</a>&lt;u8&gt;){
+<pre><code><b>public</b> <b>fun</b> <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_validate">validate</a>(_ctx: &StorageContext, _authenticator_payload: <a href="">vector</a>&lt;u8&gt;){
    //TODO
    <b>abort</b> std::error::not_implemented(1)
 }

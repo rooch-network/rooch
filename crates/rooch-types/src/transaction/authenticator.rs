@@ -236,6 +236,11 @@ impl Authenticator {
         self.scheme
     }
 
+    /// Unique identifier for the hash function scheme
+    pub fn hash(&self) -> u8 {
+        self.hash
+    }
+
     /// Create a single-signature ed25519 authenticator
     pub fn ed25519(signature: Signature) -> Self {
         Ed25519Authenticator { signature }.into()
@@ -280,9 +285,10 @@ impl fmt::Display for Authenticator {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Authenticator[scheme id: {:?}, payload: {}]",
+            "Authenticator[scheme id: {:?}, payload: {}, hash: {:?}]",
             self.scheme(),
             hex::encode(&self.payload),
+            self.hash(),
         )
     }
 }

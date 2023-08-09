@@ -94,13 +94,8 @@ module rooch_framework::schnorr_validator {
       }else{
         //if AuthenticationKey does not exist, return addr as authentication key
         moveos_std::bcs::to_bytes(&addr)
-    }
-
-    public fun schnorr_public_key_to_address(public_key: vector<u8>): address {
-        let bytes = vector::singleton((SCHEME_SCHNORR as u8));
-        vector::append(&mut bytes, public_key);
-        moveos_std::bcs::to_address(hash::blake2b256(&bytes))
-    }
+      }
+   }
 
    /// Only validate the authenticator's signature.
    public fun validate_signature(authenticator_payload: &vector<u8>, tx_hash: &vector<u8>, hash: u8){

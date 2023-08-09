@@ -272,7 +272,7 @@ error code
 Get the authentication key of the given authenticator payload.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_get_authentication_key_from_payload">get_authentication_key_from_payload</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_get_authentication_key_from_payload">get_authentication_key_from_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -281,10 +281,10 @@ Get the authentication key of the given authenticator payload.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_get_authentication_key_from_payload">get_authentication_key_from_payload</a>(payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
-   <b>let</b> public_key = <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_public_key">ecdsa_k1_recoverable_public_key</a>(payload);
-   <b>let</b> addr = <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_public_key_to_address">ecdsa_k1_recoverable_public_key_to_address</a>(public_key);
-   moveos_std::bcs::to_bytes(&addr)
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_get_authentication_key_from_payload">get_authentication_key_from_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
+    <b>let</b> public_key = <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_public_key">ecdsa_k1_recoverable_public_key</a>(authenticator_payload);
+    <b>let</b> addr = <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_public_key_to_address">ecdsa_k1_recoverable_public_key_to_address</a>(public_key);
+    moveos_std::bcs::to_bytes(&addr)
 }
 </code></pre>
 

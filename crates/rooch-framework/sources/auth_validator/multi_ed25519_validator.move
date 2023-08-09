@@ -12,7 +12,7 @@ module rooch_framework::multi_ed25519_validator {
       SCHEME_MULTIED25519
    }
 
-   public fun validate(_ctx: &StorageContext, _payload: vector<u8>){
+   public fun validate(_ctx: &StorageContext, _authenticator_payload: vector<u8>){
       //TODO
       abort std::error::not_implemented(1)
    }
