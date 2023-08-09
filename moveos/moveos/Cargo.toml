@@ -27,6 +27,8 @@ codespan-reporting = { workspace = true }
 codespan = { workspace = true }
 itertools = { workspace = true }
 regex = { workspace = true }
+parking_lot = { workspace = true }
+serde_json = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }

@@ -1,7 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{data_cache::MoveosDataCache, tx_argument_resolver::TxArgumentResolver};
+use super::{
+    data_cache::{into_change_set, MoveosDataCache},
+    tx_argument_resolver::TxArgumentResolver,
+};
 use anyhow::ensure;
 use move_binary_format::{
     compatibility::Compatibility,
@@ -29,7 +32,7 @@ use move_vm_types::{
     gas::{GasMeter, UnmeteredGasMeter},
     loaded_data::runtime_types::{CachedStructIndex, StructType, Type},
 };
-use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
+use moveos_stdlib::natives::moveos_stdlib::raw_table::{NativeTableContext, TableData};
 use moveos_types::{
     event::{Event, EventID},
     function_return_value::FunctionReturnValue,
@@ -41,6 +44,7 @@ use moveos_types::{
     tx_context::TxContext,
 };
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
+use parking_lot::RwLock;
 use std::{borrow::Borrow, sync::Arc};
 
 /// MoveOSVM is a wrapper of MoveVM with MoveOS specific features.
@@ -106,6 +110,7 @@ pub struct MoveOSSession<'r, 'l, S, G> {
     remote: &'r S,
     session: Session<'r, 'l, MoveosDataCache<'r, 'l, S>>,
     ctx: StorageContext,
+    table_data: Arc<RwLock<TableData>>,
     pre_execute_functions: Vec<FunctionCall>,
     post_execute_functions: Vec<FunctionCall>,
     gas_meter: G,
@@ -137,11 +142,13 @@ where
             );
         }
         let ctx = StorageContext::new(ctx);
+        let table_data = Arc::new(RwLock::new(TableData::default()));
         let s = Self {
             vm,
             remote,
-            session: Self::new_inner_session(vm, remote),
+            session: Self::new_inner_session(vm, remote, table_data.clone()),
             ctx,
+            table_data,
             pre_execute_functions,
             post_execute_functions,
             gas_meter,
@@ -156,7 +163,7 @@ where
         let tx_ctx = self.ctx.tx_context.spawn();
         let ctx = StorageContext::new(tx_ctx);
         let s = Self {
-            session: Self::new_inner_session(self.vm, self.remote),
+            session: Self::new_inner_session(self.vm, self.remote, self.table_data.clone()),
             ctx,
             ..self
         };
@@ -167,16 +174,18 @@ where
     fn new_inner_session(
         vm: &'l MoveVM,
         remote: &'r S,
+        table_data: Arc<RwLock<TableData>>,
     ) -> Session<'r, 'l, MoveosDataCache<'r, 'l, S>> {
         let mut extensions = NativeContextExtensions::default();
 
-        extensions.add(NativeTableContext::new(remote));
+        extensions.add(NativeTableContext::new(remote, table_data.clone()));
 
         // The VM code loader has bugs around module upgrade. After a module upgrade, the internal
         // cache needs to be flushed to work around those bugs.
         vm.flush_loader_cache_if_invalidated();
         let loader = vm.runtime().loader();
-        let data_store: MoveosDataCache<'r, 'l, S> = MoveosDataCache::new(remote, loader);
+        let data_store: MoveosDataCache<'r, 'l, S> =
+            MoveosDataCache::new(remote, loader, table_data);
         vm.new_session_with_cache_and_extensions(data_store, extensions)
     }
 
@@ -398,17 +407,27 @@ where
             }
         };
 
-        let (changeset, raw_events, mut extensions) =
-            finalized_session.session.finish_with_extensions()?;
-        let table_context: NativeTableContext = extensions.remove();
-        let state_changeset = table_context
-            .into_change_set()
-            .map_err(|e| e.finish(Location::Undefined))?;
+        let MoveOSSession {
+            vm: _,
+            remote: _,
+            session,
+            ctx,
+            table_data,
+            pre_execute_functions: _,
+            post_execute_functions: _,
+            gas_meter: _,
+            read_only,
+        } = finalized_session;
+        let (changeset, raw_events, extensions) = session.finish_with_extensions()?;
+        drop(extensions);
 
-        if finalized_session.read_only {
+        let state_changeset =
+            into_change_set(table_data).map_err(|e| e.finish(Location::Undefined))?;
+
+        if read_only {
             ensure!(
                 changeset.accounts().is_empty(),
-                "ChangeSet should be empty when execute readonly function"
+                "ChangeSet should be empty as never used."
             );
             ensure!(
                 raw_events.is_empty(),
@@ -419,7 +438,7 @@ where
                 "Table change set should be empty when execute readonly function"
             );
             ensure!(
-                finalized_session.ctx.tx_context.ids_created == 0,
+                ctx.tx_context.ids_created == 0,
                 "ids_created should be zero when execute readonly function"
             );
         }
@@ -436,7 +455,7 @@ where
         //TODO calculate the gas_used with gas_meter
         let gas_used = 0;
         Ok((
-            finalized_session.ctx.tx_context,
+            ctx.tx_context,
             TransactionOutput {
                 status,
                 changeset,

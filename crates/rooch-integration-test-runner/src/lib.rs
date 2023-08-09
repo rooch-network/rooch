@@ -4,25 +4,28 @@
 use clap::Parser;
 use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::term::termcolor::Buffer;
-use move_command_line_common::address::NumericalAddress;
-use move_command_line_common::files::verify_and_create_named_address_mapping;
-use move_command_line_common::{address::ParsedAddress, values::ParsableValue};
+use move_command_line_common::{
+    address::{NumericalAddress, ParsedAddress},
+    files::verify_and_create_named_address_mapping,
+    values::ParsableValue,
+};
 use move_compiler::compiled_unit::CompiledUnitEnum;
 use move_compiler::FullyCompiledProgram;
 use move_core_types::effects::{ChangeSet, Op};
+use move_core_types::language_storage::TypeTag;
 use move_transactional_test_runner::{
     tasks::{InitCommand, SyntaxChoice},
     vm_test_harness::view_resource_in_move_storage,
 };
 use move_vm_runtime::session::SerializedReturnValues;
 use moveos::moveos::MoveOS;
-use moveos::moveos_test_runner::MoveOSTestAdapter;
-use moveos::moveos_test_runner::{CompiledState, TaskInput};
+use moveos::moveos_test_runner::{CompiledState, MoveOSTestAdapter, TaskInput};
 use moveos_store::MoveOSStore;
+use moveos_types::move_module::MoveModule;
 use moveos_types::move_types::FunctionId;
-use moveos_types::object::ObjectID;
-use moveos_types::state::StateChangeSet;
-use moveos_types::state_resolver::AnnotatedStateReader;
+use moveos_types::object::{NamedTableID, ObjectID};
+use moveos_types::state::{MoveStructType, State, StateChangeSet};
+use moveos_types::state_resolver::{module_name_to_key, AnnotatedStateReader};
 use moveos_types::transaction::{MoveAction, MoveOSTransaction, TransactionOutput};
 use moveos_verifier::build::build_model;
 use moveos_verifier::metadata::run_extended_checks;
@@ -116,8 +119,9 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         }
 
         // Apply new modules and add precompiled address mapping
-        let mut change_set = ChangeSet::new();
-        let table_change_set = StateChangeSet::default();
+        let mut table_change_set = StateChangeSet::default();
+        // let mut mutated_accounts = BTreeSet::new();
+        let module_value_type = TypeTag::Struct(Box::new(MoveModule::struct_tag()));
         if let Some(pre_compiled_lib) = pre_compiled_deps {
             for c in &pre_compiled_lib.compiled {
                 if let CompiledUnitEnum::Module(m) = c {
@@ -142,11 +146,24 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
                     let (_, module_id) = m.module_id();
                     let mut bytes = vec![];
                     m.named_module.module.serialize(&mut bytes).unwrap();
-                    let op = Op::New(bytes);
-                    change_set.add_module_op(module_id, op).unwrap();
+
+                    let handle = NamedTableID::Module(*module_id.address()).to_object_id();
+                    table_change_set.add_op(
+                        handle,
+                        module_name_to_key(module_id.name()),
+                        Op::New(State {
+                            value_type: module_value_type.clone(),
+                            value: bytes,
+                        }),
+                    );
+                    moveos
+                        .state()
+                        .create_account_storage(*module_id.address())
+                        .unwrap();
                 }
             }
         }
+        let change_set = ChangeSet::new();
         moveos
             .state()
             .apply_change_set(change_set, table_change_set)

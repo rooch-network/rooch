@@ -200,7 +200,6 @@ impl MoveOS {
             events,
             gas_used: _,
         } = output;
-
         let new_state_root = self
             .db
             .0
