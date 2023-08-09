@@ -1,18 +1,18 @@
-/ @jolestar @wow-sven @baichuan3 @templexxx @steelgeek091
+/ @jolestar @wow-sven @baichuan3 @templexxx @stevenlaw123
 /.github @yourmoonlight @jolestar
 /scripts @yourmoonlight @jolestar
 /kube @yourmoonlight @jolestar
 /docker @yourmoonlight @jolestar
 
-/moveos @steelgeek091 @jolestar
-/moveos/metrics @baichuan3 @steelgeek091
-/moveos/moveos @steelgeek091 @jolestar
+/moveos @stevenlaw123 @jolestar
+/moveos/metrics @baichuan3 @stevenlaw123
+/moveos/moveos @stevenlaw123 @jolestar
 /moveos/moveos-commons @baichuan3 @wow-sven
 /moveos/moveos-config @baichuan3 @wow-sven
 /moveos/moveos-stdlib @baichuan3 @wow-sven @jolestar
 /moveos/moveos-store @baichuan3 @templexxx
 /moveos/moveos-types @jolestar @baichuan3
-/moveos/moveos-verfier @steelgeek091 @jolestar
+/moveos/moveos-verfier @stevenlaw123 @jolestar
 /moveos/raw-store @baichuan3 @templexxx
 /moveos/smt @baichuan3 @templexxx @jolestar
 
@@ -23,7 +23,7 @@
 /crates/rooch-executor @templexxx @jolestar
 /crates/rooch-framework @jolestar @baichuan3 
 /crates/rooch-genesis @jolestar @baichuan3 
-/crates/rooch-integration-test-runner @steelgeek091 @jolestar
+/crates/rooch-integration-test-runner @stevenlaw123 @jolestar
 /crates/rooch-key @wow-sven @templexxx
 /crates/rooch-open-rpc @wow-sven @baichuan3
 /crates/rooch-open-rpc-macros @wow-sven @baichuan3
