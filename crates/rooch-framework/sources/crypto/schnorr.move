@@ -6,9 +6,9 @@ module rooch_framework::schnorr {
     /// Error if the public key is invalid.
     const EInvalidPubKey: u64 = 1;
 
-    /// Hash function name that are valid for verify.
-    const KECCAK256: u8 = 0;
-    const SHA256: u8 = 1;
+   /// Hash function name that are valid for ecrecover and verify.
+   const SHA256: u8 = 0;
+   const KECCAK256: u8 = 1;
 
     /// @param signature: A 64-bytes signature that is signed using Schnorr over Secpk256k1 key pairs.
     /// @param public_key: A 32-bytes public key that is used to sign messages.

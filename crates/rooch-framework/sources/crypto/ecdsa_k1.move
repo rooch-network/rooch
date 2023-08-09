@@ -7,8 +7,8 @@ module rooch_framework::ecdsa_k1 {
    const EInvalidPubKey: u64 = 1;
 
    /// Hash function name that are valid for ecrecover and verify.
-   const KECCAK256: u8 = 0;
-   const SHA256: u8 = 1;
+   const SHA256: u8 = 0;
+   const KECCAK256: u8 = 1;
 
    /// @param signature: A 64-bytes signature in form (r, s) that is signed using
    /// Ecdsa. This is an non-recoverable signature without recovery id.

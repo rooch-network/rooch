@@ -114,7 +114,7 @@ module rooch_framework::ecdsa_k1_validator {
    public fun validate(ctx: &StorageContext, authenticator_payload: vector<u8>, hash: u8){
       let tx_hash = storage_context::tx_hash(ctx);
       validate_signature(&authenticator_payload, &tx_hash, hash);
-        
+
       let auth_key = get_authentication_key_from_payload(&authenticator_payload);
       let auth_key_in_account = get_authentication_key(ctx, storage_context::sender(ctx));
       assert!(
@@ -136,6 +136,6 @@ module rooch_framework::ecdsa_k1_validator {
     fun test_ecdsa_k1_public_key_to_authentication_key() {
         let public_key = x"031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
         let addr = ecdsa_k1_public_key_to_address(public_key);
-        assert!(authentication_key == @0x92718e81a52369b4bc3169161737318ddf022945391a69263e8d4289c79a0c67, 1000);
+        assert!(addr == @0x92718e81a52369b4bc3169161737318ddf022945391a69263e8d4289c79a0c67, 1000);
     }
 }

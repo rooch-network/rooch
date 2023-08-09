@@ -396,12 +396,12 @@ Only validate the authenticator's signature.
    <b>let</b> tx_hash = <a href="_tx_hash">storage_context::tx_hash</a>(ctx);
    <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_validate_signature">validate_signature</a>(&authenticator_payload, &tx_hash, <a href="../doc/hash.md#0x1_hash">hash</a>);
 
-   <b>let</b> auth_key = <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_get_authentication_key_from_payload">get_authentication_key_from_payload</a>(&authenticator_payload);
-   <b>let</b> auth_key_in_account = <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_get_authentication_key">get_authentication_key</a>(ctx, <a href="_sender">storage_context::sender</a>(ctx));
-   <b>assert</b>!(
-      auth_key_in_account == auth_key,
-      <a href="auth_validator.md#0x3_auth_validator_error_invalid_account_auth_key">auth_validator::error_invalid_account_auth_key</a>()
-   );
+   // <b>let</b> auth_key = <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_get_authentication_key_from_payload">get_authentication_key_from_payload</a>(&authenticator_payload);
+   // <b>let</b> auth_key_in_account = <a href="ecdsa_k1_validator.md#0x3_ecdsa_k1_validator_get_authentication_key">get_authentication_key</a>(ctx, <a href="_sender">storage_context::sender</a>(ctx));
+   // <b>assert</b>!(
+   //    auth_key_in_account == auth_key,
+   //    <a href="auth_validator.md#0x3_auth_validator_error_invalid_account_auth_key">auth_validator::error_invalid_account_auth_key</a>()
+   // );
 }
 </code></pre>
 

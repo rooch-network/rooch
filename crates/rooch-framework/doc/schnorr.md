@@ -40,19 +40,19 @@ Error if the signature is invalid.
 
 <a name="0x3_schnorr_KECCAK256"></a>
 
-Hash function name that are valid for verify.
 
 
-<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_KECCAK256">KECCAK256</a>: u8 = 0;
+<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_KECCAK256">KECCAK256</a>: u8 = 1;
 </code></pre>
 
 
 
 <a name="0x3_schnorr_SHA256"></a>
 
+Hash function name that are valid for ecrecover and verify.
 
 
-<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_SHA256">SHA256</a>: u8 = 1;
+<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_SHA256">SHA256</a>: u8 = 0;
 </code></pre>
 
 

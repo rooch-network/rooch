@@ -10,8 +10,8 @@ module rooch_framework::ecdsa_k1_recoverable {
    const EInvalidPubKey: u64 = 2;
 
    /// Hash function name that are valid for ecrecover and verify.
-   const KECCAK256: u8 = 0;
-   const SHA256: u8 = 1;
+   const SHA256: u8 = 0;
+   const KECCAK256: u8 = 1;
 
    /// @param signature: A 65-bytes signature in form (r, s, v) that is signed using
    /// The accepted v values are {0, 1, 2, 3}.
@@ -112,7 +112,7 @@ module rooch_framework::ecdsa_k1_recoverable {
       // recover with keccak256 hash from ecrecover_eth_address function
       let msg = b"Hello, world!";
       let sig = x"e5847245b38548547f613aaea3421ad47f5b95a222366fb9f9b8c57568feb19c7077fc31e7d83e00acc1347d08c3e1ad50a4eeb6ab044f25c861ddc7be5b8f9f01";
-      let eth_address = x"4259abf3f34ab0e5a399494cb1e9a7f8465ae4d6";
+      let eth_address = x"441cdedf054f7cd8d6eb0c55a0144e334eb4ab32";
       let addr = ecrecover_eth_address(sig, msg);
       assert!(addr == eth_address, 0);
    }
