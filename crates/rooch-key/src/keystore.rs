@@ -439,8 +439,7 @@ impl AccountKeystore for FileBasedKeystore {
         address: &RoochAddress,
         scheme: BuiltinScheme,
     ) -> Result<(), anyhow::Error> {
-        self.keystore
-            .nullify_key_pair_by_scheme(address, scheme)?;
+        self.keystore.nullify_key_pair_by_scheme(address, scheme)?;
         //TODO should check test env at here?
         if std::env::var_os("TEST_ENV").is_none() {
             self.save()?;
@@ -590,8 +589,7 @@ impl AccountKeystore for InMemKeystore {
         address: &RoochAddress,
         scheme: BuiltinScheme,
     ) -> Result<(), anyhow::Error> {
-        self.keystore
-            .nullify_key_pair_by_scheme(address, scheme)
+        self.keystore.nullify_key_pair_by_scheme(address, scheme)
     }
 
     fn get_key_pair_by_scheme(

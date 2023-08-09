@@ -17,11 +17,13 @@ module rooch_framework::account_authentication{
    
    const EAuthValidatorAlreadyInstalled: u64 = 1;
    /// The provided authentication key has an invalid length
-   const EMalformedAuthenticationKey: u64 = 2; 
+   const EMalformedAuthenticationKey: u64 = 2;
+   /// The authentication key has not been found for the specified validator
+   const EAuthenticationKeyNotFound: u64 = 3; 
 
    /// A resource that holds the authentication key for this account.
    /// ValidatorType is a phantom type parameter that is used to distinguish between different auth validator types.
-   struct AuthenticationKey<phantom ValidatorType> has key {
+   struct AuthenticationKey<phantom ValidatorType> has key, drop {
       authentication_key: vector<u8>
    }
 
@@ -61,6 +63,24 @@ module rooch_framework::account_authentication{
          };
          account_storage::global_move_to(ctx, account, authentication_key);
       }
+   }
+
+   #[private_generics(ValidatorType)]
+   /// This function is used to remove a resource account's authentication key, only the module which define the `ValidatorType` can call this function.
+   public fun remove_authentication_key<ValidatorType>(ctx: &mut StorageContext, account: &signer): AuthenticationKey<ValidatorType> {
+      remove_authentication_key_internal<ValidatorType>(ctx, account)
+   }
+
+   public(friend) fun remove_authentication_key_internal<ValidatorType>(ctx: &mut StorageContext, account: &signer): AuthenticationKey<ValidatorType> {
+      let account_addr = signer::address_of(account);
+      
+      assert!(
+         account_storage::global_exists<AuthenticationKey<ValidatorType>>(ctx, account_addr),
+         error::not_found(EAuthenticationKeyNotFound)
+      );
+   
+      let removed_authentication_key = account_storage::global_move_from<AuthenticationKey<ValidatorType>>(ctx, account_addr);
+      removed_authentication_key
    }
 
    /// Return the authentication validator is installed for the account at `account_addr`.

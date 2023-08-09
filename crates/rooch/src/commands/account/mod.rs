@@ -4,13 +4,11 @@
 use crate::cli_types::CommandAction;
 use async_trait::async_trait;
 use commands::{
-    create::CreateCommand, import::ImportCommand, list::ListCommand, update::UpdateCommand,
-    nullify::NullifyCommand, switch::SwitchCommand
+    create::CreateCommand, import::ImportCommand, list::ListCommand, nullify::NullifyCommand,
+    switch::SwitchCommand, update::UpdateCommand,
 };
 use rooch_types::error::{RoochError, RoochResult};
 use std::path::PathBuf;
-
-use self::commands::switch::SwitchCommand;
 
 pub mod commands;
 

@@ -10,6 +10,7 @@ This module implements the schnorr validator scheme.
 -  [Constants](#@Constants_0)
 -  [Function `scheme`](#0x3_schnorr_validator_scheme)
 -  [Function `rotate_authentication_key_entry`](#0x3_schnorr_validator_rotate_authentication_key_entry)
+-  [Function `remove_authentication_key_entry`](#0x3_schnorr_validator_remove_authentication_key_entry)
 -  [Function `schnorr_public_key`](#0x3_schnorr_validator_schnorr_public_key)
 -  [Function `schnorr_signature`](#0x3_schnorr_validator_schnorr_signature)
 -  [Function `schnorr_authentication_key`](#0x3_schnorr_validator_schnorr_authentication_key)
@@ -38,7 +39,7 @@ This module implements the schnorr validator scheme.
 
 
 
-<pre><code><b>struct</b> <a href="schnorr_validator.md#0x3_schnorr_validator_SchnorrValidator">SchnorrValidator</a> <b>has</b> store
+<pre><code><b>struct</b> <a href="schnorr_validator.md#0x3_schnorr_validator_SchnorrValidator">SchnorrValidator</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -208,6 +209,30 @@ error code
     // serialize the <b>address</b> <b>to</b> an auth key and rotate it by calling rotate_authentication_key
     <b>let</b> schnorr_authentication_key = moveos_std::bcs::to_bytes(&schnorr_addr);
     <a href="account_authentication.md#0x3_account_authentication_rotate_authentication_key">account_authentication::rotate_authentication_key</a>&lt;<a href="schnorr_validator.md#0x3_schnorr_validator_SchnorrValidator">SchnorrValidator</a>&gt;(ctx, <a href="account.md#0x3_account">account</a>, schnorr_authentication_key);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_schnorr_validator_remove_authentication_key_entry"></a>
+
+## Function `remove_authentication_key_entry`
+
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>&lt;<a href="schnorr_validator.md#0x3_schnorr_validator_SchnorrValidator">SchnorrValidator</a>&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>&lt;<a href="schnorr_validator.md#0x3_schnorr_validator_SchnorrValidator">SchnorrValidator</a>&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
+    <a href="account_authentication.md#0x3_account_authentication_remove_authentication_key">account_authentication::remove_authentication_key</a>&lt;<a href="schnorr_validator.md#0x3_schnorr_validator_SchnorrValidator">SchnorrValidator</a>&gt;(ctx, <a href="account.md#0x3_account">account</a>);
 }
 </code></pre>
 

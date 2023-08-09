@@ -24,7 +24,7 @@ module rooch_framework::ecdsa_k1_validator {
     const EMalformedAccount: u64 = 1001;
     const EMalformedAuthenticationKey: u64 = 1002;
 
-    struct EcdsaK1Validator has store {}
+    struct EcdsaK1Validator has store, drop {}
 
     public fun scheme(): u64 {
         SCHEME_ECDSA
@@ -52,6 +52,10 @@ module rooch_framework::ecdsa_k1_validator {
         // serialize the address to an auth key and rotate it by calling rotate_authentication_key
         let ecdsa_k1_authentication_key = moveos_std::bcs::to_bytes(&ecdsa_addr);
         account_authentication::rotate_authentication_key<EcdsaK1Validator>(ctx, account, ecdsa_k1_authentication_key);
+    }
+
+    public entry fun remove_authentication_key_entry<EcdsaK1Validator>(ctx: &mut StorageContext, account: &signer) {
+        account_authentication::remove_authentication_key<EcdsaK1Validator>(ctx, account);
     }
 
     public fun ecdsa_k1_public_key(authenticator_payload: &vector<u8>): vector<u8> {

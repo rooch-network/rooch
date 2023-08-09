@@ -74,8 +74,8 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                     AccountAddress::from(existing_address).to_hex_literal()
                 );
                 println!(
-                    "Generated a new keypair for an existing address on scheme {:?} [{existing_address}]",
-                    scheme.to_owned()
+                    "Generated a new keypair for an existing address {:?} on scheme {:?}",
+                    existing_address, scheme.to_owned()
                 );
 
                 let (module_address, module_name) = match scheme {
@@ -129,7 +129,7 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                     .await
                     .map_err(|error| {
                         RoochError::TransactionError(format!(
-                            "Update authentication key failed for scheme {} on address {}. Reason: {}.",
+                            "Updating authentication key failed for scheme {} on address {}. Reason: {}.",
                             scheme, existing_address, error
                         ))
                     })?;
