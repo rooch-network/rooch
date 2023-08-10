@@ -143,7 +143,11 @@ module rooch_framework::account_authentication{
       let ctx = moveos_std::storage_context::new_test_context(@std);
       init_authentication_keys(&mut ctx, &sender);
       let sender_addr = signer::address_of(&sender);
+      let authentication_key_option = get_authentication_key<TestValidator>(&ctx, sender_addr);
+      assert!(option::is_none(&authentication_key_option), 1000);
       rotate_authentication_key<TestValidator>(&mut ctx, sender_addr, x"0123");
+      let authentication_key_option = get_authentication_key<TestValidator>(&ctx, sender_addr);
+      assert!(option::is_some(&authentication_key_option), 1001);
       moveos_std::storage_context::drop_test_context(ctx);
    }
 
