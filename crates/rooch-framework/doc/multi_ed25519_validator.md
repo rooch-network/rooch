@@ -24,7 +24,7 @@ This module implements the multi-ed25519 validator scheme.
 
 
 
-<pre><code><b>struct</b> <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_MultiEd25519Validator">MultiEd25519Validator</a> <b>has</b> store
+<pre><code><b>struct</b> <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_MultiEd25519Validator">MultiEd25519Validator</a> <b>has</b> drop, store
 </code></pre>
 
 

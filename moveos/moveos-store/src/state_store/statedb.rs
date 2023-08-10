@@ -29,11 +29,6 @@ use std::collections::BTreeMap;
 
 use crate::state_store::NodeDBStore;
 
-struct AccountStorageTables<NS> {
-    pub resources: (Object<TableInfo>, TreeTable<NS>),
-    pub modules: (Object<TableInfo>, TreeTable<NS>),
-}
-
 pub struct TreeTable<NS> {
     smt: SMTree<Vec<u8>, State, NS>,
 }
@@ -174,15 +169,13 @@ impl StateDBStore {
     fn get_as_account_storage_or_create(
         &self,
         account: AccountAddress,
-    ) -> Result<(Object<AccountStorage>, AccountStorageTables<NodeDBStore>)> {
+    ) -> Result<Object<AccountStorage>> {
         let account_storage = self
             .get_as_account_storage(account)?
             .unwrap_or_else(|| Object::new_account_storage_object(account));
-        let storage_tables = AccountStorageTables {
-            resources: self.get_as_table_or_create(account_storage.value.resources)?,
-            modules: self.get_as_table_or_create(account_storage.value.modules)?,
-        };
-        Ok((account_storage, storage_tables))
+        self.get_as_table_or_create(account_storage.value.resources)?;
+        self.get_as_table_or_create(account_storage.value.modules)?;
+        Ok(account_storage)
     }
 
     fn get_as_table(
@@ -247,25 +240,13 @@ impl StateDBStore {
         let mut changed_objects = UpdateSet::new();
         //TODO
         //We want deprecate the global storage instructions https://github.com/rooch-network/rooch/issues/248
-        //So the ChangeSet should be empty, but the module publish still need it
-        //We need to figure out a way to make the module publish use raw table's StateChangeSet
+        //So the ChangeSet should be empty, but we need the mutated accounts to init the account storage
+        ////We need to figure out a way to init a fresh account.
         for (account, account_change_set) in change_set.into_inner() {
-            let (account_storage, storage_tables) =
-                self.get_as_account_storage_or_create(account)?;
+            let account_storage = self.get_as_account_storage_or_create(account)?;
 
             let (modules, resources) = account_change_set.into_inner();
-            if !modules.is_empty() {
-                let (mut object, module_table) = storage_tables.modules;
-                let new_state_root = module_table.put_modules(modules)?;
-                object.value.state_root = AccountAddress::new(new_state_root.into());
-                changed_objects.put(account_storage.value.modules.to_bytes(), object.into());
-            }
-            if !resources.is_empty() {
-                let (mut object, resource_table) = storage_tables.resources;
-                let new_state_root = resource_table.put_resources(resources)?;
-                object.value.state_root = AccountAddress::new(new_state_root.into());
-                changed_objects.put(account_storage.value.resources.to_bytes(), object.into());
-            }
+            debug_assert!(modules.is_empty() && resources.is_empty());
             //TODO check if the account_storage and table is changed, if not changed, don't put it
             changed_objects.put(ObjectID::from(account).to_bytes(), account_storage.into())
         }

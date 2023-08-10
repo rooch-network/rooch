@@ -18,7 +18,7 @@ use move_core_types::{
 use move_resource_viewer::{AnnotatedMoveValue, MoveValueAnnotator};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use smt::UpdateSet;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{btree_map, BTreeMap, BTreeSet};
 
 /// `State` is represent state in MoveOS statedb, it can be a Move module or a Move Object or a Move resource or a Table value
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
@@ -403,6 +403,19 @@ pub struct StateChangeSet {
     pub changes: BTreeMap<ObjectID, TableChange>,
 }
 
+impl StateChangeSet {
+    pub fn get_or_insert_table_change(&mut self, object_id: ObjectID) -> &mut TableChange {
+        match self.changes.entry(object_id) {
+            btree_map::Entry::Occupied(entry) => entry.into_mut(),
+            btree_map::Entry::Vacant(entry) => entry.insert(TableChange::default()),
+        }
+    }
+
+    pub fn add_op(&mut self, handle: ObjectID, key: Vec<u8>, op: Op<State>) {
+        let table_change = self.get_or_insert_table_change(handle);
+        table_change.entries.insert(key, op);
+    }
+}
 /// A change of a single table.
 #[derive(Default, Clone, Debug)]
 pub struct TableChange {

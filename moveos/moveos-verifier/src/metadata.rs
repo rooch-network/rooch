@@ -104,6 +104,7 @@ impl<'a> ExtendedChecker<'a> {
                 self.check_private_generics_functions(module);
                 self.check_entry_functions(module);
                 self.check_init_module(module);
+                self.check_global_storage_access(module);
             }
         }
     }
@@ -467,6 +468,116 @@ pub fn is_allowed_input_struct(name: String) -> bool {
             | "0x2::object_id::ObjectID"
             | "0x2::storage_context::StorageContext"
     )
+}
+
+// ----------------------------------------------------------------------------------
+// Check Global Storage Access
+
+impl<'a> ExtendedChecker<'a> {
+    fn check_global_storage_access(&mut self, module: &ModuleEnv) {
+        for ref fun in module.get_functions() {
+            let mut invalid_bytecode = vec![];
+            for instr in fun.get_bytecode().iter() {
+                match instr {
+                    Bytecode::MoveFrom(_)
+                    | Bytecode::MoveFromGeneric(_)
+                    | Bytecode::MoveTo(_)
+                    | Bytecode::MoveToGeneric(_)
+                    | Bytecode::ImmBorrowGlobal(_)
+                    | Bytecode::MutBorrowGlobal(_)
+                    | Bytecode::ImmBorrowGlobalGeneric(_)
+                    | Bytecode::MutBorrowGlobalGeneric(_)
+                    | Bytecode::Exists(_)
+                    | Bytecode::ExistsGeneric(_) => {
+                        invalid_bytecode.push(instr);
+                    }
+                    Bytecode::Pop
+                    | Bytecode::Ret
+                    | Bytecode::BrTrue(_)
+                    | Bytecode::BrFalse(_)
+                    | Bytecode::Branch(_)
+                    | Bytecode::LdU8(_)
+                    | Bytecode::LdU16(_)
+                    | Bytecode::LdU32(_)
+                    | Bytecode::LdU64(_)
+                    | Bytecode::LdU128(_)
+                    | Bytecode::LdU256(_)
+                    | Bytecode::CastU8
+                    | Bytecode::CastU16
+                    | Bytecode::CastU32
+                    | Bytecode::CastU64
+                    | Bytecode::CastU128
+                    | Bytecode::CastU256
+                    | Bytecode::LdConst(_)
+                    | Bytecode::LdTrue
+                    | Bytecode::LdFalse
+                    | Bytecode::CopyLoc(_)
+                    | Bytecode::MoveLoc(_)
+                    | Bytecode::StLoc(_)
+                    | Bytecode::Call(_)
+                    | Bytecode::CallGeneric(_)
+                    | Bytecode::Pack(_)
+                    | Bytecode::PackGeneric(_)
+                    | Bytecode::Unpack(_)
+                    | Bytecode::UnpackGeneric(_)
+                    | Bytecode::ReadRef
+                    | Bytecode::WriteRef
+                    | Bytecode::FreezeRef
+                    | Bytecode::MutBorrowLoc(_)
+                    | Bytecode::ImmBorrowLoc(_)
+                    | Bytecode::MutBorrowField(_)
+                    | Bytecode::MutBorrowFieldGeneric(_)
+                    | Bytecode::ImmBorrowField(_)
+                    | Bytecode::ImmBorrowFieldGeneric(_)
+                    | Bytecode::Add
+                    | Bytecode::Sub
+                    | Bytecode::Mul
+                    | Bytecode::Mod
+                    | Bytecode::Div
+                    | Bytecode::BitOr
+                    | Bytecode::BitAnd
+                    | Bytecode::Xor
+                    | Bytecode::Shl
+                    | Bytecode::Shr
+                    | Bytecode::Or
+                    | Bytecode::And
+                    | Bytecode::Not
+                    | Bytecode::Eq
+                    | Bytecode::Neq
+                    | Bytecode::Lt
+                    | Bytecode::Gt
+                    | Bytecode::Le
+                    | Bytecode::Ge
+                    | Bytecode::Abort
+                    | Bytecode::Nop
+                    | Bytecode::VecPack(_, _)
+                    | Bytecode::VecLen(_)
+                    | Bytecode::VecImmBorrow(_)
+                    | Bytecode::VecMutBorrow(_)
+                    | Bytecode::VecPushBack(_)
+                    | Bytecode::VecPopBack(_)
+                    | Bytecode::VecUnpack(_, _)
+                    | Bytecode::VecSwap(_) => {}
+                }
+            }
+
+            if !invalid_bytecode.is_empty() {
+                let func_name = self
+                    .env
+                    .symbol_pool()
+                    .string(fun.get_name())
+                    .as_str()
+                    .to_string();
+
+                let error_msg = format!(
+                    "Access to Move global storage is not allowed. Found in function {}: {:?}",
+                    func_name, invalid_bytecode,
+                );
+
+                self.env.error(&fun.get_loc(), error_msg.as_str());
+            }
+        }
+    }
 }
 
 // ----------------------------------------------------------------------------------

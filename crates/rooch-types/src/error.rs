@@ -53,8 +53,12 @@ pub enum RoochError {
     ViewFunctionError(String),
     #[error("Import account error: {0}")]
     ImportAccountError(String),
+    #[error("Switch account error: {0}")]
+    SwitchAccountError(String),
     #[error("Update account error: {0}")]
     UpdateAccountError(String),
+    #[error("Nullify account error: {0}")]
+    NullifyAccountError(String),
     #[error("Generate key error: {0}")]
     GenerateKeyError(String),
 
@@ -68,6 +72,11 @@ pub enum RoochError {
     SignatureKeyGenError(String),
     #[error("Key Conversion Error: {0}")]
     KeyConversionError(String),
+
+    #[error("Switch env error: {0}")]
+    SwitchEnvError(String),
+    #[error("Remove env error: {0}")]
+    RemoveEnvError(String),
 
     // Signature verification
     #[error("Signature is not valid: {}", error)]

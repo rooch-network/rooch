@@ -25,6 +25,7 @@ This is the reference documentation of the MoveOS standard library.
 -  [`0x2::object_storage`](object_storage.md#0x2_object_storage)
 -  [`0x2::raw_table`](raw_table.md#0x2_raw_table)
 -  [`0x2::rlp`](rlp.md#0x2_rlp)
+-  [`0x2::signer`](signer.md#0x2_signer)
 -  [`0x2::simple_map`](simple_map.md#0x2_simple_map)
 -  [`0x2::storage_context`](storage_context.md#0x2_storage_context)
 -  [`0x2::table`](table.md#0x2_table)

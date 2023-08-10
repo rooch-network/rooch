@@ -10,14 +10,15 @@ use move_core_types::account_address::AccountAddress;
 use move_package::BuildConfig;
 use move_unit_test::extensions::set_extension_hook;
 use move_vm_runtime::native_extensions::NativeContextExtensions;
-use moveos_stdlib::natives::moveos_stdlib::raw_table::NativeTableContext;
+use moveos_stdlib::natives::moveos_stdlib::raw_table::{NativeTableContext, TableData};
 use moveos_store::state_store::statedb::StateDBStore;
 use moveos_store::MoveOSStore;
 use moveos_verifier::build::build_model_with_test_attr;
 use moveos_verifier::metadata::run_extended_checks;
 use once_cell::sync::Lazy;
+use parking_lot::RwLock;
 use rooch_framework::natives::{all_natives, GasParameters};
-use std::{collections::BTreeMap, path::PathBuf};
+use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 use termcolor::Buffer;
 
 #[derive(Parser)]
@@ -91,8 +92,8 @@ static STATEDBSTORE: Lazy<Box<StateDBStore>> =
     Lazy::new(|| Box::new(MoveOSStore::mock_moveos_store().unwrap().statedb));
 
 fn new_moveos_natives_runtime(ext: &mut NativeContextExtensions) {
-    let statedb_store = Lazy::force(&STATEDBSTORE).as_ref();
-    let table_ext = NativeTableContext::new(statedb_store);
-
+    let statedb = Lazy::force(&STATEDBSTORE).as_ref();
+    let table_data = Arc::new(RwLock::new(TableData::default()));
+    let table_ext = NativeTableContext::new(statedb, table_data);
     ext.add(table_ext);
 }

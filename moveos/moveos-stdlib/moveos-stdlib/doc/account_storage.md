@@ -21,7 +21,7 @@ It is used to store the account's resources and modules
 -  [Function `publish_modules`](#0x2_account_storage_publish_modules)
 
 
-<pre><code><b>use</b> <a href="">0x1::signer</a>;
+<pre><code><b>use</b> <a href="../doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 <b>use</b> <a href="move_module.md#0x2_move_module">0x2::move_module</a>;
@@ -269,10 +269,10 @@ This function equates to <code><b>borrow_global_mut</b>&lt;T&gt;(<b>address</b>)
 ## Function `global_move_to`
 
 Move a resource to the account's storage
-This function equates to <code><b>move_to</b>&lt;T&gt;(&<a href="">signer</a>, resource)</code> instruction in Move
+This function equates to <code><b>move_to</b>&lt;T&gt;(&<a href="signer.md#0x2_signer">signer</a>, resource)</code> instruction in Move
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_global_move_to">global_move_to</a>&lt;T: key&gt;(ctx: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, account: &<a href="">signer</a>, resource: T)
+<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_global_move_to">global_move_to</a>&lt;T: key&gt;(ctx: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, account: &<a href="signer.md#0x2_signer">signer</a>, resource: T)
 </code></pre>
 
 
@@ -281,8 +281,8 @@ This function equates to <code><b>move_to</b>&lt;T&gt;(&<a href="">signer</a>, r
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_global_move_to">global_move_to</a>&lt;T: key&gt;(ctx: &<b>mut</b> StorageContext, account: &<a href="">signer</a>, resource: T){
-    <b>let</b> account_address = <a href="_address_of">signer::address_of</a>(account);
+<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_global_move_to">global_move_to</a>&lt;T: key&gt;(ctx: &<b>mut</b> StorageContext, account: &<a href="signer.md#0x2_signer">signer</a>, resource: T){
+    <b>let</b> account_address = signer::address_of(account);
     //Auto create the account storage when <b>move</b> resource <b>to</b> the account
     <a href="account_storage.md#0x2_account_storage_ensure_account_storage">ensure_account_storage</a>(ctx, account_address);
     <b>let</b> <a href="account_storage.md#0x2_account_storage">account_storage</a> = <a href="account_storage.md#0x2_account_storage_borrow_account_storage_mut">borrow_account_storage_mut</a>(<a href="storage_context.md#0x2_storage_context_object_storage_mut">storage_context::object_storage_mut</a>(ctx), account_address);
@@ -385,7 +385,7 @@ Check if the account has a module with the given name
 Publish modules to the account's storage
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_publish_modules">publish_modules</a>(ctx: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, account: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_publish_modules">publish_modules</a>(ctx: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, account: &<a href="signer.md#0x2_signer">signer</a>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;)
 </code></pre>
 
 
@@ -394,8 +394,8 @@ Publish modules to the account's storage
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_publish_modules">publish_modules</a>(ctx: &<b>mut</b> StorageContext, account: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;MoveModule&gt;) {
-    <b>let</b> account_address = <a href="_address_of">signer::address_of</a>(account);
+<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_publish_modules">publish_modules</a>(ctx: &<b>mut</b> StorageContext, account: &<a href="signer.md#0x2_signer">signer</a>, modules: <a href="">vector</a>&lt;MoveModule&gt;) {
+    <b>let</b> account_address = signer::address_of(account);
     <b>let</b> <a href="account_storage.md#0x2_account_storage">account_storage</a> = <a href="account_storage.md#0x2_account_storage_borrow_account_storage_mut">borrow_account_storage_mut</a>(<a href="storage_context.md#0x2_storage_context_object_storage_mut">storage_context::object_storage_mut</a>(ctx), account_address);
     <b>let</b> i = 0;
     <b>let</b> len = <a href="_length">vector::length</a>(&modules);

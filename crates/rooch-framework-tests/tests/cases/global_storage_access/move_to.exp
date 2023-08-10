@@ -1,0 +1,27 @@
+processed 3 tasks
+
+task 1 'publish'. lines 3-12:
+Error: error: Access to Move global storage is not allowed. Found in function publish_foo: [MoveTo(StructDefinitionIndex(0))]
+   ┌─ /tmp/tempfile:8:5
+   │  
+ 8 │ ╭     public fun publish_foo<T: key>(s: &signer) {
+ 9 │ │         move_to<Foo>(s, Foo { x: 500 })
+10 │ │     }
+   │ ╰─────^
+
+
+
+task 2 'run'. lines 14-21:
+Error: error[E03002]: unbound module
+   ┌─ /tmp/tempfile:16:9
+   │
+16 │     use creator::test::{Self, Foo};
+   │         ^^^^^^^^^^^^^ Invalid 'use'. Unbound module: '(creator=0x42)::test'
+
+error[E03002]: unbound module
+   ┌─ /tmp/tempfile:18:9
+   │
+18 │         test::publish_foo<Foo>(&s);
+   │         ^^^^ Unbound module alias 'test'
+
+

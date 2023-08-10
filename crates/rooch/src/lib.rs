@@ -4,7 +4,7 @@
 use crate::commands::event::EventCommand;
 use cli_types::CommandAction;
 use commands::{
-    abi::ABI, account::Account, dashboard::Dashboard, init::Init, move_cli::MoveCli,
+    abi::ABI, account::Account, dashboard::Dashboard, env::Env, init::Init, move_cli::MoveCli,
     object::ObjectCommand, resource::ResourceCommand, server::Server, state::StateCommand,
     transaction::Transaction,
 };
@@ -37,6 +37,7 @@ pub enum Command {
     Event(EventCommand),
     Dashboard(Dashboard),
     ABI(ABI),
+    Env(Env),
 }
 
 pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
@@ -52,5 +53,6 @@ pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
         Command::Transaction(transation) => transation.execute().await,
         Command::Event(event) => event.execute().await,
         Command::ABI(abi) => abi.execute().await,
+        Command::Env(env) => env.execute().await,
     }
 }
