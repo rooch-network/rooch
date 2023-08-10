@@ -210,7 +210,7 @@ error code
     <b>let</b> ecdsa_k1_recoverable_authentication_key = moveos_std::bcs::to_bytes(&ecdsa_recoverable_addr);
     <a href="account_authentication.md#0x3_account_authentication_rotate_authentication_key">account_authentication::rotate_authentication_key</a>&lt;<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EcdsaK1RecoverableValidator">EcdsaK1RecoverableValidator</a>&gt;(
         ctx,
-        <a href="account.md#0x3_account">account</a>,
+        account_addr,
         ecdsa_k1_recoverable_authentication_key
     );
 }
@@ -236,7 +236,8 @@ error code
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>&lt;<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EcdsaK1RecoverableValidator">EcdsaK1RecoverableValidator</a>&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
-    <a href="account_authentication.md#0x3_account_authentication_remove_authentication_key">account_authentication::remove_authentication_key</a>&lt;<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EcdsaK1RecoverableValidator">EcdsaK1RecoverableValidator</a>&gt;(ctx, <a href="account.md#0x3_account">account</a>);
+    <b>let</b> account_addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
+    <a href="account_authentication.md#0x3_account_authentication_remove_authentication_key">account_authentication::remove_authentication_key</a>&lt;<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EcdsaK1RecoverableValidator">EcdsaK1RecoverableValidator</a>&gt;(ctx, account_addr);
 }
 </code></pre>
 

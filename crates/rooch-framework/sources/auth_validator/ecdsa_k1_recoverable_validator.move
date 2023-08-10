@@ -53,13 +53,14 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
         let ecdsa_k1_recoverable_authentication_key = moveos_std::bcs::to_bytes(&ecdsa_recoverable_addr);
         account_authentication::rotate_authentication_key<EcdsaK1RecoverableValidator>(
             ctx,
-            account,
+            account_addr,
             ecdsa_k1_recoverable_authentication_key
         );
     }
 
     public entry fun remove_authentication_key_entry<EcdsaK1RecoverableValidator>(ctx: &mut StorageContext, account: &signer) {
-        account_authentication::remove_authentication_key<EcdsaK1RecoverableValidator>(ctx, account);
+        let account_addr = signer::address_of(account);
+        account_authentication::remove_authentication_key<EcdsaK1RecoverableValidator>(ctx, account_addr);
     }
 
     public fun ecdsa_k1_recoverable_public_key(authenticator_payload: &vector<u8>): vector<u8> {

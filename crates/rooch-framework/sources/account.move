@@ -6,6 +6,7 @@ module rooch_framework::account{
    use moveos_std::bcs;
    use moveos_std::storage_context::{Self, StorageContext};
    use moveos_std::account_storage;
+   use rooch_framework::account_authentication;
 
    friend rooch_framework::transaction_validator;
 
@@ -54,10 +55,14 @@ module rooch_framework::account{
    /// Address to create is not a valid reserved address for Rooch framework
    const ENoValidFrameworkReservedAddress: u64 = 11;
  
-
+   //TODO should we provide create account from arbitrary address?
    /// A entry function to create an account under `new_address`
    public entry fun create_account_entry(ctx: &mut StorageContext, new_address: address){
-      Self::create_account(ctx, new_address);
+      // If account already exists, do nothing
+      // Because if the new address is the same as the sender, the account must already created in the `transaction_validator::pre_execute` function
+      if(!exists_at(ctx, new_address)){
+         create_account(ctx, new_address);
+      };
    }
 
    /// Publishes a new `Account` resource under `new_address`. A signer representing `new_address`
@@ -87,7 +92,7 @@ module rooch_framework::account{
          Account {
             sequence_number: 0,
       });
-
+      account_authentication::init_authentication_keys(ctx, &new_account);
       new_account
    }
 
