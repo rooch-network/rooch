@@ -71,4 +71,448 @@ Documentation generation successful!
 
 ## 更多示例
 
-TODO
+
+### Account
+
+Rooch CLI Account 命令支持以下子命令：
+
+```shell
+rooch-account 
+Tool for interacting with accounts
+
+USAGE:
+    rooch account [OPTIONS] <SUBCOMMAND>
+
+OPTIONS:
+        --client.config <CONFIG>    Sets the file storing the state of our user accounts (an empty
+                                    one will be created if missing)
+    -h, --help                      Print help information
+
+SUBCOMMANDS:
+    create     Create a new account on-chain
+    help       Print this message or the help of the given subcommand(s)
+    import     Add a new key to rooch.keystore based on the input mnemonic phrase
+    list       List all keys by its Rooch address, Base64 encoded public key
+    nullify    Nullify a keypair from a selected scheme with a Ed25519 generated address in
+                   rooch.keystore
+    switch     Switch the active Rooch account
+    update     Update an address with a new keypair from scheme to rooch.keystore
+```
+
+使用 `rooch account -h` 查看支持的子命令列表。
+
+使用 `rooch account help <subcommand>` 查看每个子命令的更多信息。
+
+#### Account Create
+
+使用 `rooch account create` 子命令在 Rooch 网络上创建账户。
+
+Rooch CLI 账户创建子命令支持以下选项：
+
+```shell
+rooch-account-create 
+Create a new account on-chain
+
+An account can be created by transferring coins, or by making an explicit call to create an account.
+This will create an account with no coins, and any coins will have to transferred afterwards.
+
+USAGE:
+    rooch account create [OPTIONS]
+
+OPTIONS:
+        --config-dir <CONFIG_DIR>
+            rooch config path
+
+    -h, --help
+            Print help information
+```
+
+如果不输入 `--config-dir` 选项，账户将在默认的本地文件路径下创建，当前路径为 `~/.rooch/rooch_config/`。
+
+值得注意的是，要创建账户，配置文件 `rooch.yaml` 必须存在。`rooch.yaml` 文件可以通过 `rooch init` 命令创建。
+
+以下是创建账户时使用和不使用选项 `--config-dir` 的示例：
+
+```> rooch account create```
+
+```shell
+0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a
+Generated new keypair for address with scheme "ed25519" [0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a]
+Secret Recovery Phrase : [desert hedgehog moral long cost husband timber someone lunar knee clever brave]
+{
+  "sequence_info": {
+    "tx_order": "1",
+    "tx_order_signature": {
+      "scheme": "0",
+      "payload": "0x0027f6c2510a540a9cf615c784b1532138ee4b2e48788bc12965711f29ca6ab0a8bb0bc00e839e757583acbe6fa3cab41f521d820f7cded452aa9ea4fd2813ae0e6c8de62390c89dcb353892770164fd2cd449b5956193fa1d1759d196c666735f"
+    },
+    "tx_accumulator_root": "0x955bf43aaa654d7a4ae6e2f4a7f09d7537975eff8483fbdb1c0a1126e3e81e24"
+  },
+  "execution_info": {
+    "tx_hash": "0x6e7cd40300f2721a88719a4027ed7873daa28c22204d800fa85ee11e5569a9bf",
+    "state_root": "0xab5e6745a8c5d6a634e6b77bf95700bf7912d172ec02c641748a8237827f79f9",
+    "event_root": "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
+    "gas_used": 0,
+    "status": {
+      "type": "moveabort",
+      "location": "0000000000000000000000000000000000000000000000000000000000000003::account",
+      "abort_code": "524289"
+    }
+  },
+  "output": {
+    "status": {
+      "type": "moveabort",
+      "location": "0000000000000000000000000000000000000000000000000000000000000003::account",
+      "abort_code": "524289"
+    },
+    "table_changeset": {
+      "new_tables": {},
+      "removed_tables": [],
+      "changes": {
+        "0x0000000000000000000000000000000000000000000000000000000000000000": {
+          "entries": {
+            "0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a": {
+              "type": "new",
+              "value": "0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998ad2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998ac7d14a2ff97ecf1df90bb5698654817688e24107d9dde0ec7c703bfdab65f9256c97b072e626eda50af11f602437d06ffbf454fafec0f84afaecfbdcac00b9d7",
+              "value_type": "0x2::object::Object<0x2::account_storage::AccountStorage>"
+            }
+          }
+        },
+        "0xc7d14a2ff97ecf1df90bb5698654817688e24107d9dde0ec7c703bfdab65f925": {
+          "entries": {
+            "0x52303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6163636f756e743a3a4163636f756e74": {
+              "type": "new",
+              "value": "0x0100000000000000",
+              "value_type": "0x3::account::Account"
+            }
+          }
+        }
+      }
+    },
+    "events": [],
+    "gas_used": 0
+  }
+}
+```
+
+在第 1-2 行，创建子命令将生成一个新的密钥对，并根据方案 ed25519 创建一个地址。
+
+在第 3 行，一个秘密恢复短语或助记符短语被赋予一个地址，用于恢复地址。
+
+第 4-57 行，向 Rooch 区块链 RPC 服务器发送事务，并在此返回相应的响应。
+
+该事务所做的更改如下：
+
+```shell
+"0x0000000000000000000000000000000000000000000000000000000000000000": {
+    "entries": {
+        "0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a": {
+            "type": "new",
+            "value": "0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998ad2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998ac7d14a2ff97ecf1df90bb5698654817688e24107d9dde0ec7c703bfdab65f9256c97b072e626eda50af11f602437d06ffbf454fafec0f84afaecfbdcac00b9d7",
+            "value_type": "0x2::object::Object<0x2::account_storage::AccountStorage>"
+        }
+    }
+},
+```
+
+第一个变化表示已为刚刚创建的地址分配了账户存储。
+
+```shell
+"0xc7d14a2ff97ecf1df90bb5698654817688e24107d9dde0ec7c703bfdab65f925": {
+    "entries": {
+        "0x52303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6163636f756e743a3a4163636f756e74": {
+            "type": "new",
+            "value": "0x0100000000000000",
+            "value_type": "0x3::account::Account"
+        }
+    }
+}
+```
+
+第二个变化表示为刚刚创建的地址创建了一个账户。
+
+还可以为账户创建命令指定一个选项 `--config-dir`，以指定配置目录。
+
+```> rooch account create --config-dir ~/.rooch/rooch_config/```
+
+请注意，如果 Rooch 区块链 RPC 服务器尚未启动，账户创建将以 HTTP 错误失败：
+
+```shell
+Error: Networking or low-level protocol error: HTTP error: error trying to connect: tcp connect error: Connection refused (os error 61)
+```
+
+#### Account Switch
+
+在 `rooch init` 命令后使用 `rooch account create` 创建的账户有两个可用账户。
+
+使用 `rooch account switch` 子命令可在两个账户间切换。
+
+Rooch CLI Account Switch 子命令支持以下选项：
+
+```shell
+rooch-account-switch 
+Switch the active Rooch account
+
+USAGE:
+    rooch account switch [OPTIONS] --address <ADDRESS>
+
+OPTIONS:
+    -a, --address <ADDRESS>          The address of the Rooch account to be set as active
+        --config-dir <CONFIG_DIR>    rooch config path
+    -h, --help                       Print help information
+```
+
+使用 `--address` 或 `-a` 标志指定要切换到的地址。
+
+下面是切换到创建的地址的示例：
+
+```> rooch account switch --address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a```
+
+```shell
+The active account was successfully switched to `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a`
+```
+
+#### Account List
+
+使用 `rooch account list` 子命令检查账户状态。
+
+Rooch CLI Account List 子命令支持以下选项：
+
+```shell
+rooch-account-list 
+List all keys by its Rooch address, Base64 encoded public key
+
+USAGE:
+    rooch account list [OPTIONS]
+
+OPTIONS:
+        --config-dir <CONFIG_DIR>    rooch config path
+    -h, --help                       Print help information
+```
+
+使用帐户列表检查地址是否已成功切换为 `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a`。
+
+```> rooch account list```
+
+```shell
+                     Rooch Address (Ed25519)                       |               Public Key (Base64)                |      Scheme      | Active Address
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+0x526793be899b13834a3df14a60003554232dc2886af71296a1a4e46edae814ed |   AGBscM9xRoM6ErRRpUfx/PXGQE0HvbW3pVku0fNTcPq3   |     ed25519      |             
+0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a |   AITD/sv7fsNvqwtT53l0PpsLjJdR6LIo1lVqy+PKL1Aa   |     ed25519      |     True    
+```
+
+由于 Rooch 地址 `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a` 的 Active Address 显示为 True，因此地址切换操作已得到确认。
+
+#### Account Import
+
+使用 `rooch account import` 子命令从助记符短语中导入账户。
+
+Rooch CLI Account Import 子命令支持以下选项：
+
+```shell
+rooch-account-import 
+Add a new key to rooch.keystore based on the input mnemonic phrase
+
+USAGE:
+    rooch account import [OPTIONS] --mnemonic-phrase <MNEMONIC_PHRASE>
+
+OPTIONS:
+        --config-dir <CONFIG_DIR>              rooch config path
+    -h, --help                                 Print help information
+    -m, --mnemonic-phrase <MNEMONIC_PHRASE>
+```
+
+使用 `--mnemonic-phrase` 或 `-m` 标志指定一个助记符短语来导入账户。账户地址将从助记符短语生成一个 ed25519 地址，并生成一个 ed25519 密钥对。
+
+从助记符短语导入账户。助记符短语由 `rooch init` 或 `rooch account create` 命令生成：
+
+```> rooch account import --mnemonic-phrase "misery surprise pupil skull acid pretty loud tray wolf pride head adapt"```
+
+```shell
+"misery surprise pupil skull acid pretty loud tray wolf pride head adapt"
+Key imported for address on scheme Ed25519: [0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33]
+```
+
+第 1 行是助记符短语本身。
+
+在第 2 行，从助记符短语导入一对密钥，并用默认方案 ed25519 从一对密钥生成一个地址。
+
+现在，使用 `rooch account list` 检查新导入的地址 `0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33` 是否在账户中：
+
+```> rooch account list```
+
+```shell
+                     Rooch Address (Ed25519)                       |               Public Key (Base64)                |      Scheme      | Active Address
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33 |   AMtU2I8OF3ArnnPJ2Yvcj11++cIWh+EbhZz4sMmGENZ7   |     ed25519      |             
+0x526793be899b13834a3df14a60003554232dc2886af71296a1a4e46edae814ed |   AGBscM9xRoM6ErRRpUfx/PXGQE0HvbW3pVku0fNTcPq3   |     ed25519      |             
+0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a |   AITD/sv7fsNvqwtT53l0PpsLjJdR6LIo1lVqy+PKL1Aa   |     ed25519      |     True    
+```
+
+命令行输出显示，地址 `0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33` 已成功从助记符短语导入，并且已在账户中。
+
+值得注意的是，在使用 `rooch account import` 命令时，助记符短语应加引号，因为单词之间有空格。
+
+#### Account Update
+
+使用 `rooch account update` 子命令用来自助记符短语和方案的新密钥对更新地址。
+
+Rooch CLI Account Update 子命令支持以下选项：
+
+```shell
+rooch-account-update 
+Update an address with a new keypair from scheme to rooch.keystore
+
+USAGE:
+    rooch account update [OPTIONS] --address <ADDRESS> --mnemonic-phrase <MNEMONIC_PHRASE> --scheme <CRYPTO_SCHEMES>
+
+OPTIONS:
+    -a, --address <ADDRESS>
+            Rooch address in string format
+
+        --config-dir <CONFIG_DIR>
+            rooch config path
+
+    -h, --help
+            Print help information
+
+    -m, --mnemonic-phrase <MNEMONIC_PHRASE>
+            
+
+    -s, --scheme <CRYPTO_SCHEMES>
+            Command line input of crypto schemes (ed25519, multi-ed25519, ecdsa, ecdsa-recoverable
+            or schnorr) [possible values: ed25519, multi-ed25519, ecdsa, ecdsa-recoverable, schnorr]
+```
+
+使用 `--address` 或 `-a`、`-mnemonic-phrase` 或 `-m`、`-scheme` 或 `-s` 标志组合更新帐户地址。
+
+`<ADDRESS>` 可以取自现有地址。同样，`<MNEMONIC_PHRASE>` 也可以取自现有助记符短语。
+
+应在可能的取值范围内选择 `<CRYPTO_SCHEMES>`。
+
+下面是更新地址 `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a` 的示例，其中使用了 `ecdsa` 方案和用于生成地址的相应助记符短语 `desert hedgehog moral long cost husband timber someone lunar knee clever brave`：
+
+```> rooch account update --address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a --scheme ecdsa --mnemonic-phrase "desert hedgehog moral long cost husband timber someone lunar knee clever brave"```
+
+```shell
+"desert hedgehog moral long cost husband timber someone lunar knee clever brave"
+0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a
+Generated a new keypair for an existing address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a on scheme Ecdsa
+```
+
+第 1 行是输入的助记符短语。
+
+第 2 行是输入的现有地址。
+
+在第 3 行，它表示在方案 ecdsa 上为地址 `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a` 生成了一个新的密钥对。
+
+使用 `rooch account list` 检查方案 ecdsa 上的新配对密钥是否已成功添加到账户。
+
+```> rooch account list```
+
+```shell
+                     Rooch Address (Ed25519)                       |               Public Key (Base64)                |      Scheme      | Active Address
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33 |   AMtU2I8OF3ArnnPJ2Yvcj11++cIWh+EbhZz4sMmGENZ7   |     ed25519      |             
+0x526793be899b13834a3df14a60003554232dc2886af71296a1a4e46edae814ed |   AGBscM9xRoM6ErRRpUfx/PXGQE0HvbW3pVku0fNTcPq3   |     ed25519      |             
+0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a |   AITD/sv7fsNvqwtT53l0PpsLjJdR6LIo1lVqy+PKL1Aa   |     ed25519      |     True    
+0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a | AgKbPp8/Aryextky10gULBTs/sdL9Flh2qpxtyXuXjj3Kg== |      ecdsa       |     True    
+```
+
+命令行输出显示，已在地址 `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a` 中添加了一个新的 base64 编码公钥，其方案为 ecdsa，并已激活。
+
+公钥对应的私钥可在 `rooch.keystore` 中找到。例如
+
+```shell
+{
+  "0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33": {
+    "Ed25519": "AC4b1o0kj1/f0P2NWnYnMsZgglk4OxzOIo7xTUbr2vIY"
+  },
+  "0x526793be899b13834a3df14a60003554232dc2886af71296a1a4e46edae814ed": {
+    "Ed25519": "AAbtuAUtIVgoYjMVru/fY0Ck42ZsgM3N3BUm/6BVFV+p"
+  },
+  "0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a": {
+    "Ed25519": "AHLz7D8uDvc/16MljntLfl0WGDoqgyK6bOUNyGbZW414",
+    "Ecdsa": "At/6j9jqKsdhNSzJqMiT5knBNT7mwKGiF+mwmt2Qt6fF"
+  }
+}
+```
+
+它们都属于一个地址，而一个地址可以拥有来自不同方案的多个密钥对。多亏了 `rooch account update` 命令。
+
+除了上述功能外，`rooch account update` 还将向 Rooch 区块链 RPC 服务器发起交易，以轮换指定方案的认证密钥。
+
+目前，认证密钥是由每个方案的公钥生成的地址，每次只存在一个认证密钥。
+
+#### Account Nullify
+
+使用 `rooch account nullify` 子命令从账户地址中的方案中删除现有密钥对。
+
+Rooch CLI Account Nullify 子命令支持以下选项：
+
+```shell
+rooch-account-nullify 
+Nullify a keypair from a selected scheme with a Ed25519 generated address in rooch.keystore
+
+USAGE:
+    rooch account nullify [OPTIONS] --address <ADDRESS> --scheme <CRYPTO_SCHEMES>
+
+OPTIONS:
+    -a, --address <ADDRESS>          Rooch address in string format
+        --config-dir <CONFIG_DIR>    rooch config path
+    -h, --help                       Print help information
+    -s, --scheme <CRYPTO_SCHEMES>    Command line input of crypto schemes (ed25519, multied25519,
+                                     ecdsa, ecdsa-recoverable or schnorr) [possible values: ed25519, multi-ed25519,
+                                     ecdsa, ecdsa-recoverable, schnorr]
+```
+
+使用 `--address` 或 `-a`、`--scheme` 或 `-s` 标志组合可使账户地址中的键对无效。
+
+同样，`<ADDRESS>` 应是账户中现有的地址，`<CRYPTO_SCHEMES>` 应在可能的值中选择。
+
+下面是一个示例，用于使新添加的 ecdsa 方案的密钥对无效：
+
+```> rooch account nullify --address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a --scheme ecdsa```
+
+```shell
+0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a
+Dropped a keypair from an existing address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a on scheme Ecdsa
+```
+
+第 1 行是输入的地址。
+
+第 2 行显示，地址为 `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a` 的 ecdsa 方案配对密钥已被删除。
+
+使用 `rooch account list` 查看 ecdsa 方案中的配对密钥是否已丢失：
+
+```> rooch account list```
+
+```shell
+                     Rooch Address (Ed25519)                       |               Public Key (Base64)                |      Scheme      | Active Address
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33 |   AMtU2I8OF3ArnnPJ2Yvcj11++cIWh+EbhZz4sMmGENZ7   |     ed25519      |             
+0x526793be899b13834a3df14a60003554232dc2886af71296a1a4e46edae814ed |   AGBscM9xRoM6ErRRpUfx/PXGQE0HvbW3pVku0fNTcPq3   |     ed25519      |             
+0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a |   AITD/sv7fsNvqwtT53l0PpsLjJdR6LIo1lVqy+PKL1Aa   |     ed25519      |     True    
+```
+
+命令行输出显示，通过向 Rooch 区块链 RPC 服务器发送交易，ecdsa 方案已从账户地址中删除，ecdsa 方案的验证密钥也已从发送者的账户存储中删除。
+
+同时，检查私钥是否已成功从 `rooch.keystore` 中删除：
+
+```> cat ~/.rooch/rooch_config/rooch.keystore```
+
+```shell
+{
+  "0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33": {
+    "Ed25519": "AC4b1o0kj1/f0P2NWnYnMsZgglk4OxzOIo7xTUbr2vIY"
+  },
+  "0x526793be899b13834a3df14a60003554232dc2886af71296a1a4e46edae814ed": {
+    "Ed25519": "AAbtuAUtIVgoYjMVru/fY0Ck42ZsgM3N3BUm/6BVFV+p"
+  },
+  "0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a": {
+    "Ed25519": "AHLz7D8uDvc/16MljntLfl0WGDoqgyK6bOUNyGbZW414"
+  }
+}
+```
+
+输出结果显示，账户地址 `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a` 中不存在方案 ecdsa 及其私钥。
