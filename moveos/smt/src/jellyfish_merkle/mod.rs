@@ -327,6 +327,7 @@ where
         // Get the root node. If this is the first operation, it would get the root node from the
         // underlying db. Otherwise it most likely would come from `cache`.
         let root_node_key = tree_cache.get_root_node_key();
+        // println!("Debug smt 02 put root_node_key {:?}", root_node_key);
         let mut nibble_iter = nibble_path.nibbles();
 
         // Start insertion from the root node.
@@ -348,6 +349,7 @@ where
         blob: Option<SMTObject<V>>,
         tree_cache: &mut TreeCache<R, K, V>,
     ) -> Result<(NodeKey, Node<K, V>)> {
+        // println!("Debug smt 02 get_node node_key {:?}", node_key);
         let node = tree_cache.get_node(&node_key)?;
         match node {
             Node::Internal(internal_node) => Self::insert_at_internal_node(
@@ -440,6 +442,7 @@ where
                 .is_leaf
         {
             let (_, leaf) = children.into_iter().next().expect("must exist one child");
+            // println!("Debug smt 04 get_node next_node_key {:?}", leaf.hash);
             let leaf_node = tree_cache.get_node(&leaf.hash)?;
             Ok((leaf.hash, leaf_node))
         } else {
@@ -598,6 +601,7 @@ where
         // We limit the number of loops here deliberately to avoid potential cyclic graph bugs
         // in the tree structure.
         for nibble_depth in 0..=ROOT_NIBBLE_HEIGHT {
+            // println!("Debug smt 03 get_node next_node_key {:?}", next_node_key);
             let next_node = self.reader.get_node(&next_node_key)?;
             match next_node {
                 Node::Internal(internal_node) => {

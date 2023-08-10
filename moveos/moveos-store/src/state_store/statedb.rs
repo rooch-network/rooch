@@ -182,6 +182,7 @@ impl StateDBStore {
             resources: self.get_as_table_or_create(account_storage.value.resources)?,
             modules: self.get_as_table_or_create(account_storage.value.modules)?,
         };
+        println!("Debug get_as_account_storage_or_create account_storage {:?}", account_storage);
         Ok((account_storage, storage_tables))
     }
 
@@ -364,7 +365,9 @@ impl StateDBStore {
                 }
                 let table_states = result.unwrap().1.dump()?;
                 let mut update_set = UpdateSet::new();
+                println!("Debug dump inner table dump table_handle {:?}", table_handle);
                 for (inner_key, inner_state) in table_states.into_iter() {
+                    println!("Debug dump inner table dump inner_key {:?}", inner_key);
                     update_set.put(inner_key, inner_state);
                 }
                 state_set.state_sets.insert(table_handle, update_set);
