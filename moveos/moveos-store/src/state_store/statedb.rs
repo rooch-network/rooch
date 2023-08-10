@@ -117,7 +117,7 @@ where
     }
 
     pub fn iter(&self) -> Result<SMTIterator<Vec<u8>, State, NS>> {
-        Ok(self.smt.iter(None)?)
+        self.smt.iter(None)
     }
 }
 
@@ -182,7 +182,6 @@ impl StateDBStore {
             resources: self.get_as_table_or_create(account_storage.value.resources)?,
             modules: self.get_as_table_or_create(account_storage.value.modules)?,
         };
-        println!("Debug get_as_account_storage_or_create account_storage {:?}", account_storage);
         Ok((account_storage, storage_tables))
     }
 
@@ -211,11 +210,16 @@ impl StateDBStore {
         id: ObjectID,
     ) -> Result<(Object<TableInfo>, TreeTable<NodeDBStore>)> {
         Ok(self.get_as_table(id)?.unwrap_or_else(|| {
-            let table = TreeTable::new(self.node_store.clone());
-            let table_info = TableInfo::new(AccountAddress::new(table.state_root().into()));
-            let object = Object::new_table_object(id, table_info);
-            (object, table)
+            self.create_table(id)
+                .expect("create_table should succ when get_as_table_or_create")
         }))
+    }
+
+    fn create_table(&self, id: ObjectID) -> Result<(Object<TableInfo>, TreeTable<NodeDBStore>)> {
+        let table = TreeTable::new(self.node_store.clone());
+        let table_info = TableInfo::new(AccountAddress::new(table.state_root().into()));
+        let object = Object::new_table_object(id, table_info);
+        Ok((object, table))
     }
 
     pub fn get_with_key(&self, id: ObjectID, key: Vec<u8>) -> Result<Option<State>> {
@@ -325,12 +329,11 @@ impl StateDBStore {
     pub fn apply(&self, state_set: StateSet) -> Result<H256> {
         let mut state_root = H256::zero();
         for (k, v) in state_set.state_sets.into_iter() {
-            if &k == &state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
+            if k == state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
                 state_root = self.global_table.puts(v)?
             } else {
-                let (_, table_store) = self
-                    .get_as_table_or_create(k)
-                    .expect("call get_as_table_or_create when statedb puts should succ");
+                // must force create table
+                let (_, table_store) = self.create_table(k)?;
                 state_root = table_store.puts(v)?
             }
         }
@@ -365,9 +368,7 @@ impl StateDBStore {
                 }
                 let table_states = result.unwrap().1.dump()?;
                 let mut update_set = UpdateSet::new();
-                println!("Debug dump inner table dump table_handle {:?}", table_handle);
                 for (inner_key, inner_state) in table_states.into_iter() {
-                    println!("Debug dump inner table dump inner_key {:?}", inner_key);
                     update_set.put(inner_key, inner_state);
                 }
                 state_set.state_sets.insert(table_handle, update_set);
