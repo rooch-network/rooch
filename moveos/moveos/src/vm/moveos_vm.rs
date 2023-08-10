@@ -159,9 +159,11 @@ where
 
     /// Re spawn a new session with the same context.
     pub fn respawn(self) -> Self {
-        //Create a new tx context with the same sender and tx hash, but drop the ids_created and kv map.
-        let tx_ctx = self.ctx.tx_context.spawn();
-        let ctx = StorageContext::new(tx_ctx);
+        //FIXME
+        //The TxContext::spawn function will reset the ids_created and kv map.
+        //But we need some TxContext value in the pre_execute and post_execute function, such as the TxValidateResult.
+        //We need to find a solution.
+        let ctx = StorageContext::new(self.ctx.tx_context.spawn());
         let s = Self {
             session: Self::new_inner_session(self.vm, self.remote, self.table_data.clone()),
             ctx,
@@ -194,37 +196,31 @@ where
     /// If the result is error, the transaction should be rejected.
     pub fn verify_move_action(&self, action: MoveAction) -> VMResult<VerifiedMoveAction> {
         match action {
-            MoveAction::Script(script) => {
+            MoveAction::Script(call) => {
                 let loaded_function = self
                     .session
-                    .load_script(script.code.as_slice(), script.ty_args.clone())?;
+                    .load_script(call.code.as_slice(), call.ty_args.clone())?;
                 moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)
                     .map_err(|e| e.finish(Location::Undefined))?;
-                let resolved_args = self
+                let _resolved_args = self
                     .ctx
-                    .resolve_argument(&self.session, &loaded_function, script.args.clone())
+                    .resolve_argument(&self.session, &loaded_function, call.args.clone())
                     .map_err(|e| e.finish(Location::Undefined))?;
-                Ok(VerifiedMoveAction::Script {
-                    call: script,
-                    resolved_args,
-                })
+                Ok(VerifiedMoveAction::Script { call })
             }
-            MoveAction::Function(function) => {
+            MoveAction::Function(call) => {
                 let loaded_function = self.session.load_function(
-                    &function.function_id.module_id,
-                    &function.function_id.function_name,
-                    function.ty_args.as_slice(),
+                    &call.function_id.module_id,
+                    &call.function_id.function_name,
+                    call.ty_args.as_slice(),
                 )?;
                 moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)
                     .map_err(|e| e.finish(Location::Undefined))?;
-                let resolved_args = self
+                let _resolved_args = self
                     .ctx
-                    .resolve_argument(&self.session, &loaded_function, function.args.clone())
+                    .resolve_argument(&self.session, &loaded_function, call.args.clone())
                     .map_err(|e| e.finish(Location::Undefined))?;
-                Ok(VerifiedMoveAction::Function {
-                    call: function,
-                    resolved_args,
-                })
+                Ok(VerifiedMoveAction::Function { call })
             }
             MoveAction::ModuleBundle(module_bundle) => {
                 let compiled_modules = deserialize_modules(&module_bundle)?;
@@ -257,38 +253,54 @@ where
     /// and we need to save the result and deduct gas
     pub fn execute_move_action(&mut self, action: VerifiedMoveAction) -> VMResult<()> {
         match action {
-            VerifiedMoveAction::Script {
-                call,
-                resolved_args,
-            } => self
-                .session
-                .execute_script(call.code, call.ty_args, resolved_args, &mut self.gas_meter)
-                .map(|ret| {
-                    debug_assert!(
-                        ret.return_values.is_empty(),
-                        "Script function should not return values"
-                    );
-                    self.update_storage_context_via_return_values(&ret);
-                }),
-            VerifiedMoveAction::Function {
-                call,
-                resolved_args,
-            } => self
-                .session
-                .execute_entry_function(
+            VerifiedMoveAction::Script { call } => {
+                let loaded_function = self
+                    .session
+                    .load_script(call.code.as_slice(), call.ty_args.clone())?;
+
+                let resolved_args = self
+                    .ctx
+                    .resolve_argument(&self.session, &loaded_function, call.args)
+                    .map_err(|e| e.finish(Location::Undefined))?;
+
+                self.session
+                    .execute_script(call.code, call.ty_args, resolved_args, &mut self.gas_meter)
+                    .map(|ret| {
+                        debug_assert!(
+                            ret.return_values.is_empty(),
+                            "Script function should not return values"
+                        );
+                        self.update_storage_context_via_return_values(&ret);
+                    })
+            }
+            VerifiedMoveAction::Function { call } => {
+                let loaded_function = self.session.load_function(
                     &call.function_id.module_id,
                     &call.function_id.function_name,
-                    call.ty_args.clone(),
-                    resolved_args,
-                    &mut self.gas_meter,
-                )
-                .map(|ret| {
-                    debug_assert!(
-                        ret.return_values.is_empty(),
-                        "Entry function should not return values"
-                    );
-                    self.update_storage_context_via_return_values(&ret);
-                }),
+                    call.ty_args.as_slice(),
+                )?;
+
+                let resolved_args = self
+                    .ctx
+                    .resolve_argument(&self.session, &loaded_function, call.args)
+                    .map_err(|e| e.finish(Location::Undefined))?;
+
+                self.session
+                    .execute_entry_function(
+                        &call.function_id.module_id,
+                        &call.function_id.function_name,
+                        call.ty_args.clone(),
+                        resolved_args,
+                        &mut self.gas_meter,
+                    )
+                    .map(|ret| {
+                        debug_assert!(
+                            ret.return_values.is_empty(),
+                            "Entry function should not return values"
+                        );
+                        self.update_storage_context_via_return_values(&ret);
+                    })
+            }
             VerifiedMoveAction::ModuleBundle {
                 module_bundle,
                 init_function_modules,
