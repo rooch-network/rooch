@@ -10,6 +10,7 @@ use move_binary_format::{
 use move_core_types::{
     account_address::AccountAddress,
     gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
+    language_storage::ModuleId,
     resolver::ModuleResolver,
     vm_status::StatusCode,
 };
@@ -29,13 +30,17 @@ use std::collections::VecDeque;
 #[derive(Tid)]
 pub struct NativeModuleContext<'a> {
     resolver: &'a dyn ModuleResolver<Error = anyhow::Error>,
+    pub init_functions: Vec<ModuleId>,
 }
 
 impl<'a> NativeModuleContext<'a> {
     /// Create a new instance of a native table context. This must be passed in via an
     /// extension into VM session functions.
     pub fn new(resolver: &'a dyn ModuleResolver<Error = anyhow::Error>) -> Self {
-        Self { resolver }
+        Self {
+            resolver,
+            init_functions: vec![],
+        }
     }
 }
 
@@ -102,23 +107,20 @@ fn native_verify_modules_inner(
         .iter()
         .map(|b| CompiledModule::deserialize(b))
         .collect::<PartialVMResult<Vec<CompiledModule>>>()?;
-    let module_context = context.extensions().get::<NativeModuleContext>();
-    let mut init_function_modules = vec![];
+    let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
     let mut module_names = vec![];
     for module in &compiled_modules {
         let result = moveos_verifier::verifier::verify_module(module, module_context.resolver);
         match result {
             Ok(res) => {
                 if res {
-                    init_function_modules.push(module.self_id());
+                    module_context.init_functions.push(module.self_id());
                     module_names.push(module.self_id().name().to_owned().into_string());
                 }
             }
             Err(_) => return Err(PartialVMError::new(StatusCode::VERIFICATION_ERROR)),
         }
     }
-
-    // TODO: handle the init_functions
 
     let module_names: Vec<Value> = module_names
         .iter()
