@@ -24,7 +24,7 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
     const EMalformedAccount: u64 = 1001;
     const EMalformedAuthenticationKey: u64 = 1002;
 
-    struct EcdsaK1RecoverableValidator has store {}
+    struct EcdsaK1RecoverableValidator has store, drop {}
 
     public fun scheme(): u64 {
         SCHEME_ECDSA_RECOVERABLE
@@ -56,6 +56,10 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
             account,
             ecdsa_k1_recoverable_authentication_key
         );
+    }
+
+    public entry fun remove_authentication_key_entry<EcdsaK1RecoverableValidator>(ctx: &mut StorageContext, account: &signer) {
+        account_authentication::remove_authentication_key<EcdsaK1RecoverableValidator>(ctx, account);
     }
 
     public fun ecdsa_k1_recoverable_public_key(authenticator_payload: &vector<u8>): vector<u8> {

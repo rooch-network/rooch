@@ -13,6 +13,8 @@ Migrate their from the account module for simplyfying the account module.
 -  [Function `get_authentication_key`](#0x3_account_authentication_get_authentication_key)
 -  [Function `rotate_authentication_key`](#0x3_account_authentication_rotate_authentication_key)
 -  [Function `rotate_authentication_key_internal`](#0x3_account_authentication_rotate_authentication_key_internal)
+-  [Function `remove_authentication_key`](#0x3_account_authentication_remove_authentication_key)
+-  [Function `remove_authentication_key_internal`](#0x3_account_authentication_remove_authentication_key_internal)
 -  [Function `is_auth_validator_installed`](#0x3_account_authentication_is_auth_validator_installed)
 -  [Function `install_auth_validator`](#0x3_account_authentication_install_auth_validator)
 -  [Function `install_auth_validator_entry`](#0x3_account_authentication_install_auth_validator_entry)
@@ -38,7 +40,7 @@ A resource that holds the authentication key for this account.
 ValidatorType is a phantom type parameter that is used to distinguish between different auth validator types.
 
 
-<pre><code><b>struct</b> <a href="account_authentication.md#0x3_account_authentication_AuthenticationKey">AuthenticationKey</a>&lt;ValidatorType&gt; <b>has</b> key
+<pre><code><b>struct</b> <a href="account_authentication.md#0x3_account_authentication_AuthenticationKey">AuthenticationKey</a>&lt;ValidatorType&gt; <b>has</b> drop, key
 </code></pre>
 
 
@@ -97,6 +99,16 @@ A resource tha holds the auth validator ids for this account has installed.
 
 
 <pre><code><b>const</b> <a href="account_authentication.md#0x3_account_authentication_EAuthValidatorAlreadyInstalled">EAuthValidatorAlreadyInstalled</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x3_account_authentication_EAuthenticationKeyNotFound"></a>
+
+The authentication key has not been found for the specified validator
+
+
+<pre><code><b>const</b> <a href="account_authentication.md#0x3_account_authentication_EAuthenticationKeyNotFound">EAuthenticationKeyNotFound</a>: u64 = 3;
 </code></pre>
 
 
@@ -206,6 +218,63 @@ This function is used to rotate a resource account's authentication key, only th
       };
       <a href="_global_move_to">account_storage::global_move_to</a>(ctx, <a href="account.md#0x3_account">account</a>, authentication_key);
    }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_account_authentication_remove_authentication_key"></a>
+
+## Function `remove_authentication_key`
+
+This function is used to remove a resource account's authentication key, only the module which define the <code>ValidatorType</code> can call this function.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_remove_authentication_key">remove_authentication_key</a>&lt;ValidatorType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>): <a href="account_authentication.md#0x3_account_authentication_AuthenticationKey">account_authentication::AuthenticationKey</a>&lt;ValidatorType&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_remove_authentication_key">remove_authentication_key</a>&lt;ValidatorType&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>): <a href="account_authentication.md#0x3_account_authentication_AuthenticationKey">AuthenticationKey</a>&lt;ValidatorType&gt; {
+   <a href="account_authentication.md#0x3_account_authentication_remove_authentication_key_internal">remove_authentication_key_internal</a>&lt;ValidatorType&gt;(ctx, <a href="account.md#0x3_account">account</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_account_authentication_remove_authentication_key_internal"></a>
+
+## Function `remove_authentication_key_internal`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_remove_authentication_key_internal">remove_authentication_key_internal</a>&lt;ValidatorType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>): <a href="account_authentication.md#0x3_account_authentication_AuthenticationKey">account_authentication::AuthenticationKey</a>&lt;ValidatorType&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_remove_authentication_key_internal">remove_authentication_key_internal</a>&lt;ValidatorType&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>): <a href="account_authentication.md#0x3_account_authentication_AuthenticationKey">AuthenticationKey</a>&lt;ValidatorType&gt; {
+   <b>let</b> account_addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
+
+   <b>assert</b>!(
+      <a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account_authentication.md#0x3_account_authentication_AuthenticationKey">AuthenticationKey</a>&lt;ValidatorType&gt;&gt;(ctx, account_addr),
+      <a href="_not_found">error::not_found</a>(<a href="account_authentication.md#0x3_account_authentication_EAuthenticationKeyNotFound">EAuthenticationKeyNotFound</a>)
+   );
+
+   <b>let</b> removed_authentication_key = <a href="_global_move_from">account_storage::global_move_from</a>&lt;<a href="account_authentication.md#0x3_account_authentication_AuthenticationKey">AuthenticationKey</a>&lt;ValidatorType&gt;&gt;(ctx, account_addr);
+   removed_authentication_key
 }
 </code></pre>
 

@@ -10,6 +10,7 @@ This module implements the ECDSA Recoverable over Secpk256k1 validator scheme.
 -  [Constants](#@Constants_0)
 -  [Function `scheme`](#0x3_ecdsa_k1_recoverable_validator_scheme)
 -  [Function `rotate_authentication_key_entry`](#0x3_ecdsa_k1_recoverable_validator_rotate_authentication_key_entry)
+-  [Function `remove_authentication_key_entry`](#0x3_ecdsa_k1_recoverable_validator_remove_authentication_key_entry)
 -  [Function `ecdsa_k1_recoverable_public_key`](#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_public_key)
 -  [Function `ecdsa_k1_recoverable_signature`](#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_signature)
 -  [Function `ecdsa_k1_recoverable_authentication_key`](#0x3_ecdsa_k1_recoverable_validator_ecdsa_k1_recoverable_authentication_key)
@@ -38,7 +39,7 @@ This module implements the ECDSA Recoverable over Secpk256k1 validator scheme.
 
 
 
-<pre><code><b>struct</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EcdsaK1RecoverableValidator">EcdsaK1RecoverableValidator</a> <b>has</b> store
+<pre><code><b>struct</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EcdsaK1RecoverableValidator">EcdsaK1RecoverableValidator</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -212,6 +213,30 @@ error code
         <a href="account.md#0x3_account">account</a>,
         ecdsa_k1_recoverable_authentication_key
     );
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_ecdsa_k1_recoverable_validator_remove_authentication_key_entry"></a>
+
+## Function `remove_authentication_key_entry`
+
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>&lt;<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EcdsaK1RecoverableValidator">EcdsaK1RecoverableValidator</a>&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>&lt;<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EcdsaK1RecoverableValidator">EcdsaK1RecoverableValidator</a>&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
+    <a href="account_authentication.md#0x3_account_authentication_remove_authentication_key">account_authentication::remove_authentication_key</a>&lt;<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EcdsaK1RecoverableValidator">EcdsaK1RecoverableValidator</a>&gt;(ctx, <a href="account.md#0x3_account">account</a>);
 }
 </code></pre>
 

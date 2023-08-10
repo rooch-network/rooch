@@ -20,7 +20,7 @@ module rooch_framework::ed25519_validator {
     const EMalformedAccount: u64 = 1001;
     const EMalformedAuthenticationKey: u64 = 1002;
 
-    struct Ed25519Validator has store {}
+    struct Ed25519Validator has store, drop {}
 
     public fun scheme(): u64 {
         SCHEME_ED25519
@@ -50,6 +50,9 @@ module rooch_framework::ed25519_validator {
         account_authentication::rotate_authentication_key<Ed25519Validator>(ctx, account, ed25519_authentication_key);
     }
 
+   public entry fun remove_authentication_key_entry<Ed25519Validator>(ctx: &mut StorageContext, account: &signer) {
+      account_authentication::remove_authentication_key<Ed25519Validator>(ctx, account);
+   }
 
     public fun ed25519_public_key(authenticator_payload: &vector<u8>): vector<u8> {
         let public_key = vector::empty<u8>();
