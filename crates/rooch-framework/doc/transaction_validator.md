@@ -172,7 +172,7 @@ If the authenticator is invaid, abort this function.
     // otherwise <b>return</b> the authentication validator via the scheme
     <b>let</b> session_key_option = <a href="session_key.md#0x3_session_key_validate">session_key::validate</a>(ctx, scheme, authenticator_payload);
     <b>if</b> (<a href="_is_some">option::is_some</a>(&session_key_option)) {
-        <a href="auth_validator.md#0x3_auth_validator_new_tx_validate_result">auth_validator::new_tx_validate_result</a>(<a href="_none">option::none</a>(), session_key_option)
+        <a href="auth_validator.md#0x3_auth_validator_new_tx_validate_result">auth_validator::new_tx_validate_result</a>(scheme, <a href="_none">option::none</a>(), session_key_option)
     }<b>else</b> {
         <b>let</b> sender = <a href="_sender">storage_context::sender</a>(ctx);
         <b>let</b> <a href="auth_validator.md#0x3_auth_validator">auth_validator</a> = <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator">auth_validator_registry::borrow_validator</a>(ctx, scheme);
@@ -184,7 +184,7 @@ If the authenticator is invaid, abort this function.
                 <a href="_invalid_state">error::invalid_state</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateNotInstalledAuthValidator">EValidateNotInstalledAuthValidator</a>)
             );
         };
-        <a href="auth_validator.md#0x3_auth_validator_new_tx_validate_result">auth_validator::new_tx_validate_result</a>(<a href="_some">option::some</a>(*<a href="auth_validator.md#0x3_auth_validator">auth_validator</a>), <a href="_none">option::none</a>())
+        <a href="auth_validator.md#0x3_auth_validator_new_tx_validate_result">auth_validator::new_tx_validate_result</a>(scheme, <a href="_some">option::some</a>(*<a href="auth_validator.md#0x3_auth_validator">auth_validator</a>), <a href="_none">option::none</a>())
     }
 }
 </code></pre>

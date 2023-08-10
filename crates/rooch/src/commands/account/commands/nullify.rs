@@ -108,7 +108,7 @@ impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
                             scheme, existing_address, error
                         ))
                     })?;
-
+                let result = context.assert_execute_success(result)?;
                 // Remove keypair by scheme from key store after executing transaction
                 context
                     .config

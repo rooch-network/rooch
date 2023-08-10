@@ -61,6 +61,7 @@ impl AuthValidator {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TxValidateResult {
+    pub scheme: u64,
     pub auth_validator: MoveOption<AuthValidator>,
     pub session_key: MoveOption<Vec<u8>>,
 }
@@ -74,6 +75,7 @@ impl MoveStructType for TxValidateResult {
 impl MoveStructState for TxValidateResult {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
+            move_core_types::value::MoveTypeLayout::U64,
             move_core_types::value::MoveTypeLayout::Struct(
                 MoveOption::<AuthValidator>::struct_layout(),
             ),

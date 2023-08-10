@@ -50,11 +50,12 @@ module rooch_framework::schnorr_validator {
 
         // serialize the address to an auth key and rotate it by calling rotate_authentication_key
         let schnorr_authentication_key = moveos_std::bcs::to_bytes(&schnorr_addr);
-        account_authentication::rotate_authentication_key<SchnorrValidator>(ctx, account, schnorr_authentication_key);
+        account_authentication::rotate_authentication_key<SchnorrValidator>(ctx, account_addr, schnorr_authentication_key);
     }
 
     public entry fun remove_authentication_key_entry<SchnorrValidator>(ctx: &mut StorageContext, account: &signer) {
-        account_authentication::remove_authentication_key<SchnorrValidator>(ctx, account);
+        let account_addr = signer::address_of(account);
+        account_authentication::remove_authentication_key<SchnorrValidator>(ctx, account_addr);
     }
 
     public fun schnorr_public_key(authenticator_payload: &vector<u8>): vector<u8> {

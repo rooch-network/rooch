@@ -66,7 +66,7 @@ module rooch_framework::transaction_validator {
         // otherwise return the authentication validator via the scheme
         let session_key_option = session_key::validate(ctx, scheme, authenticator_payload);
         if (option::is_some(&session_key_option)) {
-            auth_validator::new_tx_validate_result(option::none(), session_key_option)
+            auth_validator::new_tx_validate_result(scheme, option::none(), session_key_option)
         }else {
             let sender = storage_context::sender(ctx);
             let auth_validator = auth_validator_registry::borrow_validator(ctx, scheme);
@@ -78,7 +78,7 @@ module rooch_framework::transaction_validator {
                     error::invalid_state(EValidateNotInstalledAuthValidator)
                 );
             };
-            auth_validator::new_tx_validate_result(option::some(*auth_validator), option::none())
+            auth_validator::new_tx_validate_result(scheme, option::some(*auth_validator), option::none())
         }
     }
 
@@ -114,7 +114,7 @@ module rooch_framework::transaction_validator {
 
         // Active the session key
 
-        let session_key_opt = auth_validator::get_session_key(ctx);
+        let session_key_opt = auth_validator::get_session_key_from_tx_ctx_option(ctx);
         if (option::is_some(&session_key_opt)) {
             let session_key = option::extract(&mut session_key_opt);
             session_key::active_session_key(ctx, session_key);

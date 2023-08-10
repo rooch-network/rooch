@@ -117,8 +117,9 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
 
         let sender: RoochAddress = pkg_address.into();
         eprintln!("Publish modules to address: {:?}", sender);
-        context
+        let result = context
             .sign_and_execute(sender, action, self.crypto_schemes)
-            .await
+            .await?;
+        context.assert_execute_success(result)
     }
 }

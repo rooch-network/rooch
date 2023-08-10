@@ -218,6 +218,10 @@ impl TableData {
                     key_layout,
                     content: Default::default(),
                 };
+                if log::log_enabled!(log::Level::Trace) {
+                    let key_type = type_to_type_tag(context, key_ty)?;
+                    log::trace!("[RawTable] creating table {} with key {}", handle, key_type);
+                }
                 e.insert(table)
             }
             Entry::Occupied(e) => e.into_mut(),
@@ -564,6 +568,14 @@ fn native_contains_box(
 
     let mut cost = gas_params.base;
 
+    if log::log_enabled!(log::Level::Trace) {
+        log::trace!(
+            "[RawTable] contains: table_handle: {}, key_type: {}",
+            &&table.handle,
+            type_to_type_tag(context, &ty_args[0])?
+        );
+    }
+
     let key_bytes = serialize(&table.key_layout, &key)?;
     cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
 
@@ -743,14 +755,24 @@ fn get_table_handle(table: StructRef) -> PartialVMResult<ObjectID> {
 }
 
 pub fn serialize(layout: &MoveTypeLayout, val: &Value) -> PartialVMResult<Vec<u8>> {
-    val.simple_serialize(layout)
-        .ok_or_else(|| partial_extension_error("cannot serialize table key or value"))
+    val.simple_serialize(layout).ok_or_else(|| {
+        partial_extension_error(format!(
+            "cannot serialize table key or value, layout:{:?}, val:{:?}",
+            layout, val
+        ));
+        panic!("debug")
+    })
 }
 
 // Deserialize a value and box it to `moveos_std::raw_table::Box<V>`.
 fn deserialize_and_box(layout: &MoveTypeLayout, bytes: &[u8]) -> PartialVMResult<Value> {
-    let value = Value::simple_deserialize(bytes, layout)
-        .ok_or_else(|| partial_extension_error("cannot deserialize table key or value"))?;
+    let value = Value::simple_deserialize(bytes, layout).ok_or_else(|| {
+        partial_extension_error(format!(
+            "cannot deserialize table key or value, layout:{:?}, bytes:{:?}",
+            layout,
+            hex::encode(bytes)
+        ))
+    })?;
     Ok(Value::struct_(Struct::pack(vec![value])))
 }
 

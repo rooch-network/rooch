@@ -98,6 +98,7 @@ fn test_validate_schnorr() {
 
 #[test]
 fn test_session_key_ed25519() {
+    tracing_subscriber::fmt::init();
     let mut binding_test = binding_test::RustBindingTest::new().unwrap();
 
     let keystore = InMemKeystore::new_ed25519_insecure_for_tests(1);

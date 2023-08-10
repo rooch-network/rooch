@@ -38,7 +38,7 @@ impl FromStr for AbortLocationView {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum KeptVMStatusView {
     Executed,
