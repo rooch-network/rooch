@@ -19,6 +19,7 @@
 use anyhow::{ensure, format_err, Result};
 use moveos_types::h256;
 use moveos_types::h256::{ACCUMULATOR_PLACEHOLDER_HASH, H256};
+use serde::{Deserialize, Serialize};
 
 pub type LeafCount = u64;
 
@@ -26,7 +27,8 @@ pub const MAX_ACCUMULATOR_PROOF_DEPTH: usize = 63;
 pub const MAX_ACCUMULATOR_LEAVES: LeafCount = 1 << MAX_ACCUMULATOR_PROOF_DEPTH;
 
 /// The Accumulator implementation.
-pub struct InMemoryAccumulator {
+#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone)]
+pub struct Accumulator {
     /// Represents the roots of all the full subtrees from left to right in this accumulator. For
     /// example, if we have the following accumulator, this vector will have two hashes that
     /// correspond to `X` and `e`.
@@ -68,7 +70,7 @@ impl MerkleTreeInternalNode {
     }
 }
 
-impl InMemoryAccumulator {
+impl Accumulator {
     /// Constructs a new accumulator with roots of existing frozen subtrees. Returns error if the
     /// number of frozen subtree roots does not match the number of leaves.
     pub fn new(frozen_subtree_roots: Vec<H256>, num_leaves: u64) -> Result<Self> {
@@ -291,7 +293,7 @@ impl InMemoryAccumulator {
     }
 }
 
-impl std::fmt::Debug for InMemoryAccumulator {
+impl std::fmt::Debug for Accumulator {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
             f,
@@ -301,7 +303,7 @@ impl std::fmt::Debug for InMemoryAccumulator {
     }
 }
 
-impl Default for InMemoryAccumulator {
+impl Default for Accumulator {
     fn default() -> Self {
         Self::new(vec![], 0).expect("Constructing empty accumulator should work.")
     }

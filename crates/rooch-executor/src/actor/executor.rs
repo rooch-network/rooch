@@ -17,7 +17,7 @@ use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use move_core_types::account_address::AccountAddress;
 use move_resource_viewer::MoveValueAnnotator;
 use moveos::moveos::MoveOS;
-use moveos_common::accumulator::InMemoryAccumulator;
+use moveos_common::accumulator::Accumulator;
 use moveos_store::transaction_store::TransactionStore;
 use moveos_store::MoveOSStore;
 use moveos_types::event::AnnotatedMoveOSEvent;
@@ -163,7 +163,7 @@ impl ExecutorActor {
         let tx_hash = tx.ctx.tx_hash();
         let (state_root, output) = self.moveos.execute_and_apply(tx)?;
         let event_hashes: Vec<_> = output.events.iter().map(|e| e.hash()).collect();
-        let event_root = InMemoryAccumulator::from_leaves(event_hashes.as_slice()).root_hash();
+        let event_root = Accumulator::from_leaves(event_hashes.as_slice()).root_hash();
 
         let transaction_info = TransactionExecutionInfo::new(
             tx_hash,
