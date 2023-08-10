@@ -7,8 +7,8 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::{AccountChangeSet, ChangeSet, Op};
 use moveos_types::h256::H256;
 use moveos_types::move_string::MoveString;
-use moveos_types::move_types::{random_identity, random_struct_tag, random_type_tag};
-use moveos_types::object::ObjectID;
+use moveos_types::move_types::random_type_tag;
+use moveos_types::object::{NamedTableID, ObjectID};
 use moveos_types::state::{MoveState, State, StateChangeSet, TableChange, TableTypeInfo};
 use moveos_types::storage_context;
 use rand::{thread_rng, Rng};
@@ -20,23 +20,25 @@ fn random_bytes() -> Vec<u8> {
 }
 
 fn random_account_change_set() -> AccountChangeSet {
-    let mut account_change_set = AccountChangeSet::new();
+    AccountChangeSet::new()
 
-    let mut rng = thread_rng();
-    // generate modules
-    for _n in 0..rng.gen_range(1..=5) {
-        account_change_set
-            .add_module_op(random_identity(), Op::New(random_bytes()))
-            .expect("account_change_set add module op should succ");
-    }
-    // generate resources
-    for _n in 0..rng.gen_range(1..=10) {
-        account_change_set
-            .add_resource_op(random_struct_tag(), Op::New(random_bytes()))
-            .expect("account_change_set add resource op should succ");
-    }
+    // let mut account_change_set = AccountChangeSet::new();
 
-    account_change_set
+    // let mut rng = thread_rng();
+    // // generate modules
+    // for _n in 0..rng.gen_range(1..=5) {
+    //     account_change_set
+    //         .add_module_op(random_identity(), Op::New(random_bytes()))
+    //         .expect("account_change_set add module op should succ");
+    // }
+    // // generate resources
+    // for _n in 0..rng.gen_range(1..=10) {
+    //     account_change_set
+    //         .add_resource_op(random_struct_tag(), Op::New(random_bytes()))
+    //         .expect("account_change_set add resource op should succ");
+    // }
+
+    // account_change_set
 }
 
 fn random_change_set() -> ChangeSet {
@@ -90,6 +92,23 @@ fn random_state_change_set() -> StateChangeSet {
             .changes
             .insert(handle, random_table_change());
     }
+
+    // generate modules change tables
+    for _n in 0..rng.gen_range(1..=5) {
+        let handle = NamedTableID::Module(AccountAddress::random()).to_object_id();
+        state_change_set
+            .changes
+            .insert(handle, random_table_change());
+    }
+
+    // generate resources change tables
+    for _n in 0..rng.gen_range(1..=10) {
+        let handle = NamedTableID::Resource(AccountAddress::random()).to_object_id();
+        state_change_set
+            .changes
+            .insert(handle, random_table_change());
+    }
+
     // generate global table
     state_change_set.changes.insert(
         storage_context::GLOBAL_OBJECT_STORAGE_HANDLE,
