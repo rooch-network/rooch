@@ -13,6 +13,10 @@ Feature: Rooch CLI integration tests
       Then cmd: "account update --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --scheme ecdsa --mnemonic-phrase "spike air embody solid upper grow mule slender shrimp suggest pride young""
       Then cmd: "account update --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --scheme ecdsa-recoverable --mnemonic-phrase "spike air embody solid upper grow mule slender shrimp suggest pride young""
       Then cmd: "account update --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --scheme schnorr --mnemonic-phrase "spike air embody solid upper grow mule slender shrimp suggest pride young""
+      Then cmd: "account nullify --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --scheme ed25519"
+      Then cmd: "account nullify --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --scheme ecdsa"
+      Then cmd: "account nullify --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --scheme ecdsa-recoverable"
+      Then cmd: "account nullify --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --scheme schnorr"
 
       # TODO split Scenario for every example
       # counter example
