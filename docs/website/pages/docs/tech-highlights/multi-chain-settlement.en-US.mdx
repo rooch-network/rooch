@@ -1,13 +1,13 @@
 # Multi-chain Settlement
 
-Multi-chain Settlement is one of the most important features of Rooch Network. This chapter details the protocols and challenges to be solved.
+Multi-chain Settlement is one of the most crucial functions of the Rooch Network. This chapter provides a brief introduction to the protocol and the challenges to be addressed.
 
 ## How it works
 
 import Image from "next/image";
 
 <Image
-  src="/docs/multi-chain-settlement.png"
+  src="/docs/multi-chain-settlement.jpg"
   alt="Rooch Architecture"
   width={600}
   height={600}
@@ -24,15 +24,12 @@ Rooch deploys the settlement smart contract(`State Commitment Chain` & `Bridge`)
 2. When a user migrates state from Rooch to Layer1, the state is first locked and waits for the Layer2 (Challenge period to pass or **zkProver** provides valid proof) before being moved out of the state tree for settlement.
 3. When the `State Commitment Chain` receives a notification from the arbitration contract that fraud has occurred, it rolls back the root of the off-chain state tree to before the fraud occurred, discarding any state tree changes made during that period.
 
-Now, if we want to expand the settlement layer to multiple chains, we will encounter some challenges.
+Now, if we wish to extend the settlement layer to multiple chains, the biggest challenge we face is how to confirm the status of Rooch on non-arbitration chains.
 
-How to maintain the `State Commitment Chain` on other chains?
+Our solution packages the withdrawal proofs on the settlement chain into Rooch transactions, thus inheriting the security of the second-layer network. This can be achieved by running the corresponding chain's client in the Rooch network and performing native block parsing.
 
-Our solution is mirror the `State Commitment Chain` from Ethereum to other chains by Ethereum state proof.
+After the challenge period has passed, we believe that assets can be securely released on the settlement chain.
 
-Then, another challenge is how to verify the state proof of Ethereum on other chains?
-
-We depend on the solution of syncing Ethereum state root to other chains. This is a challenge that all cross-chain solutions face. There are some solutions to this problem, such as Ethereum light nodes, Oracles, etc. As the project reaches maturity and grows from and alongside community contributions, we hope to continually iterate towards the optimal solution of a multi-chain layer2.
 
 ## Features
 
