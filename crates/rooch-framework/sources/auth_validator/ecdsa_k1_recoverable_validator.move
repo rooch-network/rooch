@@ -23,9 +23,8 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
     const SHA256: u8 = 1;
     /// error code
     const EInvalidPublicKeyLength: u64 = 0;
-    const EAuthenticationKeyNotFoundInAccount: u64 = 1;
-    const EInvalidAuthenticatorPayloadAuthKeyLength: u64 = 2;
-    const EInvalidAccountAuthKeyLength: u64 = 3;
+    const EInvalidAuthenticatorPayloadAuthKeyLength: u64 = 1;
+    const EInvalidAccountAuthKeyLength: u64 = 2;
 
     struct EcdsaK1RecoverableValidator has store, drop {}
 
@@ -55,7 +54,7 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
     }
 
     public entry fun remove_authentication_key_entry<T>(ctx: &mut StorageContext, account: &signer) {
-      account_authentication::remove_authentication_key<EcdsaK1RecoverableValidator>(ctx, signer::address_of(account));
+        account_authentication::remove_authentication_key<EcdsaK1RecoverableValidator>(ctx, signer::address_of(account));
     }
 
     public fun get_public_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
@@ -117,7 +116,6 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
 
     /// Get the authentication key of the given account.
     public fun get_authentication_key_from_account(ctx: &StorageContext, addr: address): vector<u8> {
-        assert!(is_authentication_key_in_account(ctx, addr), error::not_found(EAuthenticationKeyNotFoundInAccount));
         option::extract(&mut get_authentication_key_option_from_account(ctx, addr))
     }
 
@@ -155,14 +153,16 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
         ctx: &mut StorageContext,
     ) {
         let account_addr = storage_context::sender(ctx);
-        let auth_key_in_account = get_authentication_key_from_account(ctx, account_addr);
-        std::debug::print(&auth_key_in_account);
-        // Although we have checked public key length in rotate_authentication_key_entry function,
-        // it needs to validate the authentication key isn't empty or malformed.
-        assert!(
-           vector::length(&auth_key_in_account) == V_AUTHENTICATION_KEY_LENGTH,
-           error::invalid_argument(EInvalidAccountAuthKeyLength)
-        );
+        if (is_authentication_key_in_account(ctx, account_addr)) {
+            let auth_key_in_account = get_authentication_key_from_account(ctx, account_addr);
+            std::debug::print(&auth_key_in_account);
+            // Although we have checked public key length in rotate_authentication_key_entry function,
+            // it needs to validate the authentication key isn't empty or malformed.
+            assert!(
+                vector::length(&auth_key_in_account) == V_AUTHENTICATION_KEY_LENGTH,
+                error::invalid_argument(EInvalidAccountAuthKeyLength)
+            );
+        }
     }
 
     // this test ensures that the ecdsa k1 recoverable public_key_to_address function is compatible with the one in the rust code

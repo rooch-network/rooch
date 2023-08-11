@@ -89,20 +89,11 @@ Hash function name that are valid for verify.
 
 
 
-<a name="0x3_schnorr_validator_EAuthenticationKeyNotFoundInAccount"></a>
-
-
-
-<pre><code><b>const</b> <a href="schnorr_validator.md#0x3_schnorr_validator_EAuthenticationKeyNotFoundInAccount">EAuthenticationKeyNotFoundInAccount</a>: u64 = 1;
-</code></pre>
-
-
-
 <a name="0x3_schnorr_validator_EInvalidAccountAuthKeyLength"></a>
 
 
 
-<pre><code><b>const</b> <a href="schnorr_validator.md#0x3_schnorr_validator_EInvalidAccountAuthKeyLength">EInvalidAccountAuthKeyLength</a>: u64 = 3;
+<pre><code><b>const</b> <a href="schnorr_validator.md#0x3_schnorr_validator_EInvalidAccountAuthKeyLength">EInvalidAccountAuthKeyLength</a>: u64 = 2;
 </code></pre>
 
 
@@ -111,7 +102,7 @@ Hash function name that are valid for verify.
 
 
 
-<pre><code><b>const</b> <a href="schnorr_validator.md#0x3_schnorr_validator_EInvalidAuthenticatorPayloadAuthKeyLength">EInvalidAuthenticatorPayloadAuthKeyLength</a>: u64 = 2;
+<pre><code><b>const</b> <a href="schnorr_validator.md#0x3_schnorr_validator_EInvalidAuthenticatorPayloadAuthKeyLength">EInvalidAuthenticatorPayloadAuthKeyLength</a>: u64 = 1;
 </code></pre>
 
 
@@ -257,7 +248,7 @@ error code
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>&lt;<a href="schnorr_validator.md#0x3_schnorr_validator_SchnorrValidator">SchnorrValidator</a>&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
-  <a href="account_authentication.md#0x3_account_authentication_remove_authentication_key">account_authentication::remove_authentication_key</a>&lt;<a href="schnorr_validator.md#0x3_schnorr_validator_SchnorrValidator">SchnorrValidator</a>&gt;(ctx, <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>));
+    <a href="account_authentication.md#0x3_account_authentication_remove_authentication_key">account_authentication::remove_authentication_key</a>&lt;<a href="schnorr_validator.md#0x3_schnorr_validator_SchnorrValidator">SchnorrValidator</a>&gt;(ctx, <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>));
 }
 </code></pre>
 
@@ -479,7 +470,6 @@ Get the authentication key of the given account.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="schnorr_validator.md#0x3_schnorr_validator_get_authentication_key_from_account">get_authentication_key_from_account</a>(ctx: &StorageContext, addr: <b>address</b>): <a href="">vector</a>&lt;u8&gt; {
-    <b>assert</b>!(<a href="schnorr_validator.md#0x3_schnorr_validator_is_authentication_key_in_account">is_authentication_key_in_account</a>(ctx, addr), <a href="_not_found">error::not_found</a>(<a href="schnorr_validator.md#0x3_schnorr_validator_EAuthenticationKeyNotFoundInAccount">EAuthenticationKeyNotFoundInAccount</a>));
     <a href="_extract">option::extract</a>(&<b>mut</b> <a href="schnorr_validator.md#0x3_schnorr_validator_get_authentication_key_option_from_account">get_authentication_key_option_from_account</a>(ctx, addr))
 }
 </code></pre>
