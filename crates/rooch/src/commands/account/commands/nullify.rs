@@ -101,13 +101,7 @@ impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
                 // Execute the Move call as a transaction
                 let mut result = context
                     .sign_and_execute(existing_address, action, scheme)
-                    .await
-                    .map_err(|error| {
-                        RoochError::TransactionError(format!(
-                            "Nullifying authentication key failed for scheme {} on address {}. Reason: {}.",
-                            scheme, existing_address, error
-                        ))
-                    })?;
+                    .await?;
                 result = context.assert_execute_success(result)?;
 
                 // Remove keypair by scheme from Rooch key store after successfully executing transaction

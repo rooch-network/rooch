@@ -47,7 +47,7 @@ module rooch_framework::ed25519_validator {
     }
 
     public entry fun remove_authentication_key_entry<T>(ctx: &mut StorageContext, account: &signer) {
-      account_authentication::remove_authentication_key<Ed25519Validator>(ctx, signer::address_of(account));
+        account_authentication::remove_authentication_key<Ed25519Validator>(ctx, signer::address_of(account));
     }
 
     public fun get_public_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {

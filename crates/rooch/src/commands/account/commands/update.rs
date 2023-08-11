@@ -125,19 +125,10 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                 );
 
                 // Execute the Move call as a transaction
-                let mut result = context
+                let result = context
                     .sign_and_execute(existing_address, action, scheme)
-                    .await
-                    .map_err(|error| {
-                        RoochError::TransactionError(format!(
-                            "Updating authentication key failed for scheme {} on address {}. Reason: {}.",
-                            scheme, existing_address, error
-                        ))
-                    })?;
-                result = context.assert_execute_success(result)?;
-
-                // Transaction executed successfully
-                Ok(result)
+                    .await?;
+                context.assert_execute_success(result)
             }
             Err(error) => {
                 return Err(RoochError::CommandArgumentError(format!(
