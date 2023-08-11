@@ -5,14 +5,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Error, Result};
-use moveos_common::accumulator::Accumulator;
 use once_cell::sync::Lazy;
 use raw_store::{ColumnFamilyName, StoreInstance};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::sync::Arc;
 
-use crate::accumulator_store::{AccumulatorDBStore, AccumulatorStore};
 use crate::config_store::{ConfigStore, StartupInfoDBStore};
 use crate::event_store::{EventDBStore, EventStore};
 use crate::state_store::statedb::StateDBStore;
@@ -31,7 +29,6 @@ use moveos_types::transaction::TransactionExecutionInfo;
 use raw_store::rocks::RocksDB;
 use smt::NodeStore;
 
-pub mod accumulator_store;
 pub mod config_store;
 pub mod event_store;
 pub mod state_store;
@@ -45,7 +42,6 @@ pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction";
 pub const EVENT_PREFIX_NAME: ColumnFamilyName = "event";
 pub const EVENT_INDEX_PREFIX_NAME: ColumnFamilyName = "event_index";
 pub const CONFIG_PREFIX_NAME: ColumnFamilyName = "config";
-pub const ACCUMULATOR_PREFIX_NAME: ColumnFamilyName = "accumulator";
 
 ///db store use prefix_name vec to init
 /// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
@@ -56,7 +52,6 @@ static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         EVENT_PREFIX_NAME,
         EVENT_INDEX_PREFIX_NAME,
         CONFIG_PREFIX_NAME,
-        ACCUMULATOR_PREFIX_NAME,
     ]
 });
 
@@ -74,7 +69,6 @@ pub struct MoveOSDB {
     pub event_store: EventDBStore,
     pub transaction_store: TransactionDBStore,
     pub config_store: StartupInfoDBStore,
-    pub accumulator_store: AccumulatorDBStore,
 }
 
 impl MoveOSDB {
@@ -100,8 +94,7 @@ impl MoveOSDB {
             node_store: NodeDBStore::new(instance.clone()),
             event_store: EventDBStore::new(instance.clone()),
             transaction_store: TransactionDBStore::new(instance.clone()),
-            config_store: StartupInfoDBStore::new(instance.clone()),
-            accumulator_store: AccumulatorDBStore::new(instance),
+            config_store: StartupInfoDBStore::new(instance),
         };
         Ok(store)
     }
@@ -150,10 +143,6 @@ impl MoveOSStore {
         &self.moveosdb.config_store
     }
 
-    pub fn get_accumulator_store(&self) -> &AccumulatorDBStore {
-        &self.moveosdb.accumulator_store
-    }
-
     pub fn get_state_store(&self) -> &StateDBStore {
         &self.statedb
     }
@@ -165,7 +154,6 @@ impl Display for MoveOSStore {
         write!(f, "event_store")?;
         write!(f, "transaction_store")?;
         write!(f, "node_store")?;
-        write!(f, "accumulation_store")?;
         Ok(())
     }
 }
@@ -257,12 +245,7 @@ impl ConfigStore for MoveOSStore {
 
 /// Moveos store define
 pub trait Store:
-    NodeStore
-    + TransactionStore
-    + EventStore
-    + ConfigStore
-    + AccumulatorStore
-    + IntoSuper<dyn NodeStore>
+    NodeStore + TransactionStore + EventStore + ConfigStore + IntoSuper<dyn NodeStore>
 {
 }
 
@@ -306,15 +289,5 @@ impl StateResolver for MoveOSStore {
         limit: usize,
     ) -> std::result::Result<Vec<Option<(Vec<u8>, State)>>, Error> {
         self.statedb.resolve_list_state(handle, cursor, limit)
-    }
-}
-
-impl AccumulatorStore for MoveOSStore {
-    fn get_accumulator(&self) -> Result<Option<Accumulator>> {
-        self.get_accumulator_store().get_accumulator()
-    }
-
-    fn save_accumulator(&self, accumulator: Accumulator) -> Result<()> {
-        self.get_accumulator_store().save_accumulator(accumulator)
     }
 }
