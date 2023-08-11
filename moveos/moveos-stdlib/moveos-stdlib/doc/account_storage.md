@@ -21,7 +21,8 @@ It is used to store the account's resources and modules
 -  [Function `publish_modules`](#0x2_account_storage_publish_modules)
 
 
-<pre><code><b>use</b> <a href="../doc/signer.md#0x1_signer">0x1::signer</a>;
+<pre><code><b>use</b> <a href="">0x1::debug</a>;
+<b>use</b> <a href="../doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 <b>use</b> <a href="move_module.md#0x2_move_module">0x2::move_module</a>;
@@ -140,14 +141,20 @@ Create a new account storage space
 
 <pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_create_account_storage">create_account_storage</a>(ctx: &<b>mut</b> StorageContext, account: <b>address</b>) {
     <b>let</b> <a href="object_id.md#0x2_object_id">object_id</a> = <a href="object_id.md#0x2_object_id_address_to_object_id">object_id::address_to_object_id</a>(account);
+    <a href="_print">debug::print</a>(&31u64);
     <b>let</b> <a href="account_storage.md#0x2_account_storage">account_storage</a> = <a href="account_storage.md#0x2_account_storage_AccountStorage">AccountStorage</a> {
         resources: <a href="type_table.md#0x2_type_table_new_with_id">type_table::new_with_id</a>(<a href="account_storage.md#0x2_account_storage_named_table_id">named_table_id</a>(account, <a href="account_storage.md#0x2_account_storage_NamedTableResource">NamedTableResource</a>)),
         modules: <a href="table.md#0x2_table_new_with_id">table::new_with_id</a>(<a href="account_storage.md#0x2_account_storage_named_table_id">named_table_id</a>(account, <a href="account_storage.md#0x2_account_storage_NamedTableModule">NamedTableModule</a>)),
     };
+    <a href="_print">debug::print</a>(&32u64);
     <b>let</b> <a href="object_storage.md#0x2_object_storage">object_storage</a> = <a href="storage_context.md#0x2_storage_context_object_storage_mut">storage_context::object_storage_mut</a>(ctx);
+    <a href="_print">debug::print</a>(&33u64);
     <b>assert</b>!(!<a href="object_storage.md#0x2_object_storage_contains">object_storage::contains</a>(<a href="object_storage.md#0x2_object_storage">object_storage</a>, <a href="object_id.md#0x2_object_id">object_id</a>), <a href="account_storage.md#0x2_account_storage_EAccountAlreadyExists">EAccountAlreadyExists</a>);
+    <a href="_print">debug::print</a>(&34u64);
     <b>let</b> <a href="object.md#0x2_object">object</a> = <a href="object.md#0x2_object_new_with_id">object::new_with_id</a>(<a href="object_id.md#0x2_object_id">object_id</a>, account, <a href="account_storage.md#0x2_account_storage">account_storage</a>);
+    <a href="_print">debug::print</a>(&35u64);
     <a href="object_storage.md#0x2_object_storage_add">object_storage::add</a>(<a href="object_storage.md#0x2_object_storage">object_storage</a>, <a href="object.md#0x2_object">object</a>);
+    <a href="_print">debug::print</a>(&36u64);
 }
 </code></pre>
 
@@ -198,8 +205,11 @@ check if account storage eixst
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_ensure_account_storage">ensure_account_storage</a>(ctx: &<b>mut</b> StorageContext, account: <b>address</b>) {
+    <a href="_print">debug::print</a>(&21u64);
     <b>if</b> (!<a href="account_storage.md#0x2_account_storage_exist_account_storage">exist_account_storage</a>(ctx, account)) {
+        <a href="_print">debug::print</a>(&22u64);
         <a href="account_storage.md#0x2_account_storage_create_account_storage">create_account_storage</a>(ctx, account);
+        <a href="_print">debug::print</a>(&23u64);
     }
 }
 </code></pre>
@@ -396,13 +406,22 @@ Publish modules to the account's storage
 
 <pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_publish_modules">publish_modules</a>(ctx: &<b>mut</b> StorageContext, account: &<a href="signer.md#0x2_signer">signer</a>, modules: <a href="">vector</a>&lt;MoveModule&gt;) {
     <b>let</b> account_address = signer::address_of(account);
+    <a href="_print">debug::print</a>(&41u64);
     <b>let</b> <a href="account_storage.md#0x2_account_storage">account_storage</a> = <a href="account_storage.md#0x2_account_storage_borrow_account_storage_mut">borrow_account_storage_mut</a>(<a href="storage_context.md#0x2_storage_context_object_storage_mut">storage_context::object_storage_mut</a>(ctx), account_address);
+    <a href="_print">debug::print</a>(&42u64);
     <b>let</b> i = 0;
     <b>let</b> len = <a href="_length">vector::length</a>(&modules);
     <b>let</b> module_names = <a href="move_module.md#0x2_move_module_verify_modules">move_module::verify_modules</a>(&modules, account_address);
+
     <b>while</b> (i &lt; len) {
         <b>let</b> name = <a href="_pop_back">vector::pop_back</a>(&<b>mut</b> module_names);
         <b>let</b> m = <a href="_pop_back">vector::pop_back</a>(&<b>mut</b> modules);
+
+        // The <b>module</b> already <b>exists</b>, which means we are upgrading the <b>module</b>
+        // TODO: check upgrade compatibility
+        <b>if</b> (<a href="table.md#0x2_table_contains">table::contains</a>(&<a href="account_storage.md#0x2_account_storage">account_storage</a>.modules, name)) {
+            <a href="table.md#0x2_table_remove">table::remove</a>(&<b>mut</b> <a href="account_storage.md#0x2_account_storage">account_storage</a>.modules, name);
+        };
         <a href="table.md#0x2_table_add">table::add</a>(&<b>mut</b> <a href="account_storage.md#0x2_account_storage">account_storage</a>.modules, name, m);
         i = i + 1;
     }

@@ -110,13 +110,17 @@ fn native_verify_modules_inner(
     let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
     let mut module_names = vec![];
     for module in &compiled_modules {
+        if *module.self_id().address() != account_address {
+            return Err(PartialVMError::new(StatusCode::VERIFICATION_ERROR)
+                .with_message("Module address not match with signer".to_owned()));
+        }
         let result = moveos_verifier::verifier::verify_module(module, module_context.resolver);
         match result {
             Ok(res) => {
                 if res {
                     module_context.init_functions.push(module.self_id());
-                    module_names.push(module.self_id().name().to_owned().into_string());
                 }
+                module_names.push(module.self_id().name().to_owned().into_string());
             }
             Err(_) => return Err(PartialVMError::new(StatusCode::VERIFICATION_ERROR)),
         }

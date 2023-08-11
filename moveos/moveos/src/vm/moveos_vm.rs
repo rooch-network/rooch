@@ -335,7 +335,7 @@ where
             .get_native_extensions_mut()
             .get_mut::<NativeModuleContext>();
         let init_functions = ctx.init_functions.clone();
-        if init_functions.len() > 0 {
+        if !init_functions.is_empty() {
             println!("Pending init functions: {:?}", init_functions);
             self.execute_init_modules(init_functions)
         } else {
