@@ -30,7 +30,7 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
         SCHEME_ECDSA_RECOVERABLE
     }
 
-    public entry fun rotate_authentication_key_entry<EcdsaK1RecoverableValidator>(
+    public entry fun rotate_authentication_key_entry<T>(
         ctx: &mut StorageContext,
         account: &signer,
         public_key: vector<u8>
@@ -58,7 +58,7 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
         );
     }
 
-    public entry fun remove_authentication_key_entry<EcdsaK1RecoverableValidator>(ctx: &mut StorageContext, account: &signer) {
+    public entry fun remove_authentication_key_entry<T>(ctx: &mut StorageContext, account: &signer) {
         let account_addr = signer::address_of(account);
         account_authentication::remove_authentication_key<EcdsaK1RecoverableValidator>(ctx, account_addr);
     }
