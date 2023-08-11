@@ -89,24 +89,6 @@ Hash function name that are valid for ecrecover and verify.
 
 
 
-<a name="0x3_ecdsa_k1_recoverable_validator_EInvalidAccountAuthKeyLength"></a>
-
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EInvalidAccountAuthKeyLength">EInvalidAccountAuthKeyLength</a>: u64 = 2;
-</code></pre>
-
-
-
-<a name="0x3_ecdsa_k1_recoverable_validator_EInvalidAuthenticatorPayloadAuthKeyLength"></a>
-
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EInvalidAuthenticatorPayloadAuthKeyLength">EInvalidAuthenticatorPayloadAuthKeyLength</a>: u64 = 1;
-</code></pre>
-
-
-
 <a name="0x3_ecdsa_k1_recoverable_validator_EInvalidPublicKeyLength"></a>
 
 error code
@@ -351,6 +333,8 @@ Get the authentication key of the given authenticator from authenticator_payload
 
 ## Function `public_key_to_address`
 
+TODO: define EVMAddress or BIPAddress as the return type
+TODO: ECDSA public keys can be used to generate ETH and BTC addresses, and we need to determine which one to use.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_public_key_to_address">public_key_to_address</a>(public_key: <a href="">vector</a>&lt;u8&gt;): <b>address</b>
@@ -415,12 +399,7 @@ Get the authentication key option of the given account.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_get_authentication_key_option_from_account">get_authentication_key_option_from_account</a>(ctx: &StorageContext, addr: <b>address</b>): Option&lt;<a href="">vector</a>&lt;u8&gt;&gt; {
-    <b>let</b> auth_key_option = <a href="account_authentication.md#0x3_account_authentication_get_authentication_key">account_authentication::get_authentication_key</a>&lt;<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EcdsaK1RecoverableValidator">EcdsaK1RecoverableValidator</a>&gt;(ctx, addr);
-    <b>if</b> (<a href="_is_some">option::is_some</a>(&auth_key_option)) {
-        auth_key_option
-    }<b>else</b> {
-        <a href="_none">option::none</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;()
-    }
+    <a href="account_authentication.md#0x3_account_authentication_get_authentication_key">account_authentication::get_authentication_key</a>&lt;<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EcdsaK1RecoverableValidator">EcdsaK1RecoverableValidator</a>&gt;(ctx, addr)
 }
 </code></pre>
 
@@ -457,7 +436,7 @@ The authentication key exists in account or not.
 
 ## Function `get_authentication_key_from_account`
 
-Get the authentication key of the given account.
+Extract the authentication key of the authentication key option.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_get_authentication_key_from_account">get_authentication_key_from_account</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): <a href="">vector</a>&lt;u8&gt;
@@ -529,14 +508,7 @@ Only validate the authenticator's signature.
     <b>let</b> tx_hash = <a href="_tx_hash">storage_context::tx_hash</a>(ctx);
     <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_validate_signature">validate_signature</a>(&authenticator_payload, &tx_hash);
 
-    <b>let</b> auth_key_from_authenticator_payload = <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_get_authentication_key_from_authenticator_payload">get_authentication_key_from_authenticator_payload</a>(&authenticator_payload);
-    std::debug::print(&auth_key_from_authenticator_payload);
-    // Although we have checked <b>public</b> key length in rotate_authentication_key_entry function,
-    // it needs <b>to</b> validate the authentication key isn't <a href="empty.md#0x3_empty">empty</a> or malformed.
-    <b>assert</b>!(
-       <a href="_length">vector::length</a>(&auth_key_from_authenticator_payload) == <a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_V_AUTHENTICATION_KEY_LENGTH">V_AUTHENTICATION_KEY_LENGTH</a>,
-       <a href="_invalid_argument">error::invalid_argument</a>(<a href="ecdsa_k1_recoverable_validator.md#0x3_ecdsa_k1_recoverable_validator_EInvalidAuthenticatorPayloadAuthKeyLength">EInvalidAuthenticatorPayloadAuthKeyLength</a>)
-    );
+    // TODO compare the auth_key from the payload <b>with</b> the auth_key from the <a href="account.md#0x3_account">account</a>
 }
 </code></pre>
 

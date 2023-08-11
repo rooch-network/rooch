@@ -23,8 +23,6 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
     const SHA256: u8 = 1;
     /// error code
     const EInvalidPublicKeyLength: u64 = 0;
-    const EInvalidAuthenticatorPayloadAuthKeyLength: u64 = 1;
-    const EInvalidAccountAuthKeyLength: u64 = 2;
 
     struct EcdsaK1RecoverableValidator has store, drop {}
 
@@ -88,6 +86,8 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
         moveos_std::bcs::to_bytes(&addr)
     }
 
+    /// TODO: define EVMAddress or BIPAddress as the return type
+    /// TODO: ECDSA public keys can be used to generate ETH and BTC addresses, and we need to determine which one to use.
     public fun public_key_to_address(public_key: vector<u8>): address {
         moveos_std::bcs::to_address(public_key_to_authentication_key(public_key))
     }
@@ -101,12 +101,7 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
 
     /// Get the authentication key option of the given account.
     public fun get_authentication_key_option_from_account(ctx: &StorageContext, addr: address): Option<vector<u8>> {
-        let auth_key_option = account_authentication::get_authentication_key<EcdsaK1RecoverableValidator>(ctx, addr);
-        if (option::is_some(&auth_key_option)) {
-            auth_key_option
-        }else {
-            option::none<vector<u8>>()
-        }
+        account_authentication::get_authentication_key<EcdsaK1RecoverableValidator>(ctx, addr)
     }
 
     /// The authentication key exists in account or not.
@@ -114,7 +109,7 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
         option::is_some(&get_authentication_key_option_from_account(ctx, addr))
     }
 
-    /// Get the authentication key of the given account.
+    /// Extract the authentication key of the authentication key option.
     public fun get_authentication_key_from_account(ctx: &StorageContext, addr: address): vector<u8> {
         option::extract(&mut get_authentication_key_option_from_account(ctx, addr))
     }
@@ -135,14 +130,7 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
         let tx_hash = storage_context::tx_hash(ctx);
         validate_signature(&authenticator_payload, &tx_hash);
 
-        let auth_key_from_authenticator_payload = get_authentication_key_from_authenticator_payload(&authenticator_payload);
-        std::debug::print(&auth_key_from_authenticator_payload);
-        // Although we have checked public key length in rotate_authentication_key_entry function,
-        // it needs to validate the authentication key isn't empty or malformed.
-        assert!(
-           vector::length(&auth_key_from_authenticator_payload) == V_AUTHENTICATION_KEY_LENGTH,
-           error::invalid_argument(EInvalidAuthenticatorPayloadAuthKeyLength)
-        );
+        // TODO compare the auth_key from the payload with the auth_key from the account
     }
 
     fun pre_execute(
@@ -156,12 +144,6 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
         if (is_authentication_key_in_account(ctx, account_addr)) {
             let auth_key_in_account = get_authentication_key_from_account(ctx, account_addr);
             std::debug::print(&auth_key_in_account);
-            // Although we have checked public key length in rotate_authentication_key_entry function,
-            // it needs to validate the authentication key isn't empty or malformed.
-            assert!(
-                vector::length(&auth_key_in_account) == V_AUTHENTICATION_KEY_LENGTH,
-                error::invalid_argument(EInvalidAccountAuthKeyLength)
-            );
         }
     }
 
