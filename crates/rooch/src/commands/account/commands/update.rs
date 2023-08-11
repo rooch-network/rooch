@@ -125,7 +125,7 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                 );
 
                 // Execute the Move call as a transaction
-                let result = context
+                let mut result = context
                     .sign_and_execute(existing_address, action, scheme)
                     .await
                     .map_err(|error| {
@@ -134,7 +134,8 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                             scheme, existing_address, error
                         ))
                     })?;
-                let result = context.assert_execute_success(result)?;
+                result = context.assert_execute_success(result)?;
+
                 // Transaction executed successfully
                 Ok(result)
             }

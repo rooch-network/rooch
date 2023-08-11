@@ -3,7 +3,7 @@ module rooch_framework::schnorr_validator {
 
     use std::error;
     use std::vector;
-    use std::option;
+    use std::option::{Self, Option};
     use std::signer;
     use moveos_std::storage_context::{Self, StorageContext};
     use rooch_framework::account_authentication;
@@ -12,16 +12,20 @@ module rooch_framework::schnorr_validator {
     use rooch_framework::auth_validator;
 
     const SCHEME_SCHNORR: u64 = 4;
+
     const V_SCHNORR_SCHEME_LENGTH: u64 = 1;
     const V_SCHNORR_PUBKEY_LENGTH: u64 = 32;
     const V_SCHNORR_SIG_LENGTH: u64 = 64;
     const V_SCHNORR_HASH_LENGTH: u64 = 1;
+    const V_AUTHENTICATION_KEY_LENGTH: u64 = 32;
     /// Hash function name that are valid for verify.
     const KECCAK256: u8 = 0;
     const SHA256: u8 = 1;
     /// error code
-    const EMalformedAccount: u64 = 1001;
-    const EMalformedAuthenticationKey: u64 = 1002;
+    const EInvalidPublicKeyLength: u64 = 0;
+    const EAuthenticationKeyNotFoundInAccount: u64 = 1;
+    const EInvalidAuthenticatorPayloadAuthKeyLength: u64 = 2;
+    const EInvalidAccountAuthKeyLength: u64 = 3;
 
     struct SchnorrValidator has store, drop {}
 
@@ -37,28 +41,24 @@ module rooch_framework::schnorr_validator {
         // compare newly passed public key with schnorr public key length to ensure it's compatible
         assert!(
             vector::length(&public_key) == V_SCHNORR_PUBKEY_LENGTH,
-            error::invalid_argument(EMalformedAuthenticationKey)
+            error::invalid_argument(EInvalidPublicKeyLength)
         );
 
-        // ensure that the schnorr public key to address isn't matched with the ed25519 account address
+        // User can rotate the authentication key arbitrarily, so we do not need to check the new public key with the account address.
+        let authentication_key = public_key_to_authentication_key(public_key);
         let account_addr = signer::address_of(account);
-        let schnorr_addr = schnorr_public_key_to_address(public_key);
-        assert!(
-            account_addr != schnorr_addr,
-            error::invalid_argument(EMalformedAccount)
-        );
+        rotate_authentication_key(ctx, account_addr, authentication_key);
+    }
 
-        // serialize the address to an auth key and rotate it by calling rotate_authentication_key
-        let schnorr_authentication_key = moveos_std::bcs::to_bytes(&schnorr_addr);
-        account_authentication::rotate_authentication_key<SchnorrValidator>(ctx, account_addr, schnorr_authentication_key);
+    fun rotate_authentication_key(ctx: &mut StorageContext, account_addr: address, authentication_key: vector<u8>) {
+        account_authentication::rotate_authentication_key<SchnorrValidator>(ctx, account_addr, authentication_key);
     }
 
     public entry fun remove_authentication_key_entry<T>(ctx: &mut StorageContext, account: &signer) {
-        let account_addr = signer::address_of(account);
-        account_authentication::remove_authentication_key<SchnorrValidator>(ctx, account_addr);
+      account_authentication::remove_authentication_key<SchnorrValidator>(ctx, signer::address_of(account));
     }
 
-    public fun schnorr_public_key(authenticator_payload: &vector<u8>): vector<u8> {
+    public fun get_public_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
         let public_key = vector::empty<u8>();
         let i = V_SCHNORR_SCHEME_LENGTH + V_SCHNORR_SIG_LENGTH;
         while (i < V_SCHNORR_SCHEME_LENGTH + V_SCHNORR_SIG_LENGTH + V_SCHNORR_PUBKEY_LENGTH) {
@@ -70,7 +70,7 @@ module rooch_framework::schnorr_validator {
         public_key
     }
 
-    public fun schnorr_signature(authenticator_payload: &vector<u8>): vector<u8> {
+    public fun get_signature_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
         let sign = vector::empty<u8>();
         let i = V_SCHNORR_SCHEME_LENGTH;
         while (i < V_SCHNORR_SIG_LENGTH + 1) {
@@ -82,45 +82,69 @@ module rooch_framework::schnorr_validator {
         sign
     }
 
-    /// Get the authentication key of the given authenticator.
-    public fun schnorr_authentication_key(authenticator_payload: &vector<u8>): vector<u8> {
-        let public_key = schnorr_public_key(authenticator_payload);
-        let addr = schnorr_public_key_to_address(public_key);
+   /// Get the authentication key of the given authenticator from authenticator_payload.
+    public fun get_authentication_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
+        let public_key = get_public_key_from_authenticator_payload(authenticator_payload);
+        let addr = public_key_to_address(public_key);
         moveos_std::bcs::to_bytes(&addr)
     }
 
-    public fun schnorr_public_key_to_address(public_key: vector<u8>): address {
-        let bytes = vector::singleton((SCHEME_SCHNORR as u8));
-        vector::append(&mut bytes, public_key);
-        moveos_std::bcs::to_address(hash::blake2b256(&bytes))
+    public fun public_key_to_address(public_key: vector<u8>): address {
+        moveos_std::bcs::to_address(public_key_to_authentication_key(public_key))
     }
 
-    public fun get_authentication_key(ctx: &StorageContext, addr: address): vector<u8> {
+    /// Get the authentication key of the given public key.
+    public fun public_key_to_authentication_key(public_key: vector<u8>): vector<u8> {
+        let bytes = vector::singleton((SCHEME_SCHNORR as u8));
+        vector::append(&mut bytes, public_key);
+        hash::blake2b256(&bytes)
+    }
+
+    /// Get the authentication key option of the given account.
+    public fun get_authentication_key_option_from_account(ctx: &StorageContext, addr: address): Option<vector<u8>> {
         let auth_key_option = account_authentication::get_authentication_key<SchnorrValidator>(ctx, addr);
         if (option::is_some(&auth_key_option)) {
-            option::extract(&mut auth_key_option)
+            auth_key_option
         }else {
-            //if AuthenticationKey does not exist, return addr as authentication key
-            moveos_std::bcs::to_bytes(&addr)
+            option::none<vector<u8>>()
         }
     }
 
-    public fun validate(ctx: &StorageContext, authenticator_payload: vector<u8>) {
-        // TODO handle non-ed25519 auth key and address relationship
-        // let auth_key = schnorr_authentication_key(&authenticator_payload);
-        // let auth_key_in_account = get_authentication_key(ctx, storage_context::sender(ctx));
-        // assert!(
-        //    auth_key_in_account == auth_key,
-        //    auth_validator::error_invalid_account_auth_key()
-        // );
+    /// The authentication key exists in account or not.
+    public fun is_authentication_key_in_account(ctx: &StorageContext, addr: address): bool {
+        option::is_some(&get_authentication_key_option_from_account(ctx, addr))
+    }
+
+    /// Get the authentication key of the given account.
+    public fun get_authentication_key_from_account(ctx: &StorageContext, addr: address): vector<u8> {
+        assert!(is_authentication_key_in_account(ctx, addr), error::not_found(EAuthenticationKeyNotFoundInAccount));
+        option::extract(&mut get_authentication_key_option_from_account(ctx, addr))
+    }
+
+    /// Only validate the authenticator's signature.
+    public fun validate_signature(authenticator_payload: &vector<u8>, tx_hash: &vector<u8>) {
         assert!(
             schnorr::verify(
-                &schnorr_signature(&authenticator_payload),
-                &schnorr_public_key(&authenticator_payload),
-                &storage_context::tx_hash(ctx),
-                SHA256,
+                &get_signature_from_authenticator_payload(authenticator_payload),
+                &get_public_key_from_authenticator_payload(authenticator_payload),
+                tx_hash,
+                SHA256
             ),
-            auth_validator::error_invalid_account_auth_key()
+            auth_validator::error_invalid_authenticator()
+        );
+    }
+
+    public fun validate(ctx: &StorageContext, authenticator_payload: vector<u8>) {
+        let tx_hash = storage_context::tx_hash(ctx);
+        validate_signature(&authenticator_payload, &tx_hash);
+
+        let auth_key_from_authenticator_payload = get_authentication_key_from_authenticator_payload(&authenticator_payload);
+        std::debug::print(&auth_key_from_authenticator_payload);
+        // Although we have checked public key length in rotate_authentication_key_entry function,
+        // it needs to validate the authentication key isn't empty or malformed.
+        assert!(
+           vector::length(&auth_key_from_authenticator_payload) == V_AUTHENTICATION_KEY_LENGTH,
+           error::invalid_argument(EInvalidAuthenticatorPayloadAuthKeyLength)
         );
     }
 
@@ -129,14 +153,24 @@ module rooch_framework::schnorr_validator {
     ) {}
 
     fun post_execute(
-        _ctx: &mut StorageContext,
-    ) {}
+        ctx: &mut StorageContext,
+    ) {
+        let account_addr = storage_context::sender(ctx);
+        let auth_key_in_account = get_authentication_key_from_account(ctx, account_addr);
+        std::debug::print(&auth_key_in_account);
+        // Although we have checked public key length in rotate_authentication_key_entry function,
+        // it needs to validate the authentication key isn't empty or malformed.
+        assert!(
+           vector::length(&auth_key_in_account) == V_AUTHENTICATION_KEY_LENGTH,
+           error::invalid_argument(EInvalidAccountAuthKeyLength)
+        );
+    }
 
-    // this test ensures that the schnorr_public_key_to_address function is compatible with the one in the rust code
+    // this test ensures that the schnorr public_key_to_address function is compatible with the one in the rust code
     #[test]
-    fun test_schnorr_public_key_to_address() {
+    fun test_public_key_to_address() {
         let public_key = x"1b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
-        let addr = schnorr_public_key_to_address(public_key);
+        let addr = public_key_to_address(public_key);
         assert!(addr == @0xa519b36bbecc294726bbfd962ab46ca4e09baacca7cd90d5d2da2331afb363e6, 1000);
     }
 }

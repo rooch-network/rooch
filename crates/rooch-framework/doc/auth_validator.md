@@ -463,9 +463,8 @@ Only can be called after the transaction is validated
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx">get_session_key_from_tx_ctx</a>(ctx: &StorageContext): <a href="">vector</a>&lt;u8&gt; {
-    <b>let</b> sesion_key_option = <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx_option">get_session_key_from_tx_ctx_option</a>(ctx);
-    <b>assert</b>!(<a href="_is_some">option::is_some</a>(&sesion_key_option), <a href="_invalid_state">error::invalid_state</a>(<a href="auth_validator.md#0x3_auth_validator_EMustExecuteAfterValidate">EMustExecuteAfterValidate</a>));
-    <a href="_extract">option::extract</a>(&<b>mut</b> sesion_key_option)
+    <b>assert</b>!(<a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">is_validate_via_session_key</a>(ctx), <a href="_invalid_state">error::invalid_state</a>(<a href="auth_validator.md#0x3_auth_validator_EMustExecuteAfterValidate">EMustExecuteAfterValidate</a>));
+    <a href="_extract">option::extract</a>(&<b>mut</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx_option">get_session_key_from_tx_ctx_option</a>(ctx))
 }
 </code></pre>
 

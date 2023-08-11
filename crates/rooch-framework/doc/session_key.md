@@ -376,7 +376,7 @@ If the session key is expired or invalid, abort the tx, otherwise return option:
         <b>return</b> <a href="_none">option::none</a>()
     };
     <b>let</b> auth_key = <b>if</b>(scheme == <a href="ed25519_validator.md#0x3_ed25519_validator_scheme">ed25519_validator::scheme</a>()){
-        <a href="ed25519_validator.md#0x3_ed25519_validator_get_authentication_key_from_payload">ed25519_validator::get_authentication_key_from_payload</a>(&authenticator_payload)
+        <a href="ed25519_validator.md#0x3_ed25519_validator_get_authentication_key_from_authenticator_payload">ed25519_validator::get_authentication_key_from_authenticator_payload</a>(&authenticator_payload)
     }<b>else</b>{
         //TODO support other built-in validators
         <b>return</b> <a href="_none">option::none</a>()
