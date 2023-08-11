@@ -25,7 +25,7 @@ module rooch_framework::ed25519_validator {
         SCHEME_ED25519
     }
 
-    public entry fun rotate_authentication_key_entry<Ed25519Validator>(
+    public entry fun rotate_authentication_key_entry<T>(
         ctx: &mut StorageContext,
         account: &signer,
         public_key: vector<u8>
