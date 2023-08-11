@@ -614,8 +614,8 @@ pub fn is_defined_or_allowed_in_current_module(
 
             (false, struct_name)
         }
-        SignatureToken::TypeParameter(_) => (true, "TypeParameter".to_owned()),
         // Other types are not allowed.
+        SignatureToken::TypeParameter(tidx) => (false, format!("T{}", *tidx as usize)),
         SignatureToken::Bool => (false, "Bool".to_owned()),
         SignatureToken::U8 => (false, "U8".to_owned()),
         SignatureToken::U16 => (false, "U16".to_owned()),

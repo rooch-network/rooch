@@ -30,7 +30,7 @@ module rooch_framework::ecdsa_k1_validator {
         SCHEME_ECDSA
     }
 
-    public entry fun rotate_authentication_key_entry<EcdsaK1Validator>(
+    public entry fun rotate_authentication_key_entry<T>(
         ctx: &mut StorageContext,
         account: &signer,
         public_key: vector<u8>
@@ -54,7 +54,7 @@ module rooch_framework::ecdsa_k1_validator {
         account_authentication::rotate_authentication_key<EcdsaK1Validator>(ctx, account_addr, ecdsa_k1_authentication_key);
     }
 
-    public entry fun remove_authentication_key_entry<EcdsaK1Validator>(ctx: &mut StorageContext, account: &signer) {
+    public entry fun remove_authentication_key_entry<T>(ctx: &mut StorageContext, account: &signer) {
         let account_addr = signer::address_of(account);
         account_authentication::remove_authentication_key<EcdsaK1Validator>(ctx, account_addr);
     }

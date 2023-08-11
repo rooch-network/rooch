@@ -29,7 +29,7 @@ module rooch_framework::schnorr_validator {
         SCHEME_SCHNORR
     }
 
-    public entry fun rotate_authentication_key_entry<SchnorrValidator>(
+    public entry fun rotate_authentication_key_entry<T>(
         ctx: &mut StorageContext,
         account: &signer,
         public_key: vector<u8>
@@ -53,7 +53,7 @@ module rooch_framework::schnorr_validator {
         account_authentication::rotate_authentication_key<SchnorrValidator>(ctx, account_addr, schnorr_authentication_key);
     }
 
-    public entry fun remove_authentication_key_entry<SchnorrValidator>(ctx: &mut StorageContext, account: &signer) {
+    public entry fun remove_authentication_key_entry<T>(ctx: &mut StorageContext, account: &signer) {
         let account_addr = signer::address_of(account);
         account_authentication::remove_authentication_key<SchnorrValidator>(ctx, account_addr);
     }
