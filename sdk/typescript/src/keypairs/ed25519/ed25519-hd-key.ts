@@ -23,8 +23,8 @@ const HARDENED_OFFSET = 0x80000000
 
 export const pathRegex = /^m(\/[0-9]+')+$/
 
-
-export const replaceDerive = (val: string): string => val.replace('\'', '')
+// eslint-disable-next-line quotes
+export const replaceDerive = (val: string): string => val.replace("'", '')
 
 export const getMasterKeyFromSeed = (seed: Hex): Keys => {
   const h = hmac.create(sha512, ED25519_CURVE)
