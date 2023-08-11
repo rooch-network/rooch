@@ -11,6 +11,7 @@ use tokio::signal::ctrl_c;
 use tokio::signal::unix::{signal, SignalKind};
 use tracing::info;
 
+/// Start service
 #[derive(Debug, Parser)]
 pub struct StartCommand;
 
