@@ -66,6 +66,8 @@ jobs:
         run: cd sdk/typescript && npm install pnpm -g && pnpm install
       - name: Gen SDK dependencie Code
         run: cd sdk/typescript && pnpm gen
+      - name: Lint SDK
+        run: cd sdk/typescript && pnpm run lint
       - name: Build SDK
         run: cd sdk/typescript && pnpm run build
       - name: Test SDK

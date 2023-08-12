@@ -73,7 +73,6 @@ export class RoochClient {
     tyArgs: TypeTag[],
     args: bytes[],
   ): Promise<string> {
-
     // TODO: The bcs type is faulty
 
     const ser = new BcsSerializer()

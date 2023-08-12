@@ -10,7 +10,8 @@ import { toB64 } from '../../bcs'
 import type { SignatureScheme } from '../../crypto/signature'
 import { PRIVATE_KEY_SIZE, Keypair } from '../../crypto/keypair'
 
-export const DEFAULT_ED25519_DERIVATION_PATH = 'm/44\'/784\'/0\'/0\'/0\''
+// eslint-disable-next-line quotes
+export const DEFAULT_ED25519_DERIVATION_PATH = "m/44'/784'/0'/0'/0'"
 export const DEFAULT_ED25519_SCHEMAS = 'ED25519'
 
 /**
