@@ -6,9 +6,9 @@
  * @param schemas - entire schemas
  * @returns {string} - Returns a string representing the type of the input value.
  */
-export function getType(schema, schemas) {
+export function getType(schema, schemas, alias) {
     if (typeof schema === "string" || typeof schema === "boolean") {
-        return schema;
+        return alias ? alias(schema) : schema;
     }
 
     if ('anyOf' in schema) {
@@ -17,14 +17,14 @@ export function getType(schema, schemas) {
             if (subSchema.type === 'null') {
                 return 'null';
             } else {
-                return getType(subSchema, schemas);
+                return getType(subSchema, schemas, alias);
             }
         }).join(' | ');
     }
 
     if ('oneOf' in schema) {
         // Generate a union type from the oneOf array
-        return schema.oneOf.map(subSchema => getType(subSchema, schemas)).join(' | ');
+        return schema.oneOf.map(subSchema => getType(subSchema, schemas, alias)).join(' | ');
     }
 
     if ('type' in schema) {
@@ -33,21 +33,21 @@ export function getType(schema, schemas) {
         } else if (schema.type === 'object') {
             if (schema.additionalProperties) {
                 // This is an object with dynamic keys
-                const valueType = getType(schema.additionalProperties, schemas);
+                const valueType = getType(schema.additionalProperties, schemas, alias);
                 return `{ [key: string]: ${valueType} }`;
             } else {
                 // This is an object with a fixed set of properties
                 const properties = schema.properties;
                 const propertyTypes = Object.keys(properties).map(key => {
                     const propertySchema = properties[key];
-                    const propertyType = getType(propertySchema, schemas);
+                    const propertyType = getType(propertySchema, schemas, alias);
                     return `${key}: ${propertyType}`;
                 });
                 return `{ ${propertyTypes.join(', ')} }`;
             }
         } if (schema.type === 'array') {
             // This is an array type
-            const itemType = getType(schema.items, schemas);
+            const itemType = getType(schema.items, schemas, alias);
             return `${itemType}[]`;
         } else if (Array.isArray(schema.type)) {
             return schema.type.map(t => {
@@ -56,14 +56,14 @@ export function getType(schema, schemas) {
                 } else if (t === 'integer') {
                     return 'number';
                 } else if (t === 'array') {
-                    const itemType = getType(schema.items, schemas);
+                    const itemType = getType(schema.items, schemas, alias);
                     return `${itemType}[]`;
                 } else {
-                    return t;
+                    return alias ? alias(t) : t;
                 }
             }).join(' | ');
         } else {
-            return schema.type;
+            return alias ? alias(schema.type) : schema.type;
         }
     } else if ('$ref' in schema) {
         const originalRefName = schema.$ref.split('/').pop();  // Extract the $ref name
@@ -77,10 +77,10 @@ export function getType(schema, schemas) {
             }
             // Add this condition to handle the case when the referred schema is also a $ref
             else if ('$ref' in schemas[originalRefName]) {
-                return getType(schemas[originalRefName], schemas);
+                return getType(schemas[originalRefName], schemas, alias);
             }
             else {
-                return refName;  // Reference other schema
+                return alias ? alias(refName) : refName;  // Reference other schema
             }
         } else {
             throw new Error(`Reference ${originalRefName} not found in schemas`);
