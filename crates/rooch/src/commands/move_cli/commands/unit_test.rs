@@ -91,14 +91,14 @@ impl Test {
     }
 }
 
-static STATEDBSTORE: Lazy<Box<MoveOSResolverProxy<MoveOSStore>>> = Lazy::new(|| {
+static MOVEOSSTORE: Lazy<Box<MoveOSResolverProxy<MoveOSStore>>> = Lazy::new(|| {
     Box::new(MoveOSResolverProxy(
         MoveOSStore::mock_moveos_store().unwrap(),
     ))
 });
 
 fn new_moveos_natives_runtime(ext: &mut NativeContextExtensions) {
-    let statedb = Lazy::force(&STATEDBSTORE).as_ref();
+    let statedb = Lazy::force(&MOVEOSSTORE).as_ref();
     let table_data = Arc::new(RwLock::new(TableData::default()));
     let table_ext = NativeTableContext::new(statedb, table_data);
     let module_ext = NativeModuleContext::new(statedb);

@@ -173,7 +173,7 @@ module moveos_std::account_storage {
         let account_storage = borrow_account_storage_mut(storage_context::object_storage_mut(ctx), account_address);
         let i = 0;
         let len = vector::length(&modules);
-        let module_names = move_module::verify_modules(&modules, account_address);
+        let (module_names, module_names_with_init_fn) = move_module::verify_modules(&modules, account_address);
         
         while (i < len) {
             let name = vector::pop_back(&mut module_names);
@@ -183,6 +183,9 @@ module moveos_std::account_storage {
             // TODO: check upgrade compatibility
             if (table::contains(&account_storage.modules, name)) {
                 table::remove(&mut account_storage.modules, name);
+            } else {
+                // request init function invoking
+                move_module::request_init_functions(module_names_with_init_fn, account_address);
             };
             table::add(&mut account_storage.modules, name, m);
             i = i + 1;

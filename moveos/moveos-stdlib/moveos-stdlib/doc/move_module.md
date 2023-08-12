@@ -10,6 +10,7 @@
 -  [Function `new`](#0x2_move_module_new)
 -  [Function `module_name`](#0x2_move_module_module_name)
 -  [Function `verify_modules`](#0x2_move_module_verify_modules)
+-  [Function `request_init_functions`](#0x2_move_module_request_init_functions)
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
@@ -99,9 +100,14 @@
 
 ## Function `verify_modules`
 
+Verifies the modules and returns their names
+This function need to ensure the module's bytecode is valid and the module id is matching the account address.
+Return
+The first vector is the module names of all the modules.
+The second vector is the module names of the modules with init function.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_verify_modules">verify_modules</a>(modules: &<a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, account_address: <b>address</b>): <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_verify_modules">verify_modules</a>(modules: &<a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, account_address: <b>address</b>): (<a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;)
 </code></pre>
 
 
@@ -110,7 +116,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_verify_modules">verify_modules</a>(modules: &<a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>&gt;, account_address: <b>address</b>): <a href="">vector</a>&lt;String&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_verify_modules">verify_modules</a>(modules: &<a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>&gt;, account_address: <b>address</b>): (<a href="">vector</a>&lt;String&gt;, <a href="">vector</a>&lt;String&gt;) {
     <b>let</b> bytes_vec = <a href="_empty">vector::empty</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;();
     <b>let</b> i = 0u64;
     <b>let</b> len = <a href="_length">vector::length</a>(modules);
@@ -120,6 +126,31 @@
     };
     <a href="move_module.md#0x2_move_module_verify_modules_inner">verify_modules_inner</a>(bytes_vec, account_address)
 }
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_move_module_request_init_functions"></a>
+
+## Function `request_init_functions`
+
+Request to call the init functions of the given modules
+module_names: names of modules which have a init function
+account_address: address of all the modules
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_request_init_functions">request_init_functions</a>(module_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, account_address: <b>address</b>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>native</b> <b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_request_init_functions">request_init_functions</a>(module_names: <a href="">vector</a>&lt;String&gt;, account_address: <b>address</b>);
 </code></pre>
 
 

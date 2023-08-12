@@ -3,6 +3,8 @@ module moveos_std::move_module{
     use std::vector;
     use std::string::String;
 
+    friend moveos_std::account_storage;
+    
     struct MoveModule has store, drop {
         byte_codes: vector<u8>,
     }
@@ -18,9 +20,12 @@ module moveos_std::move_module{
         module_name_inner(&move_module.byte_codes)
     }
 
-    // This is a native function that verifies the modules and returns their names
-    // This function need to ensure the module's bytecode is valid and the module id is matching the account address.
-    public fun verify_modules(modules: &vector<MoveModule>, account_address: address): vector<String> {
+    /// Verifies the modules and returns their names
+    /// This function need to ensure the module's bytecode is valid and the module id is matching the account address.
+    /// Return
+    ///  The first vector is the module names of all the modules.
+    ///  The second vector is the module names of the modules with init function.
+    public fun verify_modules(modules: &vector<MoveModule>, account_address: address): (vector<String>, vector<String>) {
         let bytes_vec = vector::empty<vector<u8>>();
         let i = 0u64;
         let len = vector::length(modules);
@@ -32,5 +37,14 @@ module moveos_std::move_module{
     }
 
     native fun module_name_inner(byte_codes: &vector<u8>): String;
-    native fun verify_modules_inner(modules: vector<vector<u8>>, account_address: address): vector<String>;
+    /// Native function that verifies the modules and returns their names and 
+    /// names of the modules with init function
+    /// Return
+    ///  The first vector is the module names of all the modules.
+    ///  The second vector is the module names of the modules with init function.
+    native fun verify_modules_inner(modules: vector<vector<u8>>, account_address: address): (vector<String>, vector<String>);
+    /// Request to call the init functions of the given modules
+    /// module_names: names of modules which have a init function
+    /// account_address: address of all the modules
+    native public(friend) fun request_init_functions(module_names: vector<String>, account_address: address);
 }
