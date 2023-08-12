@@ -3,6 +3,7 @@
 
 use crate::{
     move_string::MoveString,
+    move_types::{random_identity, random_struct_tag},
     object::{NamedTableID, ObjectID},
     state_resolver::{self, module_name_to_key, resource_tag_to_key},
 };
@@ -273,6 +274,22 @@ impl AccessPath {
                 (resource_table_id, keys)
             }
         }
+    }
+
+    pub fn random_module() -> AccessPath {
+        Self::random_module_with_fixed_address(AccountAddress::random())
+    }
+
+    pub fn random_module_with_fixed_address(addr: AccountAddress) -> AccessPath {
+        Self::module(addr, random_identity())
+    }
+
+    pub fn random_resource() -> AccessPath {
+        Self::random_resource_with_fixed_address(AccountAddress::random())
+    }
+
+    pub fn random_resource_with_fixed_address(addr: AccountAddress) -> AccessPath {
+        Self::resource(addr, random_struct_tag())
     }
 }
 

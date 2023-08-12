@@ -4,7 +4,7 @@
 use crate::{Key, SMTObject, Value};
 use std::collections::BTreeMap;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UpdateSet<K, V> {
     updates: BTreeMap<K, Option<V>>,
 }

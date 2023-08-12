@@ -30,7 +30,7 @@ module rooch_framework::ecdsa_k1_validator {
         SCHEME_ECDSA
     }
 
-    public entry fun rotate_authentication_key_entry<EcdsaK1Validator>(
+    public entry fun rotate_authentication_key_entry<T>(
         ctx: &mut StorageContext,
         account: &signer,
         public_key: vector<u8>
@@ -51,11 +51,12 @@ module rooch_framework::ecdsa_k1_validator {
 
         // serialize the address to an auth key and rotate it by calling rotate_authentication_key
         let ecdsa_k1_authentication_key = moveos_std::bcs::to_bytes(&ecdsa_addr);
-        account_authentication::rotate_authentication_key<EcdsaK1Validator>(ctx, account, ecdsa_k1_authentication_key);
+        account_authentication::rotate_authentication_key<EcdsaK1Validator>(ctx, account_addr, ecdsa_k1_authentication_key);
     }
 
-    public entry fun remove_authentication_key_entry<EcdsaK1Validator>(ctx: &mut StorageContext, account: &signer) {
-        account_authentication::remove_authentication_key<EcdsaK1Validator>(ctx, account);
+    public entry fun remove_authentication_key_entry<T>(ctx: &mut StorageContext, account: &signer) {
+        let account_addr = signer::address_of(account);
+        account_authentication::remove_authentication_key<EcdsaK1Validator>(ctx, account_addr);
     }
 
     public fun ecdsa_k1_public_key(authenticator_payload: &vector<u8>): vector<u8> {

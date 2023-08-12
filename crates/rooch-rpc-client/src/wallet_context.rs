@@ -8,7 +8,7 @@ use move_core_types::account_address::AccountAddress;
 use moveos_types::transaction::MoveAction;
 use rooch_config::{rooch_config_dir, Config, PersistedConfig, ROOCH_CLIENT_CONFIG};
 use rooch_key::keystore::AccountKeystore;
-use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
+use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView};
 use rooch_types::address::RoochAddress;
 use rooch_types::crypto::{BuiltinScheme, Signature};
 use rooch_types::error::{RoochError, RoochResult};
@@ -159,6 +159,20 @@ impl WalletContext {
             };
 
             Ok(address)
+        }
+    }
+
+    pub fn assert_execute_success(
+        &self,
+        result: ExecuteTransactionResponseView,
+    ) -> RoochResult<ExecuteTransactionResponseView> {
+        if KeptVMStatusView::Executed != result.execution_info.status {
+            Err(RoochError::TransactionError(format!(
+                "Transaction execution failed: {:?}",
+                result.execution_info.status
+            )))
+        } else {
+            Ok(result)
         }
     }
 }

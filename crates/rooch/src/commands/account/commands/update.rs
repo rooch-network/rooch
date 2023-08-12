@@ -134,7 +134,7 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                             scheme, existing_address, error
                         ))
                     })?;
-
+                let result = context.assert_execute_success(result)?;
                 // Transaction executed successfully
                 Ok(result)
             }

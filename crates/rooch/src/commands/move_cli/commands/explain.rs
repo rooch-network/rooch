@@ -60,19 +60,7 @@ impl Explain {
             Some(bytes) => {
                 let explain_result =
                     explain_move_abort(AbortLocation::Module(module_id), self.abort_code, bytes);
-                match explain_result {
-                    None => {
-                        return Err(anyhow::Error::msg(format!(
-                            "Unable to find a description for {}::{}",
-                            self.location, self.abort_code
-                        )));
-                    }
-                    Some(error_desc) => println!(
-                        "Category:\n  Name: {}\n  Description: {}",
-                        error_desc.reason_name.unwrap(),
-                        error_desc.code_description.unwrap(),
-                    ),
-                }
+                println!("{}", explain_result)
             }
             None => {
                 return Err(anyhow::Error::msg("Error map data not found."));
@@ -104,37 +92,56 @@ pub struct MoveAbortExplain {
     pub code_description: Option<String>,
 }
 
+impl std::fmt::Display for MoveAbortExplain {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Category Code: {}", self.category_code)?;
+        writeln!(
+            f,
+            "Category Name: {}",
+            self.category_name.clone().unwrap_or("Unknown".to_string())
+        )?;
+        writeln!(f, "Reason Code: {}", self.reason_code)?;
+        writeln!(
+            f,
+            "Reason Name: {}",
+            self.reason_name.clone().unwrap_or("Unknown".to_string())
+        )?;
+        writeln!(
+            f,
+            "Code Description: {}",
+            self.code_description
+                .clone()
+                .unwrap_or("Unknown".to_string())
+        )?;
+        Ok(())
+    }
+}
+
 pub fn explain_move_abort(
     abort_location: AbortLocation,
     abort_code: u64,
     data: &[u8],
-) -> Option<MoveAbortExplain> {
+) -> MoveAbortExplain {
+    let (category, reason_code) = moveos_types::move_std::error::explain(abort_code);
+
     let err_description = match abort_location {
-        AbortLocation::Module(module_id) => get_explanation(&module_id, abort_code, data),
+        AbortLocation::Module(module_id) => get_explanation(&module_id, reason_code, data),
         AbortLocation::Script => None,
     };
     match err_description {
-        Some(description) => {
-            if abort_code > 0xffff {
-                let category = abort_code & 0xFFu64;
-                let reason_code = abort_code >> 8;
-                Some(MoveAbortExplain {
-                    category_code: category,
-                    category_name: Some(description.code_name.clone()),
-                    reason_code,
-                    reason_name: Some(description.code_name),
-                    code_description: Some(description.code_description),
-                })
-            } else {
-                Some(MoveAbortExplain {
-                    category_code: 0,
-                    category_name: None,
-                    reason_code: 0,
-                    reason_name: Some(description.code_name),
-                    code_description: Some(description.code_description),
-                })
-            }
-        }
-        None => None,
+        Some(description) => MoveAbortExplain {
+            category_code: category,
+            category_name: moveos_types::move_std::error::explain_category(category),
+            reason_code,
+            reason_name: Some(description.code_name),
+            code_description: Some(description.code_description),
+        },
+        None => MoveAbortExplain {
+            category_code: category,
+            category_name: moveos_types::move_std::error::explain_category(category),
+            reason_code,
+            reason_name: None,
+            code_description: None,
+        },
     }
 }
