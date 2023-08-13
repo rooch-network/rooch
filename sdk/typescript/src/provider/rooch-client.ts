@@ -1,12 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-import fetch from "isomorphic-fetch";
+
 import { HTTPTransport, RequestManager } from '@open-rpc/client-js'
 import { JsonRpcClient } from '../generated/client'
-import { Connection, LocalnetConnection } from './connection'
-import { encodeFunctionCall } from '../utils'
-import { BcsSerializer, bytes } from '../types/bcs'
-import { FunctionId, TypeTag, functionIdToStirng } from '../types'
 import {
   // AnnotatedEventView,
   AnnotatedFunctionReturnValueView,
@@ -21,75 +17,32 @@ import {
   // TransactionExecutionInfoView,
   // TransactionView,
 } from '../generated/client/types'
+import { Connection } from './connection'
+import { encodeFunctionCall } from '../utils'
+import { BcsSerializer, bytes } from '../types/bcs'
+import { FunctionId, TypeTag, functionIdToStirng } from '../types'
 
-/**
- * Configuration options for the JsonRpcProvider. If the value of a field is not provided,
- * value in `DEFAULT_OPTIONS` for that field will be used
- */
-export type RpcProviderOptions = {
-  /**
-   * Cache timeout in seconds for the RPC API Version
-   */
-  versionCacheTimeoutInSeconds?: number
+export class RoochClient {
+  readonly rpcClient: JsonRpcClient
 
-  /** Allow defining a custom RPC client to use */
-  fetcher?: typeof fetch;
-}
+  readonly connection: Connection
 
-const DEFAULT_OPTIONS: RpcProviderOptions = {
-  versionCacheTimeoutInSeconds: 600,
-}
-
-export class JsonRpcProvider {
-  public connection: Connection
-
-  readonly client: JsonRpcClient
-
-  private rpcApiVersion: string | undefined
-
-  private cacheExpiry: number | undefined
-
-  constructor(
-    connection: Connection = LocalnetConnection,
-    public options: RpcProviderOptions = DEFAULT_OPTIONS,
-  ) {
+  constructor(connection: Connection) {
     this.connection = connection
 
-    const opts = { ...DEFAULT_OPTIONS, ...options }
-    this.options = opts
-
-    this.client = new JsonRpcClient(
+    this.rpcClient = new JsonRpcClient(
       new RequestManager([
         new HTTPTransport(connection.url, {
           headers: {
             'Content-Type': 'application/json',
           },
-          fetcher: opts.fetcher,
         }),
       ]),
     )
   }
 
   async getRpcApiVersion(): Promise<string | undefined> {
-    if (
-      this.rpcApiVersion &&
-      this.cacheExpiry &&
-      this.cacheExpiry <= Date.now()
-    ) {
-      return this.rpcApiVersion
-    }
-
-    try {
-      this.client.getRpcApiVersion()
-      const resp = await this.client.getRpcApiVersion()
-      this.rpcApiVersion = resp
-      this.cacheExpiry =
-        // Date.now() is in milliseconds, but the timeout is in seconds
-        Date.now() + (this.options.versionCacheTimeoutInSeconds ?? 0) * 1000
-      return this.rpcApiVersion
-    } catch (err) {
-      return undefined
-    }
+    return this.rpcClient.getRpcApiVersion()
   }
 
   // Execute a read-only function call The function do not change the state of Application
@@ -106,7 +59,7 @@ export class JsonRpcProvider {
 
     // rooch, eth, wellet,
     // TDOO: args, tyArgs, wait bcs
-    return this.client.rooch_executeViewFunction({
+    return this.rpcClient.rooch_executeViewFunction({
       function_id: functionIdToStirng(funcId),
       args: args ?? [],
       ty_args: tyArgs ?? [],
@@ -125,7 +78,7 @@ export class JsonRpcProvider {
     const ser = new BcsSerializer()
     encodeFunctionCall(functionId, tyArgs, args).serialize(ser)
 
-    return this.client.rooch_sendRawTransaction(ser.getBytes())
+    return this.rpcClient.rooch_sendRawTransaction(ser.getBytes())
   }
 
   // TODO: wait bcs
@@ -210,4 +163,3 @@ export class JsonRpcProvider {
   //   return await this.rpcClient.rooch_listStates(access_path, cursor, limit)
   // }
 }
-
