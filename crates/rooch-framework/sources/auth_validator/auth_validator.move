@@ -112,8 +112,7 @@ module rooch_framework::auth_validator {
     /// Get the session key from the TxValidateResult in the TxContext
     /// Only can be called after the transaction is validated
     public fun get_session_key_from_tx_ctx(ctx: &StorageContext): vector<u8> {
-        let sesion_key_option = get_session_key_from_tx_ctx_option(ctx);
-        assert!(option::is_some(&sesion_key_option), error::invalid_state(EMustExecuteAfterValidate));
-        option::extract(&mut sesion_key_option)
+        assert!(is_validate_via_session_key(ctx), error::invalid_state(EMustExecuteAfterValidate));
+        option::extract(&mut get_session_key_from_tx_ctx_option(ctx))
     }
 }

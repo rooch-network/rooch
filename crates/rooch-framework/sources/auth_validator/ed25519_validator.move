@@ -17,8 +17,7 @@ module rooch_framework::ed25519_validator {
     const V_ED25519_PUBKEY_LENGTH: u64 = 32;
     const V_ED25519_SIG_LENGTH: u64 = 64;
     /// error code
-    const EMalformedAccount: u64 = 1001;
-    const EMalformedAuthenticationKey: u64 = 1002;
+    const EInvalidPublicKeyLength: u64 = 0;
 
     struct Ed25519Validator has store, drop {}
 
@@ -26,7 +25,7 @@ module rooch_framework::ed25519_validator {
         SCHEME_ED25519
     }
 
-    public entry fun rotate_authentication_key_entry<Ed25519Validator>(
+    public entry fun rotate_authentication_key_entry<T>(
         ctx: &mut StorageContext,
         account: &signer,
         public_key: vector<u8>
@@ -34,7 +33,7 @@ module rooch_framework::ed25519_validator {
         // compare newly passed public key with ed25519 public key length to ensure it's compatible
         assert!(
             vector::length(&public_key) == V_ED25519_PUBKEY_LENGTH,
-            error::invalid_argument(EMalformedAuthenticationKey)
+            error::invalid_argument(EInvalidPublicKeyLength)
         );
 
         // User can rotate the authentication key arbitrarily, so we do not need to check the new public key with the account address.
@@ -48,10 +47,10 @@ module rooch_framework::ed25519_validator {
     }
 
     public entry fun remove_authentication_key_entry<T>(ctx: &mut StorageContext, account: &signer) {
-      account_authentication::remove_authentication_key<Ed25519Validator>(ctx, signer::address_of(account));
+        account_authentication::remove_authentication_key<Ed25519Validator>(ctx, signer::address_of(account));
     }
 
-    public fun get_public_key_from_payload(authenticator_payload: &vector<u8>): vector<u8> {
+    public fun get_public_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
         let public_key = vector::empty<u8>();
         let i = V_ED25519_SCHEME_LENGTH + V_ED25519_SIG_LENGTH;
         while (i < V_ED25519_SCHEME_LENGTH + V_ED25519_SIG_LENGTH + V_ED25519_PUBKEY_LENGTH) {
@@ -63,7 +62,7 @@ module rooch_framework::ed25519_validator {
         public_key
     }
 
-    public fun get_signature_from_payload(authenticator_payload: &vector<u8>): vector<u8> {
+    public fun get_signature_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
         let sign = vector::empty<u8>();
         let i = V_ED25519_SCHEME_LENGTH;
         while (i < V_ED25519_SIG_LENGTH + 1) {
@@ -75,9 +74,9 @@ module rooch_framework::ed25519_validator {
         sign
     }
 
-    /// Get the authentication key of the given authenticator authenticator_payload.
-    public fun get_authentication_key_from_payload(authenticator_payload: &vector<u8>): vector<u8> {
-        let public_key = get_public_key_from_payload(authenticator_payload);
+    /// Get the authentication key of the given authenticator from authenticator_payload.
+    public fun get_authentication_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
+        let public_key = get_public_key_from_authenticator_payload(authenticator_payload);
         let addr = public_key_to_address(public_key);
         moveos_std::bcs::to_bytes(&addr)
     }
@@ -111,8 +110,8 @@ module rooch_framework::ed25519_validator {
     public fun validate_signature(authenticator_payload: &vector<u8>, tx_hash: &vector<u8>) {
         assert!(
             ed25519::verify(
-                &get_signature_from_payload(authenticator_payload),
-                &get_public_key_from_payload(authenticator_payload),
+                &get_signature_from_authenticator_payload(authenticator_payload),
+                &get_public_key_from_authenticator_payload(authenticator_payload),
                 tx_hash
             ),
             auth_validator::error_invalid_authenticator()
@@ -123,10 +122,10 @@ module rooch_framework::ed25519_validator {
         let tx_hash = storage_context::tx_hash(ctx);
         validate_signature(&authenticator_payload, &tx_hash);
 
-        let auth_key = get_authentication_key_from_payload(&authenticator_payload);
+        let auth_key_from_authenticator_payload = get_authentication_key_from_authenticator_payload(&authenticator_payload);
         let auth_key_in_account = get_authentication_key_with_default(ctx, storage_context::sender(ctx));
         assert!(
-            auth_key_in_account == auth_key,
+            auth_key_in_account == auth_key_from_authenticator_payload,
             auth_validator::error_invalid_account_auth_key()
         );
     }

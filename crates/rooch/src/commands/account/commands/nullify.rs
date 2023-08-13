@@ -35,7 +35,7 @@ pub struct NullifyCommand {
     address: String,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
-    /// Command line input of crypto schemes (ed25519, multied25519, ecdsa, or schnorr)
+    /// Command line input of crypto schemes (ed25519, multied25519, ecdsa, ecdsa-recoverable or schnorr)
     #[clap(short = 's', long = "scheme", arg_enum)]
     pub crypto_schemes: BuiltinScheme,
 }
@@ -99,17 +99,12 @@ impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
                 );
 
                 // Execute the Move call as a transaction
-                let result = context
+                let mut result = context
                     .sign_and_execute(existing_address, action, scheme)
-                    .await
-                    .map_err(|error| {
-                        RoochError::TransactionError(format!(
-                            "Nullifying authentication key failed for scheme {} on address {}. Reason: {}.",
-                            scheme, existing_address, error
-                        ))
-                    })?;
-                let result = context.assert_execute_success(result)?;
-                // Remove keypair by scheme from key store after executing transaction
+                    .await?;
+                result = context.assert_execute_success(result)?;
+
+                // Remove keypair by scheme from Rooch key store after successfully executing transaction
                 context
                     .config
                     .keystore
