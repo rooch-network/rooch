@@ -31,6 +31,7 @@ where
 {
     verify_private_generics(module, &db)?;
     verify_entry_function_at_publish(module)?;
+    verify_global_storage_access(module)?;
     verify_init_function(module)
 }
 
@@ -490,4 +491,113 @@ where
         return CompiledModule::deserialize(module_bytes.as_slice()).ok();
     }
     None
+}
+
+pub fn verify_global_storage_access(module: &CompiledModule) -> VMResult<bool> {
+    let view = BinaryIndexedView::Module(module);
+
+    for func in &module.function_defs {
+        let mut invalid_bytecode = vec![];
+        if let Some(func_code) = func.clone().code {
+            for instr in func_code.code {
+                match instr {
+                    Bytecode::MoveFrom(_)
+                    | Bytecode::MoveFromGeneric(_)
+                    | Bytecode::MoveTo(_)
+                    | Bytecode::MoveToGeneric(_)
+                    | Bytecode::ImmBorrowGlobal(_)
+                    | Bytecode::MutBorrowGlobal(_)
+                    | Bytecode::ImmBorrowGlobalGeneric(_)
+                    | Bytecode::MutBorrowGlobalGeneric(_)
+                    | Bytecode::Exists(_)
+                    | Bytecode::ExistsGeneric(_) => {
+                        invalid_bytecode.push(instr);
+                    }
+                    Bytecode::Pop
+                    | Bytecode::Ret
+                    | Bytecode::BrTrue(_)
+                    | Bytecode::BrFalse(_)
+                    | Bytecode::Branch(_)
+                    | Bytecode::LdU8(_)
+                    | Bytecode::LdU16(_)
+                    | Bytecode::LdU32(_)
+                    | Bytecode::LdU64(_)
+                    | Bytecode::LdU128(_)
+                    | Bytecode::LdU256(_)
+                    | Bytecode::CastU8
+                    | Bytecode::CastU16
+                    | Bytecode::CastU32
+                    | Bytecode::CastU64
+                    | Bytecode::CastU128
+                    | Bytecode::CastU256
+                    | Bytecode::LdConst(_)
+                    | Bytecode::LdTrue
+                    | Bytecode::LdFalse
+                    | Bytecode::CopyLoc(_)
+                    | Bytecode::MoveLoc(_)
+                    | Bytecode::StLoc(_)
+                    | Bytecode::Call(_)
+                    | Bytecode::CallGeneric(_)
+                    | Bytecode::Pack(_)
+                    | Bytecode::PackGeneric(_)
+                    | Bytecode::Unpack(_)
+                    | Bytecode::UnpackGeneric(_)
+                    | Bytecode::ReadRef
+                    | Bytecode::WriteRef
+                    | Bytecode::FreezeRef
+                    | Bytecode::MutBorrowLoc(_)
+                    | Bytecode::ImmBorrowLoc(_)
+                    | Bytecode::MutBorrowField(_)
+                    | Bytecode::MutBorrowFieldGeneric(_)
+                    | Bytecode::ImmBorrowField(_)
+                    | Bytecode::ImmBorrowFieldGeneric(_)
+                    | Bytecode::Add
+                    | Bytecode::Sub
+                    | Bytecode::Mul
+                    | Bytecode::Mod
+                    | Bytecode::Div
+                    | Bytecode::BitOr
+                    | Bytecode::BitAnd
+                    | Bytecode::Xor
+                    | Bytecode::Shl
+                    | Bytecode::Shr
+                    | Bytecode::Or
+                    | Bytecode::And
+                    | Bytecode::Not
+                    | Bytecode::Eq
+                    | Bytecode::Neq
+                    | Bytecode::Lt
+                    | Bytecode::Gt
+                    | Bytecode::Le
+                    | Bytecode::Ge
+                    | Bytecode::Abort
+                    | Bytecode::Nop
+                    | Bytecode::VecPack(_, _)
+                    | Bytecode::VecLen(_)
+                    | Bytecode::VecImmBorrow(_)
+                    | Bytecode::VecMutBorrow(_)
+                    | Bytecode::VecPushBack(_)
+                    | Bytecode::VecPopBack(_)
+                    | Bytecode::VecUnpack(_, _)
+                    | Bytecode::VecSwap(_) => {}
+                }
+            }
+        }
+
+        if !invalid_bytecode.is_empty() {
+            let fhandle = view.function_handle_at(func.function);
+            let func_name = view.identifier_at(fhandle.name).to_string();
+
+            let error_msg = format!(
+                "Access to Move global storage is not allowed. Found in function {}: {:?}",
+                func_name, invalid_bytecode,
+            );
+
+            return Err(PartialVMError::new(StatusCode::MALFORMED)
+                .with_message(error_msg)
+                .at_code_offset(FunctionDefinitionIndex::new(func.function.0), 0_u16)
+                .finish(Location::Module(module.self_id())));
+        }
+    }
+    Ok(true)
 }
