@@ -32,7 +32,10 @@ use move_vm_types::{
     gas::{GasMeter, UnmeteredGasMeter},
     loaded_data::runtime_types::{CachedStructIndex, StructType, Type},
 };
-use moveos_stdlib::natives::moveos_stdlib::raw_table::{NativeTableContext, TableData};
+use moveos_stdlib::natives::moveos_stdlib::{
+    move_module::NativeModuleContext,
+    raw_table::{NativeTableContext, TableData},
+};
 use moveos_types::{
     event::{Event, EventID},
     function_return_value::FunctionReturnValue,
@@ -181,6 +184,7 @@ where
         let mut extensions = NativeContextExtensions::default();
 
         extensions.add(NativeTableContext::new(remote, table_data.clone()));
+        extensions.add(NativeModuleContext::new(remote));
 
         // The VM code loader has bugs around module upgrade. After a module upgrade, the internal
         // cache needs to be flushed to work around those bugs.
@@ -252,7 +256,7 @@ where
     /// Once we start executing transactions, we must ensure that the transaction execution has a result, regardless of success or failure,
     /// and we need to save the result and deduct gas
     pub fn execute_move_action(&mut self, action: VerifiedMoveAction) -> VMResult<()> {
-        match action {
+        let action_result = match action {
             VerifiedMoveAction::Script { call } => {
                 let loaded_function = self
                     .session
@@ -317,6 +321,24 @@ where
                 )?;
                 self.execute_init_modules(init_function_modules)
             }
+        };
+
+        self.resolve_pending_init_functions()?;
+
+        action_result
+    }
+
+    /// Resolve pending init functions request registered via the NativeModuleContext.
+    fn resolve_pending_init_functions(&mut self) -> VMResult<()> {
+        let ctx = self
+            .session
+            .get_native_extensions_mut()
+            .get_mut::<NativeModuleContext>();
+        let init_functions = ctx.init_functions.clone();
+        if !init_functions.is_empty() {
+            self.execute_init_modules(init_functions)
+        } else {
+            Ok(())
         }
     }
 
