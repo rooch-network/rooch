@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Ed25519Keypair } from './keypair'
-import { fromB64 } from '../../bcs'
+import { fromB64 } from '../../../types/bcs'
 import nacl from 'tweetnacl'
 
 describe('create', () => {

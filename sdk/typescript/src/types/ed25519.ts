@@ -5,7 +5,7 @@ import {
   bytes as Bytes,
   BcsDeserializer as Deserializer,
   BcsSerializer as Serializer,
-} from '../bcs'
+} from './bcs'
 
 export class Ed25519PublicKey {
   static readonly LENGTH: number = 32

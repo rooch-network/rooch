@@ -1,3 +1,18 @@
+import {
+  // AnnotatedEventView,
+  AnnotatedFunctionReturnValueView,
+  // AnnotatedStateView,
+  // EventFilterView,
+  // FunctionCallView,
+  // PageView_for_Nullable_AnnotatedEventView_and_uint64,
+  // PageView_for_Nullable_AnnotatedStateView_and_alloc_vec_Vec_U8Array,
+  // PageView_for_Nullable_StateView_and_alloc_vec_Vec_U8Array,
+  // PageView_for_Nullable_TransactionExecutionInfoView_and_uint128,
+  // StateView,
+  // TransactionExecutionInfoView,
+  // TransactionView,
+} from '../generated/client/types'
+
 export type Identifier = string
 export type AccountAddress = string
 export type HashValue = string
@@ -89,3 +104,5 @@ export function normalizeRoochAddress(
   }
   return `0x${address.padStart(ROOCH_ADDRESS_LENGTH, '0')}`
 }
+
+export type FunctionReturnValue = AnnotatedFunctionReturnValueView;

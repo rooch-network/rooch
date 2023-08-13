@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { fromB64 } from '../bcs/b64'
+import { fromB64 } from '../b64'
 import type {
   SerializedSignature,
   SignaturePubkeyPair,
