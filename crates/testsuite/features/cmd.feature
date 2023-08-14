@@ -20,6 +20,10 @@ Feature: Rooch CLI integration tests
       Then cmd: "account nullify --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --scheme ecdsa-recoverable"
       Then cmd: "account nullify --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --scheme schnorr"
 
+      # session key
+      Then cmd: "session-key create --sender-account {default} --scope 0x3::empty::empty"
+      Then cmd: "move run --function 0x3::empty::empty" --sender-account {default} --session-key {{$.session-key[-1]}} "
+
       Then cmd: "transaction get-by-hash --hash {{$.account[0].execution_info.tx_hash}}"
       Then cmd: "transaction get-by-index --cursor 0 --limit 10"
 

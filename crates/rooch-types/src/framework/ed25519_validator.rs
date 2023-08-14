@@ -1,23 +1,38 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
+use crate::{addresses::ROOCH_FRAMEWORK_ADDRESS, crypto::BuiltinScheme};
 use anyhow::Result;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
 };
 use moveos_types::{
     module_binding::{ModuleBundle, MoveFunctionCaller},
+    state::MoveStructType,
     transaction::FunctionCall,
     tx_context::TxContext,
 };
 
+pub struct Ed25519Validator {}
+
+impl Ed25519Validator {
+    pub fn scheme() -> BuiltinScheme {
+        BuiltinScheme::Ed25519
+    }
+}
+
+impl MoveStructType for Ed25519Validator {
+    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = Ed25519ValidatorModule::MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Ed25519Validator");
+}
+
 /// Rust bindings for RoochFramework ed25519_validator module
-pub struct Ed25519Validator<'a> {
+pub struct Ed25519ValidatorModule<'a> {
     caller: &'a dyn MoveFunctionCaller,
 }
 
-impl<'a> Ed25519Validator<'a> {
+impl<'a> Ed25519ValidatorModule<'a> {
     const VALIDATE_FUNCTION_NAME: &'static IdentStr = ident_str!("validate");
 
     pub fn validate(&self, ctx: &TxContext, payload: Vec<u8>) -> Result<()> {
@@ -35,7 +50,7 @@ impl<'a> Ed25519Validator<'a> {
     }
 }
 
-impl<'a> ModuleBundle<'a> for Ed25519Validator<'a> {
+impl<'a> ModuleBundle<'a> for Ed25519ValidatorModule<'a> {
     const MODULE_NAME: &'static IdentStr = ident_str!("ed25519_validator");
     const MODULE_ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
 
