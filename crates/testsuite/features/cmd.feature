@@ -1,4 +1,5 @@
 Feature: Rooch CLI integration tests
+    @serial
     Scenario: Init
       Then cmd: "init"
 
