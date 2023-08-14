@@ -8,12 +8,12 @@ use move_core_types::{
     language_storage::{ModuleId, StructTag, TypeTag},
 };
 use moveos_types::{module_binding::ModuleBundle, move_types::FunctionId, transaction::MoveAction};
-use rooch_framework::bindings::{
+use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
+use rooch_types::framework::{
     ecdsa_k1_recoverable_validator::EcdsaK1RecoverableValidator,
     ecdsa_k1_validator::EcdsaK1Validator, ed25519_validator::Ed25519Validator,
     schnorr_validator::SchnorrValidator,
 };
-use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use std::fmt::Debug;
 
 use async_trait::async_trait;
