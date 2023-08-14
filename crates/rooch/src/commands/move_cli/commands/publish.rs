@@ -123,7 +123,6 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         let sender: RoochAddress = pkg_address.into();
         eprintln!("Publish modules to address: {:?}", sender);
         let tx_result = if self.by_move {
-            println!("publish by move");
             let args = bcs::to_bytes(&bundles).unwrap();
             let action = MoveAction::new_function_call(
                 FunctionId::new(
@@ -151,7 +150,6 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                 }
             }
         } else {
-            println!("publish by server");
             let action = MoveAction::ModuleBundle(bundles);
             context
                 .sign_and_execute(sender, action, self.crypto_schemes)
