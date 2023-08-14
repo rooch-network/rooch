@@ -1,0 +1,55 @@
+---
+title: Rooch 周报 2023-08-14
+description: "实现状态的转储，实现 SessionKey，新增一些账户相关的命令，禁用全局存储相关的指令，对 Framework 和 CLI 做一些重构工作"
+author: geometryolife
+category: Rooch Weekly
+date: 2023/08/14
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch 的开发进展
+
+### 新特性
+
+- **provide statedb dumping (#580)** (2023-08-07) @Bai Chuan
+- **[AccountAbstraction] Implement SessionKey (#582)** (2023-08-08) @jolestar
+- **Multi environment support (#586)** (2023-08-08) @Rahman
+- **add `rooch account switch` command (#581)** (2023-08-08) @Rahman
+- **Use TableData as MoveosDataCache backend (#554)** (2023-08-09) @0xPause
+- **[MoveosStd] add a function to get signer of module address (#594)** (2023-08-09) @Rahman
+- **[gh-557] add rooch account nullify command.  (#566)** (2023-08-09) @feliciss
+- **Feature owen opt client code gen (#600)** (2023-08-13) @Owen Wu
+- **Verify and publish modules in Move (#392)** (2023-08-13) @0xPause
+- **Detecting global storage instructions during module publishing. (#619)** (2023-08-13) @stevenlaw123
+
+### 重大重构
+
+- **[CLI] Extract KeyStore logic to BaseKeyStore (#587)** (2023-08-08) @jolestar
+- **[Framework]Unify the payload argument to authentiactor_payload (#590)** (2023-08-09) @jolestar
+- **disable all built-in instruction related to global storage (#576)** (2023-08-09) @stevenlaw123
+- **[Framework] Refactor AuthencationKey and Ed25519 AuthValidator (#602)** (2023-08-11) @jolestar
+- **[gh-609] refactor validators for other schemes. (#610)** (2023-08-13) @feliciss
+
+### 改进和修复
+
+- **add weekly 2023-08-07 (#579)** (2023-08-07) @Joe Chen
+- **Modify the names in CODEOWNER. (#596)** (2023-08-09) @stevenlaw123
+- **Storage reload consistance testcase (#603)** (2023-08-10) @Bai Chuan
+- **[gh-574] add docs for the rooch account command. (#601)** (2023-08-10) @feliciss
+- **docs: update multi-chain settlement workflow (#606)** (2023-08-11) @y17b
+- **add doc comment and fix typo for the server command (#611)** (2023-08-11) @Joe Chen
+- **Use generic parameter placeholders. (#614)** (2023-08-11) @stevenlaw123
+
+### Rooch 社区开发会议
+
+- 讨论上内部开发测试网，CLI，钱包，DashBoard，参见 [#604](https://github.com/rooch-network/rooch/issues/604)
+- 讨论下一个版本的发布计划
+- 讨论 DashBoard 开发进展
+- 讨论 OMO 改名的方案
+- 讨论 SessionKey 的开发进度，以及其 SDK，参见 [#612](https://github.com/rooch-network/rooch/issues/612)
+- 讨论 Telegram 机器人应用在交易支付方面的场景
+- 讨论中断代码的解释
+- [会议录屏](https://drive.google.com/file/d/1LE0_2yopU8JnMlzhm6gWHQ-hljPZGS1g/view?usp=sharing)
