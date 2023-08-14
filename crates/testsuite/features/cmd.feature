@@ -88,6 +88,6 @@ Feature: Rooch CLI integration tests
       # The entry_function_arguments example
       Then cmd: "move publish -p ../../examples/entry_function_arguments --sender-account {default} --named-addresses rooch_examples={default} --by-move"
       Then cmd: "move run --function {default}::entry_function::emit_u8 --args u8:3 --sender-account {default}"
-      Then assert: "{{$move[-1].output.status.type == executed}}"
+      Then assert: "{{$.move[-1].output.status.type}} == executed"
 
       Then stop the server
