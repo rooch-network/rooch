@@ -2,8 +2,9 @@ Feature: Rooch CLI integration tests
     Scenario: Init
       Then cmd: "init"
 
+    @serial
     Scenario: account
-      Given the server
+      Given a server for account
 
       Then cmd: "object --id {default}"
       Then cmd: "account create"
@@ -68,3 +69,11 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      Then stop the server
+
+  @serial
+  Scenario: publish in Move
+      Given a server for publish
+
+      Then stop the server
