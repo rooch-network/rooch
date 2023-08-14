@@ -7,7 +7,7 @@ use anyhow::Result;
 use move_core_types::value::MoveValue;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use moveos_types::{
-    module_binding::{ModuleBundle, MoveFunctionCaller},
+    module_binding::{ModuleBinding, MoveFunctionCaller},
     move_option::MoveOption,
     state::MoveState,
     transaction::{FunctionCall, MoveAction},
@@ -15,9 +15,13 @@ use moveos_types::{
 };
 use moveos_types::{
     move_string::MoveAsciiString,
+    serde::Readable,
     state::{MoveStructState, MoveStructType},
 };
 use serde::{Deserialize, Serialize};
+use serde_with::hex::Hex;
+use serde_with::serde_as;
+use serde_with::DisplayFromStr;
 use std::fmt::Display;
 use std::str::FromStr;
 
@@ -84,9 +88,12 @@ impl FromStr for SessionScope {
     }
 }
 
+#[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SessionKey {
+    #[serde_as(as = "Readable<Hex, _>")]
     pub authentication_key: Vec<u8>,
+    #[serde_as(as = "Vec<Readable<DisplayFromStr, _>>")]
     pub scopes: Vec<SessionScope>,
     pub expiration_time: u64,
     pub last_active_time: u64,
@@ -173,7 +180,7 @@ impl<'a> SessionKeyModule<'a> {
     }
 }
 
-impl<'a> ModuleBundle<'a> for SessionKeyModule<'a> {
+impl<'a> ModuleBinding<'a> for SessionKeyModule<'a> {
     const MODULE_NAME: &'static IdentStr = ident_str!("session_key");
     const MODULE_ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
 

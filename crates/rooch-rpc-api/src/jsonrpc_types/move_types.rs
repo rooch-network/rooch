@@ -68,10 +68,9 @@ impl From<AnnotatedMoveStruct> for AnnotatedMoveStructView {
     }
 }
 
-//TODO
 // impl TryFrom<AnnotatedMoveStructView> for AnnotatedMoveStruct {
 //     type Error = anyhow::Error;
-//
+
 //     fn try_from(value: AnnotatedMoveStructView) -> Result<Self, Self::Error> {
 //         Ok(Self {
 //             abilities: AbilitySet::from_u8(value.abilities)
@@ -161,7 +160,10 @@ impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
     }
 }
 
-//TODO
+//TODO should we support convert from AnnotatedMoveValueView to AnnotatedMoveValue?
+// It is not easy to implement because:
+// 1. We need to put type_tag in the Vector
+// 2. We need to support convert SpecificStruct to AnnotatedMoveStruct
 // impl TryFrom<AnnotatedMoveValueView> for AnnotatedMoveValue {
 //     type Error = anyhow::Error;
 //     fn try_from(value: AnnotatedMoveValueView) -> Result<Self, Self::Error> {
@@ -170,8 +172,9 @@ impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
 //             AnnotatedMoveValueView::U64(u64) => AnnotatedMoveValue::U64(u64.0),
 //             AnnotatedMoveValueView::U128(u128) => AnnotatedMoveValue::U128(u128.0),
 //             AnnotatedMoveValueView::Bool(bool) => AnnotatedMoveValue::Bool(bool),
-//             AnnotatedMoveValueView::Address(address) => AnnotatedMoveValue::Address(address),
-//             AnnotatedMoveValueView::Vector(type_tag, data) => AnnotatedMoveValue::Vector(
+//             AnnotatedMoveValueView::Address(address) => AnnotatedMoveValue::Address(address.0),
+//             AnnotatedMoveValueView::Vector(type_tag, data) =>
+//                 AnnotatedMoveValue::Vector(
 //                 type_tag.0,
 //                 data.into_iter()
 //                     .map(AnnotatedMoveValue::try_from)
@@ -179,6 +182,11 @@ impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
 //             ),
 //             AnnotatedMoveValueView::Bytes(data) => AnnotatedMoveValue::Bytes(data.0),
 //             AnnotatedMoveValueView::Struct(data) => AnnotatedMoveValue::Struct(data.try_into()?),
+//             AnnotatedMoveValueView::SpecificStruct(data) => match data {
+//                 SpecificStructView::MoveString(string) => AnnotatedMoveValue::Struct(string.into()),
+//                 SpecificStructView::MoveAsciiString(string) => AnnotatedMoveValue::Struct(string.into()),
+//                 SpecificStructView::ObjectID(id) => AnnotatedMoveValue::Struct(id.into()),
+//             },
 //             AnnotatedMoveValueView::U16(u16) => AnnotatedMoveValue::U16(u16),
 //             AnnotatedMoveValueView::U32(u32) => AnnotatedMoveValue::U32(u32),
 //             AnnotatedMoveValueView::U256(u256) => AnnotatedMoveValue::U256(u256.0),

@@ -8,7 +8,7 @@ use move_core_types::{
     language_storage::{ModuleId, StructTag, TypeTag},
     value::MoveValue,
 };
-use moveos_types::module_binding::ModuleBundle;
+use moveos_types::module_binding::ModuleBinding;
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
 use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;

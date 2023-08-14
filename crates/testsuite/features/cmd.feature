@@ -22,7 +22,7 @@ Feature: Rooch CLI integration tests
 
       # session key
       Then cmd: "session-key create --sender-account {default} --scope 0x3::empty::empty"
-      Then cmd: "move run --function 0x3::empty::empty" --sender-account {default} --session-key {{$.session-key[-1]}} "
+      Then cmd: "move run --function 0x3::empty::empty --sender-account {default} --session-key {{$.session-key[-1].authentication_key}}"
 
       Then cmd: "transaction get-by-hash --hash {{$.account[0].execution_info.tx_hash}}"
       Then cmd: "transaction get-by-index --cursor 0 --limit 10"

@@ -9,7 +9,7 @@ use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
 };
 use moveos_types::{
-    module_binding::{ModuleBundle, MoveFunctionCaller},
+    module_binding::{ModuleBinding, MoveFunctionCaller},
     move_types::FunctionId,
     transaction::FunctionCall,
     tx_context::TxContext,
@@ -69,7 +69,7 @@ impl<'a> TransactionValidator<'a> {
     }
 }
 
-impl<'a> ModuleBundle<'a> for TransactionValidator<'a> {
+impl<'a> ModuleBinding<'a> for TransactionValidator<'a> {
     const MODULE_NAME: &'static IdentStr = ident_str!("transaction_validator");
     const MODULE_ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
 

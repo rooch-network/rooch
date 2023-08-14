@@ -7,7 +7,9 @@ use move_core_types::{
     identifier::Identifier,
     language_storage::{ModuleId, StructTag, TypeTag},
 };
-use moveos_types::{module_binding::ModuleBundle, move_types::FunctionId, transaction::MoveAction};
+use moveos_types::{
+    module_binding::ModuleBinding, move_types::FunctionId, transaction::MoveAction,
+};
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_types::framework::{
     ecdsa_k1_recoverable_validator::EcdsaK1RecoverableValidator,

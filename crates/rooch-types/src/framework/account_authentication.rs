@@ -7,7 +7,7 @@ use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
 };
 use moveos_types::{
-    module_binding::{ModuleBundle, MoveFunctionCaller},
+    module_binding::{ModuleBinding, MoveFunctionCaller},
     move_option::MoveOption,
     state::{MoveStructState, MoveStructType},
     transaction::FunctionCall,
@@ -83,7 +83,7 @@ impl<'a> AuthenticationKeyModule<'a> {
     }
 }
 
-impl<'a> ModuleBundle<'a> for AuthenticationKeyModule<'a> {
+impl<'a> ModuleBinding<'a> for AuthenticationKeyModule<'a> {
     const MODULE_NAME: &'static IdentStr = ident_str!("account_authencation");
     const MODULE_ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
 

@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use moveos_types::{module_binding::ModuleBundle, transaction::MoveAction};
+use moveos_types::{module_binding::ModuleBinding, transaction::MoveAction};
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
 use rooch_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, framework::empty::Empty};
 use rooch_types::{
@@ -124,7 +124,6 @@ fn test_session_key_ed25519() {
     let max_inactive_interval = 100;
     let action = rooch_types::framework::session_key::SessionKeyModule::create_session_key_action(
         session_auth_key.as_ref().to_vec(),
-        BuiltinScheme::Ed25519,
         session_scope.clone(),
         expiration_time,
         max_inactive_interval,
@@ -143,7 +142,6 @@ fn test_session_key_ed25519() {
     assert!(session_key_option.is_some(), "Session key not found");
     let session_key = session_key_option.unwrap();
     assert_eq!(&session_key.authentication_key, session_auth_key.as_ref());
-    assert_eq!(session_key.scheme, BuiltinScheme::Ed25519.flag() as u64);
     assert_eq!(session_key.scopes, vec![session_scope]);
     assert_eq!(session_key.expiration_time, expiration_time);
     assert_eq!(session_key.max_inactive_interval, max_inactive_interval);

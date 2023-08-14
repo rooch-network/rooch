@@ -3,13 +3,13 @@
 
 use crate::cli_types::{TransactionOptions, WalletContextOptions};
 use clap::Parser;
+use moveos_types::module_binding::MoveFunctionCaller;
 use rooch_key::keystore::AccountKeystore;
 use rooch_types::{
     address::RoochAddress,
-    authentication_key::AuthenticationKey,
     crypto::BuiltinScheme,
     error::{RoochError, RoochResult},
-    framework::session_key::SessionScope,
+    framework::session_key::{SessionKey, SessionKeyModule, SessionScope},
 };
 
 /// Create a new session key on-chain
@@ -37,7 +37,7 @@ pub struct CreateCommand {
 }
 
 impl CreateCommand {
-    pub async fn execute(self) -> RoochResult<AuthenticationKey> {
+    pub async fn execute(self) -> RoochResult<SessionKey> {
         let mut context = self.context_options.build().await?;
 
         if self.tx_options.sender_account.is_none() {
@@ -67,6 +67,16 @@ impl CreateCommand {
             .sign_and_execute(sender, action, BuiltinScheme::Ed25519)
             .await?;
         context.assert_execute_success(result)?;
-        Ok(session_auth_key)
+        let client = context.get_client().await?;
+        let session_key_module = client.as_module_binding::<SessionKeyModule>();
+        let session_key = session_key_module
+            .get_session_key(sender.into(), &session_auth_key)?
+            .ok_or_else(|| {
+                RoochError::ViewFunctionError(format!(
+                    "Failed to get session key via {}",
+                    session_auth_key
+                ))
+            })?;
+        Ok(session_key)
     }
 }

@@ -4,7 +4,7 @@
 use anyhow::{bail, Result};
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_store::MoveOSStore;
-use moveos_types::module_binding::{ModuleBundle, MoveFunctionCaller};
+use moveos_types::module_binding::{ModuleBinding, MoveFunctionCaller};
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_store::RoochStore;
 use rooch_types::transaction::AbstractTransaction;
@@ -21,8 +21,8 @@ impl RustBindingTest {
         Ok(Self { executor })
     }
 
-    pub fn as_module_bundle<'a, M: ModuleBundle<'a>>(&'a self) -> M {
-        self.executor.moveos().as_module_bundle::<M>()
+    pub fn as_module_bundle<'a, M: ModuleBinding<'a>>(&'a self) -> M {
+        self.executor.moveos().as_module_binding::<M>()
     }
 
     //TODO let the module bundle to execute the function
