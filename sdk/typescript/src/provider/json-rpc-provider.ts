@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { RoochClient, Connection, localnetConnection } from "./rooch_client"
-import { applyMixin } from "../utils"
+import { RoochClient, Connection, LocalnetConnection } from '../client'
+import { applyMixin } from '../utils'
 
 /**
  * Configuration options for the JsonRpcProvider. If the value of a field is not provided,
@@ -24,12 +24,15 @@ const DEFAULT_OPTIONS: RpcProviderOptions = {
 
 export class JsonRpcProvider {
   public connection: Connection
+
   readonly client: RoochClient
+
   private rpcApiVersion: string | undefined
+
   private cacheExpiry: number | undefined
 
   constructor(
-    connection: Connection = localnetConnection,
+    connection: Connection = LocalnetConnection,
     public options: RpcProviderOptions = DEFAULT_OPTIONS,
   ) {
     this.connection = connection
@@ -58,12 +61,11 @@ export class JsonRpcProvider {
         Date.now() + (this.options.versionCacheTimeoutInSeconds ?? 0) * 1000
       return this.rpcApiVersion
     } catch (err) {
-      console.warn("Error fetching version number of the RPC API", err)
+      return undefined
     }
-    return void 0
   }
 }
 
 export interface JsonRpcProvider extends RoochClient {}
 
-applyMixin(JsonRpcProvider, RoochClient, "client")
+applyMixin(JsonRpcProvider, RoochClient, 'client')
