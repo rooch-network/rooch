@@ -16,7 +16,7 @@ use tracing::info;
 pub struct StartCommand {
     /// If true, start the service with a temporary data store.
     /// All data will be deleted when the service is stopped.
-    #[clap(long, default_value = "false")]
+    #[clap(long, parse(from_flag))]
     pub temp_db: bool,
 }
 

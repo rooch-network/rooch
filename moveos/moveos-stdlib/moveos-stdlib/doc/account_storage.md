@@ -19,6 +19,7 @@ It is used to store the account's resources and modules
 -  [Function `global_exists`](#0x2_account_storage_global_exists)
 -  [Function `exists_module`](#0x2_account_storage_exists_module)
 -  [Function `publish_modules`](#0x2_account_storage_publish_modules)
+-  [Function `publish_modules_entry`](#0x2_account_storage_publish_modules_entry)
 
 
 <pre><code><b>use</b> <a href="../doc/signer.md#0x1_signer">0x1::signer</a>;
@@ -416,6 +417,39 @@ Publish modules to the account's storage
         <a href="table.md#0x2_table_add">table::add</a>(&<b>mut</b> <a href="account_storage.md#0x2_account_storage">account_storage</a>.modules, name, m);
         i = i + 1;
     }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_account_storage_publish_modules_entry"></a>
+
+## Function `publish_modules_entry`
+
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="account_storage.md#0x2_account_storage_publish_modules_entry">publish_modules_entry</a>(ctx: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, account: &<a href="signer.md#0x2_signer">signer</a>, modules: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="account_storage.md#0x2_account_storage_publish_modules_entry">publish_modules_entry</a>(ctx: &<b>mut</b> StorageContext, account: &<a href="signer.md#0x2_signer">signer</a>, modules: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;) {
+    <b>let</b> n_modules = <a href="_length">vector::length</a>(&modules);
+    <b>let</b> i = 0;
+    <b>let</b> module_vec = <a href="_empty">vector::empty</a>&lt;MoveModule&gt;();
+    <b>while</b> (i &lt; n_modules) {
+        <b>let</b> code_bytes = <a href="_pop_back">vector::pop_back</a>(&<b>mut</b> modules);
+        <b>let</b> m = <a href="move_module.md#0x2_move_module_new">move_module::new</a>(code_bytes);
+        <a href="_push_back">vector::push_back</a>(&<b>mut</b> module_vec, m);
+        i = i + 1;
+    };
+    <a href="account_storage.md#0x2_account_storage_publish_modules">publish_modules</a>(ctx, account, module_vec);
 }
 </code></pre>
 

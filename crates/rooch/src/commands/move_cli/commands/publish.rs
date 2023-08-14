@@ -8,12 +8,15 @@ use move_binary_format::file_format::CompiledModule;
 use move_bytecode_utils::dependency_graph::DependencyGraph;
 use move_bytecode_utils::Modules;
 use move_cli::Move;
+use move_core_types::{identifier::Identifier, language_storage::ModuleId};
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
-use rooch_types::crypto::BuiltinScheme;
+use rooch_types::{crypto::BuiltinScheme, transaction::rooch::RoochTransaction};
 
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use moveos::vm::dependency_order::sort_by_dependency_order;
-use moveos_types::transaction::MoveAction;
+use moveos_types::{
+    addresses::MOVEOS_STD_ADDRESS, move_types::FunctionId, transaction::MoveAction,
+};
 use moveos_verifier::build::run_verifier;
 use rooch_types::address::RoochAddress;
 use rooch_types::error::{RoochError, RoochResult};
@@ -42,6 +45,10 @@ pub struct Publish {
     /// Command line input of crypto schemes (ed25519, multi-ed25519, ecdsa, ecdsa-recoverable or schnorr)
     #[clap(short = 's', long = "scheme", default_value = "ed25519", arg_enum)]
     pub crypto_schemes: BuiltinScheme,
+
+    /// Whether publish module by Move function `moveos_std::account_storage::publish_modules_entry`?
+    #[clap(long, parse(from_flag))]
+    pub by_move: bool,
 }
 
 impl Publish {
@@ -113,13 +120,43 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
             ));
         }
 
-        let action = MoveAction::ModuleBundle(bundles);
-
         let sender: RoochAddress = pkg_address.into();
         eprintln!("Publish modules to address: {:?}", sender);
-        let result = context
-            .sign_and_execute(sender, action, self.crypto_schemes)
-            .await?;
-        context.assert_execute_success(result)
+        let tx_result = if self.by_move {
+            println!("publish by move");
+            let args = bcs::to_bytes(&bundles).unwrap();
+            let action = MoveAction::new_function_call(
+                FunctionId::new(
+                    ModuleId::new(
+                        MOVEOS_STD_ADDRESS,
+                        Identifier::new("account_storage".to_owned()).unwrap(),
+                    ),
+                    Identifier::new("publish_modules_entry".to_owned()).unwrap(),
+                ),
+                vec![],
+                vec![args],
+            );
+            match self.tx_options.authenticator {
+                Some(authenticator) => {
+                    let tx_data = context.build_tx_data(sender, action).await?;
+                    //TODO the authenticator usually is associalted with the RoochTransactinData
+                    //So we need to find a way to let user generate the authenticator based on the tx_data.
+                    let tx = RoochTransaction::new(tx_data, authenticator.into());
+                    context.execute(tx).await?
+                }
+                None => {
+                    context
+                        .sign_and_execute(sender, action, self.crypto_schemes)
+                        .await?
+                }
+            }
+        } else {
+            println!("publish by server");
+            let action = MoveAction::ModuleBundle(bundles);
+            context
+                .sign_and_execute(sender, action, self.crypto_schemes)
+                .await?
+        };
+        context.assert_execute_success(tx_result)
     }
 }
