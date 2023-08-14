@@ -10,6 +10,7 @@ use crate::actor::messages::{
     GetTransactionInfosByTxHashMessage, GetTxSeqMappingByTxOrderMessage,
     ListAnnotatedStatesMessage, ListStatesMessage,
 };
+use accumulator::inmemory::InMemoryAccumulator;
 use anyhow::bail;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -17,7 +18,6 @@ use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use move_core_types::account_address::AccountAddress;
 use move_resource_viewer::MoveValueAnnotator;
 use moveos::moveos::MoveOS;
-use moveos_common::accumulator::InMemoryAccumulator;
 use moveos_store::transaction_store::TransactionStore;
 use moveos_store::MoveOSStore;
 use moveos_types::event::AnnotatedMoveOSEvent;
