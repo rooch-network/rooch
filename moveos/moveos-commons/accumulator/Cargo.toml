@@ -1,0 +1,23 @@
+[package]
+name = "accumulator"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+bcs-ext = { package = "bcs-ext", workspace = true }
+itertools = { default-features = false, workspace = true }
+log = { workspace = true }
+lru = { workspace = true }
+once_cell = { workspace = true }
+parking_lot = { workspace = true }
+serde = { workspace = true }
+mirai-annotations = { workspace = true }
+moveos-types = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+proptest-derive = { workspace = true }
+rand = { workspace = true }
+rand_core = { default-features = false, workspace = true }
+
