@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use moveos_types::{module_binding::ModuleBundle, transaction::MoveAction};
-use rooch_framework::{bindings::empty::Empty, ROOCH_FRAMEWORK_ADDRESS};
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
+use rooch_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, framework::empty::Empty};
 use rooch_types::{
     crypto::BuiltinScheme,
     framework::session_key::SessionScope,
