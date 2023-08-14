@@ -13,13 +13,21 @@ use tracing::info;
 
 /// Start service
 #[derive(Debug, Parser)]
-pub struct StartCommand;
+pub struct StartCommand {
+    /// If true, start the service with a temporary data store.
+    /// All data will be deleted when the service is stopped.
+    #[clap(long, parse(from_flag))]
+    pub temp_db: bool,
+}
 
 #[async_trait]
 impl CommandAction<()> for StartCommand {
     async fn execute(self) -> RoochResult<()> {
         let mut service = Service::new();
-        service.start(false).await.map_err(RoochError::from)?;
+        service
+            .start(self.temp_db)
+            .await
+            .map_err(RoochError::from)?;
 
         #[cfg(unix)]
         {
