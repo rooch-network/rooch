@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use moveos_types::transaction::MoveAction;
-use rooch_framework::bindings::empty::Empty;
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
+use rooch_types::framework::empty::Empty;
 use rooch_types::{
     crypto::BuiltinScheme,
     transaction::{rooch::RoochTransactionData, AbstractTransaction},
@@ -15,7 +15,7 @@ use crate::binding_test;
 fn test_validate() {
     let binding_test = binding_test::RustBindingTest::new().unwrap();
     let ecdsa_k1_recoverable_validator = binding_test
-        .as_module_bundle::<rooch_framework::bindings::ecdsa_k1_recoverable_validator::EcdsaK1RecoverableValidator>(
+        .as_module_bundle::<rooch_types::framework::ecdsa_k1_recoverable_validator::EcdsaK1RecoverableValidator>(
     );
 
     let keystore = InMemKeystore::new_ecdsa_recoverable_insecure_for_tests(1);

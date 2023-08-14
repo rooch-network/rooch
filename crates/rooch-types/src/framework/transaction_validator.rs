@@ -1,7 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::ROOCH_FRAMEWORK_ADDRESS;
+use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
+use crate::framework::auth_validator::TxValidateResult;
+use crate::transaction::AuthenticatorInfo;
 use anyhow::Result;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
@@ -12,8 +14,6 @@ use moveos_types::{
     transaction::FunctionCall,
     tx_context::TxContext,
 };
-use rooch_types::framework::auth_validator::TxValidateResult;
-use rooch_types::transaction::AuthenticatorInfo;
 
 /// Rust bindings for RoochFramework transaction_validator module
 pub struct TransactionValidator<'a> {

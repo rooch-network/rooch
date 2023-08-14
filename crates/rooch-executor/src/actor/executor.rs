@@ -31,13 +31,13 @@ use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::tx_context::TxContext;
-use rooch_framework::bindings::address_mapping::AddressMapping;
-use rooch_framework::bindings::auth_validator::AuthValidatorCaller;
-use rooch_framework::bindings::transaction_validator::TransactionValidator;
 use rooch_genesis::RoochGenesis;
 use rooch_store::RoochStore;
 use rooch_types::address::MultiChainAddress;
+use rooch_types::framework::address_mapping::AddressMapping;
+use rooch_types::framework::auth_validator::AuthValidatorCaller;
 use rooch_types::framework::auth_validator::TxValidateResult;
+use rooch_types::framework::transaction_validator::TransactionValidator;
 use rooch_types::transaction::AuthenticatorInfo;
 use rooch_types::transaction::{AbstractTransaction, TransactionSequenceMapping};
 

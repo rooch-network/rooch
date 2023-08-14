@@ -15,7 +15,9 @@ use crate::binding_test;
 #[test]
 fn test_validate_ed25519() {
     let binding_test = binding_test::RustBindingTest::new().unwrap();
-    let transaction_validator = binding_test.as_module_bundle::<rooch_framework::bindings::transaction_validator::TransactionValidator>();
+    let transaction_validator = binding_test
+        .as_module_bundle::<rooch_types::framework::transaction_validator::TransactionValidator>(
+    );
 
     let keystore = InMemKeystore::new_ed25519_insecure_for_tests(1);
     let sender = keystore.addresses()[0];
@@ -36,7 +38,9 @@ fn test_validate_ed25519() {
 #[test]
 fn test_validate_ecdsa() {
     let binding_test = binding_test::RustBindingTest::new().unwrap();
-    let transaction_validator = binding_test.as_module_bundle::<rooch_framework::bindings::transaction_validator::TransactionValidator>();
+    let transaction_validator = binding_test
+        .as_module_bundle::<rooch_types::framework::transaction_validator::TransactionValidator>(
+    );
 
     let keystore = InMemKeystore::new_ecdsa_insecure_for_tests(1);
     let sender = keystore.addresses()[0];
@@ -57,7 +61,9 @@ fn test_validate_ecdsa() {
 #[test]
 fn test_validate_ecdsa_recoverable() {
     let binding_test = binding_test::RustBindingTest::new().unwrap();
-    let transaction_validator = binding_test.as_module_bundle::<rooch_framework::bindings::transaction_validator::TransactionValidator>();
+    let transaction_validator = binding_test
+        .as_module_bundle::<rooch_types::framework::transaction_validator::TransactionValidator>(
+    );
 
     let keystore = InMemKeystore::new_ecdsa_recoverable_insecure_for_tests(1);
     let sender = keystore.addresses()[0];
@@ -78,7 +84,9 @@ fn test_validate_ecdsa_recoverable() {
 #[test]
 fn test_validate_schnorr() {
     let binding_test = binding_test::RustBindingTest::new().unwrap();
-    let transaction_validator = binding_test.as_module_bundle::<rooch_framework::bindings::transaction_validator::TransactionValidator>();
+    let transaction_validator = binding_test
+        .as_module_bundle::<rooch_types::framework::transaction_validator::TransactionValidator>(
+    );
 
     let keystore = InMemKeystore::new_schnorr_insecure_for_tests(1);
     let sender = keystore.addresses()[0];
@@ -113,14 +121,13 @@ fn test_session_key_ed25519() {
     );
     let expiration_time = 100;
     let max_inactive_interval = 100;
-    let action =
-        rooch_framework::bindings::session_key::SessionKeyModule::create_session_key_action(
-            auth_key.clone(),
-            BuiltinScheme::Ed25519,
-            session_scope.clone(),
-            expiration_time,
-            max_inactive_interval,
-        );
+    let action = rooch_types::framework::session_key::SessionKeyModule::create_session_key_action(
+        auth_key.clone(),
+        BuiltinScheme::Ed25519,
+        session_scope.clone(),
+        expiration_time,
+        max_inactive_interval,
+    );
     let tx_data = RoochTransactionData::new(sender, sequence_number, action);
     let tx = keystore
         .sign_transaction(&sender, tx_data, BuiltinScheme::Ed25519)
@@ -128,7 +135,7 @@ fn test_session_key_ed25519() {
     binding_test.execute(tx).unwrap();
 
     let session_key_module =
-        binding_test.as_module_bundle::<rooch_framework::bindings::session_key::SessionKeyModule>();
+        binding_test.as_module_bundle::<rooch_types::framework::session_key::SessionKeyModule>();
     let session_key_option = session_key_module
         .get_session_key(sender.into(), auth_key)
         .unwrap();

@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::ROOCH_FRAMEWORK_ADDRESS;
+use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use anyhow::Result;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
@@ -12,12 +12,12 @@ use moveos_types::{
     tx_context::TxContext,
 };
 
-/// Rust bindings for RoochFramework schnorr_validator module
-pub struct SchnorrValidator<'a> {
+/// Rust bindings for RoochFramework ecdsa_k1_validator module
+pub struct EcdsaK1Validator<'a> {
     caller: &'a dyn MoveFunctionCaller,
 }
 
-impl<'a> SchnorrValidator<'a> {
+impl<'a> EcdsaK1Validator<'a> {
     const VALIDATE_FUNCTION_NAME: &'static IdentStr = ident_str!("validate");
 
     pub fn validate(&self, ctx: &TxContext, payload: Vec<u8>) -> Result<()> {
@@ -35,8 +35,8 @@ impl<'a> SchnorrValidator<'a> {
     }
 }
 
-impl<'a> ModuleBundle<'a> for SchnorrValidator<'a> {
-    const MODULE_NAME: &'static IdentStr = ident_str!("schnorr_validator");
+impl<'a> ModuleBundle<'a> for EcdsaK1Validator<'a> {
+    const MODULE_NAME: &'static IdentStr = ident_str!("ecdsa_k1_validator");
     const MODULE_ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
 
     fn new(caller: &'a impl MoveFunctionCaller) -> Self
