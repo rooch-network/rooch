@@ -1,10 +1,10 @@
 # Rooch CLI
 
-Learn how to set up, configure, and use the Rooch Command Line Interface (CLI). You can use the Rooch CLI to experiment with Rooch features using a command line interface.
+Learn how to set up, configure, and use the Rooch Command Line Interface (CLI). You can experiment with Rooch features through the Rooch CLI.
 
 ## Set up
 
-The Rooch CLI installs when you install Rooch. See the [Install](./installation.en-US.mdx) topic for prerequisites and installation instructions.
+When you install Rooch, the Rooch CLI will be installed. See the [installation](./installation.en-US.mdx) topic for prerequisites and installation instructions.
 
 ## Using the Rooch CLI
 
@@ -33,20 +33,20 @@ rooch <SUBCOMMAND>
     state          Get states by accessPath
     transaction    Tool for interacting with transaction
 ```
+
 Use `rooch -h` to see a list of supported commands.
 
-Use `rooch help <command>` to see more information on each command.
-    
+Use `rooch help <COMMAND>` to see more information about a given command.
 
-## Initialize CLI
+## Initialize the Rooch configuration
 
 By default, The configuration file is saved in your home directory.
 
-Use `rooch init` to Initialize Rooch CLI, The configuration file location is specified through `--config-dir`
+Use `rooch init` to initialize the Rooch account, the location of the configuration file is specified by `--config-dir`.
 
 The response resembles the following:
 
-```
+```shell
 Creating config file ["/Users/sven/.rooch/rooch_config/rooch.yaml"] with default (local) server and ed25519 key scheme.
 Generated new keypair for address with scheme "ed25519" [0xeb417f9091c77c8c1a9c6a7683ee1eb5883fbae5128eae5ab414c0de5f050d08]
 Secret Recovery Phrase : [grab infant behave ugly erosion grief file arrange unit ship iron garage]
@@ -61,7 +61,7 @@ Use `rooch server start` to start the local network.
 
 The response resembles the following:
 
-```
+```shell
 Documentation generation successful!
 2023-07-17T05:34:49.963869Z  INFO rooch_rpc_server: JSON-RPC HTTP Server start listening 0.0.0.0:50051
 2023-07-17T05:34:49.963893Z  INFO rooch_rpc_server: Available JSON-RPC methods : ["wallet_accounts", "eth_blockNumber", "eth_getBalance", "eth_gasPrice", "net_version", "eth_getTransactionCount", "eth_sendTransaction", "rooch_sendRawTransaction", "rooch_getAnnotatedStates", "eth_sendRawTransaction", "rooch_getTransactionByIndex", "rooch_executeRawTransaction", "rooch_getEventsByEventHandle", "rooch_getTransactionByHash", "rooch_executeViewFunction", "eth_getBlockByNumber", "rooch_getEvents", "eth_feeHistory", "eth_getTransactionByHash", "eth_getBlockByHash", "eth_getTransactionReceipt", "rooch_getTransactionInfosByTxOrder", "eth_estimateGas", "eth_chainId", "rooch_getTransactionInfosByTxHash", "wallet_sign", "rooch_getStates"]
@@ -71,7 +71,7 @@ Documentation generation successful!
 
 ### Account
 
-The Rooch CLI Account command supports the following subcommands:
+Rooch account-related commands are invoked through `rooch account`, and account commands support the following subcommands:
 
 ```shell
 rooch-account 
@@ -98,13 +98,13 @@ SUBCOMMANDS:
 
 Use `rooch account -h` to see a list of supported subcommands.
 
-Use `rooch account help <subcommand>` to see more information on each subcommand.
+Use `rooch account help <SUBCOMMAND>` to see more information about a given subcommand.
 
 #### Account Create
 
-Use `rooch account create` subcommand to create an account on Rooch Network.
+Use `rooch account create` command to create an account on Rooch Network.
 
-The Rooch CLI Account Create subcommand supports the following options:
+The Rooch CLI command to create an account supports the following options:
 
 ```shell
 rooch-account-create 
@@ -124,13 +124,15 @@ OPTIONS:
             Print help information
 ```
 
-Without entering `--config-dir` option, an account will be created at the default local file path, currently `~/.rooch/rooch_config/`.
+If no path is specified via the `--config-dir` option, the account will be created at the default local file path, currently `~/.rooch/rooch_config/`.
 
-It's worth noting to create an account, a configuration file `rooch.yaml` must exist. `rooch.yaml` file can be created from `rooch init` command.
+It is worth noting that to create an account, the configuration file `rooch.yaml` must exist. The `rooch.yaml` file can be created with the `rooch init` command.
 
 Here are the examples to create accounts with and without option `--config-dir`:
 
-```> rooch account create```
+```shell
+rooch account create
+```
 
 ```shell
 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a
@@ -192,11 +194,11 @@ Secret Recovery Phrase : [desert hedgehog moral long cost husband timber someone
 }
 ```
 
-At line 1-2, the create subcommand will generate a new key pair and create an address from it from scheme ed25519.
+At lines 1-2, the `rooch account create` command will generate a new key pair and create an address according to the `ed25519` scheme.
 
-At line 3, a secret recovery phrase or mnemonic phrase is given to an address for recovering the address.
+At line 3, a secret recovery phrase or mnemonic phrase associated with the address above is printed, used to recover the address. The mnemonic is equivalent to the password of the account. With the mnemonic, you can control the entire account.
 
-At line 4-57, a transaction is sent to the Rooch blockchain RPC server and the corresponding response is returned herein.
+At lines 4-57, a transaction is sent to the Rooch blockchain RPC server, where a corresponding response is returned.
 
 Changes this transaction has made:
 
@@ -228,9 +230,11 @@ The first change indicates that an account storage is assigned to the address ju
 
 The second change indicates that an account is created for the address just created.
 
-One can also specify an option `--config-dir` for the account create command to designate the configuration direcotory.
+You can also specify the `--config-dir` option to the account creation command to specify the configuration directory.
 
-```> rooch account create --config-dir ~/.rooch/rooch_config/```
+```shell
+rooch account create --config-dir ~/.rooch/rooch_config/
+```
 
 Note that the account creation will fail with an HTTP error if the Rooch blockchain RPC server has not started:
 
@@ -240,11 +244,11 @@ Error: Networking or low-level protocol error: HTTP error: error trying to conne
 
 #### Account Switch
 
-With an account created by `rooch account create` after `rooch init` command, there are two accounts available.
+A default account will be created after the `rooch init` command, and another account will be created using `rooch account create`. At this time, there are two available accounts stored in `rooch.keystore`.
 
-Use `rooch account switch` subcommand to switch between accounts.
+Use `rooch account switch` command to switch between accounts.
 
-The Rooch CLI Account Switch subcommand supports the following options:
+The Rooch CLI switch account command supports the following options:
 
 ```shell
 rooch-account-switch 
@@ -261,9 +265,13 @@ OPTIONS:
 
 Use `--address` or `-a` flag to specify an address to switch to.
 
-Here's the example to switch to the created address taken from the above example:
+Here's an example of switching to the created address:
 
-```> rooch account switch --address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a```
+```shell
+rooch account switch --address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a
+```
+
+Prompt message for successful switching:
 
 ```shell
 The active account was successfully switched to `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a`
@@ -271,9 +279,9 @@ The active account was successfully switched to `0xd2dfe9f6f61058a73353c904646cc
 
 #### Account List
 
-Use `rooch account list` subcommand to check the account status.
+Use `rooch account list` command to check the account status.
 
-The Rooch CLI Account List subcommand supports the following options:
+The `rooch account list` command supports the following options:
 
 ```shell
 rooch-account-list 
@@ -289,7 +297,9 @@ OPTIONS:
 
 Use account list to check the address has successfully switched to `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a`.
 
-```> rooch account list```
+```shell
+rooch account list
+```
 
 ```shell
                      Rooch Address (Ed25519)                       |               Public Key (Base64)                |      Scheme      | Active Address
@@ -298,13 +308,13 @@ Use account list to check the address has successfully switched to `0xd2dfe9f6f6
 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a |   AITD/sv7fsNvqwtT53l0PpsLjJdR6LIo1lVqy+PKL1Aa   |     ed25519      |     True    
 ```
 
-With Active Address shown as True for Rooch Address `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a`, the address switch operation has been confirmed.
+With Active Address shown as `True` for Rooch Address `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a`, the address switch operation has been confirmed.
 
 #### Account Import
 
-Use `rooch account import` subcommand to import an account from a mnemonic phrase.
+Use `rooch account import` command to import an account from a mnemonic phrase.
 
-The Rooch CLI Account Import subcommand supports the following options:
+The Rooch CLI account import command supports the following options:
 
 ```shell
 rooch-account-import 
@@ -323,7 +333,11 @@ Use `--mnemonic-phrase` or `-m` flag to specify a mnemonic phrase to import an a
 
 Import an account from a mnemonic phrase. The mnemonic phrase is generated from `rooch init` or `rooch account create` commands:
 
-```> rooch account import --mnemonic-phrase "misery surprise pupil skull acid pretty loud tray wolf pride head adapt"```
+```shell
+rooch account import --mnemonic-phrase "misery surprise pupil skull acid pretty loud tray wolf pride head adapt"
+```
+
+Prompt message for successful import:
 
 ```shell
 "misery surprise pupil skull acid pretty loud tray wolf pride head adapt"
@@ -336,7 +350,9 @@ At line 2, a key pair is imported from the mnemonic phrase and an address is gen
 
 Now, use `rooch account list` to check whether the newly imported address `0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33` is in the account:
 
-```> rooch account list```
+```shell
+rooch account list
+```
 
 ```shell
                      Rooch Address (Ed25519)                       |               Public Key (Base64)                |      Scheme      | Active Address
@@ -352,9 +368,9 @@ It's worth noting that when using `rooch account import` command, the mnemonic p
 
 #### Account Update
 
-Use `rooch account update` subcommand to update an address with a new key pair from a mnemonic phrase and a scheme.
+Use `rooch account update` command to update an address with a new key pair from a mnemonic phrase and a scheme.
 
-The Rooch CLI Account Update subcommand supports the following options:
+The Rooch CLI account update command supports the following options:
 
 ```shell
 rooch-account-update 
@@ -381,7 +397,7 @@ OPTIONS:
             or schnorr) [possible values: ed25519, multi-ed25519, ecdsa, ecdsa-recoverable, schnorr]
 ```
 
-Use `--address` or `-a`, `--mnemonic-phrase` or `-m`, `--scheme` or `-s` flag combinations to update an account's address.
+Use `--address` or `-a`, `--mnemonic-phrase` or `-m`, `--scheme` or `-s` option combinations to update an account's address.
 
 `<ADDRESS>` can be taken from an existing address. Similarly, `<MNEMONIC_PHRASE>` can also be taken from an existing one.
 
@@ -389,7 +405,9 @@ Use `--address` or `-a`, `--mnemonic-phrase` or `-m`, `--scheme` or `-s` flag co
 
 Here's an example to update address `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a` with the `ecdsa` scheme and the corresponding mnemonic phrase `desert hedgehog moral long cost husband timber someone lunar knee clever brave` used to generate the address:
 
-```> rooch account update --address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a --scheme ecdsa --mnemonic-phrase "desert hedgehog moral long cost husband timber someone lunar knee clever brave"```
+```shell
+rooch account update --address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a --scheme ecdsa --mnemonic-phrase "desert hedgehog moral long cost husband timber someone lunar knee clever brave"
+```
 
 ```shell
 "desert hedgehog moral long cost husband timber someone lunar knee clever brave"
@@ -405,7 +423,9 @@ At line 3, it indicates a new key pair on scheme ecdsa is generated for the addr
 
 Use `rooch account list` to check if a new key pair on scheme ecdsa is successfully added to the account.
 
-```> rooch account list```
+```shell
+rooch account list
+```
 
 ```shell
                      Rooch Address (Ed25519)                       |               Public Key (Base64)                |      Scheme      | Active Address
@@ -443,9 +463,9 @@ For now, an authentication key is an address that is generated from a public key
 
 #### Account Nullify
 
-Use `rooch account nullify` subcommand to nullify an existing key pair from a scheme in an account's address.
+Use `rooch account nullify` command to nullify an existing key pair from a scheme in an account's address.
 
-The Rooch CLI Account Nullify subcommand supports the following options:
+The nullify account address command of the Rooch CLI supports the following options:
 
 ```shell
 rooch-account-nullify 
@@ -463,13 +483,15 @@ OPTIONS:
                                      ecdsa, ecdsa-recoverable, schnorr]
 ```
 
-Use `--address` or `-a`, `--scheme` or `-s` flag combinations to nullify a key pair in the account's address.
+Use `--address` or `-a`, `--scheme` or `-s` option combinations to nullify a key pair in the account's address.
 
 Same way, `<ADDRESS>` should be an existing address from the account, and `<CRYPTO_SCHEMES>` should be selected within the possible values.
 
 Here's an example to nullify the key pair of the newly added ecdsa scheme:
 
-```> rooch account nullify --address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a --scheme ecdsa```
+```shell
+rooch account nullify --address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a --scheme ecdsa
+```
 
 ```shell
 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a
@@ -482,7 +504,9 @@ At line 2, it indicates that a key pair of scheme ecdsa for the address `0xd2dfe
 
 Use `rooch account list` to see if the key pair on ecdsa scheme has gone:
 
-```> rooch account list```
+```shell
+rooch account list
+```
 
 ```shell
                      Rooch Address (Ed25519)                       |               Public Key (Base64)                |      Scheme      | Active Address
@@ -496,7 +520,9 @@ The command line output shows that the ecdsa scheme has been removed from the ac
 
 Also, check if the private key has been successfully removed from `rooch.keystore`:
 
-```> cat ~/.rooch/rooch_config/rooch.keystore```
+```shell
+cat ~/.rooch/rooch_config/rooch.keystore
+```
 
 ```shell
 {
