@@ -16,14 +16,11 @@
 //! This accumulator is immutable once constructed. If we append new leaves to the tree we will
 //! obtain a new accumulator instance and the old one remains unchanged.
 
+use crate::node_index::NodeIndex;
+use crate::proof::AccumulatorProof;
+use crate::{LeafCount, MAX_ACCUMULATOR_LEAVES};
 use anyhow::{ensure, format_err, Result};
-use moveos_types::h256;
-use moveos_types::h256::{ACCUMULATOR_PLACEHOLDER_HASH, H256};
-
-pub type LeafCount = u64;
-
-pub const MAX_ACCUMULATOR_PROOF_DEPTH: usize = 63;
-pub const MAX_ACCUMULATOR_LEAVES: LeafCount = 1 << MAX_ACCUMULATOR_PROOF_DEPTH;
+use moveos_types::h256::{sha3_256_of, ACCUMULATOR_PLACEHOLDER_HASH, H256};
 
 /// The Accumulator implementation.
 pub struct InMemoryAccumulator {
@@ -64,7 +61,7 @@ impl MerkleTreeInternalNode {
     pub fn hash(&self) -> H256 {
         let mut bytes = self.left.0.to_vec();
         bytes.extend(self.right.0.to_vec());
-        h256::sha3_256_of(bytes.as_slice())
+        sha3_256_of(bytes.as_slice())
     }
 }
 
@@ -92,6 +89,50 @@ impl InMemoryAccumulator {
     /// Constructs a new accumulator with given leaves.
     pub fn from_leaves(leaves: &[H256]) -> Self {
         Self::default().append(leaves)
+    }
+
+    pub fn get_proof_from_leaves(leaves: &[H256], leaf_index: u64) -> Result<AccumulatorProof> {
+        let leaf_count = leaves.len() as u64;
+        let root_pos = NodeIndex::root_from_leaf_count(leaf_count);
+        let siblings = NodeIndex::from_leaf_index(leaf_index)
+            .iter_ancestor_sibling()
+            .take(root_pos.level() as usize)
+            .map(|p| Self::get_hash(leaves, p))
+            .collect::<Vec<_>>();
+        Ok(AccumulatorProof::new(siblings))
+    }
+
+    fn hash_internal_node(left: H256, right: H256) -> H256 {
+        MerkleTreeInternalNode::new(left, right).hash()
+    }
+
+    fn get_hash(leaves: &[H256], node_index: NodeIndex) -> H256 {
+        let rightmost_leaf_index = (leaves.len() - 1) as u64;
+        if node_index.is_placeholder(rightmost_leaf_index) {
+            *ACCUMULATOR_PLACEHOLDER_HASH
+        } else if node_index.is_freezable(rightmost_leaf_index) {
+            let leaf_index = node_index.to_leaf_index();
+            if let Some(leaf_index) = leaf_index {
+                debug_assert!(
+                    leaf_index < leaves.len() as u64,
+                    "leaf index out of range, index: {}, size: {}",
+                    leaf_index,
+                    leaves.len()
+                );
+                leaves[leaf_index as usize]
+            } else {
+                Self::hash_internal_node(
+                    Self::get_hash(leaves, node_index.left_child()),
+                    Self::get_hash(leaves, node_index.right_child()),
+                )
+            }
+        } else {
+            // non-frozen non-placeholder node
+            Self::hash_internal_node(
+                Self::get_hash(leaves, node_index.left_child()),
+                Self::get_hash(leaves, node_index.right_child()),
+            )
+        }
     }
 
     /// Appends a list of new leaves to an existing accumulator. Since the accumulator is

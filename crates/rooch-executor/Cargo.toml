@@ -45,3 +45,4 @@ rooch-framework = { workspace = true }
 rooch-genesis = { workspace = true }
 rooch-store = { workspace = true }
 rooch-config = { workspace = true }
+accumulator = { workspace = true }

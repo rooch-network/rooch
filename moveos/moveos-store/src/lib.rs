@@ -29,6 +29,7 @@ use moveos_types::transaction::TransactionExecutionInfo;
 use raw_store::rocks::RocksDB;
 use smt::NodeStore;
 
+pub mod accumulator_store;
 pub mod config_store;
 pub mod event_store;
 pub mod state_store;
