@@ -7,6 +7,8 @@ use clap::Parser;
 use commands::start::StartCommand;
 use rooch_types::error::RoochResult;
 
+use self::commands::clean::CleanCommand;
+
 pub mod commands;
 
 /// Start Rooch network
@@ -21,6 +23,7 @@ impl CommandAction<String> for Server {
     async fn execute(self) -> RoochResult<String> {
         match self.cmd {
             ServerCommand::Start(start) => start.execute_serialized().await,
+            ServerCommand::Clean(clean) => clean.execute().await.map(|_| "".to_owned()),
         }
     }
 }
@@ -29,4 +32,5 @@ impl CommandAction<String> for Server {
 #[clap(name = "server")]
 pub enum ServerCommand {
     Start(StartCommand),
+    Clean(CleanCommand),
 }
