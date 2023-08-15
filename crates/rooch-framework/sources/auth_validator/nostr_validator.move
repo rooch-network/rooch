@@ -1,5 +1,5 @@
-/// This module implements the schnorr validator scheme.
-module rooch_framework::schnorr_validator {
+/// This module implements Nostr validator with the Schnorr crypto scheme.
+module rooch_framework::nostr_validator {
 
     use std::error;
     use std::vector;
@@ -11,33 +11,19 @@ module rooch_framework::schnorr_validator {
     use rooch_framework::schnorr;
     use rooch_framework::auth_validator;
 
-    const SCHEME_SCHNORR: u64 = 4;
-
-    const V_SCHNORR_SCHEME_LENGTH: u64 = 1;
-    const V_SCHNORR_PUBKEY_LENGTH: u64 = 32;
-    const V_SCHNORR_SIG_LENGTH: u64 = 64;
-    const V_SCHNORR_HASH_LENGTH: u64 = 1;
-    const V_AUTHENTICATION_KEY_LENGTH: u64 = 32;
-    /// Hash function name that are valid for verify.
-    const KECCAK256: u8 = 0;
-    const SHA256: u8 = 1;
     /// error code
     const EInvalidPublicKeyLength: u64 = 0;
 
-    struct SchnorrValidator has store, drop {}
-
-    public fun scheme(): u64 {
-        SCHEME_SCHNORR
-    }
+    struct NostrValidator has store, drop {}
 
     public entry fun rotate_authentication_key_entry<T>(
         ctx: &mut StorageContext,
         account: &signer,
         public_key: vector<u8>
     ) {
-        // compare newly passed public key with schnorr public key length to ensure it's compatible
+        // compare newly passed public key with Nostr public key length to ensure it's compatible
         assert!(
-            vector::length(&public_key) == V_SCHNORR_PUBKEY_LENGTH,
+            vector::length(&public_key) == schnorr::public_key_length(),
             error::invalid_argument(EInvalidPublicKeyLength)
         );
 
@@ -48,60 +34,35 @@ module rooch_framework::schnorr_validator {
     }
 
     fun rotate_authentication_key(ctx: &mut StorageContext, account_addr: address, authentication_key: vector<u8>) {
-        account_authentication::rotate_authentication_key<SchnorrValidator>(ctx, account_addr, authentication_key);
+        account_authentication::rotate_authentication_key<NostrValidator>(ctx, account_addr, authentication_key);
     }
 
     public entry fun remove_authentication_key_entry<T>(ctx: &mut StorageContext, account: &signer) {
-        account_authentication::remove_authentication_key<SchnorrValidator>(ctx, signer::address_of(account));
-    }
-
-    public fun get_public_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
-        let public_key = vector::empty<u8>();
-        let i = V_SCHNORR_SCHEME_LENGTH + V_SCHNORR_SIG_LENGTH;
-        while (i < V_SCHNORR_SCHEME_LENGTH + V_SCHNORR_SIG_LENGTH + V_SCHNORR_PUBKEY_LENGTH) {
-            let value = vector::borrow(authenticator_payload, i);
-            vector::push_back(&mut public_key, *value);
-            i = i + 1;
-        };
-
-        public_key
-    }
-
-    public fun get_signature_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
-        let sign = vector::empty<u8>();
-        let i = V_SCHNORR_SCHEME_LENGTH;
-        while (i < V_SCHNORR_SIG_LENGTH + 1) {
-            let value = vector::borrow(authenticator_payload, i);
-            vector::push_back(&mut sign, *value);
-            i = i + 1;
-        };
-
-        sign
+        account_authentication::remove_authentication_key<NostrValidator>(ctx, signer::address_of(account));
     }
 
    /// Get the authentication key of the given authenticator from authenticator_payload.
     public fun get_authentication_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
-        let public_key = get_public_key_from_authenticator_payload(authenticator_payload);
+        let public_key = schnorr::get_public_key_from_authenticator_payload(authenticator_payload);
         let addr = public_key_to_address(public_key);
         moveos_std::bcs::to_bytes(&addr)
     }
 
-    /// TODO: define NostrAddress or BTCLightningAddress as the return type
-    /// TODO: Schnorr public keys can be used to generate Nostr and possibly BTC Lightning addresses, and we need to determine which one to use.
+    /// TODO: https://github.com/rooch-network/rooch/issues/615
     public fun public_key_to_address(public_key: vector<u8>): address {
         moveos_std::bcs::to_address(public_key_to_authentication_key(public_key))
     }
 
     /// Get the authentication key of the given public key.
     public fun public_key_to_authentication_key(public_key: vector<u8>): vector<u8> {
-        let bytes = vector::singleton((SCHEME_SCHNORR as u8));
+        let bytes = vector::singleton((schnorr::scheme() as u8));
         vector::append(&mut bytes, public_key);
         hash::blake2b256(&bytes)
     }
 
     /// Get the authentication key option of the given account.
     public fun get_authentication_key_option_from_account(ctx: &StorageContext, addr: address): Option<vector<u8>> {
-        account_authentication::get_authentication_key<SchnorrValidator>(ctx, addr)
+        account_authentication::get_authentication_key<NostrValidator>(ctx, addr)
     }
 
     /// The authentication key exists in account or not.
@@ -118,10 +79,10 @@ module rooch_framework::schnorr_validator {
     public fun validate_signature(authenticator_payload: &vector<u8>, tx_hash: &vector<u8>) {
         assert!(
             schnorr::verify(
-                &get_signature_from_authenticator_payload(authenticator_payload),
-                &get_public_key_from_authenticator_payload(authenticator_payload),
+                &schnorr::get_signature_from_authenticator_payload(authenticator_payload),
+                &schnorr::get_public_key_from_authenticator_payload(authenticator_payload),
                 tx_hash,
-                SHA256
+                schnorr::sha256()
             ),
             auth_validator::error_invalid_authenticator()
         );
@@ -148,7 +109,7 @@ module rooch_framework::schnorr_validator {
         }
     }
 
-    // this test ensures that the schnorr public_key_to_address function is compatible with the one in the rust code
+    // this test ensures that the Nostr public_key_to_address function is compatible with the one in the rust code
     #[test]
     fun test_public_key_to_address() {
         let public_key = x"1b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";

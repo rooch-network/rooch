@@ -9,31 +9,35 @@ use move_core_types::{
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     state::MoveStructType,
-    transaction::FunctionCall,
+    transaction::{FunctionCall, MoveAction},
     tx_context::TxContext,
 };
 
-pub struct Ed25519Validator {}
+pub struct NativeValidator {}
 
-impl Ed25519Validator {
+impl NativeValidator {
     pub fn scheme() -> BuiltinScheme {
         BuiltinScheme::Ed25519
     }
 }
 
-impl MoveStructType for Ed25519Validator {
+impl MoveStructType for NativeValidator {
     const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = Ed25519ValidatorModule::MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = ident_str!("Ed25519Validator");
+    const MODULE_NAME: &'static IdentStr = NativeValidatorModule::MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("NativeValidator");
 }
 
-/// Rust bindings for RoochFramework ed25519_validator module
-pub struct Ed25519ValidatorModule<'a> {
+/// Rust bindings for RoochFramework native_validator module
+pub struct NativeValidatorModule<'a> {
     caller: &'a dyn MoveFunctionCaller,
 }
 
-impl<'a> Ed25519ValidatorModule<'a> {
+impl<'a> NativeValidatorModule<'a> {
     const VALIDATE_FUNCTION_NAME: &'static IdentStr = ident_str!("validate");
+    const ROTATE_AUTHENTICATION_KEY_ENTRY_FUNCTION_NAME: &'static IdentStr =
+        ident_str!("rotate_authentication_key_entry");
+    const REMOVE_AUTHENTICATION_KEY_ENTRY_FUNCTION_NAME: &'static IdentStr =
+        ident_str!("remove_authentication_key_entry");
 
     pub fn validate(&self, ctx: &TxContext, payload: Vec<u8>) -> Result<()> {
         let auth_validator_call = FunctionCall::new(
@@ -48,10 +52,26 @@ impl<'a> Ed25519ValidatorModule<'a> {
             })?;
         Ok(())
     }
+
+    pub fn rotate_authentication_key_action<V: MoveStructType>(public_key: Vec<u8>) -> MoveAction {
+        Self::create_move_action(
+            Self::ROTATE_AUTHENTICATION_KEY_ENTRY_FUNCTION_NAME,
+            vec![V::type_tag()],
+            vec![MoveValue::vector_u8(public_key)],
+        )
+    }
+
+    pub fn remove_authentication_key_action<V: MoveStructType>() -> MoveAction {
+        Self::create_move_action(
+            Self::REMOVE_AUTHENTICATION_KEY_ENTRY_FUNCTION_NAME,
+            vec![V::type_tag()],
+            vec![],
+        )
+    }
 }
 
-impl<'a> ModuleBinding<'a> for Ed25519ValidatorModule<'a> {
-    const MODULE_NAME: &'static IdentStr = ident_str!("ed25519_validator");
+impl<'a> ModuleBinding<'a> for NativeValidatorModule<'a> {
+    const MODULE_NAME: &'static IdentStr = ident_str!("native_validator");
     const MODULE_ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
 
     fn new(caller: &'a impl MoveFunctionCaller) -> Self

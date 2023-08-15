@@ -5,6 +5,12 @@ use crate::{
     address::RoochAddress,
     authentication_key::AuthenticationKey,
     error::{RoochError, RoochResult},
+    framework::{
+        bitcoin_validator::{BitcoinValidator, BitcoinValidatorModule},
+        ethereum_validator::{EthereumValidator, EthereumValidatorModule},
+        native_validator::{NativeValidator, NativeValidatorModule},
+        nostr_validator::{NostrValidator, NostrValidatorModule},
+    },
 };
 use clap::ArgEnum;
 use derive_more::{AsMut, AsRef, From};
@@ -42,10 +48,7 @@ use fastcrypto::{
         Secp256k1SignatureAsBytes,
     },
 };
-use move_core_types::{
-    account_address::AccountAddress, identifier::Identifier, language_storage::StructTag,
-};
-use moveos_types::{h256::H256, serde::Readable};
+use moveos_types::{h256::H256, serde::Readable, transaction::MoveAction};
 use rand::{rngs::StdRng, SeedableRng};
 use schemars::JsonSchema;
 use serde::ser::Serializer;
@@ -120,31 +123,92 @@ impl BuiltinScheme {
         }
     }
 
-    pub fn get_validator_name(&self) -> Result<String, RoochError> {
-        match self {
-            BuiltinScheme::Ed25519 => Ok(String::from(stringify!(Ed25519Validator))),
-            BuiltinScheme::MultiEd25519 => Ok(String::from(stringify!(MultiEd25519Validator))),
-            BuiltinScheme::Ecdsa => Ok(String::from(stringify!(EcdsaK1Validator))),
+    // pub fn get_validator_name(&self) -> Result<String, RoochError> {
+    //     match self {
+    //         BuiltinScheme::Ed25519 => Ok(NativeValidator::STRUCT_NAME.to_string()),
+    //         BuiltinScheme::MultiEd25519 => Ok(String::from(stringify!(MultiEd25519Validator))),
+    //         BuiltinScheme::Ecdsa => Ok(BitcoinValidator::STRUCT_NAME.to_string()),
+    //         BuiltinScheme::EcdsaRecoverable => Ok(EthereumValidator::STRUCT_NAME.to_string()),
+    //         BuiltinScheme::Schnorr => Ok(NostrValidator::STRUCT_NAME.to_string()),
+    //     }
+    // }
+
+    // pub fn create_validator_type_tag(
+    //     &self,
+    // ) -> Result<(TypeTag, AccountAddress, &IdentStr), RoochError> {
+    //     // Get addresses and module names for each scheme
+    //     let (address, module_name) = match self {
+    //         BuiltinScheme::Ed25519 => (
+    //             NativeValidatorModule::MODULE_ADDRESS,
+    //             NativeValidatorModule::MODULE_NAME,
+    //         ),
+    //         BuiltinScheme::MultiEd25519 => todo!(),
+    //         BuiltinScheme::Ecdsa => (
+    //             BitcoinValidatorModule::MODULE_ADDRESS,
+    //             BitcoinValidatorModule::MODULE_NAME,
+    //         ),
+    //         BuiltinScheme::EcdsaRecoverable => (
+    //             EthereumValidatorModule::MODULE_ADDRESS,
+    //             EthereumValidatorModule::MODULE_NAME,
+    //         ),
+    //         BuiltinScheme::Schnorr => (
+    //             NostrValidatorModule::MODULE_ADDRESS,
+    //             NostrValidatorModule::MODULE_NAME,
+    //         ),
+    //     };
+    //     // Get validator names
+    //     let validator_name: String = self.get_validator_name()?;
+    //     // Create type tag
+    //     let type_tag = TypeTag::Struct(Box::new(StructTag {
+    //         address,
+    //         module: Identifier::new(module_name.to_string()).unwrap(),
+    //         name: Identifier::new(validator_name).unwrap(),
+    //         type_params: vec![],
+    //     }));
+    //     Ok((type_tag, address, module_name))
+    // }
+
+    pub fn create_rotate_authentication_key_action(
+        &self,
+        public_key: Vec<u8>,
+    ) -> Result<MoveAction, RoochError> {
+        let action = match self {
+            BuiltinScheme::Ed25519 => NativeValidatorModule::rotate_authentication_key_action::<
+                NativeValidator,
+            >(public_key),
+            BuiltinScheme::MultiEd25519 => todo!(),
+            BuiltinScheme::Ecdsa => BitcoinValidatorModule::rotate_authentication_key_action::<
+                BitcoinValidator,
+            >(public_key),
             BuiltinScheme::EcdsaRecoverable => {
-                Ok(String::from(stringify!(EcdsaK1RecoverableValidator)))
+                EthereumValidatorModule::rotate_authentication_key_action::<EthereumValidator>(
+                    public_key,
+                )
             }
-            BuiltinScheme::Schnorr => Ok(String::from(stringify!(SchnorrValidator))),
-        }
+            BuiltinScheme::Schnorr => {
+                NostrValidatorModule::rotate_authentication_key_action::<NostrValidator>(public_key)
+            }
+        };
+        Ok(action)
     }
 
-    pub fn create_validator_struct_tag(
-        &self,
-        address: AccountAddress,
-        module_name: String,
-    ) -> Result<Box<StructTag>, RoochError> {
-        let tag_name: String = self.get_validator_name()?;
-
-        Ok(Box::new(StructTag {
-            address,
-            module: Identifier::new(module_name).unwrap(),
-            name: Identifier::new(tag_name).unwrap(),
-            type_params: vec![],
-        }))
+    pub fn create_remove_authentication_key_action(&self) -> Result<MoveAction, RoochError> {
+        let action = match self {
+            BuiltinScheme::Ed25519 => {
+                NativeValidatorModule::remove_authentication_key_action::<NativeValidator>()
+            }
+            BuiltinScheme::MultiEd25519 => todo!(),
+            BuiltinScheme::Ecdsa => {
+                BitcoinValidatorModule::remove_authentication_key_action::<BitcoinValidator>()
+            }
+            BuiltinScheme::EcdsaRecoverable => {
+                EthereumValidatorModule::remove_authentication_key_action::<EthereumValidator>()
+            }
+            BuiltinScheme::Schnorr => {
+                NostrValidatorModule::remove_authentication_key_action::<NostrValidator>()
+            }
+        };
+        Ok(action)
     }
 }
 
@@ -926,10 +990,10 @@ mod tests {
         traits::{KeyPair, ToFromBytes},
     };
 
-    // this test ensure the public key to address keep the same as the old version
-    // we should also keep the public key to address algorithm the same as the move version
+    // this test ensure the Rooch native public key to address keep the same as the old version
+    // we should also keep the Rooch native public key to address algorithm the same as the move version
     #[test]
-    fn test_ed25519_public_key_to_address() {
+    fn test_native_public_key_to_address() {
         let private_key = Ed25519PrivateKey::from_bytes(&[0u8; 32]).unwrap();
         let keypair: Ed25519KeyPair = private_key.into();
         let address: RoochAddress = keypair.public().into();
@@ -939,9 +1003,9 @@ mod tests {
         );
     }
 
-    // this test is to ensure that the other algorithms work for public key to address as well as ed25519
+    // this test is to ensure that the ECDSA algorithm works for Bitcoin public key to address
     #[test]
-    fn test_ecdsa_k1_public_key_to_address() {
+    fn test_bitcoin_public_key_to_address() {
         let private_key = Secp256k1PrivateKey::from_bytes(&[1u8; 32]).unwrap(); // use 1u8.
         let keypair: Secp256k1KeyPair = private_key.into();
         let address: RoochAddress = keypair.public().into();
@@ -951,9 +1015,9 @@ mod tests {
         );
     }
 
-    // this test is to ensure that the other algorithms work for public key to address as well as ed25519
+    // this test is to ensure that the ECDSA recoverable algorithm works for Ethereum public key to address
     #[test]
-    fn test_ecdsa_k1_recoverable_public_key_to_address() {
+    fn test_ethereum_public_key_to_address() {
         let private_key = Secp256k1RecoverablePrivateKey::from_bytes(&[1u8; 32]).unwrap(); // use 1u8.
         let keypair: Secp256k1RecoverableKeyPair = private_key.into();
         let address: RoochAddress = keypair.public().into();
@@ -963,9 +1027,9 @@ mod tests {
         );
     }
 
-    // this test is to ensure that the other algorithms work for public key to address as well as ed25519
+    // this test is to ensure that the Schnorr algorithm works for Nostr public key to address
     #[test]
-    fn test_schnorr_public_key_to_address() {
+    fn test_nostr_public_key_to_address() {
         let private_key = SchnorrPrivateKey::from_bytes(&[1u8; 32]).unwrap(); // ensure not leave 0, use 1u8
         let keypair: SchnorrKeyPair = private_key.into();
         let address: RoochAddress = keypair.public().into();

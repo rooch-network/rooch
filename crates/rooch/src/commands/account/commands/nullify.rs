@@ -2,20 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::Parser;
-use move_core_types::{
-    account_address::AccountAddress,
-    identifier::Identifier,
-    language_storage::{ModuleId, StructTag, TypeTag},
-};
-use moveos_types::{
-    module_binding::ModuleBinding, move_types::FunctionId, transaction::MoveAction,
-};
+use move_core_types::account_address::AccountAddress;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
-use rooch_types::framework::{
-    ecdsa_k1_recoverable_validator::EcdsaK1RecoverableValidator,
-    ecdsa_k1_validator::EcdsaK1Validator, ed25519_validator::Ed25519ValidatorModule,
-    schnorr_validator::SchnorrValidator,
-};
 use std::fmt::Debug;
 
 use async_trait::async_trait;
@@ -29,7 +17,7 @@ use rooch_types::{
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use std::str::FromStr;
 
-/// Nullify a keypair from a selected scheme with a Ed25519 generated address in rooch.keystore
+/// Nullify a keypair from a selected scheme with a Rooch address in rooch.keystore
 #[derive(Debug, Parser)]
 pub struct NullifyCommand {
     /// Rooch address in string format.
@@ -62,43 +50,8 @@ impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
                     AccountAddress::from(existing_address).to_hex_literal()
                 );
 
-                let (module_address, module_name) = match scheme {
-                    BuiltinScheme::Ed25519 => (
-                        Ed25519ValidatorModule::MODULE_ADDRESS,
-                        Ed25519ValidatorModule::MODULE_NAME,
-                    ),
-                    BuiltinScheme::MultiEd25519 => todo!(),
-                    BuiltinScheme::Ecdsa => (
-                        EcdsaK1Validator::MODULE_ADDRESS,
-                        EcdsaK1Validator::MODULE_NAME,
-                    ),
-                    BuiltinScheme::EcdsaRecoverable => (
-                        EcdsaK1RecoverableValidator::MODULE_ADDRESS,
-                        EcdsaK1RecoverableValidator::MODULE_NAME,
-                    ),
-                    BuiltinScheme::Schnorr => (
-                        SchnorrValidator::MODULE_ADDRESS,
-                        SchnorrValidator::MODULE_NAME,
-                    ),
-                };
-
-                // Get validator struct
-                let validator_struct_arg: Box<StructTag> =
-                    scheme.create_validator_struct_tag(module_address, module_name.to_string())?;
-
-                // Get the remove_authentication_key_entry_function
-                let remove_authentication_key_entry_function = create_function_id(
-                    module_address,
-                    module_name.as_str(),
-                    "remove_authentication_key_entry",
-                );
-
-                // Construct a Move call
-                let action = MoveAction::new_function_call(
-                    remove_authentication_key_entry_function,
-                    vec![TypeTag::Struct(validator_struct_arg)],
-                    vec![],
-                );
+                // Create MoveAction from scheme
+                let action = scheme.create_remove_authentication_key_action()?;
 
                 // Execute the Move call as a transaction
                 let mut result = context
@@ -130,15 +83,4 @@ impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
             }
         }
     }
-}
-
-fn create_function_id(
-    address: AccountAddress,
-    module_name: &str,
-    function_name: &str,
-) -> FunctionId {
-    FunctionId::new(
-        ModuleId::new(address, Identifier::new(module_name).unwrap()),
-        Identifier::new(function_name).unwrap(),
-    )
 }

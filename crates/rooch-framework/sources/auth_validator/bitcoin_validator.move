@@ -1,5 +1,5 @@
-/// This module implements the ECDSA Recoverable over Secpk256k1 validator scheme.
-module rooch_framework::ecdsa_k1_recoverable_validator {
+/// This module implements bitcoin validator with the ECDSA signature over Secp256k1 crypto scheme.
+module rooch_framework::bitcoin_validator {
 
     use std::error;
     use std::vector;
@@ -8,36 +8,22 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
     use moveos_std::storage_context::{Self, StorageContext};
     use rooch_framework::account_authentication;
     use rooch_framework::hash;
-    use rooch_framework::ecdsa_k1_recoverable;
+    use rooch_framework::ecdsa_k1;
     use rooch_framework::auth_validator;
 
-    const SCHEME_ECDSA_RECOVERABLE: u64 = 3;
-
-    const V_ECDSA_RECOVERABLE_SCHEME_LENGTH: u64 = 1;
-    const V_ECDSA_RECOVERABLE_PUBKEY_LENGTH: u64 = 33;
-    const V_ECDSA_RECOVERABLE_SIG_LENGTH: u64 = 65;
-    const V_ECDSA_RECOVERABLE_HASH_LENGTH: u64 = 1;
-    const V_AUTHENTICATION_KEY_LENGTH: u64 = 32;
-    /// Hash function name that are valid for ecrecover and verify.
-    const KECCAK256: u8 = 0;
-    const SHA256: u8 = 1;
     /// error code
     const EInvalidPublicKeyLength: u64 = 0;
 
-    struct EcdsaK1RecoverableValidator has store, drop {}
-
-    public fun scheme(): u64 {
-        SCHEME_ECDSA_RECOVERABLE
-    }
+    struct BitcoinValidator has store, drop {}
 
     public entry fun rotate_authentication_key_entry<T>(
         ctx: &mut StorageContext,
         account: &signer,
         public_key: vector<u8>
     ) {
-        // compare newly passed public key with ecdsa recoverable public key length to ensure it's compatible
+        // compare newly passed public key with Bitcoin public key length to ensure it's compatible
         assert!(
-            vector::length(&public_key) == V_ECDSA_RECOVERABLE_PUBKEY_LENGTH,
+            vector::length(&public_key) == ecdsa_k1::public_key_length(),
             error::invalid_argument(EInvalidPublicKeyLength)
         );
 
@@ -48,60 +34,35 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
     }
 
     fun rotate_authentication_key(ctx: &mut StorageContext, account_addr: address, authentication_key: vector<u8>) {
-        account_authentication::rotate_authentication_key<EcdsaK1RecoverableValidator>(ctx, account_addr, authentication_key);
+        account_authentication::rotate_authentication_key<BitcoinValidator>(ctx, account_addr, authentication_key);
     }
 
     public entry fun remove_authentication_key_entry<T>(ctx: &mut StorageContext, account: &signer) {
-        account_authentication::remove_authentication_key<EcdsaK1RecoverableValidator>(ctx, signer::address_of(account));
-    }
-
-    public fun get_public_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
-        let public_key = vector::empty<u8>();
-        let i = V_ECDSA_RECOVERABLE_SCHEME_LENGTH + V_ECDSA_RECOVERABLE_SIG_LENGTH;
-        while (i < V_ECDSA_RECOVERABLE_SCHEME_LENGTH + V_ECDSA_RECOVERABLE_SIG_LENGTH + V_ECDSA_RECOVERABLE_PUBKEY_LENGTH) {
-            let value = vector::borrow(authenticator_payload, i);
-            vector::push_back(&mut public_key, *value);
-            i = i + 1;
-        };
-
-        public_key
-    }
-
-    public fun get_signature_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
-        let sign = vector::empty<u8>();
-        let i = V_ECDSA_RECOVERABLE_SCHEME_LENGTH;
-        while (i < V_ECDSA_RECOVERABLE_SIG_LENGTH + 1) {
-            let value = vector::borrow(authenticator_payload, i);
-            vector::push_back(&mut sign, *value);
-            i = i + 1;
-        };
-
-        sign
+        account_authentication::remove_authentication_key<BitcoinValidator>(ctx, signer::address_of(account));
     }
 
     /// Get the authentication key of the given authenticator from authenticator_payload.
     public fun get_authentication_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
-        let public_key = get_public_key_from_authenticator_payload(authenticator_payload);
+        let public_key = ecdsa_k1::get_public_key_from_authenticator_payload(authenticator_payload);
         let addr = public_key_to_address(public_key);
         moveos_std::bcs::to_bytes(&addr)
     }
 
-    /// TODO: define EVMAddress or BIPAddress as the return type
-    /// TODO: ECDSA public keys can be used to generate ETH and BTC addresses, and we need to determine which one to use.
+    /// TODO: https://github.com/rooch-network/rooch/issues/615
     public fun public_key_to_address(public_key: vector<u8>): address {
         moveos_std::bcs::to_address(public_key_to_authentication_key(public_key))
     }
 
     /// Get the authentication key of the given public key.
     public fun public_key_to_authentication_key(public_key: vector<u8>): vector<u8> {
-        let bytes = vector::singleton((SCHEME_ECDSA_RECOVERABLE as u8));
+        let bytes = vector::singleton((ecdsa_k1::scheme() as u8));
         vector::append(&mut bytes, public_key);
         hash::blake2b256(&bytes)
     }
 
     /// Get the authentication key option of the given account.
     public fun get_authentication_key_option_from_account(ctx: &StorageContext, addr: address): Option<vector<u8>> {
-        account_authentication::get_authentication_key<EcdsaK1RecoverableValidator>(ctx, addr)
+        account_authentication::get_authentication_key<BitcoinValidator>(ctx, addr)
     }
 
     /// The authentication key exists in account or not.
@@ -117,10 +78,11 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
     /// Only validate the authenticator's signature.
     public fun validate_signature(authenticator_payload: &vector<u8>, tx_hash: &vector<u8>) {
         assert!(
-            ecdsa_k1_recoverable::verify(
-                &get_signature_from_authenticator_payload(authenticator_payload),
+            ecdsa_k1::verify(
+                &ecdsa_k1::get_signature_from_authenticator_payload(authenticator_payload),
+                &ecdsa_k1::get_public_key_from_authenticator_payload(authenticator_payload),
                 tx_hash,
-                KECCAK256
+                ecdsa_k1::sha256()
             ),
             auth_validator::error_invalid_authenticator()
         );
@@ -147,11 +109,11 @@ module rooch_framework::ecdsa_k1_recoverable_validator {
         }
     }
 
-    // this test ensures that the ecdsa k1 recoverable public_key_to_address function is compatible with the one in the rust code
+    // this test ensures that the Bitcoin public_key_to_address function is compatible with the one in the rust code
     #[test]
     fun test_public_key_to_address() {
         let public_key = x"031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
         let addr = public_key_to_address(public_key);
-        assert!(addr == @0x8c891976da9498ec1d3ff778a5d6c40c217d63cc8c48539c959f8b683eedf5a4, 1000);
+        assert!(addr == @0x92718e81a52369b4bc3169161737318ddf022945391a69263e8d4289c79a0c67, 1000);
     }
 }

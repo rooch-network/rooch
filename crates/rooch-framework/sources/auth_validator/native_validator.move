@@ -1,5 +1,5 @@
-/// This module implements the ed25519 validator scheme.
-module rooch_framework::ed25519_validator {
+/// This module implements the native validator scheme.
+module rooch_framework::native_validator {
 
     use std::error;
     use std::vector;
@@ -11,28 +11,19 @@ module rooch_framework::ed25519_validator {
     use rooch_framework::ed25519;
     use rooch_framework::auth_validator;
 
-    const SCHEME_ED25519: u64 = 0;
-
-    const V_ED25519_SCHEME_LENGTH: u64 = 1;
-    const V_ED25519_PUBKEY_LENGTH: u64 = 32;
-    const V_ED25519_SIG_LENGTH: u64 = 64;
     /// error code
     const EInvalidPublicKeyLength: u64 = 0;
 
-    struct Ed25519Validator has store, drop {}
-
-    public fun scheme(): u64 {
-        SCHEME_ED25519
-    }
+    struct NativeValidator has store, drop {}
 
     public entry fun rotate_authentication_key_entry<T>(
         ctx: &mut StorageContext,
         account: &signer,
         public_key: vector<u8>
     ) {
-        // compare newly passed public key with ed25519 public key length to ensure it's compatible
+        // compare newly passed public key with Rooch public key length to ensure it's compatible
         assert!(
-            vector::length(&public_key) == V_ED25519_PUBKEY_LENGTH,
+            vector::length(&public_key) == ed25519::public_key_length(),
             error::invalid_argument(EInvalidPublicKeyLength)
         );
 
@@ -43,40 +34,16 @@ module rooch_framework::ed25519_validator {
     }
 
     fun rotate_authentication_key(ctx: &mut StorageContext, account_addr: address, authentication_key: vector<u8>) {
-        account_authentication::rotate_authentication_key<Ed25519Validator>(ctx, account_addr, authentication_key);
+        account_authentication::rotate_authentication_key<NativeValidator>(ctx, account_addr, authentication_key);
     }
 
     public entry fun remove_authentication_key_entry<T>(ctx: &mut StorageContext, account: &signer) {
-        account_authentication::remove_authentication_key<Ed25519Validator>(ctx, signer::address_of(account));
-    }
-
-    public fun get_public_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
-        let public_key = vector::empty<u8>();
-        let i = V_ED25519_SCHEME_LENGTH + V_ED25519_SIG_LENGTH;
-        while (i < V_ED25519_SCHEME_LENGTH + V_ED25519_SIG_LENGTH + V_ED25519_PUBKEY_LENGTH) {
-            let value = vector::borrow(authenticator_payload, i);
-            vector::push_back(&mut public_key, *value);
-            i = i + 1;
-        };
-
-        public_key
-    }
-
-    public fun get_signature_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
-        let sign = vector::empty<u8>();
-        let i = V_ED25519_SCHEME_LENGTH;
-        while (i < V_ED25519_SIG_LENGTH + 1) {
-            let value = vector::borrow(authenticator_payload, i);
-            vector::push_back(&mut sign, *value);
-            i = i + 1;
-        };
-
-        sign
+        account_authentication::remove_authentication_key<NativeValidator>(ctx, signer::address_of(account));
     }
 
     /// Get the authentication key of the given authenticator from authenticator_payload.
     public fun get_authentication_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
-        let public_key = get_public_key_from_authenticator_payload(authenticator_payload);
+        let public_key = ed25519::get_public_key_from_authenticator_payload(authenticator_payload);
         let addr = public_key_to_address(public_key);
         moveos_std::bcs::to_bytes(&addr)
     }
@@ -87,14 +54,14 @@ module rooch_framework::ed25519_validator {
 
     /// Get the authentication key of the given public key.
     public fun public_key_to_authentication_key(public_key: vector<u8>): vector<u8> {
-        let bytes = vector::singleton((SCHEME_ED25519 as u8));
+        let bytes = vector::singleton((ed25519::scheme() as u8));
         vector::append(&mut bytes, public_key);
         hash::blake2b256(&bytes)
     }
 
     /// Get the authentication key of the given account, if it not exist, return the account address as authentication key.
     public fun get_authentication_key_with_default(ctx: &StorageContext, addr: address): vector<u8> {
-        let auth_key_option = account_authentication::get_authentication_key<Ed25519Validator>(ctx, addr);
+        let auth_key_option = account_authentication::get_authentication_key<NativeValidator>(ctx, addr);
         if (option::is_some(&auth_key_option)) {
             option::extract(&mut auth_key_option)
         }else {
@@ -110,8 +77,8 @@ module rooch_framework::ed25519_validator {
     public fun validate_signature(authenticator_payload: &vector<u8>, tx_hash: &vector<u8>) {
         assert!(
             ed25519::verify(
-                &get_signature_from_authenticator_payload(authenticator_payload),
-                &get_public_key_from_authenticator_payload(authenticator_payload),
+                &ed25519::get_signature_from_authenticator_payload(authenticator_payload),
+                &ed25519::get_public_key_from_authenticator_payload(authenticator_payload),
                 tx_hash
             ),
             auth_validator::error_invalid_authenticator()
@@ -130,7 +97,6 @@ module rooch_framework::ed25519_validator {
         );
     }
 
-
     fun pre_execute(
         _ctx: &mut StorageContext,
     ) {}
@@ -139,7 +105,7 @@ module rooch_framework::ed25519_validator {
         ctx: &mut StorageContext,
     ) {
         let account_addr = storage_context::sender(ctx);
-        let auth_key_option = account_authentication::get_authentication_key<Ed25519Validator>(ctx, account_addr);
+        let auth_key_option = account_authentication::get_authentication_key<NativeValidator>(ctx, account_addr);
         // If the account does not have an authentication key, set the account address as the authentication key after the first transaction is executed.
         if (option::is_none(&auth_key_option)) {
             let authentication_key = default_authentication_key(account_addr);
@@ -147,7 +113,7 @@ module rooch_framework::ed25519_validator {
         }
     }
 
-    // this test ensures that the ed25519 public_key_to_address function is compatible with the one in the rust code
+    // this test ensures that the Rooch native public_key_to_address function is compatible with the one in the rust code
     #[test]
     fun test_public_key_to_address() {
         let public_key = x"3b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29";

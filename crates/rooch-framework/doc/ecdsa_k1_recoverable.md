@@ -6,6 +6,14 @@
 
 
 -  [Constants](#@Constants_0)
+-  [Function `scheme`](#0x3_ecdsa_k1_recoverable_scheme)
+-  [Function `scheme_length`](#0x3_ecdsa_k1_recoverable_scheme_length)
+-  [Function `public_key_length`](#0x3_ecdsa_k1_recoverable_public_key_length)
+-  [Function `signature_length`](#0x3_ecdsa_k1_recoverable_signature_length)
+-  [Function `keccak256`](#0x3_ecdsa_k1_recoverable_keccak256)
+-  [Function `sha256`](#0x3_ecdsa_k1_recoverable_sha256)
+-  [Function `get_public_key_from_authenticator_payload`](#0x3_ecdsa_k1_recoverable_get_public_key_from_authenticator_payload)
+-  [Function `get_signature_from_authenticator_payload`](#0x3_ecdsa_k1_recoverable_get_signature_from_authenticator_payload)
 -  [Function `ecrecover`](#0x3_ecdsa_k1_recoverable_ecrecover)
 -  [Function `decompress_pubkey`](#0x3_ecdsa_k1_recoverable_decompress_pubkey)
 -  [Function `verify`](#0x3_ecdsa_k1_recoverable_verify)
@@ -69,6 +77,252 @@ Error if the public key cannot be recovered from the signature.
 </code></pre>
 
 
+
+<a name="0x3_ecdsa_k1_recoverable_SCHEME_ECDSA_K1_RECOVERABLE"></a>
+
+constant codes
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_SCHEME_ECDSA_K1_RECOVERABLE">SCHEME_ECDSA_K1_RECOVERABLE</a>: u64 = 3;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH">V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH</a>: u64 = 33;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_SCHEME_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_SCHEME_LENGTH">V_ECDSA_K1_RECOVERABLE_SCHEME_LENGTH</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_SIG_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_SIG_LENGTH">V_ECDSA_K1_RECOVERABLE_SIG_LENGTH</a>: u64 = 65;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_recoverable_scheme"></a>
+
+## Function `scheme`
+
+built-in functions
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_scheme">scheme</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_scheme">scheme</a>(): u64 {
+    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_SCHEME_ECDSA_K1_RECOVERABLE">SCHEME_ECDSA_K1_RECOVERABLE</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_ecdsa_k1_recoverable_scheme_length"></a>
+
+## Function `scheme_length`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_scheme_length">scheme_length</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_scheme_length">scheme_length</a>(): u64 {
+    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_SCHEME_LENGTH">V_ECDSA_K1_RECOVERABLE_SCHEME_LENGTH</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_ecdsa_k1_recoverable_public_key_length"></a>
+
+## Function `public_key_length`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_public_key_length">public_key_length</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_public_key_length">public_key_length</a>(): u64 {
+    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH">V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_ecdsa_k1_recoverable_signature_length"></a>
+
+## Function `signature_length`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_signature_length">signature_length</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_signature_length">signature_length</a>(): u64 {
+    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_SIG_LENGTH">V_ECDSA_K1_RECOVERABLE_SIG_LENGTH</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_ecdsa_k1_recoverable_keccak256"></a>
+
+## Function `keccak256`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_keccak256">keccak256</a>(): u8
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_keccak256">keccak256</a>(): u8 {
+    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_KECCAK256">KECCAK256</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_ecdsa_k1_recoverable_sha256"></a>
+
+## Function `sha256`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_sha256">sha256</a>(): u8
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_sha256">sha256</a>(): u8 {
+    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_SHA256">SHA256</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_ecdsa_k1_recoverable_get_public_key_from_authenticator_payload"></a>
+
+## Function `get_public_key_from_authenticator_payload`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_get_public_key_from_authenticator_payload">get_public_key_from_authenticator_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_get_public_key_from_authenticator_payload">get_public_key_from_authenticator_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
+    <b>let</b> public_key = <a href="_empty">vector::empty</a>&lt;u8&gt;();
+    <b>let</b> i = <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_scheme_length">scheme_length</a>() + <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_signature_length">signature_length</a>();
+    <b>let</b> public_key_position = <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_scheme_length">scheme_length</a>() + <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_signature_length">signature_length</a>() + <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_public_key_length">public_key_length</a>();
+    <b>while</b> (i &lt; public_key_position) {
+            <b>let</b> value = <a href="_borrow">vector::borrow</a>(authenticator_payload, i);
+            <a href="_push_back">vector::push_back</a>(&<b>mut</b> public_key, *value);
+            i = i + 1;
+    };
+    public_key
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_ecdsa_k1_recoverable_get_signature_from_authenticator_payload"></a>
+
+## Function `get_signature_from_authenticator_payload`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_get_signature_from_authenticator_payload">get_signature_from_authenticator_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_get_signature_from_authenticator_payload">get_signature_from_authenticator_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
+    <b>let</b> sign = <a href="_empty">vector::empty</a>&lt;u8&gt;();
+    <b>let</b> i = <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_scheme_length">scheme_length</a>();
+    <b>let</b> signature_position = <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_signature_length">signature_length</a>() + 1;
+    <b>while</b> (i &lt; signature_position) {
+            <b>let</b> value = <a href="_borrow">vector::borrow</a>(authenticator_payload, i);
+            <a href="_push_back">vector::push_back</a>(&<b>mut</b> sign, *value);
+            i = i + 1;
+    };
+    sign
+}
+</code></pre>
+
+
+
+</details>
 
 <a name="0x3_ecdsa_k1_recoverable_ecrecover"></a>
 
@@ -148,9 +402,9 @@ If the signature is valid to the pubkey and hashed message, return true. Else fa
 
 
 <pre><code><b>public</b> <b>native</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_verify">verify</a>(
-   signature: &<a href="">vector</a>&lt;u8&gt;,
-   msg: &<a href="">vector</a>&lt;u8&gt;,
-   <a href="../doc/hash.md#0x1_hash">hash</a>: u8
+    signature: &<a href="">vector</a>&lt;u8&gt;,
+    msg: &<a href="">vector</a>&lt;u8&gt;,
+    <a href="../doc/hash.md#0x1_hash">hash</a>: u8
 ): bool;
 </code></pre>
 

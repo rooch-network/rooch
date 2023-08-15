@@ -14,22 +14,21 @@ use crate::binding_test;
 #[test]
 fn test_validate() {
     let binding_test = binding_test::RustBindingTest::new().unwrap();
-    let ecdsa_k1_recoverable_validator = binding_test
-        .as_module_bundle::<rooch_types::framework::ecdsa_k1_recoverable_validator::EcdsaK1RecoverableValidator>(
-    );
+    let nostr_validator = binding_test
+        .as_module_bundle::<rooch_types::framework::nostr_validator::NostrValidatorModule>();
 
-    let keystore = InMemKeystore::new_ecdsa_recoverable_insecure_for_tests(1);
+    let keystore = InMemKeystore::new_schnorr_insecure_for_tests(1);
     let sender = keystore.addresses()[0];
     let sequence_number = 0;
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
     let tx_data = RoochTransactionData::new(sender, sequence_number, action);
     let tx = keystore
-        .sign_transaction(&sender, tx_data, BuiltinScheme::EcdsaRecoverable)
+        .sign_transaction(&sender, tx_data, BuiltinScheme::Schnorr)
         .unwrap();
     let auth_info = tx.authenticator_info();
     let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
 
-    ecdsa_k1_recoverable_validator
+    nostr_validator
         .validate(&move_tx.ctx, auth_info.authenticator.payload)
         .unwrap()
 }
