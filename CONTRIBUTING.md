@@ -70,3 +70,7 @@ Reporting issues and submitting feature requests is usually done by submitting c
 **When you want to request a new feature**, fill in the brief description of the feature on the title bar of the current Issues page as the title, and add `[Feature Request]` as the identifier before the title.
 
 After filling in the relevant information, click on `Lables` on the right, label it accordingly, and click on the `Submit new issue` button below.
+
+## Code of Conduct
+
+Please refer to the [Code of Conduct](CODE_OF_CONDUCT.md), which describes the expectations for interactions within the community.
