@@ -1,23 +1,38 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
+use crate::{addresses::ROOCH_FRAMEWORK_ADDRESS, crypto::BuiltinScheme};
 use anyhow::Result;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
 };
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
+    state::MoveStructType,
     transaction::FunctionCall,
     tx_context::TxContext,
 };
 
-/// Rust bindings for RoochFramework ecdsa_k1_recoverable_validator module
-pub struct EcdsaK1RecoverableValidator<'a> {
+pub struct EthereumValidator {}
+
+impl EthereumValidator {
+    pub fn scheme() -> BuiltinScheme {
+        BuiltinScheme::EcdsaRecoverable
+    }
+}
+
+impl MoveStructType for EthereumValidator {
+    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = EthereumValidatorModule::MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("EthereumValidator");
+}
+
+/// Rust bindings for RoochFramework ethereum_validator module
+pub struct EthereumValidatorModule<'a> {
     caller: &'a dyn MoveFunctionCaller,
 }
 
-impl<'a> EcdsaK1RecoverableValidator<'a> {
+impl<'a> EthereumValidatorModule<'a> {
     const VALIDATE_FUNCTION_NAME: &'static IdentStr = ident_str!("validate");
 
     pub fn validate(&self, ctx: &TxContext, payload: Vec<u8>) -> Result<()> {
@@ -35,8 +50,8 @@ impl<'a> EcdsaK1RecoverableValidator<'a> {
     }
 }
 
-impl<'a> ModuleBinding<'a> for EcdsaK1RecoverableValidator<'a> {
-    const MODULE_NAME: &'static IdentStr = ident_str!("ecdsa_k1_recoverable_validator");
+impl<'a> ModuleBinding<'a> for EthereumValidatorModule<'a> {
+    const MODULE_NAME: &'static IdentStr = ident_str!("ethereum_validator");
     const MODULE_ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
 
     fn new(caller: &'a impl MoveFunctionCaller) -> Self

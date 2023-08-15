@@ -7,8 +7,8 @@ module rooch_framework::session_key {
     use moveos_std::account_storage;
     use moveos_std::table::{Self, Table};
     use rooch_framework::auth_validator;
-    use rooch_framework::ed25519_validator;
-
+    use rooch_framework::native_validator::{Self as validator};
+    use rooch_framework::ed25519;
 
     friend rooch_framework::transaction_validator;
 
@@ -103,12 +103,12 @@ module rooch_framework::session_key {
         if (!account_storage::global_exists<SessionKeys>(ctx, sender_addr)){
             return option::none()
         };
-        // We only support ed25519 validator for SessionKey now
-        if(scheme != ed25519_validator::scheme()){
+        // We only support ed25519 scheme for SessionKey now
+        if(scheme != ed25519::scheme()){
             return option::none()
         };
 
-        let auth_key = ed25519_validator::get_authentication_key_from_authenticator_payload(&authenticator_payload);
+        let auth_key = validator::get_authentication_key_from_authenticator_payload(&authenticator_payload);
         
         let session_key_option = get_session_key(ctx, sender_addr, auth_key);
         if (option::is_none(&session_key_option)){
@@ -119,8 +119,8 @@ module rooch_framework::session_key {
         
         //TODO validate session scopes
 
-        if(scheme == ed25519_validator::scheme()){
-            ed25519_validator::validate_signature(&authenticator_payload, &storage_context::tx_hash(ctx));
+        if(scheme == ed25519::scheme()){
+            validator::validate_signature(&authenticator_payload, &storage_context::tx_hash(ctx));
         }else{ 
             //TODO support other built-in validators
             abort 1

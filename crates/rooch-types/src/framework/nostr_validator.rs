@@ -13,26 +13,26 @@ use moveos_types::{
     tx_context::TxContext,
 };
 
-pub struct Ed25519Validator {}
+pub struct NostrValidator {}
 
-impl Ed25519Validator {
+impl NostrValidator {
     pub fn scheme() -> BuiltinScheme {
-        BuiltinScheme::Ed25519
+        BuiltinScheme::Ecdsa
     }
 }
 
-impl MoveStructType for Ed25519Validator {
+impl MoveStructType for NostrValidator {
     const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = Ed25519ValidatorModule::MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = ident_str!("Ed25519Validator");
+    const MODULE_NAME: &'static IdentStr = NostrValidatorModule::MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("NostrValidator");
 }
 
-/// Rust bindings for RoochFramework ed25519_validator module
-pub struct Ed25519ValidatorModule<'a> {
+/// Rust bindings for RoochFramework nostr_validator module
+pub struct NostrValidatorModule<'a> {
     caller: &'a dyn MoveFunctionCaller,
 }
 
-impl<'a> Ed25519ValidatorModule<'a> {
+impl<'a> NostrValidatorModule<'a> {
     const VALIDATE_FUNCTION_NAME: &'static IdentStr = ident_str!("validate");
 
     pub fn validate(&self, ctx: &TxContext, payload: Vec<u8>) -> Result<()> {
@@ -50,8 +50,8 @@ impl<'a> Ed25519ValidatorModule<'a> {
     }
 }
 
-impl<'a> ModuleBinding<'a> for Ed25519ValidatorModule<'a> {
-    const MODULE_NAME: &'static IdentStr = ident_str!("ed25519_validator");
+impl<'a> ModuleBinding<'a> for NostrValidatorModule<'a> {
+    const MODULE_NAME: &'static IdentStr = ident_str!("nostr_validator");
     const MODULE_ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
 
     fn new(caller: &'a impl MoveFunctionCaller) -> Self

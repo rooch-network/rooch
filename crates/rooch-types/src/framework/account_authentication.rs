@@ -10,7 +10,7 @@ use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_option::MoveOption,
     state::{MoveStructState, MoveStructType},
-    transaction::FunctionCall,
+    transaction::{FunctionCall, MoveAction},
     tx_context::TxContext,
 };
 use serde::{Deserialize, Serialize};
@@ -61,6 +61,10 @@ pub struct AuthenticationKeyModule<'a> {
 impl<'a> AuthenticationKeyModule<'a> {
     const GET_AUTHENTICATION_KEY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("get_authentication_key");
+    const ROTATE_AUTHENTICATION_KEY_ENTRY_FUNCTION_NAME: &'static IdentStr =
+        ident_str!("rotate_authentication_key_entry");
+    const REMOVE_AUTHENTICATION_KEY_ENTRY_FUNCTION_NAME: &'static IdentStr =
+        ident_str!("remove_authentication_key_entry");
 
     pub fn get_authentication_key<V: MoveStructType>(
         &self,
@@ -80,6 +84,22 @@ impl<'a> AuthenticationKeyModule<'a> {
                 MoveOption::<Vec<u8>>::from_bytes(&value.value).expect("Expected Option<address>");
             result.into()
         })
+    }
+
+    pub fn rotate_authentication_key_action<V: MoveStructType>(public_key: Vec<u8>) -> MoveAction {
+        Self::create_move_action(
+            Self::ROTATE_AUTHENTICATION_KEY_ENTRY_FUNCTION_NAME,
+            vec![V::type_tag()],
+            vec![MoveValue::vector_u8(public_key)],
+        )
+    }
+
+    pub fn remove_authentication_key_action<V: MoveStructType>() -> MoveAction {
+        Self::create_move_action(
+            Self::REMOVE_AUTHENTICATION_KEY_ENTRY_FUNCTION_NAME,
+            vec![V::type_tag()],
+            vec![],
+        )
     }
 }
 

@@ -28,7 +28,8 @@
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
-<b>use</b> <a href="ed25519_validator.md#0x3_ed25519_validator">0x3::ed25519_validator</a>;
+<b>use</b> <a href="ed25519.md#0x3_ed25519">0x3::ed25519</a>;
+<b>use</b> <a href="native_validator.md#0x3_native_validator">0x3::native_validator</a>;
 </code></pre>
 
 
@@ -368,12 +369,12 @@ If the session key is expired or invalid, abort the tx, otherwise return option:
     <b>if</b> (!<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender_addr)){
         <b>return</b> <a href="_none">option::none</a>()
     };
-    // We only support <a href="ed25519.md#0x3_ed25519">ed25519</a> validator for <a href="session_key.md#0x3_session_key_SessionKey">SessionKey</a> now
-    <b>if</b>(scheme != <a href="ed25519_validator.md#0x3_ed25519_validator_scheme">ed25519_validator::scheme</a>()){
+    // We only support <a href="ed25519.md#0x3_ed25519">ed25519</a> scheme for <a href="session_key.md#0x3_session_key_SessionKey">SessionKey</a> now
+    <b>if</b>(scheme != <a href="ed25519.md#0x3_ed25519_scheme">ed25519::scheme</a>()){
         <b>return</b> <a href="_none">option::none</a>()
     };
 
-    <b>let</b> auth_key = <a href="ed25519_validator.md#0x3_ed25519_validator_get_authentication_key_from_authenticator_payload">ed25519_validator::get_authentication_key_from_authenticator_payload</a>(&authenticator_payload);
+    <b>let</b> auth_key = validator::get_authentication_key_from_authenticator_payload(&authenticator_payload);
 
     <b>let</b> session_key_option = <a href="session_key.md#0x3_session_key_get_session_key">get_session_key</a>(ctx, sender_addr, auth_key);
     <b>if</b> (<a href="_is_none">option::is_none</a>(&session_key_option)){
@@ -384,8 +385,8 @@ If the session key is expired or invalid, abort the tx, otherwise return option:
 
     //TODO validate session scopes
 
-    <b>if</b>(scheme == <a href="ed25519_validator.md#0x3_ed25519_validator_scheme">ed25519_validator::scheme</a>()){
-        <a href="ed25519_validator.md#0x3_ed25519_validator_validate_signature">ed25519_validator::validate_signature</a>(&authenticator_payload, &<a href="_tx_hash">storage_context::tx_hash</a>(ctx));
+    <b>if</b>(scheme == <a href="ed25519.md#0x3_ed25519_scheme">ed25519::scheme</a>()){
+        validator::validate_signature(&authenticator_payload, &<a href="_tx_hash">storage_context::tx_hash</a>(ctx));
     }<b>else</b>{
         //TODO support other built-in validators
         <b>abort</b> 1
