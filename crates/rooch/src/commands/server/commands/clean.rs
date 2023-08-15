@@ -11,7 +11,7 @@ use std::{fs, path::Path};
 pub struct CleanCommand;
 
 impl CleanCommand {
-    pub async fn execute(self) -> RoochResult<()> {
+    pub fn execute(self) -> RoochResult<()> {
         let rooch_store_dir = StoreConfig::get_rooch_store_dir();
         let moveos_store_dir = StoreConfig::get_moveos_store_dir();
 
