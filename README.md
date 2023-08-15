@@ -1,7 +1,11 @@
-# Rooch
-
-[Rooch](https://rooch.network) is a modular DApp container with the [Move language](https://github.com/move-language/move).
-
+<div align="center">
+  <br />
+  <br />
+  <a href="https://rooch.network"><img alt="Rooch" src="https://rooch.network/logo/rooch_black_combine.svg" width=384></a>
+  <br />
+  <h3><a href="https://rooch.network">Rooch</a> is Modular DApp Container, with <a href="https://github.com/move-language/move)">Move.</a></h3>
+  <br />
+</div>
 
 [![Check-Build-Test](https://github.com/rooch-network/rooch/actions/workflows/check_build_test.yml/badge.svg)](https://github.com/rooch-network/rooch/actions/workflows/check_build_test.yml)
 [![License](https://img.shields.io/badge/license-Apache-green.svg)](LICENSE)
@@ -9,65 +13,95 @@
 
 ## Usage
 
-1. Rooch Ethereum Layer2: Rooch(Execution) + Layer1s(Settlement) + Ethereum(Arbitration) + DA
-2. XChain Modular DApp: Rooch(Execution) + XChain(Settlement + Arbitration) + DA
-3. Rooch Layer3 Modular DApp: Rooch(Execution) + Rooch Layer2(Settlement + Arbitration) + DA
-4. Sovereign Rollup: Rooch + DA
+* **Multi-Chain Layer2**: Rooch(Execution) + Multi-Chain(Settlement) + Ethereum(Arbitration) + DA
+* **X-Chain Modular DApp**: Rooch(Execution) + X-Chain(Settlement + Arbitration) + DA
+* **Layer3 Modular DApp**: Rooch(Execution) + Rooch Layer2(Settlement + Arbitration) + DA
+* **Sovereign Rollup**: Rooch + DA
 
 ## Getting Started
 
-1. Build from source
+1. Building from source:
     ```bash
     cargo build && cp target/debug/rooch ~/.cargo/bin/
     ```
-2. Create a new Move project
-    ```bash
-    rooch move new my_move_project
-    ```
-3. Init Rooch config
+
+2. initialize Rooch config:
     ```bash
     rooch init
     ```
-4. Build the Move project
+ 
+3. Creating a new Move project:
+    ```bash
+    rooch move new my_move_project
+    ```
+4. Building the Move project:
     ```bash
     cd my_move_project && rooch move build
     ```
-5. Start the server
+   
+5. Starting the server
     ```bash
     rooch server start
     ```
-> If you want a more detailed log for debugging, you can use `RUST_LOG=debug rooch server start`
-6. Publish the Move project
+   * *`RUST_LOG=debug rooch server start` for debugging information*
+
+6. Publishing the Move project
     ```bash
     rooch move publish -p my_move_project
     ```
+   
+*Experience Rooch through [examples](examples).*
 
 ## Deep Dive into Rooch
 
-### [Storage Abstraction](./docs/website/pages/docs/tech-highlights/storage_abstraction.en-US.mdx)
+<details>
+<summary>Storage Abstraction</summary>
 
-Storage Abstraction module overview:
+- [Docs](./docs/website/pages/docs/tech-highlights/storage_abstraction.en-US.mdx)
+
+- Overview:
 
 ![Storage Abstraction](./docs/website/public/docs/rooch-design-storage-abstraction.svg)
+</details>
 
-State DB:
+<details>
+<summary>State DB</summary>
+
+- Overview:
 
 ![State DB](./docs/website/public/docs/rooch-design-statedb.svg)
 
-### [Transaction Flow](./docs/website/pages/docs/tech-highlights/transaction_flow.en-US.mdx)
+</details>
 
+<details>
+<summary>Transaction Flow</summary>
+
+- [Docs](./docs/website/pages/docs/tech-highlights/transaction_flow.en-US.mdx)
+- Overview:
 ![Rooch Transaction Flow](./docs/website/public/docs/rooch-design-transaction-flow-functional-perspective.svg)
+
+</details>
 
 ## Components
 
-* [MoveOS](./moveos): MoveOS is a standalone Move runtime environment based on [MoveVM](https://github.com/move-language/move). It provides Move execution environment for rooch.
+* [MoveOS](./moveos): MoveOS is a standalone Move runtime environment based on [MoveVM](https://github.com/move-language/move). It provides Move execution environment for Rooch.
 
-## How to Contribute
+## Contributing
 
-You can learn more about contributing to the Rooch project by reading our [Contribution Guide](./CONTRIBUTING.md) and by viewing our [Code of Conduct](./CODE_OF_CONDUCT.md).
+Rooch is an open source project, you can help with ideas, code, or documentation, we appreciate any efforts that help us to make the project better! 
 
-Rooch Network Rooch is licensed under [Apache 2.0](./LICENSE).
+To get started with contributing:
 
-## Join the Community
+[The First Good Pull Request](./CONTRIBUTING.md)
 
-To connect with the Rooch Network community, please join our [Discord](https://discord.gg/rooch).
+## Community
+
+* [Discord](https://discord.gg/rooch)
+* [Twitter](https://twitter.com/RoochNetwork)
+* [GitHub](https://github.com/rooch-network)
+
+## License
+
+Current Rooch code is released under [Apache 2.0](./LICENSE).
+
+When contributing to a Rooch feature, you can find the relevant license in the comments at the top of each file.

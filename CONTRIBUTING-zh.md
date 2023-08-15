@@ -69,3 +69,7 @@ git clone https://github.com/<GITHUB-USER-NAME>/rooch.git`
 **当您要请求一个新特性时**，在当前的 Issues 页面标题栏上填写特性的简介描述作为标题，并在标题前加上 `[Feature Request]` 作为标识。
 
 填写好相关信息后，点击右侧的 `Lables`，打上相应的标签，并点击下方的 `Submit new issue` 按钮。
+
+## 行为准则
+
+请参阅[行为准则](CODE_OF_CONDUCT.md)，其中描述了社区内的互动要求。
