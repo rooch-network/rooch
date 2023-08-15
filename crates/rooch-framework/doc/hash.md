@@ -14,7 +14,7 @@ Move standard library and wrap the functions at here.
 -  [Function `ripemd160`](#0x3_hash_ripemd160)
 
 
-<pre><code><b>use</b> <a href="">0x1::hash</a>;
+<pre><code><b>use</b> <a href="../doc/hash.md#0x1_hash">0x1::hash</a>;
 </code></pre>
 
 

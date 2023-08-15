@@ -48,14 +48,7 @@ use fastcrypto::{
         Secp256k1SignatureAsBytes,
     },
 };
-use move_core_types::{
-    account_address::AccountAddress,
-    identifier::{IdentStr, Identifier},
-    language_storage::StructTag,
-};
-use moveos_types::{
-    h256::H256, module_binding::ModuleBinding, serde::Readable, state::MoveStructType,
-};
+use moveos_types::{h256::H256, serde::Readable, transaction::MoveAction};
 use rand::{rngs::StdRng, SeedableRng};
 use schemars::JsonSchema;
 use serde::ser::Serializer;
@@ -130,49 +123,92 @@ impl BuiltinScheme {
         }
     }
 
-    pub fn get_validator_name(&self) -> Result<String, RoochError> {
-        match self {
-            BuiltinScheme::Ed25519 => Ok(NativeValidator::STRUCT_NAME.to_string()),
-            BuiltinScheme::MultiEd25519 => Ok(String::from(stringify!(MultiEd25519Validator))),
-            BuiltinScheme::Ecdsa => Ok(BitcoinValidator::STRUCT_NAME.to_string()),
-            BuiltinScheme::EcdsaRecoverable => Ok(EthereumValidator::STRUCT_NAME.to_string()),
-            BuiltinScheme::Schnorr => Ok(NostrValidator::STRUCT_NAME.to_string()),
-        }
+    // pub fn get_validator_name(&self) -> Result<String, RoochError> {
+    //     match self {
+    //         BuiltinScheme::Ed25519 => Ok(NativeValidator::STRUCT_NAME.to_string()),
+    //         BuiltinScheme::MultiEd25519 => Ok(String::from(stringify!(MultiEd25519Validator))),
+    //         BuiltinScheme::Ecdsa => Ok(BitcoinValidator::STRUCT_NAME.to_string()),
+    //         BuiltinScheme::EcdsaRecoverable => Ok(EthereumValidator::STRUCT_NAME.to_string()),
+    //         BuiltinScheme::Schnorr => Ok(NostrValidator::STRUCT_NAME.to_string()),
+    //     }
+    // }
+
+    // pub fn create_validator_type_tag(
+    //     &self,
+    // ) -> Result<(TypeTag, AccountAddress, &IdentStr), RoochError> {
+    //     // Get addresses and module names for each scheme
+    //     let (address, module_name) = match self {
+    //         BuiltinScheme::Ed25519 => (
+    //             NativeValidatorModule::MODULE_ADDRESS,
+    //             NativeValidatorModule::MODULE_NAME,
+    //         ),
+    //         BuiltinScheme::MultiEd25519 => todo!(),
+    //         BuiltinScheme::Ecdsa => (
+    //             BitcoinValidatorModule::MODULE_ADDRESS,
+    //             BitcoinValidatorModule::MODULE_NAME,
+    //         ),
+    //         BuiltinScheme::EcdsaRecoverable => (
+    //             EthereumValidatorModule::MODULE_ADDRESS,
+    //             EthereumValidatorModule::MODULE_NAME,
+    //         ),
+    //         BuiltinScheme::Schnorr => (
+    //             NostrValidatorModule::MODULE_ADDRESS,
+    //             NostrValidatorModule::MODULE_NAME,
+    //         ),
+    //     };
+    //     // Get validator names
+    //     let validator_name: String = self.get_validator_name()?;
+    //     // Create type tag
+    //     let type_tag = TypeTag::Struct(Box::new(StructTag {
+    //         address,
+    //         module: Identifier::new(module_name.to_string()).unwrap(),
+    //         name: Identifier::new(validator_name).unwrap(),
+    //         type_params: vec![],
+    //     }));
+    //     Ok((type_tag, address, module_name))
+    // }
+
+    pub fn create_rotate_authentication_key_action(
+        &self,
+        public_key: Vec<u8>,
+    ) -> Result<MoveAction, RoochError> {
+        let action = match self {
+            BuiltinScheme::Ed25519 => NativeValidatorModule::rotate_authentication_key_action::<
+                NativeValidator,
+            >(public_key),
+            BuiltinScheme::MultiEd25519 => todo!(),
+            BuiltinScheme::Ecdsa => BitcoinValidatorModule::rotate_authentication_key_action::<
+                BitcoinValidator,
+            >(public_key),
+            BuiltinScheme::EcdsaRecoverable => {
+                EthereumValidatorModule::rotate_authentication_key_action::<EthereumValidator>(
+                    public_key,
+                )
+            }
+            BuiltinScheme::Schnorr => {
+                NostrValidatorModule::rotate_authentication_key_action::<NostrValidator>(public_key)
+            }
+        };
+        Ok(action)
     }
 
-    pub fn create_validator_struct_tag(
-        &self,
-    ) -> Result<(Box<StructTag>, AccountAddress, &IdentStr), RoochError> {
-        // Get addresses and module names for each scheme
-        let (address, module_name) = match self {
-            BuiltinScheme::Ed25519 => (
-                NativeValidatorModule::MODULE_ADDRESS,
-                NativeValidatorModule::MODULE_NAME,
-            ),
+    pub fn create_remove_authentication_key_action(&self) -> Result<MoveAction, RoochError> {
+        let action = match self {
+            BuiltinScheme::Ed25519 => {
+                NativeValidatorModule::remove_authentication_key_action::<NativeValidator>()
+            }
             BuiltinScheme::MultiEd25519 => todo!(),
-            BuiltinScheme::Ecdsa => (
-                BitcoinValidatorModule::MODULE_ADDRESS,
-                BitcoinValidatorModule::MODULE_NAME,
-            ),
-            BuiltinScheme::EcdsaRecoverable => (
-                EthereumValidatorModule::MODULE_ADDRESS,
-                EthereumValidatorModule::MODULE_NAME,
-            ),
-            BuiltinScheme::Schnorr => (
-                NostrValidatorModule::MODULE_ADDRESS,
-                NostrValidatorModule::MODULE_NAME,
-            ),
+            BuiltinScheme::Ecdsa => {
+                BitcoinValidatorModule::remove_authentication_key_action::<BitcoinValidator>()
+            }
+            BuiltinScheme::EcdsaRecoverable => {
+                EthereumValidatorModule::remove_authentication_key_action::<EthereumValidator>()
+            }
+            BuiltinScheme::Schnorr => {
+                NostrValidatorModule::remove_authentication_key_action::<NostrValidator>()
+            }
         };
-        // Get validator names
-        let validator_name: String = self.get_validator_name()?;
-        // Create a box of struct tag
-        let struct_tag = Box::new(StructTag {
-            address,
-            module: Identifier::new(module_name.to_string()).unwrap(),
-            name: Identifier::new(validator_name).unwrap(),
-            type_params: vec![],
-        });
-        Ok((struct_tag, address, module_name))
+        Ok(action)
     }
 }
 

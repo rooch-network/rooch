@@ -9,7 +9,7 @@ use move_core_types::{
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     state::MoveStructType,
-    transaction::FunctionCall,
+    transaction::{FunctionCall, MoveAction},
     tx_context::TxContext,
 };
 
@@ -34,6 +34,10 @@ pub struct NativeValidatorModule<'a> {
 
 impl<'a> NativeValidatorModule<'a> {
     const VALIDATE_FUNCTION_NAME: &'static IdentStr = ident_str!("validate");
+    const ROTATE_AUTHENTICATION_KEY_ENTRY_FUNCTION_NAME: &'static IdentStr =
+        ident_str!("rotate_authentication_key_entry");
+    const REMOVE_AUTHENTICATION_KEY_ENTRY_FUNCTION_NAME: &'static IdentStr =
+        ident_str!("remove_authentication_key_entry");
 
     pub fn validate(&self, ctx: &TxContext, payload: Vec<u8>) -> Result<()> {
         let auth_validator_call = FunctionCall::new(
@@ -47,6 +51,22 @@ impl<'a> NativeValidatorModule<'a> {
                 debug_assert!(values.is_empty(), "should not have return values");
             })?;
         Ok(())
+    }
+
+    pub fn rotate_authentication_key_action<V: MoveStructType>(public_key: Vec<u8>) -> MoveAction {
+        Self::create_move_action(
+            Self::ROTATE_AUTHENTICATION_KEY_ENTRY_FUNCTION_NAME,
+            vec![V::type_tag()],
+            vec![MoveValue::vector_u8(public_key)],
+        )
+    }
+
+    pub fn remove_authentication_key_action<V: MoveStructType>() -> MoveAction {
+        Self::create_move_action(
+            Self::REMOVE_AUTHENTICATION_KEY_ENTRY_FUNCTION_NAME,
+            vec![V::type_tag()],
+            vec![],
+        )
     }
 }
 
