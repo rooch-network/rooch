@@ -65,7 +65,7 @@ impl ExecutorActor {
         multi_chain_address_sender: MultiChainAddress,
     ) -> Result<AccountAddress> {
         let resolved_sender = {
-            let address_mapping = self.moveos.as_module_bundle::<AddressMapping>();
+            let address_mapping = self.moveos.as_module_binding::<AddressMapping>();
             address_mapping.resovle_or_generate(multi_chain_address_sender)?
         };
 
@@ -115,7 +115,7 @@ impl ExecutorActor {
         ctx: &TxContext,
         authenticator: AuthenticatorInfo,
     ) -> Result<(TxValidateResult, Vec<FunctionCall>, Vec<FunctionCall>)> {
-        let tx_validator = self.moveos.as_module_bundle::<TransactionValidator>();
+        let tx_validator = self.moveos.as_module_binding::<TransactionValidator>();
         let tx_validate_result = tx_validator.validate(ctx, authenticator.clone())?;
         let auth_validator_option = tx_validate_result.auth_validator();
         match auth_validator_option {

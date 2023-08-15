@@ -63,6 +63,10 @@ pub trait MoveStructType {
             type_params: Self::type_params(),
         }
     }
+
+    fn type_tag() -> TypeTag {
+        TypeTag::Struct(Box::new(Self::struct_tag()))
+    }
 }
 
 /// The rust representation of a Move value state

@@ -7,7 +7,7 @@ use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
 };
 use moveos_types::{
-    module_binding::{ModuleBundle, MoveFunctionCaller},
+    module_binding::{ModuleBinding, MoveFunctionCaller},
     transaction::FunctionCall,
     tx_context::TxContext,
 };
@@ -35,7 +35,7 @@ impl<'a> SchnorrValidator<'a> {
     }
 }
 
-impl<'a> ModuleBundle<'a> for SchnorrValidator<'a> {
+impl<'a> ModuleBinding<'a> for SchnorrValidator<'a> {
     const MODULE_NAME: &'static IdentStr = ident_str!("schnorr_validator");
     const MODULE_ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
 

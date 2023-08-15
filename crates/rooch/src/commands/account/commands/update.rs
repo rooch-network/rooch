@@ -8,13 +8,13 @@ use move_core_types::{
     language_storage::{ModuleId, StructTag, TypeTag},
     value::MoveValue,
 };
-use moveos_types::module_binding::ModuleBundle;
+use moveos_types::module_binding::ModuleBinding;
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
 use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_types::framework::{
     ecdsa_k1_recoverable_validator::EcdsaK1RecoverableValidator,
-    ecdsa_k1_validator::EcdsaK1Validator, ed25519_validator::Ed25519Validator,
+    ecdsa_k1_validator::EcdsaK1Validator, ed25519_validator::Ed25519ValidatorModule,
     schnorr_validator::SchnorrValidator,
 };
 use rooch_types::{
@@ -81,8 +81,8 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
 
                 let (module_address, module_name) = match scheme {
                     BuiltinScheme::Ed25519 => (
-                        Ed25519Validator::MODULE_ADDRESS,
-                        Ed25519Validator::MODULE_NAME,
+                        Ed25519ValidatorModule::MODULE_ADDRESS,
+                        Ed25519ValidatorModule::MODULE_NAME,
                     ),
                     BuiltinScheme::MultiEd25519 => todo!(),
                     BuiltinScheme::Ecdsa => (

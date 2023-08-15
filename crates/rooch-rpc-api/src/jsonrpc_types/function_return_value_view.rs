@@ -24,6 +24,15 @@ impl From<FunctionReturnValue> for FunctionReturnValueView {
     }
 }
 
+impl From<FunctionReturnValueView> for FunctionReturnValue {
+    fn from(value: FunctionReturnValueView) -> Self {
+        Self {
+            type_tag: value.type_tag.into(),
+            value: value.value.0,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct AnnotatedFunctionReturnValueView {
     pub value: FunctionReturnValueView,
