@@ -1,7 +1,7 @@
 import { describe, it, expect, vi} from 'vitest'
 import { LocalnetConnection } from './connection'
 import { JsonRpcProvider } from './json-rpc-provider'
-import fetch from "isomorphic-fetch";
+import fetch from "isomorphic-fetch"
 import fetchMock from 'fetch-mock';
 
 describe('provider', () => {
@@ -11,28 +11,37 @@ describe('provider', () => {
     })
 
     it('should execute view function', async () => {
-        const injectedFetchMock = vi.fn().withImplementation(fetch, ()=>{
-            const mock = fetchMock.sandbox()
+        
+        const mockFetch = fetchMock.sandbox()
 
-            let body = { data: 'value' };
-            let init = {
-                status: 200,
-                statusText: "OK",
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            };
+        let body = {
+            "jsonrpc": "2.0",
+            "result": 19,
+            "id": 1
+        };
+        let init = {
+            status: 200,
+            statusText: "OK",
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        };
 
-            let response = new Response(JSON.stringify(body), init);
-            mock.mock("*", response, {
-                method: "GET"
-            })
-            
-            return mock
+        let response = new Response(JSON.stringify(body), init);
+        mockFetch.post("*", response, {
+            method: "POST"
         })
+        
+
+        const wrapFetch = async (input:any, init:any)=>{
+            console.log("mockFetch: input:", input, "init:", init)
+            const result = await fetch(input, init)
+            console.log("mockFetch: result:", result)
+            return result
+        }
 
         const provider = new JsonRpcProvider(LocalnetConnection, {
-            fetcher: injectedFetchMock,
+            fetcher: wrapFetch//mockFetch as (typeof fetch),
         })
         expect(provider).toBeDefined()
 

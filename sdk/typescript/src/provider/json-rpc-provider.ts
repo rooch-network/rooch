@@ -68,6 +68,14 @@ export class JsonRpcProvider {
         }),
       ]),
     )
+
+    this.client.onError((e)=>{
+      console.error("client error", e)
+    })
+
+    this.client.onNotification((data)=>{
+      console.log("data:", data)
+    })
   }
 
   async getRpcApiVersion(): Promise<string | undefined> {
@@ -106,7 +114,7 @@ export class JsonRpcProvider {
 
     // rooch, eth, wellet,
     // TDOO: args, tyArgs, wait bcs
-    return this.client.rooch_executeViewFunction({
+    return await this.client.rooch_executeViewFunction({
       function_id: functionIdToStirng(funcId),
       args: args ?? [],
       ty_args: tyArgs ?? [],
