@@ -114,7 +114,9 @@ impl RpcModuleBuilder {
 
 // Start json-rpc server
 pub async fn start_server(is_mock_storage: bool) -> Result<ServerHandle> {
-    tracing_subscriber::fmt::init();
+    // We may call `start_server` multiple times in testing scenarios
+    // tracing_subscriber can only be inited once.
+    let _ = tracing_subscriber::fmt::try_init();
 
     let config = ServerConfig::default();
 

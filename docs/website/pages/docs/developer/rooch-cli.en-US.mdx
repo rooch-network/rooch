@@ -69,6 +69,447 @@ Documentation generation successful!
 
 ## More Examples
 
-TODO
+### Account
 
+The Rooch CLI Account command supports the following subcommands:
 
+```shell
+rooch-account 
+Tool for interacting with accounts
+
+USAGE:
+    rooch account [OPTIONS] <SUBCOMMAND>
+
+OPTIONS:
+        --client.config <CONFIG>    Sets the file storing the state of our user accounts (an empty
+                                    one will be created if missing)
+    -h, --help                      Print help information
+
+SUBCOMMANDS:
+    create     Create a new account on-chain
+    help       Print this message or the help of the given subcommand(s)
+    import     Add a new key to rooch.keystore based on the input mnemonic phrase
+    list       List all keys by its Rooch address, Base64 encoded public key
+    nullify    Nullify a keypair from a selected scheme with a Ed25519 generated address in
+                   rooch.keystore
+    switch     Switch the active Rooch account
+    update     Update an address with a new keypair from scheme to rooch.keystore
+```
+
+Use `rooch account -h` to see a list of supported subcommands.
+
+Use `rooch account help <subcommand>` to see more information on each subcommand.
+
+#### Account Create
+
+Use `rooch account create` subcommand to create an account on Rooch Network.
+
+The Rooch CLI Account Create subcommand supports the following options:
+
+```shell
+rooch-account-create 
+Create a new account on-chain
+
+An account can be created by transferring coins, or by making an explicit call to create an account.
+This will create an account with no coins, and any coins will have to transferred afterwards.
+
+USAGE:
+    rooch account create [OPTIONS]
+
+OPTIONS:
+        --config-dir <CONFIG_DIR>
+            rooch config path
+
+    -h, --help
+            Print help information
+```
+
+Without entering `--config-dir` option, an account will be created at the default local file path, currently `~/.rooch/rooch_config/`.
+
+It's worth noting to create an account, a configuration file `rooch.yaml` must exist. `rooch.yaml` file can be created from `rooch init` command.
+
+Here are the examples to create accounts with and without option `--config-dir`:
+
+```> rooch account create```
+
+```shell
+0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a
+Generated new keypair for address with scheme "ed25519" [0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a]
+Secret Recovery Phrase : [desert hedgehog moral long cost husband timber someone lunar knee clever brave]
+{
+  "sequence_info": {
+    "tx_order": "1",
+    "tx_order_signature": {
+      "scheme": "0",
+      "payload": "0x0027f6c2510a540a9cf615c784b1532138ee4b2e48788bc12965711f29ca6ab0a8bb0bc00e839e757583acbe6fa3cab41f521d820f7cded452aa9ea4fd2813ae0e6c8de62390c89dcb353892770164fd2cd449b5956193fa1d1759d196c666735f"
+    },
+    "tx_accumulator_root": "0x955bf43aaa654d7a4ae6e2f4a7f09d7537975eff8483fbdb1c0a1126e3e81e24"
+  },
+  "execution_info": {
+    "tx_hash": "0x6e7cd40300f2721a88719a4027ed7873daa28c22204d800fa85ee11e5569a9bf",
+    "state_root": "0xab5e6745a8c5d6a634e6b77bf95700bf7912d172ec02c641748a8237827f79f9",
+    "event_root": "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
+    "gas_used": 0,
+    "status": {
+      "type": "moveabort",
+      "location": "0000000000000000000000000000000000000000000000000000000000000003::account",
+      "abort_code": "524289"
+    }
+  },
+  "output": {
+    "status": {
+      "type": "moveabort",
+      "location": "0000000000000000000000000000000000000000000000000000000000000003::account",
+      "abort_code": "524289"
+    },
+    "table_changeset": {
+      "new_tables": {},
+      "removed_tables": [],
+      "changes": {
+        "0x0000000000000000000000000000000000000000000000000000000000000000": {
+          "entries": {
+            "0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a": {
+              "type": "new",
+              "value": "0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998ad2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998ac7d14a2ff97ecf1df90bb5698654817688e24107d9dde0ec7c703bfdab65f9256c97b072e626eda50af11f602437d06ffbf454fafec0f84afaecfbdcac00b9d7",
+              "value_type": "0x2::object::Object<0x2::account_storage::AccountStorage>"
+            }
+          }
+        },
+        "0xc7d14a2ff97ecf1df90bb5698654817688e24107d9dde0ec7c703bfdab65f925": {
+          "entries": {
+            "0x52303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6163636f756e743a3a4163636f756e74": {
+              "type": "new",
+              "value": "0x0100000000000000",
+              "value_type": "0x3::account::Account"
+            }
+          }
+        }
+      }
+    },
+    "events": [],
+    "gas_used": 0
+  }
+}
+```
+
+At line 1-2, the create subcommand will generate a new key pair and create an address from it from scheme ed25519.
+
+At line 3, a secret recovery phrase or mnemonic phrase is given to an address for recovering the address.
+
+At line 4-57, a transaction is sent to the Rooch blockchain RPC server and the corresponding response is returned herein.
+
+Changes this transaction has made:
+
+```shell
+"0x0000000000000000000000000000000000000000000000000000000000000000": {
+    "entries": {
+        "0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a": {
+            "type": "new",
+            "value": "0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998ad2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998ac7d14a2ff97ecf1df90bb5698654817688e24107d9dde0ec7c703bfdab65f9256c97b072e626eda50af11f602437d06ffbf454fafec0f84afaecfbdcac00b9d7",
+            "value_type": "0x2::object::Object<0x2::account_storage::AccountStorage>"
+        }
+    }
+},
+```
+
+The first change indicates that an account storage is assigned to the address just created.
+
+```shell
+"0xc7d14a2ff97ecf1df90bb5698654817688e24107d9dde0ec7c703bfdab65f925": {
+    "entries": {
+        "0x52303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6163636f756e743a3a4163636f756e74": {
+            "type": "new",
+            "value": "0x0100000000000000",
+            "value_type": "0x3::account::Account"
+        }
+    }
+}
+```
+
+The second change indicates that an account is created for the address just created.
+
+One can also specify an option `--config-dir` for the account create command to designate the configuration direcotory.
+
+```> rooch account create --config-dir ~/.rooch/rooch_config/```
+
+Note that the account creation will fail with an HTTP error if the Rooch blockchain RPC server has not started:
+
+```shell
+Error: Networking or low-level protocol error: HTTP error: error trying to connect: tcp connect error: Connection refused (os error 61)
+```
+
+#### Account Switch
+
+With an account created by `rooch account create` after `rooch init` command, there are two accounts available.
+
+Use `rooch account switch` subcommand to switch between accounts.
+
+The Rooch CLI Account Switch subcommand supports the following options:
+
+```shell
+rooch-account-switch 
+Switch the active Rooch account
+
+USAGE:
+    rooch account switch [OPTIONS] --address <ADDRESS>
+
+OPTIONS:
+    -a, --address <ADDRESS>          The address of the Rooch account to be set as active
+        --config-dir <CONFIG_DIR>    rooch config path
+    -h, --help                       Print help information
+```
+
+Use `--address` or `-a` flag to specify an address to switch to.
+
+Here's the example to switch to the created address taken from the above example:
+
+```> rooch account switch --address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a```
+
+```shell
+The active account was successfully switched to `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a`
+```
+
+#### Account List
+
+Use `rooch account list` subcommand to check the account status.
+
+The Rooch CLI Account List subcommand supports the following options:
+
+```shell
+rooch-account-list 
+List all keys by its Rooch address, Base64 encoded public key
+
+USAGE:
+    rooch account list [OPTIONS]
+
+OPTIONS:
+        --config-dir <CONFIG_DIR>    rooch config path
+    -h, --help                       Print help information
+```
+
+Use account list to check the address has successfully switched to `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a`.
+
+```> rooch account list```
+
+```shell
+                     Rooch Address (Ed25519)                       |               Public Key (Base64)                |      Scheme      | Active Address
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+0x526793be899b13834a3df14a60003554232dc2886af71296a1a4e46edae814ed |   AGBscM9xRoM6ErRRpUfx/PXGQE0HvbW3pVku0fNTcPq3   |     ed25519      |             
+0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a |   AITD/sv7fsNvqwtT53l0PpsLjJdR6LIo1lVqy+PKL1Aa   |     ed25519      |     True    
+```
+
+With Active Address shown as True for Rooch Address `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a`, the address switch operation has been confirmed.
+
+#### Account Import
+
+Use `rooch account import` subcommand to import an account from a mnemonic phrase.
+
+The Rooch CLI Account Import subcommand supports the following options:
+
+```shell
+rooch-account-import 
+Add a new key to rooch.keystore based on the input mnemonic phrase
+
+USAGE:
+    rooch account import [OPTIONS] --mnemonic-phrase <MNEMONIC_PHRASE>
+
+OPTIONS:
+        --config-dir <CONFIG_DIR>              rooch config path
+    -h, --help                                 Print help information
+    -m, --mnemonic-phrase <MNEMONIC_PHRASE>
+```
+
+Use `--mnemonic-phrase` or `-m` flag to specify a mnemonic phrase to import an account. The account's address will be generated from the mnemonic phrase to an ed25519 address with an ed25519 key pair generated.
+
+Import an account from a mnemonic phrase. The mnemonic phrase is generated from `rooch init` or `rooch account create` commands:
+
+```> rooch account import --mnemonic-phrase "misery surprise pupil skull acid pretty loud tray wolf pride head adapt"```
+
+```shell
+"misery surprise pupil skull acid pretty loud tray wolf pride head adapt"
+Key imported for address on scheme Ed25519: [0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33]
+```
+
+At line 1, it's the mnemonic phrase itself.
+
+At line 2, a key pair is imported from the mnemonic phrase and an address is generated from the key pair with the default scheme ed25519.
+
+Now, use `rooch account list` to check whether the newly imported address `0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33` is in the account:
+
+```> rooch account list```
+
+```shell
+                     Rooch Address (Ed25519)                       |               Public Key (Base64)                |      Scheme      | Active Address
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33 |   AMtU2I8OF3ArnnPJ2Yvcj11++cIWh+EbhZz4sMmGENZ7   |     ed25519      |             
+0x526793be899b13834a3df14a60003554232dc2886af71296a1a4e46edae814ed |   AGBscM9xRoM6ErRRpUfx/PXGQE0HvbW3pVku0fNTcPq3   |     ed25519      |             
+0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a |   AITD/sv7fsNvqwtT53l0PpsLjJdR6LIo1lVqy+PKL1Aa   |     ed25519      |     True    
+```
+
+The command line output shows that the address `0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33` is successfully imported from a mnemonic phrase and it's in the account.
+
+It's worth noting that when using `rooch account import` command, the mnemonic phrase should be quoted since it has white spaces between words.
+
+#### Account Update
+
+Use `rooch account update` subcommand to update an address with a new key pair from a mnemonic phrase and a scheme.
+
+The Rooch CLI Account Update subcommand supports the following options:
+
+```shell
+rooch-account-update 
+Update an address with a new keypair from scheme to rooch.keystore
+
+USAGE:
+    rooch account update [OPTIONS] --address <ADDRESS> --mnemonic-phrase <MNEMONIC_PHRASE> --scheme <CRYPTO_SCHEMES>
+
+OPTIONS:
+    -a, --address <ADDRESS>
+            Rooch address in string format
+
+        --config-dir <CONFIG_DIR>
+            rooch config path
+
+    -h, --help
+            Print help information
+
+    -m, --mnemonic-phrase <MNEMONIC_PHRASE>
+            
+
+    -s, --scheme <CRYPTO_SCHEMES>
+            Command line input of crypto schemes (ed25519, multi-ed25519, ecdsa, ecdsa-recoverable
+            or schnorr) [possible values: ed25519, multi-ed25519, ecdsa, ecdsa-recoverable, schnorr]
+```
+
+Use `--address` or `-a`, `--mnemonic-phrase` or `-m`, `--scheme` or `-s` flag combinations to update an account's address.
+
+`<ADDRESS>` can be taken from an existing address. Similarly, `<MNEMONIC_PHRASE>` can also be taken from an existing one.
+
+`<CRYPTO_SCHEMES>` should be selected within the possible values scope.
+
+Here's an example to update address `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a` with the `ecdsa` scheme and the corresponding mnemonic phrase `desert hedgehog moral long cost husband timber someone lunar knee clever brave` used to generate the address:
+
+```> rooch account update --address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a --scheme ecdsa --mnemonic-phrase "desert hedgehog moral long cost husband timber someone lunar knee clever brave"```
+
+```shell
+"desert hedgehog moral long cost husband timber someone lunar knee clever brave"
+0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a
+Generated a new keypair for an existing address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a on scheme Ecdsa
+```
+
+At line 1, it's the mnemonic phrase from the input.
+
+At line 2, it's the existing address from the input.
+
+At line 3, it indicates a new key pair on scheme ecdsa is generated for the address `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a`.
+
+Use `rooch account list` to check if a new key pair on scheme ecdsa is successfully added to the account.
+
+```> rooch account list```
+
+```shell
+                     Rooch Address (Ed25519)                       |               Public Key (Base64)                |      Scheme      | Active Address
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33 |   AMtU2I8OF3ArnnPJ2Yvcj11++cIWh+EbhZz4sMmGENZ7   |     ed25519      |             
+0x526793be899b13834a3df14a60003554232dc2886af71296a1a4e46edae814ed |   AGBscM9xRoM6ErRRpUfx/PXGQE0HvbW3pVku0fNTcPq3   |     ed25519      |             
+0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a |   AITD/sv7fsNvqwtT53l0PpsLjJdR6LIo1lVqy+PKL1Aa   |     ed25519      |     True    
+0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a | AgKbPp8/Aryextky10gULBTs/sdL9Flh2qpxtyXuXjj3Kg== |      ecdsa       |     True    
+```
+
+The command line output shows that a new base64-encoded public key with scheme ecdsa is added to the address `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a` and it's activated.
+
+The corresponding private key to the public key can be found at `rooch.keystore`. For example:
+
+```shell
+{
+  "0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33": {
+    "Ed25519": "AC4b1o0kj1/f0P2NWnYnMsZgglk4OxzOIo7xTUbr2vIY"
+  },
+  "0x526793be899b13834a3df14a60003554232dc2886af71296a1a4e46edae814ed": {
+    "Ed25519": "AAbtuAUtIVgoYjMVru/fY0Ck42ZsgM3N3BUm/6BVFV+p"
+  },
+  "0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a": {
+    "Ed25519": "AHLz7D8uDvc/16MljntLfl0WGDoqgyK6bOUNyGbZW414",
+    "Ecdsa": "At/6j9jqKsdhNSzJqMiT5knBNT7mwKGiF+mwmt2Qt6fF"
+  }
+}
+```
+
+They all belong to one address and an address can have multiple key pairs from different schemes. Thanks to the `rooch account update` command.
+
+Beside all the above mentioned feature, `rooch account update` will also initiate a transaction to Rooch blockchain RPC server to rotate to an authentication key from the scheme specified.
+
+For now, an authentication key is an address that is generated from a public key for each scheme, and only one authentication key exists at a time.
+
+#### Account Nullify
+
+Use `rooch account nullify` subcommand to nullify an existing key pair from a scheme in an account's address.
+
+The Rooch CLI Account Nullify subcommand supports the following options:
+
+```shell
+rooch-account-nullify 
+Nullify a keypair from a selected scheme with a Ed25519 generated address in rooch.keystore
+
+USAGE:
+    rooch account nullify [OPTIONS] --address <ADDRESS> --scheme <CRYPTO_SCHEMES>
+
+OPTIONS:
+    -a, --address <ADDRESS>          Rooch address in string format
+        --config-dir <CONFIG_DIR>    rooch config path
+    -h, --help                       Print help information
+    -s, --scheme <CRYPTO_SCHEMES>    Command line input of crypto schemes (ed25519, multied25519,
+                                     ecdsa, ecdsa-recoverable or schnorr) [possible values: ed25519, multi-ed25519,
+                                     ecdsa, ecdsa-recoverable, schnorr]
+```
+
+Use `--address` or `-a`, `--scheme` or `-s` flag combinations to nullify a key pair in the account's address.
+
+Same way, `<ADDRESS>` should be an existing address from the account, and `<CRYPTO_SCHEMES>` should be selected within the possible values.
+
+Here's an example to nullify the key pair of the newly added ecdsa scheme:
+
+```> rooch account nullify --address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a --scheme ecdsa```
+
+```shell
+0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a
+Dropped a keypair from an existing address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a on scheme Ecdsa
+```
+
+At line 1, it's the address from the input.
+
+At line 2, it indicates that a key pair of scheme ecdsa for the address `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a` has been dropped and deleted.
+
+Use `rooch account list` to see if the key pair on ecdsa scheme has gone:
+
+```> rooch account list```
+
+```shell
+                     Rooch Address (Ed25519)                       |               Public Key (Base64)                |      Scheme      | Active Address
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33 |   AMtU2I8OF3ArnnPJ2Yvcj11++cIWh+EbhZz4sMmGENZ7   |     ed25519      |             
+0x526793be899b13834a3df14a60003554232dc2886af71296a1a4e46edae814ed |   AGBscM9xRoM6ErRRpUfx/PXGQE0HvbW3pVku0fNTcPq3   |     ed25519      |             
+0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a |   AITD/sv7fsNvqwtT53l0PpsLjJdR6LIo1lVqy+PKL1Aa   |     ed25519      |     True    
+```
+
+The command line output shows that the ecdsa scheme has been removed from the account's address and the authentication key for the ecdsa scheme has also been dropped from the sender's account storage in Move through a transaction sent to the Rooch blockchain RPC server.
+
+Also, check if the private key has been successfully removed from `rooch.keystore`:
+
+```> cat ~/.rooch/rooch_config/rooch.keystore```
+
+```shell
+{
+  "0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33": {
+    "Ed25519": "AC4b1o0kj1/f0P2NWnYnMsZgglk4OxzOIo7xTUbr2vIY"
+  },
+  "0x526793be899b13834a3df14a60003554232dc2886af71296a1a4e46edae814ed": {
+    "Ed25519": "AAbtuAUtIVgoYjMVru/fY0Ck42ZsgM3N3BUm/6BVFV+p"
+  },
+  "0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a": {
+    "Ed25519": "AHLz7D8uDvc/16MljntLfl0WGDoqgyK6bOUNyGbZW414"
+  }
+}
+```
+
+The output shows that there are no scheme ecdsa and its private key exist in the account's address `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a`.

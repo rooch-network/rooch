@@ -19,8 +19,8 @@ struct World {
     tpl_ctx: Option<TemplateContext>,
 }
 
-#[given(expr = "the server")] // Cucumber Expression
-async fn start_server(w: &mut World) {
+#[given(expr = "a server for {word}")] // Cucumber Expression
+async fn start_server(w: &mut World, _scenario: String) {
     let mut service = Service::new();
     service.start(true).await.unwrap();
 

@@ -10,13 +10,13 @@ use move_core_types::{
 };
 use moveos_types::module_binding::ModuleBundle;
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
-use rooch_framework::bindings::{
+use rooch_key::keystore::AccountKeystore;
+use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
+use rooch_types::framework::{
     ecdsa_k1_recoverable_validator::EcdsaK1RecoverableValidator,
     ecdsa_k1_validator::EcdsaK1Validator, ed25519_validator::Ed25519Validator,
     schnorr_validator::SchnorrValidator,
 };
-use rooch_key::keystore::AccountKeystore;
-use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_types::{
     address::RoochAddress,
     crypto::{BuiltinScheme, PublicKey},
@@ -127,16 +127,8 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                 // Execute the Move call as a transaction
                 let result = context
                     .sign_and_execute(existing_address, action, scheme)
-                    .await
-                    .map_err(|error| {
-                        RoochError::TransactionError(format!(
-                            "Updating authentication key failed for scheme {} on address {}. Reason: {}.",
-                            scheme, existing_address, error
-                        ))
-                    })?;
-
-                // Transaction executed successfully
-                Ok(result)
+                    .await?;
+                context.assert_execute_success(result)
             }
             Err(error) => {
                 return Err(RoochError::CommandArgumentError(format!(

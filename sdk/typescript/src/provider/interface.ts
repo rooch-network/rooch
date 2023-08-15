@@ -1,4 +1,4 @@
-import { FunctionId, TypeTag, functionIdToStirng, FunctionReturnValue } from '../types'
+import { FunctionId, FunctionReturnValue } from '../types'
 
 export interface IProvider {
     getRpcApiVersion(): Promise<string | undefined>;

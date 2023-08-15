@@ -109,6 +109,6 @@ function encodeStructTypeTag(str: string): TypeTag {
   return result
 }
 
-function bytesArrayToSeqSeq(input: bytes[]): Seq<Seq<number>> {
+function bytesArrayToSeqSeq(input: Bytes[]): Seq<Seq<number>> {
   return input.map((byteArray) => Array.from(byteArray))
 }

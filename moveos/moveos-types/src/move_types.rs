@@ -14,6 +14,9 @@ use crate::addresses::MOVEOS_STD_ADDRESS;
 use crate::object;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::prelude::*;
+use rand::prelude::{Distribution, SliceRandom};
+use rand::rngs::OsRng;
+use rand::Rng;
 
 /// Identifier of a module function
 /// The FunctionId is of the form <address>::<module>::<function>
@@ -281,4 +284,34 @@ pub fn is_table(struct_tag: &StructTag) -> bool {
     struct_tag.address == MOVEOS_STD_ADDRESS
         && struct_tag.module.as_ident_str() == object::TABLE_INFO_MODULE_NAME
         && struct_tag.name.as_ident_str() == object::TABLE_INFO_STRUCT_NAME
+}
+
+struct IdentifierSymbols;
+
+impl Distribution<char> for IdentifierSymbols {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> char {
+        //TODO add more valid identity char
+        *b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            .choose(rng)
+            .unwrap_or(&97) as char
+    }
+}
+
+pub fn random_identity() -> Identifier {
+    let rng = OsRng;
+    let id: String = rng.sample_iter(&IdentifierSymbols).take(7).collect();
+    Identifier::new(id).expect("random identity should valid.")
+}
+
+pub fn random_struct_tag() -> StructTag {
+    StructTag {
+        address: AccountAddress::random(),
+        module: random_identity(),
+        name: random_identity(),
+        type_params: vec![],
+    }
+}
+
+pub fn random_type_tag() -> TypeTag {
+    TypeTag::Struct(Box::new(random_struct_tag()))
 }

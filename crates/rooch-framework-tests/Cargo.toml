@@ -53,6 +53,8 @@ rooch-store = { workspace = true }
 [dev-dependencies]
 rooch-integration-test-runner = { workspace = true }
 datatest-stable = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 
 [[test]]
 harness = false

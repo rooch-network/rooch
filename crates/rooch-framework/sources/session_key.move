@@ -108,7 +108,7 @@ module rooch_framework::session_key {
             return option::none()
         };
         let auth_key = if(scheme == ed25519_validator::scheme()){
-            ed25519_validator::get_authentication_key_from_payload(&authenticator_payload)
+            ed25519_validator::get_authentication_key_from_authenticator_payload(&authenticator_payload)
         }else{
             //TODO support other built-in validators
             return option::none()

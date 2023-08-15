@@ -1,6 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-import fetch from "isomorphic-fetch";
+import fetch from 'isomorphic-fetch';
 import { HTTPTransport, RequestManager } from '@open-rpc/client-js'
 import { JsonRpcClient } from '../generated/client'
 import { Connection, LocalnetConnection } from './connection'
@@ -70,11 +70,11 @@ export class JsonRpcProvider {
     )
 
     this.client.onError((e)=>{
-      console.error("client error", e)
+      console.error('client error', e)
     })
 
     this.client.onNotification((data)=>{
-      console.log("data:", data)
+      console.log('data:', data)
     })
   }
 

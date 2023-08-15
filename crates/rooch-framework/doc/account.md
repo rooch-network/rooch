@@ -33,6 +33,7 @@
 <b>use</b> <a href="">0x2::account_storage</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
+<b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
 </code></pre>
 
 
@@ -280,7 +281,11 @@ A entry function to create an account under <code>new_address</code>
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="account.md#0x3_account_create_account_entry">create_account_entry</a>(ctx: &<b>mut</b> StorageContext, new_address: <b>address</b>){
-   <a href="account.md#0x3_account_create_account">Self::create_account</a>(ctx, new_address);
+   // If <a href="account.md#0x3_account">account</a> already <b>exists</b>, do nothing
+   // Because <b>if</b> the new <b>address</b> is the same <b>as</b> the sender, the <a href="account.md#0x3_account">account</a> must already created in the `<a href="transaction_validator.md#0x3_transaction_validator_pre_execute">transaction_validator::pre_execute</a>` function
+   <b>if</b>(!<a href="account.md#0x3_account_exists_at">exists_at</a>(ctx, new_address)){
+      <a href="account.md#0x3_account_create_account">create_account</a>(ctx, new_address);
+   };
 }
 </code></pre>
 
