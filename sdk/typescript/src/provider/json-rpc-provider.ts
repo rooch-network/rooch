@@ -1,6 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-import fetch from 'isomorphic-fetch';
+import fetch from 'isomorphic-fetch'
 import { HTTPTransport, RequestManager } from '@open-rpc/client-js'
 import { JsonRpcClient } from '../generated/client'
 import { Connection, LocalnetConnection } from './connection'
@@ -114,7 +114,7 @@ export class JsonRpcProvider {
 
     // rooch, eth, wellet,
     // TDOO: args, tyArgs, wait bcs
-    return await this.client.rooch_executeViewFunction({
+    return this.client.rooch_executeViewFunction({
       function_id: functionIdToStirng(funcId),
       args: args ?? [],
       ty_args: tyArgs ?? [],
