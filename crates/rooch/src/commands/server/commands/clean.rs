@@ -12,28 +12,29 @@ pub struct CleanCommand;
 
 impl CleanCommand {
     pub async fn execute(self) -> RoochResult<()> {
-        let rooch_store = StoreConfig::get_rooch_store_dir();
-        let moveos_store = StoreConfig::get_moveos_store_dir();
+        let rooch_store_dir = StoreConfig::get_rooch_store_dir();
+        let moveos_store_dir = StoreConfig::get_moveos_store_dir();
 
-        self.remove_store_dir(&rooch_store, "Rooch")?;
-        self.remove_store_dir(&moveos_store, "MoveOS")?;
+        self.remove_store_dir(&rooch_store_dir, "Rooch")?;
+        self.remove_store_dir(&moveos_store_dir, "MoveOS")?;
 
         println!("Rooch server storage successfully cleaned");
 
         Ok(())
     }
 
-    fn remove_store_dir(&self, store_path: &Path, name: &str) -> RoochResult<()> {
-        if !store_path.exists() {
+    fn remove_store_dir(&self, store_dir: &Path, name: &str) -> RoochResult<()> {
+        if !store_dir.exists() {
             return Ok(());
         }
 
-        if !store_path.is_dir() {
-            return Err(RoochError::CleanServerError(
-                format!("{} database path is not a valid directory", name).to_owned(),
-            ));
+        if !store_dir.is_dir() {
+            return Err(RoochError::CleanServerError(format!(
+                "{} database path is not a valid directory",
+                name
+            )));
         }
 
-        fs::remove_dir_all(store_path).map_err(|e| RoochError::CleanServerError(e.to_string()))
+        fs::remove_dir_all(store_dir).map_err(|e| RoochError::CleanServerError(e.to_string()))
     }
 }
