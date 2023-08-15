@@ -115,6 +115,13 @@ pub struct MoveAsciiString {
     bytes: Vec<u8>,
 }
 
+impl MoveAsciiString {
+    pub fn new(bytes: Vec<u8>) -> anyhow::Result<Self> {
+        ensure!(bytes.is_ascii(), "string is not ascii");
+        Ok(MoveAsciiString { bytes })
+    }
+}
+
 impl std::fmt::Display for MoveAsciiString {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         //DO not check ascii when display

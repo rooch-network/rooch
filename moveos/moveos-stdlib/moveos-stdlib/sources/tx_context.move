@@ -6,23 +6,20 @@ module moveos_std::tx_context {
     use std::hash;
     use std::string::String;
     use std::option::{Self, Option};
+    use std::error;
     use moveos_std::bcs;
     use moveos_std::object_id::{Self, ObjectID};
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::copyable_any::{Self, Any};
     use moveos_std::type_info;
+    use moveos_std::tx_meta::{TxMeta};
 
     friend moveos_std::object;
     friend moveos_std::raw_table;
     friend moveos_std::account_storage;
     friend moveos_std::event;
 
-    /// Number of bytes in an tx hash (which will be the transaction digest)
-    const TX_HASH_LENGTH: u64 = 32;
-
-    /// Expected an tx hash of length 32, but found a different length
-    const EBadTxHashLength: u64 = 0;
-
+    const EInvalidContext: u64 = 1;
 
     /// Information about the transaction currently being executed.
     /// This cannot be constructed by a transaction--it is a privileged object created by
@@ -93,7 +90,16 @@ module moveos_std::tx_context {
             option::none()
         }
     }
-    
+
+    /// Get the transaction meta data
+    /// The TxMeta is writed by the VM before the transaction execution.
+    /// The meta data is only available when executing or validating a transaction, otherwise abort(eg. readonly function call).
+    public fun tx_meta(self: &TxContext): TxMeta {
+        let meta = get<TxMeta>(self);
+        assert!(option::is_some(&meta), error::invalid_state(EInvalidContext));
+        option::extract(&mut meta)
+    }
+
     #[test_only]
     /// Create a TxContext for unit test
     public fun new_test_context(sender: address): TxContext {

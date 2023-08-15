@@ -9,7 +9,7 @@
 -  [Struct `SessionKey`](#0x3_session_key_SessionKey)
 -  [Resource `SessionKeys`](#0x3_session_key_SessionKeys)
 -  [Constants](#@Constants_0)
--  [Function `is_expired`](#0x3_session_key_is_expired)
+-  [Function `new_session_scope`](#0x3_session_key_new_session_scope)
 -  [Function `exists_session_key`](#0x3_session_key_exists_session_key)
 -  [Function `get_session_key`](#0x3_session_key_get_session_key)
 -  [Function `create_session_key`](#0x3_session_key_create_session_key)
@@ -27,6 +27,7 @@
 <b>use</b> <a href="">0x2::storage_context</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
+<b>use</b> <a href="">0x2::tx_meta</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 <b>use</b> <a href="ed25519.md#0x3_ed25519">0x3::ed25519</a>;
 <b>use</b> <a href="native_validator.md#0x3_native_validator">0x3::native_validator</a>;
@@ -157,8 +158,19 @@ The session's scope
 ## Constants
 
 
+<a name="0x3_session_key_EFunctionCallBeyoundSessionScope"></a>
+
+The function call is beyond the session's scope
+
+
+<pre><code><b>const</b> <a href="session_key.md#0x3_session_key_EFunctionCallBeyoundSessionScope">EFunctionCallBeyoundSessionScope</a>: u64 = 5;
+</code></pre>
+
+
+
 <a name="0x3_session_key_ESessionIsExpired"></a>
 
+The session is expired
 
 
 <pre><code><b>const</b> <a href="session_key.md#0x3_session_key_ESessionIsExpired">ESessionIsExpired</a>: u64 = 4;
@@ -168,6 +180,7 @@ The session's scope
 
 <a name="0x3_session_key_ESessionKeyAlreadyExists"></a>
 
+The session key already exists
 
 
 <pre><code><b>const</b> <a href="session_key.md#0x3_session_key_ESessionKeyAlreadyExists">ESessionKeyAlreadyExists</a>: u64 = 2;
@@ -177,6 +190,7 @@ The session's scope
 
 <a name="0x3_session_key_ESessionKeyCreatePermissionDenied"></a>
 
+Create session key in this context is not allowed
 
 
 <pre><code><b>const</b> <a href="session_key.md#0x3_session_key_ESessionKeyCreatePermissionDenied">ESessionKeyCreatePermissionDenied</a>: u64 = 1;
@@ -186,6 +200,7 @@ The session's scope
 
 <a name="0x3_session_key_ESessionKeyIsInvalid"></a>
 
+The session key is invalid
 
 
 <pre><code><b>const</b> <a href="session_key.md#0x3_session_key_ESessionKeyIsInvalid">ESessionKeyIsInvalid</a>: u64 = 3;
@@ -193,13 +208,13 @@ The session's scope
 
 
 
-<a name="0x3_session_key_is_expired"></a>
+<a name="0x3_session_key_new_session_scope"></a>
 
-## Function `is_expired`
+## Function `new_session_scope`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_is_expired">is_expired</a>(_ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, _session_key: &<a href="session_key.md#0x3_session_key_SessionKey">session_key::SessionKey</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_new_session_scope">new_session_scope</a>(module_address: <b>address</b>, module_name: <a href="_String">ascii::String</a>, function_name: <a href="_String">ascii::String</a>): <a href="session_key.md#0x3_session_key_SessionScope">session_key::SessionScope</a>
 </code></pre>
 
 
@@ -208,9 +223,12 @@ The session's scope
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_is_expired">is_expired</a>(_ctx: &StorageContext, _session_key: &<a href="session_key.md#0x3_session_key_SessionKey">SessionKey</a>) : bool {
-    //TODO check the session key is expired or not after the timestamp is supported
-    <b>return</b> <b>false</b>
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_new_session_scope">new_session_scope</a>(module_address: <b>address</b>, module_name: std::ascii::String, function_name: std::ascii::String) : <a href="session_key.md#0x3_session_key_SessionScope">SessionScope</a> {
+    <a href="session_key.md#0x3_session_key_SessionScope">SessionScope</a> {
+        module_address: module_address,
+        module_name: module_name,
+        function_name: function_name,
+    }
 }
 </code></pre>
 
@@ -383,14 +401,9 @@ If the session key is expired or invalid, abort the tx, otherwise return option:
     <b>let</b> <a href="session_key.md#0x3_session_key">session_key</a> = <a href="_extract">option::extract</a>(&<b>mut</b> session_key_option);
     <b>assert</b>!(!<a href="session_key.md#0x3_session_key_is_expired">is_expired</a>(ctx, &<a href="session_key.md#0x3_session_key">session_key</a>), <a href="_permission_denied">error::permission_denied</a>(<a href="session_key.md#0x3_session_key_ESessionIsExpired">ESessionIsExpired</a>));
 
-    //TODO validate session scopes
+    <b>assert</b>!(<a href="session_key.md#0x3_session_key_in_session_scope">in_session_scope</a>(ctx, &<a href="session_key.md#0x3_session_key">session_key</a>), <a href="_permission_denied">error::permission_denied</a>(<a href="session_key.md#0x3_session_key_EFunctionCallBeyoundSessionScope">EFunctionCallBeyoundSessionScope</a>));
 
-    <b>if</b>(scheme == <a href="ed25519.md#0x3_ed25519_scheme">ed25519::scheme</a>()){
-        validator::validate_signature(&authenticator_payload, &<a href="_tx_hash">storage_context::tx_hash</a>(ctx));
-    }<b>else</b>{
-        //TODO support other built-in validators
-        <b>abort</b> 1
-    };
+    validator::validate_signature(&authenticator_payload, &<a href="_tx_hash">storage_context::tx_hash</a>(ctx));
     <a href="_some">option::some</a>(auth_key)
 }
 </code></pre>
