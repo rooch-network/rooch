@@ -8,9 +8,7 @@ module rooch_framework::session_key {
     use moveos_std::table::{Self, Table};
     use rooch_framework::auth_validator;
     use rooch_framework::ed25519_validator;
-    // use rooch_framework::multi_ed25519_validator;
-    // use rooch_framework::ecdsa_validator;
-    // use rooch_framework::schnorr_validator;
+
 
     friend rooch_framework::transaction_validator;
 
@@ -31,7 +29,6 @@ module rooch_framework::session_key {
 
     struct SessionKey has store,copy,drop {
         authentication_key: vector<u8>,
-        scheme: u64,
         scopes: vector<SessionScope>,
         /// The session key's expiration time period, in seconds, 0 means never expired
         expiration_time: u64,
@@ -67,7 +64,7 @@ module rooch_framework::session_key {
         }
     }
 
-    public fun create_session_key(ctx: &mut StorageContext, sender: &signer, authentication_key: vector<u8>, scheme: u64, scopes: vector<SessionScope>, expiration_time: u64, max_inactive_interval: u64) {
+    public fun create_session_key(ctx: &mut StorageContext, sender: &signer, authentication_key: vector<u8>, scopes: vector<SessionScope>, expiration_time: u64, max_inactive_interval: u64) {
         //Can not create new session key by the other session key
         assert!(!auth_validator::is_validate_via_session_key(ctx), error::permission_denied(ESessionKeyCreatePermissionDenied));
         let sender_addr = signer::address_of(sender);
@@ -75,7 +72,6 @@ module rooch_framework::session_key {
 
         let session_key = SessionKey {
             authentication_key: authentication_key,
-            scheme: scheme,
             scopes: scopes,
             expiration_time: expiration_time,
             //TODO set the last active time to now
@@ -91,8 +87,8 @@ module rooch_framework::session_key {
         table::add(&mut session_keys.keys, authentication_key, session_key);
     }
 
-    public entry fun create_session_key_entry(ctx: &mut StorageContext, sender: &signer, authentication_key: vector<u8>, scheme: u64, scope_module_address: address, scope_module_name: std::ascii::String, scope_function_name: std::ascii::String,expiration_time: u64, max_inactive_interval: u64) {
-        create_session_key(ctx, sender, authentication_key, scheme, vector::singleton(SessionScope{
+    public entry fun create_session_key_entry(ctx: &mut StorageContext, sender: &signer, authentication_key: vector<u8>, scope_module_address: address, scope_module_name: std::ascii::String, scope_function_name: std::ascii::String,expiration_time: u64, max_inactive_interval: u64) {
+        create_session_key(ctx, sender, authentication_key, vector::singleton(SessionScope{
             module_address: scope_module_address,
             module_name: scope_module_name,
             function_name: scope_function_name,
@@ -107,12 +103,12 @@ module rooch_framework::session_key {
         if (!account_storage::global_exists<SessionKeys>(ctx, sender_addr)){
             return option::none()
         };
-        let auth_key = if(scheme == ed25519_validator::scheme()){
-            ed25519_validator::get_authentication_key_from_payload(&authenticator_payload)
-        }else{
-            //TODO support other built-in validators
+        // We only support ed25519 validator for SessionKey now
+        if(scheme != ed25519_validator::scheme()){
             return option::none()
         };
+
+        let auth_key = ed25519_validator::get_authentication_key_from_authenticator_payload(&authenticator_payload);
         
         let session_key_option = get_session_key(ctx, sender_addr, auth_key);
         if (option::is_none(&session_key_option)){
@@ -120,7 +116,7 @@ module rooch_framework::session_key {
         };
         let session_key = option::extract(&mut session_key_option);
         assert!(!is_expired(ctx, &session_key), error::permission_denied(ESessionIsExpired));
-        assert!(session_key.scheme == scheme, error::invalid_argument(ESessionKeyIsInvalid));
+        
         //TODO validate session scopes
 
         if(scheme == ed25519_validator::scheme()){

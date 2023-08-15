@@ -26,7 +26,7 @@ impl CommandAction<String> for Server {
 }
 
 #[derive(clap::Subcommand)]
-#[clap(name = "servre")]
+#[clap(name = "server")]
 pub enum ServerCommand {
     Start(StartCommand),
 }

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use moveos_types::transaction::MoveAction;
-use rooch_framework::bindings::empty::Empty;
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
+use rooch_types::framework::empty::Empty;
 use rooch_types::{
     crypto::BuiltinScheme,
     transaction::{rooch::RoochTransactionData, AbstractTransaction},
@@ -15,8 +15,7 @@ use crate::binding_test;
 fn test_validate() {
     let binding_test = binding_test::RustBindingTest::new().unwrap();
     let schnorr_validator = binding_test
-        .as_module_bundle::<rooch_framework::bindings::schnorr_validator::SchnorrValidator>(
-    );
+        .as_module_bundle::<rooch_types::framework::schnorr_validator::SchnorrValidator>();
 
     let keystore = InMemKeystore::new_schnorr_insecure_for_tests(1);
     let sender = keystore.addresses()[0];

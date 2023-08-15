@@ -22,7 +22,7 @@ pub trait MoveFunctionCaller {
         call: FunctionCall,
     ) -> Result<Vec<FunctionReturnValue>>;
 
-    fn as_module_bundle<'a, M: ModuleBundle<'a>>(&'a self) -> M
+    fn as_module_binding<'a, M: ModuleBinding<'a>>(&'a self) -> M
     where
         Self: Sized,
     {
@@ -43,7 +43,7 @@ where
     }
 }
 
-pub trait ModuleBundle<'a> {
+pub trait ModuleBinding<'a> {
     const MODULE_NAME: &'static IdentStr;
     const MODULE_ADDRESS: AccountAddress;
 

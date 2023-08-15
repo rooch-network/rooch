@@ -9,7 +9,7 @@ use crate::vm::moveos_vm::MoveOSVM;
 use move_vm_runtime::config::VMConfig;
 
 use move_binary_format::{
-    errors::{VMError, VMResult},
+    errors::VMResult,
     file_format::{
         empty_module, AbilitySet, AddressIdentifierIndex, Bytecode, CodeUnit, CompiledModule,
         CompiledScript, FieldDefinition, FunctionDefinition, FunctionHandle, FunctionHandleIndex,
@@ -261,14 +261,14 @@ impl RemoteStore {
 }
 
 impl ModuleResolver for RemoteStore {
-    type Error = VMError;
+    type Error = anyhow::Error;
     fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
         Ok(self.modules.get(module_id).cloned())
     }
 }
 
 impl ResourceResolver for RemoteStore {
-    type Error = VMError;
+    type Error = anyhow::Error;
 
     fn get_resource(
         &self,

@@ -3,6 +3,7 @@
 
 use crate::{
     address::RoochAddress,
+    authentication_key::AuthenticationKey,
     error::{RoochError, RoochResult},
 };
 use clap::ArgEnum;
@@ -164,6 +165,10 @@ impl RoochKeyPair {
             RoochKeyPair::EcdsaRecoverable(kp) => PublicKey::EcdsaRecoverable(kp.public().into()),
             RoochKeyPair::Schnorr(kp) => PublicKey::Schnorr(kp.public().into()),
         }
+    }
+
+    pub fn authentication_key(&self) -> AuthenticationKey {
+        self.public().authentication_key()
     }
 }
 
@@ -378,6 +383,14 @@ impl PublicKey {
             PublicKey::Schnorr(_) => SchnorrRoochSignature::SCHEME,
         }
     }
+
+    pub fn authentication_key(&self) -> AuthenticationKey {
+        self.into()
+    }
+
+    pub fn address(&self) -> RoochAddress {
+        self.into()
+    }
 }
 
 pub trait RoochPublicKey: VerifyingKey {
@@ -410,6 +423,7 @@ impl<T: RoochPublicKey> From<&T> for RoochAddress {
     }
 }
 
+/// The address is the hash of the public key
 impl From<&PublicKey> for RoochAddress {
     fn from(pk: &PublicKey) -> Self {
         let mut hasher = DefaultHash::default();
@@ -417,6 +431,18 @@ impl From<&PublicKey> for RoochAddress {
         hasher.update(pk);
         let g_arr = hasher.finalize();
         RoochAddress(H256(g_arr.digest))
+    }
+}
+
+///The authentication key is the hash of the public key
+/// The address and authentication key are the same for now
+impl From<&PublicKey> for AuthenticationKey {
+    fn from(pk: &PublicKey) -> Self {
+        let mut hasher = DefaultHash::default();
+        hasher.update([pk.flag()]);
+        hasher.update(pk);
+        let g_arr = hasher.finalize();
+        AuthenticationKey::new(g_arr.digest.to_vec())
     }
 }
 

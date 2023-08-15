@@ -3,7 +3,7 @@ module rooch_framework::ecdsa_k1_validator {
 
     use std::error;
     use std::vector;
-    use std::option;
+    use std::option::{Self, Option};
     use std::signer;
     use moveos_std::storage_context::{Self, StorageContext};
     use rooch_framework::account_authentication;
@@ -17,12 +17,12 @@ module rooch_framework::ecdsa_k1_validator {
     const V_ECDSA_PUBKEY_LENGTH: u64 = 33;
     const V_ECDSA_SIG_LENGTH: u64 = 64;
     const V_ECDSA_HASH_LENGTH: u64 = 1;
+    const V_AUTHENTICATION_KEY_LENGTH: u64 = 32;
     /// Hash function name that are valid for ecrecover and verify.
     const KECCAK256: u8 = 0;
     const SHA256: u8 = 1;
     /// error code
-    const EMalformedAccount: u64 = 1001;
-    const EMalformedAuthenticationKey: u64 = 1002;
+    const EInvalidPublicKeyLength: u64 = 0;
 
     struct EcdsaK1Validator has store, drop {}
 
@@ -30,7 +30,7 @@ module rooch_framework::ecdsa_k1_validator {
         SCHEME_ECDSA
     }
 
-    public entry fun rotate_authentication_key_entry<EcdsaK1Validator>(
+    public entry fun rotate_authentication_key_entry<T>(
         ctx: &mut StorageContext,
         account: &signer,
         public_key: vector<u8>
@@ -38,28 +38,24 @@ module rooch_framework::ecdsa_k1_validator {
         // compare newly passed public key with ecdsa public key length to ensure it's compatible
         assert!(
             vector::length(&public_key) == V_ECDSA_PUBKEY_LENGTH,
-            error::invalid_argument(EMalformedAuthenticationKey)
+            error::invalid_argument(EInvalidPublicKeyLength)
         );
 
-        // ensure that the ecdsa public key to address isn't matched with the ed25519 account address
+        // User can rotate the authentication key arbitrarily, so we do not need to check the new public key with the account address.
+        let authentication_key = public_key_to_authentication_key(public_key);
         let account_addr = signer::address_of(account);
-        let ecdsa_addr = ecdsa_k1_public_key_to_address(public_key);
-        assert!(
-            account_addr != ecdsa_addr,
-            error::invalid_argument(EMalformedAccount)
-        );
-
-        // serialize the address to an auth key and rotate it by calling rotate_authentication_key
-        let ecdsa_k1_authentication_key = moveos_std::bcs::to_bytes(&ecdsa_addr);
-        account_authentication::rotate_authentication_key<EcdsaK1Validator>(ctx, account_addr, ecdsa_k1_authentication_key);
+        rotate_authentication_key(ctx, account_addr, authentication_key);
     }
 
-    public entry fun remove_authentication_key_entry<EcdsaK1Validator>(ctx: &mut StorageContext, account: &signer) {
-        let account_addr = signer::address_of(account);
-        account_authentication::remove_authentication_key<EcdsaK1Validator>(ctx, account_addr);
+    fun rotate_authentication_key(ctx: &mut StorageContext, account_addr: address, authentication_key: vector<u8>) {
+        account_authentication::rotate_authentication_key<EcdsaK1Validator>(ctx, account_addr, authentication_key);
     }
 
-    public fun ecdsa_k1_public_key(authenticator_payload: &vector<u8>): vector<u8> {
+    public entry fun remove_authentication_key_entry<T>(ctx: &mut StorageContext, account: &signer) {
+        account_authentication::remove_authentication_key<EcdsaK1Validator>(ctx, signer::address_of(account));
+    }
+
+    public fun get_public_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
         let public_key = vector::empty<u8>();
         let i = V_ECDSA_SCHEME_LENGTH + V_ECDSA_SIG_LENGTH;
         while (i < V_ECDSA_SCHEME_LENGTH + V_ECDSA_SIG_LENGTH + V_ECDSA_PUBKEY_LENGTH) {
@@ -71,7 +67,7 @@ module rooch_framework::ecdsa_k1_validator {
         public_key
     }
 
-    public fun ecdsa_k1_signature(authenticator_payload: &vector<u8>): vector<u8> {
+    public fun get_signature_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
         let sign = vector::empty<u8>();
         let i = V_ECDSA_SCHEME_LENGTH;
         while (i < V_ECDSA_SIG_LENGTH + 1) {
@@ -83,46 +79,59 @@ module rooch_framework::ecdsa_k1_validator {
         sign
     }
 
-    /// Get the authentication key of the given authenticator.
-    public fun ecdsa_k1_authentication_key(authenticator_payload: &vector<u8>): vector<u8> {
-        let public_key = ecdsa_k1_public_key(authenticator_payload);
-        let addr = ecdsa_k1_public_key_to_address(public_key);
+    /// Get the authentication key of the given authenticator from authenticator_payload.
+    public fun get_authentication_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
+        let public_key = get_public_key_from_authenticator_payload(authenticator_payload);
+        let addr = public_key_to_address(public_key);
         moveos_std::bcs::to_bytes(&addr)
     }
 
-    public fun ecdsa_k1_public_key_to_address(public_key: vector<u8>): address {
+    /// TODO: define EVMAddress or BIPAddress as the return type
+    /// TODO: ECDSA public keys can be used to generate ETH and BTC addresses, and we need to determine which one to use.
+    public fun public_key_to_address(public_key: vector<u8>): address {
+        moveos_std::bcs::to_address(public_key_to_authentication_key(public_key))
+    }
+
+    /// Get the authentication key of the given public key.
+    public fun public_key_to_authentication_key(public_key: vector<u8>): vector<u8> {
         let bytes = vector::singleton((SCHEME_ECDSA as u8));
         vector::append(&mut bytes, public_key);
-        moveos_std::bcs::to_address(hash::blake2b256(&bytes))
+        hash::blake2b256(&bytes)
     }
 
-    public fun get_authentication_key(ctx: &StorageContext, addr: address): vector<u8> {
-        let auth_key_option = account_authentication::get_authentication_key<EcdsaK1Validator>(ctx, addr);
-        if (option::is_some(&auth_key_option)) {
-            option::extract(&mut auth_key_option)
-        }else {
-            //if AuthenticationKey does not exist, return addr as authentication key
-            moveos_std::bcs::to_bytes(&addr)
-        }
+    /// Get the authentication key option of the given account.
+    public fun get_authentication_key_option_from_account(ctx: &StorageContext, addr: address): Option<vector<u8>> {
+        account_authentication::get_authentication_key<EcdsaK1Validator>(ctx, addr)
     }
 
-    public fun validate(ctx: &StorageContext, authenticator_payload: vector<u8>) {
-        // TODO handle non-ed25519 auth key and address relationship
-        // let auth_key = ecdsa_k1_authentication_key(&authenticator_payload);
-        // let auth_key_in_account = get_authentication_key(ctx, storage_context::sender(ctx));
-        // assert!(
-        //    auth_key_in_account == auth_key,
-        //    auth_validator::error_invalid_account_auth_key()
-        // );
+    /// The authentication key exists in account or not.
+    public fun is_authentication_key_in_account(ctx: &StorageContext, addr: address): bool {
+        option::is_some(&get_authentication_key_option_from_account(ctx, addr))
+    }
+
+    /// Extract the authentication key of the authentication key option.
+    public fun get_authentication_key_from_account(ctx: &StorageContext, addr: address): vector<u8> {
+        option::extract(&mut get_authentication_key_option_from_account(ctx, addr))
+    }
+
+    /// Only validate the authenticator's signature.
+    public fun validate_signature(authenticator_payload: &vector<u8>, tx_hash: &vector<u8>) {
         assert!(
             ecdsa_k1::verify(
-                &ecdsa_k1_signature(&authenticator_payload),
-                &ecdsa_k1_public_key(&authenticator_payload),
-                &storage_context::tx_hash(ctx),
-                SHA256, // KECCAK256:0, SHA256:1, TODO: The hash type may need to be passed through the authenticator
+                &get_signature_from_authenticator_payload(authenticator_payload),
+                &get_public_key_from_authenticator_payload(authenticator_payload),
+                tx_hash,
+                SHA256
             ),
             auth_validator::error_invalid_authenticator()
         );
+    }
+
+    public fun validate(ctx: &StorageContext, authenticator_payload: vector<u8>) {
+        let tx_hash = storage_context::tx_hash(ctx);
+        validate_signature(&authenticator_payload, &tx_hash);
+
+        // TODO compare the auth_key from the payload with the auth_key from the account
     }
 
     fun pre_execute(
@@ -130,14 +139,20 @@ module rooch_framework::ecdsa_k1_validator {
     ) {}
 
     fun post_execute(
-        _ctx: &mut StorageContext,
-    ) {}
+        ctx: &mut StorageContext,
+    ) {
+        let account_addr = storage_context::sender(ctx);
+        if (is_authentication_key_in_account(ctx, account_addr)) {
+            let auth_key_in_account = get_authentication_key_from_account(ctx, account_addr);
+            std::debug::print(&auth_key_in_account);
+        }
+    }
 
-    // this test ensures that the ecdsa_k1_public_key_to_address function is compatible with the one in the rust code
+    // this test ensures that the ecdsa k1 public_key_to_address function is compatible with the one in the rust code
     #[test]
-    fun test_ecdsa_k1_public_key_to_address() {
+    fun test_public_key_to_address() {
         let public_key = x"031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
-        let addr = ecdsa_k1_public_key_to_address(public_key);
+        let addr = public_key_to_address(public_key);
         assert!(addr == @0x92718e81a52369b4bc3169161737318ddf022945391a69263e8d4289c79a0c67, 1000);
     }
 }

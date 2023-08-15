@@ -1,11 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::ROOCH_FRAMEWORK_ADDRESS;
+use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use anyhow::Result;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use moveos_types::{
-    module_binding::{ModuleBundle, MoveFunctionCaller},
+    module_binding::{ModuleBinding, MoveFunctionCaller},
     move_types::FunctionId,
     transaction::FunctionCall,
     tx_context::TxContext,
@@ -34,7 +34,7 @@ impl<'a> Empty<'a> {
     }
 }
 
-impl<'a> ModuleBundle<'a> for Empty<'a> {
+impl<'a> ModuleBinding<'a> for Empty<'a> {
     const MODULE_NAME: &'static IdentStr = ident_str!("empty");
     const MODULE_ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
 
