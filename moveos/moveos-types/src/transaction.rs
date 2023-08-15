@@ -141,11 +141,9 @@ impl MoveAction {
 pub enum VerifiedMoveAction {
     Script {
         call: ScriptCall,
-        resolved_args: Vec<Vec<u8>>,
     },
     Function {
         call: FunctionCall,
-        resolved_args: Vec<Vec<u8>>,
     },
     ModuleBundle {
         module_bundle: Vec<Vec<u8>>,
@@ -156,16 +154,10 @@ pub enum VerifiedMoveAction {
 impl Display for VerifiedMoveAction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            VerifiedMoveAction::Script {
-                call: _,
-                resolved_args: _,
-            } => {
+            VerifiedMoveAction::Script { call: _ } => {
                 write!(f, "ScriptCall")
             }
-            VerifiedMoveAction::Function {
-                call,
-                resolved_args: _,
-            } => {
+            VerifiedMoveAction::Function { call } => {
                 write!(f, "FunctionCall(function_id: {})", call.function_id)
             }
             VerifiedMoveAction::ModuleBundle {

@@ -5,8 +5,11 @@ use anyhow::Result;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use moveos_types::{
     access_path::AccessPath,
+    function_return_value::FunctionReturnValue,
+    module_binding::MoveFunctionCaller,
     state::{MoveStructType, State},
     transaction::FunctionCall,
+    tx_context::TxContext,
 };
 use rooch_rpc_api::jsonrpc_types::{EventPageView, StructTagView};
 use rooch_rpc_api::{
@@ -164,5 +167,19 @@ impl Client {
             .get_events_by_event_handle(event_handle_type, cursor, limit)
             .await?;
         Ok(s)
+    }
+}
+
+impl MoveFunctionCaller for Client {
+    fn call_function(
+        &self,
+        _ctx: &TxContext,
+        function_call: FunctionCall,
+    ) -> Result<Vec<FunctionReturnValue>> {
+        futures::executor::block_on(self.execute_view_function(function_call)).map(|v| {
+            v.into_iter()
+                .map(|v| FunctionReturnValue::from(v.value))
+                .collect()
+        })
     }
 }

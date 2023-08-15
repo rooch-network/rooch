@@ -173,14 +173,38 @@ module moveos_std::account_storage {
         let account_storage = borrow_account_storage_mut(storage_context::object_storage_mut(ctx), account_address);
         let i = 0;
         let len = vector::length(&modules);
-        let module_names = move_module::verify_modules(&modules, account_address);
+        let (module_names, module_names_with_init_fn) = move_module::verify_modules(&modules, account_address);
+        
         while (i < len) {
             let name = vector::pop_back(&mut module_names);
-            let m = vector::pop_back(&mut modules);
+            let m = vector::pop_back(&mut modules);   
+
+            // The module already exists, which means we are upgrading the module
+            // TODO: check upgrade compatibility
+            if (table::contains(&account_storage.modules, name)) {
+                table::remove(&mut account_storage.modules, name);
+            } else {
+                // request init function invoking
+                move_module::request_init_functions(module_names_with_init_fn, account_address);
+            };
             table::add(&mut account_storage.modules, name, m);
+            i = i + 1;
         }
     }
     
+    public entry fun publish_modules_entry(ctx: &mut StorageContext, account: &signer, modules: vector<vector<u8>>) {
+        let n_modules = vector::length(&modules);
+        let i = 0;
+        let module_vec = vector::empty<MoveModule>();
+        while (i < n_modules) {
+            let code_bytes = vector::pop_back(&mut modules);
+            let m = move_module::new(code_bytes);
+            vector::push_back(&mut module_vec, m);
+            i = i + 1;
+        };
+        publish_modules(ctx, account, module_vec);
+    }
+
     #[test]
     fun test_named_table_id() {
         assert!(named_table_id(@0xae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647, NamedTableResource) == object_id::address_to_object_id(@0x04d8b5ccef4d5b55fa9371d1a9c344fcd4bd40dd9f32dd1d94696775fe3f3013), 1000);

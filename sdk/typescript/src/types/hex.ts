@@ -1,18 +1,18 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { bytesToHex, hexToBytes } from "@noble/hashes/utils"
+import { bytesToHex, hexToBytes } from '@noble/hashes/utils'
 
 /**
- * TODO: 
- * 
+ * TODO:
+ *
  * All bytes (Vec<u8>) data is represented as hex-encoded string prefixed with `0x` and fulfilled with
  * two hex digits per byte.
  *
  * Unlike the `Address` type, HexEncodedBytes will not trim any zeros.
  *
  */
-export type HexEncodedBytes = string;
+export type HexEncodedBytes = string
 
 export type MaybeHexString = HexString | string
 
@@ -55,7 +55,7 @@ export class HexString {
    * ```
    */
   static ensure(hexString: MaybeHexString): HexString {
-    if (typeof hexString === "string") {
+    if (typeof hexString === 'string') {
       return new HexString(hexString)
     }
     return hexString
@@ -72,7 +72,7 @@ export class HexString {
    * ```
    */
   constructor(hexString: string | HexEncodedBytes) {
-    if (hexString.startsWith("0x")) {
+    if (hexString.startsWith('0x')) {
       this.hexString = hexString
     } else {
       this.hexString = `0x${hexString}`
@@ -117,7 +117,7 @@ export class HexString {
    * ```
    */
   toShortString(): string {
-    const trimmed = this.hexString.replace(/^0x0*/, "")
+    const trimmed = this.hexString.replace(/^0x0*/, '')
     return `0x${trimmed}`
   }
 

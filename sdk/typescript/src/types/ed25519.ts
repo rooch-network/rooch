@@ -1,7 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { bytes as Bytes, BcsDeserializer as Deserializer, BcsSerializer as Serializer } from "../bcs"
+import {
+  bytes as Bytes,
+  BcsDeserializer as Deserializer,
+  BcsSerializer as Serializer,
+} from '../bcs'
 
 export class Ed25519PublicKey {
   static readonly LENGTH: number = 32
@@ -10,7 +14,9 @@ export class Ed25519PublicKey {
 
   constructor(value: Bytes) {
     if (value.length !== Ed25519PublicKey.LENGTH) {
-      throw new Error(`Ed25519PublicKey length should be ${Ed25519PublicKey.LENGTH}`)
+      throw new Error(
+        `Ed25519PublicKey length should be ${Ed25519PublicKey.LENGTH}`,
+      )
     }
     this.value = value
   }
@@ -34,7 +40,9 @@ export class Ed25519Signature {
 
   constructor(public readonly value: Bytes) {
     if (value.length !== Ed25519Signature.LENGTH) {
-      throw new Error(`Ed25519Signature length should be ${Ed25519Signature.LENGTH}`)
+      throw new Error(
+        `Ed25519Signature length should be ${Ed25519Signature.LENGTH}`,
+      )
     }
   }
 

@@ -7,7 +7,7 @@ use moveos_types::tx_context::TxContext;
 #[test]
 fn test_empty() {
     let binding_test = binding_test::RustBindingTest::new().unwrap();
-    let empty = binding_test.as_module_bundle::<rooch_framework::bindings::empty::Empty>();
+    let empty = binding_test.as_module_bundle::<rooch_types::framework::empty::Empty>();
     let ctx = TxContext::random_for_testing_only();
     empty.empty(&ctx).unwrap();
 }

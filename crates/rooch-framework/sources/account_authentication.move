@@ -7,9 +7,12 @@ module rooch_framework::account_authentication{
    use std::signer;
    use std::vector;
    use moveos_std::account_storage;
-   use moveos_std::storage_context::StorageContext;
+   use moveos_std::storage_context::{Self, StorageContext};
+   use moveos_std::type_table::{Self, TypeTable};
    use rooch_framework::auth_validator_registry;
    use rooch_framework::auth_validator;
+
+   friend rooch_framework::account;
 
     /// max authentication key length
    const MAX_AUTHENTICATION_KEY_LENGTH: u64 = 256;
@@ -18,8 +21,12 @@ module rooch_framework::account_authentication{
    const EAuthValidatorAlreadyInstalled: u64 = 1;
    /// The provided authentication key has an invalid length
    const EMalformedAuthenticationKey: u64 = 2;
+   /// The authentication keys resource has not been found for the account address
+   const EAuthenticationKeysResourceNotFound: u64 = 3; 
    /// The authentication key has not been found for the specified validator
-   const EAuthenticationKeyNotFound: u64 = 3; 
+   const EAuthenticationKeyNotFound: u64 = 4; 
+   /// The authentication key already exists in the specified validator
+   const EAuthenticationKeyAlreadyExists: u64 = 5; 
 
    /// A resource that holds the authentication key for this account.
    /// ValidatorType is a phantom type parameter that is used to distinguish between different auth validator types.
@@ -27,59 +34,72 @@ module rooch_framework::account_authentication{
       authentication_key: vector<u8>
    }
 
+   /// A resource that holds the authentication keys for this account.
+   struct AuthenticationKeys has key{
+      authentication_keys: TypeTable,
+   }
+
+   //TODO should we use the AuthenticationKeys to indecate the auth validator is installed for the account?
    /// A resource tha holds the auth validator ids for this account has installed.
    struct InstalledAuthValidator has key {
       validators: vector<u64>,
    }
 
+   public(friend) fun init_authentication_keys(ctx: &mut StorageContext, account: &signer) {
+      let authentication_keys = AuthenticationKeys {
+         authentication_keys: type_table::new(storage_context::tx_context_mut(ctx)),
+      };
+      account_storage::global_move_to<AuthenticationKeys>(ctx, account, authentication_keys);
+   }
+
    public fun get_authentication_key<ValidatorType>(ctx: &StorageContext, account_addr: address): Option<vector<u8>> {
-      if(!account_storage::global_exists<AuthenticationKey<ValidatorType>>(ctx, account_addr)){
+      if(!account_storage::global_exists<AuthenticationKeys>(ctx, account_addr)){
          option::none<vector<u8>>()
       }else{
-         option::some(account_storage::global_borrow<AuthenticationKey<ValidatorType>>(ctx, account_addr).authentication_key)
+         let authentication_keys = account_storage::global_borrow<AuthenticationKeys>(ctx, account_addr);
+         if(type_table::contains<AuthenticationKey<ValidatorType>>(&authentication_keys.authentication_keys)){
+            option::some(type_table::borrow<AuthenticationKey<ValidatorType>>(&authentication_keys.authentication_keys).authentication_key)
+         }else{
+            option::none<vector<u8>>()
+         }
       }
    }
 
    #[private_generics(ValidatorType)]
    /// This function is used to rotate a resource account's authentication key, only the module which define the `ValidatorType` can call this function.
-   public fun rotate_authentication_key<ValidatorType>(ctx: &mut StorageContext, account: &signer, new_auth_key: vector<u8>) {
-      rotate_authentication_key_internal<ValidatorType>(ctx, account, new_auth_key);
-   }
-
-   public(friend) fun rotate_authentication_key_internal<ValidatorType>(ctx: &mut StorageContext, account: &signer, new_auth_key: vector<u8>) {
-      let account_addr = signer::address_of(account);
+   public fun rotate_authentication_key<ValidatorType>(ctx: &mut StorageContext, account_addr: address, new_auth_key: vector<u8>) {
       
       assert!(
          vector::length(&new_auth_key) <= MAX_AUTHENTICATION_KEY_LENGTH,
          error::invalid_argument(EMalformedAuthenticationKey)
       );
-   
-      if(account_storage::global_exists<AuthenticationKey<ValidatorType>>(ctx, account_addr)){
-         let authentication_key = account_storage::global_borrow_mut<AuthenticationKey<ValidatorType>>(ctx, account_addr);
+      //We need to ensure the AuthenticationKeys resource exists before we can rotate the authentication key.
+      let authentication_keys = account_storage::global_borrow_mut<AuthenticationKeys>(ctx, account_addr);
+      if(type_table::contains<AuthenticationKey<ValidatorType>>(&authentication_keys.authentication_keys)){
+         let authentication_key = type_table::borrow_mut<AuthenticationKey<ValidatorType>>(&mut authentication_keys.authentication_keys);
          authentication_key.authentication_key = new_auth_key;
       }else{
          let authentication_key = AuthenticationKey<ValidatorType> {
             authentication_key: new_auth_key,
          };
-         account_storage::global_move_to(ctx, account, authentication_key);
-      }
+         type_table::add(&mut authentication_keys.authentication_keys, authentication_key);
+      };
    }
 
    #[private_generics(ValidatorType)]
    /// This function is used to remove a resource account's authentication key, only the module which define the `ValidatorType` can call this function.
-   public fun remove_authentication_key<ValidatorType>(ctx: &mut StorageContext, account: &signer): AuthenticationKey<ValidatorType> {
-      remove_authentication_key_internal<ValidatorType>(ctx, account)
-   }
-
-   public(friend) fun remove_authentication_key_internal<ValidatorType>(ctx: &mut StorageContext, account: &signer): AuthenticationKey<ValidatorType> {
-      let account_addr = signer::address_of(account);
-      
+   public fun remove_authentication_key<ValidatorType>(ctx: &mut StorageContext, account_addr: address): AuthenticationKey<ValidatorType> {
       assert!(
-         account_storage::global_exists<AuthenticationKey<ValidatorType>>(ctx, account_addr),
+         account_storage::global_exists<AuthenticationKeys>(ctx, account_addr),
+         error::not_found(EAuthenticationKeysResourceNotFound)
+      );
+      let authentication_keys = account_storage::global_borrow_mut<AuthenticationKeys>(ctx, account_addr);
+      assert!(
+         type_table::contains<AuthenticationKey<ValidatorType>>(&authentication_keys.authentication_keys),
          error::not_found(EAuthenticationKeyNotFound)
       );
    
-      let removed_authentication_key = account_storage::global_move_from<AuthenticationKey<ValidatorType>>(ctx, account_addr);
+      let removed_authentication_key = type_table::remove<AuthenticationKey<ValidatorType>>(&mut authentication_keys.authentication_keys);
       removed_authentication_key
    }
 
@@ -93,6 +113,7 @@ module rooch_framework::account_authentication{
       }
    }
 
+   //TODO should we init the AuthenticationKey when install auth validator?
    public fun install_auth_validator<ValidatorType: store>(ctx: &mut StorageContext, account_signer: &signer) {
       let validator = auth_validator_registry::borrow_validator_by_type<ValidatorType>(ctx);
       let validator_id = auth_validator::validator_id(validator);
@@ -122,20 +143,33 @@ module rooch_framework::account_authentication{
    }
    
    #[test(sender=@0x42)]
-   fun test_rotate_authentication_key_internal(sender: address){
+   fun test_rotate_authentication_key(sender: signer){
       let ctx = moveos_std::storage_context::new_test_context(@std);
-      let sender_signer = rooch_framework::account::create_signer_for_test(sender);
-      rotate_authentication_key_internal<TestValidator>(&mut ctx, &sender_signer, x"0123");
+      init_authentication_keys(&mut ctx, &sender);
+      let sender_addr = signer::address_of(&sender);
+      let authentication_key = x"0123";
+      let authentication_key_option = get_authentication_key<TestValidator>(&ctx, sender_addr);
+      assert!(option::is_none(&authentication_key_option), EAuthenticationKeyAlreadyExists);
+      rotate_authentication_key<TestValidator>(&mut ctx, sender_addr, authentication_key);
+      authentication_key_option = get_authentication_key<TestValidator>(&ctx, sender_addr);
+      assert!(option::is_some(&authentication_key_option), EAuthenticationKeyNotFound);
       moveos_std::storage_context::drop_test_context(ctx);
    }
 
    #[test(sender=@0x42)]
-   fun test_remove_authentication_key_internal(sender: address){
+   fun test_remove_authentication_key(sender: signer){
       let ctx = moveos_std::storage_context::new_test_context(@std);
-      let sender_signer = rooch_framework::account::create_signer_for_test(sender);
+      init_authentication_keys(&mut ctx, &sender);
+      let sender_addr = signer::address_of(&sender);
       let authentication_key = x"1234";
-      rotate_authentication_key_internal<TestValidator>(&mut ctx, &sender_signer, authentication_key);
-      let removed_authentication_key = remove_authentication_key_internal<TestValidator>(&mut ctx, &sender_signer);
+      let authentication_key_option = get_authentication_key<TestValidator>(&ctx, sender_addr);
+      assert!(option::is_none(&authentication_key_option), EAuthenticationKeyAlreadyExists);
+      rotate_authentication_key<TestValidator>(&mut ctx, sender_addr, authentication_key);
+      authentication_key_option = get_authentication_key<TestValidator>(&ctx, sender_addr);
+      assert!(option::is_some(&authentication_key_option), EAuthenticationKeyNotFound);
+      let removed_authentication_key = remove_authentication_key<TestValidator>(&mut ctx, sender_addr);
+      authentication_key_option = get_authentication_key<TestValidator>(&ctx, sender_addr);
+      assert!(option::is_none(&authentication_key_option), EAuthenticationKeyAlreadyExists);
       assert!(removed_authentication_key.authentication_key == authentication_key, EMalformedAuthenticationKey);
       moveos_std::storage_context::drop_test_context(ctx);
    }

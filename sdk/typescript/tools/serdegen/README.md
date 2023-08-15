@@ -5,12 +5,12 @@ Only a little modification.
 
 ## Type Inheritance Diagram
 
-| types            | directory                               |
-| ---------------- | --------------------------------------- |
-| js(client level) | src/types/index.ts                      |
-| rooch_types   | src/lib/runtime/rooch_types/mod.ts |
-| bcs              | src/lib/runtime/bcs/mod.ts            |
-| serde            | src/lib/runtime/serde/mod.ts          |
+| types            | directory                          |
+| ---------------- | ---------------------------------- |
+| js(client level) | src/types/index.ts                 |
+| rooch_types      | src/lib/runtime/rooch_types/mod.ts |
+| bcs              | src/lib/runtime/bcs/mod.ts         |
+| serde            | src/lib/runtime/serde/mod.ts       |
 
 ## Development
 

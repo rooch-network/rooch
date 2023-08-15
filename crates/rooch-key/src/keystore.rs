@@ -9,16 +9,15 @@ use enum_dispatch::enum_dispatch;
 use rand::{rngs::StdRng, SeedableRng};
 use rooch_types::{
     address::RoochAddress,
-    crypto::{
-        get_key_pair_from_rng, BuiltinScheme, EncodeDecodeBase64, PublicKey, RoochKeyPair,
-        Signature,
-    },
+    authentication_key::AuthenticationKey,
+    crypto::{get_key_pair_from_rng, BuiltinScheme, PublicKey, RoochKeyPair, Signature},
     transaction::{
         authenticator,
         rooch::{RoochTransaction, RoochTransactionData},
     },
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde_with::serde_as;
 use std::collections::BTreeMap;
 use std::fmt::Write;
 use std::fmt::{Display, Formatter};
@@ -149,6 +148,18 @@ pub trait AccountKeystore: Send + Sync {
         self.nullify_key_pair_by_scheme(address, crypto_scheme)?;
         Ok(())
     }
+
+    fn generate_session_key(
+        &mut self,
+        address: &RoochAddress,
+    ) -> Result<AuthenticationKey, anyhow::Error>;
+
+    fn sign_transaction_via_session_key(
+        &self,
+        address: &RoochAddress,
+        msg: RoochTransactionData,
+        authentication_key: &AuthenticationKey,
+    ) -> Result<RoochTransaction, signature::Error>;
 }
 
 impl Display for Keystore {
@@ -169,8 +180,21 @@ impl Display for Keystore {
 }
 
 #[derive(Default, Serialize, Deserialize)]
+#[serde_as]
 pub(crate) struct BaseKeyStore {
     keys: BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, RoochKeyPair>>,
+    /// RoochAddress -> BTreeMap<AuthenticationKey, RoochKeyPair>
+    #[serde_as(as = "BTreeMap<DisplayFromStr, BTreeMap<DisplayFromStr, _>>")]
+    session_keys: BTreeMap<RoochAddress, BTreeMap<AuthenticationKey, RoochKeyPair>>,
+}
+
+impl BaseKeyStore {
+    pub fn new(keys: BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, RoochKeyPair>>) -> Self {
+        Self {
+            keys,
+            session_keys: BTreeMap::new(),
+        }
+    }
 }
 
 impl AccountKeystore for BaseKeyStore {
@@ -321,6 +345,49 @@ impl AccountKeystore for BaseKeyStore {
         inner_map.remove(&scheme);
         Ok(())
     }
+
+    fn generate_session_key(
+        &mut self,
+        address: &RoochAddress,
+    ) -> Result<AuthenticationKey, anyhow::Error> {
+        //TODO define derivation_path for session key
+        let (_address, kp, _scheme, _phrase) =
+            generate_new_key(BuiltinScheme::Ed25519, None, None)?;
+        let authentication_key = kp.public().authentication_key();
+        let inner_map = self
+            .session_keys
+            .entry(*address)
+            .or_insert_with(BTreeMap::new);
+        inner_map.insert(authentication_key.clone(), kp);
+        Ok(authentication_key)
+    }
+
+    fn sign_transaction_via_session_key(
+        &self,
+        address: &RoochAddress,
+        msg: RoochTransactionData,
+        authentication_key: &AuthenticationKey,
+    ) -> Result<RoochTransaction, signature::Error> {
+        let kp = self
+            .session_keys
+            .get(address)
+            .ok_or_else(|| {
+                signature::Error::from_source(format!(
+                    "Cannot find SessionKey for address: [{address}]"
+                ))
+            })?
+            .get(authentication_key)
+            .ok_or_else(|| {
+                signature::Error::from_source(format!(
+                    "Cannot find SessionKey for authentication_key: [{authentication_key}]"
+                ))
+            })?;
+
+        let signature = Signature::new_hashed(msg.hash().as_bytes(), kp);
+
+        let auth = authenticator::Authenticator::ed25519(signature);
+        Ok(RoochTransaction::new(msg, auth))
+    }
 }
 
 #[derive(Default)]
@@ -446,48 +513,43 @@ impl AccountKeystore for FileBasedKeystore {
         }
         Ok(())
     }
+
+    fn generate_session_key(
+        &mut self,
+        address: &RoochAddress,
+    ) -> Result<AuthenticationKey, anyhow::Error> {
+        let auth_key = self.keystore.generate_session_key(address)?;
+        self.save()?;
+        Ok(auth_key)
+    }
+
+    fn sign_transaction_via_session_key(
+        &self,
+        address: &RoochAddress,
+        msg: RoochTransactionData,
+        authentication_key: &AuthenticationKey,
+    ) -> Result<RoochTransaction, signature::Error> {
+        self.keystore
+            .sign_transaction_via_session_key(address, msg, authentication_key)
+    }
 }
 
 impl FileBasedKeystore {
     pub fn new(path: &PathBuf) -> Result<Self, anyhow::Error> {
-        let keys: BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, RoochKeyPair>> = if path.exists() {
+        let keystore = if path.exists() {
             let reader = BufReader::new(
                 File::open(path)
                     .map_err(|e| anyhow!("Can't open FileBasedKeystore from {:?}: {}", path, e))?,
             );
-            let kp_strings: BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, String>> =
-                serde_json::from_reader(reader).map_err(|e| {
-                    anyhow!("Can't deserialize FileBasedKeystore from {:?}: {}", path, e)
-                })?;
-
-            let keys: Result<_, anyhow::Error> = kp_strings
-                .into_iter()
-                .map(|(address, inner_map)| {
-                    let inner_map_decoded: Result<_, anyhow::Error> = inner_map
-                        .into_iter()
-                        .map(|(scheme, key_str)| {
-                            let keypair = match RoochKeyPair::decode_base64(&key_str) {
-                                Ok(kp) => kp,
-                                Err(err) => {
-                                    return Err(anyhow::anyhow!(
-                                        "Failed to decode base64: {}",
-                                        err
-                                    ));
-                                }
-                            };
-                            Ok((scheme, keypair))
-                        })
-                        .collect();
-                    inner_map_decoded.map(|inner_map| (address, inner_map))
-                })
-                .collect();
-            keys.map_err(|e| anyhow!("Invalid Keypair file {:#?} {:?}", e, path))?
+            serde_json::from_reader(reader).map_err(|e| {
+                anyhow!("Can't deserialize FileBasedKeystore from {:?}: {}", path, e)
+            })?
         } else {
-            BTreeMap::new()
+            BaseKeyStore::new(BTreeMap::new())
         };
 
         Ok(Self {
-            keystore: BaseKeyStore { keys },
+            keystore,
             path: Some(path.to_path_buf()),
         })
     }
@@ -498,24 +560,11 @@ impl FileBasedKeystore {
 
     pub fn save(&self) -> Result<(), anyhow::Error> {
         if let Some(path) = &self.path {
-            let store = serde_json::to_string_pretty(&self.encode_keys())?;
+            //TODO crypto the keystore
+            let store = serde_json::to_string_pretty(&self.keystore)?;
             fs::write(path, store)?;
         }
         Ok(())
-    }
-
-    fn encode_keys(&self) -> BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, String>> {
-        self.keystore
-            .keys
-            .iter()
-            .map(|(address, inner_map)| {
-                let inner_map_encoded = inner_map
-                    .iter()
-                    .map(|(scheme, keypair)| (*scheme, EncodeDecodeBase64::encode_base64(keypair)))
-                    .collect();
-                (*address, inner_map_encoded)
-            })
-            .collect()
     }
 
     pub fn key_pairs(&self) -> Vec<&RoochKeyPair> {
@@ -608,6 +657,23 @@ impl AccountKeystore for InMemKeystore {
     ) -> Result<Signature, signature::Error> {
         self.keystore.sign_hashed(address, msg, scheme)
     }
+
+    fn generate_session_key(
+        &mut self,
+        address: &RoochAddress,
+    ) -> Result<AuthenticationKey, anyhow::Error> {
+        self.keystore.generate_session_key(address)
+    }
+
+    fn sign_transaction_via_session_key(
+        &self,
+        address: &RoochAddress,
+        msg: RoochTransactionData,
+        authentication_key: &AuthenticationKey,
+    ) -> Result<RoochTransaction, signature::Error> {
+        self.keystore
+            .sign_transaction_via_session_key(address, msg, authentication_key)
+    }
 }
 
 impl InMemKeystore {
@@ -624,7 +690,7 @@ impl InMemKeystore {
             .collect::<BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, RoochKeyPair>>>();
 
         Self {
-            keystore: BaseKeyStore { keys },
+            keystore: BaseKeyStore::new(keys),
         }
     }
 
@@ -641,7 +707,7 @@ impl InMemKeystore {
             .collect::<BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, RoochKeyPair>>>();
 
         Self {
-            keystore: BaseKeyStore { keys },
+            keystore: BaseKeyStore::new(keys),
         }
     }
 
@@ -661,7 +727,7 @@ impl InMemKeystore {
             .collect::<BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, RoochKeyPair>>>();
 
         Self {
-            keystore: BaseKeyStore { keys },
+            keystore: BaseKeyStore::new(keys),
         }
     }
 
@@ -678,7 +744,7 @@ impl InMemKeystore {
             .collect::<BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, RoochKeyPair>>>();
 
         Self {
-            keystore: BaseKeyStore { keys },
+            keystore: BaseKeyStore::new(keys),
         }
     }
 }

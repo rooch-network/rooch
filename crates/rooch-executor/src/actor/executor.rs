@@ -31,13 +31,13 @@ use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::tx_context::TxContext;
-use rooch_framework::bindings::address_mapping::AddressMapping;
-use rooch_framework::bindings::auth_validator::AuthValidatorCaller;
-use rooch_framework::bindings::transaction_validator::TransactionValidator;
 use rooch_genesis::RoochGenesis;
 use rooch_store::RoochStore;
 use rooch_types::address::MultiChainAddress;
+use rooch_types::framework::address_mapping::AddressMapping;
+use rooch_types::framework::auth_validator::AuthValidatorCaller;
 use rooch_types::framework::auth_validator::TxValidateResult;
+use rooch_types::framework::transaction_validator::TransactionValidator;
 use rooch_types::transaction::AuthenticatorInfo;
 use rooch_types::transaction::{AbstractTransaction, TransactionSequenceMapping};
 
@@ -65,7 +65,7 @@ impl ExecutorActor {
         multi_chain_address_sender: MultiChainAddress,
     ) -> Result<AccountAddress> {
         let resolved_sender = {
-            let address_mapping = self.moveos.as_module_bundle::<AddressMapping>();
+            let address_mapping = self.moveos.as_module_binding::<AddressMapping>();
             address_mapping.resovle_or_generate(multi_chain_address_sender)?
         };
 
@@ -115,7 +115,7 @@ impl ExecutorActor {
         ctx: &TxContext,
         authenticator: AuthenticatorInfo,
     ) -> Result<(TxValidateResult, Vec<FunctionCall>, Vec<FunctionCall>)> {
-        let tx_validator = self.moveos.as_module_bundle::<TransactionValidator>();
+        let tx_validator = self.moveos.as_module_binding::<TransactionValidator>();
         let tx_validate_result = tx_validator.validate(ctx, authenticator.clone())?;
         let auth_validator_option = tx_validate_result.auth_validator();
         match auth_validator_option {
