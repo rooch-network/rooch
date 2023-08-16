@@ -289,7 +289,7 @@ built-in functions
 If the signature is valid to the pubkey and hashed message, return true. Else false.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="schnorr.md#0x3_schnorr_verify">verify</a>(signature: &<a href="">vector</a>&lt;u8&gt;, public_key: &<a href="">vector</a>&lt;u8&gt;, msg: &<a href="">vector</a>&lt;u8&gt;, <a href="">hash</a>: u8): bool
+<pre><code><b>public</b> <b>fun</b> <a href="schnorr.md#0x3_schnorr_verify">verify</a>(signature: &<a href="">vector</a>&lt;u8&gt;, public_key: &<a href="">vector</a>&lt;u8&gt;, msg: &<a href="">vector</a>&lt;u8&gt;, <a href="../doc/hash.md#0x1_hash">hash</a>: u8): bool
 </code></pre>
 
 
@@ -302,7 +302,7 @@ If the signature is valid to the pubkey and hashed message, return true. Else fa
     signature: &<a href="">vector</a>&lt;u8&gt;,
     public_key: &<a href="">vector</a>&lt;u8&gt;,
     msg: &<a href="">vector</a>&lt;u8&gt;,
-    <a href="">hash</a>: u8
+    <a href="../doc/hash.md#0x1_hash">hash</a>: u8
 ): bool;
 </code></pre>
 
