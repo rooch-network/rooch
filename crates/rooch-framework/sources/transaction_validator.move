@@ -93,7 +93,7 @@ module rooch_framework::transaction_validator {
         if (!account::exists_at(ctx, sender)) {
             account::create_account(ctx, sender);
         };
-        // the transaction validator will put the multi chain address into the context
+        //the transaction validator will put the multi chain address into the context
         let multichain_address = storage_context::get<MultiChainAddress>(ctx);
         if (option::is_some(&multichain_address)) {
             let multichain_address = option::extract(&mut multichain_address);

@@ -150,12 +150,16 @@ impl<'a> SessionKeyModule<'a> {
             ],
         );
         let ctx = TxContext::new_readonly_ctx(account_address);
-        let session_key = self.caller.call_function(&ctx, call).map(|mut values| {
-            let value = values.pop().expect("should have one return value");
-            bcs::from_bytes::<MoveOption<SessionKey>>(&value.value)
-                .expect("should be a valid MoveOption<SessionKey>")
-                .into()
-        })?;
+        let session_key =
+            self.caller
+                .call_function(&ctx, call)?
+                .into_result()
+                .map(|mut values| {
+                    let value = values.pop().expect("should have one return value");
+                    bcs::from_bytes::<MoveOption<SessionKey>>(&value.value)
+                        .expect("should be a valid MoveOption<SessionKey>")
+                        .into()
+                })?;
         Ok(session_key)
     }
 

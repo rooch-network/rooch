@@ -23,9 +23,12 @@ impl<'a> Empty<'a> {
         let empty_call =
             FunctionCall::new(Self::function_id(Self::EMPTY_FUNCTION_NAME), vec![], vec![]);
 
-        self.caller.call_function(ctx, empty_call).map(|values| {
-            debug_assert!(values.is_empty(), "should not have return values");
-        })?;
+        self.caller
+            .call_function(ctx, empty_call)?
+            .into_result()
+            .map(|values| {
+                debug_assert!(values.is_empty(), "should not have return values");
+            })?;
         Ok(())
     }
 

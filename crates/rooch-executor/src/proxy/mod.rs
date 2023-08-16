@@ -16,14 +16,12 @@ use anyhow::Result;
 use coerce::actor::ActorRef;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
+use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
 use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
-use moveos_types::{
-    access_path::AccessPath, function_return_value::AnnotatedFunctionReturnValue,
-    transaction::VerifiedMoveOSTransaction,
-};
+use moveos_types::{access_path::AccessPath, transaction::VerifiedMoveOSTransaction};
 use moveos_types::{
     event::AnnotatedMoveOSEvent,
     event_filter::EventFilter,
@@ -64,7 +62,7 @@ impl ExecutorProxy {
     pub async fn execute_view_function(
         &self,
         call: FunctionCall,
-    ) -> Result<Vec<AnnotatedFunctionReturnValue>> {
+    ) -> Result<AnnotatedFunctionResult> {
         self.actor.send(ExecuteViewFunctionMessage { call }).await?
     }
 

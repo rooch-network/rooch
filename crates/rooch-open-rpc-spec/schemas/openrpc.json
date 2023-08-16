@@ -48,13 +48,10 @@
         }
       ],
       "result": {
-        "name": "Vec<AnnotatedFunctionReturnValueView>",
+        "name": "AnnotatedFunctionResultView",
         "required": true,
         "schema": {
-          "type": "array",
-          "items": {
-            "$ref": "#/components/schemas/AnnotatedFunctionReturnValueView"
-          }
+          "$ref": "#/components/schemas/AnnotatedFunctionResultView"
         }
       }
     },
@@ -420,6 +417,26 @@
                 "type": "null"
               }
             ]
+          }
+        }
+      },
+      "AnnotatedFunctionResultView": {
+        "type": "object",
+        "required": [
+          "vm_status"
+        ],
+        "properties": {
+          "return_values": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/AnnotatedFunctionReturnValueView"
+            }
+          },
+          "vm_status": {
+            "$ref": "#/components/schemas/VMStatusView"
           }
         }
       },
@@ -1432,6 +1449,88 @@
             "$ref": "#/components/schemas/TransactionTypeView"
           }
         }
+      },
+      "VMStatusView": {
+        "oneOf": [
+          {
+            "type": "string",
+            "enum": [
+              "Executed"
+            ]
+          },
+          {
+            "type": "object",
+            "required": [
+              "MoveAbort"
+            ],
+            "properties": {
+              "MoveAbort": {
+                "type": "object",
+                "required": [
+                  "abort_code",
+                  "location"
+                ],
+                "properties": {
+                  "abort_code": {
+                    "$ref": "#/components/schemas/u64"
+                  },
+                  "location": {
+                    "$ref": "#/components/schemas/move_core_types::vm_status::AbortLocation"
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "ExecutionFailure"
+            ],
+            "properties": {
+              "ExecutionFailure": {
+                "type": "object",
+                "required": [
+                  "code_offset",
+                  "function",
+                  "location",
+                  "status_code"
+                ],
+                "properties": {
+                  "code_offset": {
+                    "type": "integer",
+                    "format": "uint16",
+                    "minimum": 0.0
+                  },
+                  "function": {
+                    "type": "integer",
+                    "format": "uint16",
+                    "minimum": 0.0
+                  },
+                  "location": {
+                    "$ref": "#/components/schemas/move_core_types::vm_status::AbortLocation"
+                  },
+                  "status_code": {
+                    "$ref": "#/components/schemas/u64"
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "Error"
+            ],
+            "properties": {
+              "Error": {
+                "$ref": "#/components/schemas/u64"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
       },
       "alloc::vec::Vec<u8>": {
         "type": "string"

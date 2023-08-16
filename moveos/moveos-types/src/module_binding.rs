@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    function_return_value::FunctionReturnValue,
+    function_return_value::FunctionResult,
     move_types::FunctionId,
     transaction::{FunctionCall, MoveAction},
     tx_context::TxContext,
@@ -16,11 +16,7 @@ use move_core_types::{
 };
 
 pub trait MoveFunctionCaller {
-    fn call_function(
-        &self,
-        ctx: &TxContext,
-        call: FunctionCall,
-    ) -> Result<Vec<FunctionReturnValue>>;
+    fn call_function(&self, ctx: &TxContext, call: FunctionCall) -> Result<FunctionResult>;
 
     fn as_module_binding<'a, M: ModuleBinding<'a>>(&'a self) -> M
     where
@@ -34,11 +30,7 @@ impl<C> MoveFunctionCaller for &C
 where
     C: MoveFunctionCaller,
 {
-    fn call_function(
-        &self,
-        ctx: &TxContext,
-        call: FunctionCall,
-    ) -> Result<Vec<FunctionReturnValue>> {
+    fn call_function(&self, ctx: &TxContext, call: FunctionCall) -> Result<FunctionResult> {
         (*self).call_function(ctx, call)
     }
 }
