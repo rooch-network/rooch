@@ -11,10 +11,17 @@ module rooch_framework::bitcoin_validator {
     use rooch_framework::ecdsa_k1;
     use rooch_framework::auth_validator;
 
+    /// there defines scheme for each blockchain
+    const BITCOIN_SCHEME: u64 = 2;
+
     /// error code
     const EInvalidPublicKeyLength: u64 = 0;
 
     struct BitcoinValidator has store, drop {}
+
+    public fun scheme(): u64 {
+        BITCOIN_SCHEME
+    }
 
     public entry fun rotate_authentication_key_entry<T>(
         ctx: &mut StorageContext,
@@ -55,7 +62,7 @@ module rooch_framework::bitcoin_validator {
 
     /// Get the authentication key of the given public key.
     public fun public_key_to_authentication_key(public_key: vector<u8>): vector<u8> {
-        let bytes = vector::singleton((ecdsa_k1::scheme() as u8));
+        let bytes = vector::singleton((scheme() as u8));
         vector::append(&mut bytes, public_key);
         hash::blake2b256(&bytes)
     }

@@ -107,8 +107,8 @@ impl Serialize for MultiChainAddress {
         } else {
             #[derive(::serde::Serialize)]
             #[serde(rename = "MultiChainAddress")]
-            struct Value(u32, Vec<u8>);
-            let value = Value(self.coin_id as u32, self.raw_address.clone());
+            struct Value(u64, Vec<u8>);
+            let value = Value(self.coin_id as u64, self.raw_address.clone());
             value.serialize(serializer)
         }
     }
@@ -125,7 +125,7 @@ impl<'de> Deserialize<'de> for MultiChainAddress {
         } else {
             #[derive(::serde::Deserialize)]
             #[serde(rename = "MultiChainAddress")]
-            struct Value(u32, Vec<u8>);
+            struct Value(u64, Vec<u8>);
             let value = Value::deserialize(deserializer)?;
             Self::new(
                 CoinID::try_from(value.0).map_err(serde::de::Error::custom)?,

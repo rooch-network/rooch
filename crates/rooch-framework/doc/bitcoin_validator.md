@@ -8,6 +8,7 @@ This module implements bitcoin validator with the ECDSA signature over Secp256k1
 
 -  [Struct `BitcoinValidator`](#0x3_bitcoin_validator_BitcoinValidator)
 -  [Constants](#@Constants_0)
+-  [Function `scheme`](#0x3_bitcoin_validator_scheme)
 -  [Function `rotate_authentication_key_entry`](#0x3_bitcoin_validator_rotate_authentication_key_entry)
 -  [Function `remove_authentication_key_entry`](#0x3_bitcoin_validator_remove_authentication_key_entry)
 -  [Function `get_authentication_key_from_authenticator_payload`](#0x3_bitcoin_validator_get_authentication_key_from_authenticator_payload)
@@ -67,6 +68,16 @@ This module implements bitcoin validator with the ECDSA signature over Secp256k1
 ## Constants
 
 
+<a name="0x3_bitcoin_validator_BITCOIN_SCHEME"></a>
+
+there defines scheme for each blockchain
+
+
+<pre><code><b>const</b> <a href="bitcoin_validator.md#0x3_bitcoin_validator_BITCOIN_SCHEME">BITCOIN_SCHEME</a>: u64 = 2;
+</code></pre>
+
+
+
 <a name="0x3_bitcoin_validator_EInvalidPublicKeyLength"></a>
 
 error code
@@ -76,6 +87,30 @@ error code
 </code></pre>
 
 
+
+<a name="0x3_bitcoin_validator_scheme"></a>
+
+## Function `scheme`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_validator.md#0x3_bitcoin_validator_scheme">scheme</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_validator.md#0x3_bitcoin_validator_scheme">scheme</a>(): u64 {
+    <a href="bitcoin_validator.md#0x3_bitcoin_validator_BITCOIN_SCHEME">BITCOIN_SCHEME</a>
+}
+</code></pre>
+
+
+
+</details>
 
 <a name="0x3_bitcoin_validator_rotate_authentication_key_entry"></a>
 
@@ -207,7 +242,7 @@ Get the authentication key of the given public key.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin_validator.md#0x3_bitcoin_validator_public_key_to_authentication_key">public_key_to_authentication_key</a>(public_key: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
-    <b>let</b> bytes = <a href="_singleton">vector::singleton</a>((<a href="ecdsa_k1.md#0x3_ecdsa_k1_scheme">ecdsa_k1::scheme</a>() <b>as</b> u8));
+    <b>let</b> bytes = <a href="_singleton">vector::singleton</a>((<a href="bitcoin_validator.md#0x3_bitcoin_validator_scheme">scheme</a>() <b>as</b> u8));
     <a href="_append">vector::append</a>(&<b>mut</b> bytes, public_key);
     hash::blake2b256(&bytes)
 }

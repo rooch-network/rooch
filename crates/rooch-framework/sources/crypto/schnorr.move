@@ -2,8 +2,7 @@ module rooch_framework::schnorr {
     use std::vector;
 
     /// constant codes
-    const SCHEME_SCHNORR: u64 = 4;
-    const V_SCHNORR_SCHEME_LENGTH: u64 = 1;
+    const V_SCHNORR_TO_NOSTR_SCHEME_LENGTH: u64 = 1;
     const V_SCHNORR_PUBKEY_LENGTH: u64 = 32;
     const V_SCHNORR_SIG_LENGTH: u64 = 64;
 
@@ -18,12 +17,8 @@ module rooch_framework::schnorr {
     const EInvalidPubKey: u64 = 1;
 
     /// built-in functions
-    public fun scheme(): u64 {
-        SCHEME_SCHNORR
-    }
-
     public fun scheme_length(): u64 {
-        V_SCHNORR_SCHEME_LENGTH
+        V_SCHNORR_TO_NOSTR_SCHEME_LENGTH
     }
 
     public fun public_key_length(): u64 {

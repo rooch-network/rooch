@@ -9,7 +9,6 @@ module rooch_framework::session_key {
     use moveos_std::tx_meta::{Self, FunctionCallMeta};
     use rooch_framework::auth_validator;
     use rooch_framework::native_validator::{Self as validator};
-    use rooch_framework::ed25519;
 
     friend rooch_framework::transaction_validator;
 
@@ -118,8 +117,8 @@ module rooch_framework::session_key {
         if (!account_storage::global_exists<SessionKeys>(ctx, sender_addr)){
             return option::none()
         };
-        // We only support ed25519 scheme for SessionKey now
-        if(scheme != ed25519::scheme()){
+        // We only support native validator for SessionKey now
+        if(scheme != validator::scheme()){
             return option::none()
         };
 
