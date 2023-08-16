@@ -21,7 +21,7 @@ module rooch_framework::session_key {
     /// The session is expired
     const ESessionIsExpired: u64 = 4;
     /// The function call is beyond the session's scope
-    const EFunctionCallBeyoundSessionScope: u64 = 5;
+    const EFunctionCallBeyondSessionScope: u64 = 5;
 
     /// The session's scope
     struct SessionScope has store,copy,drop {
@@ -131,7 +131,7 @@ module rooch_framework::session_key {
         let session_key = option::extract(&mut session_key_option);
         assert!(!is_expired(ctx, &session_key), error::permission_denied(ESessionIsExpired));
         
-        assert!(in_session_scope(ctx, &session_key), error::permission_denied(EFunctionCallBeyoundSessionScope));
+        assert!(in_session_scope(ctx, &session_key), error::permission_denied(EFunctionCallBeyondSessionScope));
 
         validator::validate_signature(&authenticator_payload, &storage_context::tx_hash(ctx));
         option::some(auth_key)

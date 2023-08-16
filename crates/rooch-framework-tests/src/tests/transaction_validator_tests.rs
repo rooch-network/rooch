@@ -192,8 +192,8 @@ fn test_session_key_ed25519() {
     //             _ => panic!("expect move abort in module"),
     //         }
     //         let (_category, reason) = error::explain(code);
-    //         // EFunctionCallBeyoundSessionScope = 5
-    //         assert_eq!(reason, 5, "expect EFunctionCallBeyoundSessionScope");
+    //         // EFunctionCallBeyondSessionScope = 5
+    //         assert_eq!(reason, 5, "expect EFunctionCallBeyondSessionScope");
     //     }
     //     _ => panic!("expect move abort"),
     // }

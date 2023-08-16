@@ -157,12 +157,12 @@ The session's scope
 ## Constants
 
 
-<a name="0x3_session_key_EFunctionCallBeyoundSessionScope"></a>
+<a name="0x3_session_key_EFunctionCallBeyondSessionScope"></a>
 
 The function call is beyond the session's scope
 
 
-<pre><code><b>const</b> <a href="session_key.md#0x3_session_key_EFunctionCallBeyoundSessionScope">EFunctionCallBeyoundSessionScope</a>: u64 = 5;
+<pre><code><b>const</b> <a href="session_key.md#0x3_session_key_EFunctionCallBeyondSessionScope">EFunctionCallBeyondSessionScope</a>: u64 = 5;
 </code></pre>
 
 
@@ -400,7 +400,7 @@ If the session key is expired or invalid, abort the tx, otherwise return option:
     <b>let</b> <a href="session_key.md#0x3_session_key">session_key</a> = <a href="_extract">option::extract</a>(&<b>mut</b> session_key_option);
     <b>assert</b>!(!<a href="session_key.md#0x3_session_key_is_expired">is_expired</a>(ctx, &<a href="session_key.md#0x3_session_key">session_key</a>), <a href="_permission_denied">error::permission_denied</a>(<a href="session_key.md#0x3_session_key_ESessionIsExpired">ESessionIsExpired</a>));
 
-    <b>assert</b>!(<a href="session_key.md#0x3_session_key_in_session_scope">in_session_scope</a>(ctx, &<a href="session_key.md#0x3_session_key">session_key</a>), <a href="_permission_denied">error::permission_denied</a>(<a href="session_key.md#0x3_session_key_EFunctionCallBeyoundSessionScope">EFunctionCallBeyoundSessionScope</a>));
+    <b>assert</b>!(<a href="session_key.md#0x3_session_key_in_session_scope">in_session_scope</a>(ctx, &<a href="session_key.md#0x3_session_key">session_key</a>), <a href="_permission_denied">error::permission_denied</a>(<a href="session_key.md#0x3_session_key_EFunctionCallBeyondSessionScope">EFunctionCallBeyondSessionScope</a>));
 
     validator::validate_signature(&authenticator_payload, &<a href="_tx_hash">storage_context::tx_hash</a>(ctx));
     <a href="_some">option::some</a>(auth_key)
