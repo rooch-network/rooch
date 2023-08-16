@@ -1,6 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use move_core_types::account_address::AccountAddress;
+use move_core_types::ident_str;
+use move_core_types::language_storage::ModuleId;
+use move_core_types::value::MoveValue;
+use moveos_types::move_types::FunctionId;
 use moveos_types::{module_binding::ModuleBinding, transaction::MoveAction};
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
 use rooch_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, framework::empty::Empty};
@@ -156,5 +161,40 @@ fn test_session_key_ed25519() {
 
     binding_test.execute(tx).unwrap();
 
-    // TODO test the session key call function is out the scope.
+    // test the session key call function is out the scope.
+
+    let action = MoveAction::new_function_call(
+        FunctionId::new(
+            ModuleId::new(ROOCH_FRAMEWORK_ADDRESS, ident_str!("account").to_owned()),
+            ident_str!("create_account_entry").to_owned(),
+        ),
+        vec![],
+        vec![MoveValue::Address(AccountAddress::random())
+            .simple_serialize()
+            .unwrap()],
+    );
+    let tx_data = RoochTransactionData::new(sender, sequence_number + 2, action);
+    let tx = keystore
+        .sign_transaction_via_session_key(&sender, tx_data, &session_auth_key)
+        .unwrap();
+
+    // the session key is not in the scope of account module, so the transaction should be rejected when validate.
+    // TODO Get the validate VMStatus and check the error code.
+    let execute_result = binding_test.execute_as_result(tx);
+    assert!(execute_result.is_err(), "expect move abort");
+    //let result = binding_test.execute_as_result(tx).unwrap();
+    // match result.transaction_info.status {
+    //     KeptVMStatus::MoveAbort(l, code) => {
+    //         match l{
+    //             AbortLocation::Module(module_id) => {
+    //                 assert_eq!(module_id, ModuleId::new(ROOCH_FRAMEWORK_ADDRESS, ident_str!("session_key").to_owned()), "expect session key module");
+    //             }
+    //             _ => panic!("expect move abort in module"),
+    //         }
+    //         let (_category, reason) = error::explain(code);
+    //         // EFunctionCallBeyoundSessionScope = 5
+    //         assert_eq!(reason, 5, "expect EFunctionCallBeyoundSessionScope");
+    //     }
+    //     _ => panic!("expect move abort"),
+    // }
 }

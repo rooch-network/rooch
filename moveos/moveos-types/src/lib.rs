@@ -15,6 +15,7 @@ pub mod move_simple_map;
 pub mod move_std;
 pub mod move_string;
 pub mod move_types;
+pub mod moveos_std;
 pub mod object;
 pub mod serde;
 pub mod startup_info;
