@@ -2,18 +2,13 @@ module rooch_framework::ed25519 {
     use std::vector;
 
     /// constant codes
-    const SCHEME_ED25519: u64 = 0;
-    const V_ED25519_SCHEME_LENGTH: u64 = 1;
+    const V_ED25519_TO_NATIVE_SCHEME_LENGTH: u64 = 1;
     const V_ED25519_PUBKEY_LENGTH: u64 = 32;
     const V_ED25519_SIG_LENGTH: u64 = 64;
 
     /// built-in functions
-    public fun scheme(): u64 {
-        SCHEME_ED25519
-    }
-
     public fun scheme_length(): u64 {
-        V_ED25519_SCHEME_LENGTH
+        V_ED25519_TO_NATIVE_SCHEME_LENGTH
     }
 
     public fun public_key_length(): u64 {

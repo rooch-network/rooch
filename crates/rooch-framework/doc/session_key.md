@@ -29,7 +29,6 @@
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="">0x2::tx_meta</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
-<b>use</b> <a href="ed25519.md#0x3_ed25519">0x3::ed25519</a>;
 <b>use</b> <a href="native_validator.md#0x3_native_validator">0x3::native_validator</a>;
 </code></pre>
 
@@ -387,8 +386,8 @@ If the session key is expired or invalid, abort the tx, otherwise return option:
     <b>if</b> (!<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender_addr)){
         <b>return</b> <a href="_none">option::none</a>()
     };
-    // We only support <a href="ed25519.md#0x3_ed25519">ed25519</a> scheme for <a href="session_key.md#0x3_session_key_SessionKey">SessionKey</a> now
-    <b>if</b>(scheme != <a href="ed25519.md#0x3_ed25519_scheme">ed25519::scheme</a>()){
+    // We only support <b>native</b> validator for <a href="session_key.md#0x3_session_key_SessionKey">SessionKey</a> now
+    <b>if</b>(scheme != validator::scheme()){
         <b>return</b> <a href="_none">option::none</a>()
     };
 

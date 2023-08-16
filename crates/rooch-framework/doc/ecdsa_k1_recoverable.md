@@ -6,7 +6,6 @@
 
 
 -  [Constants](#@Constants_0)
--  [Function `scheme`](#0x3_ecdsa_k1_recoverable_scheme)
 -  [Function `scheme_length`](#0x3_ecdsa_k1_recoverable_scheme_length)
 -  [Function `public_key_length`](#0x3_ecdsa_k1_recoverable_public_key_length)
 -  [Function `signature_length`](#0x3_ecdsa_k1_recoverable_signature_length)
@@ -78,30 +77,11 @@ Error if the public key cannot be recovered from the signature.
 
 
 
-<a name="0x3_ecdsa_k1_recoverable_SCHEME_ECDSA_K1_RECOVERABLE"></a>
-
-constant codes
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_SCHEME_ECDSA_K1_RECOVERABLE">SCHEME_ECDSA_K1_RECOVERABLE</a>: u64 = 3;
-</code></pre>
-
-
-
 <a name="0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH"></a>
 
 
 
 <pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH">V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH</a>: u64 = 33;
-</code></pre>
-
-
-
-<a name="0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_SCHEME_LENGTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_SCHEME_LENGTH">V_ECDSA_K1_RECOVERABLE_SCHEME_LENGTH</a>: u64 = 1;
 </code></pre>
 
 
@@ -115,35 +95,21 @@ constant codes
 
 
 
-<a name="0x3_ecdsa_k1_recoverable_scheme"></a>
+<a name="0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH"></a>
 
-## Function `scheme`
-
-built-in functions
+constant codes
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_scheme">scheme</a>(): u64
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH">V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH</a>: u64 = 1;
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_scheme">scheme</a>(): u64 {
-    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_SCHEME_ECDSA_K1_RECOVERABLE">SCHEME_ECDSA_K1_RECOVERABLE</a>
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_ecdsa_k1_recoverable_scheme_length"></a>
 
 ## Function `scheme_length`
 
+built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_scheme_length">scheme_length</a>(): u64
@@ -156,7 +122,7 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_scheme_length">scheme_length</a>(): u64 {
-    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_SCHEME_LENGTH">V_ECDSA_K1_RECOVERABLE_SCHEME_LENGTH</a>
+    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH">V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH</a>
 }
 </code></pre>
 

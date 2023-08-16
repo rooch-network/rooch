@@ -2,8 +2,7 @@ module rooch_framework::ecdsa_k1_recoverable {
     use std::vector;
 
     /// constant codes
-    const SCHEME_ECDSA_K1_RECOVERABLE: u64 = 3;
-    const V_ECDSA_K1_RECOVERABLE_SCHEME_LENGTH: u64 = 1;
+    const V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH: u64 = 1;
     const V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH: u64 = 33;
     const V_ECDSA_K1_RECOVERABLE_SIG_LENGTH: u64 = 65;
 
@@ -21,12 +20,8 @@ module rooch_framework::ecdsa_k1_recoverable {
     const EInvalidPubKey: u64 = 2;
 
     /// built-in functions
-    public fun scheme(): u64 {
-        SCHEME_ECDSA_K1_RECOVERABLE
-    }
-
     public fun scheme_length(): u64 {
-        V_ECDSA_K1_RECOVERABLE_SCHEME_LENGTH
+        V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH
     }
 
     public fun public_key_length(): u64 {

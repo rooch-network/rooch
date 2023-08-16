@@ -6,7 +6,6 @@
 
 
 -  [Constants](#@Constants_0)
--  [Function `scheme`](#0x3_schnorr_scheme)
 -  [Function `scheme_length`](#0x3_schnorr_scheme_length)
 -  [Function `public_key_length`](#0x3_schnorr_public_key_length)
 -  [Function `signature_length`](#0x3_schnorr_signature_length)
@@ -65,30 +64,11 @@ Hash function name that are valid for verify.
 
 
 
-<a name="0x3_schnorr_SCHEME_SCHNORR"></a>
-
-constant codes
-
-
-<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_SCHEME_SCHNORR">SCHEME_SCHNORR</a>: u64 = 4;
-</code></pre>
-
-
-
 <a name="0x3_schnorr_V_SCHNORR_PUBKEY_LENGTH"></a>
 
 
 
 <pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_V_SCHNORR_PUBKEY_LENGTH">V_SCHNORR_PUBKEY_LENGTH</a>: u64 = 32;
-</code></pre>
-
-
-
-<a name="0x3_schnorr_V_SCHNORR_SCHEME_LENGTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_V_SCHNORR_SCHEME_LENGTH">V_SCHNORR_SCHEME_LENGTH</a>: u64 = 1;
 </code></pre>
 
 
@@ -102,35 +82,21 @@ constant codes
 
 
 
-<a name="0x3_schnorr_scheme"></a>
+<a name="0x3_schnorr_V_SCHNORR_TO_NOSTR_SCHEME_LENGTH"></a>
 
-## Function `scheme`
-
-built-in functions
+constant codes
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="schnorr.md#0x3_schnorr_scheme">scheme</a>(): u64
+<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_V_SCHNORR_TO_NOSTR_SCHEME_LENGTH">V_SCHNORR_TO_NOSTR_SCHEME_LENGTH</a>: u64 = 1;
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="schnorr.md#0x3_schnorr_scheme">scheme</a>(): u64 {
-    <a href="schnorr.md#0x3_schnorr_SCHEME_SCHNORR">SCHEME_SCHNORR</a>
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_schnorr_scheme_length"></a>
 
 ## Function `scheme_length`
 
+built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="schnorr.md#0x3_schnorr_scheme_length">scheme_length</a>(): u64
@@ -143,7 +109,7 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="schnorr.md#0x3_schnorr_scheme_length">scheme_length</a>(): u64 {
-    <a href="schnorr.md#0x3_schnorr_V_SCHNORR_SCHEME_LENGTH">V_SCHNORR_SCHEME_LENGTH</a>
+    <a href="schnorr.md#0x3_schnorr_V_SCHNORR_TO_NOSTR_SCHEME_LENGTH">V_SCHNORR_TO_NOSTR_SCHEME_LENGTH</a>
 }
 </code></pre>
 
