@@ -16,21 +16,29 @@ module rooch_framework::builtin_validators{
         // NATIVE_SCHEME: u64 = 0;
         let id = auth_validator_registry::register_internal<native_validator::NativeValidator>(ctx);
         assert!(id == native_validator::scheme(), std::error::internal(E_GENESIS_INIT));
+
         // SCHEME_MULTIED25519: u64 = 1;
         let id = auth_validator_registry::register_internal<multi_ed25519_validator::MultiEd25519Validator>(ctx);
         assert!(id == multi_ed25519_validator::scheme(), std::error::internal(E_GENESIS_INIT));
+
         // BITCOIN_SCHEME: u64 = 2;
         let id = auth_validator_registry::register_internal<bitcoin_validator::BitcoinValidator>(ctx);
         assert!(id == bitcoin_validator::scheme(), std::error::internal(E_GENESIS_INIT));
+
         // ETHEREUM_SCHEME: u64 = 3;
         let id = auth_validator_registry::register_internal<ethereum_validator::EthereumValidator>(ctx);
         assert!(id == ethereum_validator::scheme(), std::error::internal(E_GENESIS_INIT));
+
         // NOSTR_SCHEME: u64 = 4;
         let id = auth_validator_registry::register_internal<nostr_validator::NostrValidator>(ctx);
         assert!(id == nostr_validator::scheme(), std::error::internal(E_GENESIS_INIT));
     }
 
     public fun is_builtin_scheme(scheme: u64): bool {
-        scheme == native_validator::scheme() || scheme == multi_ed25519_validator::scheme() || scheme == bitcoin_validator::scheme() || scheme == ethereum_validator::scheme() || scheme == nostr_validator::scheme()
+        scheme == native_validator::scheme()
+        || scheme == multi_ed25519_validator::scheme()
+        || scheme == bitcoin_validator::scheme()
+        || scheme == ethereum_validator::scheme()
+        || scheme == nostr_validator::scheme()
     }
 }
