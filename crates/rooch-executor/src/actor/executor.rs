@@ -22,6 +22,7 @@ use moveos_store::transaction_store::TransactionStore;
 use moveos_store::MoveOSStore;
 use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event::EventHandle;
+use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::as_struct_tag;
@@ -222,20 +223,28 @@ impl Handler<ExecuteViewFunctionMessage> for ExecutorActor {
         &mut self,
         msg: ExecuteViewFunctionMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Vec<AnnotatedFunctionReturnValue>, anyhow::Error> {
+    ) -> Result<AnnotatedFunctionResult, anyhow::Error> {
         let resoler = self.moveos.moveos_resolver();
 
-        self.moveos
-            .execute_view_function(msg.call)?
-            .into_iter()
-            .map(|v| {
-                let move_value = resoler.view_value(&v.type_tag, &v.value)?;
-                Ok(AnnotatedFunctionReturnValue {
-                    value: v,
-                    move_value,
-                })
-            })
-            .collect::<Result<Vec<AnnotatedFunctionReturnValue>, anyhow::Error>>()
+        let function_result = self.moveos.execute_view_function(msg.call);
+        Ok(AnnotatedFunctionResult {
+            vm_status: function_result.vm_status,
+            return_values: match function_result.return_values {
+                Some(values) => Some(
+                    values
+                        .into_iter()
+                        .map(|v| {
+                            let move_value = resoler.view_value(&v.type_tag, &v.value)?;
+                            Ok(AnnotatedFunctionReturnValue {
+                                value: v,
+                                move_value,
+                            })
+                        })
+                        .collect::<Result<Vec<AnnotatedFunctionReturnValue>, anyhow::Error>>()?,
+                ),
+                None => None,
+            },
+        })
     }
 }
 

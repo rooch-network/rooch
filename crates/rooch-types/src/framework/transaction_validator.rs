@@ -41,14 +41,15 @@ impl<'a> TransactionValidator<'a> {
                     .unwrap(),
             ],
         );
-        let auth_validator =
-            self.caller
-                .call_function(ctx, tx_validator_call)
-                .map(|mut values| {
-                    let value = values.pop().expect("should have one return value");
-                    bcs::from_bytes::<TxValidateResult>(&value.value)
-                        .expect("should be a valid TxValidateResult")
-                })?;
+        let auth_validator = self
+            .caller
+            .call_function(ctx, tx_validator_call)?
+            .into_result()
+            .map(|mut values| {
+                let value = values.pop().expect("should have one return value");
+                bcs::from_bytes::<TxValidateResult>(&value.value)
+                    .expect("should be a valid TxValidateResult")
+            })?;
         Ok(auth_validator)
     }
 

@@ -7,7 +7,7 @@ use clap::Parser;
 use move_core_types::value::MoveValue;
 use moveos_types::{move_types::FunctionId, transaction::FunctionCall};
 use rooch_rpc_api::jsonrpc_types::{
-    AnnotatedFunctionReturnValueView, TransactionArgumentView, TypeTagView,
+    AnnotatedFunctionResultView, TransactionArgumentView, TypeTagView,
 };
 use rooch_types::error::{RoochError, RoochResult};
 
@@ -49,8 +49,8 @@ pub struct RunViewFunction {
 }
 
 #[async_trait]
-impl CommandAction<Vec<AnnotatedFunctionReturnValueView>> for RunViewFunction {
-    async fn execute(self) -> RoochResult<Vec<AnnotatedFunctionReturnValueView>> {
+impl CommandAction<AnnotatedFunctionResultView> for RunViewFunction {
+    async fn execute(self) -> RoochResult<AnnotatedFunctionResultView> {
         let args = self
             .args
             .iter()

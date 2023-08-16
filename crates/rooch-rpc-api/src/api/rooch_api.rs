@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::{
-    AccessPathView, AnnotatedEventView, AnnotatedFunctionReturnValueView, AnnotatedStateView,
+    AccessPathView, AnnotatedEventView, AnnotatedFunctionResultView, AnnotatedStateView,
     EventFilterView, EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
     ListAnnotatedStatesPageView, ListStatesPageView, StateView, StrView, StructTagView,
     TransactionExecutionInfoView, TransactionInfoPageView, TransactionView,
@@ -33,7 +33,7 @@ pub trait RoochAPI {
     async fn execute_view_function(
         &self,
         function_call: FunctionCallView,
-    ) -> RpcResult<Vec<AnnotatedFunctionReturnValueView>>;
+    ) -> RpcResult<AnnotatedFunctionResultView>;
 
     /// Get the states by access_path
     #[method(name = "getStates")]
