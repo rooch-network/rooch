@@ -3,7 +3,7 @@
 
 use crate::vm::moveos_vm::MoveOSVM;
 use anyhow::{bail, ensure, Result};
-use move_binary_format::errors::{vm_status_of_result, Location, PartialVMError};
+use move_binary_format::errors::{vm_status_of_result, Location, PartialVMError, VMResult};
 use move_core_types::vm_status::{KeptVMStatus, VMStatus};
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, vm_status::StatusCode,
@@ -124,7 +124,7 @@ impl MoveOS {
         self.db.0.get_transaction_store()
     }
 
-    pub fn verify(&self, tx: MoveOSTransaction) -> Result<VerifiedMoveOSTransaction> {
+    pub fn verify(&self, tx: MoveOSTransaction) -> VMResult<VerifiedMoveOSTransaction> {
         let MoveOSTransaction {
             ctx,
             action,

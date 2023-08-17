@@ -5,9 +5,11 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::language_storage::ModuleId;
 use move_core_types::value::MoveValue;
+use move_core_types::vm_status::{AbortLocation, VMStatus};
 use moveos_types::move_types::FunctionId;
 use moveos_types::{module_binding::ModuleBinding, transaction::MoveAction};
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
+use rooch_types::framework::session_key::SessionKeyModule;
 use rooch_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, framework::empty::Empty};
 use rooch_types::{
     crypto::BuiltinScheme,
@@ -37,6 +39,8 @@ fn test_validate_ed25519() {
 
     transaction_validator
         .validate(&move_tx.ctx, auth_info)
+        .unwrap()
+        .into_result()
         .unwrap();
 }
 
@@ -60,6 +64,8 @@ fn test_validate_ecdsa() {
 
     transaction_validator
         .validate(&move_tx.ctx, auth_info)
+        .unwrap()
+        .into_result()
         .unwrap();
 }
 
@@ -83,6 +89,8 @@ fn test_validate_ecdsa_recoverable() {
 
     transaction_validator
         .validate(&move_tx.ctx, auth_info)
+        .unwrap()
+        .into_result()
         .unwrap();
 }
 
@@ -106,6 +114,8 @@ fn test_validate_schnorr() {
 
     transaction_validator
         .validate(&move_tx.ctx, auth_info)
+        .unwrap()
+        .into_result()
         .unwrap();
 }
 
@@ -179,22 +189,26 @@ fn test_session_key_ed25519() {
         .unwrap();
 
     // the session key is not in the scope of account module, so the transaction should be rejected when validate.
-    // TODO Get the validate VMStatus and check the error code.
     let execute_result = binding_test.execute_as_result(tx);
-    assert!(execute_result.is_err(), "expect move abort");
-    //let result = binding_test.execute_as_result(tx).unwrap();
-    // match result.transaction_info.status {
-    //     KeptVMStatus::MoveAbort(l, code) => {
-    //         match l{
-    //             AbortLocation::Module(module_id) => {
-    //                 assert_eq!(module_id, ModuleId::new(ROOCH_FRAMEWORK_ADDRESS, ident_str!("session_key").to_owned()), "expect session key module");
-    //             }
-    //             _ => panic!("expect move abort in module"),
-    //         }
-    //         let (_category, reason) = error::explain(code);
-    //         // EFunctionCallBeyondSessionScope = 5
-    //         assert_eq!(reason, 5, "expect EFunctionCallBeyondSessionScope");
-    //     }
-    //     _ => panic!("expect move abort"),
-    // }
+    let error = execute_result.expect_err("expect transaction validate error");
+    match error.downcast_ref() {
+        Some(VMStatus::MoveAbort(l, code)) => {
+            match l {
+                AbortLocation::Module(module_id) => {
+                    assert_eq!(
+                        module_id,
+                        &SessionKeyModule::module_id(),
+                        "expect session key module"
+                    );
+                }
+                _ => panic!("expect move abort in module"),
+            }
+            let (_category, reason) = moveos_types::move_std::error::explain(*code);
+            // EFunctionCallBeyondSessionScope = 5
+            assert_eq!(reason, 5, "expect EFunctionCallBeyondSessionScope");
+        }
+        _ => {
+            panic!("Expect move abort")
+        }
+    }
 }
