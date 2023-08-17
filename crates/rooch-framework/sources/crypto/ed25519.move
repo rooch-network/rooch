@@ -49,7 +49,7 @@ module rooch_framework::ed25519 {
     ///
     /// If the signature is a valid Ed25519 signature of the message and public key, return true.
     /// Otherwise, return false.
-    public native fun verify(signature: &vector<u8>, public_key: &vector<u8>, msg: &vector<u8>): bool;
+    native public fun verify(signature: &vector<u8>, public_key: &vector<u8>, msg: &vector<u8>): bool;
 
     #[test]
     fun test_ed25519_valid_sig() {

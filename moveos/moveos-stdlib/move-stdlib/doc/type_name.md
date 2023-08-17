@@ -66,7 +66,7 @@ Return a value representation of the type <code>T</code>.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>native</b> <b>fun</b> <a href="type_name.md#0x1_type_name_get">get</a>&lt;T&gt;(): <a href="type_name.md#0x1_type_name_TypeName">TypeName</a>;
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="type_name.md#0x1_type_name_get">get</a>&lt;T&gt;(): <a href="type_name.md#0x1_type_name_TypeName">TypeName</a>;
 </code></pre>
 
 
