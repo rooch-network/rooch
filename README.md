@@ -96,7 +96,7 @@ To get started with contributing:
 
 ## Community
 
-* [Discord](https://discord.gg/hpJZkBFggN)
+* [Discord](https://discord.gg/rooch)
 * [Twitter](https://twitter.com/RoochNetwork)
 * [GitHub](https://github.com/rooch-network)
 

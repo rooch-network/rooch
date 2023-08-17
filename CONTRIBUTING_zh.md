@@ -66,7 +66,7 @@ Rooch 使用 [GitHub issues](https://github.com/rooch-network/rooch/issues) 跟�
 
 ## 文档
 
-所有开发者文档均发布在 Rooch 开发者网站 [rooch.network](https://rooch.network/)。
+所有开发者文档均发布在 Rooch 开发者网站 [rooch.network](https://rooch.network/docs/introduction)。
 
 ## 行为准则
 
