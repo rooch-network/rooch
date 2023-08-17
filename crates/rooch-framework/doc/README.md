@@ -26,6 +26,7 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::ed25519`](ed25519.md#0x3_ed25519)
 -  [`0x3::empty`](empty.md#0x3_empty)
 -  [`0x3::encoding`](encoding.md#0x3_encoding)
+-  [`0x3::ethereum_address`](ethereum_address.md#0x3_ethereum_address)
 -  [`0x3::ethereum_validator`](ethereum_validator.md#0x3_ethereum_validator)
 -  [`0x3::genesis`](genesis.md#0x3_genesis)
 -  [`0x3::hash`](hash.md#0x3_hash)
