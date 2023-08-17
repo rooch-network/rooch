@@ -311,7 +311,7 @@ where
                 //TODO check the modules package address with the sender
                 let sender = self.ctx.tx_context.sender();
                 //TODO check the compatiblity
-                let compat_config = Compatibility::no_check();
+                let compat_config = Compatibility::full_check();
                 self.session.publish_module_bundle_with_compat_config(
                     module_bundle,
                     sender,

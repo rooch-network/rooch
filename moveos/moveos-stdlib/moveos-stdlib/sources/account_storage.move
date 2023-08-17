@@ -182,7 +182,8 @@ module moveos_std::account_storage {
             // The module already exists, which means we are upgrading the module
             // TODO: check upgrade compatibility
             if (table::contains(&account_storage.modules, name)) {
-                table::remove(&mut account_storage.modules, name);
+                let old_m = table::remove(&mut account_storage.modules, name);
+                move_module::check_comatibility(&m, &old_m);
             } else {
                 // request init function invoking
                 move_module::request_init_functions(module_names_with_init_fn, account_address);
