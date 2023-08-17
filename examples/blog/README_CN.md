@@ -245,10 +245,10 @@ rooch move run --function {ACCOUNT_ADDRESS}::rooch_blog_demo_init::initialize --
 可以像下面这样，使用 Rooch CLI 提交一个交易，创建一篇测试文章：
 
 ```shell
-rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::create --sender-account {ACCOUNT_ADDRESS} --args 'string:Hello' 'string:World!''
+rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::create --sender-account {ACCOUNT_ADDRESS} --args 'string:Hello' 'string:World!'
 ```
 
-然后你可以更换一下 `--args` 后面的第一个参数（`title`）和第二个参数（`body`）的内容，多创建几篇文章。第三个参数表示文章的 Owner，只有 Owner 才能对文章进行更新和删除操作。
+然后你可以更换一下 `--args` 后面的第一个参数（`title`）和第二个参数（`body`）的内容，多创建几篇文章。
 
 ##### 查询文章
 
@@ -295,7 +295,7 @@ rooch object --id {ARTICLE_OBJECT_ID}
 可以这样提交一个交易，更新文章：
 
 ```shell
-rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::update --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'string:Foo' 'string:Bar''
+rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::update --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'string:Foo' 'string:Bar'
 ```
 
 除了使用 Rooch CLI，你还可以通过调用 JSON RPC 来查询对象的状态：
@@ -785,8 +785,6 @@ rooch move run --function {ACCOUNT_ADDRESS}::blog_aggregate::create --sender-acc
 rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::add_comment --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'u64:1' 'string:Anonymous' 'string:"A test comment"'
 ```
 
-## 再次改进应用
-
 现在，添加文章之后，你可以这样查询 Blog 的状态：
 
 ```shell
@@ -795,7 +793,9 @@ rooch state --access-path /resource/{ACCOUNT_ADDRESS}/{ACCOUNT_ADDRESS}::blog::B
 
 在返回的结果中，应该可以看到博客文章的 `ObjectID` 的列表。
 
-但是，你可能已经发现，这个应用目前还有一些地方不如人意：
+## 再次改进应用
+
+你可能已经发现，这个应用目前还有一些地方不如人意：
 
 * 我们在 `Blog` 对象内定义 `AddArticle` 和 `RemoveArticle` 只是打算供内部使用，没有必要在 `blog_aggregate.move` 文件中把它们对应的 `add_article` 和 `remove_article` 函数声明为 `public entry fun`。
 * 现在我们无法使用另外一个账户来创建博客文章。我们检视一下 `add_article` 和 `remove_article` 函数的实现，发现生成的代码默认使用了类型为 `&signer` 的参数来操作签名者的账户资源中的 `Blog` 对象；然而，想要实现这个两个方法的业务逻辑（在已有的 `Blog` 对象中添加和删除文章的 `ObjectID`），代码完全可以采用另外一种写法。

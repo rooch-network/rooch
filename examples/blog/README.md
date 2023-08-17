@@ -245,10 +245,10 @@ rooch move run --function {ACCOUNT_ADDRESS}::rooch_blog_demo_init::initialize --
 You can use Rooch CLI to submit a transaction like this to create a test article:
 
 ```shell
-rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::create --sender-account {ACCOUNT_ADDRESS} --args 'string:Hello' 'string:World!''
+rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::create --sender-account {ACCOUNT_ADDRESS} --args 'string:Hello' 'string:World!'
 ```
 
-Then you can change the content of the first parameter (title) and the second parameter (body) after `--args`, and create a few more articles. The third argument indicates the owner of the article, only the owner can update and delete the article.
+Then you can change the content of the first parameter (title) and the second parameter (body) after `--args`, and create a few more articles.
 
 ##### READ Articles
 
@@ -295,7 +295,7 @@ rooch object --id {ARTICLE_OBJECT_ID}
 You can submit a transaction like this to update an article:
 
 ```shell
-rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::update --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'string:Foo' 'string:Bar''
+rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::update --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'string:Foo' 'string:Bar'
 ```
 
 In addition to using Rooch CLI, you can also query the object state by calling JSON RPC:
@@ -784,8 +784,6 @@ Also, you no longer need to pass in the `Owner` argument when adding a comment:
 rooch move run --function {ACCOUNT_ADDRESS}::article_aggregate::add_comment --sender-account {ACCOUNT_ADDRESS} --args 'object_id:{ARTICLE_OBJECT_ID}' 'u64:1' 'string:Anonymous' 'string:"A test comment"'
 ```
 
-## Re-improving the Application
-
 Now, after adding an article, you can query the state of the `Blog` like this:
 
 ```shell
@@ -794,7 +792,9 @@ rooch state --access-path /resource/{ACCOUNT_ADDRESS}/{ACCOUNT_ADDRESS}::blog::B
 
 In the returned result, you should see a list of `ObjectID`s of the blog articles.
 
-However, as you may have noticed, there are a few things about this application that are currently not as good as they could be:
+## Re-improving the Application
+
+As you may have noticed, there are a few things about this application that are currently not as good as they could be:
 
 * We defined `AddArticle` and `RemoveArticle` within the `Blog` object only with the intention of using them internally, and there was no need to declare their corresponding `add_article` and `remove_article` functions in the `blog_aggregate.move` file as `public entry fun`.
 * Now we can't use another account to create blog articles. If we review the implementation of the `add_article` and `remove_article` functions, we find that the generated code by default uses a parameter of type `&signer` to manipulate the `Blog` object in the signer's account resource;
