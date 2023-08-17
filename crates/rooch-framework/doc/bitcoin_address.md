@@ -7,7 +7,8 @@
 
 -  [Struct `BTCAddress`](#0x3_bitcoin_address_BTCAddress)
 -  [Constants](#@Constants_0)
--  [Function `new`](#0x3_bitcoin_address_new)
+-  [Function `new_legacy`](#0x3_bitcoin_address_new_legacy)
+-  [Function `new_bech32`](#0x3_bitcoin_address_new_bech32)
 -  [Function `as_bytes`](#0x3_bitcoin_address_as_bytes)
 -  [Function `into_bytes`](#0x3_bitcoin_address_into_bytes)
 -  [Function `create_p2pkh_address`](#0x3_bitcoin_address_create_p2pkh_address)
@@ -15,7 +16,8 @@
 -  [Function `create_bech32_address`](#0x3_bitcoin_address_create_bech32_address)
 
 
-<pre><code><b>use</b> <a href="encoding.md#0x3_encoding">0x3::encoding</a>;
+<pre><code><b>use</b> <a href="">0x1::error</a>;
+<b>use</b> <a href="encoding.md#0x3_encoding">0x3::encoding</a>;
 </code></pre>
 
 
@@ -61,6 +63,16 @@
 
 
 
+<a name="0x3_bitcoin_address_EInvalidDecimalPrefix"></a>
+
+error code
+
+
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_EInvalidDecimalPrefix">EInvalidDecimalPrefix</a>: u64 = 0;
+</code></pre>
+
+
+
 <a name="0x3_bitcoin_address_P2PKH_ADDR_LENGTH"></a>
 
 
@@ -88,13 +100,13 @@
 
 
 
-<a name="0x3_bitcoin_address_new"></a>
+<a name="0x3_bitcoin_address_new_legacy"></a>
 
-## Function `new`
+## Function `new_legacy`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new">new</a>(pub_key: <a href="">vector</a>&lt;u8&gt;, decimal_prefix: u8, version: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_legacy">new_legacy</a>(pub_key: <a href="">vector</a>&lt;u8&gt;, decimal_prefix: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
 </code></pre>
 
 
@@ -103,14 +115,49 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new">new</a>(pub_key: <a href="">vector</a>&lt;u8&gt;, decimal_prefix: u8, version: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_legacy">new_legacy</a>(pub_key: <a href="">vector</a>&lt;u8&gt;, decimal_prefix: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
+    // Check the decimal_prefix, i.e. <b>address</b> type
+    <b>assert</b>!(
+        decimal_prefix == 0 || decimal_prefix == 5,
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="bitcoin_address.md#0x3_bitcoin_address_EInvalidDecimalPrefix">EInvalidDecimalPrefix</a>)
+    );
+    // Perform <b>address</b> creation
     <b>let</b> <a href="bitcoin_address.md#0x3_bitcoin_address">bitcoin_address</a> = <b>if</b> (decimal_prefix == 0) { // P2PKH <b>address</b>
         <a href="bitcoin_address.md#0x3_bitcoin_address_create_p2pkh_address">create_p2pkh_address</a>(pub_key)
     } <b>else</b> <b>if</b> (decimal_prefix == 5) { // P2SH <b>address</b>
         <a href="bitcoin_address.md#0x3_bitcoin_address_create_p2sh_address">create_p2sh_address</a>(pub_key)
-    } <b>else</b> { // Segwit Bech32 or Taproot Bech32m <b>address</b>
-        <a href="bitcoin_address.md#0x3_bitcoin_address_create_bech32_address">create_bech32_address</a>(pub_key, version)
+    } <b>else</b> {
+        <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
+            bytes: <a href="_empty">vector::empty</a>&lt;u8&gt;()
+        }
     };
+
+    <a href="bitcoin_address.md#0x3_bitcoin_address">bitcoin_address</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_bitcoin_address_new_bech32"></a>
+
+## Function `new_bech32`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_bech32">new_bech32</a>(pub_key: <a href="">vector</a>&lt;u8&gt;, version: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_bech32">new_bech32</a>(pub_key: <a href="">vector</a>&lt;u8&gt;, version: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
+    // This will create Segwit Bech32 or Taproot Bech32m addresses depending on the <b>public</b> key length and the version digit
+    <b>let</b> <a href="bitcoin_address.md#0x3_bitcoin_address">bitcoin_address</a> = <a href="bitcoin_address.md#0x3_bitcoin_address_create_bech32_address">create_bech32_address</a>(pub_key, version);
 
     <a href="bitcoin_address.md#0x3_bitcoin_address">bitcoin_address</a>
 }

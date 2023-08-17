@@ -16,5 +16,5 @@ module rooch_framework::encoding {
    /// Creates a pay to (compressed) public key hash address from a public key.
    native public fun p2pkh(public_key: &vector<u8>): vector<u8>;
 
-   /// TODO add tests here
+   // TODO add tests here
 }

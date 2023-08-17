@@ -1,4 +1,6 @@
 module rooch_framework::bitcoin_address{
+    use std::error;
+    use std::vector;
     use rooch_framework::encoding;
 
     // P2PKH addresses are 34 characters
@@ -10,18 +12,36 @@ module rooch_framework::bitcoin_address{
     // P2TR addresses with Bech32m encoding are 62 characters
     const P2TR_ADDR_LENGTH: u64 = 62;
 
+    /// error code
+    const EInvalidDecimalPrefix: u64 = 0;
+
     struct BTCAddress has store, drop {
         bytes: vector<u8>,
     }
 
-    public fun new(pub_key: vector<u8>, decimal_prefix: u8, version: u8): BTCAddress {
+    public fun new_legacy(pub_key: vector<u8>, decimal_prefix: u8): BTCAddress {
+        // Check the decimal_prefix, i.e. address type
+        assert!(
+            decimal_prefix == 0 || decimal_prefix == 5,
+            error::invalid_argument(EInvalidDecimalPrefix)
+        );
+        // Perform address creation
         let bitcoin_address = if (decimal_prefix == 0) { // P2PKH address
             create_p2pkh_address(pub_key)
         } else if (decimal_prefix == 5) { // P2SH address
             create_p2sh_address(pub_key)
-        } else { // Segwit Bech32 or Taproot Bech32m address
-            create_bech32_address(pub_key, version)
+        } else {
+            BTCAddress {
+                bytes: vector::empty<u8>()
+            }
         };
+
+        bitcoin_address
+    }
+
+    public fun new_bech32(pub_key: vector<u8>, version: u8): BTCAddress {
+        // This will create Segwit Bech32 or Taproot Bech32m addresses depending on the public key length and the version digit
+        let bitcoin_address = create_bech32_address(pub_key, version);
 
         bitcoin_address
     }
