@@ -22,8 +22,7 @@ It is used to store the account's resources and modules
 -  [Function `publish_modules_entry`](#0x2_account_storage_publish_modules_entry)
 
 
-<pre><code><b>use</b> <a href="">0x1::debug</a>;
-<b>use</b> <a href="../doc/signer.md#0x1_signer">0x1::signer</a>;
+<pre><code><b>use</b> <a href="../doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 <b>use</b> <a href="move_module.md#0x2_move_module">0x2::move_module</a>;
@@ -410,10 +409,8 @@ Publish modules to the account's storage
         // The <b>module</b> already <b>exists</b>, which means we are upgrading the <b>module</b>
         // TODO: check upgrade compatibility
         <b>if</b> (<a href="table.md#0x2_table_contains">table::contains</a>(&<a href="account_storage.md#0x2_account_storage">account_storage</a>.modules, name)) {
-            <a href="_print">debug::print</a>(&111111111111111u64);
             <b>let</b> old_m = <a href="table.md#0x2_table_remove">table::remove</a>(&<b>mut</b> <a href="account_storage.md#0x2_account_storage">account_storage</a>.modules, name);
             <a href="move_module.md#0x2_move_module_check_comatibility">move_module::check_comatibility</a>(&m, &old_m);
-            <a href="_print">debug::print</a>(&222222222222222222u64);
         } <b>else</b> {
             // request init function invoking
             <a href="move_module.md#0x2_move_module_request_init_functions">move_module::request_init_functions</a>(module_names_with_init_fn, account_address);

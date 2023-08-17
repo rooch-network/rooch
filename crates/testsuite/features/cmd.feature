@@ -92,7 +92,7 @@ Feature: Rooch CLI integration tests
 
       # The entry_function_arguments example
       Then cmd: "move publish -p ../../examples/entry_function_arguments_old/ --sender-account {default} --named-addresses rooch_examples={default} --by-move"
-      # Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
+      Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
       Then cmd: "move publish -p ../../examples/entry_function_arguments/ --sender-account {default} --named-addresses rooch_examples={default} --by-move"
       Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
       Then assert: "{{$.move[-1].output.status.type}} == executed"
