@@ -4,3 +4,4 @@
 export * from './mixin'
 export * from './hex'
 export * from './tx'
+export * from './encode'

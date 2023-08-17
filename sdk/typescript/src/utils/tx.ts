@@ -6,8 +6,8 @@ import {
   FunctionId,
   TypeTag,
   StructTag,
-  parseFunctionId,
 } from '../types'
+import {parseFunctionId} from './encode'
 
 export function encodeFunctionCall(
   functionId: FunctionId,

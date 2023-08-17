@@ -4,9 +4,9 @@ import fetch from 'isomorphic-fetch'
 import { HTTPTransport, RequestManager } from '@open-rpc/client-js'
 import { JsonRpcClient } from '../generated/client'
 import { Connection, LocalnetConnection } from './connection'
-import { encodeFunctionCall } from '../utils'
 import { BcsSerializer, bytes } from '../types/bcs'
-import { FunctionId, TypeTag, functionIdToStirng } from '../types'
+import { FunctionId, TypeTag } from '../types'
+import { encodeFunctionCall, functionIdToStirng, typeTagToString } from '../utils'
 import {
   // AnnotatedEventView,
   AnnotatedFunctionReturnValueView,
@@ -103,9 +103,10 @@ export class JsonRpcProvider {
   // Execute a read-only function call The function do not change the state of Application
   async executeViewFunction(
     funcId: FunctionId,
+    tyArgs?: TypeTag[],
     args?: Uint8Array[],
-    tyArgs?: string[],
   ): Promise<AnnotatedFunctionReturnValueView[]> {
+    const tyStrArgs = tyArgs?.map(v=>typeTagToString(v))
     // let _args = args.map((v) => {
     //   let se = new BcsSerializer()
     //   typeTagToSCS(v).serialize(se)
@@ -116,8 +117,8 @@ export class JsonRpcProvider {
     // TDOO: args, tyArgs, wait bcs
     return this.client.rooch_executeViewFunction({
       function_id: functionIdToStirng(funcId),
+      ty_args: tyStrArgs ?? [],
       args: args ?? [],
-      ty_args: tyArgs ?? [],
     })
   }
 
