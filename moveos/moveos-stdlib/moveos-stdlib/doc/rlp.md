@@ -30,7 +30,7 @@ https://ethereum.org/nl/developers/docs/data-structures-and-encoding/rlp/
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>native</b> <b>fun</b> <a href="rlp.md#0x2_rlp_to_bytes">to_bytes</a>&lt;MoveValue&gt;(value: &MoveValue): <a href="">vector</a>&lt;u8&gt;;
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="rlp.md#0x2_rlp_to_bytes">to_bytes</a>&lt;MoveValue&gt;(value: &MoveValue): <a href="">vector</a>&lt;u8&gt;;
 </code></pre>
 
 

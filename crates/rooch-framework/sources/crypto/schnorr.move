@@ -67,7 +67,7 @@ module rooch_framework::schnorr {
     /// @param hash: The hash function used to hash the message when signing.
     ///
     /// If the signature is valid to the pubkey and hashed message, return true. Else false.
-    public native fun verify(
+    native public fun verify(
         signature: &vector<u8>,
         public_key: &vector<u8>,
         msg: &vector<u8>,

@@ -102,7 +102,7 @@ bcs = "0.1.3"
 bytes = "1.0.1"
 bech32 = "0.9.1"
 better_any = "0.1.1"
-bitcoin = "0.30.0"
+bitcoin = "0.30.1"
 bip32 = "0.4.0"
 byteorder = "1.4.3"
 clap = { version = "3", features = ["derive", ] }
@@ -193,6 +193,8 @@ tower-http = { version = "0.3.4", features = ["cors", "full", "trace", "set-head
 mirai-annotations = "1.12.0"
 lru = "0.11.0"
 accumulator = { path = "moveos/moveos-commons/accumulator" }
+bitcoin-bech32 = "0.13.0"
+bs58 = "0.5.0"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES

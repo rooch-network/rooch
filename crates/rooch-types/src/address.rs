@@ -316,8 +316,7 @@ impl RoochSupportedAddress for BitcoinAddress {
         // Create a P2PKH address using the public key hash
         let p2pkh_address = Address::new(Network::Bitcoin, Payload::PubkeyHash(pubkey_hash.into()));
         // Create a redeem script from the P2PKH address
-        let redeem_script =
-            Address::new(Network::Bitcoin, Payload::PubkeyHash(pubkey_hash.into())).script_pubkey();
+        let redeem_script = p2pkh_address.script_pubkey();
         // Create a P2SH address using the redeem script
         let p2sh_address = Address::new(
             Network::Bitcoin,
@@ -332,7 +331,7 @@ impl RoochSupportedAddress for BitcoinAddress {
         let segwit_address = Address::new(
             Network::Bitcoin,
             Payload::WitnessProgram(
-                WitnessProgram::new(WitnessVersion::V16, witness_program.to_vec()).unwrap(),
+                WitnessProgram::new(WitnessVersion::V1, witness_program.to_vec()).unwrap(),
             ),
         );
         // Create an array of addresses of bitcoin protocols

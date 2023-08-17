@@ -38,7 +38,7 @@ module moveos_std::type_info {
         type_info.struct_name
     }
 
-    public native fun type_of<T>(): TypeInfo;
+    native public fun type_of<T>(): TypeInfo;
 
     //TODO should use ascii::String to represent type_name
     //TODO check the gas cost, and decide whether to implement by native function.
