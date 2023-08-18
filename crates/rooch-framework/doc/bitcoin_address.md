@@ -73,6 +73,42 @@ error code
 
 
 
+<a name="0x3_bitcoin_address_EInvalidPublicKeyLength"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_EInvalidPublicKeyLength">EInvalidPublicKeyLength</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_EInvalidScriptVersion"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_EInvalidScriptVersion">EInvalidScriptVersion</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_EInvalidVersionOnePublicKeyLength"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_EInvalidVersionOnePublicKeyLength">EInvalidVersionOnePublicKeyLength</a>: u64 = 4;
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_EInvalidVersionZeroPublicKeyLength"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_EInvalidVersionZeroPublicKeyLength">EInvalidVersionZeroPublicKeyLength</a>: u64 = 3;
+</code></pre>
+
+
+
 <a name="0x3_bitcoin_address_P2PKH_ADDR_LENGTH"></a>
 
 
@@ -121,6 +157,11 @@ error code
         decimal_prefix == 0 || decimal_prefix == 5,
         <a href="_invalid_argument">error::invalid_argument</a>(<a href="bitcoin_address.md#0x3_bitcoin_address_EInvalidDecimalPrefix">EInvalidDecimalPrefix</a>)
     );
+    // Check the <b>public</b> key length
+    <b>assert</b>!(
+        <a href="_length">vector::length</a>(&pub_key) == 32,
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="bitcoin_address.md#0x3_bitcoin_address_EInvalidPublicKeyLength">EInvalidPublicKeyLength</a>)
+    );
     // Perform <b>address</b> creation
     <b>let</b> <a href="bitcoin_address.md#0x3_bitcoin_address">bitcoin_address</a> = <b>if</b> (decimal_prefix == 0) { // P2PKH <b>address</b>
         <a href="bitcoin_address.md#0x3_bitcoin_address_create_p2pkh_address">create_p2pkh_address</a>(pub_key)
@@ -156,6 +197,20 @@ error code
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_bech32">new_bech32</a>(pub_key: <a href="">vector</a>&lt;u8&gt;, version: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
+    // Check the <b>script</b> version
+    <b>assert</b>!(
+        version &lt;= 16,
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="bitcoin_address.md#0x3_bitcoin_address_EInvalidScriptVersion">EInvalidScriptVersion</a>)
+    );
+    // Check the <b>script</b> version and the <b>public</b> key relationship
+    <b>assert</b>!(
+        version == 0 && (<a href="_length">vector::length</a>(&pub_key) == 20 || <a href="_length">vector::length</a>(&pub_key) == 32),
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="bitcoin_address.md#0x3_bitcoin_address_EInvalidVersionZeroPublicKeyLength">EInvalidVersionZeroPublicKeyLength</a>)
+    );
+    <b>assert</b>!(
+        version == 1 && <a href="_length">vector::length</a>(&pub_key) == 32,
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="bitcoin_address.md#0x3_bitcoin_address_EInvalidVersionOnePublicKeyLength">EInvalidVersionOnePublicKeyLength</a>)
+    );
     // This will create Segwit Bech32 or Taproot Bech32m addresses depending on the <b>public</b> key length and the version digit
     <b>let</b> <a href="bitcoin_address.md#0x3_bitcoin_address">bitcoin_address</a> = <a href="bitcoin_address.md#0x3_bitcoin_address_create_bech32_address">create_bech32_address</a>(pub_key, version);
 

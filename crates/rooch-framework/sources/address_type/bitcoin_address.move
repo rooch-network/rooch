@@ -14,6 +14,10 @@ module rooch_framework::bitcoin_address{
 
     /// error code
     const EInvalidDecimalPrefix: u64 = 0;
+    const EInvalidScriptVersion: u64 = 1;
+    const EInvalidPublicKeyLength: u64 = 2;
+    const EInvalidVersionZeroPublicKeyLength: u64 = 3;
+    const EInvalidVersionOnePublicKeyLength: u64 = 4;
 
     struct BTCAddress has store, drop {
         bytes: vector<u8>,
@@ -24,6 +28,11 @@ module rooch_framework::bitcoin_address{
         assert!(
             decimal_prefix == 0 || decimal_prefix == 5,
             error::invalid_argument(EInvalidDecimalPrefix)
+        );
+        // Check the public key length
+        assert!(
+            vector::length(&pub_key) == 32,
+            error::invalid_argument(EInvalidPublicKeyLength)
         );
         // Perform address creation
         let bitcoin_address = if (decimal_prefix == 0) { // P2PKH address
@@ -40,6 +49,20 @@ module rooch_framework::bitcoin_address{
     }
 
     public fun new_bech32(pub_key: vector<u8>, version: u8): BTCAddress {
+        // Check the script version
+        assert!(
+            version <= 16,
+            error::invalid_argument(EInvalidScriptVersion)
+        );
+        // Check the script version and the public key relationship
+        assert!(
+            version == 0 && (vector::length(&pub_key) == 20 || vector::length(&pub_key) == 32),
+            error::invalid_argument(EInvalidVersionZeroPublicKeyLength)
+        );
+        assert!(
+            version == 1 && vector::length(&pub_key) == 32,
+            error::invalid_argument(EInvalidVersionOnePublicKeyLength)
+        );
         // This will create Segwit Bech32 or Taproot Bech32m addresses depending on the public key length and the version digit
         let bitcoin_address = create_bech32_address(pub_key, version);
 
@@ -71,16 +94,7 @@ module rooch_framework::bitcoin_address{
         }
     }
 
-    // Function to create a Bech32 address based on the given steps: https://en.bitcoin.it/wiki/Bech32
-    // Step 1: Having a compressed public key (0x02 or 0x03 followed by 32 byte X coordinate)
-    // Step 2: Perform SHA-256 hashing on the public key
-    // Step 3: Perform RIPEMD-160 hashing on the result of SHA-256
-    // Step 4: The result of step 3 is an array of 8-bit unsigned integers (base 2^8=256) and Bech32 encoding converts this to an array of 5-bit unsigned integers (base 2^5=32) so we 'squash' the bytes to get
-    // Step 5: Add the witness version byte in front of the step 4 result (current version is 0): 
-    // Step 6: Compute the checksum by using the data from step 5 and the H.R.P (bc for MainNet and tb for TestNet)
-    // Step 7: Append the checksum to result of step 5 (we now have an array of 5-bit integers):
-    // Step 8: Map each value to its corresponding character in Bech32Chars (qpzry9x8gf2tvdw0s3jn54khce6mua7l) 00 -> q, 0e -> w, etc.
-    // Step 9: A Bech32_encoded address consists of 3 parts: HRP + Separator + Data.
+    // Function to create a Bech32 address based on the given steps: https://en.bitcoin.it/wiki/Bech32.
     // Address type depends on the pub_key and version variables. Different input pub_key lengths and versions result in different address types.
     // i.e. P2wpkh uses 20 bytes public key and P2wsh uses 32 bytes public key for witness version v0. P2tr uses 32 bytes public key for witness version v1. 
     public fun create_bech32_address(pub_key: vector<u8>, version: u8): BTCAddress {

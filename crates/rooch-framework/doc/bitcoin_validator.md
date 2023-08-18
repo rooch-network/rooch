@@ -68,22 +68,22 @@ This module implements bitcoin validator with the ECDSA signature over Secp256k1
 ## Constants
 
 
-<a name="0x3_bitcoin_validator_BITCOIN_SCHEME"></a>
-
-there defines scheme for each blockchain
-
-
-<pre><code><b>const</b> <a href="bitcoin_validator.md#0x3_bitcoin_validator_BITCOIN_SCHEME">BITCOIN_SCHEME</a>: u64 = 2;
-</code></pre>
-
-
-
 <a name="0x3_bitcoin_validator_EInvalidPublicKeyLength"></a>
 
 error code
 
 
 <pre><code><b>const</b> <a href="bitcoin_validator.md#0x3_bitcoin_validator_EInvalidPublicKeyLength">EInvalidPublicKeyLength</a>: u64 = 0;
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_validator_BITCOIN_SCHEME"></a>
+
+there defines scheme for each blockchain
+
+
+<pre><code><b>const</b> <a href="bitcoin_validator.md#0x3_bitcoin_validator_BITCOIN_SCHEME">BITCOIN_SCHEME</a>: u64 = 2;
 </code></pre>
 
 
