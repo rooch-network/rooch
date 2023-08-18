@@ -44,17 +44,15 @@ pub struct NativeTableContext<'a> {
     table_data: Arc<RwLock<TableData>>,
 }
 
-// See stdlib/Error.move
-const _ECATEGORY_INVALID_STATE: u8 = 0;
-const ECATEGORY_INVALID_ARGUMENT: u8 = 7;
-
-//25607
-const ALREADY_EXISTS: u64 = (100 << 8) + ECATEGORY_INVALID_ARGUMENT as u64;
-//25863
-const NOT_FOUND: u64 = (101 << 8) + ECATEGORY_INVALID_ARGUMENT as u64;
-// Move side raises this
-//26112
-const NOT_EMPTY: u64 = (102 << 8) + _ECATEGORY_INVALID_STATE as u64;
+//524289
+const ALREADY_EXISTS: u64 =
+    moveos_types::move_std::error::canonical(moveos_types::move_std::error::ALREADY_EXISTS, 1);
+//393218
+const NOT_FOUND: u64 =
+    moveos_types::move_std::error::canonical(moveos_types::move_std::error::NOT_FOUND, 2);
+//196611
+const NOT_EMPTY: u64 =
+    moveos_types::move_std::error::canonical(moveos_types::move_std::error::INVALID_STATE, 3);
 
 // ===========================================================================================
 // Private Data Structures and Constants

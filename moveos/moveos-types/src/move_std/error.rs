@@ -42,7 +42,7 @@ pub const NOT_IMPLEMENTED: u64 = 0xC;
 pub const UNAVAILABLE: u64 = 0xD;
 
 /// Construct a canonical error code from a category and a reason.
-pub fn canonical(category: u64, reason: u64) -> u64 {
+pub const fn canonical(category: u64, reason: u64) -> u64 {
     (category << 16) + reason
 }
 
