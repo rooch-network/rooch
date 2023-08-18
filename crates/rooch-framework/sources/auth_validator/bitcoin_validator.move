@@ -12,7 +12,7 @@ module rooch_framework::bitcoin_validator {
     use rooch_framework::bitcoin_address::{Self, BTCAddress};
 
     /// there defines scheme for each blockchain
-    const BITCOIN_SCHEME: u64 = 2;
+    const SCHEME_BITCOIN: u64 = 2;
 
     /// error code
     const EInvalidPublicKeyLength: u64 = 0;
@@ -20,7 +20,7 @@ module rooch_framework::bitcoin_validator {
     struct BitcoinValidator has store, drop {}
 
     public fun scheme(): u64 {
-        BITCOIN_SCHEME
+        SCHEME_BITCOIN
     }
 
     /// `rotate_authentication_key_entry` only supports rotating authentication key to a Bitcoin legacy address

@@ -52,7 +52,7 @@
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="builtin_validators.md#0x3_builtin_validators_genesis_init">genesis_init</a>(ctx: &<b>mut</b> StorageContext, _genesis_account: &<a href="">signer</a>){
-    // NATIVE_SCHEME: u64 = 0;
+    // SCHEME_NATIVE: u64 = 0;
     <b>let</b> id = <a href="auth_validator_registry.md#0x3_auth_validator_registry_register_internal">auth_validator_registry::register_internal</a>&lt;<a href="native_validator.md#0x3_native_validator_NativeValidator">native_validator::NativeValidator</a>&gt;(ctx);
     <b>assert</b>!(id == <a href="native_validator.md#0x3_native_validator_scheme">native_validator::scheme</a>(), std::error::internal(<a href="builtin_validators.md#0x3_builtin_validators_E_GENESIS_INIT">E_GENESIS_INIT</a>));
 
@@ -60,15 +60,15 @@
     <b>let</b> id = <a href="auth_validator_registry.md#0x3_auth_validator_registry_register_internal">auth_validator_registry::register_internal</a>&lt;<a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_MultiEd25519Validator">multi_ed25519_validator::MultiEd25519Validator</a>&gt;(ctx);
     <b>assert</b>!(id == <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_scheme">multi_ed25519_validator::scheme</a>(), std::error::internal(<a href="builtin_validators.md#0x3_builtin_validators_E_GENESIS_INIT">E_GENESIS_INIT</a>));
 
-    // BITCOIN_SCHEME: u64 = 2;
+    // SCHEME_BITCOIN: u64 = 2;
     <b>let</b> id = <a href="auth_validator_registry.md#0x3_auth_validator_registry_register_internal">auth_validator_registry::register_internal</a>&lt;<a href="bitcoin_validator.md#0x3_bitcoin_validator_BitcoinValidator">bitcoin_validator::BitcoinValidator</a>&gt;(ctx);
     <b>assert</b>!(id == <a href="bitcoin_validator.md#0x3_bitcoin_validator_scheme">bitcoin_validator::scheme</a>(), std::error::internal(<a href="builtin_validators.md#0x3_builtin_validators_E_GENESIS_INIT">E_GENESIS_INIT</a>));
 
-    // ETHEREUM_SCHEME: u64 = 3;
+    // SCHEME_ETHEREUM: u64 = 3;
     <b>let</b> id = <a href="auth_validator_registry.md#0x3_auth_validator_registry_register_internal">auth_validator_registry::register_internal</a>&lt;<a href="ethereum_validator.md#0x3_ethereum_validator_EthereumValidator">ethereum_validator::EthereumValidator</a>&gt;(ctx);
     <b>assert</b>!(id == <a href="ethereum_validator.md#0x3_ethereum_validator_scheme">ethereum_validator::scheme</a>(), std::error::internal(<a href="builtin_validators.md#0x3_builtin_validators_E_GENESIS_INIT">E_GENESIS_INIT</a>));
 
-    // NOSTR_SCHEME: u64 = 4;
+    // SCHEME_NOSTR: u64 = 4;
     <b>let</b> id = <a href="auth_validator_registry.md#0x3_auth_validator_registry_register_internal">auth_validator_registry::register_internal</a>&lt;<a href="nostr_validator.md#0x3_nostr_validator_NostrValidator">nostr_validator::NostrValidator</a>&gt;(ctx);
     <b>assert</b>!(id == <a href="nostr_validator.md#0x3_nostr_validator_scheme">nostr_validator::scheme</a>(), std::error::internal(<a href="builtin_validators.md#0x3_builtin_validators_E_GENESIS_INIT">E_GENESIS_INIT</a>));
 }

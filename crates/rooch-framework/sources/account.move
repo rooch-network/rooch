@@ -62,7 +62,7 @@ module rooch_framework::account{
    /// serves to domain separate hashes used to derive resource account addresses from hashes used to derive
    /// authentication keys. Without such separation, an adversary could create (and get a signer for) a resource account
    /// whose address matches an existing address of a MultiEd25519 wallet.
-   const DERIVE_RESOURCE_ACCOUNT_SCHEME: u8 = 255;
+   const SCHEME_DERIVE_RESOURCE_ACCOUNT: u8 = 255;
    
    /// Account already exists
    const EAccountAlreadyExists: u64 = 1;
@@ -255,7 +255,7 @@ module rooch_framework::account{
    public fun create_resource_address(source: &address, seed: vector<u8>): address {
       let bytes = bcs::to_bytes(source);
       vector::append(&mut bytes, seed);
-      vector::push_back(&mut bytes, DERIVE_RESOURCE_ACCOUNT_SCHEME);
+      vector::push_back(&mut bytes, SCHEME_DERIVE_RESOURCE_ACCOUNT);
       bcs::to_address(hash::sha3_256(bytes))
    }
 

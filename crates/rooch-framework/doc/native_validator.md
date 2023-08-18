@@ -76,12 +76,12 @@ error code
 
 
 
-<a name="0x3_native_validator_NATIVE_SCHEME"></a>
+<a name="0x3_native_validator_SCHEME_NATIVE"></a>
 
 there defines scheme for each blockchain
 
 
-<pre><code><b>const</b> <a href="native_validator.md#0x3_native_validator_NATIVE_SCHEME">NATIVE_SCHEME</a>: u64 = 0;
+<pre><code><b>const</b> <a href="native_validator.md#0x3_native_validator_SCHEME_NATIVE">SCHEME_NATIVE</a>: u64 = 0;
 </code></pre>
 
 
@@ -102,7 +102,7 @@ there defines scheme for each blockchain
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_scheme">scheme</a>(): u64 {
-    <a href="native_validator.md#0x3_native_validator_NATIVE_SCHEME">NATIVE_SCHEME</a>
+    <a href="native_validator.md#0x3_native_validator_SCHEME_NATIVE">SCHEME_NATIVE</a>
 }
 </code></pre>
 

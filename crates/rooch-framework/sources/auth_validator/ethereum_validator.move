@@ -12,7 +12,7 @@ module rooch_framework::ethereum_validator {
     use rooch_framework::ethereum_address::{Self, ETHAddress};
 
     /// there defines scheme for each blockchain
-    const ETHEREUM_SCHEME: u64 = 3;
+    const SCHEME_ETHEREUM: u64 = 3;
 
     /// error code
     const EInvalidPublicKeyLength: u64 = 0;
@@ -20,7 +20,7 @@ module rooch_framework::ethereum_validator {
     struct EthereumValidator has store, drop {}
 
     public fun scheme(): u64 {
-        ETHEREUM_SCHEME
+        SCHEME_ETHEREUM
     }
 
     public entry fun rotate_authentication_key_entry(

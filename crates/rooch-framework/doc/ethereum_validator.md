@@ -76,12 +76,12 @@ error code
 
 
 
-<a name="0x3_ethereum_validator_ETHEREUM_SCHEME"></a>
+<a name="0x3_ethereum_validator_SCHEME_ETHEREUM"></a>
 
 there defines scheme for each blockchain
 
 
-<pre><code><b>const</b> <a href="ethereum_validator.md#0x3_ethereum_validator_ETHEREUM_SCHEME">ETHEREUM_SCHEME</a>: u64 = 3;
+<pre><code><b>const</b> <a href="ethereum_validator.md#0x3_ethereum_validator_SCHEME_ETHEREUM">SCHEME_ETHEREUM</a>: u64 = 3;
 </code></pre>
 
 
@@ -102,7 +102,7 @@ there defines scheme for each blockchain
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_scheme">scheme</a>(): u64 {
-    <a href="ethereum_validator.md#0x3_ethereum_validator_ETHEREUM_SCHEME">ETHEREUM_SCHEME</a>
+    <a href="ethereum_validator.md#0x3_ethereum_validator_SCHEME_ETHEREUM">SCHEME_ETHEREUM</a>
 }
 </code></pre>
 

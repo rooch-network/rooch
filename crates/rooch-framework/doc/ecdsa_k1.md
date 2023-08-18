@@ -74,30 +74,30 @@ Hash function name that are valid for ecrecover and verify.
 
 
 
-<a name="0x3_ecdsa_k1_V_ECDSA_K1_COMPRESSED_PUBKEY_LENGTH"></a>
+<a name="0x3_ecdsa_k1_VALID_ECDSA_K1_PUBKEY_LENGTH"></a>
 
 
 
-<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_V_ECDSA_K1_COMPRESSED_PUBKEY_LENGTH">V_ECDSA_K1_COMPRESSED_PUBKEY_LENGTH</a>: u64 = 33;
+<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_VALID_ECDSA_K1_PUBKEY_LENGTH">VALID_ECDSA_K1_PUBKEY_LENGTH</a>: u64 = 33;
 </code></pre>
 
 
 
-<a name="0x3_ecdsa_k1_V_ECDSA_K1_SIG_LENGTH"></a>
+<a name="0x3_ecdsa_k1_VALID_ECDSA_K1_SIG_LENGTH"></a>
 
 
 
-<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_V_ECDSA_K1_SIG_LENGTH">V_ECDSA_K1_SIG_LENGTH</a>: u64 = 64;
+<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_VALID_ECDSA_K1_SIG_LENGTH">VALID_ECDSA_K1_SIG_LENGTH</a>: u64 = 64;
 </code></pre>
 
 
 
-<a name="0x3_ecdsa_k1_V_ECDSA_K1_TO_BITCOIN_SCHEME_LENGTH"></a>
+<a name="0x3_ecdsa_k1_VALID_ECDSA_K1_TO_SCHEME_BITCOIN_LENGTH"></a>
 
 constant codes
 
 
-<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_V_ECDSA_K1_TO_BITCOIN_SCHEME_LENGTH">V_ECDSA_K1_TO_BITCOIN_SCHEME_LENGTH</a>: u64 = 1;
+<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_VALID_ECDSA_K1_TO_SCHEME_BITCOIN_LENGTH">VALID_ECDSA_K1_TO_SCHEME_BITCOIN_LENGTH</a>: u64 = 1;
 </code></pre>
 
 
@@ -119,7 +119,7 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_scheme_length">scheme_length</a>(): u64 {
-    <a href="ecdsa_k1.md#0x3_ecdsa_k1_V_ECDSA_K1_TO_BITCOIN_SCHEME_LENGTH">V_ECDSA_K1_TO_BITCOIN_SCHEME_LENGTH</a>
+    <a href="ecdsa_k1.md#0x3_ecdsa_k1_VALID_ECDSA_K1_TO_SCHEME_BITCOIN_LENGTH">VALID_ECDSA_K1_TO_SCHEME_BITCOIN_LENGTH</a>
 }
 </code></pre>
 
@@ -143,7 +143,7 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_public_key_length">public_key_length</a>(): u64 {
-    <a href="ecdsa_k1.md#0x3_ecdsa_k1_V_ECDSA_K1_COMPRESSED_PUBKEY_LENGTH">V_ECDSA_K1_COMPRESSED_PUBKEY_LENGTH</a>
+    <a href="ecdsa_k1.md#0x3_ecdsa_k1_VALID_ECDSA_K1_PUBKEY_LENGTH">VALID_ECDSA_K1_PUBKEY_LENGTH</a>
 }
 </code></pre>
 
@@ -167,7 +167,7 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_signature_length">signature_length</a>(): u64 {
-    <a href="ecdsa_k1.md#0x3_ecdsa_k1_V_ECDSA_K1_SIG_LENGTH">V_ECDSA_K1_SIG_LENGTH</a>
+    <a href="ecdsa_k1.md#0x3_ecdsa_k1_VALID_ECDSA_K1_SIG_LENGTH">VALID_ECDSA_K1_SIG_LENGTH</a>
 }
 </code></pre>
 

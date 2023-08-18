@@ -2,9 +2,9 @@ module rooch_framework::schnorr {
     use std::vector;
 
     /// constant codes
-    const V_SCHNORR_TO_NOSTR_SCHEME_LENGTH: u64 = 1;
-    const V_SCHNORR_PUBKEY_LENGTH: u64 = 32;
-    const V_SCHNORR_SIG_LENGTH: u64 = 64;
+    const VALID_SCHNORR_TO_SCHEME_NOSTR_LENGTH: u64 = 1;
+    const VALID_SCHNORR_PUBKEY_LENGTH: u64 = 32;
+    const VALID_SCHNORR_SIG_LENGTH: u64 = 64;
 
     /// Hash function name that are valid for verify.
     const KECCAK256: u8 = 0;
@@ -18,15 +18,15 @@ module rooch_framework::schnorr {
 
     /// built-in functions
     public fun scheme_length(): u64 {
-        V_SCHNORR_TO_NOSTR_SCHEME_LENGTH
+        VALID_SCHNORR_TO_SCHEME_NOSTR_LENGTH
     }
 
     public fun public_key_length(): u64 {
-        V_SCHNORR_PUBKEY_LENGTH
+        VALID_SCHNORR_PUBKEY_LENGTH
     }
 
     public fun signature_length(): u64 {
-        V_SCHNORR_SIG_LENGTH
+        VALID_SCHNORR_SIG_LENGTH
     }
 
     public fun keccak256(): u8 {

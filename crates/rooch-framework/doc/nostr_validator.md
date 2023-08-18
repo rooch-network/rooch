@@ -78,12 +78,12 @@ error code
 
 
 
-<a name="0x3_nostr_validator_NOSTR_SCHEME"></a>
+<a name="0x3_nostr_validator_SCHEME_NOSTR"></a>
 
 there defines scheme for each blockchain
 
 
-<pre><code><b>const</b> <a href="nostr_validator.md#0x3_nostr_validator_NOSTR_SCHEME">NOSTR_SCHEME</a>: u64 = 4;
+<pre><code><b>const</b> <a href="nostr_validator.md#0x3_nostr_validator_SCHEME_NOSTR">SCHEME_NOSTR</a>: u64 = 4;
 </code></pre>
 
 
@@ -104,7 +104,7 @@ there defines scheme for each blockchain
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="nostr_validator.md#0x3_nostr_validator_scheme">scheme</a>(): u64 {
-    <a href="nostr_validator.md#0x3_nostr_validator_NOSTR_SCHEME">NOSTR_SCHEME</a>
+    <a href="nostr_validator.md#0x3_nostr_validator_SCHEME_NOSTR">SCHEME_NOSTR</a>
 }
 </code></pre>
 

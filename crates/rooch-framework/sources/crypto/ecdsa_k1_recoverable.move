@@ -2,10 +2,9 @@ module rooch_framework::ecdsa_k1_recoverable {
     use std::vector;
 
     /// constant codes
-    const V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH: u64 = 1;
-    const V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH: u64 = 33;
-    const V_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH: u64 = 65;
-    const V_ECDSA_K1_RECOVERABLE_SIG_LENGTH: u64 = 65;
+    const VALID_ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH: u64 = 1;
+    const VALID_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH: u64 = 33;
+    const VALID_ECDSA_K1_RECOVERABLE_SIG_LENGTH: u64 = 65;
 
     /// Hash function name that are valid for ecrecover and verify.
     const KECCAK256: u8 = 0;
@@ -22,7 +21,7 @@ module rooch_framework::ecdsa_k1_recoverable {
 
     /// built-in functions
     public fun scheme_length(): u64 {
-        V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH
+        VALID_ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH
     }
 
     public fun public_key_length(): u64 {
@@ -30,11 +29,11 @@ module rooch_framework::ecdsa_k1_recoverable {
     }
 
     public fun uncompressed_public_key_length(): u64 {
-        V_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH
+        VALID_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH
     }
 
     public fun signature_length(): u64 {
-        V_ECDSA_K1_RECOVERABLE_SIG_LENGTH
+        VALID_ECDSA_K1_RECOVERABLE_SIG_LENGTH
     }
 
     public fun keccak256(): u8 {

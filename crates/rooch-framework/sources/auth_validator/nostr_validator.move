@@ -12,7 +12,7 @@ module rooch_framework::nostr_validator {
     use rooch_framework::auth_validator;
 
     /// there defines scheme for each blockchain
-    const NOSTR_SCHEME: u64 = 4;
+    const SCHEME_NOSTR: u64 = 4;
 
     /// error code
     const EInvalidPublicKeyLength: u64 = 0;
@@ -20,7 +20,7 @@ module rooch_framework::nostr_validator {
     struct NostrValidator has store, drop {}
 
     public fun scheme(): u64 {
-        NOSTR_SCHEME
+        SCHEME_NOSTR
     }
 
     public entry fun rotate_authentication_key_entry(

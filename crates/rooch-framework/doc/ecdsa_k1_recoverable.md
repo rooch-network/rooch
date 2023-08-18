@@ -78,30 +78,30 @@ Error if the public key cannot be recovered from the signature.
 
 
 
-<a name="0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH"></a>
+<a name="0x3_ecdsa_k1_recoverable_VALID_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH"></a>
 
 
 
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH">V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH</a>: u64 = 33;
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_VALID_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH">VALID_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH</a>: u64 = 33;
 </code></pre>
 
 
 
-<a name="0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_SIG_LENGTH"></a>
+<a name="0x3_ecdsa_k1_recoverable_VALID_ECDSA_K1_RECOVERABLE_SIG_LENGTH"></a>
 
 
 
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_SIG_LENGTH">V_ECDSA_K1_RECOVERABLE_SIG_LENGTH</a>: u64 = 65;
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_VALID_ECDSA_K1_RECOVERABLE_SIG_LENGTH">VALID_ECDSA_K1_RECOVERABLE_SIG_LENGTH</a>: u64 = 65;
 </code></pre>
 
 
 
-<a name="0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH"></a>
+<a name="0x3_ecdsa_k1_recoverable_VALID_ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH"></a>
 
 constant codes
 
 
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH">V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH</a>: u64 = 1;
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_VALID_ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH">VALID_ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH</a>: u64 = 1;
 </code></pre>
 
 
@@ -132,7 +132,7 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_scheme_length">scheme_length</a>(): u64 {
-    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH">V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH</a>
+    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_VALID_ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH">VALID_ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH</a>
 }
 </code></pre>
 
@@ -156,31 +156,7 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_public_key_length">public_key_length</a>(): u64 {
-    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH">V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH</a>
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_ecdsa_k1_recoverable_uncompressed_public_key_length"></a>
-
-## Function `uncompressed_public_key_length`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_uncompressed_public_key_length">uncompressed_public_key_length</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_uncompressed_public_key_length">uncompressed_public_key_length</a>(): u64 {
-    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH">V_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH</a>
+    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_VALID_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH">VALID_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH</a>
 }
 </code></pre>
 
@@ -204,7 +180,7 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_signature_length">signature_length</a>(): u64 {
-    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_SIG_LENGTH">V_ECDSA_K1_RECOVERABLE_SIG_LENGTH</a>
+    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_VALID_ECDSA_K1_RECOVERABLE_SIG_LENGTH">VALID_ECDSA_K1_RECOVERABLE_SIG_LENGTH</a>
 }
 </code></pre>
 

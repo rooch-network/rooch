@@ -12,7 +12,7 @@ module rooch_framework::native_validator {
     use rooch_framework::auth_validator;
 
     /// there defines scheme for each blockchain
-    const NATIVE_SCHEME: u64 = 0;
+    const SCHEME_NATIVE: u64 = 0;
 
     /// error code
     const EInvalidPublicKeyLength: u64 = 0;
@@ -20,7 +20,7 @@ module rooch_framework::native_validator {
     struct NativeValidator has store, drop {}
 
     public fun scheme(): u64 {
-        NATIVE_SCHEME
+        SCHEME_NATIVE
     }
 
     public entry fun rotate_authentication_key_entry(

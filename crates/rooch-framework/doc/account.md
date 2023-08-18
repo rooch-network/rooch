@@ -289,20 +289,6 @@ Account already exists
 
 
 
-<a name="0x3_account_DERIVE_RESOURCE_ACCOUNT_SCHEME"></a>
-
-Scheme identifier used when hashing an account's address together with a seed to derive the address (not the
-authentication key) of a resource account. This is an abuse of the notion of a scheme identifier which, for now,
-serves to domain separate hashes used to derive resource account addresses from hashes used to derive
-authentication keys. Without such separation, an adversary could create (and get a signer for) a resource account
-whose address matches an existing address of a MultiEd25519 wallet.
-
-
-<pre><code><b>const</b> <a href="account.md#0x3_account_DERIVE_RESOURCE_ACCOUNT_SCHEME">DERIVE_RESOURCE_ACCOUNT_SCHEME</a>: u8 = 255;
-</code></pre>
-
-
-
 <a name="0x3_account_EAccountIsAlreadyResourceAccount"></a>
 
 Resource Account can't derive resource account
@@ -379,6 +365,20 @@ Sequence number exceeds the maximum value for a u64
 
 
 <pre><code><b>const</b> <a href="account.md#0x3_account_ESequenceNumberTooBig">ESequenceNumberTooBig</a>: u64 = 3;
+</code></pre>
+
+
+
+<a name="0x3_account_SCHEME_DERIVE_RESOURCE_ACCOUNT"></a>
+
+Scheme identifier used when hashing an account's address together with a seed to derive the address (not the
+authentication key) of a resource account. This is an abuse of the notion of a scheme identifier which, for now,
+serves to domain separate hashes used to derive resource account addresses from hashes used to derive
+authentication keys. Without such separation, an adversary could create (and get a signer for) a resource account
+whose address matches an existing address of a MultiEd25519 wallet.
+
+
+<pre><code><b>const</b> <a href="account.md#0x3_account_SCHEME_DERIVE_RESOURCE_ACCOUNT">SCHEME_DERIVE_RESOURCE_ACCOUNT</a>: u8 = 255;
 </code></pre>
 
 
@@ -738,7 +738,7 @@ involves the use of a cryptographic hash operation and should be use thoughtfull
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_create_resource_address">create_resource_address</a>(source: &<b>address</b>, seed: <a href="">vector</a>&lt;u8&gt;): <b>address</b> {
    <b>let</b> bytes = <a href="_to_bytes">bcs::to_bytes</a>(source);
    <a href="_append">vector::append</a>(&<b>mut</b> bytes, seed);
-   <a href="_push_back">vector::push_back</a>(&<b>mut</b> bytes, <a href="account.md#0x3_account_DERIVE_RESOURCE_ACCOUNT_SCHEME">DERIVE_RESOURCE_ACCOUNT_SCHEME</a>);
+   <a href="_push_back">vector::push_back</a>(&<b>mut</b> bytes, <a href="account.md#0x3_account_SCHEME_DERIVE_RESOURCE_ACCOUNT">SCHEME_DERIVE_RESOURCE_ACCOUNT</a>);
    bcs::to_address(<a href="../doc/hash.md#0x1_hash_sha3_256">hash::sha3_256</a>(bytes))
 }
 </code></pre>
