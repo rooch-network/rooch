@@ -36,6 +36,7 @@ pub struct ExecuteTransactionMessage {
     pub tx: VerifiedMoveOSTransaction,
 }
 
+#[derive(Debug)]
 pub struct ExecuteTransactionResult {
     pub output: TransactionOutput,
     pub transaction_info: TransactionExecutionInfo,

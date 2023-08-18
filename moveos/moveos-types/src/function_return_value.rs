@@ -29,16 +29,23 @@ impl FunctionResult {
         }
     }
 
-    pub fn into_result(self) -> Result<Vec<FunctionReturnValue>, anyhow::Error> {
+    pub fn into_result(self) -> Result<Vec<FunctionReturnValue>, VMStatus> {
         match self.vm_status {
             VMStatus::Executed => Ok(self
                 .return_values
                 .expect("return_values must be Some, if vm_status is Executed")),
-            _ => Err(anyhow::anyhow!(
-                "Function call failed with VMStatus: {:?}",
-                self.vm_status
-            )),
+            status => Err(status),
         }
+    }
+
+    pub fn decode<V, F>(self, f: F) -> Result<DecodedFunctionResult<V>, anyhow::Error>
+    where
+        F: FnOnce(Vec<FunctionReturnValue>) -> Result<V, anyhow::Error>,
+    {
+        Ok(DecodedFunctionResult {
+            vm_status: self.vm_status,
+            return_values: self.return_values.map(f).transpose()?,
+        })
     }
 }
 
@@ -50,6 +57,23 @@ impl From<VMResult<Vec<FunctionReturnValue>>> for FunctionResult {
                 vm_status: vm_error.into_vm_status(),
                 return_values: None,
             },
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct DecodedFunctionResult<V> {
+    pub vm_status: VMStatus,
+    pub return_values: Option<V>,
+}
+
+impl<V> DecodedFunctionResult<V> {
+    pub fn into_result(self) -> Result<V, VMStatus> {
+        match self.vm_status {
+            VMStatus::Executed => Ok(self
+                .return_values
+                .expect("return_values must be Some, if vm_status is Executed")),
+            status => Err(status),
         }
     }
 }
