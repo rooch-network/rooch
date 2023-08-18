@@ -70,11 +70,11 @@ error code
 
 
 
-<a name="0x3_ethereum_address_ETHEREUM_ADDR_LENGTH"></a>
+<a name="0x3_ethereum_address_VALID_ETHEREUM_ADDR_LENGTH"></a>
 
 
 
-<pre><code><b>const</b> <a href="ethereum_address.md#0x3_ethereum_address_ETHEREUM_ADDR_LENGTH">ETHEREUM_ADDR_LENGTH</a>: u64 = 20;
+<pre><code><b>const</b> <a href="ethereum_address.md#0x3_ethereum_address_VALID_ETHEREUM_ADDR_LENGTH">VALID_ETHEREUM_ADDR_LENGTH</a>: u64 = 20;
 </code></pre>
 
 

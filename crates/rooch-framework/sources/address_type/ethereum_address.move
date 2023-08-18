@@ -5,7 +5,7 @@ module rooch_framework::ethereum_address {
     use rooch_framework::hash;
 
     // Ethereum addresses are always 20 bytes
-    const ETHEREUM_ADDR_LENGTH: u64 = 20;
+    const VALID_ETHEREUM_ADDR_LENGTH: u64 = 20;
 
     /// error code
     const EMalformedPublicKey: u64 = 0;
