@@ -935,6 +935,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::address::RoochAddress;
+    use ethers::utils::keccak256;
     use fastcrypto::{
         ed25519::{Ed25519KeyPair, Ed25519PrivateKey},
         secp256k1::schnorr::{SchnorrKeyPair, SchnorrPrivateKey},
@@ -975,11 +976,14 @@ mod tests {
     fn test_ethereum_public_key_to_address() {
         let private_key = Secp256k1RecoverablePrivateKey::from_bytes(&[1u8; 32]).unwrap(); // use 1u8.
         let keypair: Secp256k1RecoverableKeyPair = private_key.into();
-        let address: RoochAddress = keypair.public().into();
-        assert_eq!(
-            address.to_string(),
-            "0x8c891976da9498ec1d3ff778a5d6c40c217d63cc8c48539c959f8b683eedf5a4"
-        );
+        let public_key = keypair.public();
+        let uncompressed = public_key.pubkey.serialize_uncompressed();
+        let uncompressed_64 = uncompressed[1..65].to_vec();
+        let hashed = keccak256(uncompressed_64);
+        let address_bytes = hashed[12..32].to_vec();
+        let address_str = format!("0x{}", hex::encode(address_bytes)); // Include "0x" prefix
+        let expected_address = "0x1a642f0e3c3af545e7acbd38b07251b3990914f1";
+        assert_eq!(address_str, expected_address);
     }
 
     // this test is to ensure that the Schnorr algorithm works for Nostr public key to address

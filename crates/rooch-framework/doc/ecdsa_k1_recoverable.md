@@ -8,6 +8,7 @@
 -  [Constants](#@Constants_0)
 -  [Function `scheme_length`](#0x3_ecdsa_k1_recoverable_scheme_length)
 -  [Function `public_key_length`](#0x3_ecdsa_k1_recoverable_public_key_length)
+-  [Function `uncompressed_public_key_length`](#0x3_ecdsa_k1_recoverable_uncompressed_public_key_length)
 -  [Function `signature_length`](#0x3_ecdsa_k1_recoverable_signature_length)
 -  [Function `keccak256`](#0x3_ecdsa_k1_recoverable_keccak256)
 -  [Function `sha256`](#0x3_ecdsa_k1_recoverable_sha256)
@@ -105,6 +106,15 @@ constant codes
 
 
 
+<a name="0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH">V_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH</a>: u64 = 65;
+</code></pre>
+
+
+
 <a name="0x3_ecdsa_k1_recoverable_scheme_length"></a>
 
 ## Function `scheme_length`
@@ -147,6 +157,30 @@ built-in functions
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_public_key_length">public_key_length</a>(): u64 {
     <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH">V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_ecdsa_k1_recoverable_uncompressed_public_key_length"></a>
+
+## Function `uncompressed_public_key_length`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_uncompressed_public_key_length">uncompressed_public_key_length</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_uncompressed_public_key_length">uncompressed_public_key_length</a>(): u64 {
+    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH">V_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH</a>
 }
 </code></pre>
 
