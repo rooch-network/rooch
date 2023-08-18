@@ -42,10 +42,11 @@ pub fn native_base58check(
 
     let cost = 0.into();
 
+    let version_byte = pop_arg!(args, u8);
     let address_bytes = pop_arg!(args, VectorRef);
 
     let bs58_checksum_bytes = bs58::encode(address_bytes.as_bytes_ref().to_vec())
-        .with_check()
+        .with_check_version(version_byte)
         .into_vec();
 
     Ok(NativeResult::ok(
