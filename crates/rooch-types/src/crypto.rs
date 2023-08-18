@@ -935,6 +935,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::address::RoochAddress;
+    use bitcoin::{PublicKey, Address, secp256k1::{Secp256k1, All}};
     use ethers::utils::keccak256;
     use fastcrypto::{
         ed25519::{Ed25519KeyPair, Ed25519PrivateKey},
@@ -945,6 +946,7 @@ mod tests {
         },
         traits::{KeyPair, ToFromBytes},
     };
+    use once_cell::sync::Lazy;
 
     // this test ensure the Rooch native public key to address keep the same as the old version
     // we should also keep the Rooch native public key to address algorithm the same as the move version
@@ -962,12 +964,40 @@ mod tests {
     // this test is to ensure that the ECDSA algorithm works for Bitcoin public key to address
     #[test]
     fn test_bitcoin_public_key_to_address() {
+        pub static SECP256K1: Lazy<Secp256k1<All>> = Lazy::new(Secp256k1::new);
         let private_key = Secp256k1PrivateKey::from_bytes(&[1u8; 32]).unwrap(); // use 1u8.
         let keypair: Secp256k1KeyPair = private_key.into();
-        let address: RoochAddress = keypair.public().into();
+        let general_pk = keypair.public().pubkey;
+        let pk = PublicKey::new(general_pk);
+        let network = bitcoin::Network::Bitcoin;
+        let p2pkh_address = Address::p2pkh(&pk, network);
+        let script_pubkey = p2pkh_address.script_pubkey();
+        let redeem_script = script_pubkey.as_script();
+        let p2pkh_address_str = p2pkh_address.to_string();
+        let p2sh_address_str = Address::p2sh(&redeem_script, network).expect("Creating a pay to script hash P2SH address from a script should succeed").to_string();
+        let p2wpkh_address_str = Address::p2wpkh(&pk, network).expect("Creating a witness pay to public key address from a public key should succeed").to_string();
+        let p2wsh_address_str = Address::p2wsh(&redeem_script, network).to_string();
+        let p2tr_address_str = Address::p2tr(&SECP256K1, general_pk.x_only_public_key().0, None, network).to_string();
+
         assert_eq!(
-            address.to_string(),
-            "0x92718e81a52369b4bc3169161737318ddf022945391a69263e8d4289c79a0c67"
+            p2pkh_address_str,
+            "1C6Rc3w25VHud3dLDamutaqfKWqhrLRTaD"
+        );
+        assert_eq!(
+            p2sh_address_str,
+            "3DedZ8SErqfunkjqnv8Pta1MKgEuHi22W5"
+        );
+        assert_eq!(
+            p2wpkh_address_str,
+            "bc1q0xcqpzrky6eff2g52qdye53xkk9jxkvrh6yhyw"
+        );
+        assert_eq!(
+            p2wsh_address_str,
+            "bc1qdudnf8tla4fyptt3n9y9985tq64lqwzr37d4ywpqfzfhtt638glsqaednx"
+        );
+        assert_eq!(
+            p2tr_address_str,
+            "bc1p33wm0auhr9kkahzd6l0kqj85af4cswn276hsxg6zpz85xe2r0y8syx4e5t"
         );
     }
 
