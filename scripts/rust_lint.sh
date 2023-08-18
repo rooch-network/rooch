@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright © Aptos Foundation
+# Parts of the project are originally copyright © Meta Platforms, Inc.
+# SPDX-License-Identifier: Apache-2.0
 # Copyright (c) RoochNetwork
 # SPDX-License-Identifier: Apache-2.0
 
@@ -8,7 +11,7 @@
 #
 # The best way to do this however is to run scripts/dev_setup.sh
 #
-# If you want to run this from anywhere in moveos, try adding this wrapepr
+# If you want to run this from anywhere in rooch, try adding this wrapepr
 # script to your path:
 # https://gist.github.com/banool/e6a2b85e2fff067d3a215cbfaf808032
 
@@ -32,11 +35,9 @@ cargo xclippy
 
 # We require the nightly build of cargo fmt
 # to provide stricter rust formatting.
-# cargo +nightly fmt $CHECK_ARG
+cargo +nightly fmt $CHECK_ARG
 
 # Once cargo-sort correctly handles workspace dependencies,
 # we can move to cleaner workspace dependency notation.
 # See: https://github.com/DevinR528/cargo-sort/issues/47
-#cargo sort --grouped --workspace $CHECK_ARG
-
-# Ensure that packages have been built correctly.
+cargo sort --grouped --workspace $CHECK_ARG

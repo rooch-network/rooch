@@ -32,7 +32,9 @@ jobs:
       - name: Check code format
         run: cargo fmt -- --check
       - name: Lint rust sources
-        run: cargo clippy --all-targets --all-features --tests --benches -- -D warnings
+        run: |
+          cargo install cargo-sort
+          ./scripts/rust_lint.sh --check
       - name: Build
         run: cargo build
       - name: Execute rust tests
