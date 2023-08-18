@@ -84,6 +84,9 @@ pub enum RoochError {
     #[error("Value was not signed by the correct sender: {}", error)]
     IncorrectSigner { error: String },
 
+    #[error("Clean server error: {0}")]
+    CleanServerError(String),
+
     #[error("Use of disabled feature: {:?}", error)]
     UnsupportedFeatureError { error: String },
 }

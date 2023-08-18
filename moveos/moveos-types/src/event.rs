@@ -4,6 +4,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::moveos_std::type_info::TypeInfo;
 use crate::object::ObjectID;
 use crate::state::MoveStructType;
 use anyhow::{ensure, Error, Result};
@@ -13,7 +14,6 @@ use schemars::JsonSchema;
 // #[cfg(any(test, feature = "fuzzing"))]
 // use rand::{rngs::OsRng, RngCore};
 use crate::h256;
-use crate::move_types::TypeInfo;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;

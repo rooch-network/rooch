@@ -185,7 +185,7 @@ Note the <code>private_generics</code> ensure only the <code>MoveValue</code>'s 
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>native</b> <b>fun</b> <a href="bcs.md#0x2_bcs_from_bytes">from_bytes</a>&lt;MoveValue&gt;(bytes: <a href="">vector</a>&lt;u8&gt;): MoveValue;
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_from_bytes">from_bytes</a>&lt;MoveValue&gt;(bytes: <a href="">vector</a>&lt;u8&gt;): MoveValue;
 </code></pre>
 
 

@@ -165,7 +165,7 @@ https://github.com/starcoinorg/starcoin-framework/blob/952c51116e0ef5a97c119205d
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>native</b> <b>fun</b> <a href="type_info.md#0x2_type_info_type_of">type_of</a>&lt;T&gt;(): <a href="type_info.md#0x2_type_info_TypeInfo">TypeInfo</a>;
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="type_info.md#0x2_type_info_type_of">type_of</a>&lt;T&gt;(): <a href="type_info.md#0x2_type_info_TypeInfo">TypeInfo</a>;
 </code></pre>
 
 

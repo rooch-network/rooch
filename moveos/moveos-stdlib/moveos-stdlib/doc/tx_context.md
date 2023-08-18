@@ -14,9 +14,11 @@
 -  [Function `tx_hash`](#0x2_tx_context_tx_hash)
 -  [Function `add`](#0x2_tx_context_add)
 -  [Function `get`](#0x2_tx_context_get)
+-  [Function `tx_meta`](#0x2_tx_context_tx_meta)
 
 
-<pre><code><b>use</b> <a href="">0x1::hash</a>;
+<pre><code><b>use</b> <a href="">0x1::error</a>;
+<b>use</b> <a href="">0x1::hash</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
@@ -24,6 +26,7 @@
 <b>use</b> <a href="copyable_any.md#0x2_copyable_any">0x2::copyable_any</a>;
 <b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="simple_map.md#0x2_simple_map">0x2::simple_map</a>;
+<b>use</b> <a href="tx_meta.md#0x2_tx_meta">0x2::tx_meta</a>;
 <b>use</b> <a href="type_info.md#0x2_type_info">0x2::type_info</a>;
 </code></pre>
 
@@ -83,22 +86,11 @@ the VM and passed in to the entrypoint of the transaction as <code>&<b>mut</b> <
 ## Constants
 
 
-<a name="0x2_tx_context_EBadTxHashLength"></a>
-
-Expected an tx hash of length 32, but found a different length
-
-
-<pre><code><b>const</b> <a href="tx_context.md#0x2_tx_context_EBadTxHashLength">EBadTxHashLength</a>: u64 = 0;
-</code></pre>
+<a name="0x2_tx_context_EInvalidContext"></a>
 
 
 
-<a name="0x2_tx_context_TX_HASH_LENGTH"></a>
-
-Number of bytes in an tx hash (which will be the transaction digest)
-
-
-<pre><code><b>const</b> <a href="tx_context.md#0x2_tx_context_TX_HASH_LENGTH">TX_HASH_LENGTH</a>: u64 = 32;
+<pre><code><b>const</b> <a href="tx_context.md#0x2_tx_context_EInvalidContext">EInvalidContext</a>: u64 = 1;
 </code></pre>
 
 
@@ -285,6 +277,35 @@ Get a value from the context map
     }<b>else</b>{
         <a href="_none">option::none</a>()
     }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_tx_context_tx_meta"></a>
+
+## Function `tx_meta`
+
+Get the transaction meta data
+The TxMeta is writed by the VM before the transaction execution.
+The meta data is only available when executing or validating a transaction, otherwise abort(eg. readonly function call).
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta">tx_meta</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="tx_meta.md#0x2_tx_meta_TxMeta">tx_meta::TxMeta</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta">tx_meta</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): TxMeta {
+    <b>let</b> meta = <a href="tx_context.md#0x2_tx_context_get">get</a>&lt;TxMeta&gt;(self);
+    <b>assert</b>!(<a href="_is_some">option::is_some</a>(&meta), <a href="_invalid_state">error::invalid_state</a>(<a href="tx_context.md#0x2_tx_context_EInvalidContext">EInvalidContext</a>));
+    <a href="_extract">option::extract</a>(&<b>mut</b> meta)
 }
 </code></pre>
 

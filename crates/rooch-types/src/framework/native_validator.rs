@@ -46,7 +46,8 @@ impl<'a> NativeValidatorModule<'a> {
             vec![MoveValue::vector_u8(payload).simple_serialize().unwrap()],
         );
         self.caller
-            .call_function(ctx, auth_validator_call)
+            .call_function(ctx, auth_validator_call)?
+            .into_result()
             .map(|values| {
                 debug_assert!(values.is_empty(), "should not have return values");
             })?;

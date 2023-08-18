@@ -8,6 +8,7 @@ module moveos_std::storage_context {
     use moveos_std::object_storage::{ObjectStorage};
     use moveos_std::tx_context::{Self, TxContext};
     use moveos_std::object_id::{ObjectID};
+    use moveos_std::tx_meta::{TxMeta};
 
     #[test_only]
     use moveos_std::object_storage::{Self};
@@ -75,6 +76,10 @@ module moveos_std::storage_context {
     /// Get a value from the context map
     public fun get<T: drop + store + copy>(self: &StorageContext): Option<T> {
         tx_context::get(&self.tx_context)
+    }
+
+    public fun tx_meta(self: &StorageContext): TxMeta {
+        tx_context::tx_meta(&self.tx_context)
     }
 
     #[test_only]

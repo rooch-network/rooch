@@ -6,7 +6,6 @@
 
 
 -  [Constants](#@Constants_0)
--  [Function `scheme`](#0x3_ecdsa_k1_scheme)
 -  [Function `scheme_length`](#0x3_ecdsa_k1_scheme_length)
 -  [Function `public_key_length`](#0x3_ecdsa_k1_public_key_length)
 -  [Function `signature_length`](#0x3_ecdsa_k1_signature_length)
@@ -66,16 +65,6 @@ Hash function name that are valid for ecrecover and verify.
 
 
 
-<a name="0x3_ecdsa_k1_SCHEME_ECDSA_K1"></a>
-
-constant codes
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_SCHEME_ECDSA_K1">SCHEME_ECDSA_K1</a>: u64 = 2;
-</code></pre>
-
-
-
 <a name="0x3_ecdsa_k1_SHA256"></a>
 
 
@@ -94,15 +83,6 @@ constant codes
 
 
 
-<a name="0x3_ecdsa_k1_V_ECDSA_K1_SCHEME_LENGTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_V_ECDSA_K1_SCHEME_LENGTH">V_ECDSA_K1_SCHEME_LENGTH</a>: u64 = 1;
-</code></pre>
-
-
-
 <a name="0x3_ecdsa_k1_V_ECDSA_K1_SIG_LENGTH"></a>
 
 
@@ -112,35 +92,21 @@ constant codes
 
 
 
-<a name="0x3_ecdsa_k1_scheme"></a>
+<a name="0x3_ecdsa_k1_V_ECDSA_K1_TO_BITCOIN_SCHEME_LENGTH"></a>
 
-## Function `scheme`
-
-built-in functions
+constant codes
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_scheme">scheme</a>(): u64
+<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_V_ECDSA_K1_TO_BITCOIN_SCHEME_LENGTH">V_ECDSA_K1_TO_BITCOIN_SCHEME_LENGTH</a>: u64 = 1;
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_scheme">scheme</a>(): u64 {
-    <a href="ecdsa_k1.md#0x3_ecdsa_k1_SCHEME_ECDSA_K1">SCHEME_ECDSA_K1</a>
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_ecdsa_k1_scheme_length"></a>
 
 ## Function `scheme_length`
 
+built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_scheme_length">scheme_length</a>(): u64
@@ -153,7 +119,7 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_scheme_length">scheme_length</a>(): u64 {
-    <a href="ecdsa_k1.md#0x3_ecdsa_k1_V_ECDSA_K1_SCHEME_LENGTH">V_ECDSA_K1_SCHEME_LENGTH</a>
+    <a href="ecdsa_k1.md#0x3_ecdsa_k1_V_ECDSA_K1_TO_BITCOIN_SCHEME_LENGTH">V_ECDSA_K1_TO_BITCOIN_SCHEME_LENGTH</a>
 }
 </code></pre>
 
@@ -367,7 +333,7 @@ If the signature is valid to the pubkey and hashed message, return true. Else fa
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>native</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_verify">verify</a>(
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_verify">verify</a>(
     signature: &<a href="">vector</a>&lt;u8&gt;,
     public_key: &<a href="">vector</a>&lt;u8&gt;,
     msg: &<a href="">vector</a>&lt;u8&gt;,

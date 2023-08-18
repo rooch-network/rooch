@@ -20,12 +20,12 @@ module moveos_std::address {
     //TODO
     /// Convert `a` into a u256 by interpreting `a` as the bytes of a big-endian integer
     /// (e.g., `to_u256(0x1) == 1`)
-    //public native fun to_u256(a: address): u256;
+    //native public fun to_u256(a: address): u256;
 
     //TODO
     /// Convert `n` into an address by encoding it as a big-endian integer (e.g., `from_u256(1) = @0x1`)
     /// Aborts if `n` > `MAX_ADDRESS`
-    //public native fun from_u256(n: u256): address;
+    //native public fun from_u256(n: u256): address;
 
     /// Convert `bytes` into an address.
     /// Aborts with `EAddressParseError` if the length of `bytes` is invalid length

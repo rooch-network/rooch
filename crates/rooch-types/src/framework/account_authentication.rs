@@ -74,12 +74,17 @@ impl<'a> AuthenticationKeyModule<'a> {
                 .expect("address should serialize")],
         );
         let ctx = TxContext::new_readonly_ctx(address);
-        self.caller.call_function(&ctx, call).map(|values| {
-            let value = values.get(0).expect("Expected return value");
-            let result =
-                MoveOption::<Vec<u8>>::from_bytes(&value.value).expect("Expected Option<address>");
-            result.into()
-        })
+        let auth_key = self
+            .caller
+            .call_function(&ctx, call)?
+            .into_result()
+            .map(|values| {
+                let value = values.get(0).expect("Expected return value");
+                let result = MoveOption::<Vec<u8>>::from_bytes(&value.value)
+                    .expect("Expected Option<address>");
+                result.into()
+            })?;
+        Ok(auth_key)
     }
 }
 

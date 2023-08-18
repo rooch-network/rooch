@@ -123,51 +123,6 @@ impl BuiltinScheme {
         }
     }
 
-    // pub fn get_validator_name(&self) -> Result<String, RoochError> {
-    //     match self {
-    //         BuiltinScheme::Ed25519 => Ok(NativeValidator::STRUCT_NAME.to_string()),
-    //         BuiltinScheme::MultiEd25519 => Ok(String::from(stringify!(MultiEd25519Validator))),
-    //         BuiltinScheme::Ecdsa => Ok(BitcoinValidator::STRUCT_NAME.to_string()),
-    //         BuiltinScheme::EcdsaRecoverable => Ok(EthereumValidator::STRUCT_NAME.to_string()),
-    //         BuiltinScheme::Schnorr => Ok(NostrValidator::STRUCT_NAME.to_string()),
-    //     }
-    // }
-
-    // pub fn create_validator_type_tag(
-    //     &self,
-    // ) -> Result<(TypeTag, AccountAddress, &IdentStr), RoochError> {
-    //     // Get addresses and module names for each scheme
-    //     let (address, module_name) = match self {
-    //         BuiltinScheme::Ed25519 => (
-    //             NativeValidatorModule::MODULE_ADDRESS,
-    //             NativeValidatorModule::MODULE_NAME,
-    //         ),
-    //         BuiltinScheme::MultiEd25519 => todo!(),
-    //         BuiltinScheme::Ecdsa => (
-    //             BitcoinValidatorModule::MODULE_ADDRESS,
-    //             BitcoinValidatorModule::MODULE_NAME,
-    //         ),
-    //         BuiltinScheme::EcdsaRecoverable => (
-    //             EthereumValidatorModule::MODULE_ADDRESS,
-    //             EthereumValidatorModule::MODULE_NAME,
-    //         ),
-    //         BuiltinScheme::Schnorr => (
-    //             NostrValidatorModule::MODULE_ADDRESS,
-    //             NostrValidatorModule::MODULE_NAME,
-    //         ),
-    //     };
-    //     // Get validator names
-    //     let validator_name: String = self.get_validator_name()?;
-    //     // Create type tag
-    //     let type_tag = TypeTag::Struct(Box::new(StructTag {
-    //         address,
-    //         module: Identifier::new(module_name.to_string()).unwrap(),
-    //         name: Identifier::new(validator_name).unwrap(),
-    //         type_params: vec![],
-    //     }));
-    //     Ok((type_tag, address, module_name))
-    // }
-
     pub fn create_rotate_authentication_key_action(
         &self,
         public_key: Vec<u8>,

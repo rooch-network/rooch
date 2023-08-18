@@ -22,11 +22,11 @@ use slip10_ed25519::derive_ed25519_private_key;
 use std::string::String;
 
 // Coin type
-pub const DERIVATION_PATH_COIN_TYPE_BTC: u32 = 0;
-pub const DERIVATION_PATH_COIN_TYPE_ETH: u32 = 60;
-pub const DERIVATION_PATH_COIN_TYPE_SUI: u32 = 784;
-pub const DERIVATION_PATH_COIN_TYPE_LBTC: u32 = 998;
-pub const DERIVATION_PATH_COIN_TYPE_NOSTR: u32 = 1237;
+pub const DERIVATION_PATH_COIN_TYPE_BTC: u64 = 0;
+pub const DERIVATION_PATH_COIN_TYPE_ETH: u64 = 60;
+pub const DERIVATION_PATH_COIN_TYPE_SUI: u64 = 784;
+pub const DERIVATION_PATH_COIN_TYPE_LBTC: u64 = 998;
+pub const DERIVATION_PATH_COIN_TYPE_NOSTR: u64 = 1237;
 // Purpose
 /// Ed25519 follows SLIP-0010 using hardened path: m/44'/784'/0'/0'/{index}'
 /// Note that the purpose node is used to distinguish signature schemes.
@@ -103,7 +103,11 @@ pub fn validate_path(
                         if Some(purpose)
                             == ChildNumber::new(DERVIATION_PATH_PURPOSE_ED25519, true).ok()
                             && Some(coin_type)
-                                == ChildNumber::new(DERIVATION_PATH_COIN_TYPE_SUI, true).ok()
+                                == ChildNumber::new(
+                                    DERIVATION_PATH_COIN_TYPE_SUI.try_into().unwrap(),
+                                    true,
+                                )
+                                .ok()
                             && account.is_hardened()
                             && change.is_hardened()
                             && address.is_hardened()
@@ -134,7 +138,11 @@ pub fn validate_path(
                         if Some(purpose)
                             == ChildNumber::new(DERVIATION_PATH_PURPOSE_ECDSA, true).ok()
                             && Some(coin_type)
-                                == ChildNumber::new(DERIVATION_PATH_COIN_TYPE_SUI, true).ok()
+                                == ChildNumber::new(
+                                    DERIVATION_PATH_COIN_TYPE_SUI.try_into().unwrap(),
+                                    true,
+                                )
+                                .ok()
                             && account.is_hardened()
                             && change.is_hardened()
                             && address.is_hardened()
@@ -162,7 +170,11 @@ pub fn validate_path(
                         if Some(purpose)
                             == ChildNumber::new(DERVIATION_PATH_PURPOSE_ECDSA, true).ok()
                             && Some(coin_type)
-                                == ChildNumber::new(DERIVATION_PATH_COIN_TYPE_SUI, true).ok()
+                                == ChildNumber::new(
+                                    DERIVATION_PATH_COIN_TYPE_SUI.try_into().unwrap(),
+                                    true,
+                                )
+                                .ok()
                             && account.is_hardened()
                             && change.is_hardened()
                             && address.is_hardened()
@@ -188,7 +200,7 @@ pub fn validate_path(
                     // The derivation path must be hardened at all levels with purpose = 44, coin_type = 784
                     if let &[purpose, coin_type, account, change, address] = p.as_ref() {
                         if Some(purpose) == ChildNumber::new(DERVIATION_PATH_PURPOSE_SCHNORR, true).ok()
-                            && Some(coin_type) == ChildNumber::new(DERIVATION_PATH_COIN_TYPE_NOSTR, true).ok()
+                            && Some(coin_type) == ChildNumber::new(DERIVATION_PATH_COIN_TYPE_NOSTR.try_into().unwrap(), true).ok()
                             && account.is_hardened()
                             && change.is_hardened()
                             && address.is_hardened()

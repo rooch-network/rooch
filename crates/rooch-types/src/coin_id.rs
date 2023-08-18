@@ -10,7 +10,7 @@ use std::fmt::Display;
 /// The rooch's ID do not add to the slip-0044 yet.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
-#[repr(u32)]
+#[repr(u64)]
 pub enum CoinID {
     BTC = 0,
     ETH = 60,
@@ -18,15 +18,15 @@ pub enum CoinID {
     ROH = 20230101,
 }
 
-impl TryFrom<u32> for CoinID {
+impl TryFrom<u64> for CoinID {
     type Error = anyhow::Error;
 
-    fn try_from(value: u32) -> Result<Self, Self::Error> {
+    fn try_from(value: u64) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(CoinID::BTC),
             60 => Ok(CoinID::ETH),
             1237 => Ok(CoinID::NOSTR),
-            20130101 => Ok(CoinID::ROH),
+            20230101 => Ok(CoinID::ROH),
             _ => Err(anyhow::anyhow!("coin id {} is invalid", value)),
         }
     }
