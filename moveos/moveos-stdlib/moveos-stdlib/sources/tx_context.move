@@ -91,6 +91,12 @@ module moveos_std::tx_context {
         }
     }
 
+    /// Check if the key is in the context map
+    public fun contains<T: drop + store + copy>(self: &TxContext): bool {
+        let type_name = type_info::type_name<T>();
+        simple_map::contains_key(&self.map, &type_name)
+    }
+
     /// Get the transaction meta data
     /// The TxMeta is writed by the VM before the transaction execution.
     /// The meta data is only available when executing or validating a transaction, otherwise abort(eg. readonly function call).

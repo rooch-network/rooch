@@ -24,6 +24,7 @@ It is used to store the account's resources and modules
 
 <pre><code><b>use</b> <a href="../doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 <b>use</b> <a href="move_module.md#0x2_move_module">0x2::move_module</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
@@ -402,6 +403,7 @@ Publish modules to the account's storage
     <b>let</b> len = <a href="_length">vector::length</a>(&modules);
     <b>let</b> (module_names, module_names_with_init_fn) = <a href="move_module.md#0x2_move_module_verify_modules">move_module::verify_modules</a>(&modules, account_address);
 
+    <b>let</b> upgrade_flag = <b>false</b>;
     <b>while</b> (i &lt; len) {
         <b>let</b> name = <a href="_pop_back">vector::pop_back</a>(&<b>mut</b> module_names);
         <b>let</b> m = <a href="_pop_back">vector::pop_back</a>(&<b>mut</b> modules);
@@ -411,12 +413,24 @@ Publish modules to the account's storage
         <b>if</b> (<a href="table.md#0x2_table_contains">table::contains</a>(&<a href="account_storage.md#0x2_account_storage">account_storage</a>.modules, name)) {
             <b>let</b> old_m = <a href="table.md#0x2_table_remove">table::remove</a>(&<b>mut</b> <a href="account_storage.md#0x2_account_storage">account_storage</a>.modules, name);
             <a href="move_module.md#0x2_move_module_check_comatibility">move_module::check_comatibility</a>(&m, &old_m);
+            upgrade_flag = <b>true</b>;
         } <b>else</b> {
             // request init function invoking
             <a href="move_module.md#0x2_move_module_request_init_functions">move_module::request_init_functions</a>(module_names_with_init_fn, account_address);
         };
         <a href="table.md#0x2_table_add">table::add</a>(&<b>mut</b> <a href="account_storage.md#0x2_account_storage">account_storage</a>.modules, name, m);
         i = i + 1;
+    };
+
+    // Use MoveModule <b>as</b> flag <b>to</b> indicate <b>module</b> upgrading in this tx.
+    // Used <b>to</b> setting vm.mark_loader_cache_as_invalid(), which announce <b>to</b>
+    // the VM that the code loading cache should be considered outdated.
+    // TODO: whether define a new <b>struct</b> for this flag?
+    <b>if</b> (upgrade_flag) {
+        <b>let</b> tx_ctx = <a href="storage_context.md#0x2_storage_context_tx_context_mut">storage_context::tx_context_mut</a>(ctx);
+        <b>if</b> (!<a href="tx_context.md#0x2_tx_context_contains">tx_context::contains</a>&lt;MoveModule&gt;(tx_ctx)) {
+            <a href="tx_context.md#0x2_tx_context_add">tx_context::add</a>(tx_ctx, <a href="move_module.md#0x2_move_module_new">move_module::new</a>(<a href="_singleton">vector::singleton</a>&lt;u8&gt;(0u8)));
+        }
     }
 }
 </code></pre>

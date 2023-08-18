@@ -176,7 +176,7 @@ impl<'r, 'l, S: MoveOSResolver> DataStore for MoveosDataCache<'r, 'l, S> {
         &mut self,
         module_id: &ModuleId,
         blob: Vec<u8>,
-        _is_republishing: bool,
+        is_republishing: bool,
     ) -> VMResult<()> {
         let sender = module_id.address();
         let table_handle = NamedTableID::Module(*sender).to_object_id();
@@ -190,7 +190,7 @@ impl<'r, 'l, S: MoveOSResolver> DataStore for MoveosDataCache<'r, 'l, S> {
         // TODO: check or ensure the module table exists.
         let table = table_data
             .get_or_create_table_with_key_layout(table_handle, key_layout)
-            .map_err(|e| e.finish(Location::Undefined))?;
+            .map_err(|e| e.finish(Location::Module(module_id.clone())))?;
 
         let key_bytes = self.module_key_bytes(module_id)?;
         let (tv, _) = table
@@ -199,19 +199,24 @@ impl<'r, 'l, S: MoveOSResolver> DataStore for MoveosDataCache<'r, 'l, S> {
                     PartialVMError::new(StatusCode::STORAGE_ERROR).with_message(e.to_string())
                 })
             })
-            .map_err(|e| e.finish(Location::Undefined))?;
+            .map_err(|e| e.finish(Location::Module(module_id.clone())))?;
         let module_layout = MoveTypeLayout::Struct(MoveModule::struct_layout());
 
         let byte_codes = Value::vector_u8(blob);
         let module_value = Value::struct_(Struct::pack(vec![byte_codes]));
         // wrap with moveos_std::raw_table::Box
         let box_value = Value::struct_(Struct::pack(vec![module_value]));
+        if is_republishing {
+            let _old_value = tv
+                .move_from(value_type.clone())
+                .map_err(|e: PartialVMError| e.finish(Location::Module(module_id.clone())))?;
+        }
         match tv.move_to(box_value, module_layout, value_type) {
             Ok(_) => {
                 self.accounts.insert(*sender);
                 Ok(())
             }
-            Err((err, _)) => Err(err.finish(Location::Undefined)),
+            Err((err, _)) => Err(err.finish(Location::Module(module_id.clone()))),
         }
     }
 
