@@ -44,15 +44,10 @@ pub struct NativeTableContext<'a> {
     table_data: Arc<RwLock<TableData>>,
 }
 
-//524289
-const ALREADY_EXISTS: u64 =
-    moveos_types::move_std::error::canonical(moveos_types::move_std::error::ALREADY_EXISTS, 1);
-//393218
-const NOT_FOUND: u64 =
-    moveos_types::move_std::error::canonical(moveos_types::move_std::error::NOT_FOUND, 2);
-//196611
-const NOT_EMPTY: u64 =
-    moveos_types::move_std::error::canonical(moveos_types::move_std::error::INVALID_STATE, 3);
+/// Ensure the error codes in this file is consistent with the error code in raw_table.move
+const E_ALREADY_EXISTS: u64 = 1;
+const E_NOT_FOUND: u64 = 2;
+const E_NOT_EMPTY: u64 = 3;
 
 // ===========================================================================================
 // Private Data Structures and Constants
@@ -476,7 +471,10 @@ fn native_add_box(
     let value_type = type_to_type_tag(context, &ty_args[1])?;
     match tv.move_to(val, value_layout, value_type) {
         Ok(_) => Ok(NativeResult::ok(cost, smallvec![])),
-        Err(_) => Ok(NativeResult::err(cost, ALREADY_EXISTS)),
+        Err(_) => Ok(NativeResult::err(
+            cost,
+            moveos_types::move_std::error::already_exists(E_ALREADY_EXISTS),
+        )),
     }
 }
 
@@ -525,7 +523,10 @@ fn native_borrow_box(
     let value_type = type_to_type_tag(context, &ty_args[1])?;
     match tv.borrow_global(value_type) {
         Ok(ref_val) => Ok(NativeResult::ok(cost, smallvec![ref_val])),
-        Err(_) => Ok(NativeResult::err(cost, NOT_FOUND)),
+        Err(_) => Ok(NativeResult::err(
+            cost,
+            moveos_types::move_std::error::not_found(E_NOT_FOUND),
+        )),
     }
 }
 
@@ -629,7 +630,10 @@ fn native_remove_box(
     let value_type = type_to_type_tag(context, &ty_args[1])?;
     match tv.move_from(value_type) {
         Ok(val) => Ok(NativeResult::ok(cost, smallvec![val])),
-        Err(_) => Ok(NativeResult::err(cost, NOT_FOUND)),
+        Err(_) => Ok(NativeResult::err(
+            cost,
+            moveos_types::move_std::error::not_found(E_NOT_FOUND),
+        )),
     }
 }
 
@@ -664,7 +668,10 @@ fn native_destroy_empty_box(
     if table_data.tables.contains_key(&handle)
         && !table_data.tables.get(&handle).unwrap().content.is_empty()
     {
-        return Ok(NativeResult::err(gas_params.base, NOT_EMPTY));
+        return Ok(NativeResult::err(
+            gas_params.base,
+            moveos_types::move_std::error::invalid_state(E_NOT_EMPTY),
+        ));
     }
     assert!(table_data.removed_tables.insert(handle));
 
