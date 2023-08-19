@@ -32,9 +32,7 @@ jobs:
       - name: Check code format
         run: cargo fmt -- --check
       - name: Lint rust sources
-        run: |
-          cargo install cargo-sort
-          ./scripts/rust_lint.sh --check
+        run: ./scripts/pr.sh -c
       - name: Build
         run: cargo build
       - name: Execute rust tests
