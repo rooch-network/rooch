@@ -12,6 +12,7 @@ use move_binary_format::{
     CompiledModule,
 };
 
+use crate::gas::table::MoveOSGasMeter;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
@@ -28,7 +29,7 @@ use move_vm_runtime::{
 };
 use move_vm_types::{
     data_store::DataStore,
-    gas::{GasMeter, UnmeteredGasMeter},
+    gas::GasMeter,
     loaded_data::runtime_types::{CachedStructIndex, StructType, Type},
 };
 use moveos_stdlib::natives::moveos_stdlib::{
@@ -88,9 +89,9 @@ impl MoveOSVM {
         &self,
         remote: &'r S,
         ctx: TxContext,
-    ) -> MoveOSSession<'r, '_, S, UnmeteredGasMeter> {
+    ) -> MoveOSSession<'r, '_, S, MoveOSGasMeter> {
         //Do not charge gas for genesis session
-        let gas_meter = UnmeteredGasMeter;
+        let gas_meter = MoveOSGasMeter::new();
         // Genesis session do not need to execute pre_execute and post_execute function
         MoveOSSession::new(&self.inner, remote, ctx, vec![], vec![], gas_meter, false)
     }
