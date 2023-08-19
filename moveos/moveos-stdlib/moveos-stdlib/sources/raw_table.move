@@ -11,6 +11,13 @@ module moveos_std::raw_table {
     friend moveos_std::object_storage;
     friend moveos_std::account_storage;
 
+    /// The key already exists in the table
+    const EAlreadyExists: u64 = 1;
+    /// Can not found the key in the table
+    const ENotFound: u64 = 2;
+    /// The table is not empty
+    const ENotEmpty: u64 = 3;
+
     struct TableInfo has key {
         // Table SMT root
         state_root: address,

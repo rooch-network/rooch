@@ -357,7 +357,7 @@ module moveos_std::account_storage {
     }
 
     #[test(sender=@0x42)]
-    #[expected_failure(abort_code = 0x6507, location = moveos_std::raw_table)]
+    #[expected_failure(abort_code = 393218, location = moveos_std::raw_table)]
     fun test_failure_global_borrow_account_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
         let ctx = storage_context::new_test_context(sender_addr);
@@ -367,7 +367,7 @@ module moveos_std::account_storage {
     }
 
     #[test(sender=@0x42)]
-    #[expected_failure(abort_code = 0x6507, location = moveos_std::raw_table)]
+    #[expected_failure(abort_code = 393218, location = moveos_std::raw_table)]
     fun test_failure_global_borrow_mut_account_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
         let ctx = storage_context::new_test_context(sender_addr);
