@@ -78,11 +78,11 @@ Error if the public key cannot be recovered from the signature.
 
 
 
-<a name="0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH"></a>
+<a name="0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH"></a>
 
 
 
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH">V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH</a>: u64 = 33;
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH">V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH</a>: u64 = 33;
 </code></pre>
 
 
@@ -156,7 +156,7 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_public_key_length">public_key_length</a>(): u64 {
-    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH">V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH</a>
+    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH">V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH</a>
 }
 </code></pre>
 

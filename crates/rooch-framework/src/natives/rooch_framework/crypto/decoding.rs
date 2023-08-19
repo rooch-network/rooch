@@ -22,7 +22,7 @@ pub const DECODE_FAILED: u64 = 0;
  *              + decoding_base58_data_cost_per_byte * msg.len()       | cost depends on length of message
  *              + decoding_base58_data_cost_per_block * num_blocks     | cost depends on number of blocks in message
  **************************************************************************************************/
- pub fn native_base58(
+pub fn native_base58(
     _gas_params: &FromBytesGasParameters,
     _context: &mut NativeContext,
     ty_args: Vec<Type>,
@@ -114,14 +114,13 @@ impl GasParameters {
 }
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
-    let natives = [(
-        "base58",
-        make_native(gas_params.base58, native_base58),
-    ),
-    (
-        "base58check",
-        make_native(gas_params.base58check, native_base58check),
-    )];
+    let natives = [
+        ("base58", make_native(gas_params.base58, native_base58)),
+        (
+            "base58check",
+            make_native(gas_params.base58check, native_base58check),
+        ),
+    ];
 
     make_module_natives(natives)
 }

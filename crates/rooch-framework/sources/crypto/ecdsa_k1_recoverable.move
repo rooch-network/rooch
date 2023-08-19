@@ -3,7 +3,7 @@ module rooch_framework::ecdsa_k1_recoverable {
 
     /// constant codes
     const V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH: u64 = 1;
-    const V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH: u64 = 33;
+    const V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH: u64 = 33;
     const V_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH: u64 = 65;
     const V_ECDSA_K1_RECOVERABLE_SIG_LENGTH: u64 = 65;
 
@@ -26,7 +26,7 @@ module rooch_framework::ecdsa_k1_recoverable {
     }
 
     public fun public_key_length(): u64 {
-        V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH
+        V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH
     }
 
     public fun uncompressed_public_key_length(): u64 {

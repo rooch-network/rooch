@@ -126,15 +126,20 @@ impl BuiltinScheme {
     pub fn create_rotate_authentication_key_action(
         &self,
         public_key: Vec<u8>,
+        decimal_prefix_or_version: Option<u8>,
     ) -> Result<MoveAction, RoochError> {
         let action = match self {
             BuiltinScheme::Ed25519 => NativeValidatorModule::rotate_authentication_key_action::<
                 NativeValidator,
             >(public_key),
             BuiltinScheme::MultiEd25519 => todo!(),
-            BuiltinScheme::Ecdsa => BitcoinValidatorModule::rotate_authentication_key_action::<
-                BitcoinValidator,
-            >(public_key),
+            BuiltinScheme::Ecdsa => {
+                let decimal_prefix_or_version = decimal_prefix_or_version.ok_or_else(|| RoochError::RotateAuthenticationKeyError("Error decoding the decimal prefix or the script version. Use -t or --address-type to indicate an address to use for Bitcoin under the ecdsa scheme.".to_owned()))?;
+                BitcoinValidatorModule::rotate_authentication_key_action::<BitcoinValidator>(
+                    public_key,
+                    decimal_prefix_or_version,
+                )
+            }
             BuiltinScheme::EcdsaRecoverable => {
                 EthereumValidatorModule::rotate_authentication_key_action::<EthereumValidator>(
                     public_key,
@@ -935,7 +940,10 @@ where
 #[cfg(test)]
 mod tests {
     use crate::address::RoochAddress;
-    use bitcoin::{PublicKey, Address, secp256k1::{Secp256k1, All}};
+    use bitcoin::{
+        secp256k1::{All, Secp256k1},
+        Address, PublicKey,
+    };
     use ethers::utils::keccak256;
     use fastcrypto::{
         ed25519::{Ed25519KeyPair, Ed25519PrivateKey},
@@ -974,19 +982,18 @@ mod tests {
         let script_pubkey = p2pkh_address.script_pubkey();
         let redeem_script = script_pubkey.as_script();
         let p2pkh_address_str = p2pkh_address.to_string();
-        let p2sh_address_str = Address::p2sh(&redeem_script, network).expect("Creating a pay to script hash P2SH address from a script should succeed").to_string();
-        let p2wpkh_address_str = Address::p2wpkh(&pk, network).expect("Creating a witness pay to public key address from a public key should succeed").to_string();
+        let p2sh_address_str = Address::p2sh(&redeem_script, network)
+            .expect("Creating a pay to script hash P2SH address from a script should succeed")
+            .to_string();
+        let p2wpkh_address_str = Address::p2wpkh(&pk, network)
+            .expect("Creating a witness pay to public key address from a public key should succeed")
+            .to_string();
         let p2wsh_address_str = Address::p2wsh(&redeem_script, network).to_string();
-        let p2tr_address_str = Address::p2tr(&SECP256K1, general_pk.x_only_public_key().0, None, network).to_string();
+        let p2tr_address_str =
+            Address::p2tr(&SECP256K1, general_pk.x_only_public_key().0, None, network).to_string();
 
-        assert_eq!(
-            p2pkh_address_str,
-            "1C6Rc3w25VHud3dLDamutaqfKWqhrLRTaD"
-        );
-        assert_eq!(
-            p2sh_address_str,
-            "3DedZ8SErqfunkjqnv8Pta1MKgEuHi22W5"
-        );
+        assert_eq!(p2pkh_address_str, "1C6Rc3w25VHud3dLDamutaqfKWqhrLRTaD");
+        assert_eq!(p2sh_address_str, "3DedZ8SErqfunkjqnv8Pta1MKgEuHi22W5");
         assert_eq!(
             p2wpkh_address_str,
             "bc1q0xcqpzrky6eff2g52qdye53xkk9jxkvrh6yhyw"

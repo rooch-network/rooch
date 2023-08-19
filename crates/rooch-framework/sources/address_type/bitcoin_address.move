@@ -16,9 +16,9 @@ module rooch_framework::bitcoin_address{
     /// error code
     const EInvalidDecimalPrefix: u64 = 0;
     const EInvalidScriptVersion: u64 = 1;
-    const EInvalidPublicKeyLength: u64 = 2;
-    const EInvalidVersionZeroPublicKeyLength: u64 = 3;
-    const EInvalidVersionOnePublicKeyLength: u64 = 4;
+    const EInvalidCompressedPublicKeyLength: u64 = 2;
+    const EInvalidHashedPublicKeyLength: u64 = 3;
+    const EInvalidSchnorrPublicKeyLength: u64 = 4;
 
     // P2PKH address decimal prefix
     const P2PKH_ADDR_DECIMAL_PREFIX: u8 = 0;
@@ -39,7 +39,7 @@ module rooch_framework::bitcoin_address{
         // Check the public key length
         assert!(
             vector::length(pub_key) == ecdsa_k1::public_key_length(),
-            error::invalid_argument(EInvalidPublicKeyLength)
+            error::invalid_argument(EInvalidCompressedPublicKeyLength)
         );
         // Perform address creation
         let bitcoin_address = if (decimal_prefix == P2PKH_ADDR_DECIMAL_PREFIX) { // P2PKH address
@@ -65,13 +65,13 @@ module rooch_framework::bitcoin_address{
         if (version == 0) {
             assert!(
                 vector::length(pub_key) == 20 || vector::length(pub_key) == 32,
-                error::invalid_argument(EInvalidVersionZeroPublicKeyLength)
+                error::invalid_argument(EInvalidHashedPublicKeyLength)
             );
         };
         if (version == 1) {
             assert!(
                 vector::length(pub_key) == 32,
-                error::invalid_argument(EInvalidVersionOnePublicKeyLength)
+                error::invalid_argument(EInvalidSchnorrPublicKeyLength)
             );
         };
         // This will create Segwit Bech32 or Taproot Bech32m addresses depending on the public key length and the script version

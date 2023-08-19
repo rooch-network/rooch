@@ -29,7 +29,7 @@ pub const INVALID_SCRIPT_VERSION: u64 = 3;
  *              + encoding_base58_data_cost_per_byte * msg.len()       | cost depends on length of message
  *              + encoding_base58_data_cost_per_block * num_blocks     | cost depends on number of blocks in message
  **************************************************************************************************/
- pub fn native_base58(
+pub fn native_base58(
     _gas_params: &FromBytesGasParameters,
     _context: &mut NativeContext,
     ty_args: Vec<Type>,
@@ -44,8 +44,7 @@ pub const INVALID_SCRIPT_VERSION: u64 = 3;
 
     let address_bytes = pop_arg!(args, VectorRef);
 
-    let bs58_bytes = bs58::encode(address_bytes.as_bytes_ref().to_vec())
-        .into_vec();
+    let bs58_bytes = bs58::encode(address_bytes.as_bytes_ref().to_vec()).into_vec();
 
     Ok(NativeResult::ok(
         cost,
@@ -253,10 +252,7 @@ impl GasParameters {
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [
-        (
-            "base58",
-            make_native(gas_params.base58, native_base58),
-        ),
+        ("base58", make_native(gas_params.base58, native_base58)),
         (
             "base58check",
             make_native(gas_params.base58check, native_base58check),
