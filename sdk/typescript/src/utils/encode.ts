@@ -1,4 +1,5 @@
-import { FunctionId, AccountAddress, Identifier, TypeTag, ROOCH_ADDRESS_LENGTH } from '../types'
+import { ROOCH_ADDRESS_LENGTH } from '../constants'
+import { FunctionId, AccountAddress, Identifier, TypeTag } from '../types'
 
 export function functionIdToStirng(functionId: FunctionId): string {
     if (typeof functionId !== 'string') {
@@ -53,5 +54,23 @@ export function normalizeRoochAddress(
 }
 
 export function typeTagToString(type_tag: TypeTag): string {
-    return type_tag.toString()
+    if (typeof type_tag === 'string') {
+        return type_tag
+    } 
+    
+    if ('Vector' in type_tag) {
+        return `Vector<${typeTagToString(type_tag.Vector)}>`
+    } 
+    
+    if ('Struct' in type_tag) {
+        const struct = type_tag.Struct
+        let result = `${struct.address}::${struct.module}::${struct.name}`
+        if (struct.type_params) {
+            const params = struct.type_params.map(typeTagToString).join(', ')
+            result += `<${params}>`
+        }
+        return result
+    } 
+
+    throw new Error(`Unknown type tag: ${JSON.stringify(type_tag)}`)
 }

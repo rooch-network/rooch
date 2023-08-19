@@ -4,23 +4,9 @@ import fetch from 'isomorphic-fetch'
 import { HTTPTransport, RequestManager } from '@open-rpc/client-js'
 import { JsonRpcClient } from '../generated/client'
 import { Connection, LocalnetConnection } from './connection'
-import { BcsSerializer, bytes } from '../types/bcs'
-import { FunctionId, TypeTag } from '../types'
-import { encodeFunctionCall, functionIdToStirng, typeTagToString } from '../utils'
-import {
-  // AnnotatedEventView,
-  AnnotatedFunctionReturnValueView,
-  // AnnotatedStateView,
-  // EventFilterView,
-  // FunctionCallView,
-  // PageView_for_Nullable_AnnotatedEventView_and_uint64,
-  // PageView_for_Nullable_AnnotatedStateView_and_alloc_vec_Vec_U8Array,
-  // PageView_for_Nullable_StateView_and_alloc_vec_Vec_U8Array,
-  // PageView_for_Nullable_TransactionExecutionInfoView_and_uint128,
-  // StateView,
-  // TransactionExecutionInfoView,
-  // TransactionView,
-} from '../generated/client/types'
+import { bytes } from '../types/bcs'
+import { FunctionId, TypeTag, Arg, FunctionReturnValue } from '../types'
+import { functionIdToStirng, typeTagToString, encodeArgs } from '../utils'
 
 /**
  * Configuration options for the JsonRpcProvider. If the value of a field is not provided,
@@ -104,37 +90,24 @@ export class JsonRpcProvider {
   async executeViewFunction(
     funcId: FunctionId,
     tyArgs?: TypeTag[],
-    args?: Uint8Array[],
-  ): Promise<AnnotatedFunctionReturnValueView[]> {
+    args?: Arg[],
+  ): Promise<FunctionReturnValue[]> {
     const tyStrArgs = tyArgs?.map(v=>typeTagToString(v))
-    // let _args = args.map((v) => {
-    //   let se = new BcsSerializer()
-    //   typeTagToSCS(v).serialize(se)
-    //   return se.getBytes()
-    // })
+    const bcsArgs = args?.map(arg=>encodeArgs(arg))
 
-    // rooch, eth, wellet,
-    // TDOO: args, tyArgs, wait bcs
     return this.client.rooch_executeViewFunction({
       function_id: functionIdToStirng(funcId),
       ty_args: tyStrArgs ?? [],
-      args: args ?? [],
+      args: bcsArgs ?? [],
     })
   }
 
   // Send the signed transaction in bcs hex format
   // This method does not block waiting for the transaction to be executed.
-  async signAndExecuteFunction(
-    functionId: FunctionId,
-    tyArgs: TypeTag[],
-    args: bytes[],
+  async sendRawTransaction(
+    playload: bytes,
   ): Promise<string> {
-    // TODO: The bcs type is faulty
-
-    const ser = new BcsSerializer()
-    encodeFunctionCall(functionId, tyArgs, args).serialize(ser)
-
-    return this.client.rooch_sendRawTransaction(ser.getBytes())
+    return this.client.rooch_sendRawTransaction(playload)
   }
 
   // TODO: wait bcs

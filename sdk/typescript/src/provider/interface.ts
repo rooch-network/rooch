@@ -1,11 +1,15 @@
-import { FunctionId, FunctionReturnValue } from '../types'
+import { Arg, TypeTag, FunctionId, FunctionReturnValue, Bytes } from '../types'
 
 export interface IProvider {
     getRpcApiVersion(): Promise<string | undefined>;
 
     executeViewFunction(
         funcId: FunctionId,
-        args?: Uint8Array[],
-        tyArgs?: string[],
+        tyArgs?: TypeTag[],
+        args?: Arg[],
     ): Promise<FunctionReturnValue[]>
+
+    sendRawTransaction(
+        playload: Bytes,
+      ): Promise<string>
 }
