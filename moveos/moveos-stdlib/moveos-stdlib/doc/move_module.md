@@ -10,6 +10,7 @@
 -  [Function `new`](#0x2_move_module_new)
 -  [Function `module_name`](#0x2_move_module_module_name)
 -  [Function `verify_modules`](#0x2_move_module_verify_modules)
+-  [Function `check_comatibility`](#0x2_move_module_check_comatibility)
 -  [Function `request_init_functions`](#0x2_move_module_request_init_functions)
 
 
@@ -24,7 +25,7 @@
 
 
 
-<pre><code><b>struct</b> <a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -87,7 +88,6 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_module_name">module_name</a>(<a href="move_module.md#0x2_move_module">move_module</a>: &<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>): String {
-    //TODO implement <b>native</b> <b>module</b> name
     <a href="move_module.md#0x2_move_module_module_name_inner">module_name_inner</a>(&<a href="move_module.md#0x2_move_module">move_module</a>.byte_codes)
 }
 </code></pre>
@@ -125,6 +125,32 @@ The second vector is the module names of the modules with init function.
         i = i + 1;
     };
     <a href="move_module.md#0x2_move_module_verify_modules_inner">verify_modules_inner</a>(bytes_vec, account_address)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_move_module_check_comatibility"></a>
+
+## Function `check_comatibility`
+
+Check module compatibility when upgrading
+Abort if the new module is not compatible with the old module.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_check_comatibility">check_comatibility</a>(new_module: &<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>, old_module: &<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_check_comatibility">check_comatibility</a>(new_module: &<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>, old_module: &<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>) {
+    <a href="move_module.md#0x2_move_module_check_compatibililty_inner">check_compatibililty_inner</a>(new_module.byte_codes, old_module.byte_codes);
 }
 </code></pre>
 

@@ -175,6 +175,7 @@ module moveos_std::account_storage {
         let len = vector::length(&modules);
         let (module_names, module_names_with_init_fn) = move_module::verify_modules(&modules, account_address);
         
+        let upgrade_flag = false;
         while (i < len) {
             let name = vector::pop_back(&mut module_names);
             let m = vector::pop_back(&mut modules);   
@@ -182,13 +183,26 @@ module moveos_std::account_storage {
             // The module already exists, which means we are upgrading the module
             // TODO: check upgrade compatibility
             if (table::contains(&account_storage.modules, name)) {
-                table::remove(&mut account_storage.modules, name);
+                let old_m = table::remove(&mut account_storage.modules, name);
+                move_module::check_comatibility(&m, &old_m);
+                upgrade_flag = true;
             } else {
                 // request init function invoking
                 move_module::request_init_functions(module_names_with_init_fn, account_address);
             };
             table::add(&mut account_storage.modules, name, m);
             i = i + 1;
+        };
+        
+        // Use MoveModule as flag to indicate module upgrading in this tx.
+        // Used to setting vm.mark_loader_cache_as_invalid(), which announce to 
+        // the VM that the code loading cache should be considered outdated. 
+        // TODO: whether define a new struct for this flag?
+        if (upgrade_flag) {
+            let tx_ctx = storage_context::tx_context_mut(ctx); 
+            if (!tx_context::contains<MoveModule>(tx_ctx)) {
+                tx_context::add(tx_ctx, move_module::new(vector::singleton<u8>(0u8)));
+            }
         }
     }
     

@@ -38,6 +38,7 @@ use moveos_stdlib::natives::moveos_stdlib::{
 use moveos_types::{
     event::{Event, EventID},
     function_return_value::FunctionReturnValue,
+    move_module::MoveModule,
     move_types::FunctionId,
     object::ObjectID,
     state_resolver::MoveOSResolver,
@@ -187,6 +188,7 @@ where
 
         // The VM code loader has bugs around module upgrade. After a module upgrade, the internal
         // cache needs to be flushed to work around those bugs.
+        // vm.mark_loader_cache_as_invalid();
         vm.flush_loader_cache_if_invalidated();
         let loader = vm.runtime().loader();
         let data_store: MoveosDataCache<'r, 'l, S> =
@@ -311,7 +313,7 @@ where
                 //TODO check the modules package address with the sender
                 let sender = self.ctx.tx_context.sender();
                 //TODO check the compatiblity
-                let compat_config = Compatibility::no_check();
+                let compat_config = Compatibility::full_check();
                 self.session.publish_module_bundle_with_compat_config(
                     module_bundle,
                     sender,
@@ -323,6 +325,16 @@ where
         };
 
         self.resolve_pending_init_functions()?;
+
+        // Check if there are modules upgrading
+        let module_flag = self.ctx.tx_context.get::<MoveModule>().map_err(|e| {
+            PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
+                .with_message(e.to_string())
+                .finish(Location::Undefined)
+        })?;
+        if module_flag.is_some() {
+            self.vm.mark_loader_cache_as_invalid();
+        }
 
         action_result
     }
