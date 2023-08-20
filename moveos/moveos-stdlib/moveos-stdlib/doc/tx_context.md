@@ -14,6 +14,7 @@
 -  [Function `tx_hash`](#0x2_tx_context_tx_hash)
 -  [Function `add`](#0x2_tx_context_add)
 -  [Function `get`](#0x2_tx_context_get)
+-  [Function `contains`](#0x2_tx_context_contains)
 -  [Function `tx_meta`](#0x2_tx_context_tx_meta)
 
 
@@ -277,6 +278,32 @@ Get a value from the context map
     }<b>else</b>{
         <a href="_none">option::none</a>()
     }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_tx_context_contains"></a>
+
+## Function `contains`
+
+Check if the key is in the context map
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_contains">contains</a>&lt;T: <b>copy</b>, drop, store&gt;(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_contains">contains</a>&lt;T: drop + store + <b>copy</b>&gt;(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): bool {
+    <b>let</b> <a href="">type_name</a> = <a href="type_info.md#0x2_type_info_type_name">type_info::type_name</a>&lt;T&gt;();
+    <a href="simple_map.md#0x2_simple_map_contains_key">simple_map::contains_key</a>(&self.map, &<a href="">type_name</a>)
 }
 </code></pre>
 

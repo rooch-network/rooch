@@ -10,6 +10,7 @@ This type table if for design internal global storage, so all functions are frie
 
 -  [Resource `TableInfo`](#0x2_raw_table_TableInfo)
 -  [Resource `Box`](#0x2_raw_table_Box)
+-  [Constants](#@Constants_0)
 -  [Function `add`](#0x2_raw_table_add)
 -  [Function `borrow`](#0x2_raw_table_borrow)
 -  [Function `borrow_with_default`](#0x2_raw_table_borrow_with_default)
@@ -83,6 +84,41 @@ Because the GlobalValue in MoveVM must be a resource.
 
 
 </details>
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x2_raw_table_EAlreadyExists"></a>
+
+The key already exists in the table
+
+
+<pre><code><b>const</b> <a href="raw_table.md#0x2_raw_table_EAlreadyExists">EAlreadyExists</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x2_raw_table_ENotEmpty"></a>
+
+The table is not empty
+
+
+<pre><code><b>const</b> <a href="raw_table.md#0x2_raw_table_ENotEmpty">ENotEmpty</a>: u64 = 3;
+</code></pre>
+
+
+
+<a name="0x2_raw_table_ENotFound"></a>
+
+Can not found the key in the table
+
+
+<pre><code><b>const</b> <a href="raw_table.md#0x2_raw_table_ENotFound">ENotFound</a>: u64 = 2;
+</code></pre>
+
+
 
 <a name="0x2_raw_table_add"></a>
 

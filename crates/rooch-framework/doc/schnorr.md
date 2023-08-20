@@ -298,7 +298,7 @@ If the signature is valid to the pubkey and hashed message, return true. Else fa
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>native</b> <b>fun</b> <a href="schnorr.md#0x3_schnorr_verify">verify</a>(
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="schnorr.md#0x3_schnorr_verify">verify</a>(
     signature: &<a href="">vector</a>&lt;u8&gt;,
     public_key: &<a href="">vector</a>&lt;u8&gt;,
     msg: &<a href="">vector</a>&lt;u8&gt;,

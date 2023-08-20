@@ -4,8 +4,9 @@
 use crate::natives::helpers::{make_module_natives, make_native};
 use better_any::{Tid, TidAble};
 use move_binary_format::{
+    compatibility::Compatibility,
     errors::{PartialVMError, PartialVMResult},
-    CompiledModule,
+    normalized, CompiledModule,
 };
 use move_core_types::{
     account_address::AccountAddress,
@@ -206,6 +207,44 @@ fn request_init_functions(
 }
 
 /***************************************************************************************************
+ * native fun check_compatibililty_inner(
+ *      new_bytecodes: vector<u8>,
+ *      old_bytecodes: vector<u8>
+ * );
+ * Check module compatibility when upgrading,
+ * Abort if the new module is not compatible with the old module.
+ **************************************************************************************************/
+
+#[derive(Debug, Clone)]
+pub struct CheckCompatibilityInnerGasParameters {
+    pub base: InternalGas,
+    pub per_byte: InternalGasPerByte,
+}
+
+fn check_compatibililty_inner(
+    gas_params: &CheckCompatibilityInnerGasParameters,
+    _context: &mut NativeContext,
+    _ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    let mut cost = gas_params.base;
+    // TODO: config compatibility through global configuration
+    let compat = Compatibility::full_check();
+    if compat.need_check_compat() {
+        let old_bytecodes = pop_arg!(args, Vec<u8>);
+        let new_bytecodes = pop_arg!(args, Vec<u8>);
+        cost += gas_params.per_byte * NumBytes::new(new_bytecodes.len() as u64);
+        cost += gas_params.per_byte * NumBytes::new(old_bytecodes.len() as u64);
+        let new_module = CompiledModule::deserialize(&new_bytecodes)?;
+        let old_module = CompiledModule::deserialize(&old_bytecodes)?;
+        let new_m = normalized::Module::new(&new_module);
+        let old_m = normalized::Module::new(&old_module);
+
+        compat.check(&old_m, &new_m)?;
+    }
+    Ok(NativeResult::ok(cost, smallvec![]))
+}
+/***************************************************************************************************
  * module
  *
  **************************************************************************************************/
@@ -214,6 +253,7 @@ pub struct GasParameters {
     pub module_name_inner: ModuleNameInnerGasParameters,
     pub verify_modules_inner: VerifyModulesGasParameters,
     pub request_init_functions: RequestInitFunctionsGasParameters,
+    pub check_compatibililty_inner: CheckCompatibilityInnerGasParameters,
 }
 
 impl GasParameters {
@@ -228,6 +268,10 @@ impl GasParameters {
                 per_byte: 0.into(),
             },
             request_init_functions: RequestInitFunctionsGasParameters {
+                base: 0.into(),
+                per_byte: 0.into(),
+            },
+            check_compatibililty_inner: CheckCompatibilityInnerGasParameters {
                 base: 0.into(),
                 per_byte: 0.into(),
             },
@@ -248,6 +292,13 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         (
             "request_init_functions",
             make_native(gas_params.request_init_functions, request_init_functions),
+        ),
+        (
+            "check_compatibililty_inner",
+            make_native(
+                gas_params.check_compatibililty_inner,
+                check_compatibililty_inner,
+            ),
         ),
     ];
     make_module_natives(natives)

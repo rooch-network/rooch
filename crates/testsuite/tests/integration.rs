@@ -75,16 +75,22 @@ async fn run_cmd(world: &mut World, args: String) {
     args.push("--config-dir".to_owned());
     args.push(config_dir.to_str().unwrap().to_string());
     let opts: RoochCli = RoochCli::parse_from(args);
-    let output = rooch::run_cli(opts)
-        .await
-        .expect("CLI should run successfully.");
+    let ret = rooch::run_cli(opts).await;
 
-    let result_json = serde_json::from_str::<Value>(&output);
+    match ret {
+        Ok(output) => {
+            let result_json = serde_json::from_str::<Value>(&output);
 
-    if result_json.is_ok() {
-        tpl_ctx
-            .entry(cmd_name)
-            .append::<Value>(result_json.unwrap());
+            if result_json.is_ok() {
+                tpl_ctx
+                    .entry(cmd_name)
+                    .append::<Value>(result_json.unwrap());
+            }
+        }
+        Err(err) => {
+            let err_msg = Value::String(err.to_string());
+            tpl_ctx.entry(cmd_name).append::<Value>(err_msg);
+        }
     }
 }
 
@@ -103,11 +109,14 @@ async fn assert_output(world: &mut World, args: String) {
 
         match (first, op, second) {
             (Some(first), Some(op), Some(second)) => match op {
-                "==" => assert_eq!(first, second),
-                "!=" => assert_ne!(first, second),
+                "==" => assert_eq!(first, second, "Assert {:?} == {:?} failed", first, second),
+                "!=" => assert_ne!(first, second, "Assert {:?} 1= {:?} failed", first, second),
                 _ => panic!("unsupported operator"),
             },
-            _ => panic!("expected 3 arguments: first [==|!=] second"),
+            _ => panic!(
+                "expected 3 arguments: first [==|!=] second, but got input {:?}",
+                args
+            ),
         }
     }
     info!("assert ok!");

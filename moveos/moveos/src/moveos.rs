@@ -1,16 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::gas::table::MoveOSGasMeter;
 use crate::vm::moveos_vm::MoveOSVM;
 use anyhow::{bail, ensure, Result};
-use move_binary_format::errors::{vm_status_of_result, Location, PartialVMError};
+use move_binary_format::errors::{vm_status_of_result, Location, PartialVMError, VMResult};
 use move_core_types::vm_status::{KeptVMStatus, VMStatus};
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, vm_status::StatusCode,
 };
 use move_vm_runtime::config::VMConfig;
 use move_vm_runtime::native_functions::NativeFunction;
-use move_vm_types::gas::UnmeteredGasMeter;
 use moveos_store::config_store::ConfigStore;
 use moveos_store::event_store::EventDBStore;
 use moveos_store::state_store::statedb::StateDBStore;
@@ -124,7 +124,7 @@ impl MoveOS {
         self.db.0.get_transaction_store()
     }
 
-    pub fn verify(&self, tx: MoveOSTransaction) -> Result<VerifiedMoveOSTransaction> {
+    pub fn verify(&self, tx: MoveOSTransaction) -> VMResult<VerifiedMoveOSTransaction> {
         let MoveOSTransaction {
             ctx,
             action,
@@ -132,7 +132,7 @@ impl MoveOS {
             post_execute_functions,
         } = tx;
 
-        let gas_meter = UnmeteredGasMeter;
+        let gas_meter = MoveOSGasMeter::new();
         let session = self
             .vm
             .new_readonly_session(&self.db, ctx.clone(), gas_meter);
@@ -163,8 +163,7 @@ impl MoveOS {
                 action
             );
         }
-        //TODO define the gas meter.
-        let gas_meter = UnmeteredGasMeter;
+        let gas_meter = MoveOSGasMeter::new();
         let mut session = self.vm.new_session(
             &self.db,
             ctx,
@@ -244,7 +243,7 @@ impl MoveOS {
         function_call: FunctionCall,
     ) -> FunctionResult {
         //TODO limit the view function max gas usage
-        let gas_meter = UnmeteredGasMeter;
+        let gas_meter = MoveOSGasMeter::new();
         let mut session = self
             .vm
             .new_readonly_session(&self.db, tx_context.clone(), gas_meter);
