@@ -61,6 +61,10 @@ pub enum RoochError {
     NullifyAccountError(String),
     #[error("Generate key error: {0}")]
     GenerateKeyError(String),
+    #[error("Rotate authentication key error: {0}")]
+    RotateAuthenticationKeyError(String),
+    #[error("Remove authentication key error: {0}")]
+    RemoveAuthenticationKeyError(String),
 
     //#[error("base64 decode error: {0}")]
     //Base64DecodeError(String),

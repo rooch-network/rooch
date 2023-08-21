@@ -9,6 +9,7 @@ This module provides the foundation for typesafe Coins.
 -  [Struct `Coin`](#0x3_coin_Coin)
 -  [Resource `CoinStore`](#0x3_coin_CoinStore)
 -  [Resource `CoinInfo`](#0x3_coin_CoinInfo)
+-  [Resource `CoinInfos`](#0x3_coin_CoinInfos)
 -  [Struct `MintEvent`](#0x3_coin_MintEvent)
 -  [Struct `BurnEvent`](#0x3_coin_BurnEvent)
 -  [Resource `MintCapability`](#0x3_coin_MintCapability)
@@ -50,7 +51,10 @@ This module provides the foundation for typesafe Coins.
 <b>use</b> <a href="">0x2::account_storage</a>;
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
+<b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
+<b>use</b> <a href="">0x2::type_table</a>;
+<b>use</b> <a href="core_addresses.md#0x3_core_addresses">0x3::core_addresses</a>;
 </code></pre>
 
 
@@ -161,6 +165,34 @@ Information about a specific coin type. Stored on the creator of the coin's acco
 </dt>
 <dd>
  The total value for the coin represented by <code>CoinType</code>. Mutable.
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x3_coin_CoinInfos"></a>
+
+## Resource `CoinInfos`
+
+A resource that holds the CoinInfo for all accounts.
+
+
+<pre><code><b>struct</b> <a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a> <b>has</b> key
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>coin_infos: <a href="_TypeTable">type_table::TypeTable</a></code>
+</dt>
+<dd>
+
 </dd>
 </dl>
 
@@ -487,7 +519,12 @@ Returns <code><b>true</b></code> if the type <code>CoinType</code> is an initial
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_coin_initialized">is_coin_initialized</a>&lt;CoinType&gt;(ctx: &StorageContext): bool {
-    <a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType&gt;&gt;(ctx, <a href="coin.md#0x3_coin_coin_address">coin_address</a>&lt;CoinType&gt;())
+    <b>if</b> (<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a>&gt;(ctx, @rooch_framework)) {
+        <b>let</b> coin_infos = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a>&gt;(ctx, @rooch_framework);
+        <a href="_contains">type_table::contains</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType&gt;&gt;(&coin_infos.coin_infos)
+    } <b>else</b> {
+        <b>false</b>
+    }
 }
 </code></pre>
 
@@ -512,7 +549,7 @@ Returns the name of the coin.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_name">name</a>&lt;CoinType&gt;(ctx: &StorageContext): <a href="_String">string::String</a> {
-    <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType&gt;&gt;(ctx, <a href="coin.md#0x3_coin_coin_address">coin_address</a>&lt;CoinType&gt;()).name
+    <a href="coin.md#0x3_coin_borrow_coin_info">borrow_coin_info</a>&lt;CoinType&gt;(ctx).name
 }
 </code></pre>
 
@@ -537,7 +574,7 @@ Returns the symbol of the coin, usually a shorter version of the name.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_symbol">symbol</a>&lt;CoinType&gt;(ctx: &StorageContext): <a href="_String">string::String</a> {
-    <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType&gt;&gt;(ctx, <a href="coin.md#0x3_coin_coin_address">coin_address</a>&lt;CoinType&gt;()).symbol
+    <a href="coin.md#0x3_coin_borrow_coin_info">borrow_coin_info</a>&lt;CoinType&gt;(ctx).symbol
 }
 </code></pre>
 
@@ -564,7 +601,7 @@ be displayed to a user as <code>5.05</code> (<code>505 / 10 ** 2</code>).
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_decimals">decimals</a>&lt;CoinType&gt;(ctx: &StorageContext): u8 {
-    <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType&gt;&gt;(ctx, <a href="coin.md#0x3_coin_coin_address">coin_address</a>&lt;CoinType&gt;()).decimals
+    <a href="coin.md#0x3_coin_borrow_coin_info">borrow_coin_info</a>&lt;CoinType&gt;(ctx).decimals
 }
 </code></pre>
 
@@ -589,7 +626,7 @@ Returns the amount of coin in existence.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_supply">supply</a>&lt;CoinType&gt;(ctx: &StorageContext): u256 {
-    <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType&gt;&gt;(ctx, <a href="coin.md#0x3_coin_coin_address">coin_address</a>&lt;CoinType&gt;()).supply
+    <a href="coin.md#0x3_coin_borrow_coin_info">borrow_coin_info</a>&lt;CoinType&gt;(ctx).supply
 }
 </code></pre>
 
@@ -647,7 +684,7 @@ The capability <code>_cap</code> should be passed as a reference to <code><a hre
     <b>let</b> <a href="coin.md#0x3_coin_Coin">Coin</a> { value: amount } = <a href="coin.md#0x3_coin">coin</a>;
 
     <b>let</b> coin_type_info = <a href="_type_of">type_info::type_of</a>&lt;CoinType&gt;();
-    <b>let</b> coin_info = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType&gt;&gt;(ctx, <a href="coin.md#0x3_coin_coin_address">coin_address</a>&lt;CoinType&gt;());
+    <b>let</b> coin_info = <a href="coin.md#0x3_coin_borrow_mut_coin_info">borrow_mut_coin_info</a>&lt;CoinType&gt;(ctx);
     coin_info.supply = coin_info.supply - amount;
     <a href="_emit">event::emit</a>&lt;<a href="coin.md#0x3_coin_BurnEvent">BurnEvent</a>&gt;(ctx, <a href="coin.md#0x3_coin_BurnEvent">BurnEvent</a> {
         coin_type_info,
@@ -881,7 +918,9 @@ The given signer also becomes the account hosting the information about the coin
         decimals,
         supply: 0u256,
     };
-    <a href="_global_move_to">account_storage::global_move_to</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType&gt;&gt;(ctx, <a href="account.md#0x3_account">account</a>, coin_info);
+    // <a href="_global_move_to">account_storage::global_move_to</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType&gt;&gt;(ctx, <a href="account.md#0x3_account">account</a>, coin_info);
+    <b>let</b> coin_infos = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a>&gt;(ctx, @rooch_framework);
+    <a href="_add">type_table::add</a>(&<b>mut</b> coin_infos.coin_infos, coin_info);
 
     (<a href="coin.md#0x3_coin_BurnCapability">BurnCapability</a>&lt;CoinType&gt; {}, <a href="coin.md#0x3_coin_FreezeCapability">FreezeCapability</a>&lt;CoinType&gt; {}, <a href="coin.md#0x3_coin_MintCapability">MintCapability</a>&lt;CoinType&gt; {})
 }
@@ -941,7 +980,7 @@ Returns minted <code><a href="coin.md#0x3_coin_Coin">Coin</a></code>.
     amount: u256,
     _cap: &<a href="coin.md#0x3_coin_MintCapability">MintCapability</a>&lt;CoinType&gt;,
 ): <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
-   <b>let</b> coin_info = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType&gt;&gt;(ctx, <a href="coin.md#0x3_coin_coin_address">coin_address</a>&lt;CoinType&gt;());
+   <b>let</b> coin_info = <a href="coin.md#0x3_coin_borrow_mut_coin_info">borrow_mut_coin_info</a>&lt;CoinType&gt;(ctx);
     coin_info.supply = coin_info.supply + amount;
     <b>let</b> coin_type_info = <a href="_type_of">type_info::type_of</a>&lt;CoinType&gt;();
     <a href="_emit">event::emit</a>&lt;<a href="coin.md#0x3_coin_MintEvent">MintEvent</a>&gt;(ctx, <a href="coin.md#0x3_coin_MintEvent">MintEvent</a> {

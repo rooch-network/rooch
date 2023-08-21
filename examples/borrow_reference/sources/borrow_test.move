@@ -39,8 +39,8 @@ module rooch_examples::borrow_test {
         borrowd::do_immutable_borrow(ctx, &cap.borrow_cap);
 
         //  Invalid usage of reference as function argument. Cannot transfer a mutable reference that is being borrowed
-        let data_store_warpper = account_storage::global_borrow_mut<DataStoreWrapper>(ctx, addr);
-        borrowd::do_mutable_borrow(ctx, addr, &mut data_store_warpper.data_store);
+        // let data_store_warpper = account_storage::global_borrow_mut<DataStoreWrapper>(ctx, addr);
+        // borrowd::do_mutable_borrow(ctx, addr, &mut data_store_warpper.data_store);
     }
 
     #[test(alice = @0x11)]

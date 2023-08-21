@@ -3,6 +3,9 @@ module rooch_framework::coin {
     use std::string;
     use std::error;
     use std::signer;
+    use moveos_std::type_table::TypeTable;
+    use moveos_std::storage_context;
+    use moveos_std::type_table;
     use moveos_std::account_storage;
     use moveos_std::storage_context::{StorageContext};
     use moveos_std::event;
@@ -80,6 +83,11 @@ module rooch_framework::coin {
         supply: u256,
     }
 
+    /// A resource that holds the CoinInfo for all accounts.
+    struct CoinInfos has key {
+        coin_infos: TypeTable,
+    }
+
     /// Event emitted when coin minted.
     struct MintEvent has drop, store {
         /// full info of coin
@@ -105,6 +113,15 @@ module rooch_framework::coin {
     /// Capability required to burn coins.
     struct BurnCapability<phantom CoinType> has key, copy, store {}
 
+    fun init(ctx: &mut StorageContext, account: &signer) {
+        rooch_framework::core_addresses::assert_rooch_framework(account);
+        let tx_ctx = storage_context::tx_context_mut(ctx);
+        let coin_infos = type_table::new(tx_ctx);
+        account_storage::global_move_to(ctx, account, CoinInfos{
+            coin_infos,
+        });
+    }
+
     //
     // Getter functions
     //
@@ -127,37 +144,51 @@ module rooch_framework::coin {
 
     /// Returns `true` if the type `CoinType` is an initialized coin.
     public fun is_coin_initialized<CoinType>(ctx: &StorageContext): bool {
-        account_storage::global_exists<CoinInfo<CoinType>>(ctx, coin_address<CoinType>())
+        if (account_storage::global_exists<CoinInfos>(ctx, @rooch_framework)) {
+            let coin_infos = account_storage::global_borrow<CoinInfos>(ctx, @rooch_framework);
+            type_table::contains<CoinInfo<CoinType>>(&coin_infos.coin_infos)
+        } else {
+            false
+        }
     }
 
     /// Returns the name of the coin.
     public fun name<CoinType>(ctx: &StorageContext): string::String {
-        account_storage::global_borrow<CoinInfo<CoinType>>(ctx, coin_address<CoinType>()).name
+        borrow_coin_info<CoinType>(ctx).name
     }
 
     /// Returns the symbol of the coin, usually a shorter version of the name.
     public fun symbol<CoinType>(ctx: &StorageContext): string::String {
-        account_storage::global_borrow<CoinInfo<CoinType>>(ctx, coin_address<CoinType>()).symbol
+        borrow_coin_info<CoinType>(ctx).symbol
     }
 
     /// Returns the number of decimals used to get its user representation.
     /// For example, if `decimals` equals `2`, a balance of `505` coins should
     /// be displayed to a user as `5.05` (`505 / 10 ** 2`).
     public fun decimals<CoinType>(ctx: &StorageContext): u8 {
-        account_storage::global_borrow<CoinInfo<CoinType>>(ctx, coin_address<CoinType>()).decimals
+        borrow_coin_info<CoinType>(ctx).decimals
     }
 
 
     /// Returns the amount of coin in existence.
     public fun supply<CoinType>(ctx: &StorageContext): u256 {
-        account_storage::global_borrow<CoinInfo<CoinType>>(ctx, coin_address<CoinType>()).supply
+        borrow_coin_info<CoinType>(ctx).supply
     }
 
     /// Return true if the type `CoinType1` is same with `CoinType2`
     public fun is_same_coin<CoinType1, CoinType2>(): bool {
         return type_of<CoinType1>() == type_of<CoinType2>()
     }
-    
+
+    fun borrow_coin_info<CoinType>(ctx: &StorageContext): &CoinInfo<CoinType> {
+        let coin_infos = account_storage::global_borrow<CoinInfos>(ctx, @rooch_framework);
+        type_table::borrow<CoinInfo<CoinType>>(&coin_infos.coin_infos)
+    }
+
+    fun borrow_mut_coin_info<CoinType>(ctx: &mut StorageContext): &mut CoinInfo<CoinType> {
+        let coin_infos = account_storage::global_borrow_mut<CoinInfos>(ctx, @rooch_framework);
+        type_table::borrow_mut<CoinInfo<CoinType>>(&mut coin_infos.coin_infos)
+    }
     
     //
     // Public functions
@@ -173,7 +204,7 @@ module rooch_framework::coin {
         let Coin { value: amount } = coin;
 
         let coin_type_info = type_info::type_of<CoinType>();
-        let coin_info = account_storage::global_borrow_mut<CoinInfo<CoinType>>(ctx, coin_address<CoinType>());
+        let coin_info = borrow_mut_coin_info<CoinType>(ctx);
         coin_info.supply = coin_info.supply - amount;
         event::emit<BurnEvent>(ctx, BurnEvent {
             coin_type_info,
@@ -268,7 +299,9 @@ module rooch_framework::coin {
             decimals,
             supply: 0u256,
         };
-        account_storage::global_move_to<CoinInfo<CoinType>>(ctx, account, coin_info);
+        // account_storage::global_move_to<CoinInfo<CoinType>>(ctx, account, coin_info);
+        let coin_infos = account_storage::global_borrow_mut<CoinInfos>(ctx, @rooch_framework);
+        type_table::add(&mut coin_infos.coin_infos, coin_info);
 
         (BurnCapability<CoinType> {}, FreezeCapability<CoinType> {}, MintCapability<CoinType> {})
     }
@@ -288,7 +321,7 @@ module rooch_framework::coin {
         amount: u256,
         _cap: &MintCapability<CoinType>,
     ): Coin<CoinType> {
-       let coin_info = account_storage::global_borrow_mut<CoinInfo<CoinType>>(ctx, coin_address<CoinType>());
+       let coin_info = borrow_mut_coin_info<CoinType>(ctx);
         coin_info.supply = coin_info.supply + amount;
         let coin_type_info = type_info::type_of<CoinType>();
         event::emit<MintEvent>(ctx, MintEvent {
@@ -357,5 +390,10 @@ module rooch_framework::coin {
     /// Destroy a burn capability.
     public fun destroy_burn_cap<CoinType>(burn_cap: BurnCapability<CoinType>) {
         let BurnCapability<CoinType> {} = burn_cap;
+    }
+
+    #[test_only]
+    public fun init_for_test(ctx: &mut StorageContext, account: &signer){
+        init(ctx, account);
     }
 }

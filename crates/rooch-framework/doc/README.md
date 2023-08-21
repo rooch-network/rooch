@@ -23,6 +23,7 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::coin`](coin.md#0x3_coin)
 -  [`0x3::coin_entry`](coin_entry.md#0x3_coin_entry)
 -  [`0x3::core_addresses`](core_addresses.md#0x3_core_addresses)
+-  [`0x3::decoding`](decoding.md#0x3_decoding)
 -  [`0x3::ecdsa_k1`](ecdsa_k1.md#0x3_ecdsa_k1)
 -  [`0x3::ecdsa_k1_recoverable`](ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable)
 -  [`0x3::ed25519`](ed25519.md#0x3_ed25519)

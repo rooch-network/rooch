@@ -190,6 +190,7 @@ module rooch_framework::coin_entry {
         let destination_ctx = storage_context::new_test_context(signer::address_of(destination));
         let mod_account_ctx = storage_context::new_test_context(signer::address_of(mod_account));
 
+        coin::init_for_test(&mut mod_account_ctx, mod_account);
         initialize<FakeCoin>(
             &mut mod_account_ctx,
             mod_account,
@@ -241,6 +242,7 @@ module rooch_framework::coin_entry {
         let destination_ctx = storage_context::new_test_context(signer::address_of(destination));
         let mod_account_ctx = storage_context::new_test_context(signer::address_of(mod_account));
 
+        coin::init_for_test(&mut mod_account_ctx, mod_account);
         initialize<FakeCoin>(&mut mod_account_ctx, mod_account, b"Fake Coin", b"FCD", 9);
         accept_coin<FakeCoin>(&mut mod_account_ctx, mod_account);
         accept_coin<FakeCoin>(&mut source_ctx, source);
@@ -266,6 +268,7 @@ module rooch_framework::coin_entry {
         let destination_ctx = storage_context::new_test_context(signer::address_of(destination));
         let mod_account_ctx = storage_context::new_test_context(signer::address_of(mod_account));
 
+        coin::init_for_test(&mut mod_account_ctx, mod_account);
         initialize<FakeCoin>(&mut mod_account_ctx, mod_account, b"Fake Coin", b"FCD", 9);
         accept_coin<FakeCoin>(&mut mod_account_ctx, mod_account);
         accept_coin<FakeCoin>(&mut source_ctx, source);
