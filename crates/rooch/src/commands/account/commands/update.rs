@@ -7,6 +7,7 @@ use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_types::{
     address::RoochAddress,
+    authentication_key::AuthenticationKeyType,
     crypto::{BuiltinScheme, PublicKey},
     error::{RoochError, RoochResult},
 };
@@ -24,6 +25,9 @@ pub struct UpdateCommand {
     mnemonic_phrase: String,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
+    /// Authentication key type. Select an authentication key type with the Rooch address (Bitcoin P2PKH authentication key address leading with "1" or Bitcoin P2SH authentication key address leading with "3")
+    #[clap(short = 't', long = "authentication-key-type", arg_enum)]
+    pub authentication_key_type: Option<AuthenticationKeyType>,
     /// Command line input of crypto schemes (ed25519, multi-ed25519, ecdsa, ecdsa-recoverable or schnorr)
     #[clap(short = 's', long = "scheme", arg_enum)]
     pub crypto_schemes: BuiltinScheme,
@@ -70,8 +74,16 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                 // Get public key reference
                 let public_key = public_key.as_ref().to_vec();
 
+                // Get decimal prefix or version from the input address type
+                let decimal_prefix_or_version: Option<u8> = self
+                    .authentication_key_type
+                    .map(|addr_type| addr_type.decimal_prefix_or_version());
+
                 // Create MoveAction from scheme
-                let action = scheme.create_rotate_authentication_key_action(public_key)?;
+                let action = scheme.create_rotate_authentication_key_action(
+                    public_key,
+                    decimal_prefix_or_version,
+                )?;
 
                 // Execute the Move call as a transaction
                 let result = context
