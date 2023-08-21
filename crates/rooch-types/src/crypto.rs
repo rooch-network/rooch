@@ -6,10 +6,8 @@ use crate::{
     authentication_key::AuthenticationKey,
     error::{RoochError, RoochResult},
     framework::{
-        bitcoin_validator::{BitcoinValidator, BitcoinValidatorModule},
-        ethereum_validator::{EthereumValidator, EthereumValidatorModule},
-        native_validator::{NativeValidator, NativeValidatorModule},
-        nostr_validator::{NostrValidator, NostrValidatorModule},
+        bitcoin_validator::BitcoinValidatorModule, ethereum_validator::EthereumValidatorModule,
+        native_validator::NativeValidatorModule, nostr_validator::NostrValidatorModule,
     },
 };
 use clap::ArgEnum;
@@ -129,24 +127,22 @@ impl BuiltinScheme {
         decimal_prefix_or_version: Option<u8>,
     ) -> Result<MoveAction, RoochError> {
         let action = match self {
-            BuiltinScheme::Ed25519 => NativeValidatorModule::rotate_authentication_key_action::<
-                NativeValidator,
-            >(public_key),
+            BuiltinScheme::Ed25519 => {
+                NativeValidatorModule::rotate_authentication_key_action(public_key)
+            }
             BuiltinScheme::MultiEd25519 => todo!(),
             BuiltinScheme::Ecdsa => {
                 let decimal_prefix_or_version = decimal_prefix_or_version.ok_or_else(|| RoochError::RotateAuthenticationKeyError("Error decoding the decimal prefix or the script version. Use -t or --address-type to indicate an address to use for Bitcoin under the ecdsa scheme.".to_owned()))?;
-                BitcoinValidatorModule::rotate_authentication_key_action::<BitcoinValidator>(
+                BitcoinValidatorModule::rotate_authentication_key_action(
                     public_key,
                     decimal_prefix_or_version,
                 )
             }
             BuiltinScheme::EcdsaRecoverable => {
-                EthereumValidatorModule::rotate_authentication_key_action::<EthereumValidator>(
-                    public_key,
-                )
+                EthereumValidatorModule::rotate_authentication_key_action(public_key)
             }
             BuiltinScheme::Schnorr => {
-                NostrValidatorModule::rotate_authentication_key_action::<NostrValidator>(public_key)
+                NostrValidatorModule::rotate_authentication_key_action(public_key)
             }
         };
         Ok(action)
@@ -154,19 +150,13 @@ impl BuiltinScheme {
 
     pub fn create_remove_authentication_key_action(&self) -> Result<MoveAction, RoochError> {
         let action = match self {
-            BuiltinScheme::Ed25519 => {
-                NativeValidatorModule::remove_authentication_key_action::<NativeValidator>()
-            }
+            BuiltinScheme::Ed25519 => NativeValidatorModule::remove_authentication_key_action(),
             BuiltinScheme::MultiEd25519 => todo!(),
-            BuiltinScheme::Ecdsa => {
-                BitcoinValidatorModule::remove_authentication_key_action::<BitcoinValidator>()
-            }
+            BuiltinScheme::Ecdsa => BitcoinValidatorModule::remove_authentication_key_action(),
             BuiltinScheme::EcdsaRecoverable => {
-                EthereumValidatorModule::remove_authentication_key_action::<EthereumValidator>()
+                EthereumValidatorModule::remove_authentication_key_action()
             }
-            BuiltinScheme::Schnorr => {
-                NostrValidatorModule::remove_authentication_key_action::<NostrValidator>()
-            }
+            BuiltinScheme::Schnorr => NostrValidatorModule::remove_authentication_key_action(),
         };
         Ok(action)
     }

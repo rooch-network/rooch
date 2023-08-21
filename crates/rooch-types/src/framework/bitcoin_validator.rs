@@ -54,13 +54,13 @@ impl<'a> BitcoinValidatorModule<'a> {
         Ok(())
     }
 
-    pub fn rotate_authentication_key_action<V: MoveStructType>(
+    pub fn rotate_authentication_key_action(
         public_key: Vec<u8>,
         decimal_prefix_or_version: u8,
     ) -> MoveAction {
         Self::create_move_action(
             Self::ROTATE_AUTHENTICATION_KEY_ENTRY_FUNCTION_NAME,
-            vec![V::type_tag()],
+            vec![],
             vec![
                 MoveValue::vector_u8(public_key),
                 MoveValue::U8(decimal_prefix_or_version),
@@ -68,10 +68,10 @@ impl<'a> BitcoinValidatorModule<'a> {
         )
     }
 
-    pub fn remove_authentication_key_action<V: MoveStructType>() -> MoveAction {
+    pub fn remove_authentication_key_action() -> MoveAction {
         Self::create_move_action(
             Self::REMOVE_AUTHENTICATION_KEY_ENTRY_FUNCTION_NAME,
-            vec![V::type_tag()],
+            vec![],
             vec![],
         )
     }

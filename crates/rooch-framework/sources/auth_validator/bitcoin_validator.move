@@ -25,7 +25,7 @@ module rooch_framework::bitcoin_validator {
 
     /// `rotate_authentication_key_entry` only supports rotating authentication key to a Bitcoin legacy address
     /// becuase ecdsa k1 scheme only supports key generation of 33-bytes compressed public key at this time.
-    public entry fun rotate_authentication_key_entry<T>(
+    public entry fun rotate_authentication_key_entry(
         ctx: &mut StorageContext,
         account: &signer,
         public_key: vector<u8>,
@@ -49,7 +49,7 @@ module rooch_framework::bitcoin_validator {
         account_authentication::rotate_authentication_key<BitcoinValidator>(ctx, account_addr, authentication_key);
     }
 
-    public entry fun remove_authentication_key_entry<T>(ctx: &mut StorageContext, account: &signer) {
+    public entry fun remove_authentication_key_entry(ctx: &mut StorageContext, account: &signer) {
         account_authentication::remove_authentication_key<BitcoinValidator>(ctx, signer::address_of(account));
     }
 
