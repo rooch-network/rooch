@@ -98,7 +98,6 @@ async fn run_cmd(world: &mut World, args: String) {
 async fn assert_output(world: &mut World, args: String) {
     assert!(world.tpl_ctx.is_some(), "tpl_ctx is none");
     let args = eval_command_args(world.tpl_ctx.as_ref().unwrap(), args);
-    // let parameters = args.split_whitespace().collect::<Vec<_>>();
     let parameters = split_string_with_quotes(&args).expect("Invalid commands");
 
     for chunk in parameters.chunks(3) {

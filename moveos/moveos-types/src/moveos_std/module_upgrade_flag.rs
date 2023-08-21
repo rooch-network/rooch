@@ -13,25 +13,25 @@ use move_core_types::{
 };
 use serde::{Deserialize, Serialize};
 
-/// `MoveModuleUpgradeFlag` is represented `moveos_std::move_module::MoveModuleUpgradeFlag` in Move.
+/// `ModuleUpgradeFlag` is represented `moveos_std::move_module::ModuleUpgradeFlag` in Move.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-pub struct MoveModuleUpgradeFlag {
+pub struct ModuleUpgradeFlag {
     pub is_upgrade: bool,
 }
 
-impl MoveModuleUpgradeFlag {
+impl ModuleUpgradeFlag {
     pub fn new(is_upgrade: bool) -> Self {
         Self { is_upgrade }
     }
 }
 
-impl MoveStructType for MoveModuleUpgradeFlag {
+impl MoveStructType for ModuleUpgradeFlag {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
     const MODULE_NAME: &'static IdentStr = ident_str!("account_storage");
     const STRUCT_NAME: &'static IdentStr = ident_str!("ModuleUpgradeFlag");
 }
 
-impl MoveStructState for MoveModuleUpgradeFlag {
+impl MoveStructState for ModuleUpgradeFlag {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         MoveStructLayout::new(vec![MoveTypeLayout::Bool])
     }

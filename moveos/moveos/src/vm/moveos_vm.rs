@@ -39,8 +39,8 @@ use moveos_stdlib::natives::moveos_stdlib::{
 use moveos_types::{
     event::{Event, EventID},
     function_return_value::FunctionReturnValue,
-    move_module_upgrade_flag::MoveModuleUpgradeFlag,
     move_types::FunctionId,
+    moveos_std::module_upgrade_flag::ModuleUpgradeFlag,
     object::ObjectID,
     state_resolver::MoveOSResolver,
     storage_context::StorageContext,
@@ -331,7 +331,7 @@ where
         let module_flag = self
             .ctx
             .tx_context
-            .get::<MoveModuleUpgradeFlag>()
+            .get::<ModuleUpgradeFlag>()
             .map_err(|e| {
                 PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
                     .with_message(e.to_string())
