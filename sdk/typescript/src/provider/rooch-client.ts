@@ -18,9 +18,9 @@ import {
   // TransactionView,
 } from '../generated/client/types'
 import { Connection } from './connection'
-import { encodeFunctionCall } from '../utils'
 import { BcsSerializer, bytes } from '../types/bcs'
-import { FunctionId, TypeTag, functionIdToStirng } from '../types'
+import { FunctionId, TypeTag,  } from '../types'
+import { encodeFunctionCall, functionIdToStirng } from '../utils'
 
 export class RoochClient {
   readonly rpcClient: JsonRpcClient

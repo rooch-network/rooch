@@ -82,7 +82,9 @@
     "vite-plugin-dts": "^3.3.1",
     "vite-plugin-node-polyfills": "^0.9.0",
     "vitest": "^0.34.1",
-    "wait-on": "^7.0.1"
+    "wait-on": "^7.0.1",
+    "ejs": "^3.1.9",
+    "fetch-mock": "^9.11.0"
   },
   "dependencies": {
     "@kayahr/text-encoding": "^1.2.0",
@@ -92,11 +94,10 @@
     "@suchipi/femver": "^1.0.0",
     "@types/isomorphic-fetch": "^0.0.36",
     "@types/ws": "^8.5.5",
-    "ejs": "^3.1.9",
     "events": "^3.3.0",
-    "fetch-mock": "^9.11.0",
     "isomorphic-fetch": "^3.0.0",
     "superstruct": "^1.0.3",
     "tweetnacl": "^1.0.3"
   }
 }
+
