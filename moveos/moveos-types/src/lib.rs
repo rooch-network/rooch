@@ -10,6 +10,7 @@ pub mod h256;
 pub mod module_binding;
 pub mod move_any;
 pub mod move_module;
+pub mod move_module_upgrade_flag;
 pub mod move_option;
 pub mod move_simple_map;
 pub mod move_std;
