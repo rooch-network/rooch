@@ -9,7 +9,7 @@
 -  [Struct `SessionKey`](#0x3_session_key_SessionKey)
 -  [Resource `SessionKeys`](#0x3_session_key_SessionKeys)
 -  [Constants](#@Constants_0)
--  [Function `is_expired`](#0x3_session_key_is_expired)
+-  [Function `new_session_scope`](#0x3_session_key_new_session_scope)
 -  [Function `exists_session_key`](#0x3_session_key_exists_session_key)
 -  [Function `get_session_key`](#0x3_session_key_get_session_key)
 -  [Function `create_session_key`](#0x3_session_key_create_session_key)
@@ -27,8 +27,9 @@
 <b>use</b> <a href="">0x2::storage_context</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
+<b>use</b> <a href="">0x2::tx_meta</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
-<b>use</b> <a href="ed25519_validator.md#0x3_ed25519_validator">0x3::ed25519_validator</a>;
+<b>use</b> <a href="native_validator.md#0x3_native_validator">0x3::native_validator</a>;
 </code></pre>
 
 
@@ -96,12 +97,6 @@ The session's scope
 
 </dd>
 <dt>
-<code>scheme: u64</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
 <code>scopes: <a href="">vector</a>&lt;<a href="session_key.md#0x3_session_key_SessionScope">session_key::SessionScope</a>&gt;</code>
 </dt>
 <dd>
@@ -162,8 +157,19 @@ The session's scope
 ## Constants
 
 
+<a name="0x3_session_key_EFunctionCallBeyondSessionScope"></a>
+
+The function call is beyond the session's scope
+
+
+<pre><code><b>const</b> <a href="session_key.md#0x3_session_key_EFunctionCallBeyondSessionScope">EFunctionCallBeyondSessionScope</a>: u64 = 5;
+</code></pre>
+
+
+
 <a name="0x3_session_key_ESessionIsExpired"></a>
 
+The session is expired
 
 
 <pre><code><b>const</b> <a href="session_key.md#0x3_session_key_ESessionIsExpired">ESessionIsExpired</a>: u64 = 4;
@@ -173,6 +179,7 @@ The session's scope
 
 <a name="0x3_session_key_ESessionKeyAlreadyExists"></a>
 
+The session key already exists
 
 
 <pre><code><b>const</b> <a href="session_key.md#0x3_session_key_ESessionKeyAlreadyExists">ESessionKeyAlreadyExists</a>: u64 = 2;
@@ -182,6 +189,7 @@ The session's scope
 
 <a name="0x3_session_key_ESessionKeyCreatePermissionDenied"></a>
 
+Create session key in this context is not allowed
 
 
 <pre><code><b>const</b> <a href="session_key.md#0x3_session_key_ESessionKeyCreatePermissionDenied">ESessionKeyCreatePermissionDenied</a>: u64 = 1;
@@ -191,6 +199,7 @@ The session's scope
 
 <a name="0x3_session_key_ESessionKeyIsInvalid"></a>
 
+The session key is invalid
 
 
 <pre><code><b>const</b> <a href="session_key.md#0x3_session_key_ESessionKeyIsInvalid">ESessionKeyIsInvalid</a>: u64 = 3;
@@ -198,13 +207,13 @@ The session's scope
 
 
 
-<a name="0x3_session_key_is_expired"></a>
+<a name="0x3_session_key_new_session_scope"></a>
 
-## Function `is_expired`
+## Function `new_session_scope`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_is_expired">is_expired</a>(_ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, _session_key: &<a href="session_key.md#0x3_session_key_SessionKey">session_key::SessionKey</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_new_session_scope">new_session_scope</a>(module_address: <b>address</b>, module_name: <a href="_String">ascii::String</a>, function_name: <a href="_String">ascii::String</a>): <a href="session_key.md#0x3_session_key_SessionScope">session_key::SessionScope</a>
 </code></pre>
 
 
@@ -213,9 +222,12 @@ The session's scope
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_is_expired">is_expired</a>(_ctx: &StorageContext, _session_key: &<a href="session_key.md#0x3_session_key_SessionKey">SessionKey</a>) : bool {
-    //TODO check the session key is expired or not after the timestamp is supported
-    <b>return</b> <b>false</b>
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_new_session_scope">new_session_scope</a>(module_address: <b>address</b>, module_name: std::ascii::String, function_name: std::ascii::String) : <a href="session_key.md#0x3_session_key_SessionScope">SessionScope</a> {
+    <a href="session_key.md#0x3_session_key_SessionScope">SessionScope</a> {
+        module_address: module_address,
+        module_name: module_name,
+        function_name: function_name,
+    }
 }
 </code></pre>
 
@@ -286,7 +298,7 @@ Get the session key of the account_address by the authentication key
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key">create_session_key</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scheme: u64, scopes: <a href="">vector</a>&lt;<a href="session_key.md#0x3_session_key_SessionScope">session_key::SessionScope</a>&gt;, expiration_time: u64, max_inactive_interval: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key">create_session_key</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scopes: <a href="">vector</a>&lt;<a href="session_key.md#0x3_session_key_SessionScope">session_key::SessionScope</a>&gt;, expiration_time: u64, max_inactive_interval: u64)
 </code></pre>
 
 
@@ -295,7 +307,7 @@ Get the session key of the account_address by the authentication key
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key">create_session_key</a>(ctx: &<b>mut</b> StorageContext, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scheme: u64, scopes: <a href="">vector</a>&lt;<a href="session_key.md#0x3_session_key_SessionScope">SessionScope</a>&gt;, expiration_time: u64, max_inactive_interval: u64) {
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key">create_session_key</a>(ctx: &<b>mut</b> StorageContext, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scopes: <a href="">vector</a>&lt;<a href="session_key.md#0x3_session_key_SessionScope">SessionScope</a>&gt;, expiration_time: u64, max_inactive_interval: u64) {
     //Can not create new session key by the other session key
     <b>assert</b>!(!<a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">auth_validator::is_validate_via_session_key</a>(ctx), <a href="_permission_denied">error::permission_denied</a>(<a href="session_key.md#0x3_session_key_ESessionKeyCreatePermissionDenied">ESessionKeyCreatePermissionDenied</a>));
     <b>let</b> sender_addr = <a href="_address_of">signer::address_of</a>(sender);
@@ -303,7 +315,6 @@ Get the session key of the account_address by the authentication key
 
     <b>let</b> <a href="session_key.md#0x3_session_key">session_key</a> = <a href="session_key.md#0x3_session_key_SessionKey">SessionKey</a> {
         authentication_key: authentication_key,
-        scheme: scheme,
         scopes: scopes,
         expiration_time: expiration_time,
         //TODO set the last active time <b>to</b> now
@@ -330,7 +341,7 @@ Get the session key of the account_address by the authentication key
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key_entry">create_session_key_entry</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scheme: u64, scope_module_address: <b>address</b>, scope_module_name: <a href="_String">ascii::String</a>, scope_function_name: <a href="_String">ascii::String</a>, expiration_time: u64, max_inactive_interval: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key_entry">create_session_key_entry</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scope_module_address: <b>address</b>, scope_module_name: <a href="_String">ascii::String</a>, scope_function_name: <a href="_String">ascii::String</a>, expiration_time: u64, max_inactive_interval: u64)
 </code></pre>
 
 
@@ -339,8 +350,8 @@ Get the session key of the account_address by the authentication key
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key_entry">create_session_key_entry</a>(ctx: &<b>mut</b> StorageContext, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scheme: u64, scope_module_address: <b>address</b>, scope_module_name: std::ascii::String, scope_function_name: std::ascii::String,expiration_time: u64, max_inactive_interval: u64) {
-    <a href="session_key.md#0x3_session_key_create_session_key">create_session_key</a>(ctx, sender, authentication_key, scheme, <a href="_singleton">vector::singleton</a>(<a href="session_key.md#0x3_session_key_SessionScope">SessionScope</a>{
+<pre><code><b>public</b> entry <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key_entry">create_session_key_entry</a>(ctx: &<b>mut</b> StorageContext, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scope_module_address: <b>address</b>, scope_module_name: std::ascii::String, scope_function_name: std::ascii::String,expiration_time: u64, max_inactive_interval: u64) {
+    <a href="session_key.md#0x3_session_key_create_session_key">create_session_key</a>(ctx, sender, authentication_key, <a href="_singleton">vector::singleton</a>(<a href="session_key.md#0x3_session_key_SessionScope">SessionScope</a>{
         module_address: scope_module_address,
         module_name: scope_module_name,
         function_name: scope_function_name,
@@ -375,12 +386,12 @@ If the session key is expired or invalid, abort the tx, otherwise return option:
     <b>if</b> (!<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender_addr)){
         <b>return</b> <a href="_none">option::none</a>()
     };
-    <b>let</b> auth_key = <b>if</b>(scheme == <a href="ed25519_validator.md#0x3_ed25519_validator_scheme">ed25519_validator::scheme</a>()){
-        <a href="ed25519_validator.md#0x3_ed25519_validator_get_authentication_key_from_authenticator_payload">ed25519_validator::get_authentication_key_from_authenticator_payload</a>(&authenticator_payload)
-    }<b>else</b>{
-        //TODO support other built-in validators
+    // We only support <b>native</b> validator for <a href="session_key.md#0x3_session_key_SessionKey">SessionKey</a> now
+    <b>if</b>(scheme != validator::scheme()){
         <b>return</b> <a href="_none">option::none</a>()
     };
+
+    <b>let</b> auth_key = validator::get_authentication_key_from_authenticator_payload(&authenticator_payload);
 
     <b>let</b> session_key_option = <a href="session_key.md#0x3_session_key_get_session_key">get_session_key</a>(ctx, sender_addr, auth_key);
     <b>if</b> (<a href="_is_none">option::is_none</a>(&session_key_option)){
@@ -388,15 +399,10 @@ If the session key is expired or invalid, abort the tx, otherwise return option:
     };
     <b>let</b> <a href="session_key.md#0x3_session_key">session_key</a> = <a href="_extract">option::extract</a>(&<b>mut</b> session_key_option);
     <b>assert</b>!(!<a href="session_key.md#0x3_session_key_is_expired">is_expired</a>(ctx, &<a href="session_key.md#0x3_session_key">session_key</a>), <a href="_permission_denied">error::permission_denied</a>(<a href="session_key.md#0x3_session_key_ESessionIsExpired">ESessionIsExpired</a>));
-    <b>assert</b>!(<a href="session_key.md#0x3_session_key">session_key</a>.scheme == scheme, <a href="_invalid_argument">error::invalid_argument</a>(<a href="session_key.md#0x3_session_key_ESessionKeyIsInvalid">ESessionKeyIsInvalid</a>));
-    //TODO validate session scopes
 
-    <b>if</b>(scheme == <a href="ed25519_validator.md#0x3_ed25519_validator_scheme">ed25519_validator::scheme</a>()){
-        <a href="ed25519_validator.md#0x3_ed25519_validator_validate_signature">ed25519_validator::validate_signature</a>(&authenticator_payload, &<a href="_tx_hash">storage_context::tx_hash</a>(ctx));
-    }<b>else</b>{
-        //TODO support other built-in validators
-        <b>abort</b> 1
-    };
+    <b>assert</b>!(<a href="session_key.md#0x3_session_key_in_session_scope">in_session_scope</a>(ctx, &<a href="session_key.md#0x3_session_key">session_key</a>), <a href="_permission_denied">error::permission_denied</a>(<a href="session_key.md#0x3_session_key_EFunctionCallBeyondSessionScope">EFunctionCallBeyondSessionScope</a>));
+
+    validator::validate_signature(&authenticator_payload, &<a href="_tx_hash">storage_context::tx_hash</a>(ctx));
     <a href="_some">option::some</a>(auth_key)
 }
 </code></pre>

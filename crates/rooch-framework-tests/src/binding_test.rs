@@ -4,8 +4,8 @@
 use anyhow::{bail, Result};
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_store::MoveOSStore;
-use moveos_types::module_binding::{ModuleBundle, MoveFunctionCaller};
-use rooch_executor::actor::executor::ExecutorActor;
+use moveos_types::module_binding::{ModuleBinding, MoveFunctionCaller};
+use rooch_executor::actor::{executor::ExecutorActor, messages::ExecuteTransactionResult};
 use rooch_store::RoochStore;
 use rooch_types::transaction::AbstractTransaction;
 
@@ -21,14 +21,13 @@ impl RustBindingTest {
         Ok(Self { executor })
     }
 
-    pub fn as_module_bundle<'a, M: ModuleBundle<'a>>(&'a self) -> M {
-        self.executor.moveos().as_module_bundle::<M>()
+    pub fn as_module_bundle<'a, M: ModuleBinding<'a>>(&'a self) -> M {
+        self.executor.moveos().as_module_binding::<M>()
     }
 
     //TODO let the module bundle to execute the function
     pub fn execute<T: AbstractTransaction>(&mut self, tx: T) -> Result<()> {
-        let verified_tx = self.executor.validate(tx)?;
-        let execute_result = self.executor.execute(verified_tx)?;
+        let execute_result = self.execute_as_result(tx)?;
         if execute_result.transaction_info.status != KeptVMStatus::Executed {
             bail!(
                 "tx should success, error: {:?}",
@@ -36,5 +35,13 @@ impl RustBindingTest {
             );
         }
         Ok(())
+    }
+
+    pub fn execute_as_result<T: AbstractTransaction>(
+        &mut self,
+        tx: T,
+    ) -> Result<ExecuteTransactionResult> {
+        let verified_tx = self.executor.validate(tx)?;
+        self.executor.execute(verified_tx)
     }
 }

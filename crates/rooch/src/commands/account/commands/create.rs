@@ -23,6 +23,7 @@ use rooch_key::keystore::{AccountKeystore, Keystore};
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_types::{
+    account::AccountModule,
     address::RoochAddress,
     crypto::BuiltinScheme,
     error::{RoochError, RoochResult},
@@ -66,12 +67,11 @@ impl CreateCommand {
         );
         println!("Secret Recovery Phrase : [{phrase}]");
 
-        let create_account_entry_function = CREATE_ACCOUNT_ENTRY_FUNCTION.clone();
-        let action = MoveAction::new_function_call(
-            create_account_entry_function,
-            vec![],
-            vec![bcs::to_bytes(&new_address).unwrap()],
-        );
+        // Obtain account address
+        let address = AccountAddress::from(new_address);
+
+        // Create account action
+        let action = AccountModule::create_account_action(address);
 
         let result = context
             .sign_and_execute(new_address, action, scheme)
@@ -79,10 +79,3 @@ impl CreateCommand {
         context.assert_execute_success(result)
     }
 }
-
-static CREATE_ACCOUNT_ENTRY_FUNCTION: Lazy<FunctionId> = Lazy::new(|| {
-    FunctionId::new(
-        ModuleId::new(ROOCH_FRAMEWORK_ADDRESS, Identifier::new("account").unwrap()),
-        Identifier::new("create_account_entry").unwrap(),
-    )
-});

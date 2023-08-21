@@ -31,6 +31,7 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 schemars = { workspace = true }
 serde_with = { workspace = true }
+log = { workspace = true }
 
 move-core-types = { workspace = true }
 move-resource-viewer = { workspace = true }
@@ -45,3 +46,4 @@ rooch-framework = { workspace = true }
 rooch-genesis = { workspace = true }
 rooch-store = { workspace = true }
 rooch-config = { workspace = true }
+accumulator = { workspace = true }

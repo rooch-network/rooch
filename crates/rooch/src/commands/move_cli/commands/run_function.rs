@@ -5,6 +5,7 @@ use crate::cli_types::{ArgWithType, CommandAction, TransactionOptions, WalletCon
 use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
+use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, TypeTagView};
 use rooch_types::{
     address::RoochAddress,
@@ -83,15 +84,24 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
             self.type_args.into_iter().map(Into::into).collect(),
             args,
         );
-        match self.tx_options.authenticator {
-            Some(authenticator) => {
+        match (self.tx_options.authenticator, self.tx_options.session_key) {
+            (Some(authenticator), _) => {
                 let tx_data = context.build_tx_data(sender, action).await?;
                 //TODO the authenticator usually is associalted with the RoochTransactinData
                 //So we need to find a way to let user generate the authenticator based on the tx_data.
                 let tx = RoochTransaction::new(tx_data, authenticator.into());
                 context.execute(tx).await
             }
-            None => {
+            (_, Some(session_key)) => {
+                let tx_data = context.build_tx_data(sender, action).await?;
+                let tx = context
+                    .config
+                    .keystore
+                    .sign_transaction_via_session_key(&sender, tx_data, &session_key)
+                    .map_err(|e| RoochError::SignMessageError(e.to_string()))?;
+                context.execute(tx).await
+            }
+            (None, None) => {
                 context
                     .sign_and_execute(sender, action, self.crypto_schemes)
                     .await

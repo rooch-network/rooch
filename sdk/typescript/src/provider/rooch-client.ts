@@ -5,7 +5,7 @@ import { HTTPTransport, RequestManager } from '@open-rpc/client-js'
 import { JsonRpcClient } from '../generated/client'
 import {
   // AnnotatedEventView,
-  AnnotatedFunctionReturnValueView,
+  AnnotatedFunctionResultView,
   // AnnotatedStateView,
   // EventFilterView,
   // FunctionCallView,
@@ -50,7 +50,7 @@ export class RoochClient {
     funcId: FunctionId,
     args?: Uint8Array[],
     tyArgs?: string[],
-  ): Promise<AnnotatedFunctionReturnValueView[]> {
+  ): Promise<AnnotatedFunctionResultView> {
     // let _args = args.map((v) => {
     //   let se = new BcsSerializer()
     //   typeTagToSCS(v).serialize(se)

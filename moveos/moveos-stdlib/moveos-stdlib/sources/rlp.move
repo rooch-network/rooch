@@ -2,7 +2,7 @@
 /// https://ethereum.org/nl/developers/docs/data-structures-and-encoding/rlp/
 module moveos_std::rlp{
 
-    public native fun to_bytes<MoveValue>(value: &MoveValue): vector<u8>;
+    native public fun to_bytes<MoveValue>(value: &MoveValue): vector<u8>;
     public(friend) native fun from_bytes<MoveValue>(bytes: &vector<u8>): MoveValue;
 
 }

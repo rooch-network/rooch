@@ -11,6 +11,7 @@ bcs = { workspace = true }
 tokio = { workspace = true }
 clap = { workspace = true }
 dirs = { workspace = true }
+futures = { workspace = true }
 tonic = { workspace = true }
 serde = { workspace = true }
 serde_with = { workspace = true }

@@ -1,72 +1,73 @@
-# Contributing to Rooch
+# Your First PR for Rooch
 
-Thank you for your interest in contributing to Rooch! There are many ways to contribute and we appreciate all of them.
+Rooch is an open-source project where everyone can contribute their code and make their creative ideas into a reality. This topic helps new contributors understand how to create a pull request for Rooch on GitHub and provides useful considerations for code contributions.
 
-- Communicating in our [Discord channel](https://discord.gg/kgXEmHGB), share your new ideas, talk technologies
-- Learning Rooch
-- Reporting bugs
-- Requesting new features
-- Submitting PRs
+## Prerequisites
 
-## Contributing via GitHub
+Rooch is written in Rust, to build Rooch from scratch you will need to install the following tools:
 
-To contribute to the Rooch source code or documentation, you need a GitHub account.
+* Git
+* Rust install with [rustup](https://rustup.rs/)
 
-There are usually two ways to submit a PR:
+## Pull Requests
 
-- One is to edit directly in the repository on the GitHub website, and after submitting the changes, push them directly to the main branch. This method is especially suitable for submitting simple PRs such as correcting typos. It is not recommended to use this method when multiple files are involved or there are many changes.
+### Submit a PR
 
-- Another way is to `fork` the Rooch repository under your own account, and `clone` it locally, and then push it to the upstream `main` branch (referring to the Rooch organization) after the modification is completed. The branch on your own GitHub is called a remote branch.
+1. Fork the `rooch` repo and create your branch from `main`.
+2. Open a regular [issue](https://github.com/rooch-network/rooch/issues/new) for binding the pull request.
+3. Submit a [Draft Pull Requests](https://github.blog/2019-02-14-introducing-draft-pull-requests/), tag your work in progress.
+4. If you have added code that should be tested, add unit tests.
+5. Change the status to “Ready for review”.
 
-## Detailed operation process of method 2
+### PR Title
 
-### Create a new fork
+Format: `<type>(<scope>): <subject>`
 
-First, create a fork of the `rooch` repository in your own account so that you can use your own copy.
+`<scope>` is optional
 
-1. Log in to your Github account.
-2. Browse the [Rooch repo](https://github.com/rooch-network/rooch) on GitHub.
-3. Select `Fork` in the upper right corner, then select `Create a new fork`.
-4. For **Owner**, select your username.
-5. For the **Repository name**, we recommend keeping the name `rooch`, but you can use any name.
-6. Optional. To contribute, you only need the main branch of the repository. To include all branches, uncheck the checkbox for **Copy the `main` branch only**.
-7. Click `Create fork`.
-
-### Clone your fork
-
-Next, clone the fork of the repository to your local repository.
-
-1. Open the repository page of your fork, and click the `Sync fork` button (no operation is usually required for the fork just now, and synchronization is only required if your forked repository commits lags behind the upstream repository).
-2. Click on `Code`, then click on `HTTPS` and copy the displayed web URL.
-3. Open a terminal session and navigate to the folder you want to use, then run the following command, replacing the URL with the one you copied from the GitHub page:
-
-```shell
-git clone https://github.com/<GITHUB-USER-NAME>/rooch.git` 
+```
+feat(rooch-da): add lifecycle in put policy
+^--^  ^------------^
+|     |
+|     +-> Summary in present tense.
+|
++-------> Type: rfc, feat, fix, refactor, ci, docs, chore
 ```
 
-### Create a new branch
+Types:
 
-After cloning is completed, you can modify any file in the `rooch` directory. By default, the clone is the default branch (can be set in GitHub), usually the `main` branch.
+* `rfc`: this PR proposes a new RFC
+* `feat`: this PR introduces a new feature to the codebase
+* `fix`: this PR patches a bug in codebase
+* `refactor`: this PR changes the code base without new features or bugfix
+* `ci`: this PR changes build/ci steps
+* `docs`: this PR changes the documents or websites
+* `chore`: this PR only has small changes that no need to record, like coding styles.
 
-Before making corresponding changes to Rooch's project, you need to perform **the most important step**: creating a new topic branch.
+### PR Template
 
-In general, it is not recommended to submit a PR to Rooch's upstream directly using the `main` branch, which is not conducive to the collaboration of Rooch maintainers with you.
+Rooch has a [Pull Request Template](.github/PULL_REQUEST_TEMPLATE.md):
 
-## Create a new pull request
+```
+## Summary
 
+Summary about this PR
 
-When you have completed the modification, submitted and pushed the changes to the remote repository, you can usually see a `Compare & pull request` pop-up button on the GitHub page, just click and fill in the corresponding information.
+Fixes #issue
+```
 
-The content is usually filled in automatically. If you feel that the title or the content description of this PR is not accurate enough, you can continue to modify it.
+You should not change the PR template context, but need to finish:
 
-After the modification is complete, click the `Create pull request` button below, and your PR will appear on Rooch's `Pull requests` page.
+* `Summary` - Describes what constitutes the Pull Request and what changes you have made to the code. For example, fixes which issue.
 
-## Submitting new issues
+## Issues
 
-Reporting issues and submitting feature requests is usually done by submitting corresponding issue posts on the `Issues` page.
+Rooch uses [GitHub issues](https://github.com/rooch-network/rooch/issues) to track bugs. Please include necessary information and instructions to reproduce your issue.
 
-**When you want to report a bug**, please open [Rooch's GitHub Issues page](https://github.com/rooch-network/rooch/issues). In the search bar above, simply search for your question, maybe the question you found may have been submitted by others, so avoid duplicating submissions.If there is no bug post you want to report, please click the `New issue` button on the upper right, enter a brief description of the current bug as the title, and fill in the **detailed description** of the current bug in the content box, including *your operating (system) environment*, *the version of Rooch used*, and *the process of reproducing the problem*, etc.
+## Documentations
 
-**When you want to request a new feature**, fill in the brief description of the feature on the title bar of the current Issues page as the title, and add `[Feature Request]` as the identifier before the title.
+All developer documentation is published on the Rooch developer site, [rooch.network](https://rooch.network/docs/introduction).
 
-After filling in the relevant information, click on `Lables` on the right, label it accordingly, and click on the `Submit new issue` button below.
+## Code of Conduct
+
+Please refer to the [Code of Conduct](CODE_OF_CONDUCT.md), which describes the expectations for interactions within the community.

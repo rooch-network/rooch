@@ -10,18 +10,20 @@ use crate::actor::messages::{
     GetTransactionInfosByTxHashMessage, GetTxSeqMappingByTxOrderMessage,
     ListAnnotatedStatesMessage, ListStatesMessage,
 };
-use anyhow::bail;
+use accumulator::inmemory::InMemoryAccumulator;
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use move_core_types::account_address::AccountAddress;
+use move_core_types::vm_status::VMStatus;
 use move_resource_viewer::MoveValueAnnotator;
 use moveos::moveos::MoveOS;
-use moveos_common::accumulator::InMemoryAccumulator;
+use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_store::transaction_store::TransactionStore;
 use moveos_store::MoveOSStore;
 use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event::EventHandle;
+use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::as_struct_tag;
@@ -46,6 +48,9 @@ pub struct ExecutorActor {
     rooch_store: RoochStore,
 }
 
+type ValidateAuthenticatorResult =
+    Result<(TxValidateResult, Vec<FunctionCall>, Vec<FunctionCall>), VMStatus>;
+
 impl ExecutorActor {
     pub fn new(moveos_store: MoveOSStore, rooch_store: RoochStore) -> Result<Self> {
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
@@ -65,7 +70,7 @@ impl ExecutorActor {
         multi_chain_address_sender: MultiChainAddress,
     ) -> Result<AccountAddress> {
         let resolved_sender = {
-            let address_mapping = self.moveos.as_module_bundle::<AddressMapping>();
+            let address_mapping = self.moveos.as_module_binding::<AddressMapping>();
             address_mapping.resovle_or_generate(multi_chain_address_sender)?
         };
 
@@ -75,14 +80,14 @@ impl ExecutorActor {
     pub fn validate<T: AbstractTransaction>(&self, tx: T) -> Result<VerifiedMoveOSTransaction> {
         let multi_chain_address_sender = tx.sender();
 
-        let resolved_sender = self.resolve_or_generate(multi_chain_address_sender.clone());
+        let resolved_sender = self.resolve_or_generate(multi_chain_address_sender.clone())?;
         let authenticator = tx.authenticator_info();
 
-        let mut moveos_tx = tx.construct_moveos_transaction(resolved_sender?)?;
+        let mut moveos_tx = tx.construct_moveos_transaction(resolved_sender)?;
 
-        let result = self.validate_authenticator(&moveos_tx.ctx, authenticator);
+        let vm_result = self.validate_authenticator(&moveos_tx.ctx, authenticator)?;
 
-        match result {
+        match vm_result {
             Ok((tx_validate_result, pre_execute_functions, post_execute_functions)) => {
                 // Add the original multichain address to the context
                 moveos_tx
@@ -100,12 +105,14 @@ impl ExecutorActor {
                 Ok(self.moveos.verify(moveos_tx)?)
             }
             Err(e) => {
-                //TODO handle the abort error code
-                //let status = explain_vm_status(self.db.get_state_store(), e.into_vm_status())?;
-                println!("validate failed: {:?}", e);
-                // If the error code is EUnsupportedScheme, then we can try to call the sender's validate function
-                // This is the Account Abstraction.
-                bail!("validate failed: {:?}", e)
+                let status_view = explain_vm_status(self.moveos.moveos_resolver(), e.clone())?;
+                log::warn!(
+                    "transaction validate vm error, tx_hash: {}, error:{:?}",
+                    moveos_tx.ctx.tx_hash(),
+                    status_view,
+                );
+                //TODO how to return the vm status to rpc client.
+                Err(e.into())
             }
         }
     }
@@ -114,41 +121,58 @@ impl ExecutorActor {
         &self,
         ctx: &TxContext,
         authenticator: AuthenticatorInfo,
-    ) -> Result<(TxValidateResult, Vec<FunctionCall>, Vec<FunctionCall>)> {
-        let tx_validator = self.moveos.as_module_bundle::<TransactionValidator>();
-        let tx_validate_result = tx_validator.validate(ctx, authenticator.clone())?;
-        let auth_validator_option = tx_validate_result.auth_validator();
-        match auth_validator_option {
-            Some(auth_validator) => {
-                let auth_validator_caller = AuthValidatorCaller::new(&self.moveos, auth_validator);
-                auth_validator_caller.validate(ctx, authenticator.authenticator.payload)?;
-                // pre_execute_function: TransactionValidator first, then AuthValidator
-                let pre_execute_functions = vec![
-                    TransactionValidator::pre_execute_function_call(),
-                    auth_validator_caller.pre_execute_function_call(),
-                ];
-                // post_execute_function: AuthValidator first, then TransactionValidator
-                let post_execute_functions = vec![
-                    auth_validator_caller.post_execute_function_call(),
-                    TransactionValidator::post_execute_function_call(),
-                ];
-                Ok((
-                    tx_validate_result,
-                    pre_execute_functions,
-                    post_execute_functions,
-                ))
+    ) -> Result<ValidateAuthenticatorResult> {
+        let tx_validator = self.moveos.as_module_binding::<TransactionValidator>();
+        let tx_validate_function_result = tx_validator
+            .validate(ctx, authenticator.clone())?
+            .into_result();
+        let vm_result = match tx_validate_function_result {
+            Ok(tx_validate_result) => {
+                let auth_validator_option = tx_validate_result.auth_validator();
+                match auth_validator_option {
+                    Some(auth_validator) => {
+                        let auth_validator_caller =
+                            AuthValidatorCaller::new(&self.moveos, auth_validator);
+                        let auth_validator_function_result = auth_validator_caller
+                            .validate(ctx, authenticator.authenticator.payload)?
+                            .into_result();
+                        match auth_validator_function_result {
+                            Ok(_) => {
+                                // pre_execute_function: TransactionValidator first, then AuthValidator
+                                let pre_execute_functions = vec![
+                                    TransactionValidator::pre_execute_function_call(),
+                                    auth_validator_caller.pre_execute_function_call(),
+                                ];
+                                // post_execute_function: AuthValidator first, then TransactionValidator
+                                let post_execute_functions = vec![
+                                    auth_validator_caller.post_execute_function_call(),
+                                    TransactionValidator::post_execute_function_call(),
+                                ];
+                                Ok((
+                                    tx_validate_result,
+                                    pre_execute_functions,
+                                    post_execute_functions,
+                                ))
+                            }
+                            Err(vm_status) => Err(vm_status),
+                        }
+                    }
+                    None => {
+                        let pre_execute_functions =
+                            vec![TransactionValidator::pre_execute_function_call()];
+                        let post_execute_functions =
+                            vec![TransactionValidator::post_execute_function_call()];
+                        Ok((
+                            tx_validate_result,
+                            pre_execute_functions,
+                            post_execute_functions,
+                        ))
+                    }
+                }
             }
-            None => {
-                let pre_execute_functions = vec![TransactionValidator::pre_execute_function_call()];
-                let post_execute_functions =
-                    vec![TransactionValidator::post_execute_function_call()];
-                Ok((
-                    tx_validate_result,
-                    pre_execute_functions,
-                    post_execute_functions,
-                ))
-            }
-        }
+            Err(vm_status) => Err(vm_status),
+        };
+        Ok(vm_result)
     }
 
     pub fn get_rooch_store(&self) -> RoochStore {
@@ -222,20 +246,28 @@ impl Handler<ExecuteViewFunctionMessage> for ExecutorActor {
         &mut self,
         msg: ExecuteViewFunctionMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Vec<AnnotatedFunctionReturnValue>, anyhow::Error> {
+    ) -> Result<AnnotatedFunctionResult, anyhow::Error> {
         let resoler = self.moveos.moveos_resolver();
 
-        self.moveos
-            .execute_view_function(msg.call)?
-            .into_iter()
-            .map(|v| {
-                let move_value = resoler.view_value(&v.type_tag, &v.value)?;
-                Ok(AnnotatedFunctionReturnValue {
-                    value: v,
-                    move_value,
-                })
-            })
-            .collect::<Result<Vec<AnnotatedFunctionReturnValue>, anyhow::Error>>()
+        let function_result = self.moveos.execute_view_function(msg.call);
+        Ok(AnnotatedFunctionResult {
+            vm_status: function_result.vm_status,
+            return_values: match function_result.return_values {
+                Some(values) => Some(
+                    values
+                        .into_iter()
+                        .map(|v| {
+                            let move_value = resoler.view_value(&v.type_tag, &v.value)?;
+                            Ok(AnnotatedFunctionReturnValue {
+                                value: v,
+                                move_value,
+                            })
+                        })
+                        .collect::<Result<Vec<AnnotatedFunctionReturnValue>, anyhow::Error>>()?,
+                ),
+                None => None,
+            },
+        })
     }
 }
 

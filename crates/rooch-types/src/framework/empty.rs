@@ -5,7 +5,7 @@ use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use anyhow::Result;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use moveos_types::{
-    module_binding::{ModuleBundle, MoveFunctionCaller},
+    module_binding::{ModuleBinding, MoveFunctionCaller},
     move_types::FunctionId,
     transaction::FunctionCall,
     tx_context::TxContext,
@@ -23,9 +23,12 @@ impl<'a> Empty<'a> {
         let empty_call =
             FunctionCall::new(Self::function_id(Self::EMPTY_FUNCTION_NAME), vec![], vec![]);
 
-        self.caller.call_function(ctx, empty_call).map(|values| {
-            debug_assert!(values.is_empty(), "should not have return values");
-        })?;
+        self.caller
+            .call_function(ctx, empty_call)?
+            .into_result()
+            .map(|values| {
+                debug_assert!(values.is_empty(), "should not have return values");
+            })?;
         Ok(())
     }
 
@@ -34,7 +37,7 @@ impl<'a> Empty<'a> {
     }
 }
 
-impl<'a> ModuleBundle<'a> for Empty<'a> {
+impl<'a> ModuleBinding<'a> for Empty<'a> {
     const MODULE_NAME: &'static IdentStr = ident_str!("empty");
     const MODULE_ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
 

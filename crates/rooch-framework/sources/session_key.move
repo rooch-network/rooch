@@ -6,18 +6,22 @@ module rooch_framework::session_key {
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::account_storage;
     use moveos_std::table::{Self, Table};
+    use moveos_std::tx_meta::{Self, FunctionCallMeta};
     use rooch_framework::auth_validator;
-    use rooch_framework::ed25519_validator;
-    // use rooch_framework::multi_ed25519_validator;
-    // use rooch_framework::ecdsa_validator;
-    // use rooch_framework::schnorr_validator;
+    use rooch_framework::native_validator::{Self as validator};
 
     friend rooch_framework::transaction_validator;
 
+    /// Create session key in this context is not allowed
     const ESessionKeyCreatePermissionDenied: u64 = 1;
+    /// The session key already exists
     const ESessionKeyAlreadyExists: u64 = 2;
+    /// The session key is invalid
     const ESessionKeyIsInvalid: u64 = 3;
+    /// The session is expired
     const ESessionIsExpired: u64 = 4;
+    /// The function call is beyond the session's scope
+    const EFunctionCallBeyondSessionScope: u64 = 5;
 
     /// The session's scope
     struct SessionScope has store,copy,drop {
@@ -31,7 +35,6 @@ module rooch_framework::session_key {
 
     struct SessionKey has store,copy,drop {
         authentication_key: vector<u8>,
-        scheme: u64,
         scopes: vector<SessionScope>,
         /// The session key's expiration time period, in seconds, 0 means never expired
         expiration_time: u64,
@@ -45,7 +48,15 @@ module rooch_framework::session_key {
         keys: Table<vector<u8>, SessionKey>,
     }
 
-    public fun is_expired(_ctx: &StorageContext, _session_key: &SessionKey) : bool {
+    public fun new_session_scope(module_address: address, module_name: std::ascii::String, function_name: std::ascii::String) : SessionScope {
+        SessionScope {
+            module_address: module_address,
+            module_name: module_name,
+            function_name: function_name,
+        }
+    }
+
+    fun is_expired(_ctx: &StorageContext, _session_key: &SessionKey) : bool {
         //TODO check the session key is expired or not after the timestamp is supported
         return false
     }
@@ -67,7 +78,7 @@ module rooch_framework::session_key {
         }
     }
 
-    public fun create_session_key(ctx: &mut StorageContext, sender: &signer, authentication_key: vector<u8>, scheme: u64, scopes: vector<SessionScope>, expiration_time: u64, max_inactive_interval: u64) {
+    public fun create_session_key(ctx: &mut StorageContext, sender: &signer, authentication_key: vector<u8>, scopes: vector<SessionScope>, expiration_time: u64, max_inactive_interval: u64) {
         //Can not create new session key by the other session key
         assert!(!auth_validator::is_validate_via_session_key(ctx), error::permission_denied(ESessionKeyCreatePermissionDenied));
         let sender_addr = signer::address_of(sender);
@@ -75,7 +86,6 @@ module rooch_framework::session_key {
 
         let session_key = SessionKey {
             authentication_key: authentication_key,
-            scheme: scheme,
             scopes: scopes,
             expiration_time: expiration_time,
             //TODO set the last active time to now
@@ -91,8 +101,8 @@ module rooch_framework::session_key {
         table::add(&mut session_keys.keys, authentication_key, session_key);
     }
 
-    public entry fun create_session_key_entry(ctx: &mut StorageContext, sender: &signer, authentication_key: vector<u8>, scheme: u64, scope_module_address: address, scope_module_name: std::ascii::String, scope_function_name: std::ascii::String,expiration_time: u64, max_inactive_interval: u64) {
-        create_session_key(ctx, sender, authentication_key, scheme, vector::singleton(SessionScope{
+    public entry fun create_session_key_entry(ctx: &mut StorageContext, sender: &signer, authentication_key: vector<u8>, scope_module_address: address, scope_module_name: std::ascii::String, scope_function_name: std::ascii::String,expiration_time: u64, max_inactive_interval: u64) {
+        create_session_key(ctx, sender, authentication_key, vector::singleton(SessionScope{
             module_address: scope_module_address,
             module_name: scope_module_name,
             function_name: scope_function_name,
@@ -107,12 +117,12 @@ module rooch_framework::session_key {
         if (!account_storage::global_exists<SessionKeys>(ctx, sender_addr)){
             return option::none()
         };
-        let auth_key = if(scheme == ed25519_validator::scheme()){
-            ed25519_validator::get_authentication_key_from_authenticator_payload(&authenticator_payload)
-        }else{
-            //TODO support other built-in validators
+        // We only support native validator for SessionKey now
+        if(scheme != validator::scheme()){
             return option::none()
         };
+
+        let auth_key = validator::get_authentication_key_from_authenticator_payload(&authenticator_payload);
         
         let session_key_option = get_session_key(ctx, sender_addr, auth_key);
         if (option::is_none(&session_key_option)){
@@ -120,16 +130,51 @@ module rooch_framework::session_key {
         };
         let session_key = option::extract(&mut session_key_option);
         assert!(!is_expired(ctx, &session_key), error::permission_denied(ESessionIsExpired));
-        assert!(session_key.scheme == scheme, error::invalid_argument(ESessionKeyIsInvalid));
-        //TODO validate session scopes
+        
+        assert!(in_session_scope(ctx, &session_key), error::permission_denied(EFunctionCallBeyondSessionScope));
 
-        if(scheme == ed25519_validator::scheme()){
-            ed25519_validator::validate_signature(&authenticator_payload, &storage_context::tx_hash(ctx));
-        }else{ 
-            //TODO support other built-in validators
-            abort 1
-        };
+        validator::validate_signature(&authenticator_payload, &storage_context::tx_hash(ctx));
         option::some(auth_key)
+    }
+
+    /// Check the current tx is in the session scope or not
+    fun in_session_scope(ctx: &StorageContext, session_key: &SessionKey): bool{
+        let idx = 0;
+        let tx_meta = storage_context::tx_meta(ctx);
+        
+        let function_call_meta_option = tx_meta::function_meta(&tx_meta);
+        // session key can not be used to execute script or publish module
+        // only support function call now
+        if (option::is_none(&function_call_meta_option)){
+            return false
+        };
+        let function_call_meta = option::extract(&mut function_call_meta_option);
+        while(idx < vector::length(&session_key.scopes)){
+            let scope = vector::borrow(&session_key.scopes, idx);
+            if(check_scope_match(scope, &function_call_meta)){
+                return true
+            };
+            idx = idx + 1;
+        };
+        false
+    }
+
+    fun is_asterisk(str: &std::ascii::String) : bool {
+        let asterisk = std::ascii::string(b"*");
+        str == &asterisk
+    }
+
+    fun check_scope_match(scope: &SessionScope, function_call_meta:&FunctionCallMeta) : bool {
+        if (&scope.module_address != tx_meta::function_meta_module_address(function_call_meta)){
+            return false
+        };
+        if (!is_asterisk(&scope.module_name) && &scope.module_name != tx_meta::function_meta_module_name(function_call_meta)){
+            return false
+        };
+        if (!is_asterisk(&scope.function_name) && &scope.function_name != tx_meta::function_meta_function_name(function_call_meta)){
+            return false
+        };
+        true
     }
 
     public(friend) fun active_session_key(ctx: &mut StorageContext, authentication_key: vector<u8>) {
@@ -140,5 +185,45 @@ module rooch_framework::session_key {
         let session_key = table::borrow_mut(&mut session_keys.keys, authentication_key);
         //TODO set the last active time to now when the timestamp is supported
         session_key.last_active_time = session_key.last_active_time + 1;
+    }
+
+    #[test]
+    fun test_check_scope_match() {
+        let scope = new_session_scope(@0x1, std::ascii::string(b"test"), std::ascii::string(b"test"));
+        let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::ascii::string(b"test"), std::ascii::string(b"test"));
+        assert!(check_scope_match(&scope, &function_call_meta), 1000);
+        
+        let function_call_meta = tx_meta::new_function_call_meta(@0x2, std::ascii::string(b"test"), std::ascii::string(b"test"));
+        assert!(!check_scope_match(&scope, &function_call_meta), 1001);
+
+        let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::ascii::string(b"test1"), std::ascii::string(b"test"));
+        assert!(!check_scope_match(&scope, &function_call_meta), 1002);
+
+        let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::ascii::string(b"test"), std::ascii::string(b"test1"));
+        assert!(!check_scope_match(&scope, &function_call_meta), 1003);
+    }
+
+     #[test]
+    fun test_check_scope_match_asterisk() {
+        let scope = new_session_scope(@0x1, std::ascii::string(b"*"), std::ascii::string(b"*"));
+        
+        let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::ascii::string(b"test"), std::ascii::string(b"test"));
+        assert!(check_scope_match(&scope, &function_call_meta), 1000);
+
+        let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::ascii::string(b"test2"), std::ascii::string(b"test2"));
+        assert!(check_scope_match(&scope, &function_call_meta), 1001);
+        
+        let function_call_meta = tx_meta::new_function_call_meta(@0x2, std::ascii::string(b"test"), std::ascii::string(b"test"));
+        assert!(!check_scope_match(&scope, &function_call_meta), 1002);
+
+        let scope = new_session_scope(@0x1, std::ascii::string(b"test"), std::ascii::string(b"*"));
+
+        let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::ascii::string(b"test"), std::ascii::string(b"test1"));
+        assert!(check_scope_match(&scope, &function_call_meta), 1003);
+
+        let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::ascii::string(b"test1"), std::ascii::string(b"test"));
+        assert!(!check_scope_match(&scope, &function_call_meta), 1004);
+
+        
     }
 }

@@ -9,7 +9,8 @@ use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
 };
 use moveos_types::{
-    module_binding::{ModuleBundle, MoveFunctionCaller},
+    function_return_value::DecodedFunctionResult,
+    module_binding::{ModuleBinding, MoveFunctionCaller},
     move_types::FunctionId,
     transaction::FunctionCall,
     tx_context::TxContext,
@@ -25,7 +26,11 @@ impl<'a> TransactionValidator<'a> {
     pub const PRE_EXECUTE_FUNCTION_NAME: &IdentStr = ident_str!("pre_execute");
     pub const POST_EXECUTE_FUNCTION_NAME: &IdentStr = ident_str!("post_execute");
 
-    pub fn validate(&self, ctx: &TxContext, auth: AuthenticatorInfo) -> Result<TxValidateResult> {
+    pub fn validate(
+        &self,
+        ctx: &TxContext,
+        auth: AuthenticatorInfo,
+    ) -> Result<DecodedFunctionResult<TxValidateResult>> {
         let tx_validator_call = FunctionCall::new(
             Self::function_id(Self::VALIDATE_FUNCTION_NAME),
             vec![],
@@ -43,11 +48,11 @@ impl<'a> TransactionValidator<'a> {
         );
         let auth_validator =
             self.caller
-                .call_function(ctx, tx_validator_call)
-                .map(|mut values| {
+                .call_function(ctx, tx_validator_call)?
+                .decode(|mut values| {
                     let value = values.pop().expect("should have one return value");
-                    bcs::from_bytes::<TxValidateResult>(&value.value)
-                        .expect("should be a valid TxValidateResult")
+                    let result = bcs::from_bytes::<TxValidateResult>(&value.value)?;
+                    Ok(result)
                 })?;
         Ok(auth_validator)
     }
@@ -69,7 +74,7 @@ impl<'a> TransactionValidator<'a> {
     }
 }
 
-impl<'a> ModuleBundle<'a> for TransactionValidator<'a> {
+impl<'a> ModuleBinding<'a> for TransactionValidator<'a> {
     const MODULE_NAME: &'static IdentStr = ident_str!("transaction_validator");
     const MODULE_ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
 

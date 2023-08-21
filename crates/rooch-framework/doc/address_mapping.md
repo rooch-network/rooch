@@ -46,7 +46,7 @@
 
 <dl>
 <dt>
-<code>coin_id: u32</code>
+<code>coin_id: u64</code>
 </dt>
 <dd>
 
@@ -98,7 +98,7 @@
 
 
 
-<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_COIN_TYPE_BTC">COIN_TYPE_BTC</a>: u32 = 0;
+<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_COIN_TYPE_BTC">COIN_TYPE_BTC</a>: u64 = 0;
 </code></pre>
 
 
@@ -107,7 +107,7 @@
 
 
 
-<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_COIN_TYPE_ETH">COIN_TYPE_ETH</a>: u32 = 60;
+<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_COIN_TYPE_ETH">COIN_TYPE_ETH</a>: u64 = 60;
 </code></pre>
 
 
@@ -116,7 +116,7 @@
 
 
 
-<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_COIN_TYPE_NOSTR">COIN_TYPE_NOSTR</a>: u32 = 1237;
+<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_COIN_TYPE_NOSTR">COIN_TYPE_NOSTR</a>: u64 = 1237;
 </code></pre>
 
 
@@ -125,7 +125,7 @@
 
 
 
-<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_COIN_TYPE_ROH">COIN_TYPE_ROH</a>: u32 = 20230101;
+<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_COIN_TYPE_ROH">COIN_TYPE_ROH</a>: u64 = 20230101;
 </code></pre>
 
 

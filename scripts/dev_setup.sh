@@ -2,6 +2,9 @@
 # Copyright (c) RoochNetwork
 # SPDX-License-Identifier: Apache-2.0
 # This script sets up the environment for installing necessary dependencies.
+# Copyright © Aptos Foundation
+# Parts of the project are originally copyright © Meta Platforms, Inc.
+# SPDX-License-Identifier: Apache-2.0
 #
 # Usage ./dev_setup.sh <options>
 #   v - verbose, print all statements

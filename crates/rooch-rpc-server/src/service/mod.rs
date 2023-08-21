@@ -7,7 +7,7 @@ use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
 use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event_filter::EventFilter;
-use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
+use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
 use rooch_executor::proxy::ExecutorProxy;
@@ -69,7 +69,7 @@ impl RpcService {
     pub async fn execute_view_function(
         &self,
         function_call: FunctionCall,
-    ) -> Result<Vec<AnnotatedFunctionReturnValue>> {
+    ) -> Result<AnnotatedFunctionResult> {
         let resp = self.executor.execute_view_function(function_call).await?;
         Ok(resp)
     }

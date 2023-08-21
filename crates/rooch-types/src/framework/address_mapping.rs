@@ -3,10 +3,10 @@
 
 use crate::address::{MultiChainAddress, RoochAddress};
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
-use anyhow::Result;
+use anyhow::{Ok, Result};
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use moveos_types::{
-    module_binding::{ModuleBundle, MoveFunctionCaller},
+    module_binding::{ModuleBinding, MoveFunctionCaller},
     move_option::MoveOption,
     state::MoveStructState,
     transaction::FunctionCall,
@@ -33,12 +33,17 @@ impl<'a> AddressMapping<'a> {
                 vec![],
                 vec![multichain_address.to_bytes()],
             );
-            self.caller.call_function(&ctx, call).map(|values| {
-                let value = values.get(0).expect("Expected return value");
-                let result = MoveOption::<AccountAddress>::from_bytes(&value.value)
-                    .expect("Expected Option<address>");
-                result.into()
-            })
+            let result = self
+                .caller
+                .call_function(&ctx, call)?
+                .into_result()
+                .map(|values| {
+                    let value = values.get(0).expect("Expected return value");
+                    let result = MoveOption::<AccountAddress>::from_bytes(&value.value)
+                        .expect("Expected Option<address>");
+                    result.into()
+                })?;
+            Ok(result)
         }
     }
 
@@ -56,15 +61,20 @@ impl<'a> AddressMapping<'a> {
                 vec![],
                 vec![multichain_address.to_bytes()],
             );
-            self.caller.call_function(&ctx, call).map(|values| {
-                let value = values.get(0).expect("Expected return value");
-                AccountAddress::from_bytes(&value.value).expect("Expected return address")
-            })
+            let address = self
+                .caller
+                .call_function(&ctx, call)?
+                .into_result()
+                .map(|values| {
+                    let value = values.get(0).expect("Expected return value");
+                    AccountAddress::from_bytes(&value.value).expect("Expected return address")
+                })?;
+            Ok(address)
         }
     }
 }
 
-impl<'a> ModuleBundle<'a> for AddressMapping<'a> {
+impl<'a> ModuleBinding<'a> for AddressMapping<'a> {
     const MODULE_NAME: &'static IdentStr = ident_str!("address_mapping");
     const MODULE_ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
 

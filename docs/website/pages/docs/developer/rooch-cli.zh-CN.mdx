@@ -1,12 +1,12 @@
 # Rooch CLI
 
-了解如何设置、配置和使用 Rooch 命令行界面（CLI）。您可以通过 Rooch CLI 来试验 Rooch 特性。
+了解如何设置、配置和使用 Rooch 命令行界面（CLI）。您可以通过 Rooch CLI 来试验 Rooch 的特性。
 
-## Set up
+## 安装
 
-在安装 Rooch 时，将安装 Rooch CLI。有关先决条件和安装说明，请参阅[安装](./installation.zh-CN.mdx)主题。
+安装 Rooch 时，将安装 Rooch CLI。有关先决条件和安装说明，请参阅[安装](./installation.zh-CN.mdx)主题。
 
-## Using the Rooch CLI
+## 使用 Rooch 的命令行界面
 
 Rooch CLI 支持以下命令:
 
@@ -36,17 +36,17 @@ rooch <SUBCOMMAND>
 
 使用 `rooch -h` 来查看支持的命令列表。
 
-使用 `rooch help <command>` 来查看每个命令的更多信息。
+使用 `rooch help <COMMAND>` 来查看指定命令的更多信息。
 
-## 初始化命令
+## 初始化 Rooch 配置
 
-默认情况下，配置文件保存在您的 `Home` 目录。
+默认情况下，Rooch 的配置文件保存在您的 `home` 目录。
 
 使用 `rooch init` 来初始化 Rooch 账户，配置文件的位置通过 `--config-dir` 指定。
 
-响应类似于以下内容:
+响应类似于以下内容：
 
-```
+```shell
 Creating config file ["/Users/sven/.rooch/rooch_config/rooch.yaml"] with default (local) server and ed25519 key scheme.
 Generated new keypair for address with scheme "ed25519" [0xeb417f9091c77c8c1a9c6a7683ee1eb5883fbae5128eae5ab414c0de5f050d08]
 Secret Recovery Phrase : [grab infant behave ugly erosion grief file arrange unit ship iron garage]
@@ -59,9 +59,9 @@ Secret Recovery Phrase : [grab infant behave ugly erosion grief file arrange uni
 
 **重要提示**：每次启动 Rooch 服务器时，该网络都作为一个新网络启动，没有以前的数据。
 
-响应类似于以下内容:
+响应类似于以下内容：
 
-```
+```shell
 Documentation generation successful!
 2023-07-17T05:34:49.963869Z  INFO rooch_rpc_server: JSON-RPC HTTP Server start listening 0.0.0.0:50051
 2023-07-17T05:34:49.963893Z  INFO rooch_rpc_server: Available JSON-RPC methods : ["wallet_accounts", "eth_blockNumber", "eth_getBalance", "eth_gasPrice", "net_version", "eth_getTransactionCount", "eth_sendTransaction", "rooch_sendRawTransaction", "rooch_getAnnotatedStates", "eth_sendRawTransaction", "rooch_getTransactionByIndex", "rooch_executeRawTransaction", "rooch_getEventsByEventHandle", "rooch_getTransactionByHash", "rooch_executeViewFunction", "eth_getBlockByNumber", "rooch_getEvents", "eth_feeHistory", "eth_getTransactionByHash", "eth_getBlockByHash", "eth_getTransactionReceipt", "rooch_getTransactionInfosByTxOrder", "eth_estimateGas", "eth_chainId", "rooch_getTransactionInfosByTxHash", "wallet_sign", "rooch_getStates"]
@@ -69,7 +69,7 @@ Documentation generation successful!
 
 ## 更多示例
 
-### Account
+### 账户
 
 Rooch 账户相关的命令通过 `rooch account` 调用，账户命令支持以下子命令：
 
@@ -98,11 +98,11 @@ SUBCOMMANDS:
 
 使用 `rooch account -h` 查看支持的子命令列表。
 
-使用 `rooch account help <subcommand>` 查看每个子命令的更多信息。
+使用 `rooch account help <SUBCOMMAND>` 查看指定子命令的更多信息。
 
-#### Account Create
+#### 创建账户
 
-使用 `rooch account create` 子命令在 Rooch 网络上创建账户。
+使用 `rooch account create` 命令在 Rooch 网络上创建账户。
 
 Rooch CLI 创建账户的命令支持以下选项：
 
@@ -124,11 +124,11 @@ OPTIONS:
             Print help information
 ```
 
-如果不输入 `--config-dir` 选项来指定路径，账户将在默认的本地文件路径下创建，当前路径为 `~/.rooch/rooch_config/`。
+如果不通过 `--config-dir` 选项来指定路径，则账户将在默认的本地文件路径下创建，当前路径为 `~/.rooch/rooch_config/`。
 
 值得注意的是，要创建账户，配置文件 `rooch.yaml` 必须存在。`rooch.yaml` 文件可以通过 `rooch init` 命令创建。
 
-以下是创建账户时使用和不使用选项 `--config-dir` 的示例：
+以下是创建账户时使用和不使用 `--config-dir` 选项的示例：
 
 ```shell
 rooch account create
@@ -194,13 +194,13 @@ Secret Recovery Phrase : [desert hedgehog moral long cost husband timber someone
 }
 ```
 
-在第 1-2 行，创建子命令将生成一个新的密钥对，并根据方案 ed25519 创建一个地址。
+在第 1-2 行，`rooch account create` 命令将生成一个新的密钥对，并根据 `ed25519` 方案创建一个地址。
 
-在第 3 行，一个密钥恢复短语或助记符短语被赋予一个地址，用于恢复地址。
+在第 3 行，打印了一个与上面地址关联的秘密恢复短语或助记符短语，用于恢复地址。助记词相当于账户的密码，拥有了助记词就能控制整个账户。
 
-第 4-57 行，向 Rooch 区块链 RPC 服务器发送事务，并在此返回相应的响应。
+在第 4-57 行，向 Rooch 区块链 RPC 服务器发送交易，并在此返回相应的响应。
 
-该事务所做的更改如下：
+该交易所做的更改如下：
 
 ```shell
 "0x0000000000000000000000000000000000000000000000000000000000000000": {
@@ -230,7 +230,7 @@ Secret Recovery Phrase : [desert hedgehog moral long cost husband timber someone
 
 第二个变化表示为刚刚创建的地址创建了一个账户。
 
-还可以为账户创建命令指定一个选项 `--config-dir`，以指定配置目录。
+还可以为账户创建命令指定 `--config-dir` 选项，以指定配置目录。
 
 ```shell
 rooch account create --config-dir ~/.rooch/rooch_config/
@@ -242,9 +242,9 @@ rooch account create --config-dir ~/.rooch/rooch_config/
 Error: Networking or low-level protocol error: HTTP error: error trying to connect: tcp connect error: Connection refused (os error 61)
 ```
 
-#### Account Switch
+#### 切换账户
 
-在 `rooch init` 命令后使用 `rooch account create` 创建的账户有两个可用账户。
+在 `rooch init` 命令后会创建一个默认的账户，使用 `rooch account create` 创建了另一个账户，此时 `rooch.keystore` 保存有两个可用账户。
 
 使用 `rooch account switch` 命令可在两个账户间切换。
 
@@ -263,7 +263,7 @@ OPTIONS:
     -h, --help                       Print help information
 ```
 
-使用 `--address` 或 `-a` 标志指定要切换到的地址。
+使用 `--address` 或 `-a` 选项指定要切换到的地址。
 
 下面是切换到创建的地址的示例：
 
@@ -277,7 +277,7 @@ rooch account switch --address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a
 The active account was successfully switched to `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a`
 ```
 
-#### Account List
+#### 列出账户
 
 使用 `rooch account list` 命令检查账户状态。
 
@@ -297,7 +297,9 @@ OPTIONS:
 
 使用帐户列表检查地址是否已成功切换为 `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a`。
 
-```> rooch account list```
+```shell
+rooch account list
+```
 
 ```shell
                      Rooch Address (Ed25519)                       |               Public Key (Base64)                |      Scheme      | Active Address
@@ -306,9 +308,9 @@ OPTIONS:
 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a |   AITD/sv7fsNvqwtT53l0PpsLjJdR6LIo1lVqy+PKL1Aa   |     ed25519      |     True    
 ```
 
-由于 Rooch 地址 `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a` 的 Active Address 显示为 True，因此地址切换操作已得到确认。
+由于 Rooch 地址 `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a` 的 Active Address 显示为 `True`，因此地址切换操作已得到确认。
 
-#### Account Import
+#### 导入账户
 
 使用 `rooch account import` 命令从助记符短语中导入账户。
 
@@ -327,7 +329,7 @@ OPTIONS:
     -m, --mnemonic-phrase <MNEMONIC_PHRASE>
 ```
 
-使用 `--mnemonic-phrase` 或 `-m` 标志指定一个助记符短语来导入账户。账户地址将从助记符短语生成一个 ed25519 地址，并生成一个 ed25519 密钥对。
+使用 `--mnemonic-phrase` 或 `-m` 选项指定一个助记符短语来导入账户。账户地址将从助记符短语生成一个 ed25519 地址，并生成一个 ed25519 密钥对。
 
 从助记符短语导入账户。助记符短语由 `rooch init` 或 `rooch account create` 命令生成：
 
@@ -364,7 +366,7 @@ rooch account list
 
 值得注意的是，在使用 `rooch account import` 命令时，助记符短语应加引号，因为单词之间有空格。
 
-#### Account Update
+#### 更新账户
 
 使用 `rooch account update` 命令用来自助记符短语和方案的新密钥对更新地址。
 
@@ -395,7 +397,7 @@ OPTIONS:
             or schnorr) [possible values: ed25519, multi-ed25519, ecdsa, ecdsa-recoverable, schnorr]
 ```
 
-使用 `--address` 或 `-a`、`-mnemonic-phrase` 或 `-m`、`-scheme` 或 `-s` 标志组合更新帐户地址。
+使用 `--address` 或 `-a`、`-mnemonic-phrase` 或 `-m`、`-scheme` 或 `-s` 选项组合更新帐户地址。
 
 `<ADDRESS>` 可以取自现有地址。同样，`<MNEMONIC_PHRASE>` 也可以取自现有助记符短语。
 
@@ -459,11 +461,11 @@ rooch account list
 
 目前，认证密钥是由每个方案的公钥生成的地址，每次只存在一个认证密钥。
 
-#### Account Nullify
+#### 废弃账户地址
 
 使用 `rooch account nullify` 命令从账户地址中的方案中删除现有密钥对。
 
-Rooch CLI 的账户作废命令支持以下选项：
+Rooch CLI 的作废账户地址命令支持以下选项：
 
 ```shell
 rooch-account-nullify 
@@ -481,11 +483,11 @@ OPTIONS:
                                      ecdsa, ecdsa-recoverable, schnorr]
 ```
 
-使用 `--address` 或 `-a`、`--scheme` 或 `-s` 标志组合可使账户地址中的键对无效。
+使用 `--address` 或 `-a`、`--scheme` 或 `-s` 选项组合来作废账户地址中的密钥对。
 
 同样，`<ADDRESS>` 应是账户中现有的地址，`<CRYPTO_SCHEMES>` 应在可能的值中选择。
 
-下面是一个示例，用于使新添加的 ecdsa 方案的密钥对无效：
+下面是一个示例，作废使用 ecdsa 方案添加的密钥对：
 
 ```shell
 rooch account nullify --address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a --scheme ecdsa
@@ -514,7 +516,7 @@ rooch account list
 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a |   AITD/sv7fsNvqwtT53l0PpsLjJdR6LIo1lVqy+PKL1Aa   |     ed25519      |     True    
 ```
 
-命令行输出显示，通过向 Rooch 区块链 RPC 服务器发送交易，ecdsa 方案已从账户地址中删除，ecdsa 方案的验证密钥也已从发送者的账户存储中删除。
+命令行输出显示，通过向 Rooch 区块链 RPC 服务器发送交易，ecdsa 方案已从账户地址中删除，ecdsa 方案的认证密钥也已从发送者的账户存储中删除。
 
 同时，检查私钥是否已成功从 `rooch.keystore` 中删除：
 

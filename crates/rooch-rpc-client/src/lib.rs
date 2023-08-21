@@ -5,15 +5,17 @@ use anyhow::Result;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use moveos_types::{
     access_path::AccessPath,
+    function_return_value::FunctionResult,
+    module_binding::MoveFunctionCaller,
     state::{MoveStructType, State},
     transaction::FunctionCall,
+    tx_context::TxContext,
 };
-use rooch_rpc_api::jsonrpc_types::{EventPageView, StructTagView};
+use rooch_rpc_api::jsonrpc_types::{AnnotatedFunctionResultView, EventPageView, StructTagView};
 use rooch_rpc_api::{
     api::rooch_api::RoochAPIClient,
     jsonrpc_types::{
-        AnnotatedFunctionReturnValueView, AnnotatedStateView, ExecuteTransactionResponseView,
-        StateView, TransactionView,
+        AnnotatedStateView, ExecuteTransactionResponseView, StateView, TransactionView,
     },
 };
 use rooch_types::{
@@ -102,7 +104,7 @@ impl Client {
     pub async fn execute_view_function(
         &self,
         function_call: FunctionCall,
-    ) -> Result<Vec<AnnotatedFunctionReturnValueView>> {
+    ) -> Result<AnnotatedFunctionResultView> {
         self.rpc
             .http
             .execute_view_function(function_call.into())
@@ -164,5 +166,17 @@ impl Client {
             .get_events_by_event_handle(event_handle_type, cursor, limit)
             .await?;
         Ok(s)
+    }
+}
+
+impl MoveFunctionCaller for Client {
+    fn call_function(
+        &self,
+        _ctx: &TxContext,
+        function_call: FunctionCall,
+    ) -> Result<FunctionResult> {
+        let function_result =
+            futures::executor::block_on(self.execute_view_function(function_call))?;
+        function_result.try_into()
     }
 }

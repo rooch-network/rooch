@@ -19,12 +19,14 @@ and let developers can customize the storage
 -  [Function `tx_hash`](#0x2_storage_context_tx_hash)
 -  [Function `add`](#0x2_storage_context_add)
 -  [Function `get`](#0x2_storage_context_get)
+-  [Function `tx_meta`](#0x2_storage_context_tx_meta)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="object_storage.md#0x2_object_storage">0x2::object_storage</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
+<b>use</b> <a href="tx_meta.md#0x2_tx_meta">0x2::tx_meta</a>;
 </code></pre>
 
 
@@ -311,6 +313,30 @@ Get a value from the context map
 
 <pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_get">get</a>&lt;T: drop + store + <b>copy</b>&gt;(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>): Option&lt;T&gt; {
     <a href="tx_context.md#0x2_tx_context_get">tx_context::get</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_storage_context_tx_meta"></a>
+
+## Function `tx_meta`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta">tx_meta</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): <a href="tx_meta.md#0x2_tx_meta_TxMeta">tx_meta::TxMeta</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta">tx_meta</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>): TxMeta {
+    <a href="tx_context.md#0x2_tx_context_tx_meta">tx_context::tx_meta</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
 }
 </code></pre>
 

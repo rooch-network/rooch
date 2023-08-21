@@ -8,7 +8,7 @@ use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
 use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event_filter::EventFilter;
-use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
+use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::transaction::FunctionCall;
@@ -36,6 +36,7 @@ pub struct ExecuteTransactionMessage {
     pub tx: VerifiedMoveOSTransaction,
 }
 
+#[derive(Debug)]
 pub struct ExecuteTransactionResult {
     pub output: TransactionOutput,
     pub transaction_info: TransactionExecutionInfo,
@@ -51,7 +52,7 @@ pub struct ExecuteViewFunctionMessage {
 }
 
 impl Message for ExecuteViewFunctionMessage {
-    type Result = Result<Vec<AnnotatedFunctionReturnValue>, anyhow::Error>;
+    type Result = Result<AnnotatedFunctionResult, anyhow::Error>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]

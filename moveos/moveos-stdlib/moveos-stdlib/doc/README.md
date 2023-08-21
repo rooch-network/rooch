@@ -30,6 +30,7 @@ This is the reference documentation of the MoveOS standard library.
 -  [`0x2::storage_context`](storage_context.md#0x2_storage_context)
 -  [`0x2::table`](table.md#0x2_table)
 -  [`0x2::tx_context`](tx_context.md#0x2_tx_context)
+-  [`0x2::tx_meta`](tx_meta.md#0x2_tx_meta)
 -  [`0x2::type_info`](type_info.md#0x2_type_info)
 -  [`0x2::type_table`](type_table.md#0x2_type_table)
 

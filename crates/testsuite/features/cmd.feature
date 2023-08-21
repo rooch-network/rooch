@@ -20,6 +20,10 @@ Feature: Rooch CLI integration tests
       Then cmd: "account nullify --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --scheme ecdsa-recoverable"
       Then cmd: "account nullify --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --scheme schnorr"
 
+      # session key
+      Then cmd: "session-key create --sender-account {default} --scope 0x3::empty::empty"
+      Then cmd: "move run --function 0x3::empty::empty --sender-account {default} --session-key {{$.session-key[-1].authentication_key}}"
+
       Then cmd: "transaction get-by-hash --hash {{$.account[0].execution_info.tx_hash}}"
       Then cmd: "transaction get-by-index --cursor 0 --limit 10"
 
@@ -73,22 +77,47 @@ Feature: Rooch CLI integration tests
       Then stop the server
 
   @serial
-  Scenario: publish in Move
-      Given a server for publish
+  Scenario: publish in Move and module upgrade
+      Given a server for publish_in_move
 
       # The counter example
       Then cmd: "move publish -p ../../examples/counter --sender-account {default} --named-addresses rooch_examples={default} --by-move"
       Then cmd: "move view --function {default}::counter::value"
-      Then assert: "{{$.move[-1][0].move_value}} == 0"
+      Then assert: "{{$.move[-1].return_values[0].move_value}} == 0"
       Then cmd: "move run --function {default}::counter::increase --sender-account {default}"
       Then cmd: "move view --function {default}::counter::value"
-      Then assert: "{{$.move[-1][0].move_value}} == 1"
+      Then assert: "{{$.move[-1].return_values[0].move_value}} == 1"
       Then cmd: "resource --address {default} --resource {default}::counter::Counter"
       Then assert: "{{$.resource[-1].move_value.value.value}} == 1"
 
       # The entry_function_arguments example
-      Then cmd: "move publish -p ../../examples/entry_function_arguments --sender-account {default} --named-addresses rooch_examples={default} --by-move"
-      Then cmd: "move run --function {default}::entry_function::emit_u8 --args u8:3 --sender-account {default}"
+      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/ --sender-account {default} --named-addresses rooch_examples={default} --by-move"
+      Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
+      Then cmd: "move publish -p ../../examples/entry_function_arguments/ --sender-account {default} --named-addresses rooch_examples={default} --by-move"
+      Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
+      Then assert: "{{$.move[-1].output.status.type}} == executed"
+
+      Then stop the server
+
+  @serial
+  Scenario: publish in Rust and module upgrade
+      Given a server for publish_in_rust
+
+      # The counter example
+      Then cmd: "move publish -p ../../examples/counter --sender-account {default} --named-addresses rooch_examples={default}"
+      Then cmd: "move view --function {default}::counter::value"
+      Then assert: "{{$.move[-1].return_values[0].move_value}} == 0"
+      Then cmd: "move run --function {default}::counter::increase --sender-account {default}"
+      Then cmd: "move view --function {default}::counter::value"
+      Then assert: "{{$.move[-1].return_values[0].move_value}} == 1"
+      Then cmd: "resource --address {default} --resource {default}::counter::Counter"
+      Then assert: "{{$.resource[-1].move_value.value.value}} == 1"
+
+      # The entry_function_arguments example
+      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/ --sender-account {default} --named-addresses rooch_examples={default}"
+      Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
+      Then cmd: "move publish -p ../../examples/entry_function_arguments/ --sender-account {default} --named-addresses rooch_examples={default}"
+      Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
       Then assert: "{{$.move[-1].output.status.type}} == executed"
 
       Then stop the server
