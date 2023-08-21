@@ -237,6 +237,7 @@ module rooch_framework::coin {
         coin_store.frozen = false;
     }
 
+    // #[private_generics(CoinType)]
     /// Creates a new Coin with given `CoinType` and returns minting/freezing/burning capabilities.
     /// The given signer also becomes the account hosting the information about the coin
     /// (name, supply, etc.).

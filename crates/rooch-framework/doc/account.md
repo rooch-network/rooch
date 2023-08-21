@@ -947,8 +947,6 @@ Withdraw specifed <code>amount</code> of coin <code>CoinType</code> from the sig
       <a href="_not_found">error::not_found</a>(<a href="account.md#0x3_account_EAccountNotAcceptCoin">EAccountNotAcceptCoin</a>),
    );
 
-   // <b>let</b> coin_store = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;CoinStore&lt;CoinType&gt;&gt;(ctx, addr);
-   // <b>let</b> coin_store = coin::borrow_mut_coin_store&lt;CoinType&gt;(ctx, addr);
    <b>assert</b>!(
        !<a href="coin.md#0x3_coin_is_coin_store_frozen">coin::is_coin_store_frozen</a>&lt;CoinType&gt;(ctx, addr),
        <a href="_permission_denied">error::permission_denied</a>(<a href="account.md#0x3_account_EAccountWithCoinFrozen">EAccountWithCoinFrozen</a> ),
@@ -960,9 +958,7 @@ Withdraw specifed <code>amount</code> of coin <code>CoinType</code> from the sig
       amount,
    });
 
-
    <a href="coin.md#0x3_coin_extract_coin">coin::extract_coin</a>(ctx, addr, amount)
-   // <a href="coin.md#0x3_coin_extract">coin::extract</a>(coin::borrow_mut_coin&lt;CoinType&gt;(ctx, addr), amount)
 }
 </code></pre>
 
@@ -993,14 +989,11 @@ Deposit the coin balance into the recipient's account and emit an event.
       <a href="_not_found">error::not_found</a>(<a href="account.md#0x3_account_EAccountNotAcceptCoin">EAccountNotAcceptCoin</a>),
    );
 
-   // <b>let</b> coin_store = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;CoinStore&lt;CoinType&gt;&gt;(ctx, addr);
    <b>assert</b>!(
        !<a href="coin.md#0x3_coin_is_coin_store_frozen">coin::is_coin_store_frozen</a>&lt;CoinType&gt;(ctx, addr),
        <a href="_permission_denied">error::permission_denied</a>(<a href="account.md#0x3_account_EAccountWithCoinFrozen">EAccountWithCoinFrozen</a>),
    );
 
-   // <b>let</b> account_coin = coin::borrow_mut_coin&lt;CoinType&gt;(ctx, addr);
-   // <b>let</b> account_coin = coin::borrow_mut_coin&lt;CoinType&gt;(ctx, addr);
    <b>let</b> coin_type_info = <a href="_type_of">type_info::type_of</a>&lt;CoinType&gt;();
    <a href="_emit">event::emit</a>&lt;<a href="account.md#0x3_account_DepositEvent">DepositEvent</a>&gt;(ctx, <a href="account.md#0x3_account_DepositEvent">DepositEvent</a> {
       coin_type_info,

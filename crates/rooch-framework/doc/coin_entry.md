@@ -206,7 +206,7 @@ Withdraw an <code>amount</code> of coin <code>CoinType</code> from <code><a href
     <b>let</b> cap = <a href="_global_move_from">account_storage::global_move_from</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
     <b>let</b> to_burn = <a href="account.md#0x3_account_withdraw">account::withdraw</a>&lt;CoinType&gt;(ctx, <a href="account.md#0x3_account">account</a>, amount);
     // <b>let</b> burn_cap = borrow_burn_cap&lt;CoinType&gt;(ctx, account_addr);
-    <a href="coin.md#0x3_coin_burn">coin::burn</a>(ctx, to_burn, &cap.burn_cap);
+    <a href="coin.md#0x3_coin_burn">coin::burn</a>&lt;CoinType&gt;(ctx, to_burn, &cap.burn_cap);
     <a href="_global_move_to">account_storage::global_move_to</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, <a href="account.md#0x3_account">account</a>, cap);
 }
 </code></pre>
