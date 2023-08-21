@@ -33,7 +33,7 @@ module moveos_std::account_storage {
     }
 
     //Ensure the NamedTableID generate use same method with Rust code
-    fun named_table_id(account: address, table_type: u64): ObjectID{
+    public fun named_table_id(account: address, table_type: u64): ObjectID{
         object_id::address_to_object_id(tx_context::derive_id(bcs::to_bytes(&account), table_type))
     }
 

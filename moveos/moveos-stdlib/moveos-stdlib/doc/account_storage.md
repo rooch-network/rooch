@@ -9,6 +9,7 @@ It is used to store the account's resources and modules
 
 -  [Resource `AccountStorage`](#0x2_account_storage_AccountStorage)
 -  [Constants](#@Constants_0)
+-  [Function `named_table_id`](#0x2_account_storage_named_table_id)
 -  [Function `create_account_storage`](#0x2_account_storage_create_account_storage)
 -  [Function `exist_account_storage`](#0x2_account_storage_exist_account_storage)
 -  [Function `ensure_account_storage`](#0x2_account_storage_ensure_account_storage)
@@ -123,6 +124,30 @@ The resource with the given type not exists
 </code></pre>
 
 
+
+<a name="0x2_account_storage_named_table_id"></a>
+
+## Function `named_table_id`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_named_table_id">named_table_id</a>(account: <b>address</b>, table_type: u64): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_named_table_id">named_table_id</a>(account: <b>address</b>, table_type: u64): ObjectID{
+    <a href="object_id.md#0x2_object_id_address_to_object_id">object_id::address_to_object_id</a>(<a href="tx_context.md#0x2_tx_context_derive_id">tx_context::derive_id</a>(<a href="../doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(&account), table_type))
+}
+</code></pre>
+
+
+
+</details>
 
 <a name="0x2_account_storage_create_account_storage"></a>
 
