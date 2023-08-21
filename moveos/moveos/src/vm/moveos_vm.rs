@@ -39,8 +39,8 @@ use moveos_stdlib::natives::moveos_stdlib::{
 use moveos_types::{
     event::{Event, EventID},
     function_return_value::FunctionReturnValue,
-    move_module::MoveModule,
     move_types::FunctionId,
+    moveos_std::module_upgrade_flag::ModuleUpgradeFlag,
     object::ObjectID,
     state_resolver::MoveOSResolver,
     storage_context::StorageContext,
@@ -328,13 +328,19 @@ where
         self.resolve_pending_init_functions()?;
 
         // Check if there are modules upgrading
-        let module_flag = self.ctx.tx_context.get::<MoveModule>().map_err(|e| {
-            PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
-                .with_message(e.to_string())
-                .finish(Location::Undefined)
-        })?;
-        if module_flag.is_some() {
-            self.vm.mark_loader_cache_as_invalid();
+        let module_flag = self
+            .ctx
+            .tx_context
+            .get::<ModuleUpgradeFlag>()
+            .map_err(|e| {
+                PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
+                    .with_message(e.to_string())
+                    .finish(Location::Undefined)
+            })?;
+        if let Some(flag) = module_flag {
+            if flag.is_upgrade {
+                self.vm.mark_loader_cache_as_invalid();
+            }
         }
 
         action_result

@@ -8,6 +8,7 @@ It is used to store the account's resources and modules
 
 
 -  [Resource `AccountStorage`](#0x2_account_storage_AccountStorage)
+-  [Struct `ModuleUpgradeFlag`](#0x2_account_storage_ModuleUpgradeFlag)
 -  [Constants](#@Constants_0)
 -  [Function `named_table_id`](#0x2_account_storage_named_table_id)
 -  [Function `create_account_storage`](#0x2_account_storage_create_account_storage)
@@ -25,7 +26,6 @@ It is used to store the account's resources and modules
 
 <pre><code><b>use</b> <a href="../doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="">0x1::string</a>;
-<b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 <b>use</b> <a href="move_module.md#0x2_move_module">0x2::move_module</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
@@ -63,6 +63,33 @@ It is used to store the account's resources and modules
 </dd>
 <dt>
 <code>modules: <a href="table.md#0x2_table_Table">table::Table</a>&lt;<a href="_String">string::String</a>, <a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x2_account_storage_ModuleUpgradeFlag"></a>
+
+## Struct `ModuleUpgradeFlag`
+
+
+
+<pre><code><b>struct</b> <a href="account_storage.md#0x2_account_storage_ModuleUpgradeFlag">ModuleUpgradeFlag</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>is_upgrade: bool</code>
 </dt>
 <dd>
 
@@ -434,7 +461,6 @@ Publish modules to the account's storage
         <b>let</b> m = <a href="_pop_back">vector::pop_back</a>(&<b>mut</b> modules);
 
         // The <b>module</b> already <b>exists</b>, which means we are upgrading the <b>module</b>
-        // TODO: check upgrade compatibility
         <b>if</b> (<a href="table.md#0x2_table_contains">table::contains</a>(&<a href="account_storage.md#0x2_account_storage">account_storage</a>.modules, name)) {
             <b>let</b> old_m = <a href="table.md#0x2_table_remove">table::remove</a>(&<b>mut</b> <a href="account_storage.md#0x2_account_storage">account_storage</a>.modules, name);
             <a href="move_module.md#0x2_move_module_check_comatibility">move_module::check_comatibility</a>(&m, &old_m);
@@ -447,15 +473,11 @@ Publish modules to the account's storage
         i = i + 1;
     };
 
-    // Use MoveModule <b>as</b> flag <b>to</b> indicate <b>module</b> upgrading in this tx.
-    // Used <b>to</b> setting vm.mark_loader_cache_as_invalid(), which announce <b>to</b>
-    // the VM that the code loading cache should be considered outdated.
-    // TODO: whether define a new <b>struct</b> for this flag?
-    <b>if</b> (upgrade_flag) {
-        <b>let</b> tx_ctx = <a href="storage_context.md#0x2_storage_context_tx_context_mut">storage_context::tx_context_mut</a>(ctx);
-        <b>if</b> (!<a href="tx_context.md#0x2_tx_context_contains">tx_context::contains</a>&lt;MoveModule&gt;(tx_ctx)) {
-            <a href="tx_context.md#0x2_tx_context_add">tx_context::add</a>(tx_ctx, <a href="move_module.md#0x2_move_module_new">move_module::new</a>(<a href="_singleton">vector::singleton</a>&lt;u8&gt;(0u8)));
-        }
+    // Store <a href="account_storage.md#0x2_account_storage_ModuleUpgradeFlag">ModuleUpgradeFlag</a> in <a href="tx_context.md#0x2_tx_context">tx_context</a> which will be fetched in VM in Rust,
+    // and then announce <b>to</b> the VM that the code loading cache should be considered outdated.
+    <b>let</b> tx_ctx = <a href="storage_context.md#0x2_storage_context_tx_context_mut">storage_context::tx_context_mut</a>(ctx);
+    <b>if</b> (!<a href="tx_context.md#0x2_tx_context_contains">tx_context::contains</a>&lt;<a href="account_storage.md#0x2_account_storage_ModuleUpgradeFlag">ModuleUpgradeFlag</a>&gt;(tx_ctx)) {
+        <a href="tx_context.md#0x2_tx_context_add">tx_context::add</a>(tx_ctx, <a href="account_storage.md#0x2_account_storage_ModuleUpgradeFlag">ModuleUpgradeFlag</a> { is_upgrade: upgrade_flag });
     }
 }
 </code></pre>
