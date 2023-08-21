@@ -98,7 +98,7 @@ module rooch_framework::coin_entry {
         let cap = account_storage::global_move_from<Capabilities<CoinType>>(ctx, account_addr);
         let to_burn = account::withdraw<CoinType>(ctx, account, amount);
         // let burn_cap = borrow_burn_cap<CoinType>(ctx, account_addr);
-        coin::burn(ctx, to_burn, &cap.burn_cap);
+        coin::burn<CoinType>(ctx, to_burn, &cap.burn_cap);
         account_storage::global_move_to<Capabilities<CoinType>>(ctx, account, cap);
     }
 

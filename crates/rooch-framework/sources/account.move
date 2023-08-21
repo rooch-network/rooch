@@ -336,8 +336,6 @@ module rooch_framework::account{
          error::not_found(EAccountNotAcceptCoin),
       );
 
-      // let coin_store = account_storage::global_borrow_mut<CoinStore<CoinType>>(ctx, addr);
-      // let coin_store = coin::borrow_mut_coin_store<CoinType>(ctx, addr);
       assert!(
           !coin::is_coin_store_frozen<CoinType>(ctx, addr),
           error::permission_denied(EAccountWithCoinFrozen ),
@@ -349,9 +347,7 @@ module rooch_framework::account{
          amount,
       });
 
-
       coin::extract_coin(ctx, addr, amount)
-      // coin::extract(coin::borrow_mut_coin<CoinType>(ctx, addr), amount)
    }
 
    /// Deposit the coin balance into the recipient's account and emit an event.
@@ -362,14 +358,11 @@ module rooch_framework::account{
          error::not_found(EAccountNotAcceptCoin),
       );
 
-      // let coin_store = account_storage::global_borrow_mut<CoinStore<CoinType>>(ctx, addr);
       assert!(
           !coin::is_coin_store_frozen<CoinType>(ctx, addr),
           error::permission_denied(EAccountWithCoinFrozen),
       );
 
-      // let account_coin = coin::borrow_mut_coin<CoinType>(ctx, addr);
-      // let account_coin = coin::borrow_mut_coin<CoinType>(ctx, addr);
       let coin_type_info = type_info::type_of<CoinType>();
       event::emit<DepositEvent>(ctx, DepositEvent {
          coin_type_info,
