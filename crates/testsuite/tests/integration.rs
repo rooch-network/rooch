@@ -118,7 +118,7 @@ async fn assert_output(world: &mut World, args: String) {
                     first,
                     second
                 ),
-                _ => panic!("unsupported operator"),
+                _ => panic!("unsupported operator {:?}", op.as_str()),
             },
             _ => panic!(
                 "expected 3 arguments: first [==|!=] second, but got input {:?}",
