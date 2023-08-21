@@ -11,4 +11,4 @@ moveos_std =  "0x2"
 rooch_framework =  "0x3"
 
 [dev-addresses]
-rooch_examples = "0xbecf2f0f545f16f0c5b69786a4e08a422cec5bf94ffb9ba68e34b730423026ef"
+rooch_examples = "0x42"

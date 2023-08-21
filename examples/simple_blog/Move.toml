@@ -18,4 +18,4 @@ rooch_framework =  "0x3"
 simple_blog =  "_"
 
 [dev-addresses]
-simple_blog = "0x9fb8a2b8b84ea08804c5830c9fca7b6850cdb1a37aca58d33fea861ea1a515af"
+simple_blog = "0x42"
