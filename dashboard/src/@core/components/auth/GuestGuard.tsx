@@ -22,13 +22,13 @@ const GuestGuard = (props: GuestGuardProps) => {
       return
     }
 
-    if (window.localStorage.getItem('userData')) {
+    if (window.localStorage.getItem('secret_key')) {
       router.replace('/')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router.route])
 
-  if (auth.loading || (!auth.loading && auth.user !== null)) {
+  if (auth.loading || (!auth.loading && auth.accounts !== null)) {
     return fallback
   }
 

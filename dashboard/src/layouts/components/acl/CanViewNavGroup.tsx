@@ -19,7 +19,7 @@ const CanViewNavGroup = (props: Props) => {
   // ** Hook
   const auth = useAuth()
 
-  if (auth.user || (navGroup && navGroup.auth === false)) {
+  if (auth.accounts || (navGroup && navGroup.auth === false)) {
     return <>{children}</>
   } else {
     return null

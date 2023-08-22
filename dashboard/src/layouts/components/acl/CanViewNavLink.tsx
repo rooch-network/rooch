@@ -18,7 +18,7 @@ const CanViewNavLink = (props: Props) => {
 
   const auth = useAuth()
 
-  if (auth.user || (navLink && navLink.auth === false)) {
+  if (auth.accounts || (navLink && navLink.auth === false)) {
     return <>{children}</>
   } else {
     return null
