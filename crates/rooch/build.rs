@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use std::{
     env, fs,
     path::Path,
@@ -21,6 +24,13 @@ fn main() {
 
             let dashboard_path = Path::new(&base_path).join(dashboard_dir);
             env::set_current_dir(dashboard_path.clone()).unwrap();
+
+            let npm_status = Command::new("npm").args(["install", "-g", "yarn"]).status();
+
+            if npm_status.is_err() {
+                eprintln!("yarn install failed");
+                process::exit(1);
+            }
 
             let yarn_status = Command::new("yarn").status();
 
