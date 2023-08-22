@@ -53,6 +53,16 @@ module moveos_std::storage_context {
         tx_context::sender(&self.tx_context)
     } 
 
+    /// Return the sequence number of the current transaction
+    public fun sequence_number(self: &StorageContext): u64 {
+        tx_context::sequence_number(&self.tx_context)
+    }
+
+    /// Return the maximum gas amount that can be used by the current transaction
+    public fun max_gas_amount(self: &StorageContext): u64 {
+        tx_context::max_gas_amount(&self.tx_context)
+    }
+
     /// Generate a new unique address
     public fun fresh_address(self: &mut StorageContext): address {
         tx_context::fresh_address(&mut self.tx_context)

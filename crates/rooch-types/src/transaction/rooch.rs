@@ -21,16 +21,27 @@ pub struct RoochTransactionData {
     pub sender: RoochAddress,
     // Sequence number of this transaction corresponding to sender's account.
     pub sequence_number: u64,
+    // The ChainID of the transaction.
+    pub chain_id: u64,
+    // The max gas to be used.
+    pub max_gas_amount: u64,
     // The MoveAction to execute.
     pub action: MoveAction,
-    //TODO how to define Gas paramter and AppID(Or ChainID)
 }
 
 impl RoochTransactionData {
-    pub fn new(sender: RoochAddress, sequence_number: u64, action: MoveAction) -> Self {
+    pub fn new(
+        sender: RoochAddress,
+        sequence_number: u64,
+        chain_id: u64,
+        max_gas_amount: u64,
+        action: MoveAction,
+    ) -> Self {
         Self {
             sender,
             sequence_number,
+            chain_id,
+            max_gas_amount,
             action,
         }
     }
@@ -64,6 +75,14 @@ impl RoochTransaction {
 
     pub fn sequence_number(&self) -> u64 {
         self.data.sequence_number
+    }
+
+    pub fn chain_id(&self) -> u64 {
+        self.data.chain_id
+    }
+
+    pub fn max_gas_amount(&self) -> u64 {
+        self.data.max_gas_amount
     }
 
     pub fn action(&self) -> &MoveAction {
@@ -103,7 +122,12 @@ impl RoochTransaction {
 impl From<RoochTransaction> for MoveOSTransaction {
     fn from(tx: RoochTransaction) -> Self {
         let tx_hash = tx.tx_hash();
-        let tx_ctx = TxContext::new(tx.data.sender.into(), tx_hash);
+        let tx_ctx = TxContext::new(
+            tx.data.sender.into(),
+            tx.data.sequence_number,
+            tx.data.max_gas_amount,
+            tx_hash,
+        );
         MoveOSTransaction::new(tx_ctx, tx.data.action)
     }
 }
@@ -130,11 +154,11 @@ impl AbstractTransaction for RoochTransaction {
         self.data.hash()
     }
 
-    fn authenticator_info(&self) -> AuthenticatorInfo {
-        AuthenticatorInfo {
-            seqence_number: self.sequence_number(),
-            authenticator: self.authenticator.clone(),
-        }
+    fn authenticator_info(&self) -> Result<AuthenticatorInfo> {
+        Ok(AuthenticatorInfo::new(
+            self.chain_id(),
+            self.authenticator.clone(),
+        ))
     }
 
     fn construct_moveos_transaction(

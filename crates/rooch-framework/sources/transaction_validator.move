@@ -36,12 +36,16 @@ module rooch_framework::transaction_validator {
     /// If the authenticator is invaid, abort this function.
     public fun validate(
         ctx: &StorageContext,
-        tx_sequence_number: u64,
+        _chain_id: u64,
         scheme: u64,
         authenticator_payload: vector<u8>
     ): TxValidateResult {
-        // === validate the sequence number ===
 
+        // === validate the chain id ===
+        //TODO validate the chain id
+
+        // === validate the sequence number ===
+        let tx_sequence_number = storage_context::sequence_number(ctx);
         assert!(
             (tx_sequence_number as u128) < MAX_U64,
             error::out_of_range(EValidateSequenceNumberTooBig)
@@ -59,6 +63,10 @@ module rooch_framework::transaction_validator {
             tx_sequence_number == account_sequence_number,
             error::invalid_argument(EValidateSequenceNumberTooNew)
         );
+
+        // === validate gas ===
+        let _max_gas_amount = storage_context::max_gas_amount(ctx);
+        //TODO check the account can pay the gas fee
 
         // === validate the authenticator ===
 
@@ -101,7 +109,9 @@ module rooch_framework::transaction_validator {
             if (!address_mapping::exists_mapping(ctx, multichain_address)) {
                 address_mapping::bind_no_check(ctx, sender, multichain_address);
             };
-        }
+        };
+        let _max_gas_amount = storage_context::max_gas_amount(ctx);
+        //TODO prepare the gas fee based on the max_gas_amount
     }
 
     /// Transaction post_execute function.
@@ -110,8 +120,7 @@ module rooch_framework::transaction_validator {
     fun post_execute(
         ctx: &mut StorageContext,
     ) {
-        //TODO handle transaction gas fee
-
+    
         // Active the session key
 
         let session_key_opt = auth_validator::get_session_key_from_tx_ctx_option(ctx);
@@ -122,5 +131,8 @@ module rooch_framework::transaction_validator {
 
         // Increment sequence number
         account::increment_sequence_number(ctx);
+
+        // Charge gas fee
+        //TODO how to get the used gas amount?
     }
 }

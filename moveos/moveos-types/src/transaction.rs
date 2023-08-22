@@ -3,7 +3,7 @@
 
 use crate::{
     event::Event, h256, h256::H256, move_types::FunctionId, moveos_std::tx_meta::TxMeta,
-    state::StateChangeSet, tx_context::TxContext,
+    state::StateChangeSet, tx_context::TxContext, vm_config::VMConfig,
 };
 use move_core_types::{
     account_address::AccountAddress,
@@ -199,7 +199,13 @@ impl MoveOSTransaction {
     pub fn new_for_test(sender: AccountAddress, action: MoveAction) -> Self {
         let sender_and_action = (sender, action);
         let tx_hash = h256::sha3_256_of(bcs::to_bytes(&sender_and_action).unwrap().as_slice());
-        let ctx = TxContext::new(sender_and_action.0, tx_hash);
+        //TODO pass the sequence_number
+        let ctx = TxContext::new(
+            sender_and_action.0,
+            0,
+            VMConfig::DEFAULT_MAX_GAS_AMOUNT,
+            tx_hash,
+        );
         Self::new(ctx, sender_and_action.1)
     }
 

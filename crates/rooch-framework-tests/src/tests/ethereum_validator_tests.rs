@@ -26,7 +26,7 @@ fn test_validate() {
     let tx = keystore
         .sign_transaction(&sender, tx_data, BuiltinScheme::EcdsaRecoverable)
         .unwrap();
-    let auth_info = tx.authenticator_info();
+    let auth_info = tx.authenticator_info().unwrap();
     let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
 
     ethereum_validator

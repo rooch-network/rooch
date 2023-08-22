@@ -27,11 +27,16 @@ module moveos_std::tx_context {
     struct TxContext has drop {
         /// The address of the user that signed the current transaction
         sender: address,
+        /// Sequence number of this transaction corresponding to sender's account.
+        sequence_number: u64,
+        // The max gas to be used. 
+        max_gas_amount: u64,
         /// Hash of the current transaction
         tx_hash: vector<u8>,
         /// Counter recording the number of fresh id's created while executing
         /// this transaction. Always 0 at the start of a transaction
         ids_created: u64,
+        chain_id: u64,
         /// A Key-Value map that can be used to store context information
         map: SimpleMap<String, Any>,
     }
@@ -40,6 +45,16 @@ module moveos_std::tx_context {
     /// transaction
     public fun sender(self: &TxContext): address {
         self.sender
+    }
+
+    /// Return the sequence number of the current transaction
+    public fun sequence_number(self: &TxContext): u64 {
+        self.sequence_number
+    }
+
+    /// Return the max gas to be used
+    public fun max_gas_amount(self: &TxContext): u64 {
+        self.max_gas_amount
     } 
 
     /// Generate a new unique address,

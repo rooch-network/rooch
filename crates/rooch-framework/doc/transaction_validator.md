@@ -131,7 +131,7 @@ This function is for Rooch to validate the transaction sender's authenticator.
 If the authenticator is invaid, abort this function.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_validate">validate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, tx_sequence_number: u64, scheme: u64, authenticator_payload: <a href="">vector</a>&lt;u8&gt;): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">auth_validator::TxValidateResult</a>
+<pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_validate">validate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, _chain_id: u64, scheme: u64, authenticator_payload: <a href="">vector</a>&lt;u8&gt;): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">auth_validator::TxValidateResult</a>
 </code></pre>
 
 
@@ -142,12 +142,16 @@ If the authenticator is invaid, abort this function.
 
 <pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_validate">validate</a>(
     ctx: &StorageContext,
-    tx_sequence_number: u64,
+    _chain_id: u64,
     scheme: u64,
     authenticator_payload: <a href="">vector</a>&lt;u8&gt;
 ): TxValidateResult {
-    // === validate the sequence number ===
 
+    // === validate the chain id ===
+    //TODO validate the chain id
+
+    // === validate the sequence number ===
+    <b>let</b> tx_sequence_number = <a href="_sequence_number">storage_context::sequence_number</a>(ctx);
     <b>assert</b>!(
         (tx_sequence_number <b>as</b> u128) &lt; <a href="transaction_validator.md#0x3_transaction_validator_MAX_U64">MAX_U64</a>,
         <a href="_out_of_range">error::out_of_range</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNumberTooBig">EValidateSequenceNumberTooBig</a>)
@@ -165,6 +169,10 @@ If the authenticator is invaid, abort this function.
         tx_sequence_number == account_sequence_number,
         <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNumberTooNew">EValidateSequenceNumberTooNew</a>)
     );
+
+    // === validate gas ===
+    <b>let</b> _max_gas_amount = <a href="_max_gas_amount">storage_context::max_gas_amount</a>(ctx);
+    //TODO check the <a href="account.md#0x3_account">account</a> can pay the gas fee
 
     // === validate the authenticator ===
 

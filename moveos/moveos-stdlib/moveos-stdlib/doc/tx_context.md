@@ -8,6 +8,8 @@
 -  [Struct `TxContext`](#0x2_tx_context_TxContext)
 -  [Constants](#@Constants_0)
 -  [Function `sender`](#0x2_tx_context_sender)
+-  [Function `sequence_number`](#0x2_tx_context_sequence_number)
+-  [Function `max_gas_amount`](#0x2_tx_context_max_gas_amount)
 -  [Function `fresh_address`](#0x2_tx_context_fresh_address)
 -  [Function `fresh_object_id`](#0x2_tx_context_fresh_object_id)
 -  [Function `derive_id`](#0x2_tx_context_derive_id)
@@ -59,6 +61,18 @@ the VM and passed in to the entrypoint of the transaction as <code>&<b>mut</b> <
  The address of the user that signed the current transaction
 </dd>
 <dt>
+<code>sequence_number: u64</code>
+</dt>
+<dd>
+ Sequence number of this transaction corresponding to sender's account.
+</dd>
+<dt>
+<code>max_gas_amount: u64</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
 <code>tx_hash: <a href="">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
@@ -70,6 +84,12 @@ the VM and passed in to the entrypoint of the transaction as <code>&<b>mut</b> <
 <dd>
  Counter recording the number of fresh id's created while executing
  this transaction. Always 0 at the start of a transaction
+</dd>
+<dt>
+<code>chain_id: u64</code>
+</dt>
+<dd>
+
 </dd>
 <dt>
 <code>map: <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="copyable_any.md#0x2_copyable_any_Any">copyable_any::Any</a>&gt;</code>
@@ -115,6 +135,56 @@ transaction
 
 <pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_sender">sender</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): <b>address</b> {
     self.sender
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_tx_context_sequence_number"></a>
+
+## Function `sequence_number`
+
+Return the sequence number of the current transaction
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_sequence_number">sequence_number</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_sequence_number">sequence_number</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): u64 {
+    self.sequence_number
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_tx_context_max_gas_amount"></a>
+
+## Function `max_gas_amount`
+
+Return the max gas to be used
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_max_gas_amount">max_gas_amount</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_max_gas_amount">max_gas_amount</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): u64 {
+    self.max_gas_amount
 }
 </code></pre>
 

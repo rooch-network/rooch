@@ -14,6 +14,8 @@ and let developers can customize the storage
 -  [Function `object_storage`](#0x2_storage_context_object_storage)
 -  [Function `object_storage_mut`](#0x2_storage_context_object_storage_mut)
 -  [Function `sender`](#0x2_storage_context_sender)
+-  [Function `sequence_number`](#0x2_storage_context_sequence_number)
+-  [Function `max_gas_amount`](#0x2_storage_context_max_gas_amount)
 -  [Function `fresh_address`](#0x2_storage_context_fresh_address)
 -  [Function `fresh_object_id`](#0x2_storage_context_fresh_object_id)
 -  [Function `tx_hash`](#0x2_storage_context_tx_hash)
@@ -188,6 +190,56 @@ Return the address of the user that signed the current transaction
 
 <pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_sender">sender</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>): <b>address</b> {
     <a href="tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_storage_context_sequence_number"></a>
+
+## Function `sequence_number`
+
+Return the sequence number of the current transaction
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_sequence_number">sequence_number</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_sequence_number">sequence_number</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>): u64 {
+    <a href="tx_context.md#0x2_tx_context_sequence_number">tx_context::sequence_number</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_storage_context_max_gas_amount"></a>
+
+## Function `max_gas_amount`
+
+Return the maximum gas amount that can be used by the current transaction
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_max_gas_amount">max_gas_amount</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_max_gas_amount">max_gas_amount</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>): u64 {
+    <a href="tx_context.md#0x2_tx_context_max_gas_amount">tx_context::max_gas_amount</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
 }
 </code></pre>
 

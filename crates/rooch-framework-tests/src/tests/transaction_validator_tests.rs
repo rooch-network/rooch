@@ -34,7 +34,7 @@ fn test_validate_ed25519() {
     let tx = keystore
         .sign_transaction(&sender, tx_data, BuiltinScheme::Ed25519)
         .unwrap();
-    let auth_info = tx.authenticator_info();
+    let auth_info = tx.authenticator_info().unwrap();
     let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
 
     transaction_validator
@@ -59,7 +59,7 @@ fn test_validate_ecdsa() {
     let tx = keystore
         .sign_transaction(&sender, tx_data, BuiltinScheme::Ecdsa)
         .unwrap();
-    let auth_info = tx.authenticator_info();
+    let auth_info = tx.authenticator_info().unwrap();
     let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
 
     transaction_validator
@@ -84,7 +84,7 @@ fn test_validate_ecdsa_recoverable() {
     let tx = keystore
         .sign_transaction(&sender, tx_data, BuiltinScheme::EcdsaRecoverable)
         .unwrap();
-    let auth_info = tx.authenticator_info();
+    let auth_info = tx.authenticator_info().unwrap();
     let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
 
     transaction_validator
@@ -109,7 +109,7 @@ fn test_validate_schnorr() {
     let tx = keystore
         .sign_transaction(&sender, tx_data, BuiltinScheme::Schnorr)
         .unwrap();
-    let auth_info = tx.authenticator_info();
+    let auth_info = tx.authenticator_info().unwrap();
     let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
 
     transaction_validator

@@ -24,3 +24,4 @@ pub mod state_resolver;
 pub mod storage_context;
 pub mod transaction;
 pub mod tx_context;
+pub mod vm_config;
