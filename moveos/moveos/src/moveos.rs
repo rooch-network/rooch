@@ -82,7 +82,7 @@ impl MoveOS {
 
         let genesis_hash = h256::sha3_256_of(bcs::to_bytes(&genesis_txs)?.as_slice());
         for genesis_tx in genesis_txs {
-            self.verify_and_execute_genesis_tx(genesis_tx.clone())?;
+            self.verify_and_execute_genesis_tx(genesis_tx)?;
         }
 
         self.db
