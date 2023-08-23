@@ -94,13 +94,6 @@ pub enum RoochError {
 
     #[error("Use of disabled feature: {:?}", error)]
     UnsupportedFeatureError { error: String },
-
-    #[error("Genesis version mismatch expect: {expect:?}, real: {real:?}.")]
-    GenesisVersionMismatch { expect: H256, real: H256 },
-    #[error("Genesis load fail {0}")]
-    GenesisLoadFailure(String),
-    #[error("Genesis block not exist in {0}.")]
-    GenesisNotExist(String),
 }
 
 impl From<anyhow::Error> for RoochError {
@@ -121,10 +114,12 @@ impl From<io::Error> for RoochError {
     }
 }
 
-#[derive(Debug, Error)]
-pub enum ServerStartError {
-    #[error("Server start failed for genesis: {0:?}")]
-    GenesisError(RoochError),
-    #[error("Server start failed, cause: {0:?}")]
-    Other(anyhow::Error),
+#[derive(Debug, Error, Eq, PartialEq)]
+pub enum GenesisError {
+    #[error("Genesis version mismatch expect: {expect:?}, real: {real:?}.")]
+    GenesisVersionMismatch { expect: H256, real: H256 },
+    #[error("Genesis load fail {0}")]
+    GenesisLoadFailure(String),
+    #[error("Genesis block not exist in {0}.")]
+    GenesisNotExist(String),
 }

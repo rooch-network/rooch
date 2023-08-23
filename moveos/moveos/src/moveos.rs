@@ -21,7 +21,7 @@ use moveos_types::startup_info::StartupInfo;
 use moveos_types::state_resolver::MoveOSResolverProxy;
 use moveos_types::transaction::{MoveOSTransaction, TransactionOutput, VerifiedMoveOSTransaction};
 use moveos_types::tx_context::TxContext;
-use moveos_types::{h256::H256, transaction::FunctionCall};
+use moveos_types::{h256, h256::H256, transaction::FunctionCall};
 
 pub struct MoveOSConfig {
     pub vm_config: VMConfig,
@@ -80,7 +80,7 @@ impl MoveOS {
             "genesis already initialized"
         );
 
-        let genesis_hash = H256::from_slice(bcs::to_bytes(&genesis_txs)?.as_slice());
+        let genesis_hash = h256::sha3_256_of(bcs::to_bytes(&genesis_txs)?.as_slice());
         for genesis_tx in genesis_txs {
             self.verify_and_execute_genesis_tx(genesis_tx.clone())?;
         }

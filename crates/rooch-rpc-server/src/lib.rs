@@ -29,7 +29,7 @@ use rooch_rpc_api::api::RoochRpcModule;
 use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
-use rooch_types::error::ServerStartError;
+use rooch_types::error::GenesisError;
 use serde_json::json;
 use std::env;
 use std::fmt::Debug;
@@ -119,17 +119,11 @@ impl RpcModuleBuilder {
 pub async fn start_server(is_mock_storage: bool) -> Result<ServerHandle> {
     match run_start_server(is_mock_storage).await {
         Ok(server_handle) => Ok(server_handle),
-        Err(e) => match e.downcast::<ServerStartError>() {
-            Ok(e) => match e {
-                ServerStartError::GenesisError(e) => {
-                    log::error!("{:?}, please clean your data dir.", e);
-                    std::process::exit(R_EXIT_CODE_NEED_HELP);
-                }
-                _ => {
-                    log::error!("{:?}, server start fail. ", e);
-                    std::process::exit(R_EXIT_CODE_NEED_HELP);
-                }
-            },
+        Err(e) => match e.downcast::<GenesisError>() {
+            Ok(e) => {
+                log::error!("{:?}, please clean your data dir.", e);
+                std::process::exit(R_EXIT_CODE_NEED_HELP);
+            }
             Err(e) => {
                 log::error!("{:?}, server start fail. ", e);
                 std::process::exit(R_EXIT_CODE_NEED_HELP);

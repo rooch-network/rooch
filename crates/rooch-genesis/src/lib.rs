@@ -8,10 +8,11 @@ use move_vm_runtime::{config::VMConfig, native_functions::NativeFunction};
 use moveos::moveos::MoveOSConfig;
 use moveos_stdlib_builder::BuildOptions;
 use moveos_store::config_store::ConfigDBStore;
+use moveos_types::h256;
 use moveos_types::h256::H256;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use once_cell::sync::Lazy;
-use rooch_types::error::RoochError;
+use rooch_types::error::GenesisError;
 use serde::{Deserialize, Serialize};
 use std::{
     fs::File,
@@ -87,30 +88,29 @@ impl RoochGenesis {
     }
 
     pub fn genesis_hash(&self) -> H256 {
-        H256::from_slice(
+        h256::sha3_256_of(
             bcs::to_bytes(&self.genesis_txs())
-                .expect("genesis txs bcs should success")
+                .expect("genesis txs bcs to_bytes should success")
                 .as_slice(),
         )
     }
 
     pub fn check_genesis(&self, config_store: &ConfigDBStore) -> Result<()> {
         let genesis_hash_result = config_store.get_genesis();
-
         match genesis_hash_result {
             Ok(Some(genesis_hash_store)) => {
                 let genesis_hash = self.genesis_hash();
                 if genesis_hash_store != genesis_hash {
-                    return Err(RoochError::GenesisVersionMismatch {
+                    return Err(GenesisError::GenesisVersionMismatch {
                         expect: genesis_hash_store,
                         real: genesis_hash,
                     }
                     .into());
                 }
             }
-            Err(e) => return Err(RoochError::GenesisLoadFailure(e.to_string()).into()),
+            Err(e) => return Err(GenesisError::GenesisLoadFailure(e.to_string()).into()),
             Ok(None) => {
-                return Err(RoochError::GenesisNotExist(
+                return Err(GenesisError::GenesisNotExist(
                     "genesis hash from store is none".to_string(),
                 )
                 .into())

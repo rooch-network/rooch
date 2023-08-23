@@ -36,7 +36,6 @@ use moveos_types::tx_context::TxContext;
 use rooch_genesis::RoochGenesis;
 use rooch_store::RoochStore;
 use rooch_types::address::MultiChainAddress;
-use rooch_types::error::{RoochError, ServerStartError};
 use rooch_types::framework::address_mapping::AddressMapping;
 use rooch_types::framework::auth_validator::AuthValidatorCaller;
 use rooch_types::framework::auth_validator::TxValidateResult;
@@ -61,16 +60,7 @@ impl ExecutorActor {
         if moveos.state().is_genesis() {
             moveos.init_genesis(genesis.genesis_txs())?;
         } else {
-            match genesis.check_genesis(&config_store_ref) {
-                Ok(()) => {}
-                Err(e) => {
-                    match e.downcast::<RoochError>() {
-                        Ok(e) => ServerStartError::GenesisError(e),
-                        Err(e) => ServerStartError::Other(e),
-                    };
-                    // genesis.check_genesis(&config_store_ref)?;
-                }
-            }
+            genesis.check_genesis(&config_store_ref)?;
         }
 
         Ok(Self {

@@ -42,7 +42,6 @@ This module provides the foundation for typesafe Coins.
 -  [Function `merge_coin`](#0x3_coin_merge_coin)
 -  [Function `destroy_freeze_cap`](#0x3_coin_destroy_freeze_cap)
 -  [Function `destroy_mint_cap`](#0x3_coin_destroy_mint_cap)
--  [Function `destroy_burn_cap`](#0x3_coin_destroy_burn_cap)
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
@@ -1219,31 +1218,6 @@ Destroy a mint capability.
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_destroy_mint_cap">destroy_mint_cap</a>&lt;CoinType&gt;(mint_cap: <a href="coin.md#0x3_coin_MintCapability">MintCapability</a>&lt;CoinType&gt;) {
     <b>let</b> <a href="coin.md#0x3_coin_MintCapability">MintCapability</a>&lt;CoinType&gt; {} = mint_cap;
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_coin_destroy_burn_cap"></a>
-
-## Function `destroy_burn_cap`
-
-Destroy a burn capability.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_destroy_burn_cap">destroy_burn_cap</a>&lt;CoinType&gt;(burn_cap: <a href="coin.md#0x3_coin_BurnCapability">coin::BurnCapability</a>&lt;CoinType&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_destroy_burn_cap">destroy_burn_cap</a>&lt;CoinType&gt;(burn_cap: <a href="coin.md#0x3_coin_BurnCapability">BurnCapability</a>&lt;CoinType&gt;) {
-    <b>let</b> <a href="coin.md#0x3_coin_BurnCapability">BurnCapability</a>&lt;CoinType&gt; {} = burn_cap;
 }
 </code></pre>
 
