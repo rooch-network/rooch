@@ -5,14 +5,18 @@ import { HTTPTransport, RequestManager } from '@open-rpc/client-js'
 import { JsonRpcClient } from '../generated/client'
 import { Connection, LocalnetConnection } from './connection'
 import { bytes } from '../types/bcs'
-import { FunctionId, TypeTag, Arg, FunctionReturnValue } from '../types'
+import { FunctionId, TypeTag, Arg, AnnotatedFunctionResultView } from '../types'
 import { functionIdToStirng, typeTagToString, encodeArgs } from '../utils'
+
+import { ROOCH_CHIAN_ID } from '../constants'
 
 /**
  * Configuration options for the JsonRpcProvider. If the value of a field is not provided,
  * value in `DEFAULT_OPTIONS` for that field will be used
  */
 export type RpcProviderOptions = {
+  chainID: number
+
   /**
    * Cache timeout in seconds for the RPC API Version
    */
@@ -23,6 +27,7 @@ export type RpcProviderOptions = {
 }
 
 const DEFAULT_OPTIONS: RpcProviderOptions = {
+  chainID: ROOCH_CHIAN_ID,
   versionCacheTimeoutInSeconds: 600,
 }
 
@@ -56,6 +61,10 @@ export class JsonRpcProvider {
     )
   }
 
+  getChainId(): number {
+    return this.options.chainID
+  }
+
   async getRpcApiVersion(): Promise<string | undefined> {
     if (
       this.rpcApiVersion &&
@@ -83,7 +92,7 @@ export class JsonRpcProvider {
     funcId: FunctionId,
     tyArgs?: TypeTag[],
     args?: Arg[],
-  ): Promise<FunctionReturnValue[]> {
+  ): Promise<AnnotatedFunctionResultView> {
     const tyStrArgs = tyArgs?.map((v) => typeTagToString(v))
     const bcsArgs = args?.map((arg) => encodeArgs(arg))
 

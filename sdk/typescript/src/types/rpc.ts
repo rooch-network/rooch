@@ -1,3 +1,3 @@
-import { AnnotatedFunctionReturnValueView } from '../generated/client/types'
+import * as rpcTypes from '../generated/client/types'
 
-export type FunctionReturnValue = AnnotatedFunctionReturnValueView
+export type AnnotatedFunctionResultView = rpcTypes.AnnotatedFunctionResultView

@@ -34,6 +34,7 @@ describe('provider', () => {
       })
 
       const provider = new JsonRpcProvider(LocalnetConnection, {
+        chainID: 1,
         fetcher: mockFetch,
       })
       expect(provider).toBeDefined()
@@ -66,6 +67,7 @@ describe('provider', () => {
       })
 
       const provider = new JsonRpcProvider(LocalnetConnection, {
+        chainID: 1,
         fetcher: mockFetch,
       })
       expect(provider).toBeDefined()

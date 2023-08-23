@@ -5,10 +5,9 @@ import {
   PrivateKeyAuth,
   Account,
 } from '../../src'
-//import { RoochServer } from './servers/rooch-server'
+import { RoochServer } from './servers/rooch-server'
 
 describe('callFunction', () => {
-  /*
   let server: RoochServer
 
   beforeAll(async () => {
@@ -19,8 +18,7 @@ describe('callFunction', () => {
   afterAll(async () => {
     await server.stop()
   })
-  */
- 
+
   it('call function with private key auth should be ok', async () => {
     const provider = new JsonRpcProvider()
 
@@ -40,6 +38,9 @@ describe('callFunction', () => {
           value: roochAddress,
         },
       ],
+      {
+        maxGasAmount: 1000000,
+      },
     )
 
     expect(tx).toBeDefined()
