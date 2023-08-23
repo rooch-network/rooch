@@ -44,7 +44,7 @@ fn dist(file: PathBuf) -> Option<(ContentType, Cow<'static, [u8]>)> {
         && !filename.starts_with("images")
         && !filename.ends_with(".html")
     {
-        filename = filename + "/index.html";
+        filename += "/index.html";
         let asset = Asset::get(&filename)?;
         return Some((ContentType::HTML, asset.data));
     }
