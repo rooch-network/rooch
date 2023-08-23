@@ -4,21 +4,21 @@ Rooch Network 使用基于 [Optimistic Rollups](https://ethereum.org/en/develope
 
 > Rooch 还将支持[由 ZK Proof 启用的混合安全性](/docs/tech-highlights/hybrid-security)。
 
-## OMO - 提供单步证明的通用模拟器
+## flexEmu - 提供单步证明的通用模拟器
 
-生成欺诈证明是确保 Optimistic Rollup 系统中链下系统安全的关键部分。为此，我们设计了 [OMO](https://github.com/rooch-network/omo)。
+生成欺诈证明是确保 Optimistic Rollup 系统中链下系统安全的关键部分。为此，我们设计了 [flexEmu](https://github.com/rooch-network/flexemu)。
 
 import Image from "next/image";
 
 <Image
   src="/docs/rooch-omo.svg"
-  alt="Rooch OMO"
+  alt="Rooch flexEmu"
   width={500}
   height={500}
   className="mx-auto my-4"
 />
 
-> 在 GitHub 上查找 [OMO 的详细说明](https://github.com/rooch-network/omo/blob/main/docs/guidelines.md)。
+> 在 GitHub 上查找 [flexEmu 的详细说明](https://github.com/rooch-network/flexemu/blob/main/docs/guidelines.md)。
 
 ### 多轮交互式仲裁
 
@@ -39,11 +39,11 @@ import Image from "next/image";
 
 > Tokenomics 将于 [2023 年第四季度发布](/docs/miscellaneous/roadmap#2023-q4---mainnet-ready-testnet)
 
-### OMO 优势
+### flexEmu 优势
 
-OMO 被设计为具有单步状态证明的通用字节码模拟器。它的通用目标为 Rooch 的实现提供了 2 个优势：
+flexEmu 被设计为具有单步状态证明的通用字节码模拟器。它的通用目标为 Rooch 的实现提供了 2 个优势：
 
 - **与任意 Layer1 的兼容性**
-  任何支持 MIPS 指令集的 Layer1 都可以仲裁 OMO 生成的证明。这使得 Rooch 成为任意 Layer1 的 Layer2。
+  任何支持 MIPS 指令集的 Layer1 都可以仲裁 flexEmu 生成的证明。这使得 Rooch 成为任意 Layer1 的 Layer2。
 - **易于维护、调试和升级**
-  如果未来 MoveVM 有重大升级，OMO 可以快速容纳。
+  如果未来 MoveVM 有重大升级，flexEmu 可以快速容纳。
