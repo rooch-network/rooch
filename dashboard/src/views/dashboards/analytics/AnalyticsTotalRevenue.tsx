@@ -28,7 +28,7 @@ import { useSettings } from 'src/@core/hooks/useSettings'
 // ** Util Import
 import { hexToRGBA } from 'src/@core/utils/hex-to-rgba'
 
-const tokenOptions = ['BTC', 'R', 'APT']
+const tokenOptions = ['BTC', 'ROH', 'APT']
 
 const series = [
   { name: `${new Date().getFullYear() - 1}`, data: [18, 7, 15, 29, 18, 12, 9] },

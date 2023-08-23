@@ -18,9 +18,6 @@ import type { EmotionCache } from '@emotion/cache'
 
 import themeConfig from 'src/configs/themeConfig'
 
-// ** Fake-DB Import
-import 'src/@fake-db'
-
 // ** Third Party Import
 import { Toaster } from 'react-hot-toast'
 
@@ -113,10 +110,7 @@ const App = (props: ExtendedAppProps) => {
     <CacheProvider value={emotionCache}>
       <Head>
         <title>{`${themeConfig.templateName} - Dashboard`}</title>
-        <meta
-          name='description'
-          content={`${themeConfig.templateName} – Dashboard`}
-        />
+        <meta name='description' content={`${themeConfig.templateName} – Dashboard`} />
         <meta name='keywords' content='Rooch, Dashboard' />
         <meta name='viewport' content='initial-scale=1, width=device-width' />
       </Head>
@@ -128,7 +122,7 @@ const App = (props: ExtendedAppProps) => {
               return (
                 <ThemeComponent settings={settings}>
                   <Guard authGuard={authGuard} guestGuard={guestGuard}>
-                      {getLayout(<Component {...pageProps} />)}
+                    {getLayout(<Component {...pageProps} />)}
                   </Guard>
                   <ReactHotToast>
                     <Toaster position={settings.toastPosition} toastOptions={{ className: 'react-hot-toast' }} />

@@ -116,8 +116,7 @@ const UserDropdown = (props: Props) => {
       >
         {
         data.map(value => (
-          <>
-          <MenuItem sx={{ p: 0 }} onClick={() => handleDropdownClose()}>
+          <MenuItem key={value.address} sx={{ p: 0 }} onClick={() => handleDropdownClose()}>
             <Box sx={styles}>
               <Icon icon='bx:user'/>
               <Box sx={{ display: 'flex', flexDirection: 'column' }}>
@@ -128,7 +127,6 @@ const UserDropdown = (props: Props) => {
               </Box>
             </Box>
           </MenuItem>
-          </>
         ))
         }
         <Divider />

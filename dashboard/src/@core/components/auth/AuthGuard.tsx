@@ -22,8 +22,7 @@ const AuthGuard = (props: AuthGuardProps) => {
       if (!router.isReady) {
         return
       }
-
-      if (auth.user === null && !window.localStorage.getItem('userData')) {
+      if (auth.accounts === null && !window.localStorage.getItem('secret_key')) {
         if (router.asPath !== '/') {
           router.replace({
             pathname: '/login',
@@ -38,7 +37,7 @@ const AuthGuard = (props: AuthGuardProps) => {
     [router.route]
   )
 
-  if (auth.loading || auth.user === null) {
+  if (auth.loading || auth.accounts === null) {
     return fallback
   }
 

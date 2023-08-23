@@ -9,6 +9,7 @@ import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import Button from '@mui/material/Button'
 import Divider from '@mui/material/Divider'
+import TextField from '@mui/material/TextField'
 import InputLabel from '@mui/material/InputLabel'
 import Typography from '@mui/material/Typography'
 import IconButton from '@mui/material/IconButton'
@@ -18,10 +19,11 @@ import { styled, useTheme } from '@mui/material/styles'
 import MenuItem from '@mui/material/MenuItem'
 import Select, { SelectChangeEvent } from '@mui/material/Select'
 import FormControlLabel from '@mui/material/FormControlLabel'
+import FormHelperText from '@mui/material/FormHelperText'
 
 // ** Third Party Imports
 import * as yup from 'yup'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 
 // ** Icon Imports
@@ -50,19 +52,21 @@ const LinkStyled = styled(Link)(({ theme }) => ({
 }))
 
 const schema = yup.object().shape({
-  email: yup.string().email().required(),
-  password: yup.string().min(5).required()
+  secretKey: yup.string().min(43).required()
 })
 
-// TODO: change to secret key
 const defaultValues = {
-  password: '',
-  email: ''
+  secretKey: 'AM4KesRCz7SzQt+F9TK0IvznFGxjUWGgRNlJxbTLW0Ol'
 }
 
 interface FormData {
-  email: string
-  password: string
+  secretKey: string
+}
+
+enum InputType {
+  Connect,
+  Import,
+  Create
 }
 
 const LoginPage = () => {
@@ -70,38 +74,45 @@ const LoginPage = () => {
   const auth = useAuth()
   const theme = useTheme()
 
-//  const { settings } = useSettings()
-//  const bgColors = useBgColor()
+  //  const { settings } = useSettings()
+  //  const bgColors = useBgColor()
 
   const {
-//    control,
-    setError,
-    handleSubmit,
+    control,
 
-//    formState: { errors }
+//    setError,
+    handleSubmit,
+    formState: { errors }
   } = useForm({
     defaultValues,
     mode: 'onBlur',
     resolver: yupResolver(schema)
   })
-  
+
+  const [inputType, setInputType] = useState<InputType>(InputType.Connect)
+
   // ** State
   const [statusValue, setStatusValue] = useState<string>('')
-  
+
   const handleStatusValue = (e: SelectChangeEvent) => {
     setStatusValue(e.target.value)
   }
-  
+
   const onSubmit = (data: FormData) => {
-    const { email, password } = data
-    auth.login({ email, password, rememberMe:true }, () => {
-      setError('email', {
-        type: 'manual',
-        message: 'Email or Password is invalid'
-      })
-    })
+    const { secretKey } = data
+
+    console.log(secretKey)
+
+    auth.loginByMetamask()
+
+    //    auth.login({ email, password, rememberMe: true }, () => {
+    //      setError('email', {
+    //        type: 'manual',
+    //        message: 'Email or Password is invalid'
+    //      })
+    //    })
   }
-  
+
   return (
     <Box className='content-center'>
       <AuthIllustrationWrapper>
@@ -111,24 +122,48 @@ const LoginPage = () => {
               <Typography
                 variant='h5'
                 sx={{
-                ml: 2,
+                  ml: 2,
                   lineHeight: 1,
                   fontWeight: 700,
                   letterSpacing: '-0.45px',
                   fontSize: '1.75rem !important'
-              }}
-                >
+                }}
+              >
                 {themeConfig.templateName} Dashboard
               </Typography>
             </Box>
             <Typography variant='h6' sx={{ mb: 1.5 }}>
-              Welcome to {themeConfig.templateName} Dashboard! 👋🏻
+              Welcome to {themeConfig.templateName} Dashboard!!!! 👋🏻
             </Typography>
             <Typography sx={{ mb: 6, color: 'text.secondary' }}>
               Please connect to your account and start the adventure
             </Typography>
             <form noValidate autoComplete='off' onSubmit={handleSubmit(onSubmit)}>
-              <FormControl fullWidth>
+              {inputType === InputType.Import ? (
+                <FormControl fullWidth sx={{ mb: 2 }}>
+                  <Controller
+                    name='secretKey'
+                    control={control}
+                    rules={{ required: true }}
+                    render={({ field: { value, onChange, onBlur } }) => (
+                      <TextField
+                        autoFocus
+                        label='Secret Key'
+                        value={value}
+                        onBlur={onBlur}
+                        onChange={onChange}
+                        error={Boolean(errors.secretKey)}
+                        placeholder=''
+                      />
+                    )}
+                  />
+                  {errors.secretKey && (
+                    <FormHelperText sx={{ color: 'error.main' }}>{errors.secretKey.message}</FormHelperText>
+                  )}
+                </FormControl>
+              ) : (
+                <>
+                  <FormControl fullWidth>
                     <InputLabel id='invoice-status-select'>Select Wallet</InputLabel>
                     <Select
                       fullWidth
@@ -141,16 +176,35 @@ const LoginPage = () => {
                       <MenuItem value='Bitcoin'>Bitcoin</MenuItem>
                       <MenuItem value='Matemask'>Matemask</MenuItem>
                     </Select>
-              </FormControl>
+                  </FormControl>
+                </>
+              )}
               <Box
-                sx={{ mb: 4, display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}
-                >
+                sx={{
+                  mb: 4,
+                  display: 'flex',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  justifyContent: 'space-between'
+                }}
+              >
                 <FormControlLabel
                   label=''
                   control={<></>}
                   sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.875rem', color: 'text.secondary' } }}
                 />
-                <LinkStyled href='/'>Import Account</LinkStyled>
+                <Button
+                  onClick={() => {
+                    if (inputType === InputType.Connect) {
+                      setInputType(InputType.Import)
+                    } else {
+                      setInputType(InputType.Connect)
+                    }
+                    console.log('hhahah')
+                  }}
+                >
+                  {inputType === InputType.Import ? 'Select Account' : 'Import Account'}
+                </Button>
               </Box>
               <Button fullWidth size='large' type='submit' variant='contained' sx={{ mb: 4 }}>
                 Connect
@@ -196,8 +250,3 @@ LoginPage.getLayout = (page: ReactNode) => <BlankLayout>{page}</BlankLayout>
 LoginPage.guestGuard = true
 
 export default LoginPage
-
-
-
-
-
