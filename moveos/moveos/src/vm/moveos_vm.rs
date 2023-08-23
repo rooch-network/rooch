@@ -38,7 +38,6 @@ use moveos_stdlib::natives::moveos_stdlib::{
 use moveos_types::{
     event::{Event, EventID},
     function_return_value::FunctionReturnValue,
-    gas_config::GasConfig,
     move_types::FunctionId,
     moveos_std::{module_upgrade_flag::ModuleUpgradeFlag, tx_result::TxResult},
     object::ObjectID,
@@ -90,7 +89,8 @@ impl MoveOSVM {
         remote: &'r S,
         ctx: TxContext,
     ) -> MoveOSSession<'r, '_, S, MoveOSGasMeter> {
-        let gas_meter = MoveOSGasMeter::new(GasConfig::DEFAULT_MAX_GAS_AMOUNT);
+        //Do not charge gas for genesis session
+        let gas_meter = MoveOSGasMeter::new_unmetered();
         // Genesis session do not need to execute pre_execute and post_execute function
         MoveOSSession::new(&self.inner, remote, ctx, vec![], vec![], gas_meter, false)
     }
