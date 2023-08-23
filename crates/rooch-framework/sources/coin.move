@@ -387,10 +387,10 @@ module rooch_framework::coin {
         let MintCapability<CoinType> {} = mint_cap;
     }
 
-    // /// Destroy a burn capability.
-    // public fun destroy_burn_cap<CoinType>(burn_cap: BurnCapability<CoinType>) {
-    //     let BurnCapability<CoinType> {} = burn_cap;
-    // }
+    /// Destroy a burn capability.
+    public fun destroy_burn_cap<CoinType>(burn_cap: BurnCapability<CoinType>) {
+        let BurnCapability<CoinType> {} = burn_cap;
+    }
 
     #[test_only]
     public fun init_for_test(ctx: &mut StorageContext, account: &signer){
