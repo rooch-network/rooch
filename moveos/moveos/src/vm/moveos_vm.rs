@@ -91,7 +91,7 @@ impl MoveOSVM {
         ctx: TxContext,
     ) -> MoveOSSession<'r, '_, S, MoveOSGasMeter> {
         //Do not charge gas for genesis session
-        let gas_meter = MoveOSGasMeter::new();
+        let gas_meter = MoveOSGasMeter::new_unmetered();
         // Genesis session do not need to execute pre_execute and post_execute function
         MoveOSSession::new(&self.inner, remote, ctx, vec![], vec![], gas_meter, false)
     }
