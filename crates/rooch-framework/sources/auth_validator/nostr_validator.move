@@ -23,7 +23,7 @@ module rooch_framework::nostr_validator {
         NOSTR_SCHEME
     }
 
-    public entry fun rotate_authentication_key_entry<T>(
+    public entry fun rotate_authentication_key_entry(
         ctx: &mut StorageContext,
         account: &signer,
         public_key: vector<u8>
@@ -44,7 +44,7 @@ module rooch_framework::nostr_validator {
         account_authentication::rotate_authentication_key<NostrValidator>(ctx, account_addr, authentication_key);
     }
 
-    public entry fun remove_authentication_key_entry<T>(ctx: &mut StorageContext, account: &signer) {
+    public entry fun remove_authentication_key_entry(ctx: &mut StorageContext, account: &signer) {
         account_authentication::remove_authentication_key<NostrValidator>(ctx, signer::address_of(account));
     }
 

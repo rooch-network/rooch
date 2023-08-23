@@ -8,6 +8,8 @@
 -  [Struct `TxContext`](#0x2_tx_context_TxContext)
 -  [Constants](#@Constants_0)
 -  [Function `sender`](#0x2_tx_context_sender)
+-  [Function `sequence_number`](#0x2_tx_context_sequence_number)
+-  [Function `max_gas_amount`](#0x2_tx_context_max_gas_amount)
 -  [Function `fresh_address`](#0x2_tx_context_fresh_address)
 -  [Function `fresh_object_id`](#0x2_tx_context_fresh_object_id)
 -  [Function `derive_id`](#0x2_tx_context_derive_id)
@@ -16,6 +18,7 @@
 -  [Function `get`](#0x2_tx_context_get)
 -  [Function `contains`](#0x2_tx_context_contains)
 -  [Function `tx_meta`](#0x2_tx_context_tx_meta)
+-  [Function `tx_result`](#0x2_tx_context_tx_result)
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
@@ -28,6 +31,7 @@
 <b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="simple_map.md#0x2_simple_map">0x2::simple_map</a>;
 <b>use</b> <a href="tx_meta.md#0x2_tx_meta">0x2::tx_meta</a>;
+<b>use</b> <a href="tx_result.md#0x2_tx_result">0x2::tx_result</a>;
 <b>use</b> <a href="type_info.md#0x2_type_info">0x2::type_info</a>;
 </code></pre>
 
@@ -57,6 +61,18 @@ the VM and passed in to the entrypoint of the transaction as <code>&<b>mut</b> <
 </dt>
 <dd>
  The address of the user that signed the current transaction
+</dd>
+<dt>
+<code>sequence_number: u64</code>
+</dt>
+<dd>
+ Sequence number of this transaction corresponding to sender's account.
+</dd>
+<dt>
+<code>max_gas_amount: u64</code>
+</dt>
+<dd>
+
 </dd>
 <dt>
 <code>tx_hash: <a href="">vector</a>&lt;u8&gt;</code>
@@ -115,6 +131,56 @@ transaction
 
 <pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_sender">sender</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): <b>address</b> {
     self.sender
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_tx_context_sequence_number"></a>
+
+## Function `sequence_number`
+
+Return the sequence number of the current transaction
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_sequence_number">sequence_number</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_sequence_number">sequence_number</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): u64 {
+    self.sequence_number
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_tx_context_max_gas_amount"></a>
+
+## Function `max_gas_amount`
+
+Return the max gas to be used
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_max_gas_amount">max_gas_amount</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_max_gas_amount">max_gas_amount</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): u64 {
+    self.max_gas_amount
 }
 </code></pre>
 
@@ -333,6 +399,33 @@ The meta data is only available when executing or validating a transaction, othe
     <b>let</b> meta = <a href="tx_context.md#0x2_tx_context_get">get</a>&lt;TxMeta&gt;(self);
     <b>assert</b>!(<a href="_is_some">option::is_some</a>(&meta), <a href="_invalid_state">error::invalid_state</a>(<a href="tx_context.md#0x2_tx_context_EInvalidContext">EInvalidContext</a>));
     <a href="_extract">option::extract</a>(&<b>mut</b> meta)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_tx_context_tx_result"></a>
+
+## Function `tx_result`
+
+The result is only available in the <code>post_execute</code> function.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_result.md#0x2_tx_result">tx_result</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="tx_result.md#0x2_tx_result_TxResult">tx_result::TxResult</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_result.md#0x2_tx_result">tx_result</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): TxResult {
+    <b>let</b> result = <a href="tx_context.md#0x2_tx_context_get">get</a>&lt;TxResult&gt;(self);
+    <b>assert</b>!(<a href="_is_some">option::is_some</a>(&result), <a href="_invalid_state">error::invalid_state</a>(<a href="tx_context.md#0x2_tx_context_EInvalidContext">EInvalidContext</a>));
+    <a href="_extract">option::extract</a>(&<b>mut</b> result)
 }
 </code></pre>
 

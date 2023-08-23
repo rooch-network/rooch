@@ -25,7 +25,7 @@
 
 
 
-<pre><code><b>struct</b> <a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a> <b>has</b> drop, store
 </code></pre>
 
 

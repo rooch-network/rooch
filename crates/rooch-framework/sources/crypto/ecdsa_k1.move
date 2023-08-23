@@ -3,7 +3,7 @@ module rooch_framework::ecdsa_k1 {
 
     /// constant codes
     const V_ECDSA_K1_TO_BITCOIN_SCHEME_LENGTH: u64 = 1;
-    const V_ECDSA_K1_PUBKEY_LENGTH: u64 = 33;
+    const V_ECDSA_K1_COMPRESSED_PUBKEY_LENGTH: u64 = 33;
     const V_ECDSA_K1_SIG_LENGTH: u64 = 64;
 
     /// Hash function name that are valid for ecrecover and verify.
@@ -23,7 +23,7 @@ module rooch_framework::ecdsa_k1 {
     }
 
     public fun public_key_length(): u64 {
-        V_ECDSA_K1_PUBKEY_LENGTH
+        V_ECDSA_K1_COMPRESSED_PUBKEY_LENGTH
     }
 
     public fun signature_length(): u64 {

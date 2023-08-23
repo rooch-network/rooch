@@ -23,7 +23,7 @@ module rooch_framework::ethereum_validator {
         ETHEREUM_SCHEME
     }
 
-    public entry fun rotate_authentication_key_entry<T>(
+    public entry fun rotate_authentication_key_entry(
         ctx: &mut StorageContext,
         account: &signer,
         public_key: vector<u8>
@@ -44,7 +44,7 @@ module rooch_framework::ethereum_validator {
         account_authentication::rotate_authentication_key<EthereumValidator>(ctx, account_addr, authentication_key);
     }
 
-    public entry fun remove_authentication_key_entry<T>(ctx: &mut StorageContext, account: &signer) {
+    public entry fun remove_authentication_key_entry(ctx: &mut StorageContext, account: &signer) {
         account_authentication::remove_authentication_key<EthereumValidator>(ctx, signer::address_of(account));
     }
 
@@ -97,6 +97,7 @@ module rooch_framework::ethereum_validator {
         validate_signature(&authenticator_payload, &tx_hash);
 
         // TODO compare the auth_key from the payload with the auth_key from the account
+        std::debug::print(ctx);
     }
 
     fun pre_execute(

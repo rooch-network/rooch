@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use clap::ArgEnum;
 use moveos_types::serde::Readable;
 use serde::{Deserialize, Serialize};
 use serde_with::hex::Hex;
@@ -13,6 +14,26 @@ use std::{fmt::Display, str::FromStr};
 #[serde_as]
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub struct AuthenticationKey(#[serde_as(as = "Readable<Hex,_>")] Vec<u8>);
+
+/// Define authentication key type for each blockchain
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ArgEnum)]
+pub enum AuthenticationKeyType {
+    P2PKH,
+    P2SH,
+}
+
+impl AuthenticationKeyType {
+    const P2PKH_DECIMAL_PREFIX: u8 = 0x00;
+    const P2SH_DECIMAL_PREFIX: u8 = 0x05;
+
+    // TODO: Support script version
+    pub fn decimal_prefix_or_version(&self) -> u8 {
+        match self {
+            AuthenticationKeyType::P2PKH => Self::P2PKH_DECIMAL_PREFIX,
+            AuthenticationKeyType::P2SH => Self::P2SH_DECIMAL_PREFIX,
+        }
+    }
+}
 
 impl Display for AuthenticationKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

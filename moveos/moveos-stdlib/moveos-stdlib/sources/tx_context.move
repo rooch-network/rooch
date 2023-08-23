@@ -13,6 +13,7 @@ module moveos_std::tx_context {
     use moveos_std::copyable_any::{Self, Any};
     use moveos_std::type_info;
     use moveos_std::tx_meta::{TxMeta};
+    use moveos_std::tx_result::{TxResult};
 
     friend moveos_std::object;
     friend moveos_std::raw_table;
@@ -27,6 +28,10 @@ module moveos_std::tx_context {
     struct TxContext has drop {
         /// The address of the user that signed the current transaction
         sender: address,
+        /// Sequence number of this transaction corresponding to sender's account.
+        sequence_number: u64,
+        // The max gas to be used. 
+        max_gas_amount: u64,
         /// Hash of the current transaction
         tx_hash: vector<u8>,
         /// Counter recording the number of fresh id's created while executing
@@ -40,6 +45,16 @@ module moveos_std::tx_context {
     /// transaction
     public fun sender(self: &TxContext): address {
         self.sender
+    }
+
+    /// Return the sequence number of the current transaction
+    public fun sequence_number(self: &TxContext): u64 {
+        self.sequence_number
+    }
+
+    /// Return the max gas to be used
+    public fun max_gas_amount(self: &TxContext): u64 {
+        self.max_gas_amount
     } 
 
     /// Generate a new unique address,
@@ -106,12 +121,21 @@ module moveos_std::tx_context {
         option::extract(&mut meta)
     }
 
+    /// The result is only available in the `post_execute` function.
+    public fun tx_result(self: &TxContext): TxResult {
+        let result = get<TxResult>(self);
+        assert!(option::is_some(&result), error::invalid_state(EInvalidContext));
+        option::extract(&mut result)
+    }
+
     #[test_only]
     /// Create a TxContext for unit test
     public fun new_test_context(sender: address): TxContext {
         let tx_hash = hash::sha3_256(b"test_tx");
         TxContext {
             sender,
+            sequence_number: 0,
+            max_gas_amount: 100000000,
             tx_hash,
             ids_created: 0,
             map: simple_map::create(),

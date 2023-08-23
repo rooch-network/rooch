@@ -98,7 +98,7 @@ async fn run_cmd(world: &mut World, args: String) {
 async fn assert_output(world: &mut World, args: String) {
     assert!(world.tpl_ctx.is_some(), "tpl_ctx is none");
     let args = eval_command_args(world.tpl_ctx.as_ref().unwrap(), args);
-    let parameters = args.split_whitespace().collect::<Vec<_>>();
+    let parameters = split_string_with_quotes(&args).expect("Invalid commands");
 
     for chunk in parameters.chunks(3) {
         let first = chunk.get(0).cloned();
@@ -108,10 +108,16 @@ async fn assert_output(world: &mut World, args: String) {
         info!("assert value: {:?} {:?} {:?}", first, op, second);
 
         match (first, op, second) {
-            (Some(first), Some(op), Some(second)) => match op {
+            (Some(first), Some(op), Some(second)) => match op.as_str() {
                 "==" => assert_eq!(first, second, "Assert {:?} == {:?} failed", first, second),
                 "!=" => assert_ne!(first, second, "Assert {:?} 1= {:?} failed", first, second),
-                _ => panic!("unsupported operator"),
+                "contains" => assert!(
+                    first.contains(&second),
+                    "Assert {:?} contains {:?} failed",
+                    first,
+                    second
+                ),
+                _ => panic!("unsupported operator {:?}", op.as_str()),
             },
             _ => panic!(
                 "expected 3 arguments: first [==|!=] second, but got input {:?}",

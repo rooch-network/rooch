@@ -17,6 +17,7 @@
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
+<b>use</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1">0x3::ecdsa_k1</a>;
 <b>use</b> <a href="encoding.md#0x3_encoding">0x3::encoding</a>;
 </code></pre>
 
@@ -63,6 +64,15 @@
 
 
 
+<a name="0x3_bitcoin_address_EInvalidCompressedPublicKeyLength"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_EInvalidCompressedPublicKeyLength">EInvalidCompressedPublicKeyLength</a>: u64 = 2;
+</code></pre>
+
+
+
 <a name="0x3_bitcoin_address_EInvalidDecimalPrefix"></a>
 
 error code
@@ -73,11 +83,56 @@ error code
 
 
 
+<a name="0x3_bitcoin_address_EInvalidHashedPublicKeyLength"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_EInvalidHashedPublicKeyLength">EInvalidHashedPublicKeyLength</a>: u64 = 3;
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_EInvalidSchnorrPublicKeyLength"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_EInvalidSchnorrPublicKeyLength">EInvalidSchnorrPublicKeyLength</a>: u64 = 4;
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_EInvalidScriptVersion"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_EInvalidScriptVersion">EInvalidScriptVersion</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_P2PKH_ADDR_DECIMAL_PREFIX"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_P2PKH_ADDR_DECIMAL_PREFIX">P2PKH_ADDR_DECIMAL_PREFIX</a>: u8 = 0;
+</code></pre>
+
+
+
 <a name="0x3_bitcoin_address_P2PKH_ADDR_LENGTH"></a>
 
 
 
 <pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_P2PKH_ADDR_LENGTH">P2PKH_ADDR_LENGTH</a>: u64 = 34;
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_P2SH_ADDR_DECIMAL_PREFIX"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_P2SH_ADDR_DECIMAL_PREFIX">P2SH_ADDR_DECIMAL_PREFIX</a>: u8 = 5;
 </code></pre>
 
 
@@ -106,7 +161,7 @@ error code
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_legacy">new_legacy</a>(pub_key: <a href="">vector</a>&lt;u8&gt;, decimal_prefix: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_legacy">new_legacy</a>(pub_key: &<a href="">vector</a>&lt;u8&gt;, decimal_prefix: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
 </code></pre>
 
 
@@ -115,16 +170,22 @@ error code
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_legacy">new_legacy</a>(pub_key: <a href="">vector</a>&lt;u8&gt;, decimal_prefix: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_legacy">new_legacy</a>(pub_key: &<a href="">vector</a>&lt;u8&gt;, decimal_prefix: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
     // Check the decimal_prefix, i.e. <b>address</b> type
     <b>assert</b>!(
-        decimal_prefix == 0 || decimal_prefix == 5,
+        decimal_prefix == <a href="bitcoin_address.md#0x3_bitcoin_address_P2PKH_ADDR_DECIMAL_PREFIX">P2PKH_ADDR_DECIMAL_PREFIX</a>
+        || decimal_prefix == <a href="bitcoin_address.md#0x3_bitcoin_address_P2SH_ADDR_DECIMAL_PREFIX">P2SH_ADDR_DECIMAL_PREFIX</a>,
         <a href="_invalid_argument">error::invalid_argument</a>(<a href="bitcoin_address.md#0x3_bitcoin_address_EInvalidDecimalPrefix">EInvalidDecimalPrefix</a>)
     );
+    // Check the <b>public</b> key length
+    <b>assert</b>!(
+        <a href="_length">vector::length</a>(pub_key) == <a href="ecdsa_k1.md#0x3_ecdsa_k1_public_key_length">ecdsa_k1::public_key_length</a>(),
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="bitcoin_address.md#0x3_bitcoin_address_EInvalidCompressedPublicKeyLength">EInvalidCompressedPublicKeyLength</a>)
+    );
     // Perform <b>address</b> creation
-    <b>let</b> <a href="bitcoin_address.md#0x3_bitcoin_address">bitcoin_address</a> = <b>if</b> (decimal_prefix == 0) { // P2PKH <b>address</b>
+    <b>let</b> <a href="bitcoin_address.md#0x3_bitcoin_address">bitcoin_address</a> = <b>if</b> (decimal_prefix == <a href="bitcoin_address.md#0x3_bitcoin_address_P2PKH_ADDR_DECIMAL_PREFIX">P2PKH_ADDR_DECIMAL_PREFIX</a>) { // P2PKH <b>address</b>
         <a href="bitcoin_address.md#0x3_bitcoin_address_create_p2pkh_address">create_p2pkh_address</a>(pub_key)
-    } <b>else</b> <b>if</b> (decimal_prefix == 5) { // P2SH <b>address</b>
+    } <b>else</b> <b>if</b> (decimal_prefix == <a href="bitcoin_address.md#0x3_bitcoin_address_P2SH_ADDR_DECIMAL_PREFIX">P2SH_ADDR_DECIMAL_PREFIX</a>) { // P2SH <b>address</b>
         <a href="bitcoin_address.md#0x3_bitcoin_address_create_p2sh_address">create_p2sh_address</a>(pub_key)
     } <b>else</b> {
         <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
@@ -146,7 +207,7 @@ error code
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_bech32">new_bech32</a>(pub_key: <a href="">vector</a>&lt;u8&gt;, version: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_bech32">new_bech32</a>(pub_key: &<a href="">vector</a>&lt;u8&gt;, version: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
 </code></pre>
 
 
@@ -155,8 +216,26 @@ error code
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_bech32">new_bech32</a>(pub_key: <a href="">vector</a>&lt;u8&gt;, version: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
-    // This will create Segwit Bech32 or Taproot Bech32m addresses depending on the <b>public</b> key length and the version digit
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_bech32">new_bech32</a>(pub_key: &<a href="">vector</a>&lt;u8&gt;, version: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
+    // Check the <b>script</b> version
+    <b>assert</b>!(
+        version &lt;= 16,
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="bitcoin_address.md#0x3_bitcoin_address_EInvalidScriptVersion">EInvalidScriptVersion</a>)
+    );
+    // Check the <b>script</b> version and the <b>public</b> key relationship
+    <b>if</b> (version == 0) {
+        <b>assert</b>!(
+            <a href="_length">vector::length</a>(pub_key) == 20 || <a href="_length">vector::length</a>(pub_key) == 32,
+            <a href="_invalid_argument">error::invalid_argument</a>(<a href="bitcoin_address.md#0x3_bitcoin_address_EInvalidHashedPublicKeyLength">EInvalidHashedPublicKeyLength</a>)
+        );
+    };
+    <b>if</b> (version == 1) {
+        <b>assert</b>!(
+            <a href="_length">vector::length</a>(pub_key) == 32,
+            <a href="_invalid_argument">error::invalid_argument</a>(<a href="bitcoin_address.md#0x3_bitcoin_address_EInvalidSchnorrPublicKeyLength">EInvalidSchnorrPublicKeyLength</a>)
+        );
+    };
+    // This will create Segwit Bech32 or Taproot Bech32m addresses depending on the <b>public</b> key length and the <b>script</b> version
     <b>let</b> <a href="bitcoin_address.md#0x3_bitcoin_address">bitcoin_address</a> = <a href="bitcoin_address.md#0x3_bitcoin_address_create_bech32_address">create_bech32_address</a>(pub_key, version);
 
     <a href="bitcoin_address.md#0x3_bitcoin_address">bitcoin_address</a>
@@ -222,7 +301,7 @@ error code
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_create_p2pkh_address">create_p2pkh_address</a>(pub_key: <a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_create_p2pkh_address">create_p2pkh_address</a>(pub_key: &<a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
 </code></pre>
 
 
@@ -231,8 +310,8 @@ error code
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_create_p2pkh_address">create_p2pkh_address</a>(pub_key: <a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
-    <b>let</b> address_bytes = <a href="encoding.md#0x3_encoding_p2pkh">encoding::p2pkh</a>(&pub_key);
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_create_p2pkh_address">create_p2pkh_address</a>(pub_key: &<a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
+    <b>let</b> address_bytes = <a href="encoding.md#0x3_encoding_p2pkh">encoding::p2pkh</a>(pub_key);
 
     <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
         bytes: address_bytes
@@ -250,7 +329,7 @@ error code
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_create_p2sh_address">create_p2sh_address</a>(pub_key: <a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_create_p2sh_address">create_p2sh_address</a>(pub_key: &<a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
 </code></pre>
 
 
@@ -259,8 +338,8 @@ error code
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_create_p2sh_address">create_p2sh_address</a>(pub_key: <a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
-    <b>let</b> address_bytes = <a href="encoding.md#0x3_encoding_p2sh">encoding::p2sh</a>(&pub_key);
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_create_p2sh_address">create_p2sh_address</a>(pub_key: &<a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
+    <b>let</b> address_bytes = <a href="encoding.md#0x3_encoding_p2sh">encoding::p2sh</a>(pub_key);
 
     <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
         bytes: address_bytes
@@ -278,7 +357,7 @@ error code
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_create_bech32_address">create_bech32_address</a>(pub_key: <a href="">vector</a>&lt;u8&gt;, version: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_create_bech32_address">create_bech32_address</a>(pub_key: &<a href="">vector</a>&lt;u8&gt;, version: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
 </code></pre>
 
 
@@ -287,8 +366,8 @@ error code
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_create_bech32_address">create_bech32_address</a>(pub_key: <a href="">vector</a>&lt;u8&gt;, version: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
-    <b>let</b> address_bytes = <a href="encoding.md#0x3_encoding_bech32">encoding::bech32</a>(&pub_key, version);
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_create_bech32_address">create_bech32_address</a>(pub_key: &<a href="">vector</a>&lt;u8&gt;, version: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
+    <b>let</b> address_bytes = <a href="encoding.md#0x3_encoding_bech32">encoding::bech32</a>(pub_key, version);
 
     <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
         bytes: address_bytes

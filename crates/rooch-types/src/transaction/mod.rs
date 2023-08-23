@@ -26,14 +26,14 @@ pub struct RawTransaction {
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct AuthenticatorInfo {
-    pub seqence_number: u64,
+    pub chain_id: u64,
     pub authenticator: Authenticator,
 }
 
 impl AuthenticatorInfo {
-    pub fn new(seqence_number: u64, authenticator: Authenticator) -> Self {
+    pub fn new(chain_id: u64, authenticator: Authenticator) -> Self {
         Self {
-            seqence_number,
+            chain_id,
             authenticator,
         }
     }
@@ -61,7 +61,7 @@ pub trait AbstractTransaction {
 
     fn tx_hash(&self) -> H256;
 
-    fn authenticator_info(&self) -> AuthenticatorInfo;
+    fn authenticator_info(&self) -> Result<AuthenticatorInfo>;
 
     fn construct_moveos_transaction(
         self,
@@ -122,7 +122,7 @@ impl AbstractTransaction for TypedTransaction {
         }
     }
 
-    fn authenticator_info(&self) -> AuthenticatorInfo {
+    fn authenticator_info(&self) -> Result<AuthenticatorInfo> {
         match self {
             TypedTransaction::Rooch(tx) => tx.authenticator_info(),
             TypedTransaction::Ethereum(tx) => tx.authenticator_info(),
