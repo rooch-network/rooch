@@ -161,6 +161,8 @@ impl MoveStructState for TxContext {
     fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![
             MoveTypeLayout::Address,
+            MoveTypeLayout::U64,
+            MoveTypeLayout::U64,
             MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
             MoveTypeLayout::U64,
             MoveTypeLayout::Struct(SimpleMap::<MoveString, CopyableAny>::struct_layout()),

@@ -121,7 +121,7 @@ impl RoochTransaction {
             vec![],
         );
 
-        let transaction_data = RoochTransactionData::new(sender, sequence_number, payload);
+        let transaction_data = RoochTransactionData::new_for_test(sender, sequence_number, payload);
         let mut rng = rand::thread_rng();
         let ed25519_keypair: Ed25519KeyPair = Ed25519KeyPair::generate(&mut rng);
         let auth =
