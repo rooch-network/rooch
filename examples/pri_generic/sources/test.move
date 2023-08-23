@@ -1,6 +1,5 @@
 // module rooch_examples
 module rooch_examples::test {
-
     // Test1:
     // struct Data {}
     //
@@ -41,7 +40,7 @@ module rooch_examples::test {
     }
 
     // Define a Box type
-    struct Box<T> has drop{
+    struct Box<T> has drop {
         v: T
     }
 
@@ -62,24 +61,29 @@ module rooch_examples::test {
 
     // Unit Test:
     #[test]
+    // #[expected_failure]
     fun test() {
-        let val = 123;
-        let data = Data { v: val };
+        let data = new_data(123);
         let box = new_box<Data>(data);
-        // let _ = get_box_value(&box);
-        assert!(get_box_value(&box).v == val, 1000);
+        assert!(get_box_value<Data>(&box).v == 123, 1000);
+        // assert!(get_box_value(&box) == Data{v:1234}, 10001)
     }
 }
 
-module rooch_examples::test2 {
-    use rooch_examples::test::{new_box, get_box_value};
-    struct Data2 has copy, drop{
-        v: u64
-    }
-
-    fun run() {
-        let data2 = Data2 { v: 789};
-        let box = new_box<Data2>(data2);
-        assert!(get_box_value(&box).v == 7891, 2000);
-    }
-}
+// module rooch_examples::test2 {
+//     use rooch_examples::test::{new_box, get_box_value};
+//
+//     const NOT_EQUAL: u64 = 1;
+//
+//     struct Data2 has copy, drop {
+//         v: u64
+//     }
+//
+//     #[test]
+//     #[expected_failure]
+//     fun run() {
+//         let data2 = Data2 { v: 789 };
+//         let box = new_box<Data2>(data2);
+//         assert!(get_box_value(&box).v == 7891, NOT_EQUAL);
+//     }
+// }
