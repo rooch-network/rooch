@@ -7,8 +7,12 @@ use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use move_vm_runtime::{config::VMConfig, native_functions::NativeFunction};
 use moveos::moveos::MoveOSConfig;
 use moveos_stdlib_builder::BuildOptions;
+use moveos_store::config_store::ConfigDBStore;
+use moveos_types::h256;
+use moveos_types::h256::H256;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use once_cell::sync::Lazy;
+use rooch_types::error::GenesisError;
 use serde::{Deserialize, Serialize};
 use std::{
     fs::File,
@@ -81,6 +85,38 @@ impl RoochGenesis {
 
     pub fn all_natives(&self) -> Vec<(AccountAddress, Identifier, Identifier, NativeFunction)> {
         rooch_framework::natives::all_natives(self.gas_params.clone())
+    }
+
+    pub fn genesis_hash(&self) -> H256 {
+        h256::sha3_256_of(
+            bcs::to_bytes(&self.genesis_txs())
+                .expect("genesis txs bcs to_bytes should success")
+                .as_slice(),
+        )
+    }
+
+    pub fn check_genesis(&self, config_store: &ConfigDBStore) -> Result<()> {
+        let genesis_hash_result = config_store.get_genesis();
+        match genesis_hash_result {
+            Ok(Some(genesis_hash_store)) => {
+                let genesis_hash = self.genesis_hash();
+                if genesis_hash_store != genesis_hash {
+                    return Err(GenesisError::GenesisVersionMismatch {
+                        expect: genesis_hash_store,
+                        real: genesis_hash,
+                    }
+                    .into());
+                }
+            }
+            Err(e) => return Err(GenesisError::GenesisLoadFailure(e.to_string()).into()),
+            Ok(None) => {
+                return Err(GenesisError::GenesisNotExist(
+                    "genesis hash from store is none".to_string(),
+                )
+                .into())
+            }
+        }
+        Ok(())
     }
 }
 
@@ -185,6 +221,12 @@ mod tests {
     fn test_genesis_build() {
         let genesis = super::RoochGenesis::build().expect("build rooch framework failed");
         assert_eq!(genesis.genesis_package.genesis_txs.len(), 3);
+    }
+
+    #[test]
+    fn test_genesis_hash() {
+        let genesis = super::RoochGenesis::build().expect("build rooch framework failed");
+        genesis.genesis_hash();
     }
 
     #[test]

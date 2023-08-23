@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use moveos_types::h256::H256;
 use serde::{Deserialize, Serialize};
 use std::io;
 use thiserror::Error;
@@ -113,4 +114,14 @@ impl From<io::Error> for RoochError {
     fn from(e: io::Error) -> Self {
         RoochError::IOError(e.to_string())
     }
+}
+
+#[derive(Debug, Error, Eq, PartialEq)]
+pub enum GenesisError {
+    #[error("Genesis version mismatch expect: {expect:?}, real: {real:?}.")]
+    GenesisVersionMismatch { expect: H256, real: H256 },
+    #[error("Genesis load fail {0}")]
+    GenesisLoadFailure(String),
+    #[error("Genesis block not exist in {0}.")]
+    GenesisNotExist(String),
 }
