@@ -1,4 +1,3 @@
-
 /**
  * Get the type from the given value.
  *

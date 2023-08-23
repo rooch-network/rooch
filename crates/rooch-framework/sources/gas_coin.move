@@ -60,4 +60,5 @@ module rooch_framework::gas_coin {
         let MintCapStore { mint_cap } = account_storage::global_move_from<MintCapStore>(ctx,@rooch_framework);
         coin::destroy_mint_cap(mint_cap);
     }
+
 }

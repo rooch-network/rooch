@@ -29,6 +29,7 @@ use rooch_rpc_api::api::RoochRpcModule;
 use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
+use rooch_types::chain_id::ChainID;
 use rooch_types::error::GenesisError;
 use serde_json::json;
 use std::env;
@@ -139,6 +140,8 @@ pub async fn run_start_server(is_mock_storage: bool) -> Result<ServerHandle> {
     let _ = tracing_subscriber::fmt::try_init();
 
     let config = ServerConfig::default();
+    //TODO load chain id from config or CLI option.
+    let chain_id = ChainID::Dev as u64;
 
     let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
     let actor_system = ActorSystem::global_system();
@@ -206,16 +209,10 @@ pub async fn run_start_server(is_mock_storage: bool) -> Result<ServerHandle> {
         .await?;
 
     let mut rpc_module_builder = RpcModuleBuilder::new();
-    rpc_module_builder
-        .register_module(RoochServer::new(rpc_service.clone()))
-        .unwrap();
-    rpc_module_builder
-        .register_module(WalletServer::new(rpc_service.clone()))
-        .unwrap();
+    rpc_module_builder.register_module(RoochServer::new(rpc_service.clone()))?;
+    rpc_module_builder.register_module(WalletServer::new(rpc_service.clone()))?;
 
-    rpc_module_builder
-        .register_module(EthServer::new(rpc_service.clone()))
-        .unwrap();
+    rpc_module_builder.register_module(EthServer::new(chain_id, rpc_service.clone()))?;
 
     // let rpc_api = build_rpc_api(rpc_api);
     let methods_names = rpc_module_builder.module.method_names().collect::<Vec<_>>();

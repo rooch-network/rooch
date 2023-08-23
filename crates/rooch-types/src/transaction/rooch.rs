@@ -4,10 +4,11 @@
 use super::{
     authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo, TransactionType,
 };
-use crate::address::RoochAddress;
 use crate::H256;
+use crate::{address::RoochAddress, chain_id::ChainID};
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
+use moveos_types::gas_config::GasConfig;
 use moveos_types::{
     transaction::{MoveAction, MoveOSTransaction},
     tx_context::TxContext,
@@ -21,16 +22,37 @@ pub struct RoochTransactionData {
     pub sender: RoochAddress,
     // Sequence number of this transaction corresponding to sender's account.
     pub sequence_number: u64,
+    // The ChainID of the transaction.
+    pub chain_id: u64,
+    // The max gas to be used.
+    pub max_gas_amount: u64,
     // The MoveAction to execute.
     pub action: MoveAction,
-    //TODO how to define Gas paramter and AppID(Or ChainID)
 }
 
 impl RoochTransactionData {
-    pub fn new(sender: RoochAddress, sequence_number: u64, action: MoveAction) -> Self {
+    pub fn new(
+        sender: RoochAddress,
+        sequence_number: u64,
+        chain_id: u64,
+        max_gas_amount: u64,
+        action: MoveAction,
+    ) -> Self {
         Self {
             sender,
             sequence_number,
+            chain_id,
+            max_gas_amount,
+            action,
+        }
+    }
+
+    pub fn new_for_test(sender: RoochAddress, sequence_number: u64, action: MoveAction) -> Self {
+        Self {
+            sender,
+            sequence_number,
+            chain_id: ChainID::Dev as u64,
+            max_gas_amount: GasConfig::DEFAULT_MAX_GAS_AMOUNT,
             action,
         }
     }
@@ -66,6 +88,14 @@ impl RoochTransaction {
         self.data.sequence_number
     }
 
+    pub fn chain_id(&self) -> u64 {
+        self.data.chain_id
+    }
+
+    pub fn max_gas_amount(&self) -> u64 {
+        self.data.max_gas_amount
+    }
+
     pub fn action(&self) -> &MoveAction {
         &self.data.action
     }
@@ -91,7 +121,7 @@ impl RoochTransaction {
             vec![],
         );
 
-        let transaction_data = RoochTransactionData::new(sender, sequence_number, payload);
+        let transaction_data = RoochTransactionData::new_for_test(sender, sequence_number, payload);
         let mut rng = rand::thread_rng();
         let ed25519_keypair: Ed25519KeyPair = Ed25519KeyPair::generate(&mut rng);
         let auth =
@@ -103,7 +133,12 @@ impl RoochTransaction {
 impl From<RoochTransaction> for MoveOSTransaction {
     fn from(tx: RoochTransaction) -> Self {
         let tx_hash = tx.tx_hash();
-        let tx_ctx = TxContext::new(tx.data.sender.into(), tx_hash);
+        let tx_ctx = TxContext::new(
+            tx.data.sender.into(),
+            tx.data.sequence_number,
+            tx.data.max_gas_amount,
+            tx_hash,
+        );
         MoveOSTransaction::new(tx_ctx, tx.data.action)
     }
 }
@@ -130,11 +165,11 @@ impl AbstractTransaction for RoochTransaction {
         self.data.hash()
     }
 
-    fn authenticator_info(&self) -> AuthenticatorInfo {
-        AuthenticatorInfo {
-            seqence_number: self.sequence_number(),
-            authenticator: self.authenticator.clone(),
-        }
+    fn authenticator_info(&self) -> Result<AuthenticatorInfo> {
+        Ok(AuthenticatorInfo::new(
+            self.chain_id(),
+            self.authenticator.clone(),
+        ))
     }
 
     fn construct_moveos_transaction(

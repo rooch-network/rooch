@@ -142,7 +142,7 @@ impl MoveOS {
             post_execute_functions,
         } = tx;
 
-        let gas_meter = MoveOSGasMeter::new();
+        let gas_meter = MoveOSGasMeter::new_for_test();
         let session = self
             .vm
             .new_readonly_session(&self.db, ctx.clone(), gas_meter);
@@ -173,7 +173,7 @@ impl MoveOS {
                 action
             );
         }
-        let gas_meter = MoveOSGasMeter::new();
+        let gas_meter = MoveOSGasMeter::new(ctx.max_gas_amount);
         let mut session = self.vm.new_session(
             &self.db,
             ctx,
@@ -253,7 +253,7 @@ impl MoveOS {
         function_call: FunctionCall,
     ) -> FunctionResult {
         //TODO limit the view function max gas usage
-        let gas_meter = MoveOSGasMeter::new();
+        let gas_meter = MoveOSGasMeter::new_for_test();
         let mut session = self
             .vm
             .new_readonly_session(&self.db, tx_context.clone(), gas_meter);

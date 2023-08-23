@@ -12,7 +12,7 @@ use move_binary_format::{
     CompiledModule,
 };
 
-use crate::gas::table::MoveOSGasMeter;
+use crate::gas::{table::MoveOSGasMeter, SwitchableGasMeter};
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
@@ -29,7 +29,6 @@ use move_vm_runtime::{
 };
 use move_vm_types::{
     data_store::DataStore,
-    gas::GasMeter,
     loaded_data::runtime_types::{CachedStructIndex, StructType, Type},
 };
 use moveos_stdlib::natives::moveos_stdlib::{
@@ -39,8 +38,9 @@ use moveos_stdlib::natives::moveos_stdlib::{
 use moveos_types::{
     event::{Event, EventID},
     function_return_value::FunctionReturnValue,
+    gas_config::GasConfig,
     move_types::FunctionId,
-    moveos_std::module_upgrade_flag::ModuleUpgradeFlag,
+    moveos_std::{module_upgrade_flag::ModuleUpgradeFlag, tx_result::TxResult},
     object::ObjectID,
     state_resolver::MoveOSResolver,
     storage_context::StorageContext,
@@ -66,7 +66,7 @@ impl MoveOSVM {
         })
     }
 
-    pub fn new_session<'r, S: MoveOSResolver, G: GasMeter>(
+    pub fn new_session<'r, S: MoveOSResolver, G: SwitchableGasMeter>(
         &self,
         remote: &'r S,
         ctx: TxContext,
@@ -90,13 +90,12 @@ impl MoveOSVM {
         remote: &'r S,
         ctx: TxContext,
     ) -> MoveOSSession<'r, '_, S, MoveOSGasMeter> {
-        //Do not charge gas for genesis session
-        let gas_meter = MoveOSGasMeter::new();
+        let gas_meter = MoveOSGasMeter::new(GasConfig::DEFAULT_MAX_GAS_AMOUNT);
         // Genesis session do not need to execute pre_execute and post_execute function
         MoveOSSession::new(&self.inner, remote, ctx, vec![], vec![], gas_meter, false)
     }
 
-    pub fn new_readonly_session<'r, S: MoveOSResolver, G: GasMeter>(
+    pub fn new_readonly_session<'r, S: MoveOSResolver, G: SwitchableGasMeter>(
         &self,
         remote: &'r S,
         ctx: TxContext,
@@ -124,7 +123,7 @@ pub struct MoveOSSession<'r, 'l, S, G> {
 impl<'r, 'l, S, G> MoveOSSession<'r, 'l, S, G>
 where
     S: MoveOSResolver,
-    G: GasMeter,
+    G: SwitchableGasMeter,
 {
     pub fn new(
         vm: &'l MoveVM,
@@ -450,7 +449,7 @@ where
         self,
         vm_status: VMStatus,
     ) -> VMResult<(TxContext, TransactionOutput)> {
-        let (finalized_session, status) = match vm_status.keep_or_discard() {
+        let (finalized_session, status, gas_used) = match vm_status.keep_or_discard() {
             Ok(status) => self.post_execute(status),
             Err(discard_status) => {
                 //This should not happen, if it happens, it means that the VM or verifer has a bug
@@ -511,8 +510,7 @@ where
                 Event::new(EventID::new(event_handle_id, e.1), e.2, e.3, i as u64)
             })
             .collect();
-        //TODO calculate the gas_used with gas_meter
-        let gas_used = 0;
+
         Ok((
             ctx.tx_context,
             TransactionOutput {
@@ -529,6 +527,9 @@ where
         // the read_only function should not execute pre_execute function
         // this ensure via the check in new_session
         let mut pre_execute_session = self;
+        // we do not charge gas for pre_execute function
+        // TODO should we charge gas for custom authencation validator?
+        pre_execute_session.gas_meter.stop_metering();
         for function_call in pre_execute_session.pre_execute_functions.clone() {
             let pre_execute_function_id = function_call.function_id.clone();
             let result = pre_execute_session.execute_function_bypass_visibility(function_call);
@@ -543,12 +544,14 @@ where
                 panic!("pre_execute function should success")
             }
         }
+        pre_execute_session.gas_meter.start_metering();
         pre_execute_session
     }
 
-    fn post_execute(self, execute_status: KeptVMStatus) -> (Self, KeptVMStatus) {
+    fn post_execute(self, execute_status: KeptVMStatus) -> (Self, KeptVMStatus, u64) {
         if self.read_only {
-            (self, execute_status)
+            //TODO calculate readonly function gas usage
+            (self, execute_status, 0)
         } else {
             let mut post_execute_session = match &execute_status {
                 KeptVMStatus::Executed => self,
@@ -558,13 +561,28 @@ where
                     self.respawn()
                 }
             };
+            let max_gas_amount = post_execute_session.ctx.tx_context.max_gas_amount;
+            let gas_left: u64 = post_execute_session.gas_meter.balance_internal().into();
+            let gas_used = max_gas_amount.checked_sub(gas_left).unwrap_or_else(|| panic!("gas_left({gas_left}) should always be less than or equal to max gas amount({max_gas_amount})"));
+
+            // we do not charge gas for post_execute function
+            post_execute_session.gas_meter.stop_metering();
+
+            //TODO is it a good approach to add tx_result to TxContext?
+            let tx_result = TxResult::new(&execute_status, gas_used);
+            post_execute_session
+                .ctx
+                .tx_context
+                .add(tx_result)
+                .expect("Add tx_result to TxContext should always success");
+
             for function_call in post_execute_session.post_execute_functions.clone() {
                 //TODO handle post_execute function error
                 post_execute_session
                     .execute_function_bypass_visibility(function_call)
                     .expect("post_execute function should always success");
             }
-            (post_execute_session, execute_status)
+            (post_execute_session, execute_status, gas_used)
         }
     }
 

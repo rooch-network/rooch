@@ -22,11 +22,11 @@ fn test_validate() {
     let sender = keystore.addresses()[0];
     let sequence_number = 0;
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
-    let tx_data = RoochTransactionData::new(sender, sequence_number, action);
+    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore
         .sign_transaction(&sender, tx_data, BuiltinScheme::Ed25519)
         .unwrap();
-    let auth_info = tx.authenticator_info();
+    let auth_info = tx.authenticator_info().unwrap();
     let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
 
     native_validator
