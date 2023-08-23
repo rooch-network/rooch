@@ -7,7 +7,12 @@ export class RoochServer {
 
   async start() {
     this.child = spawn('cargo', [
-      'run', '--bin', 'rooch', 'server', 'start', '--temp-db'
+      'run',
+      '--bin',
+      'rooch',
+      'server',
+      'start',
+      '--temp-db',
     ])
 
     if (this.child) {
@@ -57,17 +62,22 @@ export class RoochServer {
       return
     }
 
-    await new Promise<void>((resolve: (value: void | PromiseLike<void>) => void, reject: (reason?: any) => void) => {
-      this.checkReady((ready: boolean) => {
-        if (ready) {
-          this.ready = true
-          resolve()
-          return
-        }
+    await new Promise<void>(
+      (
+        resolve: (value: void | PromiseLike<void>) => void,
+        reject: (reason?: any) => void,
+      ) => {
+        this.checkReady((ready: boolean) => {
+          if (ready) {
+            this.ready = true
+            resolve()
+            return
+          }
 
-        reject(new Error('timeout'))
-      })
-    })
+          reject(new Error('timeout'))
+        })
+      },
+    )
   }
 
   async stop() {

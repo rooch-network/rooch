@@ -19,7 +19,7 @@ export type RpcProviderOptions = {
   versionCacheTimeoutInSeconds?: number
 
   /** Allow defining a custom RPC client to use */
-  fetcher?: typeof fetch;
+  fetcher?: typeof fetch
 }
 
 const DEFAULT_OPTIONS: RpcProviderOptions = {
@@ -54,14 +54,6 @@ export class JsonRpcProvider {
         }),
       ]),
     )
-
-    this.client.onError((e)=>{
-      console.error('client error', e)
-    })
-
-    this.client.onNotification((data)=>{
-      console.log('data:', data)
-    })
   }
 
   async getRpcApiVersion(): Promise<string | undefined> {
@@ -92,8 +84,8 @@ export class JsonRpcProvider {
     tyArgs?: TypeTag[],
     args?: Arg[],
   ): Promise<FunctionReturnValue[]> {
-    const tyStrArgs = tyArgs?.map(v=>typeTagToString(v))
-    const bcsArgs = args?.map(arg=>encodeArgs(arg))
+    const tyStrArgs = tyArgs?.map((v) => typeTagToString(v))
+    const bcsArgs = args?.map((arg) => encodeArgs(arg))
 
     return this.client.rooch_executeViewFunction({
       function_id: functionIdToStirng(funcId),
@@ -104,9 +96,7 @@ export class JsonRpcProvider {
 
   // Send the signed transaction in bcs hex format
   // This method does not block waiting for the transaction to be executed.
-  async sendRawTransaction(
-    playload: bytes,
-  ): Promise<string> {
+  async sendRawTransaction(playload: bytes): Promise<string> {
     return this.client.rooch_sendRawTransaction(playload)
   }
 
@@ -192,4 +182,3 @@ export class JsonRpcProvider {
   //   return await this.rpcClient.rooch_listStates(access_path, cursor, limit)
   // }
 }
-

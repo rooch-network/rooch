@@ -1,16 +1,16 @@
 import { fromHexString } from './hex'
 import { ROOCH_ADDRESS_LENGTH } from '../constants'
 import * as rooch_types from '../generated/runtime/rooch_types/mod'
-import { bytes as Bytes, Seq, Tuple, ListTuple, uint8} from '../generated/runtime/serde/mod'
-import { BcsSerializer } from '../generated/runtime/bcs/mod'
 import {
-  AccountAddress,
-  FunctionId,
-  TypeTag,
-  StructTag,
-  Arg,
-} from '../types'
-import {parseFunctionId} from './encode'
+  bytes as Bytes,
+  Seq,
+  Tuple,
+  ListTuple,
+  uint8,
+} from '../generated/runtime/serde/mod'
+import { BcsSerializer } from '../generated/runtime/bcs/mod'
+import { AccountAddress, FunctionId, TypeTag, StructTag, Arg } from '../types'
+import { parseFunctionId } from './encode'
 
 export function encodeFunctionCall(
   functionId: FunctionId,
@@ -118,23 +118,24 @@ function bytesArrayToSeqSeq(input: Bytes[]): Seq<Seq<number>> {
 
 export function addressToListTuple(ethAddress: string): ListTuple<[uint8]> {
   // Remove '0x' prefix
-  const cleanedEthAddress = ethAddress.startsWith('0x') ? ethAddress.slice(2) : ethAddress
+  const cleanedEthAddress = ethAddress.startsWith('0x')
+    ? ethAddress.slice(2)
+    : ethAddress
 
   // Check if the address is valid
   if (cleanedEthAddress.length !== ROOCH_ADDRESS_LENGTH) {
-      throw new Error('Invalid Ethereum address')
+    throw new Error('Invalid Ethereum address')
   }
 
   // Convert to list of tuples
   const listTuple: ListTuple<[uint8]> = []
   for (let i = 0; i < cleanedEthAddress.length; i += 2) {
-      const byte = parseInt(ethAddress.slice(i, i + 2), 16)
-      listTuple.push([byte] as Tuple<[uint8]>)
+    const byte = parseInt(ethAddress.slice(i, i + 2), 16)
+    listTuple.push([byte] as Tuple<[uint8]>)
   }
 
   return listTuple
 }
-
 
 export function encodeArgs(arg: Arg): Bytes {
   const se = new BcsSerializer()
@@ -159,8 +160,9 @@ export function encodeArgs(arg: Arg): Bytes {
 export const encodeMoveCallData = (
   funcId: FunctionId,
   tyArgs: TypeTag[],
-  args: Arg[])=>{
-  const bcsArgs = args?.map(arg=>encodeArgs(arg))
+  args: Arg[],
+) => {
+  const bcsArgs = args?.map((arg) => encodeArgs(arg))
   const scriptFunction = encodeFunctionCall(funcId, tyArgs, bcsArgs)
 
   const payloadInHex = (() => {

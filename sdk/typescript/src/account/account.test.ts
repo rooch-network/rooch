@@ -6,38 +6,37 @@ import { PrivateKeyAuth } from '../auth'
 import { fail } from 'assert'
 
 describe('account', () => {
-    it('should create Account ok ', async () => {
-        const mockProvider: IProvider = {
-            getRpcApiVersion: vi.fn(),
-            executeViewFunction: vi.fn(),
-            sendRawTransaction: vi.fn(),
-        };
+  it('should create Account ok ', async () => {
+    const mockProvider: IProvider = {
+      getRpcApiVersion: vi.fn(),
+      executeViewFunction: vi.fn(),
+      sendRawTransaction: vi.fn(),
+    }
 
-        const kp = Ed25519Keypair.generate()
-        const roochAddress = kp.getPublicKey().toRoochAddress()
-        const authorizer = new PrivateKeyAuth(kp)
+    const kp = Ed25519Keypair.generate()
+    const roochAddress = kp.getPublicKey().toRoochAddress()
+    const authorizer = new PrivateKeyAuth(kp)
 
-        const account = new Account(mockProvider, roochAddress, authorizer)
-        expect(account).toBeDefined()
+    const account = new Account(mockProvider, roochAddress, authorizer)
+    expect(account).toBeDefined()
+  })
+
+  describe('#callFunction', () => {
+    it('should execute call function ok', async () => {
+      const mockProvider: IProvider = {
+        getRpcApiVersion: vi.fn(),
+        executeViewFunction: vi.fn(),
+        sendRawTransaction: vi.fn(),
+      }
+
+      const kp = Ed25519Keypair.generate()
+      const roochAddress = kp.getPublicKey().toRoochAddress()
+      const authorizer = new PrivateKeyAuth(kp)
+
+      const account = new Account(mockProvider, roochAddress, authorizer)
+      expect(account).toBeDefined()
+
+      account.callFunction('0x123::counter::increase', [], [])
     })
-
-    describe('#callFunction', () => {
-
-        it('should execute call function ok', async () => {
-            const mockProvider: IProvider = {
-                getRpcApiVersion: vi.fn(),
-                executeViewFunction: vi.fn(),
-                sendRawTransaction: vi.fn(),
-            };
-
-            const kp = Ed25519Keypair.generate()
-            const roochAddress = kp.getPublicKey().toRoochAddress()
-            const authorizer = new PrivateKeyAuth(kp)
-
-            const account = new Account(mockProvider, roochAddress, authorizer)
-            expect(account).toBeDefined()
-
-            account.callFunction('0x123::counter::increase', [], [])
-        })
-    })
+  })
 })

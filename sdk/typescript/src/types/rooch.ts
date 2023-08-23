@@ -37,8 +37,8 @@ export type TypeTag =
   | { Vector: TypeTag }
   | { Struct: StructTag }
 
-export type ArgType = Bool | U8 | U64 | U128 | AccountAddress;
+export type ArgType = Bool | U8 | U64 | U128 | AccountAddress
 export type Arg = {
-  type: TypeTag,
+  type: TypeTag
   value: ArgType
 }
