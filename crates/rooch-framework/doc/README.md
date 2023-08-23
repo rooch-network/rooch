@@ -32,6 +32,7 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::ethereum_address`](ethereum_address.md#0x3_ethereum_address)
 -  [`0x3::ethereum_validator`](ethereum_validator.md#0x3_ethereum_validator)
 -  [`0x3::gas_coin`](gas_coin.md#0x3_gas_coin)
+-  [`0x3::gas_price`](gas_price.md#0x3_gas_price)
 -  [`0x3::genesis`](genesis.md#0x3_genesis)
 -  [`0x3::hash`](hash.md#0x3_hash)
 -  [`0x3::multi_ed25519_validator`](multi_ed25519_validator.md#0x3_multi_ed25519_validator)

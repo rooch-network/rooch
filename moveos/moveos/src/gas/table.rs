@@ -15,6 +15,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::ops::{Add, Bound};
 
+use super::SwitchableGasMeter;
+
 /// The size in bytes for a reference on the stack
 pub const REFERENCE_SIZE: AbstractMemorySize = AbstractMemorySize::new(8);
 
@@ -182,6 +184,7 @@ impl GasCost {
 pub struct MoveOSGasMeter {
     cost_table: CostTable,
     gas_left: InternalGas,
+    //TODO we do not need to use gas_price in gas meter.
     gas_price: u64,
     initial_budget: InternalGas,
     charge: bool,
@@ -370,6 +373,7 @@ impl MoveOSGasMeter {
 
         // self.decrease_stack_size(decr_size);
         self.pop_stack(pops);
+
         Ok(())
     }
 
@@ -440,7 +444,7 @@ fn get_simple_instruction_stack_change(
 
 impl GasMeter for MoveOSGasMeter {
     fn balance_internal(&self) -> InternalGas {
-        InternalGas::new(1000000)
+        self.gas_left
     }
 
     fn charge_simple_instr(&mut self, instr: SimpleInstruction) -> PartialVMResult<()> {
@@ -759,5 +763,19 @@ impl GasMeter for MoveOSGasMeter {
         _locals: impl Iterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
         Ok(())
+    }
+}
+
+impl SwitchableGasMeter for MoveOSGasMeter {
+    fn stop_metering(&mut self) {
+        self.charge = false;
+    }
+
+    fn start_metering(&mut self) {
+        self.charge = true;
+    }
+
+    fn is_metering(&self) -> bool {
+        self.charge
     }
 }

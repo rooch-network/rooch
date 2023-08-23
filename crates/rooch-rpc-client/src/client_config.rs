@@ -7,6 +7,7 @@ use rooch_config::rpc::server_config::ServerConfig;
 use rooch_config::Config;
 use rooch_key::keystore::{AccountKeystore, Keystore};
 use rooch_types::address::RoochAddress;
+use rooch_types::chain_id::ChainID;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_with::serde_as;
@@ -63,6 +64,7 @@ impl ClientConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Env {
+    pub chain_id: u64,
     pub alias: String,
     pub rpc: String,
     pub ws: Option<String>,
@@ -91,6 +93,7 @@ impl Env {
 impl Default for Env {
     fn default() -> Self {
         Env {
+            chain_id: ChainID::Dev as u64,
             alias: "default".to_string(),
             rpc: ServerConfig::default().url(false),
             ws: None,
@@ -101,7 +104,11 @@ impl Default for Env {
 impl Display for Env {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut writer = String::new();
-        writeln!(writer, "Active environment : {}", self.alias)?;
+        writeln!(
+            writer,
+            "Active environment : {}, ChainID: {}",
+            self.alias, self.chain_id
+        )?;
         write!(writer, "RPC URL: {}", self.rpc)?;
         if let Some(ws) = &self.ws {
             writeln!(writer)?;

@@ -375,6 +375,7 @@ Only validate the authenticator's signature.
     <a href="ethereum_validator.md#0x3_ethereum_validator_validate_signature">validate_signature</a>(&authenticator_payload, &tx_hash);
 
     // TODO compare the auth_key from the payload <b>with</b> the auth_key from the <a href="account.md#0x3_account">account</a>
+    std::debug::print(ctx);
 }
 </code></pre>
 

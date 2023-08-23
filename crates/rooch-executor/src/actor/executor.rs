@@ -55,10 +55,14 @@ impl ExecutorActor {
     pub fn new(moveos_store: MoveOSStore, rooch_store: RoochStore) -> Result<Self> {
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
 
+        let config_store_ref = moveos_store.get_config_store().clone();
         let mut moveos = MoveOS::new(moveos_store, genesis.all_natives(), genesis.config.clone())?;
         if moveos.state().is_genesis() {
             moveos.init_genesis(genesis.genesis_txs())?;
+        } else {
+            genesis.check_genesis(&config_store_ref)?;
         }
+
         Ok(Self {
             moveos,
             rooch_store,
@@ -81,7 +85,7 @@ impl ExecutorActor {
         let multi_chain_address_sender = tx.sender();
 
         let resolved_sender = self.resolve_or_generate(multi_chain_address_sender.clone())?;
-        let authenticator = tx.authenticator_info();
+        let authenticator = tx.authenticator_info()?;
 
         let mut moveos_tx = tx.construct_moveos_transaction(resolved_sender)?;
 
