@@ -38,7 +38,6 @@ use moveos_stdlib::natives::moveos_stdlib::{
 use moveos_types::{
     event::{Event, EventID},
     function_return_value::FunctionReturnValue,
-    gas_config::GasConfig,
     move_types::FunctionId,
     moveos_std::{module_upgrade_flag::ModuleUpgradeFlag, tx_result::TxResult},
     object::ObjectID,
