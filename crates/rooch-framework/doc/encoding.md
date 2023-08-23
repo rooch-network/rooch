@@ -6,6 +6,7 @@
 Module which defines encoding functions.
 
 
+-  [Function `base58`](#0x3_encoding_base58)
 -  [Function `base58check`](#0x3_encoding_base58check)
 -  [Function `bech32`](#0x3_encoding_bech32)
 -  [Function `p2sh`](#0x3_encoding_p2sh)
@@ -16,15 +17,15 @@ Module which defines encoding functions.
 
 
 
-<a name="0x3_encoding_base58check"></a>
+<a name="0x3_encoding_base58"></a>
 
-## Function `base58check`
+## Function `base58`
 
 @param address_bytes: address bytes on the Bitcoin network
-Encode the address bytes with Base58Check algorithm and returns an encoded Bitcoin address
+Encode the address bytes with Base58 algorithm and returns an encoded Bitcoin address
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="encoding.md#0x3_encoding_base58check">base58check</a>(address_bytes: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="encoding.md#0x3_encoding_base58">base58</a>(address_bytes: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -33,7 +34,32 @@ Encode the address bytes with Base58Check algorithm and returns an encoded Bitco
 <summary>Implementation</summary>
 
 
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="encoding.md#0x3_encoding_base58check">base58check</a>(address_bytes: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;;
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="encoding.md#0x3_encoding_base58">base58</a>(address_bytes: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;;
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_encoding_base58check"></a>
+
+## Function `base58check`
+
+@param address_bytes: address bytes on the Bitcoin network
+@param version_byte: version byte used on Bitcoin network for verification of different types of addresses
+Encode the address bytes with Base58Check algorithm and returns an encoded Bitcoin address with checksum
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="encoding.md#0x3_encoding_base58check">base58check</a>(address_bytes: &<a href="">vector</a>&lt;u8&gt;, version_byte: u8): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="encoding.md#0x3_encoding_base58check">base58check</a>(address_bytes: &<a href="">vector</a>&lt;u8&gt;, version_byte: u8): <a href="">vector</a>&lt;u8&gt;;
 </code></pre>
 
 
@@ -44,7 +70,8 @@ Encode the address bytes with Base58Check algorithm and returns an encoded Bitco
 
 ## Function `bech32`
 
-@param public_key: 32 bytes compressed public key
+@param public_key: 20 or 32 bytes public keys
+@param version: 0 for bech32 encoding and 1 for bech32m encoding. 2-16 are held.
 Encode the public key with Bech32 or Bech32m encoding algorithm and returns 42 or 62 length Bitcoin Bech32 address.
 
 
@@ -68,7 +95,7 @@ Encode the public key with Bech32 or Bech32m encoding algorithm and returns 42 o
 
 ## Function `p2sh`
 
-@param public_key: 32 bytes compressed public key
+@param public_key: 33 bytes compressed public key
 Creates a pay to script hash P2SH address from a script converted from a compressed public key.
 
 
@@ -92,7 +119,7 @@ Creates a pay to script hash P2SH address from a script converted from a compres
 
 ## Function `p2pkh`
 
-@param public_key: 32 bytes compressed public key
+@param public_key: 33 bytes compressed public key
 Creates a pay to (compressed) public key hash address from a public key.
 
 

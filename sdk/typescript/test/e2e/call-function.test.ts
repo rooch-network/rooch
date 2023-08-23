@@ -38,6 +38,9 @@ describe('callFunction', () => {
           value: roochAddress,
         },
       ],
+      {
+        maxGasAmount: 1000000,
+      },
     )
 
     expect(tx).toBeDefined()

@@ -6,10 +6,8 @@ use crate::{
     authentication_key::AuthenticationKey,
     error::{RoochError, RoochResult},
     framework::{
-        bitcoin_validator::{BitcoinValidator, BitcoinValidatorModule},
-        ethereum_validator::{EthereumValidator, EthereumValidatorModule},
-        native_validator::{NativeValidator, NativeValidatorModule},
-        nostr_validator::{NostrValidator, NostrValidatorModule},
+        bitcoin_validator::BitcoinValidatorModule, ethereum_validator::EthereumValidatorModule,
+        native_validator::NativeValidatorModule, nostr_validator::NostrValidatorModule,
     },
 };
 use clap::ArgEnum;
@@ -126,22 +124,25 @@ impl BuiltinScheme {
     pub fn create_rotate_authentication_key_action(
         &self,
         public_key: Vec<u8>,
+        decimal_prefix_or_version: Option<u8>,
     ) -> Result<MoveAction, RoochError> {
         let action = match self {
-            BuiltinScheme::Ed25519 => NativeValidatorModule::rotate_authentication_key_action::<
-                NativeValidator,
-            >(public_key),
+            BuiltinScheme::Ed25519 => {
+                NativeValidatorModule::rotate_authentication_key_action(public_key)
+            }
             BuiltinScheme::MultiEd25519 => todo!(),
-            BuiltinScheme::Ecdsa => BitcoinValidatorModule::rotate_authentication_key_action::<
-                BitcoinValidator,
-            >(public_key),
-            BuiltinScheme::EcdsaRecoverable => {
-                EthereumValidatorModule::rotate_authentication_key_action::<EthereumValidator>(
+            BuiltinScheme::Ecdsa => {
+                let decimal_prefix_or_version = decimal_prefix_or_version.ok_or_else(|| RoochError::RotateAuthenticationKeyError("Error decoding the decimal prefix or the script version. Use -t or --address-type to indicate an address to use for Bitcoin under the ecdsa scheme.".to_owned()))?;
+                BitcoinValidatorModule::rotate_authentication_key_action(
                     public_key,
+                    decimal_prefix_or_version,
                 )
             }
+            BuiltinScheme::EcdsaRecoverable => {
+                EthereumValidatorModule::rotate_authentication_key_action(public_key)
+            }
             BuiltinScheme::Schnorr => {
-                NostrValidatorModule::rotate_authentication_key_action::<NostrValidator>(public_key)
+                NostrValidatorModule::rotate_authentication_key_action(public_key)
             }
         };
         Ok(action)
@@ -149,19 +150,13 @@ impl BuiltinScheme {
 
     pub fn create_remove_authentication_key_action(&self) -> Result<MoveAction, RoochError> {
         let action = match self {
-            BuiltinScheme::Ed25519 => {
-                NativeValidatorModule::remove_authentication_key_action::<NativeValidator>()
-            }
+            BuiltinScheme::Ed25519 => NativeValidatorModule::remove_authentication_key_action(),
             BuiltinScheme::MultiEd25519 => todo!(),
-            BuiltinScheme::Ecdsa => {
-                BitcoinValidatorModule::remove_authentication_key_action::<BitcoinValidator>()
-            }
+            BuiltinScheme::Ecdsa => BitcoinValidatorModule::remove_authentication_key_action(),
             BuiltinScheme::EcdsaRecoverable => {
-                EthereumValidatorModule::remove_authentication_key_action::<EthereumValidator>()
+                EthereumValidatorModule::remove_authentication_key_action()
             }
-            BuiltinScheme::Schnorr => {
-                NostrValidatorModule::remove_authentication_key_action::<NostrValidator>()
-            }
+            BuiltinScheme::Schnorr => NostrValidatorModule::remove_authentication_key_action(),
         };
         Ok(action)
     }
@@ -935,6 +930,10 @@ where
 #[cfg(test)]
 mod tests {
     use crate::address::RoochAddress;
+    use bitcoin::{
+        secp256k1::{All, Secp256k1},
+        Address, PublicKey,
+    };
     use ethers::utils::keccak256;
     use fastcrypto::{
         ed25519::{Ed25519KeyPair, Ed25519PrivateKey},
@@ -945,6 +944,7 @@ mod tests {
         },
         traits::{KeyPair, ToFromBytes},
     };
+    use once_cell::sync::Lazy;
 
     // this test ensure the Rooch native public key to address keep the same as the old version
     // we should also keep the Rooch native public key to address algorithm the same as the move version
@@ -962,12 +962,39 @@ mod tests {
     // this test is to ensure that the ECDSA algorithm works for Bitcoin public key to address
     #[test]
     fn test_bitcoin_public_key_to_address() {
+        pub static SECP256K1: Lazy<Secp256k1<All>> = Lazy::new(Secp256k1::new);
         let private_key = Secp256k1PrivateKey::from_bytes(&[1u8; 32]).unwrap(); // use 1u8.
         let keypair: Secp256k1KeyPair = private_key.into();
-        let address: RoochAddress = keypair.public().into();
+        let general_pk = keypair.public().pubkey;
+        let pk = PublicKey::new(general_pk);
+        let network = bitcoin::Network::Bitcoin;
+        let p2pkh_address = Address::p2pkh(&pk, network);
+        let script_pubkey = p2pkh_address.script_pubkey();
+        let redeem_script = script_pubkey.as_script();
+        let p2pkh_address_str = p2pkh_address.to_string();
+        let p2sh_address_str = Address::p2sh(&redeem_script, network)
+            .expect("Creating a pay to script hash P2SH address from a script should succeed")
+            .to_string();
+        let p2wpkh_address_str = Address::p2wpkh(&pk, network)
+            .expect("Creating a witness pay to public key address from a public key should succeed")
+            .to_string();
+        let p2wsh_address_str = Address::p2wsh(&redeem_script, network).to_string();
+        let p2tr_address_str =
+            Address::p2tr(&SECP256K1, general_pk.x_only_public_key().0, None, network).to_string();
+
+        assert_eq!(p2pkh_address_str, "1C6Rc3w25VHud3dLDamutaqfKWqhrLRTaD");
+        assert_eq!(p2sh_address_str, "3DedZ8SErqfunkjqnv8Pta1MKgEuHi22W5");
         assert_eq!(
-            address.to_string(),
-            "0x92718e81a52369b4bc3169161737318ddf022945391a69263e8d4289c79a0c67"
+            p2wpkh_address_str,
+            "bc1q0xcqpzrky6eff2g52qdye53xkk9jxkvrh6yhyw"
+        );
+        assert_eq!(
+            p2wsh_address_str,
+            "bc1qdudnf8tla4fyptt3n9y9985tq64lqwzr37d4ywpqfzfhtt638glsqaednx"
+        );
+        assert_eq!(
+            p2tr_address_str,
+            "bc1p33wm0auhr9kkahzd6l0kqj85af4cswn276hsxg6zpz85xe2r0y8syx4e5t"
         );
     }
 

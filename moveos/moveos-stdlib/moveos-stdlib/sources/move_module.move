@@ -5,7 +5,7 @@ module moveos_std::move_module{
 
     friend moveos_std::account_storage;
     
-    struct MoveModule has copy, store, drop {
+    struct MoveModule has store, drop {
         byte_codes: vector<u8>,
     }
 

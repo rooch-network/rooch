@@ -12,7 +12,8 @@ Feature: Rooch CLI integration tests
       Then cmd: "account list"
       Then cmd: "account import --mnemonic-phrase "fiber tube acid imitate frost coffee choose crowd grass topple donkey submit""
       Then cmd: "account update --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --scheme ed25519 --mnemonic-phrase "spike air embody solid upper grow mule slender shrimp suggest pride young""
-      Then cmd: "account update --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --scheme ecdsa --mnemonic-phrase "spike air embody solid upper grow mule slender shrimp suggest pride young""
+      Then cmd: "account update --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --scheme ecdsa --mnemonic-phrase "spike air embody solid upper grow mule slender shrimp suggest pride young" --authentication-key-type p2pkh"
+      Then cmd: "account update --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --scheme ecdsa --mnemonic-phrase "spike air embody solid upper grow mule slender shrimp suggest pride young" --authentication-key-type p2sh"
       Then cmd: "account update --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --scheme ecdsa-recoverable --mnemonic-phrase "spike air embody solid upper grow mule slender shrimp suggest pride young""
       Then cmd: "account update --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --scheme schnorr --mnemonic-phrase "spike air embody solid upper grow mule slender shrimp suggest pride young""
       Then cmd: "account nullify --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --scheme ed25519"
@@ -93,9 +94,13 @@ Feature: Rooch CLI integration tests
       # The entry_function_arguments example
       Then cmd: "move publish -p ../../examples/entry_function_arguments_old/ --sender-account {default} --named-addresses rooch_examples={default} --by-move"
       Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
+      Then assert: ""{{$.move[-1]}}" contains FUNCTION_RESOLUTION_FAILURE"
       Then cmd: "move publish -p ../../examples/entry_function_arguments/ --sender-account {default} --named-addresses rooch_examples={default} --by-move"
       Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
       Then assert: "{{$.move[-1].output.status.type}} == executed"
+      # check compatibility
+      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/ --sender-account {default} --named-addresses rooch_examples={default} --by-move"
+      Then assert: ""{{$.move[-1]}}" contains MiscellaneousError"
 
       Then stop the server
 
@@ -116,8 +121,13 @@ Feature: Rooch CLI integration tests
       # The entry_function_arguments example
       Then cmd: "move publish -p ../../examples/entry_function_arguments_old/ --sender-account {default} --named-addresses rooch_examples={default}"
       Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
+      Then assert: ""{{$.move[-1]}}" contains FUNCTION_RESOLUTION_FAILURE"
       Then cmd: "move publish -p ../../examples/entry_function_arguments/ --sender-account {default} --named-addresses rooch_examples={default}"
       Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
       Then assert: "{{$.move[-1].output.status.type}} == executed"
+
+      # check compatibility
+      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/ --sender-account {default} --named-addresses rooch_examples={default}"
+      Then assert: ""{{$.move[-1]}}" contains MiscellaneousError"
 
       Then stop the server

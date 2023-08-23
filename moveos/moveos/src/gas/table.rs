@@ -11,6 +11,8 @@ use move_vm_types::views::{TypeView, ValueView};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+use super::SwitchableGasMeter;
+
 /// The size in bytes for a reference on the stack
 pub const REFERENCE_SIZE: AbstractMemorySize = AbstractMemorySize::new(8);
 
@@ -33,6 +35,7 @@ pub struct MoveOSGasMeter {
     pub gas_model_version: u64,
     cost_table: CostTable,
     gas_left: InternalGas,
+    //TODO we do not need to use gas_price in gas meter.
     gas_price: u64,
     initial_budget: InternalGas,
     charge: bool,
@@ -40,12 +43,12 @@ pub struct MoveOSGasMeter {
 
 impl Default for MoveOSGasMeter {
     fn default() -> Self {
-        Self::new()
+        Self::new_for_test()
     }
 }
 
 impl MoveOSGasMeter {
-    pub fn new() -> Self {
+    pub fn new_for_test() -> Self {
         Self {
             gas_model_version: 0,
             cost_table: CostTable {
@@ -53,10 +56,25 @@ impl MoveOSGasMeter {
                 stack_height_tiers: Default::default(),
                 stack_size_tiers: Default::default(),
             },
-            gas_left: InternalGas::zero(),
+            gas_left: InternalGas::new(u64::max_value()),
             gas_price: 0,
-            initial_budget: InternalGas::new(10000000),
-            charge: false,
+            initial_budget: InternalGas::new(u64::max_value()),
+            charge: true,
+        }
+    }
+
+    pub fn new(max_gas_amount: u64) -> Self {
+        Self {
+            gas_model_version: 0,
+            cost_table: CostTable {
+                instruction_tiers: Default::default(),
+                stack_height_tiers: Default::default(),
+                stack_size_tiers: Default::default(),
+            },
+            gas_left: InternalGas::new(max_gas_amount),
+            gas_price: 0,
+            initial_budget: InternalGas::new(max_gas_amount),
+            charge: true,
         }
     }
 
@@ -69,6 +87,7 @@ impl MoveOSGasMeter {
         _decr_size: u64,
     ) -> PartialVMResult<()> {
         // #TODO: Various resources are used to charge for the execution of an instruction.
+        self.deduct_gas(InternalGas::new(1))?;
         Ok(())
     }
 
@@ -139,7 +158,7 @@ fn get_simple_instruction_stack_change(
 
 impl GasMeter for MoveOSGasMeter {
     fn balance_internal(&self) -> InternalGas {
-        InternalGas::new(1000000)
+        self.gas_left
     }
 
     fn charge_simple_instr(&mut self, instr: SimpleInstruction) -> PartialVMResult<()> {
@@ -458,5 +477,19 @@ impl GasMeter for MoveOSGasMeter {
         _locals: impl Iterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
         Ok(())
+    }
+}
+
+impl SwitchableGasMeter for MoveOSGasMeter {
+    fn stop_metering(&mut self) {
+        self.charge = false;
+    }
+
+    fn start_metering(&mut self) {
+        self.charge = true;
+    }
+
+    fn is_metering(&self) -> bool {
+        self.charge
     }
 }

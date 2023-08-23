@@ -1,0 +1,1 @@
+export const DEFAULT_MAX_GAS_AMOUNT = 1000000

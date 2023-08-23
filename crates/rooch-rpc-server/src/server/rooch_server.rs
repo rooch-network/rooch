@@ -21,6 +21,7 @@ use rooch_rpc_api::{
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::{AbstractTransaction, TypedTransaction};
 use std::cmp::min;
+use tracing::info;
 
 pub struct RoochServer {
     rpc_service: RpcService,
@@ -35,6 +36,7 @@ impl RoochServer {
 #[async_trait]
 impl RoochAPIServer for RoochServer {
     async fn send_raw_transaction(&self, payload: StrView<Vec<u8>>) -> RpcResult<H256View> {
+        info!("send_raw_transaction payload: {:?}", payload);
         let tx = bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;
         let hash = tx.tx_hash();
         self.rpc_service

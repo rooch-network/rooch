@@ -3,11 +3,11 @@ import { IProvider } from '../provider'
 import { Ed25519Keypair } from '../utils/keypairs'
 import { Account } from './account'
 import { PrivateKeyAuth } from '../auth'
-import { fail } from 'assert'
 
 describe('account', () => {
   it('should create Account ok ', async () => {
     const mockProvider: IProvider = {
+      getChainId: vi.fn(),
       getRpcApiVersion: vi.fn(),
       executeViewFunction: vi.fn(),
       sendRawTransaction: vi.fn(),
@@ -24,6 +24,7 @@ describe('account', () => {
   describe('#callFunction', () => {
     it('should execute call function ok', async () => {
       const mockProvider: IProvider = {
+        getChainId: vi.fn(),
         getRpcApiVersion: vi.fn(),
         executeViewFunction: vi.fn(),
         sendRawTransaction: vi.fn(),
@@ -36,7 +37,9 @@ describe('account', () => {
       const account = new Account(mockProvider, roochAddress, authorizer)
       expect(account).toBeDefined()
 
-      account.callFunction('0x123::counter::increase', [], [])
+      account.callFunction('0x123::counter::increase', [], [], {
+        maxGasAmount: 1000000,
+      })
     })
   })
 })

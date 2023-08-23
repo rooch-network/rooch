@@ -23,13 +23,13 @@ pub const INVALID_DATA: u64 = 2;
 pub const INVALID_SCRIPT_VERSION: u64 = 3;
 
 /***************************************************************************************************
- * native fun base58check
- * Implementation of the Move native function `encoding::base58check(address_bytes: &vector<u8>): vector<u8>`
- *   gas cost: encoding_base58check_cost_base                               | base cost for function call and fixed opers
- *              + encoding_base58check_data_cost_per_byte * msg.len()       | cost depends on length of message
- *              + encoding_base58check_data_cost_per_block * num_blocks     | cost depends on number of blocks in message
+ * native fun base58
+ * Implementation of the Move native function `encoding::base58(address_bytes: &vector<u8>): vector<u8>`
+ *   gas cost: encoding_base58_cost_base                               | base cost for function call and fixed opers
+ *              + encoding_base58_data_cost_per_byte * msg.len()       | cost depends on length of message
+ *              + encoding_base58_data_cost_per_block * num_blocks     | cost depends on number of blocks in message
  **************************************************************************************************/
-pub fn native_base58check(
+pub fn native_base58(
     _gas_params: &FromBytesGasParameters,
     _context: &mut NativeContext,
     ty_args: Vec<Type>,
@@ -44,8 +44,39 @@ pub fn native_base58check(
 
     let address_bytes = pop_arg!(args, VectorRef);
 
+    let bs58_bytes = bs58::encode(address_bytes.as_bytes_ref().to_vec()).into_vec();
+
+    Ok(NativeResult::ok(
+        cost,
+        smallvec![Value::vector_u8(bs58_bytes)],
+    ))
+}
+
+/***************************************************************************************************
+ * native fun base58check
+ * Implementation of the Move native function `encoding::base58check(address_bytes: &vector<u8>, version_byte: u8): vector<u8>`
+ *   gas cost: encoding_base58check_cost_base                               | base cost for function call and fixed opers
+ *              + encoding_base58check_data_cost_per_byte * msg.len()       | cost depends on length of message
+ *              + encoding_base58check_data_cost_per_block * num_blocks     | cost depends on number of blocks in message
+ **************************************************************************************************/
+pub fn native_base58check(
+    _gas_params: &FromBytesGasParameters,
+    _context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert!(ty_args.is_empty());
+    debug_assert!(args.len() == 2);
+
+    // TODO(Gas): Charge the arg size dependent costs
+
+    let cost = 0.into();
+
+    let version_byte = pop_arg!(args, u8);
+    let address_bytes = pop_arg!(args, VectorRef);
+
     let bs58_checksum_bytes = bs58::encode(address_bytes.as_bytes_ref().to_vec())
-        .with_check()
+        .with_check_version(version_byte)
         .into_vec();
 
     Ok(NativeResult::ok(
@@ -200,6 +231,7 @@ impl FromBytesGasParameters {
 
 #[derive(Debug, Clone)]
 pub struct GasParameters {
+    pub base58: FromBytesGasParameters,
     pub base58check: FromBytesGasParameters,
     pub bech32: FromBytesGasParameters,
     pub p2pkh: FromBytesGasParameters,
@@ -209,6 +241,7 @@ pub struct GasParameters {
 impl GasParameters {
     pub fn zeros() -> Self {
         Self {
+            base58: FromBytesGasParameters::zeros(),
             base58check: FromBytesGasParameters::zeros(),
             bech32: FromBytesGasParameters::zeros(),
             p2pkh: FromBytesGasParameters::zeros(),
@@ -219,6 +252,7 @@ impl GasParameters {
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [
+        ("base58", make_native(gas_params.base58, native_base58)),
         (
             "base58check",
             make_native(gas_params.base58check, native_base58check),

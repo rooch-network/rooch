@@ -1,4 +1,5 @@
-import { IAccount } from './interface'
+import { DEFAULT_MAX_GAS_AMOUNT } from '../constants'
+import { IAccount, CallOption } from './interface'
 import { IProvider } from '../provider'
 import { IAuthorizer } from '../auth'
 import { AccountAddress, FunctionId, TypeTag, Arg } from '../types'
@@ -40,12 +41,15 @@ export class Account implements IAccount {
     funcId: FunctionId,
     tyArgs: TypeTag[],
     args: Arg[],
+    opts: CallOption,
   ): Promise<string> {
     const bcsArgs = args.map((arg) => encodeArgs(arg))
     const scriptFunction = encodeFunctionCall(funcId, tyArgs, bcsArgs)
     const data = new RoochTransactionData(
       new BCSAccountAddress(addressToListTuple(this.address)),
       this.sequenceNumber,
+      BigInt(this.provider.getChainId()),
+      BigInt(opts.maxGasAmount ?? DEFAULT_MAX_GAS_AMOUNT),
       scriptFunction,
     )
 
