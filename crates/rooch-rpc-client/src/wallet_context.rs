@@ -5,8 +5,8 @@ use crate::client_config::{ClientConfig, DEFAULT_EXPIRATION_SECS};
 use crate::Client;
 use anyhow::anyhow;
 use move_core_types::account_address::AccountAddress;
+use moveos_types::gas_config::GasConfig;
 use moveos_types::transaction::MoveAction;
-use moveos_types::vm_config::VMConfig;
 use rooch_config::{rooch_config_dir, Config, PersistedConfig, ROOCH_CLIENT_CONFIG};
 use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView};
@@ -97,7 +97,7 @@ impl WalletContext {
             sender,
             sequence_number,
             chain_id,
-            VMConfig::DEFAULT_MAX_GAS_AMOUNT,
+            GasConfig::DEFAULT_MAX_GAS_AMOUNT,
             action,
         );
         Ok(tx_data)

@@ -22,6 +22,7 @@ and let developers can customize the storage
 -  [Function `add`](#0x2_storage_context_add)
 -  [Function `get`](#0x2_storage_context_get)
 -  [Function `tx_meta`](#0x2_storage_context_tx_meta)
+-  [Function `tx_result`](#0x2_storage_context_tx_result)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -29,6 +30,7 @@ and let developers can customize the storage
 <b>use</b> <a href="object_storage.md#0x2_object_storage">0x2::object_storage</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 <b>use</b> <a href="tx_meta.md#0x2_tx_meta">0x2::tx_meta</a>;
+<b>use</b> <a href="tx_result.md#0x2_tx_result">0x2::tx_result</a>;
 </code></pre>
 
 
@@ -389,6 +391,30 @@ Get a value from the context map
 
 <pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta">tx_meta</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>): TxMeta {
     <a href="tx_context.md#0x2_tx_context_tx_meta">tx_context::tx_meta</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_storage_context_tx_result"></a>
+
+## Function `tx_result`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_result.md#0x2_tx_result">tx_result</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): <a href="tx_result.md#0x2_tx_result_TxResult">tx_result::TxResult</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_result.md#0x2_tx_result">tx_result</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>): TxResult {
+    <a href="tx_context.md#0x2_tx_context_tx_result">tx_context::tx_result</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
 }
 </code></pre>
 

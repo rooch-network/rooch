@@ -2,12 +2,14 @@ module rooch_framework::transaction_validator {
     use std::error;
     use std::option;
     use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::tx_result;
     use rooch_framework::account;
     use rooch_framework::address_mapping::{Self, MultiChainAddress};
     use rooch_framework::account_authentication;
     use rooch_framework::auth_validator::{Self, TxValidateResult};
     use rooch_framework::auth_validator_registry;
     use rooch_framework::session_key;
+    use rooch_framework::gas_price;
 
     const MAX_U64: u128 = 18446744073709551615;
 
@@ -110,8 +112,10 @@ module rooch_framework::transaction_validator {
                 address_mapping::bind_no_check(ctx, sender, multichain_address);
             };
         };
-        let _max_gas_amount = storage_context::max_gas_amount(ctx);
-        //TODO prepare the gas fee based on the max_gas_amount
+        let max_gas_amount = storage_context::max_gas_amount(ctx);
+        let gas_price = gas_price::get_gas_price_per_unit();
+        let _gas = max_gas_amount * gas_price;
+        //TODO prepare the gas coin
     }
 
     /// Transaction post_execute function.
@@ -132,7 +136,8 @@ module rooch_framework::transaction_validator {
         // Increment sequence number
         account::increment_sequence_number(ctx);
 
-        // Charge gas fee
-        //TODO how to get the used gas amount?
+        let tx_result = storage_context::tx_result(ctx);
+        let _gas_used = tx_result::gas_used(&tx_result);
+        //TODO Charge gas fee and return remaining gas
     }
 }

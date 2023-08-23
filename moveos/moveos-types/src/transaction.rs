@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    event::Event, h256, h256::H256, move_types::FunctionId, moveos_std::tx_meta::TxMeta,
-    state::StateChangeSet, tx_context::TxContext, vm_config::VMConfig,
+    event::Event, gas_config::GasConfig, h256, h256::H256, move_types::FunctionId,
+    moveos_std::tx_meta::TxMeta, state::StateChangeSet, tx_context::TxContext,
 };
 use move_core_types::{
     account_address::AccountAddress,
@@ -203,7 +203,7 @@ impl MoveOSTransaction {
         let ctx = TxContext::new(
             sender_and_action.0,
             0,
-            VMConfig::DEFAULT_MAX_GAS_AMOUNT,
+            GasConfig::DEFAULT_MAX_GAS_AMOUNT,
             tx_hash,
         );
         Self::new(ctx, sender_and_action.1)

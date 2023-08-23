@@ -4,10 +4,11 @@
 use super::{
     authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo, TransactionType,
 };
-use crate::address::RoochAddress;
 use crate::H256;
+use crate::{address::RoochAddress, chain_id::ChainID};
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
+use moveos_types::gas_config::GasConfig;
 use moveos_types::{
     transaction::{MoveAction, MoveOSTransaction},
     tx_context::TxContext,
@@ -42,6 +43,16 @@ impl RoochTransactionData {
             sequence_number,
             chain_id,
             max_gas_amount,
+            action,
+        }
+    }
+
+    pub fn new_for_test(sender: RoochAddress, sequence_number: u64, action: MoveAction) -> Self {
+        Self {
+            sender,
+            sequence_number,
+            chain_id: ChainID::Dev as u64,
+            max_gas_amount: GasConfig::DEFAULT_MAX_GAS_AMOUNT,
             action,
         }
     }

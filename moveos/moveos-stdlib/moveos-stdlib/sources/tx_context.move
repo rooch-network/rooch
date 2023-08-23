@@ -13,6 +13,7 @@ module moveos_std::tx_context {
     use moveos_std::copyable_any::{Self, Any};
     use moveos_std::type_info;
     use moveos_std::tx_meta::{TxMeta};
+    use moveos_std::tx_result::{TxResult};
 
     friend moveos_std::object;
     friend moveos_std::raw_table;
@@ -36,7 +37,6 @@ module moveos_std::tx_context {
         /// Counter recording the number of fresh id's created while executing
         /// this transaction. Always 0 at the start of a transaction
         ids_created: u64,
-        chain_id: u64,
         /// A Key-Value map that can be used to store context information
         map: SimpleMap<String, Any>,
     }
@@ -121,12 +121,21 @@ module moveos_std::tx_context {
         option::extract(&mut meta)
     }
 
+    /// The result is only available in the `post_execute` function.
+    public fun tx_result(self: &TxContext): TxResult {
+        let result = get<TxResult>(self);
+        assert!(option::is_some(&result), error::invalid_state(EInvalidContext));
+        option::extract(&mut result)
+    }
+
     #[test_only]
     /// Create a TxContext for unit test
     public fun new_test_context(sender: address): TxContext {
         let tx_hash = hash::sha3_256(b"test_tx");
         TxContext {
             sender,
+            sequence_number: 0,
+            max_gas_amount: 100000000,
             tx_hash,
             ids_created: 0,
             map: simple_map::create(),

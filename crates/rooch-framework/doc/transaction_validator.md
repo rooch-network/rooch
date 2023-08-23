@@ -12,12 +12,14 @@
 <pre><code><b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
+<b>use</b> <a href="">0x2::tx_result</a>;
 <b>use</b> <a href="account.md#0x3_account">0x3::account</a>;
 <b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
 <b>use</b> <a href="address_mapping.md#0x3_address_mapping">0x3::address_mapping</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 <b>use</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry">0x3::auth_validator_registry</a>;
 <b>use</b> <a href="builtin_validators.md#0x3_builtin_validators">0x3::builtin_validators</a>;
+<b>use</b> <a href="gas_price.md#0x3_gas_price">0x3::gas_price</a>;
 <b>use</b> <a href="session_key.md#0x3_session_key">0x3::session_key</a>;
 </code></pre>
 

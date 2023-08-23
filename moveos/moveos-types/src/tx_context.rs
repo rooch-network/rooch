@@ -4,13 +4,13 @@
 //Source origin from https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-types/src/base_types.rs
 
 use crate::addresses::MOVEOS_STD_ADDRESS;
+use crate::gas_config::GasConfig;
 use crate::h256::{self, H256};
 use crate::move_any::{AnyTrait, CopyableAny};
 use crate::move_simple_map::SimpleMap;
 use crate::move_string::MoveString;
 use crate::object::ObjectID;
 use crate::state::{MoveState, MoveStructState, MoveStructType};
-use crate::vm_config::VMConfig;
 use anyhow::Result;
 use move_core_types::value::{MoveStructLayout, MoveTypeLayout};
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
@@ -70,7 +70,7 @@ impl TxContext {
     /// Create a new TxContext with a zero tx_hash for read-only function call cases
     pub fn new_readonly_ctx(sender: AccountAddress) -> Self {
         //TODO define read-only function gas limit
-        Self::new(sender, 0, VMConfig::DEFAULT_MAX_GAS_AMOUNT, H256::zero())
+        Self::new(sender, 0, GasConfig::DEFAULT_MAX_GAS_AMOUNT, H256::zero())
     }
 
     /// Spawn a new TxContext with a new `ids_created` counter and empty map
@@ -91,7 +91,7 @@ impl TxContext {
         Self {
             sender: AccountAddress::ZERO,
             sequence_number: 0,
-            max_gas_amount: VMConfig::DEFAULT_MAX_GAS_AMOUNT,
+            max_gas_amount: GasConfig::DEFAULT_MAX_GAS_AMOUNT,
             tx_hash: vec![0u8; h256::LENGTH],
             ids_created: 0,
             map: SimpleMap::create(),
@@ -124,7 +124,7 @@ impl TxContext {
         Self::new(
             AccountAddress::random(),
             0,
-            VMConfig::DEFAULT_MAX_GAS_AMOUNT,
+            GasConfig::DEFAULT_MAX_GAS_AMOUNT,
             H256::random(),
         )
     }

@@ -18,6 +18,7 @@
 -  [Function `get`](#0x2_tx_context_get)
 -  [Function `contains`](#0x2_tx_context_contains)
 -  [Function `tx_meta`](#0x2_tx_context_tx_meta)
+-  [Function `tx_result`](#0x2_tx_context_tx_result)
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
@@ -30,6 +31,7 @@
 <b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="simple_map.md#0x2_simple_map">0x2::simple_map</a>;
 <b>use</b> <a href="tx_meta.md#0x2_tx_meta">0x2::tx_meta</a>;
+<b>use</b> <a href="tx_result.md#0x2_tx_result">0x2::tx_result</a>;
 <b>use</b> <a href="type_info.md#0x2_type_info">0x2::type_info</a>;
 </code></pre>
 
@@ -84,12 +86,6 @@ the VM and passed in to the entrypoint of the transaction as <code>&<b>mut</b> <
 <dd>
  Counter recording the number of fresh id's created while executing
  this transaction. Always 0 at the start of a transaction
-</dd>
-<dt>
-<code>chain_id: u64</code>
-</dt>
-<dd>
-
 </dd>
 <dt>
 <code>map: <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="copyable_any.md#0x2_copyable_any_Any">copyable_any::Any</a>&gt;</code>
@@ -403,6 +399,33 @@ The meta data is only available when executing or validating a transaction, othe
     <b>let</b> meta = <a href="tx_context.md#0x2_tx_context_get">get</a>&lt;TxMeta&gt;(self);
     <b>assert</b>!(<a href="_is_some">option::is_some</a>(&meta), <a href="_invalid_state">error::invalid_state</a>(<a href="tx_context.md#0x2_tx_context_EInvalidContext">EInvalidContext</a>));
     <a href="_extract">option::extract</a>(&<b>mut</b> meta)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_tx_context_tx_result"></a>
+
+## Function `tx_result`
+
+The result is only available in the <code>post_execute</code> function.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_result.md#0x2_tx_result">tx_result</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="tx_result.md#0x2_tx_result_TxResult">tx_result::TxResult</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_result.md#0x2_tx_result">tx_result</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): TxResult {
+    <b>let</b> result = <a href="tx_context.md#0x2_tx_context_get">get</a>&lt;TxResult&gt;(self);
+    <b>assert</b>!(<a href="_is_some">option::is_some</a>(&result), <a href="_invalid_state">error::invalid_state</a>(<a href="tx_context.md#0x2_tx_context_EInvalidContext">EInvalidContext</a>));
+    <a href="_extract">option::extract</a>(&<b>mut</b> result)
 }
 </code></pre>
 
