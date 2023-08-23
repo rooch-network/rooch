@@ -120,15 +120,12 @@ impl AbstractTransaction for EthereumTransaction {
         self.0.hash()
     }
 
-    fn authenticator_info(&self) -> AuthenticatorInfo {
-        AuthenticatorInfo {
-            //TODO should change the seqence_number to u256?
-            seqence_number: self.0.nonce.as_u64(),
-            authenticator: Authenticator::ecdsa_recoverable(
-                self.convert_eth_transaction_signature_to_rooch_signature()
-                    .unwrap(),
-            ),
-        }
+    fn authenticator_info(&self) -> Result<AuthenticatorInfo> {
+        let chain_id = self.0.chain_id.ok_or(RoochError::InvalidChainID)?.as_u64();
+        let authenticator = Authenticator::ecdsa_recoverable(
+            self.convert_eth_transaction_signature_to_rooch_signature()?,
+        );
+        Ok(AuthenticatorInfo::new(chain_id, authenticator))
     }
 
     fn construct_moveos_transaction(
@@ -136,7 +133,9 @@ impl AbstractTransaction for EthereumTransaction {
         resolved_sender: AccountAddress,
     ) -> Result<MoveOSTransaction> {
         let action = self.decode_calldata_to_action()?;
-        let tx_ctx = TxContext::new(resolved_sender, self.tx_hash());
+        let sequence_number = self.0.nonce.as_u64();
+        let gas = self.0.gas.as_u64();
+        let tx_ctx = TxContext::new(resolved_sender, sequence_number, gas, self.tx_hash());
         Ok(MoveOSTransaction::new(tx_ctx, action))
     }
 

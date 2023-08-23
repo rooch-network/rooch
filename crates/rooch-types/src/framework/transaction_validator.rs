@@ -35,9 +35,7 @@ impl<'a> TransactionValidator<'a> {
             Self::function_id(Self::VALIDATE_FUNCTION_NAME),
             vec![],
             vec![
-                MoveValue::U64(auth.seqence_number)
-                    .simple_serialize()
-                    .unwrap(),
+                MoveValue::U64(auth.chain_id).simple_serialize().unwrap(),
                 MoveValue::U64(auth.authenticator.scheme)
                     .simple_serialize()
                     .unwrap(),

@@ -317,7 +317,7 @@ fn call_script_with_args_ty_args_signers(
 ) -> VMResult<()> {
     let moveos_vm = MoveOSVM::new(vec![], VMConfig::default()).unwrap();
     let remote_view = RemoteStore::new();
-    let gas_meter = MoveOSGasMeter::new();
+    let gas_meter = MoveOSGasMeter::new_for_test();
     let ctx = TxContext::random_for_testing_only();
     let mut session = moveos_vm.new_session(&remote_view, ctx, vec![], vec![], gas_meter);
 
@@ -345,7 +345,7 @@ fn call_script_function_with_args_ty_args_signers(
     let mut remote_view = RemoteStore::new();
     let id = module.self_id();
     remote_view.add_module(module);
-    let gas_meter = MoveOSGasMeter::new();
+    let gas_meter = MoveOSGasMeter::new_for_test();
     let ctx = TxContext::random_for_testing_only();
     let mut session: crate::vm::moveos_vm::MoveOSSession<'_, '_, RemoteStore, MoveOSGasMeter> =
         moveos_vm.new_session(&remote_view, ctx, vec![], vec![], gas_meter);
@@ -828,7 +828,7 @@ fn call_missing_item() {
     // mising module
     let moveos_vm = MoveOSVM::new(vec![], VMConfig::default()).unwrap();
     let mut remote_view = RemoteStore::new();
-    let gas_meter = MoveOSGasMeter::new();
+    let gas_meter = MoveOSGasMeter::new_for_test();
     let ctx = TxContext::random_for_testing_only();
     let mut session = moveos_vm.new_session(&remote_view, ctx.clone(), vec![], vec![], gas_meter);
     let func_call = FunctionCall::new(
@@ -846,7 +846,7 @@ fn call_missing_item() {
 
     // missing function
     remote_view.add_module(module);
-    let gas_meter = MoveOSGasMeter::new();
+    let gas_meter = MoveOSGasMeter::new_for_test();
     let mut session = moveos_vm.new_session(&remote_view, ctx, vec![], vec![], gas_meter);
     let error = session
         .execute_function_bypass_visibility(func_call)
