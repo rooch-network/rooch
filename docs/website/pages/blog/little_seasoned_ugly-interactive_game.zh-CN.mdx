@@ -1,6 +1,6 @@
 ---
-title: The Little, the Seasoned, the Ugly Interactive Game in Optimistic Rollups
-description: "Let us commence with 1+1, and unfold our contemplation of the Interactive Game through a series of inquisitive pursuits."
+title: 简单的，深入的，丑陋的交互式证明
+description: "让我们从 1+1 开始，以追问的方式展开对交互式证明的思辨。"
 author: popcnt
 category: Technology
 date: 2023/08/21
@@ -10,7 +10,7 @@ import PostHeader from "/components/blog/postHeader";
 
 <PostHeader />
 
-## 1 The Little
+## 1 简单
 
 Interactive Proof, aka Interactive Game, have become the de facto
 standard for the arbitration mechanisms of Optimistic Rollups. By
@@ -21,7 +21,7 @@ arbitration. Its inherent complexity leads us to simplify its
 explanation for the sake of dissemination and comprehension. Let us
 delve into just how simple it can be[^1].
 
-### 1.1 One Language, One Result
+### 1.1 同一语言，同一结果
 
 **Moe**: Is `Uno mas uno es igual a dos` also true on your computer?
 
@@ -46,7 +46,7 @@ it in mathematical language that everyone could comprehend?
 
 Everyone: Yes!
 
-### 1.2 One Language, Two Result, One Step
+### 1.2 同一语言，步骤，两种结果
 
 **Moe**: Is `(((1 + 1) + 1) + 1) = 5 ` also true on your computer?
 
@@ -82,7 +82,7 @@ validation to him.
 
 **Moe** & **Joe**: Thank you!
 
-### 1.3 One Language, Two Result, One Step, LogN Comparison
+### 1.3 同一语言，步骤，两种结果，LogN 次核对
 
 **Moe**: Is `(((1 + 1) + 1) + ... + 1) = 48784359345934` also true on
 your computer?
@@ -124,7 +124,7 @@ can swiftly identify inconsistencies!
 first inconsistent step must be in `(6098044918241, 12196089836483]`,
 we're not far from our destination!
 
-## 2 The Seasoned
+## 2 深入
 
 In 'The Little' we have identified the three essential elements that
 constitute the 'Interactive Game'：
@@ -145,7 +145,7 @@ attract those who used to drive to fly instead, it's sufficient to
 emphasize this point. However, for an aircraft engineer, it is evident
 that there is much more to know.
 
-### 2.1 One Language
+### 2.1 同一语言
 
 **Moe**: We require a language that supports the operation of blockchain
 clients and yields results consistent with the client on the chain.
@@ -188,7 +188,7 @@ this language on chain.
 **Joe**: Ideally, it should be an assembly language, as emulating the
 execution of instructions is always simpler.
 
-### 2.2 Deterministic Step
+### 2.2 确定性步骤
 
 **Moe**: By utilizing a certain language, we can roughly achieve certainty
 in computation. Thus, the problem to be addressed now is the certainty
@@ -233,7 +233,7 @@ Sure!
 
 **Joe**: Almost.
 
-### 2.3 Bisection
+### 2.3 对分法
 
 **Moe**: As the most straightforward segment, there appears to be little
 worth discussing.
@@ -252,7 +252,7 @@ worth discussing.
 
 **Joe**: Yes. And L1 could not only have inconsistent STEP<sub>i</sub>, also have last consistent STEP<sub>i-1</sub> after bisection.
 
-## 3 The Ugly
+## 3 丑陋
 
 In 'The Seasoned', we have refined the three essential elements that
 constitute the 'Interactive Game'：
@@ -267,7 +267,7 @@ and be emulated on chain.
 Until now, the Interactive Game has been endearing and intricate.
 However, to make it truly functional, we must unveil its ugly side.
 
-### 3.1 One Language: RISC
+### 3.1 同一语言： RISC
 
 **Moe**: It appears we have a plethora of choices, such as MIPS, RISC-V, and
 even Wasm.
@@ -354,7 +354,7 @@ project that's doing just that.
 
 **Joe**: Exactly it!
 
-### 3.2 Deterministic Step: Procedure, Input
+### 3.2 确定性步骤: 过程, 输入
 
 **Moe**: Let's proceed swiftly, as the earlier segment regarding language
 has not yet been fully discussed.
@@ -510,7 +510,7 @@ service providers are already well-versed in similar tasks.
 
 **Joe**: Now we can say we have deterministic step.
 
-### 3.3 Bisection: First-Class Ticket
+### 3.3 二分法: 头等舱机票
 
 **Moe**: Bisection is the most discussed topic as it is a direct challenge
 in the interactive game. However, it now seems to be a foregone
@@ -528,7 +528,7 @@ have the airplane, we just need to purchase the tickets.
 
 **Joe**: Give me a first-class ticket, thank you!
 
-## APPENDIX A: What Emulator Emulates When It Emulates
+## 附录 A: 当模拟器在模拟时它在模拟什么
 
 **Joe**: Let me start this time.
 
