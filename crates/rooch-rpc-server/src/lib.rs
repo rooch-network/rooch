@@ -15,6 +15,7 @@ use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
 use moveos_config::store_config::RocksdbConfig;
 use moveos_store::{MoveOSDB, MoveOSStore};
+use raw_store::errors::RawStoreError;
 use raw_store::rocks::RocksDB;
 use raw_store::StoreInstance;
 use rooch_config::rpc::server_config::ServerConfig;
@@ -122,13 +123,19 @@ pub async fn start_server(is_mock_storage: bool) -> Result<ServerHandle> {
         Ok(server_handle) => Ok(server_handle),
         Err(e) => match e.downcast::<GenesisError>() {
             Ok(e) => {
-                log::error!("{:?}, please clean your data dir.", e);
+                log::error!("{:?}, please clean your data dir. `rooch server clean` ", e);
                 std::process::exit(R_EXIT_CODE_NEED_HELP);
             }
-            Err(e) => {
-                log::error!("{:?}, server start fail. ", e);
-                std::process::exit(R_EXIT_CODE_NEED_HELP);
-            }
+            Err(e) => match e.downcast::<RawStoreError>() {
+                Ok(e) => {
+                    log::error!("{:?}, please clean your data dir. `rooch server clean` ", e);
+                    std::process::exit(R_EXIT_CODE_NEED_HELP);
+                }
+                Err(e) => {
+                    log::error!("{:?}, server start fail. ", e);
+                    std::process::exit(R_EXIT_CODE_NEED_HELP);
+                }
+            },
         },
     }
 }
@@ -253,29 +260,23 @@ fn init_stroage(is_mock_storage: bool) -> Result<(MoveOSStore, RoochStore)> {
     };
 
     //Init store
-    let moveosdb = MoveOSDB::new(StoreInstance::new_db_instance(
-        RocksDB::new(
-            moveos_db_path,
-            moveos_store::StoreMeta::get_column_family_names().to_vec(),
-            RocksdbConfig::default(),
-            None,
-        )
-        .unwrap(),
-    ))?;
+    let moveosdb = MoveOSDB::new(StoreInstance::new_db_instance(RocksDB::new(
+        moveos_db_path,
+        moveos_store::StoreMeta::get_column_family_names().to_vec(),
+        RocksdbConfig::default(),
+        None,
+    )?))?;
     let lastest_state_root = moveosdb
         .config_store
         .get_startup_info()?
         .map(|info| info.state_root_hash);
-    let moveos_store = MoveOSStore::new_with_root(moveosdb, lastest_state_root).unwrap();
+    let moveos_store = MoveOSStore::new_with_root(moveosdb, lastest_state_root)?;
 
-    let rooch_store = RoochStore::new(StoreInstance::new_db_instance(
-        RocksDB::new(
-            rooch_db_path,
-            rooch_store::StoreMeta::get_column_family_names().to_vec(),
-            RocksdbConfig::default(),
-            None,
-        )
-        .unwrap(),
-    ))?;
+    let rooch_store = RoochStore::new(StoreInstance::new_db_instance(RocksDB::new(
+        rooch_db_path,
+        rooch_store::StoreMeta::get_column_family_names().to_vec(),
+        RocksdbConfig::default(),
+        None,
+    )?))?;
     Ok((moveos_store, rooch_store))
 }
