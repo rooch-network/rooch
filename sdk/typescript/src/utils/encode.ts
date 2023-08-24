@@ -25,7 +25,7 @@ export function parseFunctionId(functionId: FunctionId): {
   }
 
   return {
-    address: parts[0],
+    address: normalizeRoochAddress(parts[0]),
     module: parts[1],
     functionName: parts[2],
   }

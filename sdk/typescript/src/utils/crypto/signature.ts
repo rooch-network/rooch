@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { toB64 } from '../b64'
 import type { PublicKey } from './publickey'
 
 // TODO MultiSig
@@ -22,7 +21,7 @@ export type SignaturePubkeyPair = {
  * (`flag || signature || pubkey` bytes, as base-64 encoded string).
  * Signature is committed to the intent message of the transaction data, as base-64 encoded string.
  */
-export type SerializedSignature = string
+export type SerializedSignature = Uint8Array
 
 export const SIGNATURE_SCHEME_TO_FLAG = {
   ED25519: 0x00,
@@ -46,5 +45,5 @@ export function toSerializedSignature({
   serializedSignature.set([SIGNATURE_SCHEME_TO_FLAG[signatureScheme]])
   serializedSignature.set(signature, 1)
   serializedSignature.set(pubKeyBytes, 1 + signature.length)
-  return toB64(serializedSignature)
+  return serializedSignature
 }

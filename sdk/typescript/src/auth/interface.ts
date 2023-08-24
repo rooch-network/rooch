@@ -6,5 +6,5 @@ export interface IAuthorization {
 }
 
 export interface IAuthorizer {
-  auth(callData: Bytes): IAuthorization
+  auth(callData: Bytes): Promise<IAuthorization>
 }

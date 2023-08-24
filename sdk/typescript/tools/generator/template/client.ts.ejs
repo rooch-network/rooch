@@ -47,9 +47,16 @@ export class JsonRpcClient extends Client {
     <% methods.forEach((method) => { %> 
     <% if (method.description) { %>// <%= method.description %> <% } %>
     async <%= method.name %>(<%= method.params.map(param=>param.name + ":" + getType(param.schema, schemas, alias)) %>): Promise<<%= getType(method.result.schema, schemas, alias) %>> {
+        <% method.params.map(param=>{  %> 
+            <% const paramType = getType(param.schema, schemas, alias) %> 
+            <% if (paramType == 'Uint8Array') { %>
+                const <%= param.name + "_hex"%> = `0x${Buffer.from(<%=param.name%>).toString('hex')}`
+            <% } %>
+        <% }) %>
+
         const resp = await this.request({
             method: '<%= method.name %>',
-            params: [<%= method.params.map(param=>param.name) %>],
+            params: [<%= method.params.map(param=>getType(param.schema, schemas, alias)=="Uint8Array" ? param.name + "_hex":param.name) %>],
         });
 
         return resp as <%= getType(method.result.schema, schemas, alias) %>;

@@ -8,7 +8,7 @@ import { bytes } from '../types/bcs'
 import { FunctionId, TypeTag, Arg, AnnotatedFunctionResultView } from '../types'
 import { functionIdToStirng, typeTagToString, encodeArgs } from '../utils'
 
-import { ROOCH_CHIAN_ID } from '../constants'
+import { ROOCH_DEV_CHIAN_ID } from '../constants'
 
 /**
  * Configuration options for the JsonRpcProvider. If the value of a field is not provided,
@@ -27,7 +27,7 @@ export type RpcProviderOptions = {
 }
 
 const DEFAULT_OPTIONS: RpcProviderOptions = {
-  chainID: ROOCH_CHIAN_ID,
+  chainID: ROOCH_DEV_CHIAN_ID,
   versionCacheTimeoutInSeconds: 600,
 }
 

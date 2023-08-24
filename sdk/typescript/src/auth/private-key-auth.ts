@@ -11,12 +11,12 @@ export class PrivateKeyAuth implements IAuthorizer {
     this.pk = pk
   }
 
-  auth(data: Bytes): IAuthorization {
-    const signData = this.pk.signData(data)
+  async auth(data: Bytes): Promise<IAuthorization> {
+    const sign = await this.pk.signMessage(data)
 
     return {
       scheme: SCHEME_ED25519,
-      payload: signData,
+      payload: sign.signature,
     }
   }
 }

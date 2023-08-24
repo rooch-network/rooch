@@ -1,7 +1,7 @@
 import { DEFAULT_MAX_GAS_AMOUNT } from '../constants'
 import { IAccount, CallOption } from './interface'
 import { IProvider } from '../provider'
-import { IAuthorizer } from '../auth'
+import { IAuthorizer, IAuthorization } from '../auth'
 import { AccountAddress, FunctionId, TypeTag, Arg } from '../types'
 import { BcsSerializer } from '../generated/runtime/bcs/mod'
 import {
@@ -37,7 +37,7 @@ export class Account implements IAccount {
     this.sequenceNumber = BigInt('0')
   }
 
-  public callFunction(
+  public async callFunction(
     funcId: FunctionId,
     tyArgs: TypeTag[],
     args: Arg[],
@@ -53,7 +53,7 @@ export class Account implements IAccount {
       scriptFunction,
     )
 
-    const authPayload = this.makeAuth(data)
+    const authPayload = await this.makeAuth(data)
     const auth = new Authenticator(
       BigInt(authPayload.scheme),
       uint8Array2SeqNumber(authPayload.payload),
@@ -69,7 +69,9 @@ export class Account implements IAccount {
     return this.provider.sendRawTransaction(payload)
   }
 
-  private makeAuth(tsData: RoochTransactionData) {
+  private async makeAuth(
+    tsData: RoochTransactionData,
+  ): Promise<IAuthorization> {
     const payload = (() => {
       const se = new BcsSerializer()
       tsData.serialize(se)
