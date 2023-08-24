@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { fromB64 } from '../bcs/b64'
+import { fromB64 } from '../b64'
 import type {
   SerializedSignature,
   SignaturePubkeyPair,
@@ -18,7 +18,7 @@ import { LEGACY_PRIVATE_KEY_SIZE, PRIVATE_KEY_SIZE } from './keypair'
 export function toParsedSignaturePubkeyPair(
   serializedSignature: SerializedSignature,
 ): SignaturePubkeyPair[] {
-  const bytes = fromB64(serializedSignature)
+  const bytes = serializedSignature
   const signatureScheme =
     SIGNATURE_FLAG_TO_SCHEME[bytes[0] as keyof typeof SIGNATURE_FLAG_TO_SCHEME]
 

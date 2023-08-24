@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { toB64 } from '../bcs'
+import { toB64 } from '../../types/bcs'
 
 /**
  * Value to be converted into public key.
