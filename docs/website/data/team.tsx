@@ -14,6 +14,11 @@ const ROOCH_TEAM: Record<string, AuthorDetails> = {
     twitterUsername: "renryderauthor",
     avatar: "/images/people/ren.jpg",
   },
+  popcnt: {
+    name: "POPCNT",
+    twitterUsername: "evex_popcnt",
+    avatar: "/images/people/popcnt.jpg",
+  },
   geometryolife: {
       name: "Joe Chen",
       twitterUsername: "joechendev",
