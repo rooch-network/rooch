@@ -1,6 +1,6 @@
 module rooch_examples::module1 {
-    #[test_only]
-    use rooch_examples::module2::{new_data, Data2};
+    // #[test_only]
+    // use rooch_examples::module2::{new_data, Data2};
 
     struct Data has copy, drop {
         v: u64
@@ -26,10 +26,10 @@ module rooch_examples::module1 {
         assert!(get_box_value(&box).v == 123, 1000);
     }
 
-    #[test]
-    fun test2() {
-        let data2 = new_data(789);
-        let box2 = new_box<Data2, Data2, Data2>(data2);
-        assert!(get_box_value(&box2) == new_data(789), 2000)
-    }
+    // #[test]
+    // fun test2() {
+    //     let data2 = new_data(456);
+    //     let box2 = new_box<Data2, Data2, Data2>(data2);
+    //     assert!(get_box_value(&box2) == new_data(456), 2000)
+    // }
 }

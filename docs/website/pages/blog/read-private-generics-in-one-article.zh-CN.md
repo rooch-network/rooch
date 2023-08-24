@@ -62,7 +62,7 @@ module rooch_examples::module1 {
 $ rooch move test
 INCLUDING DEPENDENCY MoveStdlib
 INCLUDING DEPENDENCY MoveosStdlib
-BUILDING pri_generic
+BUILDING private_generics
 Running Move unit tests
 [ PASS    ] 0x42::module1::test1
 Test result: OK. Total tests: 1; passed: 1; failed: 0
@@ -140,7 +140,7 @@ module rooch_examples::module1 {
 $ rooch move test
 INCLUDING DEPENDENCY MoveStdlib
 INCLUDING DEPENDENCY MoveosStdlib
-BUILDING pri_generic
+BUILDING private_generics
 Running Move unit tests
 [ PASS    ] 0x42::module1::test1
 Test result: OK. Total tests: 1; passed: 1; failed: 0
@@ -231,80 +231,46 @@ error: resource type "Data2" in function "0x42::module1::new_box" not defined in
 Error: extended checks failed
 ```
 
+### 模块可以调用其他模块定义的私有泛型函数
 
-## 泛型函数
+接下来，我们再做一个小测试，检查其他模块是否可以调用私有泛型函数。
 
-在了解如何使用私有泛型函数之前，我们先来回顾一下如何使用泛型函数。
+我们再新建一个模块 `module3`：
 
 ```move
-module rooch_examples::test {
-    struct Data has copy, drop {
+module rooch_examples::module3 {
+    #[test_only]
+    use rooch_examples::module1::{new_box, get_box_value};
+
+    struct Data3 has copy, drop {
         v: u64
     }
 
-    // Define a Box type
-    struct Box<T> has drop {
-        v: T
-    }
-
-    // Create an instance of type Data
-    fun new_data(value: u64): Data {
-        Data { v: value }
-    }
-
-    // Create an instance of type Box<T>
-    public fun new_box<T>(value: T): Box<T> {
-        Box { v: value }
-    }
-
-    // Get the value inside the Box<T>
-    public fun get_box_value<T: copy>(box: &Box<T>): T {
-        box.v
-    }
-
-    // Unit Test:
     #[test]
-    fun test() {
-        let data = new_data(123);
-        let box = new_box<Data>(data);
-        assert!(get_box_value(&box).v == 123, 1000);
+    fun test3() {
+        let data3 = Data3 { v: 789 };
+        let box3 = new_box<Data3, Data3, u8>(data3);
+        assert!(get_box_value(&box3) == Data3 { v: 789 }, 3000);
     }
 }
 ```
 
-首先我们定义两个自定义类型 `Data` 和 `Box<T>`。
+可以看到，此时 `module3` 导入了 `module1` 定义的私有泛型函数 `new_box` 和获取 `Box<T>` 类型的泛型函数 `get_box_value`。
 
-`Data` 是常见的结构体，包含一个 `u64` 类型的字段 `v`。`Box<T>` 是一个泛型结构体，包含了一个类型为 `T` 的字段 `v`。
-
-接着我们定义函数 `new_data` 用来创建 `Data` 类型的值，定义泛型函数 `new_box` 用来创建 `Box<T>` 类型的值，再定义泛型函数 `get_box_value` 用来获取 `Box<T>` 类型中的字段值 `v: T`。
-
-最后我们编写一个简单的单元测试，测试上面定义的代码是否工作正常。这是一个很简单的流程，将 `123` 放进 `Data`，然后使用 `Box<T>` 包装起来，在断言表达式中判是否能一层层将 `123` 取出来，如果获取失败，则以中断码 `1000`，返回错误结果。
-
-终端运行 `rooch move test` 命令执行单元测试：
+这个时候我们将 `module1` 中的单元测试 `test2` 注释掉，并重新运行单元测试：
 
 ```shell
-rooch move test
-
+$ rooch move test
 INCLUDING DEPENDENCY MoveStdlib
 INCLUDING DEPENDENCY MoveosStdlib
-BUILDING pri_generic
+BUILDING private_generics
 Running Move unit tests
-[ PASS    ] 0x42::test::test
-Test result: OK. Total tests: 1; passed: 1; failed: 0
+[ PASS    ] 0x42::module1::test1
+[ PASS    ] 0x42::module3::test3
+Test result: OK. Total tests: 2; passed: 2; failed: 0
 Success
 ```
 
-## 私有泛型函数的使用
-
-接下来我们开始修改我们的例子，通过私有泛型标注将泛型函数 `new_box` 变成一个私有泛型函数。
-
-```shell
-```
-
-<++>
-
-## 使用泛型函数
-
 ## 总结
 
-
+我们通过了四个小例子，来演示了私有泛型的函数如何定义、如何使用，看到这里，相信您已经完全掌握了 Rooch 中私有泛型函数的概念、作用和用法了。
