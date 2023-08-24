@@ -29,7 +29,7 @@ import PostHeader from "/components/blog/postHeader";
 我们先来看一个不使用私有泛型函数的例子。
 
 ```move
-module rooch_examples::current_module {
+module rooch_examples::module1 {
     struct Box<T> has drop {
         v: T
     }
@@ -83,23 +83,153 @@ public fun new_box<T1, T2, T3>(value: T1): Box<T1> {
 ```shell
 $ rooch move test
 error: resource type "U32" in function "0x42::module1::new_box" not defined in current module or not allowed
-   ┌─ ./sources/current.move:22:19
+   ┌─ ./sources/module1.move:17:19
    │
-22 │         let box = new_box<u32, u64, u128>(123);
+17 │         let box = new_box<u32, u64, u128>(123);
    │                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error: resource type "U64" in function "0x42::module1::new_box" not defined in current module or not allowed
-   ┌─ ./sources/current.move:22:19
+   ┌─ ./sources/module1.move:17:19
    │
-22 │         let box = new_box<u32, u64, u128>(123);
+17 │         let box = new_box<u32, u64, u128>(123);
    │                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 Error: extended checks failed
 ```
 
+### 私有泛型函数使用当前模块定义的自定义类型
+
+基于上面的代码，我们稍作修改：
+
+```move
+module rooch_examples::module1 {
+    struct Data has copy, drop {
+        v: u64
+    }
+
+    struct Box<T> has drop {
+        v: T
+    }
+
+    #[private_generics(T1, T2)]
+    public fun new_box<T1, T2, T3>(value: T1): Box<T1> {
+        Box { v: value }
+    }
+
+    public fun get_box_value<T: copy>(box: &Box<T>): T {
+        box.v
+    }
+
+    #[test]
+    fun test1() {
+        let data = Data { v: 123 };
+        let box = new_box<Data, Data, u128>(data);
+        assert!(get_box_value(&box).v == 123, 1000);
+    }
+}
+```
+
+首先，新增一个自定义类型 `Data`，它是一个常见的结构体，包含一个 `u64` 类型的字段 `v`。
+
+接着修改一下单元测试的函数 `test1`，构造一个 `Data` 类型的数据 `data`，并将私有泛型函数 `new_box` 的泛型类型参数 `u32` 和 `u64` 修改为 `Data`，断言中，使用成员运算符 `.` 获取 `data` 内的 `u64` 整数值进行比较。
+
+此时再次运行测试，测试例子又能顺利通过测试了：
+
+```shell
+$ rooch move test
+INCLUDING DEPENDENCY MoveStdlib
+INCLUDING DEPENDENCY MoveosStdlib
+BUILDING pri_generic
+Running Move unit tests
+[ PASS    ] 0x42::module1::test1
+Test result: OK. Total tests: 1; passed: 1; failed: 0
+Success
+```
+
+私有泛型函数是在 `module1` 调用的，自定义类型 `Data` 也是在**当前**模块内定义的，因此 `Data` 能通过函数的私有泛型约束。
+
+接下来我们将演示在另一个模块定义一个自定义类型，并通过 `use` 语句将这个自定义类型导入到当前模块，并将其传递给私有泛型函数。猜猜看它是否能同正常使用？
+
 ### 私有泛型函数不接受其他模块定义的自定义类型
 
+我们定义一个名为 `module2` 的新模块：
+
+```move
+module rooch_examples::module2 {
+    struct Data2 has copy, drop {
+        v: u64
+    }
+
+    public fun new_data(value: u64): Data2 {
+        Data2 {
+            v: value
+        }
+    }
+}
+```
+
+在这个模块里，我们定义一个新的类型 `Data2`，并定义一个创建这个类型的函数 `new_data`。因为在 Move 中，所有的结构体只能在声明它们的模块中构造，字段只能在结构体的模块内部访问，所以要想被外部模块构造，必须要有相应的函数。
+
+接下来，我们继续修改 `module1`：
+
+```move
+module rooch_examples::module1 {
+    #[test_only]
+    use rooch_examples::module2::{new_data, Data2};
+
+    struct Data has copy, drop {
+        v: u64
+    }
+
+    struct Box<T> has drop {
+        v: T
+    }
+
+    #[private_generics(T1, T2)]
+    public fun new_box<T1, T2, T3>(value: T1): Box<T1> {
+        Box { v: value }
+    }
+
+    public fun get_box_value<T: copy>(box: &Box<T>): T {
+        box.v
+    }
+
+    #[test]
+    fun test1() {
+        let data = Data { v: 123 };
+        let box = new_box<Data, Data, u128>(data);
+        assert!(get_box_value(&box).v == 123, 1000);
+    }
+
+    #[test]
+    fun test2() {
+        let data2 = new_data(789);
+        let box2 = new_box<Data2, Data2, Data2>(data2);
+        assert!(get_box_value(&box2) == new_data(789), 2000)
+    }
+}
+```
+
+我们导入 `module2` 定义的类型和函数，然后创建单元测试 `test2`。
+
+测试中我们调用 `new_data` 函数创建 `module2::Data2` 类型的值 `data2`，并在将私有泛型函数的类型参数修改为 `Data2`。
+
+注意，这个时候调用私有泛型函数所传递的类型参数 `Data2` 是在外部模块定义的，显然无法通过私有泛型约束！
+
+此时，运行单元测试：
+
+```shell
+$ rooch move test
+error: resource type "Data2" in function "0x42::module1::new_box" not defined in current module or not allowed
+   ┌─ ./sources/module1.move:32:20
+   │
+32 │         let box2 = new_box<Data2, Data2, Data2>(data2);
+   │                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Error: extended checks failed
+```
 
 
 ## 泛型函数
