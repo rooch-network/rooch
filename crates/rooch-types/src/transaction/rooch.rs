@@ -5,7 +5,7 @@ use super::{
     authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo, TransactionType,
 };
 use crate::H256;
-use crate::{address::RoochAddress, chain_id::ChainID};
+use crate::{address::RoochAddress, chain_id::RoochChainID};
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::gas_config::GasConfig;
@@ -51,7 +51,7 @@ impl RoochTransactionData {
         Self {
             sender,
             sequence_number,
-            chain_id: ChainID::Dev as u64,
+            chain_id: RoochChainID::DEV.chain_id().id(),
             max_gas_amount: GasConfig::DEFAULT_MAX_GAS_AMOUNT,
             action,
         }

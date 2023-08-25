@@ -89,43 +89,6 @@ impl EventID {
     }
 }
 
-// impl ser::Serialize for EventID {
-//     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-//     where
-//         S: ser::Serializer,
-//     {
-//         if serializer.is_human_readable() {
-//             self.to_string().serialize(serializer)
-//         } else {
-//             // In order to preserve the Serde data model and help analysis tools,
-//             // make sure to wrap our value in a container with the same name
-//             // as the original type.
-//             serializer.serialize_newtype_struct("EventID", serde_bytes::Bytes::new(&self.0))
-//         }
-//     }
-// }
-//
-// impl<'de> de::Deserialize<'de> for EventID {
-//     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-//     where
-//         D: de::Deserializer<'de>,
-//     {
-//         if deserializer.is_human_readable() {
-//             let s = <String>::deserialize(deserializer)?;
-//             Self::from_str(s.as_str()).map_err(<D::Error as ::serde::de::Error>::custom)
-//         } else {
-//             // See comment in serialize.
-//             #[derive(::serde::Deserialize)]
-//             #[serde(rename = "EventID")]
-//             struct Value<'a>(&'a [u8]);
-//
-//             let value = Value::deserialize(deserializer)?;
-//             Self::try_from(value.0).map_err(<D::Error as ::serde::de::Error>::custom)
-//         }
-//     }
-// }
-//
-
 /// Entry produced via a call to the `emit_event` builtin.
 #[derive(Hash, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Event {

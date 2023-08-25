@@ -18,8 +18,9 @@ use moveos_store::{MoveOSDB, MoveOSStore};
 use raw_store::errors::RawStoreError;
 use raw_store::rocks::RocksDB;
 use raw_store::StoreInstance;
-use rooch_config::rpc::server_config::ServerConfig;
+use rooch_config::server_config::ServerConfig;
 use rooch_config::store_config::StoreConfig;
+use rooch_config::{BaseConfig, RoochOpt};
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_key::key_derive::generate_new_key;
@@ -30,12 +31,12 @@ use rooch_rpc_api::api::RoochRpcModule;
 use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
-use rooch_types::chain_id::ChainID;
 use rooch_types::error::GenesisError;
 use serde_json::json;
 use std::env;
 use std::fmt::Debug;
 use std::net::SocketAddr;
+use std::sync::Arc;
 use std::time::Duration;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tracing::info;
@@ -82,8 +83,8 @@ impl Service {
         Self { handle: None }
     }
 
-    pub async fn start(&mut self, is_mock_storage: bool) -> Result<()> {
-        self.handle = Some(start_server(is_mock_storage).await?);
+    pub async fn start(&mut self, opt: &RoochOpt) -> Result<()> {
+        self.handle = Some(start_server(opt).await?);
         Ok(())
     }
 
@@ -118,8 +119,8 @@ impl RpcModuleBuilder {
 }
 
 // Start json-rpc server
-pub async fn start_server(is_mock_storage: bool) -> Result<ServerHandle> {
-    match run_start_server(is_mock_storage).await {
+pub async fn start_server(opt: &RoochOpt) -> Result<ServerHandle> {
+    match run_start_server(opt).await {
         Ok(server_handle) => Ok(server_handle),
         Err(e) => match e.downcast::<GenesisError>() {
             Ok(e) => {
@@ -141,20 +142,22 @@ pub async fn start_server(is_mock_storage: bool) -> Result<ServerHandle> {
 }
 
 // run json-rpc server
-pub async fn run_start_server(is_mock_storage: bool) -> Result<ServerHandle> {
+pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
     // We may call `start_server` multiple times in testing scenarios
     // tracing_subscriber can only be inited once.
     let _ = tracing_subscriber::fmt::try_init();
 
     let config = ServerConfig::default();
-    //TODO load chain id from config or CLI option.
-    let chain_id = ChainID::Dev as u64;
+    let chain_id = opt.chain_id.clone().unwrap_or_default().chain_id();
 
     let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
     let actor_system = ActorSystem::global_system();
 
     //Init store
-    let (moveos_store, rooch_store) = init_stroage(is_mock_storage)?;
+    let base_config = BaseConfig::load_with_opt(opt)?;
+    let mut store_config = StoreConfig::default();
+    store_config.merge_with_opt_then_init(opt, Arc::new(base_config))?;
+    let (moveos_store, rooch_store) = init_stroage(opt, &store_config)?;
 
     // Init executor
     let executor = ExecutorActor::new(moveos_store, rooch_store.clone())?
@@ -246,11 +249,11 @@ fn _build_rpc_api<M: Send + Sync + 'static>(mut rpc_module: RpcModule<M>) -> Rpc
     rpc_module
 }
 
-fn init_stroage(is_mock_storage: bool) -> Result<(MoveOSStore, RoochStore)> {
-    let (rooch_db_path, moveos_db_path) = if !is_mock_storage {
+fn init_stroage(opt: &RoochOpt, store_config: &StoreConfig) -> Result<(MoveOSStore, RoochStore)> {
+    let (rooch_db_path, moveos_db_path) = if !opt.is_temp_store {
         (
-            StoreConfig::get_rooch_store_dir(),
-            StoreConfig::get_moveos_store_dir(),
+            store_config.get_rooch_store_dir(),
+            store_config.get_moveos_store_dir(),
         )
     } else {
         (

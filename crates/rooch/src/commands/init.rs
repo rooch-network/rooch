@@ -6,11 +6,11 @@ use crate::utils::read_line;
 use async_trait::async_trait;
 use clap::Parser;
 use regex::Regex;
-use rooch_config::store_config::StoreConfig;
-use rooch_config::{rooch_config_dir, Config, ROOCH_CLIENT_CONFIG, ROOCH_KEYSTORE_FILENAME};
+use rooch_config::config::Config;
+use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_KEYSTORE_FILENAME};
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use rooch_rpc_client::client_config::{ClientConfig, Env};
-use rooch_types::chain_id::ChainID;
+use rooch_types::chain_id::RoochChainID;
 use rooch_types::error::RoochError;
 use rooch_types::{crypto::BuiltinScheme, error::RoochResult};
 use std::fs;
@@ -42,7 +42,7 @@ impl CommandAction<String> for Init {
             let env = match std::env::var_os("ROOCH_CONFIG_WITH_RPC_URL") {
                 Some(v) => Some(Env {
                     //TODO get chain id from env
-                    chain_id: ChainID::Dev as u64,
+                    chain_id: RoochChainID::DEV.chain_id().id(),
                     alias: "custom".to_string(),
                     rpc: v.into_string().unwrap(),
                     ws: None,
@@ -82,7 +82,7 @@ impl CommandAction<String> for Init {
                         let chain_id = chain_id
                             .trim()
                             .parse::<u64>()
-                            .unwrap_or(ChainID::Dev as u64);
+                            .unwrap_or(RoochChainID::DEV.chain_id().id());
                         Env {
                             chain_id,
                             alias,
@@ -116,9 +116,9 @@ impl CommandAction<String> for Init {
                 .persisted(client_config_path.as_path())
                 .save()?;
 
-                //Store config init
-                StoreConfig::init()
-                    .map_err(|e| anyhow::anyhow!("Init stroe config failed:{}", e))?;
+                // //Store config init
+                // StoreConfig::init()
+                //     .map_err(|e| anyhow::anyhow!("Init stroe config failed:{}", e))?;
             }
 
             let message = format!(

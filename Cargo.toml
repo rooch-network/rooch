@@ -195,6 +195,7 @@ lru = "0.11.0"
 accumulator = { path = "moveos/moveos-commons/accumulator" }
 bitcoin-bech32 = "0.13.0"
 bs58 = "0.5.0"
+dirs-next = "2.0.0"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES
