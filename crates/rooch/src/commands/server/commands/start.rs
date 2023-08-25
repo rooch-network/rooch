@@ -20,11 +20,6 @@ pub struct StartCommand {
     // #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
     pub chain_id: Option<RoochChainID>,
-
-    /// If true, start the service with a temporary data store.
-    /// All data will be deleted when the service is stopped.
-    #[clap(long, parse(from_flag))]
-    pub is_temp_store: bool,
 }
 
 #[async_trait]
@@ -32,7 +27,7 @@ impl CommandAction<()> for StartCommand {
     async fn execute(self) -> RoochResult<()> {
         let mut service = Service::new();
         let rooch_opt = RoochOpt {
-            is_temp_store: self.is_temp_store,
+            is_temp_store: false,
             base_data_dir: None,
             chain_id: self.chain_id,
             store: None,

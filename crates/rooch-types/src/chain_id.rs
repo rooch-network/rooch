@@ -262,25 +262,6 @@ impl FromStr for RoochChainID {
     }
 }
 
-// impl Serialize for RoochChainID {
-//     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-//     where
-//         S: Serializer,
-//     {
-//         serializer.serialize_str(self.to_string().as_str())
-//     }
-// }
-//
-// impl<'de> Deserialize<'de> for RoochChainID {
-//     fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-//     where
-//         D: Deserializer<'de>,
-//     {
-//         let s = <String>::deserialize(deserializer)?;
-//         Self::from_str(s.as_str()).map_err(D::Error::custom)
-//     }
-// }
-
 impl RoochChainID {
     pub const DEV: RoochChainID = RoochChainID::Builtin(BuiltinChainID::Dev);
     pub const TEST: RoochChainID = RoochChainID::Builtin(BuiltinChainID::Test);

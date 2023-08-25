@@ -58,18 +58,14 @@ pub static R_OPT_NET_HELP: &str = r#"Chain Network
 #[derive(Clone, Debug, Parser, Default, Serialize, Deserialize)]
 #[clap(name = "rooch", about = "Rooch")]
 pub struct RoochOpt {
-    /// If true, start the service with a temporary data store.
-    /// All data will be deleted when the service is stopped.
-    #[clap(long, parse(from_flag))]
-    pub is_temp_store: bool,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long = "data-dir", short = 'd', parse(from_os_str))]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
     pub base_data_dir: Option<PathBuf>,
 
+    /// If dev chainid, start the service with a temporary data store.
+    /// All data will be deleted when the service is stopped.
     #[serde(skip_serializing_if = "Option::is_none")]
-    // #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
     pub chain_id: Option<RoochChainID>,
 
     // #[serde(skip_serializing_if = "Option::is_none")]
@@ -77,8 +73,6 @@ pub struct RoochOpt {
     // /// Init chain by a custom genesis config. if want to reuse builtin network config, just pass a builtin network name.
     // /// This option only work for node init start.
     // pub genesis_config: Option<String>,
-
-    // #[clap(flatten)]
     pub store: Option<StoreConfig>,
 }
 
@@ -95,9 +89,8 @@ impl std::fmt::Display for RoochOpt {
 impl RoochOpt {
     pub fn new_with_temp_store() -> Self {
         RoochOpt {
-            is_temp_store: true,
             base_data_dir: None,
-            chain_id: None,
+            chain_id: Some(RoochChainID::DEV),
             store: None,
         }
     }

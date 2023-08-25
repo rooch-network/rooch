@@ -250,17 +250,10 @@ fn _build_rpc_api<M: Send + Sync + 'static>(mut rpc_module: RpcModule<M>) -> Rpc
 }
 
 fn init_stroage(opt: &RoochOpt, store_config: &StoreConfig) -> Result<(MoveOSStore, RoochStore)> {
-    let (rooch_db_path, moveos_db_path) = if !opt.is_temp_store {
-        (
-            store_config.get_rooch_store_dir(),
-            store_config.get_moveos_store_dir(),
-        )
-    } else {
-        (
-            moveos_config::temp_dir().path().to_path_buf(),
-            moveos_config::temp_dir().path().to_path_buf(),
-        )
-    };
+    let (rooch_db_path, moveos_db_path) = (
+        store_config.get_rooch_store_dir(),
+        store_config.get_moveos_store_dir(),
+    );
 
     //Init store
     let moveosdb = MoveOSDB::new(StoreInstance::new_db_instance(RocksDB::new(
