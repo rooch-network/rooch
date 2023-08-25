@@ -27,7 +27,6 @@ impl CommandAction<()> for StartCommand {
     async fn execute(self) -> RoochResult<()> {
         let mut service = Service::new();
         let rooch_opt = RoochOpt {
-            is_temp_store: false,
             base_data_dir: None,
             chain_id: self.chain_id,
             store: None,

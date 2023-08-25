@@ -20,7 +20,6 @@ pub struct CleanCommand {
 impl CleanCommand {
     pub fn execute(self) -> RoochResult<()> {
         let opt = RoochOpt {
-            is_temp_store: false,
             base_data_dir: None,
             chain_id: self.chain_id.clone(),
             store: None,
