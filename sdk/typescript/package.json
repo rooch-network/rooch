@@ -61,16 +61,17 @@
     "@iarna/toml": "^2.2.5",
     "@size-limit/preset-small-lib": "^8.2.4",
     "@types/isomorphic-fetch": "^0.0.36",
-    "@typescript-eslint/eslint-plugin": "^6.3.0",
-    "@typescript-eslint/parser": "^6.3.0",
     "@types/node": "^18.15.11",
     "@types/ws": "^8.5.5",
+    "@typescript-eslint/eslint-plugin": "^6.3.0",
+    "@typescript-eslint/parser": "^6.3.0",
     "commander": "^11.0.0",
     "eslint": "8.23.0",
     "eslint-config-airbnb-base": "15.0.0",
     "eslint-config-airbnb-typescript": "17.0.0",
     "eslint-config-prettier": "8.5.0",
     "eslint-plugin-import": "2.26.0",
+    "jest-fetch-mock": "^3.0.3",
     "msw": "^1.2.1",
     "prettier": "^3.0.0",
     "ts-retry-promise": "^0.7.0",
@@ -80,8 +81,10 @@
     "vite": "^4.2.3",
     "vite-plugin-dts": "^3.3.1",
     "vite-plugin-node-polyfills": "^0.9.0",
-    "vitest": "^0.32.0",
-    "wait-on": "^7.0.1"
+    "vitest": "^0.34.1",
+    "wait-on": "^7.0.1",
+    "ejs": "^3.1.9",
+    "fetch-mock": "^9.11.0"
   },
   "dependencies": {
     "@kayahr/text-encoding": "^1.2.0",
@@ -91,8 +94,8 @@
     "@suchipi/femver": "^1.0.0",
     "@types/isomorphic-fetch": "^0.0.36",
     "@types/ws": "^8.5.5",
-    "ejs": "^3.1.9",
     "events": "^3.3.0",
+    "isomorphic-fetch": "^3.0.0",
     "superstruct": "^1.0.3",
     "tweetnacl": "^1.0.3"
   }

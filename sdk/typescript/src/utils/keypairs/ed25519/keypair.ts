@@ -6,7 +6,7 @@ import type { ExportedKeypair } from '../../crypto/keypair'
 import { Ed25519PublicKey } from './publickey'
 import { isValidHardenedPath, mnemonicToSeedHex } from '../../crypto/mnemonics'
 import { derivePath } from './ed25519-hd-key'
-import { toB64 } from '../../bcs'
+import { toB64 } from '../../../types/bcs'
 import type { SignatureScheme } from '../../crypto/signature'
 import { PRIVATE_KEY_SIZE, Keypair } from '../../crypto/keypair'
 

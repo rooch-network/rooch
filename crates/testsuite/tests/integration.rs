@@ -22,7 +22,7 @@ struct World {
 #[given(expr = "a server for {word}")] // Cucumber Expression
 async fn start_server(w: &mut World, _scenario: String) {
     let mut service = Service::new();
-    let opt = RoochOpt::new_with_temp_store(true);
+    let opt = RoochOpt::new_with_temp_store();
     service.start(&opt).await.unwrap();
 
     w.service = Some(service);

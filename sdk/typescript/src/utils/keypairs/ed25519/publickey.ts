@@ -4,11 +4,12 @@
 import { blake2b } from '@noble/hashes/blake2b'
 import { bytesToHex } from '@noble/hashes/utils'
 
-import { fromB64 } from '../../bcs'
+import { fromB64 } from '../../../types/bcs'
 import type { PublicKeyInitData } from '../../crypto/publickey'
 import { PublicKey } from '../../crypto/publickey'
 import { SIGNATURE_SCHEME_TO_FLAG } from '../../crypto/signature'
-import { ROOCH_ADDRESS_LENGTH, normalizeRoochAddress } from '../../types'
+import { ROOCH_ADDRESS_LENGTH } from '../../../constants'
+import { normalizeRoochAddress } from '../../encode'
 
 const PUBLIC_KEY_SIZE = 32
 

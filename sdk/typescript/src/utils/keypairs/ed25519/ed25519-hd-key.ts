@@ -8,7 +8,7 @@ import { sha512 } from '@noble/hashes/sha512'
 import { hmac } from '@noble/hashes/hmac'
 import nacl from 'tweetnacl'
 // import { fromHEX } from '@mysten/bcs'
-import { fromHexString } from '../../utils'
+import { fromHexString } from '../..'
 
 type Hex = string
 type Path = string
