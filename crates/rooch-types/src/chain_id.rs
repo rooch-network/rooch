@@ -347,8 +347,8 @@ impl RoochChainID {
     /// Default data dir name of this chain_id
     pub fn dir_name(&self) -> String {
         match self {
-            Self::Builtin(b) => b.chain_name(),
-            Self::Custom(c) => c.chain_name().to_string(),
+            Self::Builtin(b) => b.chain_name().to_lowercase(),
+            Self::Custom(c) => c.chain_name().to_string().to_lowercase(),
         }
     }
 
