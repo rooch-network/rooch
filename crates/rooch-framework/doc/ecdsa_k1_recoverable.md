@@ -6,9 +6,9 @@
 
 
 -  [Constants](#@Constants_0)
--  [Function `scheme`](#0x3_ecdsa_k1_recoverable_scheme)
 -  [Function `scheme_length`](#0x3_ecdsa_k1_recoverable_scheme_length)
 -  [Function `public_key_length`](#0x3_ecdsa_k1_recoverable_public_key_length)
+-  [Function `uncompressed_public_key_length`](#0x3_ecdsa_k1_recoverable_uncompressed_public_key_length)
 -  [Function `signature_length`](#0x3_ecdsa_k1_recoverable_signature_length)
 -  [Function `keccak256`](#0x3_ecdsa_k1_recoverable_keccak256)
 -  [Function `sha256`](#0x3_ecdsa_k1_recoverable_sha256)
@@ -78,30 +78,11 @@ Error if the public key cannot be recovered from the signature.
 
 
 
-<a name="0x3_ecdsa_k1_recoverable_SCHEME_ECDSA_K1_RECOVERABLE"></a>
-
-constant codes
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_SCHEME_ECDSA_K1_RECOVERABLE">SCHEME_ECDSA_K1_RECOVERABLE</a>: u64 = 3;
-</code></pre>
+<a name="0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH"></a>
 
 
 
-<a name="0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH">V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH</a>: u64 = 33;
-</code></pre>
-
-
-
-<a name="0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_SCHEME_LENGTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_SCHEME_LENGTH">V_ECDSA_K1_RECOVERABLE_SCHEME_LENGTH</a>: u64 = 1;
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH">V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH</a>: u64 = 33;
 </code></pre>
 
 
@@ -115,35 +96,30 @@ constant codes
 
 
 
-<a name="0x3_ecdsa_k1_recoverable_scheme"></a>
+<a name="0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH"></a>
 
-## Function `scheme`
-
-built-in functions
+constant codes
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_scheme">scheme</a>(): u64
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH">V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH</a>: u64 = 1;
 </code></pre>
 
 
 
-<details>
-<summary>Implementation</summary>
+<a name="0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH"></a>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_scheme">scheme</a>(): u64 {
-    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_SCHEME_ECDSA_K1_RECOVERABLE">SCHEME_ECDSA_K1_RECOVERABLE</a>
-}
+
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH">V_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH</a>: u64 = 65;
 </code></pre>
 
 
-
-</details>
 
 <a name="0x3_ecdsa_k1_recoverable_scheme_length"></a>
 
 ## Function `scheme_length`
 
+built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_scheme_length">scheme_length</a>(): u64
@@ -156,7 +132,7 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_scheme_length">scheme_length</a>(): u64 {
-    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_SCHEME_LENGTH">V_ECDSA_K1_RECOVERABLE_SCHEME_LENGTH</a>
+    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH">V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH</a>
 }
 </code></pre>
 
@@ -180,7 +156,31 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_public_key_length">public_key_length</a>(): u64 {
-    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH">V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH</a>
+    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH">V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_ecdsa_k1_recoverable_uncompressed_public_key_length"></a>
+
+## Function `uncompressed_public_key_length`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_uncompressed_public_key_length">uncompressed_public_key_length</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_uncompressed_public_key_length">uncompressed_public_key_length</a>(): u64 {
+    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_V_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH">V_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH</a>
 }
 </code></pre>
 
@@ -347,7 +347,7 @@ applied to Ecdsa signatures.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>native</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ecrecover">ecrecover</a>(signature: &<a href="">vector</a>&lt;u8&gt;, msg: &<a href="">vector</a>&lt;u8&gt;, <a href="../doc/hash.md#0x1_hash">hash</a>: u8): <a href="">vector</a>&lt;u8&gt;;
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ecrecover">ecrecover</a>(signature: &<a href="">vector</a>&lt;u8&gt;, msg: &<a href="">vector</a>&lt;u8&gt;, <a href="../doc/hash.md#0x1_hash">hash</a>: u8): <a href="">vector</a>&lt;u8&gt;;
 </code></pre>
 
 
@@ -373,7 +373,7 @@ otherwise throw error.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>native</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_decompress_pubkey">decompress_pubkey</a>(pubkey: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;;
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_decompress_pubkey">decompress_pubkey</a>(pubkey: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;;
 </code></pre>
 
 
@@ -401,7 +401,7 @@ If the signature is valid to the pubkey and hashed message, return true. Else fa
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>native</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_verify">verify</a>(
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_verify">verify</a>(
     signature: &<a href="">vector</a>&lt;u8&gt;,
     msg: &<a href="">vector</a>&lt;u8&gt;,
     <a href="../doc/hash.md#0x1_hash">hash</a>: u8

@@ -7,17 +7,21 @@ use jsonrpsee::{
     RpcModule,
 };
 use moveos_types::h256::H256;
-use rooch_rpc_api::api::{RoochRpcModule, MAX_RESULT_LIMIT_USIZE};
 use rooch_rpc_api::jsonrpc_types::{
-    AccessPathView, AnnotatedEventView, AnnotatedFunctionReturnValueView, AnnotatedStateView,
-    EventFilterView, EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
-    ListAnnotatedStatesPageView, ListStatesPageView, StateView, StrView, StructTagView,
-    TransactionExecutionInfoView, TransactionInfoPageView, TransactionView,
+    AccessPathView, AnnotatedEventView, AnnotatedStateView, EventFilterView, EventPageView,
+    ExecuteTransactionResponseView, FunctionCallView, H256View, ListAnnotatedStatesPageView,
+    ListStatesPageView, StateView, StrView, StructTagView, TransactionExecutionInfoView,
+    TransactionInfoPageView, TransactionView,
 };
 use rooch_rpc_api::{api::rooch_api::RoochAPIServer, api::MAX_RESULT_LIMIT};
+use rooch_rpc_api::{
+    api::{RoochRpcModule, MAX_RESULT_LIMIT_USIZE},
+    jsonrpc_types::AnnotatedFunctionResultView,
+};
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::{AbstractTransaction, TypedTransaction};
 use std::cmp::min;
+use tracing::info;
 
 pub struct RoochServer {
     rpc_service: RpcService,
@@ -32,7 +36,10 @@ impl RoochServer {
 #[async_trait]
 impl RoochAPIServer for RoochServer {
     async fn send_raw_transaction(&self, payload: StrView<Vec<u8>>) -> RpcResult<H256View> {
+        info!("send_raw_transaction payload: {:?}", payload);
         let tx = bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;
+        info!("send_raw_transaction tx: {:?}", tx);
+
         let hash = tx.tx_hash();
         self.rpc_service
             .quene_tx(TypedTransaction::Rooch(tx))
@@ -55,14 +62,12 @@ impl RoochAPIServer for RoochServer {
     async fn execute_view_function(
         &self,
         function_call: FunctionCallView,
-    ) -> RpcResult<Vec<AnnotatedFunctionReturnValueView>> {
+    ) -> RpcResult<AnnotatedFunctionResultView> {
         Ok(self
             .rpc_service
             .execute_view_function(function_call.into())
             .await?
-            .into_iter()
-            .map(AnnotatedFunctionReturnValueView::from)
-            .collect())
+            .into())
     }
 
     async fn get_states(&self, access_path: AccessPathView) -> RpcResult<Vec<Option<StateView>>> {

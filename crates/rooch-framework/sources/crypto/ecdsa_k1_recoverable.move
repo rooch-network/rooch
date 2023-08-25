@@ -2,9 +2,9 @@ module rooch_framework::ecdsa_k1_recoverable {
     use std::vector;
 
     /// constant codes
-    const SCHEME_ECDSA_K1_RECOVERABLE: u64 = 3;
-    const V_ECDSA_K1_RECOVERABLE_SCHEME_LENGTH: u64 = 1;
-    const V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH: u64 = 33;
+    const V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH: u64 = 1;
+    const V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH: u64 = 33;
+    const V_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH: u64 = 65;
     const V_ECDSA_K1_RECOVERABLE_SIG_LENGTH: u64 = 65;
 
     /// Hash function name that are valid for ecrecover and verify.
@@ -21,16 +21,16 @@ module rooch_framework::ecdsa_k1_recoverable {
     const EInvalidPubKey: u64 = 2;
 
     /// built-in functions
-    public fun scheme(): u64 {
-        SCHEME_ECDSA_K1_RECOVERABLE
-    }
-
     public fun scheme_length(): u64 {
-        V_ECDSA_K1_RECOVERABLE_SCHEME_LENGTH
+        V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH
     }
 
     public fun public_key_length(): u64 {
-        V_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH
+        V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH
+    }
+
+    public fun uncompressed_public_key_length(): u64 {
+        V_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH
     }
 
     public fun signature_length(): u64 {
@@ -77,13 +77,13 @@ module rooch_framework::ecdsa_k1_recoverable {
     /// If the signature is valid, return the corresponding recovered Secpk256k1 public
     /// key, otherwise throw error. This is similar to ecrecover in Ethereum, can only be
     /// applied to Ecdsa signatures.
-    public native fun ecrecover(signature: &vector<u8>, msg: &vector<u8>, hash: u8): vector<u8>;
+    native public fun ecrecover(signature: &vector<u8>, msg: &vector<u8>, hash: u8): vector<u8>;
 
     /// @param pubkey: A 33-bytes compressed public key, a prefix either 0x02 or 0x03 and a 256-bit integer.
     ///
     /// If the compressed public key is valid, return the 65-bytes uncompressed public key,
     /// otherwise throw error.
-    public native fun decompress_pubkey(pubkey: &vector<u8>): vector<u8>;
+    native public fun decompress_pubkey(pubkey: &vector<u8>): vector<u8>;
 
     /// @param signature: A 65-bytes signature in form (r, s, v) that is signed using
     /// Ecdsa. This is a recoverable signature with a recovery id.
@@ -91,7 +91,7 @@ module rooch_framework::ecdsa_k1_recoverable {
     /// @param hash: The hash function used to hash the message when signing.
     ///
     /// If the signature is valid to the pubkey and hashed message, return true. Else false.
-    public native fun verify(
+    native public fun verify(
         signature: &vector<u8>,
         msg: &vector<u8>,
         hash: u8

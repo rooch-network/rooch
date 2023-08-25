@@ -17,6 +17,7 @@ module moveos_std::type_info {
 
     struct TypeInfo has copy, drop, store {
         account_address: address,
+        //TODO should use ascii::String to represent module_name and struct_name
         module_name: vector<u8>,
         struct_name: vector<u8>,
     }
@@ -37,8 +38,9 @@ module moveos_std::type_info {
         type_info.struct_name
     }
 
-    public native fun type_of<T>(): TypeInfo;
+    native public fun type_of<T>(): TypeInfo;
 
+    //TODO should use ascii::String to represent type_name
     //TODO check the gas cost, and decide whether to implement by native function.
     public fun type_name<T>(): string::String{
         let ascii = std::type_name::into_string(std::type_name::get<T>());

@@ -6,4 +6,5 @@ module rooch_framework::empty{
     public entry fun empty(){
         //Just do nothing
     }
+
 }

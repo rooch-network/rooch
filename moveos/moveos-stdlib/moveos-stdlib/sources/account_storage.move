@@ -32,8 +32,15 @@ module moveos_std::account_storage {
         modules: Table<String, MoveModule>,
     }
 
+    // Used to indicate module upgrading in this tx and then 
+    // setting mark_loader_cache_as_invalid() in VM, which announce to 
+    // the VM that the code loading cache should be considered outdated. 
+    struct ModuleUpgradeFlag has copy, drop, store {
+        is_upgrade: bool,
+    }
+
     //Ensure the NamedTableID generate use same method with Rust code
-    fun named_table_id(account: address, table_type: u64): ObjectID{
+    public fun named_table_id(account: address, table_type: u64): ObjectID{
         object_id::address_to_object_id(tx_context::derive_id(bcs::to_bytes(&account), table_type))
     }
 
@@ -175,20 +182,29 @@ module moveos_std::account_storage {
         let len = vector::length(&modules);
         let (module_names, module_names_with_init_fn) = move_module::verify_modules(&modules, account_address);
         
+        let upgrade_flag = false;
         while (i < len) {
             let name = vector::pop_back(&mut module_names);
             let m = vector::pop_back(&mut modules);   
 
             // The module already exists, which means we are upgrading the module
-            // TODO: check upgrade compatibility
             if (table::contains(&account_storage.modules, name)) {
-                table::remove(&mut account_storage.modules, name);
+                let old_m = table::remove(&mut account_storage.modules, name);
+                move_module::check_comatibility(&m, &old_m);
+                upgrade_flag = true;
             } else {
                 // request init function invoking
                 move_module::request_init_functions(module_names_with_init_fn, account_address);
             };
             table::add(&mut account_storage.modules, name, m);
             i = i + 1;
+        };
+        
+        // Store ModuleUpgradeFlag in tx_context which will be fetched in VM in Rust, 
+        // and then announce to the VM that the code loading cache should be considered outdated. 
+        let tx_ctx = storage_context::tx_context_mut(ctx); 
+        if (!tx_context::contains<ModuleUpgradeFlag>(tx_ctx)) {
+            tx_context::add(tx_ctx, ModuleUpgradeFlag { is_upgrade: upgrade_flag });
         }
     }
     
@@ -343,7 +359,7 @@ module moveos_std::account_storage {
     }
 
     #[test(sender=@0x42)]
-    #[expected_failure(abort_code = 0x6507, location = moveos_std::raw_table)]
+    #[expected_failure(abort_code = 393218, location = moveos_std::raw_table)]
     fun test_failure_global_borrow_account_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
         let ctx = storage_context::new_test_context(sender_addr);
@@ -353,7 +369,7 @@ module moveos_std::account_storage {
     }
 
     #[test(sender=@0x42)]
-    #[expected_failure(abort_code = 0x6507, location = moveos_std::raw_table)]
+    #[expected_failure(abort_code = 393218, location = moveos_std::raw_table)]
     fun test_failure_global_borrow_mut_account_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
         let ctx = storage_context::new_test_context(sender_addr);

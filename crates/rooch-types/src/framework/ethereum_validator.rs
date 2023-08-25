@@ -46,25 +46,26 @@ impl<'a> EthereumValidatorModule<'a> {
             vec![MoveValue::vector_u8(payload).simple_serialize().unwrap()],
         );
         self.caller
-            .call_function(ctx, auth_validator_call)
+            .call_function(ctx, auth_validator_call)?
+            .into_result()
             .map(|values| {
                 debug_assert!(values.is_empty(), "should not have return values");
             })?;
         Ok(())
     }
 
-    pub fn rotate_authentication_key_action<V: MoveStructType>(public_key: Vec<u8>) -> MoveAction {
+    pub fn rotate_authentication_key_action(public_key: Vec<u8>) -> MoveAction {
         Self::create_move_action(
             Self::ROTATE_AUTHENTICATION_KEY_ENTRY_FUNCTION_NAME,
-            vec![V::type_tag()],
+            vec![],
             vec![MoveValue::vector_u8(public_key)],
         )
     }
 
-    pub fn remove_authentication_key_action<V: MoveStructType>() -> MoveAction {
+    pub fn remove_authentication_key_action() -> MoveAction {
         Self::create_move_action(
             Self::REMOVE_AUTHENTICATION_KEY_ENTRY_FUNCTION_NAME,
-            vec![V::type_tag()],
+            vec![],
             vec![],
         )
     }

@@ -11,7 +11,7 @@ use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::sync::Arc;
 
-use crate::config_store::{ConfigStore, StartupInfoDBStore};
+use crate::config_store::{ConfigDBStore, ConfigStore};
 use crate::event_store::{EventDBStore, EventStore};
 use crate::state_store::statedb::StateDBStore;
 use crate::state_store::NodeDBStore;
@@ -42,7 +42,8 @@ pub const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
 pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction";
 pub const EVENT_PREFIX_NAME: ColumnFamilyName = "event";
 pub const EVENT_INDEX_PREFIX_NAME: ColumnFamilyName = "event_index";
-pub const CONFIG_PREFIX_NAME: ColumnFamilyName = "config";
+pub const CONFIG_STARTUP_INFO_PREFIX_NAME: ColumnFamilyName = "config_startup_info";
+pub const CONFIG_GENESIS_PREFIX_NAME: ColumnFamilyName = "config_genesis";
 
 ///db store use prefix_name vec to init
 /// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
@@ -52,7 +53,8 @@ static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         TRANSACTION_PREFIX_NAME,
         EVENT_PREFIX_NAME,
         EVENT_INDEX_PREFIX_NAME,
-        CONFIG_PREFIX_NAME,
+        CONFIG_STARTUP_INFO_PREFIX_NAME,
+        CONFIG_GENESIS_PREFIX_NAME,
     ]
 });
 
@@ -69,7 +71,7 @@ pub struct MoveOSDB {
     pub node_store: NodeDBStore,
     pub event_store: EventDBStore,
     pub transaction_store: TransactionDBStore,
-    pub config_store: StartupInfoDBStore,
+    pub config_store: ConfigDBStore,
 }
 
 impl MoveOSDB {
@@ -95,7 +97,7 @@ impl MoveOSDB {
             node_store: NodeDBStore::new(instance.clone()),
             event_store: EventDBStore::new(instance.clone()),
             transaction_store: TransactionDBStore::new(instance.clone()),
-            config_store: StartupInfoDBStore::new(instance),
+            config_store: ConfigDBStore::new(instance),
         };
         Ok(store)
     }
@@ -140,7 +142,7 @@ impl MoveOSStore {
         &self.moveosdb.node_store
     }
 
-    pub fn get_config_store(&self) -> &StartupInfoDBStore {
+    pub fn get_config_store(&self) -> &ConfigDBStore {
         &self.moveosdb.config_store
     }
 
@@ -241,6 +243,14 @@ impl ConfigStore for MoveOSStore {
 
     fn save_startup_info(&self, startup_info: StartupInfo) -> Result<()> {
         self.get_config_store().save_startup_info(startup_info)
+    }
+
+    fn get_genesis(&self) -> Result<Option<H256>> {
+        self.get_config_store().get_genesis()
+    }
+
+    fn save_genesis(&self, genesis_hash: H256) -> Result<()> {
+        self.get_config_store().save_genesis(genesis_hash)
     }
 }
 

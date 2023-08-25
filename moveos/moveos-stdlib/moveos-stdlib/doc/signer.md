@@ -29,7 +29,7 @@ This is safe because the generic type <code>T</code> is private, meaning it can 
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>native</b> <b>fun</b> <a href="signer.md#0x2_signer_module_signer">module_signer</a>&lt;T&gt;(): <a href="signer.md#0x2_signer">signer</a>;
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="signer.md#0x2_signer_module_signer">module_signer</a>&lt;T&gt;(): <a href="signer.md#0x2_signer">signer</a>;
 </code></pre>
 
 

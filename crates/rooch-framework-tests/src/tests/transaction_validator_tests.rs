@@ -1,8 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use move_core_types::account_address::AccountAddress;
+use move_core_types::ident_str;
+use move_core_types::language_storage::ModuleId;
+use move_core_types::value::MoveValue;
+use move_core_types::vm_status::{AbortLocation, VMStatus};
+use moveos_types::move_types::FunctionId;
 use moveos_types::{module_binding::ModuleBinding, transaction::MoveAction};
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
+use rooch_types::framework::session_key::SessionKeyModule;
 use rooch_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, framework::empty::Empty};
 use rooch_types::{
     crypto::BuiltinScheme,
@@ -23,15 +30,17 @@ fn test_validate_ed25519() {
     let sender = keystore.addresses()[0];
     let sequence_number = 0;
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
-    let tx_data = RoochTransactionData::new(sender, sequence_number, action);
+    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore
         .sign_transaction(&sender, tx_data, BuiltinScheme::Ed25519)
         .unwrap();
-    let auth_info = tx.authenticator_info();
+    let auth_info = tx.authenticator_info().unwrap();
     let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
 
     transaction_validator
         .validate(&move_tx.ctx, auth_info)
+        .unwrap()
+        .into_result()
         .unwrap();
 }
 
@@ -46,15 +55,17 @@ fn test_validate_ecdsa() {
     let sender = keystore.addresses()[0];
     let sequence_number = 0;
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
-    let tx_data = RoochTransactionData::new(sender, sequence_number, action);
+    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore
         .sign_transaction(&sender, tx_data, BuiltinScheme::Ecdsa)
         .unwrap();
-    let auth_info = tx.authenticator_info();
+    let auth_info = tx.authenticator_info().unwrap();
     let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
 
     transaction_validator
         .validate(&move_tx.ctx, auth_info)
+        .unwrap()
+        .into_result()
         .unwrap();
 }
 
@@ -69,15 +80,17 @@ fn test_validate_ecdsa_recoverable() {
     let sender = keystore.addresses()[0];
     let sequence_number = 0;
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
-    let tx_data = RoochTransactionData::new(sender, sequence_number, action);
+    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore
         .sign_transaction(&sender, tx_data, BuiltinScheme::EcdsaRecoverable)
         .unwrap();
-    let auth_info = tx.authenticator_info();
+    let auth_info = tx.authenticator_info().unwrap();
     let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
 
     transaction_validator
         .validate(&move_tx.ctx, auth_info)
+        .unwrap()
+        .into_result()
         .unwrap();
 }
 
@@ -92,15 +105,17 @@ fn test_validate_schnorr() {
     let sender = keystore.addresses()[0];
     let sequence_number = 0;
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
-    let tx_data = RoochTransactionData::new(sender, sequence_number, action);
+    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore
         .sign_transaction(&sender, tx_data, BuiltinScheme::Schnorr)
         .unwrap();
-    let auth_info = tx.authenticator_info();
+    let auth_info = tx.authenticator_info().unwrap();
     let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
 
     transaction_validator
         .validate(&move_tx.ctx, auth_info)
+        .unwrap()
+        .into_result()
         .unwrap();
 }
 
@@ -128,7 +143,7 @@ fn test_session_key_ed25519() {
         expiration_time,
         max_inactive_interval,
     );
-    let tx_data = RoochTransactionData::new(sender, sequence_number, action);
+    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore
         .sign_transaction(&sender, tx_data, BuiltinScheme::Ed25519)
         .unwrap();
@@ -149,12 +164,51 @@ fn test_session_key_ed25519() {
     // send transaction via session key
 
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
-    let tx_data = RoochTransactionData::new(sender, sequence_number + 1, action);
+    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number + 1, action);
     let tx = keystore
         .sign_transaction_via_session_key(&sender, tx_data, &session_auth_key)
         .unwrap();
 
     binding_test.execute(tx).unwrap();
 
-    // TODO test the session key call function is out the scope.
+    // test the session key call function is out the scope.
+
+    let action = MoveAction::new_function_call(
+        FunctionId::new(
+            ModuleId::new(ROOCH_FRAMEWORK_ADDRESS, ident_str!("account").to_owned()),
+            ident_str!("create_account_entry").to_owned(),
+        ),
+        vec![],
+        vec![MoveValue::Address(AccountAddress::random())
+            .simple_serialize()
+            .unwrap()],
+    );
+    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number + 2, action);
+    let tx = keystore
+        .sign_transaction_via_session_key(&sender, tx_data, &session_auth_key)
+        .unwrap();
+
+    // the session key is not in the scope of account module, so the transaction should be rejected when validate.
+    let execute_result = binding_test.execute_as_result(tx);
+    let error = execute_result.expect_err("expect transaction validate error");
+    match error.downcast_ref() {
+        Some(VMStatus::MoveAbort(l, code)) => {
+            match l {
+                AbortLocation::Module(module_id) => {
+                    assert_eq!(
+                        module_id,
+                        &SessionKeyModule::module_id(),
+                        "expect session key module"
+                    );
+                }
+                _ => panic!("expect move abort in module"),
+            }
+            let (_category, reason) = moveos_types::move_std::error::explain(*code);
+            // EFunctionCallBeyondSessionScope = 5
+            assert_eq!(reason, 5, "expect EFunctionCallBeyondSessionScope");
+        }
+        _ => {
+            panic!("Expect move abort")
+        }
+    }
 }

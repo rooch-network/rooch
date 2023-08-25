@@ -11,12 +11,19 @@ module rooch_framework::native_validator {
     use rooch_framework::ed25519;
     use rooch_framework::auth_validator;
 
+    /// there defines scheme for each blockchain
+    const NATIVE_SCHEME: u64 = 0;
+
     /// error code
     const EInvalidPublicKeyLength: u64 = 0;
 
     struct NativeValidator has store, drop {}
 
-    public entry fun rotate_authentication_key_entry<T>(
+    public fun scheme(): u64 {
+        NATIVE_SCHEME
+    }
+
+    public entry fun rotate_authentication_key_entry(
         ctx: &mut StorageContext,
         account: &signer,
         public_key: vector<u8>
@@ -37,7 +44,7 @@ module rooch_framework::native_validator {
         account_authentication::rotate_authentication_key<NativeValidator>(ctx, account_addr, authentication_key);
     }
 
-    public entry fun remove_authentication_key_entry<T>(ctx: &mut StorageContext, account: &signer) {
+    public entry fun remove_authentication_key_entry(ctx: &mut StorageContext, account: &signer) {
         account_authentication::remove_authentication_key<NativeValidator>(ctx, signer::address_of(account));
     }
 
@@ -54,7 +61,7 @@ module rooch_framework::native_validator {
 
     /// Get the authentication key of the given public key.
     public fun public_key_to_authentication_key(public_key: vector<u8>): vector<u8> {
-        let bytes = vector::singleton((ed25519::scheme() as u8));
+        let bytes = vector::singleton((scheme() as u8));
         vector::append(&mut bytes, public_key);
         hash::blake2b256(&bytes)
     }

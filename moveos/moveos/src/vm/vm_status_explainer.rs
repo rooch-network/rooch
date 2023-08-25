@@ -6,11 +6,10 @@ use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::FunctionHandleIndex;
 use move_binary_format::CompiledModule;
 use move_core_types::resolver::MoveResolver;
+use move_core_types::vm_status::AbortLocation;
 use move_core_types::vm_status::VMStatus;
-use move_core_types::vm_status::{AbortLocation, StatusCode};
 use serde::Deserialize;
 use serde::Serialize;
-use std::fmt;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, Eq, PartialEq)]
 pub struct MoveAbortExplain {
@@ -20,8 +19,8 @@ pub struct MoveAbortExplain {
     pub reason_name: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Hash, Eq, PartialEq)]
-pub enum VmStatusExplainView {
+#[derive(Debug, Serialize, Deserialize, Clone, Hash, Eq, PartialEq)]
+pub enum VMStatusExplainView {
     /// The VM status corresponding to an EXECUTED status code
     Executed,
     /// Indicates an error from the VM, e.g. OUT_OF_GAS, INVALID_AUTH_KEY, RET_TYPE_MISMATCH_ERROR
@@ -32,7 +31,8 @@ pub enum VmStatusExplainView {
     /// Indicates an `abort` from inside Move code. Contains the location of the abort and the code
     MoveAbort {
         location: AbortLocation,
-        abort_code: u64,
+        category_code: u64,
+        reason_code: u64,
     },
 
     /// Indicates an failure from inside Move code, where the VM could not continue execution, e.g.
@@ -51,23 +51,29 @@ pub enum VmStatusExplainView {
     },
 }
 
-pub fn explain_vm_status<T>(module_resolver: T, vm_status: VMStatus) -> Result<VmStatusExplainView>
+pub fn explain_vm_status<T>(module_resolver: T, vm_status: VMStatus) -> Result<VMStatusExplainView>
 where
     T: MoveResolver,
 {
     let vm_status_explain = match &vm_status {
-        VMStatus::Executed => VmStatusExplainView::Executed,
-        VMStatus::Error(c) => VmStatusExplainView::Error(format!("{:?}", c)),
-        VMStatus::MoveAbort(location, abort_code) => VmStatusExplainView::MoveAbort {
-            location: location.clone(),
-            abort_code: *abort_code,
-        },
+        VMStatus::Executed => VMStatusExplainView::Executed,
+        VMStatus::Error(c) => VMStatusExplainView::Error(format!("{:?}", c)),
+        VMStatus::MoveAbort(location, abort_code) => {
+            //TODO find a way to include the description
+            //Define a error code description trait, and let caller pass the error description files as argument.
+            let (category_code, reason_code) = moveos_types::move_std::error::explain(*abort_code);
+            VMStatusExplainView::MoveAbort {
+                location: location.clone(),
+                category_code,
+                reason_code,
+            }
+        }
         VMStatus::ExecutionFailure {
             status_code,
             location,
             function,
             code_offset,
-        } => VmStatusExplainView::ExecutionFailure {
+        } => VMStatusExplainView::ExecutionFailure {
             status_code: format!("{:?}", status_code),
             status: (*status_code).into(),
             location: location.clone(),
@@ -98,35 +104,5 @@ where
             Some(format!("{}::{}", module_name, func_name))
         }
         AbortLocation::Script => None,
-    }
-}
-
-/// custom debug for VmStatusExplainView for usage in functional test
-impl fmt::Debug for VmStatusExplainView {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Executed => fmt::Debug::fmt(&VMStatus::Executed, f),
-            Self::Error(code) => f.debug_struct("ERROR").field("status_code", code).finish(),
-            Self::MoveAbort {
-                location,
-                abort_code,
-                ..
-            } => fmt::Debug::fmt(&VMStatus::MoveAbort(location.clone(), *abort_code), f),
-            Self::ExecutionFailure {
-                status,
-                location,
-                function,
-                code_offset,
-                ..
-            } => fmt::Debug::fmt(
-                &VMStatus::ExecutionFailure {
-                    status_code: StatusCode::try_from(*status).unwrap(),
-                    location: location.clone(),
-                    function: *function,
-                    code_offset: *code_offset,
-                },
-                f,
-            ),
-        }
     }
 }

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    event::Event, h256, h256::H256, move_types::FunctionId, state::StateChangeSet,
-    tx_context::TxContext,
+    event::Event, gas_config::GasConfig, h256, h256::H256, move_types::FunctionId,
+    moveos_std::tx_meta::TxMeta, state::StateChangeSet, tx_context::TxContext,
 };
 use move_core_types::{
     account_address::AccountAddress,
@@ -113,6 +113,14 @@ pub enum MoveAction {
 }
 
 impl MoveAction {
+    pub fn action_type(&self) -> u8 {
+        match self {
+            MoveAction::Script(_) => 0,
+            MoveAction::Function(_) => 1,
+            MoveAction::ModuleBundle(_) => 2,
+        }
+    }
+
     pub fn new_module_bundle(modules: Vec<Vec<u8>>) -> Self {
         Self::ModuleBundle(modules)
     }
@@ -191,16 +199,19 @@ impl MoveOSTransaction {
     pub fn new_for_test(sender: AccountAddress, action: MoveAction) -> Self {
         let sender_and_action = (sender, action);
         let tx_hash = h256::sha3_256_of(bcs::to_bytes(&sender_and_action).unwrap().as_slice());
-        let ctx = TxContext::new(sender_and_action.0, tx_hash);
-        Self {
-            ctx,
-            action: sender_and_action.1,
-            pre_execute_functions: vec![],
-            post_execute_functions: vec![],
-        }
+        //TODO pass the sequence_number
+        let ctx = TxContext::new(
+            sender_and_action.0,
+            0,
+            GasConfig::DEFAULT_MAX_GAS_AMOUNT,
+            tx_hash,
+        );
+        Self::new(ctx, sender_and_action.1)
     }
 
-    pub fn new(ctx: TxContext, action: MoveAction) -> Self {
+    pub fn new(mut ctx: TxContext, action: MoveAction) -> Self {
+        ctx.add(TxMeta::new_from_move_action(&action))
+            .expect("add TxMeta to TxContext should success");
         Self {
             ctx,
             action,

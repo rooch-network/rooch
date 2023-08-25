@@ -3,11 +3,12 @@
 
 use super::transaction_validator::TransactionValidator;
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
-use anyhow::Result;
+use anyhow::{ensure, Result};
 use move_core_types::value::MoveValue;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, language_storage::ModuleId,
 };
+use moveos_types::function_return_value::DecodedFunctionResult;
 use moveos_types::move_option::MoveOption;
 use moveos_types::{
     module_binding::MoveFunctionCaller,
@@ -121,18 +122,18 @@ impl<'a> AuthValidatorCaller<'a> {
         }
     }
 
-    pub fn validate(&self, ctx: &TxContext, payload: Vec<u8>) -> Result<()> {
+    pub fn validate(&self, ctx: &TxContext, payload: Vec<u8>) -> Result<DecodedFunctionResult<()>> {
         let auth_validator_call = FunctionCall::new(
             self.auth_validator.validator_function_id(),
             vec![],
             vec![MoveValue::vector_u8(payload).simple_serialize().unwrap()],
         );
         self.caller
-            .call_function(ctx, auth_validator_call)
-            .map(|values| {
-                debug_assert!(values.is_empty(), "should not have return values");
-            })?;
-        Ok(())
+            .call_function(ctx, auth_validator_call)?
+            .decode(|values| {
+                ensure!(values.is_empty(), "should not have return values");
+                Ok(())
+            })
     }
 
     pub fn pre_execute_function_id(&self) -> FunctionId {

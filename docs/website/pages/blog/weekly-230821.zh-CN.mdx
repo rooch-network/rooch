@@ -1,0 +1,52 @@
+---
+title: Rooch 周报 2023-08-21
+description: "实现 Session Key 的新特性，实现累加器存储，实现 GasMeter，新增 CLI 命令，重构 framework 和 validator，对相关文档进行优化和改进"
+author: geometryolife
+category: Rooch Weekly
+date: 2023/08/21
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch 的开发进展
+
+### 新特性
+
+- **[CLI] Support session key in CLI (#629)** (2023-08-15) @jolestar
+- **implement accumulator store and proof verification (#605)** (2023-08-15) @Rahman
+- **add `rooch server clean` to rooch cli (#634)** (2023-08-16) @Rahman
+- **[gh-650] implement BTCAddress Move module and return type. (#651)** (2023-08-17) @feliciss
+- **Check compatibility when upgrading modules (#658)** (2023-08-19) @0xPause
+- **Implemented GasMeter for runtime calls in VM. (#667)** (2023-08-19) @stevenlaw123
+
+### 重大重构
+
+- **[types] Migrate module bindings from rooch-framework to rooch-types (#623)** (2023-08-14) @jolestar
+- **[gh-621] refactor algorithms and validators. (#636)** (2023-08-15) @feliciss
+- **[gh-641] unify coin id to u64 and refactor blockchain scheme. (#642)** (2023-08-16) @feliciss
+- **[VM] Refactor view_function result, return the VMStatus to caller (#646)** (2023-08-16) @jolestar
+- **[MoveOS & Executor] Refactor validator to let caller got VMStatus (#655)** (2023-08-18) @jolestar
+
+### 改进和修复
+
+- **add weekly 2023-08-14 (#624)** (2023-08-14) @Joe Chen
+- **typescript sdk part of issues/585 (#597)** (2023-08-14) @sven Tan
+- **Auto test for module publishing in Move (#632)** (2023-08-14) @0xPause
+- **update `rooch-cli.zh-CN.mdx` and translate it (#637)** (2023-08-15) @Joe Chen
+- **refine README.md (#639)** (2023-08-16) @subodhi
+- **[SessionKey] Check the transaction va session scope (#640)** (2023-08-16) @jolestar
+- **fix const typo => `EFunctionCallBeyondSessionScope` (#645)** (2023-08-16) @Joe Chen
+- **Update blog example READMEs (#654)** (2023-08-17) @wubuku
+- **docs: refine CONTRIBUTING.md (#649)** (2023-08-18) @subodhi
+- **[gh-652] implement ETHAddress Move module and return type, tests for the implementation. (#659)** (2023-08-17) @feliciss
+- **[MoveOS] Fix raw_table error code bug (#666)** (2023-08-19) @jolestar
+- **ci: use script to check lint (#668)** (2023-08-20) @subodhi
+
+### Rooch 社区开发会议
+
+- 详细讨论多链的代币如何映射到 Rooch 上的方案，参见 [#626](https://github.com/rooch-network/rooch/issues/626)
+- 讨论在以太坊网络上定义 Rooch 的链 ID
+- 讨论 Gas 和 Gas provider
+- 展示 Dashboard

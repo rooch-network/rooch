@@ -8,6 +8,7 @@ This module implements Nostr validator with the Schnorr crypto scheme.
 
 -  [Struct `NostrValidator`](#0x3_nostr_validator_NostrValidator)
 -  [Constants](#@Constants_0)
+-  [Function `scheme`](#0x3_nostr_validator_scheme)
 -  [Function `rotate_authentication_key_entry`](#0x3_nostr_validator_rotate_authentication_key_entry)
 -  [Function `remove_authentication_key_entry`](#0x3_nostr_validator_remove_authentication_key_entry)
 -  [Function `get_authentication_key_from_authenticator_payload`](#0x3_nostr_validator_get_authentication_key_from_authenticator_payload)
@@ -77,13 +78,23 @@ error code
 
 
 
-<a name="0x3_nostr_validator_rotate_authentication_key_entry"></a>
+<a name="0x3_nostr_validator_NOSTR_SCHEME"></a>
 
-## Function `rotate_authentication_key_entry`
+there defines scheme for each blockchain
+
+
+<pre><code><b>const</b> <a href="nostr_validator.md#0x3_nostr_validator_NOSTR_SCHEME">NOSTR_SCHEME</a>: u64 = 4;
+</code></pre>
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="nostr_validator.md#0x3_nostr_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>&lt;T&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, public_key: <a href="">vector</a>&lt;u8&gt;)
+<a name="0x3_nostr_validator_scheme"></a>
+
+## Function `scheme`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="nostr_validator.md#0x3_nostr_validator_scheme">scheme</a>(): u64
 </code></pre>
 
 
@@ -92,7 +103,31 @@ error code
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="nostr_validator.md#0x3_nostr_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>&lt;T&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="nostr_validator.md#0x3_nostr_validator_scheme">scheme</a>(): u64 {
+    <a href="nostr_validator.md#0x3_nostr_validator_NOSTR_SCHEME">NOSTR_SCHEME</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_nostr_validator_rotate_authentication_key_entry"></a>
+
+## Function `rotate_authentication_key_entry`
+
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="nostr_validator.md#0x3_nostr_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, public_key: <a href="">vector</a>&lt;u8&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="nostr_validator.md#0x3_nostr_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>(
     ctx: &<b>mut</b> StorageContext,
     <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>,
     public_key: <a href="">vector</a>&lt;u8&gt;
@@ -120,7 +155,7 @@ error code
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="nostr_validator.md#0x3_nostr_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>&lt;T&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="nostr_validator.md#0x3_nostr_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -129,7 +164,7 @@ error code
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="nostr_validator.md#0x3_nostr_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>&lt;T&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
+<pre><code><b>public</b> entry <b>fun</b> <a href="nostr_validator.md#0x3_nostr_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
     <a href="account_authentication.md#0x3_account_authentication_remove_authentication_key">account_authentication::remove_authentication_key</a>&lt;<a href="nostr_validator.md#0x3_nostr_validator_NostrValidator">NostrValidator</a>&gt;(ctx, <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>));
 }
 </code></pre>
@@ -207,7 +242,7 @@ Get the authentication key of the given public key.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="nostr_validator.md#0x3_nostr_validator_public_key_to_authentication_key">public_key_to_authentication_key</a>(public_key: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
-    <b>let</b> bytes = <a href="_singleton">vector::singleton</a>((<a href="schnorr.md#0x3_schnorr_scheme">schnorr::scheme</a>() <b>as</b> u8));
+    <b>let</b> bytes = <a href="_singleton">vector::singleton</a>((<a href="nostr_validator.md#0x3_nostr_validator_scheme">scheme</a>() <b>as</b> u8));
     <a href="_append">vector::append</a>(&<b>mut</b> bytes, public_key);
     hash::blake2b256(&bytes)
 }

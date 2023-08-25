@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use crate::vm::moveos_vm::MoveOSVM;
 use move_vm_runtime::config::VMConfig;
 
+use crate::gas::table::MoveOSGasMeter;
 use move_binary_format::{
     errors::VMResult,
     file_format::{
@@ -27,7 +28,6 @@ use move_core_types::{
     value::{serialize_values, MoveValue},
     vm_status::{StatusCode, StatusType},
 };
-use move_vm_types::gas::UnmeteredGasMeter;
 use moveos_types::state_resolver::ListState;
 use moveos_types::{
     move_types::FunctionId,
@@ -317,7 +317,7 @@ fn call_script_with_args_ty_args_signers(
 ) -> VMResult<()> {
     let moveos_vm = MoveOSVM::new(vec![], VMConfig::default()).unwrap();
     let remote_view = RemoteStore::new();
-    let gas_meter = UnmeteredGasMeter;
+    let gas_meter = MoveOSGasMeter::new_unmetered();
     let ctx = TxContext::random_for_testing_only();
     let mut session = moveos_vm.new_session(&remote_view, ctx, vec![], vec![], gas_meter);
 
@@ -345,9 +345,9 @@ fn call_script_function_with_args_ty_args_signers(
     let mut remote_view = RemoteStore::new();
     let id = module.self_id();
     remote_view.add_module(module);
-    let gas_meter = UnmeteredGasMeter;
+    let gas_meter = MoveOSGasMeter::new_unmetered();
     let ctx = TxContext::random_for_testing_only();
-    let mut session: crate::vm::moveos_vm::MoveOSSession<'_, '_, RemoteStore, UnmeteredGasMeter> =
+    let mut session: crate::vm::moveos_vm::MoveOSSession<'_, '_, RemoteStore, MoveOSGasMeter> =
         moveos_vm.new_session(&remote_view, ctx, vec![], vec![], gas_meter);
 
     let function_action = MoveAction::new_function_call(
@@ -828,7 +828,7 @@ fn call_missing_item() {
     // mising module
     let moveos_vm = MoveOSVM::new(vec![], VMConfig::default()).unwrap();
     let mut remote_view = RemoteStore::new();
-    let gas_meter = UnmeteredGasMeter;
+    let gas_meter = MoveOSGasMeter::new_unmetered();
     let ctx = TxContext::random_for_testing_only();
     let mut session = moveos_vm.new_session(&remote_view, ctx.clone(), vec![], vec![], gas_meter);
     let func_call = FunctionCall::new(
@@ -846,7 +846,7 @@ fn call_missing_item() {
 
     // missing function
     remote_view.add_module(module);
-    let gas_meter = UnmeteredGasMeter;
+    let gas_meter = MoveOSGasMeter::new_unmetered();
     let mut session = moveos_vm.new_session(&remote_view, ctx, vec![], vec![], gas_meter);
     let error = session
         .execute_function_bypass_visibility(func_call)

@@ -1,29 +1,27 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::gas::table::MoveOSGasMeter;
 use crate::vm::moveos_vm::MoveOSVM;
 use anyhow::{bail, ensure, Result};
-use move_binary_format::errors::vm_status_of_result;
-use move_binary_format::errors::{Location, PartialVMError};
+use move_binary_format::errors::{vm_status_of_result, Location, PartialVMError, VMResult};
 use move_core_types::vm_status::{KeptVMStatus, VMStatus};
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, vm_status::StatusCode,
 };
 use move_vm_runtime::config::VMConfig;
 use move_vm_runtime::native_functions::NativeFunction;
-use move_vm_types::gas::UnmeteredGasMeter;
-use moveos_store::config_store::ConfigStore;
 use moveos_store::event_store::EventDBStore;
 use moveos_store::state_store::statedb::StateDBStore;
 use moveos_store::transaction_store::TransactionDBStore;
 use moveos_store::MoveOSStore;
-use moveos_types::function_return_value::FunctionReturnValue;
+use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state_resolver::MoveOSResolverProxy;
 use moveos_types::transaction::{MoveOSTransaction, TransactionOutput, VerifiedMoveOSTransaction};
 use moveos_types::tx_context::TxContext;
-use moveos_types::{h256::H256, transaction::FunctionCall};
+use moveos_types::{h256, h256::H256, transaction::FunctionCall};
 
 pub struct MoveOSConfig {
     pub vm_config: VMConfig,
@@ -82,9 +80,20 @@ impl MoveOS {
             "genesis already initialized"
         );
 
+        let genesis_hash = h256::sha3_256_of(bcs::to_bytes(&genesis_txs)?.as_slice());
         for genesis_tx in genesis_txs {
             self.verify_and_execute_genesis_tx(genesis_tx)?;
         }
+
+        self.db
+            .0
+            .get_config_store()
+            .save_genesis(genesis_hash)
+            .map_err(|e| {
+                PartialVMError::new(StatusCode::STORAGE_ERROR)
+                    .with_message(e.to_string())
+                    .finish(Location::Undefined)
+            })?;
         //TODO return the state root genesis TransactionExecutionInfo
         Ok(())
     }
@@ -125,7 +134,7 @@ impl MoveOS {
         self.db.0.get_transaction_store()
     }
 
-    pub fn verify(&self, tx: MoveOSTransaction) -> Result<VerifiedMoveOSTransaction> {
+    pub fn verify(&self, tx: MoveOSTransaction) -> VMResult<VerifiedMoveOSTransaction> {
         let MoveOSTransaction {
             ctx,
             action,
@@ -133,7 +142,7 @@ impl MoveOS {
             post_execute_functions,
         } = tx;
 
-        let gas_meter = UnmeteredGasMeter;
+        let gas_meter = MoveOSGasMeter::new_unmetered();
         let session = self
             .vm
             .new_readonly_session(&self.db, ctx.clone(), gas_meter);
@@ -164,8 +173,7 @@ impl MoveOS {
                 action
             );
         }
-        //TODO define the gas meter.
-        let gas_meter = UnmeteredGasMeter;
+        let gas_meter = MoveOSGasMeter::new_unmetered();
         let mut session = self.vm.new_session(
             &self.db,
             ctx,
@@ -232,10 +240,7 @@ impl MoveOS {
     }
 
     /// Execute readonly view function
-    pub fn execute_view_function(
-        &self,
-        function_call: FunctionCall,
-    ) -> Result<Vec<FunctionReturnValue>> {
+    pub fn execute_view_function(&self, function_call: FunctionCall) -> FunctionResult {
         //TODO allow user to specify the sender
         let tx_context = TxContext::new_readonly_ctx(AccountAddress::ZERO);
         //TODO verify the view function
@@ -246,19 +251,24 @@ impl MoveOS {
         &self,
         tx_context: &TxContext,
         function_call: FunctionCall,
-    ) -> Result<Vec<FunctionReturnValue>> {
+    ) -> FunctionResult {
         //TODO limit the view function max gas usage
-        let gas_meter = UnmeteredGasMeter;
+        let gas_meter = MoveOSGasMeter::new_unmetered();
         let mut session = self
             .vm
             .new_readonly_session(&self.db, tx_context.clone(), gas_meter);
 
-        let result = session.execute_function_bypass_visibility(function_call)?;
-
-        // if execute success, finish the session to check if it change the state
-        let (_ctx, _output) = session.finish_with_extensions(VMStatus::Executed)?;
-
-        Ok(result)
+        let result = session.execute_function_bypass_visibility(function_call);
+        match result {
+            Ok(return_values) => {
+                // if execute success, finish the session to check if it change the state
+                match session.finish_with_extensions(VMStatus::Executed) {
+                    Ok(_) => FunctionResult::ok(return_values),
+                    Err(e) => FunctionResult::err(e),
+                }
+            }
+            Err(e) => FunctionResult::err(e),
+        }
     }
 }
 
@@ -267,7 +277,8 @@ impl MoveFunctionCaller for MoveOS {
         &self,
         ctx: &TxContext,
         function_call: FunctionCall,
-    ) -> Result<Vec<FunctionReturnValue>> {
-        self.execute_readonly_function(ctx, function_call)
+    ) -> Result<FunctionResult> {
+        let result = self.execute_readonly_function(ctx, function_call);
+        Ok(result)
     }
 }

@@ -5,20 +5,20 @@ use super::{
     data_cache::{into_change_set, MoveosDataCache},
     tx_argument_resolver::TxArgumentResolver,
 };
-use anyhow::ensure;
 use move_binary_format::{
     compatibility::Compatibility,
-    errors::{Location, VMError, VMResult},
+    errors::{Location, PartialVMError, VMError, VMResult},
     file_format::AbilitySet,
     CompiledModule,
 };
 
+use crate::gas::{table::MoveOSGasMeter, SwitchableGasMeter};
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
     value::MoveTypeLayout,
-    vm_status::{KeptVMStatus, VMStatus},
+    vm_status::{KeptVMStatus, StatusCode, VMStatus},
 };
 use move_vm_runtime::{
     config::VMConfig,
@@ -29,7 +29,6 @@ use move_vm_runtime::{
 };
 use move_vm_types::{
     data_store::DataStore,
-    gas::{GasMeter, UnmeteredGasMeter},
     loaded_data::runtime_types::{CachedStructIndex, StructType, Type},
 };
 use moveos_stdlib::natives::moveos_stdlib::{
@@ -40,6 +39,7 @@ use moveos_types::{
     event::{Event, EventID},
     function_return_value::FunctionReturnValue,
     move_types::FunctionId,
+    moveos_std::{module_upgrade_flag::ModuleUpgradeFlag, tx_result::TxResult},
     object::ObjectID,
     state_resolver::MoveOSResolver,
     storage_context::StorageContext,
@@ -65,7 +65,7 @@ impl MoveOSVM {
         })
     }
 
-    pub fn new_session<'r, S: MoveOSResolver, G: GasMeter>(
+    pub fn new_session<'r, S: MoveOSResolver, G: SwitchableGasMeter>(
         &self,
         remote: &'r S,
         ctx: TxContext,
@@ -88,14 +88,14 @@ impl MoveOSVM {
         &self,
         remote: &'r S,
         ctx: TxContext,
-    ) -> MoveOSSession<'r, '_, S, UnmeteredGasMeter> {
+    ) -> MoveOSSession<'r, '_, S, MoveOSGasMeter> {
         //Do not charge gas for genesis session
-        let gas_meter = UnmeteredGasMeter;
+        let gas_meter = MoveOSGasMeter::new_unmetered();
         // Genesis session do not need to execute pre_execute and post_execute function
         MoveOSSession::new(&self.inner, remote, ctx, vec![], vec![], gas_meter, false)
     }
 
-    pub fn new_readonly_session<'r, S: MoveOSResolver, G: GasMeter>(
+    pub fn new_readonly_session<'r, S: MoveOSResolver, G: SwitchableGasMeter>(
         &self,
         remote: &'r S,
         ctx: TxContext,
@@ -123,7 +123,7 @@ pub struct MoveOSSession<'r, 'l, S, G> {
 impl<'r, 'l, S, G> MoveOSSession<'r, 'l, S, G>
 where
     S: MoveOSResolver,
-    G: GasMeter,
+    G: SwitchableGasMeter,
 {
     pub fn new(
         vm: &'l MoveVM,
@@ -188,6 +188,7 @@ where
 
         // The VM code loader has bugs around module upgrade. After a module upgrade, the internal
         // cache needs to be flushed to work around those bugs.
+        // vm.mark_loader_cache_as_invalid();
         vm.flush_loader_cache_if_invalidated();
         let loader = vm.runtime().loader();
         let data_store: MoveosDataCache<'r, 'l, S> =
@@ -312,7 +313,7 @@ where
                 //TODO check the modules package address with the sender
                 let sender = self.ctx.tx_context.sender();
                 //TODO check the compatiblity
-                let compat_config = Compatibility::no_check();
+                let compat_config = Compatibility::full_check();
                 self.session.publish_module_bundle_with_compat_config(
                     module_bundle,
                     sender,
@@ -324,6 +325,22 @@ where
         };
 
         self.resolve_pending_init_functions()?;
+
+        // Check if there are modules upgrading
+        let module_flag = self
+            .ctx
+            .tx_context
+            .get::<ModuleUpgradeFlag>()
+            .map_err(|e| {
+                PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
+                    .with_message(e.to_string())
+                    .finish(Location::Undefined)
+            })?;
+        if let Some(flag) = module_flag {
+            if flag.is_upgrade {
+                self.vm.mark_loader_cache_as_invalid();
+            }
+        }
 
         action_result
     }
@@ -431,8 +448,8 @@ where
     pub fn finish_with_extensions(
         self,
         vm_status: VMStatus,
-    ) -> Result<(TxContext, TransactionOutput), anyhow::Error> {
-        let (finalized_session, status) = match vm_status.keep_or_discard() {
+    ) -> VMResult<(TxContext, TransactionOutput)> {
+        let (finalized_session, status, gas_used) = match vm_status.keep_or_discard() {
             Ok(status) => self.post_execute(status),
             Err(discard_status) => {
                 //This should not happen, if it happens, it means that the VM or verifer has a bug
@@ -459,22 +476,29 @@ where
             into_change_set(table_data).map_err(|e| e.finish(Location::Undefined))?;
 
         if read_only {
-            ensure!(
-                changeset.accounts().is_empty(),
-                "ChangeSet should be empty as never used."
-            );
-            ensure!(
-                raw_events.is_empty(),
-                "Events should be empty when execute readonly function"
-            );
-            ensure!(
-                state_changeset.changes.is_empty(),
-                "Table change set should be empty when execute readonly function"
-            );
-            ensure!(
-                ctx.tx_context.ids_created == 0,
-                "ids_created should be zero when execute readonly function"
-            );
+            if !changeset.accounts().is_empty() {
+                return Err(PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
+                    .with_message("ChangeSet should be empty as never used.".to_owned())
+                    .finish(Location::Undefined));
+            }
+
+            if !raw_events.is_empty() {
+                return Err(PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
+                    .with_message("Events should be empty as never used.".to_owned())
+                    .finish(Location::Undefined));
+            }
+
+            if !state_changeset.changes.is_empty() {
+                return Err(PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
+                    .with_message("Table change set should be empty as never used.".to_owned())
+                    .finish(Location::Undefined));
+            }
+
+            if ctx.tx_context.ids_created > 0 {
+                return Err(PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
+                    .with_message("TxContext::ids_created should be zero as never used.".to_owned())
+                    .finish(Location::Undefined));
+            }
         }
 
         let events = raw_events
@@ -486,8 +510,7 @@ where
                 Event::new(EventID::new(event_handle_id, e.1), e.2, e.3, i as u64)
             })
             .collect();
-        //TODO calculate the gas_used with gas_meter
-        let gas_used = 0;
+
         Ok((
             ctx.tx_context,
             TransactionOutput {
@@ -504,19 +527,31 @@ where
         // the read_only function should not execute pre_execute function
         // this ensure via the check in new_session
         let mut pre_execute_session = self;
+        // we do not charge gas for pre_execute function
+        // TODO should we charge gas for custom authencation validator?
+        pre_execute_session.gas_meter.stop_metering();
         for function_call in pre_execute_session.pre_execute_functions.clone() {
-            //TODO handle pre_execute function error
-            //Because if we allow user to write pre_execute function, we need to handle the error
-            pre_execute_session
-                .execute_function_bypass_visibility(function_call)
-                .expect("pre_execute function should always success");
+            let pre_execute_function_id = function_call.function_id.clone();
+            let result = pre_execute_session.execute_function_bypass_visibility(function_call);
+            if let Err(e) = result {
+                //TODO handle pre_execute function error
+                //Because if we allow user to write pre_execute function, we need to handle the error
+                log::error!(
+                    "pre_execute function {} error: {:?}",
+                    pre_execute_function_id,
+                    e
+                );
+                panic!("pre_execute function should success")
+            }
         }
+        pre_execute_session.gas_meter.start_metering();
         pre_execute_session
     }
 
-    fn post_execute(self, execute_status: KeptVMStatus) -> (Self, KeptVMStatus) {
+    fn post_execute(self, execute_status: KeptVMStatus) -> (Self, KeptVMStatus, u64) {
         if self.read_only {
-            (self, execute_status)
+            //TODO calculate readonly function gas usage
+            (self, execute_status, 0)
         } else {
             let mut post_execute_session = match &execute_status {
                 KeptVMStatus::Executed => self,
@@ -526,13 +561,28 @@ where
                     self.respawn()
                 }
             };
+            let max_gas_amount = post_execute_session.ctx.tx_context.max_gas_amount;
+            let gas_left: u64 = post_execute_session.gas_meter.balance_internal().into();
+            let gas_used = max_gas_amount.checked_sub(gas_left).unwrap_or_else(|| panic!("gas_left({gas_left}) should always be less than or equal to max gas amount({max_gas_amount})"));
+
+            // we do not charge gas for post_execute function
+            post_execute_session.gas_meter.stop_metering();
+
+            //TODO is it a good approach to add tx_result to TxContext?
+            let tx_result = TxResult::new(&execute_status, gas_used);
+            post_execute_session
+                .ctx
+                .tx_context
+                .add(tx_result)
+                .expect("Add tx_result to TxContext should always success");
+
             for function_call in post_execute_session.post_execute_functions.clone() {
                 //TODO handle post_execute function error
                 post_execute_session
                     .execute_function_bypass_visibility(function_call)
                     .expect("post_execute function should always success");
             }
-            (post_execute_session, execute_status)
+            (post_execute_session, execute_status, gas_used)
         }
     }
 

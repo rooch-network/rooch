@@ -2,9 +2,8 @@ module rooch_framework::ecdsa_k1 {
     use std::vector;
 
     /// constant codes
-    const SCHEME_ECDSA_K1: u64 = 2;
-    const V_ECDSA_K1_SCHEME_LENGTH: u64 = 1;
-    const V_ECDSA_K1_PUBKEY_LENGTH: u64 = 33;
+    const V_ECDSA_K1_TO_BITCOIN_SCHEME_LENGTH: u64 = 1;
+    const V_ECDSA_K1_COMPRESSED_PUBKEY_LENGTH: u64 = 33;
     const V_ECDSA_K1_SIG_LENGTH: u64 = 64;
 
     /// Hash function name that are valid for ecrecover and verify.
@@ -19,16 +18,12 @@ module rooch_framework::ecdsa_k1 {
     const EInvalidPubKey: u64 = 1;
 
     /// built-in functions
-    public fun scheme(): u64 {
-        SCHEME_ECDSA_K1
-    }
-
     public fun scheme_length(): u64 {
-        V_ECDSA_K1_SCHEME_LENGTH
+        V_ECDSA_K1_TO_BITCOIN_SCHEME_LENGTH
     }
 
     public fun public_key_length(): u64 {
-        V_ECDSA_K1_PUBKEY_LENGTH
+        V_ECDSA_K1_COMPRESSED_PUBKEY_LENGTH
     }
 
     public fun signature_length(): u64 {
@@ -78,7 +73,7 @@ module rooch_framework::ecdsa_k1 {
     /// @param hash: The hash function used to hash the message when signing.
     ///
     /// If the signature is valid to the pubkey and hashed message, return true. Else false.
-    public native fun verify(
+    native public fun verify(
         signature: &vector<u8>,
         public_key: &vector<u8>,
         msg: &vector<u8>,

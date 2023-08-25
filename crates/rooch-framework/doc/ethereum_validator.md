@@ -8,6 +8,7 @@ This module implements Ethereum validator with the ECDSA recoverable signature o
 
 -  [Struct `EthereumValidator`](#0x3_ethereum_validator_EthereumValidator)
 -  [Constants](#@Constants_0)
+-  [Function `scheme`](#0x3_ethereum_validator_scheme)
 -  [Function `rotate_authentication_key_entry`](#0x3_ethereum_validator_rotate_authentication_key_entry)
 -  [Function `remove_authentication_key_entry`](#0x3_ethereum_validator_remove_authentication_key_entry)
 -  [Function `get_authentication_key_from_authenticator_payload`](#0x3_ethereum_validator_get_authentication_key_from_authenticator_payload)
@@ -24,13 +25,11 @@ This module implements Ethereum validator with the ECDSA recoverable signature o
 <b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::signer</a>;
-<b>use</b> <a href="">0x1::vector</a>;
-<b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
 <b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 <b>use</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable">0x3::ecdsa_k1_recoverable</a>;
-<b>use</b> <a href="hash.md#0x3_hash">0x3::hash</a>;
+<b>use</b> <a href="ethereum_address.md#0x3_ethereum_address">0x3::ethereum_address</a>;
 </code></pre>
 
 
@@ -77,13 +76,23 @@ error code
 
 
 
-<a name="0x3_ethereum_validator_rotate_authentication_key_entry"></a>
+<a name="0x3_ethereum_validator_ETHEREUM_SCHEME"></a>
 
-## Function `rotate_authentication_key_entry`
+there defines scheme for each blockchain
+
+
+<pre><code><b>const</b> <a href="ethereum_validator.md#0x3_ethereum_validator_ETHEREUM_SCHEME">ETHEREUM_SCHEME</a>: u64 = 3;
+</code></pre>
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>&lt;T&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, public_key: <a href="">vector</a>&lt;u8&gt;)
+<a name="0x3_ethereum_validator_scheme"></a>
+
+## Function `scheme`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_scheme">scheme</a>(): u64
 </code></pre>
 
 
@@ -92,7 +101,31 @@ error code
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>&lt;T&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_scheme">scheme</a>(): u64 {
+    <a href="ethereum_validator.md#0x3_ethereum_validator_ETHEREUM_SCHEME">ETHEREUM_SCHEME</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_ethereum_validator_rotate_authentication_key_entry"></a>
+
+## Function `rotate_authentication_key_entry`
+
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, public_key: <a href="">vector</a>&lt;u8&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>(
     ctx: &<b>mut</b> StorageContext,
     <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>,
     public_key: <a href="">vector</a>&lt;u8&gt;
@@ -120,7 +153,7 @@ error code
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>&lt;T&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -129,7 +162,7 @@ error code
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>&lt;T&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
+<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
     <a href="account_authentication.md#0x3_account_authentication_remove_authentication_key">account_authentication::remove_authentication_key</a>&lt;<a href="ethereum_validator.md#0x3_ethereum_validator_EthereumValidator">EthereumValidator</a>&gt;(ctx, <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>));
 }
 </code></pre>
@@ -157,7 +190,7 @@ Get the authentication key of the given authenticator from authenticator_payload
 <pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_get_authentication_key_from_authenticator_payload">get_authentication_key_from_authenticator_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
     <b>let</b> public_key = <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_get_public_key_from_authenticator_payload">ecdsa_k1_recoverable::get_public_key_from_authenticator_payload</a>(authenticator_payload);
     <b>let</b> addr = <a href="ethereum_validator.md#0x3_ethereum_validator_public_key_to_address">public_key_to_address</a>(public_key);
-    moveos_std::bcs::to_bytes(&addr)
+    <a href="ethereum_address.md#0x3_ethereum_address_into_bytes">ethereum_address::into_bytes</a>(addr)
 }
 </code></pre>
 
@@ -169,10 +202,9 @@ Get the authentication key of the given authenticator from authenticator_payload
 
 ## Function `public_key_to_address`
 
-TODO: https://github.com/rooch-network/rooch/issues/615
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_public_key_to_address">public_key_to_address</a>(public_key: <a href="">vector</a>&lt;u8&gt;): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_public_key_to_address">public_key_to_address</a>(public_key: <a href="">vector</a>&lt;u8&gt;): <a href="ethereum_address.md#0x3_ethereum_address_ETHAddress">ethereum_address::ETHAddress</a>
 </code></pre>
 
 
@@ -181,8 +213,8 @@ TODO: https://github.com/rooch-network/rooch/issues/615
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_public_key_to_address">public_key_to_address</a>(public_key: <a href="">vector</a>&lt;u8&gt;): <b>address</b> {
-    moveos_std::bcs::to_address(<a href="ethereum_validator.md#0x3_ethereum_validator_public_key_to_authentication_key">public_key_to_authentication_key</a>(public_key))
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_public_key_to_address">public_key_to_address</a>(public_key: <a href="">vector</a>&lt;u8&gt;): ETHAddress {
+    <a href="ethereum_address.md#0x3_ethereum_address_new">ethereum_address::new</a>(public_key)
 }
 </code></pre>
 
@@ -207,9 +239,8 @@ Get the authentication key of the given public key.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_public_key_to_authentication_key">public_key_to_authentication_key</a>(public_key: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
-    <b>let</b> bytes = <a href="_singleton">vector::singleton</a>((<a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_scheme">ecdsa_k1_recoverable::scheme</a>() <b>as</b> u8));
-    <a href="_append">vector::append</a>(&<b>mut</b> bytes, public_key);
-    hash::blake2b256(&bytes)
+    <b>let</b> addr = <a href="ethereum_validator.md#0x3_ethereum_validator_public_key_to_address">public_key_to_address</a>(public_key);
+    <a href="ethereum_address.md#0x3_ethereum_address_into_bytes">ethereum_address::into_bytes</a>(addr)
 }
 </code></pre>
 
@@ -344,6 +375,7 @@ Only validate the authenticator's signature.
     <a href="ethereum_validator.md#0x3_ethereum_validator_validate_signature">validate_signature</a>(&authenticator_payload, &tx_hash);
 
     // TODO compare the auth_key from the payload <b>with</b> the auth_key from the <a href="account.md#0x3_account">account</a>
+    std::debug::print(ctx);
 }
 </code></pre>
 

@@ -11,13 +11,13 @@ module rooch_framework::address_mapping{
 
     //The coin id standard is defined in [slip-0044](https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
     //Please keep consistent with rust ChainID
-    const COIN_TYPE_BTC: u32 = 0;
-    const COIN_TYPE_ETH: u32 = 60;
-    const COIN_TYPE_NOSTR: u32 = 1237;
-    const COIN_TYPE_ROH: u32 = 20230101;
+    const COIN_TYPE_BTC: u64 = 0;
+    const COIN_TYPE_ETH: u64 = 60;
+    const COIN_TYPE_NOSTR: u64 = 1237;
+    const COIN_TYPE_ROH: u64 = 20230101;
 
     struct MultiChainAddress has copy, store, drop {
-        coin_id: u32,
+        coin_id: u64,
         raw_address: vector<u8>,
     }
     

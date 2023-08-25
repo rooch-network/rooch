@@ -2,12 +2,14 @@ module rooch_framework::transaction_validator {
     use std::error;
     use std::option;
     use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::tx_result;
     use rooch_framework::account;
     use rooch_framework::address_mapping::{Self, MultiChainAddress};
     use rooch_framework::account_authentication;
     use rooch_framework::auth_validator::{Self, TxValidateResult};
     use rooch_framework::auth_validator_registry;
     use rooch_framework::session_key;
+    use rooch_framework::gas_price;
 
     const MAX_U64: u128 = 18446744073709551615;
 
@@ -36,12 +38,16 @@ module rooch_framework::transaction_validator {
     /// If the authenticator is invaid, abort this function.
     public fun validate(
         ctx: &StorageContext,
-        tx_sequence_number: u64,
+        _chain_id: u64,
         scheme: u64,
         authenticator_payload: vector<u8>
     ): TxValidateResult {
-        // === validate the sequence number ===
 
+        // === validate the chain id ===
+        //TODO validate the chain id
+
+        // === validate the sequence number ===
+        let tx_sequence_number = storage_context::sequence_number(ctx);
         assert!(
             (tx_sequence_number as u128) < MAX_U64,
             error::out_of_range(EValidateSequenceNumberTooBig)
@@ -59,6 +65,10 @@ module rooch_framework::transaction_validator {
             tx_sequence_number == account_sequence_number,
             error::invalid_argument(EValidateSequenceNumberTooNew)
         );
+
+        // === validate gas ===
+        let _max_gas_amount = storage_context::max_gas_amount(ctx);
+        //TODO check the account can pay the gas fee
 
         // === validate the authenticator ===
 
@@ -93,7 +103,7 @@ module rooch_framework::transaction_validator {
         if (!account::exists_at(ctx, sender)) {
             account::create_account(ctx, sender);
         };
-        // the transaction validator will put the multi chain address into the context
+        //the transaction validator will put the multi chain address into the context
         let multichain_address = storage_context::get<MultiChainAddress>(ctx);
         if (option::is_some(&multichain_address)) {
             let multichain_address = option::extract(&mut multichain_address);
@@ -101,7 +111,11 @@ module rooch_framework::transaction_validator {
             if (!address_mapping::exists_mapping(ctx, multichain_address)) {
                 address_mapping::bind_no_check(ctx, sender, multichain_address);
             };
-        }
+        };
+        let max_gas_amount = storage_context::max_gas_amount(ctx);
+        let gas_price = gas_price::get_gas_price_per_unit();
+        let _gas = max_gas_amount * gas_price;
+        //TODO prepare the gas coin
     }
 
     /// Transaction post_execute function.
@@ -110,8 +124,7 @@ module rooch_framework::transaction_validator {
     fun post_execute(
         ctx: &mut StorageContext,
     ) {
-        //TODO handle transaction gas fee
-
+    
         // Active the session key
 
         let session_key_opt = auth_validator::get_session_key_from_tx_ctx_option(ctx);
@@ -122,5 +135,9 @@ module rooch_framework::transaction_validator {
 
         // Increment sequence number
         account::increment_sequence_number(ctx);
+
+        let tx_result = storage_context::tx_result(ctx);
+        let _gas_used = tx_result::gas_used(&tx_result);
+        //TODO Charge gas fee and return remaining gas
     }
 }

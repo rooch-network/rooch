@@ -7,16 +7,23 @@ module rooch_framework::ethereum_validator {
     use std::signer;
     use moveos_std::storage_context::{Self, StorageContext};
     use rooch_framework::account_authentication;
-    use rooch_framework::hash;
     use rooch_framework::ecdsa_k1_recoverable;
     use rooch_framework::auth_validator;
+    use rooch_framework::ethereum_address::{Self, ETHAddress};
+
+    /// there defines scheme for each blockchain
+    const ETHEREUM_SCHEME: u64 = 3;
 
     /// error code
     const EInvalidPublicKeyLength: u64 = 0;
 
     struct EthereumValidator has store, drop {}
 
-    public entry fun rotate_authentication_key_entry<T>(
+    public fun scheme(): u64 {
+        ETHEREUM_SCHEME
+    }
+
+    public entry fun rotate_authentication_key_entry(
         ctx: &mut StorageContext,
         account: &signer,
         public_key: vector<u8>
@@ -37,7 +44,7 @@ module rooch_framework::ethereum_validator {
         account_authentication::rotate_authentication_key<EthereumValidator>(ctx, account_addr, authentication_key);
     }
 
-    public entry fun remove_authentication_key_entry<T>(ctx: &mut StorageContext, account: &signer) {
+    public entry fun remove_authentication_key_entry(ctx: &mut StorageContext, account: &signer) {
         account_authentication::remove_authentication_key<EthereumValidator>(ctx, signer::address_of(account));
     }
 
@@ -45,19 +52,17 @@ module rooch_framework::ethereum_validator {
     public fun get_authentication_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
         let public_key = ecdsa_k1_recoverable::get_public_key_from_authenticator_payload(authenticator_payload);
         let addr = public_key_to_address(public_key);
-        moveos_std::bcs::to_bytes(&addr)
+        ethereum_address::into_bytes(addr)
     }
 
-    /// TODO: https://github.com/rooch-network/rooch/issues/615
-    public fun public_key_to_address(public_key: vector<u8>): address {
-        moveos_std::bcs::to_address(public_key_to_authentication_key(public_key))
+    public fun public_key_to_address(public_key: vector<u8>): ETHAddress {
+        ethereum_address::new(public_key)
     }
 
     /// Get the authentication key of the given public key.
     public fun public_key_to_authentication_key(public_key: vector<u8>): vector<u8> {
-        let bytes = vector::singleton((ecdsa_k1_recoverable::scheme() as u8));
-        vector::append(&mut bytes, public_key);
-        hash::blake2b256(&bytes)
+        let addr = public_key_to_address(public_key);
+        ethereum_address::into_bytes(addr)
     }
 
     /// Get the authentication key option of the given account.
@@ -92,6 +97,7 @@ module rooch_framework::ethereum_validator {
         validate_signature(&authenticator_payload, &tx_hash);
 
         // TODO compare the auth_key from the payload with the auth_key from the account
+        std::debug::print(ctx);
     }
 
     fun pre_execute(
@@ -113,6 +119,8 @@ module rooch_framework::ethereum_validator {
     fun test_public_key_to_address() {
         let public_key = x"031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
         let addr = public_key_to_address(public_key);
-        assert!(addr == @0x8c891976da9498ec1d3ff778a5d6c40c217d63cc8c48539c959f8b683eedf5a4, 1000);
+        let address_bytes = ethereum_address::into_bytes(addr);
+        let expected_address = x"1a642f0e3c3af545e7acbd38b07251b3990914f1";
+        assert!(address_bytes == expected_address, 1000);
     }
 }
