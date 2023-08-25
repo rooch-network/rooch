@@ -115,10 +115,6 @@ impl CommandAction<String> for Init {
                 }
                 .persisted(client_config_path.as_path())
                 .save()?;
-
-                // //Store config init
-                // StoreConfig::init()
-                //     .map_err(|e| anyhow::anyhow!("Init stroe config failed:{}", e))?;
             }
 
             let message = format!(
