@@ -163,7 +163,7 @@ const Navigation = (props: Props) => {
             {userNavMenuContent ? (
               userNavMenuContent(navMenuContentProps)
             ) : (
-              <List className='nav-items' sx={{ py: 1, '& > :first-child': { mt: '0' } }}>
+              <List className='nav-items' sx={{ py: 1, '& > :first-of-type': { mt: '0' } }}>
                 <VerticalNavItems
                   navHover={navHover}
                   groupActive={groupActive}
