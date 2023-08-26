@@ -45,7 +45,7 @@ export class Account implements IAccount {
   ): Promise<string> {
     const bcsArgs = args.map((arg) => encodeArgs(arg))
     const scriptFunction = encodeFunctionCall(funcId, tyArgs, bcsArgs)
-    const data = new RoochTransactionData(
+    const txData = new RoochTransactionData(
       new BCSAccountAddress(addressToListTuple(this.address)),
       this.sequenceNumber,
       BigInt(this.provider.getChainId()),
@@ -53,12 +53,12 @@ export class Account implements IAccount {
       scriptFunction,
     )
 
-    const authPayload = await this.makeAuth(data)
+    const authResult = await this.makeAuth(txData)
     const auth = new Authenticator(
-      BigInt(authPayload.scheme),
-      uint8Array2SeqNumber(authPayload.payload),
+      BigInt(authResult.scheme),
+      uint8Array2SeqNumber(authResult.payload),
     )
-    const ts = new RoochTransaction(data, auth)
+    const ts = new RoochTransaction(txData, auth)
 
     const payload = (() => {
       const se = new BcsSerializer()

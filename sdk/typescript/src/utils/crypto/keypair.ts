@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { blake2b } from '@noble/hashes/blake2b'
+import { sha256 } from '@noble/hashes/sha256'
 import type { PublicKey } from './publickey'
 import { SignatureScheme, toSerializedSignature } from './signature'
 
@@ -22,7 +22,7 @@ export abstract class BaseSigner {
   abstract sign(bytes: Uint8Array): Promise<Uint8Array>
 
   async signMessage(bytes: Uint8Array) {
-    const digest = blake2b(bytes, { dkLen: 32 })
+    const digest = sha256(bytes)
 
     const signature = toSerializedSignature({
       signature: await this.sign(digest),
