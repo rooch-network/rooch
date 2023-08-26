@@ -21,8 +21,6 @@ import { ErrCallbackType } from 'src/context/types'
 
 // ** Hooks
 import { useMetamask } from 'src/hooks/useMetamask'
-import { hooks } from 'prismjs'
-import all = hooks.all
 
 // ** Defaults
 const defaultProvider: AuthValuesType = {
@@ -61,7 +59,7 @@ const AuthProvider = ({ children }: Props) => {
 
       if (allSecretKey) {
         // TODO: Parse key
-        let acc = new Map<string, AccountDataType>()
+        const acc = new Map<string, AccountDataType>()
         acc.set('0x12345', {
           address: '0x12345',
           kp: null,
@@ -94,8 +92,8 @@ const AuthProvider = ({ children }: Props) => {
 
   /// ** Impl fun
   const supportWallets = (): SuppoertWalletType[] => {
-    let result: SuppoertWalletType[] = []
-    for (let key in WalletType) {
+    const result: SuppoertWalletType[] = []
+    for (const key in WalletType) {
       switch (WalletType[key as keyof typeof WalletType]) {
         case WalletType.Metamask:
           result.push({
@@ -126,7 +124,9 @@ const AuthProvider = ({ children }: Props) => {
           .connect()
           .then(loginSuccess)
           .catch(e => {
-            console.log(e)
+            if (errorCallback) {
+              errorCallback(e)
+            }
           })
         break
     }
@@ -134,6 +134,7 @@ const AuthProvider = ({ children }: Props) => {
 
   const loginBySecretKey = (params: AddAccountBySecretKeyParams) => {
     // TODO: use rooch sdk
+    console.log(params)
     tmpLogin()
   }
 
@@ -157,7 +158,7 @@ const AuthProvider = ({ children }: Props) => {
   }
 
   const getAccounts = (): Map<string, AccountDataType> | null => {
-    let allAccounts = accounts ?? new Map<string, AccountDataType>()
+    const allAccounts = accounts ?? new Map<string, AccountDataType>()
 
     // TODO: abstract wallet
     if (metamask.accounts.length > 0) {

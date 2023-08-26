@@ -1,16 +1,11 @@
 // ** React Imports
 import { createContext, useEffect, useState, ReactNode } from 'react'
 import detectEthereumProvider from '@metamask/detect-provider'
-import MetaMaskSDK from '@metamask/sdk'
 
 import { MetamaskValueType, AddChinaParameterType } from 'src/context/wallet/types'
 
 // ** Config
 import config from 'src/configs/auth'
-
-const options = {
-  dappMetadata: { url: 'https://rooch.network', name: 'rooch dashboard' }
-}
 
 type Props = {
   children: ReactNode
@@ -22,9 +17,9 @@ const defaultProvider: MetamaskValueType = {
   hasProvider: false,
   accounts: [],
   isConnect: false,
-  switchChina: async () => {},
-  addChina: async () => {},
-  connect: async () => {},
+  switchChina: async () => Promise.resolve(),
+  addChina: async () => Promise.resolve(),
+  connect: async () => Promise.resolve(),
   disconnect: () => null
 }
 
@@ -40,7 +35,8 @@ const MetamaskProvider = ({ children }: Props) => {
     setLoading(true)
 
     const refreshAccounts = (newAccounts: any) => {
-      if (newAccounts.length > 0) {
+      console.log(newAccounts)
+      if (newAccounts && newAccounts.length > 0) {
         updateWallet(newAccounts)
       } else {
         updateWallet([])
@@ -82,11 +78,13 @@ const MetamaskProvider = ({ children }: Props) => {
   }
 
   const connect = async () => {
+    console.log('开始链接')
     if (chainId !== config.roochChain.chainId) {
       try {
         await switchChina(config.roochChain.chainId)
       } catch (e: any) {
         if (e.code === 4902) {
+          // Rooch chain not found
           try {
             await addChina({
               ...config.roochChain
@@ -95,16 +93,18 @@ const MetamaskProvider = ({ children }: Props) => {
             return
           }
         } else {
-          return 
+          return
         }
       }
     }
+
+    console.log('开始链接')
 
     return window.ethereum
       ?.request({
         method: 'eth_requestAccounts'
       })
-      .then(accounts => {
+      .then((accounts: any) => {
         updateWallet(accounts)
       })
   }
@@ -115,27 +115,27 @@ const MetamaskProvider = ({ children }: Props) => {
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: chainId }]
       })
-      .then(value => {
+      .then((value: any) => {
         setChainId(chainId)
         console.log('switch success ' + value)
+      })
+      .catch(e => {
+        console.log(e)
       })
   }
 
   const addChina = async (params: AddChinaParameterType) => {
-    return window
-      .ethereum!.request({
-        method: 'wallet_addEthereumChain',
-        params: params
-      })
-      .then(value => {
-        console.log(value)
-      })
+    return window.ethereum?.request({
+      method: 'wallet_addEthereumChain',
+      params: params
+    }).then(v => {
+      console.log(v)
+    })
   }
 
   const disconnect = () => {
     if (window.ethereum!.isConnected()) {
       console.log(window.ethereum)
-      window.sdkProvider.handleDisconnect({ terminate: true })
     }
   }
 

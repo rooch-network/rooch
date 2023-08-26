@@ -19,6 +19,6 @@ export type MetamaskValueType = {
   isConnect: boolean
   connect: () => Promise<void>
   disconnect: () => void
-  switchChina:(chainId: string) => Promise<void> 
+  switchChina:(chainId: string) => Promise<void>
   addChina: (params: AddChinaParameterType) => Promise<void>
 }

@@ -37,11 +37,10 @@ import BlankLayout from 'src/@core/layouts/BlankLayout'
 
 // ** Hooks
 import { useAuth } from 'src/hooks/useAuth'
-import { useMetamask } from 'src/hooks/useMetamask'
 
 // ** Demo Imports
 import AuthIllustrationWrapper from 'src/views/pages/auth/AuthIllustrationWrapper'
-import { WalletType, SuppoertWalletType } from '../../context/auth/types'
+import { WalletType } from 'src/context/auth/types'
 
 // ** Styled Components
 const LinkStyled = styled(Link)(({ theme }) => ({
