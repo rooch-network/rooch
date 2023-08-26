@@ -105,7 +105,7 @@ better_any = "0.1.1"
 bitcoin = "0.30.1"
 bip32 = "0.4.0"
 byteorder = "1.4.3"
-clap = { version = "3", features = ["derive", ] }
+clap = { version = "4.2.7", features = ["derive", ] }
 chrono = "0.4.23"
 coerce = "0.8"
 datatest-stable = "0.1.3"
