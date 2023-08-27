@@ -34,7 +34,7 @@ export class Account implements IAccount {
     this.authorizer = authorizer
   }
 
-  public async callFunction(
+  public async runFunction(
     funcId: FunctionId,
     tyArgs: TypeTag[],
     args: Arg[],
