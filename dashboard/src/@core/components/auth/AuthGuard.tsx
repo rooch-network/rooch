@@ -22,7 +22,8 @@ const AuthGuard = (props: AuthGuardProps) => {
       if (!router.isReady) {
         return
       }
-      if (auth.accounts === null && !window.localStorage.getItem('secret_key')) {
+
+      if (auth.accounts === null && !auth.loading) {
         if (router.asPath !== '/') {
           router.replace({
             pathname: '/login',
@@ -34,7 +35,7 @@ const AuthGuard = (props: AuthGuardProps) => {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [router.route]
+    [router.route, auth.accounts]
   )
 
   if (auth.loading || auth.accounts === null) {

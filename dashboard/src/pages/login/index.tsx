@@ -38,11 +38,9 @@ import BlankLayout from 'src/@core/layouts/BlankLayout'
 // ** Hooks
 import { useAuth } from 'src/hooks/useAuth'
 
-//import useBgColor from 'src/@core/hooks/useBgColor'
-//import { useSettings } from 'src/@core/hooks/useSettings'
-
 // ** Demo Imports
 import AuthIllustrationWrapper from 'src/views/pages/auth/AuthIllustrationWrapper'
+import { WalletType } from 'src/context/auth/types'
 
 // ** Styled Components
 const LinkStyled = styled(Link)(({ theme }) => ({
@@ -64,9 +62,10 @@ interface FormData {
 }
 
 enum InputType {
-  Connect,
-  Import,
-  Create
+  Connect = 'Connect',
+  Import = 'Import',
+  Create = 'Create',
+  Oauth = 'Oauth'
 }
 
 const LoginPage = () => {
@@ -80,7 +79,7 @@ const LoginPage = () => {
   const {
     control,
 
-//    setError,
+    //    setError,
     handleSubmit,
     formState: { errors }
   } = useForm({
@@ -89,28 +88,34 @@ const LoginPage = () => {
     resolver: yupResolver(schema)
   })
 
-  const [inputType, setInputType] = useState<InputType>(InputType.Connect)
+  const [inputType, setInputType] = useState<InputType>(
+    auth.suppoertWallets.length > 0 ? InputType.Connect : InputType.Import
+  )
 
   // ** State
-  const [statusValue, setStatusValue] = useState<string>('')
+  const [selectWallet, setSelectWallet] = useState<WalletType | null>(
+    auth.suppoertWallets.length > 0 ? auth.suppoertWallets[0].name : null
+  )
 
   const handleStatusValue = (e: SelectChangeEvent) => {
-    setStatusValue(e.target.value)
+    setSelectWallet(e.target.value as WalletType)
   }
 
   const onSubmit = (data: FormData) => {
     const { secretKey } = data
 
-    console.log(secretKey)
-
-    auth.loginByMetamask()
-
-    //    auth.login({ email, password, rememberMe: true }, () => {
-    //      setError('email', {
-    //        type: 'manual',
-    //        message: 'Email or Password is invalid'
-    //      })
-    //    })
+    switch (inputType) {
+      case InputType.Connect:
+        auth.loginByWallet(selectWallet!)
+        break
+      case InputType.Create:
+        break
+      case InputType.Import:
+        auth.loginBySecretKey({ key: secretKey, rememberMe: false })
+        break
+      case InputType.Oauth:
+        break
+    }
   }
 
   return (
@@ -133,7 +138,7 @@ const LoginPage = () => {
               </Typography>
             </Box>
             <Typography variant='h6' sx={{ mb: 1.5 }}>
-              Welcome to {themeConfig.templateName} Dashboard!!!! 👋🏻
+              Welcome to {themeConfig.templateName} Dashboard! 👋🏻
             </Typography>
             <Typography sx={{ mb: 6, color: 'text.secondary' }}>
               Please connect to your account and start the adventure
@@ -167,14 +172,17 @@ const LoginPage = () => {
                     <InputLabel id='invoice-status-select'>Select Wallet</InputLabel>
                     <Select
                       fullWidth
-                      value={statusValue}
+                      value={selectWallet ?? ''}
                       sx={{ mr: 4, mb: 2 }}
                       label='Select Wallet'
                       onChange={handleStatusValue}
                       labelId='invoice-status-select'
                     >
-                      <MenuItem value='Bitcoin'>Bitcoin</MenuItem>
-                      <MenuItem value='Matemask'>Matemask</MenuItem>
+                      {auth.suppoertWallets.map(value => (
+                        <MenuItem key={value.name} value={value.name}>
+                          {value.name}
+                        </MenuItem>
+                      ))}
                     </Select>
                   </FormControl>
                 </>
@@ -193,21 +201,24 @@ const LoginPage = () => {
                   control={<></>}
                   sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.875rem', color: 'text.secondary' } }}
                 />
-                <Button
-                  onClick={() => {
-                    if (inputType === InputType.Connect) {
-                      setInputType(InputType.Import)
-                    } else {
-                      setInputType(InputType.Connect)
-                    }
-                    console.log('hhahah')
-                  }}
-                >
-                  {inputType === InputType.Import ? 'Select Account' : 'Import Account'}
-                </Button>
+                {auth.suppoertWallets.length > 0 ? (
+                  <Button
+                    onClick={() => {
+                      if (inputType === InputType.Connect) {
+                        setInputType(InputType.Import)
+                      } else {
+                        setInputType(InputType.Connect)
+                      }
+                    }}
+                  >
+                    {inputType === InputType.Import ? 'Select Account' : 'Import Account'}
+                  </Button>
+                ) : (
+                  <></>
+                )}
               </Box>
               <Button fullWidth size='large' type='submit' variant='contained' sx={{ mb: 4 }}>
-                Connect
+                {inputType}
               </Button>
               <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
                 <Typography variant='body2' sx={{ mr: 2 }}>
@@ -230,7 +241,7 @@ const LoginPage = () => {
                   component={Link}
                   onClick={e => e.preventDefault()}
                   sx={{ color: theme.palette.mode === 'light' ? '#272727' : 'grey.300' }}
-                  >
+                >
                   <Icon icon='bxl:github' />
                 </IconButton>
                 <IconButton href='/' component={Link} sx={{ color: '#db4437' }} onClick={e => e.preventDefault()}>
@@ -242,7 +253,7 @@ const LoginPage = () => {
         </Card>
       </AuthIllustrationWrapper>
     </Box>
-    )
+  )
 }
 
 LoginPage.getLayout = (page: ReactNode) => <BlankLayout>{page}</BlankLayout>

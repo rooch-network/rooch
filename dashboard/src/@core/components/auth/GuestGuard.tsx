@@ -22,7 +22,7 @@ const GuestGuard = (props: GuestGuardProps) => {
       return
     }
 
-    if (window.localStorage.getItem('secret_key')) {
+    if (auth.accounts != null) {
       router.replace('/')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

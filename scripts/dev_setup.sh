@@ -43,6 +43,7 @@ function usage {
   echo "-o install operations tooling as well: yamllint, docker,  python3"
   echo "-y installs or updates Move prover tools: z3, cvc5, dotnet, boogie"
   echo "-a install tools for build and test api"
+  echo "-j install js/ts tools"
   echo "-v verbose mode"
   echo "-i installs an individual tool by name"
   echo "-n will target the /opt/ dir rather than the $HOME dir.  /opt/bin/, /opt/rustup/, and /opt/dotnet/ rather than $HOME/bin/, $HOME/.rustup/, and $HOME/.dotnet/"
@@ -611,7 +612,6 @@ Build tools (since -t or no option was provided):
   * lcov
   * pkg-config
   * libssl-dev
-  * NodeJS / NPM
   * protoc (and related tools)
   * lld (only for Linux)
 EOF
@@ -671,6 +671,7 @@ OPERATIONS=false;
 INSTALL_PROFILE=false;
 INSTALL_PROVER=false;
 INSTALL_PROTOC=false;
+INSTALL_JSTS=false;
 INSTALL_API_BUILD_TOOLS=false;
 INSTALL_INDIVIDUAL=false;
 INSTALL_PACKAGES=();
@@ -703,6 +704,9 @@ while getopts "btoprvysah:i:n" arg; do
       ;;
     a)
       INSTALL_API_BUILD_TOOLS="true"
+      ;;
+    j)
+      INSTALL_JSTS="true"
       ;;
     i)
       INSTALL_INDIVIDUAL="true"
@@ -825,7 +829,6 @@ if [[ "$INSTALL_BUILD_TOOLS" == "true" ]]; then
   install_postgres
   install_pkg git "$PACKAGE_MANAGER"
   install_lcov "$PACKAGE_MANAGER"
-  install_nodejs "$PACKAGE_MANAGER"
   install_pnpm "$PACKAGE_MANAGER"
   install_pkg unzip "$PACKAGE_MANAGER"
   install_protoc
@@ -884,6 +887,12 @@ if [[ "$INSTALL_API_BUILD_TOOLS" == "true" ]]; then
   # python and tools
   install_python3
   "${PRE_COMMAND[@]}" python3 -m pip install schemathesis
+fi
+
+if [[ "$INSTALL_JSTS" == "true" ]]; then
+  # javascript and typescript tools
+  install_nodejs "$PACKAGE_MANAGER"
+  install_pnpm "$PACKAGE_MANAGER"
 fi
 
 install_python3
