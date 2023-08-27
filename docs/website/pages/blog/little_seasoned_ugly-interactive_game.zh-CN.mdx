@@ -12,280 +12,246 @@ import PostHeader from "/components/blog/postHeader";
 
 ## 1 简单
 
-Interactive Proof, aka Interactive Game, have become the de facto
-standard for the arbitration mechanisms of Optimistic Rollups. By
-providing a unified deterministic single-step execution environment for
-both on-chain and off-chain through the use of intermediary
-instructions, it minimizes resource requirements during on-chain
-arbitration. Its inherent complexity leads us to simplify its
-explanation for the sake of dissemination and comprehension. Let us
-delve into just how simple it can be[^1].
+交互式证明，又名交互式游戏，已经成为 Optimistic Rollups 仲裁机制的事实上的标准。通过使用中间指令为链上和链下提供统一的确定性单步执行环境，最大限度地减少链上仲裁期间的资源需求。它固有的复杂性导致我们为了传播和理解而简化其解释。让我们深入研究一下它到底有多简单[^1]。
 
 ### 1.1 同一语言，同一结果
 
-**Moe**: Is `Uno mas uno es igual a dos` also true on your computer?
+**Moe**：`Uno mas uno es igual a dos` 在你的电脑上也成立吗？
 
-**Joe**: I don't understand Spanish, what did you mean? Could you describe
-it in mathematical language that everyone could comprehend?
-
-----
-
-**Moe**: Is `1 + 1 = 2` also true on your computer?
-
-**Joe**: Yes!
+**Joe**：我不懂西班牙语，你什么意思？你能用大家都能理解的数学语言描述一下吗？
 
 ----
 
-**Moe**: Is `1 + 1 = 2` also true on everyone's computer?
+**Moe**：`1 + 1 = 2` 在你的电脑上也成立吗？
 
-**Everyone**: Yes!
+**Joe**：Yes！
 
 ----
 
-**Moe**: Is `(((1 + 1) + 1) + 1) = 4 ` also true on everyone's computer?
+**Moe**：`1 + 1 = 2` 在每个人的计算机上都成立吗？
 
-Everyone: Yes!
+**Everyone**：Yes！
+
+----
+
+**Moe**：`(((1 + 1) + 1) + 1) = 4 ` 在每个人的计算机上也成立吗？
+
+每个人：Yes！
 
 ### 1.2 同一语言，步骤，两种结果
 
-**Moe**: Is `(((1 + 1) + 1) + 1) = 5 ` also true on your computer?
+**Moe**：`(((1 + 1) + 1) + 1) = 5 ` 在你的电脑上也成立吗？
 
-**Joe**: No! It's 4.
-
-----
-
-**Moe**: I am inclined to assert the correctness of 5. Shall we entreat the
-esteemed scholar, Lorentz[^2], to adjudicate the veracity of our claims?
-
-**Joe**: Good. However, as Mr. Lorentz is rather preoccupied, we could
-initially examine the first inconsistent step and delegate their
-validation to him.
+**Joe**：不！它是 4。
 
 ----
 
-**Moe**: Could this work?
+**Moe**：我倾向于断言 5 的正确性。我们是否应该请求尊敬的学者洛伦兹[^2]来判定我们的主张的真实性？
 
-**Joe**: Yes. Every step is deterministic.
+**Joe**：好的。然而，由于洛伦兹先生相当专注，我们可以首先检查第一个不一致的步骤，并将其验证委托给他。
 
 ----
 
-**Moe**: Let's start with first evaluation!
+**Moe**：这行得通吗？
 
-**Joe**: Okay!
+**Joe**：可以。每一步都是确定性的。
 
-...
+----
 
-**Moe** & **Joe**: In step 2, we have different result. A is `2 + 1 = 4`, B is
-`2 +1 = 3`. Let's seek his help!
+**Moe**：让我们从第一次评测开始吧！
 
-**Lorentz**: `2 + 1 = 3`
+**Joe**：Okay！
 
-**Moe** & **Joe**: Thank you!
+……
+
+**Moe** & **Joe**：在第 2 步中，我们得到了不同的结果。A 是 `2 + 1 = 4`，B 是 `2 +1 = 3`。我们来寻求他的帮助吧！
+
+**Lorentz**：`2 + 1 = 3`
+
+**Moe** & **Joe**：感谢！
 
 ### 1.3 同一语言，步骤，两种结果，LogN 次核对
 
-**Moe**: Is `(((1 + 1) + 1) + ... + 1) = 48784359345934` also true on
-your computer?
+**Moe**：`(((1 + 1) + 1) + ... + 1) = 48784359345934` 在你的电脑上也成立吗？
 
-**Joe**: No. The Value is 48784359345935.
-
-----
-
-**Moe**: Let's play the game again!
-
-**Joe**: No way! Due to the communication overhead, each comparison requires
-1 second. We may need 1.5 million years to finish the game.
+**Joe**：不。它的值是 `48784359345935`。
 
 ----
 
-**Moe**: The cost of computation is just 1 second. Emmmm, how about using
-bisection?
+**Moe**：我们再玩一次游戏吧！
 
-**Joe**: Each comparison can resolve half of the issues. In this manner, we
-can swiftly identify inconsistencies!
+**Joe**：决不！由于通信开销，每次比较需要 1 秒。我们可能需要 150 万年才能完成游戏。
 
 ----
 
-**Moe**: Step 24392179672966 is `24392179672966 + 1 = 24392179672967 `
+**Moe**：计算成本仅为 1 秒。Emmmm，使用二分法怎么样？
 
-**Joe**: Step 24392179672966 is `24392179672965 + 1 = 24392179672966 `
-
-----
-
-**Moe**: Step 12196089836483 is `12196089836483 + 1 = 12196089836484 `
-
-**Joe**: Step 12196089836483 is `12196089836482 + 1 = 12196089836483 `
+**Joe**：每次比较都可以解决一半的问题。通过这种方式，我们可以快速识别不一致的地方！
 
 ----
 
-**Moe**: Step 6098044918241 is `6098044918241 + 1 = 6098044918242 `
+**Moe**：第 24392179672966 步是 `24392179672966 + 1 = 24392179672967`
 
-**Joe**: Step 6098044918241 is `6098044918241 + 1 = 6098044918242 `. The
-first inconsistent step must be in `(6098044918241, 12196089836483]`,
-we're not far from our destination!
+**Joe**：第 24392179672966 步是 `24392179672965 + 1 = 24392179672966`
+
+----
+
+**Moe**：第 12196089836483 步是 `12196089836483 + 1 = 12196089836484`
+
+**Joe**：第 12196089836483 步是 `12196089836482 + 1 = 12196089836483`
+
+----
+
+**Moe**：第 6098044918241 步是 `6098044918241 + 1 = 6098044918242`
+
+**Joe**：第 6098044918241 步是 `6098044918241 + 1 = 6098044918242`。第一个不一致的步骤一定在 `(6098044918241, 12196089836483]`，我们离目的地不远了！
 
 ## 2 深入
 
-In 'The Little' we have identified the three essential elements that
-constitute the 'Interactive Game'：
+在“简单”中，我们确定了构成“交互式游戏”的三个基本要素：
 
-> a. One Language
+> a. 一种语言
 
-> b. Deterministic Step
+> b. 确定性步骤
 
-> c. Bisection
+> c. 二分法
 
-One cannot help but wonder how such a simple protocol led numerous
-Optimistic Rollups teams to spend so much time and energy on it? This is
-akin to the time before the Wright brothers invented the airplane when
-people already knew that the quickest way from point A to point B was
-not traveling over mountains and valleys, but flying in a straight line.
-The act of flying, like Bisection, is straightforward and simple. To
-attract those who used to drive to fly instead, it's sufficient to
-emphasize this point. However, for an aircraft engineer, it is evident
-that there is much more to know.
+人们不禁会想，这么一个简单的协议是如何让众多的 Optimistic Rollups 团队花费如此多的时间和精力的呢？这就像莱特兄弟发明飞机之前的时代一样，当时人们已经知道从 A 点到 B 点最快的方法不是翻山越岭，而是直线飞行。飞行的动作就像二分法一样简单明了。为了吸引那些以前开车改坐飞机的人，强调这一点就足够了。然而，对于一名飞机工程师来说，显然还有更多东西需要了解。
 
 ### 2.1 同一语言
 
-**Moe**: We require a language that supports the operation of blockchain
-clients and yields results consistent with the client on the chain.
+**Moe**：我们需要一种支持区块链客户端操作并产生与链上客户端一致的结果的语言。
 
-**Joe**: Done! For Ethereum, it's Solidity!
-
-----
-
-**Moe**: How do you intend to handle these instructions that depend on
-spacetime? Such as: CALLER, SLOAD, SSTORE, BLOCKTIME.
-
-**Joe**: Emmm... I can't tell you right now, but there is always a way,
-isn't there?
+**Joe**：没问题！对于以太坊来说，就是 Solidity！
 
 ----
 
-**Moe**: Optimism has tried that but failed.
+**Moe**：您打算如何处理这些依赖于时空的指令？如：CALLER、SLOAD、SSTORE、BLOCKTIME。
 
-**Joe**: Sad story. Thanks for their contribution.
-
-----
-
-**Moe**: We could emulate the execution container of a language. How about
-EVM-in-EVM?
-
-**Joe**: Sounds not bad. But how about the cost of Gas? I don't think it's an
-easy job to emulate memory and storage in Solidity.
+**Joe**：嗯……我现在不能告诉你，但总有办法的，不是吗？
 
 ----
 
-**Moe**: We need a medium, just like we've done with mathematical language.
+**Moe**：Optimism 曾尝试过这一点，但失败了。
 
-**Joe**: I think we're closer to the answer.
+**Joe**：悲剧。感谢他们的贡献。
 
 ----
 
-**Moe**: Client could be compiled to this language. And we could emulate
-this language on chain.
+**Moe**：我们可以模拟一种语言的执行容器。 EVM-in-EVM 怎么样？
 
-**Joe**: Ideally, it should be an assembly language, as emulating the
-execution of instructions is always simpler.
+**Joe**：听起来不错。但是 Gas 成本怎么样？我认为在 Solidity 中模拟内存和存储并不是一件容易的事。
+
+----
+
+**Moe**：我们需要一种媒介，就像我们对数学语言所做的那样。
+
+**Joe**：我认为我们已经接近答案了。
+
+----
+
+**Moe**：客户端可以编译为这种语言。我们可以在链上模拟这种语言。
+
+**Joe**：理想情况下，它应该是一种汇编语言，因为模拟指令的执行总是更简单。
 
 ### 2.2 确定性步骤
 
-**Moe**: By utilizing a certain language, we can roughly achieve certainty
+**Moe**：: By utilizing a certain language, we can roughly achieve certainty
 in computation. Thus, the problem to be addressed now is the certainty
 of input and state changes.
 
-**Joe**: Generally speaking, we employ an Oracle to resolve issues related
+**Joe**：: Generally speaking, we employ an Oracle to resolve issues related
 to external information input.
 
 ----
 
-**Moe**: Could this Oracle be deterministic for both of L1 and L2?
+**Moe**：: Could this Oracle be deterministic for both of L1 and L2?
 
-**Joe**: We have root on L1, which means we have chance to verify input.
+**Joe**：: We have root on L1, which means we have chance to verify input.
 
 ----
 
-**Moe**: Is it possible to illustrate our current achievements with a
+**Moe**：: Is it possible to illustrate our current achievements with a
 figure?
 
-**Joe**:
+**Joe**：:
 Sure! 
 
 <img src="/blog/interactive-game/timeline.png" width = "500" height = "300" alt="timeline" align=center />
 
 ----
 
-**Moe**: Could you explain this figure more?
+**Moe**：: Could you explain this figure more?
 
-**Joe**: 
+**Joe**：: 
 
-> Pre-execution: fetch input by block_hash
+> Pre-execution：: fetch input by block_hash
 
-> Load Emulator: setup execution environment
+> Load Emulator：: setup execution environment
 
-> Verify Input: verify input with witness
+> Verify Input：: verify input with witness
 
-> Transition: execute L2 tx
+> Transition：: execute L2 tx
 
 ----
 
-**Moe**: Sounds we've already had everything!
+**Moe**：: Sounds we've already had everything!
 
-**Joe**: Almost.
+**Joe**：: Almost.
 
 ### 2.3 对分法
 
-**Moe**: As the most straightforward segment, there appears to be little
+**Moe**：: As the most straightforward segment, there appears to be little
 worth discussing.
 
-**Joe**: We need to ascertain the validity of the witness.
+**Joe**：: We need to ascertain the validity of the witness.
 
 ----
 
-**Moe**: Signature is not enough?
+**Moe**：: Signature is not enough?
 
-**Joe**: No. Some may choose to feign deafness and muteness.
+**Joe**：: No. Some may choose to feign deafness and muteness.
 
 ----
 
-**Moe**: Okay. L1 should verify witness in each bisection round.
+**Moe**：: Okay. L1 should verify witness in each bisection round.
 
-**Joe**: Yes. And L1 could not only have inconsistent STEP<sub>i</sub>, also have last consistent STEP<sub>i-1</sub> after bisection.
+**Joe**：: Yes. And L1 could not only have inconsistent STEP<sub>i</sub>, also have last consistent STEP<sub>i-1</sub> after bisection.
 
 ## 3 丑陋
 
 In 'The Seasoned', we have refined the three essential elements that
 constitute the 'Interactive Game'：
 
-> a. One Language: simple assembly which could be run in off-chain client
+> a. One Language：: simple assembly which could be run in off-chain client
 and be emulated on chain.
 
-> b. Deterministic Step: verify input with witness.
+> b. Deterministic Step：: verify input with witness.
 
-> c. Bisection: verify witness in each round.
+> c. Bisection：: verify witness in each round.
 
 Until now, the Interactive Game has been endearing and intricate.
 However, to make it truly functional, we must unveil its ugly side.
 
 ### 3.1 同一语言： RISC
 
-**Moe**: It appears we have a plethora of choices, such as MIPS, RISC-V, and
+**Moe**：: It appears we have a plethora of choices, such as MIPS, RISC-V, and
 even Wasm.
 
-**Joe**: We can design a flexible architecture to support various languages.
+**Joe**：: We can design a flexible architecture to support various languages.
 However, only one can be utilized at any given moment.
 
 ----
 
-**Moe**: Which one would be your preferred choice?
+**Moe**：: Which one would be your preferred choice?
 
-**Joe**: MIPS. But in two years it will be RISC-V.
+**Joe**：: MIPS. But in two years it will be RISC-V.
 
 ----
 
-**Moe**: Your unpredictability leaves me perplexed.
+**Moe**：: Your unpredictability leaves me perplexed.
 
-**Joe**: I'm a reasonable man, and I am about to elucidate my rationale to
+**Joe**：: I'm a reasonable man, and I am about to elucidate my rationale to
 you. Firstly, the abstraction level of emulating CPU instructions is
 quite low. While it may appear abstruse, it actually entails a lesser
 cognitive load due to the absence of multiple layers of abstraction,
@@ -293,9 +259,9 @@ hence my lack of enthusiasm for Wasm.
 
 ----
 
-**Moe**: That seems reasonably sound.
+**Moe**：: That seems reasonably sound.
 
-**Joe**: Among CPU instruction sets, RISC instruction sets are undoubtedly a
+**Joe**：: Among CPU instruction sets, RISC instruction sets are undoubtedly a
 superior choice, owing to their limited and stable number of
 instructions, and the evasion of the complexity of emulating intricate
 instructions. In particular, the load-store architecture precludes the
@@ -307,26 +273,26 @@ maturity and stability of compilers, I lean towards MIPS.
 
 ----
 
-**Moe**: Tell me more about RISC-V.
+**Moe**：: Tell me more about RISC-V.
 
-**Joe**: We could have a 64-bit address space, as the 4GB memory space
+**Joe**：: We could have a 64-bit address space, as the 4GB memory space
 provided by MIPS 32-bit can sometimes prove inadequate. However,
 regardless of the instruction set used, we must take care to verify the
 correctness of the implementation.
 
 ----
 
-**Moe**: How will system calls be implemented? Indeed, it could pose a
+**Moe**：: How will system calls be implemented? Indeed, it could pose a
 formidable issue. 
 
-**Joe**: However, we can cleverly construct our program to minimize the use 
+**Joe**：: However, we can cleverly construct our program to minimize the use 
 of system calls, deploying our own system call implementations to replace
 generic ones. Our primary demand is to maintain consistency in state
 changes on and off the chain, rather than to create a universal emulator.
 
 ----
 
-**Moe**: When I mention system calls, I am actually referring to the
+**Moe**：: When I mention system calls, I am actually referring to the
 non-deterministic factors in the language. System calls represent a form
 of interaction between the emulator and the outside world, and such
 interaction could imply non-determinism. You mentioned the method of
@@ -335,38 +301,38 @@ indeed feasible considering that all aspects of the emulator lie in the
 hands of the implementer. However, I remain apprehensive, feeling that
 there are many non-deterministic factors that I have not yet considered.
 
-**Joe**: I perceive your concerns, and you have even begun contemplating
+**Joe**：: I perceive your concerns, and you have even begun contemplating
 issues of the next phase. Let us first postulate that we already possess
 such a medium and continue this discussion in the following section.
 
 ----
 
-**Moe**: The intermediary representation appears to be impartial towards all
+**Moe**：: The intermediary representation appears to be impartial towards all
 chains, which sounds immensely promising.
 
-**Joe**: Indeed. We can implement its emulator on various chains, thus
+**Joe**：: Indeed. We can implement its emulator on various chains, thus
 enabling various chains to have an Interactive Game. I've heard of a
 project that's doing just that.
 
 ----
 
-**Moe**: [Rooch/flexEmu](https://github.com/rooch-network/flexEmu)
+**Moe**：: [Rooch/flexEmu](https://github.com/rooch-network/flexEmu)
 
-**Joe**: Exactly it!
+**Joe**：: Exactly it!
 
-### 3.2 确定性步骤: 过程, 输入
+### 3.2 确定性步骤：: 过程, 输入
 
-**Moe**: Let's proceed swiftly, as the earlier segment regarding language
+**Moe**：: Let's proceed swiftly, as the earlier segment regarding language
 has not yet been fully discussed.
 
-**Joe**: Indeed, we need to delve deeper into the determinacy of language.
+**Joe**：: Indeed, we need to delve deeper into the determinacy of language.
 
 ----
 
-**Moe**: When we discuss the determinacy of assembly language, we are in
+**Moe**：: When we discuss the determinacy of assembly language, we are in
 fact addressing the determinacy of instructions.
 
-**Joe**: Instruction is composed of opcode and operand. These are the two
+**Joe**：: Instruction is composed of opcode and operand. These are the two
 primary sources of determinacy issues: the micro-level manifestations of
 procedure and input at the level of instructions. We have briefly
 discussed input in 'The Seasoned' and will delve into a detailed
@@ -375,97 +341,97 @@ side effects.
 
 ----
 
-**Moe**: Concurrency will be a serious issue.
+**Moe**：: Concurrency will be a serious issue.
 
-**Joe**: Yes. The output (state root) produced by emulator must be as same
+**Joe**：: Yes. The output (state root) produced by emulator must be as same
 as the one calculated by parallel executor in production environment.
 
 ----
 
-**Moe**: How do we ensure the determinacy of concurrent execution in every
+**Moe**：: How do we ensure the determinacy of concurrent execution in every
 step?
 
-**Joe**: Dr.Strange[^3] could help us.
+**Joe**：: Dr.Strange[^3] could help us.
 
 ----
 
-**Moe**: Are you serious?
+**Moe**：: Are you serious?
 
-**Joe**: No, I'm Joe. We can't do that, and our purpose is not to build such a
+**Joe**：: No, I'm Joe. We can't do that, and our purpose is not to build such a
 system. What we want is to get the same final state and maintain the
 same step state among emulators.
 
 ----
 
-**Moe**: Oh, yes. It's not a hard job to achieve the same final state. We
+**Moe**：: Oh, yes. It's not a hard job to achieve the same final state. We
 just need...
 
-**Joe**: Sequencer should give each tx an order number. Tx that are causally
+**Joe**：: Sequencer should give each tx an order number. Tx that are causally
 unrelated can be executed in parallel, while those that are causally
 related must be executed strictly in sequence. In this manner, the final
 state will be consistent with a global sequential execution.
 
 ----
 
-**Moe**: Now, we can confidently eliminate the impact of concurrency on the
+**Moe**：: Now, we can confidently eliminate the impact of concurrency on the
 side effects of instructions.
 
-**Joe**: In addition to concurrent transactions, there are many units of
+**Joe**：: In addition to concurrent transactions, there are many units of
 concurrent execution in the process.
 
 ----
 
-**Moe**: The easiest way to do this is to force the emulator to execute
+**Moe**：: The easiest way to do this is to force the emulator to execute
 on a single thread.
 
-**Joe**: Yes.
+**Joe**：: Yes.
 
 ----
 
-**Moe**: Randomness is another element of instability.
+**Moe**：: Randomness is another element of instability.
 
-**Joe**: Let's start analysing the world of instructions from the bottom
+**Joe**：: Let's start analysing the world of instructions from the bottom
 up.
 
 ----
 
-**Moe**: There is no opcode supporting random operation directly in RISC
+**Moe**：: There is no opcode supporting random operation directly in RISC
 family. For related system calls, we can embed a fixed random data
 source within the emulator. This way, each emulator can achieve
 consistent pseudorandom numbers in the same procedure.
 
-**Joe**: Nothing wrong with.
+**Joe**：: Nothing wrong with.
 
 ----
 
-**Moe**: Linux Kernel hates float. Does emulator hate that too?
+**Moe**：: Linux Kernel hates float. Does emulator hate that too?
 
-**Joe**: We could use SoftFloat Library or just forbidden it.
+**Joe**：: We could use SoftFloat Library or just forbidden it.
 
 ----
 
-**Moe**: Sounds like we've prepared everything for deterministic procedure.
+**Moe**：: Sounds like we've prepared everything for deterministic procedure.
 
-**Joe**: Not enough yet. Do not forget that procedures cannot prove their
+**Joe**：: Not enough yet. Do not forget that procedures cannot prove their
 own innocence.
 
 ----
 
-**Moe**: L1 can validate static procedures, requiring only a digest. Prior
+**Moe**：: L1 can validate static procedures, requiring only a digest. Prior
 to the commencement of the Interactive Game, the L1 contract will verify
 whether a consistent procedure has been used by the two parties through
 the validation of their memory states.
 
-**Joe**: Indeed. This is akin to a verifiable boot process. The memory
+**Joe**：: Indeed. This is akin to a verifiable boot process. The memory
 address of the boot sector is fixed, and both parties only need to
 provide a simple merkle tree proof.
 
 ----
 
-**Moe**: You just mentioned that there are
+**Moe**：: You just mentioned that there are
 additional points to be made regarding the issue with input.
 
-**Joe**: Indeed. I would like to reiterate the importance of the verifiable
+**Joe**：: Indeed. I would like to reiterate the importance of the verifiable
 'verification of the input process'. The off-chain verification
 process for input must be traceable in single steps, so that the initial
 state of the input can be legitimized. As part of the memory state, if
@@ -477,23 +443,23 @@ side effect instructions to prove their innocence.
 
 ----
 
-**Moe**: It does sound a bit convoluted, but I comprehend your meaning. The
+**Moe**：: It does sound a bit convoluted, but I comprehend your meaning. The
 crux is to ensure the determinacy of the input, and combined with the
 determinacy of the procedure, we can only have deterministic single-step
 states. It seems impregnable.
 
-**Joe**: We also have the issue of 'Unconscious Evil', a problem that is
+**Joe**：: We also have the issue of 'Unconscious Evil', a problem that is
 easily overlooked.
 
 ----
 
-**Moe**: As your counterpart, I understand
+**Moe**：: As your counterpart, I understand
 your point. Achieving determinacy means we are implementing pure
 rationality that relies on a physical medium. Possessing pure
 rationality alone should not lead to complacency, causing us to overlook
 the physical constraints.
 
-**Joe**: Exactly. Blockchain networks are resilient to silent errors, as
+**Joe**：: Exactly. Blockchain networks are resilient to silent errors, as
 nodes provide ample redundancy in the verification process. However, the
 simple blockchain itself does not possess this property. In the
 asynchronous validation of L2, silent errors can result in honest but
@@ -501,47 +467,47 @@ erroneous nodes being penalized.
 
 ----
 
-**Moe**: The occurrence of silent errors is as inevitable as the sun rising
+**Moe**：: The occurrence of silent errors is as inevitable as the sun rising
 in the east and setting in the west. Therefore, we need to proactively
 create redundancy. For instance, we can utilize physical machines with
 different architectures to collectively compute the same process, and
 use the aggregated results as the output of the current node. Cloud
 service providers are already well-versed in similar tasks.
 
-**Joe**: Now we can say we have deterministic step.
+**Joe**：: Now we can say we have deterministic step.
 
-### 3.3 二分法: 头等舱机票
+### 3.3 二分法：: 头等舱机票
 
-**Moe**: Bisection is the most discussed topic as it is a direct challenge
+**Moe**：: Bisection is the most discussed topic as it is a direct challenge
 in the interactive game. However, it now seems to be a foregone
 conclusion.
 
-**Joe**: It is a direct issue as it directly exhibits the interactive
+**Joe**：: It is a direct issue as it directly exhibits the interactive
 behaviors, yet the answer is indirect. It relies on an appropriate
 intermediary language medium and the implementation of deterministic
 language execution.
 
 ----
 
-**Moe**: This reminds me of the previous analogy about airplanes. Now we
+**Moe**：: This reminds me of the previous analogy about airplanes. Now we
 have the airplane, we just need to purchase the tickets.
 
-**Joe**: Give me a first-class ticket, thank you!
+**Joe**：: Give me a first-class ticket, thank you!
 
-## 附录 A: 当模拟器在模拟时它在模拟什么
+## 附录 A：: 当模拟器在模拟时它在模拟什么
 
-**Joe**: Let me start this time.
+**Joe**：: Let me start this time.
 
-**Moe**: Go ahead.
+**Moe**：: Go ahead.
 
 ----
 
-**Moe**: Observe what instructions this source code will morph into on your
+**Moe**：: Observe what instructions this source code will morph into on your
 machine:
 
 <img src="/blog/interactive-game/ones-count.png" width = "600" height = "300" alt="ones-count" align=center />
 
-**Joe**: You've preemptively spoken again. On my x86_64:
+**Joe**：: You've preemptively spoken again. On my x86_64:
 
 <img src="/blog/interactive-game/ones-count-x86.png" width = "600" height = "600" alt="ones-count-x86" align=center />
 
@@ -551,19 +517,19 @@ Or：
 
 ----
 
-**Moe**: Because I showed you source code. Talking is cheap. On my RISC-V:
+**Moe**：: Because I showed you source code. Talking is cheap. On my RISC-V:
 
 <img src="/blog/interactive-game/ones-count-riscv.png" width = "283" height = "600" alt="ones-count-riscv" align=center />
 
-**Joe**: In the face of identical inputs, despite the vast differences in
+**Joe**：: In the face of identical inputs, despite the vast differences in
 the instructions our machines execute, they still manage to yield
 identical outputs.
 
 ----
 
-**Moe**: Is it you who is mirroring me, or am I the one replicating you?
+**Moe**：: Is it you who is mirroring me, or am I the one replicating you?
 
-**Joe**: That is the question.
+**Joe**：: That is the question.
 
 ----
 
