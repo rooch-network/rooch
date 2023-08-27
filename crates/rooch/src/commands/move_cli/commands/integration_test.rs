@@ -136,7 +136,7 @@ impl IntegrationTest {
     pub fn execute(self, move_arg: Move) -> anyhow::Result<()> {
         let rerooted_path = {
             let path = match move_arg.package_path {
-                Some(_) => move_arg.package_path.clone(),
+                Some(_) => move_arg.package_path,
                 None => Some(std::env::current_dir()?),
             };
             // Always root ourselves to the package root, and then compile relative to that.
