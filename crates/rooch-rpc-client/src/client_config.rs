@@ -3,11 +3,11 @@
 
 use crate::{Client, ClientBuilder};
 use anyhow::anyhow;
-use rooch_config::rpc::server_config::ServerConfig;
-use rooch_config::Config;
+use rooch_config::config::Config;
+use rooch_config::server_config::ServerConfig;
 use rooch_key::keystore::{AccountKeystore, Keystore};
 use rooch_types::address::RoochAddress;
-use rooch_types::chain_id::ChainID;
+use rooch_types::chain_id::RoochChainID;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_with::serde_as;
@@ -93,7 +93,7 @@ impl Env {
 impl Default for Env {
     fn default() -> Self {
         Env {
-            chain_id: ChainID::Dev as u64,
+            chain_id: RoochChainID::DEV.chain_id().id(),
             alias: "default".to_string(),
             rpc: ServerConfig::default().url(false),
             ws: None,
