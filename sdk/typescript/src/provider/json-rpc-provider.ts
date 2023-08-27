@@ -6,7 +6,12 @@ import { JsonRpcClient } from '../generated/client'
 import { Connection, LocalnetConnection } from './connection'
 import { bytes } from '../types/bcs'
 import { FunctionId, TypeTag, Arg, AnnotatedFunctionResultView } from '../types'
-import { functionIdToStirng, typeTagToString, encodeArgs } from '../utils'
+import {
+  functionIdToStirng,
+  typeTagToString,
+  encodeArgs,
+  toHexString,
+} from '../utils'
 
 import { ROOCH_DEV_CHIAN_ID } from '../constants'
 
@@ -94,7 +99,7 @@ export class JsonRpcProvider {
     args?: Arg[],
   ): Promise<AnnotatedFunctionResultView> {
     const tyStrArgs = tyArgs?.map((v) => typeTagToString(v))
-    const bcsArgs = args?.map((arg) => encodeArgs(arg))
+    const bcsArgs = args?.map((arg) => toHexString(encodeArgs(arg))) as any
 
     return this.client.rooch_executeViewFunction({
       function_id: functionIdToStirng(funcId),

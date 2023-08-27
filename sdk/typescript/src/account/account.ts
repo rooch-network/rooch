@@ -24,8 +24,6 @@ export class Account implements IAccount {
 
   private authorizer: IAuthorizer
 
-  private sequenceNumber: bigint
-
   public constructor(
     provider: IProvider,
     address: AccountAddress,
@@ -34,7 +32,6 @@ export class Account implements IAccount {
     this.provider = provider
     this.address = address
     this.authorizer = authorizer
-    this.sequenceNumber = BigInt('0')
   }
 
   public async callFunction(
@@ -43,17 +40,19 @@ export class Account implements IAccount {
     args: Arg[],
     opts: CallOption,
   ): Promise<string> {
+    const number = await this.sequenceNumber()
     const bcsArgs = args.map((arg) => encodeArgs(arg))
     const scriptFunction = encodeFunctionCall(funcId, tyArgs, bcsArgs)
     const txData = new RoochTransactionData(
       new BCSAccountAddress(addressToListTuple(this.address)),
-      this.sequenceNumber,
+      BigInt(number),
       BigInt(this.provider.getChainId()),
       BigInt(opts.maxGasAmount ?? DEFAULT_MAX_GAS_AMOUNT),
       scriptFunction,
     )
 
     const authResult = await this.makeAuth(txData)
+
     const auth = new Authenticator(
       BigInt(authResult.scheme),
       uint8Array2SeqNumber(authResult.payload),
@@ -79,5 +78,24 @@ export class Account implements IAccount {
     })()
 
     return this.authorizer.auth(payload)
+  }
+
+  async sequenceNumber(): Promise<number> {
+    const resp = await this.provider.executeViewFunction(
+      '0x3::account::sequence_number',
+      [],
+      [
+        {
+          type: 'Address',
+          value: this.address,
+        },
+      ],
+    )
+
+    if (resp && resp.return_values) {
+      return resp.return_values[0].move_value as number
+    }
+
+    return 0
   }
 }

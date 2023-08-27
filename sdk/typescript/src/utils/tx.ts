@@ -130,7 +130,7 @@ export function addressToListTuple(ethAddress: string): ListTuple<[uint8]> {
   // Convert to list of tuples
   const listTuple: ListTuple<[uint8]> = []
   for (let i = 0; i < cleanedEthAddress.length; i += 2) {
-    const byte = parseInt(ethAddress.slice(i, i + 2), 16)
+    const byte = parseInt(cleanedEthAddress.slice(i, i + 2), 16)
     listTuple.push([byte] as Tuple<[uint8]>)
   }
 
