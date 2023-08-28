@@ -168,11 +168,11 @@ Optimistic Rollup 方案中，链上的仲裁合约如何判定链下的交易�
 所以剩下的问题就是通过什么方式来生成证明，主要有两个方案：
 
 1. 直接在合约语言虚拟机中实现，比如 Arbitrum 的 AVM，Fuel 的 FuelVM。
-2. 基于已有的指令集实现一个模拟器，在模拟器中提供证明能力。如 Optimism 的基于 MIPS 指令的 cannon，Arbitrum 新的基于 WASM 指令的 Nitro，以及 Rooch 的基于 MIPS 指令的 OMO。
+2. 基于已有的指令集实现一个模拟器，在模拟器中提供证明能力。如 Optimism 的基于 MIPS 指令的 cannon，Arbitrum 新的基于 WASM 指令的 Nitro，以及 Rooch 的基于 MIPS 指令的 flexEmu。
 
-![OMO](/blog/modular/rooch-omo.svg)
+![flexEmu](/blog/modular/rooch-flexemu.svg)
 
-OMO 是一个拥有单步状态证明能力的通用字节码模拟器，为多链执行环境设计。有了 OMO 的支持，可以实现仲裁层的模块化。任意支持图灵完备合约的链，都可以在合约中模拟 OMO 的指令，作为仲裁层。
+flexEmu 是一个拥有单步状态证明能力的通用字节码模拟器，为多链执行环境设计。有了 flexEmu 的支持，可以实现仲裁层的模块化。任意支持图灵完备合约的链，都可以在合约中模拟 flexEmu 的指令，作为仲裁层。
 
 ### ZK + Optimistic 组合方案
 

@@ -37,12 +37,12 @@
             </root>
         </mxGraphModel>
     </diagram>
-    <diagram id="2alpfbnSqNpXs6ikViOz" name="omo">
+    <diagram id="2alpfbnSqNpXs6ikViOz" name="flexemu">
         <mxGraphModel dx="1192" dy="716" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
-                <mxCell id="XdkposplsFSqHSL-H2rm-19" value="OMO&lt;br&gt;&amp;nbsp;(MIPS Emulator)" style="whiteSpace=wrap;html=1;aspect=fixed;verticalAlign=top;" parent="1" vertex="1">
+                <mxCell id="XdkposplsFSqHSL-H2rm-19" value="flexEmu&lt;br&gt;&amp;nbsp;(MIPS Emulator)" style="whiteSpace=wrap;html=1;aspect=fixed;verticalAlign=top;" parent="1" vertex="1">
                     <mxGeometry x="560" y="220.5" width="151.5" height="151.5" as="geometry"/>
                 </mxCell>
                 <mxCell id="XdkposplsFSqHSL-H2rm-2" value="&lt;br&gt;MoveVM" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;verticalAlign=top;" parent="1" vertex="1">
@@ -113,7 +113,7 @@
                 <mxCell id="B_G0NRVPA1ljCq9yVG63-4" value="MoveVM" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="575" y="575" width="115" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="B_G0NRVPA1ljCq9yVG63-5" value="OMO&lt;br&gt;&amp;nbsp;(MIPS Emulator)" style="whiteSpace=wrap;html=1;aspect=fixed;verticalAlign=top;" parent="1" vertex="1">
+                <mxCell id="B_G0NRVPA1ljCq9yVG63-5" value="flexEmu&lt;br&gt;&amp;nbsp;(MIPS Emulator)" style="whiteSpace=wrap;html=1;aspect=fixed;verticalAlign=top;" parent="1" vertex="1">
                     <mxGeometry x="560" y="518.5" width="151.5" height="151.5" as="geometry"/>
                 </mxCell>
                 <mxCell id="B_G0NRVPA1ljCq9yVG63-6" value="MoveVM" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
