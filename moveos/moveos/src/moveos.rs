@@ -11,6 +11,7 @@ use move_core_types::{
 };
 use move_vm_runtime::config::VMConfig;
 use move_vm_runtime::native_functions::NativeFunction;
+use moveos_store::config_store::ConfigDBStore;
 use moveos_store::event_store::EventDBStore;
 use moveos_store::state_store::statedb::StateDBStore;
 use moveos_store::transaction_store::TransactionDBStore;
@@ -21,7 +22,7 @@ use moveos_types::startup_info::StartupInfo;
 use moveos_types::state_resolver::MoveOSResolverProxy;
 use moveos_types::transaction::{MoveOSTransaction, TransactionOutput, VerifiedMoveOSTransaction};
 use moveos_types::tx_context::TxContext;
-use moveos_types::{h256, h256::H256, transaction::FunctionCall};
+use moveos_types::{h256::H256, transaction::FunctionCall};
 
 pub struct MoveOSConfig {
     pub vm_config: VMConfig,
@@ -74,31 +75,42 @@ impl MoveOS {
     }
 
     //TODO genesis tx should be in one transaction?
-    pub fn init_genesis(&mut self, genesis_txs: Vec<MoveOSTransaction>) -> Result<()> {
+    pub fn init_genesis<T: Into<MoveOSTransaction>>(
+        &mut self,
+        genesis_txs: Vec<T>,
+    ) -> Result<Vec<(H256, TransactionOutput)>> {
         ensure!(
             self.db.0.get_state_store().is_genesis(),
             "genesis already initialized"
         );
 
-        let genesis_hash = h256::sha3_256_of(bcs::to_bytes(&genesis_txs)?.as_slice());
-        for genesis_tx in genesis_txs {
-            self.verify_and_execute_genesis_tx(genesis_tx)?;
-        }
+        //let genesis_hash = h256::sha3_256_of(bcs::to_bytes(&genesis_txs)?.as_slice());
+        // for genesis_tx in genesis_txs {
+        //     self.verify_and_execute_genesis_tx(genesis_tx.into())?;
+        // }
 
-        self.db
-            .0
-            .get_config_store()
-            .save_genesis(genesis_hash)
-            .map_err(|e| {
-                PartialVMError::new(StatusCode::STORAGE_ERROR)
-                    .with_message(e.to_string())
-                    .finish(Location::Undefined)
-            })?;
+        genesis_txs
+            .into_iter()
+            .map(|tx| self.verify_and_execute_genesis_tx(tx.into()))
+            .collect::<Result<Vec<_>>>()
+
+        // self.db
+        //     .0
+        //     .get_config_store()
+        //     .save_genesis(genesis_hash)
+        //     .map_err(|e| {
+        //         PartialVMError::new(StatusCode::STORAGE_ERROR)
+        //             .with_message(e.to_string())
+        //             .finish(Location::Undefined)
+        //     })?;
         //TODO return the state root genesis TransactionExecutionInfo
-        Ok(())
+        //Ok(())
     }
 
-    fn verify_and_execute_genesis_tx(&mut self, tx: MoveOSTransaction) -> Result<()> {
+    fn verify_and_execute_genesis_tx(
+        &mut self,
+        tx: MoveOSTransaction,
+    ) -> Result<(H256, TransactionOutput)> {
         let MoveOSTransaction {
             ctx,
             action,
@@ -114,8 +126,8 @@ impl MoveOS {
         if output.status != KeptVMStatus::Executed {
             bail!("genesis tx should success, error: {:?}", output.status);
         }
-        let _state_root = self.apply_transaction_output(output)?;
-        Ok(())
+        let state_root = self.apply_transaction_output(output.clone())?;
+        Ok((state_root, output))
     }
 
     pub fn state(&self) -> &StateDBStore {
@@ -132,6 +144,10 @@ impl MoveOS {
 
     pub fn transaction_store(&self) -> &TransactionDBStore {
         self.db.0.get_transaction_store()
+    }
+
+    pub fn config_store(&self) -> &ConfigDBStore {
+        self.db.0.get_config_store()
     }
 
     pub fn verify(&self, tx: MoveOSTransaction) -> VMResult<VerifiedMoveOSTransaction> {

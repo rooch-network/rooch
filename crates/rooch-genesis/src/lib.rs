@@ -10,9 +10,11 @@ use moveos_stdlib_builder::BuildOptions;
 use moveos_store::config_store::ConfigDBStore;
 use moveos_types::h256;
 use moveos_types::h256::H256;
-use moveos_types::transaction::{MoveAction, MoveOSTransaction};
+use moveos_types::transaction::MoveAction;
 use once_cell::sync::Lazy;
+use rooch_types::chain_id::RoochChainID;
 use rooch_types::error::GenesisError;
+use rooch_types::transaction::rooch::RoochTransaction;
 use serde::{Deserialize, Serialize};
 use std::{
     fs::File,
@@ -25,7 +27,7 @@ pub static ROOCH_GENESIS: Lazy<RoochGenesis> =
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GenesisPackage {
-    pub genesis_txs: Vec<MoveOSTransaction>,
+    pub genesis_txs: Vec<RoochTransaction>,
 }
 
 #[derive(Clone, Debug)]
@@ -34,6 +36,7 @@ pub struct RoochGenesis {
     ///config for the Move integration test
     pub config_for_test: MoveOSConfig,
     //TODO we need to add gas parameters to the GenesisPackage
+    //How to serialize the gas parameters?
     pub gas_params: rooch_framework::natives::GasParameters,
     pub genesis_package: GenesisPackage,
 }
@@ -79,7 +82,7 @@ impl RoochGenesis {
         self.genesis_package.modules()
     }
 
-    pub fn genesis_txs(&self) -> Vec<MoveOSTransaction> {
+    pub fn genesis_txs(&self) -> Vec<RoochTransaction> {
         self.genesis_package.genesis_txs.clone()
     }
 
@@ -89,7 +92,7 @@ impl RoochGenesis {
 
     pub fn genesis_hash(&self) -> H256 {
         h256::sha3_256_of(
-            bcs::to_bytes(&self.genesis_txs())
+            bcs::to_bytes(&self.genesis_package)
                 .expect("genesis txs bcs to_bytes should success")
                 .as_slice(),
         )
@@ -132,11 +135,9 @@ impl GenesisPackage {
         let genesis_txs = bundles
             .into_iter()
             .map(|(genesis_account, bundle)|
-        //TODO make this to RoochTransaction.
-        MoveOSTransaction::new_for_test(
-            genesis_account,
-            MoveAction::ModuleBundle(bundle),
-        ))
+            //TODO chain_id should be a parameter
+            RoochTransaction::new_genesis_tx(genesis_account.into(), RoochChainID::DEV.chain_id().id(), MoveAction::ModuleBundle(bundle))
+        )
             .collect();
         Ok(Self { genesis_txs })
     }
@@ -174,7 +175,7 @@ impl GenesisPackage {
         self.genesis_txs
             .iter()
             .filter_map(|tx| {
-                if let MoveAction::ModuleBundle(bundle) = &tx.action {
+                if let MoveAction::ModuleBundle(bundle) = &tx.action() {
                     Some(bundle)
                 } else {
                     None
