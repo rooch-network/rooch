@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+// ** React Imports
 import { createContext, ReactNode, useEffect, useState } from 'react'
 
 // ** Next Import
@@ -15,7 +16,7 @@ import {
   AccountType,
   AddAccountBySecretKeyParams,
   AuthValuesType,
-  SuppoertWalletType,
+  SupportWalletType,
   WalletType,
 } from 'src/context/auth/types'
 
@@ -29,7 +30,7 @@ const defaultProvider: AuthValuesType = {
   loading: true,
   setLoading: () => Boolean,
   accounts: null,
-  suppoertWallets: [],
+  supportWallets: [],
   addAccount: () => null,
   defaultAccount: () => null,
   logout: () => Promise.resolve(),
@@ -95,8 +96,8 @@ const AuthProvider = ({ children }: Props) => {
   }
 
   /// ** Impl fun
-  const supportWallets = (): SuppoertWalletType[] => {
-    const result: SuppoertWalletType[] = []
+  const supportWallets = (): SupportWalletType[] => {
+    const result: SupportWalletType[] = []
     for (const key in WalletType) {
       switch (WalletType[key as keyof typeof WalletType]) {
         case WalletType.Metamask:
@@ -184,7 +185,7 @@ const AuthProvider = ({ children }: Props) => {
     setLoading,
     accounts: getAccounts(),
     setAccounts,
-    suppoertWallets: supportWallets(),
+    supportWallets: supportWallets(),
     addAccount,
     defaultAccount,
     loginByWallet,

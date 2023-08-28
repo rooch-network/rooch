@@ -1,5 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+
+// ** React Imports
 import { createContext, useEffect, useState, ReactNode } from 'react'
 import detectEthereumProvider from '@metamask/detect-provider'
 
@@ -79,7 +81,6 @@ const MetamaskProvider = ({ children }: Props) => {
   }
 
   const connect = async () => {
-    console.log('开始链接')
     if (chainId !== config.roochChain.chainId) {
       try {
         await switchChina(config.roochChain.chainId)

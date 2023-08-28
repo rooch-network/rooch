@@ -27,13 +27,13 @@ fn main() {
             let npm_status = Command::new("npm").args(["install", "-g", "pnpm"]).status();
 
             if npm_status.is_err() {
-                eprintln!("yarn install failed");
+                eprintln!("pnpm install failed");
                 process::exit(1);
             }
 
-            let yarn_status = Command::new("pnpm").arg("i").status();
+            let pnpm_status = Command::new("pnpm").arg("i").status();
 
-            if yarn_status.is_err() {
+            if pnpm_status.is_err() {
                 eprintln!("pnpm install failed");
                 process::exit(1);
             }

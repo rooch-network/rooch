@@ -90,12 +90,12 @@ const LoginPage = () => {
   })
 
   const [inputType, setInputType] = useState<InputType>(
-    auth.suppoertWallets.length > 0 ? InputType.Connect : InputType.Import,
+    auth.supportWallets.length > 0 ? InputType.Connect : InputType.Import,
   )
 
   // ** State
   const [selectWallet, setSelectWallet] = useState<WalletType | null>(
-    auth.suppoertWallets.length > 0 ? auth.suppoertWallets[0].name : null,
+    auth.supportWallets.length > 0 ? auth.supportWallets[0].name : null,
   )
 
   const handleStatusValue = (e: SelectChangeEvent) => {
@@ -181,7 +181,7 @@ const LoginPage = () => {
                       onChange={handleStatusValue}
                       labelId="invoice-status-select"
                     >
-                      {auth.suppoertWallets.map((value) => (
+                      {auth.supportWallets.map((value) => (
                         <MenuItem key={value.name} value={value.name}>
                           {value.name}
                         </MenuItem>
@@ -209,7 +209,7 @@ const LoginPage = () => {
                     },
                   }}
                 />
-                {auth.suppoertWallets.length > 0 ? (
+                {auth.supportWallets.length > 0 ? (
                   <Button
                     onClick={() => {
                       if (inputType === InputType.Connect) {
