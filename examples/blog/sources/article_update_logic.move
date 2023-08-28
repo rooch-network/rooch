@@ -9,7 +9,7 @@ module rooch_examples::article_update_logic {
 
     friend rooch_examples::article_aggregate;
 
-    const ENOT_OWNER_ACCOUNT: u64 = 113;
+    const ErrorNotOwnerAccount: u64 = 113;
 
     public(friend) fun verify(
         storage_ctx: &mut StorageContext,
@@ -19,7 +19,7 @@ module rooch_examples::article_update_logic {
         article_obj: &Object<article::Article>,
     ): article::ArticleUpdated {
         let _ = storage_ctx;
-        assert!(signer::address_of(account) == object::owner(article_obj), ENOT_OWNER_ACCOUNT);
+        assert!(signer::address_of(account) == object::owner(article_obj), ErrorNotOwnerAccount);
         article::new_article_updated(
             article_obj,
             title,

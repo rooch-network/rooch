@@ -11,8 +11,8 @@ module rooch_framework::auth_validator_registry{
     friend rooch_framework::genesis;
     friend rooch_framework::builtin_validators;
 
-    const EValidatorUnregistered: u64 = 1;
-    const EValidatorAlreadyRegistered: u64 = 2;
+    const ErrorValidatorUnregistered: u64 = 1;
+    const ErrorValidatorAlreadyRegistered: u64 = 2;
 
     
 

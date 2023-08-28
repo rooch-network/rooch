@@ -10,7 +10,7 @@ module rooch_framework::builtin_validators{
 
     friend rooch_framework::genesis;
 
-    const E_GENESIS_INIT: u64 = 1;
+    const ErrorGenesisInit: u64 = 1;
 
     public(friend) fun genesis_init(ctx: &mut StorageContext, _genesis_account: &signer){
         // SCHEME_NATIVE: u64 = 0;

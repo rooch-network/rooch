@@ -15,12 +15,12 @@ module rooch_examples::timestamp {
     const MICRO_CONVERSION_FACTOR: u64 = 1000000;
 
     /// The blockchain is not in an operating state yet
-    const ENOT_OPERATING: u64 = 1;
+    const ErrorNotOperating: u64 = 1;
     /// An invalid timestamp was provided
-    const EINVALID_TIMESTAMP: u64 = 2;
+    const ErrorInvalidTimestamp: u64 = 2;
 
     public(friend) fun set_time_has_started(framework: &signer, ctx: &mut StorageContext) {
-        assert!(signer::address_of(framework) == @moveos_std, ENOT_OPERATING);
+        assert!(signer::address_of(framework) == @moveos_std, ErrorNotOperating);
         let timer = CurrentTimeMicroseconds { microseconds: 0 };
         account_storage::global_move_to(ctx, framework, timer);
     }
@@ -52,7 +52,7 @@ module rooch_examples::timestamp {
     public fun update_global_time_for_test(timestamp_microsecs: u64,ctx: &mut StorageContext)  {
         let global_timer_mut_ref = account_storage::global_borrow_mut<CurrentTimeMicroseconds>(ctx, @moveos_std);
         let now = global_timer_mut_ref.microseconds;
-        assert!(now < timestamp_microsecs, EINVALID_TIMESTAMP);
+        assert!(now < timestamp_microsecs, ErrorInvalidTimestamp);
         global_timer_mut_ref.microseconds = timestamp_microsecs;
     }
 

@@ -15,7 +15,7 @@ module rooch_framework::bitcoin_validator {
     const SCHEME_BITCOIN: u64 = 2;
 
     /// error code
-    const EInvalidPublicKeyLength: u64 = 0;
+    const ErrorInvalidPublicKeyLength: u64 = 0;
 
     struct BitcoinValidator has store, drop {}
 

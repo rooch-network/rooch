@@ -6,31 +6,31 @@ module rooch_examples::coin {
     use moveos_std::storage_context::StorageContext;
     use moveos_std::type_info;
 
-    const ECOIN_INFO_ADDRESS_MISMATCH: u64 = 1;
+    const ErrorCoinInfoAddressMismatch: u64 = 1;
 
-    const ECOIN_INFO_ALREADY_PUBLISHED: u64 = 2;
+    const ErrorCoinInfoAlreadyPublished: u64 = 2;
 
-    const ECOIN_INFO_NOT_PUBLISHED: u64 = 3;
+    const ErrorCoinInfoNotPublished: u64 = 3;
 
-    const ECOIN_STORE_ALREADY_PUBLISHED: u64 = 4;
+    const ErrorCoinStoreAlreadyPublished: u64 = 4;
 
-    const ECOIN_STORE_NOT_PUBLISHED: u64 = 5;
+    const ErrorCoinStoreNotPublished: u64 = 5;
 
-    const EINSUFFICIENT_BALANCE: u64 = 6;
+    const ErrorInSufficientBalance: u64 = 6;
 
-    const EDESTRUCTION_OF_NONZERO_TOKEN: u64 = 7;
+    const ErrorDestructionOfNonzeroToken: u64 = 7;
 
-    const EZERO_COIN_AMOUNT: u64 = 9;
+    const ErrorZeroCoinAmount: u64 = 9;
 
-    const EFROZEN: u64 = 10;
+    const ErrorFrozen: u64 = 10;
 
-    const ECOIN_SUPPLY_UPGRADE_NOT_SUPPORTED: u64 = 11;
+    const ErrorCoinSupplyUpgradeNotSupported: u64 = 11;
 
-    const ECOIN_NAME_TOO_LONG: u64 = 12;
+    const ErrorCoinNameTooLong: u64 = 12;
 
-    const ECOIN_SYMBOL_TOO_LONG: u64 = 13;
+    const ErrorCoinSymbolTooLong: u64 = 13;
 
-    const EAGGREGATABLE_COIN_VALUE_TOO_LARGE: u64 = 14;
+    const ErrorAggregatableCoinValueTooLarge: u64 = 14;
 
     const MAX_COIN_NAME_LENGTH: u64 = 32;
     const MAX_COIN_SYMBOL_LENGTH: u64 = 10;
@@ -64,14 +64,14 @@ module rooch_examples::coin {
         _cap: &BurnCapability<CoinType>
     ) {
         let Coin { value: amount } = coin;
-        assert!(amount > 0, error::invalid_argument(EZERO_COIN_AMOUNT));
+        assert!(amount > 0, error::invalid_argument(ErrorZeroCoinAmount));
     }
 
     public fun deposit<CoinType>(account_addr: address, coin: Coin<CoinType>,
                                  ctx: &mut StorageContext, ) {
         assert!(
             is_account_registered<CoinType>(ctx, account_addr),
-            error::not_found(ECOIN_STORE_NOT_PUBLISHED),
+            error::not_found(ErrorCoinStoreNotPublished),
         );
 
         let coin_mut_ref = account_storage::global_borrow_mut<Coin<CoinType>>(ctx, account_addr);
@@ -80,11 +80,11 @@ module rooch_examples::coin {
 
     public fun destroy_zero<CoinType>(zero_coin: Coin<CoinType>) {
         let Coin { value } = zero_coin;
-        assert!(value == 0, error::invalid_argument(EDESTRUCTION_OF_NONZERO_TOKEN))
+        assert!(value == 0, error::invalid_argument(ErrorDestructionOfNonzeroToken))
     }
 
     public fun extract<CoinType>(coin: &mut Coin<CoinType>, amount: u64): Coin<CoinType> {
-        assert!(coin.value >= amount, error::invalid_argument(EINSUFFICIENT_BALANCE));
+        assert!(coin.value >= amount, error::invalid_argument(ErrorInSufficientBalance));
 
         coin.value = coin.value - amount;
 
@@ -117,7 +117,7 @@ module rooch_examples::coin {
 
         assert!(
             coin_address<CoinType>() == account_addr,
-            error::invalid_argument(ECOIN_INFO_ADDRESS_MISMATCH),
+            error::invalid_argument(ErrorCoinInfoAddressMismatch),
         );
 
         (BurnCapability<CoinType> {}, FreezeCapability<CoinType> {}, MintCapability<CoinType> {})
@@ -181,7 +181,7 @@ module rooch_examples::coin {
         let account_addr = signer::address_of(account);
         assert!(
             is_account_registered<CoinType>(ctx, account_addr),
-            error::not_found(ECOIN_STORE_NOT_PUBLISHED),
+            error::not_found(ErrorCoinStoreNotPublished),
         );
         let coin_mut_ref = account_storage::global_borrow_mut<Coin<CoinType>>(ctx, account_addr);
 

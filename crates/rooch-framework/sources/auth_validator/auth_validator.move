@@ -12,12 +12,12 @@ module rooch_framework::auth_validator {
     friend rooch_framework::transaction_validator;
 
     /// The function must be executed after the transaction is validated
-    const EMustExecuteAfterValidate: u64 = 1;
+    const ErrorMustExecuteAfterValidate: u64 = 1;
 
     /// The AuthKey in transaction's authenticator do not match with the sender's account auth key
-    const EValidateInvalidAccountAuthKey: u64 = 1001;
+    const ErrorValidateInvalidAccountAuthKey: u64 = 1001;
     /// InvalidAuthenticator, include invalid signature
-    const EValidateInvalidAuthenticator: u64 = 1002;
+    const ErrorValidateInvalidAuthenticator: u64 = 1002;
 
     public fun error_invalid_account_auth_key(): u64 {
         error::invalid_argument(EValidateInvalidAccountAuthKey)

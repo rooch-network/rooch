@@ -18,15 +18,15 @@ module rooch_framework::account_authentication{
    const MAX_AUTHENTICATION_KEY_LENGTH: u64 = 256;
 
    
-   const EAuthValidatorAlreadyInstalled: u64 = 1;
+   const ErrorAuthValidatorAlreadyInstalled: u64 = 1;
    /// The provided authentication key has an invalid length
-   const EMalformedAuthenticationKey: u64 = 2;
+   const ErrorMalformedAuthenticationKey: u64 = 2;
    /// The authentication keys resource has not been found for the account address
-   const EAuthenticationKeysResourceNotFound: u64 = 3; 
+   const ErrorAuthenticationKeysResourceNotFound: u64 = 3; 
    /// The authentication key has not been found for the specified validator
-   const EAuthenticationKeyNotFound: u64 = 4; 
+   const ErrorAuthenticationKeyNotFound: u64 = 4; 
    /// The authentication key already exists in the specified validator
-   const EAuthenticationKeyAlreadyExists: u64 = 5; 
+   const ErrorAuthenticationKeyAlreadyExists: u64 = 5; 
 
    /// A resource that holds the authentication key for this account.
    /// ValidatorType is a phantom type parameter that is used to distinguish between different auth validator types.

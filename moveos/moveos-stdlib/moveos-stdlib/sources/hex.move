@@ -7,8 +7,8 @@
 module moveos_std::hex {
     use std::vector;
 
-    const EInvalidHexLength: u64 = 0;
-    const ENotValidHexCharacter: u64 = 1;
+    const ErrorInvalidHexLength: u64 = 0;
+    const ErrorNotValidHexCharacter: u64 = 1;
 
     /// Vector of Base16 values from `00` to `FF`
     const HEX: vector<vector<u8>> = vector[
@@ -36,7 +36,7 @@ module moveos_std::hex {
     /// Aborts if the hex string contains non-valid hex characters (valid characters are 0 - 9, a - f, A - F)
     public fun decode(hex: vector<u8>): vector<u8> {
         let (i, r, l) = (0, vector[], vector::length(&hex));
-        assert!(l % 2 == 0, EInvalidHexLength); 
+        assert!(l % 2 == 0, ErrorInvalidHexLength); 
         while (i < l) {
             let decimal = (decode_byte(*vector::borrow(&hex, i)) * 16) + 
                           decode_byte(*vector::borrow(&hex, i + 1));
@@ -54,7 +54,7 @@ module moveos_std::hex {
         } else if (/* a .. f */ 97 <= hex && hex < 103) {
             10 + hex - 97
         } else {
-            abort ENotValidHexCharacter
+            abort ErrorNotValidHexCharacter
         }
     }
 
@@ -94,19 +94,19 @@ module moveos_std::hex {
     }
 
     #[test]
-    #[expected_failure(abort_code = EInvalidHexLength)]
+    #[expected_failure(abort_code = ErrorInvalidHexLength)]
     fun test_hex_decode__invalid_length() {
         decode(b"0");
     }
 
     #[test]
-    #[expected_failure(abort_code = ENotValidHexCharacter)]
+    #[expected_failure(abort_code = ErrorNotValidHexCharacter)]
     fun test_hex_decode__hex_literal() {
         decode(x"ffff");
     }
 
     #[test]
-    #[expected_failure(abort_code = ENotValidHexCharacter)]
+    #[expected_failure(abort_code = ErrorNotValidHexCharacter)]
     fun test_hex_decode__invalid_string_literal() {
         decode(b"0g");
     }

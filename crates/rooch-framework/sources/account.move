@@ -65,24 +65,24 @@ module rooch_framework::account{
    const SCHEME_DERIVE_RESOURCE_ACCOUNT: u8 = 255;
    
    /// Account already exists
-   const EAccountAlreadyExists: u64 = 1;
+   const ErrorAccountAlreadyExists: u64 = 1;
    /// Account does not exist
-   const EAccountNotExist: u64 = 2;
+   const ErrorAccountNotExist: u64 = 2;
    /// Sequence number exceeds the maximum value for a u64
-   const ESequenceNumberTooBig: u64 = 3; 
+   const ErrorSequenceNumberTooBig: u64 = 3; 
    /// Cannot create account because address is reserved
-   const EAddressReseved: u64 = 5;
+   const ErrorAddressReseved: u64 = 5;
    /// An attempt to create a resource account on an account that has a committed transaction
-   const EResourceAccountAlreadyUsed: u64 = 6;
+   const ErrorResourceAccountAlreadyUsed: u64 = 6;
    /// Resource Account can't derive resource account
-   const EAccountIsAlreadyResourceAccount: u64 = 7;
+   const ErrorAccountIsAlreadyResourceAccount: u64 = 7;
    /// Address to create is not a valid reserved address for Rooch framework
-   const ENoValidFrameworkReservedAddress: u64 = 11;
+   const ErrorNoValidFrameworkReservedAddress: u64 = 11;
    /// CoinStore is frozen. Coins cannot be deposited or withdrawn
-   const EAccountWithCoinFrozen: u64 = 13;
+   const ErrorAccountWithCoinFrozen: u64 = 13;
 
    /// Account hasn't accept `CoinType`
-   const EAccountNotAcceptCoin: u64 = 15;
+   const ErrorAccountNotAcceptCoin: u64 = 15;
 
    //TODO should we provide create account from arbitrary address?
    /// A entry function to create an account under `new_address`

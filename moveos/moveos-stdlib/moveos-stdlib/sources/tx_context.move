@@ -20,7 +20,7 @@ module moveos_std::tx_context {
     friend moveos_std::account_storage;
     friend moveos_std::event;
 
-    const EInvalidContext: u64 = 1;
+    const ErrorInvalidContext: u64 = 1;
 
     /// Information about the transaction currently being executed.
     /// This cannot be constructed by a transaction--it is a privileged object created by
@@ -117,14 +117,14 @@ module moveos_std::tx_context {
     /// The meta data is only available when executing or validating a transaction, otherwise abort(eg. readonly function call).
     public fun tx_meta(self: &TxContext): TxMeta {
         let meta = get<TxMeta>(self);
-        assert!(option::is_some(&meta), error::invalid_state(EInvalidContext));
+        assert!(option::is_some(&meta), error::invalid_state(ErrorInvalidContext));
         option::extract(&mut meta)
     }
 
     /// The result is only available in the `post_execute` function.
     public fun tx_result(self: &TxContext): TxResult {
         let result = get<TxResult>(self);
-        assert!(option::is_some(&result), error::invalid_state(EInvalidContext));
+        assert!(option::is_some(&result), error::invalid_state(ErrorInvalidContext));
         option::extract(&mut result)
     }
 

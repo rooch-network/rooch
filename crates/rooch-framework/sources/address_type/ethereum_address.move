@@ -8,8 +8,8 @@ module rooch_framework::ethereum_address {
     const VALID_ETHEREUM_ADDR_LENGTH: u64 = 20;
 
     /// error code
-    const EMalformedPublicKey: u64 = 0;
-    const EDecompressPublicKey: u64 = 1;
+    const ErrorMalformedPublicKey: u64 = 0;
+    const ErrorDecompressPublicKey: u64 = 1;
 
     struct ETHAddress has store, drop {
         bytes: vector<u8>,

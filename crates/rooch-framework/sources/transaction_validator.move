@@ -16,22 +16,22 @@ module rooch_framework::transaction_validator {
 
 
     /// Transaction exceeded its allocated max gas
-    const EOUT_OF_GAS: u64 = 6;
+    const ErrorOutOfGas: u64 = 6;
 
     //TODO Migrate the error code to the auth_validator module 
     /// Validate errors. These are separated out from the other errors in this
     /// module since they are mapped separately to major VM statuses, and are
     /// important to the semantics of the system.
-    const EValidateSequenceNuberTooOld: u64 = 1001;
-    const EValidateSequenceNumberTooNew: u64 = 1002;
-    const EValidateAccountDoesNotExist: u64 = 1003;
-    const EValidateCantPayGasDeposit: u64 = 1004;
-    const EValidateTransactionExpired: u64 = 1005;
-    const EValidateBadChainId: u64 = 1006;
-    const EValidateSequenceNumberTooBig: u64 = 1007;
+    const ErrorValidateSequenceNuberTooOld: u64 = 1001;
+    const ErrorValidateSequenceNumberTooNew: u64 = 1002;
+    const ErrorValidateAccountDoesNotExist: u64 = 1003;
+    const ErrorValidateCantPayGasDeposit: u64 = 1004;
+    const ErrorValidateTransactionExpired: u64 = 1005;
+    const ErrorValidateBadChainId: u64 = 1006;
+    const ErrorValidateSequenceNumberTooBig: u64 = 1007;
 
     /// The authenticator's scheme is not installed to the sender's account
-    const EValidateNotInstalledAuthValidator: u64 = 1010;
+    const ErrorValidateNotInstalledAuthValidator: u64 = 1010;
 
 
     #[view]

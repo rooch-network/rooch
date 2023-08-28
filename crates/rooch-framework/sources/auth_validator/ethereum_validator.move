@@ -15,7 +15,7 @@ module rooch_framework::ethereum_validator {
     const SCHEME_ETHEREUM: u64 = 3;
 
     /// error code
-    const EInvalidPublicKeyLength: u64 = 0;
+    const ErrorInvalidPublicKeyLength: u64 = 0;
 
     struct EthereumValidator has store, drop {}
 

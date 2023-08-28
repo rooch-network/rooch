@@ -3,15 +3,15 @@ module rooch_framework::core_addresses {
     use std::signer;
 
     /// The address/account did not correspond to the genesis address
-    const ENotGenesisAddress: u64 = 1;
+    const ErrorNotGenesisAddress: u64 = 1;
     /// The address/account did not correspond to the association address
-    const ENotAssociationAddress: u64 = 2;
+    const ErrorNotAssociationAddress: u64 = 2;
     /// The operation can only be performed by the VM
-    const EVm: u64 = 3;
+    const ErrorVm: u64 = 3;
     /// The address/account did not correspond to the core framework address
-    const ENotRoochFrameworkAddress: u64 = 4;
+    const ErrorNotRoochFrameworkAddress: u64 = 4;
     /// The address is not framework reserved address
-    const ENotFrameworkReservedAddress: u64 = 5;
+    const ErrorNotFrameworkReservedAddress: u64 = 5;
 
 
     public fun assert_rooch_genesis(account: &signer) {

@@ -13,15 +13,15 @@ module rooch_framework::session_key {
     friend rooch_framework::transaction_validator;
 
     /// Create session key in this context is not allowed
-    const ESessionKeyCreatePermissionDenied: u64 = 1;
+    const ErrorSessionKeyCreatePermissionDenied: u64 = 1;
     /// The session key already exists
-    const ESessionKeyAlreadyExists: u64 = 2;
+    const ErrorSessionKeyAlreadyExists: u64 = 2;
     /// The session key is invalid
-    const ESessionKeyIsInvalid: u64 = 3;
+    const ErrorSessionKeyIsInvalid: u64 = 3;
     /// The session is expired
-    const ESessionIsExpired: u64 = 4;
+    const ErrorSessionIsExpired: u64 = 4;
     /// The function call is beyond the session's scope
-    const EFunctionCallBeyondSessionScope: u64 = 5;
+    const ErrorFunctionCallBeyondSessionScope: u64 = 5;
 
     /// The session's scope
     struct SessionScope has store,copy,drop {

@@ -17,7 +17,7 @@ module rooch_framework::coin_entry {
     //
 
     /// account has no capabilities (burn/mint).
-    const ENoCapabilities: u64 = 1;
+    const ErrorNoCapabilities: u64 = 1;
 
     //
     // Data structures

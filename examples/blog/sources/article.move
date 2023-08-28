@@ -24,11 +24,11 @@ module rooch_examples::article {
     friend rooch_examples::article_delete_logic;
     friend rooch_examples::article_aggregate;
 
-    const EID_ALREADY_EXISTS: u64 = 101;
-    const EDATA_TOO_LONG: u64 = 102;
-    const EINAPPROPRIATE_VERSION: u64 = 103;
-    const ENOT_GENESIS_ACCOUNT: u64 = 105;
-    const EID_NOT_FOUND: u64 = 106;
+    const ErrorIdAlreadyExists: u64 = 101;
+    const ErrorDataTooLong: u64 = 102;
+    const ErrorInappropriateVersion: u64 = 103;
+    const ErrorNotGenesisAccount: u64 = 105;
+    const ErrorIdNotFound: u64 = 106;
 
     struct CommentTableItemAdded has key {
         article_id: ObjectID,
@@ -36,7 +36,7 @@ module rooch_examples::article {
     }
 
     public fun initialize(storage_ctx: &mut StorageContext, account: &signer) {
-        assert!(signer::address_of(account) == @rooch_examples, error::invalid_argument(ENOT_GENESIS_ACCOUNT));
+        assert!(signer::address_of(account) == @rooch_examples, error::invalid_argument(ErrorNotGenesisAccount));
         let _ = storage_ctx;
         let _ = account;
     }
@@ -76,7 +76,7 @@ module rooch_examples::article {
     }
 
     public(friend) fun set_title(article_obj: &mut Object<Article>, title: String) {
-        assert!(std::string::length(&title) <= 200, EDATA_TOO_LONG);
+        assert!(std::string::length(&title) <= 200, ErrorDataTooLong);
         object::borrow_mut(article_obj).title = title;
     }
 
@@ -85,13 +85,13 @@ module rooch_examples::article {
     }
 
     public(friend) fun set_body(article_obj: &mut Object<Article>, body: String) {
-        assert!(std::string::length(&body) <= 2000, EDATA_TOO_LONG);
+        assert!(std::string::length(&body) <= 2000, ErrorDataTooLong);
         object::borrow_mut(article_obj).body = body;
     }
 
     public(friend) fun add_comment(storage_ctx: &mut StorageContext, article_obj: &mut Object<Article>, comment: Comment) {
         let comment_seq_id = comment::comment_seq_id(&comment);
-        assert!(!table::contains(&object::borrow_mut(article_obj).comments, comment_seq_id), EID_ALREADY_EXISTS);
+        assert!(!table::contains(&object::borrow_mut(article_obj).comments, comment_seq_id), ErrorIdAlreadyExists);
         table::add(&mut object::borrow_mut(article_obj).comments, comment_seq_id, comment);
         event::emit(storage_ctx, CommentTableItemAdded {
             article_id: id(article_obj),
@@ -100,7 +100,7 @@ module rooch_examples::article {
     }
 
     public(friend) fun remove_comment(article_obj: &mut Object<Article>, comment_seq_id: u64) {
-        assert!(table::contains(&object::borrow_mut(article_obj).comments, comment_seq_id), EID_NOT_FOUND);
+        assert!(table::contains(&object::borrow_mut(article_obj).comments, comment_seq_id), ErrorIdNotFound);
         let comment = table::remove(&mut object::borrow_mut(article_obj).comments, comment_seq_id);
         comment::drop_comment(comment);
     }
@@ -122,8 +122,8 @@ module rooch_examples::article {
         title: String,
         body: String,
     ): Article {
-        assert!(std::string::length(&title) <= 200, EDATA_TOO_LONG);
-        assert!(std::string::length(&body) <= 2000, EDATA_TOO_LONG);
+        assert!(std::string::length(&title) <= 200, ErrorDataTooLong);
+        assert!(std::string::length(&body) <= 2000, ErrorDataTooLong);
         Article {
             version: 0,
             title,
@@ -356,7 +356,7 @@ module rooch_examples::article {
 
     public(friend) fun update_version_and_add(storage_ctx: &mut StorageContext, article_obj: Object<Article>) {
         object::borrow_mut(&mut article_obj).version = object::borrow( &mut article_obj).version + 1;
-        //assert!(object::borrow(&article_obj).version != 0, EINAPPROPRIATE_VERSION);
+        //assert!(object::borrow(&article_obj).version != 0, ErrorInappropriateVersion);
         private_add_article(storage_ctx, article_obj);
     }
 
@@ -366,13 +366,13 @@ module rooch_examples::article {
     }
 
     public(friend) fun add_article(storage_ctx: &mut StorageContext, article_obj: Object<Article>) {
-        assert!(object::borrow(&article_obj).version == 0, EINAPPROPRIATE_VERSION);
+        assert!(object::borrow(&article_obj).version == 0, ErrorInappropriateVersion);
         private_add_article(storage_ctx, article_obj);
     }
 
     fun private_add_article(storage_ctx: &mut StorageContext, article_obj: Object<Article>) {
-        assert!(std::string::length(&object::borrow(&article_obj).title) <= 200, EDATA_TOO_LONG);
-        assert!(std::string::length(&object::borrow(&article_obj).body) <= 2000, EDATA_TOO_LONG);
+        assert!(std::string::length(&object::borrow(&article_obj).title) <= 200, ErrorDataTooLong);
+        assert!(std::string::length(&object::borrow(&article_obj).body) <= 2000, ErrorDataTooLong);
         let obj_store = storage_context::object_storage_mut(storage_ctx);
         object_storage::add(obj_store, article_obj);
     }

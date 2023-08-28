@@ -15,7 +15,7 @@ module rooch_framework::nostr_validator {
     const SCHEME_NOSTR: u64 = 4;
 
     /// error code
-    const EInvalidPublicKeyLength: u64 = 0;
+    const ErrorInvalidPublicKeyLength: u64 = 0;
 
     struct NostrValidator has store, drop {}
 

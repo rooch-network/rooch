@@ -18,25 +18,25 @@ module rooch_framework::coin {
     //
 
     /// Address of account which is used to initialize a coin `CoinType` doesn't match the deployer of module
-    const ECoinInfoAddressMismatch: u64 = 1;
+    const ErrorCoinInfoAddressMismatch: u64 = 1;
 
     /// `CoinType` is already initialized as a coin
-    const ECoinInfoAlreadyPublished: u64 = 2;
+    const ErrorCoinInfoAlreadyPublished: u64 = 2;
 
     /// Not enough coins to complete transaction
-    const EInSufficientBalance: u64 = 3;
+    const ErrorInSufficientBalance: u64 = 3;
 
     /// Cannot destroy non-zero coins
-    const EDestroyOfNonZeroCoin: u64 = 4;
+    const ErrorDestroyOfNonZeroCoin: u64 = 4;
 
     /// Coin amount cannot be zero
-    const EZeroCoinAmount: u64 = 5;
+    const ErrorZeroCoinAmount: u64 = 5;
 
     /// Name of the coin is too long
-    const ECoinNameTooLong: u64 = 6;
+    const ErrorCoinNameTooLong: u64 = 6;
 
     /// Symbol of the coin is too long
-    const ECoinSymbolTooLong: u64 = 7;
+    const ErrorSymbolTooLong: u64 = 7;
 
     //
     // Constants

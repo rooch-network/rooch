@@ -14,11 +14,11 @@ module rooch_framework::bitcoin_address{
     const P2TR_ADDR_LENGTH: u64 = 62;
 
     /// error code
-    const EInvalidDecimalPrefix: u64 = 0;
-    const EInvalidScriptVersion: u64 = 1;
-    const EInvalidCompressedPublicKeyLength: u64 = 2;
-    const EInvalidHashedPublicKeyLength: u64 = 3;
-    const EInvalidSchnorrPublicKeyLength: u64 = 4;
+    const ErrorInvalidDecimalPrefix: u64 = 0;
+    const ErrorInvalidScriptVersion: u64 = 1;
+    const ErrorInvalidCompressedPublicKeyLength: u64 = 2;
+    const ErrorInvalidHashedPublicKeyLength: u64 = 3;
+    const ErrorInvalidSchnorrPublicKeyLength: u64 = 4;
 
     // P2PKH address decimal prefix
     const P2PKH_ADDR_DECIMAL_PREFIX: u8 = 0;

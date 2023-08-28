@@ -3,7 +3,7 @@ module rooch_framework::ecdsa_k1_recoverable {
 
     /// constant codes
     const VALID_ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH: u64 = 1;
-    const VALID_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH: u64 = 33;
+    const VALID_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH: u64 = 33;
     const VALID_ECDSA_K1_RECOVERABLE_SIG_LENGTH: u64 = 65;
 
     /// Hash function name that are valid for ecrecover and verify.
@@ -11,13 +11,13 @@ module rooch_framework::ecdsa_k1_recoverable {
     const SHA256: u8 = 1;
 
     /// Error if the public key cannot be recovered from the signature.
-    const EFailToRecoverPubKey: u64 = 0;
+    const ErrorFailToRecoverPubKey: u64 = 0;
 
     /// Error if the signature is invalid.
-    const EInvalidSignature: u64 = 1;
+    const ErrorInvalidSignature: u64 = 1;
 
     /// Error if the public key is invalid.
-    const EInvalidPubKey: u64 = 2;
+    const ErrorInvalidPubKey: u64 = 2;
 
     /// built-in functions
     public fun scheme_length(): u64 {
@@ -25,11 +25,7 @@ module rooch_framework::ecdsa_k1_recoverable {
     }
 
     public fun public_key_length(): u64 {
-        V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH
-    }
-
-    public fun uncompressed_public_key_length(): u64 {
-        VALID_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH
+        VALID_ECDSA_K1_RECOVERABLE_PUBKEY_LENGTH
     }
 
     public fun signature_length(): u64 {
