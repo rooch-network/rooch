@@ -168,11 +168,11 @@ where Υ represents an instruction, T represents instruction input, and σ repre
 The remaining question is how to generate the proof, and there are mainly two approaches:
 
 1. Implement it directly in the contract language virtual machine, such as Arbitrum's AVM and Fuel's FuelVM.
-2. Implement a simulator based on an existing instruction set, which can provide proof capabilities within the simulator. For example, Optimism's MIPS-based cannon, Arbitrum's new WASM-based Nitro, and Rooch's MIPS-based OMO.
+2. Implement a simulator based on an existing instruction set, which can provide proof capabilities within the simulator. For example, Optimism's MIPS-based cannon, Arbitrum's new WASM-based Nitro, and Rooch's MIPS-based flexEmu.
 
-![OMO](/blog/modular/rooch-omo.svg)
+![flexEmu](/blog/modular/rooch-flexemu.svg)
 
-OMO is a general bytecode simulator with single-step state proof capabilities, designed for multi-chain execution environments. With support from OMO, the arbitration layer can be modular. Any chain that supports Turing-complete contracts can simulate OMO's instructions in its contracts and act as an arbitration layer.
+flexEmu is a general bytecode simulator with single-step state proof capabilities, designed for multi-chain execution environments. With support from flexEmu, the arbitration layer can be modular. Any chain that supports Turing-complete contracts can simulate flexEmu's instructions in its contracts and act as an arbitration layer.
 
 ### ZK + Optimistic Combination Solution
 
