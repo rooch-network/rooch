@@ -46,9 +46,11 @@ pub struct Publish {
     #[clap(short = 's', long = "scheme", default_value = "ed25519", arg_enum)]
     pub crypto_schemes: BuiltinScheme,
 
-    /// Whether publish module by Move function `moveos_std::account_storage::publish_modules_entry`?
+    /// Whether publish modules by `MoveAction::ModuleBundle`?
+    /// If not set, publish moduels through Move entry function
+    /// `moveos_std::account_storage::publish_modules_entry`
     #[clap(long, parse(from_flag))]
-    pub by_move: bool,
+    pub by_move_action: bool,
 }
 
 impl Publish {
@@ -122,7 +124,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
 
         let sender: RoochAddress = pkg_address.into();
         eprintln!("Publish modules to address: {:?}", sender);
-        let tx_result = if self.by_move {
+        let tx_result = if !self.by_move_action {
             let args = bcs::to_bytes(&bundles).unwrap();
             let action = MoveAction::new_function_call(
                 FunctionId::new(
