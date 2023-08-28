@@ -25,7 +25,6 @@ impl fmt::Display for GenesisInfo {
 }
 
 impl GenesisInfo {
-
     pub fn new(genesis_package_hash: H256, state_root_hash: H256) -> Self {
         GenesisInfo {
             genesis_package_hash,

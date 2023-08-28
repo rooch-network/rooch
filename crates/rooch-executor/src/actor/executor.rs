@@ -69,15 +69,20 @@ impl ExecutorActor {
     fn init_or_check_genesis(mut self) -> Result<Self> {
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
         if self.moveos.state().is_genesis() {
-            let genesis_result = self.moveos.init_genesis(genesis.genesis_txs())?;
-            let genesis_state_root = genesis_result.last().expect("Genesis result must not empty").0;
-            
+            let genesis_result = self
+                .moveos
+                .init_genesis(genesis.genesis_txs(), genesis.genesis_ctx())?;
+            let genesis_state_root = genesis_result
+                .last()
+                .expect("Genesis result must not empty")
+                .0;
+
             for (genesis_tx, (state_root, genesis_tx_output)) in
                 genesis.genesis_txs().into_iter().zip(genesis_result)
             {
                 self.handle_tx_output(genesis_tx.tx_hash(), state_root, genesis_tx_output)?;
             }
-            
+
             debug_assert!(
                 genesis_state_root == genesis.genesis_state_root(),
                 "Genesis state root mismatch"

@@ -5,16 +5,17 @@ use anyhow::Result;
 use move_binary_format::{errors::Location, CompiledModule};
 use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use move_vm_runtime::{config::VMConfig, native_functions::NativeFunction};
-use moveos::moveos::{MoveOSConfig, MoveOS};
+use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos_stdlib_builder::BuildOptions;
 use moveos_store::{config_store::ConfigDBStore, MoveOSStore};
 use moveos_types::h256;
 use moveos_types::h256::H256;
 use moveos_types::transaction::MoveAction;
 use once_cell::sync::Lazy;
-use rooch_types::chain_id::RoochChainID;
 use rooch_types::error::GenesisError;
+use rooch_types::framework::genesis;
 use rooch_types::transaction::rooch::RoochTransaction;
+use rooch_types::{chain_id::RoochChainID, framework::genesis::GenesisContext};
 use serde::{Deserialize, Serialize};
 use std::{
     fs::File,
@@ -28,6 +29,7 @@ pub static ROOCH_GENESIS: Lazy<RoochGenesis> =
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GenesisPackage {
     pub state_root: H256,
+    pub genesis_ctx: GenesisContext,
     pub genesis_txs: Vec<RoochTransaction>,
 }
 
@@ -85,6 +87,10 @@ impl RoochGenesis {
 
     pub fn genesis_txs(&self) -> Vec<RoochTransaction> {
         self.genesis_package.genesis_txs.clone()
+    }
+
+    pub fn genesis_ctx(&self) -> GenesisContext {
+        self.genesis_package.genesis_ctx.clone()
     }
 
     pub fn all_natives(&self) -> Vec<(AccountAddress, Identifier, Identifier, NativeFunction)> {
@@ -145,14 +151,19 @@ impl GenesisPackage {
     pub const GENESIS_DIR: &'static str = "genesis";
 
     fn build() -> Result<Self> {
+        //TODO chain_id should be a parameter
+        let chain_id = RoochChainID::DEV.chain_id().id();
         let bundles =
             moveos_stdlib_builder::Stdlib::build(BuildOptions::default())?.module_bundles()?;
         let genesis_txs: Vec<RoochTransaction> = bundles
             .into_iter()
-            .map(|(genesis_account, bundle)|
-            //TODO chain_id should be a parameter
-            RoochTransaction::new_genesis_tx(genesis_account.into(), RoochChainID::DEV.chain_id().id(), MoveAction::ModuleBundle(bundle))
-        )
+            .map(|(genesis_account, bundle)| {
+                RoochTransaction::new_genesis_tx(
+                    genesis_account.into(),
+                    chain_id,
+                    MoveAction::ModuleBundle(bundle),
+                )
+            })
             .collect();
         //TODO put gas parameters into genesis package
         let gas_parameters = rooch_framework::natives::GasParameters::zeros();
@@ -164,11 +175,17 @@ impl GenesisPackage {
             rooch_framework::natives::all_natives(gas_parameters),
             vm_config,
         )?;
-        let genesis_result = moveos.init_genesis(genesis_txs.clone())?;
-        let state_root = genesis_result.last().expect("genesis result should not be empty").0;
-        Ok(Self { 
+        let genesis_ctx = genesis::GenesisContext::new(chain_id);
+        let genesis_result = moveos.init_genesis(genesis_txs.clone(), genesis_ctx.clone())?;
+        let state_root = genesis_result
+            .last()
+            .expect("genesis result should not be empty")
+            .0;
+        Ok(Self {
             state_root,
-            genesis_txs })
+            genesis_ctx,
+            genesis_txs,
+        })
     }
 
     pub fn load() -> Result<Self> {
@@ -269,8 +286,12 @@ mod tests {
             genesis.config,
         )
         .expect("init moveos failed");
+
         moveos
-            .init_genesis(genesis.genesis_package.genesis_txs)
+            .init_genesis(
+                genesis.genesis_package.genesis_txs,
+                genesis.genesis_package.genesis_ctx,
+            )
             .expect("init genesis failed");
     }
 }

@@ -19,6 +19,7 @@ use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::startup_info::StartupInfo;
+use moveos_types::state::MoveState;
 use moveos_types::state_resolver::MoveOSResolverProxy;
 use moveos_types::transaction::{MoveOSTransaction, TransactionOutput, VerifiedMoveOSTransaction};
 use moveos_types::tx_context::TxContext;
@@ -74,9 +75,10 @@ impl MoveOS {
         })
     }
 
-    pub fn init_genesis<T: Into<MoveOSTransaction>>(
+    pub fn init_genesis<T: Into<MoveOSTransaction>, GT: MoveState + Clone>(
         &mut self,
         genesis_txs: Vec<T>,
+        genesis_ctx: GT,
     ) -> Result<Vec<(H256, TransactionOutput)>> {
         ensure!(
             self.db.0.get_state_store().is_genesis(),
@@ -84,21 +86,22 @@ impl MoveOS {
         );
         genesis_txs
             .into_iter()
-            .map(|tx| self.verify_and_execute_genesis_tx(tx.into()))
+            .map(|tx| self.verify_and_execute_genesis_tx(tx.into(), genesis_ctx.clone()))
             .collect::<Result<Vec<_>>>()
     }
 
-    fn verify_and_execute_genesis_tx(
+    fn verify_and_execute_genesis_tx<GT: MoveState>(
         &mut self,
         tx: MoveOSTransaction,
+        genesis_ctx: GT,
     ) -> Result<(H256, TransactionOutput)> {
         let MoveOSTransaction {
-            ctx,
+            mut ctx,
             action,
             pre_execute_functions: _,
             post_execute_functions: _,
         } = tx;
-
+        ctx.add(genesis_ctx)?;
         let mut session = self.vm.new_genesis_session(&self.db, ctx);
         let verified_action = session.verify_move_action(action)?;
         let execute_result = session.execute_move_action(verified_action);

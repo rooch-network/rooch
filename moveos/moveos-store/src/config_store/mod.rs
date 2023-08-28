@@ -3,8 +3,8 @@
 
 use crate::{CONFIG_GENESIS_PREFIX_NAME, CONFIG_STARTUP_INFO_PREFIX_NAME};
 use anyhow::Result;
-use moveos_types::startup_info::StartupInfo;
 use moveos_types::genesis_info::GenesisInfo;
+use moveos_types::startup_info::StartupInfo;
 use raw_store::{derive_store, CodecKVStore, StoreInstance};
 use std::string::ToString;
 
@@ -17,7 +17,12 @@ derive_store!(
     StartupInfo,
     CONFIG_STARTUP_INFO_PREFIX_NAME
 );
-derive_store!(GenesisStore, String, GenesisInfo, CONFIG_GENESIS_PREFIX_NAME);
+derive_store!(
+    GenesisStore,
+    String,
+    GenesisInfo,
+    CONFIG_GENESIS_PREFIX_NAME
+);
 
 pub trait ConfigStore {
     fn get_startup_info(&self) -> Result<Option<StartupInfo>>;

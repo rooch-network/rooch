@@ -19,6 +19,7 @@
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 <b>use</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry">0x3::auth_validator_registry</a>;
 <b>use</b> <a href="builtin_validators.md#0x3_builtin_validators">0x3::builtin_validators</a>;
+<b>use</b> <a href="chain_id.md#0x3_chain_id">0x3::chain_id</a>;
 <b>use</b> <a href="gas_price.md#0x3_gas_price">0x3::gas_price</a>;
 <b>use</b> <a href="session_key.md#0x3_session_key">0x3::session_key</a>;
 </code></pre>
@@ -133,7 +134,7 @@ This function is for Rooch to validate the transaction sender's authenticator.
 If the authenticator is invaid, abort this function.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_validate">validate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, _chain_id: u64, scheme: u64, authenticator_payload: <a href="">vector</a>&lt;u8&gt;): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">auth_validator::TxValidateResult</a>
+<pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_validate">validate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, <a href="chain_id.md#0x3_chain_id">chain_id</a>: u64, scheme: u64, authenticator_payload: <a href="">vector</a>&lt;u8&gt;): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">auth_validator::TxValidateResult</a>
 </code></pre>
 
 
@@ -144,13 +145,16 @@ If the authenticator is invaid, abort this function.
 
 <pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_validate">validate</a>(
     ctx: &StorageContext,
-    _chain_id: u64,
+    <a href="chain_id.md#0x3_chain_id">chain_id</a>: u64,
     scheme: u64,
     authenticator_payload: <a href="">vector</a>&lt;u8&gt;
 ): TxValidateResult {
 
     // === validate the chain id ===
-    //TODO validate the chain id
+    <b>assert</b>!(
+        <a href="chain_id.md#0x3_chain_id">chain_id</a> == <a href="chain_id.md#0x3_chain_id_chain_id">chain_id::chain_id</a>(ctx),
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateBadChainId">EValidateBadChainId</a>)
+    );
 
     // === validate the sequence number ===
     <b>let</b> tx_sequence_number = <a href="_sequence_number">storage_context::sequence_number</a>(ctx);

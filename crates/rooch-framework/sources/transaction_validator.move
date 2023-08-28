@@ -10,6 +10,7 @@ module rooch_framework::transaction_validator {
     use rooch_framework::auth_validator_registry;
     use rooch_framework::session_key;
     use rooch_framework::gas_price;
+    use rooch_framework::chain_id;
 
     const MAX_U64: u128 = 18446744073709551615;
 
@@ -38,13 +39,16 @@ module rooch_framework::transaction_validator {
     /// If the authenticator is invaid, abort this function.
     public fun validate(
         ctx: &StorageContext,
-        _chain_id: u64,
+        chain_id: u64,
         scheme: u64,
         authenticator_payload: vector<u8>
     ): TxValidateResult {
 
         // === validate the chain id ===
-        //TODO validate the chain id
+        assert!(
+            chain_id == chain_id::chain_id(ctx),
+            error::invalid_argument(EValidateBadChainId)
+        );
 
         // === validate the sequence number ===
         let tx_sequence_number = storage_context::sequence_number(ctx);

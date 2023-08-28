@@ -10,6 +10,7 @@ pub mod auth_validator;
 pub mod bitcoin_validator;
 pub mod empty;
 pub mod ethereum_validator;
+pub mod genesis;
 pub mod native_validator;
 pub mod nostr_validator;
 pub mod session_key;
