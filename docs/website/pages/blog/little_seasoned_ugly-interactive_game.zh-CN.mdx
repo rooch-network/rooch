@@ -157,26 +157,21 @@ import PostHeader from "/components/blog/postHeader";
 
 ### 2.2 确定性步骤
 
-**Moe**：: By utilizing a certain language, we can roughly achieve certainty
-in computation. Thus, the problem to be addressed now is the certainty
-of input and state changes.
+**Moe**：通过使用某种语言，我们可以大致实现计算的确定性。因此，现在要解决的问题是输入和状态变化的确定性。
 
-**Joe**：: Generally speaking, we employ an Oracle to resolve issues related
-to external information input.
+**Joe**：一般来说，我们使用 Oracle 来解决与外部信息输入相关的问题。
 
 ----
 
-**Moe**：: Could this Oracle be deterministic for both of L1 and L2?
+**Moe**：这个 Oracle 对于 L1 和 L2 都具有确定性吗？
 
-**Joe**：: We have root on L1, which means we have chance to verify input.
+**Joe**：我们在 L1 上有根（哈希），这意味着我们有机会验证输入。
 
 ----
 
-**Moe**：: Is it possible to illustrate our current achievements with a
-figure?
+**Moe**：能否用一个数字来说明我们目前取得的成就？
 
-**Joe**：:
-Sure! 
+**Joe**：当然！
 
 <Image
   src="/blog/interactive-game/timeline.png"
@@ -188,104 +183,83 @@ Sure!
 
 ----
 
-**Moe**：: Could you explain this figure more?
+**Moe**：您能进一步解释一下这个数字吗？
 
-**Joe**：: 
+**Joe**：
 
-> Pre-execution：: fetch input by block_hash
+> 预执行：通过 `block_hash` 获取输入
 
-> Load Emulator：: setup execution environment
+> 加载模拟器：设置执行环境
 
-> Verify Input：: verify input with witness
+> 验证输入：与见证人验证输入
 
-> Transition：: execute L2 tx
+> 转换：执行 L2 交易
 
 ----
 
-**Moe**：: Sounds we've already had everything!
+**Moe**：听起来我们已经拥有了一切！
 
-**Joe**：: Almost.
+**Joe**：差不多了。
 
 ### 2.3 对分法
 
-**Moe**：: As the most straightforward segment, there appears to be little
-worth discussing.
+**Moe**：作为最直接的部分，似乎没有什么值得讨论的。
 
-**Joe**：: We need to ascertain the validity of the witness.
-
-----
-
-**Moe**：: Signature is not enough?
-
-**Joe**：: No. Some may choose to feign deafness and muteness.
+**Joe**：我们需要确定证人的真实性。
 
 ----
 
-**Moe**：: Okay. L1 should verify witness in each bisection round.
+**Moe**：签名还不够吗？
 
-**Joe**：: Yes. And L1 could not only have inconsistent STEP<sub>i</sub>, also have last consistent STEP<sub>i-1</sub> after bisection.
+**Joe**：不够。有些人可能会选择装聋作哑。
+
+----
+
+**Moe**：好的。L1 应在每一平分轮中验证见证人。
+
+**Joe**：是的。并且 L1 不仅可以具有不一致的 STEP<sub>i</sub>，还可以具有二分后最后一致的 STEP<sub>i-1</sub>。
 
 ## 3 丑陋
 
-In 'The Seasoned', we have refined the three essential elements that
-constitute the 'Interactive Game'：
+在“深入”中，我们提炼出了构成“交互式游戏”的三个基本要素：
 
-> a. One Language：: simple assembly which could be run in off-chain client
-and be emulated on chain.
+> a. 一种语言：简单的汇编，可以在链下客户端运行并在链上进行模拟。
 
-> b. Deterministic Step：: verify input with witness.
+> b. 确定性步骤：与见证人验证输入。
 
-> c. Bisection：: verify witness in each round.
+> c. 二分法：在每一轮中验证见证人。
 
-Until now, the Interactive Game has been endearing and intricate.
-However, to make it truly functional, we must unveil its ugly side.
+到目前为止，交互式游戏一直是可爱且复杂的。然而，为了让它真正发挥作用，我们必须揭开它丑陋的一面。
 
-### 3.1 同一语言： RISC
+### 3.1 同一语言：RISC
 
-**Moe**：: It appears we have a plethora of choices, such as MIPS, RISC-V, and
-even Wasm.
+**Moe**：看来我们有很多选择，比如 MIPS、RISC-V，甚至 Wasm。
 
-**Joe**：: We can design a flexible architecture to support various languages.
-However, only one can be utilized at any given moment.
+**Joe**：我们可以设计一个灵活的架构来支持各种语言。然而，在任何给定时刻只能使用一个。
 
 ----
 
-**Moe**：: Which one would be your preferred choice?
+**Moe**：哪一个是你的首选？
 
-**Joe**：: MIPS. But in two years it will be RISC-V.
-
-----
-
-**Moe**：: Your unpredictability leaves me perplexed.
-
-**Joe**：: I'm a reasonable man, and I am about to elucidate my rationale to
-you. Firstly, the abstraction level of emulating CPU instructions is
-quite low. While it may appear abstruse, it actually entails a lesser
-cognitive load due to the absence of multiple layers of abstraction,
-hence my lack of enthusiasm for Wasm.
+**Joe**：MIPS。但两年后将会是 RISC-V。
 
 ----
 
-**Moe**：: That seems reasonably sound.
+**Moe**：你的不可预测性让我感到困惑。
 
-**Joe**：: Among CPU instruction sets, RISC instruction sets are undoubtedly a
-superior choice, owing to their limited and stable number of
-instructions, and the evasion of the complexity of emulating intricate
-instructions. In particular, the load-store architecture precludes the
-emergence of memory side effects within ALU operations. It is essential
-to note that every step of memory state change in our emulator requires
-tracking, and thus the hardship of implementing register-memory
-architecture may merely result in an infinity of bugs. Considering the
-maturity and stability of compilers, I lean towards MIPS.
+**Joe**：我是一个讲道理的人，我正要向你解释我的理由。首先，模拟 CPU 指令的抽象级别相当低。虽然它可能看起来很深奥，但由于缺乏多层抽象，它实际上需要较少的认知负担，因此我对 Wasm 缺乏热情。
 
 ----
 
-**Moe**：: Tell me more about RISC-V.
+**Moe**：这似乎相当合理。
 
-**Joe**：: We could have a 64-bit address space, as the 4GB memory space
-provided by MIPS 32-bit can sometimes prove inadequate. However,
-regardless of the instruction set used, we must take care to verify the
-correctness of the implementation.
+**Joe**：在 CPU 指令集中，RISC 指令集无疑是一个更优越的选择，因为它的指令数量有限且稳定，并且避免了模拟复杂指令的复杂性。特别是，加载-存储架构可以防止 ALU 操作中内存副作用的出现。值得注意的是，我们的模拟器中内存状态变化的每一步都需要跟踪，因此实现寄存器内存架构的困难可能只会导致无限的错误。考虑到编译器的成熟度和稳定性，我倾向于MIPS。
+
+----
+
+**Moe**：告诉我更多有关 RISC-V 的信息。
+
+**Joe**：我们可以拥有 64 位地址空间，因为 MIPS 32 位提供的 4GB 内存空间有时会不够用。然而，无论使用什么指令集，我们都必须小心验证实现的正确性。
 
 ----
 
