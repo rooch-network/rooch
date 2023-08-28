@@ -77,6 +77,7 @@ impl ExecutorActor {
                 .expect("Genesis result must not empty")
                 .0;
 
+            //TODO should we save the genesis txs to sequencer?
             for (genesis_tx, (state_root, genesis_tx_output)) in
                 genesis.genesis_txs().into_iter().zip(genesis_result)
             {
