@@ -7,7 +7,7 @@ export interface CallOption {
 }
 
 export interface IAccount {
-  callFunction(
+  runFunction(
     funcId: FunctionId,
     tyArgs?: TypeTag[],
     args?: Arg[],

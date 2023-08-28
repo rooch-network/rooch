@@ -24,7 +24,7 @@ describe('account', () => {
     expect(account).toBeDefined()
   })
 
-  describe('#callFunction', () => {
+  describe('#runFunction', () => {
     it('should execute call function ok', async () => {
       const mockProvider: IProvider = {
         getChainId: vi.fn().mockImplementation(() => {
@@ -42,7 +42,7 @@ describe('account', () => {
       const account = new Account(mockProvider, roochAddress, authorizer)
       expect(account).toBeDefined()
 
-      account.callFunction('0x123::counter::increase', [], [], {
+      account.runFunction('0x123::counter::increase', [], [], {
         maxGasAmount: 1000000,
       })
     })

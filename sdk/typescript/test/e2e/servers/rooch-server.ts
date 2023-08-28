@@ -41,20 +41,22 @@ export class RoochServer {
   checkReady(cb: (ret: boolean) => void) {
     const readyRegex = /JSON-RPC HTTP Server start listening/
 
+    const timer = setTimeout(() => {
+      if (cb) {
+        cb(false)
+      }
+    }, 1000 * 300)
+
     this.child?.stdout?.on('data', (data) => {
       const text = data.toString()
       if (readyRegex.test(text)) {
+        clearTimeout(timer)
+
         if (cb) {
           cb(true)
         }
       }
     })
-
-    setTimeout(() => {
-      if (cb) {
-        cb(false)
-      }
-    }, 1000 * 300)
   }
 
   async waitReady(): Promise<void> {

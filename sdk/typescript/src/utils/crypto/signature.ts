@@ -45,5 +45,6 @@ export function toSerializedSignature({
   serializedSignature.set([SIGNATURE_SCHEME_TO_FLAG[signatureScheme]])
   serializedSignature.set(signature, 1)
   serializedSignature.set(pubKeyBytes, 1 + signature.length)
+
   return serializedSignature
 }
