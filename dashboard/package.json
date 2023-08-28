@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "export": "yarn build && next export",
+    "export": "pnpm build && next export",
     "eslint:check": "eslint --max-warnings=0 \"./src/**/*.{js,jsx,ts,tsx}\"",
 		"eslint:fix": "pnpm eslint:check --fix",
 		"prettier:check": "prettier -c --ignore-unknown .",
