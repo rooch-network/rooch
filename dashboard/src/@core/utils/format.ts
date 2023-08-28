@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { PaymentTypes } from './types'
 
 /**
@@ -21,7 +24,7 @@ const isToday = (date: Date | string) => {
 
 export const formatDate = (
   value: Date | string,
-  formatting: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' }
+  formatting: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' },
 ) => {
   if (!value) return value
 
@@ -64,26 +67,25 @@ export const formatCreditCardNumber = (value: string, Payment: PaymentTypes) => 
       nextValue = `${clearValue.slice(0, 4)} ${clearValue.slice(4, 10)} ${clearValue.slice(10, 14)}`
       break
     default:
-      nextValue = `${clearValue.slice(0, 4)} ${clearValue.slice(4, 8)} ${clearValue.slice(8, 12)} ${clearValue.slice(
+      nextValue = `${clearValue.slice(0, 4)} ${clearValue.slice(4, 8)} ${clearValue.slice(
+        8,
         12,
-        19
-      )}`
+      )} ${clearValue.slice(12, 19)}`
       break
   }
 
   return nextValue.trim()
 }
 
-// Format expiration date in any credit card
 export const formatExpirationDate = (value: string) => {
   const finalValue = value
-    .replace(/^([1-9]\/|[2-9])$/g, '0$1/') // 3 > 03/
-    .replace(/^(0[1-9]|1[0-2])$/g, '$1/') // 11 > 11/
-    .replace(/^([0-1])([3-9])$/g, '0$1/$2') // 13 > 01/3
-    .replace(/^(0?[1-9]|1[0-2])([0-9]{2})$/g, '$1/$2') // 141 > 01/41
-    .replace(/^([0]+)\/|[0]+$/g, '0') // 0/ > 0 and 00 > 0
+    .replace(/^([1-9]\/|[2-9])$/, '0$1/') // 3 > 03/
+    .replace(/^(0[1-9]|1[0-2])$/, '$1/') // 11 > 11/
+    .replace(/^([0-1])([3-9])$/, '0$1/$2') // 13 > 01/3
+    .replace(/^(0?[1-9]|1[0-2])([0-9]{2})$/, '$1/$2') // 141 > 01/41
+    .replace(/^([0]+)\/|[0]+$/, '0') // 0/ > 0 and 00 > 0
     // To allow only digits and `/`
-    .replace(/[^\d\/]|^[\/]*$/g, '')
+    .replace(/[^\d/]|^[/]*$/, '')
     .replace(/\/\//g, '/') // Prevent entering more than 1 `/`
 
   return finalValue

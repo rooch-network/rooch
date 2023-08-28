@@ -1,4 +1,6 @@
-// ** React Imports
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { ReactNode } from 'react'
 
 // ** MUI Imports
@@ -59,34 +61,36 @@ const UserLayout = ({ children, contentHeightFixed }: Props) => {
       contentHeightFixed={contentHeightFixed}
       verticalLayoutProps={{
         navMenu: {
-          navItems: VerticalNavItems()
+          navItems: VerticalNavItems(),
 
           // Uncomment the below line when using server-side menu in vertical layout and comment the above line
           // navItems: verticalMenuItems
         },
         appBar: {
-          content: props => (
+          content: (props) => (
             <VerticalAppBarContent
               hidden={hidden}
               settings={settings}
               saveSettings={saveSettings}
               toggleNavVisibility={props.toggleNavVisibility}
             />
-          )
-        }
+          ),
+        },
       }}
       {...(settings.layout === 'horizontal' && {
         horizontalLayoutProps: {
           navMenu: {
-            navItems: HorizontalNavItems()
+            navItems: HorizontalNavItems(),
 
             // Uncomment the below line when using server-side menu in horizontal layout and comment the above line
             // navItems: horizontalMenuItems
           },
           appBar: {
-            content: () => <HorizontalAppBarContent settings={settings} saveSettings={saveSettings} />
-          }
-        }
+            content: () => (
+              <HorizontalAppBarContent settings={settings} saveSettings={saveSettings} />
+            ),
+          },
+        },
       })}
     >
       {children}

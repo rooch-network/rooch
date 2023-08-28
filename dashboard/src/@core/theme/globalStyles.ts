@@ -1,4 +1,6 @@
-// ** MUI Imports
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { Theme } from '@mui/material/styles'
 
 // ** Hook Import
@@ -23,14 +25,14 @@ const GlobalStyles = (theme: Theme) => {
       marginRight: '1rem !important',
       'body[dir="rtl"] &': {
         marginRight: '0 !important',
-        marginLeft: '1rem !important'
-      }
+        marginLeft: '1rem !important',
+      },
     },
     '.demo-space-y > *:not(:last-of-type)': {
-      marginBottom: '1rem'
+      marginBottom: '1rem',
     },
     '.MuiGrid-container.match-height .MuiCard-root': {
-      height: '100%'
+      height: '100%',
     },
     '.ps__rail-y': {
       zIndex: 1,
@@ -43,27 +45,29 @@ const GlobalStyles = (theme: Theme) => {
             ? 'rgba(86, 106, 127, 0.1) !important'
             : 'rgba(203, 203, 226, 0.15) !important',
         '& .ps__thumb-y': {
-          width: 8
-        }
+          width: 8,
+        },
       },
       '& .ps__thumb-y': {
         left: 'auto !important',
         backgroundColor:
-          theme.palette.mode === 'light' ? 'rgba(86, 106, 127, 0.25) !important' : 'rgba(203, 203, 226, 0.4) !important'
+          theme.palette.mode === 'light'
+            ? 'rgba(86, 106, 127, 0.25) !important'
+            : 'rgba(203, 203, 226, 0.4) !important',
       },
       '.layout-vertical-nav &': {
         '& .ps__thumb-y': {
           width: 2,
           right: 4,
-          backgroundColor: perfectScrollbarThumbBgColor()
+          backgroundColor: perfectScrollbarThumbBgColor(),
         },
         '&:hover, &:focus, &.ps--clicking': {
           backgroundColor: 'transparent !important',
           '& .ps__thumb-y': {
-            width: 6
-          }
-        }
-      }
+            width: 6,
+          },
+        },
+      },
     },
 
     '#nprogress': {
@@ -75,9 +79,9 @@ const GlobalStyles = (theme: Theme) => {
         width: '100%',
         zIndex: 2000,
         position: 'fixed',
-        backgroundColor: theme.palette.primary.main
-      }
-    }
+        backgroundColor: theme.palette.primary.main,
+      },
+    },
   }
 }
 

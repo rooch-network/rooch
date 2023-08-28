@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 declare module '@mui/material/styles' {
   interface Palette {
     customColors: {

@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** React Imports
 import { useEffect, Fragment } from 'react'
 
@@ -62,7 +65,7 @@ const MenuItemTextWrapper = styled(Box)<BoxProps>(({ theme }) => ({
   gap: theme.spacing(2),
   justifyContent: 'space-between',
   transition: 'opacity .25s ease-in-out',
-  ...(themeConfig.menuTextTruncate && { overflow: 'hidden' })
+  ...(themeConfig.menuTextTruncate && { overflow: 'hidden' }),
 }))
 
 const VerticalNavGroup = (props: Props) => {
@@ -79,7 +82,7 @@ const VerticalNavGroup = (props: Props) => {
     collapsedNavWidth,
     currentActiveGroup,
     setCurrentActiveGroup,
-    navigationBorderWidth
+    navigationBorderWidth,
   } = props
 
   // ** Hooks & Vars
@@ -117,7 +120,7 @@ const VerticalNavGroup = (props: Props) => {
       openGroup = []
 
       // ** push Current Active Group To Open Group array
-      if (currentActiveGroup.every(elem => groupActive.includes(elem))) {
+      if (currentActiveGroup.every((elem) => groupActive.includes(elem))) {
         openGroup.push(...currentActiveGroup)
       }
 
@@ -189,7 +192,7 @@ const VerticalNavGroup = (props: Props) => {
       <Fragment>
         <ListItem
           disablePadding
-          className='nav-group'
+          className="nav-group"
           sx={{
             px: '0 !important',
             flexDirection: 'column',
@@ -203,25 +206,28 @@ const VerticalNavGroup = (props: Props) => {
                   content: '""',
                   position: 'absolute',
                   backgroundColor: 'primary.main',
-                  borderTopLeftRadius: theme => theme.shape.borderRadius,
-                  borderBottomLeftRadius: theme => theme.shape.borderRadius
-                }
-              })
-            })
+                  borderTopLeftRadius: (theme) => theme.shape.borderRadius,
+                  borderBottomLeftRadius: (theme) => theme.shape.borderRadius,
+                },
+              }),
+            }),
           }}
         >
           <ListItemButton
             onClick={handleGroupClick}
             className={clsx({
-              'Mui-selected': currentActiveGroup.includes(item.title)
+              'Mui-selected': currentActiveGroup.includes(item.title),
             })}
             sx={{
               mx: 4,
               py: 2.5,
               borderRadius: 1,
               transition: 'padding .25s ease-in-out',
-              width: theme => `calc(100% - ${theme.spacing(4 * 2)})`,
-              pr: navCollapsed && !navHover ? ((collapsedNavWidth - navigationBorderWidth - 22) / 4 - 8) / 2 : 2.5,
+              width: (theme) => `calc(100% - ${theme.spacing(4 * 2)})`,
+              pr:
+                navCollapsed && !navHover
+                  ? ((collapsedNavWidth - navigationBorderWidth - 22) / 4 - 8) / 2
+                  : 2.5,
               pl:
                 navCollapsed && !navHover
                   ? ((collapsedNavWidth - navigationBorderWidth - 22) / 4 - 8) / 2
@@ -229,33 +235,34 @@ const VerticalNavGroup = (props: Props) => {
                   ? 6
                   : 4,
               ...(groupActive.includes(item.title) && {
-                backgroundColor: 'action.hover'
+                backgroundColor: 'action.hover',
               }),
               ...(groupActive.includes(item.title) && {
                 '& .MuiTypography-root, & svg': {
-                  color: 'text.primary'
-                }
+                  color: 'text.primary',
+                },
               }),
               '&.Mui-selected.Mui-focusVisible': {
                 '&, &:hover': {
-                  backgroundColor: theme =>
-                    mode === 'light' ? hexToRGBA(theme.palette.primary.main, 0.24) : 'primary.dark'
-                }
+                  backgroundColor: (theme) =>
+                    mode === 'light' ? hexToRGBA(theme.palette.primary.main, 0.24) : 'primary.dark',
+                },
               },
               '&.Mui-selected': {
                 '&, &:hover': {
-                  backgroundColor: mode === 'light' ? bgColors.primaryLight.backgroundColor : 'primary.main'
+                  backgroundColor:
+                    mode === 'light' ? bgColors.primaryLight.backgroundColor : 'primary.main',
                 },
                 '& .MuiTypography-root, & svg': {
-                  color: mode === 'light' ? 'primary.main' : 'common.white'
+                  color: mode === 'light' ? 'primary.main' : 'common.white',
                 },
                 '& + .MuiCollapse-root .Mui-selected': {
                   '&, &:hover': {
-                    backgroundColor: 'action.hover'
+                    backgroundColor: 'action.hover',
                   },
-                  '& .MuiTypography-root, & svg': { color: 'text.primary' }
-                }
-              }
+                  '& .MuiTypography-root, & svg': { color: 'text.primary' },
+                },
+              },
             }}
           >
             {isSubToSub ? null : (
@@ -264,23 +271,26 @@ const VerticalNavGroup = (props: Props) => {
                   transition: 'margin .25s ease-in-out',
                   ...(parent && navCollapsed && !navHover ? {} : { mr: 2.5 }),
                   ...(navCollapsed && !navHover ? { mr: 0 } : {}), // this condition should come after (parent && navCollapsed && !navHover) condition for proper styling
-                  ...(parent && { mr: 4.25, color: 'text.disabled' })
+                  ...(parent && { mr: 4.25, color: 'text.disabled' }),
                 }}
               >
                 <UserIcon icon={icon as string} fontSize={parent ? '0.4375rem' : '1.375rem'} />
               </ListItemIcon>
             )}
-            <MenuItemTextWrapper sx={{ ...menuGroupCollapsedStyles, ...(isSubToSub ? { ml: 9 } : {}) }}>
+            <MenuItemTextWrapper
+              sx={{ ...menuGroupCollapsedStyles, ...(isSubToSub ? { ml: 9 } : {}) }}
+            >
               <Typography
                 sx={{ color: 'text.secondary' }}
-                {...((themeConfig.menuTextTruncate || (!themeConfig.menuTextTruncate && navCollapsed && !navHover)) && {
-                  noWrap: true
+                {...((themeConfig.menuTextTruncate ||
+                  (!themeConfig.menuTextTruncate && navCollapsed && !navHover)) && {
+                  noWrap: true,
                 })}
               >
                 <Translations text={item.title} />
               </Typography>
               <Box
-                className='menu-item-meta'
+                className="menu-item-meta"
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
@@ -288,9 +298,9 @@ const VerticalNavGroup = (props: Props) => {
                     color: 'text.secondary',
                     transition: 'transform .25s ease-in-out',
                     ...(groupActive.includes(item.title) && {
-                      transform: direction === 'ltr' ? 'rotate(90deg)' : 'rotate(-90deg)'
-                    })
-                  }
+                      transform: direction === 'ltr' ? 'rotate(90deg)' : 'rotate(-90deg)',
+                    }),
+                  },
                 }}
               >
                 {item.badgeContent ? (
@@ -301,23 +311,26 @@ const VerticalNavGroup = (props: Props) => {
                       mr: 1.5,
                       height: 20,
                       fontWeight: 500,
-                      '& .MuiChip-label': { px: 1.5, textTransform: 'capitalize' }
+                      '& .MuiChip-label': { px: 1.5, textTransform: 'capitalize' },
                     }}
                   />
                 ) : null}
-                <Icon fontSize='1.25rem' icon={direction === 'ltr' ? 'bx:chevron-right' : 'bx:chevron-left'} />
+                <Icon
+                  fontSize="1.25rem"
+                  icon={direction === 'ltr' ? 'bx:chevron-right' : 'bx:chevron-left'}
+                />
               </Box>
             </MenuItemTextWrapper>
           </ListItemButton>
           <Collapse
-            component='ul'
-            onClick={e => e.stopPropagation()}
+            component="ul"
+            onClick={(e) => e.stopPropagation()}
             in={groupActive.includes(item.title)}
             sx={{
               pl: 0,
               width: '100%',
               ...menuGroupCollapsedStyles,
-              '& .MuiCollapse-wrapper': { pt: 1 }
+              '& .MuiCollapse-wrapper': { pt: 1 },
             }}
           >
             <VerticalNavItems

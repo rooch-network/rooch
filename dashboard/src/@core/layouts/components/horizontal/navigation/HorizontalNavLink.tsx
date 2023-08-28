@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** React Imports
 import { ElementType, Fragment } from 'react'
 
@@ -48,12 +51,12 @@ const ListItem = styled(MuiListItem)<
   width: 'auto',
   color: theme.palette.text.primary,
   '&:hover': {
-    backgroundColor: theme.palette.action.hover
+    backgroundColor: theme.palette.action.hover,
   },
   '&:focus-visible': {
     outline: 0,
-    backgroundColor: theme.palette.action.focus
-  }
+    backgroundColor: theme.palette.action.focus,
+  },
 }))
 
 const HorizontalNavLink = (props: Props) => {
@@ -80,7 +83,9 @@ const HorizontalNavLink = (props: Props) => {
 
   return (
     <CanViewNavLink navLink={item}>
-      <Wrapper {...(!hasParent ? { component: 'div', sx: { py: skin === 'bordered' ? 2.375 : 2.5 } } : {})}>
+      <Wrapper
+        {...(!hasParent ? { component: 'div', sx: { py: skin === 'bordered' ? 2.375 : 2.5 } } : {})}
+      >
         <ListItem
           component={Link}
           disabled={item.disabled}
@@ -88,7 +93,7 @@ const HorizontalNavLink = (props: Props) => {
           className={clsx({ active: isNavLinkActive() })}
           target={item.openInNewTab ? '_blank' : undefined}
           href={item.path === undefined ? '/' : `${item.path}`}
-          onClick={e => {
+          onClick={(e) => {
             if (item.path === undefined) {
               e.preventDefault()
               e.stopPropagation()
@@ -100,26 +105,37 @@ const HorizontalNavLink = (props: Props) => {
               ? {
                   borderRadius: 1,
                   '&.active': {
-                    backgroundColor: mode === 'light' ? bgColors.primaryLight.backgroundColor : 'primary.main',
+                    backgroundColor:
+                      mode === 'light' ? bgColors.primaryLight.backgroundColor : 'primary.main',
                     '&:focus-visible': {
-                      backgroundColor: theme =>
-                        mode === 'light' ? hexToRGBA(theme.palette.primary.main, 0.24) : 'primary.dark'
+                      backgroundColor: (theme) =>
+                        mode === 'light'
+                          ? hexToRGBA(theme.palette.primary.main, 0.24)
+                          : 'primary.dark',
                     },
                     '& .MuiTypography-root': {
-                      color: mode === 'light' ? 'primary.main' : 'common.white'
-                    }
-                  }
+                      color: mode === 'light' ? 'primary.main' : 'common.white',
+                    },
+                  },
                 }
-              : { py: 2.5 })
+              : { py: 2.5 }),
           }}
         >
-          <Box sx={{ gap: 2, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box
+            sx={{
+              gap: 2,
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
             <Box
               sx={{
                 display: 'flex',
                 alignItems: 'center',
                 ...(menuTextTruncate && { overflow: 'hidden' }),
-                ...(hasParent && isNavLinkActive() && { pl: 1.5, ml: -1.5 })
+                ...(hasParent && isNavLinkActive() && { pl: 1.5, ml: -1.5 }),
               }}
             >
               <ListItemIcon
@@ -133,17 +149,24 @@ const HorizontalNavLink = (props: Props) => {
                       icon === navSubItemIcon && {
                         '& svg': {
                           transform: 'scale(1.35)',
-                          filter: theme => `drop-shadow(0 0 2px ${theme.palette.primary.main})`
-                        }
-                      })
-                  })
+                          filter: (theme) => `drop-shadow(0 0 2px ${theme.palette.primary.main})`,
+                        },
+                      }),
+                  }),
                 }}
               >
-                <UserIcon icon={icon} fontSize={icon === navSubItemIcon ? '0.4375rem' : '1.375rem'} />
+                <UserIcon
+                  icon={icon}
+                  fontSize={icon === navSubItemIcon ? '0.4375rem' : '1.375rem'}
+                />
               </ListItemIcon>
               <Typography
                 {...(menuTextTruncate && { noWrap: true })}
-                sx={{ ...(isNavLinkActive() ? hasParent && { fontWeight: 600 } : { color: 'text.secondary' }) }}
+                sx={{
+                  ...(isNavLinkActive()
+                    ? hasParent && { fontWeight: 600 }
+                    : { color: 'text.secondary' }),
+                }}
               >
                 <Translations text={item.title} />
               </Typography>
@@ -155,7 +178,7 @@ const HorizontalNavLink = (props: Props) => {
                 sx={{
                   height: 20,
                   fontWeight: 500,
-                  '& .MuiChip-label': { px: 1.5, textTransform: 'capitalize' }
+                  '& .MuiChip-label': { px: 1.5, textTransform: 'capitalize' },
                 }}
               />
             ) : null}

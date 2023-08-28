@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** MUI Imports
 import Box from '@mui/material/Box'
 
@@ -13,21 +16,23 @@ import HorizontalNavItems from './HorizontalNavItems'
 // ** Types
 interface Props {
   settings: LayoutProps['settings']
-  horizontalNavItems: NonNullable<NonNullable<LayoutProps['horizontalLayoutProps']>['navMenu']>['navItems']
+  horizontalNavItems: NonNullable<
+    NonNullable<LayoutProps['horizontalLayoutProps']>['navMenu']
+  >['navItems']
 }
 
 const Navigation = (props: Props) => {
   return (
     <Box
-      className='menu-content'
+      className="menu-content"
       sx={{
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
         '& > *': {
           '&:not(:last-child)': { mr: 0.5 },
-          ...(themeConfig.menuTextTruncate && { maxWidth: 200 })
-        }
+          ...(themeConfig.menuTextTruncate && { maxWidth: 200 }),
+        },
       }}
     >
       <HorizontalNavItems {...props} />

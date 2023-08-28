@@ -1,13 +1,9 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { fromHexString } from './hex'
 import { ROOCH_ADDRESS_LENGTH } from '../constants'
 import * as rooch_types from '../generated/runtime/rooch_types/mod'
-import {
-  bytes as Bytes,
-  Seq,
-  Tuple,
-  ListTuple,
-  uint8,
-} from '../generated/runtime/serde/mod'
+import { bytes as Bytes, Seq, Tuple, ListTuple, uint8 } from '../generated/runtime/serde/mod'
 import { BcsSerializer } from '../generated/runtime/bcs/mod'
 import { AccountAddress, FunctionId, TypeTag, StructTag, Arg } from '../types'
 import { parseFunctionId } from './encode'
@@ -118,9 +114,7 @@ function bytesArrayToSeqSeq(input: Bytes[]): Seq<Seq<number>> {
 
 export function addressToListTuple(ethAddress: string): ListTuple<[uint8]> {
   // Remove '0x' prefix
-  const cleanedEthAddress = ethAddress.startsWith('0x')
-    ? ethAddress.slice(2)
-    : ethAddress
+  const cleanedEthAddress = ethAddress.startsWith('0x') ? ethAddress.slice(2) : ethAddress
 
   // Check if the address is valid
   if (cleanedEthAddress.length !== ROOCH_ADDRESS_LENGTH) {
@@ -157,11 +151,7 @@ export function encodeArgs(arg: Arg): Bytes {
   return se.getBytes()
 }
 
-export const encodeMoveCallData = (
-  funcId: FunctionId,
-  tyArgs: TypeTag[],
-  args: Arg[],
-) => {
+export const encodeMoveCallData = (funcId: FunctionId, tyArgs: TypeTag[], args: Arg[]) => {
   const bcsArgs = args?.map((arg) => encodeArgs(arg))
   const scriptFunction = encodeFunctionCall(funcId, tyArgs, bcsArgs)
 

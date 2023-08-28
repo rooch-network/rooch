@@ -39,9 +39,7 @@ export function toSerializedSignature({
   pubKey,
 }: SignaturePubkeyPair): SerializedSignature {
   const pubKeyBytes = pubKey.toBytes()
-  const serializedSignature = new Uint8Array(
-    1 + signature.length + pubKeyBytes.length,
-  )
+  const serializedSignature = new Uint8Array(1 + signature.length + pubKeyBytes.length)
   serializedSignature.set([SIGNATURE_SCHEME_TO_FLAG[signatureScheme]])
   serializedSignature.set(signature, 1)
   serializedSignature.set(pubKeyBytes, 1 + signature.length)

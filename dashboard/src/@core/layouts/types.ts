@@ -1,4 +1,6 @@
-// ** Type Imports
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { ReactNode } from 'react'
 import { AppBarProps } from '@mui/material/AppBar'
 import { Theme, SxProps, PaletteMode } from '@mui/material'

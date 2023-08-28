@@ -1,4 +1,7 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+import { describe, it, expect } from 'vitest'
 import { JsonRpcProvider } from '../../src'
 //import { RoochServer } from './servers/rooch-server'
 

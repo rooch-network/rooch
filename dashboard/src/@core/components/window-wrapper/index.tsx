@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** React Imports
 import { useState, useEffect, ReactNode } from 'react'
 
@@ -22,7 +25,7 @@ const WindowWrapper = ({ children }: Props) => {
     },
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [router.route]
+    [router.route],
   )
 
   if (windowReadyFlag) {

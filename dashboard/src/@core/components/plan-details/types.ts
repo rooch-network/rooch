@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 export type PricingPlanType = {
   title: string
   imgSrc: string
@@ -25,7 +28,12 @@ export type PricingFaqType = {
   question: string
 }
 
-export type PricingTableRowType = { feature: string; starter: boolean; pro: boolean | string; enterprise: boolean }
+export type PricingTableRowType = {
+  feature: string
+  starter: boolean
+  pro: boolean | string
+  enterprise: boolean
+}
 
 export type PricingTableType = {
   header: { title: string; subtitle: string; isPro?: boolean }[]

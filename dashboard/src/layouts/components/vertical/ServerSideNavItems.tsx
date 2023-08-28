@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** React Imports
 import { useEffect, useState } from 'react'
 
@@ -12,7 +15,7 @@ const ServerSideNavItems = () => {
   const [menuItems, setMenuItems] = useState<VerticalNavItemsType>([])
 
   useEffect(() => {
-    axios.get('/api/vertical-nav/data').then(response => {
+    axios.get('/api/vertical-nav/data').then((response) => {
       const menuArray = response.data
 
       setMenuItems(menuArray)

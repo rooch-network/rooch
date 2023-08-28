@@ -1,4 +1,6 @@
-// ** Type Import
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { OwnerStateThemeType } from './'
 
 const Table = () => {
@@ -7,9 +9,9 @@ const Table = () => {
       styleOverrides: {
         root: ({ theme }: OwnerStateThemeType) => ({
           boxShadow: theme.shadows[0],
-          borderTopColor: theme.palette.divider
-        })
-      }
+          borderTopColor: theme.palette.divider,
+        }),
+      },
     },
     MuiTableHead: {
       styleOverrides: {
@@ -17,10 +19,10 @@ const Table = () => {
           textTransform: 'uppercase',
           '& .MuiTableCell-head': {
             fontSize: '0.75rem',
-            letterSpacing: '1px'
-          }
-        }
-      }
+            letterSpacing: '1px',
+          },
+        },
+      },
     },
     MuiTableBody: {
       styleOverrides: {
@@ -28,40 +30,41 @@ const Table = () => {
           '& .MuiTableCell-body': {
             letterSpacing: '0.25px',
             color: theme.palette.text.secondary,
-            '&:not(.MuiTableCell-sizeSmall):not(.MuiTableCell-paddingCheckbox):not(.MuiTableCell-paddingNone)': {
-              paddingTop: theme.spacing(3.5),
-              paddingBottom: theme.spacing(3.5)
-            }
-          }
-        })
-      }
+            '&:not(.MuiTableCell-sizeSmall):not(.MuiTableCell-paddingCheckbox):not(.MuiTableCell-paddingNone)':
+              {
+                paddingTop: theme.spacing(3.5),
+                paddingBottom: theme.spacing(3.5),
+              },
+          },
+        }),
+      },
     },
     MuiTableRow: {
       styleOverrides: {
         root: ({ theme }: OwnerStateThemeType) => ({
           '& .MuiTableCell-head:not(.MuiTableCell-paddingCheckbox):first-child, & .MuiTableCell-root:not(.MuiTableCell-paddingCheckbox):first-child ':
             {
-              paddingLeft: theme.spacing(6)
+              paddingLeft: theme.spacing(6),
             },
           '& .MuiTableCell-head:last-child, & .MuiTableCell-root:last-child': {
-            paddingRight: theme.spacing(6)
-          }
-        })
-      }
+            paddingRight: theme.spacing(6),
+          },
+        }),
+      },
     },
     MuiTableCell: {
       styleOverrides: {
         root: ({ theme }: OwnerStateThemeType) => ({
-          borderBottom: `1px solid ${theme.palette.divider}`
+          borderBottom: `1px solid ${theme.palette.divider}`,
         }),
         paddingCheckbox: ({ theme }: OwnerStateThemeType) => ({
-          paddingLeft: theme.spacing(3.25)
+          paddingLeft: theme.spacing(3.25),
         }),
         stickyHeader: ({ theme }: OwnerStateThemeType) => ({
-          backgroundColor: theme.palette.customColors.tableHeaderBg
-        })
-      }
-    }
+          backgroundColor: theme.palette.customColors.tableHeaderBg,
+        }),
+      },
+    },
   }
 }
 

@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** React Imports
 import { ReactNode } from 'react'
 
@@ -98,7 +101,8 @@ const App = (props: ExtendedAppProps) => {
   // Variables
   const contentHeightFixed = Component.contentHeightFixed ?? false
   const getLayout =
-    Component.getLayout ?? (page => <UserLayout contentHeightFixed={contentHeightFixed}>{page}</UserLayout>)
+    Component.getLayout ??
+    ((page) => <UserLayout contentHeightFixed={contentHeightFixed}>{page}</UserLayout>)
 
   const setConfig = Component.setConfig ?? undefined
 
@@ -110,9 +114,9 @@ const App = (props: ExtendedAppProps) => {
     <CacheProvider value={emotionCache}>
       <Head>
         <title>{`${themeConfig.templateName} - Dashboard`}</title>
-        <meta name='description' content={`${themeConfig.templateName} – Dashboard`} />
-        <meta name='keywords' content='Rooch, Dashboard' />
-        <meta name='viewport' content='initial-scale=1, width=device-width' />
+        <meta name="description" content={`${themeConfig.templateName} – Dashboard`} />
+        <meta name="keywords" content="Rooch, Dashboard" />
+        <meta name="viewport" content="initial-scale=1, width=device-width" />
       </Head>
 
       <AuthProvider>
@@ -125,7 +129,10 @@ const App = (props: ExtendedAppProps) => {
                     {getLayout(<Component {...pageProps} />)}
                   </Guard>
                   <ReactHotToast>
-                    <Toaster position={settings.toastPosition} toastOptions={{ className: 'react-hot-toast' }} />
+                    <Toaster
+                      position={settings.toastPosition}
+                      toastOptions={{ className: 'react-hot-toast' }}
+                    />
                   </ReactHotToast>
                 </ThemeComponent>
               )

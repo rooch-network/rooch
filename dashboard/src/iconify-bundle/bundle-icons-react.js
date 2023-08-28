@@ -1,4 +1,6 @@
-'use strict'
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 Object.defineProperty(exports, '__esModule', { value: true })
 
 /**
@@ -30,7 +32,7 @@ const sources = {
     // Custom file with only few icons
     {
       filename: require.resolve('@iconify/json/json/line-md.json'),
-      icons: ['home-twotone-alt', 'github', 'document-list', 'document-code', 'image-twotone']
+      icons: ['home-twotone-alt', 'github', 'document-list', 'document-code', 'image-twotone'],
     },
     {
       filename: require.resolve('@iconify/json/json/mdi.json'),
@@ -52,27 +54,33 @@ const sources = {
         'file-remove-outline',
         'account-cog-outline',
         'arrow-expand-vertical',
-        'arrow-collapse-vertical'
-      ]
-    }
+        'arrow-collapse-vertical',
+      ],
+    },
 
     // Custom JSON file
     // 'json/gg.json'
   ],
-  icons: ['bi:airplane-engines', 'tabler:anchor', 'uit:adobe-alt', 'fa6-regular:comment', 'twemoji:auto-rickshaw'],
+  icons: [
+    'bi:airplane-engines',
+    'tabler:anchor',
+    'uit:adobe-alt',
+    'fa6-regular:comment',
+    'twemoji:auto-rickshaw',
+  ],
   svg: [
     {
       dir: 'src/iconify-bundle/svg',
       monotone: false,
-      prefix: 'custom'
-    }
+      prefix: 'custom',
+    },
 
     /* {
           dir: 'src/iconify-bundle/emojis',
           monotone: false,
           prefix: 'emoji'
         } */
-  ]
+  ],
 }
 
 // Iconify component (this changes import statement in generated file)
@@ -93,7 +101,7 @@ const target = 'src/iconify-bundle/icons-bundle-react.js'
   const dir = (0, path_1.dirname)(target)
   try {
     await fs_1.promises.mkdir(dir, {
-      recursive: true
+      recursive: true,
     })
   } catch (err) {
     //
@@ -111,7 +119,7 @@ const target = 'src/iconify-bundle/icons-bundle-react.js'
       const filename = require.resolve(`@iconify/json/json/${prefix}.json`)
       sourcesJSON.push({
         filename,
-        icons: organizedList[prefix]
+        icons: organizedList[prefix],
       })
     }
   }
@@ -153,7 +161,7 @@ const target = 'src/iconify-bundle/icons-bundle-react.js'
 
       // Import icons
       const iconSet = await (0, tools_1.importDirectory)(source.dir, {
-        prefix: source.prefix
+        prefix: source.prefix,
       })
 
       // Validate, clean up, fix palette and optimise
@@ -182,7 +190,7 @@ const target = 'src/iconify-bundle/icons-bundle-react.js'
               defaultColor: 'currentColor',
               callback: (attr, colorStr, color) => {
                 return !color || (0, tools_1.isEmptyColor)(color) ? colorStr : 'currentColor'
-              }
+              },
             })
           }
 
@@ -210,7 +218,7 @@ const target = 'src/iconify-bundle/icons-bundle-react.js'
   // Save to file
   await fs_1.promises.writeFile(target, bundle, 'utf8')
   console.log(`Saved ${target} (${bundle.length} bytes)`)
-})().catch(err => {
+})().catch((err) => {
   console.error(err)
 })
 
@@ -219,7 +227,7 @@ const target = 'src/iconify-bundle/icons-bundle-react.js'
  */
 function removeMetaData(iconSet) {
   const props = ['info', 'chars', 'categories', 'themes', 'prefixes', 'suffixes']
-  props.forEach(prop => {
+  props.forEach((prop) => {
     delete iconSet[prop]
   })
 }
@@ -229,7 +237,7 @@ function removeMetaData(iconSet) {
  */
 function organizeIconsList(icons) {
   const sorted = Object.create(null)
-  icons.forEach(icon => {
+  icons.forEach((icon) => {
     const item = (0, utils_1.stringToIcon)(icon)
     if (!item) {
       return

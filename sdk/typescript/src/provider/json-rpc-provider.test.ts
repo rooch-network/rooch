@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { describe, it, expect, vi } from 'vitest'
 import fetchMock from 'fetch-mock'
 import { LocalnetConnection } from './connection'

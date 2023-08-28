@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { DEFAULT_MAX_GAS_AMOUNT } from '../constants'
 import { IAccount, CallOption } from './interface'
 import { IProvider } from '../provider'
@@ -10,12 +13,7 @@ import {
   AccountAddress as BCSAccountAddress,
   Authenticator,
 } from '../generated/runtime/rooch_types/mod'
-import {
-  encodeArgs,
-  encodeFunctionCall,
-  addressToListTuple,
-  uint8Array2SeqNumber,
-} from '../utils'
+import { encodeArgs, encodeFunctionCall, addressToListTuple, uint8Array2SeqNumber } from '../utils'
 
 export class Account implements IAccount {
   private provider: IProvider
@@ -26,11 +24,7 @@ export class Account implements IAccount {
 
   private sequenceNumber: bigint
 
-  public constructor(
-    provider: IProvider,
-    address: AccountAddress,
-    authorizer: IAuthorizer,
-  ) {
+  public constructor(provider: IProvider, address: AccountAddress, authorizer: IAuthorizer) {
     this.provider = provider
     this.address = address
     this.authorizer = authorizer
@@ -69,9 +63,7 @@ export class Account implements IAccount {
     return this.provider.sendRawTransaction(payload)
   }
 
-  private async makeAuth(
-    tsData: RoochTransactionData,
-  ): Promise<IAuthorization> {
+  private async makeAuth(tsData: RoochTransactionData): Promise<IAuthorization> {
     const payload = (() => {
       const se = new BcsSerializer()
       tsData.serialize(se)

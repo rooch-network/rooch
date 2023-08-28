@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** React Imports
 import { createContext, useEffect, useState, ReactNode } from 'react'
 
@@ -20,7 +23,7 @@ const defaultProvider: AuthValuesType = {
   logout: () => Promise.resolve(),
   loginByBitcoin: () => Promise.resolve(),
   loginByMetamask: () => Promise.resolve(),
-  loginBySecretKey: () => Promise.resolve()
+  loginBySecretKey: () => Promise.resolve(),
 }
 
 const AuthContext = createContext(defaultProvider)
@@ -31,7 +34,9 @@ type Props = {
 
 const AuthProvider = ({ children }: Props) => {
   // ** States
-  const [accounts, setAccounts] = useState<Map<string, AccountDataType> | null>(defaultProvider.accounts)
+  const [accounts, setAccounts] = useState<Map<string, AccountDataType> | null>(
+    defaultProvider.accounts,
+  )
   const [loading, setLoading] = useState<boolean>(defaultProvider.loading)
 
   // ** Hooks
@@ -100,7 +105,7 @@ const AuthProvider = ({ children }: Props) => {
     return {
       address: 'aa',
       kp: 'aa',
-      activate: true
+      activate: true,
     }
   }
 
@@ -114,7 +119,7 @@ const AuthProvider = ({ children }: Props) => {
     loginByBitcoin,
     loginByMetamask,
     loginBySecretKey,
-    logout: handleLogout
+    logout: handleLogout,
   }
 
   return <AuthContext.Provider value={values}>{children}</AuthContext.Provider>

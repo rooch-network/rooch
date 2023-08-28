@@ -1,10 +1,5 @@
-/**
- * Get the type from the given value.
- *
- * @param schema - current schema
- * @param schemas - entire schemas
- * @returns {string} - Returns a string representing the type of the input value.
- */
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 export function getType(schema, schemas, alias) {
   if (typeof schema === "string" || typeof schema === "boolean") {
       return alias ? alias(schema) : schema;

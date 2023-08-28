@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** React Imports
 import { MouseEvent, useState, ReactNode } from 'react'
 
@@ -20,7 +23,13 @@ import { OptionType, OptionsMenuType, OptionMenuItemType } from './types'
 // ** Hook Import
 import { useSettings } from 'src/@core/hooks/useSettings'
 
-const MenuItemWrapper = ({ children, option }: { children: ReactNode; option: OptionMenuItemType }) => {
+const MenuItemWrapper = ({
+  children,
+  option,
+}: {
+  children: ReactNode
+  option: OptionMenuItemType
+}) => {
   if (option.href) {
     return (
       <Box
@@ -34,7 +43,7 @@ const MenuItemWrapper = ({ children, option }: { children: ReactNode; option: Op
           display: 'flex',
           color: 'inherit',
           alignItems: 'center',
-          textDecoration: 'none'
+          textDecoration: 'none',
         }}
       >
         {children}
@@ -66,8 +75,8 @@ const OptionsMenu = (props: OptionsMenuType) => {
 
   return (
     <>
-      <IconButton aria-haspopup='true' onClick={handleClick} {...iconButtonProps}>
-        {icon ? icon : <Icon icon='bx:dots-vertical-rounded' {...iconProps} />}
+      <IconButton aria-haspopup="true" onClick={handleClick} {...iconButtonProps}>
+        {icon ? icon : <Icon icon="bx:dots-vertical-rounded" {...iconProps} />}
       </IconButton>
       <Menu
         keepMounted
@@ -76,18 +85,17 @@ const OptionsMenu = (props: OptionsMenuType) => {
         open={Boolean(anchorEl)}
         {...(!leftAlignMenu && {
           anchorOrigin: { vertical: 'bottom', horizontal: direction === 'ltr' ? 'right' : 'left' },
-          transformOrigin: { vertical: 'top', horizontal: direction === 'ltr' ? 'right' : 'left' }
+          transformOrigin: { vertical: 'top', horizontal: direction === 'ltr' ? 'right' : 'left' },
         })}
         {...menuProps}
       >
-        {
-        options.map((option: OptionType, index: number) => {
+        {options.map((option: OptionType, index: number) => {
           if (typeof option === 'string') {
             return (
               <MenuItem key={index} onClick={handleClose}>
-        {option}
+                {option}
               </MenuItem>
-              )
+            )
           } else if ('divider' in option) {
             return option.divider && <Divider key={index} {...option.dividerProps} />
           } else {
@@ -96,19 +104,21 @@ const OptionsMenu = (props: OptionsMenuType) => {
                 key={index}
                 {...option.menuItemProps}
                 {...(option.href && { sx: { p: 0 } })}
-                onClick={e => {
-                handleClose()
-                  option.menuItemProps && option.menuItemProps.onClick ? option.menuItemProps.onClick(e) : null
-              }}
-                >
+                onClick={(e) => {
+                  handleClose()
+                  if (option.menuItemProps?.onClick) {
+                    option.menuItemProps.onClick(e)
+                  }
+                }}
+              >
                 <MenuItemWrapper option={option}>
                   {option.icon ? option.icon : null}
                   {option.text}
                 </MenuItemWrapper>
               </MenuItem>
-              )
+            )
           }
-    })}
+        })}
       </Menu>
     </>
   )

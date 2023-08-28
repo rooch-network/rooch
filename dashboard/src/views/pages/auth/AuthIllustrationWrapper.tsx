@@ -1,4 +1,5 @@
-// ** MUI Components
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { styled } from '@mui/material/styles'
 import Box, { BoxProps } from '@mui/material/Box'
 
@@ -16,7 +17,7 @@ const AuthIllustrationWrapper = styled(Box)<BoxProps>(({ theme }) => ({
       width: '148px',
       height: '148px',
       position: 'absolute',
-      backgroundImage: `url(/images/pages/auth-illustration-top.png)`
+      backgroundImage: `url(/images/pages/auth-illustration-top.png)`,
     },
     '&:after': {
       zIndex: -1,
@@ -26,9 +27,9 @@ const AuthIllustrationWrapper = styled(Box)<BoxProps>(({ theme }) => ({
       height: '240px',
       bottom: '-68px',
       position: 'absolute',
-      backgroundImage: `url(/images/pages/auth-illustration-bottom-${theme.palette.mode}.png)`
-    }
-  }
+      backgroundImage: `url(/images/pages/auth-illustration-bottom-${theme.palette.mode}.png)`,
+    },
+  },
 }))
 
 export default AuthIllustrationWrapper

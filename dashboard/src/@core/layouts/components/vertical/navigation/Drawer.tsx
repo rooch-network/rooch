@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** MUI Imports
 import { styled } from '@mui/material/styles'
 import MuiSwipeableDrawer, { SwipeableDrawerProps } from '@mui/material/SwipeableDrawer'
@@ -23,18 +26,18 @@ const SwipeableDrawer = styled(MuiSwipeableDrawer)<SwipeableDrawerProps>({
   overflow: 'hidden',
   transition: 'width .25s ease-in-out',
   '& ul': {
-    listStyle: 'none'
+    listStyle: 'none',
   },
   '& .MuiListItem-gutters': {
     paddingLeft: 4,
-    paddingRight: 4
+    paddingRight: 4,
   },
   '& .MuiDrawer-paper': {
     left: 'unset',
     right: 'unset',
     overflow: 'hidden',
-    transition: 'width .25s ease-in-out, box-shadow .25s ease-in-out'
-  }
+    transition: 'width .25s ease-in-out, box-shadow .25s ease-in-out',
+  },
 })
 
 const Drawer = (props: Props) => {
@@ -50,7 +53,7 @@ const Drawer = (props: Props) => {
     navMenuProps,
     setNavVisible,
     collapsedNavWidth,
-    navigationBorderWidth
+    navigationBorderWidth,
   } = props
 
   // ** Vars
@@ -64,8 +67,8 @@ const Drawer = (props: Props) => {
     onOpen: () => setNavVisible(true),
     onClose: () => setNavVisible(false),
     ModalProps: {
-      keepMounted: true // Better open performance on mobile.
-    }
+      keepMounted: true, // Better open performance on mobile.
+    },
   }
 
   // Drawer Props for Laptop & Desktop screens
@@ -84,7 +87,7 @@ const Drawer = (props: Props) => {
       if (navCollapsed) {
         setNavHover(false)
       }
-    }
+    },
   }
 
   let userNavMenuStyle = {}
@@ -101,7 +104,7 @@ const Drawer = (props: Props) => {
 
   return (
     <SwipeableDrawer
-      className='layout-vertical-nav'
+      className="layout-vertical-nav"
       variant={hidden ? 'temporary' : 'permanent'}
       {...(hidden ? { ...MobileDrawerProps } : { ...DesktopDrawerProps })}
       PaperProps={{
@@ -109,16 +112,20 @@ const Drawer = (props: Props) => {
           backgroundColor: 'background.paper',
           ...(!hidden && skin !== 'bordered' && { boxShadow: 6 }),
           width: navCollapsed && !navHover ? collapsedNavWidth : navWidth,
-          borderRight: theme =>
-            navigationBorderWidth === 0 ? 0 : `${navigationBorderWidth}px solid ${theme.palette.divider}`,
-          ...userNavMenuPaperStyle
+          borderRight: (theme) =>
+            navigationBorderWidth === 0
+              ? 0
+              : `${navigationBorderWidth}px solid ${theme.palette.divider}`,
+          ...userNavMenuPaperStyle,
         },
-        ...navMenuProps?.PaperProps
+        ...navMenuProps?.PaperProps,
       }}
       sx={{
         width: navCollapsed ? collapsedNavWidth : navWidth,
-        ...(navCollapsed && !navHover ? {} : { overflow: 'visible', '& .MuiDrawer-paper': { overflow: 'visible' } }),
-        ...userNavMenuStyle
+        ...(navCollapsed && !navHover
+          ? {}
+          : { overflow: 'visible', '& .MuiDrawer-paper': { overflow: 'visible' } }),
+        ...userNavMenuStyle,
       }}
       {...userNavMenuProps}
     >

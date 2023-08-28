@@ -1,4 +1,6 @@
-// ** MUI Imports
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { ThemeOptions } from '@mui/material'
 
 // ** To use core palette, uncomment the below import

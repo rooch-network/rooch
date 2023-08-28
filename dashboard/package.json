@@ -7,8 +7,12 @@
     "build": "next build",
     "start": "next start",
     "export": "yarn build && next export",
-    "lint": "eslint --fix \"src/**/*.{js,jsx,ts,tsx}\"",
-    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\"",
+    "eslint:check": "eslint --max-warnings=0 \"./src/**/*.{js,jsx,ts,tsx}\"",
+		"eslint:fix": "pnpm eslint:check --fix",
+		"prettier:check": "prettier -c --ignore-unknown .",
+		"prettier:fix": "prettier -w --ignore-unknown .",
+		"lint": "pnpm eslint:check && pnpm prettier:check",
+		"lint:fix": "pnpm eslint:fix && pnpm prettier:fix",
     "build:icons": "tsc -b src/iconify-bundle && node src/iconify-bundle/bundle-icons-react.js"
   },
   "dependencies": {
@@ -26,10 +30,12 @@
     "@fullcalendar/timegrid": "6.1.4",
     "@hookform/resolvers": "2.9.11",
     "@iconify/react": "4.1.0",
+    "@mui/base": "5.0.0-beta.12",
     "@mui/lab": "5.0.0-alpha.123",
-    "@mui/material": "5.11.13",
-    "@mui/system": "5.11.13",
-    "@mui/x-data-grid": "6.0.1",
+    "@mui/material": "5.4.1",
+    "@mui/system": "5.4.1",
+    "@mui/utils": "^5.14.6",
+    "@mui/x-data-grid": "6.11.2",
     "@popperjs/core": "2.11.6",
     "@reduxjs/toolkit": "1.9.3",
     "apexcharts-clevision": "3.28.5",
@@ -54,11 +60,8 @@
     "react": "18.2.0",
     "react-apexcharts": "1.4.0",
     "react-chartjs-2": "5.2.0",
-    "react-credit-cards": "0.8.3",
     "react-datepicker": "4.10.0",
     "react-dom": "18.2.0",
-    "react-draft-wysiwyg": "1.15.0",
-    "react-dropzone": "14.2.3",
     "react-hook-form": "7.43.5",
     "react-hot-toast": "2.4.0",
     "react-i18next": "12.2.0",
@@ -87,32 +90,6 @@
     "@types/react-credit-cards": "0.8.1",
     "@types/react-datepicker": "4.10.0",
     "@types/react-draft-wysiwyg": "1.13.4",
-    "@types/react-redux": "7.1.25",
-    "@typescript-eslint/eslint-plugin": "5.55.0",
-    "@typescript-eslint/parser": "5.55.0",
-    "eslint": "8.36.0",
-    "eslint-config-next": "13.2.4",
-    "eslint-config-prettier": "8.7.0",
-    "eslint-import-resolver-alias": "1.1.2",
-    "eslint-import-resolver-typescript": "3.5.3",
-    "eslint-plugin-import": "2.27.5",
-    "prettier": "2.8.4",
-    "typescript": "4.9.5"
-  },
-  "resolutions": {
-    "minipass": "4.2.5",
-    "@mui/x-data-grid/@mui/system": "5.4.1",
-    "react-credit-cards/prop-types": "15.7.2",
-    "react-hot-toast/goober/csstype": "3.0.10",
-    "recharts/react-smooth/prop-types": "15.6.0",
-    "react-draft-wysiwyg/html-to-draftjs/immutable": "4.3.0",
-    "react-draft-wysiwyg/draftjs-utils/immutable": "4.3.0",
-    "@emotion/react/@emotion/babel-plugin/@babel/core": "7.0.0",
-    "@emotion/react/@emotion/babel-plugin/@babel/plugin-syntax-jsx/@babel/core": "7.0.0"
-  },
-  "overrides": {
-    "react-credit-cards": {
-      "react": "$react"
-    }
+    "@types/react-redux": "7.1.25"
   }
 }

@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** MUI Imports
 import MuiChip from '@mui/material/Chip'
 
@@ -23,7 +26,7 @@ const Chip = (props: CustomChipProps) => {
     success: { ...bgColors.successLight },
     error: { ...bgColors.errorLight },
     warning: { ...bgColors.warningLight },
-    info: { ...bgColors.infoLight }
+    info: { ...bgColors.infoLight },
   }
 
   const propsToPass = { ...props }
@@ -33,10 +36,10 @@ const Chip = (props: CustomChipProps) => {
   return (
     <MuiChip
       {...propsToPass}
-      variant='filled'
+      variant="filled"
       className={clsx({
         'MuiChip-rounded': rounded,
-        'MuiChip-light': skin === 'light'
+        'MuiChip-light': skin === 'light',
       })}
       sx={skin === 'light' && color ? Object.assign(colors[color], sx) : sx}
     />

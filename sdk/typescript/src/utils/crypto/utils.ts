@@ -2,11 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { fromB64 } from '../b64'
-import type {
-  SerializedSignature,
-  SignaturePubkeyPair,
-  SignatureScheme,
-} from './signature'
+import type { SerializedSignature, SignaturePubkeyPair, SignatureScheme } from './signature'
 import { SIGNATURE_FLAG_TO_SCHEME } from './signature'
 import { Ed25519PublicKey, Ed25519Keypair } from '../keypairs'
 import type { PublicKey } from './publickey'
@@ -53,10 +49,7 @@ export function toSingleSignaturePubkeyPair(
   return res[0]
 }
 
-export function publicKeyFromSerialized(
-  schema: SignatureScheme,
-  pubKey: string,
-): PublicKey {
+export function publicKeyFromSerialized(schema: SignatureScheme, pubKey: string): PublicKey {
   if (schema === 'ED25519') {
     return new Ed25519PublicKey(pubKey)
   }

@@ -1,4 +1,7 @@
-// ** Types
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+// ** Types Imports
 import { RepeaterProps } from './types'
 
 const Repeater = (props: RepeaterProps) => {

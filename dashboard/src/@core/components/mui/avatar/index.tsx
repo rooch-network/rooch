@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** React Imports
 import { forwardRef, Ref } from 'react'
 
@@ -20,7 +23,10 @@ const Avatar = forwardRef((props: CustomAvatarProps, ref: Ref<any>) => {
   const theme = useTheme()
   const bgColors: UseBgColorType = useBgColor()
 
-  const getAvatarStyles = (skin: 'filled' | 'light' | 'light-static' | undefined, skinColor: ThemeColor) => {
+  const getAvatarStyles = (
+    skin: 'filled' | 'light' | 'light-static' | undefined,
+    skinColor: ThemeColor,
+  ) => {
     let avatarStyles
 
     if (skin === 'light') {
@@ -28,7 +34,7 @@ const Avatar = forwardRef((props: CustomAvatarProps, ref: Ref<any>) => {
     } else if (skin === 'light-static') {
       avatarStyles = {
         color: bgColors[`${skinColor}Light`].color,
-        backgroundColor: lighten(theme.palette[skinColor].main, 0.88)
+        backgroundColor: lighten(theme.palette[skinColor].main, 0.88),
       }
     } else {
       avatarStyles = { ...bgColors[`${skinColor}Filled`] }
@@ -43,15 +49,21 @@ const Avatar = forwardRef((props: CustomAvatarProps, ref: Ref<any>) => {
     success: getAvatarStyles(skin, 'success'),
     error: getAvatarStyles(skin, 'error'),
     warning: getAvatarStyles(skin, 'warning'),
-    info: getAvatarStyles(skin, 'info')
+    info: getAvatarStyles(skin, 'info'),
   }
 
-  return <MuiAvatar ref={ref} {...props} sx={!src && skin && color ? Object.assign(colors[color], sx) : sx} />
+  return (
+    <MuiAvatar
+      ref={ref}
+      {...props}
+      sx={!src && skin && color ? Object.assign(colors[color], sx) : sx}
+    />
+  )
 })
 
 Avatar.defaultProps = {
   skin: 'filled',
-  color: 'primary'
+  color: 'primary',
 }
 
 export default Avatar
