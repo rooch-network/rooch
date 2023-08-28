@@ -100,8 +100,6 @@ const MetamaskProvider = ({ children }: Props) => {
       }
     }
 
-    console.log('开始链接')
-
     return window.ethereum
       ?.request({
         method: 'eth_requestAccounts',
@@ -143,7 +141,7 @@ const MetamaskProvider = ({ children }: Props) => {
     }
   }
 
-  const vlaues = {
+  const values = {
     loading,
     chainId,
     hasProvider,
@@ -155,7 +153,7 @@ const MetamaskProvider = ({ children }: Props) => {
     disconnect,
   }
 
-  return <MetamaskContext.Provider value={vlaues}>{children}</MetamaskContext.Provider>
+  return <MetamaskContext.Provider value={values}>{children}</MetamaskContext.Provider>
 }
 
 export { MetamaskContext, MetamaskProvider }

@@ -29,7 +29,7 @@ const GuestGuard = (props: GuestGuardProps) => {
       router.replace('/')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router.route])
+  }, [router.route, auth.loading])
 
   if (auth.loading || (!auth.loading && auth.accounts !== null)) {
     return fallback
