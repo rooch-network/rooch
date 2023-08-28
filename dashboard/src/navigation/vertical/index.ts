@@ -16,7 +16,7 @@ const navigation = (): VerticalNavItemsType => {
       ],
     },
     {
-      sectionTitle: 'Tutorial'
+      sectionTitle: 'Tutorial',
     },
     {
       title: 'Publich Package',
@@ -24,7 +24,7 @@ const navigation = (): VerticalNavItemsType => {
       path: '/tutorial/publich/package',
     },
     {
-      sectionTitle: 'Transaction'
+      sectionTitle: 'Transaction',
     },
     {
       title: 'Transaction List',
@@ -32,7 +32,7 @@ const navigation = (): VerticalNavItemsType => {
       path: '/transcation/list',
     },
     {
-      sectionTitle: 'Wallet & Assets'
+      sectionTitle: 'Wallet & Assets',
     },
     {
       title: 'Wallet',

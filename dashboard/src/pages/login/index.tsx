@@ -66,7 +66,7 @@ enum InputType {
   Connect = 'Connect',
   Import = 'Import',
   Create = 'Create',
-  Oauth = 'Oauth'
+  Oauth = 'Oauth',
 }
 
 const LoginPage = () => {
@@ -90,12 +90,12 @@ const LoginPage = () => {
   })
 
   const [inputType, setInputType] = useState<InputType>(
-    auth.suppoertWallets.length > 0 ? InputType.Connect : InputType.Import
+    auth.suppoertWallets.length > 0 ? InputType.Connect : InputType.Import,
   )
 
   // ** State
   const [selectWallet, setSelectWallet] = useState<WalletType | null>(
-    auth.suppoertWallets.length > 0 ? auth.suppoertWallets[0].name : null
+    auth.suppoertWallets.length > 0 ? auth.suppoertWallets[0].name : null,
   )
 
   const handleStatusValue = (e: SelectChangeEvent) => {
@@ -138,7 +138,7 @@ const LoginPage = () => {
                 {themeConfig.templateName} Dashboard
               </Typography>
             </Box>
-            <Typography variant='h6' sx={{ mb: 1.5 }}>
+            <Typography variant="h6" sx={{ mb: 1.5 }}>
               Welcome to {themeConfig.templateName} Dashboard! 👋🏻
             </Typography>
             <Typography sx={{ mb: 6, color: 'text.secondary' }}>
@@ -181,7 +181,7 @@ const LoginPage = () => {
                       onChange={handleStatusValue}
                       labelId="invoice-status-select"
                     >
-                      {auth.suppoertWallets.map(value => (
+                      {auth.suppoertWallets.map((value) => (
                         <MenuItem key={value.name} value={value.name}>
                           {value.name}
                         </MenuItem>
@@ -225,7 +225,7 @@ const LoginPage = () => {
                   <></>
                 )}
               </Box>
-              <Button fullWidth size='large' type='submit' variant='contained' sx={{ mb: 4 }}>
+              <Button fullWidth size="large" type="submit" variant="contained" sx={{ mb: 4 }}>
                 {inputType}
               </Button>
               <Box
@@ -256,10 +256,10 @@ const LoginPage = () => {
                 <IconButton
                   href="/"
                   component={Link}
-                  onClick={e => e.preventDefault()}
+                  onClick={(e) => e.preventDefault()}
                   sx={{ color: theme.palette.mode === 'light' ? '#272727' : 'grey.300' }}
                 >
-                  <Icon icon='bxl:github' />
+                  <Icon icon="bxl:github" />
                 </IconButton>
                 <IconButton
                   href="/"

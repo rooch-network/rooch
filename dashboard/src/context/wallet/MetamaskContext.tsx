@@ -1,4 +1,5 @@
-// ** React Imports
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { createContext, useEffect, useState, ReactNode } from 'react'
 import detectEthereumProvider from '@metamask/detect-provider'
 
@@ -20,7 +21,7 @@ const defaultProvider: MetamaskValueType = {
   switchChina: async () => Promise.resolve(),
   addChina: async () => Promise.resolve(),
   connect: async () => Promise.resolve(),
-  disconnect: () => null
+  disconnect: () => null,
 }
 
 const MetamaskContext = createContext(defaultProvider)
@@ -87,7 +88,7 @@ const MetamaskProvider = ({ children }: Props) => {
           // Rooch chain not found
           try {
             await addChina({
-              ...config.roochChain
+              ...config.roochChain,
             })
           } catch (e) {
             return
@@ -102,7 +103,7 @@ const MetamaskProvider = ({ children }: Props) => {
 
     return window.ethereum
       ?.request({
-        method: 'eth_requestAccounts'
+        method: 'eth_requestAccounts',
       })
       .then((accounts: any) => {
         updateWallet(accounts)
@@ -113,24 +114,26 @@ const MetamaskProvider = ({ children }: Props) => {
     return window.ethereum
       ?.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: chainId }]
+        params: [{ chainId: chainId }],
       })
       .then((value: any) => {
         setChainId(chainId)
         console.log('switch success ' + value)
       })
-      .catch(e => {
+      .catch((e) => {
         console.log(e)
       })
   }
 
   const addChina = async (params: AddChinaParameterType) => {
-    return window.ethereum?.request({
-      method: 'wallet_addEthereumChain',
-      params: params
-    }).then(v => {
-      console.log(v)
-    })
+    return window.ethereum
+      ?.request({
+        method: 'wallet_addEthereumChain',
+        params: params,
+      })
+      .then((v) => {
+        console.log(v)
+      })
   }
 
   const disconnect = () => {
@@ -148,7 +151,7 @@ const MetamaskProvider = ({ children }: Props) => {
     addChina,
     switchChina,
     connect,
-    disconnect
+    disconnect,
   }
 
   return <MetamaskContext.Provider value={vlaues}>{children}</MetamaskContext.Provider>

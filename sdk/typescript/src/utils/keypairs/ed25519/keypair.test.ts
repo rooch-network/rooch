@@ -56,13 +56,10 @@ describe('sign', () => {
   // Publish modules to address: 0x7194e6bf0860250491496174e7f7d7a9a9424d41734830656b9466787c04480c
   // wallet_context sign, hash:"0xfb4163fdb9ab1f9fc31c13d6f2d2ea91b411bb0a80a204f2c0ceb68f6b35e172", sign:"0x00b49c1ee8d28e55e7f526f33cff9ec51cea1bd0bad8a7d92a30d1f59f84d0043da3409e680dc719e8f0cd5aaf22b01e5f72433bdaaeed6ab3ae476fcf5e593907056f1378f1c31a98b7be133d43d242ecb1b8b418b2090f90c6febb49a417200e"
   it('should sign data same as rooch cli', async () => {
-    const mnemonics =
-      'nose aspect organ harbor move prepare raven manage lamp consider oil front'
+    const mnemonics = 'nose aspect organ harbor move prepare raven manage lamp consider oil front'
     const keypair = Ed25519Keypair.deriveKeypair(mnemonics)
     const roochAddress = keypair.toRoochAddress()
-    expect(roochAddress).toBe(
-      '0x7194e6bf0860250491496174e7f7d7a9a9424d41734830656b9466787c04480c',
-    )
+    expect(roochAddress).toBe('0x7194e6bf0860250491496174e7f7d7a9a9424d41734830656b9466787c04480c')
 
     const signHash = fromHexString(
       '0xfb4163fdb9ab1f9fc31c13d6f2d2ea91b411bb0a80a204f2c0ceb68f6b35e172',
