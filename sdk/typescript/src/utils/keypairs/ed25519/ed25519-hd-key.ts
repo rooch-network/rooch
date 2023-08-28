@@ -1,4 +1,4 @@
-// Copyright (c) Mysten Labs, Inc.
+// Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
 // This is adapted from https://github.com/alepop/ed25519-hd-key replacing create-hmac
@@ -45,10 +45,7 @@ const CKDPriv = ({ key, chainCode }: Keys, index: number): Keys => {
   const data = new Uint8Array(1 + key.length + indexBuffer.byteLength)
   data.set(new Uint8Array(1).fill(0))
   data.set(key, 1)
-  data.set(
-    new Uint8Array(indexBuffer, 0, indexBuffer.byteLength),
-    key.length + 1,
-  )
+  data.set(new Uint8Array(indexBuffer, 0, indexBuffer.byteLength), key.length + 1)
 
   const I = hmac.create(sha512, chainCode).update(data).digest()
   const IL = I.slice(0, 32)
@@ -59,10 +56,7 @@ const CKDPriv = ({ key, chainCode }: Keys, index: number): Keys => {
   }
 }
 
-export const getPublicKey = (
-  privateKey: Uint8Array,
-  withZeroByte = true,
-): Uint8Array => {
+export const getPublicKey = (privateKey: Uint8Array, withZeroByte = true): Uint8Array => {
   const keyPair = nacl.sign.keyPair.fromSeed(privateKey)
   const signPk = keyPair.secretKey.subarray(32)
   const newArr = new Uint8Array(signPk.length + 1)
@@ -82,11 +76,7 @@ export const isValidPath = (path: string): boolean => {
     .some(Number.isNaN as any /* ts T_T */)
 }
 
-export const derivePath = (
-  path: Path,
-  seed: Hex,
-  offset = HARDENED_OFFSET,
-): Keys => {
+export const derivePath = (path: Path, seed: Hex, offset = HARDENED_OFFSET): Keys => {
   if (!isValidPath(path)) {
     throw new Error('Invalid derivation path')
   }
@@ -98,11 +88,8 @@ export const derivePath = (
     .map(replaceDerive)
     .map((el) => parseInt(el, 10))
 
-  return segments.reduce(
-    (parentKeys, segment) => CKDPriv(parentKeys, segment + offset),
-    {
-      key,
-      chainCode,
-    },
-  )
+  return segments.reduce((parentKeys, segment) => CKDPriv(parentKeys, segment + offset), {
+    key,
+    chainCode,
+  })
 }

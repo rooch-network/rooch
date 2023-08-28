@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** MUI Imports
 import { Theme } from '@mui/material/styles'
 
@@ -20,19 +23,19 @@ const Autocomplete = (skin: Skin) => {
         paper: ({ theme }: OwnerStateThemeType) => ({
           boxShadow: boxShadow(theme),
           marginTop: theme.spacing(1),
-          ...(skin === 'bordered' && { border: `1px solid ${theme.palette.divider}` })
+          ...(skin === 'bordered' && { border: `1px solid ${theme.palette.divider}` }),
         }),
         listbox: ({ theme }: OwnerStateThemeType) => ({
           padding: theme.spacing(1.25, 0),
           '& .MuiAutocomplete-option': {
             padding: theme.spacing(2, 5),
             '&[aria-selected="true"]': {
-              color: theme.palette.primary.main
-            }
-          }
-        })
-      }
-    }
+              color: theme.palette.primary.main,
+            },
+          },
+        }),
+      },
+    },
   }
 }
 

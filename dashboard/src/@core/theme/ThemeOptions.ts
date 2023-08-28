@@ -1,4 +1,6 @@
-// ** MUI Theme Provider
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { deepmerge } from '@mui/utils'
 import { PaletteMode, ThemeOptions } from '@mui/material'
 
@@ -31,17 +33,17 @@ const themeOptions = (settings: Settings, overrideMode: PaletteMode): ThemeOptio
       palette: palette(mode === 'semi-dark' ? overrideMode : mode, settings),
       ...spacing,
       shape: {
-        borderRadius: 6
+        borderRadius: 6,
       },
       mixins: {
         toolbar: {
-          minHeight: 64
-        }
+          minHeight: 64,
+        },
       },
       shadows: shadows(mode === 'semi-dark' ? overrideMode : mode),
-      typography
+      typography,
     },
-    userThemeConfig
+    userThemeConfig,
   )
 
   return deepmerge(mergedThemeConfig, {
@@ -49,9 +51,9 @@ const themeOptions = (settings: Settings, overrideMode: PaletteMode): ThemeOptio
       primary: {
         ...(mergedThemeConfig.palette
           ? mergedThemeConfig.palette[themeColor]
-          : palette(mode === 'semi-dark' ? overrideMode : mode, settings).primary)
-      }
-    }
+          : palette(mode === 'semi-dark' ? overrideMode : mode, settings).primary),
+      },
+    },
   })
 }
 

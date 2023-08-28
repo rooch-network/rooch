@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** React Imports
 import { useState, SyntheticEvent, Fragment, ReactNode } from 'react'
 
@@ -47,12 +50,12 @@ const Menu = styled(MuiMenu)<MenuProps>(({ theme }) => ({
     overflow: 'hidden',
     marginTop: theme.spacing(4),
     [theme.breakpoints.down('sm')]: {
-      width: '100%'
-    }
+      width: '100%',
+    },
   },
   '& .MuiMenu-list': {
-    padding: 0
-  }
+    padding: 0,
+  },
 }))
 
 // ** Styled MenuItem component
@@ -60,20 +63,24 @@ const MenuItem = styled(MuiMenuItem)<MenuItemProps>(({ theme }) => ({
   paddingTop: theme.spacing(3),
   paddingBottom: theme.spacing(3),
   '&:not(:last-of-type)': {
-    borderBottom: `1px solid ${theme.palette.divider}`
-  }
+    borderBottom: `1px solid ${theme.palette.divider}`,
+  },
 }))
 
 // ** Styled PerfectScrollbar component
 const PerfectScrollbar = styled(PerfectScrollbarComponent)({
-  maxHeight: '30rem'
+  maxHeight: '30rem',
 })
 
 const ScrollWrapper = ({ children, hidden }: { children: ReactNode; hidden: boolean }) => {
   if (hidden) {
     return <Box sx={{ maxHeight: '30rem', overflowY: 'auto', overflowX: 'hidden' }}>{children}</Box>
   } else {
-    return <PerfectScrollbar options={{ wheelPropagation: false, suppressScrollX: true }}>{children}</PerfectScrollbar>
+    return (
+      <PerfectScrollbar options={{ wheelPropagation: false, suppressScrollX: true }}>
+        {children}
+      </PerfectScrollbar>
+    )
   }
 }
 
@@ -100,8 +107,13 @@ const ShortcutsDropdown = (props: Props) => {
 
   return (
     <Fragment>
-      <IconButton color='inherit' aria-haspopup='true' onClick={handleDropdownOpen} aria-controls='customized-menu'>
-        <Icon icon='bx:grid-alt' />
+      <IconButton
+        color="inherit"
+        aria-haspopup="true"
+        onClick={handleDropdownOpen}
+        aria-controls="customized-menu"
+      >
+        <Icon icon="bx:grid-alt" />
       </IconButton>
       <Menu
         anchorEl={anchorEl}
@@ -115,11 +127,20 @@ const ShortcutsDropdown = (props: Props) => {
           disableTouchRipple
           sx={{ cursor: 'default', userSelect: 'auto', backgroundColor: 'transparent !important' }}
         >
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-            <Typography sx={{ fontSize: '1.125rem', color: 'text.secondary', fontWeight: 600 }}>Shortcuts</Typography>
-            <Tooltip title='Add Shortcut' placement='top'>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              width: '100%',
+            }}
+          >
+            <Typography sx={{ fontSize: '1.125rem', color: 'text.secondary', fontWeight: 600 }}>
+              Shortcuts
+            </Typography>
+            <Tooltip title="Add Shortcut" placement="top">
               <IconButton disableRipple>
-                <Icon icon='bx:plus-circle' />
+                <Icon icon="bx:plus-circle" />
               </IconButton>
             </Tooltip>
           </Box>
@@ -131,12 +152,14 @@ const ShortcutsDropdown = (props: Props) => {
             spacing={0}
             sx={{
               '& .MuiGrid-root': {
-                borderBottom: theme => `1px solid ${theme.palette.divider}`,
-                '&:nth-of-type(odd)': { borderRight: theme => `1px solid ${theme.palette.divider}` }
-              }
+                borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+                '&:nth-of-type(odd)': {
+                  borderRight: (theme) => `1px solid ${theme.palette.divider}`,
+                },
+              },
             }}
           >
-            {shortcuts.map(shortcut => (
+            {shortcuts.map((shortcut) => (
               <Grid
                 item
                 xs={6}
@@ -154,14 +177,20 @@ const ShortcutsDropdown = (props: Props) => {
                     alignItems: 'center',
                     textDecoration: 'none',
                     flexDirection: 'column',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
                   }}
                 >
-                  <CustomAvatar skin='light' color='secondary' sx={{ mb: 2, width: 50, height: 50 }}>
+                  <CustomAvatar
+                    skin="light"
+                    color="secondary"
+                    sx={{ mb: 2, width: 50, height: 50 }}
+                  >
                     <Icon icon={shortcut.icon} />
                   </CustomAvatar>
-                  <Typography sx={{ fontWeight: 600, color: 'text.secondary' }}>{shortcut.title}</Typography>
-                  <Typography variant='body2' sx={{ color: 'text.disabled' }}>
+                  <Typography sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                    {shortcut.title}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'text.disabled' }}>
                     {shortcut.subtitle}
                   </Typography>
                 </Box>

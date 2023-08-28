@@ -1,14 +1,12 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** MUI Imports
 import { Theme } from '@mui/material/styles'
 import { ComponentsPropsList } from '@mui/material'
 
 // ** Type Import
 import { Settings } from 'src/@core/context/settingsContext'
-
-export type OwnerStateThemeType = {
-  theme: Theme
-  ownerState: ComponentsPropsList[keyof ComponentsPropsList] & Record<string, unknown>
-}
 
 // ** Overrides Imports
 import MuiCard from './card'
@@ -44,6 +42,11 @@ import MuiTypography from './typography'
 import MuiBreadcrumb from './breadcrumbs'
 import MuiAutocomplete from './autocomplete'
 import MuiToggleButton from './toggleButton'
+
+export type OwnerStateThemeType = {
+  theme: Theme
+  ownerState: ComponentsPropsList[keyof ComponentsPropsList] & Record<string, unknown>
+}
 
 const Overrides = (settings: Settings) => {
   const { skin } = settings
@@ -110,7 +113,7 @@ const Overrides = (settings: Settings) => {
     pagination,
     autocomplete,
     MuiTypography,
-    MuiToggleButton
+    MuiToggleButton,
   )
 }
 

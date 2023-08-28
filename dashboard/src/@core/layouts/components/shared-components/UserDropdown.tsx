@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** React Imports
 import { useState, SyntheticEvent, Fragment } from 'react'
 
@@ -10,7 +13,7 @@ import Menu from '@mui/material/Menu'
 import Divider from '@mui/material/Divider'
 import MenuItem from '@mui/material/MenuItem'
 import Typography from '@mui/material/Typography'
-import Button from "@mui/material/Button";
+import Button from '@mui/material/Button'
 
 // ** Icon Imports
 import Icon from 'src/@core/components/icon'
@@ -28,21 +31,21 @@ interface DataType {
 
 const data: DataType[] = [
   {
-    title:'Rooch Account1',
-    address: '0x123456asdasx'
+    title: 'Rooch Account1',
+    address: '0x123456asdasx',
   },
   {
-    title:'Rooch Account1',
-    address: '0x123456asddffff'
+    title: 'Rooch Account1',
+    address: '0x123456asddffff',
   },
   {
-    title:'Rooch Account1',
-    address: '0x123456aas'
+    title: 'Rooch Account1',
+    address: '0x123456aas',
   },
   {
-    title:'Rooch Account1',
-    address: '0x123456'
-  }
+    title: 'Rooch Account1',
+    address: '0x123456',
+  },
 ]
 
 interface Props {
@@ -85,8 +88,8 @@ const UserDropdown = (props: Props) => {
     '& svg': {
       mr: 2,
       fontSize: '1.25rem',
-      color: 'text.secondary'
-    }
+      color: 'text.secondary',
+    },
   }
 
   const handleLogout = () => {
@@ -98,12 +101,12 @@ const UserDropdown = (props: Props) => {
   return (
     <Fragment>
       <Box sx={{ mr: 6, display: 'flex', flexDirection: 'column' }}>
-        <Typography sx={{ fontWeight: 500 }}>
-          Rooch Account
+        <Typography sx={{ fontWeight: 500 }}>Rooch Account</Typography>
+        <Typography variant="body2" sx={{ mb: 0.5, color: 'text.disabled' }}>
+          0x123456...
         </Typography>
-        <Typography variant='body2' sx={{ mb: 0.5, color: 'text.disabled' }}>0x123456...</Typography>
       </Box>
-      <Button size='small' variant='outlined' onClick={handleDropdownOpen}>
+      <Button size="small" variant="outlined" onClick={handleDropdownOpen}>
         Switch Account
       </Button>
       <Menu
@@ -114,21 +117,19 @@ const UserDropdown = (props: Props) => {
         anchorOrigin={{ vertical: 'bottom', horizontal: direction === 'ltr' ? 'right' : 'left' }}
         transformOrigin={{ vertical: 'top', horizontal: direction === 'ltr' ? 'right' : 'left' }}
       >
-        {
-        data.map(value => (
+        {data.map((value) => (
           <MenuItem key={value.address} sx={{ p: 0 }} onClick={() => handleDropdownClose()}>
             <Box sx={styles}>
-              <Icon icon='bx:user'/>
+              <Icon icon="bx:user" />
               <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                <Typography sx={{ fontWeight: 500 }}>
-                  {value.title}
+                <Typography sx={{ fontWeight: 500 }}>{value.title}</Typography>
+                <Typography variant="body2" noWrap={true} sx={{ mb: 0.5, color: 'text.disabled' }}>
+                  {value.address}
                 </Typography>
-                <Typography variant='body2' noWrap={true} sx={{ mb: 0.5, color: 'text.disabled' }}>{value.address}</Typography>
               </Box>
             </Box>
           </MenuItem>
-        ))
-        }
+        ))}
         <Divider />
         <MenuItem
           onClick={handleLogout}
@@ -136,10 +137,10 @@ const UserDropdown = (props: Props) => {
             py: 2,
             px: 4,
             color: 'text.secondary',
-            '& svg': { mr: 2, fontSize: '1.25rem', color: 'text.secondary' }
+            '& svg': { mr: 2, fontSize: '1.25rem', color: 'text.secondary' },
           }}
         >
-          <Icon icon='bx:power-off' />
+          <Icon icon="bx:power-off" />
           Clean Loacl Account
         </MenuItem>
       </Menu>

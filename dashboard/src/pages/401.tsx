@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** React Imports
 import { ReactNode } from 'react'
 
@@ -16,22 +19,30 @@ import BlankLayout from 'src/@core/layouts/BlankLayout'
 // ** Styled Components
 const BoxWrapper = styled(Box)<BoxProps>(({ theme }) => ({
   [theme.breakpoints.down('md')]: {
-    width: '90vw'
-  }
+    width: '90vw',
+  },
 }))
 
 const Error401 = () => {
   return (
-    <Box className='content-center'>
-      <Box sx={{ p: 5, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+    <Box className="content-center">
+      <Box
+        sx={{
+          p: 5,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center',
+        }}
+      >
         <BoxWrapper>
-          <Typography variant='h4' sx={{ mb: 2 }}>
+          <Typography variant="h4" sx={{ mb: 2 }}>
             You are not connect wallet!
           </Typography>
           <Typography sx={{ mb: 6, color: 'text.secondary' }}>
             Please Connect the wallet and try again.
           </Typography>
-          <Button href='/' component={Link} variant='contained'>
+          <Button href="/" component={Link} variant="contained">
             Back to Home
           </Button>
         </BoxWrapper>

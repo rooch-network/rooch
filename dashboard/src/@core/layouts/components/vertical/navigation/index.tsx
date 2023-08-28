@@ -1,4 +1,7 @@
-// ** React Import
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+// ** React Imports
 import { useRef, useState } from 'react'
 
 // ** MUI Imports
@@ -60,16 +63,22 @@ const StyledBoxForShadow = styled(Box)<BoxProps>(({ theme }) => ({
     theme.direction === 'rtl' ? '95%' : '5%'
   },${hexToRGBA(theme.palette.background.paper, 0.85)} 30%,${hexToRGBA(
     theme.palette.background.paper,
-    0.5
+    0.5,
   )} 65%,${hexToRGBA(theme.palette.background.paper, 0.3)} 75%,transparent)`,
   '&.scrolled': {
-    opacity: 1
-  }
+    opacity: 1,
+  },
 }))
 
 const Navigation = (props: Props) => {
   // ** Props
-  const { hidden, settings, afterNavMenuContent, beforeNavMenuContent, navMenuContent: userNavMenuContent } = props
+  const {
+    hidden,
+    settings,
+    afterNavMenuContent,
+    beforeNavMenuContent,
+    navMenuContent: userNavMenuContent,
+  } = props
 
   // ** States
   const [navHover, setNavHover] = useState<boolean>(false)
@@ -88,7 +97,7 @@ const Navigation = (props: Props) => {
     groupActive,
     setGroupActive,
     currentActiveGroup,
-    setCurrentActiveGroup
+    setCurrentActiveGroup,
   }
 
   // ** Create new theme for the navigation menu when mode is `semi-dark`
@@ -149,12 +158,12 @@ const Navigation = (props: Props) => {
             {...(hidden
               ? {
                   onScroll: (container: any) => scrollMenu(container),
-                  sx: { height: '100%', overflowY: 'auto', overflowX: 'hidden' }
+                  sx: { height: '100%', overflowY: 'auto', overflowX: 'hidden' },
                 }
               : {
                   options: { wheelPropagation: false },
                   onScrollY: (container: any) => scrollMenu(container),
-                  containerRef: (ref: any) => handleInfiniteScroll(ref)
+                  containerRef: (ref: any) => handleInfiniteScroll(ref),
                 })}
           >
             {beforeNavMenuContent && beforeVerticalNavMenuContentPosition === 'static'
@@ -163,7 +172,7 @@ const Navigation = (props: Props) => {
             {userNavMenuContent ? (
               userNavMenuContent(navMenuContentProps)
             ) : (
-              <List className='nav-items' sx={{ py: 1, '& > :first-of-type': { mt: '0' } }}>
+              <List className="nav-items" sx={{ py: 1, '& > :first-child': { mt: '0' } }}>
                 <VerticalNavItems
                   navHover={navHover}
                   groupActive={groupActive}

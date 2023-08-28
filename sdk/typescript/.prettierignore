@@ -2,7 +2,8 @@
 # /*
 
 # ignore generated files
-package-lock.json
 dist/
 tools/generator
 pnpm-lock.yaml
+src/generated
+package.json

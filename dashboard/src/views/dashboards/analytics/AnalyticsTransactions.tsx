@@ -1,4 +1,5 @@
-// ** MUI Imports
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import Avatar from '@mui/material/Avatar'
@@ -21,43 +22,43 @@ const data: DataType[] = [
     title: 'Withdraw',
     amount: '-82.6',
     subtitle: '0x123456...',
-    imgSrc: '/images/cards/credit-card.png'
+    imgSrc: '/images/cards/credit-card.png',
   },
   {
     title: 'Deposit',
     amount: '+270.69',
-    subtitle: "0x123456...",
-    imgSrc: '/images/cards/atm-card.png'
+    subtitle: '0x123456...',
+    imgSrc: '/images/cards/atm-card.png',
   },
   {
     title: 'Transfer',
     amount: '+637.91',
     subtitle: '0x123456...',
-    imgSrc: '/images/cards/paypal.png'
+    imgSrc: '/images/cards/paypal.png',
   },
   {
     title: 'Withdraw',
     amount: '-82.6',
     subtitle: '0x123456...',
-    imgSrc: '/images/cards/credit-card.png'
+    imgSrc: '/images/cards/credit-card.png',
   },
   {
     title: 'Deposit',
     amount: '+270.69',
-    subtitle: "0x123456...",
-    imgSrc: '/images/cards/atm-card.png'
+    subtitle: '0x123456...',
+    imgSrc: '/images/cards/atm-card.png',
   },
   {
     title: 'Transfer',
     amount: '+637.91',
     subtitle: '0x123456...',
-    imgSrc: '/images/cards/paypal.png'
+    imgSrc: '/images/cards/paypal.png',
   },
   {
     title: 'Transfer',
     amount: '+637.91',
     subtitle: '0x123456...',
-    imgSrc: '/images/cards/paypal.png'
+    imgSrc: '/images/cards/paypal.png',
   },
 ]
 
@@ -65,7 +66,7 @@ const AnalyticsTransactions = () => {
   return (
     <Card>
       <CardHeader
-        title='Transactions'
+        title="Transactions"
         action={<OptionsMenu iconButtonProps={{ size: 'small' }} options={['Share', 'Refresh']} />}
       />
       <CardContent>
@@ -76,21 +77,21 @@ const AnalyticsTransactions = () => {
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                mb: index !== data.length - 1 ? 5 : undefined
+                mb: index !== data.length - 1 ? 5 : undefined,
               }}
             >
-              <Avatar src={item.imgSrc} variant='rounded' sx={{ mr: 3.5, width: 38, height: 38 }} />
+              <Avatar src={item.imgSrc} variant="rounded" sx={{ mr: 3.5, width: 38, height: 38 }} />
               <Box
                 sx={{
                   width: '100%',
                   display: 'flex',
                   flexWrap: 'wrap',
                   alignItems: 'center',
-                  justifyContent: 'space-between'
+                  justifyContent: 'space-between',
                 }}
               >
                 <Box sx={{ mr: 2, display: 'flex', flexDirection: 'column' }}>
-                  <Typography variant='body2' sx={{ mb: 0.5, color: 'text.disabled' }}>
+                  <Typography variant="body2" sx={{ mb: 0.5, color: 'text.disabled' }}>
                     {item.title}
                   </Typography>
                   <Typography sx={{ fontWeight: 500 }}>{item.subtitle}</Typography>

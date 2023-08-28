@@ -32,11 +32,7 @@ export function fromB64(sBase64: string, nBlocksSize?: number): Uint8Array {
       : (nInLen * 3 + 1) >> 2,
     taBytes = new Uint8Array(nOutLen)
 
-  for (
-    var nMod3, nMod4, nUint24 = 0, nOutIdx = 0, nInIdx = 0;
-    nInIdx < nInLen;
-    nInIdx++
-  ) {
+  for (var nMod3, nMod4, nUint24 = 0, nOutIdx = 0, nInIdx = 0; nInIdx < nInLen; nInIdx++) {
     nMod4 = nInIdx & 3
     nUint24 |= b64ToUint6(sB64Enc.charCodeAt(nInIdx)) << (6 * (3 - nMod4))
     if (nMod4 === 3 || nInLen - nInIdx === 1) {
@@ -85,7 +81,6 @@ export function toB64(aBytes: Uint8Array): string {
   }
 
   return (
-    sB64Enc.slice(0, sB64Enc.length - 2 + nMod3) +
-    (nMod3 === 2 ? '' : nMod3 === 1 ? '=' : '==')
+    sB64Enc.slice(0, sB64Enc.length - 2 + nMod3) + (nMod3 === 2 ? '' : nMod3 === 1 ? '=' : '==')
   )
 }

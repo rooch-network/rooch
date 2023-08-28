@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { describe, it, expect } from 'vitest'
 import { Ed25519Keypair } from './keypair'
 import { fromB64 } from '../../../types/bcs'
@@ -32,10 +35,8 @@ describe('create', () => {
 
   it('should recover ed25519 keypair by mnemonics', () => {
     // mnemonics is provided by rooch cli
-    const mnemonics =
-      'main south wonder traffic identify two baby job doctor eye betray sniff'
-    const address =
-      '0xe3e66642fee3090f5518fc2412af42f3b27a26af3dd7bf0436a5604680a654f6'
+    const mnemonics = 'main south wonder traffic identify two baby job doctor eye betray sniff'
+    const address = '0xe3e66642fee3090f5518fc2412af42f3b27a26af3dd7bf0436a5604680a654f6'
 
     const k1 = Ed25519Keypair.deriveKeypair(mnemonics)
 
@@ -48,11 +49,7 @@ describe('sign', () => {
     const keypair = new Ed25519Keypair()
     const signData = new TextEncoder().encode('hello world')
     const signature = keypair.signData(signData)
-    const isValid = nacl.sign.detached.verify(
-      signData,
-      signature,
-      keypair.getPublicKey().toBytes(),
-    )
+    const isValid = nacl.sign.detached.verify(signData, signature, keypair.getPublicKey().toBytes())
     expect(isValid).toBeTruthy()
   })
 

@@ -1,4 +1,6 @@
-// ** Type Import
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { OwnerStateThemeType } from './'
 
 const List = () => {
@@ -8,36 +10,36 @@ const List = () => {
         root: ({ theme }: OwnerStateThemeType) => ({
           minWidth: '0 !important',
           marginRight: theme.spacing(2.25),
-          color: theme.palette.text.secondary
-        })
-      }
+          color: theme.palette.text.secondary,
+        }),
+      },
     },
     MuiListItemAvatar: {
       styleOverrides: {
         root: ({ theme }: OwnerStateThemeType) => ({
           minWidth: 0,
-          marginRight: theme.spacing(4)
-        })
-      }
+          marginRight: theme.spacing(4),
+        }),
+      },
     },
     MuiListItemText: {
       styleOverrides: {
         dense: ({ theme }: OwnerStateThemeType) => ({
           '& .MuiListItemText-primary': {
-            color: theme.palette.text.primary
-          }
-        })
-      }
+            color: theme.palette.text.primary,
+          },
+        }),
+      },
     },
     MuiListSubheader: {
       styleOverrides: {
         root: ({ theme }: OwnerStateThemeType) => ({
           fontWeight: 600,
           textTransform: 'uppercase',
-          color: theme.palette.text.primary
-        })
-      }
-    }
+          color: theme.palette.text.primary,
+        }),
+      },
+    },
   }
 }
 

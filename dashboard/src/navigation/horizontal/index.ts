@@ -1,4 +1,6 @@
-// ** Type import
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { HorizontalNavItemsType } from 'src/@core/layouts/types'
 
 const navigation = (): HorizontalNavItemsType => [
@@ -18,7 +20,7 @@ const navigation = (): HorizontalNavItemsType => [
     subject: 'acl-page',
     title: 'Access Control',
     icon: 'bx:shield',
-  }
+  },
 ]
 
 export default navigation

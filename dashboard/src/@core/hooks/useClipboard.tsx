@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** React Imports
 import { RefObject, useCallback, useRef } from 'react'
 
@@ -58,7 +61,7 @@ const useClipboard = (options: UseClipboardOptions = {}): ClipboardAPI => {
 
   return {
     copy: copyHandler,
-    target: targetRef
+    target: targetRef,
   }
 }
 

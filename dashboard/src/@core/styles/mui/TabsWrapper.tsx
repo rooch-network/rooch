@@ -1,4 +1,7 @@
-// ** React Import
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+// ** MUI Imports
 import { ReactNode } from 'react'
 
 // ** MUI imports
@@ -30,8 +33,8 @@ const TabsWrapper = ({ children, orientation, panelTopRound, panelLeftRound }: P
         ...(panelTopRound === 'right' && { borderTopRightRadius: theme.shape.borderRadius }),
         ...(panelTopRound === 'both' && {
           borderTopLeftRadius: theme.shape.borderRadius,
-          borderTopRightRadius: theme.shape.borderRadius
-        })
+          borderTopRightRadius: theme.shape.borderRadius,
+        }),
       }),
       ...(orientation === 'vertical' && {
         borderTopRightRadius: theme.shape.borderRadius,
@@ -39,10 +42,10 @@ const TabsWrapper = ({ children, orientation, panelTopRound, panelLeftRound }: P
         ...(panelLeftRound === 'bottom' && { borderBottomLeftRadius: theme.shape.borderRadius }),
         ...(panelLeftRound === 'both' && {
           borderTopLeftRadius: theme.shape.borderRadius,
-          borderBottomLeftRadius: theme.shape.borderRadius
-        })
-      })
-    }
+          borderBottomLeftRadius: theme.shape.borderRadius,
+        }),
+      }),
+    },
   }))
 
   return <Wrapper>{children}</Wrapper>

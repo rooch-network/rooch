@@ -1,0 +1,20 @@
+# ignore everything by default
+/*
+# Enable prettier for apps, dapps and sdk
+!/dashboard
+!/sdk
+!/.config
+!/*.js
+
+# ignore generated files
+.vscode
+.next
+node_modules
+styles
+out
+package.json
+pnpm-lock.yaml
+tsconfig.json
+dist
+generated
+generator

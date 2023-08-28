@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** MUI Imports
 import { styled } from '@mui/material/styles'
 import Box, { BoxProps } from '@mui/material/Box'
@@ -19,7 +22,7 @@ const ReactHotToast = styled(Box)<BoxProps>(({ theme }) => {
       top: layout === 'horizontal' && !navHidden ? '139px !important' : '75px !important',
       zIndex: useMediaQuery(theme.breakpoints.down('lg'))
         ? `${theme.zIndex.drawer - 1} !important`
-        : `${theme.zIndex.drawer + 1} !important`
+        : `${theme.zIndex.drawer + 1} !important`,
     },
     '& .react-hot-toast': {
       fontWeight: 500,
@@ -34,9 +37,9 @@ const ReactHotToast = styled(Box)<BoxProps>(({ theme }) => {
           : '0px 8px 16px -4px rgba(31, 31, 45, 0.75)',
       '&>:first-of-type:not([role])>:first-of-type': {
         width: 14,
-        height: 14
-      }
-    }
+        height: 14,
+      },
+    },
   }
 })
 

@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { spawn } from 'child_process'
 
 export const sh = (cmd, args) => {
@@ -13,7 +16,7 @@ export const sh = (cmd, args) => {
     })
 
     child.on('close', (code) => {
-      if (code != 0) {
+      if (code !== 0) {
         process.stderr.write(`子进程退出，退出码 ${code}`)
       }
 

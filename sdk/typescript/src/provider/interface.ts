@@ -1,10 +1,6 @@
-import {
-  Arg,
-  TypeTag,
-  FunctionId,
-  AnnotatedFunctionResultView,
-  Bytes,
-} from '../types'
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+import { Arg, TypeTag, FunctionId, AnnotatedFunctionResultView, Bytes } from '../types'
 
 export interface IProvider {
   getRpcApiVersion(): Promise<string | undefined>

@@ -1,4 +1,7 @@
-// ** MUI Imports
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+// ** Mui Imports
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import Typography from '@mui/material/Typography'
@@ -24,16 +27,18 @@ const CardStatsVertical = (props: CardStatsVerticalProps) => {
     trendNumber,
     optionsMenuProps,
     trend = 'positive',
-    avatarColor = 'primary'
+    avatarColor = 'primary',
   } = props
 
   return (
     <Card>
-      <CardContent sx={{ p: theme => `${theme.spacing(5, 5, 4)} !important` }}>
-        <Box sx={{ display: 'flex', mb: 4, alignItems: 'flex-start', justifyContent: 'space-between' }}>
+      <CardContent sx={{ p: (theme) => `${theme.spacing(5, 5, 4)} !important` }}>
+        <Box
+          sx={{ display: 'flex', mb: 4, alignItems: 'flex-start', justifyContent: 'space-between' }}
+        >
           <CustomAvatar
-            skin='light'
-            variant='rounded'
+            skin="light"
+            variant="rounded"
             color={avatarColor}
             src={avatarSrc ?? ''}
             sx={{ width: 42, height: 42 }}
@@ -45,24 +50,31 @@ const CardStatsVertical = (props: CardStatsVerticalProps) => {
           ) : (
             <OptionsMenu
               options={['Refresh', 'Share', 'Update']}
-              iconButtonProps={{ size: 'small', className: 'card-more-options', sx: { color: 'text.secondary' } }}
+              iconButtonProps={{
+                size: 'small',
+                className: 'card-more-options',
+                sx: { color: 'text.secondary' },
+              }}
             />
           )}
         </Box>
         <Typography sx={{ mb: 0.5, fontWeight: 600, color: 'text.secondary' }}>{title}</Typography>
-        <Typography variant='h5' sx={{ mb: 2 }}>
+        <Typography variant="h5" sx={{ mb: 2 }}>
           {stats}
         </Typography>
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
-            '& svg': { mr: 1, color: `${trend === 'positive' ? 'success' : 'error'}.main` }
+            '& svg': { mr: 1, color: `${trend === 'positive' ? 'success' : 'error'}.main` },
           }}
         >
-          <Icon fontSize={16} icon={trend === 'positive' ? 'bx:up-arrow-alt' : 'bx:down-arrow-alt'} />
+          <Icon
+            fontSize={16}
+            icon={trend === 'positive' ? 'bx:up-arrow-alt' : 'bx:down-arrow-alt'}
+          />
           <Typography
-            variant='body2'
+            variant="body2"
             sx={{ fontWeight: 500, color: `${trend === 'positive' ? 'success' : 'error'}.main` }}
           >
             {`${trendNumber}%`}

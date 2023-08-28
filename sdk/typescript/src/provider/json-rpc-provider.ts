@@ -71,11 +71,7 @@ export class JsonRpcProvider {
   }
 
   async getRpcApiVersion(): Promise<string | undefined> {
-    if (
-      this.rpcApiVersion &&
-      this.cacheExpiry &&
-      this.cacheExpiry <= Date.now()
-    ) {
+    if (this.rpcApiVersion && this.cacheExpiry && this.cacheExpiry <= Date.now()) {
       return this.rpcApiVersion
     }
 

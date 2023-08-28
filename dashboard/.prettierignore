@@ -1,0 +1,8 @@
+.vscode
+.next
+node_modules
+styles
+out
+package.json
+pnpm-lock.yaml
+tsconfig.json

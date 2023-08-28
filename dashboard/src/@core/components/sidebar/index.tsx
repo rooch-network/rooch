@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** React Imports
 import { Fragment, useEffect } from 'react'
 
@@ -41,7 +44,7 @@ const Sidebar = (props: BoxProps & SidebarType) => {
           ...(direction === 'right'
             ? { left: 'auto', right: show ? 0 : '-100%' }
             : { right: 'auto', left: show ? 0 : '-100%' }),
-          ...sx
+          ...sx,
         }}
       >
         {children}
@@ -51,7 +54,7 @@ const Sidebar = (props: BoxProps & SidebarType) => {
           open={show}
           transitionDuration={250}
           onClick={handleBackdropClick}
-          sx={{ position: 'absolute', zIndex: theme => theme.zIndex.drawer - 1 }}
+          sx={{ position: 'absolute', zIndex: (theme) => theme.zIndex.drawer - 1 }}
         />
       )}
     </Fragment>
@@ -61,5 +64,5 @@ const Sidebar = (props: BoxProps & SidebarType) => {
 export default Sidebar
 
 Sidebar.defaultProps = {
-  direction: 'left'
+  direction: 'left',
 }

@@ -1,4 +1,7 @@
-// ** MUI Imports
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+// ** Mui Imports
 import IconButton from '@mui/material/IconButton'
 
 // ** Icon Imports
@@ -30,7 +33,7 @@ const ModeToggler = (props: Props) => {
   }
 
   return (
-    <IconButton color='inherit' aria-haspopup='true' onClick={handleModeToggle}>
+    <IconButton color="inherit" aria-haspopup="true" onClick={handleModeToggle}>
       <Icon icon={settings.mode === 'dark' ? 'bx:sun' : 'bx:moon'} />
     </IconButton>
   )
