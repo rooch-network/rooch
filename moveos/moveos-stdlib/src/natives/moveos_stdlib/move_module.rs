@@ -112,6 +112,11 @@ fn native_verify_modules_inner(
         .iter()
         .map(|b| CompiledModule::deserialize(b))
         .collect::<PartialVMResult<Vec<CompiledModule>>>()?;
+
+    // move verifier
+    context.verify_module_bundle_for_publication(&compiled_modules)?;
+
+    // moveos verifier
     let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
     let mut module_names = vec![];
     let mut init_identifier = vec![];

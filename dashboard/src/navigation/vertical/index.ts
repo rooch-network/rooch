@@ -14,6 +14,22 @@ const navigation = (): VerticalNavItemsType => {
       ]
     },
     {
+      sectionTitle: 'Tutorial'
+    },
+    {
+      title: 'Publich Package',
+      icon: 'bxs-package',
+      path: '/tutorial/publich/package',
+    },
+    {
+      sectionTitle: 'Transaction'
+    },
+    {
+      title: 'Transaction List',
+      icon: 'bx-list-ol',
+      path: '/transcation/list',
+    },
+    {
       sectionTitle: 'Wallet & Assets'
     },
     {

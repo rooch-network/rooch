@@ -16,7 +16,7 @@ pub struct RustBindingTest {
 impl RustBindingTest {
     pub fn new() -> Result<Self> {
         let moveos_store = MoveOSStore::mock_moveos_store()?;
-        let rooch_store = RoochStore::mock_rooch_store();
+        let rooch_store = RoochStore::mock_rooch_store()?;
         let executor = ExecutorActor::new(moveos_store, rooch_store)?;
         Ok(Self { executor })
     }

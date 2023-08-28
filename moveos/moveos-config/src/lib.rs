@@ -32,6 +32,18 @@ impl DataDirPath {
     }
 }
 
+impl PartialEq for DataDirPath {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (DataDirPath::PathBuf(path1), DataDirPath::PathBuf(path2)) => path1 == path2,
+            (DataDirPath::TempPath(path1), DataDirPath::TempPath(path2)) => {
+                path1.path() == path2.path()
+            }
+            (_, _) => false,
+        }
+    }
+}
+
 impl AsRef<Path> for DataDirPath {
     fn as_ref(&self) -> &Path {
         match self {
