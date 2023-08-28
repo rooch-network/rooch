@@ -24,6 +24,13 @@ fn main() {
 
             let dashboard_path: std::path::PathBuf = Path::new(&base_path).join(dashboard_dir);
 
+            let npm_status = Command::new("npm").args(["install", "-g", "pnpm"]).status();
+
+            if npm_status.is_err() {
+                eprintln!("yarn install failed");
+                process::exit(1);
+            }
+
             let yarn_status = Command::new("pnpm").arg("i").status();
 
             if yarn_status.is_err() {
