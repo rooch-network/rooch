@@ -25,6 +25,7 @@ use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event::EventHandle;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
+use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::as_struct_tag;
 use moveos_types::state::{AnnotatedState, State};
@@ -67,16 +68,24 @@ impl ExecutorActor {
 
     fn init_or_check_genesis(mut self) -> Result<Self> {
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
-        let config_store = self.moveos.config_store();
         if self.moveos.state().is_genesis() {
             let genesis_result = self.moveos.init_genesis(genesis.genesis_txs())?;
+            let genesis_state_root = genesis_result.last().expect("Genesis result must not empty").0;
+            
             for (genesis_tx, (state_root, genesis_tx_output)) in
                 genesis.genesis_txs().into_iter().zip(genesis_result)
             {
                 self.handle_tx_output(genesis_tx.tx_hash(), state_root, genesis_tx_output)?;
             }
+            
+            debug_assert!(
+                genesis_state_root == genesis.genesis_state_root(),
+                "Genesis state root mismatch"
+            );
+            let genesis_info = GenesisInfo::new(genesis.genesis_package_hash(), genesis_state_root);
+            self.moveos.config_store().save_genesis(genesis_info)?;
         } else {
-            genesis.check_genesis(&config_store)?;
+            genesis.check_genesis(self.moveos.config_store())?;
         }
         Ok(self)
     }

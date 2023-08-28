@@ -3,8 +3,8 @@
 
 use crate::{CONFIG_GENESIS_PREFIX_NAME, CONFIG_STARTUP_INFO_PREFIX_NAME};
 use anyhow::Result;
-use moveos_types::h256::H256;
 use moveos_types::startup_info::StartupInfo;
+use moveos_types::genesis_info::GenesisInfo;
 use raw_store::{derive_store, CodecKVStore, StoreInstance};
 use std::string::ToString;
 
@@ -17,16 +17,16 @@ derive_store!(
     StartupInfo,
     CONFIG_STARTUP_INFO_PREFIX_NAME
 );
-derive_store!(GenesisStore, String, H256, CONFIG_GENESIS_PREFIX_NAME);
+derive_store!(GenesisStore, String, GenesisInfo, CONFIG_GENESIS_PREFIX_NAME);
 
 pub trait ConfigStore {
     fn get_startup_info(&self) -> Result<Option<StartupInfo>>;
 
     fn save_startup_info(&self, startup_info: StartupInfo) -> Result<()>;
 
-    fn get_genesis(&self) -> Result<Option<H256>>;
+    fn get_genesis(&self) -> Result<Option<GenesisInfo>>;
 
-    fn save_genesis(&self, genesis_hash: H256) -> Result<()>;
+    fn save_genesis(&self, genesis_info: GenesisInfo) -> Result<()>;
 }
 
 #[derive(Clone)]
@@ -52,12 +52,12 @@ impl ConfigDBStore {
             .put_sync(STARTUP_INFO_KEY.to_string(), startup_info)
     }
 
-    pub fn get_genesis(&self) -> Result<Option<H256>> {
+    pub fn get_genesis(&self) -> Result<Option<GenesisInfo>> {
         self.genesis_store.kv_get(GENESIS_KEY.to_string())
     }
 
-    pub fn save_genesis(&self, genesis_hash: H256) -> Result<()> {
+    pub fn save_genesis(&self, genesis_info: GenesisInfo) -> Result<()> {
         self.genesis_store
-            .put_sync(GENESIS_KEY.to_string(), genesis_hash)
+            .put_sync(GENESIS_KEY.to_string(), genesis_info)
     }
 }

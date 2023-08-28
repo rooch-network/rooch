@@ -5,9 +5,9 @@ use anyhow::Result;
 use move_binary_format::{errors::Location, CompiledModule};
 use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use move_vm_runtime::{config::VMConfig, native_functions::NativeFunction};
-use moveos::moveos::MoveOSConfig;
+use moveos::moveos::{MoveOSConfig, MoveOS};
 use moveos_stdlib_builder::BuildOptions;
-use moveos_store::config_store::ConfigDBStore;
+use moveos_store::{config_store::ConfigDBStore, MoveOSStore};
 use moveos_types::h256;
 use moveos_types::h256::H256;
 use moveos_types::transaction::MoveAction;
@@ -27,6 +27,7 @@ pub static ROOCH_GENESIS: Lazy<RoochGenesis> =
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GenesisPackage {
+    pub state_root: H256,
     pub genesis_txs: Vec<RoochTransaction>,
 }
 
@@ -90,7 +91,7 @@ impl RoochGenesis {
         rooch_framework::natives::all_natives(self.gas_params.clone())
     }
 
-    pub fn genesis_hash(&self) -> H256 {
+    pub fn genesis_package_hash(&self) -> H256 {
         h256::sha3_256_of(
             bcs::to_bytes(&self.genesis_package)
                 .expect("genesis txs bcs to_bytes should success")
@@ -98,15 +99,29 @@ impl RoochGenesis {
         )
     }
 
+    pub fn genesis_state_root(&self) -> H256 {
+        self.genesis_package.state_root
+    }
+
     pub fn check_genesis(&self, config_store: &ConfigDBStore) -> Result<()> {
-        let genesis_hash_result = config_store.get_genesis();
-        match genesis_hash_result {
-            Ok(Some(genesis_hash_store)) => {
-                let genesis_hash = self.genesis_hash();
-                if genesis_hash_store != genesis_hash {
+        let genesis_info_result = config_store.get_genesis();
+        match genesis_info_result {
+            Ok(Some(genesis_info_store)) => {
+                let genesis_package_hash = self.genesis_package_hash();
+                if genesis_info_store.genesis_package_hash != genesis_package_hash {
                     return Err(GenesisError::GenesisVersionMismatch {
-                        expect: genesis_hash_store,
-                        real: genesis_hash,
+                        expect: genesis_info_store.genesis_package_hash,
+                        real: genesis_package_hash,
+                    }
+                    .into());
+                }
+                // We need to check the state root hash
+                // because the same genesis package may generate different state root hash when the Move VM is upgraded
+                let state_rooth_hash = self.genesis_package.state_root;
+                if genesis_info_store.state_root_hash != state_rooth_hash {
+                    return Err(GenesisError::GenesisVersionMismatch {
+                        expect: genesis_info_store.state_root_hash,
+                        real: state_rooth_hash,
                     }
                     .into());
                 }
@@ -132,14 +147,28 @@ impl GenesisPackage {
     fn build() -> Result<Self> {
         let bundles =
             moveos_stdlib_builder::Stdlib::build(BuildOptions::default())?.module_bundles()?;
-        let genesis_txs = bundles
+        let genesis_txs: Vec<RoochTransaction> = bundles
             .into_iter()
             .map(|(genesis_account, bundle)|
             //TODO chain_id should be a parameter
             RoochTransaction::new_genesis_tx(genesis_account.into(), RoochChainID::DEV.chain_id().id(), MoveAction::ModuleBundle(bundle))
         )
             .collect();
-        Ok(Self { genesis_txs })
+        //TODO put gas parameters into genesis package
+        let gas_parameters = rooch_framework::natives::GasParameters::zeros();
+        let vm_config = MoveOSConfig {
+            vm_config: VMConfig::default(),
+        };
+        let mut moveos = MoveOS::new(
+            MoveOSStore::mock_moveos_store()?,
+            rooch_framework::natives::all_natives(gas_parameters),
+            vm_config,
+        )?;
+        let genesis_result = moveos.init_genesis(genesis_txs.clone())?;
+        let state_root = genesis_result.last().expect("genesis result should not be empty").0;
+        Ok(Self { 
+            state_root,
+            genesis_txs })
     }
 
     pub fn load() -> Result<Self> {
@@ -227,13 +256,12 @@ mod tests {
     #[test]
     fn test_genesis_hash() {
         let genesis = super::RoochGenesis::build().expect("build rooch framework failed");
-        genesis.genesis_hash();
+        genesis.genesis_package_hash();
     }
 
     #[test]
     fn test_genesis_init() {
         let genesis = super::RoochGenesis::build().expect("build rooch framework failed");
-        // let db = moveos_store::MoveOSStore::new_with_memory_store();
         let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
         let mut moveos = MoveOS::new(
             moveos_store,

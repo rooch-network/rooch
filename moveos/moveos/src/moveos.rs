@@ -74,7 +74,6 @@ impl MoveOS {
         })
     }
 
-    //TODO genesis tx should be in one transaction?
     pub fn init_genesis<T: Into<MoveOSTransaction>>(
         &mut self,
         genesis_txs: Vec<T>,
@@ -83,28 +82,10 @@ impl MoveOS {
             self.db.0.get_state_store().is_genesis(),
             "genesis already initialized"
         );
-
-        //let genesis_hash = h256::sha3_256_of(bcs::to_bytes(&genesis_txs)?.as_slice());
-        // for genesis_tx in genesis_txs {
-        //     self.verify_and_execute_genesis_tx(genesis_tx.into())?;
-        // }
-
         genesis_txs
             .into_iter()
             .map(|tx| self.verify_and_execute_genesis_tx(tx.into()))
             .collect::<Result<Vec<_>>>()
-
-        // self.db
-        //     .0
-        //     .get_config_store()
-        //     .save_genesis(genesis_hash)
-        //     .map_err(|e| {
-        //         PartialVMError::new(StatusCode::STORAGE_ERROR)
-        //             .with_message(e.to_string())
-        //             .finish(Location::Undefined)
-        //     })?;
-        //TODO return the state root genesis TransactionExecutionInfo
-        //Ok(())
     }
 
     fn verify_and_execute_genesis_tx(
