@@ -1,0 +1,50 @@
+---
+title: Rooch 周报 2023-08-28
+description: "定义代币标准，发布 dashboard 0.1 版本，新增 ModuleUpgradeFlag，增加链 ID 实现，重构 genesis 的功能，增加交互式游戏的文档"
+author: geometryolife
+category: Rooch Weekly
+date: 2023/08/28
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch 的开发进展
+
+### 新特性
+
+- **[gh-650] add tests for BTCAddress Move module and support passing authentication key type for Bitcoin addresses under ecdsa scheme. (#665)** (2023-08-21) @feliciss
+- **define coin standard and gas coin (#669)** (2023-08-21) @Bai Chuan
+- **Define ModuleUpgradeFlag (#674)** (2023-08-21) @0xPause
+- **Feature/dashboard 0.1 (#657)** (2023-08-22) @sven Tan
+- **[types] Add chain_id and max_gas_amount to Transaction (#681)** (2023-08-23) @jolestar
+- **The CostTable that has implemented tiered pricing. (#684)** (2023-08-24) @stevenlaw123
+- **Feature owen sdk ts rooch client (#671)** (2023-08-24) @Owen Wu
+
+### 重大重构
+
+- **compare the genesis in storage and code when server start, then suggest users clean the storage (#682)** (2023-08-23) @Bai Chuan
+- **refactor rooch config and chainid to support multi env for rooch store, including devnet/testnet/mainnet (#701)** (2023-08-27) @Bai Chuan
+
+### 改进和修复
+
+- **add weekly 2023-08-21 (#673)** (2023-08-21) @Joe Chen
+- **[gh-676] resolve bug MetaMask sending Ethereum transactions to Rooch RPC endpoint. (#677)** (2023-08-22) @feliciss
+- **dashboard 0.1.1 (#683)** (2023-08-23) @sven Tan
+- **docs: add interactive game blog (#670)** (2023-08-24) @Triplex
+- **[RPC] Fix eth_chainId response (#693)** (2023-08-24) @jolestar
+- **update runner manifest for GKE (#695)** (2023-08-25) @yourmoonlight
+- **Verify module with MoveVM verifier (#696)** (2023-08-25) @0xPause
+- **upgrade rust version from 1.68.0 to 1.70.0 (#706)** (2023-08-27) @Bai Chuan
+- **dashboard-0.1.2 (#700)** (2023-08-27) @sven Tan
+
+### Rooch 社区开发会议
+
+- 讨论错误码常量和普通常量的命名约定，参见 [#663](https://github.com/rooch-network/rooch/issues/663)
+- 讨论 Token | Coin 的标准和设计方法，如何提供自定义扩展性
+- 讨论 Gas 的抽象方案，预支 Gas 方案，代付方案
+- 讨论 CostTable 和 Gas 价格设计的问题
+- 讨论多链结算中的一些问题
+- 讨论 Session Key 的实现
+- [会议录屏](https://drive.google.com/file/d/1dwjOzox_Lwc1ziBRFip8HLw8n2Mw2nap/view?usp=sharing)
