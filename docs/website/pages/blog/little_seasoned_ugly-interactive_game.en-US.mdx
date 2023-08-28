@@ -6,6 +6,7 @@ category: Technology
 date: 2023/08/21
 ---
 
+import Image from "next/image";
 import PostHeader from "/components/blog/postHeader";
 
 <PostHeader />
@@ -211,7 +212,13 @@ figure?
 **Joe**:
 Sure! 
 
-<img src="/blog/interactive-game/timeline.png" width = "500" height = "300" alt="timeline" align=center />
+<Image
+  src="/blog/interactive-game/timeline.png"
+  alt="timeline"
+  width={500}
+  height={300}
+  className="mx-auto my-8"
+/>
 
 ----
 
@@ -539,21 +546,45 @@ have the airplane, we just need to purchase the tickets.
 **Moe**: Observe what instructions this source code will morph into on your
 machine:
 
-<img src="/blog/interactive-game/ones-count.png" width = "600" height = "300" alt="ones-count" align=center />
+<Image
+  src="/blog/interactive-game/ones-count.png"
+  alt="ones-count"
+  width={600}
+  height={300}
+  className="mx-auto my-8"
+/>
 
 **Joe**: You've preemptively spoken again. On my x86_64:
 
-<img src="/blog/interactive-game/ones-count-x86.png" width = "600" height = "600" alt="ones-count-x86" align=center />
+<Image
+  src="/blog/interactive-game/ones-count-x86.png"
+  alt="ones-count-x86"
+  width={600}
+  height={600}
+  className="mx-auto my-8"
+/>
 
 Or：
 
-<img src="/blog/interactive-game/ones-count-simd.png" width = "600" height = "276" alt="ones-count-simd" align=center />
+<Image
+  src="/blog/interactive-game/ones-count-simd.png"
+  alt="ones-count-simd"
+  width={600}
+  height={276}
+  className="mx-auto my-8"
+/>
 
 ----
 
 **Moe**: Because I showed you source code. Talking is cheap. On my RISC-V:
 
-<img src="/blog/interactive-game/ones-count-riscv.png" width = "283" height = "600" alt="ones-count-riscv" align=center />
+<Image
+  src="/blog/interactive-game/ones-count-riscv.png"
+  alt="ones-count-riscv"
+  width={283}
+  height={600}
+  className="mx-auto my-8"
+/>
 
 **Joe**: In the face of identical inputs, despite the vast differences in
 the instructions our machines execute, they still manage to yield
