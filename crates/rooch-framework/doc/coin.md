@@ -70,12 +70,12 @@ This module provides the foundation for typesafe Coins.
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::account_storage</a>;
 <b>use</b> <a href="">0x2::event</a>;
+<b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x2::type_table</a>;
-<b>use</b> <a href="core_addresses.md#0x3_core_addresses">0x3::core_addresses</a>;
 </code></pre>
 
 
