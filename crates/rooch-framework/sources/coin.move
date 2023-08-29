@@ -492,7 +492,6 @@ module rooch_framework::coin {
             decimals,
             supply: 0u256,
         };
-        // account_storage::global_move_to<CoinInfo<CoinType>>(ctx, account, coin_info);
         let coin_infos = account_storage::global_borrow_mut<CoinInfos>(ctx, @rooch_framework);
         type_table::add(&mut coin_infos.coin_infos, coin_info);
 
@@ -581,5 +580,270 @@ module rooch_framework::coin {
     #[test_only]
     public fun init_for_test(ctx: &mut StorageContext, account: &signer){
         init(ctx, account);
+    }
+
+    /// account has no capabilities (burn/mint).
+    const ENoCapabilities: u64 = 1;
+
+    //
+    // Data structures
+    //
+
+    /// Capabilities resource storing mint and burn capabilities.
+    /// The resource is stored on the account that initialized coin `CoinType`.
+    struct Capabilities<phantom CoinType> has key {
+        burn_cap: BurnCapability<CoinType>,
+        freeze_cap: FreezeCapability<CoinType>,
+        mint_cap: MintCapability<CoinType>,
+    }
+
+    //
+    // entry functions
+    //
+    // CoinEntry is built to make a simple walkthrough of the Coins module.
+    // It contains scripts you will need to initialize, mint, burn, transfer coins.
+
+    /// Initialize new coin `CoinType` in Rooch Blockchain.
+    /// Mint and Burn Capabilities will be stored under `account` in `Capabilities` resource.
+    /// A developer can create his own coin and care less about mint and burn capabilities
+    public entry fun initialize_entry<CoinType>(
+        ctx: &mut StorageContext,
+        account: &signer,
+        name: vector<u8>,
+        symbol: vector<u8>,
+        decimals: u8,
+    ) {
+        // let addr = signer::address_of(account);
+        let (burn_cap, freeze_cap, mint_cap) = initialize<CoinType>(
+            ctx,
+            account,
+            string::utf8(name),
+            string::utf8(symbol),
+            decimals,
+        );
+
+        account_storage::global_move_to(ctx, account, Capabilities<CoinType> {
+            burn_cap,
+            freeze_cap,
+            mint_cap
+        });
+    }
+
+    /// Create new coins `CoinType` and deposit them into dst_addr's account.
+    public entry fun mint_entry<CoinType>(
+        ctx: &mut StorageContext,
+        account: &signer,
+        dst_addr: address,
+        amount: u256,
+    ) {
+        let account_addr = signer::address_of(account);
+
+        assert!(
+            account_storage::global_exists<Capabilities<CoinType>>(ctx, account_addr),
+            error::not_found(ENoCapabilities),
+        );
+
+        let cap = account_storage::global_move_from<Capabilities<CoinType>>(ctx, account_addr);
+        // let cap = account_storage::global_borrow<Capabilities<CoinType>>(ctx, account_addr);
+        let coins_minted = mint(ctx, amount, &cap.mint_cap);
+        deposit(ctx, dst_addr, coins_minted);
+        account_storage::global_move_to<Capabilities<CoinType>>(ctx, account, cap)
+    }
+
+    /// Withdraw an `amount` of coin `CoinType` from `account` and burn it.
+    public entry fun burn_entry<CoinType>(
+        ctx: &mut StorageContext,
+        account: &signer,
+        amount: u256,
+    ) {
+        let account_addr = signer::address_of(account);
+
+        assert!(
+            account_storage::global_exists<Capabilities<CoinType>>(ctx, account_addr),
+            error::not_found(ENoCapabilities),
+        );
+
+        // let cap = account_storage::global_borrow<Capabilities<CoinType>>(ctx, account_addr);
+        let cap = account_storage::global_move_from<Capabilities<CoinType>>(ctx, account_addr);
+        let to_burn = withdraw<CoinType>(ctx, account, amount);
+        burn<CoinType>(ctx, to_burn, &cap.burn_cap);
+        account_storage::global_move_to<Capabilities<CoinType>>(ctx, account, cap);
+    }
+
+    /// Creating a resource that stores balance of `CoinType` on user's account.
+    /// Required if user wants to start accepting deposits of `CoinType` in his account.
+    public entry fun accept_coin_entry<CoinType>(ctx: &mut StorageContext, account: &signer) {
+        do_accept_coin<CoinType>(ctx, account)
+    }
+
+    /// Enable account's auto-accept-coin feature.
+    /// The script function is reenterable.
+    public entry fun enable_auto_accept_coin_entry(ctx: &mut StorageContext, account: &signer) {
+        set_auto_accept_coin(ctx, account, true)
+    }
+
+    /// Disable account's auto-accept-coin feature.
+    /// The script function is reenterable.
+    public entry fun disable_auto_accept_coin_entry(ctx: &mut StorageContext, account: &signer) {
+        set_auto_accept_coin(ctx, account, false);
+    }
+
+    // /// Deposit the coin balance into the recipient's account and emit an event.
+    // public entry fun deposit<CoinType>(ctx: &mut StorageContext, addr: address, coin: Coin<CoinType>) {
+    //     deposit<CoinType>(ctx, addr, coin)
+    // }
+
+    /// Transfer `amount` of coins `CoinType` from `from` to `to`.
+    public entry fun transfer_entry<CoinType>(
+        ctx: &mut StorageContext,
+        from: &signer,
+        to: address,
+        amount: u256,
+    ) {
+        transfer<CoinType>(ctx, from, to, amount)
+    }
+
+    /// Freeze a CoinStore to prevent transfers
+    public entry fun freeze_coin_store_entry<CoinType>(
+        ctx: &mut StorageContext,
+        account: &signer
+    ) {
+        let account_addr = signer::address_of(account);
+        assert!(
+            account_storage::global_exists<Capabilities<CoinType>>(ctx, account_addr),
+            error::not_found(ENoCapabilities),
+        );
+        // let cap = account_storage::global_borrow<Capabilities<CoinType>>(ctx, account_addr);
+        let cap = account_storage::global_move_from<Capabilities<CoinType>>(ctx, account_addr);
+        freeze_coin_store(ctx, account_addr, &cap.freeze_cap);
+        account_storage::global_move_to<Capabilities<CoinType>>(ctx, account, cap)
+    }
+
+    /// Unfreeze a CoinStore to allow transfers
+    public entry fun unfreeze_coin_store_entry<CoinType>(
+        ctx: &mut StorageContext,
+        account: &signer
+    ) {
+        let account_addr = signer::address_of(account);
+        assert!(
+            account_storage::global_exists<Capabilities<CoinType>>(ctx, account_addr),
+            error::not_found(ENoCapabilities),
+        );
+        let cap = account_storage::global_move_from<Capabilities<CoinType>>(ctx, account_addr);
+        // let cap = account_storage::global_borrow<Capabilities<CoinType>>(ctx, account_addr);
+        unfreeze_coin_store(ctx, account_addr, &cap.freeze_cap);
+        account_storage::global_move_to<Capabilities<CoinType>>(ctx, account, cap)
+    }
+
+    //
+    // Tests
+    //
+
+    #[test_only]
+    struct FakeCoin {}
+
+    #[test(source = @0xa0a, destination = @0xb0b, mod_account = @rooch_framework)]
+    public entry fun test_end_to_end(
+        source: &signer,
+        destination: &signer,
+        mod_account: &signer
+    ) {
+        let source_addr = signer::address_of(source);
+        let destination_addr = signer::address_of(destination);
+
+        let source_ctx = storage_context::new_test_context(signer::address_of(source));
+        let destination_ctx = storage_context::new_test_context_random(signer::address_of(destination), b"test_tx1");
+        let mod_account_ctx = storage_context::new_test_context_random(signer::address_of(mod_account), b"test_tx2");
+
+        init_for_test(&mut mod_account_ctx, mod_account);
+        initialize_entry<FakeCoin>(
+            &mut mod_account_ctx,
+            mod_account,
+            b"Fake Coin",
+            b"FCD",
+            9,
+        );
+        assert!(is_coin_initialized<FakeCoin>(&source_ctx), 0);
+
+        init_account_coin_store(&mut mod_account_ctx, mod_account);
+        init_account_coin_store(&mut source_ctx, source);
+        init_account_coin_store(&mut destination_ctx, destination);
+
+        mint_entry<FakeCoin>(&mut mod_account_ctx, mod_account, source_addr, 50);
+        mint_entry<FakeCoin>(&mut mod_account_ctx, mod_account, destination_addr, 10);
+        assert!(balance<FakeCoin>(&source_ctx, source_addr) == 50, 1);
+        assert!(balance<FakeCoin>(&destination_ctx, destination_addr) == 10, 2);
+
+        let supply = supply<FakeCoin>(&mod_account_ctx);
+        assert!(supply == 60, 3);
+
+        transfer<FakeCoin>(&mut source_ctx, source, destination_addr, 10);
+        assert!(balance<FakeCoin>(&source_ctx, source_addr) == 40, 4);
+        assert!(balance<FakeCoin>(&destination_ctx, destination_addr) == 20, 5);
+
+        transfer<FakeCoin>(&mut source_ctx, source, signer::address_of(mod_account), 40);
+        burn_entry<FakeCoin>(&mut mod_account_ctx, mod_account, 40);
+
+        assert!(balance<FakeCoin>(&source_ctx, source_addr) == 0, 1);
+
+        let new_supply = supply<FakeCoin>(&source_ctx);
+        assert!(new_supply == 20, 2);
+
+        moveos_std::storage_context::drop_test_context(source_ctx);
+        moveos_std::storage_context::drop_test_context(destination_ctx);
+        moveos_std::storage_context::drop_test_context(mod_account_ctx);
+    }
+
+    #[test(source = @0xa11ce, destination = @0xb0b, mod_account = @rooch_framework)]
+    #[expected_failure(abort_code = 0x60001, location = Self)]
+    public entry fun fail_mint(
+        source: &signer,
+        destination: &signer,
+        mod_account: &signer,
+    ) {
+        let source_addr = signer::address_of(source);
+
+        let source_ctx = storage_context::new_test_context(signer::address_of(source));
+        let destination_ctx = storage_context::new_test_context_random(signer::address_of(destination), b"test_tx1");
+        let mod_account_ctx = storage_context::new_test_context_random(signer::address_of(mod_account), b"test_tx2");
+
+        init_for_test(&mut mod_account_ctx, mod_account);
+        initialize_entry<FakeCoin>(&mut mod_account_ctx, mod_account, b"Fake Coin", b"FCD", 9);
+        init_account_coin_store(&mut mod_account_ctx, mod_account);
+        init_account_coin_store(&mut source_ctx, source);
+        init_account_coin_store(&mut destination_ctx, destination);
+
+        mint_entry<FakeCoin>(&mut destination_ctx, destination, source_addr, 100);
+
+        moveos_std::storage_context::drop_test_context(source_ctx);
+        moveos_std::storage_context::drop_test_context(destination_ctx);
+        moveos_std::storage_context::drop_test_context(mod_account_ctx);
+    }
+
+    #[test(source = @0xa11ce, destination = @0xb0b, mod_account = @rooch_framework)]
+    #[expected_failure(abort_code = 393217, location = Self)]
+    public entry fun fail_burn(
+        source: &signer,
+        destination: &signer,
+        mod_account: &signer,
+    ) {
+        let source_addr = signer::address_of(source);
+
+        let source_ctx = storage_context::new_test_context(signer::address_of(source));
+        let destination_ctx = storage_context::new_test_context_random(signer::address_of(destination), b"test_tx1");
+        let mod_account_ctx = storage_context::new_test_context_random(signer::address_of(mod_account), b"test_tx2");
+
+        init_for_test(&mut mod_account_ctx, mod_account);
+        initialize_entry<FakeCoin>(&mut mod_account_ctx, mod_account, b"Fake Coin", b"FCD", 9);
+        init_account_coin_store(&mut mod_account_ctx, mod_account);
+        init_account_coin_store(&mut source_ctx, source);
+        init_account_coin_store(&mut destination_ctx, destination);
+
+        mint_entry<FakeCoin>(&mut mod_account_ctx, mod_account, source_addr, 100);
+        burn_entry<FakeCoin>(&mut destination_ctx, destination, 10);
+
+        moveos_std::storage_context::drop_test_context(source_ctx);
+        moveos_std::storage_context::drop_test_context(destination_ctx);
+        moveos_std::storage_context::drop_test_context(mod_account_ctx);
     }
 }
