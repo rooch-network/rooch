@@ -85,10 +85,7 @@ export class RoochServer {
     }
 
     await new Promise<void>(
-      (
-        resolve: (value: void | PromiseLike<void>) => void,
-        reject: (reason?: any) => void,
-      ) => {
+      (resolve: (value: void | PromiseLike<void>) => void, reject: (reason?: any) => void) => {
         this.checkReady((err: Error | undefined) => {
           if (err) {
             reject(err)
