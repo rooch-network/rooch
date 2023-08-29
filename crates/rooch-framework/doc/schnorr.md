@@ -9,7 +9,6 @@
 -  [Function `scheme_length`](#0x3_schnorr_scheme_length)
 -  [Function `public_key_length`](#0x3_schnorr_public_key_length)
 -  [Function `signature_length`](#0x3_schnorr_signature_length)
--  [Function `keccak256`](#0x3_schnorr_keccak256)
 -  [Function `sha256`](#0x3_schnorr_sha256)
 -  [Function `get_public_key_from_authenticator_payload`](#0x3_schnorr_get_public_key_from_authenticator_payload)
 -  [Function `get_signature_from_authenticator_payload`](#0x3_schnorr_get_signature_from_authenticator_payload)
@@ -158,30 +157,6 @@ built-in functions
 
 <pre><code><b>public</b> <b>fun</b> <a href="schnorr.md#0x3_schnorr_signature_length">signature_length</a>(): u64 {
     <a href="schnorr.md#0x3_schnorr_VALID_SCHNORR_SIG_LENGTH">VALID_SCHNORR_SIG_LENGTH</a>
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_schnorr_keccak256"></a>
-
-## Function `keccak256`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="schnorr.md#0x3_schnorr_keccak256">keccak256</a>(): u8
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="schnorr.md#0x3_schnorr_keccak256">keccak256</a>(): u8 {
-    <a href="schnorr.md#0x3_schnorr_KECCAK256">KECCAK256</a>
 }
 </code></pre>
 
