@@ -21,11 +21,11 @@ By utilizing this current module, a developer can create his own coin and care l
 -  [Function `unfreeze_coin_store`](#0x3_coin_entry_unfreeze_coin_store)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x1::signer</a>;
-<b>use</b> <a href="">0x1::string</a>;
-<b>use</b> <a href="">0x2::account_storage</a>;
-<b>use</b> <a href="">0x2::storage_context</a>;
+<pre><code><b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage">0x2::account_storage</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context">0x2::storage_context</a>;
 <b>use</b> <a href="account.md#0x3_account">0x3::account</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 </code></pre>
@@ -96,7 +96,7 @@ Initialize new coin <code>CoinType</code> in Rooch Blockchain.
 Mint and Burn Capabilities will be stored under <code><a href="account.md#0x3_account">account</a></code> in <code><a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a></code> resource.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_initialize">initialize</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, name: <a href="">vector</a>&lt;u8&gt;, symbol: <a href="">vector</a>&lt;u8&gt;, decimals: u8)
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_initialize">initialize</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>, name: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, symbol: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, decimals: u8)
 </code></pre>
 
 
@@ -107,20 +107,20 @@ Mint and Burn Capabilities will be stored under <code><a href="account.md#0x3_ac
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_initialize">initialize</a>&lt;CoinType&gt;(
     ctx: &<b>mut</b> StorageContext,
-    <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>,
-    name: <a href="">vector</a>&lt;u8&gt;,
-    symbol: <a href="">vector</a>&lt;u8&gt;,
+    <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    name: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    symbol: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     decimals: u8,
 ) {
     <b>let</b> (burn_cap, freeze_cap, mint_cap) = <a href="coin.md#0x3_coin_initialize">coin::initialize</a>&lt;CoinType&gt;(
         ctx,
         <a href="account.md#0x3_account">account</a>,
-        <a href="_utf8">string::utf8</a>(name),
-        <a href="_utf8">string::utf8</a>(symbol),
+        <a href="../../moveos/moveos-stdlib/move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(name),
+        <a href="../../moveos/moveos-stdlib/move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(symbol),
         decimals,
     );
 
-    <a href="_global_move_to">account_storage::global_move_to</a>(ctx, <a href="account.md#0x3_account">account</a>, <a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt; {
+    <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_move_to">account_storage::global_move_to</a>(ctx, <a href="account.md#0x3_account">account</a>, <a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt; {
         burn_cap,
         freeze_cap,
         mint_cap
@@ -139,7 +139,7 @@ Mint and Burn Capabilities will be stored under <code><a href="account.md#0x3_ac
 Create new coins <code>CoinType</code> and deposit them into dst_addr's account.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_mint">mint</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, dst_addr: <b>address</b>, amount: u256)
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_mint">mint</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>, dst_addr: <b>address</b>, amount: u256)
 </code></pre>
 
 
@@ -150,23 +150,23 @@ Create new coins <code>CoinType</code> and deposit them into dst_addr's account.
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_mint">mint</a>&lt;CoinType&gt;(
     ctx: &<b>mut</b> StorageContext,
-    <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>,
+    <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     dst_addr: <b>address</b>,
     amount: u256,
 ) {
-    <b>let</b> account_addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
+    <b>let</b> account_addr = <a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
 
     <b>assert</b>!(
         // <b>exists</b>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(account_addr),
-        <a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr),
-        <a href="_not_found">error::not_found</a>(<a href="coin_entry.md#0x3_coin_entry_ErrorNoCapabilities">ErrorNoCapabilities</a>),
+        <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_exists">account_storage::global_exists</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr),
+        <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="coin_entry.md#0x3_coin_entry_ErrorNoCapabilities">ErrorNoCapabilities</a>),
     );
 
-    <b>let</b> cap = <a href="_global_move_from">account_storage::global_move_from</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
-    // <b>let</b> cap = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
+    <b>let</b> cap = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_move_from">account_storage::global_move_from</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
+    // <b>let</b> cap = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
     <b>let</b> coins_minted = <a href="coin.md#0x3_coin_mint">coin::mint</a>(ctx, amount, &cap.mint_cap);
     <a href="account.md#0x3_account_deposit">account::deposit</a>(ctx, dst_addr, coins_minted);
-    <a href="_global_move_to">account_storage::global_move_to</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, <a href="account.md#0x3_account">account</a>, cap)
+    <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_move_to">account_storage::global_move_to</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, <a href="account.md#0x3_account">account</a>, cap)
 }
 </code></pre>
 
@@ -181,7 +181,7 @@ Create new coins <code>CoinType</code> and deposit them into dst_addr's account.
 Withdraw an <code>amount</code> of coin <code>CoinType</code> from <code><a href="account.md#0x3_account">account</a></code> and burn it.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_burn">burn</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, amount: u256)
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_burn">burn</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>, amount: u256)
 </code></pre>
 
 
@@ -192,22 +192,22 @@ Withdraw an <code>amount</code> of coin <code>CoinType</code> from <code><a href
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_burn">burn</a>&lt;CoinType&gt;(
     ctx: &<b>mut</b> StorageContext,
-    <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>,
+    <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     amount: u256,
 ) {
-    <b>let</b> account_addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
+    <b>let</b> account_addr = <a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
 
     <b>assert</b>!(
-        <a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr),
-        <a href="_not_found">error::not_found</a>(<a href="coin_entry.md#0x3_coin_entry_ErrorNoCapabilities">ErrorNoCapabilities</a>),
+        <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_exists">account_storage::global_exists</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr),
+        <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="coin_entry.md#0x3_coin_entry_ErrorNoCapabilities">ErrorNoCapabilities</a>),
     );
 
-    // <b>let</b> cap = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
-    <b>let</b> cap = <a href="_global_move_from">account_storage::global_move_from</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
+    // <b>let</b> cap = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
+    <b>let</b> cap = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_move_from">account_storage::global_move_from</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
     <b>let</b> to_burn = <a href="account.md#0x3_account_withdraw">account::withdraw</a>&lt;CoinType&gt;(ctx, <a href="account.md#0x3_account">account</a>, amount);
     // <b>let</b> burn_cap = borrow_burn_cap&lt;CoinType&gt;(ctx, account_addr);
     <a href="coin.md#0x3_coin_burn">coin::burn</a>&lt;CoinType&gt;(ctx, to_burn, &cap.burn_cap);
-    <a href="_global_move_to">account_storage::global_move_to</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, <a href="account.md#0x3_account">account</a>, cap);
+    <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_move_to">account_storage::global_move_to</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, <a href="account.md#0x3_account">account</a>, cap);
 }
 </code></pre>
 
@@ -223,7 +223,7 @@ Creating a resource that stores balance of <code>CoinType</code> on user's accou
 Required if user wants to start accepting deposits of <code>CoinType</code> in his account.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_accept_coin">accept_coin</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_accept_coin">accept_coin</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -232,7 +232,7 @@ Required if user wants to start accepting deposits of <code>CoinType</code> in h
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_accept_coin">accept_coin</a>&lt;CoinType&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_accept_coin">accept_coin</a>&lt;CoinType&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
     <a href="account.md#0x3_account_do_accept_coin">account::do_accept_coin</a>&lt;CoinType&gt;(ctx, <a href="account.md#0x3_account">account</a>)
 }
 </code></pre>
@@ -249,7 +249,7 @@ Enable account's auto-accept-coin feature.
 The script function is reenterable.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_enable_auto_accept_coin">enable_auto_accept_coin</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_enable_auto_accept_coin">enable_auto_accept_coin</a>(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -258,7 +258,7 @@ The script function is reenterable.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_enable_auto_accept_coin">enable_auto_accept_coin</a>(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_enable_auto_accept_coin">enable_auto_accept_coin</a>(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
     <a href="account.md#0x3_account_set_auto_accept_coin">account::set_auto_accept_coin</a>(ctx, <a href="account.md#0x3_account">account</a>, <b>true</b>)
 }
 </code></pre>
@@ -275,7 +275,7 @@ Disable account's auto-accept-coin feature.
 The script function is reenterable.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_disable_auto_accept_coin">disable_auto_accept_coin</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_disable_auto_accept_coin">disable_auto_accept_coin</a>(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -284,7 +284,7 @@ The script function is reenterable.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_disable_auto_accept_coin">disable_auto_accept_coin</a>(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_disable_auto_accept_coin">disable_auto_accept_coin</a>(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
     <a href="account.md#0x3_account_set_auto_accept_coin">account::set_auto_accept_coin</a>(ctx, <a href="account.md#0x3_account">account</a>, <b>false</b>);
 }
 </code></pre>
@@ -300,7 +300,7 @@ The script function is reenterable.
 Transfer <code>amount</code> of coins <code>CoinType</code> from <code>from</code> to <code><b>to</b></code>.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_transfer">transfer</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, amount: u256)
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_transfer">transfer</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, from: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>, <b>to</b>: <b>address</b>, amount: u256)
 </code></pre>
 
 
@@ -311,7 +311,7 @@ Transfer <code>amount</code> of coins <code>CoinType</code> from <code>from</cod
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_transfer">transfer</a>&lt;CoinType&gt;(
     ctx: &<b>mut</b> StorageContext,
-    from: &<a href="">signer</a>,
+    from: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     <b>to</b>: <b>address</b>,
     amount: u256,
 ) {
@@ -330,7 +330,7 @@ Transfer <code>amount</code> of coins <code>CoinType</code> from <code>from</cod
 Freeze a CoinStore to prevent transfers
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_freeze_coin_store">freeze_coin_store</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_freeze_coin_store">freeze_coin_store</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -341,17 +341,17 @@ Freeze a CoinStore to prevent transfers
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_freeze_coin_store">freeze_coin_store</a>&lt;CoinType&gt;(
     ctx: &<b>mut</b> StorageContext,
-    <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>
+    <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>
 ) {
-    <b>let</b> account_addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
+    <b>let</b> account_addr = <a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
     <b>assert</b>!(
-        <a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr),
-        <a href="_not_found">error::not_found</a>(<a href="coin_entry.md#0x3_coin_entry_ErrorNoCapabilities">ErrorNoCapabilities</a>),
+        <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_exists">account_storage::global_exists</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr),
+        <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="coin_entry.md#0x3_coin_entry_ErrorNoCapabilities">ErrorNoCapabilities</a>),
     );
-    // <b>let</b> cap = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
-    <b>let</b> cap = <a href="_global_move_from">account_storage::global_move_from</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
+    // <b>let</b> cap = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
+    <b>let</b> cap = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_move_from">account_storage::global_move_from</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
     <a href="coin.md#0x3_coin_freeze_coin_store">coin::freeze_coin_store</a>(ctx, account_addr, &cap.freeze_cap);
-    <a href="_global_move_to">account_storage::global_move_to</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, <a href="account.md#0x3_account">account</a>, cap)
+    <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_move_to">account_storage::global_move_to</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, <a href="account.md#0x3_account">account</a>, cap)
 }
 </code></pre>
 
@@ -366,7 +366,7 @@ Freeze a CoinStore to prevent transfers
 Unfreeze a CoinStore to allow transfers
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_unfreeze_coin_store">unfreeze_coin_store</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_unfreeze_coin_store">unfreeze_coin_store</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -377,17 +377,17 @@ Unfreeze a CoinStore to allow transfers
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_unfreeze_coin_store">unfreeze_coin_store</a>&lt;CoinType&gt;(
     ctx: &<b>mut</b> StorageContext,
-    <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>
+    <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>
 ) {
-    <b>let</b> account_addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
+    <b>let</b> account_addr = <a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
     <b>assert</b>!(
-        <a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr),
-        <a href="_not_found">error::not_found</a>(<a href="coin_entry.md#0x3_coin_entry_ErrorNoCapabilities">ErrorNoCapabilities</a>),
+        <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_exists">account_storage::global_exists</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr),
+        <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="coin_entry.md#0x3_coin_entry_ErrorNoCapabilities">ErrorNoCapabilities</a>),
     );
-    <b>let</b> cap = <a href="_global_move_from">account_storage::global_move_from</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
-    // <b>let</b> cap = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
+    <b>let</b> cap = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_move_from">account_storage::global_move_from</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
+    // <b>let</b> cap = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
     <a href="coin.md#0x3_coin_unfreeze_coin_store">coin::unfreeze_coin_store</a>(ctx, account_addr, &cap.freeze_cap);
-    <a href="_global_move_to">account_storage::global_move_to</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, <a href="account.md#0x3_account">account</a>, cap)
+    <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_move_to">account_storage::global_move_to</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, <a href="account.md#0x3_account">account</a>, cap)
 }
 </code></pre>
 

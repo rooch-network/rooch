@@ -16,13 +16,13 @@
 -  [Function `bind_no_check`](#0x3_address_mapping_bind_no_check)
 
 
-<pre><code><b>use</b> <a href="">0x1::option</a>;
-<b>use</b> <a href="">0x1::signer</a>;
-<b>use</b> <a href="">0x2::account_storage</a>;
-<b>use</b> <a href="">0x2::bcs</a>;
-<b>use</b> <a href="">0x2::storage_context</a>;
-<b>use</b> <a href="">0x2::table</a>;
-<b>use</b> <a href="">0x2::tx_context</a>;
+<pre><code><b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage">0x2::account_storage</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/bcs.md#0x2_bcs">0x2::bcs</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context">0x2::storage_context</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/table.md#0x2_table">0x2::table</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 <b>use</b> <a href="core_addresses.md#0x3_core_addresses">0x3::core_addresses</a>;
 <b>use</b> <a href="hash.md#0x3_hash">0x3::hash</a>;
 </code></pre>
@@ -52,7 +52,7 @@
 
 </dd>
 <dt>
-<code>raw_address: <a href="">vector</a>&lt;u8&gt;</code>
+<code>raw_address: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
 
@@ -79,7 +79,7 @@
 
 <dl>
 <dt>
-<code>mapping: <a href="_Table">table::Table</a>&lt;<a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">address_mapping::MultiChainAddress</a>, <b>address</b>&gt;</code>
+<code>mapping: <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/table.md#0x2_table_Table">table::Table</a>&lt;<a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">address_mapping::MultiChainAddress</a>, <b>address</b>&gt;</code>
 </dt>
 <dd>
 
@@ -161,7 +161,7 @@
 Resolve a multi-chain address to a rooch address
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve">resolve</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, maddress: <a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">address_mapping::MultiChainAddress</a>): <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve">resolve</a>(ctx: &<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, maddress: <a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">address_mapping::MultiChainAddress</a>): <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<b>address</b>&gt;
 </code></pre>
 
 
@@ -172,14 +172,14 @@ Resolve a multi-chain address to a rooch address
 
 <pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve">resolve</a>(ctx: &StorageContext, maddress: <a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">MultiChainAddress</a>): Option&lt;<b>address</b>&gt; {
     <b>if</b> (<a href="address_mapping.md#0x3_address_mapping_is_rooch_address">is_rooch_address</a>(&maddress)) {
-        <b>return</b> <a href="_some">option::some</a>(moveos_std::bcs::to_address(maddress.raw_address))
+        <b>return</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_some">option::some</a>(moveos_std::bcs::to_address(maddress.raw_address))
     };
-    <b>let</b> am = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="address_mapping.md#0x3_address_mapping_AddressMapping">AddressMapping</a>&gt;(ctx, @rooch_framework);
-    <b>if</b>(<a href="_contains">table::contains</a>(&am.mapping, maddress)){
-        <b>let</b> addr = <a href="_borrow">table::borrow</a>(&am.mapping, maddress);
-        <a href="_some">option::some</a>(*addr)
+    <b>let</b> am = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_borrow">account_storage::global_borrow</a>&lt;<a href="address_mapping.md#0x3_address_mapping_AddressMapping">AddressMapping</a>&gt;(ctx, @rooch_framework);
+    <b>if</b>(<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/table.md#0x2_table_contains">table::contains</a>(&am.mapping, maddress)){
+        <b>let</b> addr = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/table.md#0x2_table_borrow">table::borrow</a>(&am.mapping, maddress);
+        <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_some">option::some</a>(*addr)
     }<b>else</b>{
-        <a href="_none">option::none</a>()
+        <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_none">option::none</a>()
     }
 }
 </code></pre>
@@ -195,7 +195,7 @@ Resolve a multi-chain address to a rooch address
 Resolve a multi-chain address to a rooch address, if not exists, generate a new rooch address
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve_or_generate">resolve_or_generate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, maddress: <a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">address_mapping::MultiChainAddress</a>): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve_or_generate">resolve_or_generate</a>(ctx: &<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, maddress: <a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">address_mapping::MultiChainAddress</a>): <b>address</b>
 </code></pre>
 
 
@@ -206,10 +206,10 @@ Resolve a multi-chain address to a rooch address, if not exists, generate a new 
 
 <pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve_or_generate">resolve_or_generate</a>(ctx: &StorageContext, maddress: <a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">MultiChainAddress</a>): <b>address</b> {
     <b>let</b> addr = <a href="address_mapping.md#0x3_address_mapping_resolve">resolve</a>(ctx, maddress);
-    <b>if</b>(<a href="_is_none">option::is_none</a>(&addr)){
+    <b>if</b>(<a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_is_none">option::is_none</a>(&addr)){
         <a href="address_mapping.md#0x3_address_mapping_generate_rooch_address">generate_rooch_address</a>(maddress)
     }<b>else</b>{
-        <a href="_extract">option::extract</a>(&<b>mut</b> addr)
+        <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_extract">option::extract</a>(&<b>mut</b> addr)
     }
 }
 </code></pre>
@@ -225,7 +225,7 @@ Resolve a multi-chain address to a rooch address, if not exists, generate a new 
 Check if a multi-chain address is bound to a rooch address
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_exists_mapping">exists_mapping</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, maddress: <a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">address_mapping::MultiChainAddress</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_exists_mapping">exists_mapping</a>(ctx: &<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, maddress: <a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">address_mapping::MultiChainAddress</a>): bool
 </code></pre>
 
 
@@ -238,8 +238,8 @@ Check if a multi-chain address is bound to a rooch address
     <b>if</b> (<a href="address_mapping.md#0x3_address_mapping_is_rooch_address">is_rooch_address</a>(&maddress)) {
         <b>return</b> <b>true</b>
     };
-    <b>let</b> am = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="address_mapping.md#0x3_address_mapping_AddressMapping">AddressMapping</a>&gt;(ctx, @rooch_framework);
-    <a href="_contains">table::contains</a>(&am.mapping, maddress)
+    <b>let</b> am = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_borrow">account_storage::global_borrow</a>&lt;<a href="address_mapping.md#0x3_address_mapping_AddressMapping">AddressMapping</a>&gt;(ctx, @rooch_framework);
+    <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/table.md#0x2_table_contains">table::contains</a>(&am.mapping, maddress)
 }
 </code></pre>
 
@@ -255,7 +255,7 @@ Bind a multi-chain address to the sender's rooch address
 The caller need to ensure the relationship between the multi-chain address and the rooch address
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind">bind</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, sender: &<a href="">signer</a>, maddress: <a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">address_mapping::MultiChainAddress</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind">bind</a>(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, sender: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>, maddress: <a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">address_mapping::MultiChainAddress</a>)
 </code></pre>
 
 
@@ -264,8 +264,8 @@ The caller need to ensure the relationship between the multi-chain address and t
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind">bind</a>(ctx: &<b>mut</b> StorageContext, sender: &<a href="">signer</a>, maddress: <a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">MultiChainAddress</a>) {
-    <a href="address_mapping.md#0x3_address_mapping_bind_no_check">bind_no_check</a>(ctx, <a href="_address_of">signer::address_of</a>(sender), maddress);
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind">bind</a>(ctx: &<b>mut</b> StorageContext, sender: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>, maddress: <a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">MultiChainAddress</a>) {
+    <a href="address_mapping.md#0x3_address_mapping_bind_no_check">bind_no_check</a>(ctx, <a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(sender), maddress);
 }
 </code></pre>
 
@@ -280,7 +280,7 @@ The caller need to ensure the relationship between the multi-chain address and t
 Bind a rooch address to a multi-chain address
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind_no_check">bind_no_check</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, rooch_address: <b>address</b>, maddress: <a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">address_mapping::MultiChainAddress</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind_no_check">bind_no_check</a>(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, rooch_address: <b>address</b>, maddress: <a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">address_mapping::MultiChainAddress</a>)
 </code></pre>
 
 
@@ -294,9 +294,9 @@ Bind a rooch address to a multi-chain address
         //Do nothing <b>if</b> the multi-chain <b>address</b> is a rooch <b>address</b>
         <b>return</b>
     };
-    <b>let</b> am = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="address_mapping.md#0x3_address_mapping_AddressMapping">AddressMapping</a>&gt;(ctx, @rooch_framework);
-    <a href="_add">table::add</a>(&<b>mut</b> am.mapping, maddress, rooch_address);
-    //TODO matienance the reverse mapping rooch_address -&gt; <a href="">vector</a>&lt;<a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">MultiChainAddress</a>&gt;
+    <b>let</b> am = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="address_mapping.md#0x3_address_mapping_AddressMapping">AddressMapping</a>&gt;(ctx, @rooch_framework);
+    <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/table.md#0x2_table_add">table::add</a>(&<b>mut</b> am.mapping, maddress, rooch_address);
+    //TODO matienance the reverse mapping rooch_address -&gt; <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">MultiChainAddress</a>&gt;
 }
 </code></pre>
 

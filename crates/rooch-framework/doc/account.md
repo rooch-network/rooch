@@ -35,15 +35,15 @@
 -  [Function `transfer`](#0x3_account_transfer)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x1::hash</a>;
-<b>use</b> <a href="">0x1::signer</a>;
-<b>use</b> <a href="">0x1::vector</a>;
-<b>use</b> <a href="">0x2::account_storage</a>;
-<b>use</b> <a href="">0x2::bcs</a>;
-<b>use</b> <a href="">0x2::event</a>;
-<b>use</b> <a href="">0x2::storage_context</a>;
-<b>use</b> <a href="">0x2::type_info</a>;
+<pre><code><b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/hash.md#0x1_hash">0x1::hash</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">0x1::vector</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage">0x2::account_storage</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/bcs.md#0x2_bcs">0x2::bcs</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/event.md#0x2_event">0x2::event</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context">0x2::storage_context</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/type_info.md#0x2_type_info">0x2::type_info</a>;
 <b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 <b>use</b> <a href="gas_coin.md#0x3_gas_coin">0x3::gas_coin</a>;
@@ -124,7 +124,7 @@ Event emitted when some amount of a coin is deposited into an account.
 
 <dl>
 <dt>
-<code>coin_type_info: <a href="_TypeInfo">type_info::TypeInfo</a></code>
+<code>coin_type_info: <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/type_info.md#0x2_type_info_TypeInfo">type_info::TypeInfo</a></code>
 </dt>
 <dd>
  The type info for the coin that was sent
@@ -158,7 +158,7 @@ Event emitted when some amount of a coin is withdrawn from an account.
 
 <dl>
 <dt>
-<code>coin_type_info: <a href="_TypeInfo">type_info::TypeInfo</a></code>
+<code>coin_type_info: <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/type_info.md#0x2_type_info_TypeInfo">type_info::TypeInfo</a></code>
 </dt>
 <dd>
  The type info for the coin that was sent
@@ -192,7 +192,7 @@ Event for accept coin
 
 <dl>
 <dt>
-<code>coin_type_info: <a href="_TypeInfo">type_info::TypeInfo</a></code>
+<code>coin_type_info: <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/type_info.md#0x2_type_info_TypeInfo">type_info::TypeInfo</a></code>
 </dt>
 <dd>
  full info of coin
@@ -284,7 +284,7 @@ Account already exists
 
 
 
-<pre><code><b>const</b> <a href="account.md#0x3_account_CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER">CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER</a>: <a href="">vector</a>&lt;u8&gt; = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
+<pre><code><b>const</b> <a href="account.md#0x3_account_CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER">CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER</a>: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
 </code></pre>
 
 
@@ -387,7 +387,7 @@ whose address matches an existing address of a MultiEd25519 wallet.
 
 
 
-<pre><code><b>const</b> <a href="account.md#0x3_account_ZERO_AUTH_KEY">ZERO_AUTH_KEY</a>: <a href="">vector</a>&lt;u8&gt; = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+<pre><code><b>const</b> <a href="account.md#0x3_account_ZERO_AUTH_KEY">ZERO_AUTH_KEY</a>: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 </code></pre>
 
 
@@ -399,7 +399,7 @@ whose address matches an existing address of a MultiEd25519 wallet.
 A entry function to create an account under <code>new_address</code>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="account.md#0x3_account_create_account_entry">create_account_entry</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, new_address: <b>address</b>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="account.md#0x3_account_create_account_entry">create_account_entry</a>(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, new_address: <b>address</b>)
 </code></pre>
 
 
@@ -430,7 +430,7 @@ is returned. This way, the caller of this function can publish additional resour
 <code>new_address</code>.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_account">create_account</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, new_address: <b>address</b>): <a href="">signer</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_account">create_account</a>(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, new_address: <b>address</b>): <a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>
 </code></pre>
 
 
@@ -439,16 +439,16 @@ is returned. This way, the caller of this function can publish additional resour
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_account">create_account</a>(ctx: &<b>mut</b> StorageContext, new_address: <b>address</b>): <a href="">signer</a> {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_account">create_account</a>(ctx: &<b>mut</b> StorageContext, new_address: <b>address</b>): <a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a> {
    <b>assert</b>!(
       new_address != @vm_reserved && new_address != @rooch_framework,
-      <a href="_invalid_argument">error::invalid_argument</a>(<a href="account.md#0x3_account_ErrorAddressReseved">ErrorAddressReseved</a>)
+      <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="account.md#0x3_account_ErrorAddressReseved">ErrorAddressReseved</a>)
    );
 
    // there cannot be an <a href="account.md#0x3_account_Account">Account</a> resource under new_addr already.
    <b>assert</b>!(
-      !<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, new_address),
-      <a href="_already_exists">error::already_exists</a>(<a href="account.md#0x3_account_ErrorAccountAlreadyExists">ErrorAccountAlreadyExists</a>)
+      !<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, new_address),
+      <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_already_exists">error::already_exists</a>(<a href="account.md#0x3_account_ErrorAccountAlreadyExists">ErrorAccountAlreadyExists</a>)
    );
 
    <b>let</b> new_account = <a href="account.md#0x3_account_create_account_unchecked">create_account_unchecked</a>(ctx, new_address);
@@ -469,7 +469,7 @@ is returned. This way, the caller of this function can publish additional resour
 create the account for system reserved addresses
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_framework_reserved_account">create_framework_reserved_account</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): (<a href="">signer</a>, <a href="account.md#0x3_account_SignerCapability">account::SignerCapability</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_framework_reserved_account">create_framework_reserved_account</a>(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): (<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="account.md#0x3_account_SignerCapability">account::SignerCapability</a>)
 </code></pre>
 
 
@@ -478,7 +478,7 @@ create the account for system reserved addresses
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_framework_reserved_account">create_framework_reserved_account</a>(ctx: &<b>mut</b> StorageContext, addr: <b>address</b>): (<a href="">signer</a>, <a href="account.md#0x3_account_SignerCapability">SignerCapability</a>) {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_framework_reserved_account">create_framework_reserved_account</a>(ctx: &<b>mut</b> StorageContext, addr: <b>address</b>): (<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="account.md#0x3_account_SignerCapability">SignerCapability</a>) {
    <b>assert</b>!(
       addr == @0x1 ||
           addr == @0x2 ||
@@ -490,11 +490,11 @@ create the account for system reserved addresses
           addr == @0x8 ||
           addr == @0x9 ||
           addr == @0xa,
-      <a href="_permission_denied">error::permission_denied</a>(<a href="account.md#0x3_account_ErrorNoValidFrameworkReservedAddress">ErrorNoValidFrameworkReservedAddress</a>),
+      <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="account.md#0x3_account_ErrorNoValidFrameworkReservedAddress">ErrorNoValidFrameworkReservedAddress</a>),
    );
-   <b>let</b> <a href="">signer</a> = <a href="account.md#0x3_account_create_account_unchecked">create_account_unchecked</a>(ctx, addr);
+   <b>let</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a> = <a href="account.md#0x3_account_create_account_unchecked">create_account_unchecked</a>(ctx, addr);
    <b>let</b> signer_cap = <a href="account.md#0x3_account_SignerCapability">SignerCapability</a> { addr };
-   (<a href="">signer</a>, signer_cap)
+   (<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>, signer_cap)
 }
 </code></pre>
 
@@ -509,7 +509,7 @@ create the account for system reserved addresses
 Return the current sequence number at <code>addr</code>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_sequence_number">sequence_number</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_sequence_number">sequence_number</a>(ctx: &<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): u64
 </code></pre>
 
 
@@ -521,10 +521,10 @@ Return the current sequence number at <code>addr</code>
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_sequence_number">sequence_number</a>(ctx: &StorageContext, addr: <b>address</b>): u64 {
    // <b>if</b> <a href="account.md#0x3_account">account</a> does not exist, <b>return</b> 0 <b>as</b> sequence number
    // TODO: refactor this after we decide how <b>to</b> handle <a href="account.md#0x3_account">account</a> create.
-   <b>if</b> (!<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, addr)) {
+   <b>if</b> (!<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, addr)) {
       <b>return</b> 0
    };
-   <b>let</b> <a href="account.md#0x3_account">account</a> = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, addr);
+   <b>let</b> <a href="account.md#0x3_account">account</a> = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_borrow">account_storage::global_borrow</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, addr);
    <a href="account.md#0x3_account_sequence_number_for_account">sequence_number_for_account</a>(<a href="account.md#0x3_account">account</a>)
 }
 </code></pre>
@@ -539,7 +539,7 @@ Return the current sequence number at <code>addr</code>
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_sequence_number_for_sender">sequence_number_for_sender</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_sequence_number_for_sender">sequence_number_for_sender</a>(ctx: &<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): u64
 </code></pre>
 
 
@@ -549,7 +549,7 @@ Return the current sequence number at <code>addr</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_sequence_number_for_sender">sequence_number_for_sender</a>(ctx: &StorageContext): u64 {
-   <b>let</b> sender = <a href="_sender">storage_context::sender</a>(ctx);
+   <b>let</b> sender = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_sender">storage_context::sender</a>(ctx);
    <a href="account.md#0x3_account_sequence_number">sequence_number</a>(ctx, sender)
 }
 </code></pre>
@@ -564,7 +564,7 @@ Return the current sequence number at <code>addr</code>
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_increment_sequence_number">increment_sequence_number</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_increment_sequence_number">increment_sequence_number</a>(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>)
 </code></pre>
 
 
@@ -574,13 +574,13 @@ Return the current sequence number at <code>addr</code>
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_increment_sequence_number">increment_sequence_number</a>(ctx: &<b>mut</b> StorageContext) {
-   <b>let</b> sender = <a href="_sender">storage_context::sender</a>(ctx);
+   <b>let</b> sender = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_sender">storage_context::sender</a>(ctx);
 
-   <b>let</b> sequence_number = &<b>mut</b> <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, sender).sequence_number;
+   <b>let</b> sequence_number = &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, sender).sequence_number;
 
    <b>assert</b>!(
       (*sequence_number <b>as</b> u128) &lt; <a href="account.md#0x3_account_MAX_U64">MAX_U64</a>,
-      <a href="_out_of_range">error::out_of_range</a>(<a href="account.md#0x3_account_ErrorSequenceNumberTooBig">ErrorSequenceNumberTooBig</a>)
+      <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="account.md#0x3_account_ErrorSequenceNumberTooBig">ErrorSequenceNumberTooBig</a>)
    );
 
    *sequence_number = *sequence_number + 1;
@@ -621,7 +621,7 @@ Return the current sequence number at <code>addr</code>
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_is_resource_account">is_resource_account</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_is_resource_account">is_resource_account</a>(ctx: &<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): bool
 </code></pre>
 
 
@@ -633,8 +633,8 @@ Return the current sequence number at <code>addr</code>
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_is_resource_account">is_resource_account</a>(ctx: &StorageContext, addr: <b>address</b>): bool {
    // for resource <a href="account.md#0x3_account">account</a> , <a href="account.md#0x3_account">account</a> storage maybe not exist when create,
    // so need check <a href="account.md#0x3_account">account</a> storage eixst befor call <b>global</b> exist function
-   <b>if</b>(<a href="_exist_account_storage">account_storage::exist_account_storage</a>(ctx, addr)){
-      <a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_ResourceAccount">ResourceAccount</a>&gt;(ctx, addr)
+   <b>if</b>(<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_exist_account_storage">account_storage::exist_account_storage</a>(ctx, addr)){
+      <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_ResourceAccount">ResourceAccount</a>&gt;(ctx, addr)
    } <b>else</b> {
       <b>false</b>
    }
@@ -651,7 +651,7 @@ Return the current sequence number at <code>addr</code>
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_exists_at">exists_at</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_exists_at">exists_at</a>(ctx: &<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): bool
 </code></pre>
 
 
@@ -661,8 +661,8 @@ Return the current sequence number at <code>addr</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_exists_at">exists_at</a>(ctx: &StorageContext, addr: <b>address</b>): bool {
-   <b>if</b>(<a href="_exist_account_storage">account_storage::exist_account_storage</a>(ctx, addr)){
-      <a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, addr)
+   <b>if</b>(<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_exist_account_storage">account_storage::exist_account_storage</a>(ctx, addr)){
+      <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, addr)
    } <b>else</b> {
       <b>false</b>
    }
@@ -682,7 +682,7 @@ In Rooch a resource account is created based upon the sha3 256 of the source's a
 A resource account can only be created once
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_create_resource_account">create_resource_account</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, source: &<a href="">signer</a>): (<a href="">signer</a>, <a href="account.md#0x3_account_SignerCapability">account::SignerCapability</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_create_resource_account">create_resource_account</a>(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, source: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>): (<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="account.md#0x3_account_SignerCapability">account::SignerCapability</a>)
 </code></pre>
 
 
@@ -691,20 +691,20 @@ A resource account can only be created once
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_create_resource_account">create_resource_account</a>(ctx: &<b>mut</b> StorageContext, source: &<a href="">signer</a>): (<a href="">signer</a>, <a href="account.md#0x3_account_SignerCapability">SignerCapability</a>) {
-   <b>let</b> source_addr = <a href="_address_of">signer::address_of</a>(source);
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_create_resource_account">create_resource_account</a>(ctx: &<b>mut</b> StorageContext, source: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>): (<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="account.md#0x3_account_SignerCapability">SignerCapability</a>) {
+   <b>let</b> source_addr = <a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(source);
    <b>let</b> seed = <a href="account.md#0x3_account_generate_seed_bytes">generate_seed_bytes</a>(ctx, &source_addr);
    <b>let</b> resource_addr = <a href="account.md#0x3_account_create_resource_address">create_resource_address</a>(&source_addr, seed);
-   <b>assert</b>!(!<a href="account.md#0x3_account_is_resource_account">is_resource_account</a>(ctx, resource_addr), <a href="_invalid_state">error::invalid_state</a>(<a href="account.md#0x3_account_ErrorAccountIsAlreadyResourceAccount">ErrorAccountIsAlreadyResourceAccount</a>));
+   <b>assert</b>!(!<a href="account.md#0x3_account_is_resource_account">is_resource_account</a>(ctx, resource_addr), <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="account.md#0x3_account_ErrorAccountIsAlreadyResourceAccount">ErrorAccountIsAlreadyResourceAccount</a>));
    <b>let</b> resource_signer = <b>if</b> (<a href="account.md#0x3_account_exists_at">exists_at</a>(ctx, resource_addr)) {
-      <b>let</b> <a href="account.md#0x3_account">account</a> = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, resource_addr);
-      <b>assert</b>!(<a href="account.md#0x3_account">account</a>.sequence_number == 0, <a href="_invalid_state">error::invalid_state</a>(<a href="account.md#0x3_account_ErrorResourceAccountAlreadyUsed">ErrorResourceAccountAlreadyUsed</a>));
+      <b>let</b> <a href="account.md#0x3_account">account</a> = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_borrow">account_storage::global_borrow</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, resource_addr);
+      <b>assert</b>!(<a href="account.md#0x3_account">account</a>.sequence_number == 0, <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="account.md#0x3_account_ErrorResourceAccountAlreadyUsed">ErrorResourceAccountAlreadyUsed</a>));
       <a href="account.md#0x3_account_create_signer">create_signer</a>(resource_addr)
    } <b>else</b> {
       <a href="account.md#0x3_account_create_account_unchecked">create_account_unchecked</a>(ctx, resource_addr)
    };
 
-   <a href="_global_move_to">account_storage::global_move_to</a>&lt;<a href="account.md#0x3_account_ResourceAccount">ResourceAccount</a>&gt;(ctx,
+   <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_move_to">account_storage::global_move_to</a>&lt;<a href="account.md#0x3_account_ResourceAccount">ResourceAccount</a>&gt;(ctx,
       &resource_signer,
       <a href="account.md#0x3_account_ResourceAccount">ResourceAccount</a> {}
    );
@@ -726,7 +726,7 @@ This is a helper function to compute resource addresses. Computation of the addr
 involves the use of a cryptographic hash operation and should be use thoughtfully.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_create_resource_address">create_resource_address</a>(source: &<b>address</b>, seed: <a href="">vector</a>&lt;u8&gt;): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_create_resource_address">create_resource_address</a>(source: &<b>address</b>, seed: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <b>address</b>
 </code></pre>
 
 
@@ -735,11 +735,11 @@ involves the use of a cryptographic hash operation and should be use thoughtfull
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_create_resource_address">create_resource_address</a>(source: &<b>address</b>, seed: <a href="">vector</a>&lt;u8&gt;): <b>address</b> {
-   <b>let</b> bytes = <a href="_to_bytes">bcs::to_bytes</a>(source);
-   <a href="_append">vector::append</a>(&<b>mut</b> bytes, seed);
-   <a href="_push_back">vector::push_back</a>(&<b>mut</b> bytes, <a href="account.md#0x3_account_SCHEME_DERIVE_RESOURCE_ACCOUNT">SCHEME_DERIVE_RESOURCE_ACCOUNT</a>);
-   bcs::to_address(<a href="_sha3_256">hash::sha3_256</a>(bytes))
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_create_resource_address">create_resource_address</a>(source: &<b>address</b>, seed: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <b>address</b> {
+   <b>let</b> bytes = <a href="../../moveos/moveos-stdlib/move-stdlib/doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(source);
+   <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector_append">vector::append</a>(&<b>mut</b> bytes, seed);
+   <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> bytes, <a href="account.md#0x3_account_SCHEME_DERIVE_RESOURCE_ACCOUNT">SCHEME_DERIVE_RESOURCE_ACCOUNT</a>);
+   bcs::to_address(<a href="../../moveos/moveos-stdlib/move-stdlib/doc/hash.md#0x1_hash_sha3_256">hash::sha3_256</a>(bytes))
 }
 </code></pre>
 
@@ -753,7 +753,7 @@ involves the use of a cryptographic hash operation and should be use thoughtfull
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_create_signer_with_capability">create_signer_with_capability</a>(capability: &<a href="account.md#0x3_account_SignerCapability">account::SignerCapability</a>): <a href="">signer</a>
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_create_signer_with_capability">create_signer_with_capability</a>(capability: &<a href="account.md#0x3_account_SignerCapability">account::SignerCapability</a>): <a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>
 </code></pre>
 
 
@@ -762,7 +762,7 @@ involves the use of a cryptographic hash operation and should be use thoughtfull
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_create_signer_with_capability">create_signer_with_capability</a>(capability: &<a href="account.md#0x3_account_SignerCapability">SignerCapability</a>): <a href="">signer</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_create_signer_with_capability">create_signer_with_capability</a>(capability: &<a href="account.md#0x3_account_SignerCapability">SignerCapability</a>): <a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a> {
    <b>let</b> addr = &capability.addr;
    <a href="account.md#0x3_account_create_signer">create_signer</a>(*addr)
 }
@@ -803,7 +803,7 @@ involves the use of a cryptographic hash operation and should be use thoughtfull
 Return whether the account at <code>addr</code> accept <code>Coin</code> type coins
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_is_account_accept_coin">is_account_accept_coin</a>&lt;CoinType&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_is_account_accept_coin">is_account_accept_coin</a>&lt;CoinType&gt;(ctx: &<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): bool
 </code></pre>
 
 
@@ -832,7 +832,7 @@ Return whether the account at <code>addr</code> accept <code>Coin</code> type co
 Check whether the address can auto accept coin.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_can_auto_accept_coin">can_auto_accept_coin</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_can_auto_accept_coin">can_auto_accept_coin</a>(ctx: &<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): bool
 </code></pre>
 
 
@@ -842,8 +842,8 @@ Check whether the address can auto accept coin.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_can_auto_accept_coin">can_auto_accept_coin</a>(ctx: &StorageContext, addr: <b>address</b>): bool {
-   <b>if</b> (<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_AutoAcceptCoin">AutoAcceptCoin</a>&gt;(ctx, addr)) {
-      <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="account.md#0x3_account_AutoAcceptCoin">AutoAcceptCoin</a>&gt;(ctx, addr).enable
+   <b>if</b> (<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_AutoAcceptCoin">AutoAcceptCoin</a>&gt;(ctx, addr)) {
+      <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_borrow">account_storage::global_borrow</a>&lt;<a href="account.md#0x3_account_AutoAcceptCoin">AutoAcceptCoin</a>&gt;(ctx, addr).enable
    } <b>else</b> {
       <b>false</b>
    }
@@ -861,7 +861,7 @@ Check whether the address can auto accept coin.
 Add a balance of <code>Coin</code> type to the sending account.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_do_accept_coin">do_accept_coin</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_do_accept_coin">do_accept_coin</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -870,13 +870,13 @@ Add a balance of <code>Coin</code> type to the sending account.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_do_accept_coin">do_accept_coin</a>&lt;CoinType&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
-   <b>let</b> addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_do_accept_coin">do_accept_coin</a>&lt;CoinType&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
+   <b>let</b> addr = <a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
    <b>if</b> (!<a href="coin.md#0x3_coin_exist_coin_store">coin::exist_coin_store</a>&lt;CoinType&gt;(ctx, addr)) {
       <a href="coin.md#0x3_coin_initialize_coin_store">coin::initialize_coin_store</a>&lt;CoinType&gt;(ctx, <a href="account.md#0x3_account">account</a>);
 
-      <b>let</b> coin_type_info = <a href="_type_of">type_info::type_of</a>&lt;CoinType&gt;();
-      <a href="_emit">event::emit</a>&lt;<a href="account.md#0x3_account_AcceptCoinEvent">AcceptCoinEvent</a>&gt;(ctx,
+      <b>let</b> coin_type_info = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/type_info.md#0x2_type_info_type_of">type_info::type_of</a>&lt;CoinType&gt;();
+      <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/event.md#0x2_event_emit">event::emit</a>&lt;<a href="account.md#0x3_account_AcceptCoinEvent">AcceptCoinEvent</a>&gt;(ctx,
          <a href="account.md#0x3_account_AcceptCoinEvent">AcceptCoinEvent</a> {
             coin_type_info,
          },
@@ -896,7 +896,7 @@ Add a balance of <code>Coin</code> type to the sending account.
 Configure whether auto-accept coins.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_set_auto_accept_coin">set_auto_accept_coin</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, enable: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_set_auto_accept_coin">set_auto_accept_coin</a>(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>, enable: bool)
 </code></pre>
 
 
@@ -905,13 +905,13 @@ Configure whether auto-accept coins.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_set_auto_accept_coin">set_auto_accept_coin</a>(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, enable: bool)  {
-   <b>let</b> addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
-   <b>if</b> (<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_AutoAcceptCoin">AutoAcceptCoin</a>&gt;(ctx, addr)) {
-      <b>let</b> config = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="account.md#0x3_account_AutoAcceptCoin">AutoAcceptCoin</a>&gt;(ctx, addr);
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_set_auto_accept_coin">set_auto_accept_coin</a>(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>, enable: bool)  {
+   <b>let</b> addr = <a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
+   <b>if</b> (<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_AutoAcceptCoin">AutoAcceptCoin</a>&gt;(ctx, addr)) {
+      <b>let</b> config = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="account.md#0x3_account_AutoAcceptCoin">AutoAcceptCoin</a>&gt;(ctx, addr);
       config.enable = enable;
    } <b>else</b> {
-      <a href="_global_move_to">account_storage::global_move_to</a>&lt;<a href="account.md#0x3_account_AutoAcceptCoin">AutoAcceptCoin</a>&gt;(ctx, <a href="account.md#0x3_account">account</a>, <a href="account.md#0x3_account_AutoAcceptCoin">AutoAcceptCoin</a>{ enable });
+      <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_move_to">account_storage::global_move_to</a>&lt;<a href="account.md#0x3_account_AutoAcceptCoin">AutoAcceptCoin</a>&gt;(ctx, <a href="account.md#0x3_account">account</a>, <a href="account.md#0x3_account_AutoAcceptCoin">AutoAcceptCoin</a>{ enable });
    };
 }
 </code></pre>
@@ -927,7 +927,7 @@ Configure whether auto-accept coins.
 Withdraw specifed <code>amount</code> of coin <code>CoinType</code> from the signing account.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_withdraw">withdraw</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_withdraw">withdraw</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
 </code></pre>
 
 
@@ -938,22 +938,22 @@ Withdraw specifed <code>amount</code> of coin <code>CoinType</code> from the sig
 
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_withdraw">withdraw</a>&lt;CoinType&gt;(
    ctx: &<b>mut</b> StorageContext,
-   <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>,
+   <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>,
    amount: u256,
 ): Coin&lt;CoinType&gt; {
-   <b>let</b> addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
+   <b>let</b> addr = <a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
    <b>assert</b>!(
       <a href="account.md#0x3_account_is_account_accept_coin">is_account_accept_coin</a>&lt;CoinType&gt;(ctx, addr),
-      <a href="_not_found">error::not_found</a>(<a href="account.md#0x3_account_ErrorAccountNotAcceptCoin">ErrorAccountNotAcceptCoin</a>),
+      <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="account.md#0x3_account_ErrorAccountNotAcceptCoin">ErrorAccountNotAcceptCoin</a>),
    );
 
    <b>assert</b>!(
        !<a href="coin.md#0x3_coin_is_coin_store_frozen">coin::is_coin_store_frozen</a>&lt;CoinType&gt;(ctx, addr),
-       <a href="_permission_denied">error::permission_denied</a>(<a href="account.md#0x3_account_ErrorAccountWithCoinFrozen">ErrorAccountWithCoinFrozen</a> ),
+       <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="account.md#0x3_account_ErrorAccountWithCoinFrozen">ErrorAccountWithCoinFrozen</a> ),
    );
 
-   <b>let</b> coin_type_info = <a href="_type_of">type_info::type_of</a>&lt;CoinType&gt;();
-   <a href="_emit">event::emit</a>&lt;<a href="account.md#0x3_account_WithdrawEvent">WithdrawEvent</a>&gt;(ctx, <a href="account.md#0x3_account_WithdrawEvent">WithdrawEvent</a> {
+   <b>let</b> coin_type_info = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/type_info.md#0x2_type_info_type_of">type_info::type_of</a>&lt;CoinType&gt;();
+   <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/event.md#0x2_event_emit">event::emit</a>&lt;<a href="account.md#0x3_account_WithdrawEvent">WithdrawEvent</a>&gt;(ctx, <a href="account.md#0x3_account_WithdrawEvent">WithdrawEvent</a> {
       coin_type_info,
       amount,
    });
@@ -973,7 +973,7 @@ Withdraw specifed <code>amount</code> of coin <code>CoinType</code> from the sig
 Deposit the coin balance into the recipient's account and emit an event.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_deposit">deposit</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_deposit">deposit</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
 </code></pre>
 
 
@@ -986,16 +986,16 @@ Deposit the coin balance into the recipient's account and emit an event.
    <a href="account.md#0x3_account_try_accept_coin">try_accept_coin</a>&lt;CoinType&gt;(ctx, addr);
    <b>assert</b>!(
       <a href="account.md#0x3_account_is_account_accept_coin">is_account_accept_coin</a>&lt;CoinType&gt;(ctx, addr),
-      <a href="_not_found">error::not_found</a>(<a href="account.md#0x3_account_ErrorAccountNotAcceptCoin">ErrorAccountNotAcceptCoin</a>),
+      <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="account.md#0x3_account_ErrorAccountNotAcceptCoin">ErrorAccountNotAcceptCoin</a>),
    );
 
    <b>assert</b>!(
        !<a href="coin.md#0x3_coin_is_coin_store_frozen">coin::is_coin_store_frozen</a>&lt;CoinType&gt;(ctx, addr),
-       <a href="_permission_denied">error::permission_denied</a>(<a href="account.md#0x3_account_ErrorAccountWithCoinFrozen">ErrorAccountWithCoinFrozen</a>),
+       <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="account.md#0x3_account_ErrorAccountWithCoinFrozen">ErrorAccountWithCoinFrozen</a>),
    );
 
-   <b>let</b> coin_type_info = <a href="_type_of">type_info::type_of</a>&lt;CoinType&gt;();
-   <a href="_emit">event::emit</a>&lt;<a href="account.md#0x3_account_DepositEvent">DepositEvent</a>&gt;(ctx, <a href="account.md#0x3_account_DepositEvent">DepositEvent</a> {
+   <b>let</b> coin_type_info = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/type_info.md#0x2_type_info_type_of">type_info::type_of</a>&lt;CoinType&gt;();
+   <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/event.md#0x2_event_emit">event::emit</a>&lt;<a href="account.md#0x3_account_DepositEvent">DepositEvent</a>&gt;(ctx, <a href="account.md#0x3_account_DepositEvent">DepositEvent</a> {
       coin_type_info,
       amount: <a href="coin.md#0x3_coin_value">coin::value</a>(&<a href="coin.md#0x3_coin">coin</a>),
    });
@@ -1015,7 +1015,7 @@ Deposit the coin balance into the recipient's account and emit an event.
 Transfer <code>amount</code> of coins <code>CoinType</code> from <code>from</code> to <code><b>to</b></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_transfer">transfer</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, amount: u256)
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_transfer">transfer</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, from: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>, <b>to</b>: <b>address</b>, amount: u256)
 </code></pre>
 
 
@@ -1026,7 +1026,7 @@ Transfer <code>amount</code> of coins <code>CoinType</code> from <code>from</cod
 
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_transfer">transfer</a>&lt;CoinType&gt;(
    ctx: &<b>mut</b> StorageContext,
-   from: &<a href="">signer</a>,
+   from: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>,
    <b>to</b>: <b>address</b>,
    amount: u256,
 ) {

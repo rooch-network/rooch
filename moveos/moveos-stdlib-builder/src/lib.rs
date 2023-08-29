@@ -6,13 +6,11 @@ use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use dependency_order::sort_by_dependency_order;
 use move_binary_format::{errors::Location, CompiledModule};
 use move_core_types::account_address::AccountAddress;
-use move_docgen::DocgenOptions;
 use move_model::model::GlobalEnv;
 use move_package::{compilation::compiled_package::CompiledPackage, BuildConfig, ModelConfig};
 use moveos_verifier::build::run_verifier;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::BTreeMap,
     fs::{self, File},
     io::{stderr, Write},
     path::{Path, PathBuf},
@@ -59,14 +57,6 @@ impl StdlibPackage {
             })
             .collect::<Result<Vec<CompiledModule>>>()
     }
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct BuildOptions {
-    pub named_addresses: BTreeMap<String, AccountAddress>,
-    pub with_abis: bool,
-    pub install_dir: Option<PathBuf>,
-    pub skip_fetch_latest_git_deps: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -144,33 +134,38 @@ impl StdlibBuildConfig {
     }
 
     fn build_doc(&self, model: &GlobalEnv, deps_doc_paths: Vec<String>) -> Result<()> {
-        let mut options = DocgenOptions::default();
-        options.root_doc_templates = vec![self.document_template.to_string_lossy().to_string()];
-        options.include_specs = false;
-        options.include_impl = true;
-        options.include_private_fun = false;
-        options.output_directory = self.document_output_directory.to_string_lossy().to_string();
-        options.compile_relative_to_output_dir = false;
-        options.doc_path = deps_doc_paths;
+        fs::remove_dir_all(self.document_output_directory.as_path())?;
+        println!("Generated move documents at {:?}, deps: {:?}", self.document_output_directory.as_path(), deps_doc_paths);
+        let options = move_docgen::DocgenOptions {
+            root_doc_templates: vec![self.document_template.to_string_lossy().to_string()],
+            include_specs: false,
+            include_impl: true,
+            include_private_fun: false,
+            output_directory: self.document_output_directory.to_string_lossy().to_string(),
+            compile_relative_to_output_dir: false,
+            doc_path: deps_doc_paths,
+            ..Default::default()
+        };
 
-        let generator = move_docgen::Docgen::new(&model, &options);
+        let generator = move_docgen::Docgen::new(model, &options);
 
         for (file, content) in generator.gen() {
             let path = PathBuf::from(&file);
             fs::create_dir_all(path.parent().unwrap())?;
             fs::write(path.as_path(), content)?;
-            println!("Generated {:?}", path);
         }
         Ok(())
     }
 
     fn build_error_code_map(&self, model: &GlobalEnv) -> Result<()> {
-        let mut error_map_gen_opt = move_errmapgen::ErrmapOptions::default();
-        error_map_gen_opt.error_prefix = self.error_prefix.clone();
-        error_map_gen_opt.output_file = self
-            .error_code_map_output_file
-            .to_string_lossy()
-            .to_string();
+        let error_map_gen_opt = move_errmapgen::ErrmapOptions {
+            error_prefix: self.error_prefix.clone(),
+            output_file: self
+                .error_code_map_output_file
+                .to_string_lossy()
+                .to_string(),
+            ..Default::default()
+        };
 
         let mut errmap_gen = move_errmapgen::ErrmapGen::new(model, &error_map_gen_opt);
         errmap_gen.gen();
@@ -181,15 +176,6 @@ impl StdlibBuildConfig {
 }
 
 impl Stdlib {
-    ///MoveOS builtin packages
-    pub fn builtin_packages() -> [&'static str; 3] {
-        //TODO move out rooch_framework and as a external framework arguments
-        [
-            "../moveos-stdlib/move-stdlib",
-            "../moveos-stdlib/moveos-stdlib",
-            "../../crates/rooch-framework",
-        ]
-    }
 
     /// Build the stdlib or framework packages
     pub fn build(build_configs: Vec<StdlibBuildConfig>) -> Result<Self> {

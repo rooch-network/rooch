@@ -18,16 +18,16 @@
 -  [Function `active_session_key`](#0x3_session_key_active_session_key)
 
 
-<pre><code><b>use</b> <a href="">0x1::ascii</a>;
-<b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x1::option</a>;
-<b>use</b> <a href="">0x1::signer</a>;
-<b>use</b> <a href="">0x1::vector</a>;
-<b>use</b> <a href="">0x2::account_storage</a>;
-<b>use</b> <a href="">0x2::storage_context</a>;
-<b>use</b> <a href="">0x2::table</a>;
-<b>use</b> <a href="">0x2::tx_context</a>;
-<b>use</b> <a href="">0x2::tx_meta</a>;
+<pre><code><b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/ascii.md#0x1_ascii">0x1::ascii</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">0x1::vector</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage">0x2::account_storage</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context">0x2::storage_context</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/table.md#0x2_table">0x2::table</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/tx_context.md#0x2_tx_context">0x2::tx_context</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/tx_meta.md#0x2_tx_meta">0x2::tx_meta</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 <b>use</b> <a href="native_validator.md#0x3_native_validator">0x3::native_validator</a>;
 </code></pre>
@@ -58,13 +58,13 @@ The session's scope
 
 </dd>
 <dt>
-<code>module_name: <a href="_String">ascii::String</a></code>
+<code>module_name: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/ascii.md#0x1_ascii_String">ascii::String</a></code>
 </dt>
 <dd>
  The scope module name, <code>*</code> means all modules in the module address
 </dd>
 <dt>
-<code>function_name: <a href="_String">ascii::String</a></code>
+<code>function_name: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/ascii.md#0x1_ascii_String">ascii::String</a></code>
 </dt>
 <dd>
  The scope function name, <code>*</code> means all functions in the module
@@ -91,13 +91,13 @@ The session's scope
 
 <dl>
 <dt>
-<code>authentication_key: <a href="">vector</a>&lt;u8&gt;</code>
+<code>authentication_key: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>scopes: <a href="">vector</a>&lt;<a href="session_key.md#0x3_session_key_SessionScope">session_key::SessionScope</a>&gt;</code>
+<code>scopes: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="session_key.md#0x3_session_key_SessionScope">session_key::SessionScope</a>&gt;</code>
 </dt>
 <dd>
 
@@ -142,7 +142,7 @@ The session's scope
 
 <dl>
 <dt>
-<code>keys: <a href="_Table">table::Table</a>&lt;<a href="">vector</a>&lt;u8&gt;, <a href="session_key.md#0x3_session_key_SessionKey">session_key::SessionKey</a>&gt;</code>
+<code>keys: <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/table.md#0x2_table_Table">table::Table</a>&lt;<a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="session_key.md#0x3_session_key_SessionKey">session_key::SessionKey</a>&gt;</code>
 </dt>
 <dd>
 
@@ -213,7 +213,7 @@ The session key is invalid
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_new_session_scope">new_session_scope</a>(module_address: <b>address</b>, module_name: <a href="_String">ascii::String</a>, function_name: <a href="_String">ascii::String</a>): <a href="session_key.md#0x3_session_key_SessionScope">session_key::SessionScope</a>
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_new_session_scope">new_session_scope</a>(module_address: <b>address</b>, module_name: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/ascii.md#0x1_ascii_String">ascii::String</a>, function_name: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/ascii.md#0x1_ascii_String">ascii::String</a>): <a href="session_key.md#0x3_session_key_SessionScope">session_key::SessionScope</a>
 </code></pre>
 
 
@@ -241,7 +241,7 @@ The session key is invalid
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_exists_session_key">exists_session_key</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, account_address: <b>address</b>, authentication_key: <a href="">vector</a>&lt;u8&gt;): bool
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_exists_session_key">exists_session_key</a>(ctx: &<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, account_address: <b>address</b>, authentication_key: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): bool
 </code></pre>
 
 
@@ -250,8 +250,8 @@ The session key is invalid
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_exists_session_key">exists_session_key</a>(ctx: &StorageContext, account_address: <b>address</b>, authentication_key: <a href="">vector</a>&lt;u8&gt;) : bool {
-    <a href="_is_some">option::is_some</a>(&<a href="session_key.md#0x3_session_key_get_session_key">get_session_key</a>(ctx, account_address, authentication_key))
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_exists_session_key">exists_session_key</a>(ctx: &StorageContext, account_address: <b>address</b>, authentication_key: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;) : bool {
+    <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&<a href="session_key.md#0x3_session_key_get_session_key">get_session_key</a>(ctx, account_address, authentication_key))
 }
 </code></pre>
 
@@ -266,7 +266,7 @@ The session key is invalid
 Get the session key of the account_address by the authentication key
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_get_session_key">get_session_key</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, account_address: <b>address</b>, authentication_key: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;<a href="session_key.md#0x3_session_key_SessionKey">session_key::SessionKey</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_get_session_key">get_session_key</a>(ctx: &<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, account_address: <b>address</b>, authentication_key: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="session_key.md#0x3_session_key_SessionKey">session_key::SessionKey</a>&gt;
 </code></pre>
 
 
@@ -275,15 +275,15 @@ Get the session key of the account_address by the authentication key
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_get_session_key">get_session_key</a>(ctx: &StorageContext, account_address: <b>address</b>, authentication_key: <a href="">vector</a>&lt;u8&gt;) : Option&lt;<a href="session_key.md#0x3_session_key_SessionKey">SessionKey</a>&gt; {
-    <b>if</b> (!<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, account_address)){
-        <b>return</b> <a href="_none">option::none</a>()
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_get_session_key">get_session_key</a>(ctx: &StorageContext, account_address: <b>address</b>, authentication_key: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;) : Option&lt;<a href="session_key.md#0x3_session_key_SessionKey">SessionKey</a>&gt; {
+    <b>if</b> (!<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_exists">account_storage::global_exists</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, account_address)){
+        <b>return</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_none">option::none</a>()
     };
-    <b>let</b> session_keys = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, account_address);
-    <b>if</b> (!<a href="_contains">table::contains</a>(&session_keys.keys, authentication_key)){
-        <b>return</b> <a href="_none">option::none</a>()
+    <b>let</b> session_keys = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_borrow">account_storage::global_borrow</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, account_address);
+    <b>if</b> (!<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/table.md#0x2_table_contains">table::contains</a>(&session_keys.keys, authentication_key)){
+        <b>return</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_none">option::none</a>()
     }<b>else</b>{
-        <a href="_some">option::some</a>(*<a href="_borrow">table::borrow</a>(&session_keys.keys, authentication_key))
+        <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_some">option::some</a>(*<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/table.md#0x2_table_borrow">table::borrow</a>(&session_keys.keys, authentication_key))
     }
 }
 </code></pre>
@@ -298,7 +298,7 @@ Get the session key of the account_address by the authentication key
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key">create_session_key</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scopes: <a href="">vector</a>&lt;<a href="session_key.md#0x3_session_key_SessionScope">session_key::SessionScope</a>&gt;, expiration_time: u64, max_inactive_interval: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key">create_session_key</a>(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, sender: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>, authentication_key: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, scopes: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="session_key.md#0x3_session_key_SessionScope">session_key::SessionScope</a>&gt;, expiration_time: u64, max_inactive_interval: u64)
 </code></pre>
 
 
@@ -307,11 +307,11 @@ Get the session key of the account_address by the authentication key
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key">create_session_key</a>(ctx: &<b>mut</b> StorageContext, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scopes: <a href="">vector</a>&lt;<a href="session_key.md#0x3_session_key_SessionScope">SessionScope</a>&gt;, expiration_time: u64, max_inactive_interval: u64) {
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key">create_session_key</a>(ctx: &<b>mut</b> StorageContext, sender: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>, authentication_key: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, scopes: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="session_key.md#0x3_session_key_SessionScope">SessionScope</a>&gt;, expiration_time: u64, max_inactive_interval: u64) {
     //Can not create new session key by the other session key
-    <b>assert</b>!(!<a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">auth_validator::is_validate_via_session_key</a>(ctx), <a href="_permission_denied">error::permission_denied</a>(<a href="session_key.md#0x3_session_key_ErrorSessionKeyCreatePermissionDenied">ErrorSessionKeyCreatePermissionDenied</a>));
-    <b>let</b> sender_addr = <a href="_address_of">signer::address_of</a>(sender);
-    <b>assert</b>!(!<a href="session_key.md#0x3_session_key_exists_session_key">exists_session_key</a>(ctx, sender_addr, authentication_key), <a href="_already_exists">error::already_exists</a>(<a href="session_key.md#0x3_session_key_ErrorSessionKeyAlreadyExists">ErrorSessionKeyAlreadyExists</a>));
+    <b>assert</b>!(!<a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">auth_validator::is_validate_via_session_key</a>(ctx), <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="session_key.md#0x3_session_key_ErrorSessionKeyCreatePermissionDenied">ErrorSessionKeyCreatePermissionDenied</a>));
+    <b>let</b> sender_addr = <a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(sender);
+    <b>assert</b>!(!<a href="session_key.md#0x3_session_key_exists_session_key">exists_session_key</a>(ctx, sender_addr, authentication_key), <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_already_exists">error::already_exists</a>(<a href="session_key.md#0x3_session_key_ErrorSessionKeyAlreadyExists">ErrorSessionKeyAlreadyExists</a>));
 
     <b>let</b> <a href="session_key.md#0x3_session_key">session_key</a> = <a href="session_key.md#0x3_session_key_SessionKey">SessionKey</a> {
         authentication_key: authentication_key,
@@ -321,13 +321,13 @@ Get the session key of the account_address by the authentication key
         last_active_time: 0,
         max_inactive_interval: max_inactive_interval,
     };
-    <b>if</b> (!<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender_addr)){
-        <b>let</b> keys = <a href="_new">table::new</a>&lt;<a href="">vector</a>&lt;u8&gt;, <a href="session_key.md#0x3_session_key_SessionKey">SessionKey</a>&gt;(<a href="_tx_context_mut">storage_context::tx_context_mut</a>(ctx));
-        <a href="_global_move_to">account_storage::global_move_to</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender, <a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>{keys});
+    <b>if</b> (!<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_exists">account_storage::global_exists</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender_addr)){
+        <b>let</b> keys = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/table.md#0x2_table_new">table::new</a>&lt;<a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="session_key.md#0x3_session_key_SessionKey">SessionKey</a>&gt;(<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_tx_context_mut">storage_context::tx_context_mut</a>(ctx));
+        <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_move_to">account_storage::global_move_to</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender, <a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>{keys});
     };
 
-    <b>let</b> session_keys = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender_addr);
-    <a href="_add">table::add</a>(&<b>mut</b> session_keys.keys, authentication_key, <a href="session_key.md#0x3_session_key">session_key</a>);
+    <b>let</b> session_keys = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender_addr);
+    <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/table.md#0x2_table_add">table::add</a>(&<b>mut</b> session_keys.keys, authentication_key, <a href="session_key.md#0x3_session_key">session_key</a>);
 }
 </code></pre>
 
@@ -341,7 +341,7 @@ Get the session key of the account_address by the authentication key
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key_entry">create_session_key_entry</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scope_module_address: <b>address</b>, scope_module_name: <a href="_String">ascii::String</a>, scope_function_name: <a href="_String">ascii::String</a>, expiration_time: u64, max_inactive_interval: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key_entry">create_session_key_entry</a>(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, sender: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>, authentication_key: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, scope_module_address: <b>address</b>, scope_module_name: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/ascii.md#0x1_ascii_String">ascii::String</a>, scope_function_name: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/ascii.md#0x1_ascii_String">ascii::String</a>, expiration_time: u64, max_inactive_interval: u64)
 </code></pre>
 
 
@@ -350,8 +350,8 @@ Get the session key of the account_address by the authentication key
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key_entry">create_session_key_entry</a>(ctx: &<b>mut</b> StorageContext, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scope_module_address: <b>address</b>, scope_module_name: std::ascii::String, scope_function_name: std::ascii::String,expiration_time: u64, max_inactive_interval: u64) {
-    <a href="session_key.md#0x3_session_key_create_session_key">create_session_key</a>(ctx, sender, authentication_key, <a href="_singleton">vector::singleton</a>(<a href="session_key.md#0x3_session_key_SessionScope">SessionScope</a>{
+<pre><code><b>public</b> entry <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key_entry">create_session_key_entry</a>(ctx: &<b>mut</b> StorageContext, sender: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>, authentication_key: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, scope_module_address: <b>address</b>, scope_module_name: std::ascii::String, scope_function_name: std::ascii::String,expiration_time: u64, max_inactive_interval: u64) {
+    <a href="session_key.md#0x3_session_key_create_session_key">create_session_key</a>(ctx, sender, authentication_key, <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector_singleton">vector::singleton</a>(<a href="session_key.md#0x3_session_key_SessionScope">SessionScope</a>{
         module_address: scope_module_address,
         module_name: scope_module_name,
         function_name: scope_function_name,
@@ -372,7 +372,7 @@ If the authentication key is not a session key, return option::none
 If the session key is expired or invalid, abort the tx, otherwise return option::some(authentication key)
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="session_key.md#0x3_session_key_validate">validate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, scheme: u64, authenticator_payload: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="session_key.md#0x3_session_key_validate">validate</a>(ctx: &<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, scheme: u64, authenticator_payload: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;
 </code></pre>
 
 
@@ -381,29 +381,29 @@ If the session key is expired or invalid, abort the tx, otherwise return option:
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="session_key.md#0x3_session_key_validate">validate</a>(ctx: &StorageContext, scheme: u64, authenticator_payload: <a href="">vector</a>&lt;u8&gt;) : Option&lt;<a href="">vector</a>&lt;u8&gt;&gt; {
-    <b>let</b> sender_addr = <a href="_sender">storage_context::sender</a>(ctx);
-    <b>if</b> (!<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender_addr)){
-        <b>return</b> <a href="_none">option::none</a>()
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="session_key.md#0x3_session_key_validate">validate</a>(ctx: &StorageContext, scheme: u64, authenticator_payload: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;) : Option&lt;<a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt; {
+    <b>let</b> sender_addr = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_sender">storage_context::sender</a>(ctx);
+    <b>if</b> (!<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_exists">account_storage::global_exists</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender_addr)){
+        <b>return</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_none">option::none</a>()
     };
     // We only support <b>native</b> validator for <a href="session_key.md#0x3_session_key_SessionKey">SessionKey</a> now
     <b>if</b>(scheme != validator::scheme()){
-        <b>return</b> <a href="_none">option::none</a>()
+        <b>return</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_none">option::none</a>()
     };
 
     <b>let</b> auth_key = validator::get_authentication_key_from_authenticator_payload(&authenticator_payload);
 
     <b>let</b> session_key_option = <a href="session_key.md#0x3_session_key_get_session_key">get_session_key</a>(ctx, sender_addr, auth_key);
-    <b>if</b> (<a href="_is_none">option::is_none</a>(&session_key_option)){
-        <b>return</b> <a href="_none">option::none</a>()
+    <b>if</b> (<a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_is_none">option::is_none</a>(&session_key_option)){
+        <b>return</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_none">option::none</a>()
     };
-    <b>let</b> <a href="session_key.md#0x3_session_key">session_key</a> = <a href="_extract">option::extract</a>(&<b>mut</b> session_key_option);
-    <b>assert</b>!(!<a href="session_key.md#0x3_session_key_is_expired">is_expired</a>(ctx, &<a href="session_key.md#0x3_session_key">session_key</a>), <a href="_permission_denied">error::permission_denied</a>(<a href="session_key.md#0x3_session_key_ErrorSessionIsExpired">ErrorSessionIsExpired</a>));
+    <b>let</b> <a href="session_key.md#0x3_session_key">session_key</a> = <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_extract">option::extract</a>(&<b>mut</b> session_key_option);
+    <b>assert</b>!(!<a href="session_key.md#0x3_session_key_is_expired">is_expired</a>(ctx, &<a href="session_key.md#0x3_session_key">session_key</a>), <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="session_key.md#0x3_session_key_ErrorSessionIsExpired">ErrorSessionIsExpired</a>));
 
-    <b>assert</b>!(<a href="session_key.md#0x3_session_key_in_session_scope">in_session_scope</a>(ctx, &<a href="session_key.md#0x3_session_key">session_key</a>), <a href="_permission_denied">error::permission_denied</a>(<a href="session_key.md#0x3_session_key_ErrorFunctionCallBeyondSessionScope">ErrorFunctionCallBeyondSessionScope</a>));
+    <b>assert</b>!(<a href="session_key.md#0x3_session_key_in_session_scope">in_session_scope</a>(ctx, &<a href="session_key.md#0x3_session_key">session_key</a>), <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="session_key.md#0x3_session_key_ErrorFunctionCallBeyondSessionScope">ErrorFunctionCallBeyondSessionScope</a>));
 
-    validator::validate_signature(&authenticator_payload, &<a href="_tx_hash">storage_context::tx_hash</a>(ctx));
-    <a href="_some">option::some</a>(auth_key)
+    validator::validate_signature(&authenticator_payload, &<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_tx_hash">storage_context::tx_hash</a>(ctx));
+    <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_some">option::some</a>(auth_key)
 }
 </code></pre>
 
@@ -417,7 +417,7 @@ If the session key is expired or invalid, abort the tx, otherwise return option:
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="session_key.md#0x3_session_key_active_session_key">active_session_key</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="session_key.md#0x3_session_key_active_session_key">active_session_key</a>(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, authentication_key: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -426,12 +426,12 @@ If the session key is expired or invalid, abort the tx, otherwise return option:
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="session_key.md#0x3_session_key_active_session_key">active_session_key</a>(ctx: &<b>mut</b> StorageContext, authentication_key: <a href="">vector</a>&lt;u8&gt;) {
-    <b>let</b> sender_addr = <a href="_sender">storage_context::sender</a>(ctx);
-    <b>assert</b>!(<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender_addr), <a href="_not_found">error::not_found</a>(<a href="session_key.md#0x3_session_key_ErrorSessionKeyIsInvalid">ErrorSessionKeyIsInvalid</a>));
-    <b>let</b> session_keys = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender_addr);
-    <b>assert</b>!(<a href="_contains">table::contains</a>(&session_keys.keys, authentication_key), <a href="_not_found">error::not_found</a>(<a href="session_key.md#0x3_session_key_ErrorSessionKeyIsInvalid">ErrorSessionKeyIsInvalid</a>));
-    <b>let</b> <a href="session_key.md#0x3_session_key">session_key</a> = <a href="_borrow_mut">table::borrow_mut</a>(&<b>mut</b> session_keys.keys, authentication_key);
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="session_key.md#0x3_session_key_active_session_key">active_session_key</a>(ctx: &<b>mut</b> StorageContext, authentication_key: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;) {
+    <b>let</b> sender_addr = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_sender">storage_context::sender</a>(ctx);
+    <b>assert</b>!(<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_exists">account_storage::global_exists</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender_addr), <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="session_key.md#0x3_session_key_ErrorSessionKeyIsInvalid">ErrorSessionKeyIsInvalid</a>));
+    <b>let</b> session_keys = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender_addr);
+    <b>assert</b>!(<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/table.md#0x2_table_contains">table::contains</a>(&session_keys.keys, authentication_key), <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="session_key.md#0x3_session_key_ErrorSessionKeyIsInvalid">ErrorSessionKeyIsInvalid</a>));
+    <b>let</b> <a href="session_key.md#0x3_session_key">session_key</a> = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/table.md#0x2_table_borrow_mut">table::borrow_mut</a>(&<b>mut</b> session_keys.keys, authentication_key);
     //TODO set the last active time <b>to</b> now when the timestamp is supported
     <a href="session_key.md#0x3_session_key">session_key</a>.last_active_time = <a href="session_key.md#0x3_session_key">session_key</a>.last_active_time + 1;
 }
