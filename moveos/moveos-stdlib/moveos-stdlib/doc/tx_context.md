@@ -103,11 +103,11 @@ the VM and passed in to the entrypoint of the transaction as <code>&<b>mut</b> <
 ## Constants
 
 
-<a name="0x2_tx_context_EInvalidContext"></a>
+<a name="0x2_tx_context_ErrorInvalidContext"></a>
 
 
 
-<pre><code><b>const</b> <a href="tx_context.md#0x2_tx_context_EInvalidContext">EInvalidContext</a>: u64 = 1;
+<pre><code><b>const</b> <a href="tx_context.md#0x2_tx_context_ErrorInvalidContext">ErrorInvalidContext</a>: u64 = 1;
 </code></pre>
 
 
@@ -397,7 +397,7 @@ The meta data is only available when executing or validating a transaction, othe
 
 <pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta">tx_meta</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): TxMeta {
     <b>let</b> meta = <a href="tx_context.md#0x2_tx_context_get">get</a>&lt;TxMeta&gt;(self);
-    <b>assert</b>!(<a href="_is_some">option::is_some</a>(&meta), <a href="_invalid_state">error::invalid_state</a>(<a href="tx_context.md#0x2_tx_context_EInvalidContext">EInvalidContext</a>));
+    <b>assert</b>!(<a href="_is_some">option::is_some</a>(&meta), <a href="_invalid_state">error::invalid_state</a>(<a href="tx_context.md#0x2_tx_context_ErrorInvalidContext">ErrorInvalidContext</a>));
     <a href="_extract">option::extract</a>(&<b>mut</b> meta)
 }
 </code></pre>
@@ -424,7 +424,7 @@ The result is only available in the <code>post_execute</code> function.
 
 <pre><code><b>public</b> <b>fun</b> <a href="tx_result.md#0x2_tx_result">tx_result</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): TxResult {
     <b>let</b> result = <a href="tx_context.md#0x2_tx_context_get">get</a>&lt;TxResult&gt;(self);
-    <b>assert</b>!(<a href="_is_some">option::is_some</a>(&result), <a href="_invalid_state">error::invalid_state</a>(<a href="tx_context.md#0x2_tx_context_EInvalidContext">EInvalidContext</a>));
+    <b>assert</b>!(<a href="_is_some">option::is_some</a>(&result), <a href="_invalid_state">error::invalid_state</a>(<a href="tx_context.md#0x2_tx_context_ErrorInvalidContext">ErrorInvalidContext</a>));
     <a href="_extract">option::extract</a>(&<b>mut</b> result)
 }
 </code></pre>

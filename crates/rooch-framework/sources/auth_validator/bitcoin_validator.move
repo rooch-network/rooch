@@ -36,7 +36,7 @@ module rooch_framework::bitcoin_validator {
             vector::length(&public_key) == ecdsa_k1::public_key_length()
             || vector::length(&public_key) == 20 // TODO support key generation of 20-bytes public key for Bitcoin bech32 addresses
             || vector::length(&public_key) == 32, // TODO support key generation of 32-bytes public key for Bitcoin bech32 addresses
-            error::invalid_argument(EInvalidPublicKeyLength)
+            error::invalid_argument(ErrorInvalidPublicKeyLength)
         );
 
         // User can rotate the authentication key arbitrarily, so we do not need to check the new public key with the account address.

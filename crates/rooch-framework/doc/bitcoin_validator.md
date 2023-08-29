@@ -66,12 +66,12 @@ This module implements bitcoin validator with the ECDSA signature over Secp256k1
 ## Constants
 
 
-<a name="0x3_bitcoin_validator_EInvalidPublicKeyLength"></a>
+<a name="0x3_bitcoin_validator_ErrorInvalidPublicKeyLength"></a>
 
 error code
 
 
-<pre><code><b>const</b> <a href="bitcoin_validator.md#0x3_bitcoin_validator_EInvalidPublicKeyLength">EInvalidPublicKeyLength</a>: u64 = 0;
+<pre><code><b>const</b> <a href="bitcoin_validator.md#0x3_bitcoin_validator_ErrorInvalidPublicKeyLength">ErrorInvalidPublicKeyLength</a>: u64 = 0;
 </code></pre>
 
 
@@ -138,7 +138,7 @@ becuase ecdsa k1 scheme only supports key generation of 33-bytes compressed publ
         <a href="_length">vector::length</a>(&public_key) == <a href="ecdsa_k1.md#0x3_ecdsa_k1_public_key_length">ecdsa_k1::public_key_length</a>()
         || <a href="_length">vector::length</a>(&public_key) == 20 // TODO support key generation of 20-bytes <b>public</b> key for Bitcoin bech32 addresses
         || <a href="_length">vector::length</a>(&public_key) == 32, // TODO support key generation of 32-bytes <b>public</b> key for Bitcoin bech32 addresses
-        <a href="_invalid_argument">error::invalid_argument</a>(<a href="bitcoin_validator.md#0x3_bitcoin_validator_EInvalidPublicKeyLength">EInvalidPublicKeyLength</a>)
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="bitcoin_validator.md#0x3_bitcoin_validator_ErrorInvalidPublicKeyLength">ErrorInvalidPublicKeyLength</a>)
     );
 
     // User can rotate the authentication key arbitrarily, so we do not need <b>to</b> check the new <b>public</b> key <b>with</b> the <a href="account.md#0x3_account">account</a> <b>address</b>.

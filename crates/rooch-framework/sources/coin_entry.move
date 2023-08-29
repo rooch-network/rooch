@@ -71,7 +71,7 @@ module rooch_framework::coin_entry {
         assert!(
             // exists<Capabilities<CoinType>>(account_addr),
             account_storage::global_exists<Capabilities<CoinType>>(ctx, account_addr),
-            error::not_found(ENoCapabilities),
+            error::not_found(ErrorNoCapabilities),
         );
 
         let cap = account_storage::global_move_from<Capabilities<CoinType>>(ctx, account_addr);
@@ -91,7 +91,7 @@ module rooch_framework::coin_entry {
 
         assert!(
             account_storage::global_exists<Capabilities<CoinType>>(ctx, account_addr),
-            error::not_found(ENoCapabilities),
+            error::not_found(ErrorNoCapabilities),
         );
 
         // let cap = account_storage::global_borrow<Capabilities<CoinType>>(ctx, account_addr);
@@ -143,7 +143,7 @@ module rooch_framework::coin_entry {
         let account_addr = signer::address_of(account);
         assert!(
             account_storage::global_exists<Capabilities<CoinType>>(ctx, account_addr),
-            error::not_found(ENoCapabilities),
+            error::not_found(ErrorNoCapabilities),
         );
         // let cap = account_storage::global_borrow<Capabilities<CoinType>>(ctx, account_addr);
         let cap = account_storage::global_move_from<Capabilities<CoinType>>(ctx, account_addr);
@@ -159,7 +159,7 @@ module rooch_framework::coin_entry {
         let account_addr = signer::address_of(account);
         assert!(
             account_storage::global_exists<Capabilities<CoinType>>(ctx, account_addr),
-            error::not_found(ENoCapabilities),
+            error::not_found(ErrorNoCapabilities),
         );
         let cap = account_storage::global_move_from<Capabilities<CoinType>>(ctx, account_addr);
         // let cap = account_storage::global_borrow<Capabilities<CoinType>>(ctx, account_addr);

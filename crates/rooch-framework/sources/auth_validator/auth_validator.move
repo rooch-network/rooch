@@ -20,11 +20,11 @@ module rooch_framework::auth_validator {
     const ErrorValidateInvalidAuthenticator: u64 = 1002;
 
     public fun error_invalid_account_auth_key(): u64 {
-        error::invalid_argument(EValidateInvalidAccountAuthKey)
+        error::invalid_argument(ErrorValidateInvalidAccountAuthKey)
     }
 
     public fun error_invalid_authenticator(): u64 {
-        error::invalid_argument(EValidateInvalidAuthenticator)
+        error::invalid_argument(ErrorValidateInvalidAuthenticator)
     }
 
     /// The Authentication Validator
@@ -82,7 +82,7 @@ module rooch_framework::auth_validator {
     /// Get the TxValidateResult from the TxContext, Only can be called after the transaction is validated
     public fun get_validate_result_from_tx_ctx(ctx: &StorageContext): TxValidateResult {
         let validate_result_opt = storage_context::get<TxValidateResult>(ctx);
-        assert!(option::is_some(&validate_result_opt), error::invalid_state(EMustExecuteAfterValidate));
+        assert!(option::is_some(&validate_result_opt), error::invalid_state(ErrorMustExecuteAfterValidate));
         option::extract(&mut validate_result_opt)
     }
 
@@ -112,7 +112,7 @@ module rooch_framework::auth_validator {
     /// Get the session key from the TxValidateResult in the TxContext
     /// Only can be called after the transaction is validated
     public fun get_session_key_from_tx_ctx(ctx: &StorageContext): vector<u8> {
-        assert!(is_validate_via_session_key(ctx), error::invalid_state(EMustExecuteAfterValidate));
+        assert!(is_validate_via_session_key(ctx), error::invalid_state(ErrorMustExecuteAfterValidate));
         option::extract(&mut get_session_key_from_tx_ctx_option(ctx))
     }
 }

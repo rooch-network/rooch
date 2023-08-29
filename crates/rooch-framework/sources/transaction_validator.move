@@ -54,20 +54,20 @@ module rooch_framework::transaction_validator {
         let tx_sequence_number = storage_context::sequence_number(ctx);
         assert!(
             (tx_sequence_number as u128) < MAX_U64,
-            error::out_of_range(EValidateSequenceNumberTooBig)
+            error::out_of_range(ErrorValidateSequenceNumberTooBig)
         );
 
         let account_sequence_number = account::sequence_number_for_sender(ctx);
         assert!(
             tx_sequence_number >= account_sequence_number,
-            error::invalid_argument(EValidateSequenceNuberTooOld)
+            error::invalid_argument(ErrorValidateSequenceNuberTooOld)
         );
 
         // [PCA12]: Check that the transaction's sequence number matches the
         // current sequence number. Otherwise sequence number is too new by [PCA11].
         assert!(
             tx_sequence_number == account_sequence_number,
-            error::invalid_argument(EValidateSequenceNumberTooNew)
+            error::invalid_argument(ErrorValidateSequenceNumberTooNew)
         );
 
         // === validate gas ===
@@ -89,7 +89,7 @@ module rooch_framework::transaction_validator {
             if (!rooch_framework::builtin_validators::is_builtin_scheme(scheme)) {
                 assert!(
                     account_authentication::is_auth_validator_installed(ctx, sender, validator_id),
-                    error::invalid_state(EValidateNotInstalledAuthValidator)
+                    error::invalid_state(ErrorValidateNotInstalledAuthValidator)
                 );
             };
             auth_validator::new_tx_validate_result(scheme, option::some(*auth_validator), option::none())

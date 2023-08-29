@@ -141,12 +141,12 @@ The container stores the current pending delegations.
 ## Constants
 
 
-<a name="0x3_gas_coin_ENoCapabilities"></a>
+<a name="0x3_gas_coin_ErrorNoCapabilities"></a>
 
 Account does not have mint capability
 
 
-<pre><code><b>const</b> <a href="gas_coin.md#0x3_gas_coin_ENoCapabilities">ENoCapabilities</a>: u64 = 1;
+<pre><code><b>const</b> <a href="gas_coin.md#0x3_gas_coin_ErrorNoCapabilities">ErrorNoCapabilities</a>: u64 = 1;
 </code></pre>
 
 

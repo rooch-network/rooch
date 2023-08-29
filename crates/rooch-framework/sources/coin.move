@@ -36,7 +36,7 @@ module rooch_framework::coin {
     const ErrorCoinNameTooLong: u64 = 6;
 
     /// Symbol of the coin is too long
-    const ErrorSymbolTooLong: u64 = 7;
+    const ErrorCoinSymbolTooLong: u64 = 7;
 
     //
     // Constants
@@ -231,12 +231,12 @@ module rooch_framework::coin {
     /// a `BurnCapability` for the specific `CoinType`.
     public fun destroy_zero<CoinType>(zero_coin: Coin<CoinType>) {
         let Coin { value } = zero_coin;
-        assert!(value == 0, error::invalid_argument(EDestroyOfNonZeroCoin))
+        assert!(value == 0, error::invalid_argument(ErrorDestroyOfNonZeroCoin))
     }
 
     /// Extracts `amount` from the passed-in `coin`, where the original coin is modified in place.
     public fun extract<CoinType>(coin: &mut Coin<CoinType>, amount: u256): Coin<CoinType> {
-        assert!(coin.value >= amount, error::invalid_argument(EInSufficientBalance));
+        assert!(coin.value >= amount, error::invalid_argument(ErrorInSufficientBalance));
         coin.value = coin.value - amount;
         Coin { value: amount }
     }
@@ -282,16 +282,16 @@ module rooch_framework::coin {
         let addr = signer::address_of(account);
         assert!(
             coin_address<CoinType>() == addr,
-            error::invalid_argument(ECoinInfoAddressMismatch),
+            error::invalid_argument(ErrorCoinInfoAddressMismatch),
         );
 
         assert!(
             !account_storage::global_exists<CoinInfo<CoinType>>(ctx, addr),
-            error::already_exists(ECoinInfoAlreadyPublished),
+            error::already_exists(ErrorCoinInfoAlreadyPublished),
         );
 
-        assert!(string::length(&name) <= MAX_COIN_NAME_LENGTH, error::invalid_argument(ECoinNameTooLong));
-        assert!(string::length(&symbol) <= MAX_COIN_SYMBOL_LENGTH, error::invalid_argument(ECoinSymbolTooLong));
+        assert!(string::length(&name) <= MAX_COIN_NAME_LENGTH, error::invalid_argument(ErrorCoinNameTooLong));
+        assert!(string::length(&symbol) <= MAX_COIN_SYMBOL_LENGTH, error::invalid_argument(ErrorCoinSymbolTooLong));
 
         let coin_info = CoinInfo<CoinType> {
             name,

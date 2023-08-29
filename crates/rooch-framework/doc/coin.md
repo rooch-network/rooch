@@ -385,72 +385,72 @@ Maximum possible coin supply.
 
 
 
-<a name="0x3_coin_ECoinInfoAddressMismatch"></a>
+<a name="0x3_coin_ErrorCoinInfoAddressMismatch"></a>
 
 Address of account which is used to initialize a coin <code>CoinType</code> doesn't match the deployer of module
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_ECoinInfoAddressMismatch">ECoinInfoAddressMismatch</a>: u64 = 1;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinInfoAddressMismatch">ErrorCoinInfoAddressMismatch</a>: u64 = 1;
 </code></pre>
 
 
 
-<a name="0x3_coin_ECoinInfoAlreadyPublished"></a>
+<a name="0x3_coin_ErrorCoinInfoAlreadyPublished"></a>
 
 <code>CoinType</code> is already initialized as a coin
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_ECoinInfoAlreadyPublished">ECoinInfoAlreadyPublished</a>: u64 = 2;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinInfoAlreadyPublished">ErrorCoinInfoAlreadyPublished</a>: u64 = 2;
 </code></pre>
 
 
 
-<a name="0x3_coin_ECoinNameTooLong"></a>
+<a name="0x3_coin_ErrorCoinNameTooLong"></a>
 
 Name of the coin is too long
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_ECoinNameTooLong">ECoinNameTooLong</a>: u64 = 6;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinNameTooLong">ErrorCoinNameTooLong</a>: u64 = 6;
 </code></pre>
 
 
 
-<a name="0x3_coin_ECoinSymbolTooLong"></a>
+<a name="0x3_coin_ErrorCoinSymbolTooLong"></a>
 
 Symbol of the coin is too long
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_ECoinSymbolTooLong">ECoinSymbolTooLong</a>: u64 = 7;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinSymbolTooLong">ErrorCoinSymbolTooLong</a>: u64 = 7;
 </code></pre>
 
 
 
-<a name="0x3_coin_EDestroyOfNonZeroCoin"></a>
+<a name="0x3_coin_ErrorDestroyOfNonZeroCoin"></a>
 
 Cannot destroy non-zero coins
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_EDestroyOfNonZeroCoin">EDestroyOfNonZeroCoin</a>: u64 = 4;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorDestroyOfNonZeroCoin">ErrorDestroyOfNonZeroCoin</a>: u64 = 4;
 </code></pre>
 
 
 
-<a name="0x3_coin_EInSufficientBalance"></a>
+<a name="0x3_coin_ErrorInSufficientBalance"></a>
 
 Not enough coins to complete transaction
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_EInSufficientBalance">EInSufficientBalance</a>: u64 = 3;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorInSufficientBalance">ErrorInSufficientBalance</a>: u64 = 3;
 </code></pre>
 
 
 
-<a name="0x3_coin_EZeroCoinAmount"></a>
+<a name="0x3_coin_ErrorZeroCoinAmount"></a>
 
 Coin amount cannot be zero
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_EZeroCoinAmount">EZeroCoinAmount</a>: u64 = 5;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorZeroCoinAmount">ErrorZeroCoinAmount</a>: u64 = 5;
 </code></pre>
 
 
@@ -751,7 +751,7 @@ a <code><a href="coin.md#0x3_coin_BurnCapability">BurnCapability</a></code> for 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_destroy_zero">destroy_zero</a>&lt;CoinType&gt;(zero_coin: <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;) {
     <b>let</b> <a href="coin.md#0x3_coin_Coin">Coin</a> { value } = zero_coin;
-    <b>assert</b>!(value == 0, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_EDestroyOfNonZeroCoin">EDestroyOfNonZeroCoin</a>))
+    <b>assert</b>!(value == 0, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ErrorDestroyOfNonZeroCoin">ErrorDestroyOfNonZeroCoin</a>))
 }
 </code></pre>
 
@@ -776,7 +776,7 @@ Extracts <code>amount</code> from the passed-in <code><a href="coin.md#0x3_coin"
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_extract">extract</a>&lt;CoinType&gt;(<a href="coin.md#0x3_coin">coin</a>: &<b>mut</b> <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;, amount: u256): <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
-    <b>assert</b>!(<a href="coin.md#0x3_coin">coin</a>.value &gt;= amount, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_EInSufficientBalance">EInSufficientBalance</a>));
+    <b>assert</b>!(<a href="coin.md#0x3_coin">coin</a>.value &gt;= amount, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ErrorInSufficientBalance">ErrorInSufficientBalance</a>));
     <a href="coin.md#0x3_coin">coin</a>.value = <a href="coin.md#0x3_coin">coin</a>.value - amount;
     <a href="coin.md#0x3_coin_Coin">Coin</a> { value: amount }
 }
@@ -901,16 +901,16 @@ The given signer also becomes the account hosting the information about the coin
     <b>let</b> addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
     <b>assert</b>!(
         <a href="coin.md#0x3_coin_coin_address">coin_address</a>&lt;CoinType&gt;() == addr,
-        <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ECoinInfoAddressMismatch">ECoinInfoAddressMismatch</a>),
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ErrorCoinInfoAddressMismatch">ErrorCoinInfoAddressMismatch</a>),
     );
 
     <b>assert</b>!(
         !<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType&gt;&gt;(ctx, addr),
-        <a href="_already_exists">error::already_exists</a>(<a href="coin.md#0x3_coin_ECoinInfoAlreadyPublished">ECoinInfoAlreadyPublished</a>),
+        <a href="_already_exists">error::already_exists</a>(<a href="coin.md#0x3_coin_ErrorCoinInfoAlreadyPublished">ErrorCoinInfoAlreadyPublished</a>),
     );
 
-    <b>assert</b>!(<a href="_length">string::length</a>(&name) &lt;= <a href="coin.md#0x3_coin_MAX_COIN_NAME_LENGTH">MAX_COIN_NAME_LENGTH</a>, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ECoinNameTooLong">ECoinNameTooLong</a>));
-    <b>assert</b>!(<a href="_length">string::length</a>(&symbol) &lt;= <a href="coin.md#0x3_coin_MAX_COIN_SYMBOL_LENGTH">MAX_COIN_SYMBOL_LENGTH</a>, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ECoinSymbolTooLong">ECoinSymbolTooLong</a>));
+    <b>assert</b>!(<a href="_length">string::length</a>(&name) &lt;= <a href="coin.md#0x3_coin_MAX_COIN_NAME_LENGTH">MAX_COIN_NAME_LENGTH</a>, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ErrorCoinNameTooLong">ErrorCoinNameTooLong</a>));
+    <b>assert</b>!(<a href="_length">string::length</a>(&symbol) &lt;= <a href="coin.md#0x3_coin_MAX_COIN_SYMBOL_LENGTH">MAX_COIN_SYMBOL_LENGTH</a>, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ErrorCoinSymbolTooLong">ErrorCoinSymbolTooLong</a>));
 
     <b>let</b> coin_info = <a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType&gt; {
         name,

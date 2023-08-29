@@ -31,7 +31,7 @@ module rooch_framework::native_validator {
         // compare newly passed public key with Rooch public key length to ensure it's compatible
         assert!(
             vector::length(&public_key) == ed25519::public_key_length(),
-            error::invalid_argument(EInvalidPublicKeyLength)
+            error::invalid_argument(ErrorInvalidPublicKeyLength)
         );
 
         // User can rotate the authentication key arbitrarily, so we do not need to check the new public key with the account address.

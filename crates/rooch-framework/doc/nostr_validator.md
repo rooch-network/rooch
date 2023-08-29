@@ -68,12 +68,12 @@ This module implements Nostr validator with the Schnorr crypto scheme.
 ## Constants
 
 
-<a name="0x3_nostr_validator_EInvalidPublicKeyLength"></a>
+<a name="0x3_nostr_validator_ErrorInvalidPublicKeyLength"></a>
 
 error code
 
 
-<pre><code><b>const</b> <a href="nostr_validator.md#0x3_nostr_validator_EInvalidPublicKeyLength">EInvalidPublicKeyLength</a>: u64 = 0;
+<pre><code><b>const</b> <a href="nostr_validator.md#0x3_nostr_validator_ErrorInvalidPublicKeyLength">ErrorInvalidPublicKeyLength</a>: u64 = 0;
 </code></pre>
 
 
@@ -135,7 +135,7 @@ there defines scheme for each blockchain
     // compare newly passed <b>public</b> key <b>with</b> Nostr <b>public</b> key length <b>to</b> ensure it's compatible
     <b>assert</b>!(
         <a href="_length">vector::length</a>(&public_key) == <a href="schnorr.md#0x3_schnorr_public_key_length">schnorr::public_key_length</a>(),
-        <a href="_invalid_argument">error::invalid_argument</a>(<a href="nostr_validator.md#0x3_nostr_validator_EInvalidPublicKeyLength">EInvalidPublicKeyLength</a>)
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="nostr_validator.md#0x3_nostr_validator_ErrorInvalidPublicKeyLength">ErrorInvalidPublicKeyLength</a>)
     );
 
     // User can rotate the authentication key arbitrarily, so we do not need <b>to</b> check the new <b>public</b> key <b>with</b> the <a href="account.md#0x3_account">account</a> <b>address</b>.
