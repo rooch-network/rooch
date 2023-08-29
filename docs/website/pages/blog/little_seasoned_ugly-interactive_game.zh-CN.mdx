@@ -263,228 +263,151 @@ import PostHeader from "/components/blog/postHeader";
 
 ----
 
-**Moe**：: How will system calls be implemented? Indeed, it could pose a
-formidable issue. 
+**Moe**：系统调用将如何实现？事实上，这可能会带来一个棘手的问题。
 
-**Joe**：: However, we can cleverly construct our program to minimize the use 
-of system calls, deploying our own system call implementations to replace
-generic ones. Our primary demand is to maintain consistency in state
-changes on and off the chain, rather than to create a universal emulator.
+**Joe**：但是，我们可以巧妙地构建我们的程序来最大限度地减少系统调用的使用，部署我们自己的系统调用实现来替换通用的系统调用实现。我们的首要需求是保持链上链下状态变化的一致性，而不是创建一个通用模拟器。
 
 ----
 
-**Moe**：: When I mention system calls, I am actually referring to the
-non-deterministic factors in the language. System calls represent a form
-of interaction between the emulator and the outside world, and such
-interaction could imply non-determinism. You mentioned the method of
-minimizing and customizing system calls, which, while not specific, is
-indeed feasible considering that all aspects of the emulator lie in the
-hands of the implementer. However, I remain apprehensive, feeling that
-there are many non-deterministic factors that I have not yet considered.
+**Moe**：当我提到系统调用时，我实际上指的是语言中的非确定性因素。系统调用代表模拟器与外部世界之间的一种交互形式，这种交互可能意味着非确定性。您提到了最小化和定制系统调用的方法，虽然不具体，但考虑到模拟器的所有方面都掌握在实现者手中，这确实是可行的。但我还是很担心，觉得还有很多不确定因素没有考虑到。
 
-**Joe**：: I perceive your concerns, and you have even begun contemplating
-issues of the next phase. Let us first postulate that we already possess
-such a medium and continue this discussion in the following section.
+**Joe**：我理解你的担忧，你甚至已经开始考虑下一阶段的问题了。让我们首先假设我们已经拥有这样的媒介，并在下一节中继续讨论。
 
 ----
 
-**Moe**：: The intermediary representation appears to be impartial towards all
-chains, which sounds immensely promising.
+**Moe**：中间人代表似乎对所有链都是公正的，这听起来非常有希望。
 
-**Joe**：: Indeed. We can implement its emulator on various chains, thus
-enabling various chains to have an Interactive Game. I've heard of a
-project that's doing just that.
+**Joe**：确实如此。我们可以在各个链上实现它的模拟器，从而使各个链能够进行交互式游戏。我听说过一个项目就是这样做的。
 
 ----
 
-**Moe**：: [Rooch/flexEmu](https://github.com/rooch-network/flexEmu)
+**Moe**：[Rooch/flexEmu](https://github.com/rooch-network/flexEmu)
 
-**Joe**：: Exactly it!
+**Joe**：正是如此！
 
-### 3.2 确定性步骤：: 过程, 输入
+### 3.2 确定性步骤：过程，输入
 
-**Moe**：: Let's proceed swiftly, as the earlier segment regarding language
-has not yet been fully discussed.
+**Moe**：我们快点进行吧，因为前面关于语言的部分还没有充分讨论。
 
-**Joe**：: Indeed, we need to delve deeper into the determinacy of language.
-
-----
-
-**Moe**：: When we discuss the determinacy of assembly language, we are in
-fact addressing the determinacy of instructions.
-
-**Joe**：: Instruction is composed of opcode and operand. These are the two
-primary sources of determinacy issues: the micro-level manifestations of
-procedure and input at the level of instructions. We have briefly
-discussed input in 'The Seasoned' and will delve into a detailed
-analysis shortly. First, we need to ensure the uniqueness of instruction
-side effects.
+**Joe**：确实，我们需要更深入地研究语言的确定性。
 
 ----
 
-**Moe**：: Concurrency will be a serious issue.
+**Moe**：当我们讨论汇编语言的确定性时，实际上是在讨论指令的确定性。
 
-**Joe**：: Yes. The output (state root) produced by emulator must be as same
-as the one calculated by parallel executor in production environment.
-
-----
-
-**Moe**：: How do we ensure the determinacy of concurrent execution in every
-step?
-
-**Joe**：: Dr.Strange[^3] could help us.
+**Joe**：指令由操作码和操作数组成。这是确定性问题的两个主要来源：程序的微观表现和指令级别的输入。我们已经简要讨论了“深入”中的输入，并将很快深入进行详细分析。首先，我们需要保证指令副作用的唯一性。
 
 ----
 
-**Moe**：: Are you serious?
+**Moe**：并发将是一个严重的问题。
 
-**Joe**：: No, I'm Joe. We can't do that, and our purpose is not to build such a
-system. What we want is to get the same final state and maintain the
-same step state among emulators.
+**Joe**：是的。仿真器产生的输出（状态根）必须与生产环境中并行执行器计算的输出相同。
 
 ----
 
-**Moe**：: Oh, yes. It's not a hard job to achieve the same final state. We
-just need...
+**Moe**：如何保证每一步并发执行的确定性？
 
-**Joe**：: Sequencer should give each tx an order number. Tx that are causally
-unrelated can be executed in parallel, while those that are causally
-related must be executed strictly in sequence. In this manner, the final
-state will be consistent with a global sequential execution.
+**Joe**：Dr.Strange[^3] 可以帮助我们。
 
 ----
 
-**Moe**：: Now, we can confidently eliminate the impact of concurrency on the
-side effects of instructions.
+**Moe**：你是认真的？
 
-**Joe**：: In addition to concurrent transactions, there are many units of
-concurrent execution in the process.
+**Joe**：不，我是乔。我们不能这样做，我们的目的也不是建立这样一个系统。我们想要的是在模拟器之间获得相同的最终状态并保持相同的步骤状态。
 
 ----
 
-**Moe**：: The easiest way to do this is to force the emulator to execute
-on a single thread.
+**Moe**：哦，是的。达到同样的最终状态并不是一件难事。我们只需要……
 
-**Joe**：: Yes.
-
-----
-
-**Moe**：: Randomness is another element of instability.
-
-**Joe**：: Let's start analysing the world of instructions from the bottom
-up.
+**Joe**：排序器应该给每个交易一个订单号。因果无关的交易可以并行执行，而因果相关的交易必须严格按顺序执行。这样，最终状态将与全局顺序执行一致。
 
 ----
 
-**Moe**：: There is no opcode supporting random operation directly in RISC
-family. For related system calls, we can embed a fixed random data
-source within the emulator. This way, each emulator can achieve
-consistent pseudorandom numbers in the same procedure.
+**Moe**：现在，我们可以自信地消除并发对指令副作用的影响。
 
-**Joe**：: Nothing wrong with.
+**Joe**：除了并发交易之外，流程中还有很多并发执行单元。
 
 ----
 
-**Moe**：: Linux Kernel hates float. Does emulator hate that too?
+**Moe**：最简单的方法是强制模拟器在单个线程上执行。
 
-**Joe**：: We could use SoftFloat Library or just forbidden it.
-
-----
-
-**Moe**：: Sounds like we've prepared everything for deterministic procedure.
-
-**Joe**：: Not enough yet. Do not forget that procedures cannot prove their
-own innocence.
+**Joe**：是的。
 
 ----
 
-**Moe**：: L1 can validate static procedures, requiring only a digest. Prior
-to the commencement of the Interactive Game, the L1 contract will verify
-whether a consistent procedure has been used by the two parties through
-the validation of their memory states.
+**Moe**：随机性是另一个不稳定因素。
 
-**Joe**：: Indeed. This is akin to a verifiable boot process. The memory
-address of the boot sector is fixed, and both parties only need to
-provide a simple merkle tree proof.
+**Joe**：让我们开始自下而上分析指令世界。
 
 ----
 
-**Moe**：: You just mentioned that there are
-additional points to be made regarding the issue with input.
+**Moe**：RISC 家族中没有直接支持随机操作的操作码。对于相关的系统调用，我们可以在模拟器中嵌入固定的随机数据源。这样，每个仿真器都可以在同一过程中获得一致的伪随机数。
 
-**Joe**：: Indeed. I would like to reiterate the importance of the verifiable
-'verification of the input process'. The off-chain verification
-process for input must be traceable in single steps, so that the initial
-state of the input can be legitimized. As part of the memory state, if
-the input data loaded is deliberately tampered with, it will lead to the
-inability to provide a proof of the state tree, as tampering implies
-that the preceding instructions have produced side effects. However, in
-the case of consistent initial states, malicious nodes cannot provide
-side effect instructions to prove their innocence.
+**Joe**：没什么问题。
 
 ----
 
-**Moe**：: It does sound a bit convoluted, but I comprehend your meaning. The
-crux is to ensure the determinacy of the input, and combined with the
-determinacy of the procedure, we can only have deterministic single-step
-states. It seems impregnable.
+**Moe**：Linux 内核讨厌浮动。模拟器也讨厌这个吗？
 
-**Joe**：: We also have the issue of 'Unconscious Evil', a problem that is
-easily overlooked.
+**Joe**：我们可以使用 SoftFloat 库，也可以直接禁止它。
 
 ----
 
-**Moe**：: As your counterpart, I understand
-your point. Achieving determinacy means we are implementing pure
-rationality that relies on a physical medium. Possessing pure
-rationality alone should not lead to complacency, causing us to overlook
-the physical constraints.
+**Moe**：听起来我们已经为确定性程序做好了一切准备。
 
-**Joe**：: Exactly. Blockchain networks are resilient to silent errors, as
-nodes provide ample redundancy in the verification process. However, the
-simple blockchain itself does not possess this property. In the
-asynchronous validation of L2, silent errors can result in honest but
-erroneous nodes being penalized.
+**Joe**：还不够。不要忘记程序不能证明自己的清白。
 
 ----
 
-**Moe**：: The occurrence of silent errors is as inevitable as the sun rising
-in the east and setting in the west. Therefore, we need to proactively
-create redundancy. For instance, we can utilize physical machines with
-different architectures to collectively compute the same process, and
-use the aggregated results as the output of the current node. Cloud
-service providers are already well-versed in similar tasks.
+**Moe**：L1 可以验证静态过程，只需要摘要。在交互式游戏开始之前，L1 合约将通过验证双方的记忆状态来验证双方是否使用了一致的程序。
 
-**Joe**：: Now we can say we have deterministic step.
+**Joe**：确实如此。这类似于可验证的启动过程。引导扇区的内存地址是固定的，双方只需要提供简单的 merkle 树证明即可。
+
+----
+
+**Moe**：您刚才提到，关于输入问题还有一些补充意见。
+
+**Joe**：确实如此。我想重申可验证的“输入过程验证”的重要性。输入的链下验证过程必须是单步可追溯的，以便输入的初始状态合法化。作为内存状态的一部分，如果加载的输入数据被故意篡改，将导致无法提供状态树的证明，因为篡改意味着前面的指令产生了副作用。然而，在初始状态一致的情况下，恶意节点无法提供副作用指令来证明自己的清白。
+
+----
+
+**Moe**：听起来确实有点绕，但我明白你的意思。关键是要保证输入的确定性，结合过程的确定性，我们只能有确定性的单步状态。看起来坚不可摧。
+
+**Joe**：我们还有“无意识的邪恶”的问题，这是一个很容易被忽视的问题。
+
+----
+
+**Moe**：作为你的对手，我理解你的观点。实现确定性意味着我们正在实现依赖于物理媒介的纯粹理性。仅仅拥有纯粹的理性不应该导致自满，导致我们忽视物理的限制。
+
+**Joe**：没错。区块链网络能够抵御无声错误，因为节点在验证过程中提供了充足的冗余。然而，简单的区块链本身并不具备这个属性。在 L2 的异步验证中，无声错误可能会导致诚实但错误的节点受到惩罚。
+
+----
+
+**Moe**：无声错误的发生就像太阳从东边升起、西边落下一样不可避免。因此，我们需要主动创造冗余。例如，我们可以利用不同架构的物理机来集中计算同一个过程，并将聚合结果作为当前节点的输出。云服务提供商已经精通类似的任务。
+
+**Joe**：现在我们可以说我们已经有了确定性的步骤。
 
 ### 3.3 二分法：: 头等舱机票
 
-**Moe**：: Bisection is the most discussed topic as it is a direct challenge
-in the interactive game. However, it now seems to be a foregone
-conclusion.
+**Moe**：二分是讨论最多的话题，因为它是交互式游戏中的直接挑战。不过，现在看来已成定局。
 
-**Joe**：: It is a direct issue as it directly exhibits the interactive
-behaviors, yet the answer is indirect. It relies on an appropriate
-intermediary language medium and the implementation of deterministic
-language execution.
+**Joe**：这是一个直接的问题，因为它直接表现出交互行为，但答案是间接的。它依赖于适当的中间语言媒介和确定性语言执行的实现。
 
 ----
 
-**Moe**：: This reminds me of the previous analogy about airplanes. Now we
-have the airplane, we just need to purchase the tickets.
+**Moe**：这让我想起之前关于飞机的比喻。现在我们有了飞机，我们只需要购买机票即可。
 
-**Joe**：: Give me a first-class ticket, thank you!
+**Joe**：给我一张头等舱的票，谢谢！
 
-## 附录 A：: 当模拟器在模拟时它在模拟什么
+## 附录 A：当模拟器在模拟时它在模拟什么
 
-**Joe**：: Let me start this time.
+**Joe**：这次让我开始吧。
 
-**Moe**：: Go ahead.
+**Moe**：继续吧。
 
 ----
 
-**Moe**：: Observe what instructions this source code will morph into on your
-machine:
+**Moe**：观察这个源代码在你的机器上会变成什么样的指令：
 
 <Image
   src="/blog/interactive-game/ones-count.png"
@@ -495,7 +418,7 @@ machine:
 />
 
 
-**Joe**：: You've preemptively spoken again. On my x86_64:
+**Joe**：你又抢先说话了。在我的 `x86_64` 上：
 
 <Image
   src="/blog/interactive-game/ones-count-x86.png"
@@ -505,7 +428,7 @@ machine:
   className="mx-auto my-8"
 />
 
-Or：
+或：
 
 <Image
   src="/blog/interactive-game/ones-count-simd.png"
@@ -517,7 +440,7 @@ Or：
 
 ----
 
-**Moe**：: Because I showed you source code. Talking is cheap. On my RISC-V:
+**Moe**：因为我给你看了源代码。说话很便宜。在我的 RISC-V 上：
 
 <Image
   src="/blog/interactive-game/ones-count-riscv.png"
@@ -527,22 +450,18 @@ Or：
   className="mx-auto my-8"
 />
 
-**Joe**：: In the face of identical inputs, despite the vast differences in
-the instructions our machines execute, they still manage to yield
-identical outputs.
+**Joe**：面对相同的输入，尽管我们的机器执行的指令存在巨大差异，但它们仍然设法产生相同的输出。
 
 ----
 
-**Moe**：: Is it you who is mirroring me, or am I the one replicating you?
+**Moe**：是你在模仿我，还是我在模仿你？
 
-**Joe**：: That is the question.
+**Joe**：这就是问题所在。
 
 ----
 
-[^1]: Prerequisite knowledge: Understand the basic concepts of
-optimistic rollups, and the fundamental components of L1 and L2.
+[^1]: 必备知识：了解 Optimistic Rollup 的基本概念，以及 L1 和 L2 的基本组成部分。
 
-[^2]: A scientist with a narrative intertwined with Ether.
+[^2]: 一位科学家的故事与以太交织在一起。
 
-[^3]: Doctor Stephen Strange is a character who can control time-space
-appearing in American comic books published by Marvel Comics.
+[^3]: 史蒂芬·斯特兰奇博士是漫威漫画出版的美国漫画中出现的一个能够控制时空的角色。
