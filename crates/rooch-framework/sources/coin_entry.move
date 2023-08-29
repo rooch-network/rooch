@@ -10,8 +10,6 @@ module rooch_framework::coin_entry {
     use rooch_framework::coin::{BurnCapability, MintCapability, FreezeCapability};
 
     use rooch_framework::coin;
-    #[test_only]
-    use std::debug;
 
     //
     // Errors
@@ -97,7 +95,6 @@ module rooch_framework::coin_entry {
         // let cap = account_storage::global_borrow<Capabilities<CoinType>>(ctx, account_addr);
         let cap = account_storage::global_move_from<Capabilities<CoinType>>(ctx, account_addr);
         let to_burn = coin::withdraw<CoinType>(ctx, account, amount);
-        // let burn_cap = borrow_burn_cap<CoinType>(ctx, account_addr);
         coin::burn<CoinType>(ctx, to_burn, &cap.burn_cap);
         account_storage::global_move_to<Capabilities<CoinType>>(ctx, account, cap);
     }
@@ -179,7 +176,7 @@ module rooch_framework::coin_entry {
     #[test_only]
     struct FakeCoin {}
 
-    #[test(source = @0xa11ce, destination = @0xb0b, mod_account = @rooch_framework)]
+    #[test(source = @0xa0a, destination = @0xb0b, mod_account = @rooch_framework)]
     public entry fun test_end_to_end(
         source: &signer,
         destination: &signer,
@@ -189,8 +186,8 @@ module rooch_framework::coin_entry {
         let destination_addr = signer::address_of(destination);
 
         let source_ctx = storage_context::new_test_context(signer::address_of(source));
-        let destination_ctx = storage_context::new_test_context(signer::address_of(destination));
-        let mod_account_ctx = storage_context::new_test_context(signer::address_of(mod_account));
+        let destination_ctx = storage_context::new_test_context_random(signer::address_of(destination), b"test_tx1");
+        let mod_account_ctx = storage_context::new_test_context_random(signer::address_of(mod_account), b"test_tx2");
 
         coin::init_for_test(&mut mod_account_ctx, mod_account);
         initialize<FakeCoin>(
@@ -208,25 +205,20 @@ module rooch_framework::coin_entry {
 
         mint<FakeCoin>(&mut mod_account_ctx, mod_account, source_addr, 50);
         mint<FakeCoin>(&mut mod_account_ctx, mod_account, destination_addr, 10);
-        debug::print(&100120);
-        debug::print(&coin::balance<FakeCoin>(&source_ctx, source_addr));
-        debug::print(&coin::balance<FakeCoin>(&destination_ctx, destination_addr));
-        debug::print(&source_ctx);
-        debug::print(&destination_ctx);
-        // assert!(coin::balance<FakeCoin>(&source_ctx, source_addr) == 50, 1);
-        // assert!(coin::balance<FakeCoin>(&destination_ctx, destination_addr) == 10, 2);
+        assert!(coin::balance<FakeCoin>(&source_ctx, source_addr) == 50, 1);
+        assert!(coin::balance<FakeCoin>(&destination_ctx, destination_addr) == 10, 2);
 
         let supply = coin::supply<FakeCoin>(&mod_account_ctx);
         assert!(supply == 60, 3);
 
         transfer<FakeCoin>(&mut source_ctx, source, destination_addr, 10);
-        // assert!(coin::balance<FakeCoin>(&source_ctx, source_addr) == 40, 4);
-        // assert!(coin::balance<FakeCoin>(&destination_ctx, destination_addr) == 20, 5);
+        assert!(coin::balance<FakeCoin>(&source_ctx, source_addr) == 40, 4);
+        assert!(coin::balance<FakeCoin>(&destination_ctx, destination_addr) == 20, 5);
 
         transfer<FakeCoin>(&mut source_ctx, source, signer::address_of(mod_account), 40);
         burn<FakeCoin>(&mut mod_account_ctx, mod_account, 40);
 
-        // assert!(coin::balance<FakeCoin>(&source_ctx, source_addr) == 0, 1);
+        assert!(coin::balance<FakeCoin>(&source_ctx, source_addr) == 0, 1);
 
         let new_supply = coin::supply<FakeCoin>(&source_ctx);
         assert!(new_supply == 20, 2);
@@ -246,8 +238,8 @@ module rooch_framework::coin_entry {
         let source_addr = signer::address_of(source);
 
         let source_ctx = storage_context::new_test_context(signer::address_of(source));
-        let destination_ctx = storage_context::new_test_context(signer::address_of(destination));
-        let mod_account_ctx = storage_context::new_test_context(signer::address_of(mod_account));
+        let destination_ctx = storage_context::new_test_context_random(signer::address_of(destination), b"test_tx1");
+        let mod_account_ctx = storage_context::new_test_context_random(signer::address_of(mod_account), b"test_tx2");
 
         coin::init_for_test(&mut mod_account_ctx, mod_account);
         initialize<FakeCoin>(&mut mod_account_ctx, mod_account, b"Fake Coin", b"FCD", 9);
@@ -272,8 +264,8 @@ module rooch_framework::coin_entry {
         let source_addr = signer::address_of(source);
 
         let source_ctx = storage_context::new_test_context(signer::address_of(source));
-        let destination_ctx = storage_context::new_test_context(signer::address_of(destination));
-        let mod_account_ctx = storage_context::new_test_context(signer::address_of(mod_account));
+        let destination_ctx = storage_context::new_test_context_random(signer::address_of(destination), b"test_tx1");
+        let mod_account_ctx = storage_context::new_test_context_random(signer::address_of(mod_account), b"test_tx2");
 
         coin::init_for_test(&mut mod_account_ctx, mod_account);
         initialize<FakeCoin>(&mut mod_account_ctx, mod_account, b"Fake Coin", b"FCD", 9);

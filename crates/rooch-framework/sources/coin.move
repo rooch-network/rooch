@@ -244,20 +244,6 @@ module rooch_framework::coin {
         type_table::borrow_mut<CoinInfo<CoinType>>(&mut coin_infos.coin_infos)
     }
 
-    // fun borrow_auto_accept_coin(ctx: &StorageContext): &AutoAcceptCoin {
-    //     let coin_infos = account_storage::global_borrow<AutoAcceptCoins>(ctx, @rooch_framework);
-    //     type_table::borrow<CoinInfo<CoinType>>(&coin_infos.coin_infos)
-    // }
-    //
-    // fun get_auto_accept_coin(ctx: &mut StorageContext, addr: address): bool {
-    //     let auto_accept_coins = account_storage::global_borrow<AutoAcceptCoins>(ctx, @rooch_framework);
-    //     if (table::contains<address, bool>(&auto_accept_coins.auto_accept_coins, addr)) {
-    //
-    //     } else {
-    //
-    //     }
-    // }
-
     fun exist_auto_accept_token(ctx: &StorageContext, addr: address): bool {
         let auto_accept_coins = account_storage::global_borrow<AutoAcceptCoins>(ctx, @rooch_framework);
         table::contains<address, bool>(&auto_accept_coins.auto_accept_coins, addr)
@@ -274,13 +260,23 @@ module rooch_framework::coin {
     }
 
     fun ensure_coin_store<CoinType>(ctx: &mut StorageContext, addr: address) {
-        if (!exist_coin_store<CoinType>(ctx, addr)) {
-            let coin_stores = account_storage::global_borrow_mut<CoinStores>(ctx, addr);
-            type_table::add<CoinStore<CoinType>>(&mut coin_stores.coin_stores, CoinStore<CoinType> {
-                coin: Coin { value: 0 },
-                frozen: false,
-            })
+        if (!exist_coin_store<CoinType>(ctx, addr) && can_auto_accept_coin(ctx, addr)) {
+            inner_new_coin_store<CoinType>(ctx, addr)
         }
+    }
+
+    fun ensure_coin_store_pass_auto_accept_flag<CoinType>(ctx: &mut StorageContext, addr: address) {
+        if (!exist_coin_store<CoinType>(ctx, addr)) {
+            inner_new_coin_store<CoinType>(ctx, addr)
+        }
+    }
+
+    fun inner_new_coin_store<CoinType>(ctx: &mut StorageContext, addr: address) {
+        let coin_stores = account_storage::global_borrow_mut<CoinStores>(ctx, addr);
+        type_table::add<CoinStore<CoinType>>(&mut coin_stores.coin_stores, CoinStore<CoinType> {
+            coin: Coin { value: 0 },
+            frozen: false,
+        })
     }
 
     //
@@ -312,7 +308,7 @@ module rooch_framework::coin {
     /// If user turns off AutoAcceptCoin, call this method to receive the corresponding Coin
     public fun do_accept_coin<CoinType>(ctx: &mut StorageContext, account: &signer) {
         let addr = signer::address_of(account);
-        ensure_coin_store<CoinType>(ctx, addr);
+        ensure_coin_store_pass_auto_accept_flag<CoinType>(ctx, addr);
     }
 
     /// Configure whether auto-accept coins.
@@ -327,18 +323,6 @@ module rooch_framework::coin {
             },
         );
     }
-
-    // /// try to accept coin for `addr`.
-    // fun try_accept_coin<CoinType>(ctx: &mut StorageContext, addr: address) {
-    //     if (!exist_coin_store<CoinType>(ctx, addr)) {
-    //         if (can_auto_accept_coin(ctx, addr)) {
-    //             let signer = create_signer(addr);
-    //             do_accept_coin<CoinType>(ctx, &signer);
-    //         }else{
-    //             abort error::not_found(EAccountNotAcceptCoin)
-    //         }
-    //     };
-    // }
 
     /// Withdraw specifed `amount` of coin `CoinType` from the signing account.
     public fun withdraw<CoinType>(

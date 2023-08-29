@@ -131,7 +131,13 @@ module moveos_std::tx_context {
     #[test_only]
     /// Create a TxContext for unit test
     public fun new_test_context(sender: address): TxContext {
-        let tx_hash = hash::sha3_256(b"test_tx");
+        new_test_context_random(sender, b"test_tx")
+    }
+
+    #[test_only]
+    /// Create a random TxContext for unit test
+    public fun new_test_context_random(sender: address, seed: vector<u8>): TxContext {
+        let tx_hash = hash::sha3_256(seed);
         TxContext {
             sender,
             sequence_number: 0,
