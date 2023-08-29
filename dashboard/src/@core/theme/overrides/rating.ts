@@ -1,4 +1,6 @@
-// ** Type Import
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { OwnerStateThemeType } from './'
 
 const Rating = () => {
@@ -8,11 +10,11 @@ const Rating = () => {
         root: ({ theme }: OwnerStateThemeType) => ({
           color: theme.palette.warning.main,
           '& svg': {
-            flexShrink: 0
-          }
-        })
-      }
-    }
+            flexShrink: 0,
+          },
+        }),
+      },
+    },
   }
 }
 

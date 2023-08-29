@@ -1,4 +1,7 @@
-// ** MUI imports
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+// ** MUI Imports
 import { styled } from '@mui/material/styles'
 
 // ** KeenSlider CSS
@@ -9,11 +12,11 @@ const KeenSliderWrapper = styled('div')(({ theme }) => ({
     '& .keen-slider__slide': {
       '& img': {
         height: 'auto',
-        maxWidth: '100%'
-      }
+        maxWidth: '100%',
+      },
     },
     '&.thumbnail .keen-slider__slide:not(.active)': {
-      opacity: 0.4
+      opacity: 0.4,
     },
     '&.zoom-out': {
       perspective: '1000px',
@@ -28,18 +31,18 @@ const KeenSliderWrapper = styled('div')(({ theme }) => ({
             height: '100%',
             objectFit: 'cover',
             position: 'absolute',
-            backgroundColor: 'transparent'
-          }
-        }
-      }
+            backgroundColor: 'transparent',
+          },
+        },
+      },
     },
     '& .default-slide': {
       height: 200,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: theme.palette.background.default
-    }
+      backgroundColor: theme.palette.background.default,
+    },
   },
 
   //  ** Fade
@@ -56,9 +59,9 @@ const KeenSliderWrapper = styled('div')(({ theme }) => ({
         width: ' 100%',
         height: ' 100%',
         objectFit: 'cover',
-        position: 'absolute'
-      }
-    }
+        position: 'absolute',
+      },
+    },
   },
 
   // ** Navigation Controls
@@ -76,15 +79,15 @@ const KeenSliderWrapper = styled('div')(({ theme }) => ({
       '&.arrow-disabled': {
         cursor: 'not-allowed',
         pointerEvents: 'none',
-        color: theme.palette.action.disabled
+        color: theme.palette.action.disabled,
       },
       '&.arrow-left': {
-        left: 0
+        left: 0,
       },
       '&.arrow-right': {
-        right: 0
-      }
-    }
+        right: 0,
+      },
+    },
   },
 
   // ** Dots
@@ -95,20 +98,20 @@ const KeenSliderWrapper = styled('div')(({ theme }) => ({
 
     '& .MuiBadge-root': {
       '&:not(:last-child)': {
-        marginRight: theme.spacing(4)
+        marginRight: theme.spacing(4),
       },
       '& .MuiBadge-dot': {
         width: 10,
         height: 10,
         cursor: 'pointer',
         borderRadius: '50%',
-        backgroundColor: theme.palette.action.disabled
+        backgroundColor: theme.palette.action.disabled,
       },
       '&.active .MuiBadge-dot': {
-        backgroundColor: theme.palette.primary.main
-      }
-    }
-  }
+        backgroundColor: theme.palette.primary.main,
+      },
+    },
+  },
 }))
 
 export default KeenSliderWrapper

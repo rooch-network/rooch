@@ -1,4 +1,7 @@
-// ** Next Import
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+// ** Next Imports
 import Link from 'next/link'
 
 // ** MUI Imports
@@ -10,7 +13,7 @@ import useMediaQuery from '@mui/material/useMediaQuery'
 
 const LinkStyled = styled(Link)(({ theme }) => ({
   textDecoration: 'none',
-  color: theme.palette.primary.main
+  color: theme.palette.primary.main,
 }))
 
 const FooterContent = () => {
@@ -18,25 +21,39 @@ const FooterContent = () => {
   const hidden = useMediaQuery((theme: Theme) => theme.breakpoints.down('md'))
 
   return (
-    <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}
+    >
       <Typography sx={{ mr: 2 }}>
-        <LinkStyled target='_blank' href='https://rooch.network'>
+        <LinkStyled target="_blank" href="https://rooch.network">
           © Root Branch Ltd.
         </LinkStyled>
         {` ${new Date().getFullYear()}. All rights reserved. `}
       </Typography>
       {hidden ? null : (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', '& :not(:last-child)': { mr: 4 } }}>
-          <LinkStyled target='_blank' href='https://github.com/rooch-network/'>
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            '& :not(:last-child)': { mr: 4 },
+          }}
+        >
+          <LinkStyled target="_blank" href="https://github.com/rooch-network/">
             Github
           </LinkStyled>
-          <LinkStyled target='_blank' href='https://discord.com/invite/rooch'>
+          <LinkStyled target="_blank" href="https://discord.com/invite/rooch">
             Discord
           </LinkStyled>
-          <LinkStyled target='_blank' href='https://twitter.com/RoochNetwork'>
+          <LinkStyled target="_blank" href="https://twitter.com/RoochNetwork">
             Twitter
           </LinkStyled>
-          <LinkStyled target='_blank' href='https://medium.com/rooch-network/'>
+          <LinkStyled target="_blank" href="https://medium.com/rooch-network/">
             Medium
           </LinkStyled>
         </Box>

@@ -22,3 +22,5 @@ build/
 
 # mac
 .DS_Store
+
+node_modules

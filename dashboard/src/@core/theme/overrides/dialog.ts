@@ -1,4 +1,6 @@
-// ** Type Imports
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { OwnerStateThemeType } from './'
 import { Skin } from 'src/@core/layouts/types'
 
@@ -14,38 +16,38 @@ const Dialog = (skin: Skin) => {
             [theme.breakpoints.down('sm')]: {
               margin: theme.spacing(4),
               width: `calc(100% - ${theme.spacing(8)})`,
-              maxWidth: `calc(100% - ${theme.spacing(8)}) !important`
-            }
+              maxWidth: `calc(100% - ${theme.spacing(8)}) !important`,
+            },
           },
           '& > .MuiList-root': {
             paddingLeft: theme.spacing(1),
-            paddingRight: theme.spacing(1)
-          }
-        })
-      }
+            paddingRight: theme.spacing(1),
+          },
+        }),
+      },
     },
     MuiDialogTitle: {
       styleOverrides: {
         root: ({ theme }: OwnerStateThemeType) => ({
           padding: theme.spacing(6, 6, 1),
           '& + .MuiDialogContent-root': {
-            paddingTop: `${theme.spacing(6)} !important`
-          }
-        })
-      }
+            paddingTop: `${theme.spacing(6)} !important`,
+          },
+        }),
+      },
     },
     MuiDialogContent: {
       styleOverrides: {
         root: ({ theme }: OwnerStateThemeType) => ({
           padding: theme.spacing(6),
           '& + .MuiDialogContent-root': {
-            paddingTop: '0 !important'
+            paddingTop: '0 !important',
           },
           '& + .MuiDialogActions-root': {
-            paddingTop: '0 !important'
-          }
-        })
-      }
+            paddingTop: '0 !important',
+          },
+        }),
+      },
     },
     MuiDialogActions: {
       styleOverrides: {
@@ -53,11 +55,11 @@ const Dialog = (skin: Skin) => {
           padding: theme.spacing(1, 6, 6),
           '&.dialog-actions-dense': {
             padding: theme.spacing(3),
-            paddingTop: theme.spacing(1)
-          }
-        })
-      }
-    }
+            paddingTop: theme.spacing(1),
+          },
+        }),
+      },
+    },
   }
 }
 

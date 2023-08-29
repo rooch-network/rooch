@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 
 import { promises as fs } from "fs";
 import { fileURLToPath } from 'url';

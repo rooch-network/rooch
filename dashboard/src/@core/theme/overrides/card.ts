@@ -1,4 +1,6 @@
-// ** Type Imports
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { OwnerStateThemeType } from './'
 import { Skin } from 'src/@core/layouts/types'
 
@@ -11,29 +13,30 @@ const Card = (skin: Skin) => {
           ...(skin === 'bordered' && { border: `1px solid ${theme.palette.divider}` }),
           '& .card-more-options': {
             marginTop: theme.spacing(-1),
-            marginRight: theme.spacing(-3)
+            marginRight: theme.spacing(-3),
           },
           '& .MuiTableContainer-root, & .MuiDataGrid-root, & .MuiDataGrid-columnHeaders': {
-            borderRadius: 0
-          }
-        })
+            borderRadius: 0,
+          },
+        }),
       },
       defaultProps: {
-        elevation: skin === 'bordered' ? 0 : 6
-      }
+        elevation: skin === 'bordered' ? 0 : 6,
+      },
     },
     MuiCardHeader: {
       styleOverrides: {
         root: ({ theme }: OwnerStateThemeType) => ({
           padding: theme.spacing(6),
-          '& + .MuiCardContent-root, & + .MuiCardActions-root, & + .MuiCollapse-root .MuiCardContent-root': {
-            paddingTop: 0
-          },
+          '& + .MuiCardContent-root, & + .MuiCardActions-root, & + .MuiCollapse-root .MuiCardContent-root':
+            {
+              paddingTop: 0,
+            },
           '& .MuiCardHeader-subheader': {
             fontSize: '0.875rem',
             marginTop: theme.spacing(1.25),
-            color: theme.palette.text.secondary
-          }
+            color: theme.palette.text.secondary,
+          },
         }),
         title: {
           lineHeight: 1.6,
@@ -41,27 +44,27 @@ const Card = (skin: Skin) => {
           fontSize: '1.125rem',
           letterSpacing: '0.15px',
           '@media (min-width: 600px)': {
-            fontSize: '1.25rem'
-          }
+            fontSize: '1.25rem',
+          },
         },
         action: {
           marginTop: 0,
-          marginRight: 0
-        }
-      }
+          marginRight: 0,
+        },
+      },
     },
     MuiCardContent: {
       styleOverrides: {
         root: ({ theme }: OwnerStateThemeType) => ({
           padding: theme.spacing(6),
           '& + .MuiCardHeader-root, & + .MuiCardContent-root, & + .MuiCardActions-root': {
-            paddingTop: 0
+            paddingTop: 0,
           },
           '&:last-of-type': {
-            paddingBottom: theme.spacing(6)
-          }
-        })
-      }
+            paddingBottom: theme.spacing(6),
+          },
+        }),
+      },
     },
     MuiCardActions: {
       styleOverrides: {
@@ -69,23 +72,23 @@ const Card = (skin: Skin) => {
           padding: theme.spacing(6),
           '& .MuiButton-text': {
             paddingLeft: theme.spacing(3),
-            paddingRight: theme.spacing(3)
+            paddingRight: theme.spacing(3),
           },
           '&.card-action-dense': {
             padding: theme.spacing(0, 3, 3),
             '.MuiCard-root .MuiCardMedia-root + &': {
-              paddingTop: theme.spacing(3)
-            }
+              paddingTop: theme.spacing(3),
+            },
           },
           '.MuiCard-root &:first-of-type': {
             paddingTop: theme.spacing(3),
             '& + .MuiCardHeader-root, & + .MuiCardContent-root, & + .MuiCardActions-root': {
-              paddingTop: 0
-            }
-          }
-        })
-      }
-    }
+              paddingTop: 0,
+            },
+          },
+        }),
+      },
+    },
   }
 }
 

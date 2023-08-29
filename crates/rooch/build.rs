@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::{
-    env, fs,
+    fs,
     path::Path,
     process::{self, Command},
 };
@@ -22,24 +22,23 @@ fn main() {
 
             println!("cargo:rerun-if-changed={}/{}", base_path, dashboard_dir);
 
-            let dashboard_path = Path::new(&base_path).join(dashboard_dir);
-            env::set_current_dir(dashboard_path.clone()).unwrap();
+            let dashboard_path: std::path::PathBuf = Path::new(&base_path).join(dashboard_dir);
 
-            let npm_status = Command::new("npm").args(["install", "-g", "yarn"]).status();
+            let npm_status = Command::new("npm").args(["install", "-g", "pnpm"]).status();
 
             if npm_status.is_err() {
-                eprintln!("yarn install failed");
+                eprintln!("pnpm install failed");
                 process::exit(1);
             }
 
-            let yarn_status = Command::new("yarn").status();
+            let pnpm_status = Command::new("pnpm").arg("i").status();
 
-            if yarn_status.is_err() {
-                eprintln!("yarn install failed");
+            if pnpm_status.is_err() {
+                eprintln!("pnpm install failed");
                 process::exit(1);
             }
 
-            let export_status = Command::new("yarn").args(["export"]).status();
+            let export_status = Command::new("pnpm").args(["dashboard", "export"]).status();
 
             if let Ok(status) = export_status {
                 if status.success() {
@@ -51,11 +50,11 @@ fn main() {
                         process::exit(1);
                     }
                 } else {
-                    eprintln!("yarn build failed");
+                    eprintln!("dashboard build failed");
                     process::exit(1);
                 }
             } else {
-                eprintln!("yarn build failed");
+                eprintln!("dashboard build failed");
                 process::exit(1);
             }
         }

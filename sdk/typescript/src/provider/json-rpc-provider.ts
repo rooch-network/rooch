@@ -6,12 +6,7 @@ import { JsonRpcClient } from '../generated/client'
 import { Connection, LocalnetConnection } from './connection'
 import { bytes } from '../types/bcs'
 import { FunctionId, TypeTag, Arg, AnnotatedFunctionResultView } from '../types'
-import {
-  functionIdToStirng,
-  typeTagToString,
-  encodeArgs,
-  toHexString,
-} from '../utils'
+import { functionIdToStirng, typeTagToString, encodeArgs, toHexString } from '../utils'
 
 import { ROOCH_DEV_CHIAN_ID } from '../constants'
 
@@ -71,11 +66,7 @@ export class JsonRpcProvider {
   }
 
   async getRpcApiVersion(): Promise<string | undefined> {
-    if (
-      this.rpcApiVersion &&
-      this.cacheExpiry &&
-      this.cacheExpiry <= Date.now()
-    ) {
+    if (this.rpcApiVersion && this.cacheExpiry && this.cacheExpiry <= Date.now()) {
       return this.rpcApiVersion
     }
 

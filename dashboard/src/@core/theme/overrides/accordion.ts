@@ -1,4 +1,6 @@
-// ** Type Import
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { OwnerStateThemeType } from './'
 
 // ** Hook Import
@@ -20,21 +22,21 @@ const Accordion = () => {
           boxShadow: theme.shadows[skin === 'bordered' ? 0 : 3],
           ...(skin === 'bordered' && { border: `1px solid ${theme.palette.divider}` }),
           ...(ownerState.disabled === true && {
-            backgroundColor: `rgba(${theme.palette.customColors.main}, 0.12)`
+            backgroundColor: `rgba(${theme.palette.customColors.main}, 0.12)`,
           }),
           ...(ownerState.expanded === true && {
             margin: theme.spacing(2.5, 0),
-            boxShadow: theme.shadows[skin === 'bordered' ? 0 : 4]
+            boxShadow: theme.shadows[skin === 'bordered' ? 0 : 4],
           }),
           '& .MuiCollapse-root': {
             minHeight: 'unset !important',
             transition: 'height .35s ease !important',
             '&.MuiCollapse-entered': {
-              height: 'auto !important'
-            }
-          }
-        })
-      }
+              height: 'auto !important',
+            },
+          },
+        }),
+      },
     },
     MuiAccordionSummary: {
       styleOverrides: {
@@ -44,39 +46,39 @@ const Accordion = () => {
           padding: `0 ${theme.spacing(4.5)}`,
           '& + .MuiCollapse-root': {
             '& .MuiAccordionDetails-root:first-child': {
-              paddingTop: 0
-            }
+              paddingTop: 0,
+            },
           },
           '&.Mui-expanded': {
             minHeight: 'unset',
             borderBottomLeftRadius: 0,
             borderBottomRightRadius: 0,
             '& .MuiAccordionSummary-content': {
-              margin: theme.spacing(3, 0)
-            }
+              margin: theme.spacing(3, 0),
+            },
           },
           '& .MuiTypography-root': {
-            fontWeight: 500
-          }
+            fontWeight: 500,
+          },
         }),
         content: ({ theme }: OwnerStateThemeType) => ({
-          margin: theme.spacing(3, 0)
+          margin: theme.spacing(3, 0),
         }),
         expandIconWrapper: ({ theme }: OwnerStateThemeType) => ({
-          color: theme.palette.text.primary
-        })
-      }
+          color: theme.palette.text.primary,
+        }),
+      },
     },
     MuiAccordionDetails: {
       styleOverrides: {
         root: ({ theme }: OwnerStateThemeType) => ({
           padding: theme.spacing(5),
           '& + .MuiAccordionDetails-root': {
-            paddingTop: 0
-          }
-        })
-      }
-    }
+            paddingTop: 0,
+          },
+        }),
+      },
+    },
   }
 }
 

@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** MUI Imports
 import Grid from '@mui/material/Grid'
 
@@ -12,7 +15,7 @@ const SessionPage = () => {
     <ApexChartWrapper>
       <Grid container spacing={6}>
         <Grid item xs={12} lg={12} sx={{ order: -1 }}>
-              <FeatureView/>
+          <FeatureView />
         </Grid>
       </Grid>
     </ApexChartWrapper>

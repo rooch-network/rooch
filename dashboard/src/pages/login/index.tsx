@@ -1,4 +1,5 @@
-// ** React Imports
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { ReactNode, useState } from 'react'
 
 // ** Next Import
@@ -46,15 +47,15 @@ import { WalletType } from 'src/context/auth/types'
 const LinkStyled = styled(Link)(({ theme }) => ({
   fontSize: '0.875rem',
   textDecoration: 'none',
-  color: theme.palette.primary.main
+  color: theme.palette.primary.main,
 }))
 
 const schema = yup.object().shape({
-  secretKey: yup.string().min(43).required()
+  secretKey: yup.string().min(43).required(),
 })
 
 const defaultValues = {
-  secretKey: 'AM4KesRCz7SzQt+F9TK0IvznFGxjUWGgRNlJxbTLW0Ol'
+  secretKey: 'AM4KesRCz7SzQt+F9TK0IvznFGxjUWGgRNlJxbTLW0Ol',
 }
 
 interface FormData {
@@ -65,7 +66,7 @@ enum InputType {
   Connect = 'Connect',
   Import = 'Import',
   Create = 'Create',
-  Oauth = 'Oauth'
+  Oauth = 'Oauth',
 }
 
 const LoginPage = () => {
@@ -81,20 +82,20 @@ const LoginPage = () => {
 
     //    setError,
     handleSubmit,
-    formState: { errors }
+    formState: { errors },
   } = useForm({
     defaultValues,
     mode: 'onBlur',
-    resolver: yupResolver(schema)
+    resolver: yupResolver(schema),
   })
 
   const [inputType, setInputType] = useState<InputType>(
-    auth.suppoertWallets.length > 0 ? InputType.Connect : InputType.Import
+    auth.supportWallets.length > 0 ? InputType.Connect : InputType.Import,
   )
 
   // ** State
   const [selectWallet, setSelectWallet] = useState<WalletType | null>(
-    auth.suppoertWallets.length > 0 ? auth.suppoertWallets[0].name : null
+    auth.supportWallets.length > 0 ? auth.supportWallets[0].name : null,
   )
 
   const handleStatusValue = (e: SelectChangeEvent) => {
@@ -119,66 +120,68 @@ const LoginPage = () => {
   }
 
   return (
-    <Box className='content-center'>
+    <Box className="content-center">
       <AuthIllustrationWrapper>
         <Card>
           <CardContent sx={{ p: `${theme.spacing(8, 8, 7)} !important` }}>
             <Box sx={{ mb: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Typography
-                variant='h5'
+                variant="h5"
                 sx={{
                   ml: 2,
                   lineHeight: 1,
                   fontWeight: 700,
                   letterSpacing: '-0.45px',
-                  fontSize: '1.75rem !important'
+                  fontSize: '1.75rem !important',
                 }}
               >
                 {themeConfig.templateName} Dashboard
               </Typography>
             </Box>
-            <Typography variant='h6' sx={{ mb: 1.5 }}>
+            <Typography variant="h6" sx={{ mb: 1.5 }}>
               Welcome to {themeConfig.templateName} Dashboard! 👋🏻
             </Typography>
             <Typography sx={{ mb: 6, color: 'text.secondary' }}>
               Please connect to your account and start the adventure
             </Typography>
-            <form noValidate autoComplete='off' onSubmit={handleSubmit(onSubmit)}>
+            <form noValidate autoComplete="off" onSubmit={handleSubmit(onSubmit)}>
               {inputType === InputType.Import ? (
                 <FormControl fullWidth sx={{ mb: 2 }}>
                   <Controller
-                    name='secretKey'
+                    name="secretKey"
                     control={control}
                     rules={{ required: true }}
                     render={({ field: { value, onChange, onBlur } }) => (
                       <TextField
                         autoFocus
-                        label='Secret Key'
+                        label="Secret Key"
                         value={value}
                         onBlur={onBlur}
                         onChange={onChange}
                         error={Boolean(errors.secretKey)}
-                        placeholder=''
+                        placeholder=""
                       />
                     )}
                   />
                   {errors.secretKey && (
-                    <FormHelperText sx={{ color: 'error.main' }}>{errors.secretKey.message}</FormHelperText>
+                    <FormHelperText sx={{ color: 'error.main' }}>
+                      {errors.secretKey.message}
+                    </FormHelperText>
                   )}
                 </FormControl>
               ) : (
                 <>
                   <FormControl fullWidth>
-                    <InputLabel id='invoice-status-select'>Select Wallet</InputLabel>
+                    <InputLabel id="invoice-status-select">Select Wallet</InputLabel>
                     <Select
                       fullWidth
                       value={selectWallet ?? ''}
                       sx={{ mr: 4, mb: 2 }}
-                      label='Select Wallet'
+                      label="Select Wallet"
                       onChange={handleStatusValue}
-                      labelId='invoice-status-select'
+                      labelId="invoice-status-select"
                     >
-                      {auth.suppoertWallets.map(value => (
+                      {auth.supportWallets.map((value) => (
                         <MenuItem key={value.name} value={value.name}>
                           {value.name}
                         </MenuItem>
@@ -193,15 +196,20 @@ const LoginPage = () => {
                   display: 'flex',
                   alignItems: 'center',
                   flexWrap: 'wrap',
-                  justifyContent: 'space-between'
+                  justifyContent: 'space-between',
                 }}
               >
                 <FormControlLabel
-                  label=''
+                  label=""
                   control={<></>}
-                  sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.875rem', color: 'text.secondary' } }}
+                  sx={{
+                    '& .MuiFormControlLabel-label': {
+                      fontSize: '0.875rem',
+                      color: 'text.secondary',
+                    },
+                  }}
                 />
-                {auth.suppoertWallets.length > 0 ? (
+                {auth.supportWallets.length > 0 ? (
                   <Button
                     onClick={() => {
                       if (inputType === InputType.Connect) {
@@ -217,35 +225,57 @@ const LoginPage = () => {
                   <></>
                 )}
               </Box>
-              <Button fullWidth size='large' type='submit' variant='contained' sx={{ mb: 4 }}>
+              <Button fullWidth size="large" type="submit" variant="contained" sx={{ mb: 4 }}>
                 {inputType}
               </Button>
-              <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-                <Typography variant='body2' sx={{ mr: 2 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  justifyContent: 'center',
+                }}
+              >
+                <Typography variant="body2" sx={{ mr: 2 }}>
                   New on our platform?
                 </Typography>
                 <Typography>
-                  <LinkStyled href='/'>Create an account</LinkStyled>
+                  <LinkStyled href="/">Create an account</LinkStyled>
                 </Typography>
               </Box>
               <Divider sx={{ my: `${theme.spacing(6)} !important` }}>or</Divider>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <IconButton href='/' component={Link} sx={{ color: '#497ce2' }} onClick={e => e.preventDefault()}>
-                  <Icon icon='bxl:facebook-circle' />
-                </IconButton>
-                <IconButton href='/' component={Link} sx={{ color: '#1da1f2' }} onClick={e => e.preventDefault()}>
-                  <Icon icon='bxl:twitter' />
+                <IconButton
+                  href="/"
+                  component={Link}
+                  sx={{ color: '#497ce2' }}
+                  onClick={(e) => e.preventDefault()}
+                >
+                  <Icon icon="bxl:facebook-circle" />
                 </IconButton>
                 <IconButton
-                  href='/'
+                  href="/"
                   component={Link}
-                  onClick={e => e.preventDefault()}
+                  onClick={(e) => e.preventDefault()}
                   sx={{ color: theme.palette.mode === 'light' ? '#272727' : 'grey.300' }}
                 >
-                  <Icon icon='bxl:github' />
+                  <Icon icon="bxl:github" />
                 </IconButton>
-                <IconButton href='/' component={Link} sx={{ color: '#db4437' }} onClick={e => e.preventDefault()}>
-                  <Icon icon='bxl:google' />
+                <IconButton
+                  href="/"
+                  component={Link}
+                  onClick={(e) => e.preventDefault()}
+                  sx={{ color: theme.palette.mode === 'light' ? '#272727' : 'grey.300' }}
+                >
+                  <Icon icon="bxl:github" />
+                </IconButton>
+                <IconButton
+                  href="/"
+                  component={Link}
+                  sx={{ color: '#db4437' }}
+                  onClick={(e) => e.preventDefault()}
+                >
+                  <Icon icon="bxl:google" />
                 </IconButton>
               </Box>
             </form>

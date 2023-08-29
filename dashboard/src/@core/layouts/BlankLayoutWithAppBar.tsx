@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** MUI Imports
 import { styled } from '@mui/material/styles'
 import Box, { BoxProps } from '@mui/material/Box'
@@ -18,7 +21,7 @@ const BlankLayoutWithAppBarWrapper = styled(Box)<BoxProps>(({ theme }) => ({
     alignItems: 'center',
     justifyContent: 'center',
     padding: theme.spacing(5),
-    minHeight: `calc(100vh - ${theme.spacing((theme.mixins.toolbar.minHeight as number) / 4)})`
+    minHeight: `calc(100vh - ${theme.spacing((theme.mixins.toolbar.minHeight as number) / 4)})`,
   },
 
   // For V2 Blank layout pages
@@ -26,8 +29,8 @@ const BlankLayoutWithAppBarWrapper = styled(Box)<BoxProps>(({ theme }) => ({
     display: 'flex',
     overflowX: 'hidden',
     position: 'relative',
-    minHeight: `calc(100vh - ${theme.spacing((theme.mixins.toolbar.minHeight as number) / 4)})`
-  }
+    minHeight: `calc(100vh - ${theme.spacing((theme.mixins.toolbar.minHeight as number) / 4)})`,
+  },
 }))
 
 const BlankLayoutWithAppBar = (props: BlankLayoutWithAppBarProps) => {
@@ -38,11 +41,12 @@ const BlankLayoutWithAppBar = (props: BlankLayoutWithAppBarProps) => {
     <BlankLayoutWithAppBarWrapper>
       <AppBar />
       <Box
-        className='app-content'
+        className="app-content"
         sx={{
           overflowX: 'hidden',
           position: 'relative',
-          minHeight: theme => `calc(100vh - ${theme.spacing((theme.mixins.toolbar.minHeight as number) / 4)})`
+          minHeight: (theme) =>
+            `calc(100vh - ${theme.spacing((theme.mixins.toolbar.minHeight as number) / 4)})`,
         }}
       >
         {children}

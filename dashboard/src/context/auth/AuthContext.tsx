@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** React Imports
 import { createContext, ReactNode, useEffect, useState } from 'react'
 
@@ -13,8 +16,8 @@ import {
   AccountType,
   AddAccountBySecretKeyParams,
   AuthValuesType,
-  SuppoertWalletType,
-  WalletType
+  SupportWalletType,
+  WalletType,
 } from 'src/context/auth/types'
 
 import { ErrCallbackType } from 'src/context/types'
@@ -27,12 +30,12 @@ const defaultProvider: AuthValuesType = {
   loading: true,
   setLoading: () => Boolean,
   accounts: null,
-  suppoertWallets: [],
+  supportWallets: [],
   addAccount: () => null,
   defaultAccount: () => null,
   logout: () => Promise.resolve(),
   loginByWallet: () => Promise.resolve(),
-  loginBySecretKey: () => Promise.resolve()
+  loginBySecretKey: () => Promise.resolve(),
 }
 
 const AuthContext = createContext(defaultProvider)
@@ -45,7 +48,9 @@ const AuthProvider = ({ children }: Props) => {
   const metamask = useMetamask()
 
   // ** States
-  const [accounts, setAccounts] = useState<Map<string, AccountDataType> | null>(defaultProvider.accounts)
+  const [accounts, setAccounts] = useState<Map<string, AccountDataType> | null>(
+    defaultProvider.accounts,
+  )
   const [loading, setLoading] = useState<boolean>(defaultProvider.loading)
 
   // ** Hooks
@@ -64,7 +69,7 @@ const AuthProvider = ({ children }: Props) => {
           address: '0x12345',
           kp: null,
           activate: true,
-          type: AccountType.ROOCH
+          type: AccountType.ROOCH,
         })
         setAccounts(acc)
       }
@@ -91,26 +96,26 @@ const AuthProvider = ({ children }: Props) => {
   }
 
   /// ** Impl fun
-  const supportWallets = (): SuppoertWalletType[] => {
-    const result: SuppoertWalletType[] = []
+  const supportWallets = (): SupportWalletType[] => {
+    const result: SupportWalletType[] = []
     for (const key in WalletType) {
       switch (WalletType[key as keyof typeof WalletType]) {
         case WalletType.Metamask:
           result.push({
             enable: metamask.hasProvider,
-            name: WalletType.Metamask
+            name: WalletType.Metamask,
           })
           break
         default:
           result.push({
             enable: false,
-            name: WalletType[key as keyof typeof WalletType]
+            name: WalletType[key as keyof typeof WalletType],
           })
           break
       }
     }
 
-    if (result.some(value => value.enable)) {
+    if (result.some((value) => value.enable)) {
       return result
     }
 
@@ -123,7 +128,7 @@ const AuthProvider = ({ children }: Props) => {
         metamask
           .connect()
           .then(loginSuccess)
-          .catch(e => {
+          .catch((e) => {
             if (errorCallback) {
               errorCallback(e)
             }
@@ -153,7 +158,7 @@ const AuthProvider = ({ children }: Props) => {
       address: 'aa',
       kp: 'aa',
       activate: true,
-      type: AccountType.ROOCH
+      type: AccountType.ROOCH,
     }
   }
 
@@ -162,12 +167,12 @@ const AuthProvider = ({ children }: Props) => {
 
     // TODO: abstract wallet
     if (metamask.accounts.length > 0) {
-      metamask.accounts.map(v => {
+      metamask.accounts.forEach((v) => {
         allAccounts.set(v, {
           address: v,
           activate: true,
           kp: null,
-          type: AccountType.ETH
+          type: AccountType.ETH,
         })
       })
     }
@@ -180,12 +185,12 @@ const AuthProvider = ({ children }: Props) => {
     setLoading,
     accounts: getAccounts(),
     setAccounts,
-    suppoertWallets: supportWallets(),
+    supportWallets: supportWallets(),
     addAccount,
     defaultAccount,
     loginByWallet,
     loginBySecretKey,
-    logout: handleLogout
+    logout: handleLogout,
   }
 
   return <AuthContext.Provider value={values}>{children}</AuthContext.Provider>

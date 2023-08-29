@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import fs from 'fs'
 import os from 'os'
 import path from 'path'

@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 export type AddChinaParameterType = {
   chainId: string
   blockExplorerUrls?: string[]
@@ -14,11 +17,11 @@ export type AddChinaParameterType = {
 export type MetamaskValueType = {
   loading: boolean
   hasProvider: boolean
-  chainId: string|null,
+  chainId: string | null
   accounts: string[]
   isConnect: boolean
   connect: () => Promise<void>
   disconnect: () => void
-  switchChina:(chainId: string) => Promise<void>
+  switchChina: (chainId: string) => Promise<void>
   addChina: (params: AddChinaParameterType) => Promise<void>
 }

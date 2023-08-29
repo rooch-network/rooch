@@ -1,4 +1,6 @@
-// ** Type import
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { VerticalNavItemsType } from 'src/@core/layouts/types'
 
 const navigation = (): VerticalNavItemsType => {
@@ -9,12 +11,12 @@ const navigation = (): VerticalNavItemsType => {
       children: [
         {
           title: 'Analytics',
-          path: '/dashboards/analytics'
-        }
-      ]
+          path: '/dashboards/analytics',
+        },
+      ],
     },
     {
-      sectionTitle: 'Tutorial'
+      sectionTitle: 'Tutorial',
     },
     {
       title: 'Publich Package',
@@ -22,7 +24,7 @@ const navigation = (): VerticalNavItemsType => {
       path: '/tutorial/publich/package',
     },
     {
-      sectionTitle: 'Transaction'
+      sectionTitle: 'Transaction',
     },
     {
       title: 'Transaction List',
@@ -30,7 +32,7 @@ const navigation = (): VerticalNavItemsType => {
       path: '/transcation/list',
     },
     {
-      sectionTitle: 'Wallet & Assets'
+      sectionTitle: 'Wallet & Assets',
     },
     {
       title: 'Wallet',
@@ -57,10 +59,10 @@ const navigation = (): VerticalNavItemsType => {
           title: 'Transfer',
           path: '/assets/transfer',
         },
-      ]
+      ],
     },
     {
-      sectionTitle: 'Authentication'
+      sectionTitle: 'Authentication',
     },
     {
       title: 'Session',
@@ -73,7 +75,7 @@ const navigation = (): VerticalNavItemsType => {
       path: '/oauth',
     },
     {
-      sectionTitle: 'Other'
+      sectionTitle: 'Other',
     },
     {
       title: 'Setting',

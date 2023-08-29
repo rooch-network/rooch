@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 export type Identifier = string
 export type AccountAddress = string
 export type HashValue = string

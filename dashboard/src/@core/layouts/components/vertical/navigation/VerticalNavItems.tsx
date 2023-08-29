@@ -1,4 +1,7 @@
-// ** Type Imports
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+// ** Types Imports
 import { NavLink, NavGroup, LayoutProps, NavSectionTitle } from 'src/@core/layouts/types'
 
 // ** Custom Menu Components
@@ -32,11 +35,13 @@ const VerticalNavItems = (props: Props) => {
   // ** Props
   const { verticalNavItems } = props
 
-  const RenderMenuItems = verticalNavItems?.map((item: NavGroup | NavLink | NavSectionTitle, index: number) => {
-    const TagName: any = resolveNavItemComponent(item)
+  const RenderMenuItems = verticalNavItems?.map(
+    (item: NavGroup | NavLink | NavSectionTitle, index: number) => {
+      const TagName: any = resolveNavItemComponent(item)
 
-    return <TagName {...props} key={index} item={item} />
-  })
+      return <TagName {...props} key={index} item={item} />
+    },
+  )
 
   return <>{RenderMenuItems}</>
 }

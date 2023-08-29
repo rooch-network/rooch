@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { spawn, ChildProcess } from 'child_process'
 
 export class RoochServer {
@@ -6,14 +8,7 @@ export class RoochServer {
   private ready: boolean = false
 
   async start() {
-    this.child = spawn('cargo', [
-      'run',
-      '--bin',
-      'rooch',
-      'server',
-      'start',
-      '--temp-db',
-    ])
+    this.child = spawn('cargo', ['run', '--bin', 'rooch', 'server', 'start', '--temp-db'])
 
     if (this.child) {
       this.child.stdout?.on('data', (data) => {
@@ -65,10 +60,7 @@ export class RoochServer {
     }
 
     await new Promise<void>(
-      (
-        resolve: (value: void | PromiseLike<void>) => void,
-        reject: (reason?: any) => void,
-      ) => {
+      (resolve: (value: void | PromiseLike<void>) => void, reject: (reason?: any) => void) => {
         this.checkReady((ready: boolean) => {
           if (ready) {
             this.ready = true

@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { ROOCH_ADDRESS_LENGTH } from '../constants'
 import { FunctionId, AccountAddress, Identifier, TypeTag } from '../types'
 
@@ -42,10 +44,7 @@ export function parseFunctionId(functionId: FunctionId): {
  * setting `forceAdd0x` to true
  *
  */
-export function normalizeRoochAddress(
-  value: string,
-  forceAdd0x: boolean = false,
-): string {
+export function normalizeRoochAddress(value: string, forceAdd0x: boolean = false): string {
   let address = value.toLowerCase()
   if (!forceAdd0x && address.startsWith('0x')) {
     address = address.slice(2)

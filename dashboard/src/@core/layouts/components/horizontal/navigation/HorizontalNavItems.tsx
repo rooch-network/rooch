@@ -1,4 +1,7 @@
-// ** Types
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+// ** Types Imports
 import { NavLink, NavGroup, HorizontalNavItemsType } from 'src/@core/layouts/types'
 
 // ** Custom Navigation Components
@@ -16,11 +19,13 @@ const resolveComponent = (item: NavGroup | NavLink) => {
 }
 
 const HorizontalNavItems = (props: Props) => {
-  const RenderMenuItems = props.horizontalNavItems?.map((item: NavGroup | NavLink, index: number) => {
-    const TagName: any = resolveComponent(item)
+  const RenderMenuItems = props.horizontalNavItems?.map(
+    (item: NavGroup | NavLink, index: number) => {
+      const TagName: any = resolveComponent(item)
 
-    return <TagName {...props} key={index} item={item} />
-  })
+      return <TagName {...props} key={index} item={item} />
+    },
+  )
 
   return <>{RenderMenuItems}</>
 }

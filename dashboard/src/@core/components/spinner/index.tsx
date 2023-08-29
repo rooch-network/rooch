@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** MUI Imports
 import Box, { BoxProps } from '@mui/material/Box'
 import CircularProgress from '@mui/material/CircularProgress'
@@ -12,7 +15,7 @@ const FallbackSpinner = ({ sx }: { sx?: BoxProps['sx'] }) => {
         alignItems: 'center',
         flexDirection: 'column',
         justifyContent: 'center',
-        ...sx
+        ...sx,
       }}
     >
       {/*<svg width={55} height={80} viewBox='0 0 55 81' fill='none' xmlns='http://www.w3.org/2000/svg'>*/}

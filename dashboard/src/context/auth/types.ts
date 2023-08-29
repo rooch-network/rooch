@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { ErrCallbackType } from 'src/context/types'
 
 export type AddAccountBySecretKeyParams = {
@@ -6,16 +9,16 @@ export type AddAccountBySecretKeyParams = {
 }
 
 export enum WalletType {
-  Metamask = "Metamask",
-  Bitcoin = "Bitcoin"
+  Metamask = 'Metamask',
+  Bitcoin = 'Bitcoin',
 }
 
 export enum AccountType {
   ETH,
-  ROOCH
+  ROOCH,
 }
 
-export type SuppoertWalletType = {
+export type SupportWalletType = {
   enable: boolean
   name: WalletType
 }
@@ -31,10 +34,10 @@ export type AuthValuesType = {
   loading: boolean
   logout: () => void
   setLoading: (value: boolean) => void
-  suppoertWallets: SuppoertWalletType[]
+  supportWallets: SupportWalletType[]
   accounts: Map<string, AccountDataType> | null
   addAccount: (value: AccountDataType | null) => void
   defaultAccount: () => AccountDataType | null
-  loginByWallet: (walletType:WalletType, errorCallback?: ErrCallbackType) => void
+  loginByWallet: (walletType: WalletType, errorCallback?: ErrCallbackType) => void
   loginBySecretKey: (params: AddAccountBySecretKeyParams, errorCallback?: ErrCallbackType) => void
 }

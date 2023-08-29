@@ -1,4 +1,6 @@
-// ** Type Import
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { OwnerStateThemeType } from './'
 
 const Progress = () => {
@@ -8,13 +10,13 @@ const Progress = () => {
         root: ({ theme }: OwnerStateThemeType) => ({
           height: 12,
           borderRadius: 10,
-          backgroundColor: theme.palette.customColors.trackBg
+          backgroundColor: theme.palette.customColors.trackBg,
         }),
         bar: {
-          borderRadius: 10
-        }
-      }
-    }
+          borderRadius: 10,
+        },
+      },
+    },
   }
 }
 

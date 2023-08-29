@@ -1,10 +1,8 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import {
-  JsonRpcProvider,
-  Ed25519Keypair,
-  PrivateKeyAuth,
-  Account,
-} from '../../src'
+import { JsonRpcProvider, Ed25519Keypair, PrivateKeyAuth, Account } from '../../src'
 import { RoochServer } from './servers/rooch-server'
 
 describe('SDK', () => {
