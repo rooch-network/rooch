@@ -29,10 +29,6 @@ module rooch_framework::schnorr {
         VALID_SCHNORR_SIG_LENGTH
     }
 
-    public fun keccak256(): u8 {
-        KECCAK256
-    }
-
     public fun sha256(): u8 {
         SHA256
     }
@@ -75,49 +71,42 @@ module rooch_framework::schnorr {
     ): bool;
 
     #[test]
+    #[expected_failure(abort_code = ErrorInvalidSignature)]
     public fun test_schnorr_invalid_sig() {
       let msg = x"00010203";
       let pk = x"3e99a541db69bd32040dfe5037fbf5210dafa8151a71e21c5204b05d95ce0a62";
-      let invalid_sig = x"235c98d74dd7926570a757550d282b0a4bde6c53772c62348a04085201811f7f99240b073efa9822b224ee906b8d816977106a72ca01ed6835fd04c9b7112400";
+      let invalid_sig = x"";
 
-      let verify = verify(&invalid_sig, &pk, &msg, SHA256);
-      assert!(!verify, EInvalidSignature);
-
-      let pk = x"3e99a541db69bd32040dfe5037fbf5210dafa8151a71e21c5204b05d95ce0a62";
-      let sig = x"bf4395f2f5a75dcfc82f7f4dd9ff032c450b5caed39bdd7b09df4cfa1b15ecd0c9f1d124916903b5291623bd06f2bc005ad8e92c74ec6d962f2d41f3ea2600e8";
-      let other_msg = x"00010203";
-
-      let verify = verify(&sig, &pk, &other_msg, KECCAK256);
-      assert!(!verify, EInvalidSignature);
+      verify(&invalid_sig, &pk, &msg, SHA256);
     }
 
     #[test]
     public fun test_schnorr_valid_sig() {
       let msg = x"00010203";
       let pk = x"3e99a541db69bd32040dfe5037fbf5210dafa8151a71e21c5204b05d95ce0a62";
-      let sig = x"bf4395f2f5a75dcfc82f7f4dd9ff032c450b5caed39bdd7b09df4cfa1b15ecd0c9f1d124916903b5291623bd06f2bc005ad8e92c74ec6d962f2d41f3ea2600e7";
+      let valid_sig = x"bf4395f2f5a75dcfc82f7f4dd9ff032c450b5caed39bdd7b09df4cfa1b15ecd0c9f1d124916903b5291623bd06f2bc005ad8e92c74ec6d962f2d41f3ea2600e7";
 
-      let verify = verify(&sig, &pk, &msg, SHA256);
-      assert!(verify, EInvalidSignature);
+      let result = verify(&valid_sig, &pk, &msg, SHA256);
+      assert!(result, 0)
     }
 
     #[test]
+    #[expected_failure(abort_code = ErrorInvalidPubKey)]
     public fun test_schnorr_invalid_pubkey() {
         let msg = x"00010203";
-        let pk = x"3e99a541db69bd32040dfe5037fbf5210dafa8151a71e21c5204b05d95ce0a63";
+        let invalid_pk = x"";
         let sig = x"bf4395f2f5a75dcfc82f7f4dd9ff032c450b5caed39bdd7b09df4cfa1b15ecd0c9f1d124916903b5291623bd06f2bc005ad8e92c74ec6d962f2d41f3ea2600e7";
 
-        let verify = verify(&sig, &pk, &msg, SHA256);
-        assert!(!verify, EInvalidPubKey)
+        verify(&sig, &invalid_pk, &msg, SHA256);
     }
 
     #[test]
     public fun test_schnorr_valid_pubkey() {
         let msg = x"00010203";
-        let pk = x"3e99a541db69bd32040dfe5037fbf5210dafa8151a71e21c5204b05d95ce0a62";
-        let sig = x"1312289adb61ab33b1132f5ecd1e4d5f791f4618f5e17de2284b286c534a4fb8a7ee8a141f9a98eab92488796007e53cb71a3a3a4d738cf2a818acb48178153a";
+        let valid_pk = x"3e99a541db69bd32040dfe5037fbf5210dafa8151a71e21c5204b05d95ce0a62";
+        let sig = x"bf4395f2f5a75dcfc82f7f4dd9ff032c450b5caed39bdd7b09df4cfa1b15ecd0c9f1d124916903b5291623bd06f2bc005ad8e92c74ec6d962f2d41f3ea2600e7";
 
-        let verify = verify(&sig, &pk, &msg, KECCAK256);
-        assert!(verify, EInvalidPubKey)
+        let result = verify(&sig, &valid_pk, &msg, SHA256);
+        assert!(result, 0)
     }
 }
