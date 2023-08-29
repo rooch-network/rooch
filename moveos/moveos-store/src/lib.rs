@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Error, Result};
+use moveos_types::genesis_info::GenesisInfo;
 use once_cell::sync::Lazy;
 use raw_store::{ColumnFamilyName, StoreInstance};
 use std::collections::BTreeMap;
@@ -245,12 +246,12 @@ impl ConfigStore for MoveOSStore {
         self.get_config_store().save_startup_info(startup_info)
     }
 
-    fn get_genesis(&self) -> Result<Option<H256>> {
+    fn get_genesis(&self) -> Result<Option<GenesisInfo>> {
         self.get_config_store().get_genesis()
     }
 
-    fn save_genesis(&self, genesis_hash: H256) -> Result<()> {
-        self.get_config_store().save_genesis(genesis_hash)
+    fn save_genesis(&self, genesis_info: GenesisInfo) -> Result<()> {
+        self.get_config_store().save_genesis(genesis_info)
     }
 }
 

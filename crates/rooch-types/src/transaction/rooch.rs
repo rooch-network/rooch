@@ -4,6 +4,7 @@
 use super::{
     authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo, TransactionType,
 };
+use crate::crypto::{Ed25519RoochSignature, Signature};
 use crate::H256;
 use crate::{address::RoochAddress, chain_id::RoochChainID};
 use anyhow::Result;
@@ -77,6 +78,19 @@ impl RoochTransaction {
         Self {
             data,
             authenticator,
+        }
+    }
+
+    pub fn new_genesis_tx(
+        genesis_address: RoochAddress,
+        chain_id: u64,
+        action: MoveAction,
+    ) -> Self {
+        Self {
+            data: RoochTransactionData::new(genesis_address, 0, chain_id, u64::max_value(), action),
+            authenticator: Authenticator::ed25519(Signature::Ed25519RoochSignature(
+                Ed25519RoochSignature::default(),
+            )),
         }
     }
 
