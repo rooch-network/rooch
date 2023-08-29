@@ -58,8 +58,6 @@ describe('SDK', () => {
         },
       )
 
-      console.log('tx:', tx)
-
       expect(tx).toBeDefined()
     })
   })

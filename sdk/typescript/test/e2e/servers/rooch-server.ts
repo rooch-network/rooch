@@ -8,7 +8,7 @@ export class RoochServer {
   private ready: boolean = false
 
   async start() {
-    this.child = spawn('cargo', ['run', '--bin', 'rooch', 'server', 'start', '--temp-db'])
+    this.child = spawn('cargo', ['run', '--bin', 'rooch', 'server', 'start'])
 
     if (this.child) {
       this.child.stdout?.on('data', (data) => {
@@ -33,12 +33,13 @@ export class RoochServer {
     await this.waitReady()
   }
 
-  checkReady(cb: (ret: boolean) => void) {
+  checkReady(cb: (ret: Error | undefined) => void) {
     const readyRegex = /JSON-RPC HTTP Server start listening/
+    const errorRegex = /[Ee]rror:/
 
     const timer = setTimeout(() => {
       if (cb) {
-        cb(false)
+        cb(new Error('timeout'))
       }
     }, 1000 * 300)
 
@@ -48,8 +49,32 @@ export class RoochServer {
         clearTimeout(timer)
 
         if (cb) {
-          cb(true)
+          cb(undefined)
         }
+      } else if (errorRegex.test(text)) {
+        clearTimeout(timer)
+
+        if (cb) {
+          cb(new Error(text))
+        }
+      }
+    })
+
+    this.child?.stderr?.on('data', (text) => {
+      if (errorRegex.test(text)) {
+        clearTimeout(timer)
+
+        if (cb) {
+          cb(new Error(text))
+        }
+      }
+    })
+
+    this.child?.on('error', (err) => {
+      clearTimeout(timer)
+
+      if (cb) {
+        cb(err)
       }
     })
   }
@@ -61,14 +86,14 @@ export class RoochServer {
 
     await new Promise<void>(
       (resolve: (value: void | PromiseLike<void>) => void, reject: (reason?: any) => void) => {
-        this.checkReady((ready: boolean) => {
-          if (ready) {
-            this.ready = true
-            resolve()
+        this.checkReady((err: Error | undefined) => {
+          if (err) {
+            reject(err)
             return
           }
 
-          reject(new Error('timeout'))
+          this.ready = true
+          resolve()
         })
       },
     )
