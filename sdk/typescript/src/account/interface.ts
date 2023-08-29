@@ -17,10 +17,10 @@ export interface IAccount {
 
   /**
    * createSessionAccount
-   * 
+   *
    * create a sub account with session key
-   * 
-   * @param scope 
+   *
+   * @param scope
    */
   createSessionAccount(scope: string): Promise<IAccount>
 }
