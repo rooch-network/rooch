@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::gas::table::MoveOSGasMeter;
+use crate::gas::table::{initial_cost_schedule, MoveOSGasMeter};
 use crate::vm::moveos_vm::MoveOSVM;
 use anyhow::{bail, ensure, Result};
 use move_binary_format::errors::{vm_status_of_result, Location, PartialVMError, VMResult};
@@ -142,7 +142,9 @@ impl MoveOS {
             post_execute_functions,
         } = tx;
 
-        let gas_meter = MoveOSGasMeter::new_unmetered();
+        let cost_table = initial_cost_schedule();
+        let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
+        gas_meter.set_metering(false);
         let session = self
             .vm
             .new_readonly_session(&self.db, ctx.clone(), gas_meter);
@@ -173,7 +175,8 @@ impl MoveOS {
                 action
             );
         }
-        let gas_meter = MoveOSGasMeter::new_unmetered();
+        let cost_table = initial_cost_schedule();
+        let gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
         let mut session = self.vm.new_session(
             &self.db,
             ctx,
@@ -253,7 +256,9 @@ impl MoveOS {
         function_call: FunctionCall,
     ) -> FunctionResult {
         //TODO limit the view function max gas usage
-        let gas_meter = MoveOSGasMeter::new_unmetered();
+        let cost_table = initial_cost_schedule();
+        let mut gas_meter = MoveOSGasMeter::new(cost_table, tx_context.max_gas_amount);
+        gas_meter.set_metering(false);
         let mut session = self
             .vm
             .new_readonly_session(&self.db, tx_context.clone(), gas_meter);
