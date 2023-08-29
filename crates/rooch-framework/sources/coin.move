@@ -10,6 +10,7 @@ module rooch_framework::coin {
     use moveos_std::storage_context::{StorageContext};
     use moveos_std::event;
     use moveos_std::type_info::{Self, TypeInfo, type_of};
+    use moveos_std::signer as moveos_signer;
 
     friend rooch_framework::account;
 
@@ -113,8 +114,8 @@ module rooch_framework::coin {
     /// Capability required to burn coins.
     struct BurnCapability<phantom CoinType> has key, copy, store {}
 
-    fun init(ctx: &mut StorageContext, account: &signer) {
-        rooch_framework::core_addresses::assert_rooch_framework(account);
+    fun init(ctx: &mut StorageContext) {
+        let account = &moveos_signer::module_signer<CoinInfos>();
         let tx_ctx = storage_context::tx_context_mut(ctx);
         let coin_infos = type_table::new(tx_ctx);
         account_storage::global_move_to(ctx, account, CoinInfos{
@@ -393,7 +394,7 @@ module rooch_framework::coin {
     }
 
     #[test_only]
-    public fun init_for_test(ctx: &mut StorageContext, account: &signer){
-        init(ctx, account);
+    public fun init_for_test(ctx: &mut StorageContext){
+        init(ctx);
     }
 }
