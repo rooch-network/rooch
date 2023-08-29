@@ -76,12 +76,12 @@ The object can not be copied, droped, only can be consumed by ObjectStorage API.
 ## Constants
 
 
-<a name="0x2_object_EInvalidAccess"></a>
+<a name="0x2_object_ErrorInvalidAccess"></a>
 
 Invalid access of object, the object is not owned by the signer or the object is not shared or immutable
 
 
-<pre><code><b>const</b> <a href="object.md#0x2_object_EInvalidAccess">EInvalidAccess</a>: u64 = 0;
+<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorInvalidAccess">ErrorInvalidAccess</a>: u64 = 0;
 </code></pre>
 
 

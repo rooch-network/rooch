@@ -12,9 +12,9 @@ module moveos_std::simple_map {
     use std::vector;
 
     /// Map key already exists
-    const EKEY_ALREADY_EXISTS: u64 = 1;
+    const ErrorKeyAlreadyExists: u64 = 1;
     /// Map key is not found
-    const EKEY_NOT_FOUND: u64 = 2;
+    const ErrorKeyNotFound: u64 = 2;
 
     struct SimpleMap<Key, Value> has copy, drop, store {
         data: vector<Element<Key, Value>>,
@@ -40,7 +40,7 @@ module moveos_std::simple_map {
         key: &Key,
     ): &Value {
         let maybe_idx = find(map, key);
-        assert!(option::is_some(&maybe_idx), error::invalid_argument(EKEY_NOT_FOUND));
+        assert!(option::is_some(&maybe_idx), error::invalid_argument(ErrorKeyNotFound));
         let idx = option::extract(&mut maybe_idx);
         &vector::borrow(&map.data, idx).value
     }
@@ -50,7 +50,7 @@ module moveos_std::simple_map {
         key: &Key,
     ): &mut Value {
         let maybe_idx = find(map, key);
-        assert!(option::is_some(&maybe_idx), error::invalid_argument(EKEY_NOT_FOUND));
+        assert!(option::is_some(&maybe_idx), error::invalid_argument(ErrorKeyNotFound));
         let idx = option::extract(&mut maybe_idx);
         &mut vector::borrow_mut(&mut map.data, idx).value
     }
@@ -74,7 +74,7 @@ module moveos_std::simple_map {
         value: Value,
     ) {
         let maybe_idx = find(map, &key);
-        assert!(option::is_none(&maybe_idx), error::invalid_argument(EKEY_ALREADY_EXISTS));
+        assert!(option::is_none(&maybe_idx), error::invalid_argument(ErrorKeyAlreadyExists));
 
         vector::push_back(&mut map.data, Element { key, value });
     }
@@ -151,7 +151,7 @@ module moveos_std::simple_map {
         key: &Key,
     ): (Key, Value) {
         let maybe_idx = find(map, key);
-        assert!(option::is_some(&maybe_idx), error::invalid_argument(EKEY_NOT_FOUND));
+        assert!(option::is_some(&maybe_idx), error::invalid_argument(ErrorKeyNotFound));
         let placement = option::extract(&mut maybe_idx);
         let Element { key, value } = vector::swap_remove(&mut map.data, placement);
         (key, value)

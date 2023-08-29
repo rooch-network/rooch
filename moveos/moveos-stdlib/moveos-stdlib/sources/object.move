@@ -13,7 +13,7 @@ module moveos_std::object {
     friend moveos_std::event;
 
     /// Invalid access of object, the object is not owned by the signer or the object is not shared or immutable
-    const EInvalidAccess: u64 = 0;
+    const ErrorInvalidAccess: u64 = 0;
    
     /// Box style object
     /// The object can not be copied, droped, only can be consumed by ObjectStorage API.

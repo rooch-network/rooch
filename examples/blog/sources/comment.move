@@ -13,7 +13,7 @@ module rooch_examples::comment {
     friend rooch_examples::article_delete_logic;
     friend rooch_examples::article;
 
-    const EDATA_TOO_LONG: u64 = 102;
+    const ErrorDataTooLong: u64 = 102;
 
     struct Comment has store {
         comment_seq_id: u64,
@@ -31,7 +31,7 @@ module rooch_examples::comment {
     }
 
     public(friend) fun set_commenter(comment: &mut Comment, commenter: String) {
-        assert!(std::string::length(&commenter) <= 100, EDATA_TOO_LONG);
+        assert!(std::string::length(&commenter) <= 100, ErrorDataTooLong);
         comment.commenter = commenter;
     }
 
@@ -40,7 +40,7 @@ module rooch_examples::comment {
     }
 
     public(friend) fun set_body(comment: &mut Comment, body: String) {
-        assert!(std::string::length(&body) <= 500, EDATA_TOO_LONG);
+        assert!(std::string::length(&body) <= 500, ErrorDataTooLong);
         comment.body = body;
     }
 
@@ -58,8 +58,8 @@ module rooch_examples::comment {
         body: String,
         owner: address,
     ): Comment {
-        assert!(std::string::length(&commenter) <= 100, EDATA_TOO_LONG);
-        assert!(std::string::length(&body) <= 500, EDATA_TOO_LONG);
+        assert!(std::string::length(&commenter) <= 100, ErrorDataTooLong);
+        assert!(std::string::length(&body) <= 500, ErrorDataTooLong);
         Comment {
             comment_seq_id,
             commenter,

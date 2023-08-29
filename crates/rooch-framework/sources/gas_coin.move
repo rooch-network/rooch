@@ -11,7 +11,7 @@ module rooch_framework::gas_coin {
     friend rooch_framework::genesis;
 
     /// Account does not have mint capability
-    const ENoCapabilities: u64 = 1;
+    const ErrorNoCapabilities: u64 = 1;
 
     struct GasCoin has key {}
 

@@ -8,8 +8,8 @@ module simple_blog::blog {
     use moveos_std::account_storage;
     use simple_blog::article;
 
-    const EDATA_TOO_LONG: u64 = 1;
-    const ENOT_FOUND: u64 = 2;
+    const ErrorDataTooLong: u64 = 1;
+    const ErrorNotFound: u64 = 2;
 
     struct MyBlog has key {
         name: String,
@@ -33,7 +33,7 @@ module simple_blog::blog {
     }
 
     public entry fun set_blog_name(ctx: &mut StorageContext, owner: &signer, blog_name: String) {
-        assert!(std::string::length(&blog_name) <= 200, error::invalid_argument(EDATA_TOO_LONG));
+        assert!(std::string::length(&blog_name) <= 200, error::invalid_argument(ErrorDataTooLong));
         let owner_address = signer::address_of(owner);
         // if blog not exist, create it
         if(!account_storage::global_exists<MyBlog>(ctx, owner_address)){
@@ -57,7 +57,7 @@ module simple_blog::blog {
         let owner_address = signer::address_of(owner);
         let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
         let (contains, index) = vector::index_of(&myblog.articles, &article_id);
-        assert!(contains, error::not_found(ENOT_FOUND));
+        assert!(contains, error::not_found(ErrorNotFound));
         vector::remove(&mut myblog.articles, index); 
     }
 

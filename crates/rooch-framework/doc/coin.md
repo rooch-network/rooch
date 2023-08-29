@@ -20,6 +20,7 @@ This module provides the foundation for typesafe Coins.
 -  [Resource `MintCapability`](#0x3_coin_MintCapability)
 -  [Resource `FreezeCapability`](#0x3_coin_FreezeCapability)
 -  [Resource `BurnCapability`](#0x3_coin_BurnCapability)
+-  [Resource `Capabilities`](#0x3_coin_Capabilities)
 -  [Constants](#@Constants_0)
 -  [Function `init_account_coin_store`](#0x3_coin_init_account_coin_store)
 -  [Function `balance`](#0x3_coin_balance)
@@ -53,6 +54,15 @@ This module provides the foundation for typesafe Coins.
 -  [Function `destroy_freeze_cap`](#0x3_coin_destroy_freeze_cap)
 -  [Function `destroy_mint_cap`](#0x3_coin_destroy_mint_cap)
 -  [Function `destroy_burn_cap`](#0x3_coin_destroy_burn_cap)
+-  [Function `initialize_entry`](#0x3_coin_initialize_entry)
+-  [Function `mint_entry`](#0x3_coin_mint_entry)
+-  [Function `burn_entry`](#0x3_coin_burn_entry)
+-  [Function `accept_coin_entry`](#0x3_coin_accept_coin_entry)
+-  [Function `enable_auto_accept_coin_entry`](#0x3_coin_enable_auto_accept_coin_entry)
+-  [Function `disable_auto_accept_coin_entry`](#0x3_coin_disable_auto_accept_coin_entry)
+-  [Function `transfer_entry`](#0x3_coin_transfer_entry)
+-  [Function `freeze_coin_store_entry`](#0x3_coin_freeze_coin_store_entry)
+-  [Function `unfreeze_coin_store_entry`](#0x3_coin_unfreeze_coin_store_entry)
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
@@ -516,6 +526,47 @@ Capability required to burn coins.
 
 </details>
 
+<a name="0x3_coin_Capabilities"></a>
+
+## Resource `Capabilities`
+
+Capabilities resource storing mint and burn capabilities.
+The resource is stored on the account that initialized coin <code>CoinType</code>.
+
+
+<pre><code><b>struct</b> <a href="coin.md#0x3_coin_Capabilities">Capabilities</a>&lt;CoinType&gt; <b>has</b> key
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>burn_cap: <a href="coin.md#0x3_coin_BurnCapability">coin::BurnCapability</a>&lt;CoinType&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>freeze_cap: <a href="coin.md#0x3_coin_FreezeCapability">coin::FreezeCapability</a>&lt;CoinType&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>mint_cap: <a href="coin.md#0x3_coin_MintCapability">coin::MintCapability</a>&lt;CoinType&gt;</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -550,92 +601,102 @@ Maximum possible coin supply.
 
 
 
-<a name="0x3_coin_EAccountNotAcceptCoin"></a>
+<a name="0x3_coin_ErrorAccountNotAcceptCoin"></a>
 
 Account hasn't accept <code>CoinType</code>
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_EAccountNotAcceptCoin">EAccountNotAcceptCoin</a>: u64 = 9;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorAccountNotAcceptCoin">ErrorAccountNotAcceptCoin</a>: u64 = 9;
 </code></pre>
 
 
 
-<a name="0x3_coin_EAccountWithCoinFrozen"></a>
+<a name="0x3_coin_ErrorAccountWithCoinFrozen"></a>
 
 CoinStore is frozen. Coins cannot be deposited or withdrawn
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_EAccountWithCoinFrozen">EAccountWithCoinFrozen</a>: u64 = 8;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorAccountWithCoinFrozen">ErrorAccountWithCoinFrozen</a>: u64 = 8;
 </code></pre>
 
 
 
-<a name="0x3_coin_ECoinInfoAddressMismatch"></a>
+<a name="0x3_coin_ErrorCoinInfoAddressMismatch"></a>
 
 Address of account which is used to initialize a coin <code>CoinType</code> doesn't match the deployer of module
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_ECoinInfoAddressMismatch">ECoinInfoAddressMismatch</a>: u64 = 1;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinInfoAddressMismatch">ErrorCoinInfoAddressMismatch</a>: u64 = 1;
 </code></pre>
 
 
 
-<a name="0x3_coin_ECoinInfoAlreadyPublished"></a>
+<a name="0x3_coin_ErrorCoinInfoAlreadyPublished"></a>
 
 <code>CoinType</code> is already initialized as a coin
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_ECoinInfoAlreadyPublished">ECoinInfoAlreadyPublished</a>: u64 = 2;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinInfoAlreadyPublished">ErrorCoinInfoAlreadyPublished</a>: u64 = 2;
 </code></pre>
 
 
 
-<a name="0x3_coin_ECoinNameTooLong"></a>
+<a name="0x3_coin_ErrorCoinNameTooLong"></a>
 
 Name of the coin is too long
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_ECoinNameTooLong">ECoinNameTooLong</a>: u64 = 6;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinNameTooLong">ErrorCoinNameTooLong</a>: u64 = 6;
 </code></pre>
 
 
 
-<a name="0x3_coin_ECoinSymbolTooLong"></a>
+<a name="0x3_coin_ErrorCoinSymbolTooLong"></a>
 
 Symbol of the coin is too long
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_ECoinSymbolTooLong">ECoinSymbolTooLong</a>: u64 = 7;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinSymbolTooLong">ErrorCoinSymbolTooLong</a>: u64 = 7;
 </code></pre>
 
 
 
-<a name="0x3_coin_EDestroyOfNonZeroCoin"></a>
+<a name="0x3_coin_ErrorDestroyOfNonZeroCoin"></a>
 
 Cannot destroy non-zero coins
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_EDestroyOfNonZeroCoin">EDestroyOfNonZeroCoin</a>: u64 = 4;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorDestroyOfNonZeroCoin">ErrorDestroyOfNonZeroCoin</a>: u64 = 4;
 </code></pre>
 
 
 
-<a name="0x3_coin_EInSufficientBalance"></a>
+<a name="0x3_coin_ErrorInSufficientBalance"></a>
 
 Not enough coins to complete transaction
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_EInSufficientBalance">EInSufficientBalance</a>: u64 = 3;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorInSufficientBalance">ErrorInSufficientBalance</a>: u64 = 3;
 </code></pre>
 
 
 
-<a name="0x3_coin_EZeroCoinAmount"></a>
+<a name="0x3_coin_ErrorNoCapabilities"></a>
+
+account has no capabilities (burn/mint).
+
+
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorNoCapabilities">ErrorNoCapabilities</a>: u64 = 12;
+</code></pre>
+
+
+
+<a name="0x3_coin_ErrorZeroCoinAmount"></a>
 
 Coin amount cannot be zero
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_EZeroCoinAmount">EZeroCoinAmount</a>: u64 = 5;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorZeroCoinAmount">ErrorZeroCoinAmount</a>: u64 = 5;
 </code></pre>
 
 
@@ -1016,12 +1077,12 @@ Withdraw specifed <code>amount</code> of coin <code>CoinType</code> from the sig
     <b>let</b> addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
     <b>assert</b>!(
         <a href="coin.md#0x3_coin_is_account_accept_coin">is_account_accept_coin</a>&lt;CoinType&gt;(ctx, addr),
-        <a href="_not_found">error::not_found</a>(<a href="coin.md#0x3_coin_EAccountNotAcceptCoin">EAccountNotAcceptCoin</a>),
+        <a href="_not_found">error::not_found</a>(<a href="coin.md#0x3_coin_ErrorAccountNotAcceptCoin">ErrorAccountNotAcceptCoin</a>),
     );
 
     <b>assert</b>!(
         !<a href="coin.md#0x3_coin_is_coin_store_frozen">is_coin_store_frozen</a>&lt;CoinType&gt;(ctx, addr),
-        <a href="_permission_denied">error::permission_denied</a>(<a href="coin.md#0x3_coin_EAccountWithCoinFrozen">EAccountWithCoinFrozen</a>),
+        <a href="_permission_denied">error::permission_denied</a>(<a href="coin.md#0x3_coin_ErrorAccountWithCoinFrozen">ErrorAccountWithCoinFrozen</a>),
     );
 
     <a href="coin.md#0x3_coin_ensure_coin_store">ensure_coin_store</a>&lt;CoinType&gt;(ctx, addr);
@@ -1058,12 +1119,12 @@ Deposit the coin balance into the recipient's account and emit an event.
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_deposit">deposit</a>&lt;CoinType&gt;(ctx: &<b>mut</b> StorageContext, addr: <b>address</b>, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;) {
     <b>assert</b>!(
         <a href="coin.md#0x3_coin_is_account_accept_coin">is_account_accept_coin</a>&lt;CoinType&gt;(ctx, addr),
-        <a href="_not_found">error::not_found</a>(<a href="coin.md#0x3_coin_EAccountNotAcceptCoin">EAccountNotAcceptCoin</a>),
+        <a href="_not_found">error::not_found</a>(<a href="coin.md#0x3_coin_ErrorAccountNotAcceptCoin">ErrorAccountNotAcceptCoin</a>),
     );
 
     <b>assert</b>!(
         !<a href="coin.md#0x3_coin_is_coin_store_frozen">is_coin_store_frozen</a>&lt;CoinType&gt;(ctx, addr),
-        <a href="_permission_denied">error::permission_denied</a>(<a href="coin.md#0x3_coin_EAccountWithCoinFrozen">EAccountWithCoinFrozen</a>),
+        <a href="_permission_denied">error::permission_denied</a>(<a href="coin.md#0x3_coin_ErrorAccountWithCoinFrozen">ErrorAccountWithCoinFrozen</a>),
     );
 
     <a href="coin.md#0x3_coin_ensure_coin_store">ensure_coin_store</a>&lt;CoinType&gt;(ctx, addr);
@@ -1204,7 +1265,7 @@ a <code><a href="coin.md#0x3_coin_BurnCapability">BurnCapability</a></code> for 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_destroy_zero">destroy_zero</a>&lt;CoinType&gt;(zero_coin: <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;) {
     <b>let</b> <a href="coin.md#0x3_coin_Coin">Coin</a> { value } = zero_coin;
-    <b>assert</b>!(value == 0, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_EDestroyOfNonZeroCoin">EDestroyOfNonZeroCoin</a>))
+    <b>assert</b>!(value == 0, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ErrorDestroyOfNonZeroCoin">ErrorDestroyOfNonZeroCoin</a>))
 }
 </code></pre>
 
@@ -1229,7 +1290,7 @@ Extracts <code>amount</code> from the passed-in <code><a href="coin.md#0x3_coin"
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_extract">extract</a>&lt;CoinType&gt;(<a href="coin.md#0x3_coin">coin</a>: &<b>mut</b> <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;, amount: u256): <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
-    <b>assert</b>!(<a href="coin.md#0x3_coin">coin</a>.value &gt;= amount, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_EInSufficientBalance">EInSufficientBalance</a>));
+    <b>assert</b>!(<a href="coin.md#0x3_coin">coin</a>.value &gt;= amount, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ErrorInSufficientBalance">ErrorInSufficientBalance</a>));
     <a href="coin.md#0x3_coin">coin</a>.value = <a href="coin.md#0x3_coin">coin</a>.value - amount;
     <a href="coin.md#0x3_coin_Coin">Coin</a> { value: amount }
 }
@@ -1357,16 +1418,16 @@ The given signer also becomes the account hosting the information about the coin
     <b>let</b> addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
     <b>assert</b>!(
         <a href="coin.md#0x3_coin_coin_address">coin_address</a>&lt;CoinType&gt;() == addr,
-        <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ECoinInfoAddressMismatch">ECoinInfoAddressMismatch</a>),
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ErrorCoinInfoAddressMismatch">ErrorCoinInfoAddressMismatch</a>),
     );
 
     <b>assert</b>!(
         !<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType&gt;&gt;(ctx, addr),
-        <a href="_already_exists">error::already_exists</a>(<a href="coin.md#0x3_coin_ECoinInfoAlreadyPublished">ECoinInfoAlreadyPublished</a>),
+        <a href="_already_exists">error::already_exists</a>(<a href="coin.md#0x3_coin_ErrorCoinInfoAlreadyPublished">ErrorCoinInfoAlreadyPublished</a>),
     );
 
-    <b>assert</b>!(<a href="_length">string::length</a>(&name) &lt;= <a href="coin.md#0x3_coin_MAX_COIN_NAME_LENGTH">MAX_COIN_NAME_LENGTH</a>, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ECoinNameTooLong">ECoinNameTooLong</a>));
-    <b>assert</b>!(<a href="_length">string::length</a>(&symbol) &lt;= <a href="coin.md#0x3_coin_MAX_COIN_SYMBOL_LENGTH">MAX_COIN_SYMBOL_LENGTH</a>, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ECoinSymbolTooLong">ECoinSymbolTooLong</a>));
+    <b>assert</b>!(<a href="_length">string::length</a>(&name) &lt;= <a href="coin.md#0x3_coin_MAX_COIN_NAME_LENGTH">MAX_COIN_NAME_LENGTH</a>, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ErrorCoinNameTooLong">ErrorCoinNameTooLong</a>));
+    <b>assert</b>!(<a href="_length">string::length</a>(&symbol) &lt;= <a href="coin.md#0x3_coin_MAX_COIN_SYMBOL_LENGTH">MAX_COIN_SYMBOL_LENGTH</a>, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ErrorCoinSymbolTooLong">ErrorCoinSymbolTooLong</a>));
 
     <b>let</b> coin_info = <a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType&gt; {
         name,
@@ -1374,7 +1435,6 @@ The given signer also becomes the account hosting the information about the coin
         decimals,
         supply: 0u256,
     };
-    // <a href="_global_move_to">account_storage::global_move_to</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType&gt;&gt;(ctx, <a href="account.md#0x3_account">account</a>, coin_info);
     <b>let</b> coin_infos = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a>&gt;(ctx, @rooch_framework);
     <a href="_add">type_table::add</a>(&<b>mut</b> coin_infos.coin_infos, coin_info);
 
@@ -1628,6 +1688,313 @@ Destroy a burn capability.
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_destroy_burn_cap">destroy_burn_cap</a>&lt;CoinType&gt;(burn_cap: <a href="coin.md#0x3_coin_BurnCapability">BurnCapability</a>&lt;CoinType&gt;) {
     <b>let</b> <a href="coin.md#0x3_coin_BurnCapability">BurnCapability</a>&lt;CoinType&gt; {} = burn_cap;
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_coin_initialize_entry"></a>
+
+## Function `initialize_entry`
+
+Initialize new coin <code>CoinType</code> in Rooch Blockchain.
+Mint and Burn Capabilities will be stored under <code><a href="account.md#0x3_account">account</a></code> in <code><a href="coin.md#0x3_coin_Capabilities">Capabilities</a></code> resource.
+A developer can create his own coin and care less about mint and burn capabilities
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_initialize_entry">initialize_entry</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, name: <a href="">vector</a>&lt;u8&gt;, symbol: <a href="">vector</a>&lt;u8&gt;, decimals: u8)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_initialize_entry">initialize_entry</a>&lt;CoinType&gt;(
+    ctx: &<b>mut</b> StorageContext,
+    <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>,
+    name: <a href="">vector</a>&lt;u8&gt;,
+    symbol: <a href="">vector</a>&lt;u8&gt;,
+    decimals: u8,
+) {
+    // <b>let</b> addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
+    <b>let</b> (burn_cap, freeze_cap, mint_cap) = <a href="coin.md#0x3_coin_initialize">initialize</a>&lt;CoinType&gt;(
+        ctx,
+        <a href="account.md#0x3_account">account</a>,
+        <a href="_utf8">string::utf8</a>(name),
+        <a href="_utf8">string::utf8</a>(symbol),
+        decimals,
+    );
+
+    <a href="_global_move_to">account_storage::global_move_to</a>(ctx, <a href="account.md#0x3_account">account</a>, <a href="coin.md#0x3_coin_Capabilities">Capabilities</a>&lt;CoinType&gt; {
+        burn_cap,
+        freeze_cap,
+        mint_cap
+    });
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_coin_mint_entry"></a>
+
+## Function `mint_entry`
+
+Create new coins <code>CoinType</code> and deposit them into dst_addr's account.
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_mint_entry">mint_entry</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, dst_addr: <b>address</b>, amount: u256)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_mint_entry">mint_entry</a>&lt;CoinType&gt;(
+    ctx: &<b>mut</b> StorageContext,
+    <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>,
+    dst_addr: <b>address</b>,
+    amount: u256,
+) {
+    <b>let</b> account_addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
+
+    <b>assert</b>!(
+        <a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin.md#0x3_coin_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr),
+        <a href="_not_found">error::not_found</a>(<a href="coin.md#0x3_coin_ErrorNoCapabilities">ErrorNoCapabilities</a>),
+    );
+
+    <b>let</b> cap = <a href="_global_move_from">account_storage::global_move_from</a>&lt;<a href="coin.md#0x3_coin_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
+    // <b>let</b> cap = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin.md#0x3_coin_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
+    <b>let</b> coins_minted = <a href="coin.md#0x3_coin_mint">mint</a>(ctx, amount, &cap.mint_cap);
+    <a href="coin.md#0x3_coin_deposit">deposit</a>(ctx, dst_addr, coins_minted);
+    <a href="_global_move_to">account_storage::global_move_to</a>&lt;<a href="coin.md#0x3_coin_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, <a href="account.md#0x3_account">account</a>, cap)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_coin_burn_entry"></a>
+
+## Function `burn_entry`
+
+Withdraw an <code>amount</code> of coin <code>CoinType</code> from <code><a href="account.md#0x3_account">account</a></code> and burn it.
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_burn_entry">burn_entry</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, amount: u256)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_burn_entry">burn_entry</a>&lt;CoinType&gt;(
+    ctx: &<b>mut</b> StorageContext,
+    <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>,
+    amount: u256,
+) {
+    <b>let</b> account_addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
+
+    <b>assert</b>!(
+        <a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin.md#0x3_coin_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr),
+        <a href="_not_found">error::not_found</a>(<a href="coin.md#0x3_coin_ErrorNoCapabilities">ErrorNoCapabilities</a>),
+    );
+
+    // <b>let</b> cap = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin.md#0x3_coin_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
+    <b>let</b> cap = <a href="_global_move_from">account_storage::global_move_from</a>&lt;<a href="coin.md#0x3_coin_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
+    <b>let</b> to_burn = <a href="coin.md#0x3_coin_withdraw">withdraw</a>&lt;CoinType&gt;(ctx, <a href="account.md#0x3_account">account</a>, amount);
+    <a href="coin.md#0x3_coin_burn">burn</a>&lt;CoinType&gt;(ctx, to_burn, &cap.burn_cap);
+    <a href="_global_move_to">account_storage::global_move_to</a>&lt;<a href="coin.md#0x3_coin_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, <a href="account.md#0x3_account">account</a>, cap);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_coin_accept_coin_entry"></a>
+
+## Function `accept_coin_entry`
+
+Creating a resource that stores balance of <code>CoinType</code> on user's account.
+Required if user wants to start accepting deposits of <code>CoinType</code> in his account.
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_accept_coin_entry">accept_coin_entry</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_accept_coin_entry">accept_coin_entry</a>&lt;CoinType&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
+    <a href="coin.md#0x3_coin_do_accept_coin">do_accept_coin</a>&lt;CoinType&gt;(ctx, <a href="account.md#0x3_account">account</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_coin_enable_auto_accept_coin_entry"></a>
+
+## Function `enable_auto_accept_coin_entry`
+
+Enable account's auto-accept-coin feature.
+The script function is reenterable.
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_enable_auto_accept_coin_entry">enable_auto_accept_coin_entry</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_enable_auto_accept_coin_entry">enable_auto_accept_coin_entry</a>(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
+    <a href="coin.md#0x3_coin_set_auto_accept_coin">set_auto_accept_coin</a>(ctx, <a href="account.md#0x3_account">account</a>, <b>true</b>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_coin_disable_auto_accept_coin_entry"></a>
+
+## Function `disable_auto_accept_coin_entry`
+
+Disable account's auto-accept-coin feature.
+The script function is reenterable.
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_disable_auto_accept_coin_entry">disable_auto_accept_coin_entry</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_disable_auto_accept_coin_entry">disable_auto_accept_coin_entry</a>(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
+    <a href="coin.md#0x3_coin_set_auto_accept_coin">set_auto_accept_coin</a>(ctx, <a href="account.md#0x3_account">account</a>, <b>false</b>);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_coin_transfer_entry"></a>
+
+## Function `transfer_entry`
+
+Transfer <code>amount</code> of coins <code>CoinType</code> from <code>from</code> to <code><b>to</b></code>.
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_transfer_entry">transfer_entry</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, amount: u256)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_transfer_entry">transfer_entry</a>&lt;CoinType&gt;(
+    ctx: &<b>mut</b> StorageContext,
+    from: &<a href="">signer</a>,
+    <b>to</b>: <b>address</b>,
+    amount: u256,
+) {
+    <a href="coin.md#0x3_coin_transfer">transfer</a>&lt;CoinType&gt;(ctx, from, <b>to</b>, amount)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_coin_freeze_coin_store_entry"></a>
+
+## Function `freeze_coin_store_entry`
+
+Freeze a CoinStore to prevent transfers
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_freeze_coin_store_entry">freeze_coin_store_entry</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_freeze_coin_store_entry">freeze_coin_store_entry</a>&lt;CoinType&gt;(
+    ctx: &<b>mut</b> StorageContext,
+    <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>
+) {
+    <b>let</b> account_addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
+    <b>assert</b>!(
+        <a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin.md#0x3_coin_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr),
+        <a href="_not_found">error::not_found</a>(<a href="coin.md#0x3_coin_ErrorNoCapabilities">ErrorNoCapabilities</a>),
+    );
+    // <b>let</b> cap = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin.md#0x3_coin_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
+    <b>let</b> cap = <a href="_global_move_from">account_storage::global_move_from</a>&lt;<a href="coin.md#0x3_coin_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
+    <a href="coin.md#0x3_coin_freeze_coin_store">freeze_coin_store</a>(ctx, account_addr, &cap.freeze_cap);
+    <a href="_global_move_to">account_storage::global_move_to</a>&lt;<a href="coin.md#0x3_coin_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, <a href="account.md#0x3_account">account</a>, cap)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_coin_unfreeze_coin_store_entry"></a>
+
+## Function `unfreeze_coin_store_entry`
+
+Unfreeze a CoinStore to allow transfers
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_unfreeze_coin_store_entry">unfreeze_coin_store_entry</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_unfreeze_coin_store_entry">unfreeze_coin_store_entry</a>&lt;CoinType&gt;(
+    ctx: &<b>mut</b> StorageContext,
+    <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>
+) {
+    <b>let</b> account_addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
+    <b>assert</b>!(
+        <a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin.md#0x3_coin_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr),
+        <a href="_not_found">error::not_found</a>(<a href="coin.md#0x3_coin_ErrorNoCapabilities">ErrorNoCapabilities</a>),
+    );
+    <b>let</b> cap = <a href="_global_move_from">account_storage::global_move_from</a>&lt;<a href="coin.md#0x3_coin_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
+    // <b>let</b> cap = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin.md#0x3_coin_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
+    <a href="coin.md#0x3_coin_unfreeze_coin_store">unfreeze_coin_store</a>(ctx, account_addr, &cap.freeze_cap);
+    <a href="_global_move_to">account_storage::global_move_to</a>&lt;<a href="coin.md#0x3_coin_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, <a href="account.md#0x3_account">account</a>, cap)
 }
 </code></pre>
 

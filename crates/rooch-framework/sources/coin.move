@@ -20,31 +20,34 @@ module rooch_framework::coin {
     //
 
     /// Address of account which is used to initialize a coin `CoinType` doesn't match the deployer of module
-    const ECoinInfoAddressMismatch: u64 = 1;
+    const ErrorCoinInfoAddressMismatch: u64 = 1;
 
     /// `CoinType` is already initialized as a coin
-    const ECoinInfoAlreadyPublished: u64 = 2;
+    const ErrorCoinInfoAlreadyPublished: u64 = 2;
 
     /// Not enough coins to complete transaction
-    const EInSufficientBalance: u64 = 3;
+    const ErrorInSufficientBalance: u64 = 3;
 
     /// Cannot destroy non-zero coins
-    const EDestroyOfNonZeroCoin: u64 = 4;
+    const ErrorDestroyOfNonZeroCoin: u64 = 4;
 
     /// Coin amount cannot be zero
-    const EZeroCoinAmount: u64 = 5;
+    const ErrorZeroCoinAmount: u64 = 5;
 
     /// Name of the coin is too long
-    const ECoinNameTooLong: u64 = 6;
+    const ErrorCoinNameTooLong: u64 = 6;
 
     /// Symbol of the coin is too long
-    const ECoinSymbolTooLong: u64 = 7;
+    const ErrorCoinSymbolTooLong: u64 = 7;
 
     /// CoinStore is frozen. Coins cannot be deposited or withdrawn
-    const EAccountWithCoinFrozen: u64 = 8;
+    const ErrorAccountWithCoinFrozen: u64 = 8;
 
     /// Account hasn't accept `CoinType`
-    const EAccountNotAcceptCoin: u64 = 9;
+    const ErrorAccountNotAcceptCoin: u64 = 9;
+
+    /// account has no capabilities (burn/mint).
+    const ErrorNoCapabilities: u64 = 12;
 
     //
     // Constants
@@ -333,12 +336,12 @@ module rooch_framework::coin {
         let addr = signer::address_of(account);
         assert!(
             is_account_accept_coin<CoinType>(ctx, addr),
-            error::not_found(EAccountNotAcceptCoin),
+            error::not_found(ErrorAccountNotAcceptCoin),
         );
 
         assert!(
             !is_coin_store_frozen<CoinType>(ctx, addr),
-            error::permission_denied(EAccountWithCoinFrozen),
+            error::permission_denied(ErrorAccountWithCoinFrozen),
         );
 
         ensure_coin_store<CoinType>(ctx, addr);
@@ -355,12 +358,12 @@ module rooch_framework::coin {
     public fun deposit<CoinType>(ctx: &mut StorageContext, addr: address, coin: Coin<CoinType>) {
         assert!(
             is_account_accept_coin<CoinType>(ctx, addr),
-            error::not_found(EAccountNotAcceptCoin),
+            error::not_found(ErrorAccountNotAcceptCoin),
         );
 
         assert!(
             !is_coin_store_frozen<CoinType>(ctx, addr),
-            error::permission_denied(EAccountWithCoinFrozen),
+            error::permission_denied(ErrorAccountWithCoinFrozen),
         );
 
         ensure_coin_store<CoinType>(ctx, addr);
@@ -421,12 +424,12 @@ module rooch_framework::coin {
     /// a `BurnCapability` for the specific `CoinType`.
     public fun destroy_zero<CoinType>(zero_coin: Coin<CoinType>) {
         let Coin { value } = zero_coin;
-        assert!(value == 0, error::invalid_argument(EDestroyOfNonZeroCoin))
+        assert!(value == 0, error::invalid_argument(ErrorDestroyOfNonZeroCoin))
     }
 
     /// Extracts `amount` from the passed-in `coin`, where the original coin is modified in place.
     public fun extract<CoinType>(coin: &mut Coin<CoinType>, amount: u256): Coin<CoinType> {
-        assert!(coin.value >= amount, error::invalid_argument(EInSufficientBalance));
+        assert!(coin.value >= amount, error::invalid_argument(ErrorInSufficientBalance));
         coin.value = coin.value - amount;
         Coin { value: amount }
     }
@@ -475,16 +478,16 @@ module rooch_framework::coin {
         let addr = signer::address_of(account);
         assert!(
             coin_address<CoinType>() == addr,
-            error::invalid_argument(ECoinInfoAddressMismatch),
+            error::invalid_argument(ErrorCoinInfoAddressMismatch),
         );
 
         assert!(
             !account_storage::global_exists<CoinInfo<CoinType>>(ctx, addr),
-            error::already_exists(ECoinInfoAlreadyPublished),
+            error::already_exists(ErrorCoinInfoAlreadyPublished),
         );
 
-        assert!(string::length(&name) <= MAX_COIN_NAME_LENGTH, error::invalid_argument(ECoinNameTooLong));
-        assert!(string::length(&symbol) <= MAX_COIN_SYMBOL_LENGTH, error::invalid_argument(ECoinSymbolTooLong));
+        assert!(string::length(&name) <= MAX_COIN_NAME_LENGTH, error::invalid_argument(ErrorCoinNameTooLong));
+        assert!(string::length(&symbol) <= MAX_COIN_SYMBOL_LENGTH, error::invalid_argument(ErrorCoinSymbolTooLong));
 
         let coin_info = CoinInfo<CoinType> {
             name,
@@ -582,9 +585,6 @@ module rooch_framework::coin {
         init(ctx, account);
     }
 
-    /// account has no capabilities (burn/mint).
-    const ENoCapabilities: u64 = 1;
-
     //
     // Data structures
     //
@@ -640,7 +640,7 @@ module rooch_framework::coin {
 
         assert!(
             account_storage::global_exists<Capabilities<CoinType>>(ctx, account_addr),
-            error::not_found(ENoCapabilities),
+            error::not_found(ErrorNoCapabilities),
         );
 
         let cap = account_storage::global_move_from<Capabilities<CoinType>>(ctx, account_addr);
@@ -660,7 +660,7 @@ module rooch_framework::coin {
 
         assert!(
             account_storage::global_exists<Capabilities<CoinType>>(ctx, account_addr),
-            error::not_found(ENoCapabilities),
+            error::not_found(ErrorNoCapabilities),
         );
 
         // let cap = account_storage::global_borrow<Capabilities<CoinType>>(ctx, account_addr);
@@ -711,7 +711,7 @@ module rooch_framework::coin {
         let account_addr = signer::address_of(account);
         assert!(
             account_storage::global_exists<Capabilities<CoinType>>(ctx, account_addr),
-            error::not_found(ENoCapabilities),
+            error::not_found(ErrorNoCapabilities),
         );
         // let cap = account_storage::global_borrow<Capabilities<CoinType>>(ctx, account_addr);
         let cap = account_storage::global_move_from<Capabilities<CoinType>>(ctx, account_addr);
@@ -727,7 +727,7 @@ module rooch_framework::coin {
         let account_addr = signer::address_of(account);
         assert!(
             account_storage::global_exists<Capabilities<CoinType>>(ctx, account_addr),
-            error::not_found(ENoCapabilities),
+            error::not_found(ErrorNoCapabilities),
         );
         let cap = account_storage::global_move_from<Capabilities<CoinType>>(ctx, account_addr);
         // let cap = account_storage::global_borrow<Capabilities<CoinType>>(ctx, account_addr);
@@ -795,7 +795,7 @@ module rooch_framework::coin {
     }
 
     #[test(source = @0xa11ce, destination = @0xb0b, mod_account = @rooch_framework)]
-    #[expected_failure(abort_code = 0x60001, location = Self)]
+    #[expected_failure(abort_code = 393228, location = Self)]
     public entry fun fail_mint(
         source: &signer,
         destination: &signer,
@@ -821,7 +821,7 @@ module rooch_framework::coin {
     }
 
     #[test(source = @0xa11ce, destination = @0xb0b, mod_account = @rooch_framework)]
-    #[expected_failure(abort_code = 393217, location = Self)]
+    #[expected_failure(abort_code = 393228, location = Self)]
     public entry fun fail_burn(
         source: &signer,
         destination: &signer,

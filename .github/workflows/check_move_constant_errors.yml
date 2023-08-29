@@ -1,0 +1,23 @@
+name: Check Move Constant Errors
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-move-constant-errors:
+    name: Check-Move-Constant-Errors
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Run Bash Script
+        run: |
+          chmod +x scripts/check_move_constant_errors.sh
+          ./scripts/check_move_constant_errors.sh

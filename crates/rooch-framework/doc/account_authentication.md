@@ -124,51 +124,52 @@ A resource tha holds the auth validator ids for this account has installed.
 ## Constants
 
 
-<a name="0x3_account_authentication_EAuthValidatorAlreadyInstalled"></a>
+<a name="0x3_account_authentication_ErrorAuthValidatorAlreadyInstalled"></a>
+
+The authentication validator is already installed
 
 
-
-<pre><code><b>const</b> <a href="account_authentication.md#0x3_account_authentication_EAuthValidatorAlreadyInstalled">EAuthValidatorAlreadyInstalled</a>: u64 = 1;
+<pre><code><b>const</b> <a href="account_authentication.md#0x3_account_authentication_ErrorAuthValidatorAlreadyInstalled">ErrorAuthValidatorAlreadyInstalled</a>: u64 = 1;
 </code></pre>
 
 
 
-<a name="0x3_account_authentication_EAuthenticationKeyAlreadyExists"></a>
+<a name="0x3_account_authentication_ErrorAuthenticationKeyAlreadyExists"></a>
 
 The authentication key already exists in the specified validator
 
 
-<pre><code><b>const</b> <a href="account_authentication.md#0x3_account_authentication_EAuthenticationKeyAlreadyExists">EAuthenticationKeyAlreadyExists</a>: u64 = 5;
+<pre><code><b>const</b> <a href="account_authentication.md#0x3_account_authentication_ErrorAuthenticationKeyAlreadyExists">ErrorAuthenticationKeyAlreadyExists</a>: u64 = 5;
 </code></pre>
 
 
 
-<a name="0x3_account_authentication_EAuthenticationKeyNotFound"></a>
+<a name="0x3_account_authentication_ErrorAuthenticationKeyNotFound"></a>
 
 The authentication key has not been found for the specified validator
 
 
-<pre><code><b>const</b> <a href="account_authentication.md#0x3_account_authentication_EAuthenticationKeyNotFound">EAuthenticationKeyNotFound</a>: u64 = 4;
+<pre><code><b>const</b> <a href="account_authentication.md#0x3_account_authentication_ErrorAuthenticationKeyNotFound">ErrorAuthenticationKeyNotFound</a>: u64 = 4;
 </code></pre>
 
 
 
-<a name="0x3_account_authentication_EAuthenticationKeysResourceNotFound"></a>
+<a name="0x3_account_authentication_ErrorAuthenticationKeysResourceNotFound"></a>
 
 The authentication keys resource has not been found for the account address
 
 
-<pre><code><b>const</b> <a href="account_authentication.md#0x3_account_authentication_EAuthenticationKeysResourceNotFound">EAuthenticationKeysResourceNotFound</a>: u64 = 3;
+<pre><code><b>const</b> <a href="account_authentication.md#0x3_account_authentication_ErrorAuthenticationKeysResourceNotFound">ErrorAuthenticationKeysResourceNotFound</a>: u64 = 3;
 </code></pre>
 
 
 
-<a name="0x3_account_authentication_EMalformedAuthenticationKey"></a>
+<a name="0x3_account_authentication_ErrorMalformedAuthenticationKey"></a>
 
 The provided authentication key has an invalid length
 
 
-<pre><code><b>const</b> <a href="account_authentication.md#0x3_account_authentication_EMalformedAuthenticationKey">EMalformedAuthenticationKey</a>: u64 = 2;
+<pre><code><b>const</b> <a href="account_authentication.md#0x3_account_authentication_ErrorMalformedAuthenticationKey">ErrorMalformedAuthenticationKey</a>: u64 = 2;
 </code></pre>
 
 
@@ -263,7 +264,7 @@ This function is used to rotate a resource account's authentication key, only th
 
    <b>assert</b>!(
       <a href="_length">vector::length</a>(&new_auth_key) &lt;= <a href="account_authentication.md#0x3_account_authentication_MAX_AUTHENTICATION_KEY_LENGTH">MAX_AUTHENTICATION_KEY_LENGTH</a>,
-      <a href="_invalid_argument">error::invalid_argument</a>(<a href="account_authentication.md#0x3_account_authentication_EMalformedAuthenticationKey">EMalformedAuthenticationKey</a>)
+      <a href="_invalid_argument">error::invalid_argument</a>(<a href="account_authentication.md#0x3_account_authentication_ErrorMalformedAuthenticationKey">ErrorMalformedAuthenticationKey</a>)
    );
    //We need <b>to</b> ensure the <a href="account_authentication.md#0x3_account_authentication_AuthenticationKeys">AuthenticationKeys</a> resource <b>exists</b> before we can rotate the authentication key.
    <b>let</b> authentication_keys = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="account_authentication.md#0x3_account_authentication_AuthenticationKeys">AuthenticationKeys</a>&gt;(ctx, account_addr);
@@ -302,12 +303,12 @@ This function is used to remove a resource account's authentication key, only th
 <pre><code><b>public</b> <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_remove_authentication_key">remove_authentication_key</a>&lt;ValidatorType&gt;(ctx: &<b>mut</b> StorageContext, account_addr: <b>address</b>): <a href="account_authentication.md#0x3_account_authentication_AuthenticationKey">AuthenticationKey</a>&lt;ValidatorType&gt; {
    <b>assert</b>!(
       <a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account_authentication.md#0x3_account_authentication_AuthenticationKeys">AuthenticationKeys</a>&gt;(ctx, account_addr),
-      <a href="_not_found">error::not_found</a>(<a href="account_authentication.md#0x3_account_authentication_EAuthenticationKeysResourceNotFound">EAuthenticationKeysResourceNotFound</a>)
+      <a href="_not_found">error::not_found</a>(<a href="account_authentication.md#0x3_account_authentication_ErrorAuthenticationKeysResourceNotFound">ErrorAuthenticationKeysResourceNotFound</a>)
    );
    <b>let</b> authentication_keys = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="account_authentication.md#0x3_account_authentication_AuthenticationKeys">AuthenticationKeys</a>&gt;(ctx, account_addr);
    <b>assert</b>!(
       <a href="_contains">type_table::contains</a>&lt;<a href="account_authentication.md#0x3_account_authentication_AuthenticationKey">AuthenticationKey</a>&lt;ValidatorType&gt;&gt;(&authentication_keys.authentication_keys),
-      <a href="_not_found">error::not_found</a>(<a href="account_authentication.md#0x3_account_authentication_EAuthenticationKeyNotFound">EAuthenticationKeyNotFound</a>)
+      <a href="_not_found">error::not_found</a>(<a href="account_authentication.md#0x3_account_authentication_ErrorAuthenticationKeyNotFound">ErrorAuthenticationKeyNotFound</a>)
    );
 
    <b>let</b> removed_authentication_key = <a href="_remove">type_table::remove</a>&lt;<a href="account_authentication.md#0x3_account_authentication_AuthenticationKey">AuthenticationKey</a>&lt;ValidatorType&gt;&gt;(&<b>mut</b> authentication_keys.authentication_keys);
@@ -371,7 +372,7 @@ Return the authentication validator is installed for the account at <code>accoun
 
    <b>assert</b>!(
       !<a href="account_authentication.md#0x3_account_authentication_is_auth_validator_installed">is_auth_validator_installed</a>(ctx, account_addr, validator_id),
-      <a href="_already_exists">error::already_exists</a>(<a href="account_authentication.md#0x3_account_authentication_EAuthValidatorAlreadyInstalled">EAuthValidatorAlreadyInstalled</a>));
+      <a href="_already_exists">error::already_exists</a>(<a href="account_authentication.md#0x3_account_authentication_ErrorAuthValidatorAlreadyInstalled">ErrorAuthValidatorAlreadyInstalled</a>));
 
 
    <b>if</b>(!<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account_authentication.md#0x3_account_authentication_InstalledAuthValidator">InstalledAuthValidator</a>&gt;(ctx, account_addr)){

@@ -17,12 +17,12 @@ module moveos_std::account_storage {
     use moveos_std::move_module::{Self, MoveModule};
 
     /// The account with the given address already exists
-    const EAccountAlreadyExists: u64 = 0;
+    const ErrorAccountAlreadyExists: u64 = 0;
 
     /// The resource with the given type already exists
-    const EResourceAlreadyExists: u64 = 1;
+    const ErrorResourceAlreadyExists: u64 = 1;
     /// The resource with the given type not exists 
-    const EResourceNotExists: u64 = 2;
+    const ErrorResourceNotExists: u64 = 2;
 
     const NamedTableResource: u64 = 0;
     const NamedTableModule: u64 = 1;
@@ -52,7 +52,7 @@ module moveos_std::account_storage {
             modules: table::new_with_id(named_table_id(account, NamedTableModule)),
         };
         let object_storage = storage_context::object_storage_mut(ctx);
-        assert!(!object_storage::contains(object_storage, object_id), EAccountAlreadyExists);
+        assert!(!object_storage::contains(object_storage, object_id), ErrorAccountAlreadyExists);
         let object = object::new_with_id(object_id, account, account_storage);
         object_storage::add(object_storage, object);
     }
@@ -97,13 +97,13 @@ module moveos_std::account_storage {
     /// Add a resource to the account storage
     fun add_resource_to_account_storage<T: key>(self: &mut AccountStorage, resource: T){
         //TODO should let the type_table native add function to check the resource is exists?
-        assert!(!type_table::contains<T>(&self.resources), EResourceAlreadyExists);
+        assert!(!type_table::contains<T>(&self.resources), ErrorResourceAlreadyExists);
         type_table::add(&mut self.resources, resource);
     }
 
     /// Remove a resource from the account storage
     fun remove_resource_from_account_storage<T: key>(self: &mut AccountStorage): T {
-        assert!(type_table::contains<T>(&self.resources), EResourceNotExists);
+        assert!(type_table::contains<T>(&self.resources), ErrorResourceNotExists);
         type_table::remove<T>(&mut self.resources)
     }
 

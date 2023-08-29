@@ -134,12 +134,12 @@ Resource representing an account.
 
 
 
-<a name="0x3_account_EAccountAlreadyExists"></a>
+<a name="0x3_account_ErrorAccountAlreadyExists"></a>
 
 Account already exists
 
 
-<pre><code><b>const</b> <a href="account.md#0x3_account_EAccountAlreadyExists">EAccountAlreadyExists</a>: u64 = 1;
+<pre><code><b>const</b> <a href="account.md#0x3_account_ErrorAccountAlreadyExists">ErrorAccountAlreadyExists</a>: u64 = 1;
 </code></pre>
 
 
@@ -153,7 +153,67 @@ Account already exists
 
 
 
-<a name="0x3_account_DERIVE_RESOURCE_ACCOUNT_SCHEME"></a>
+<a name="0x3_account_ErrorAccountIsAlreadyResourceAccount"></a>
+
+Resource Account can't derive resource account
+
+
+<pre><code><b>const</b> <a href="account.md#0x3_account_ErrorAccountIsAlreadyResourceAccount">ErrorAccountIsAlreadyResourceAccount</a>: u64 = 7;
+</code></pre>
+
+
+
+<a name="0x3_account_ErrorAccountNotExist"></a>
+
+Account does not exist
+
+
+<pre><code><b>const</b> <a href="account.md#0x3_account_ErrorAccountNotExist">ErrorAccountNotExist</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x3_account_ErrorAddressReseved"></a>
+
+Cannot create account because address is reserved
+
+
+<pre><code><b>const</b> <a href="account.md#0x3_account_ErrorAddressReseved">ErrorAddressReseved</a>: u64 = 5;
+</code></pre>
+
+
+
+<a name="0x3_account_ErrorNoValidFrameworkReservedAddress"></a>
+
+Address to create is not a valid reserved address for Rooch framework
+
+
+<pre><code><b>const</b> <a href="account.md#0x3_account_ErrorNoValidFrameworkReservedAddress">ErrorNoValidFrameworkReservedAddress</a>: u64 = 11;
+</code></pre>
+
+
+
+<a name="0x3_account_ErrorResourceAccountAlreadyUsed"></a>
+
+An attempt to create a resource account on an account that has a committed transaction
+
+
+<pre><code><b>const</b> <a href="account.md#0x3_account_ErrorResourceAccountAlreadyUsed">ErrorResourceAccountAlreadyUsed</a>: u64 = 6;
+</code></pre>
+
+
+
+<a name="0x3_account_ErrorSequenceNumberTooBig"></a>
+
+Sequence number exceeds the maximum value for a u64
+
+
+<pre><code><b>const</b> <a href="account.md#0x3_account_ErrorSequenceNumberTooBig">ErrorSequenceNumberTooBig</a>: u64 = 3;
+</code></pre>
+
+
+
+<a name="0x3_account_SCHEME_DERIVE_RESOURCE_ACCOUNT"></a>
 
 Scheme identifier used when hashing an account's address together with a seed to derive the address (not the
 authentication key) of a resource account. This is an abuse of the notion of a scheme identifier which, for now,
@@ -162,67 +222,7 @@ authentication keys. Without such separation, an adversary could create (and get
 whose address matches an existing address of a MultiEd25519 wallet.
 
 
-<pre><code><b>const</b> <a href="account.md#0x3_account_DERIVE_RESOURCE_ACCOUNT_SCHEME">DERIVE_RESOURCE_ACCOUNT_SCHEME</a>: u8 = 255;
-</code></pre>
-
-
-
-<a name="0x3_account_EAccountIsAlreadyResourceAccount"></a>
-
-Resource Account can't derive resource account
-
-
-<pre><code><b>const</b> <a href="account.md#0x3_account_EAccountIsAlreadyResourceAccount">EAccountIsAlreadyResourceAccount</a>: u64 = 7;
-</code></pre>
-
-
-
-<a name="0x3_account_EAccountNotExist"></a>
-
-Account does not exist
-
-
-<pre><code><b>const</b> <a href="account.md#0x3_account_EAccountNotExist">EAccountNotExist</a>: u64 = 2;
-</code></pre>
-
-
-
-<a name="0x3_account_EAddressReseved"></a>
-
-Cannot create account because address is reserved
-
-
-<pre><code><b>const</b> <a href="account.md#0x3_account_EAddressReseved">EAddressReseved</a>: u64 = 5;
-</code></pre>
-
-
-
-<a name="0x3_account_ENoValidFrameworkReservedAddress"></a>
-
-Address to create is not a valid reserved address for Rooch framework
-
-
-<pre><code><b>const</b> <a href="account.md#0x3_account_ENoValidFrameworkReservedAddress">ENoValidFrameworkReservedAddress</a>: u64 = 11;
-</code></pre>
-
-
-
-<a name="0x3_account_EResourceAccountAlreadyUsed"></a>
-
-An attempt to create a resource account on an account that has a committed transaction
-
-
-<pre><code><b>const</b> <a href="account.md#0x3_account_EResourceAccountAlreadyUsed">EResourceAccountAlreadyUsed</a>: u64 = 6;
-</code></pre>
-
-
-
-<a name="0x3_account_ESequenceNumberTooBig"></a>
-
-Sequence number exceeds the maximum value for a u64
-
-
-<pre><code><b>const</b> <a href="account.md#0x3_account_ESequenceNumberTooBig">ESequenceNumberTooBig</a>: u64 = 3;
+<pre><code><b>const</b> <a href="account.md#0x3_account_SCHEME_DERIVE_RESOURCE_ACCOUNT">SCHEME_DERIVE_RESOURCE_ACCOUNT</a>: u8 = 255;
 </code></pre>
 
 
@@ -286,13 +286,13 @@ is returned. This way, the caller of this function can publish additional resour
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_account">create_account</a>(ctx: &<b>mut</b> StorageContext, new_address: <b>address</b>): <a href="">signer</a> {
    <b>assert</b>!(
       new_address != @vm_reserved && new_address != @rooch_framework,
-      <a href="_invalid_argument">error::invalid_argument</a>(<a href="account.md#0x3_account_EAddressReseved">EAddressReseved</a>)
+      <a href="_invalid_argument">error::invalid_argument</a>(<a href="account.md#0x3_account_ErrorAddressReseved">ErrorAddressReseved</a>)
    );
 
    // there cannot be an <a href="account.md#0x3_account_Account">Account</a> resource under new_addr already.
    <b>assert</b>!(
       !<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, new_address),
-      <a href="_already_exists">error::already_exists</a>(<a href="account.md#0x3_account_EAccountAlreadyExists">EAccountAlreadyExists</a>)
+      <a href="_already_exists">error::already_exists</a>(<a href="account.md#0x3_account_ErrorAccountAlreadyExists">ErrorAccountAlreadyExists</a>)
    );
 
    <b>let</b> new_account = <a href="account.md#0x3_account_create_account_unchecked">create_account_unchecked</a>(ctx, new_address);
@@ -334,7 +334,7 @@ create the account for system reserved addresses
           addr == @0x8 ||
           addr == @0x9 ||
           addr == @0xa,
-      <a href="_permission_denied">error::permission_denied</a>(<a href="account.md#0x3_account_ENoValidFrameworkReservedAddress">ENoValidFrameworkReservedAddress</a>),
+      <a href="_permission_denied">error::permission_denied</a>(<a href="account.md#0x3_account_ErrorNoValidFrameworkReservedAddress">ErrorNoValidFrameworkReservedAddress</a>),
    );
    <b>let</b> <a href="">signer</a> = <a href="account.md#0x3_account_create_account_unchecked">create_account_unchecked</a>(ctx, addr);
    <b>let</b> signer_cap = <a href="account.md#0x3_account_SignerCapability">SignerCapability</a> { addr };
@@ -424,7 +424,7 @@ Return the current sequence number at <code>addr</code>
 
    <b>assert</b>!(
       (*sequence_number <b>as</b> u128) &lt; <a href="account.md#0x3_account_MAX_U64">MAX_U64</a>,
-      <a href="_out_of_range">error::out_of_range</a>(<a href="account.md#0x3_account_ESequenceNumberTooBig">ESequenceNumberTooBig</a>)
+      <a href="_out_of_range">error::out_of_range</a>(<a href="account.md#0x3_account_ErrorSequenceNumberTooBig">ErrorSequenceNumberTooBig</a>)
    );
 
    *sequence_number = *sequence_number + 1;
@@ -539,10 +539,10 @@ A resource account can only be created once
    <b>let</b> source_addr = <a href="_address_of">signer::address_of</a>(source);
    <b>let</b> seed = <a href="account.md#0x3_account_generate_seed_bytes">generate_seed_bytes</a>(ctx, &source_addr);
    <b>let</b> resource_addr = <a href="account.md#0x3_account_create_resource_address">create_resource_address</a>(&source_addr, seed);
-   <b>assert</b>!(!<a href="account.md#0x3_account_is_resource_account">is_resource_account</a>(ctx, resource_addr), <a href="_invalid_state">error::invalid_state</a>(<a href="account.md#0x3_account_EAccountIsAlreadyResourceAccount">EAccountIsAlreadyResourceAccount</a>));
+   <b>assert</b>!(!<a href="account.md#0x3_account_is_resource_account">is_resource_account</a>(ctx, resource_addr), <a href="_invalid_state">error::invalid_state</a>(<a href="account.md#0x3_account_ErrorAccountIsAlreadyResourceAccount">ErrorAccountIsAlreadyResourceAccount</a>));
    <b>let</b> resource_signer = <b>if</b> (<a href="account.md#0x3_account_exists_at">exists_at</a>(ctx, resource_addr)) {
       <b>let</b> <a href="account.md#0x3_account">account</a> = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, resource_addr);
-      <b>assert</b>!(<a href="account.md#0x3_account">account</a>.sequence_number == 0, <a href="_invalid_state">error::invalid_state</a>(<a href="account.md#0x3_account_EResourceAccountAlreadyUsed">EResourceAccountAlreadyUsed</a>));
+      <b>assert</b>!(<a href="account.md#0x3_account">account</a>.sequence_number == 0, <a href="_invalid_state">error::invalid_state</a>(<a href="account.md#0x3_account_ErrorResourceAccountAlreadyUsed">ErrorResourceAccountAlreadyUsed</a>));
       <a href="account.md#0x3_account_create_signer">create_signer</a>(resource_addr)
    } <b>else</b> {
       <a href="account.md#0x3_account_create_account_unchecked">create_account_unchecked</a>(ctx, resource_addr)
@@ -582,7 +582,7 @@ involves the use of a cryptographic hash operation and should be use thoughtfull
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_create_resource_address">create_resource_address</a>(source: &<b>address</b>, seed: <a href="">vector</a>&lt;u8&gt;): <b>address</b> {
    <b>let</b> bytes = <a href="_to_bytes">bcs::to_bytes</a>(source);
    <a href="_append">vector::append</a>(&<b>mut</b> bytes, seed);
-   <a href="_push_back">vector::push_back</a>(&<b>mut</b> bytes, <a href="account.md#0x3_account_DERIVE_RESOURCE_ACCOUNT_SCHEME">DERIVE_RESOURCE_ACCOUNT_SCHEME</a>);
+   <a href="_push_back">vector::push_back</a>(&<b>mut</b> bytes, <a href="account.md#0x3_account_SCHEME_DERIVE_RESOURCE_ACCOUNT">SCHEME_DERIVE_RESOURCE_ACCOUNT</a>);
    bcs::to_address(<a href="../doc/hash.md#0x1_hash_sha3_256">hash::sha3_256</a>(bytes))
 }
 </code></pre>

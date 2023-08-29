@@ -77,12 +77,12 @@ The resource is stored on the account that initialized coin <code>CoinType</code
 ## Constants
 
 
-<a name="0x3_coin_entry_ENoCapabilities"></a>
+<a name="0x3_coin_entry_ErrorNoCapabilities"></a>
 
 account has no capabilities (burn/mint).
 
 
-<pre><code><b>const</b> <a href="coin_entry.md#0x3_coin_entry_ENoCapabilities">ENoCapabilities</a>: u64 = 1;
+<pre><code><b>const</b> <a href="coin_entry.md#0x3_coin_entry_ErrorNoCapabilities">ErrorNoCapabilities</a>: u64 = 1;
 </code></pre>
 
 
@@ -157,7 +157,7 @@ Create new coins <code>CoinType</code> and deposit them into dst_addr's account.
 
     <b>assert</b>!(
         <a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr),
-        <a href="_not_found">error::not_found</a>(<a href="coin_entry.md#0x3_coin_entry_ENoCapabilities">ENoCapabilities</a>),
+        <a href="_not_found">error::not_found</a>(<a href="coin_entry.md#0x3_coin_entry_ErrorNoCapabilities">ErrorNoCapabilities</a>),
     );
 
     <b>let</b> cap = <a href="_global_move_from">account_storage::global_move_from</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
@@ -197,7 +197,7 @@ Withdraw an <code>amount</code> of coin <code>CoinType</code> from <code><a href
 
     <b>assert</b>!(
         <a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr),
-        <a href="_not_found">error::not_found</a>(<a href="coin_entry.md#0x3_coin_entry_ENoCapabilities">ENoCapabilities</a>),
+        <a href="_not_found">error::not_found</a>(<a href="coin_entry.md#0x3_coin_entry_ErrorNoCapabilities">ErrorNoCapabilities</a>),
     );
 
     // <b>let</b> cap = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
@@ -343,7 +343,7 @@ Freeze a CoinStore to prevent transfers
     <b>let</b> account_addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
     <b>assert</b>!(
         <a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr),
-        <a href="_not_found">error::not_found</a>(<a href="coin_entry.md#0x3_coin_entry_ENoCapabilities">ENoCapabilities</a>),
+        <a href="_not_found">error::not_found</a>(<a href="coin_entry.md#0x3_coin_entry_ErrorNoCapabilities">ErrorNoCapabilities</a>),
     );
     // <b>let</b> cap = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
     <b>let</b> cap = <a href="_global_move_from">account_storage::global_move_from</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
@@ -379,7 +379,7 @@ Unfreeze a CoinStore to allow transfers
     <b>let</b> account_addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
     <b>assert</b>!(
         <a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr),
-        <a href="_not_found">error::not_found</a>(<a href="coin_entry.md#0x3_coin_entry_ENoCapabilities">ENoCapabilities</a>),
+        <a href="_not_found">error::not_found</a>(<a href="coin_entry.md#0x3_coin_entry_ErrorNoCapabilities">ErrorNoCapabilities</a>),
     );
     <b>let</b> cap = <a href="_global_move_from">account_storage::global_move_from</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);
     // <b>let</b> cap = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin_entry.md#0x3_coin_entry_Capabilities">Capabilities</a>&lt;CoinType&gt;&gt;(ctx, account_addr);

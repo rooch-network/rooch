@@ -9,7 +9,7 @@ module moveos_std::type_info {
     // Error codes
     //
 
-    const E_NATIVE_FUN_NOT_AVAILABLE: u64 = 1;
+    const ErrorNativeFunctionNotAvailable: u64 = 1;
 
     //
     // Structs

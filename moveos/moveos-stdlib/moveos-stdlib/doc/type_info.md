@@ -69,11 +69,11 @@ https://github.com/starcoinorg/starcoin-framework/blob/952c51116e0ef5a97c119205d
 ## Constants
 
 
-<a name="0x2_type_info_E_NATIVE_FUN_NOT_AVAILABLE"></a>
+<a name="0x2_type_info_ErrorNativeFunctionNotAvailable"></a>
 
 
 
-<pre><code><b>const</b> <a href="type_info.md#0x2_type_info_E_NATIVE_FUN_NOT_AVAILABLE">E_NATIVE_FUN_NOT_AVAILABLE</a>: u64 = 1;
+<pre><code><b>const</b> <a href="type_info.md#0x2_type_info_ErrorNativeFunctionNotAvailable">ErrorNativeFunctionNotAvailable</a>: u64 = 1;
 </code></pre>
 
 

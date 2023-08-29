@@ -90,32 +90,32 @@ Because the GlobalValue in MoveVM must be a resource.
 ## Constants
 
 
-<a name="0x2_raw_table_EAlreadyExists"></a>
+<a name="0x2_raw_table_ErrorAlreadyExists"></a>
 
 The key already exists in the table
 
 
-<pre><code><b>const</b> <a href="raw_table.md#0x2_raw_table_EAlreadyExists">EAlreadyExists</a>: u64 = 1;
+<pre><code><b>const</b> <a href="raw_table.md#0x2_raw_table_ErrorAlreadyExists">ErrorAlreadyExists</a>: u64 = 1;
 </code></pre>
 
 
 
-<a name="0x2_raw_table_ENotEmpty"></a>
+<a name="0x2_raw_table_ErrorNotEmpty"></a>
 
 The table is not empty
 
 
-<pre><code><b>const</b> <a href="raw_table.md#0x2_raw_table_ENotEmpty">ENotEmpty</a>: u64 = 3;
+<pre><code><b>const</b> <a href="raw_table.md#0x2_raw_table_ErrorNotEmpty">ErrorNotEmpty</a>: u64 = 3;
 </code></pre>
 
 
 
-<a name="0x2_raw_table_ENotFound"></a>
+<a name="0x2_raw_table_ErrorNotFound"></a>
 
 Can not found the key in the table
 
 
-<pre><code><b>const</b> <a href="raw_table.md#0x2_raw_table_ENotFound">ENotFound</a>: u64 = 2;
+<pre><code><b>const</b> <a href="raw_table.md#0x2_raw_table_ErrorNotFound">ErrorNotFound</a>: u64 = 2;
 </code></pre>
 
 
