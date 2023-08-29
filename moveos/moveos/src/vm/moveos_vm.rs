@@ -12,6 +12,7 @@ use move_binary_format::{
     CompiledModule,
 };
 
+use crate::gas::table::initial_cost_schedule;
 use crate::gas::{table::MoveOSGasMeter, SwitchableGasMeter};
 use move_core_types::{
     account_address::AccountAddress,
@@ -90,7 +91,9 @@ impl MoveOSVM {
         ctx: TxContext,
     ) -> MoveOSSession<'r, '_, S, MoveOSGasMeter> {
         //Do not charge gas for genesis session
-        let gas_meter = MoveOSGasMeter::new_unmetered();
+        let cost_table = initial_cost_schedule();
+        let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
+        gas_meter.set_metering(false);
         // Genesis session do not need to execute pre_execute and post_execute function
         MoveOSSession::new(&self.inner, remote, ctx, vec![], vec![], gas_meter, false)
     }

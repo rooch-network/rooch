@@ -183,10 +183,8 @@ impl GasCost {
 #[derive(Debug)]
 pub struct MoveOSGasMeter {
     cost_table: CostTable,
-    gas_left: InternalGas,
+    gas_left: u64,
     //TODO we do not need to use gas_price in gas meter.
-    gas_price: u64,
-    initial_budget: InternalGas,
     charge: bool,
 
     // The current height of the operand stack, and the maximal height that it has reached.
@@ -212,10 +210,10 @@ impl MoveOSGasMeter {
     ///
     /// Charge for every operation and fail when there is no more gas to pay for operations.
     /// This is the instantiation that must be used when executing a user function.
-    pub fn new(cost_table: CostTable, budget: u64, gas_price: u64) -> Self {
-        assert!(gas_price > 0, "gas price cannot be 0");
-        let budget_in_unit = budget / gas_price;
-        let gas_left = Self::to_internal_units(budget_in_unit);
+    pub fn new(cost_table: CostTable, budget: u64) -> Self {
+        //assert!(gas_price > 0, "gas price cannot be 0");
+        //let budget_in_unit = budget / gas_price;
+        // let gas_left = Self::to_internal_units(budget_in_unit);
         let (stack_height_current_tier_mult, stack_height_next_tier_start) =
             cost_table.stack_height_tier(0);
         let (stack_size_current_tier_mult, stack_size_next_tier_start) =
@@ -223,9 +221,7 @@ impl MoveOSGasMeter {
         let (instructions_current_tier_mult, instructions_next_tier_start) =
             cost_table.instruction_tier(0);
         Self {
-            gas_left,
-            gas_price,
-            initial_budget: gas_left,
+            gas_left: budget,
             cost_table,
             charge: true,
             stack_height_high_water_mark: 0,
@@ -249,9 +245,7 @@ impl MoveOSGasMeter {
     pub fn new_unmetered() -> Self {
         Self {
             cost_table: ZERO_COST_SCHEDULE.clone(),
-            gas_left: InternalGas::zero(),
-            gas_price: 1,
-            initial_budget: InternalGas::new(0),
+            gas_left: 0,
             charge: false,
             stack_height_high_water_mark: 0,
             stack_height_current: 0,
@@ -265,12 +259,6 @@ impl MoveOSGasMeter {
             instructions_next_tier_start: None,
             instructions_current_tier_mult: 0,
         }
-    }
-
-    const INTERNAL_UNIT_MULTIPLIER: u64 = 1000;
-
-    fn to_internal_units(val: u64) -> InternalGas {
-        InternalGas::new(val * Self::INTERNAL_UNIT_MULTIPLIER)
     }
 
     pub fn push_stack(&mut self, pushes: u64) -> PartialVMResult<()> {
@@ -368,7 +356,8 @@ impl MoveOSGasMeter {
                     .checked_mul(pushes)
                     .ok_or_else(|| PartialVMError::new(StatusCode::ARITHMETIC_ERROR))?,
             )
-            .total_internal(),
+            .total_internal()
+            .into(),
         )?;
 
         // self.decrease_stack_size(decr_size);
@@ -377,7 +366,7 @@ impl MoveOSGasMeter {
         Ok(())
     }
 
-    pub fn deduct_gas(&mut self, amount: InternalGas) -> PartialVMResult<()> {
+    pub fn deduct_gas(&mut self, amount: u64) -> PartialVMResult<()> {
         if !self.charge {
             return Ok(());
         }
@@ -388,10 +377,14 @@ impl MoveOSGasMeter {
                 Ok(())
             }
             None => {
-                self.gas_left = InternalGas::new(0);
+                self.gas_left = 0;
                 Err(PartialVMError::new(StatusCode::OUT_OF_GAS))
             }
         }
+    }
+
+    pub fn set_metering(&mut self, enabled: bool) {
+        self.charge = enabled;
     }
 }
 
@@ -444,7 +437,7 @@ fn get_simple_instruction_stack_change(
 
 impl GasMeter for MoveOSGasMeter {
     fn balance_internal(&self) -> InternalGas {
-        self.gas_left
+        InternalGas::new(self.gas_left)
     }
 
     fn charge_simple_instr(&mut self, instr: SimpleInstruction) -> PartialVMResult<()> {
@@ -737,7 +730,7 @@ impl GasMeter for MoveOSGasMeter {
         // `charge_native_function_before_execution` call.
         self.charge(0, pushes, 0, size_increase.into(), 0)?;
         // Now charge the gas that the native function told us to charge.
-        self.deduct_gas(amount)
+        self.deduct_gas(amount.into())
     }
 
     fn charge_native_function_before_execution(
