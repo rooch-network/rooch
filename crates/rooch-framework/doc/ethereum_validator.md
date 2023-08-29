@@ -66,22 +66,22 @@ This module implements Ethereum validator with the ECDSA recoverable signature o
 ## Constants
 
 
-<a name="0x3_ethereum_validator_EInvalidPublicKeyLength"></a>
+<a name="0x3_ethereum_validator_ErrorInvalidPublicKeyLength"></a>
 
 error code
 
 
-<pre><code><b>const</b> <a href="ethereum_validator.md#0x3_ethereum_validator_EInvalidPublicKeyLength">EInvalidPublicKeyLength</a>: u64 = 0;
+<pre><code><b>const</b> <a href="ethereum_validator.md#0x3_ethereum_validator_ErrorInvalidPublicKeyLength">ErrorInvalidPublicKeyLength</a>: u64 = 0;
 </code></pre>
 
 
 
-<a name="0x3_ethereum_validator_ETHEREUM_SCHEME"></a>
+<a name="0x3_ethereum_validator_SCHEME_ETHEREUM"></a>
 
 there defines scheme for each blockchain
 
 
-<pre><code><b>const</b> <a href="ethereum_validator.md#0x3_ethereum_validator_ETHEREUM_SCHEME">ETHEREUM_SCHEME</a>: u64 = 3;
+<pre><code><b>const</b> <a href="ethereum_validator.md#0x3_ethereum_validator_SCHEME_ETHEREUM">SCHEME_ETHEREUM</a>: u64 = 3;
 </code></pre>
 
 
@@ -102,7 +102,7 @@ there defines scheme for each blockchain
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_scheme">scheme</a>(): u64 {
-    <a href="ethereum_validator.md#0x3_ethereum_validator_ETHEREUM_SCHEME">ETHEREUM_SCHEME</a>
+    <a href="ethereum_validator.md#0x3_ethereum_validator_SCHEME_ETHEREUM">SCHEME_ETHEREUM</a>
 }
 </code></pre>
 
@@ -133,7 +133,7 @@ there defines scheme for each blockchain
     // compare newly passed <b>public</b> key <b>with</b> Ethereum <b>public</b> key length <b>to</b> ensure it's compatible
     <b>assert</b>!(
         <a href="_length">vector::length</a>(&public_key) == <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_public_key_length">ecdsa_k1_recoverable::public_key_length</a>(),
-        <a href="_invalid_argument">error::invalid_argument</a>(<a href="ethereum_validator.md#0x3_ethereum_validator_EInvalidPublicKeyLength">EInvalidPublicKeyLength</a>)
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="ethereum_validator.md#0x3_ethereum_validator_ErrorInvalidPublicKeyLength">ErrorInvalidPublicKeyLength</a>)
     );
 
     // User can rotate the authentication key arbitrarily, so we do not need <b>to</b> check the new <b>public</b> key <b>with</b> the <a href="account.md#0x3_account">account</a> <b>address</b>.

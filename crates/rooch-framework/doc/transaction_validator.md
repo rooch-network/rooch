@@ -40,88 +40,88 @@
 
 
 
-<a name="0x3_transaction_validator_EOUT_OF_GAS"></a>
+<a name="0x3_transaction_validator_ErrorOutOfGas"></a>
 
 Transaction exceeded its allocated max gas
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EOUT_OF_GAS">EOUT_OF_GAS</a>: u64 = 6;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_ErrorOutOfGas">ErrorOutOfGas</a>: u64 = 6;
 </code></pre>
 
 
 
-<a name="0x3_transaction_validator_EValidateAccountDoesNotExist"></a>
+<a name="0x3_transaction_validator_ErrorValidateAccountDoesNotExist"></a>
 
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateAccountDoesNotExist">EValidateAccountDoesNotExist</a>: u64 = 1003;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_ErrorValidateAccountDoesNotExist">ErrorValidateAccountDoesNotExist</a>: u64 = 1003;
 </code></pre>
 
 
 
-<a name="0x3_transaction_validator_EValidateBadChainId"></a>
+<a name="0x3_transaction_validator_ErrorValidateBadChainId"></a>
 
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateBadChainId">EValidateBadChainId</a>: u64 = 1006;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_ErrorValidateBadChainId">ErrorValidateBadChainId</a>: u64 = 1006;
 </code></pre>
 
 
 
-<a name="0x3_transaction_validator_EValidateCantPayGasDeposit"></a>
+<a name="0x3_transaction_validator_ErrorValidateCantPayGasDeposit"></a>
 
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateCantPayGasDeposit">EValidateCantPayGasDeposit</a>: u64 = 1004;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_ErrorValidateCantPayGasDeposit">ErrorValidateCantPayGasDeposit</a>: u64 = 1004;
 </code></pre>
 
 
 
-<a name="0x3_transaction_validator_EValidateNotInstalledAuthValidator"></a>
+<a name="0x3_transaction_validator_ErrorValidateNotInstalledAuthValidator"></a>
 
 The authenticator's scheme is not installed to the sender's account
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateNotInstalledAuthValidator">EValidateNotInstalledAuthValidator</a>: u64 = 1010;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_ErrorValidateNotInstalledAuthValidator">ErrorValidateNotInstalledAuthValidator</a>: u64 = 1010;
 </code></pre>
 
 
 
-<a name="0x3_transaction_validator_EValidateSequenceNuberTooOld"></a>
+<a name="0x3_transaction_validator_ErrorValidateSequenceNuberTooOld"></a>
 
 Validate errors. These are separated out from the other errors in this
 module since they are mapped separately to major VM statuses, and are
 important to the semantics of the system.
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNuberTooOld">EValidateSequenceNuberTooOld</a>: u64 = 1001;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_ErrorValidateSequenceNuberTooOld">ErrorValidateSequenceNuberTooOld</a>: u64 = 1001;
 </code></pre>
 
 
 
-<a name="0x3_transaction_validator_EValidateSequenceNumberTooBig"></a>
+<a name="0x3_transaction_validator_ErrorValidateSequenceNumberTooBig"></a>
 
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNumberTooBig">EValidateSequenceNumberTooBig</a>: u64 = 1007;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_ErrorValidateSequenceNumberTooBig">ErrorValidateSequenceNumberTooBig</a>: u64 = 1007;
 </code></pre>
 
 
 
-<a name="0x3_transaction_validator_EValidateSequenceNumberTooNew"></a>
+<a name="0x3_transaction_validator_ErrorValidateSequenceNumberTooNew"></a>
 
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNumberTooNew">EValidateSequenceNumberTooNew</a>: u64 = 1002;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_ErrorValidateSequenceNumberTooNew">ErrorValidateSequenceNumberTooNew</a>: u64 = 1002;
 </code></pre>
 
 
 
-<a name="0x3_transaction_validator_EValidateTransactionExpired"></a>
+<a name="0x3_transaction_validator_ErrorValidateTransactionExpired"></a>
 
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_EValidateTransactionExpired">EValidateTransactionExpired</a>: u64 = 1005;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_ErrorValidateTransactionExpired">ErrorValidateTransactionExpired</a>: u64 = 1005;
 </code></pre>
 
 
@@ -153,27 +153,27 @@ If the authenticator is invaid, abort this function.
     // === validate the chain id ===
     <b>assert</b>!(
         <a href="chain_id.md#0x3_chain_id">chain_id</a> == <a href="chain_id.md#0x3_chain_id_chain_id">chain_id::chain_id</a>(ctx),
-        <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateBadChainId">EValidateBadChainId</a>)
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_ErrorValidateBadChainId">ErrorValidateBadChainId</a>)
     );
 
     // === validate the sequence number ===
     <b>let</b> tx_sequence_number = <a href="_sequence_number">storage_context::sequence_number</a>(ctx);
     <b>assert</b>!(
         (tx_sequence_number <b>as</b> u128) &lt; <a href="transaction_validator.md#0x3_transaction_validator_MAX_U64">MAX_U64</a>,
-        <a href="_out_of_range">error::out_of_range</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNumberTooBig">EValidateSequenceNumberTooBig</a>)
+        <a href="_out_of_range">error::out_of_range</a>(<a href="transaction_validator.md#0x3_transaction_validator_ErrorValidateSequenceNumberTooBig">ErrorValidateSequenceNumberTooBig</a>)
     );
 
     <b>let</b> account_sequence_number = <a href="account.md#0x3_account_sequence_number_for_sender">account::sequence_number_for_sender</a>(ctx);
     <b>assert</b>!(
         tx_sequence_number &gt;= account_sequence_number,
-        <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNuberTooOld">EValidateSequenceNuberTooOld</a>)
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_ErrorValidateSequenceNuberTooOld">ErrorValidateSequenceNuberTooOld</a>)
     );
 
     // [PCA12]: Check that the transaction's sequence number matches the
     // current sequence number. Otherwise sequence number is too new by [PCA11].
     <b>assert</b>!(
         tx_sequence_number == account_sequence_number,
-        <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateSequenceNumberTooNew">EValidateSequenceNumberTooNew</a>)
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_ErrorValidateSequenceNumberTooNew">ErrorValidateSequenceNumberTooNew</a>)
     );
 
     // === validate gas ===
@@ -195,7 +195,7 @@ If the authenticator is invaid, abort this function.
         <b>if</b> (!rooch_framework::builtin_validators::is_builtin_scheme(scheme)) {
             <b>assert</b>!(
                 <a href="account_authentication.md#0x3_account_authentication_is_auth_validator_installed">account_authentication::is_auth_validator_installed</a>(ctx, sender, validator_id),
-                <a href="_invalid_state">error::invalid_state</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateNotInstalledAuthValidator">EValidateNotInstalledAuthValidator</a>)
+                <a href="_invalid_state">error::invalid_state</a>(<a href="transaction_validator.md#0x3_transaction_validator_ErrorValidateNotInstalledAuthValidator">ErrorValidateNotInstalledAuthValidator</a>)
             );
         };
         <a href="auth_validator.md#0x3_auth_validator_new_tx_validate_result">auth_validator::new_tx_validate_result</a>(scheme, <a href="_some">option::some</a>(*<a href="auth_validator.md#0x3_auth_validator">auth_validator</a>), <a href="_none">option::none</a>())

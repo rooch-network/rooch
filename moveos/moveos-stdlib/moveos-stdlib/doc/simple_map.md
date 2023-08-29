@@ -102,22 +102,22 @@ This module provides a solution for unsorted maps, that is it has the properties
 ## Constants
 
 
-<a name="0x2_simple_map_EKEY_ALREADY_EXISTS"></a>
+<a name="0x2_simple_map_ErrorKeyAlreadyExists"></a>
 
 Map key already exists
 
 
-<pre><code><b>const</b> <a href="simple_map.md#0x2_simple_map_EKEY_ALREADY_EXISTS">EKEY_ALREADY_EXISTS</a>: u64 = 1;
+<pre><code><b>const</b> <a href="simple_map.md#0x2_simple_map_ErrorKeyAlreadyExists">ErrorKeyAlreadyExists</a>: u64 = 1;
 </code></pre>
 
 
 
-<a name="0x2_simple_map_EKEY_NOT_FOUND"></a>
+<a name="0x2_simple_map_ErrorKeyNotFound"></a>
 
 Map key is not found
 
 
-<pre><code><b>const</b> <a href="simple_map.md#0x2_simple_map_EKEY_NOT_FOUND">EKEY_NOT_FOUND</a>: u64 = 2;
+<pre><code><b>const</b> <a href="simple_map.md#0x2_simple_map_ErrorKeyNotFound">ErrorKeyNotFound</a>: u64 = 2;
 </code></pre>
 
 
@@ -192,7 +192,7 @@ Map key is not found
     key: &Key,
 ): &Value {
     <b>let</b> maybe_idx = <a href="simple_map.md#0x2_simple_map_find">find</a>(map, key);
-    <b>assert</b>!(<a href="_is_some">option::is_some</a>(&maybe_idx), <a href="_invalid_argument">error::invalid_argument</a>(<a href="simple_map.md#0x2_simple_map_EKEY_NOT_FOUND">EKEY_NOT_FOUND</a>));
+    <b>assert</b>!(<a href="_is_some">option::is_some</a>(&maybe_idx), <a href="_invalid_argument">error::invalid_argument</a>(<a href="simple_map.md#0x2_simple_map_ErrorKeyNotFound">ErrorKeyNotFound</a>));
     <b>let</b> idx = <a href="_extract">option::extract</a>(&<b>mut</b> maybe_idx);
     &<a href="_borrow">vector::borrow</a>(&map.data, idx).value
 }
@@ -222,7 +222,7 @@ Map key is not found
     key: &Key,
 ): &<b>mut</b> Value {
     <b>let</b> maybe_idx = <a href="simple_map.md#0x2_simple_map_find">find</a>(map, key);
-    <b>assert</b>!(<a href="_is_some">option::is_some</a>(&maybe_idx), <a href="_invalid_argument">error::invalid_argument</a>(<a href="simple_map.md#0x2_simple_map_EKEY_NOT_FOUND">EKEY_NOT_FOUND</a>));
+    <b>assert</b>!(<a href="_is_some">option::is_some</a>(&maybe_idx), <a href="_invalid_argument">error::invalid_argument</a>(<a href="simple_map.md#0x2_simple_map_ErrorKeyNotFound">ErrorKeyNotFound</a>));
     <b>let</b> idx = <a href="_extract">option::extract</a>(&<b>mut</b> maybe_idx);
     &<b>mut</b> <a href="_borrow_mut">vector::borrow_mut</a>(&<b>mut</b> map.data, idx).value
 }
@@ -306,7 +306,7 @@ Map key is not found
     value: Value,
 ) {
     <b>let</b> maybe_idx = <a href="simple_map.md#0x2_simple_map_find">find</a>(map, &key);
-    <b>assert</b>!(<a href="_is_none">option::is_none</a>(&maybe_idx), <a href="_invalid_argument">error::invalid_argument</a>(<a href="simple_map.md#0x2_simple_map_EKEY_ALREADY_EXISTS">EKEY_ALREADY_EXISTS</a>));
+    <b>assert</b>!(<a href="_is_none">option::is_none</a>(&maybe_idx), <a href="_invalid_argument">error::invalid_argument</a>(<a href="simple_map.md#0x2_simple_map_ErrorKeyAlreadyExists">ErrorKeyAlreadyExists</a>));
 
     <a href="_push_back">vector::push_back</a>(&<b>mut</b> map.data, <a href="simple_map.md#0x2_simple_map_Element">Element</a> { key, value });
 }
@@ -483,7 +483,7 @@ Primarily used to destroy a map
     key: &Key,
 ): (Key, Value) {
     <b>let</b> maybe_idx = <a href="simple_map.md#0x2_simple_map_find">find</a>(map, key);
-    <b>assert</b>!(<a href="_is_some">option::is_some</a>(&maybe_idx), <a href="_invalid_argument">error::invalid_argument</a>(<a href="simple_map.md#0x2_simple_map_EKEY_NOT_FOUND">EKEY_NOT_FOUND</a>));
+    <b>assert</b>!(<a href="_is_some">option::is_some</a>(&maybe_idx), <a href="_invalid_argument">error::invalid_argument</a>(<a href="simple_map.md#0x2_simple_map_ErrorKeyNotFound">ErrorKeyNotFound</a>));
     <b>let</b> placement = <a href="_extract">option::extract</a>(&<b>mut</b> maybe_idx);
     <b>let</b> <a href="simple_map.md#0x2_simple_map_Element">Element</a> { key, value } = <a href="_swap_remove">vector::swap_remove</a>(&<b>mut</b> map.data, placement);
     (key, value)

@@ -9,8 +9,8 @@ module simple_blog::article {
     use moveos_std::object_storage;
     use moveos_std::storage_context::{Self, StorageContext};
 
-    const EDATA_TOO_LONG: u64 = 1;
-    const ENOT_OWNER_ACCOUNT: u64 = 2;
+    const ErrorDataTooLong: u64 = 1;
+    const ErrorNotOwnerAccount: u64 = 2;
 
     struct Article has key {
         version: u64,
@@ -40,8 +40,8 @@ module simple_blog::article {
         title: String,
         body: String,
     ): ObjectID {
-        assert!(std::string::length(&title) <= 200, error::invalid_argument(EDATA_TOO_LONG));
-        assert!(std::string::length(&body) <= 2000, error::invalid_argument(EDATA_TOO_LONG));
+        assert!(std::string::length(&title) <= 200, error::invalid_argument(ErrorDataTooLong));
+        assert!(std::string::length(&body) <= 2000, error::invalid_argument(ErrorDataTooLong));
 
         let tx_ctx = storage_context::tx_context_mut(ctx);
         let article = Article {
@@ -74,15 +74,15 @@ module simple_blog::article {
         new_title: String,
         new_body: String,
     ) {
-        assert!(std::string::length(&new_title) <= 200, error::invalid_argument(EDATA_TOO_LONG));
-        assert!(std::string::length(&new_body) <= 2000, error::invalid_argument(EDATA_TOO_LONG));
+        assert!(std::string::length(&new_title) <= 200, error::invalid_argument(ErrorDataTooLong));
+        assert!(std::string::length(&new_body) <= 2000, error::invalid_argument(ErrorDataTooLong));
 
         let object_storage = storage_context::object_storage_mut(ctx);
         let article_obj = object_storage::borrow_mut<Article>(object_storage, id);
         let owner_address = signer::address_of(owner);
         
         // only article owner can update the article 
-        assert!(object::owner(article_obj) == owner_address, error::permission_denied(ENOT_OWNER_ACCOUNT));
+        assert!(object::owner(article_obj) == owner_address, error::permission_denied(ErrorNotOwnerAccount));
 
         let article = object::borrow_mut(article_obj);
         article.version = article.version + 1;
@@ -107,7 +107,7 @@ module simple_blog::article {
         let owner_address = signer::address_of(owner);
         
         // only article owner can delete the article 
-        assert!(object::owner(&article_obj) == owner_address, error::permission_denied(ENOT_OWNER_ACCOUNT));
+        assert!(object::owner(&article_obj) == owner_address, error::permission_denied(ErrorNotOwnerAccount));
 
         let article_deleted_event = ArticleDeletedEvent {
             id,

@@ -12,15 +12,15 @@ module rooch_framework::nostr_validator {
     use rooch_framework::auth_validator;
 
     /// there defines scheme for each blockchain
-    const NOSTR_SCHEME: u64 = 4;
+    const SCHEME_NOSTR: u64 = 4;
 
     /// error code
-    const EInvalidPublicKeyLength: u64 = 0;
+    const ErrorInvalidPublicKeyLength: u64 = 0;
 
     struct NostrValidator has store, drop {}
 
     public fun scheme(): u64 {
-        NOSTR_SCHEME
+        SCHEME_NOSTR
     }
 
     public entry fun rotate_authentication_key_entry(
@@ -31,7 +31,7 @@ module rooch_framework::nostr_validator {
         // compare newly passed public key with Nostr public key length to ensure it's compatible
         assert!(
             vector::length(&public_key) == schnorr::public_key_length(),
-            error::invalid_argument(EInvalidPublicKeyLength)
+            error::invalid_argument(ErrorInvalidPublicKeyLength)
         );
 
         // User can rotate the authentication key arbitrarily, so we do not need to check the new public key with the account address.

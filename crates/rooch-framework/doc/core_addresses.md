@@ -35,52 +35,52 @@
 ## Constants
 
 
-<a name="0x3_core_addresses_ENotAssociationAddress"></a>
+<a name="0x3_core_addresses_ErrorNotAssociationAddress"></a>
 
 The address/account did not correspond to the association address
 
 
-<pre><code><b>const</b> <a href="core_addresses.md#0x3_core_addresses_ENotAssociationAddress">ENotAssociationAddress</a>: u64 = 2;
+<pre><code><b>const</b> <a href="core_addresses.md#0x3_core_addresses_ErrorNotAssociationAddress">ErrorNotAssociationAddress</a>: u64 = 2;
 </code></pre>
 
 
 
-<a name="0x3_core_addresses_ENotFrameworkReservedAddress"></a>
+<a name="0x3_core_addresses_ErrorNotFrameworkReservedAddress"></a>
 
 The address is not framework reserved address
 
 
-<pre><code><b>const</b> <a href="core_addresses.md#0x3_core_addresses_ENotFrameworkReservedAddress">ENotFrameworkReservedAddress</a>: u64 = 5;
+<pre><code><b>const</b> <a href="core_addresses.md#0x3_core_addresses_ErrorNotFrameworkReservedAddress">ErrorNotFrameworkReservedAddress</a>: u64 = 5;
 </code></pre>
 
 
 
-<a name="0x3_core_addresses_ENotGenesisAddress"></a>
+<a name="0x3_core_addresses_ErrorNotGenesisAddress"></a>
 
 The address/account did not correspond to the genesis address
 
 
-<pre><code><b>const</b> <a href="core_addresses.md#0x3_core_addresses_ENotGenesisAddress">ENotGenesisAddress</a>: u64 = 1;
+<pre><code><b>const</b> <a href="core_addresses.md#0x3_core_addresses_ErrorNotGenesisAddress">ErrorNotGenesisAddress</a>: u64 = 1;
 </code></pre>
 
 
 
-<a name="0x3_core_addresses_ENotRoochFrameworkAddress"></a>
+<a name="0x3_core_addresses_ErrorNotRoochFrameworkAddress"></a>
 
 The address/account did not correspond to the core framework address
 
 
-<pre><code><b>const</b> <a href="core_addresses.md#0x3_core_addresses_ENotRoochFrameworkAddress">ENotRoochFrameworkAddress</a>: u64 = 4;
+<pre><code><b>const</b> <a href="core_addresses.md#0x3_core_addresses_ErrorNotRoochFrameworkAddress">ErrorNotRoochFrameworkAddress</a>: u64 = 4;
 </code></pre>
 
 
 
-<a name="0x3_core_addresses_EVm"></a>
+<a name="0x3_core_addresses_ErrorVm"></a>
 
 The operation can only be performed by the VM
 
 
-<pre><code><b>const</b> <a href="core_addresses.md#0x3_core_addresses_EVm">EVm</a>: u64 = 3;
+<pre><code><b>const</b> <a href="core_addresses.md#0x3_core_addresses_ErrorVm">ErrorVm</a>: u64 = 3;
 </code></pre>
 
 
@@ -125,7 +125,7 @@ The operation can only be performed by the VM
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_genesis_address">assert_rooch_genesis_address</a>(addr: <b>address</b>) {
-    <b>assert</b>!(<a href="core_addresses.md#0x3_core_addresses_is_rooch_genesis_address">is_rooch_genesis_address</a>(addr), <a href="_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ENotGenesisAddress">ENotGenesisAddress</a>))
+    <b>assert</b>!(<a href="core_addresses.md#0x3_core_addresses_is_rooch_genesis_address">is_rooch_genesis_address</a>(addr), <a href="_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ErrorNotGenesisAddress">ErrorNotGenesisAddress</a>))
 }
 </code></pre>
 
@@ -197,7 +197,7 @@ The operation can only be performed by the VM
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_association_address">assert_rooch_association_address</a>(addr: <b>address</b>) {
-    <b>assert</b>!(<a href="core_addresses.md#0x3_core_addresses_is_rooch_association_address">is_rooch_association_address</a>(addr), <a href="_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ENotAssociationAddress">ENotAssociationAddress</a>))
+    <b>assert</b>!(<a href="core_addresses.md#0x3_core_addresses_is_rooch_association_address">is_rooch_association_address</a>(addr), <a href="_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ErrorNotAssociationAddress">ErrorNotAssociationAddress</a>))
 }
 </code></pre>
 
@@ -247,7 +247,7 @@ The operation can only be performed by the VM
 <pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_framework">assert_rooch_framework</a>(<a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
     <b>assert</b>!(
         <a href="core_addresses.md#0x3_core_addresses_is_rooch_framework_address">is_rooch_framework_address</a>(<a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>)),
-        <a href="_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ENotRoochFrameworkAddress">ENotRoochFrameworkAddress</a>),
+        <a href="_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ErrorNotRoochFrameworkAddress">ErrorNotRoochFrameworkAddress</a>),
     )
 }
 </code></pre>
@@ -298,7 +298,7 @@ The operation can only be performed by the VM
 <pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_framework_reserved">assert_framework_reserved</a>(addr: <b>address</b>) {
     <b>assert</b>!(
         <a href="core_addresses.md#0x3_core_addresses_is_framework_reserved_address">is_framework_reserved_address</a>(addr),
-        <a href="_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ENotFrameworkReservedAddress">ENotFrameworkReservedAddress</a>),
+        <a href="_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ErrorNotFrameworkReservedAddress">ErrorNotFrameworkReservedAddress</a>),
     )
 }
 </code></pre>
@@ -383,7 +383,7 @@ Assert that the signer has the VM reserved address.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_vm">assert_vm</a>(<a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
-    <b>assert</b>!(<a href="core_addresses.md#0x3_core_addresses_is_vm">is_vm</a>(<a href="account.md#0x3_account">account</a>), <a href="_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_EVm">EVm</a>))
+    <b>assert</b>!(<a href="core_addresses.md#0x3_core_addresses_is_vm">is_vm</a>(<a href="account.md#0x3_account">account</a>), <a href="_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ErrorVm">ErrorVm</a>))
 }
 </code></pre>
 

@@ -25,22 +25,22 @@
 ## Constants
 
 
-<a name="0x2_address_EAddressParseError"></a>
+<a name="0x2_address_ErrorAddressParseError"></a>
 
 Error from <code>from_bytes</code> when it is supplied too many or too few bytes.
 
 
-<pre><code><b>const</b> <a href="address.md#0x2_address_EAddressParseError">EAddressParseError</a>: u64 = 0;
+<pre><code><b>const</b> <a href="address.md#0x2_address_ErrorAddressParseError">ErrorAddressParseError</a>: u64 = 0;
 </code></pre>
 
 
 
-<a name="0x2_address_EU256TooBigToConvertToAddress"></a>
+<a name="0x2_address_ErrorU256TooBigToConvertToAddress"></a>
 
 Error from <code>from_u256</code> when
 
 
-<pre><code><b>const</b> <a href="address.md#0x2_address_EU256TooBigToConvertToAddress">EU256TooBigToConvertToAddress</a>: u64 = 1;
+<pre><code><b>const</b> <a href="address.md#0x2_address_ErrorU256TooBigToConvertToAddress">ErrorU256TooBigToConvertToAddress</a>: u64 = 1;
 </code></pre>
 
 
@@ -73,7 +73,7 @@ Convert <code>a</code> into a u256 by interpreting <code>a</code> as the bytes o
 Convert <code>n</code> into an address by encoding it as a big-endian integer (e.g., <code>from_u256(1) = @0x1</code>)
 Aborts if <code>n</code> > <code>MAX_ADDRESS</code>
 Convert <code>bytes</code> into an address.
-Aborts with <code><a href="address.md#0x2_address_EAddressParseError">EAddressParseError</a></code> if the length of <code>bytes</code> is invalid length
+Aborts with <code><a href="address.md#0x2_address_ErrorAddressParseError">ErrorAddressParseError</a></code> if the length of <code>bytes</code> is invalid length
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_from_bytes">from_bytes</a>(bytes: <a href="">vector</a>&lt;u8&gt;): <b>address</b>

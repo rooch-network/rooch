@@ -3,15 +3,15 @@ module rooch_framework::core_addresses {
     use std::signer;
 
     /// The address/account did not correspond to the genesis address
-    const ENotGenesisAddress: u64 = 1;
+    const ErrorNotGenesisAddress: u64 = 1;
     /// The address/account did not correspond to the association address
-    const ENotAssociationAddress: u64 = 2;
+    const ErrorNotAssociationAddress: u64 = 2;
     /// The operation can only be performed by the VM
-    const EVm: u64 = 3;
+    const ErrorVm: u64 = 3;
     /// The address/account did not correspond to the core framework address
-    const ENotRoochFrameworkAddress: u64 = 4;
+    const ErrorNotRoochFrameworkAddress: u64 = 4;
     /// The address is not framework reserved address
-    const ENotFrameworkReservedAddress: u64 = 5;
+    const ErrorNotFrameworkReservedAddress: u64 = 5;
 
 
     public fun assert_rooch_genesis(account: &signer) {
@@ -19,7 +19,7 @@ module rooch_framework::core_addresses {
     }
 
     public fun assert_rooch_genesis_address(addr: address) {
-        assert!(is_rooch_genesis_address(addr), error::permission_denied(ENotGenesisAddress))
+        assert!(is_rooch_genesis_address(addr), error::permission_denied(ErrorNotGenesisAddress))
     }
 
     public fun is_rooch_genesis_address(addr: address): bool {
@@ -31,7 +31,7 @@ module rooch_framework::core_addresses {
     }
 
     public fun assert_rooch_association_address(addr: address) {
-        assert!(is_rooch_association_address(addr), error::permission_denied(ENotAssociationAddress))
+        assert!(is_rooch_association_address(addr), error::permission_denied(ErrorNotAssociationAddress))
     }
 
     public fun is_rooch_association_address(addr: address): bool {
@@ -41,7 +41,7 @@ module rooch_framework::core_addresses {
     public fun assert_rooch_framework(account: &signer) {
         assert!(
             is_rooch_framework_address(signer::address_of(account)),
-            error::permission_denied(ENotRoochFrameworkAddress),
+            error::permission_denied(ErrorNotRoochFrameworkAddress),
         )
     }
 
@@ -52,7 +52,7 @@ module rooch_framework::core_addresses {
     public fun assert_framework_reserved(addr: address) {
         assert!(
             is_framework_reserved_address(addr),
-            error::permission_denied(ENotFrameworkReservedAddress),
+            error::permission_denied(ErrorNotFrameworkReservedAddress),
         )
     }
 
@@ -77,7 +77,7 @@ module rooch_framework::core_addresses {
 
     /// Assert that the signer has the VM reserved address.
     public fun assert_vm(account: &signer) {
-        assert!(is_vm(account), error::permission_denied(EVm))
+        assert!(is_vm(account), error::permission_denied(ErrorVm))
     }
 
     /// Return true if `addr` is a reserved address for the VM to call system modules.

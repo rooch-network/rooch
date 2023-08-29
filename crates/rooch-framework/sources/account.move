@@ -62,27 +62,27 @@ module rooch_framework::account{
    /// serves to domain separate hashes used to derive resource account addresses from hashes used to derive
    /// authentication keys. Without such separation, an adversary could create (and get a signer for) a resource account
    /// whose address matches an existing address of a MultiEd25519 wallet.
-   const DERIVE_RESOURCE_ACCOUNT_SCHEME: u8 = 255;
+   const SCHEME_DERIVE_RESOURCE_ACCOUNT: u8 = 255;
    
    /// Account already exists
-   const EAccountAlreadyExists: u64 = 1;
+   const ErrorAccountAlreadyExists: u64 = 1;
    /// Account does not exist
-   const EAccountNotExist: u64 = 2;
+   const ErrorAccountNotExist: u64 = 2;
    /// Sequence number exceeds the maximum value for a u64
-   const ESequenceNumberTooBig: u64 = 3; 
+   const ErrorSequenceNumberTooBig: u64 = 3; 
    /// Cannot create account because address is reserved
-   const EAddressReseved: u64 = 5;
+   const ErrorAddressReseved: u64 = 5;
    /// An attempt to create a resource account on an account that has a committed transaction
-   const EResourceAccountAlreadyUsed: u64 = 6;
+   const ErrorResourceAccountAlreadyUsed: u64 = 6;
    /// Resource Account can't derive resource account
-   const EAccountIsAlreadyResourceAccount: u64 = 7;
+   const ErrorAccountIsAlreadyResourceAccount: u64 = 7;
    /// Address to create is not a valid reserved address for Rooch framework
-   const ENoValidFrameworkReservedAddress: u64 = 11;
+   const ErrorNoValidFrameworkReservedAddress: u64 = 11;
    /// CoinStore is frozen. Coins cannot be deposited or withdrawn
-   const EAccountWithCoinFrozen: u64 = 13;
+   const ErrorAccountWithCoinFrozen: u64 = 13;
 
    /// Account hasn't accept `CoinType`
-   const EAccountNotAcceptCoin: u64 = 15;
+   const ErrorAccountNotAcceptCoin: u64 = 15;
 
    //TODO should we provide create account from arbitrary address?
    /// A entry function to create an account under `new_address`
@@ -100,13 +100,13 @@ module rooch_framework::account{
    public(friend) fun create_account(ctx: &mut StorageContext, new_address: address): signer {
       assert!(
          new_address != @vm_reserved && new_address != @rooch_framework,
-         error::invalid_argument(EAddressReseved)
+         error::invalid_argument(ErrorAddressReseved)
       );
 
       // there cannot be an Account resource under new_addr already.
       assert!(
          !account_storage::global_exists<Account>(ctx, new_address),
-         error::already_exists(EAccountAlreadyExists)
+         error::already_exists(ErrorAccountAlreadyExists)
       ); 
 
       let new_account = create_account_unchecked(ctx, new_address);
@@ -141,7 +141,7 @@ module rooch_framework::account{
              addr == @0x8 ||
              addr == @0x9 ||
              addr == @0xa,
-         error::permission_denied(ENoValidFrameworkReservedAddress),
+         error::permission_denied(ErrorNoValidFrameworkReservedAddress),
       );
       let signer = create_account_unchecked(ctx, addr);
       let signer_cap = SignerCapability { addr };
@@ -172,7 +172,7 @@ module rooch_framework::account{
 
       assert!(
          (*sequence_number as u128) < MAX_U64,
-         error::out_of_range(ESequenceNumberTooBig)
+         error::out_of_range(ErrorSequenceNumberTooBig)
       );
 
       *sequence_number = *sequence_number + 1;
@@ -219,10 +219,10 @@ module rooch_framework::account{
       let source_addr = signer::address_of(source);
       let seed = generate_seed_bytes(ctx, &source_addr);
       let resource_addr = create_resource_address(&source_addr, seed);
-      assert!(!is_resource_account(ctx, resource_addr), error::invalid_state(EAccountIsAlreadyResourceAccount));
+      assert!(!is_resource_account(ctx, resource_addr), error::invalid_state(ErrorAccountIsAlreadyResourceAccount));
       let resource_signer = if (exists_at(ctx, resource_addr)) {
          let account = account_storage::global_borrow<Account>(ctx, resource_addr);
-         assert!(account.sequence_number == 0, error::invalid_state(EResourceAccountAlreadyUsed));
+         assert!(account.sequence_number == 0, error::invalid_state(ErrorResourceAccountAlreadyUsed));
          create_signer(resource_addr)
       } else {
          create_account_unchecked(ctx, resource_addr)
@@ -255,7 +255,7 @@ module rooch_framework::account{
    public fun create_resource_address(source: &address, seed: vector<u8>): address {
       let bytes = bcs::to_bytes(source);
       vector::append(&mut bytes, seed);
-      vector::push_back(&mut bytes, DERIVE_RESOURCE_ACCOUNT_SCHEME);
+      vector::push_back(&mut bytes, SCHEME_DERIVE_RESOURCE_ACCOUNT);
       bcs::to_address(hash::sha3_256(bytes))
    }
 
@@ -319,7 +319,7 @@ module rooch_framework::account{
             let signer = create_signer(addr);
             do_accept_coin<CoinType>(ctx, &signer);
          }else{
-            abort error::not_found(EAccountNotAcceptCoin)
+            abort error::not_found(ErrorAccountNotAcceptCoin)
          }
       };
    }
@@ -333,12 +333,12 @@ module rooch_framework::account{
       let addr = signer::address_of(account);
       assert!(
          is_account_accept_coin<CoinType>(ctx, addr),
-         error::not_found(EAccountNotAcceptCoin),
+         error::not_found(ErrorAccountNotAcceptCoin),
       );
 
       assert!(
           !coin::is_coin_store_frozen<CoinType>(ctx, addr),
-          error::permission_denied(EAccountWithCoinFrozen ),
+          error::permission_denied(ErrorAccountWithCoinFrozen ),
       );
 
       let coin_type_info = type_info::type_of<CoinType>();
@@ -355,12 +355,12 @@ module rooch_framework::account{
       try_accept_coin<CoinType>(ctx, addr);
       assert!(
          is_account_accept_coin<CoinType>(ctx, addr),
-         error::not_found(EAccountNotAcceptCoin),
+         error::not_found(ErrorAccountNotAcceptCoin),
       );
 
       assert!(
           !coin::is_coin_store_frozen<CoinType>(ctx, addr),
-          error::permission_denied(EAccountWithCoinFrozen),
+          error::permission_denied(ErrorAccountWithCoinFrozen),
       );
 
       let coin_type_info = type_info::type_of<CoinType>();

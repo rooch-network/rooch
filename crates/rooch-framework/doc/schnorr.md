@@ -9,7 +9,6 @@
 -  [Function `scheme_length`](#0x3_schnorr_scheme_length)
 -  [Function `public_key_length`](#0x3_schnorr_public_key_length)
 -  [Function `signature_length`](#0x3_schnorr_signature_length)
--  [Function `keccak256`](#0x3_schnorr_keccak256)
 -  [Function `sha256`](#0x3_schnorr_sha256)
 -  [Function `get_public_key_from_authenticator_payload`](#0x3_schnorr_get_public_key_from_authenticator_payload)
 -  [Function `get_signature_from_authenticator_payload`](#0x3_schnorr_get_signature_from_authenticator_payload)
@@ -25,22 +24,22 @@
 ## Constants
 
 
-<a name="0x3_schnorr_EInvalidPubKey"></a>
+<a name="0x3_schnorr_ErrorInvalidPubKey"></a>
 
 Error if the public key is invalid.
 
 
-<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_EInvalidPubKey">EInvalidPubKey</a>: u64 = 1;
+<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_ErrorInvalidPubKey">ErrorInvalidPubKey</a>: u64 = 1;
 </code></pre>
 
 
 
-<a name="0x3_schnorr_EInvalidSignature"></a>
+<a name="0x3_schnorr_ErrorInvalidSignature"></a>
 
 Error if the signature is invalid.
 
 
-<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_EInvalidSignature">EInvalidSignature</a>: u64 = 0;
+<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_ErrorInvalidSignature">ErrorInvalidSignature</a>: u64 = 0;
 </code></pre>
 
 
@@ -64,30 +63,30 @@ Hash function name that are valid for verify.
 
 
 
-<a name="0x3_schnorr_V_SCHNORR_PUBKEY_LENGTH"></a>
+<a name="0x3_schnorr_VALID_SCHNORR_PUBKEY_LENGTH"></a>
 
 
 
-<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_V_SCHNORR_PUBKEY_LENGTH">V_SCHNORR_PUBKEY_LENGTH</a>: u64 = 32;
+<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_VALID_SCHNORR_PUBKEY_LENGTH">VALID_SCHNORR_PUBKEY_LENGTH</a>: u64 = 32;
 </code></pre>
 
 
 
-<a name="0x3_schnorr_V_SCHNORR_SIG_LENGTH"></a>
+<a name="0x3_schnorr_VALID_SCHNORR_SIG_LENGTH"></a>
 
 
 
-<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_V_SCHNORR_SIG_LENGTH">V_SCHNORR_SIG_LENGTH</a>: u64 = 64;
+<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_VALID_SCHNORR_SIG_LENGTH">VALID_SCHNORR_SIG_LENGTH</a>: u64 = 64;
 </code></pre>
 
 
 
-<a name="0x3_schnorr_V_SCHNORR_TO_NOSTR_SCHEME_LENGTH"></a>
+<a name="0x3_schnorr_VALID_SCHNORR_TO_SCHEME_NOSTR_LENGTH"></a>
 
 constant codes
 
 
-<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_V_SCHNORR_TO_NOSTR_SCHEME_LENGTH">V_SCHNORR_TO_NOSTR_SCHEME_LENGTH</a>: u64 = 1;
+<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_VALID_SCHNORR_TO_SCHEME_NOSTR_LENGTH">VALID_SCHNORR_TO_SCHEME_NOSTR_LENGTH</a>: u64 = 1;
 </code></pre>
 
 
@@ -109,7 +108,7 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="schnorr.md#0x3_schnorr_scheme_length">scheme_length</a>(): u64 {
-    <a href="schnorr.md#0x3_schnorr_V_SCHNORR_TO_NOSTR_SCHEME_LENGTH">V_SCHNORR_TO_NOSTR_SCHEME_LENGTH</a>
+    <a href="schnorr.md#0x3_schnorr_VALID_SCHNORR_TO_SCHEME_NOSTR_LENGTH">VALID_SCHNORR_TO_SCHEME_NOSTR_LENGTH</a>
 }
 </code></pre>
 
@@ -133,7 +132,7 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="schnorr.md#0x3_schnorr_public_key_length">public_key_length</a>(): u64 {
-    <a href="schnorr.md#0x3_schnorr_V_SCHNORR_PUBKEY_LENGTH">V_SCHNORR_PUBKEY_LENGTH</a>
+    <a href="schnorr.md#0x3_schnorr_VALID_SCHNORR_PUBKEY_LENGTH">VALID_SCHNORR_PUBKEY_LENGTH</a>
 }
 </code></pre>
 
@@ -157,31 +156,7 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="schnorr.md#0x3_schnorr_signature_length">signature_length</a>(): u64 {
-    <a href="schnorr.md#0x3_schnorr_V_SCHNORR_SIG_LENGTH">V_SCHNORR_SIG_LENGTH</a>
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_schnorr_keccak256"></a>
-
-## Function `keccak256`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="schnorr.md#0x3_schnorr_keccak256">keccak256</a>(): u8
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="schnorr.md#0x3_schnorr_keccak256">keccak256</a>(): u8 {
-    <a href="schnorr.md#0x3_schnorr_KECCAK256">KECCAK256</a>
+    <a href="schnorr.md#0x3_schnorr_VALID_SCHNORR_SIG_LENGTH">VALID_SCHNORR_SIG_LENGTH</a>
 }
 </code></pre>
 

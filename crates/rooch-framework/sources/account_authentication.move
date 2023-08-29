@@ -17,16 +17,16 @@ module rooch_framework::account_authentication{
     /// max authentication key length
    const MAX_AUTHENTICATION_KEY_LENGTH: u64 = 256;
 
-   
-   const EAuthValidatorAlreadyInstalled: u64 = 1;
+   /// The authentication validator is already installed
+   const ErrorAuthValidatorAlreadyInstalled: u64 = 1;
    /// The provided authentication key has an invalid length
-   const EMalformedAuthenticationKey: u64 = 2;
+   const ErrorMalformedAuthenticationKey: u64 = 2;
    /// The authentication keys resource has not been found for the account address
-   const EAuthenticationKeysResourceNotFound: u64 = 3; 
+   const ErrorAuthenticationKeysResourceNotFound: u64 = 3; 
    /// The authentication key has not been found for the specified validator
-   const EAuthenticationKeyNotFound: u64 = 4; 
+   const ErrorAuthenticationKeyNotFound: u64 = 4; 
    /// The authentication key already exists in the specified validator
-   const EAuthenticationKeyAlreadyExists: u64 = 5; 
+   const ErrorAuthenticationKeyAlreadyExists: u64 = 5; 
 
    /// A resource that holds the authentication key for this account.
    /// ValidatorType is a phantom type parameter that is used to distinguish between different auth validator types.
@@ -71,7 +71,7 @@ module rooch_framework::account_authentication{
       
       assert!(
          vector::length(&new_auth_key) <= MAX_AUTHENTICATION_KEY_LENGTH,
-         error::invalid_argument(EMalformedAuthenticationKey)
+         error::invalid_argument(ErrorMalformedAuthenticationKey)
       );
       //We need to ensure the AuthenticationKeys resource exists before we can rotate the authentication key.
       let authentication_keys = account_storage::global_borrow_mut<AuthenticationKeys>(ctx, account_addr);
@@ -91,12 +91,12 @@ module rooch_framework::account_authentication{
    public fun remove_authentication_key<ValidatorType>(ctx: &mut StorageContext, account_addr: address): AuthenticationKey<ValidatorType> {
       assert!(
          account_storage::global_exists<AuthenticationKeys>(ctx, account_addr),
-         error::not_found(EAuthenticationKeysResourceNotFound)
+         error::not_found(ErrorAuthenticationKeysResourceNotFound)
       );
       let authentication_keys = account_storage::global_borrow_mut<AuthenticationKeys>(ctx, account_addr);
       assert!(
          type_table::contains<AuthenticationKey<ValidatorType>>(&authentication_keys.authentication_keys),
-         error::not_found(EAuthenticationKeyNotFound)
+         error::not_found(ErrorAuthenticationKeyNotFound)
       );
    
       let removed_authentication_key = type_table::remove<AuthenticationKey<ValidatorType>>(&mut authentication_keys.authentication_keys);
@@ -121,7 +121,7 @@ module rooch_framework::account_authentication{
 
       assert!(
          !is_auth_validator_installed(ctx, account_addr, validator_id),
-         error::already_exists(EAuthValidatorAlreadyInstalled));
+         error::already_exists(ErrorAuthValidatorAlreadyInstalled));
 
       
       if(!account_storage::global_exists<InstalledAuthValidator>(ctx, account_addr)){
@@ -149,10 +149,10 @@ module rooch_framework::account_authentication{
       let sender_addr = signer::address_of(&sender);
       let authentication_key = x"0123";
       let authentication_key_option = get_authentication_key<TestValidator>(&ctx, sender_addr);
-      assert!(option::is_none(&authentication_key_option), EAuthenticationKeyAlreadyExists);
+      assert!(option::is_none(&authentication_key_option), ErrorAuthenticationKeyAlreadyExists);
       rotate_authentication_key<TestValidator>(&mut ctx, sender_addr, authentication_key);
       authentication_key_option = get_authentication_key<TestValidator>(&ctx, sender_addr);
-      assert!(option::is_some(&authentication_key_option), EAuthenticationKeyNotFound);
+      assert!(option::is_some(&authentication_key_option), ErrorAuthenticationKeyNotFound);
       moveos_std::storage_context::drop_test_context(ctx);
    }
 
@@ -163,14 +163,14 @@ module rooch_framework::account_authentication{
       let sender_addr = signer::address_of(&sender);
       let authentication_key = x"1234";
       let authentication_key_option = get_authentication_key<TestValidator>(&ctx, sender_addr);
-      assert!(option::is_none(&authentication_key_option), EAuthenticationKeyAlreadyExists);
+      assert!(option::is_none(&authentication_key_option), ErrorAuthenticationKeyAlreadyExists);
       rotate_authentication_key<TestValidator>(&mut ctx, sender_addr, authentication_key);
       authentication_key_option = get_authentication_key<TestValidator>(&ctx, sender_addr);
-      assert!(option::is_some(&authentication_key_option), EAuthenticationKeyNotFound);
+      assert!(option::is_some(&authentication_key_option), ErrorAuthenticationKeyNotFound);
       let removed_authentication_key = remove_authentication_key<TestValidator>(&mut ctx, sender_addr);
       authentication_key_option = get_authentication_key<TestValidator>(&ctx, sender_addr);
-      assert!(option::is_none(&authentication_key_option), EAuthenticationKeyAlreadyExists);
-      assert!(removed_authentication_key.authentication_key == authentication_key, EMalformedAuthenticationKey);
+      assert!(option::is_none(&authentication_key_option), ErrorAuthenticationKeyAlreadyExists);
+      assert!(removed_authentication_key.authentication_key == authentication_key, ErrorMalformedAuthenticationKey);
       moveos_std::storage_context::drop_test_context(ctx);
    }
 }

@@ -2,39 +2,39 @@ module rooch_framework::ecdsa_k1_recoverable {
     use std::vector;
 
     /// constant codes
-    const V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH: u64 = 1;
-    const V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH: u64 = 33;
-    const V_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH: u64 = 65;
-    const V_ECDSA_K1_RECOVERABLE_SIG_LENGTH: u64 = 65;
+    const VALID_ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH: u64 = 1;
+    const VALID_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH: u64 = 33;
+    const VALID_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH: u64 = 65;
+    const VALID_ECDSA_K1_RECOVERABLE_SIG_LENGTH: u64 = 65;
 
     /// Hash function name that are valid for ecrecover and verify.
     const KECCAK256: u8 = 0;
     const SHA256: u8 = 1;
 
     /// Error if the public key cannot be recovered from the signature.
-    const EFailToRecoverPubKey: u64 = 0;
+    const ErrorFailToRecoverPubKey: u64 = 0;
 
     /// Error if the signature is invalid.
-    const EInvalidSignature: u64 = 1;
+    const ErrorInvalidSignature: u64 = 1;
 
     /// Error if the public key is invalid.
-    const EInvalidPubKey: u64 = 2;
+    const ErrorInvalidPubKey: u64 = 2;
 
     /// built-in functions
     public fun scheme_length(): u64 {
-        V_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_SCHEME_LENGTH
+        VALID_ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH
     }
 
     public fun public_key_length(): u64 {
-        V_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH
+        VALID_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH
     }
 
     public fun uncompressed_public_key_length(): u64 {
-        V_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH
+        VALID_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH
     }
 
     public fun signature_length(): u64 {
-        V_ECDSA_K1_RECOVERABLE_SIG_LENGTH
+        VALID_ECDSA_K1_RECOVERABLE_SIG_LENGTH
     }
 
     public fun keccak256(): u8 {
@@ -116,7 +116,7 @@ module rooch_framework::ecdsa_k1_recoverable {
     }
 
     #[test]
-    #[expected_failure(abort_code = EFailToRecoverPubKey)]
+    #[expected_failure(abort_code = ErrorFailToRecoverPubKey)]
     fun test_ecrecover_pubkey_fail_to_recover() {
         let msg = x"00";
         let sig = x"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
@@ -124,7 +124,7 @@ module rooch_framework::ecdsa_k1_recoverable {
     }
 
     #[test]
-    #[expected_failure(abort_code = EInvalidSignature)]
+    #[expected_failure(abort_code = ErrorInvalidSignature)]
     fun test_ecrecover_pubkey_invalid_sig() {
         let msg = b"Hello, world!";
         // incorrect length sig
@@ -133,7 +133,7 @@ module rooch_framework::ecdsa_k1_recoverable {
     }
 
     #[test]
-    #[expected_failure(abort_code = EInvalidSignature)]
+    #[expected_failure(abort_code = ErrorInvalidSignature)]
     fun test_verify_fails_invalid_sig() {
         let msg = b"Hello, world!";
         let sig = x"";
@@ -157,7 +157,7 @@ module rooch_framework::ecdsa_k1_recoverable {
     }
 
     #[test]
-    #[expected_failure(abort_code = EInvalidPubKey)]
+    #[expected_failure(abort_code = ErrorInvalidPubKey)]
     fun test_decompress_pubkey_invalid_pubkey() {
         let pubkey = x"013e99a541db69bd32040dfe5037fbf5210dafa8151a71e21c5204b05d95ce0a62";
         decompress_pubkey(&pubkey);

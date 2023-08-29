@@ -18,25 +18,25 @@ module rooch_framework::coin {
     //
 
     /// Address of account which is used to initialize a coin `CoinType` doesn't match the deployer of module
-    const ECoinInfoAddressMismatch: u64 = 1;
+    const ErrorCoinInfoAddressMismatch: u64 = 1;
 
     /// `CoinType` is already initialized as a coin
-    const ECoinInfoAlreadyPublished: u64 = 2;
+    const ErrorCoinInfoAlreadyPublished: u64 = 2;
 
     /// Not enough coins to complete transaction
-    const EInSufficientBalance: u64 = 3;
+    const ErrorInSufficientBalance: u64 = 3;
 
     /// Cannot destroy non-zero coins
-    const EDestroyOfNonZeroCoin: u64 = 4;
+    const ErrorDestroyOfNonZeroCoin: u64 = 4;
 
     /// Coin amount cannot be zero
-    const EZeroCoinAmount: u64 = 5;
+    const ErrorZeroCoinAmount: u64 = 5;
 
     /// Name of the coin is too long
-    const ECoinNameTooLong: u64 = 6;
+    const ErrorCoinNameTooLong: u64 = 6;
 
     /// Symbol of the coin is too long
-    const ECoinSymbolTooLong: u64 = 7;
+    const ErrorCoinSymbolTooLong: u64 = 7;
 
     //
     // Constants
@@ -231,12 +231,12 @@ module rooch_framework::coin {
     /// a `BurnCapability` for the specific `CoinType`.
     public fun destroy_zero<CoinType>(zero_coin: Coin<CoinType>) {
         let Coin { value } = zero_coin;
-        assert!(value == 0, error::invalid_argument(EDestroyOfNonZeroCoin))
+        assert!(value == 0, error::invalid_argument(ErrorDestroyOfNonZeroCoin))
     }
 
     /// Extracts `amount` from the passed-in `coin`, where the original coin is modified in place.
     public fun extract<CoinType>(coin: &mut Coin<CoinType>, amount: u256): Coin<CoinType> {
-        assert!(coin.value >= amount, error::invalid_argument(EInSufficientBalance));
+        assert!(coin.value >= amount, error::invalid_argument(ErrorInSufficientBalance));
         coin.value = coin.value - amount;
         Coin { value: amount }
     }
@@ -282,16 +282,16 @@ module rooch_framework::coin {
         let addr = signer::address_of(account);
         assert!(
             coin_address<CoinType>() == addr,
-            error::invalid_argument(ECoinInfoAddressMismatch),
+            error::invalid_argument(ErrorCoinInfoAddressMismatch),
         );
 
         assert!(
             !account_storage::global_exists<CoinInfo<CoinType>>(ctx, addr),
-            error::already_exists(ECoinInfoAlreadyPublished),
+            error::already_exists(ErrorCoinInfoAlreadyPublished),
         );
 
-        assert!(string::length(&name) <= MAX_COIN_NAME_LENGTH, error::invalid_argument(ECoinNameTooLong));
-        assert!(string::length(&symbol) <= MAX_COIN_SYMBOL_LENGTH, error::invalid_argument(ECoinSymbolTooLong));
+        assert!(string::length(&name) <= MAX_COIN_NAME_LENGTH, error::invalid_argument(ErrorCoinNameTooLong));
+        assert!(string::length(&symbol) <= MAX_COIN_SYMBOL_LENGTH, error::invalid_argument(ErrorCoinSymbolTooLong));
 
         let coin_info = CoinInfo<CoinType> {
             name,
