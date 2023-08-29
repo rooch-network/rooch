@@ -63,30 +63,30 @@ Hash function name that are valid for verify.
 
 
 
-<a name="0x3_schnorr_VALID_SCHNORR_PUBKEY_LENGTH"></a>
+<a name="0x3_schnorr_SCHNORR_PUBKEY_LENGTH"></a>
 
 
 
-<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_VALID_SCHNORR_PUBKEY_LENGTH">VALID_SCHNORR_PUBKEY_LENGTH</a>: u64 = 32;
+<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_SCHNORR_PUBKEY_LENGTH">SCHNORR_PUBKEY_LENGTH</a>: u64 = 32;
 </code></pre>
 
 
 
-<a name="0x3_schnorr_VALID_SCHNORR_SIG_LENGTH"></a>
+<a name="0x3_schnorr_SCHNORR_SIG_LENGTH"></a>
 
 
 
-<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_VALID_SCHNORR_SIG_LENGTH">VALID_SCHNORR_SIG_LENGTH</a>: u64 = 64;
+<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_SCHNORR_SIG_LENGTH">SCHNORR_SIG_LENGTH</a>: u64 = 64;
 </code></pre>
 
 
 
-<a name="0x3_schnorr_VALID_SCHNORR_TO_SCHEME_NOSTR_LENGTH"></a>
+<a name="0x3_schnorr_SCHNORR_TO_SCHEME_NOSTR_LENGTH"></a>
 
 constant codes
 
 
-<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_VALID_SCHNORR_TO_SCHEME_NOSTR_LENGTH">VALID_SCHNORR_TO_SCHEME_NOSTR_LENGTH</a>: u64 = 1;
+<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_SCHNORR_TO_SCHEME_NOSTR_LENGTH">SCHNORR_TO_SCHEME_NOSTR_LENGTH</a>: u64 = 1;
 </code></pre>
 
 
@@ -108,7 +108,7 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="schnorr.md#0x3_schnorr_scheme_length">scheme_length</a>(): u64 {
-    <a href="schnorr.md#0x3_schnorr_VALID_SCHNORR_TO_SCHEME_NOSTR_LENGTH">VALID_SCHNORR_TO_SCHEME_NOSTR_LENGTH</a>
+    <a href="schnorr.md#0x3_schnorr_SCHNORR_TO_SCHEME_NOSTR_LENGTH">SCHNORR_TO_SCHEME_NOSTR_LENGTH</a>
 }
 </code></pre>
 
@@ -132,7 +132,7 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="schnorr.md#0x3_schnorr_public_key_length">public_key_length</a>(): u64 {
-    <a href="schnorr.md#0x3_schnorr_VALID_SCHNORR_PUBKEY_LENGTH">VALID_SCHNORR_PUBKEY_LENGTH</a>
+    <a href="schnorr.md#0x3_schnorr_SCHNORR_PUBKEY_LENGTH">SCHNORR_PUBKEY_LENGTH</a>
 }
 </code></pre>
 
@@ -156,7 +156,7 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="schnorr.md#0x3_schnorr_signature_length">signature_length</a>(): u64 {
-    <a href="schnorr.md#0x3_schnorr_VALID_SCHNORR_SIG_LENGTH">VALID_SCHNORR_SIG_LENGTH</a>
+    <a href="schnorr.md#0x3_schnorr_SCHNORR_SIG_LENGTH">SCHNORR_SIG_LENGTH</a>
 }
 </code></pre>
 

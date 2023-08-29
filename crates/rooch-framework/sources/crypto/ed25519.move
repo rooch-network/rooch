@@ -2,21 +2,21 @@ module rooch_framework::ed25519 {
     use std::vector;
 
     /// constant codes
-    const VALID_ED25519_TO_SCHEME_NATIVE_LENGTH: u64 = 1;
-    const VALID_ED25519_PUBKEY_LENGTH: u64 = 32;
-    const VALID_ED25519_SIG_LENGTH: u64 = 64;
+    const ED25519_TO_SCHEME_NATIVE_LENGTH: u64 = 1;
+    const ED25519_PUBKEY_LENGTH: u64 = 32;
+    const ED25519_SIG_LENGTH: u64 = 64;
 
     /// built-in functions
     public fun scheme_length(): u64 {
-        VALID_ED25519_TO_SCHEME_NATIVE_LENGTH
+        ED25519_TO_SCHEME_NATIVE_LENGTH
     }
 
     public fun public_key_length(): u64 {
-        VALID_ED25519_PUBKEY_LENGTH
+        ED25519_PUBKEY_LENGTH
     }
 
     public fun signature_length(): u64 {
-        VALID_ED25519_SIG_LENGTH
+        ED25519_SIG_LENGTH
     }
 
     public fun get_public_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {

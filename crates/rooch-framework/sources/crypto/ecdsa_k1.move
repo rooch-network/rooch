@@ -2,9 +2,9 @@ module rooch_framework::ecdsa_k1 {
     use std::vector;
 
     /// constant codes
-    const VALID_ECDSA_K1_TO_SCHEME_BITCOIN_LENGTH: u64 = 1;
-    const VALID_ECDSA_K1_COMPRESSED_PUBKEY_LENGTH: u64 = 33;
-    const VALID_ECDSA_K1_SIG_LENGTH: u64 = 64;
+    const ECDSA_K1_TO_SCHEME_BITCOIN_LENGTH: u64 = 1;
+    const ECDSA_K1_COMPRESSED_PUBKEY_LENGTH: u64 = 33;
+    const ECDSA_K1_SIG_LENGTH: u64 = 64;
 
     /// Hash function name that are valid for ecrecover and verify.
     const KECCAK256: u8 = 0;
@@ -19,15 +19,15 @@ module rooch_framework::ecdsa_k1 {
 
     /// built-in functions
     public fun scheme_length(): u64 {
-        VALID_ECDSA_K1_TO_SCHEME_BITCOIN_LENGTH
+        ECDSA_K1_TO_SCHEME_BITCOIN_LENGTH
     }
 
     public fun public_key_length(): u64 {
-        VALID_ECDSA_K1_COMPRESSED_PUBKEY_LENGTH
+        ECDSA_K1_COMPRESSED_PUBKEY_LENGTH
     }
 
     public fun signature_length(): u64 {
-        VALID_ECDSA_K1_SIG_LENGTH
+        ECDSA_K1_SIG_LENGTH
     }
 
     public fun keccak256(): u8 {
