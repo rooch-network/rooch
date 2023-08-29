@@ -71,18 +71,13 @@ pub struct StdlibBuildConfig {
 }
 
 impl StdlibBuildConfig {
-    pub fn build(self, deps: &Vec<StdlibBuildConfig>) -> Result<StdlibPackage> {
-        let package_path = self.path.clone();
+    pub fn build(self, deps: &[StdlibBuildConfig]) -> Result<StdlibPackage> {
         let mut compiled_package = self
             .build_config
             .clone()
-            .compile_package_no_exit(&package_path, &mut stderr())?;
+            .compile_package_no_exit(&self.path, &mut stderr())?;
 
-        run_verifier(
-            &package_path,
-            self.build_config.clone(),
-            &mut compiled_package,
-        )?;
+        run_verifier(&self.path, self.build_config.clone(), &mut compiled_package)?;
         let module_map = compiled_package.root_modules_map();
         let mut modules = module_map.iter_modules().into_iter();
 
@@ -135,7 +130,11 @@ impl StdlibBuildConfig {
 
     fn build_doc(&self, model: &GlobalEnv, deps_doc_paths: Vec<String>) -> Result<()> {
         fs::remove_dir_all(self.document_output_directory.as_path())?;
-        println!("Generated move documents at {:?}, deps: {:?}", self.document_output_directory.as_path(), deps_doc_paths);
+        println!(
+            "Generated move documents at {:?}, deps: {:?}",
+            self.document_output_directory.as_path(),
+            deps_doc_paths
+        );
         let options = move_docgen::DocgenOptions {
             root_doc_templates: vec![self.document_template.to_string_lossy().to_string()],
             include_specs: false,
@@ -176,7 +175,6 @@ impl StdlibBuildConfig {
 }
 
 impl Stdlib {
-
     /// Build the stdlib or framework packages
     pub fn build(build_configs: Vec<StdlibBuildConfig>) -> Result<Self> {
         let mut packages = vec![];

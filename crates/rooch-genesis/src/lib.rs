@@ -298,6 +298,10 @@ where
     path
 }
 
+pub fn crate_dir() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+}
+
 #[cfg(test)]
 mod tests {
     use moveos::moveos::MoveOS;
