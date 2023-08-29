@@ -114,7 +114,7 @@ error code
         <a href="_push_back">vector::push_back</a>(&<b>mut</b> uncompressed_64, *value);
         i = i + 1;
     };
-    // Take the last 20 bytes of the <a href="../doc/hash.md#0x1_hash">hash</a> of the 64-bytes uncompressed pubkey.
+    // Take the last 20 bytes of the <a href="">hash</a> of the 64-bytes uncompressed pubkey.
     <b>let</b> hashed = hash::keccak256(&uncompressed_64);
     <b>let</b> address_bytes = <a href="_empty">vector::empty</a>&lt;u8&gt;();
     <b>let</b> i = 12;

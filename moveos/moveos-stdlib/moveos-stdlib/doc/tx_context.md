@@ -257,7 +257,7 @@ Generate a new unique object ID
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_derive_id">derive_id</a>(<a href="">hash</a>: <a href="">vector</a>&lt;u8&gt;, index: u64): <b>address</b> {
     <b>let</b> bytes = <a href="">hash</a>;
-    <a href="_append">vector::append</a>(&<b>mut</b> bytes, <a href="../doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(&index));
+    <a href="_append">vector::append</a>(&<b>mut</b> bytes, <a href="_to_bytes">bcs::to_bytes</a>(&index));
     //TODO change <b>return</b> type <b>to</b> h256 and <b>use</b> h256 <b>to</b> replace <b>address</b>?
     <b>let</b> id = <a href="_sha3_256">hash::sha3_256</a>(bytes);
     bcs::to_address(id)

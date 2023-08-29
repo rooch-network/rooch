@@ -24,7 +24,7 @@ It is used to store the account's resources and modules
 -  [Function `publish_modules_entry`](#0x2_account_storage_publish_modules_entry)
 
 
-<pre><code><b>use</b> <a href="../doc/signer.md#0x1_signer">0x1::signer</a>;
+<pre><code><b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 <b>use</b> <a href="move_module.md#0x2_move_module">0x2::move_module</a>;
@@ -168,7 +168,7 @@ The resource with the given type not exists
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_named_table_id">named_table_id</a>(account: <b>address</b>, table_type: u64): ObjectID{
-    <a href="object_id.md#0x2_object_id_address_to_object_id">object_id::address_to_object_id</a>(<a href="tx_context.md#0x2_tx_context_derive_id">tx_context::derive_id</a>(<a href="../doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(&account), table_type))
+    <a href="object_id.md#0x2_object_id_address_to_object_id">object_id::address_to_object_id</a>(<a href="tx_context.md#0x2_tx_context_derive_id">tx_context::derive_id</a>(<a href="_to_bytes">bcs::to_bytes</a>(&account), table_type))
 }
 </code></pre>
 

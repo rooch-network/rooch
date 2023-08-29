@@ -92,7 +92,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
 
         let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
 
-        let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
+        let genesis: &RoochGenesis = &rooch_genesis::ROOCH_DEV_GENESIS;
         let mut moveos = MoveOS::new(
             moveos_store,
             genesis.all_natives(),

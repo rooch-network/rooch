@@ -1,9 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use rooch_genesis::{BuildOption, RoochGenesis};
+use rooch_genesis::GenesisPackage;
 
 fn main() {
-    let genesis = RoochGenesis::build_with_option(BuildOption::Fresh).unwrap();
-    genesis.genesis_package.save().unwrap();
+    GenesisPackage::build_stdlib()
+        .unwrap()
+        .save_to_file(GenesisPackage::stdlib_file())
+        .unwrap();
 }

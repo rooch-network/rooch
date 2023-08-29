@@ -160,7 +160,7 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
     let (moveos_store, rooch_store) = init_stroage(&store_config)?;
 
     // Init executor
-    let executor = ExecutorActor::new(moveos_store, rooch_store.clone())?
+    let executor = ExecutorActor::new(chain_id.id(), moveos_store, rooch_store.clone())?
         .into_actor(Some("Executor"), &actor_system)
         .await?;
     let executor_proxy = ExecutorProxy::new(executor.into());

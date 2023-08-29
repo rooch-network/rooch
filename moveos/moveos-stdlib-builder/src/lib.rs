@@ -2,16 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{ensure, Result};
+use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use dependency_order::sort_by_dependency_order;
 use move_binary_format::{errors::Location, CompiledModule};
-use move_cli::base::docgen::Docgen;
 use move_core_types::account_address::AccountAddress;
+use move_docgen::DocgenOptions;
+use move_model::model::GlobalEnv;
 use move_package::{compilation::compiled_package::CompiledPackage, BuildConfig, ModelConfig};
 use moveos_verifier::build::run_verifier;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
-    io::stderr,
+    fs::{self, File},
+    io::{stderr, Write},
     path::{Path, PathBuf},
 };
 
@@ -66,50 +69,30 @@ pub struct BuildOptions {
     pub skip_fetch_latest_git_deps: bool,
 }
 
-impl Stdlib {
-    ///MoveOS builtin packages
-    pub fn builtin_packages() -> [&'static str; 3] {
-        //TODO move out rooch_framework and as a external framework arguments
-        [
-            "../moveos-stdlib/move-stdlib",
-            "../moveos-stdlib/moveos-stdlib",
-            "../../crates/rooch-framework",
-        ]
-    }
+#[derive(Debug, Clone)]
+pub struct StdlibBuildConfig {
+    // The path of the stdlib project
+    pub path: PathBuf,
+    pub error_prefix: String,
+    pub error_code_map_output_file: PathBuf,
+    pub document_template: PathBuf,
+    pub document_output_directory: PathBuf,
+    pub build_config: BuildConfig,
+}
 
-    /// Build the MoveOS stdlib with exernal frameworks.
-    /// The move_stdlib and moveos_stdlib packages are always built-in.
-    pub fn build(option: BuildOptions) -> Result<Self> {
-        Self::build_error_code_map(&option)?;
-        let mut packages = vec![];
-        for stdlib in Self::builtin_packages().into_iter() {
-            packages.push(Self::build_package(path_in_crate(stdlib), option.clone())?);
-        }
-
-        Ok(Self { packages })
-    }
-
-    pub fn build_package(package_path: PathBuf, options: BuildOptions) -> Result<StdlibPackage> {
-        let build_config = BuildConfig {
-            dev_mode: false,
-            additional_named_addresses: options.named_addresses.clone(),
-            architecture: None,
-            generate_abis: options.with_abis,
-            generate_docs: false,
-            install_dir: options.install_dir.clone(),
-            test_mode: false,
-            force_recompilation: false,
-            fetch_deps_only: false,
-            skip_fetch_latest_git_deps: options.skip_fetch_latest_git_deps,
-            lock_file: None,
-            //TODO set bytecode version
-            bytecode_version: None,
-        };
-        let mut compiled_package = build_config
+impl StdlibBuildConfig {
+    pub fn build(self, deps: &Vec<StdlibBuildConfig>) -> Result<StdlibPackage> {
+        let package_path = self.path.clone();
+        let mut compiled_package = self
+            .build_config
             .clone()
             .compile_package_no_exit(&package_path, &mut stderr())?;
 
-        run_verifier(&package_path, build_config.clone(), &mut compiled_package)?;
+        run_verifier(
+            &package_path,
+            self.build_config.clone(),
+            &mut compiled_package,
+        )?;
         let module_map = compiled_package.root_modules_map();
         let mut modules = module_map.iter_modules().into_iter();
 
@@ -124,72 +107,115 @@ impl Stdlib {
                 "all modules must have same address"
             );
         }
-        Self::build_doc(package_path.as_path(), build_config)?;
+        let model = self.build_config.clone().move_model_for_package(
+            &self.path,
+            ModelConfig {
+                all_files_as_targets: false,
+                target_filter: None,
+            },
+        )?;
+
+        let deps_doc_paths = deps
+            .iter()
+            .map(|dep| {
+                pathdiff::diff_paths(dep.document_output_directory.as_path(), self.path.as_path())
+                    .expect("path diff return none")
+                    .to_string_lossy()
+                    .to_string()
+            })
+            .collect::<Vec<String>>();
+
+        self.build_doc(&model, deps_doc_paths)?;
+        self.build_error_code_map(&model)?;
+
+        if model.has_errors() {
+            let mut error_writer = StandardStream::stderr(ColorChoice::Auto);
+            model.report_diag(
+                &mut error_writer,
+                codespan_reporting::diagnostic::Severity::Error,
+            );
+        }
+        anyhow::ensure!(
+            !model.has_errors(),
+            "Errors encountered while build stdlib!"
+        );
+
         StdlibPackage::new(genesis_account, compiled_package)
     }
 
-    fn build_doc(package_path: &Path, build_config: BuildConfig) -> Result<()> {
-        let current_path = std::env::current_dir().unwrap();
-        let docgen = Docgen {
-            section_level_start: Option::None,
-            exclude_private_fun: true,
-            exclude_specs: true,
-            independent_specs: false,
-            exclude_impl: false,
-            toc_depth: Option::None,
-            no_collapsed_sections: false,
-            output_directory: None,
-            template: vec!["doc_template/README.md".to_owned()],
-            references_file: Option::None,
-            include_dep_diagrams: false,
-            include_call_diagrams: false,
-            compile_relative_to_output_dir: false,
-        };
-        docgen.execute(Option::Some(package_path.to_path_buf()), build_config)?;
-        std::env::set_current_dir(current_path).unwrap();
+    fn build_doc(&self, model: &GlobalEnv, deps_doc_paths: Vec<String>) -> Result<()> {
+        let mut options = DocgenOptions::default();
+        options.root_doc_templates = vec![self.document_template.to_string_lossy().to_string()];
+        options.include_specs = false;
+        options.include_impl = true;
+        options.include_private_fun = false;
+        options.output_directory = self.document_output_directory.to_string_lossy().to_string();
+        options.compile_relative_to_output_dir = false;
+        options.doc_path = deps_doc_paths;
+
+        let generator = move_docgen::Docgen::new(&model, &options);
+
+        for (file, content) in generator.gen() {
+            let path = PathBuf::from(&file);
+            fs::create_dir_all(path.parent().unwrap())?;
+            fs::write(path.as_path(), content)?;
+            println!("Generated {:?}", path);
+        }
         Ok(())
     }
 
-    pub fn build_error_code_map(build_option: &BuildOptions) -> Result<()> {
-        let build_config = BuildConfig {
-            dev_mode: false,
-            additional_named_addresses: build_option.named_addresses.clone(),
-            architecture: None,
-            generate_abis: build_option.with_abis,
-            generate_docs: false,
-            install_dir: build_option.install_dir.clone(),
-            test_mode: false,
-            force_recompilation: false,
-            fetch_deps_only: false,
-            skip_fetch_latest_git_deps: build_option.skip_fetch_latest_git_deps,
-            lock_file: None,
-            //TODO set bytecode version
-            bytecode_version: None,
-        };
-
+    fn build_error_code_map(&self, model: &GlobalEnv) -> Result<()> {
         let mut error_map_gen_opt = move_errmapgen::ErrmapOptions::default();
+        error_map_gen_opt.error_prefix = self.error_prefix.clone();
+        error_map_gen_opt.output_file = self
+            .error_code_map_output_file
+            .to_string_lossy()
+            .to_string();
 
-        for stdlib in Self::builtin_packages().into_iter() {
-            let package_path = path_in_crate(stdlib);
-            let model = build_config.clone().move_model_for_package(
-                &package_path,
-                ModelConfig {
-                    all_files_as_targets: true,
-                    target_filter: None,
-                },
-            )?;
+        let mut errmap_gen = move_errmapgen::ErrmapGen::new(model, &error_map_gen_opt);
+        errmap_gen.gen();
+        errmap_gen.save_result();
 
-            error_map_gen_opt.output_file = package_path
-                .join("error_description.errmap")
-                .to_str()
-                .unwrap()
-                .to_string();
+        Ok(())
+    }
+}
 
-            let mut errmap_gen = move_errmapgen::ErrmapGen::new(&model, &error_map_gen_opt);
-            errmap_gen.gen();
-            errmap_gen.save_result();
+impl Stdlib {
+    ///MoveOS builtin packages
+    pub fn builtin_packages() -> [&'static str; 3] {
+        //TODO move out rooch_framework and as a external framework arguments
+        [
+            "../moveos-stdlib/move-stdlib",
+            "../moveos-stdlib/moveos-stdlib",
+            "../../crates/rooch-framework",
+        ]
+    }
+
+    /// Build the stdlib or framework packages
+    pub fn build(build_configs: Vec<StdlibBuildConfig>) -> Result<Self> {
+        let mut packages = vec![];
+        let mut deps = vec![];
+        for build_config in build_configs {
+            packages.push(build_config.clone().build(&deps)?);
+            deps.push(build_config);
         }
+        Ok(Self { packages })
+    }
 
+    pub fn decode(bytes: &[u8]) -> Result<Self> {
+        let stdlib = bcs::from_bytes(bytes)?;
+        Ok(stdlib)
+    }
+
+    pub fn load_from_file<P: AsRef<Path>>(file: P) -> Result<Self> {
+        let stdlib = bcs::from_bytes(&std::fs::read(file)?)?;
+        Ok(stdlib)
+    }
+
+    pub fn save_to_file<P: AsRef<Path>>(&self, file: P) -> Result<()> {
+        let mut file = File::create(file)?;
+        let contents = bcs::to_bytes(&self)?;
+        file.write_all(&contents)?;
         Ok(())
     }
 
@@ -213,31 +239,5 @@ impl Stdlib {
             bundles.push((package.genesis_account, module_bundle));
         }
         Ok(bundles)
-    }
-}
-
-fn path_in_crate<S>(relative: S) -> PathBuf
-where
-    S: AsRef<Path>,
-{
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push(relative);
-    path
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_package() {
-        let moveos_stdlib = Stdlib::build(BuildOptions::default()).unwrap();
-        for stdlib_package in moveos_stdlib.packages {
-            println!(
-                "stdlib package: {}, modules_count:{}",
-                stdlib_package.genesis_account.short_str_lossless(),
-                stdlib_package.modules().unwrap().len()
-            );
-        }
     }
 }

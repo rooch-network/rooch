@@ -9,7 +9,7 @@ module rooch_framework::genesis {
 
     const ErrorGenesisInit: u64 = 1;
 
-    /// GenesisContext is a geneis init parameters in the TxContext.
+    /// GenesisContext is a genesis init parameters in the TxContext.
     struct GenesisContext has copy,store,drop{
         chain_id: u64,
     }

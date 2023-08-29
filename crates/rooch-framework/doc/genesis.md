@@ -23,7 +23,7 @@
 
 ## Struct `GenesisContext`
 
-GenesisContext is a geneis init parameters in the TxContext.
+GenesisContext is a genesis init parameters in the TxContext.
 
 
 <pre><code><b>struct</b> <a href="genesis.md#0x3_genesis_GenesisContext">GenesisContext</a> <b>has</b> <b>copy</b>, drop, store
