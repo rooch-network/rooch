@@ -41,7 +41,7 @@ export class RoochServer {
       if (cb) {
         cb(new Error('timeout'))
       }
-    }, 1000 * 300)
+    }, 1000 * 60)
 
     this.child?.stdout?.on('data', (data) => {
       const text = data.toString()
