@@ -5,14 +5,11 @@ module rooch_framework::account{
    use std::signer;
    use rooch_framework::gas_coin::{GasCoin};
 
-   use moveos_std::type_info;
-   use moveos_std::event;
-   use moveos_std::type_info::TypeInfo;
    use moveos_std::bcs;
    use moveos_std::storage_context::{Self, StorageContext};
    use moveos_std::account_storage;
    use rooch_framework::account_authentication;
-   use rooch_framework::coin::{Self, Coin};
+   use rooch_framework::coin::{Self};
 
    friend rooch_framework::transaction_validator;
 
@@ -21,28 +18,28 @@ module rooch_framework::account{
       sequence_number: u64,
    }
 
-   // Resource marking whether the account enable auto-accept-coin feature.
-   struct AutoAcceptCoin has key { enable: bool }
+   // // Resource marking whether the account enable auto-accept-coin feature.
+   // struct AutoAcceptCoin has key { enable: bool }
 
-   /// Event emitted when some amount of a coin is deposited into an account.
-   struct DepositEvent has drop, store {
-      /// The type info for the coin that was sent
-      coin_type_info: TypeInfo,
-      amount: u256,
-   }
-
-   /// Event emitted when some amount of a coin is withdrawn from an account.
-   struct WithdrawEvent has drop, store {
-      /// The type info for the coin that was sent
-      coin_type_info: TypeInfo,
-      amount: u256,
-   }
-
-   /// Event for accept coin
-   struct AcceptCoinEvent has drop, store {
-      /// full info of coin
-      coin_type_info: TypeInfo,
-   }
+   // /// Event emitted when some amount of a coin is deposited into an account.
+   // struct DepositEvent has drop, store {
+   //    /// The type info for the coin that was sent
+   //    coin_type_info: TypeInfo,
+   //    amount: u256,
+   // }
+   //
+   // /// Event emitted when some amount of a coin is withdrawn from an account.
+   // struct WithdrawEvent has drop, store {
+   //    /// The type info for the coin that was sent
+   //    coin_type_info: TypeInfo,
+   //    amount: u256,
+   // }
+   //
+   // /// Event for accept coin
+   // struct AcceptCoinEvent has drop, store {
+   //    /// full info of coin
+   //    coin_type_info: TypeInfo,
+   // }
 
    // ResourceAccount can only be stored under address, not in other structs.
    struct ResourceAccount has key {}
@@ -78,11 +75,11 @@ module rooch_framework::account{
    const EAccountIsAlreadyResourceAccount: u64 = 7;
    /// Address to create is not a valid reserved address for Rooch framework
    const ENoValidFrameworkReservedAddress: u64 = 11;
-   /// CoinStore is frozen. Coins cannot be deposited or withdrawn
-   const EAccountWithCoinFrozen: u64 = 13;
-
-   /// Account hasn't accept `CoinType`
-   const EAccountNotAcceptCoin: u64 = 15;
+   // /// CoinStore is frozen. Coins cannot be deposited or withdrawn
+   // const EAccountWithCoinFrozen: u64 = 13;
+   //
+   // /// Account hasn't accept `CoinType`
+   // const EAccountNotAcceptCoin: u64 = 15;
 
    //TODO should we provide create account from arbitrary address?
    /// A entry function to create an account under `new_address`
@@ -110,8 +107,8 @@ module rooch_framework::account{
       ); 
 
       let new_account = create_account_unchecked(ctx, new_address);
-      // Make sure all account accept GasCoin.
-      do_accept_coin<GasCoin>(ctx, &new_account);
+      // initialize account coin store
+      coin::init_account_coin_store(ctx, &new_account);
       new_account
    }
 
@@ -268,119 +265,125 @@ module rooch_framework::account{
       capability.addr
    }
 
-   /// Return whether the account at `addr` accept `Coin` type coins
-   public fun is_account_accept_coin<CoinType>(ctx: &StorageContext, addr: address): bool {
-      if (can_auto_accept_coin(ctx, addr)) {
-         true
-      } else {
-         coin::exist_coin_store<CoinType>(ctx, addr)
-      }
-   }
+   // /// Return whether the account at `addr` accept `Coin` type coins
+   // public fun is_account_accept_coin<CoinType>(ctx: &StorageContext, addr: address): bool {
+   //    if (can_auto_accept_coin(ctx, addr)) {
+   //       true
+   //    } else {
+   //       coin::exist_coin_store<CoinType>(ctx, addr)
+   //    }
+   // }
+   //
+   // /// Check whether the address can auto accept coin.
+   // public fun can_auto_accept_coin(ctx: &StorageContext, addr: address): bool {
+   //    if (account_storage::global_exists<AutoAcceptCoin>(ctx, addr)) {
+   //       account_storage::global_borrow<AutoAcceptCoin>(ctx, addr).enable
+   //    } else {
+   //       false
+   //    }
+   // }
+   //
+   // /// Add a balance of `Coin` type to the sending account.
+   // public fun do_accept_coin<CoinType>(ctx: &mut StorageContext, account: &signer) {
+   //    let addr = signer::address_of(account);
+   //    if (!coin::exist_coin_store<CoinType>(ctx, addr)) {
+   //       coin::initialize_coin_store<CoinType>(ctx, account);
+   //
+   //       let coin_type_info = type_info::type_of<CoinType>();
+   //       event::emit<AcceptCoinEvent>(ctx,
+   //          AcceptCoinEvent {
+   //             coin_type_info,
+   //          },
+   //       );
+   //    }
+   // }
 
-   /// Check whether the address can auto accept coin.
-   public fun can_auto_accept_coin(ctx: &StorageContext, addr: address): bool {
-      if (account_storage::global_exists<AutoAcceptCoin>(ctx, addr)) {
-         account_storage::global_borrow<AutoAcceptCoin>(ctx, addr).enable
-      } else {
-         false
-      }
-   }
+   // /// Configure whether auto-accept coins.
+   // public fun set_auto_accept_coin(ctx: &mut StorageContext, account: &signer, enable: bool)  {
+   //    let addr = signer::address_of(account);
+   //    if (account_storage::global_exists<AutoAcceptCoin>(ctx, addr)) {
+   //       let config = account_storage::global_borrow_mut<AutoAcceptCoin>(ctx, addr);
+   //       config.enable = enable;
+   //    } else {
+   //       account_storage::global_move_to<AutoAcceptCoin>(ctx, account, AutoAcceptCoin{ enable });
+   //    };
+   // }
+   //
+   // /// try to accept coin for `addr`.
+   // fun try_accept_coin<CoinType>(ctx: &mut StorageContext, addr: address) {
+   //    if (!coin::exist_coin_store<CoinType>(ctx, addr)) {
+   //       if (can_auto_accept_coin(ctx, addr)) {
+   //          let signer = create_signer(addr);
+   //          do_accept_coin<CoinType>(ctx, &signer);
+   //       }else{
+   //          abort error::not_found(EAccountNotAcceptCoin)
+   //       }
+   //    };
+   // }
+   //
+   // /// Withdraw specifed `amount` of coin `CoinType` from the signing account.
+   // public fun withdraw<CoinType>(
+   //    ctx: &mut StorageContext,
+   //    account: &signer,
+   //    amount: u256,
+   // ): Coin<CoinType> {
+   //    let addr = signer::address_of(account);
+   //    assert!(
+   //       is_account_accept_coin<CoinType>(ctx, addr),
+   //       error::not_found(EAccountNotAcceptCoin),
+   //    );
+   //
+   //    assert!(
+   //        !coin::is_coin_store_frozen<CoinType>(ctx, addr),
+   //        error::permission_denied(EAccountWithCoinFrozen ),
+   //    );
+   //
+   //    let coin_type_info = type_info::type_of<CoinType>();
+   //    event::emit<WithdrawEvent>(ctx, WithdrawEvent {
+   //       coin_type_info,
+   //       amount,
+   //    });
+   //
+   //    coin::extract_coin(ctx, addr, amount)
+   // }
+   //
+   // /// Deposit the coin balance into the recipient's account and emit an event.
+   // public fun deposit<CoinType>(ctx: &mut StorageContext, addr: address, coin: Coin<CoinType>) {
+   //    try_accept_coin<CoinType>(ctx, addr);
+   //    assert!(
+   //       is_account_accept_coin<CoinType>(ctx, addr),
+   //       error::not_found(EAccountNotAcceptCoin),
+   //    );
+   //
+   //    assert!(
+   //        !coin::is_coin_store_frozen<CoinType>(ctx, addr),
+   //        error::permission_denied(EAccountWithCoinFrozen),
+   //    );
+   //
+   //    let coin_type_info = type_info::type_of<CoinType>();
+   //    event::emit<DepositEvent>(ctx, DepositEvent {
+   //       coin_type_info,
+   //       amount: coin::value(&coin),
+   //    });
+   //
+   //    coin::merge_coin(ctx, addr, coin);
+   // }
+   //
+   // /// Transfer `amount` of coins `CoinType` from `from` to `to`.
+   // public fun transfer<CoinType>(
+   //    ctx: &mut StorageContext,
+   //    from: &signer,
+   //    to: address,
+   //    amount: u256,
+   // ) {
+   //    let coin = withdraw<CoinType>(ctx, from, amount);
+   //    deposit(ctx, to, coin);
+   // }
 
-   /// Add a balance of `Coin` type to the sending account.
-   public fun do_accept_coin<CoinType>(ctx: &mut StorageContext, account: &signer) {
-      let addr = signer::address_of(account);
-      if (!coin::exist_coin_store<CoinType>(ctx, addr)) {
-         coin::initialize_coin_store<CoinType>(ctx, account);
-
-         let coin_type_info = type_info::type_of<CoinType>();
-         event::emit<AcceptCoinEvent>(ctx,
-            AcceptCoinEvent {
-               coin_type_info,
-            },
-         );
-      }
-   }
-
-   /// Configure whether auto-accept coins.
-   public fun set_auto_accept_coin(ctx: &mut StorageContext, account: &signer, enable: bool)  {
-      let addr = signer::address_of(account);
-      if (account_storage::global_exists<AutoAcceptCoin>(ctx, addr)) {
-         let config = account_storage::global_borrow_mut<AutoAcceptCoin>(ctx, addr);
-         config.enable = enable;
-      } else {
-         account_storage::global_move_to<AutoAcceptCoin>(ctx, account, AutoAcceptCoin{ enable });
-      };
-   }
-
-   /// try to accept coin for `addr`.
-   fun try_accept_coin<CoinType>(ctx: &mut StorageContext, addr: address) {
-      if (!coin::exist_coin_store<CoinType>(ctx, addr)) {
-         if (can_auto_accept_coin(ctx, addr)) {
-            let signer = create_signer(addr);
-            do_accept_coin<CoinType>(ctx, &signer);
-         }else{
-            abort error::not_found(EAccountNotAcceptCoin)
-         }
-      };
-   }
-
-   /// Withdraw specifed `amount` of coin `CoinType` from the signing account.
-   public fun withdraw<CoinType>(
-      ctx: &mut StorageContext,
-      account: &signer,
-      amount: u256,
-   ): Coin<CoinType> {
-      let addr = signer::address_of(account);
-      assert!(
-         is_account_accept_coin<CoinType>(ctx, addr),
-         error::not_found(EAccountNotAcceptCoin),
-      );
-
-      assert!(
-          !coin::is_coin_store_frozen<CoinType>(ctx, addr),
-          error::permission_denied(EAccountWithCoinFrozen ),
-      );
-
-      let coin_type_info = type_info::type_of<CoinType>();
-      event::emit<WithdrawEvent>(ctx, WithdrawEvent {
-         coin_type_info,
-         amount,
-      });
-
-      coin::extract_coin(ctx, addr, amount)
-   }
-
-   /// Deposit the coin balance into the recipient's account and emit an event.
-   public fun deposit<CoinType>(ctx: &mut StorageContext, addr: address, coin: Coin<CoinType>) {
-      try_accept_coin<CoinType>(ctx, addr);
-      assert!(
-         is_account_accept_coin<CoinType>(ctx, addr),
-         error::not_found(EAccountNotAcceptCoin),
-      );
-
-      assert!(
-          !coin::is_coin_store_frozen<CoinType>(ctx, addr),
-          error::permission_denied(EAccountWithCoinFrozen),
-      );
-
-      let coin_type_info = type_info::type_of<CoinType>();
-      event::emit<DepositEvent>(ctx, DepositEvent {
-         coin_type_info,
-         amount: coin::value(&coin),
-      });
-
-      coin::merge_coin(ctx, addr, coin);
-   }
-
-   /// Transfer `amount` of coins `CoinType` from `from` to `to`.
-   public fun transfer<CoinType>(
-      ctx: &mut StorageContext,
-      from: &signer,
-      to: address,
-      amount: u256,
-   ) {
-      let coin = withdraw<CoinType>(ctx, from, amount);
-      deposit(ctx, to, coin);
+   #[test_only]
+   public fun init_account_for_test(ctx: &mut StorageContext, account: &signer) {
+      // initialize account coin store
+      coin::init_account_coin_store(ctx, account);
    }
 
    #[test_only]
