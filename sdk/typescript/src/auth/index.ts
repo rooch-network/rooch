@@ -3,3 +3,4 @@
 
 export * from './interface'
 export * from './private-key-auth'
+export * from './session-key-auth'

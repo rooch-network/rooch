@@ -4,7 +4,7 @@
 import { DEFAULT_MAX_GAS_AMOUNT } from '../constants'
 import { IAccount, CallOption } from './interface'
 import { IProvider } from '../provider'
-import { IAuthorizer, IAuthorization } from '../auth'
+import { IAuthorizer, IAuthorization, SessionKeyAuth } from '../auth'
 import { AccountAddress, FunctionId, TypeTag, Arg } from '../types'
 import { BcsSerializer } from '../generated/runtime/bcs/mod'
 import {
@@ -13,7 +13,14 @@ import {
   AccountAddress as BCSAccountAddress,
   Authenticator,
 } from '../generated/runtime/rooch_types/mod'
-import { encodeArgs, encodeFunctionCall, addressToListTuple, uint8Array2SeqNumber } from '../utils'
+import {
+  encodeArgs,
+  encodeFunctionCall,
+  addressToListTuple,
+  uint8Array2SeqNumber,
+  toHexString,
+} from '../utils'
+import { Ed25519Keypair, Ed25519PublicKey } from '../utils/keypairs'
 
 export class Account implements IAccount {
   private provider: IProvider
@@ -89,5 +96,34 @@ export class Account implements IAccount {
     }
 
     return 0
+  }
+
+  async createSessionAccount(scope: string): Promise<IAccount> {
+    const kp = Ed25519Keypair.generate()
+    await this.registerSessionKey(kp.getPublicKey(), scope)
+    const auth = new SessionKeyAuth(kp)
+    return new Account(this.provider, this.address, auth)
+  }
+
+  private async registerSessionKey(pk: Ed25519PublicKey, scope: string): Promise<void> {
+    await this.runFunction(
+      '0x3::session_key::create_session_key_entry',
+      [],
+      [
+        {
+          type: { Vector: 'U8' },
+          value: toHexString(pk.toBytes()),
+        },
+        {
+          type: 'Address',
+          value: this.address,
+        },
+        {
+          type: { Vector: 'U8' },
+          value: scope,
+        },
+      ],
+      {},
+    )
   }
 }

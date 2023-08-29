@@ -14,4 +14,13 @@ export interface IAccount {
     args?: Arg[],
     opts?: CallOption,
   ): Promise<string>
+
+  /**
+   * createSessionAccount
+   * 
+   * create a sub account with session key
+   * 
+   * @param scope 
+   */
+  createSessionAccount(scope: string): Promise<IAccount>
 }

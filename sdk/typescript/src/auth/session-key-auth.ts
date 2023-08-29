@@ -1,13 +1,10 @@
-// Copyright (c) RoochNetwork
-// SPDX-License-Identifier: Apache-2.0
-
 import { Bytes } from '../types'
 import { Keypair } from '../utils/crypto'
 import { IAuthorization, IAuthorizer } from './interface'
 
-const SCHEME_ED25519: number = 0
+const SCHEME_ED25519: number = 3
 
-export class PrivateKeyAuth implements IAuthorizer {
+export class SessionKeyAuth implements IAuthorizer {
   private pk: Keypair
 
   constructor(pk: Keypair) {
