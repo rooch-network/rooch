@@ -24,8 +24,8 @@
 -  [Function `genesis_address`](#0x3_core_addresses_genesis_address)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x1::signer</a>;
+<pre><code><b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
 </code></pre>
 
 
@@ -91,7 +91,7 @@ The operation can only be performed by the VM
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_genesis">assert_rooch_genesis</a>(<a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_genesis">assert_rooch_genesis</a>(<a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -100,8 +100,8 @@ The operation can only be performed by the VM
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_genesis">assert_rooch_genesis</a>(<a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
-    <a href="core_addresses.md#0x3_core_addresses_assert_rooch_genesis_address">assert_rooch_genesis_address</a>(<a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>))
+<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_genesis">assert_rooch_genesis</a>(<a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
+    <a href="core_addresses.md#0x3_core_addresses_assert_rooch_genesis_address">assert_rooch_genesis_address</a>(<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>))
 }
 </code></pre>
 
@@ -125,7 +125,7 @@ The operation can only be performed by the VM
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_genesis_address">assert_rooch_genesis_address</a>(addr: <b>address</b>) {
-    <b>assert</b>!(<a href="core_addresses.md#0x3_core_addresses_is_rooch_genesis_address">is_rooch_genesis_address</a>(addr), <a href="_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ErrorNotGenesisAddress">ErrorNotGenesisAddress</a>))
+    <b>assert</b>!(<a href="core_addresses.md#0x3_core_addresses_is_rooch_genesis_address">is_rooch_genesis_address</a>(addr), <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ErrorNotGenesisAddress">ErrorNotGenesisAddress</a>))
 }
 </code></pre>
 
@@ -163,7 +163,7 @@ The operation can only be performed by the VM
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_association">assert_rooch_association</a>(<a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_association">assert_rooch_association</a>(<a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -172,8 +172,8 @@ The operation can only be performed by the VM
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_association">assert_rooch_association</a>(<a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
-    <a href="core_addresses.md#0x3_core_addresses_assert_rooch_association_address">assert_rooch_association_address</a>(<a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>))
+<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_association">assert_rooch_association</a>(<a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
+    <a href="core_addresses.md#0x3_core_addresses_assert_rooch_association_address">assert_rooch_association_address</a>(<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>))
 }
 </code></pre>
 
@@ -197,7 +197,7 @@ The operation can only be performed by the VM
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_association_address">assert_rooch_association_address</a>(addr: <b>address</b>) {
-    <b>assert</b>!(<a href="core_addresses.md#0x3_core_addresses_is_rooch_association_address">is_rooch_association_address</a>(addr), <a href="_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ErrorNotAssociationAddress">ErrorNotAssociationAddress</a>))
+    <b>assert</b>!(<a href="core_addresses.md#0x3_core_addresses_is_rooch_association_address">is_rooch_association_address</a>(addr), <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ErrorNotAssociationAddress">ErrorNotAssociationAddress</a>))
 }
 </code></pre>
 
@@ -235,7 +235,7 @@ The operation can only be performed by the VM
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_framework">assert_rooch_framework</a>(<a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_framework">assert_rooch_framework</a>(<a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -244,10 +244,10 @@ The operation can only be performed by the VM
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_framework">assert_rooch_framework</a>(<a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
+<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_framework">assert_rooch_framework</a>(<a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
     <b>assert</b>!(
-        <a href="core_addresses.md#0x3_core_addresses_is_rooch_framework_address">is_rooch_framework_address</a>(<a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>)),
-        <a href="_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ErrorNotRoochFrameworkAddress">ErrorNotRoochFrameworkAddress</a>),
+        <a href="core_addresses.md#0x3_core_addresses_is_rooch_framework_address">is_rooch_framework_address</a>(<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>)),
+        <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ErrorNotRoochFrameworkAddress">ErrorNotRoochFrameworkAddress</a>),
     )
 }
 </code></pre>
@@ -262,7 +262,7 @@ The operation can only be performed by the VM
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_framework_reserved_address">assert_framework_reserved_address</a>(<a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_framework_reserved_address">assert_framework_reserved_address</a>(<a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -271,8 +271,8 @@ The operation can only be performed by the VM
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_framework_reserved_address">assert_framework_reserved_address</a>(<a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
-    <a href="core_addresses.md#0x3_core_addresses_assert_framework_reserved">assert_framework_reserved</a>(<a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>));
+<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_framework_reserved_address">assert_framework_reserved_address</a>(<a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
+    <a href="core_addresses.md#0x3_core_addresses_assert_framework_reserved">assert_framework_reserved</a>(<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>));
 }
 </code></pre>
 
@@ -298,7 +298,7 @@ The operation can only be performed by the VM
 <pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_framework_reserved">assert_framework_reserved</a>(addr: <b>address</b>) {
     <b>assert</b>!(
         <a href="core_addresses.md#0x3_core_addresses_is_framework_reserved_address">is_framework_reserved_address</a>(addr),
-        <a href="_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ErrorNotFrameworkReservedAddress">ErrorNotFrameworkReservedAddress</a>),
+        <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ErrorNotFrameworkReservedAddress">ErrorNotFrameworkReservedAddress</a>),
     )
 }
 </code></pre>
@@ -373,7 +373,7 @@ Return true if <code>addr</code> is 0x3.
 Assert that the signer has the VM reserved address.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_vm">assert_vm</a>(<a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_vm">assert_vm</a>(<a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -382,8 +382,8 @@ Assert that the signer has the VM reserved address.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_vm">assert_vm</a>(<a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
-    <b>assert</b>!(<a href="core_addresses.md#0x3_core_addresses_is_vm">is_vm</a>(<a href="account.md#0x3_account">account</a>), <a href="_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ErrorVm">ErrorVm</a>))
+<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_vm">assert_vm</a>(<a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
+    <b>assert</b>!(<a href="core_addresses.md#0x3_core_addresses_is_vm">is_vm</a>(<a href="account.md#0x3_account">account</a>), <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ErrorVm">ErrorVm</a>))
 }
 </code></pre>
 
@@ -398,7 +398,7 @@ Assert that the signer has the VM reserved address.
 Return true if <code>addr</code> is a reserved address for the VM to call system modules.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_is_vm">is_vm</a>(<a href="account.md#0x3_account">account</a>: &<a href="">signer</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_is_vm">is_vm</a>(<a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>): bool
 </code></pre>
 
 
@@ -407,8 +407,8 @@ Return true if <code>addr</code> is a reserved address for the VM to call system
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_is_vm">is_vm</a>(<a href="account.md#0x3_account">account</a>: &<a href="">signer</a>): bool {
-    <a href="core_addresses.md#0x3_core_addresses_is_vm_address">is_vm_address</a>(<a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>))
+<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_is_vm">is_vm</a>(<a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>): bool {
+    <a href="core_addresses.md#0x3_core_addresses_is_vm_address">is_vm_address</a>(<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>))
 }
 </code></pre>
 

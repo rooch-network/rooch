@@ -111,7 +111,7 @@ Convert <code>a</code> into BCS-encoded bytes.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_to_bytes">to_bytes</a>(a: <b>address</b>): <a href="">vector</a>&lt;u8&gt; {
-    <a href="../doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(&a)
+    <a href="_to_bytes">bcs::to_bytes</a>(&a)
 }
 </code></pre>
 

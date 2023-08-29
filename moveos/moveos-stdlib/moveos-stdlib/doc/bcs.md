@@ -5,7 +5,7 @@
 
 Source from https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framework/aptos-stdlib/sources/from_bcs.move
 This module provides a number of functions to convert _primitive_ types from their representation in <code>std::bcs</code>
-to values. This is the opposite of <code><a href="../doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a></code>. Note that it is not safe to define a generic public <code>from_bytes</code>
+to values. This is the opposite of <code><a href="_to_bytes">bcs::to_bytes</a></code>. Note that it is not safe to define a generic public <code>from_bytes</code>
 function because this can violate implicit struct invariants, therefore only primitive types are offerred. If
 a general conversion back-and-force is needed, consider the <code>moveos_std::Any</code> type which preserves invariants.
 
@@ -19,7 +19,7 @@ a general conversion back-and-force is needed, consider the <code>moveos_std::An
 -  [Function `from_bytes`](#0x2_bcs_from_bytes)
 
 
-<pre><code><b>use</b> <a href="../doc/bcs.md#0x1_bcs">0x1::bcs</a>;
+<pre><code><b>use</b> <a href="">0x1::bcs</a>;
 </code></pre>
 
 

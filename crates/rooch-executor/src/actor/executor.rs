@@ -47,6 +47,7 @@ use rooch_types::transaction::{AbstractTransaction, TransactionSequenceMapping};
 use rooch_types::H256;
 
 pub struct ExecutorActor {
+    genesis: RoochGenesis,
     moveos: MoveOS,
     rooch_store: RoochStore,
 }
@@ -55,11 +56,12 @@ type ValidateAuthenticatorResult =
     Result<(TxValidateResult, Vec<FunctionCall>, Vec<FunctionCall>), VMStatus>;
 
 impl ExecutorActor {
-    pub fn new(moveos_store: MoveOSStore, rooch_store: RoochStore) -> Result<Self> {
-        let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
+    pub fn new(chain_id: u64, moveos_store: MoveOSStore, rooch_store: RoochStore) -> Result<Self> {
+        let genesis: RoochGenesis = rooch_genesis::RoochGenesis::build(chain_id)?;
         let moveos = MoveOS::new(moveos_store, genesis.all_natives(), genesis.config.clone())?;
 
         let executor = Self {
+            genesis,
             moveos,
             rooch_store,
         };
@@ -67,11 +69,10 @@ impl ExecutorActor {
     }
 
     fn init_or_check_genesis(mut self) -> Result<Self> {
-        let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
         if self.moveos.state().is_genesis() {
             let genesis_result = self
                 .moveos
-                .init_genesis(genesis.genesis_txs(), genesis.genesis_ctx())?;
+                .init_genesis(self.genesis.genesis_txs(), self.genesis.genesis_ctx())?;
             let genesis_state_root = genesis_result
                 .last()
                 .expect("Genesis result must not empty")
@@ -79,19 +80,21 @@ impl ExecutorActor {
 
             //TODO should we save the genesis txs to sequencer?
             for (genesis_tx, (state_root, genesis_tx_output)) in
-                genesis.genesis_txs().into_iter().zip(genesis_result)
+                self.genesis.genesis_txs().into_iter().zip(genesis_result)
             {
-                self.handle_tx_output(genesis_tx.tx_hash(), state_root, genesis_tx_output)?;
+                let tx_hash = genesis_tx.tx_hash();
+                self.handle_tx_output(tx_hash, state_root, genesis_tx_output)?;
             }
 
             debug_assert!(
-                genesis_state_root == genesis.genesis_state_root(),
+                genesis_state_root == self.genesis.genesis_state_root(),
                 "Genesis state root mismatch"
             );
-            let genesis_info = GenesisInfo::new(genesis.genesis_package_hash(), genesis_state_root);
+            let genesis_info =
+                GenesisInfo::new(self.genesis.genesis_package_hash(), genesis_state_root);
             self.moveos.config_store().save_genesis(genesis_info)?;
         } else {
-            genesis.check_genesis(self.moveos.config_store())?;
+            self.genesis.check_genesis(self.moveos.config_store())?;
         }
         Ok(self)
     }
