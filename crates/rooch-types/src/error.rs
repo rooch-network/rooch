@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use moveos_types::{genesis_info::GenesisInfo};
+use moveos_types::genesis_info::GenesisInfo;
 use serde::{Deserialize, Serialize};
 use std::io;
 use thiserror::Error;
