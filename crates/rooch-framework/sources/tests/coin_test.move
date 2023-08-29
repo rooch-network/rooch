@@ -28,7 +28,7 @@ module rooch_framework::coin_test{
         account: &signer,
         decimals: u8,
     ): (BurnCapability<FakeCoin>, FreezeCapability<FakeCoin>, MintCapability<FakeCoin>) {
-        coin::init_for_test(ctx, account);
+        coin::init_for_test(ctx);
         coin::initialize<FakeCoin>(
             ctx,
             account,
@@ -90,7 +90,7 @@ module rooch_framework::coin_test{
         let symbol = string::utf8(b"FCD");
         let decimals = 9u8;
 
-        coin::init_for_test(&mut source_ctx, &source);
+        coin::init_for_test(&mut source_ctx);
         let (burn_cap, freeze_cap, mint_cap) = initialize<FakeCoin>(
             &mut source_ctx,
             &source,

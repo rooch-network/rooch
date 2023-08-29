@@ -5,13 +5,15 @@ module test::m {
     use std::signer;
     use moveos_std::storage_context::{StorageContext};
     use moveos_std::account_storage;
+    use moveos_std::signer as moveos_signer;
 
     struct Test has key{
         addr: address,
         version: u64
     }
 
-    fun init(ctx: &mut StorageContext, sender: &signer) {
+    fun init(ctx: &mut StorageContext) {
+        let sender = &moveos_signer::module_signer<Test>();
         let sender_addr = signer::address_of(sender);
         account_storage::global_move_to(ctx, sender, Test{
             addr: sender_addr,
