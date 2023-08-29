@@ -47,7 +47,7 @@ module rooch_framework::transaction_validator {
         // === validate the chain id ===
         assert!(
             chain_id == chain_id::chain_id(ctx),
-            error::invalid_argument(EValidateBadChainId)
+            error::invalid_argument(ErrorValidateBadChainId)
         );
 
         // === validate the sequence number ===

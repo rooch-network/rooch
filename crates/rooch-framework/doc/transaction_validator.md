@@ -153,7 +153,7 @@ If the authenticator is invaid, abort this function.
     // === validate the chain id ===
     <b>assert</b>!(
         <a href="chain_id.md#0x3_chain_id">chain_id</a> == <a href="chain_id.md#0x3_chain_id_chain_id">chain_id::chain_id</a>(ctx),
-        <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_EValidateBadChainId">EValidateBadChainId</a>)
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_ErrorValidateBadChainId">ErrorValidateBadChainId</a>)
     );
 
     // === validate the sequence number ===
