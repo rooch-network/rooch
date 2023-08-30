@@ -20,8 +20,8 @@ once_cell  = { workspace = true }
 clap  = { workspace = true }
 dirs-next = { workspace = true }
 schemars = {workspace = true }
-proptest = { default-features = false, optional = true, workspace = true }
-proptest-derive = { default-features = false, optional = true, workspace = true }
+proptest = { optional = true, workspace = true }
+proptest-derive = { optional = true, workspace = true }
 
 rooch-key = { workspace = true }
 rooch-types = { workspace = true }

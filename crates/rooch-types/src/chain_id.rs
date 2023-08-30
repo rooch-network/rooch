@@ -77,10 +77,10 @@ impl Into<u64> for ChainID {
 #[repr(u64)]
 pub enum BuiltinChainID {
     /// A ephemeral network just for developer test.
-    Dev = CHAIN_ID_DEV,
-    /// Rooch test network,
-    /// The data on the chain will be cleaned up periodically.
     #[default]
+    Dev = CHAIN_ID_DEV,
+    /// Rooch test network.
+    /// The data on the chain will be cleaned up periodically.
     Test = CHAIN_ID_TEST,
     /// Rooch main net.
     Main = CHAIN_ID_MAIN,

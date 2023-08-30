@@ -5,8 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
-itertools = { default-features = false, workspace = true }
+itertools = { workspace = true }
 log = { workspace = true }
 lru = { workspace = true }
 once_cell = { workspace = true }
@@ -14,6 +13,7 @@ parking_lot = { workspace = true }
 serde = { workspace = true }
 mirai-annotations = { workspace = true }
 moveos-types = { workspace = true }
+bcs-ext = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

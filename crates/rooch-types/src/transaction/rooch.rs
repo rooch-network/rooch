@@ -118,7 +118,6 @@ impl RoochTransaction {
     #[cfg(test)]
     pub fn mock() -> RoochTransaction {
         use crate::address::RoochSupportedAddress;
-        use crate::crypto::Signature;
         use fastcrypto::ed25519::Ed25519KeyPair;
         use fastcrypto::traits::KeyPair;
         use move_core_types::{identifier::Identifier, language_storage::ModuleId};
