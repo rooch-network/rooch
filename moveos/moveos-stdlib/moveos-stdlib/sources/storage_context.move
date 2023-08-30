@@ -100,7 +100,13 @@ module moveos_std::storage_context {
     #[test_only]
     /// Create a StorageContext for unit test
     public fun new_test_context(sender: address): StorageContext {
-        let tx_context = tx_context::new_test_context(sender);
+        new_test_context_random(sender, b"test_tx")
+    }
+
+    #[test_only]
+    /// Create a StorageContext for unit test with random seed
+    public fun new_test_context_random(sender: address, seed: vector<u8>): StorageContext {
+        let tx_context = tx_context::new_test_context_random(sender, seed);
         let object_storage = object_storage::new_with_id(object_storage::global_object_storage_handle());
         StorageContext {
             tx_context,
