@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use moveos_types::h256::H256;
 use raw_store::CodecKVStore;
 use rooch_types::transaction::{
     AbstractTransaction, TransactionSequenceInfo, TransactionSequenceInfoMapping, TypedTransaction,
 };
-use rooch_types::H256;
 
 use crate::{
     TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME, TX_SEQUENCE_INFO_PREFIX_NAME,

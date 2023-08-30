@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::TransactionProposeMessage;
-use rooch_types::{block::Block, H256};
+use moveos_types::h256::H256;
+use rooch_types::block::Block;
 use std::collections::BTreeMap;
 
 /// State Commitment Chain(SCC) is a chain of transaction state root

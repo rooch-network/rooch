@@ -3,12 +3,13 @@
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
+use clap::Parser;
 use moveos_types::{access_path::AccessPath, object::ObjectID};
 use rooch_rpc_api::jsonrpc_types::AnnotatedStateView;
 use rooch_types::error::RoochResult;
 
 /// Get object by object id
-#[derive(Debug, clap::Parser)]
+#[derive(Debug, Parser)]
 pub struct ObjectCommand {
     /// Object id.
     #[clap(long)]

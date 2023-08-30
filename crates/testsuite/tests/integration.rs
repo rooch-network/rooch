@@ -53,7 +53,12 @@ async fn run_cmd(world: &mut World, args: String) {
         .join("rooch_test");
 
     let default = if config_dir.exists() {
-        let context = WalletContext::new(Some(config_dir.clone())).await.unwrap();
+        let context = WalletContext::<
+            rooch_types::address::RoochAddress,
+            rooch_types::crypto::RoochKeyPair,
+        >::new(Some(config_dir.clone()))
+        .await
+        .unwrap();
 
         match context.client_config.active_address {
             Some(addr) => AccountAddress::from(addr).to_hex_literal(),
@@ -97,7 +102,7 @@ async fn run_cmd(world: &mut World, args: String) {
 }
 
 #[then(regex = r#"assert: "([^"]*)""#)]
-async fn assert_output(world: &mut World, args: String) {
+fn assert_output(world: &mut World, args: String) {
     assert!(world.tpl_ctx.is_some(), "tpl_ctx is none");
     let args = eval_command_args(world.tpl_ctx.as_ref().unwrap(), args);
     let parameters = split_string_with_quotes(&args).expect("Invalid commands");

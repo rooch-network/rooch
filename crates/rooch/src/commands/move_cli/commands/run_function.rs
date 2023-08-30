@@ -89,14 +89,14 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
         );
         match (self.tx_options.authenticator, self.tx_options.session_key) {
             (Some(authenticator), _) => {
-                let tx_data = context.build_rooch_tx_data(sender, action).await?;
+                let tx_data = context.build_tx_data(sender, action).await?;
                 //TODO the authenticator usually is associalted with the RoochTransactinData
                 //So we need to find a way to let user generate the authenticator based on the tx_data.
                 let tx = RoochTransaction::new(tx_data, authenticator.into());
                 context.execute(tx).await
             }
             (_, Some(session_key)) => {
-                let tx_data = context.build_rooch_tx_data(sender, action).await?;
+                let tx_data = context.build_tx_data(sender, action).await?;
                 let tx = context
                     .keystore
                     .sign_transaction_via_session_key(

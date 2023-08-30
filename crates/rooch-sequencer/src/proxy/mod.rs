@@ -10,8 +10,9 @@ use crate::{actor::sequencer::SequencerActor, messages::TransactionSequenceMessa
 use anyhow::Result;
 use coerce::actor::ActorRef;
 use rooch_types::sequencer::SequencerOrder;
+use moveos_types::h256::H256;
+use rooch_types::transaction::TransactionSequenceInfo;
 use rooch_types::transaction::{TransactionSequenceInfoMapping, TypedTransaction};
-use rooch_types::{transaction::TransactionSequenceInfo, H256};
 
 #[derive(Clone)]
 pub struct SequencerProxy {

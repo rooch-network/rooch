@@ -39,6 +39,7 @@ rocket = { workspace = true }
 parking_lot = { workspace = true }
 bcs-ext = { workspace = true }
 rpassword = { workspace = true }
+fastcrypto = { workspace = true }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use async_trait::async_trait;
+use clap::{Parser, Subcommand};
 use commands::{
     build::Build, integration_test::IntegrationTest, new::New, publish::Publish,
     run_function::RunFunction, run_view_function::RunViewFunction, unit_test::Test,
@@ -20,7 +21,7 @@ use crate::CommandAction;
 
 pub mod commands;
 
-#[derive(clap::Parser)]
+#[derive(Parser)]
 pub struct MoveCli {
     #[clap(flatten)]
     move_args: Move,
@@ -28,7 +29,7 @@ pub struct MoveCli {
     cmd: MoveCommand,
 }
 
-#[derive(clap::Subcommand)]
+#[derive(Subcommand)]
 #[clap(name = "move")]
 pub enum MoveCommand {
     Build(Build),

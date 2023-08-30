@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use jsonrpsee::{
-    core::client::ClientT,
-    http_client::{HttpClient, HttpClientBuilder},
-};
+use ethers::types::{H160, H256, U256};
+use jsonrpsee::core::client::ClientT;
+use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use moveos_types::{
     access_path::AccessPath,
     function_return_value::FunctionResult,
@@ -15,20 +14,29 @@ use moveos_types::{
     tx_context::TxContext,
 };
 use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionResultView;
+use rooch_rpc_api::api::rooch_api::RoochAPIClient;
+use rooch_rpc_api::jsonrpc_types::TransactionResultPageView;
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedFunctionResultView, EventPageView,
     ListAnnotatedStatesPageView, ListBalanceInfoPageView, ListStatesPageView, StrView,
     StructTagView,
 };
 use rooch_rpc_api::{
-    api::rooch_api::RoochAPIClient,
+    api::eth_api::EthAPIClient,
+    jsonrpc_types::{H256View, U256View},
+};
+use rooch_rpc_api::{
+    api::eth_api::TransactionType,
     jsonrpc_types::{
-        AnnotatedStateView, ExecuteTransactionResponseView, StateView, TransactionResultPageView,
+        AnnotatedStateView, ExecuteTransactionResponseView, StateView,
+        bytes::Bytes,
+        eth::{
+            ethereum_types::block::{Block, BlockNumber},
+            CallRequest, EthFeeHistory, Transaction, TransactionReceipt,
+        },
     },
 };
-use rooch_types::{
-    account::Account, address::RoochAddress, transaction::rooch::RoochTransaction, H256,
-};
+use rooch_types::{account::Account, address::RoochAddress, transaction::rooch::RoochTransaction};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -240,6 +248,92 @@ impl Client {
         params: Vec<serde_json::Value>,
     ) -> Result<serde_json::Value> {
         Ok(self.rpc.http.request(method, params).await?)
+    }
+
+    pub async fn net_version(&self) -> Result<String> {
+        Ok(self.rpc.http.net_version().await?)
+    }
+
+    pub async fn eth_chain_id(&self) -> Result<String> {
+        Ok(self.rpc.http.eth_chain_id().await?)
+    }
+
+    pub async fn get_block_number(&self) -> Result<String> {
+        Ok(self.rpc.http.get_block_number().await?)
+    }
+
+    pub async fn get_block_by_number(
+        &self,
+        num: BlockNumber,
+        include_txs: bool,
+    ) -> Result<Block<TransactionType>> {
+        Ok(self.rpc.http.get_block_by_number(num, include_txs).await?)
+    }
+
+    pub async fn get_balance(&self, address: H160, num: Option<BlockNumber>) -> Result<U256View> {
+        let response = self.rpc.http.get_balance(address.into(), num).await?;
+        Result::Ok(response)
+    }
+
+    pub async fn estimate_gas(
+        &self,
+        request: CallRequest,
+        num: Option<BlockNumber>,
+    ) -> Result<U256View> {
+        let response = self.rpc.http.estimate_gas(request, num).await?;
+        Result::Ok(response)
+    }
+
+    pub async fn fee_history(
+        &self,
+        block_count: U256,
+        newest_block: BlockNumber,
+        reward_percentiles: Option<Vec<f64>>,
+    ) -> Result<EthFeeHistory> {
+        Ok(self
+            .rpc
+            .http
+            .fee_history(block_count.into(), newest_block, reward_percentiles)
+            .await?)
+    }
+
+    pub async fn gas_price(&self) -> Result<U256View> {
+        let response = self.rpc.http.gas_price().await?;
+        Result::Ok(response)
+    }
+
+    pub async fn transaction_count(
+        &self,
+        address: H160,
+        num: Option<BlockNumber>,
+    ) -> Result<U256View> {
+        let response = self.rpc.http.transaction_count(address.into(), num).await?;
+        Result::Ok(response)
+    }
+
+    pub async fn send_raw_transaction(&self, bytes: Bytes) -> Result<H256View> {
+        let response = EthAPIClient::send_raw_transaction(&self.rpc.http, bytes).await?;
+        Result::Ok(response)
+    }
+
+    pub async fn transaction_receipt(&self, hash: H256) -> Result<Option<TransactionReceipt>> {
+        Ok(self.rpc.http.transaction_receipt(hash.into()).await?)
+    }
+
+    pub async fn transaction_by_hash(&self, hash: H256) -> Result<Option<Transaction>> {
+        Ok(self.rpc.http.transaction_by_hash(hash.into()).await?)
+    }
+
+    pub async fn block_by_hash(
+        &self,
+        hash: H256,
+        include_txs: bool,
+    ) -> Result<Block<TransactionType>> {
+        Ok(self
+            .rpc
+            .http
+            .block_by_hash(hash.into(), include_txs)
+            .await?)
     }
 }
 

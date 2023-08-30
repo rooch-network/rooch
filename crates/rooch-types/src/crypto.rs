@@ -10,11 +10,6 @@ use crate::{
 use derive_more::{AsMut, AsRef, From};
 pub use enum_dispatch::enum_dispatch;
 use eyre::eyre;
-use fastcrypto::ed25519::{
-    Ed25519KeyPair, Ed25519PublicKey, Ed25519PublicKeyAsBytes, Ed25519Signature,
-    Ed25519SignatureAsBytes,
-};
-use fastcrypto::encoding::{Base64, Encoding};
 use fastcrypto::error::FastCryptoError;
 use fastcrypto::hash::{Blake2b256, HashFunction};
 pub use fastcrypto::traits::KeyPair as KeypairTraits;
@@ -22,6 +17,13 @@ pub use fastcrypto::traits::Signer;
 pub use fastcrypto::traits::{
     AggregateAuthenticator, Authenticator, EncodeDecodeBase64, RecoverableSignature,
     RecoverableSigner, SigningKey, ToFromBytes, VerifyingKey,
+};
+use fastcrypto::{
+    ed25519::{
+        Ed25519KeyPair, Ed25519PublicKey, Ed25519PublicKeyAsBytes, Ed25519Signature,
+        Ed25519SignatureAsBytes,
+    },
+    encoding::{Base64, Encoding},
 };
 use moveos_types::{h256::H256, serde::Readable};
 use schemars::JsonSchema;

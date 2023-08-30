@@ -102,7 +102,7 @@ impl WalletContext<RoochAddress> {
         })
     }
 
-    pub async fn build_rooch_tx_data(
+    pub async fn build_tx_data(
         &self,
         sender: RoochAddress,
         action: MoveAction,
@@ -143,7 +143,7 @@ impl WalletContext<RoochAddress> {
 
         match key_pair_type {
             KeyPairType::RoochKeyPairType => {
-                let tx_data = self.build_rooch_tx_data(sender, action).await?;
+                let tx_data = self.build_tx_data(sender, action).await?;
                 let signature = Signature::new_hashed(tx_data.hash().as_bytes(), &kp);
                 Ok(RoochTransaction::new(
                     tx_data,

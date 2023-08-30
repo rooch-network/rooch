@@ -53,3 +53,25 @@ impl CommandAction<()> for ListCommand {
         Ok(())
     }
 }
+
+// Ethereum key list
+// println!(
+//     "{0: ^66} | {1: ^48} | {2: ^6}",
+//     "Ethereum Address", "Public Key (Base64)", "Active"
+// );
+// println!("{}", ["-"; 127].join(""));
+// for (address, public_key) in context.config.keystore.get_address_public_keys() {
+//     let mut active = "";
+//     if active_address == Some(address) {
+//         active = "True";
+//     };
+
+//     println!(
+//         "{0: ^66} | {1: ^48} | {2: ^6}",
+//         address,
+//         public_key.encode_base64(),
+//         active
+//     );
+// }
+
+// Ok(())

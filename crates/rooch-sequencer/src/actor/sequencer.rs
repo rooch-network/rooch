@@ -9,19 +9,17 @@ use crate::messages::{
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
-use moveos_types::h256;
+use moveos_types::h256::{self, H256};
 use rooch_store::meta_store::MetaStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
 use rooch_types::sequencer::SequencerOrder;
-use rooch_types::transaction::TransactionSequenceInfoMapping;
+use rooch_types::transaction::{
+    TransactionSequenceInfo, TransactionSequenceInfoMapping, TypedTransaction,
+};
 use rooch_types::{
     crypto::{RoochKeyPair, Signature},
     transaction::AbstractTransaction,
-};
-use rooch_types::{
-    transaction::{TransactionSequenceInfo, TypedTransaction},
-    H256,
 };
 use tracing::info;
 

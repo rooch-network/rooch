@@ -3,6 +3,7 @@
 
 use crate::jsonrpc_types::StrView;
 use anyhow::Result;
+use ethers::types::{H160, H64, U256, U64};
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
@@ -364,7 +365,7 @@ impl From<IdentifierView> for Identifier {
 }
 
 #[serde_as]
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub struct H256View(
     #[schemars(with = "Hex")]
     #[serde_as(as = "Readable<Hex, _>")]
@@ -380,6 +381,78 @@ impl From<H256> for H256View {
 impl From<H256View> for H256 {
     fn from(value: H256View) -> Self {
         H256(value.0)
+    }
+}
+
+#[serde_as]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+pub struct H64View(
+    #[schemars(with = "Hex")]
+    #[serde_as(as = "Readable<Hex, _>")]
+    [u8; 8],
+);
+
+impl From<H64> for H64View {
+    fn from(value: H64) -> Self {
+        H64View(value.0)
+    }
+}
+
+impl From<H64View> for H64 {
+    fn from(value: H64View) -> Self {
+        H64(value.0)
+    }
+}
+
+#[serde_as]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+pub struct H160View(
+    #[schemars(with = "Hex")]
+    #[serde_as(as = "Readable<Hex, _>")]
+    [u8; 20],
+);
+
+impl From<H160> for H160View {
+    fn from(value: H160) -> Self {
+        H160View(value.0)
+    }
+}
+
+impl From<H160View> for H160 {
+    fn from(value: H160View) -> Self {
+        H160(value.0)
+    }
+}
+
+#[serde_as]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+pub struct U256View([u64; 4]);
+
+impl From<U256> for U256View {
+    fn from(value: U256) -> Self {
+        U256View(value.0)
+    }
+}
+
+impl From<U256View> for U256 {
+    fn from(value: U256View) -> Self {
+        U256(value.0)
+    }
+}
+
+#[serde_as]
+#[derive(Default, Copy, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+pub struct U64View([u64; 1]);
+
+impl From<U64> for U64View {
+    fn from(value: U64) -> Self {
+        U64View(value.0)
+    }
+}
+
+impl From<U64View> for U64 {
+    fn from(value: U64View) -> Self {
+        U64(value.0)
     }
 }
 
