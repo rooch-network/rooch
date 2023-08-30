@@ -19,6 +19,7 @@ members = [
     "crates/rooch-framework",
     "crates/rooch-framework-tests",
     "crates/rooch-genesis",
+    "crates/rooch-genesis-builder",
     "crates/rooch-integration-test-runner",
     "crates/rooch-rpc-server",
     "crates/rooch-rpc-client",
@@ -79,6 +80,7 @@ rooch-framework = { path = "crates/rooch-framework" }
 rooch-framework-tests = { path = "crates/rooch-framework-tests" }
 rooch-integration-test-runner = { path = "crates/rooch-integration-test-runner" }
 rooch-genesis = { path = "crates/rooch-genesis" }
+rooch-genesis-builder = { path = "crates/rooch-genesis-builder" }
 rooch-rpc-server = { path = "crates/rooch-rpc-server" }
 rooch-rpc-client = { path = "crates/rooch-rpc-client" }
 rooch-rpc-api = { path = "crates/rooch-rpc-api" }

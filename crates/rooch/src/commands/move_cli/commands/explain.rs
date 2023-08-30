@@ -8,10 +8,11 @@ use move_core_types::errmap::{ErrorDescription, ErrorMapping};
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::ModuleId;
 use move_core_types::vm_status::AbortLocation;
-use moveos_stdlib::{move_std_error_descriptions, moveos_std_error_descriptions};
 use moveos_types::addresses::MOVEOS_STD_ADDRESS;
 use moveos_types::addresses::MOVE_STD_ADDRESS;
-use rooch_framework::rooch_framework_error_descriptions;
+use rooch_genesis::{
+    move_std_error_descriptions, moveos_std_error_descriptions, rooch_framework_error_descriptions,
+};
 use rooch_types::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use serde::{Deserialize, Serialize};
 

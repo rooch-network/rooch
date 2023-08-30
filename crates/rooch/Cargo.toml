@@ -67,6 +67,7 @@ rooch-key = { workspace = true }
 rooch-types = { workspace = true }
 rooch-config = { workspace = true }
 rooch-framework = { workspace = true }
+rooch-genesis = { workspace = true }
 rooch-rpc-api = { workspace = true }
 rooch-rpc-server = { workspace = true }
 rooch-rpc-client = { workspace = true }

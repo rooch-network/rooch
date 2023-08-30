@@ -7078,6 +7078,7 @@ dependencies = [
  "rocket",
  "rooch-config",
  "rooch-framework",
+ "rooch-genesis",
  "rooch-integration-test-runner",
  "rooch-key",
  "rooch-rpc-api",
@@ -7246,6 +7247,44 @@ dependencies = [
 
 [[package]]
 name = "rooch-genesis"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "better_any",
+ "fastcrypto",
+ "hex",
+ "linked-hash-map",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-bytecode-verifier",
+ "move-command-line-common",
+ "move-core-types",
+ "move-package",
+ "move-prover",
+ "move-stdlib",
+ "move-unit-test",
+ "move-vm-runtime",
+ "move-vm-test-utils",
+ "move-vm-types",
+ "moveos",
+ "moveos-stdlib",
+ "moveos-stdlib-builder",
+ "moveos-store",
+ "moveos-types",
+ "moveos-verifier",
+ "once_cell",
+ "rooch-framework",
+ "rooch-genesis-builder",
+ "rooch-types",
+ "serde 1.0.188",
+ "serde_bytes",
+ "sha3 0.9.1",
+ "smallvec 1.11.0",
+]
+
+[[package]]
+name = "rooch-genesis-builder"
 version = "0.1.0"
 dependencies = [
  "anyhow",

@@ -11,6 +11,7 @@ use move_package::{compilation::compiled_package::CompiledPackage, BuildConfig, 
 use moveos_verifier::build::run_verifier;
 use serde::{Deserialize, Serialize};
 use std::{
+    collections::{HashMap, HashSet},
     fs::{self, File},
     io::{stderr, Write},
     path::{Path, PathBuf},
@@ -72,6 +73,8 @@ pub struct StdlibBuildConfig {
 
 impl StdlibBuildConfig {
     pub fn build(self, deps: &[StdlibBuildConfig]) -> Result<StdlibPackage> {
+        println!("Build stdlib at {:?}", self.path);
+
         let mut compiled_package = self
             .build_config
             .clone()
@@ -129,7 +132,9 @@ impl StdlibBuildConfig {
     }
 
     fn build_doc(&self, model: &GlobalEnv, deps_doc_paths: Vec<String>) -> Result<()> {
-        fs::remove_dir_all(self.document_output_directory.as_path())?;
+        if !self.document_output_directory.exists() {
+            fs::create_dir_all(self.document_output_directory.as_path())?;
+        }
         println!(
             "Generated move documents at {:?}, deps: {:?}",
             self.document_output_directory.as_path(),
@@ -145,18 +150,55 @@ impl StdlibBuildConfig {
             doc_path: deps_doc_paths,
             ..Default::default()
         };
+        let old_docs = match fs::read_dir(self.document_output_directory.as_path()) {
+            Ok(dir) => dir
+                .filter_map(|res| res.map(|f| f.path()).ok())
+                .filter(|p| {
+                    p.is_file() && p.extension().map(|s| s.to_str()).flatten().unwrap_or("") == "md"
+                })
+                .map(|f| {
+                    let file = f.to_string_lossy().to_string();
+                    let content = fs::read_to_string(f).unwrap_or("".to_string());
+                    (file, content)
+                })
+                .collect::<HashMap<_, _>>(),
+            Err(_) => HashMap::new(),
+        };
 
         let generator = move_docgen::Docgen::new(model, &options);
-
+        let mut new_docs = HashSet::new();
         for (file, content) in generator.gen() {
-            let path = PathBuf::from(&file);
-            fs::create_dir_all(path.parent().unwrap())?;
-            fs::write(path.as_path(), content)?;
+            match old_docs.get(&file) {
+                Some(old_content) if old_content != &content => {
+                    println!("Update doc {:?}", file);
+                    let path = PathBuf::from(&file);
+                    fs::write(path.as_path(), content)?;
+                }
+                None => {
+                    println!("Create new doc {:?}", file);
+                    let path = PathBuf::from(&file);
+                    fs::write(path.as_path(), content)?;
+                }
+                _ => {}
+            }
+            new_docs.insert(file);
         }
+
+        for old_doc in old_docs.keys() {
+            if !new_docs.contains(old_doc) {
+                println!("Remove old doc {:?}", old_doc);
+                fs::remove_file(old_doc)?;
+            }
+        }
+
         Ok(())
     }
 
     fn build_error_code_map(&self, model: &GlobalEnv) -> Result<()> {
+        println!(
+            "Generate error code map at {:?}",
+            self.error_code_map_output_file
+        );
         let error_map_gen_opt = move_errmapgen::ErrmapOptions {
             error_prefix: self.error_prefix.clone(),
             output_file: self
@@ -165,7 +207,6 @@ impl StdlibBuildConfig {
                 .to_string(),
             ..Default::default()
         };
-
         let mut errmap_gen = move_errmapgen::ErrmapGen::new(model, &error_map_gen_opt);
         errmap_gen.gen();
         errmap_gen.save_result();
