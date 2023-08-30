@@ -29,7 +29,8 @@ use std::{
 pub static ROOCH_DEV_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
     // genesis for integration test, we need to build the stdlib every time for `private_generic` check
     // see moveos/moveos-verifier/src/metadata.rs#L27-L30
-    RoochGenesis::build_with_option(RoochChainID::DEV.chain_id().id(), BuildOption::Fresh).expect("build rooch genesis failed")
+    RoochGenesis::build_with_option(RoochChainID::DEV.chain_id().id(), BuildOption::Fresh)
+        .expect("build rooch genesis failed")
 });
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -189,7 +190,6 @@ impl GenesisPackage {
     pub const GENESIS_DIR: &'static str = "genesis";
 
     fn build(chain_id: u64, build_option: BuildOption) -> Result<Self> {
-    
         let stdlib = match build_option {
             BuildOption::Fresh => Self::build_stdlib()?,
             BuildOption::Release => Self::load_stdlib()?,
