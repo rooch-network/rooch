@@ -154,7 +154,7 @@ impl StdlibBuildConfig {
             Ok(dir) => dir
                 .filter_map(|res| res.map(|f| f.path()).ok())
                 .filter(|p| {
-                    p.is_file() && p.extension().map(|s| s.to_str()).flatten().unwrap_or("") == "md"
+                    p.is_file() && p.extension().and_then(|s| s.to_str()).unwrap_or("") == "md"
                 })
                 .map(|f| {
                     let file = f.to_string_lossy().to_string();
