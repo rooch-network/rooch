@@ -6,6 +6,7 @@ category: Technology
 date: 2023/08/21
 ---
 
+import Image from "next/image";
 import PostHeader from "/components/blog/postHeader";
 
 <PostHeader />
@@ -87,7 +88,7 @@ validation to him.
 **Moe**: Is `(((1 + 1) + 1) + ... + 1) = 48784359345934` also true on
 your computer?
 
-**Joe**: No. The Value is 48784359345935.
+**Joe**: No. The Value is `48784359345935`.
 
 ----
 
@@ -106,21 +107,21 @@ can swiftly identify inconsistencies!
 
 ----
 
-**Moe**: Step 24392179672966 is `24392179672966 + 1 = 24392179672967 `
+**Moe**: Step 24392179672966 is `24392179672966 + 1 = 24392179672967`
 
-**Joe**: Step 24392179672966 is `24392179672965 + 1 = 24392179672966 `
-
-----
-
-**Moe**: Step 12196089836483 is `12196089836483 + 1 = 12196089836484 `
-
-**Joe**: Step 12196089836483 is `12196089836482 + 1 = 12196089836483 `
+**Joe**: Step 24392179672966 is `24392179672965 + 1 = 24392179672966`
 
 ----
 
-**Moe**: Step 6098044918241 is `6098044918241 + 1 = 6098044918242 `
+**Moe**: Step 12196089836483 is `12196089836483 + 1 = 12196089836484`
 
-**Joe**: Step 6098044918241 is `6098044918241 + 1 = 6098044918242 `. The
+**Joe**: Step 12196089836483 is `12196089836482 + 1 = 12196089836483`
+
+----
+
+**Moe**: Step 6098044918241 is `6098044918241 + 1 = 6098044918242`
+
+**Joe**: Step 6098044918241 is `6098044918241 + 1 = 6098044918242`. The
 first inconsistent step must be in `(6098044918241, 12196089836483]`,
 we're not far from our destination!
 
@@ -211,7 +212,13 @@ figure?
 **Joe**:
 Sure! 
 
-![timeline](/blog/interactive-game/timeline.png)
+<Image
+  src="/blog/interactive-game/timeline.png"
+  alt="timeline"
+  width={500}
+  height={300}
+  className="mx-auto my-8"
+/>
 
 ----
 
@@ -219,7 +226,7 @@ Sure!
 
 **Joe**: 
 
-> Pre-execution: fetch input by block_hash
+> Pre-execution: fetch input by `block_hash`
 
 > Load Emulator: setup execution environment
 
@@ -422,7 +429,7 @@ on a single thread.
 
 ----
 
-**Moe**: Randomness is another element of instability.
+**Moe**: Randomness is another factor of instability.
 
 **Joe**: Let's start analysing the world of instructions from the bottom
 up.
@@ -440,7 +447,7 @@ consistent pseudorandom numbers in the same procedure.
 
 **Moe**: Linux Kernel hates float. Does emulator hate that too?
 
-**Joe**: We could use SoftFloat Library or just forbidden it.
+**Joe**: We could use SoftFloat library or just forbidden it.
 
 ----
 
@@ -467,7 +474,7 @@ additional points to be made regarding the issue with input.
 
 **Joe**: Indeed. I would like to reiterate the importance of the verifiable
 'verification of the input process'. The off-chain verification
-process for input must be traceable in single steps, so that the initial
+process for input must be traceable in single step, so that the initial
 state of the input can be legitimized. As part of the memory state, if
 the input data loaded is deliberately tampered with, it will lead to the
 inability to provide a proof of the state tree, as tampering implies
@@ -539,21 +546,45 @@ have the airplane, we just need to purchase the tickets.
 **Moe**: Observe what instructions this source code will morph into on your
 machine:
 
-![ones-count](/blog/interactive-game/ones-count.png)
+<Image
+  src="/blog/interactive-game/ones-count.png"
+  alt="ones-count"
+  width={600}
+  height={300}
+  className="mx-auto my-8"
+/>
 
-**Joe**: You've preemptively spoken again. On my x86_64:
+**Joe**: You've preemptively spoken again. On my `x86_64`:
 
-![ones-count-x86](/blog/interactive-game/ones-count-x86.png)
+<Image
+  src="/blog/interactive-game/ones-count-x86.png"
+  alt="ones-count-x86"
+  width={600}
+  height={600}
+  className="mx-auto my-8"
+/>
 
 Or：
 
-![ones-count-simd](/blog/interactive-game/ones-count-simd.png)
+<Image
+  src="/blog/interactive-game/ones-count-simd.png"
+  alt="ones-count-simd"
+  width={600}
+  height={276}
+  className="mx-auto my-8"
+/>
 
 ----
 
 **Moe**: Because I showed you source code. Talking is cheap. On my RISC-V:
 
-![ones-count-riscv](/blog/interactive-game/ones-count-riscv.png)
+<Image
+  src="/blog/interactive-game/ones-count-riscv.png"
+  alt="ones-count-riscv"
+  width={283}
+  height={600}
+  className="mx-auto my-8"
+/>
 
 **Joe**: In the face of identical inputs, despite the vast differences in
 the instructions our machines execute, they still manage to yield
@@ -564,6 +595,8 @@ identical outputs.
 **Moe**: Is it you who is mirroring me, or am I the one replicating you?
 
 **Joe**: That is the question.
+
+----
 
 [^1]: Prerequisite knowledge: Understand the basic concepts of
 optimistic rollups, and the fundamental components of L1 and L2.
