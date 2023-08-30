@@ -69,10 +69,12 @@ impl CommandAction<String> for MoveCli {
                 .execute(move_args.package_path, move_args.build_config)
                 .map(|_| "Success".to_owned())
                 .map_err(RoochError::from),
-            MoveCommand::Errmap(c) => c
-                .execute(move_args.package_path, move_args.build_config)
-                .map(|_| "Success".to_owned())
-                .map_err(RoochError::from),
+            MoveCommand::Errmap(mut c) => {
+                c.error_prefix = Some("Error".to_owned());
+                c.execute(move_args.package_path, move_args.build_config)
+                    .map(|_| "Success".to_owned())
+                    .map_err(RoochError::from)
+            }
             MoveCommand::Info(c) => c
                 .execute(move_args.package_path, move_args.build_config)
                 .map(|_| "Success".to_owned())
