@@ -54,7 +54,7 @@ pub fn build_stdlib() -> Result<Stdlib> {
 }
 
 pub fn build_and_save_stdlib() -> Result<()> {
-    fs::create_dir_all(generated_dir())?;
+    std::fs::create_dir_all(generated_dir())?;
     let stdlib = build_stdlib()?;
     stdlib.save_to_file(stdlib_output_file())
 }
