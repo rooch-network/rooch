@@ -5,6 +5,7 @@ module rooch_framework::chain_id {
 
     friend rooch_framework::genesis;
 
+    /// The ChainID in the global storage
     struct ChainID has key,store,copy,drop {
         id: u64
     }

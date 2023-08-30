@@ -19,6 +19,7 @@ members = [
     "crates/rooch-framework",
     "crates/rooch-framework-tests",
     "crates/rooch-genesis",
+    "crates/rooch-genesis-builder",
     "crates/rooch-integration-test-runner",
     "crates/rooch-rpc-server",
     "crates/rooch-rpc-client",
@@ -32,6 +33,7 @@ members = [
     "crates/rooch-proposer",
     "crates/rooch-open-rpc",
     "crates/rooch-open-rpc-spec",
+    "crates/rooch-open-rpc-spec-builder",
     "crates/rooch-open-rpc-macros",
     "crates/rooch-store"
 ]
@@ -79,6 +81,7 @@ rooch-framework = { path = "crates/rooch-framework" }
 rooch-framework-tests = { path = "crates/rooch-framework-tests" }
 rooch-integration-test-runner = { path = "crates/rooch-integration-test-runner" }
 rooch-genesis = { path = "crates/rooch-genesis" }
+rooch-genesis-builder = { path = "crates/rooch-genesis-builder" }
 rooch-rpc-server = { path = "crates/rooch-rpc-server" }
 rooch-rpc-client = { path = "crates/rooch-rpc-client" }
 rooch-rpc-api = { path = "crates/rooch-rpc-api" }
@@ -89,6 +92,7 @@ rooch-executor = { path = "crates/rooch-executor" }
 rooch-proposer = { path = "crates/rooch-proposer" }
 rooch-open-rpc = { path = "crates/rooch-open-rpc" }
 rooch-open-rpc-spec = { path = "crates/rooch-open-rpc-spec" }
+rooch-open-rpc-spec-builder = { path = "crates/rooch-open-rpc-spec-builder" }
 rooch-open-rpc-macros = { path = "crates/rooch-open-rpc-macros" }
 rooch-store = { path = "crates/rooch-store" }
 

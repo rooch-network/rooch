@@ -4,10 +4,9 @@
 use anyhow::Result;
 use move_binary_format::{errors::Location, CompiledModule};
 use move_core_types::{account_address::AccountAddress, identifier::Identifier};
-use move_package::BuildConfig;
 use move_vm_runtime::{config::VMConfig, native_functions::NativeFunction};
 use moveos::moveos::{MoveOS, MoveOSConfig};
-use moveos_stdlib_builder::{Stdlib, StdlibBuildConfig};
+use moveos_stdlib_builder::Stdlib;
 use moveos_store::{config_store::ConfigDBStore, MoveOSStore};
 use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256;
@@ -144,51 +143,9 @@ impl RoochGenesis {
     }
 }
 
-static GENESIS_STDLIB_BYTES: &[u8] = include_bytes!("../genesis/stdlib");
-
-static STDLIB_BUILD_CONFIGS: Lazy<Vec<StdlibBuildConfig>> = Lazy::new(|| {
-    let move_stdlib_path = path_in_crate("../../moveos/moveos-stdlib/move-stdlib")
-        .canonicalize()
-        .expect("canonicalize path failed");
-    let moveos_stdlib_path = path_in_crate("../../moveos/moveos-stdlib/moveos-stdlib")
-        .canonicalize()
-        .expect("canonicalize path failed");
-    let rooch_framework_path = path_in_crate("../rooch-framework")
-        .canonicalize()
-        .expect("canonicalize path failed");
-    vec![
-        StdlibBuildConfig {
-            path: move_stdlib_path.clone(),
-            error_prefix: "E".to_string(),
-            error_code_map_output_file: move_stdlib_path.join("error_description.errmap"),
-            document_template: move_stdlib_path.join("doc_template/README.md"),
-            document_output_directory: move_stdlib_path.join("doc"),
-            build_config: BuildConfig::default(),
-        },
-        StdlibBuildConfig {
-            path: moveos_stdlib_path.clone(),
-            error_prefix: "Error".to_string(),
-            error_code_map_output_file: moveos_stdlib_path.join("error_description.errmap"),
-            document_template: moveos_stdlib_path.join("doc_template/README.md"),
-            document_output_directory: moveos_stdlib_path.join("doc"),
-            build_config: BuildConfig::default(),
-        },
-        StdlibBuildConfig {
-            path: rooch_framework_path.clone(),
-            error_prefix: "Error".to_string(),
-            error_code_map_output_file: rooch_framework_path.join("error_description.errmap"),
-            document_template: rooch_framework_path.join("doc_template/README.md"),
-            document_output_directory: rooch_framework_path.join("doc"),
-            build_config: BuildConfig::default(),
-        },
-    ]
-});
+static GENESIS_STDLIB_BYTES: &[u8] = include_bytes!("../generated/stdlib");
 
 impl GenesisPackage {
-    pub const GENESIS_FILE_NAME: &'static str = "genesis";
-    pub const STDLIB_FILE_NAME: &'static str = "genesis/stdlib";
-    pub const GENESIS_DIR: &'static str = "genesis";
-
     fn build(chain_id: u64, build_option: BuildOption) -> Result<Self> {
         let stdlib = match build_option {
             BuildOption::Fresh => Self::build_stdlib()?,
@@ -231,31 +188,20 @@ impl GenesisPackage {
     }
 
     pub fn build_stdlib() -> Result<Stdlib> {
-        moveos_stdlib_builder::Stdlib::build(STDLIB_BUILD_CONFIGS.clone())
+        rooch_genesis_builder::build_stdlib()
     }
 
     pub fn load_stdlib() -> Result<Stdlib> {
         moveos_stdlib_builder::Stdlib::decode(GENESIS_STDLIB_BYTES)
     }
 
-    pub fn stdlib_file() -> PathBuf {
-        path_in_crate(Self::STDLIB_FILE_NAME)
-    }
-
-    pub fn load_from<P: AsRef<Path>>(data_dir: P) -> Result<Self> {
-        let data_dir = data_dir.as_ref();
-        let genesis_file = data_dir.join(Self::GENESIS_FILE_NAME);
+    pub fn load_from<P: AsRef<Path>>(genesis_file: P) -> Result<Self> {
         let genesis_package = bcs::from_bytes(&std::fs::read(genesis_file)?)?;
         Ok(genesis_package)
     }
 
-    pub fn save_to<P: AsRef<Path>>(&self, data_dir: P) -> Result<()> {
-        let data_dir = data_dir.as_ref();
-        if !data_dir.exists() {
-            std::fs::create_dir_all(data_dir)?;
-        }
-        let genesis_file = data_dir.join(Self::GENESIS_FILE_NAME);
-        eprintln!("Save genesis to {:?}", genesis_file);
+    pub fn save_to<P: AsRef<Path>>(&self, genesis_file: P) -> Result<()> {
+        eprintln!("Save genesis to {:?}", genesis_file.as_ref());
         let mut file = File::create(genesis_file)?;
         let contents = bcs::to_bytes(&self)?;
         file.write_all(&contents)?;
@@ -282,17 +228,29 @@ impl GenesisPackage {
     }
 }
 
-pub(crate) fn path_in_crate<S>(relative: S) -> PathBuf
-where
-    S: AsRef<Path>,
-{
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push(relative);
-    path
-}
-
 pub fn crate_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+}
+
+const MOVE_STD_ERROR_DESCRIPTIONS: &[u8] =
+    include_bytes!("../generated/move_std_error_description.errmap");
+
+pub fn move_std_error_descriptions() -> &'static [u8] {
+    MOVE_STD_ERROR_DESCRIPTIONS
+}
+
+const MOVEOS_STD_ERROR_DESCRIPTIONS: &[u8] =
+    include_bytes!("../generated/moveos_std_error_description.errmap");
+
+pub fn moveos_std_error_descriptions() -> &'static [u8] {
+    MOVEOS_STD_ERROR_DESCRIPTIONS
+}
+
+const ROOCH_FRAMEWORK_ERROR_DESCRIPTIONS: &[u8] =
+    include_bytes!("../generated/rooch_framework_error_description.errmap");
+
+pub fn rooch_framework_error_descriptions() -> &'static [u8] {
+    ROOCH_FRAMEWORK_ERROR_DESCRIPTIONS
 }
 
 #[cfg(test)]
@@ -303,17 +261,13 @@ mod tests {
     use rooch_types::chain_id::RoochChainID;
 
     #[test]
-    fn test_genesis_build() {
-        let genesis = super::RoochGenesis::build(RoochChainID::DEV.chain_id().id())
-            .expect("build rooch framework failed");
-        genesis.genesis_package_hash();
-        assert_eq!(genesis.genesis_package.genesis_txs.len(), 3);
-    }
-
-    #[test]
     fn test_genesis_init() {
-        let genesis = super::RoochGenesis::build(RoochChainID::DEV.chain_id().id())
-            .expect("build rooch framework failed");
+        let genesis = super::RoochGenesis::build_with_option(
+            RoochChainID::DEV.chain_id().id(),
+            crate::BuildOption::Fresh,
+        )
+        .expect("build rooch framework failed");
+        assert_eq!(genesis.genesis_package.genesis_txs.len(), 3);
         let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
         let mut moveos = MoveOS::new(
             moveos_store,

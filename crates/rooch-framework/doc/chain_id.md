@@ -20,6 +20,7 @@
 
 ## Resource `ChainID`
 
+The ChainID in the global storage
 
 
 <pre><code><b>struct</b> <a href="chain_id.md#0x3_chain_id_ChainID">ChainID</a> <b>has</b> <b>copy</b>, drop, store, key

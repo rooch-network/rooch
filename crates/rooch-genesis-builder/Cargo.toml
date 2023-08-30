@@ -1,5 +1,5 @@
 [package]
-name = "rooch-genesis"
+name = "rooch-genesis-builder"
 version = "0.1.0"
 
 # Workspace inherited keys
@@ -49,8 +49,3 @@ moveos-store = { workspace = true }
 
 rooch-framework = { workspace = true }
 rooch-types = { workspace = true }
-rooch-genesis-builder = { workspace = true }
-
-[build-dependencies]
-rooch-genesis-builder = { workspace = true }
-moveos-stdlib-builder = { workspace = true }

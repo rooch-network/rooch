@@ -68,49 +68,49 @@ Hash function name that are valid for ecrecover and verify.
 
 
 
+<a name="0x3_ecdsa_k1_recoverable_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH">ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH</a>: u64 = 33;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_recoverable_ECDSA_K1_RECOVERABLE_SIG_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ECDSA_K1_RECOVERABLE_SIG_LENGTH">ECDSA_K1_RECOVERABLE_SIG_LENGTH</a>: u64 = 65;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_recoverable_ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH"></a>
+
+constant codes
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH">ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_recoverable_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH">ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH</a>: u64 = 65;
+</code></pre>
+
+
+
 <a name="0x3_ecdsa_k1_recoverable_ErrorFailToRecoverPubKey"></a>
 
 Error if the public key cannot be recovered from the signature.
 
 
 <pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ErrorFailToRecoverPubKey">ErrorFailToRecoverPubKey</a>: u64 = 0;
-</code></pre>
-
-
-
-<a name="0x3_ecdsa_k1_recoverable_VALID_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_VALID_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH">VALID_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH</a>: u64 = 33;
-</code></pre>
-
-
-
-<a name="0x3_ecdsa_k1_recoverable_VALID_ECDSA_K1_RECOVERABLE_SIG_LENGTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_VALID_ECDSA_K1_RECOVERABLE_SIG_LENGTH">VALID_ECDSA_K1_RECOVERABLE_SIG_LENGTH</a>: u64 = 65;
-</code></pre>
-
-
-
-<a name="0x3_ecdsa_k1_recoverable_VALID_ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH"></a>
-
-constant codes
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_VALID_ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH">VALID_ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH</a>: u64 = 1;
-</code></pre>
-
-
-
-<a name="0x3_ecdsa_k1_recoverable_VALID_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_VALID_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH">VALID_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH</a>: u64 = 65;
 </code></pre>
 
 
@@ -132,7 +132,7 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_scheme_length">scheme_length</a>(): u64 {
-    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_VALID_ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH">VALID_ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH</a>
+    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH">ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH</a>
 }
 </code></pre>
 
@@ -156,7 +156,7 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_public_key_length">public_key_length</a>(): u64 {
-    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_VALID_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH">VALID_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH</a>
+    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH">ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH</a>
 }
 </code></pre>
 
@@ -180,7 +180,7 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_uncompressed_public_key_length">uncompressed_public_key_length</a>(): u64 {
-    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_VALID_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH">VALID_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH</a>
+    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH">ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH</a>
 }
 </code></pre>
 
@@ -204,7 +204,7 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_signature_length">signature_length</a>(): u64 {
-    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_VALID_ECDSA_K1_RECOVERABLE_SIG_LENGTH">VALID_ECDSA_K1_RECOVERABLE_SIG_LENGTH</a>
+    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ECDSA_K1_RECOVERABLE_SIG_LENGTH">ECDSA_K1_RECOVERABLE_SIG_LENGTH</a>
 }
 </code></pre>
 
