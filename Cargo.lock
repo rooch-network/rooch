@@ -7424,6 +7424,27 @@ dependencies = [
  "rand 0.8.5",
  "rooch-open-rpc",
  "rooch-open-rpc-macros",
+ "rooch-open-rpc-spec-builder",
+ "rooch-rpc-api",
+ "schemars",
+ "serde 1.0.188",
+ "serde_json",
+ "tokio",
+ "versions",
+]
+
+[[package]]
+name = "rooch-open-rpc-spec-builder"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "clap 3.2.25",
+ "fastcrypto",
+ "pretty_assertions",
+ "rand 0.8.5",
+ "rooch-open-rpc",
+ "rooch-open-rpc-macros",
  "rooch-rpc-api",
  "schemars",
  "serde 1.0.188",

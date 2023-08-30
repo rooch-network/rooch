@@ -1,5 +1,5 @@
 [package]
-name = "rooch-open-rpc-spec"
+name = "rooch-open-rpc-spec-builder"
 version = "0.1.0"
 
 # Workspace inherited keys
@@ -26,7 +26,3 @@ pretty_assertions = { workspace = true }
 rooch-rpc-api = { workspace = true }
 rooch-open-rpc = { workspace = true }
 rooch-open-rpc-macros = { workspace = true }
-rooch-open-rpc-spec-builder = { workspace = true }
-
-[build-dependencies]
-rooch-open-rpc-spec-builder = { workspace = true }
