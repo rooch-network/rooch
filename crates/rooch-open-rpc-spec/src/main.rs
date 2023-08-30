@@ -10,7 +10,6 @@ use pretty_assertions::assert_str_eq;
 use std::fs::File;
 use std::io::Write;
 
-
 #[derive(Debug, Parser, Clone, Copy, ArgEnum)]
 enum Action {
     Print,
@@ -19,22 +18,17 @@ enum Action {
 }
 
 #[derive(Debug, Parser)]
-#[clap(
-    name = "Rooch Open RPC Spec",
-    about = "Generate rooch open rpc spec",
-)]
+#[clap(name = "Rooch Open RPC Spec", about = "Generate rooch open rpc spec")]
 struct Options {
     #[clap(arg_enum, default_value = "Record", ignore_case = true)]
     action: Action,
 }
-
 
 #[tokio::main]
 async fn main() {
     let options = Options::parse();
 
     let open_rpc = rooch_open_rpc_spec_builder::build_rooch_rpc_spec();
-
 
     match options.action {
         Action::Record => {
@@ -43,7 +37,8 @@ async fn main() {
             writeln!(f, "{content}").unwrap();
         }
         Action::Test => {
-            let reference = std::fs::read_to_string(rooch_open_rpc_spec_builder::spec_file()).unwrap();
+            let reference =
+                std::fs::read_to_string(rooch_open_rpc_spec_builder::spec_file()).unwrap();
             let content = serde_json::to_string_pretty(&open_rpc).unwrap() + "\n";
             assert_str_eq!(&reference, &content);
         }

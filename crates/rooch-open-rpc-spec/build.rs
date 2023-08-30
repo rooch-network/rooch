@@ -21,11 +21,9 @@ fn main() {
 
         println!(
             "cargo:rerun-if-changed={}",
-            root_dir
-                .join("crates/rooch-rpc-api")
-                .join("src")
-                .display()
+            root_dir.join("crates/rooch-rpc-api").join("src").display()
         );
-        rooch_open_rpc_spec_builder::build_and_save_rooch_rpc_spec().expect("build and save rooch rpc spec failed");
+        rooch_open_rpc_spec_builder::build_and_save_rooch_rpc_spec()
+            .expect("build and save rooch rpc spec failed");
     }
 }

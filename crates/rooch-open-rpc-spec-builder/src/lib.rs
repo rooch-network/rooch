@@ -4,15 +4,15 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use std::fs::File;
-use std::io::Write;
-use std::path::Path;
-use std::path::PathBuf;
+use anyhow::Result;
 use clap::ArgEnum;
 use clap::Parser;
 use rooch_open_rpc::Project;
 use rooch_rpc_api::api::rooch_api::RoochAPIOpenRpc;
-use anyhow::Result;
+use std::fs::File;
+use std::io::Write;
+use std::path::Path;
+use std::path::PathBuf;
 
 mod examples;
 
@@ -38,9 +38,9 @@ enum Action {
 // TODO: This currently always use workspace version, which is not ideal.
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-pub fn build_rooch_rpc_spec() -> Project{
+pub fn build_rooch_rpc_spec() -> Project {
     let mut open_rpc = rooch_rpc_doc(VERSION);
-    open_rpc.add_module(RoochAPIOpenRpc::module_doc()); 
+    open_rpc.add_module(RoochAPIOpenRpc::module_doc());
     //open_rpc.add_examples(RpcExampleProvider::new().examples());
     open_rpc
 }
@@ -53,7 +53,7 @@ pub fn build_and_save_rooch_rpc_spec() -> Result<()> {
     Ok(())
 }
 
-pub fn spec_file() -> PathBuf{
+pub fn spec_file() -> PathBuf {
     path_in_crate("../rooch-open-rpc-spec/schemas/openrpc.json")
 }
 
