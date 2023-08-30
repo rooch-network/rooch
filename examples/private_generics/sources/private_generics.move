@@ -30,10 +30,6 @@ module rooch_examples::Test1 {
 }
 
 module rooch_examples::Test3 {
-    use rooch_examples::Test1::Box;
-    use rooch_examples::Test1::create_box;
-    use rooch_examples::Test1::box_value;
-
     struct InnerData has key, store, drop, copy {
         v: u64,
     }
