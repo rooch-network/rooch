@@ -27,11 +27,10 @@ use std::{
 };
 
 pub static ROOCH_DEV_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
-    RoochGenesis::build(RoochChainID::DEV.chain_id().id()).expect("build rooch genesis failed")
+    // genesis for integration test, we need to build the stdlib every time for `private_generic` check
+    // see moveos/moveos-verifier/src/metadata.rs#L27-L30
+    RoochGenesis::build_with_option(RoochChainID::DEV.chain_id().id(), BuildOption::Fresh).expect("build rooch genesis failed")
 });
-
-static ROOCH_RELEASE_STDLIB: Lazy<Stdlib> =
-    Lazy::new(|| GenesisPackage::load_stdlib().expect("load rooch stdlib failed"));
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GenesisPackage {
@@ -58,11 +57,7 @@ pub enum BuildOption {
 
 impl RoochGenesis {
     pub fn build(chain_id: u64) -> Result<Self> {
-        if cfg!(debug_assertions) {
-            Self::build_with_option(chain_id, BuildOption::Fresh)
-        } else {
-            Self::build_with_option(chain_id, BuildOption::Release)
-        }
+        Self::build_with_option(chain_id, BuildOption::Release)
     }
 
     pub fn build_with_option(chain_id: u64, option: BuildOption) -> Result<Self> {
@@ -193,9 +188,12 @@ impl GenesisPackage {
     pub const STDLIB_FILE_NAME: &'static str = "genesis/stdlib";
     pub const GENESIS_DIR: &'static str = "genesis";
 
-    fn build(chain_id: u64, _build_option: BuildOption) -> Result<Self> {
-        //tempary ignore the build option
-        let stdlib = ROOCH_RELEASE_STDLIB.clone();
+    fn build(chain_id: u64, build_option: BuildOption) -> Result<Self> {
+    
+        let stdlib = match build_option {
+            BuildOption::Fresh => Self::build_stdlib()?,
+            BuildOption::Release => Self::load_stdlib()?,
+        };
 
         let bundles = stdlib.module_bundles()?;
 
