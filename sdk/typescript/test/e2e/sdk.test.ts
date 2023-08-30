@@ -10,11 +10,11 @@ describe('SDK', () => {
 
   beforeAll(async () => {
     server = new RoochServer()
-    await server.start()
+    //await server.start()
   })
 
   afterAll(async () => {
-    await server.stop()
+    //await server.stop()
   })
 
   describe('#viewFunction', () => {
@@ -53,6 +53,39 @@ describe('SDK', () => {
             value: roochAddress,
           },
         ],
+        {
+          maxGasAmount: 1000000,
+        },
+      )
+
+      expect(tx).toBeDefined()
+    })
+  })
+
+  describe('#sessionKey', () => {
+    it('Create session account should be ok', async () => {
+      const provider = new JsonRpcProvider()
+
+      const kp = Ed25519Keypair.deriveKeypair(
+        'nose aspect organ harbor move prepare raven manage lamp consider oil front',
+      )
+      const roochAddress = kp.getPublicKey().toRoochAddress()
+      const authorizer = new PrivateKeyAuth(kp)
+
+      console.log('roochAddress:', roochAddress)
+
+      const account = new Account(provider, roochAddress, authorizer)
+      expect(account).toBeDefined()
+
+      // create session account
+      const sessionAccount = await account.createSessionAccount('0x3::empty::empty')
+      expect(sessionAccount).toBeDefined()
+
+      // run function with sessoin key
+      const tx = await sessionAccount.runFunction(
+        '0x3::empty::empty',
+        [],
+        [],
         {
           maxGasAmount: 1000000,
         },

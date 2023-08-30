@@ -4,7 +4,7 @@
 import { DEFAULT_MAX_GAS_AMOUNT } from '../constants'
 import { IAccount, CallOption } from './interface'
 import { IProvider } from '../provider'
-import { IAuthorizer, IAuthorization, SessionKeyAuth } from '../auth'
+import { IAuthorizer, IAuthorization, PrivateKeyAuth } from '../auth'
 import { AccountAddress, FunctionId, TypeTag, Arg } from '../types'
 import { BcsSerializer } from '../generated/runtime/bcs/mod'
 import {
@@ -14,13 +14,14 @@ import {
   Authenticator,
 } from '../generated/runtime/rooch_types/mod'
 import {
-  encodeArgs,
+  encodeArg,
   encodeFunctionCall,
   addressToListTuple,
   uint8Array2SeqNumber,
-  toHexString,
+  addressToSeqNumber,
 } from '../utils'
-import { Ed25519Keypair, Ed25519PublicKey } from '../utils/keypairs'
+import { Ed25519Keypair } from '../utils/keypairs'
+import { bigint } from 'superstruct'
 
 export class Account implements IAccount {
   private provider: IProvider
@@ -42,7 +43,7 @@ export class Account implements IAccount {
     opts: CallOption,
   ): Promise<string> {
     const number = await this.sequenceNumber()
-    const bcsArgs = args.map((arg) => encodeArgs(arg))
+    const bcsArgs = args.map((arg) => encodeArg(arg))
     const scriptFunction = encodeFunctionCall(funcId, tyArgs, bcsArgs)
     const txData = new RoochTransactionData(
       new BCSAccountAddress(addressToListTuple(this.address)),
@@ -100,30 +101,49 @@ export class Account implements IAccount {
 
   async createSessionAccount(scope: string): Promise<IAccount> {
     const kp = Ed25519Keypair.generate()
-    await this.registerSessionKey(kp.getPublicKey(), scope)
-    const auth = new SessionKeyAuth(kp)
+    await this.registerSessionKey(kp.getPublicKey().toRoochAddress(), scope)
+    const auth = new PrivateKeyAuth(kp)
     return new Account(this.provider, this.address, auth)
   }
 
-  private async registerSessionKey(pk: Ed25519PublicKey, scope: string): Promise<void> {
+  private async registerSessionKey(authKey: AccountAddress, scope: string): Promise<void> {
+    const parts = scope.split('::')
+    if (parts.length !== 3) {
+      throw new Error('invalid scope')
+    }
+
     await this.runFunction(
       '0x3::session_key::create_session_key_entry',
       [],
       [
         {
           type: { Vector: 'U8' },
-          value: toHexString(pk.toBytes()),
+          value: addressToSeqNumber(authKey),
         },
         {
-          type: 'Address',
-          value: this.address,
+          type: { Vector: 'Address' },
+          value: Array.from(parts[0]),
         },
         {
           type: { Vector: 'U8' },
-          value: scope,
+          value: Array.from(parts[1]),
         },
+        {
+          type: { Vector: 'U8' },
+          value: Array.from(parts[2]),
+        },
+        {
+          type: { Vector: 'U64' },
+          value: BigInt(3600),
+        },
+        {
+          type: { Vector: 'U64' },
+          value: BigInt(300),
+        }
       ],
-      {},
+      {
+        maxGasAmount: 1000000,
+      },
     )
   }
 }
