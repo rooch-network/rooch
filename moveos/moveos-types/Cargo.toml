@@ -28,8 +28,8 @@ schemars = { workspace = true }
 primitive-types = { workspace = true }
 tiny-keccak = { workspace = true, features = ["keccak", "sha3"] }
 fastcrypto = { workspace = true }
-proptest = { default-features = false, optional = true, workspace = true }
-proptest-derive = { default-features = false, optional = true, workspace = true }
+proptest = { optional = true, workspace = true }
+proptest-derive = { optional = true, workspace = true }
 
 move-core-types = { workspace = true }
 move-resource-viewer = { workspace = true }

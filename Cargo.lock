@@ -5196,7 +5196,6 @@ dependencies = [
  "accumulator",
  "anyhow",
  "bcs",
- "bcs-ext",
  "chrono",
  "hex",
  "move-core-types",
