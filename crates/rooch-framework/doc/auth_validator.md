@@ -27,10 +27,10 @@ fun post_execute(ctx: &mut StorageContext)
 -  [Function `get_session_key_from_tx_ctx`](#0x3_auth_validator_get_session_key_from_tx_ctx)
 
 
-<pre><code><b>use</b> <a href="">0x1::ascii</a>;
-<b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x1::option</a>;
-<b>use</b> <a href="">0x2::storage_context</a>;
+<pre><code><b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/ascii.md#0x1_ascii">0x1::ascii</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context">0x2::storage_context</a>;
 </code></pre>
 
 
@@ -65,7 +65,7 @@ The Authentication Validator
 
 </dd>
 <dt>
-<code>module_name: <a href="_String">ascii::String</a></code>
+<code>module_name: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/ascii.md#0x1_ascii_String">ascii::String</a></code>
 </dt>
 <dd>
 
@@ -100,13 +100,13 @@ this result will be stored in the TxContext
  The auth validator's scheme that validate the transaction
 </dd>
 <dt>
-<code><a href="auth_validator.md#0x3_auth_validator">auth_validator</a>: <a href="_Option">option::Option</a>&lt;<a href="auth_validator.md#0x3_auth_validator_AuthValidator">auth_validator::AuthValidator</a>&gt;</code>
+<code><a href="auth_validator.md#0x3_auth_validator">auth_validator</a>: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="auth_validator.md#0x3_auth_validator_AuthValidator">auth_validator::AuthValidator</a>&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code><a href="session_key.md#0x3_session_key">session_key</a>: <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;</code>
+<code><a href="session_key.md#0x3_session_key">session_key</a>: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;</code>
 </dt>
 <dd>
 
@@ -167,7 +167,7 @@ InvalidAuthenticator, include invalid signature
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_error_invalid_account_auth_key">error_invalid_account_auth_key</a>(): u64 {
-    <a href="_invalid_argument">error::invalid_argument</a>(<a href="auth_validator.md#0x3_auth_validator_ErrorValidateInvalidAccountAuthKey">ErrorValidateInvalidAccountAuthKey</a>)
+    <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="auth_validator.md#0x3_auth_validator_ErrorValidateInvalidAccountAuthKey">ErrorValidateInvalidAccountAuthKey</a>)
 }
 </code></pre>
 
@@ -191,7 +191,7 @@ InvalidAuthenticator, include invalid signature
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_error_invalid_authenticator">error_invalid_authenticator</a>(): u64 {
-    <a href="_invalid_argument">error::invalid_argument</a>(<a href="auth_validator.md#0x3_auth_validator_ErrorValidateInvalidAuthenticator">ErrorValidateInvalidAuthenticator</a>)
+    <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="auth_validator.md#0x3_auth_validator_ErrorValidateInvalidAuthenticator">ErrorValidateInvalidAuthenticator</a>)
 }
 </code></pre>
 
@@ -205,7 +205,7 @@ InvalidAuthenticator, include invalid signature
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_new_auth_validator">new_auth_validator</a>(id: u64, module_address: <b>address</b>, module_name: <a href="_String">ascii::String</a>): <a href="auth_validator.md#0x3_auth_validator_AuthValidator">auth_validator::AuthValidator</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_new_auth_validator">new_auth_validator</a>(id: u64, module_address: <b>address</b>, module_name: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/ascii.md#0x1_ascii_String">ascii::String</a>): <a href="auth_validator.md#0x3_auth_validator_AuthValidator">auth_validator::AuthValidator</a>
 </code></pre>
 
 
@@ -285,7 +285,7 @@ InvalidAuthenticator, include invalid signature
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_validator_module_name">validator_module_name</a>(validator: &<a href="auth_validator.md#0x3_auth_validator_AuthValidator">auth_validator::AuthValidator</a>): <a href="_String">ascii::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_validator_module_name">validator_module_name</a>(validator: &<a href="auth_validator.md#0x3_auth_validator_AuthValidator">auth_validator::AuthValidator</a>): <a href="../../moveos/moveos-stdlib/move-stdlib/doc/ascii.md#0x1_ascii_String">ascii::String</a>
 </code></pre>
 
 
@@ -309,7 +309,7 @@ InvalidAuthenticator, include invalid signature
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_new_tx_validate_result">new_tx_validate_result</a>(scheme: u64, <a href="auth_validator.md#0x3_auth_validator">auth_validator</a>: <a href="_Option">option::Option</a>&lt;<a href="auth_validator.md#0x3_auth_validator_AuthValidator">auth_validator::AuthValidator</a>&gt;, <a href="session_key.md#0x3_session_key">session_key</a>: <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">auth_validator::TxValidateResult</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_new_tx_validate_result">new_tx_validate_result</a>(scheme: u64, <a href="auth_validator.md#0x3_auth_validator">auth_validator</a>: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="auth_validator.md#0x3_auth_validator_AuthValidator">auth_validator::AuthValidator</a>&gt;, <a href="session_key.md#0x3_session_key">session_key</a>: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">auth_validator::TxValidateResult</a>
 </code></pre>
 
 
@@ -321,7 +321,7 @@ InvalidAuthenticator, include invalid signature
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_new_tx_validate_result">new_tx_validate_result</a>(
     scheme: u64,
     <a href="auth_validator.md#0x3_auth_validator">auth_validator</a>: Option&lt;<a href="auth_validator.md#0x3_auth_validator_AuthValidator">AuthValidator</a>&gt;,
-    <a href="session_key.md#0x3_session_key">session_key</a>: Option&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+    <a href="session_key.md#0x3_session_key">session_key</a>: Option&lt;<a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;
 ): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a> {
     <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a> {
         scheme: scheme,
@@ -342,7 +342,7 @@ InvalidAuthenticator, include invalid signature
 Get the TxValidateResult from the TxContext, Only can be called after the transaction is validated
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_validate_result_from_tx_ctx">get_validate_result_from_tx_ctx</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">auth_validator::TxValidateResult</a>
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_validate_result_from_tx_ctx">get_validate_result_from_tx_ctx</a>(ctx: &<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">auth_validator::TxValidateResult</a>
 </code></pre>
 
 
@@ -352,9 +352,9 @@ Get the TxValidateResult from the TxContext, Only can be called after the transa
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_validate_result_from_tx_ctx">get_validate_result_from_tx_ctx</a>(ctx: &StorageContext): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a> {
-    <b>let</b> validate_result_opt = <a href="_get">storage_context::get</a>&lt;<a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a>&gt;(ctx);
-    <b>assert</b>!(<a href="_is_some">option::is_some</a>(&validate_result_opt), <a href="_invalid_state">error::invalid_state</a>(<a href="auth_validator.md#0x3_auth_validator_ErrorMustExecuteAfterValidate">ErrorMustExecuteAfterValidate</a>));
-    <a href="_extract">option::extract</a>(&<b>mut</b> validate_result_opt)
+    <b>let</b> validate_result_opt = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_get">storage_context::get</a>&lt;<a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a>&gt;(ctx);
+    <b>assert</b>!(<a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&validate_result_opt), <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="auth_validator.md#0x3_auth_validator_ErrorMustExecuteAfterValidate">ErrorMustExecuteAfterValidate</a>));
+    <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_extract">option::extract</a>(&<b>mut</b> validate_result_opt)
 }
 </code></pre>
 
@@ -369,7 +369,7 @@ Get the TxValidateResult from the TxContext, Only can be called after the transa
 Get the auth validator's scheme from the TxValidateResult in the TxContext
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_validator_scheme_from_tx_ctx">get_validator_scheme_from_tx_ctx</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_validator_scheme_from_tx_ctx">get_validator_scheme_from_tx_ctx</a>(ctx: &<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): u64
 </code></pre>
 
 
@@ -396,7 +396,7 @@ Get the session key from the TxValidateResult in the TxContext
 If the TxValidateResult is None or SessionKey is None, return None
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx_option">get_session_key_from_tx_ctx_option</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx_option">get_session_key_from_tx_ctx_option</a>(ctx: &<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;
 </code></pre>
 
 
@@ -405,13 +405,13 @@ If the TxValidateResult is None or SessionKey is None, return None
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx_option">get_session_key_from_tx_ctx_option</a>(ctx: &StorageContext): Option&lt;<a href="">vector</a>&lt;u8&gt;&gt; {
-    <b>let</b> validate_result_opt = <a href="_get">storage_context::get</a>&lt;<a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a>&gt;(ctx);
-    <b>if</b> (<a href="_is_some">option::is_some</a>(&validate_result_opt)) {
-        <b>let</b> validate_result = <a href="_extract">option::extract</a>(&<b>mut</b> validate_result_opt);
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx_option">get_session_key_from_tx_ctx_option</a>(ctx: &StorageContext): Option&lt;<a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt; {
+    <b>let</b> validate_result_opt = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_get">storage_context::get</a>&lt;<a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a>&gt;(ctx);
+    <b>if</b> (<a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&validate_result_opt)) {
+        <b>let</b> validate_result = <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_extract">option::extract</a>(&<b>mut</b> validate_result_opt);
         validate_result.<a href="session_key.md#0x3_session_key">session_key</a>
     }<b>else</b> {
-        <a href="_none">option::none</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;()
+        <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_none">option::none</a>&lt;<a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;()
     }
 }
 </code></pre>
@@ -427,7 +427,7 @@ If the TxValidateResult is None or SessionKey is None, return None
 The current tx is validate via the session key or not
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">is_validate_via_session_key</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">is_validate_via_session_key</a>(ctx: &<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): bool
 </code></pre>
 
 
@@ -437,7 +437,7 @@ The current tx is validate via the session key or not
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">is_validate_via_session_key</a>(ctx: &StorageContext): bool {
-    <a href="_is_some">option::is_some</a>(&<a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx_option">get_session_key_from_tx_ctx_option</a>(ctx))
+    <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&<a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx_option">get_session_key_from_tx_ctx_option</a>(ctx))
 }
 </code></pre>
 
@@ -453,7 +453,7 @@ Get the session key from the TxValidateResult in the TxContext
 Only can be called after the transaction is validated
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx">get_session_key_from_tx_ctx</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx">get_session_key_from_tx_ctx</a>(ctx: &<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -462,9 +462,9 @@ Only can be called after the transaction is validated
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx">get_session_key_from_tx_ctx</a>(ctx: &StorageContext): <a href="">vector</a>&lt;u8&gt; {
-    <b>assert</b>!(<a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">is_validate_via_session_key</a>(ctx), <a href="_invalid_state">error::invalid_state</a>(<a href="auth_validator.md#0x3_auth_validator_ErrorMustExecuteAfterValidate">ErrorMustExecuteAfterValidate</a>));
-    <a href="_extract">option::extract</a>(&<b>mut</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx_option">get_session_key_from_tx_ctx_option</a>(ctx))
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx">get_session_key_from_tx_ctx</a>(ctx: &StorageContext): <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
+    <b>assert</b>!(<a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">is_validate_via_session_key</a>(ctx), <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="auth_validator.md#0x3_auth_validator_ErrorMustExecuteAfterValidate">ErrorMustExecuteAfterValidate</a>));
+    <a href="../../moveos/moveos-stdlib/move-stdlib/doc/option.md#0x1_option_extract">option::extract</a>(&<b>mut</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx_option">get_session_key_from_tx_ctx_option</a>(ctx))
 }
 </code></pre>
 

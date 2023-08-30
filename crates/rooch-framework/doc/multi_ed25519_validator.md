@@ -12,8 +12,8 @@ This module implements the multi-ed25519 validator scheme.
 -  [Function `validate`](#0x3_multi_ed25519_validator_validate)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x2::storage_context</a>;
+<pre><code><b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context">0x2::storage_context</a>;
 </code></pre>
 
 
@@ -89,7 +89,7 @@ This module implements the multi-ed25519 validator scheme.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_validate">validate</a>(_ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, _payload: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_validate">validate</a>(_ctx: &<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, _payload: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -98,7 +98,7 @@ This module implements the multi-ed25519 validator scheme.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_validate">validate</a>(_ctx: &StorageContext, _payload: <a href="">vector</a>&lt;u8&gt;){
+<pre><code><b>public</b> <b>fun</b> <a href="multi_ed25519_validator.md#0x3_multi_ed25519_validator_validate">validate</a>(_ctx: &StorageContext, _payload: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;){
    //TODO
    <b>abort</b> std::error::not_implemented(1)
 }

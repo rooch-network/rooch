@@ -100,7 +100,7 @@ also required from <code>T</code>.
 <pre><code><b>public</b> <b>fun</b> <a href="any.md#0x2_any_pack">pack</a>&lt;T: drop + store&gt;(x: T): <a href="any.md#0x2_any_Any">Any</a> {
     <a href="any.md#0x2_any_Any">Any</a> {
         <a href="">type_name</a>: <a href="type_info.md#0x2_type_info_type_name">type_info::type_name</a>&lt;T&gt;(),
-        data: <a href="../doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(&x)
+        data: <a href="_to_bytes">bcs::to_bytes</a>(&x)
     }
 }
 </code></pre>

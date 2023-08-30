@@ -10,8 +10,8 @@
 -  [Function `chain_id`](#0x3_chain_id_chain_id)
 
 
-<pre><code><b>use</b> <a href="">0x2::account_storage</a>;
-<b>use</b> <a href="">0x2::storage_context</a>;
+<pre><code><b>use</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage">0x2::account_storage</a>;
+<b>use</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context">0x2::storage_context</a>;
 </code></pre>
 
 
@@ -49,7 +49,7 @@
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="chain_id.md#0x3_chain_id_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, genesis_account: &<a href="">signer</a>, <a href="chain_id.md#0x3_chain_id">chain_id</a>: u64)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="chain_id.md#0x3_chain_id_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, genesis_account: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="chain_id.md#0x3_chain_id">chain_id</a>: u64)
 </code></pre>
 
 
@@ -58,11 +58,11 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="chain_id.md#0x3_chain_id_genesis_init">genesis_init</a>(ctx: &<b>mut</b> StorageContext, genesis_account: &<a href="">signer</a>, <a href="chain_id.md#0x3_chain_id">chain_id</a>: u64){
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="chain_id.md#0x3_chain_id_genesis_init">genesis_init</a>(ctx: &<b>mut</b> StorageContext, genesis_account: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="chain_id.md#0x3_chain_id">chain_id</a>: u64){
     <b>let</b> <a href="chain_id.md#0x3_chain_id">chain_id</a> = <a href="chain_id.md#0x3_chain_id_ChainID">ChainID</a>{
         id: <a href="chain_id.md#0x3_chain_id">chain_id</a>
     };
-    <a href="_global_move_to">account_storage::global_move_to</a>(ctx, genesis_account, <a href="chain_id.md#0x3_chain_id">chain_id</a>);
+    <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_move_to">account_storage::global_move_to</a>(ctx, genesis_account, <a href="chain_id.md#0x3_chain_id">chain_id</a>);
 }
 </code></pre>
 
@@ -76,7 +76,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id">chain_id</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id">chain_id</a>(ctx: &<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): u64
 </code></pre>
 
 
@@ -86,7 +86,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id">chain_id</a>(ctx: &StorageContext) : u64 {
-    <b>let</b> <a href="chain_id.md#0x3_chain_id">chain_id</a> = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="chain_id.md#0x3_chain_id_ChainID">ChainID</a>&gt;(ctx, @rooch_framework);
+    <b>let</b> <a href="chain_id.md#0x3_chain_id">chain_id</a> = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_borrow">account_storage::global_borrow</a>&lt;<a href="chain_id.md#0x3_chain_id_ChainID">ChainID</a>&gt;(ctx, @rooch_framework);
     <a href="chain_id.md#0x3_chain_id">chain_id</a>.id
 }
 </code></pre>

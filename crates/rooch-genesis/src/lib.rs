@@ -4,18 +4,21 @@
 use anyhow::Result;
 use move_binary_format::{errors::Location, CompiledModule};
 use move_core_types::{account_address::AccountAddress, identifier::Identifier};
+use move_package::BuildConfig;
 use move_vm_runtime::{config::VMConfig, native_functions::NativeFunction};
 use moveos::moveos::{MoveOS, MoveOSConfig};
-use moveos_stdlib_builder::BuildOptions;
+use moveos_stdlib_builder::{Stdlib, StdlibBuildConfig};
 use moveos_store::{config_store::ConfigDBStore, MoveOSStore};
+use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256;
 use moveos_types::h256::H256;
 use moveos_types::transaction::MoveAction;
 use once_cell::sync::Lazy;
+use rooch_types::chain_id::RoochChainID;
 use rooch_types::error::GenesisError;
 use rooch_types::framework::genesis;
+use rooch_types::framework::genesis::GenesisContext;
 use rooch_types::transaction::rooch::RoochTransaction;
-use rooch_types::{chain_id::RoochChainID, framework::genesis::GenesisContext};
 use serde::{Deserialize, Serialize};
 use std::{
     fs::File,
@@ -23,8 +26,12 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub static ROOCH_GENESIS: Lazy<RoochGenesis> =
-    Lazy::new(|| RoochGenesis::build().expect("build rooch framework failed"));
+pub static ROOCH_DEV_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
+    // genesis for integration test, we need to build the stdlib every time for `private_generic` check
+    // see moveos/moveos-verifier/src/metadata.rs#L27-L30
+    RoochGenesis::build_with_option(RoochChainID::DEV.chain_id().id(), BuildOption::Fresh)
+        .expect("build rooch genesis failed")
+});
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GenesisPackage {
@@ -50,15 +57,11 @@ pub enum BuildOption {
 }
 
 impl RoochGenesis {
-    fn build() -> Result<Self> {
-        if cfg!(debug_assertions) {
-            Self::build_with_option(BuildOption::Fresh)
-        } else {
-            Self::build_with_option(BuildOption::Release)
-        }
+    pub fn build(chain_id: u64) -> Result<Self> {
+        Self::build_with_option(chain_id, BuildOption::Release)
     }
 
-    pub fn build_with_option(option: BuildOption) -> Result<Self> {
+    pub fn build_with_option(chain_id: u64, option: BuildOption) -> Result<Self> {
         let config = MoveOSConfig {
             vm_config: VMConfig::default(),
         };
@@ -68,11 +71,8 @@ impl RoochGenesis {
         };
 
         let gas_params = rooch_framework::natives::GasParameters::zeros();
+        let genesis_package = GenesisPackage::build(chain_id, option)?;
 
-        let genesis_package = match option {
-            BuildOption::Fresh => GenesisPackage::build()?,
-            BuildOption::Release => GenesisPackage::load()?,
-        };
         Ok(RoochGenesis {
             config,
             config_for_test,
@@ -109,25 +109,25 @@ impl RoochGenesis {
         self.genesis_package.state_root
     }
 
+    pub fn genesis_info(&self) -> GenesisInfo {
+        GenesisInfo {
+            genesis_package_hash: self.genesis_package_hash(),
+            state_root_hash: self.genesis_state_root(),
+        }
+    }
+
     pub fn check_genesis(&self, config_store: &ConfigDBStore) -> Result<()> {
         let genesis_info_result = config_store.get_genesis();
         match genesis_info_result {
-            Ok(Some(genesis_info_store)) => {
-                let genesis_package_hash = self.genesis_package_hash();
-                if genesis_info_store.genesis_package_hash != genesis_package_hash {
-                    return Err(GenesisError::GenesisVersionMismatch {
-                        expect: genesis_info_store.genesis_package_hash,
-                        real: genesis_package_hash,
-                    }
-                    .into());
-                }
-                // We need to check the state root hash
+            Ok(Some(genesis_info_from_store)) => {
+                let genesis_info_from_binary = self.genesis_info();
+
+                // We need to check the genesis package hash and genesis state root hash
                 // because the same genesis package may generate different state root hash when the Move VM is upgraded
-                let state_rooth_hash = self.genesis_package.state_root;
-                if genesis_info_store.state_root_hash != state_rooth_hash {
+                if genesis_info_from_store != genesis_info_from_binary {
                     return Err(GenesisError::GenesisVersionMismatch {
-                        expect: genesis_info_store.state_root_hash,
-                        real: state_rooth_hash,
+                        from_store: genesis_info_from_store,
+                        from_binary: genesis_info_from_binary,
                     }
                     .into());
                 }
@@ -144,17 +144,59 @@ impl RoochGenesis {
     }
 }
 
-static GENESIS_PACKAGE_BYTES: &[u8] = include_bytes!("../genesis/genesis");
+static GENESIS_STDLIB_BYTES: &[u8] = include_bytes!("../genesis/stdlib");
+
+static STDLIB_BUILD_CONFIGS: Lazy<Vec<StdlibBuildConfig>> = Lazy::new(|| {
+    let move_stdlib_path = path_in_crate("../../moveos/moveos-stdlib/move-stdlib")
+        .canonicalize()
+        .expect("canonicalize path failed");
+    let moveos_stdlib_path = path_in_crate("../../moveos/moveos-stdlib/moveos-stdlib")
+        .canonicalize()
+        .expect("canonicalize path failed");
+    let rooch_framework_path = path_in_crate("../rooch-framework")
+        .canonicalize()
+        .expect("canonicalize path failed");
+    vec![
+        StdlibBuildConfig {
+            path: move_stdlib_path.clone(),
+            error_prefix: "E".to_string(),
+            error_code_map_output_file: move_stdlib_path.join("error_description.errmap"),
+            document_template: move_stdlib_path.join("doc_template/README.md"),
+            document_output_directory: move_stdlib_path.join("doc"),
+            build_config: BuildConfig::default(),
+        },
+        StdlibBuildConfig {
+            path: moveos_stdlib_path.clone(),
+            error_prefix: "Error".to_string(),
+            error_code_map_output_file: moveos_stdlib_path.join("error_description.errmap"),
+            document_template: moveos_stdlib_path.join("doc_template/README.md"),
+            document_output_directory: moveos_stdlib_path.join("doc"),
+            build_config: BuildConfig::default(),
+        },
+        StdlibBuildConfig {
+            path: rooch_framework_path.clone(),
+            error_prefix: "Error".to_string(),
+            error_code_map_output_file: rooch_framework_path.join("error_description.errmap"),
+            document_template: rooch_framework_path.join("doc_template/README.md"),
+            document_output_directory: rooch_framework_path.join("doc"),
+            build_config: BuildConfig::default(),
+        },
+    ]
+});
 
 impl GenesisPackage {
     pub const GENESIS_FILE_NAME: &'static str = "genesis";
+    pub const STDLIB_FILE_NAME: &'static str = "genesis/stdlib";
     pub const GENESIS_DIR: &'static str = "genesis";
 
-    fn build() -> Result<Self> {
-        //TODO chain_id should be a parameter
-        let chain_id = RoochChainID::DEV.chain_id().id();
-        let bundles =
-            moveos_stdlib_builder::Stdlib::build(BuildOptions::default())?.module_bundles()?;
+    fn build(chain_id: u64, build_option: BuildOption) -> Result<Self> {
+        let stdlib = match build_option {
+            BuildOption::Fresh => Self::build_stdlib()?,
+            BuildOption::Release => Self::load_stdlib()?,
+        };
+
+        let bundles = stdlib.module_bundles()?;
+
         let genesis_txs: Vec<RoochTransaction> = bundles
             .into_iter()
             .map(|(genesis_account, bundle)| {
@@ -188,9 +230,16 @@ impl GenesisPackage {
         })
     }
 
-    pub fn load() -> Result<Self> {
-        let genesis_package = bcs::from_bytes(GENESIS_PACKAGE_BYTES)?;
-        Ok(genesis_package)
+    pub fn build_stdlib() -> Result<Stdlib> {
+        moveos_stdlib_builder::Stdlib::build(STDLIB_BUILD_CONFIGS.clone())
+    }
+
+    pub fn load_stdlib() -> Result<Stdlib> {
+        moveos_stdlib_builder::Stdlib::decode(GENESIS_STDLIB_BYTES)
+    }
+
+    pub fn stdlib_file() -> PathBuf {
+        path_in_crate(Self::STDLIB_FILE_NAME)
     }
 
     pub fn load_from<P: AsRef<Path>>(data_dir: P) -> Result<Self> {
@@ -198,10 +247,6 @@ impl GenesisPackage {
         let genesis_file = data_dir.join(Self::GENESIS_FILE_NAME);
         let genesis_package = bcs::from_bytes(&std::fs::read(genesis_file)?)?;
         Ok(genesis_package)
-    }
-
-    pub fn save(&self) -> Result<()> {
-        self.save_to(path_in_crate(Self::GENESIS_DIR))
     }
 
     pub fn save_to<P: AsRef<Path>>(&self, data_dir: P) -> Result<()> {
@@ -237,7 +282,7 @@ impl GenesisPackage {
     }
 }
 
-fn path_in_crate<S>(relative: S) -> PathBuf
+pub(crate) fn path_in_crate<S>(relative: S) -> PathBuf
 where
     S: AsRef<Path>,
 {
@@ -246,39 +291,29 @@ where
     path
 }
 
+pub fn crate_dir() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::GenesisPackage;
     use moveos::moveos::MoveOS;
     use moveos_store::MoveOSStore;
     use rooch_framework::natives::all_natives;
-
-    #[test]
-    fn test_genesis_package_build_and_save() {
-        let genesis_package = GenesisPackage::build().unwrap();
-        genesis_package.save().unwrap();
-    }
-
-    #[test]
-    fn test_genesis_package_load() {
-        let _genesis_package = GenesisPackage::load().unwrap();
-    }
+    use rooch_types::chain_id::RoochChainID;
 
     #[test]
     fn test_genesis_build() {
-        let genesis = super::RoochGenesis::build().expect("build rooch framework failed");
+        let genesis = super::RoochGenesis::build(RoochChainID::DEV.chain_id().id())
+            .expect("build rooch framework failed");
+        genesis.genesis_package_hash();
         assert_eq!(genesis.genesis_package.genesis_txs.len(), 3);
     }
 
     #[test]
-    fn test_genesis_hash() {
-        let genesis = super::RoochGenesis::build().expect("build rooch framework failed");
-        genesis.genesis_package_hash();
-    }
-
-    #[test]
     fn test_genesis_init() {
-        let genesis = super::RoochGenesis::build().expect("build rooch framework failed");
+        let genesis = super::RoochGenesis::build(RoochChainID::DEV.chain_id().id())
+            .expect("build rooch framework failed");
         let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
         let mut moveos = MoveOS::new(
             moveos_store,

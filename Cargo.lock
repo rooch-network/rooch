@@ -5161,7 +5161,9 @@ name = "moveos-stdlib-builder"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bcs",
  "better_any",
+ "codespan-reporting",
  "fastcrypto",
  "hex",
  "linked-hash-map",
@@ -5171,7 +5173,9 @@ dependencies = [
  "move-cli",
  "move-command-line-common",
  "move-core-types",
+ "move-docgen",
  "move-errmapgen",
+ "move-model",
  "move-package",
  "move-prover",
  "move-stdlib",
@@ -5182,6 +5186,7 @@ dependencies = [
  "moveos-types",
  "moveos-verifier",
  "once_cell",
+ "pathdiff",
  "petgraph 0.5.1",
  "serde 1.0.188",
  "serde_bytes",
@@ -5867,6 +5872,12 @@ name = "path-slash"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e91099d4268b0e11973f036e885d652fb0b21fedcf69738c627f94db6a44f42"
+
+[[package]]
+name = "pathdiff"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8835116a5c179084a830efb3adc117ab007512b535bc1a21c991d3b32a6b44dd"
 
 [[package]]
 name = "pbkdf2"
