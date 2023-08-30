@@ -26,7 +26,7 @@ import { ErrCallbackType } from 'src/context/types'
 import { useMetamask } from 'src/hooks/useMetamask'
 
 // ** Rooch SDK
-import { JsonRpcProvider, Ed25519Keypair } from '@rooch/sdk'
+import { Ed25519Keypair } from '@rooch/sdk'
 
 // ** Defaults
 const defaultProvider: AuthValuesType = {
@@ -65,11 +65,7 @@ const AuthProvider = ({ children }: Props) => {
 
       const kp = Ed25519Keypair.generate()
 
-      console.log(kp.toRoochAddress())
-
-      const jp = new JsonRpcProvider()
-
-      console.log(jp)
+      console.log(kp.getPublicKey().toRoochAddress())
 
       const allSecretKey = window.localStorage.getItem(authConfig.secretKey)
 
