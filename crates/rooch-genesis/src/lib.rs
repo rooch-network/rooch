@@ -30,9 +30,6 @@ pub static ROOCH_DEV_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
     RoochGenesis::build(RoochChainID::DEV.chain_id().id()).expect("build rooch genesis failed")
 });
 
-static ROOCH_FRESH_STDLIB: Lazy<Stdlib> =
-    Lazy::new(|| GenesisPackage::build_stdlib().expect("build rooch stdlib failed"));
-
 static ROOCH_RELEASE_STDLIB: Lazy<Stdlib> =
     Lazy::new(|| GenesisPackage::load_stdlib().expect("load rooch stdlib failed"));
 
@@ -196,11 +193,9 @@ impl GenesisPackage {
     pub const STDLIB_FILE_NAME: &'static str = "genesis/stdlib";
     pub const GENESIS_DIR: &'static str = "genesis";
 
-    fn build(chain_id: u64, build_option: BuildOption) -> Result<Self> {
-        let stdlib = match build_option {
-            BuildOption::Fresh => ROOCH_FRESH_STDLIB.clone(),
-            BuildOption::Release => ROOCH_RELEASE_STDLIB.clone(),
-        };
+    fn build(chain_id: u64, _build_option: BuildOption) -> Result<Self> {
+        //tempary ignore the build option
+        let stdlib = ROOCH_RELEASE_STDLIB.clone();
 
         let bundles = stdlib.module_bundles()?;
 
