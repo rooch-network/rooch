@@ -2,18 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo};
-use crate::{
-    address::EthereumAddress,
-    crypto::{BuiltinScheme, EcdsaRecoverableRoochSignature, Signature},
-    error::RoochError,
-};
+use crate::{address::EthereumAddress, error::RoochError};
 use anyhow::Result;
 use ethers::utils::rlp::{Decodable, Rlp};
-use fastcrypto::{
-    hash::Keccak256,
-    secp256k1::recoverable::Secp256k1RecoverableSignature,
-    traits::{RecoverableSignature, ToFromBytes},
-};
+use fastcrypto::{secp256k1::recoverable::Secp256k1RecoverableSignature, traits::ToFromBytes};
 use move_core_types::account_address::AccountAddress;
 use moveos_types::{
     h256::H256,
@@ -45,17 +37,12 @@ impl EthereumTransaction {
         }
     }
 
-    pub fn convert_eth_transaction_signature_to_rooch_signature(
-        &self,
-    ) -> Result<Signature, RoochError> {
+    pub fn into_signature(&self) -> Result<Secp256k1RecoverableSignature, RoochError> {
         let r = self.0.r;
         let s = self.0.s;
         let v = self.0.v.as_u64();
 
         let recovery_id = Self::normalize_recovery_id(v);
-
-        // Prepare the signed message (RLP encoding of the transaction)
-        let message = self.tx_hash().to_fixed_bytes();
 
         // Convert `U256` values `r` and `s` to arrays of `u8`
         let mut r_bytes = [0u8; 32];
@@ -74,29 +61,7 @@ impl EthereumTransaction {
             <Secp256k1RecoverableSignature as ToFromBytes>::from_bytes(&rsv_signature)
                 .expect("Invalid signature");
 
-        // Recover with Keccak256 hash to a public key
-        let public_key = recoverable_signature
-            .recover_with_hash::<Keccak256>(&message)
-            .expect("Failed to recover public key");
-
-        // Combine the scheme, recoverable signature and public key as the following order to construct the final signature
-        // 1. The Rooch crypto scheme
-        // 2. The RSV signature
-        // 3. The public key
-        let mut scheme_rsv_signature_pubkey = Vec::new();
-        scheme_rsv_signature_pubkey.push(BuiltinScheme::EcdsaRecoverable.flag());
-        scheme_rsv_signature_pubkey.extend_from_slice(&rsv_signature);
-        scheme_rsv_signature_pubkey.extend_from_slice(public_key.as_bytes());
-
-        // Parse the "scheme_rsv_signature_pubkey" signature
-        // 99 length with 1 byte scheme following with 65 bytes recoverable signature and 33 bytes public key
-        let signature: Signature = <EcdsaRecoverableRoochSignature as ToFromBytes>::from_bytes(
-            &scheme_rsv_signature_pubkey,
-        )
-        .unwrap()
-        .into();
-
-        Ok(signature)
+        Ok(recoverable_signature)
     }
 }
 
@@ -122,9 +87,7 @@ impl AbstractTransaction for EthereumTransaction {
 
     fn authenticator_info(&self) -> Result<AuthenticatorInfo> {
         let chain_id = self.0.chain_id.ok_or(RoochError::InvalidChainID)?.as_u64();
-        let authenticator = Authenticator::ecdsa_recoverable(
-            self.convert_eth_transaction_signature_to_rooch_signature()?,
-        );
+        let authenticator = Authenticator::ethereum(self.into_signature()?);
         Ok(AuthenticatorInfo::new(chain_id, authenticator))
     }
 
