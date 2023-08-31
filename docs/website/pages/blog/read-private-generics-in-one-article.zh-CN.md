@@ -271,7 +271,46 @@ Success
 
 ## 应用
 
+在 MoveOS 标准库中定义了这样一个函数：
+
+```move
+#[private_generics(T)]
+/// Move a resource to the account's storage
+/// This function equates to `move_to<T>(&signer, resource)` instruction in Move
+public fun global_move_to<T: key>(ctx: &mut StorageContext, account: &signer, resource: T){
+    let account_address = signer::address_of(account);
+    //Auto create the account storage when move resource to the account
+    ensure_account_storage(ctx, account_address);
+    let account_storage = borrow_account_storage_mut(storage_context::object_storage_mut(ctx), account_address);
+    add_resource_to_account_storage(account_storage, resource);
+}
+```
+
+函数 `global_move_to` 是一个私有泛型函数，被私有泛型约束的类型 `T` 是一种资源类型。调用函数需要传递三个参数（存储上下文，signer，资源）。
+
+首先获取调用当前函数的地址并存到 `account_address` 中，`ensure_account_storage` 确保账户存储存在，接着调用 `borrow_account_storage_mut` 获取账户中的可变借用，最后调用 `add_resource_to_account_storage` 将 `resource` 添加到账户存储中。
+
+像这类私有泛型函数，调用的它的模块必定定义了私有泛型约束的类型，那么接下来看一看在 Rooch Framework 中使用的一个例子：
+
+```move
+public(friend) fun init_authentication_keys(ctx: &mut StorageContext, account: &signer) {
+  let authentication_keys = AuthenticationKeys {
+     authentication_keys: type_table::new(storage_context::tx_context_mut(ctx)),
+  };
+  account_storage::global_move_to<AuthenticationKeys>(ctx, account, authentication_keys);
+}
+```
+
+`account_authentication.move` 中的 `init_authentication_keys` 函数用到了 `global_move_to` 私有泛型函数，那么意味者 `AuthenticationKeys` 也必须在当前模块定义。
+
+我们可以在当前模块开头找到 `AuthenticationKeys` 类型的定义：
+
+```move
+struct AuthenticationKeys has key{
+  authentication_keys: TypeTable,
+}
+```
 
 ## 总结
 
-我们通过了四个小例子，来演示了私有泛型的函数如何定义、如何使用，看到这里，相信您已经完全掌握了 Rooch 中私有泛型函数的概念、作用和用法了。
+我们通过了四个小例子，来演示了私有泛型的函数如何定义、如何使用，并带你看了一下在 Rooch Framework 中是如何使用私有泛型函数的，看到这里，相信您已经完全掌握了 Rooch 中私有泛型函数的概念、作用和用法了。
