@@ -36,7 +36,7 @@ fn main() {
         println!(
             "cargo:rerun-if-changed={}",
             root_dir
-                .join("moveos/moveos-stdlib/os-stdlib")
+                .join("moveos/moveos-stdlib/moveos-stdlib")
                 .join("sources")
                 .display()
         );
