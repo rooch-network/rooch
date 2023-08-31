@@ -16,10 +16,10 @@ This module defines Rooch Gas Coin.
 -  [Function `destroy_mint_cap`](#0x3_gas_coin_destroy_mint_cap)
 
 
-<pre><code><b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
-<b>use</b> <a href="../../moveos/moveos-stdlib/move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
-<b>use</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage">0x2::account_storage</a>;
-<b>use</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context">0x2::storage_context</a>;
+<pre><code><b>use</b> <a href="">0x1::signer</a>;
+<b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x2::account_storage</a>;
+<b>use</b> <a href="">0x2::storage_context</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 <b>use</b> <a href="core_addresses.md#0x3_core_addresses">0x3::core_addresses</a>;
 </code></pre>
@@ -126,7 +126,7 @@ The container stores the current pending delegations.
 
 <dl>
 <dt>
-<code>inner: <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="gas_coin.md#0x3_gas_coin_DelegatedMintCapability">gas_coin::DelegatedMintCapability</a>&gt;</code>
+<code>inner: <a href="">vector</a>&lt;<a href="gas_coin.md#0x3_gas_coin_DelegatedMintCapability">gas_coin::DelegatedMintCapability</a>&gt;</code>
 </dt>
 <dd>
 
@@ -158,7 +158,7 @@ Account does not have mint capability
 Can only called during genesis to initialize the Rooch coin.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_initialize">initialize</a>(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, rooch_framework: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>): (<a href="coin.md#0x3_coin_BurnCapability">coin::BurnCapability</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">gas_coin::GasCoin</a>&gt;, <a href="coin.md#0x3_coin_MintCapability">coin::MintCapability</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">gas_coin::GasCoin</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_initialize">initialize</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, rooch_framework: &<a href="">signer</a>): (<a href="coin.md#0x3_coin_BurnCapability">coin::BurnCapability</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">gas_coin::GasCoin</a>&gt;, <a href="coin.md#0x3_coin_MintCapability">coin::MintCapability</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">gas_coin::GasCoin</a>&gt;)
 </code></pre>
 
 
@@ -167,20 +167,20 @@ Can only called during genesis to initialize the Rooch coin.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_initialize">initialize</a>(ctx: &<b>mut</b> StorageContext, rooch_framework: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>): (BurnCapability&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a>&gt;, MintCapability&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a>&gt;) {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_initialize">initialize</a>(ctx: &<b>mut</b> StorageContext, rooch_framework: &<a href="">signer</a>): (BurnCapability&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a>&gt;, MintCapability&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a>&gt;) {
     <a href="core_addresses.md#0x3_core_addresses_assert_rooch_framework">core_addresses::assert_rooch_framework</a>(rooch_framework);
 
     <b>let</b> (burn_cap, freeze_cap, mint_cap) = <a href="coin.md#0x3_coin_initialize">coin::initialize</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a>&gt;(
         ctx,
         rooch_framework,
-        <a href="../../moveos/moveos-stdlib/move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"Rooch Gas Coin"),
-        <a href="../../moveos/moveos-stdlib/move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"RGC"),
+        <a href="_utf8">string::utf8</a>(b"Rooch Gas Coin"),
+        <a href="_utf8">string::utf8</a>(b"RGC"),
         9, // decimals
     );
 
     // Rooch framework needs mint cap <b>to</b> mint coins <b>to</b> initial validators. This will be revoked once the validators
     // have been initialized.
-    <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_move_to">account_storage::global_move_to</a>(ctx, rooch_framework, <a href="gas_coin.md#0x3_gas_coin_MintCapStore">MintCapStore</a> { mint_cap });
+    <a href="_global_move_to">account_storage::global_move_to</a>(ctx, rooch_framework, <a href="gas_coin.md#0x3_gas_coin_MintCapStore">MintCapStore</a> { mint_cap });
 
     <a href="coin.md#0x3_coin_destroy_freeze_cap">coin::destroy_freeze_cap</a>(freeze_cap);
     (burn_cap, mint_cap)
@@ -197,7 +197,7 @@ Can only called during genesis to initialize the Rooch coin.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_has_mint_capability">has_mint_capability</a>(ctx: &<a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_has_mint_capability">has_mint_capability</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>): bool
 </code></pre>
 
 
@@ -206,8 +206,8 @@ Can only called during genesis to initialize the Rooch coin.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_has_mint_capability">has_mint_capability</a>(ctx: &StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>): bool {
-    <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_exists">account_storage::global_exists</a>&lt;<a href="gas_coin.md#0x3_gas_coin_MintCapStore">MintCapStore</a>&gt;(ctx, <a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>))
+<pre><code><b>public</b> <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_has_mint_capability">has_mint_capability</a>(ctx: &StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>): bool {
+    <a href="_global_exists">account_storage::global_exists</a>&lt;<a href="gas_coin.md#0x3_gas_coin_MintCapStore">MintCapStore</a>&gt;(ctx, <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>))
 }
 </code></pre>
 
@@ -223,7 +223,7 @@ Only called during genesis to destroy the rooch framework account's mint capabil
 and accounts have been initialized during genesis.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_destroy_mint_cap">destroy_mint_cap</a>(ctx: &<b>mut</b> <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, rooch_framework: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_destroy_mint_cap">destroy_mint_cap</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, rooch_framework: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -232,9 +232,9 @@ and accounts have been initialized during genesis.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_destroy_mint_cap">destroy_mint_cap</a>(ctx: &<b>mut</b> StorageContext, rooch_framework: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_destroy_mint_cap">destroy_mint_cap</a>(ctx: &<b>mut</b> StorageContext, rooch_framework: &<a href="">signer</a>) {
     <a href="core_addresses.md#0x3_core_addresses_assert_rooch_framework">core_addresses::assert_rooch_framework</a>(rooch_framework);
-    <b>let</b> <a href="gas_coin.md#0x3_gas_coin_MintCapStore">MintCapStore</a> { mint_cap } = <a href="../../moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md#0x2_account_storage_global_move_from">account_storage::global_move_from</a>&lt;<a href="gas_coin.md#0x3_gas_coin_MintCapStore">MintCapStore</a>&gt;(ctx,@rooch_framework);
+    <b>let</b> <a href="gas_coin.md#0x3_gas_coin_MintCapStore">MintCapStore</a> { mint_cap } = <a href="_global_move_from">account_storage::global_move_from</a>&lt;<a href="gas_coin.md#0x3_gas_coin_MintCapStore">MintCapStore</a>&gt;(ctx,@rooch_framework);
     <a href="coin.md#0x3_coin_destroy_mint_cap">coin::destroy_mint_cap</a>(mint_cap);
 }
 </code></pre>
