@@ -24,37 +24,42 @@ fn main() {
 
             let dashboard_path: std::path::PathBuf = Path::new(&base_path).join(dashboard_dir);
 
-            if let Err(_) = Command::new("npm").args(["install", "-g", "pnpm"]).status() {
+            if Command::new("npm")
+                .args(["install", "-g", "pnpm"])
+                .status()
+                .is_err()
+            {
                 eprintln!("install pnpm failed");
                 process::exit(1);
             }
 
-            if let Err(_) = Command::new("pnpm").arg("i").status() {
+            if Command::new("pnpm").arg("i").status().is_err() {
                 eprintln!("pnpm install failed");
                 process::exit(1);
             }
 
-            if let Err(_) = Command::new("pnpm").args(["sdk", "build"]).status() {
+            if Command::new("pnpm")
+                .args(["sdk", "build"])
+                .status()
+                .is_err()
+            {
                 eprintln!("pnpm sdk build failed");
                 process::exit(1);
             }
 
-            if let Ok(status) = Command::new("pnpm").args(["dashboard", "export"]).status() {
-                if status.success() {
-                    let out_dir = dashboard_path.join("out");
-                    let destination_dir = Path::new(&base_path).join(output_dir);
-                    println!("{:?}", destination_dir);
-                    if let Err(err) = copy_directory(&out_dir, &destination_dir) {
-                        eprintln!("Failed to copy directory: {}", err);
-                        process::exit(1);
-                    }
-                } else {
-                    eprintln!("dashboard build failed");
-                    process::exit(1);
-                }
-            } else {
+            if Command::new("pnpm")
+                .args(["dashboard", "export"])
+                .status()
+                .is_err()
+            {
                 eprintln!("dashboard build failed");
                 process::exit(1);
+            }
+
+            let out_dir = dashboard_path.join("out");
+            let destination_dir = Path::new(&base_path).join(output_dir);
+            if let Err(err) = copy_directory(&out_dir, &destination_dir) {
+                eprintln!("Failed to copy directory: {}", err);
             }
         }
     }
