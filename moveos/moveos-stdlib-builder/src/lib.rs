@@ -5,6 +5,7 @@ use anyhow::{ensure, Result};
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use dependency_order::sort_by_dependency_order;
 use move_binary_format::{errors::Location, CompiledModule};
+use move_cli::base::reroot_path;
 use move_core_types::account_address::AccountAddress;
 use move_model::model::GlobalEnv;
 use move_package::{compilation::compiled_package::CompiledPackage, BuildConfig, ModelConfig};
@@ -14,7 +15,7 @@ use std::{
     collections::{HashMap, HashSet},
     fs::{self, File},
     io::{stderr, Write},
-    path::{Path, PathBuf},
+    path::{Path, PathBuf}, env::current_dir,
 };
 
 pub mod dependency_order;
@@ -74,13 +75,16 @@ pub struct StdlibBuildConfig {
 impl StdlibBuildConfig {
     pub fn build(self, deps: &[StdlibBuildConfig]) -> Result<StdlibPackage> {
         println!("Build stdlib at {:?}", self.path);
+        let original_current_dir = current_dir()?;
+        let project_path = self.path.clone();
+        let project_path = reroot_path(Some(project_path))?;
 
         let mut compiled_package = self
             .build_config
             .clone()
             .compile_package_no_exit(&self.path, &mut stderr())?;
 
-        run_verifier(&self.path, self.build_config.clone(), &mut compiled_package)?;
+        run_verifier(&project_path, self.build_config.clone(), &mut compiled_package)?;
         let module_map = compiled_package.root_modules_map();
         let mut modules = module_map.iter_modules().into_iter();
 
@@ -96,22 +100,24 @@ impl StdlibBuildConfig {
             );
         }
         let model = self.build_config.clone().move_model_for_package(
-            &self.path,
+            &project_path,
             ModelConfig {
                 all_files_as_targets: false,
                 target_filter: None,
             },
         )?;
 
-        let deps_doc_paths = deps
-            .iter()
-            .map(|dep| {
-                pathdiff::diff_paths(dep.document_output_directory.as_path(), self.path.as_path())
-                    .expect("path diff return none")
-                    .to_string_lossy()
-                    .to_string()
-            })
-            .collect::<Vec<String>>();
+        let deps_doc_paths = vec![];
+        //TODO fix deps doc path, and make the document reference work
+        //  = deps
+        //     .iter()
+        //     .map(|dep| {
+        //         pathdiff::diff_paths(dep.document_output_directory.as_path(), self.path.as_path())
+        //             .expect("path diff return none")
+        //             .to_string_lossy()
+        //             .to_string()
+        //     })
+        //     .collect::<Vec<String>>();
 
         self.build_doc(&model, deps_doc_paths)?;
         self.build_error_code_map(&model)?;
@@ -127,7 +133,7 @@ impl StdlibBuildConfig {
             !model.has_errors(),
             "Errors encountered while build stdlib!"
         );
-
+        std::env::set_current_dir(original_current_dir)?;
         StdlibPackage::new(genesis_account, compiled_package)
     }
 
@@ -146,7 +152,7 @@ impl StdlibBuildConfig {
             include_impl: true,
             include_private_fun: false,
             output_directory: self.document_output_directory.to_string_lossy().to_string(),
-            compile_relative_to_output_dir: false,
+            compile_relative_to_output_dir: qfalse,
             doc_path: deps_doc_paths,
             ..Default::default()
         };

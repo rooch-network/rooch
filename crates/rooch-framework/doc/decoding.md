@@ -22,7 +22,7 @@ Module which defines decoding functions.
 Decode the Bitcoin address bytes with Base58 algorithm and returns a raw address bytes
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="decoding.md#0x3_decoding_base58">base58</a>(encoded_address_bytes: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="decoding.md#0x3_decoding_base58">base58</a>(encoded_address_bytes: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -31,7 +31,7 @@ Decode the Bitcoin address bytes with Base58 algorithm and returns a raw address
 <summary>Implementation</summary>
 
 
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="decoding.md#0x3_decoding_base58">base58</a>(encoded_address_bytes: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;;
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="decoding.md#0x3_decoding_base58">base58</a>(encoded_address_bytes: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;;
 </code></pre>
 
 
@@ -47,7 +47,7 @@ Decode the Bitcoin address bytes with Base58 algorithm and returns a raw address
 Decode the Bitcoin address bytes with Base58Check algorithm and returns a raw address bytes without checksum
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="decoding.md#0x3_decoding_base58check">base58check</a>(encoded_address_bytes: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, version_byte: u8): <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="decoding.md#0x3_decoding_base58check">base58check</a>(encoded_address_bytes: &<a href="">vector</a>&lt;u8&gt;, version_byte: u8): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -56,7 +56,7 @@ Decode the Bitcoin address bytes with Base58Check algorithm and returns a raw ad
 <summary>Implementation</summary>
 
 
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="decoding.md#0x3_decoding_base58check">base58check</a>(encoded_address_bytes: &<a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, version_byte: u8): <a href="../../moveos/moveos-stdlib/move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;;
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="decoding.md#0x3_decoding_base58check">base58check</a>(encoded_address_bytes: &<a href="">vector</a>&lt;u8&gt;, version_byte: u8): <a href="">vector</a>&lt;u8&gt;;
 </code></pre>
 
 
