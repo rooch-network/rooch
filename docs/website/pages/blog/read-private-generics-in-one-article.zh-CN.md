@@ -34,18 +34,18 @@ module rooch_examples::module1 {
         v: T
     }
 
-    public fun new_box<T1, T2, T3>(value: T1): Box<T1> {
+    public fun new_box<T>(value: T): Box<T> {
         Box { v: value }
     }
 
-    public fun get_box_value<T: copy>(box: &Box<T>): T {
-        box.v
+    public fun get_box_value<T>(box: &Box<T>): &T {
+        &box.v
     }
 
     #[test]
     fun test1() {
-        let box = new_box<u32, u64, u128>(123);
-        assert!(get_box_value(&box) == 123, 1000);
+        let box = new_box<u32>(123);
+        assert!(get_box_value(&box) == &123, 1000);
     }
 }
 ```
@@ -54,7 +54,7 @@ module rooch_examples::module1 {
 
 接着定义两个泛型函数 `new_box` 和 `get_box_value`。函数 `new_box` 用来创建 `Box<T>` 类型的值，函数 `get_box_value` 用来获取 `Box<T>` 类型中的字段值 `v: T`。
 
-我们简单地写一个单元测试来验证我们的代码逻辑。我们给 `new_box` 传递一个整数字面量 `123`，并创建一个包裹了 `u32` 类型的 `Box<u32>` 值 `box`。在断言表达式中，整数字面量 `123` 会隐式推断为 `123u32`，`get_box_value` 从 `box` 中获取到 `123u32`，两者相等，能够顺利通过测试。
+我们简单地写一个单元测试来验证我们的代码逻辑。我们给 `new_box` 传递一个整数字面量 `123`，并创建一个包装了 `u32` 类型的 `Box<u32>` 类型的值 `box`。在断言表达式中，整数字面量引用 `&123` 会隐式推断为 `&123u32`，`get_box_value` 从 `box` 中获取到 `&123u32`，两者相等，能够顺利通过测试。
 
 运行单元测试：
 
