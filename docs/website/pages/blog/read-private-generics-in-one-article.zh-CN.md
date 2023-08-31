@@ -69,34 +69,30 @@ Test result: OK. Total tests: 1; passed: 1; failed: 0
 Success
 ```
 
-接下来我们对泛型函数 `new_box` 进行**私有泛型约束**，在函数的上一行添加 `#[private_generics(T1, T2)]` 属性标注，其他地方保持不变：
+接下来我们对泛型函数 `new_box` 进行**私有泛型约束**，在函数的上一行添加 `#[private_generics(T)]` 属性标注，其他地方保持不变：
 
 ```shell
-#[private_generics(T1, T2)]
-public fun new_box<T1, T2, T3>(value: T1): Box<T1> {
-    Box { v: value }
+#[private_generics(T)]
+public fun new_box<T, U>(value: T): Box<T> {
+	Box { v: value }
 }
 ```
 
-在添加了私有泛型约束后，在调用函数时，类型 `T1` 和 `T2` 必须在当前模块内定义。显然**内置类型** `u32` 和 `u64` 并不是在当前模块定义的，所以此时再运行代码，就会报错，如下：
+添加了私有泛型约束后，在调用函数时，类型 `T` 必须在当前模块内定义。显然**内置类型** `u32` 并不是在当前模块定义的，所以此时再运行代码，就会报错，如下：
 
 ```shell
 $ rooch move test
 error: resource type "U32" in function "0x42::module1::new_box" not defined in current module or not allowed
    ┌─ ./sources/module1.move:17:19
    │
-17 │         let box = new_box<u32, u64, u128>(123);
-   │                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-error: resource type "U64" in function "0x42::module1::new_box" not defined in current module or not allowed
-   ┌─ ./sources/module1.move:17:19
-   │
-17 │         let box = new_box<u32, u64, u128>(123);
-   │                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17 │         let box = new_box<u32, u64>(123);
+   │                   ^^^^^^^^^^^^^^^^^^^^^^
 
 
 Error: extended checks failed
 ```
+
+私有泛型并没有约束类型 `U`，所以不会检查类型 `U` 声明的位置是否在当前模块。
 
 ### 私有泛型函数使用当前模块定义的自定义类型
 
@@ -104,7 +100,7 @@ Error: extended checks failed
 
 ```move
 module rooch_examples::module1 {
-    struct Data has copy, drop {
+    struct Data has drop {
         v: u64
     }
 
@@ -112,19 +108,19 @@ module rooch_examples::module1 {
         v: T
     }
 
-    #[private_generics(T1, T2)]
-    public fun new_box<T1, T2, T3>(value: T1): Box<T1> {
+    #[private_generics(T)]
+    public fun new_box<T, U>(value: T): Box<T> {
         Box { v: value }
     }
 
-    public fun get_box_value<T: copy>(box: &Box<T>): T {
-        box.v
+    public fun get_box_value<T>(box: &Box<T>): &T {
+        &box.v
     }
 
     #[test]
     fun test1() {
         let data = Data { v: 123 };
-        let box = new_box<Data, Data, u128>(data);
+        let box = new_box<Data, u64>(data);
         assert!(get_box_value(&box).v == 123, 1000);
     }
 }
@@ -132,7 +128,7 @@ module rooch_examples::module1 {
 
 首先，新增一个自定义类型 `Data`，它是一个常见的结构体，包含一个 `u64` 类型的字段 `v`。
 
-接着修改一下单元测试的函数 `test1`，构造一个 `Data` 类型的数据 `data`，并将私有泛型函数 `new_box` 的泛型类型参数 `u32` 和 `u64` 修改为 `Data`，断言中，使用成员运算符 `.` 获取 `data` 内的 `u64` 整数值进行比较。
+接着修改一下单元测试的函数 `test1`，构造一个 `Data` 类型的数据 `data`，并将私有泛型函数 `new_box` 的泛型类型参数 `u32` 修改为 `Data`，断言中，使用成员运算符 `.` 获取 `data` 内的 `u64` 整数值进行比较。
 
 此时再次运行测试，测试例子又能顺利通过测试了：
 
