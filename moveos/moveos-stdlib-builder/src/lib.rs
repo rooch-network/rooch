@@ -74,7 +74,7 @@ pub struct StdlibBuildConfig {
 }
 
 impl StdlibBuildConfig {
-    pub fn build(self, deps: &[StdlibBuildConfig]) -> Result<StdlibPackage> {
+    pub fn build(self, _deps: &[StdlibBuildConfig]) -> Result<StdlibPackage> {
         println!("Build stdlib at {:?}", self.path);
         let original_current_dir = current_dir()?;
         let project_path = self.path.clone();
