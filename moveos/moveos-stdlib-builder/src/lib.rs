@@ -13,9 +13,10 @@ use moveos_verifier::build::run_verifier;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
+    env::current_dir,
     fs::{self, File},
     io::{stderr, Write},
-    path::{Path, PathBuf}, env::current_dir,
+    path::{Path, PathBuf},
 };
 
 pub mod dependency_order;
@@ -84,7 +85,11 @@ impl StdlibBuildConfig {
             .clone()
             .compile_package_no_exit(&self.path, &mut stderr())?;
 
-        run_verifier(&project_path, self.build_config.clone(), &mut compiled_package)?;
+        run_verifier(
+            &project_path,
+            self.build_config.clone(),
+            &mut compiled_package,
+        )?;
         let module_map = compiled_package.root_modules_map();
         let mut modules = module_map.iter_modules().into_iter();
 
