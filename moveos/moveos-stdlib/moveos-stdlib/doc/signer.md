@@ -6,9 +6,11 @@
 
 
 -  [Function `module_signer`](#0x2_signer_module_signer)
+-  [Function `address_of`](#0x2_signer_address_of)
 
 
-<pre><code></code></pre>
+<pre><code><b>use</b> <a href="">0x1::signer</a>;
+</code></pre>
 
 
 
@@ -20,7 +22,7 @@ Returns the signer of the module address of the generic type <code>T</code>.
 This is safe because the generic type <code>T</code> is private, meaning it can only be used within the module that defines it.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="signer.md#0x2_signer_module_signer">module_signer</a>&lt;T&gt;(): <a href="signer.md#0x2_signer">signer</a>
+<pre><code><b>public</b> <b>fun</b> <a href="signer.md#0x2_signer_module_signer">module_signer</a>&lt;T&gt;(): <a href="">signer</a>
 </code></pre>
 
 
@@ -29,7 +31,32 @@ This is safe because the generic type <code>T</code> is private, meaning it can 
 <summary>Implementation</summary>
 
 
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="signer.md#0x2_signer_module_signer">module_signer</a>&lt;T&gt;(): <a href="signer.md#0x2_signer">signer</a>;
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="signer.md#0x2_signer_module_signer">module_signer</a>&lt;T&gt;(): <a href="">signer</a>;
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_signer_address_of"></a>
+
+## Function `address_of`
+
+Returns the address of the signer.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="signer.md#0x2_signer_address_of">address_of</a>(<a href="">signer</a>: &<a href="">signer</a>): <b>address</b>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="signer.md#0x2_signer_address_of">address_of</a>(<a href="">signer</a>: &<a href="">signer</a>): <b>address</b> {
+    std::signer::address_of(<a href="">signer</a>)
+}
 </code></pre>
 
 

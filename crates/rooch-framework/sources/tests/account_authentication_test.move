@@ -11,7 +11,7 @@ module rooch_framework::account_authentication_test{
     }
     #[test]
     fun test_install_auth_validator(){
-        rooch_framework::genesis::init_for_test();
+        let genesis_ctx = rooch_framework::genesis::init_for_test();
             
         let user_address = @0x42;
         let user_signer = rooch_framework::account::create_signer_for_test(user_address);
@@ -25,5 +25,6 @@ module rooch_framework::account_authentication_test{
         assert!(!is_auth_validator_installed(&user_ctx, user_address, 100000), 1001);
 
         storage_context::drop_test_context(user_ctx);
+        storage_context::drop_test_context(genesis_ctx);
     }
 }

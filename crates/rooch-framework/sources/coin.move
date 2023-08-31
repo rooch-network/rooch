@@ -2,7 +2,6 @@
 module rooch_framework::coin {
     use std::string;
     use std::error;
-    use std::signer;
     use moveos_std::table;
     use moveos_std::table::Table;
     use moveos_std::type_table::TypeTable;
@@ -12,9 +11,10 @@ module rooch_framework::coin {
     use moveos_std::storage_context::{StorageContext};
     use moveos_std::event;
     use moveos_std::type_info::{Self, TypeInfo, type_of};
-    use moveos_std::signer as moveos_signer;
+    use moveos_std::signer;
 
     friend rooch_framework::account;
+    friend rooch_framework::genesis;
 
     //
     // Errors.
@@ -157,14 +157,13 @@ module rooch_framework::coin {
     /// Capability required to burn coins.
     struct BurnCapability<phantom CoinType> has key, copy, store {}
 
-    fun init(ctx: &mut StorageContext) {
-        let account = &moveos_signer::module_signer<CoinInfos>();
+    public(friend) fun genesis_init(ctx: &mut StorageContext, genesis_account: &signer) {
         let tx_ctx = storage_context::tx_context_mut(ctx);
-        account_storage::global_move_to(ctx, account, CoinInfos{
+        account_storage::global_move_to(ctx, genesis_account, CoinInfos{
             coin_infos: type_table::new(tx_ctx),
         });
         let tx_ctx = storage_context::tx_context_mut(ctx);
-        account_storage::global_move_to(ctx, account, AutoAcceptCoins{
+        account_storage::global_move_to(ctx, genesis_account, AutoAcceptCoins{
             auto_accept_coins: table::new<address, bool>(tx_ctx),
         });
     }
@@ -335,6 +334,25 @@ module rooch_framework::coin {
         amount: u256,
     ): Coin<CoinType> {
         let addr = signer::address_of(account);
+        withdraw_interal<CoinType>(ctx, addr, amount) 
+    }
+
+    #[private_generics(CoinType)]
+    /// Withdraw specifed `amount` of coin `CoinType` from any addr
+    /// This function is only called by the `CoinType` module, for the developer to extend custom withdraw logic
+    public fun withdraw_extend<CoinType>(
+        ctx: &mut StorageContext,
+        addr: address,
+        amount: u256,
+    ): Coin<CoinType> {
+        withdraw_interal<CoinType>(ctx, addr, amount) 
+    }
+
+    fun withdraw_interal<CoinType>(
+        ctx: &mut StorageContext,
+        addr: address,
+        amount: u256,
+    ): Coin<CoinType> {
         assert!(
             is_account_accept_coin<CoinType>(ctx, addr),
             error::not_found(ErrorAccountNotAcceptCoin),
@@ -395,6 +413,23 @@ module rooch_framework::coin {
         coin: Coin<CoinType>,
         _cap: &BurnCapability<CoinType>,
     ) {
+        burn_internal(ctx, coin) 
+    }
+
+    #[private_generics(CoinType)]
+    /// Burn `coin`
+    /// This function is only called by the `CoinType` module, for the developer to extend custom burn logic
+    public fun burn_extend<CoinType>(
+        ctx: &mut StorageContext,
+        coin: Coin<CoinType>,
+    ) {
+        burn_internal(ctx, coin) 
+    }
+
+    fun burn_internal<CoinType>(
+        ctx: &mut StorageContext,
+        coin: Coin<CoinType>,
+    ) {
         let Coin { value: amount } = coin;
 
         let coin_type_info = type_info::type_of<CoinType>();
@@ -406,6 +441,7 @@ module rooch_framework::coin {
         });
     }
 
+    //TODO This function can be replaced by `withdraw_extend` and `burn`, we can remove it.
     /// Burn `coin` from the specified `account` with capability.
     /// The capability `burn_cap` should be passed as a reference to `BurnCapability<CoinType>`.
     /// This function shouldn't fail as it's called as part of transaction fee burning.
@@ -517,7 +553,18 @@ module rooch_framework::coin {
         amount: u256,
         _cap: &MintCapability<CoinType>,
     ): Coin<CoinType> {
-       let coin_info = borrow_mut_coin_info<CoinType>(ctx);
+        mint_internal<CoinType>(ctx, amount)
+    }
+
+    #[private_generics(CoinType)]
+    /// Mint new `Coin`, this function is only called by the `CoinType` module, for the developer to extend custom mint logic
+    public fun mint_extend<CoinType>(ctx: &mut StorageContext,amount: u256) : Coin<CoinType> {
+        mint_internal<CoinType>(ctx, amount)
+    }
+
+    fun mint_internal<CoinType>(ctx: &mut StorageContext,
+        amount: u256): Coin<CoinType>{
+        let coin_info = borrow_mut_coin_info<CoinType>(ctx);
         coin_info.supply = coin_info.supply + amount;
         let coin_type_info = type_info::type_of<CoinType>();
         event::emit<MintEvent>(ctx, MintEvent {
@@ -579,11 +626,6 @@ module rooch_framework::coin {
     /// Destroy a burn capability.
     public fun destroy_burn_cap<CoinType>(burn_cap: BurnCapability<CoinType>) {
         let BurnCapability<CoinType> {} = burn_cap;
-    }
-
-    #[test_only]
-    public fun init_for_test(ctx: &mut StorageContext){
-        init(ctx);
     }
 
     //
@@ -689,10 +731,6 @@ module rooch_framework::coin {
         set_auto_accept_coin(ctx, account, false);
     }
 
-    // /// Deposit the coin balance into the recipient's account and emit an event.
-    // public entry fun deposit<CoinType>(ctx: &mut StorageContext, addr: address, coin: Coin<CoinType>) {
-    //     deposit<CoinType>(ctx, addr, coin)
-    // }
 
     /// Transfer `amount` of coins `CoinType` from `from` to `to`.
     public entry fun transfer_entry<CoinType>(
@@ -736,115 +774,4 @@ module rooch_framework::coin {
         account_storage::global_move_to<Capabilities<CoinType>>(ctx, account, cap)
     }
 
-    //
-    // Tests
-    //
-
-    #[test_only]
-    struct FakeCoin {}
-
-    #[test(source = @0xa0a, destination = @0xb0b, mod_account = @rooch_framework)]
-    public entry fun test_end_to_end(
-        source: &signer,
-        destination: &signer,
-        mod_account: &signer
-    ) {
-        let source_addr = signer::address_of(source);
-        let destination_addr = signer::address_of(destination);
-
-        let source_ctx = storage_context::new_test_context(signer::address_of(source));
-        let destination_ctx = storage_context::new_test_context_random(signer::address_of(destination), b"test_tx1");
-        let mod_account_ctx = storage_context::new_test_context_random(signer::address_of(mod_account), b"test_tx2");
-
-        init_for_test(&mut mod_account_ctx);
-        initialize_entry<FakeCoin>(
-            &mut mod_account_ctx,
-            mod_account,
-            b"Fake Coin",
-            b"FCD",
-            9,
-        );
-        assert!(is_coin_initialized<FakeCoin>(&source_ctx), 0);
-
-        init_account_coin_store(&mut mod_account_ctx, mod_account);
-        init_account_coin_store(&mut source_ctx, source);
-        init_account_coin_store(&mut destination_ctx, destination);
-
-        mint_entry<FakeCoin>(&mut mod_account_ctx, mod_account, source_addr, 50);
-        mint_entry<FakeCoin>(&mut mod_account_ctx, mod_account, destination_addr, 10);
-        assert!(balance<FakeCoin>(&source_ctx, source_addr) == 50, 1);
-        assert!(balance<FakeCoin>(&destination_ctx, destination_addr) == 10, 2);
-
-        let supply = supply<FakeCoin>(&mod_account_ctx);
-        assert!(supply == 60, 3);
-
-        transfer<FakeCoin>(&mut source_ctx, source, destination_addr, 10);
-        assert!(balance<FakeCoin>(&source_ctx, source_addr) == 40, 4);
-        assert!(balance<FakeCoin>(&destination_ctx, destination_addr) == 20, 5);
-
-        transfer<FakeCoin>(&mut source_ctx, source, signer::address_of(mod_account), 40);
-        burn_entry<FakeCoin>(&mut mod_account_ctx, mod_account, 40);
-
-        assert!(balance<FakeCoin>(&source_ctx, source_addr) == 0, 1);
-
-        let new_supply = supply<FakeCoin>(&source_ctx);
-        assert!(new_supply == 20, 2);
-
-        moveos_std::storage_context::drop_test_context(source_ctx);
-        moveos_std::storage_context::drop_test_context(destination_ctx);
-        moveos_std::storage_context::drop_test_context(mod_account_ctx);
-    }
-
-    #[test(source = @0xa11ce, destination = @0xb0b, mod_account = @rooch_framework)]
-    #[expected_failure(abort_code = 393228, location = Self)]
-    public entry fun fail_mint(
-        source: &signer,
-        destination: &signer,
-        mod_account: &signer,
-    ) {
-        let source_addr = signer::address_of(source);
-
-        let source_ctx = storage_context::new_test_context(signer::address_of(source));
-        let destination_ctx = storage_context::new_test_context_random(signer::address_of(destination), b"test_tx1");
-        let mod_account_ctx = storage_context::new_test_context_random(signer::address_of(mod_account), b"test_tx2");
-
-        init_for_test(&mut mod_account_ctx);
-        initialize_entry<FakeCoin>(&mut mod_account_ctx, mod_account, b"Fake Coin", b"FCD", 9);
-        init_account_coin_store(&mut mod_account_ctx, mod_account);
-        init_account_coin_store(&mut source_ctx, source);
-        init_account_coin_store(&mut destination_ctx, destination);
-
-        mint_entry<FakeCoin>(&mut destination_ctx, destination, source_addr, 100);
-
-        moveos_std::storage_context::drop_test_context(source_ctx);
-        moveos_std::storage_context::drop_test_context(destination_ctx);
-        moveos_std::storage_context::drop_test_context(mod_account_ctx);
-    }
-
-    #[test(source = @0xa11ce, destination = @0xb0b, mod_account = @rooch_framework)]
-    #[expected_failure(abort_code = 393228, location = Self)]
-    public entry fun fail_burn(
-        source: &signer,
-        destination: &signer,
-        mod_account: &signer,
-    ) {
-        let source_addr = signer::address_of(source);
-
-        let source_ctx = storage_context::new_test_context(signer::address_of(source));
-        let destination_ctx = storage_context::new_test_context_random(signer::address_of(destination), b"test_tx1");
-        let mod_account_ctx = storage_context::new_test_context_random(signer::address_of(mod_account), b"test_tx2");
-
-        init_for_test(&mut mod_account_ctx);
-        initialize_entry<FakeCoin>(&mut mod_account_ctx, mod_account, b"Fake Coin", b"FCD", 9);
-        init_account_coin_store(&mut mod_account_ctx, mod_account);
-        init_account_coin_store(&mut source_ctx, source);
-        init_account_coin_store(&mut destination_ctx, destination);
-
-        mint_entry<FakeCoin>(&mut mod_account_ctx, mod_account, source_addr, 100);
-        burn_entry<FakeCoin>(&mut destination_ctx, destination, 10);
-
-        moveos_std::storage_context::drop_test_context(source_ctx);
-        moveos_std::storage_context::drop_test_context(destination_ctx);
-        moveos_std::storage_context::drop_test_context(mod_account_ctx);
-    }
 }

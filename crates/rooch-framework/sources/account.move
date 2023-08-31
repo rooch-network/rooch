@@ -12,6 +12,7 @@ module rooch_framework::account{
    use rooch_framework::coin::{Self};
 
    friend rooch_framework::transaction_validator;
+   friend rooch_framework::genesis;
 
    /// Resource representing an account.
    struct Account has key, store {
@@ -67,7 +68,7 @@ module rooch_framework::account{
    /// `new_address`.
    public(friend) fun create_account(ctx: &mut StorageContext, new_address: address): signer {
       assert!(
-         new_address != @vm_reserved && new_address != @rooch_framework,
+         new_address != @vm_reserved,
          error::invalid_argument(ErrorAddressReseved)
       );
 
@@ -77,9 +78,7 @@ module rooch_framework::account{
          error::already_exists(ErrorAccountAlreadyExists)
       ); 
 
-      let new_account = create_account_unchecked(ctx, new_address);
-      // initialize account coin store
-      coin::init_account_coin_store(ctx, &new_account);
+      let new_account = create_account_unchecked(ctx, new_address); 
       new_account
    }
 
@@ -93,6 +92,7 @@ module rooch_framework::account{
             sequence_number: 0,
       });
       account_authentication::init_authentication_keys(ctx, &new_account);
+      coin::init_account_coin_store(ctx, &new_account);
       new_account
    }
 
@@ -234,12 +234,6 @@ module rooch_framework::account{
 
    public fun get_signer_capability_address(capability: &SignerCapability): address {
       capability.addr
-   }
-
-   #[test_only]
-   public fun init_account_for_test(ctx: &mut StorageContext, account: &signer) {
-      // initialize account coin store
-      coin::init_account_coin_store(ctx, account);
    }
 
    #[test_only]

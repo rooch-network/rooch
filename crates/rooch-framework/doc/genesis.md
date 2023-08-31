@@ -11,11 +11,14 @@
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x1::option</a>;
-<b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
+<b>use</b> <a href="account.md#0x3_account">0x3::account</a>;
 <b>use</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry">0x3::auth_validator_registry</a>;
 <b>use</b> <a href="builtin_validators.md#0x3_builtin_validators">0x3::builtin_validators</a>;
 <b>use</b> <a href="chain_id.md#0x3_chain_id">0x3::chain_id</a>;
+<b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
+<b>use</b> <a href="gas_coin.md#0x3_gas_coin">0x3::gas_coin</a>;
+<b>use</b> <a href="transaction_fee.md#0x3_transaction_fee">0x3::transaction_fee</a>;
 </code></pre>
 
 

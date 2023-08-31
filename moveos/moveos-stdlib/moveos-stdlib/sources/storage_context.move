@@ -100,7 +100,12 @@ module moveos_std::storage_context {
     #[test_only]
     /// Create a StorageContext for unit test
     public fun new_test_context(sender: address): StorageContext {
-        new_test_context_random(sender, b"test_tx")
+        // We need to ensure the tx_hash is unique, so we append the sender to the seed
+        // If a sender create two StorageContext, the tx_hash will be the same.
+        // Maybe the test function need to pass a type parameter as seed.
+        let seed = b"test_tx";
+        std::vector::append(&mut seed, moveos_std::bcs::to_bytes(&sender));
+        new_test_context_random(sender, seed)
     }
 
     #[test_only]

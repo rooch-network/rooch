@@ -32,7 +32,6 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::ethereum_address`](ethereum_address.md#0x3_ethereum_address)
 -  [`0x3::ethereum_validator`](ethereum_validator.md#0x3_ethereum_validator)
 -  [`0x3::gas_coin`](gas_coin.md#0x3_gas_coin)
--  [`0x3::gas_price`](gas_price.md#0x3_gas_price)
 -  [`0x3::genesis`](genesis.md#0x3_genesis)
 -  [`0x3::hash`](hash.md#0x3_hash)
 -  [`0x3::multi_ed25519_validator`](multi_ed25519_validator.md#0x3_multi_ed25519_validator)
@@ -40,6 +39,7 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::nostr_validator`](nostr_validator.md#0x3_nostr_validator)
 -  [`0x3::schnorr`](schnorr.md#0x3_schnorr)
 -  [`0x3::session_key`](session_key.md#0x3_session_key)
+-  [`0x3::transaction_fee`](transaction_fee.md#0x3_transaction_fee)
 -  [`0x3::transaction_validator`](transaction_validator.md#0x3_transaction_validator)
 
 
