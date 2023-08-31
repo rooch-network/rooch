@@ -12,7 +12,7 @@
 		"dev": "vite",
 		"build": "pnpm build:clean && pnpm _build:node",
 		"build:clean": "rm -rf dist",
-		"_build:browser": "TODO:",
+		"_build:browser": "tsup --platform browser --format iife --global-name roochSDK --minify",
 		"_build:node": "tsup --format cjs,esm --dts",
 		"doc": "typedoc",
 		"vitest": "vitest",
@@ -42,14 +42,14 @@
 		"dist",
 		"src"
 	],
-	"type": "commonjs",
+	"type": "module",
 	"main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "module": "./dist/index.cjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
       "types": "./dist/index.d.ts"
     }
 	},
