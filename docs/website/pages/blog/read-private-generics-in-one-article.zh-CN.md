@@ -247,8 +247,8 @@ module rooch_examples::module3 {
     #[test]
     fun test3() {
         let data3 = Data3 { v: 789 };
-        let box3 = new_box<Data3, Data3, u8>(data3);
-        assert!(get_box_value(&box3) == Data3 { v: 789 }, 3000);
+        let box3 = new_box<Data3, u8>(data3);
+        assert!(get_box_value(&box3) == &Data3 { v: 789 }, 3000);
     }
 }
 ```
@@ -268,6 +268,9 @@ Running Move unit tests
 Test result: OK. Total tests: 2; passed: 2; failed: 0
 Success
 ```
+
+## 应用
+
 
 ## 总结
 
