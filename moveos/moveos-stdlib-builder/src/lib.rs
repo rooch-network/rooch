@@ -157,7 +157,7 @@ impl StdlibBuildConfig {
             include_impl: true,
             include_private_fun: false,
             output_directory: self.document_output_directory.to_string_lossy().to_string(),
-            compile_relative_to_output_dir: qfalse,
+            compile_relative_to_output_dir: false,
             doc_path: deps_doc_paths,
             ..Default::default()
         };
