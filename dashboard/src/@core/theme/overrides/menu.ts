@@ -1,4 +1,6 @@
-// ** Type Imports
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { OwnerStateThemeType } from './'
 import { Skin } from 'src/@core/layouts/types'
 
@@ -17,27 +19,27 @@ const Menu = (skin: Skin) => {
         root: ({ theme }: OwnerStateThemeType) => ({
           '& .MuiMenu-paper': {
             boxShadow: boxShadow(theme),
-            ...(skin === 'bordered' && { border: `1px solid ${theme.palette.divider}` })
-          }
+            ...(skin === 'bordered' && { border: `1px solid ${theme.palette.divider}` }),
+          },
         }),
         list: ({ theme }: OwnerStateThemeType) => ({
-          padding: theme.spacing(1.25, 0)
+          padding: theme.spacing(1.25, 0),
         }),
         paper: ({ theme }: OwnerStateThemeType) => ({
-          marginTop: theme.spacing(1)
-        })
-      }
+          marginTop: theme.spacing(1),
+        }),
+      },
     },
     MuiMenuItem: {
       styleOverrides: {
         root: ({ theme }: OwnerStateThemeType) => ({
           padding: theme.spacing(2, 5),
           '&.Mui-selected': {
-            color: theme.palette.primary.main
-          }
-        })
-      }
-    }
+            color: theme.palette.primary.main,
+          },
+        }),
+      },
+    },
   }
 }
 

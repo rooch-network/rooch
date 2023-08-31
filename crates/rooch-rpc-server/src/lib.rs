@@ -14,12 +14,13 @@ use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
 use moveos_config::store_config::RocksdbConfig;
-use moveos_store::config_store::ConfigStore;
 use moveos_store::{MoveOSDB, MoveOSStore};
+use raw_store::errors::RawStoreError;
 use raw_store::rocks::RocksDB;
 use raw_store::StoreInstance;
-use rooch_config::rpc::server_config::ServerConfig;
+use rooch_config::server_config::ServerConfig;
 use rooch_config::store_config::StoreConfig;
+use rooch_config::{BaseConfig, RoochOpt};
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_key::key_derive::generate_new_key;
@@ -30,16 +31,21 @@ use rooch_rpc_api::api::RoochRpcModule;
 use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
+use rooch_types::error::GenesisError;
 use serde_json::json;
 use std::env;
 use std::fmt::Debug;
 use std::net::SocketAddr;
+use std::sync::Arc;
 use std::time::Duration;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tracing::info;
 
 pub mod server;
 pub mod service;
+
+/// This exit code means is that the server failed to start and required human intervention.
+static R_EXIT_CODE_NEED_HELP: i32 = 120;
 
 pub fn http_client(url: impl AsRef<str>) -> Result<HttpClient> {
     let client = HttpClientBuilder::default().build(url)?;
@@ -77,8 +83,8 @@ impl Service {
         Self { handle: None }
     }
 
-    pub async fn start(&mut self, is_mock_storage: bool) -> Result<()> {
-        self.handle = Some(start_server(is_mock_storage).await?);
+    pub async fn start(&mut self, opt: &RoochOpt) -> Result<()> {
+        self.handle = Some(start_server(opt).await?);
         Ok(())
     }
 
@@ -113,21 +119,48 @@ impl RpcModuleBuilder {
 }
 
 // Start json-rpc server
-pub async fn start_server(is_mock_storage: bool) -> Result<ServerHandle> {
+pub async fn start_server(opt: &RoochOpt) -> Result<ServerHandle> {
+    match run_start_server(opt).await {
+        Ok(server_handle) => Ok(server_handle),
+        Err(e) => match e.downcast::<GenesisError>() {
+            Ok(e) => {
+                log::error!("{:?}, please clean your data dir. `rooch server clean` ", e);
+                std::process::exit(R_EXIT_CODE_NEED_HELP);
+            }
+            Err(e) => match e.downcast::<RawStoreError>() {
+                Ok(e) => {
+                    log::error!("{:?}, please clean your data dir. `rooch server clean` ", e);
+                    std::process::exit(R_EXIT_CODE_NEED_HELP);
+                }
+                Err(e) => {
+                    log::error!("{:?}, server start fail. ", e);
+                    std::process::exit(R_EXIT_CODE_NEED_HELP);
+                }
+            },
+        },
+    }
+}
+
+// run json-rpc server
+pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
     // We may call `start_server` multiple times in testing scenarios
     // tracing_subscriber can only be inited once.
     let _ = tracing_subscriber::fmt::try_init();
 
     let config = ServerConfig::default();
+    let chain_id = opt.chain_id.clone().unwrap_or_default().chain_id();
 
     let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
     let actor_system = ActorSystem::global_system();
 
     //Init store
-    let (moveos_store, rooch_store) = init_stroage(is_mock_storage)?;
+    let base_config = BaseConfig::load_with_opt(opt)?;
+    let mut store_config = StoreConfig::default();
+    store_config.merge_with_opt_then_init(opt, Arc::new(base_config))?;
+    let (moveos_store, rooch_store) = init_stroage(&store_config)?;
 
     // Init executor
-    let executor = ExecutorActor::new(moveos_store, rooch_store.clone())?
+    let executor = ExecutorActor::new(chain_id.id(), moveos_store, rooch_store.clone())?
         .into_actor(Some("Executor"), &actor_system)
         .await?;
     let executor_proxy = ExecutorProxy::new(executor.into());
@@ -186,16 +219,10 @@ pub async fn start_server(is_mock_storage: bool) -> Result<ServerHandle> {
         .await?;
 
     let mut rpc_module_builder = RpcModuleBuilder::new();
-    rpc_module_builder
-        .register_module(RoochServer::new(rpc_service.clone()))
-        .unwrap();
-    rpc_module_builder
-        .register_module(WalletServer::new(rpc_service.clone()))
-        .unwrap();
+    rpc_module_builder.register_module(RoochServer::new(rpc_service.clone()))?;
+    rpc_module_builder.register_module(WalletServer::new(rpc_service.clone()))?;
 
-    rpc_module_builder
-        .register_module(EthServer::new(rpc_service.clone()))
-        .unwrap();
+    rpc_module_builder.register_module(EthServer::new(chain_id, rpc_service.clone()))?;
 
     // let rpc_api = build_rpc_api(rpc_api);
     let methods_names = rpc_module_builder.module.method_names().collect::<Vec<_>>();
@@ -222,43 +249,30 @@ fn _build_rpc_api<M: Send + Sync + 'static>(mut rpc_module: RpcModule<M>) -> Rpc
     rpc_module
 }
 
-fn init_stroage(is_mock_storage: bool) -> Result<(MoveOSStore, RoochStore)> {
-    let (rooch_db_path, moveos_db_path) = if !is_mock_storage {
-        (
-            StoreConfig::get_rooch_store_dir(),
-            StoreConfig::get_moveos_store_dir(),
-        )
-    } else {
-        (
-            moveos_config::temp_dir().path().to_path_buf(),
-            moveos_config::temp_dir().path().to_path_buf(),
-        )
-    };
+fn init_stroage(store_config: &StoreConfig) -> Result<(MoveOSStore, RoochStore)> {
+    let (rooch_db_path, moveos_db_path) = (
+        store_config.get_rooch_store_dir(),
+        store_config.get_moveos_store_dir(),
+    );
 
     //Init store
-    let moveosdb = MoveOSDB::new(StoreInstance::new_db_instance(
-        RocksDB::new(
-            moveos_db_path,
-            moveos_store::StoreMeta::get_column_family_names().to_vec(),
-            RocksdbConfig::default(),
-            None,
-        )
-        .unwrap(),
-    ))?;
+    let moveosdb = MoveOSDB::new(StoreInstance::new_db_instance(RocksDB::new(
+        moveos_db_path,
+        moveos_store::StoreMeta::get_column_family_names().to_vec(),
+        RocksdbConfig::default(),
+        None,
+    )?))?;
     let lastest_state_root = moveosdb
         .config_store
         .get_startup_info()?
         .map(|info| info.state_root_hash);
-    let moveos_store = MoveOSStore::new_with_root(moveosdb, lastest_state_root).unwrap();
+    let moveos_store = MoveOSStore::new_with_root(moveosdb, lastest_state_root)?;
 
-    let rooch_store = RoochStore::new(StoreInstance::new_db_instance(
-        RocksDB::new(
-            rooch_db_path,
-            rooch_store::StoreMeta::get_column_family_names().to_vec(),
-            RocksdbConfig::default(),
-            None,
-        )
-        .unwrap(),
-    ))?;
+    let rooch_store = RoochStore::new(StoreInstance::new_db_instance(RocksDB::new(
+        rooch_db_path,
+        rooch_store::StoreMeta::get_column_family_names().to_vec(),
+        RocksdbConfig::default(),
+        None,
+    )?))?;
     Ok((moveos_store, rooch_store))
 }

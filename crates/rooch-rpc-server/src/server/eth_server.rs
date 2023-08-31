@@ -20,6 +20,7 @@ use rooch_rpc_api::jsonrpc_types::{
     eth::{CallRequest, EthFeeHistory},
     TransactionView,
 };
+use rooch_types::chain_id::ChainID;
 use rooch_types::{
     account::Account,
     address::{EthereumAddress, MultiChainAddress},
@@ -32,12 +33,16 @@ use std::time::SystemTime;
 use tracing::info;
 
 pub struct EthServer {
+    chain_id: ChainID,
     rpc_service: RpcService,
 }
 
 impl EthServer {
-    pub fn new(rpc_service: RpcService) -> Self {
-        Self { rpc_service }
+    pub fn new(chain_id: ChainID, rpc_service: RpcService) -> Self {
+        Self {
+            chain_id,
+            rpc_service,
+        }
     }
 }
 
@@ -48,7 +53,7 @@ impl EthAPIServer for EthServer {
     }
 
     async fn get_chain_id(&self) -> RpcResult<String> {
-        Ok(format!("0x{:X}", 10001))
+        Ok(format!("0x{:x}", self.chain_id.id()))
     }
 
     async fn get_block_number(&self) -> RpcResult<String> {
@@ -57,7 +62,7 @@ impl EthAPIServer for EthServer {
             .expect("Time went backwards");
 
         let block_number = now.as_secs();
-        Ok(format!("0x{:X}", block_number))
+        Ok(format!("0x{:x}", block_number))
     }
 
     async fn get_block_by_number(

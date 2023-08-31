@@ -12,15 +12,15 @@ module rooch_framework::ethereum_validator {
     use rooch_framework::ethereum_address::{Self, ETHAddress};
 
     /// there defines scheme for each blockchain
-    const ETHEREUM_SCHEME: u64 = 3;
+    const SCHEME_ETHEREUM: u64 = 3;
 
     /// error code
-    const EInvalidPublicKeyLength: u64 = 0;
+    const ErrorInvalidPublicKeyLength: u64 = 0;
 
     struct EthereumValidator has store, drop {}
 
     public fun scheme(): u64 {
-        ETHEREUM_SCHEME
+        SCHEME_ETHEREUM
     }
 
     public entry fun rotate_authentication_key_entry(
@@ -31,7 +31,7 @@ module rooch_framework::ethereum_validator {
         // compare newly passed public key with Ethereum public key length to ensure it's compatible
         assert!(
             vector::length(&public_key) == ecdsa_k1_recoverable::public_key_length(),
-            error::invalid_argument(EInvalidPublicKeyLength)
+            error::invalid_argument(ErrorInvalidPublicKeyLength)
         );
 
         // User can rotate the authentication key arbitrarily, so we do not need to check the new public key with the account address.
@@ -97,6 +97,7 @@ module rooch_framework::ethereum_validator {
         validate_signature(&authenticator_payload, &tx_hash);
 
         // TODO compare the auth_key from the payload with the auth_key from the account
+        std::debug::print(ctx);
     }
 
     fun pre_execute(

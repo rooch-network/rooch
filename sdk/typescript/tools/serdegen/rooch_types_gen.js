@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { Command } from 'commander'
 import { sh } from './shell.js'
 import { createTempFile, deleteTempFile, replaceFile } from './utils.js'
@@ -44,11 +46,6 @@ const main = async (opts) => {
 }
 
 const program = new Command()
-program
-  .option(
-    '-o, --output-dir <string>',
-    'Output dir for generated typescript code.',
-  )
-  .parse()
+program.option('-o, --output-dir <string>', 'Output dir for generated typescript code.').parse()
 
 main(program.opts())

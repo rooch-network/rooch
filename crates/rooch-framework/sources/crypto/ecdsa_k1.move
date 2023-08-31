@@ -2,9 +2,9 @@ module rooch_framework::ecdsa_k1 {
     use std::vector;
 
     /// constant codes
-    const V_ECDSA_K1_TO_BITCOIN_SCHEME_LENGTH: u64 = 1;
-    const V_ECDSA_K1_COMPRESSED_PUBKEY_LENGTH: u64 = 33;
-    const V_ECDSA_K1_SIG_LENGTH: u64 = 64;
+    const ECDSA_K1_TO_SCHEME_BITCOIN_LENGTH: u64 = 1;
+    const ECDSA_K1_COMPRESSED_PUBKEY_LENGTH: u64 = 33;
+    const ECDSA_K1_SIG_LENGTH: u64 = 64;
 
     /// Hash function name that are valid for ecrecover and verify.
     const KECCAK256: u8 = 0;
@@ -12,22 +12,22 @@ module rooch_framework::ecdsa_k1 {
     const RIPEMD160: u8 = 2;
 
     /// Error if the signature is invalid.
-    const EInvalidSignature: u64 = 0;
+    const ErrorInvalidSignature: u64 = 0;
 
     /// Error if the public key is invalid.
-    const EInvalidPubKey: u64 = 1;
+    const ErrorInvalidPubKey: u64 = 1;
 
     /// built-in functions
     public fun scheme_length(): u64 {
-        V_ECDSA_K1_TO_BITCOIN_SCHEME_LENGTH
+        ECDSA_K1_TO_SCHEME_BITCOIN_LENGTH
     }
 
     public fun public_key_length(): u64 {
-        V_ECDSA_K1_COMPRESSED_PUBKEY_LENGTH
+        ECDSA_K1_COMPRESSED_PUBKEY_LENGTH
     }
 
     public fun signature_length(): u64 {
-        V_ECDSA_K1_SIG_LENGTH
+        ECDSA_K1_SIG_LENGTH
     }
 
     public fun keccak256(): u8 {
@@ -90,7 +90,7 @@ module rooch_framework::ecdsa_k1 {
     }
 
     #[test]
-    #[expected_failure(abort_code = EInvalidSignature)]
+    #[expected_failure(abort_code = ErrorInvalidSignature)]
     fun test_verify_fails_invalid_sig() {
         let msg = x"00010203";
         let pubkey = x"033e99a541db69bd32040dfe5037fbf5210dafa8151a71e21c5204b05d95ce0a62";
@@ -99,7 +99,7 @@ module rooch_framework::ecdsa_k1 {
     }
 
     #[test]
-    #[expected_failure(abort_code = EInvalidPubKey)]
+    #[expected_failure(abort_code = ErrorInvalidPubKey)]
     fun test_verify_fails_invalid_pubkey() {
         let msg = x"00010203";
         let pubkey = x"";

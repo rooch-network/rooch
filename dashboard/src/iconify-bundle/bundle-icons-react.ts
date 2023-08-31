@@ -1,15 +1,5 @@
-/**
- * This is an advanced example for creating icon bundles for Iconify SVG Framework.
- *
- * It creates a bundle from:
- * - All SVG files in a directory.
- * - Custom JSON files.
- * - Iconify icon sets.
- * - SVG framework.
- *
- * This example uses Iconify Tools to import and clean up icons.
- * For Iconify Tools documentation visit https://docs.iconify.design/tools/tools2/
- */
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { promises as fs } from 'fs'
 import { dirname } from 'path'
 
@@ -65,7 +55,7 @@ const sources: BundleScriptConfig = {
     // Custom file with only few icons
     {
       filename: require.resolve('@iconify/json/json/line-md.json'),
-      icons: ['home-twotone-alt', 'github', 'document-list', 'document-code', 'image-twotone']
+      icons: ['home-twotone-alt', 'github', 'document-list', 'document-code', 'image-twotone'],
     },
     {
       filename: require.resolve('@iconify/json/json/mdi.json'),
@@ -87,29 +77,35 @@ const sources: BundleScriptConfig = {
         'file-remove-outline',
         'account-cog-outline',
         'arrow-expand-vertical',
-        'arrow-collapse-vertical'
-      ]
-    }
+        'arrow-collapse-vertical',
+      ],
+    },
 
     // Custom JSON file
     // 'json/gg.json'
   ],
 
-  icons: ['bi:airplane-engines', 'tabler:anchor', 'uit:adobe-alt', 'fa6-regular:comment', 'twemoji:auto-rickshaw'],
+  icons: [
+    'bi:airplane-engines',
+    'tabler:anchor',
+    'uit:adobe-alt',
+    'fa6-regular:comment',
+    'twemoji:auto-rickshaw',
+  ],
 
   svg: [
     {
       dir: 'src/iconify-bundle/svg',
       monotone: false,
-      prefix: 'custom'
-    }
+      prefix: 'custom',
+    },
 
     /* {
       dir: 'src/iconify-bundle/emojis',
       monotone: false,
       prefix: 'emoji'
     } */
-  ]
+  ],
 }
 
 // Iconify component (this changes import statement in generated file)
@@ -134,7 +130,7 @@ const target = 'src/iconify-bundle/icons-bundle-react.js'
   const dir = dirname(target)
   try {
     await fs.mkdir(dir, {
-      recursive: true
+      recursive: true,
     })
   } catch (err) {
     //
@@ -152,7 +148,7 @@ const target = 'src/iconify-bundle/icons-bundle-react.js'
       const filename = require.resolve(`@iconify/json/json/${prefix}.json`)
       sourcesJSON.push({
         filename,
-        icons: organizedList[prefix]
+        icons: organizedList[prefix],
       })
     }
   }
@@ -194,7 +190,7 @@ const target = 'src/iconify-bundle/icons-bundle-react.js'
 
       // Import icons
       const iconSet = await importDirectory(source.dir, {
-        prefix: source.prefix
+        prefix: source.prefix,
       })
 
       // Validate, clean up, fix palette and optimise
@@ -224,7 +220,7 @@ const target = 'src/iconify-bundle/icons-bundle-react.js'
               defaultColor: 'currentColor',
               callback: (attr, colorStr, color) => {
                 return !color || isEmptyColor(color) ? colorStr : 'currentColor'
-              }
+              },
             })
           }
 
@@ -253,7 +249,7 @@ const target = 'src/iconify-bundle/icons-bundle-react.js'
   await fs.writeFile(target, bundle, 'utf8')
 
   console.log(`Saved ${target} (${bundle.length} bytes)`)
-})().catch(err => {
+})().catch((err) => {
   console.error(err)
 })
 
@@ -261,8 +257,15 @@ const target = 'src/iconify-bundle/icons-bundle-react.js'
  * Remove metadata from icon set
  */
 function removeMetaData(iconSet: IconifyJSON) {
-  const props: (keyof IconifyMetaData)[] = ['info', 'chars', 'categories', 'themes', 'prefixes', 'suffixes']
-  props.forEach(prop => {
+  const props: (keyof IconifyMetaData)[] = [
+    'info',
+    'chars',
+    'categories',
+    'themes',
+    'prefixes',
+    'suffixes',
+  ]
+  props.forEach((prop) => {
     delete iconSet[prop]
   })
 }
@@ -272,7 +275,7 @@ function removeMetaData(iconSet: IconifyJSON) {
  */
 function organizeIconsList(icons: string[]): Record<string, string[]> {
   const sorted: Record<string, string[]> = Object.create(null)
-  icons.forEach(icon => {
+  icons.forEach((icon) => {
     const item = stringToIcon(icon)
     if (!item) {
       return

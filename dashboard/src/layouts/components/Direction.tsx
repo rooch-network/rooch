@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** React Imports
 import { useEffect, ReactNode } from 'react'
 
@@ -20,7 +23,7 @@ const styleCache = () =>
   createCache({
     key: 'rtl',
     prepend: true,
-    stylisPlugins: [stylisRTLPlugin]
+    stylisPlugins: [stylisRTLPlugin],
   })
 
 const Direction = (props: DirectionProps) => {

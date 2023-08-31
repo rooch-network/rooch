@@ -13,15 +13,15 @@ module rooch_framework::session_key {
     friend rooch_framework::transaction_validator;
 
     /// Create session key in this context is not allowed
-    const ESessionKeyCreatePermissionDenied: u64 = 1;
+    const ErrorSessionKeyCreatePermissionDenied: u64 = 1;
     /// The session key already exists
-    const ESessionKeyAlreadyExists: u64 = 2;
+    const ErrorSessionKeyAlreadyExists: u64 = 2;
     /// The session key is invalid
-    const ESessionKeyIsInvalid: u64 = 3;
+    const ErrorSessionKeyIsInvalid: u64 = 3;
     /// The session is expired
-    const ESessionIsExpired: u64 = 4;
+    const ErrorSessionIsExpired: u64 = 4;
     /// The function call is beyond the session's scope
-    const EFunctionCallBeyondSessionScope: u64 = 5;
+    const ErrorFunctionCallBeyondSessionScope: u64 = 5;
 
     /// The session's scope
     struct SessionScope has store,copy,drop {
@@ -80,9 +80,9 @@ module rooch_framework::session_key {
 
     public fun create_session_key(ctx: &mut StorageContext, sender: &signer, authentication_key: vector<u8>, scopes: vector<SessionScope>, expiration_time: u64, max_inactive_interval: u64) {
         //Can not create new session key by the other session key
-        assert!(!auth_validator::is_validate_via_session_key(ctx), error::permission_denied(ESessionKeyCreatePermissionDenied));
+        assert!(!auth_validator::is_validate_via_session_key(ctx), error::permission_denied(ErrorSessionKeyCreatePermissionDenied));
         let sender_addr = signer::address_of(sender);
-        assert!(!exists_session_key(ctx, sender_addr, authentication_key), error::already_exists(ESessionKeyAlreadyExists));
+        assert!(!exists_session_key(ctx, sender_addr, authentication_key), error::already_exists(ErrorSessionKeyAlreadyExists));
 
         let session_key = SessionKey {
             authentication_key: authentication_key,
@@ -129,9 +129,9 @@ module rooch_framework::session_key {
             return option::none()
         };
         let session_key = option::extract(&mut session_key_option);
-        assert!(!is_expired(ctx, &session_key), error::permission_denied(ESessionIsExpired));
+        assert!(!is_expired(ctx, &session_key), error::permission_denied(ErrorSessionIsExpired));
         
-        assert!(in_session_scope(ctx, &session_key), error::permission_denied(EFunctionCallBeyondSessionScope));
+        assert!(in_session_scope(ctx, &session_key), error::permission_denied(ErrorFunctionCallBeyondSessionScope));
 
         validator::validate_signature(&authenticator_payload, &storage_context::tx_hash(ctx));
         option::some(auth_key)
@@ -179,9 +179,9 @@ module rooch_framework::session_key {
 
     public(friend) fun active_session_key(ctx: &mut StorageContext, authentication_key: vector<u8>) {
         let sender_addr = storage_context::sender(ctx);
-        assert!(account_storage::global_exists<SessionKeys>(ctx, sender_addr), error::not_found(ESessionKeyIsInvalid));
+        assert!(account_storage::global_exists<SessionKeys>(ctx, sender_addr), error::not_found(ErrorSessionKeyIsInvalid));
         let session_keys = account_storage::global_borrow_mut<SessionKeys>(ctx, sender_addr);
-        assert!(table::contains(&session_keys.keys, authentication_key), error::not_found(ESessionKeyIsInvalid));
+        assert!(table::contains(&session_keys.keys, authentication_key), error::not_found(ErrorSessionKeyIsInvalid));
         let session_key = table::borrow_mut(&mut session_keys.keys, authentication_key);
         //TODO set the last active time to now when the timestamp is supported
         session_key.last_active_time = session_key.last_active_time + 1;

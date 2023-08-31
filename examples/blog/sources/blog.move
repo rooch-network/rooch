@@ -18,9 +18,9 @@ module rooch_examples::blog {
     friend rooch_examples::blog_delete_logic;
     friend rooch_examples::blog_aggregate;
 
-    const EDATA_TOO_LONG: u64 = 102;
-    const EINAPPROPRIATE_VERSION: u64 = 103;
-    const ENOT_GENESIS_ACCOUNT: u64 = 105;
+    const ErrorDataTooLong: u64 = 102;
+    const ErrorInappropriateVersion: u64 = 103;
+    const ErrorNotGenesisAccount: u64 = 105;
 
     struct Blog has key, store {
         version: u64,
@@ -37,7 +37,7 @@ module rooch_examples::blog {
     }
 
     public(friend) fun set_name(blog: &mut Blog, name: String) {
-        assert!(std::string::length(&name) <= 200, EDATA_TOO_LONG);
+        assert!(std::string::length(&name) <= 200, ErrorDataTooLong);
         blog.name = name;
     }
 
@@ -53,7 +53,7 @@ module rooch_examples::blog {
         name: String,
         articles: vector<ObjectID>,
     ): Blog {
-        assert!(std::string::length(&name) <= 200, EDATA_TOO_LONG);
+        assert!(std::string::length(&name) <= 200, ErrorDataTooLong);
         Blog {
             version: 0,
             name,
@@ -162,7 +162,7 @@ module rooch_examples::blog {
 
 
     public(friend) fun update_version_and_add(storage_ctx: &mut StorageContext, account: &signer, blog: Blog) {
-        assert!(signer::address_of(account) == @rooch_examples, error::invalid_argument(ENOT_GENESIS_ACCOUNT));
+        assert!(signer::address_of(account) == @rooch_examples, error::invalid_argument(ErrorNotGenesisAccount));
         blog.version = blog.version + 1;
         private_add_blog(storage_ctx, account, blog);
     }
@@ -172,13 +172,13 @@ module rooch_examples::blog {
     }
 
     public(friend) fun add_blog(storage_ctx: &mut StorageContext, account: &signer, blog: Blog) {
-        assert!(signer::address_of(account) == @rooch_examples, error::invalid_argument(ENOT_GENESIS_ACCOUNT));
-        assert!(blog.version == 0, EINAPPROPRIATE_VERSION);
+        assert!(signer::address_of(account) == @rooch_examples, error::invalid_argument(ErrorNotGenesisAccount));
+        assert!(blog.version == 0, ErrorInappropriateVersion);
         private_add_blog(storage_ctx, account, blog);
     }
 
     fun private_add_blog(storage_ctx: &mut StorageContext, account: &signer, blog: Blog) {
-        assert!(std::string::length(&blog.name) <= 200, EDATA_TOO_LONG);
+        assert!(std::string::length(&blog.name) <= 200, ErrorDataTooLong);
         account_storage::global_move_to(storage_ctx, account, blog);
     }
 

@@ -11,8 +11,8 @@ module rooch_framework::auth_validator_registry{
     friend rooch_framework::genesis;
     friend rooch_framework::builtin_validators;
 
-    const EValidatorUnregistered: u64 = 1;
-    const EValidatorAlreadyRegistered: u64 = 2;
+    const ErrorValidatorUnregistered: u64 = 1;
+    const ErrorValidatorAlreadyRegistered: u64 = 2;
 
     
 
@@ -51,7 +51,7 @@ module rooch_framework::auth_validator_registry{
         let registry = account_storage::global_borrow_mut<ValidatorRegistry>(ctx, @rooch_framework);
         let id = registry.validator_num;
 
-        assert!(!type_table::contains<AuthValidatorWithType<ValidatorType>>(&registry.validators_with_type), error::already_exists(EValidatorAlreadyRegistered));
+        assert!(!type_table::contains<AuthValidatorWithType<ValidatorType>>(&registry.validators_with_type), error::already_exists(ErrorValidatorAlreadyRegistered));
         
         let validator_with_type = AuthValidatorWithType<ValidatorType>{
             id,
@@ -76,9 +76,9 @@ module rooch_framework::auth_validator_registry{
 
     public fun borrow_validator_by_type<ValidatorType: store>(ctx: &StorageContext): &AuthValidator {
         let registry = account_storage::global_borrow<ValidatorRegistry>(ctx, @rooch_framework);
-        assert!(type_table::contains<AuthValidatorWithType<ValidatorType>>(&registry.validators_with_type), error::not_found(EValidatorUnregistered));
+        assert!(type_table::contains<AuthValidatorWithType<ValidatorType>>(&registry.validators_with_type), error::not_found(ErrorValidatorUnregistered));
         let validator_with_type = type_table::borrow<AuthValidatorWithType<ValidatorType>>(&registry.validators_with_type);
-        assert!(table::contains(&registry.validators, validator_with_type.id), error::not_found(EValidatorUnregistered));
+        assert!(table::contains(&registry.validators, validator_with_type.id), error::not_found(ErrorValidatorUnregistered));
         table::borrow(&registry.validators, validator_with_type.id)
     }
 

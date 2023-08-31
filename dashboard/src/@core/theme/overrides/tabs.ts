@@ -1,4 +1,6 @@
-// ** Type Imports
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { OwnerStateThemeType } from './'
 import { Skin } from 'src/@core/layouts/types'
 
@@ -9,29 +11,31 @@ const Tabs = (skin: Skin) => {
         vertical: {
           minWidth: 130,
           '& .MuiTab-root': {
-            minWidth: 130
-          }
-        }
-      }
+            minWidth: 130,
+          },
+        },
+      },
     },
     MuiTab: {
       styleOverrides: {
         textColorSecondary: ({ theme }: OwnerStateThemeType) => ({
           '&.Mui-selected': {
-            color: theme.palette.text.secondary
-          }
-        })
-      }
+            color: theme.palette.text.secondary,
+          },
+        }),
+      },
     },
     MuiTabPanel: {
       styleOverrides: {
         root: ({ theme }: OwnerStateThemeType) => ({
           padding: theme.spacing(6),
           backgroundColor: theme.palette.background.paper,
-          ...(skin === 'bordered' ? { border: `1px solid ${theme.palette.divider}` } : { boxShadow: theme.shadows[6] })
-        })
-      }
-    }
+          ...(skin === 'bordered'
+            ? { border: `1px solid ${theme.palette.divider}` }
+            : { boxShadow: theme.shadows[6] }),
+        }),
+      },
+    },
   }
 }
 

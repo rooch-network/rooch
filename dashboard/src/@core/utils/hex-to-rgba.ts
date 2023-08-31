@@ -1,6 +1,6 @@
-/**
- ** Hex color to RGBA color
- */
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 export const hexToRGBA = (hexCode: string, opacity: number) => {
   let hex = hexCode.replace('#', '')
 

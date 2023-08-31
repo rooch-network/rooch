@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** React Imports
 import { ReactNode } from 'react'
 
@@ -19,7 +22,7 @@ const CanViewNavSectionTitle = (props: Props) => {
   // ** Hook
   const auth = useAuth()
 
-  if (auth.user || (navTitle && navTitle.auth === false)) {
+  if (auth.accounts || (navTitle && navTitle.auth === false)) {
     return <>{children}</>
   } else {
     return null

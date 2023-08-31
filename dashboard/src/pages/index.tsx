@@ -1,19 +1,22 @@
-    import { useEffect } from 'react'
-    import { useRouter } from 'next/router'
-    import { useAuth } from 'src/hooks/useAuth'
-    import Spinner from 'src/@core/components/spinner'
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 
-    const Home = () => {
-      const auth = useAuth()
-      const router = useRouter()
+import { useEffect } from 'react'
+import { useRouter } from 'next/router'
+import { useAuth } from 'src/hooks/useAuth'
+import Spinner from 'src/@core/components/spinner'
 
-      useEffect(() => {
-        if (auth.user && router.route === '/') {
-          router.replace('/dashboards/analytics')
-        }
-      }, [auth.user, router])
+const Home = () => {
+  const auth = useAuth()
+  const router = useRouter()
 
-      return <Spinner sx={{ height: '100%' }} />
+  useEffect(() => {
+    if (auth.accounts && router.route === '/') {
+      router.replace('/dashboards/analytics')
     }
+  }, [auth.accounts, router])
 
-    export default Home
+  return <Spinner sx={{ height: '100%' }} />
+}
+
+export default Home

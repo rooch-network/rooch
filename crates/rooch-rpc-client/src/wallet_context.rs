@@ -5,8 +5,10 @@ use crate::client_config::{ClientConfig, DEFAULT_EXPIRATION_SECS};
 use crate::Client;
 use anyhow::anyhow;
 use move_core_types::account_address::AccountAddress;
+use moveos_types::gas_config::GasConfig;
 use moveos_types::transaction::MoveAction;
-use rooch_config::{rooch_config_dir, Config, PersistedConfig, ROOCH_CLIENT_CONFIG};
+use rooch_config::config::{Config, PersistedConfig};
+use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG};
 use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView};
 use rooch_types::address::RoochAddress;
@@ -85,13 +87,20 @@ impl WalletContext {
         action: MoveAction,
     ) -> RoochResult<RoochTransactionData> {
         let client = self.get_client().await?;
-
+        let chain_id = self.config.get_active_env()?.chain_id;
         let sequence_number = client
             .get_sequence_number(sender)
             .await
             .map_err(RoochError::from)?;
         log::debug!("use sequence_number: {}", sequence_number);
-        let tx_data = RoochTransactionData::new(sender, sequence_number, action);
+        //TODO max gas amount from cli option or dry run estimate
+        let tx_data = RoochTransactionData::new(
+            sender,
+            sequence_number,
+            chain_id,
+            GasConfig::DEFAULT_MAX_GAS_AMOUNT,
+            action,
+        );
         Ok(tx_data)
     }
 

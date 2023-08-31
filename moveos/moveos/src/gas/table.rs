@@ -2,14 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
-use move_core_types::gas_algebra::{AbstractMemorySize, InternalGas, NumArgs, NumBytes};
+use move_core_types::gas_algebra::{
+    AbstractMemorySize, GasQuantity, InternalGas, NumArgs, NumBytes,
+};
 use move_core_types::language_storage::ModuleId;
 use move_core_types::vm_status::StatusCode;
 use move_vm_types::gas::{GasMeter, SimpleInstruction};
 use move_vm_types::loaded_data::runtime_types::Type;
 use move_vm_types::views::{TypeView, ValueView};
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::ops::{Add, Bound};
+
+use super::SwitchableGasMeter;
 
 /// The size in bytes for a reference on the stack
 pub const REFERENCE_SIZE: AbstractMemorySize = AbstractMemorySize::new(8);
@@ -20,6 +26,12 @@ pub const STRUCT_SIZE: AbstractMemorySize = AbstractMemorySize::new(2);
 /// The size of a vector (without its containing data) in bytes
 pub const VEC_SIZE: AbstractMemorySize = AbstractMemorySize::new(8);
 
+pub const INSTRUCTION_TIER_DEFAULT: u64 = 1;
+pub const STACK_HEIGHT_TIER_DEFAULT: u64 = 1;
+pub const STACK_SIZE_TIER_DEFAULT: u64 = 1;
+
+pub static ZERO_COST_SCHEDULE: Lazy<CostTable> = Lazy::new(zero_cost_schedule);
+
 #[derive(Clone, Debug, Serialize, PartialEq, Eq, Deserialize)]
 pub struct CostTable {
     pub instruction_tiers: BTreeMap<u64, u64>,
@@ -27,52 +39,334 @@ pub struct CostTable {
     pub stack_size_tiers: BTreeMap<u64, u64>,
 }
 
-#[allow(dead_code)]
-#[derive(Debug)]
-pub struct MoveOSGasMeter {
-    pub gas_model_version: u64,
-    cost_table: CostTable,
-    gas_left: InternalGas,
-    gas_price: u64,
-    initial_budget: InternalGas,
-    charge: bool,
-}
+impl CostTable {
+    fn get_current_and_future_tier(
+        tiers: &BTreeMap<u64, u64>,
+        current: u64,
+        default: u64,
+    ) -> (u64, Option<u64>) {
+        let current_cost = tiers
+            .get(&current)
+            .or_else(|| tiers.range(..current).next_back().map(|(_, v)| v))
+            .unwrap_or(&default);
+        let next_tier_start = tiers
+            .range::<u64, _>((Bound::Excluded(current), Bound::Unbounded))
+            .next()
+            .map(|(next_tier_start, _)| *next_tier_start);
+        (*current_cost, next_tier_start)
+    }
 
-impl Default for MoveOSGasMeter {
-    fn default() -> Self {
-        Self::new()
+    pub fn instruction_tier(&self, instr_count: u64) -> (u64, Option<u64>) {
+        Self::get_current_and_future_tier(
+            &self.instruction_tiers,
+            instr_count,
+            INSTRUCTION_TIER_DEFAULT,
+        )
+    }
+
+    pub fn stack_height_tier(&self, stack_height: u64) -> (u64, Option<u64>) {
+        Self::get_current_and_future_tier(
+            &self.stack_height_tiers,
+            stack_height,
+            STACK_HEIGHT_TIER_DEFAULT,
+        )
+    }
+
+    pub fn stack_size_tier(&self, stack_size: u64) -> (u64, Option<u64>) {
+        Self::get_current_and_future_tier(
+            &self.stack_size_tiers,
+            stack_size,
+            STACK_SIZE_TIER_DEFAULT,
+        )
     }
 }
 
-impl MoveOSGasMeter {
-    pub fn new() -> Self {
+/// The  `GasCost` tracks:
+/// - instruction cost: how much time/computational power is needed to perform the instruction
+/// - memory cost: how much memory is required for the instruction, and storage overhead
+/// - stack height: how high is the stack growing (regardless of size in bytes)
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct GasCost {
+    pub instruction_gas: u64,
+    pub memory_gas: u64,
+    pub stack_height_gas: u64,
+}
+
+pub fn initial_cost_schedule() -> CostTable {
+    let instruction_tiers: BTreeMap<u64, u64> = vec![
+        (0, 1),
+        (3000, 2),
+        (6000, 3),
+        (8000, 5),
+        (9000, 9),
+        (9500, 16),
+        (10000, 29),
+        (10500, 50),
+        (15000, 100),
+    ]
+    .into_iter()
+    .collect();
+
+    let stack_height_tiers: BTreeMap<u64, u64> = vec![
+        (0, 1),
+        (400, 2),
+        (800, 3),
+        (1200, 5),
+        (1500, 9),
+        (1800, 16),
+        (2000, 29),
+        (2200, 50),
+        (5000, 100),
+    ]
+    .into_iter()
+    .collect();
+
+    let stack_size_tiers: BTreeMap<u64, u64> = vec![
+        (0, 1),
+        (2000, 2),
+        (5000, 3),
+        (8000, 5),
+        (10000, 9),
+        (11000, 16),
+        (11500, 29),
+        (11500, 50),
+        (20000, 100),
+    ]
+    .into_iter()
+    .collect();
+
+    CostTable {
+        instruction_tiers,
+        stack_size_tiers,
+        stack_height_tiers,
+    }
+}
+
+pub fn zero_cost_schedule() -> CostTable {
+    let mut zero_tier = BTreeMap::new();
+    zero_tier.insert(0, 0);
+    CostTable {
+        instruction_tiers: zero_tier.clone(),
+        stack_size_tiers: zero_tier.clone(),
+        stack_height_tiers: zero_tier,
+    }
+}
+
+impl GasCost {
+    pub fn new(instruction_gas: u64, memory_gas: u64, stack_height_gas: u64) -> Self {
         Self {
-            gas_model_version: 0,
-            cost_table: CostTable {
-                instruction_tiers: Default::default(),
-                stack_height_tiers: Default::default(),
-                stack_size_tiers: Default::default(),
-            },
-            gas_left: InternalGas::zero(),
-            gas_price: 0,
-            initial_budget: InternalGas::new(10000000),
-            charge: false,
+            instruction_gas,
+            memory_gas,
+            stack_height_gas,
         }
+    }
+
+    /// Convert a GasCost to a total gas charge in `InternalGas`.
+    #[inline]
+    pub fn total(&self) -> u64 {
+        self.instruction_gas
+            .add(self.memory_gas)
+            .add(self.stack_height_gas)
+    }
+
+    #[inline]
+    pub fn total_internal(&self) -> InternalGas {
+        GasQuantity::new(
+            self.instruction_gas
+                .add(self.memory_gas)
+                .add(self.stack_height_gas),
+        )
+    }
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+pub struct MoveOSGasMeter {
+    cost_table: CostTable,
+    gas_left: u64,
+    //TODO we do not need to use gas_price in gas meter.
+    charge: bool,
+
+    // The current height of the operand stack, and the maximal height that it has reached.
+    stack_height_high_water_mark: u64,
+    stack_height_current: u64,
+    stack_height_next_tier_start: Option<u64>,
+    stack_height_current_tier_mult: u64,
+
+    // The current (abstract) size  of the operand stack and the maximal size that it has reached.
+    stack_size_high_water_mark: u64,
+    stack_size_current: u64,
+    stack_size_next_tier_start: Option<u64>,
+    stack_size_current_tier_mult: u64,
+
+    // The total number of bytecode instructions that have been executed in the transaction.
+    instructions_executed: u64,
+    instructions_next_tier_start: Option<u64>,
+    instructions_current_tier_mult: u64,
+}
+
+impl MoveOSGasMeter {
+    /// Initialize the gas state with metering enabled.
+    ///
+    /// Charge for every operation and fail when there is no more gas to pay for operations.
+    /// This is the instantiation that must be used when executing a user function.
+    pub fn new(cost_table: CostTable, budget: u64) -> Self {
+        //assert!(gas_price > 0, "gas price cannot be 0");
+        //let budget_in_unit = budget / gas_price;
+        // let gas_left = Self::to_internal_units(budget_in_unit);
+        let (stack_height_current_tier_mult, stack_height_next_tier_start) =
+            cost_table.stack_height_tier(0);
+        let (stack_size_current_tier_mult, stack_size_next_tier_start) =
+            cost_table.stack_size_tier(0);
+        let (instructions_current_tier_mult, instructions_next_tier_start) =
+            cost_table.instruction_tier(0);
+        Self {
+            gas_left: budget,
+            cost_table,
+            charge: true,
+            stack_height_high_water_mark: 0,
+            stack_height_current: 0,
+            stack_size_high_water_mark: 0,
+            stack_size_current: 0,
+            instructions_executed: 0,
+            stack_height_current_tier_mult,
+            stack_size_current_tier_mult,
+            instructions_current_tier_mult,
+            stack_height_next_tier_start,
+            stack_size_next_tier_start,
+            instructions_next_tier_start,
+        }
+    }
+
+    /// Initialize the gas state with metering disabled.
+    ///
+    /// It should be used by clients in very specific cases and when executing system
+    /// code that does not have to charge the user.
+    pub fn new_unmetered() -> Self {
+        Self {
+            cost_table: ZERO_COST_SCHEDULE.clone(),
+            gas_left: 0,
+            charge: false,
+            stack_height_high_water_mark: 0,
+            stack_height_current: 0,
+            stack_height_next_tier_start: None,
+            stack_height_current_tier_mult: 0,
+            stack_size_high_water_mark: 0,
+            stack_size_current: 0,
+            stack_size_next_tier_start: None,
+            stack_size_current_tier_mult: 0,
+            instructions_executed: 0,
+            instructions_next_tier_start: None,
+            instructions_current_tier_mult: 0,
+        }
+    }
+
+    pub fn push_stack(&mut self, pushes: u64) -> PartialVMResult<()> {
+        match self.stack_height_current.checked_add(pushes) {
+            // We should never hit this.
+            None => return Err(PartialVMError::new(StatusCode::ARITHMETIC_ERROR)),
+            Some(new_height) => {
+                if new_height > self.stack_height_high_water_mark {
+                    self.stack_height_high_water_mark = new_height;
+                }
+                self.stack_height_current = new_height;
+            }
+        }
+
+        if let Some(stack_height_tier_next) = self.stack_height_next_tier_start {
+            if self.stack_height_current > stack_height_tier_next {
+                let (next_mul, next_tier) =
+                    self.cost_table.stack_height_tier(self.stack_height_current);
+                self.stack_height_current_tier_mult = next_mul;
+                self.stack_height_next_tier_start = next_tier;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn increase_instruction_count(&mut self, amount: u64) -> PartialVMResult<()> {
+        match self.instructions_executed.checked_add(amount) {
+            None => return Err(PartialVMError::new(StatusCode::ARITHMETIC_ERROR)),
+            Some(new_pc) => {
+                self.instructions_executed = new_pc;
+            }
+        }
+
+        if let Some(instr_tier_next) = self.instructions_next_tier_start {
+            if self.instructions_executed > instr_tier_next {
+                let (instr_cost, next_tier) =
+                    self.cost_table.instruction_tier(self.instructions_executed);
+                self.instructions_current_tier_mult = instr_cost;
+                self.instructions_next_tier_start = next_tier;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn increase_stack_size(&mut self, size_amount: u64) -> PartialVMResult<()> {
+        match self.stack_size_current.checked_add(size_amount) {
+            None => return Err(PartialVMError::new(StatusCode::ARITHMETIC_ERROR)),
+            Some(new_size) => {
+                if new_size > self.stack_size_high_water_mark {
+                    self.stack_size_high_water_mark = new_size;
+                }
+                self.stack_size_current = new_size;
+            }
+        }
+
+        if let Some(stack_size_tier_next) = self.stack_size_next_tier_start {
+            if self.stack_size_current > stack_size_tier_next {
+                let (next_mul, next_tier) =
+                    self.cost_table.stack_size_tier(self.stack_size_current);
+                self.stack_size_current_tier_mult = next_mul;
+                self.stack_size_next_tier_start = next_tier;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn pop_stack(&mut self, pops: u64) {
+        self.stack_height_current = self.stack_height_current.saturating_sub(pops);
     }
 
     pub fn charge(
         &mut self,
-        _num_instructions: u64,
-        _pushes: u64,
-        _pops: u64,
-        _incr_size: u64,
+        num_instructions: u64,
+        pushes: u64,
+        pops: u64,
+        incr_size: u64,
         _decr_size: u64,
     ) -> PartialVMResult<()> {
-        // #TODO: Various resources are used to charge for the execution of an instruction.
+        self.push_stack(pushes)?;
+        self.increase_instruction_count(num_instructions)?;
+        self.increase_stack_size(incr_size)?;
+
+        self.deduct_gas(
+            GasCost::new(
+                self.instructions_current_tier_mult
+                    .checked_mul(num_instructions)
+                    .ok_or_else(|| PartialVMError::new(StatusCode::ARITHMETIC_ERROR))?,
+                self.stack_size_current_tier_mult
+                    .checked_mul(incr_size)
+                    .ok_or_else(|| PartialVMError::new(StatusCode::ARITHMETIC_ERROR))?,
+                self.stack_height_current_tier_mult
+                    .checked_mul(pushes)
+                    .ok_or_else(|| PartialVMError::new(StatusCode::ARITHMETIC_ERROR))?,
+            )
+            .total_internal()
+            .into(),
+        )?;
+
+        // self.decrease_stack_size(decr_size);
+        self.pop_stack(pops);
+
         Ok(())
     }
 
-    pub fn deduct_gas(&mut self, amount: InternalGas) -> PartialVMResult<()> {
+    pub fn deduct_gas(&mut self, amount: u64) -> PartialVMResult<()> {
         if !self.charge {
             return Ok(());
         }
@@ -83,10 +377,14 @@ impl MoveOSGasMeter {
                 Ok(())
             }
             None => {
-                self.gas_left = InternalGas::new(0);
+                self.gas_left = 0;
                 Err(PartialVMError::new(StatusCode::OUT_OF_GAS))
             }
         }
+    }
+
+    pub fn set_metering(&mut self, enabled: bool) {
+        self.charge = enabled;
     }
 }
 
@@ -139,7 +437,7 @@ fn get_simple_instruction_stack_change(
 
 impl GasMeter for MoveOSGasMeter {
     fn balance_internal(&self) -> InternalGas {
-        InternalGas::new(1000000)
+        InternalGas::new(self.gas_left)
     }
 
     fn charge_simple_instr(&mut self, instr: SimpleInstruction) -> PartialVMResult<()> {
@@ -432,7 +730,7 @@ impl GasMeter for MoveOSGasMeter {
         // `charge_native_function_before_execution` call.
         self.charge(0, pushes, 0, size_increase.into(), 0)?;
         // Now charge the gas that the native function told us to charge.
-        self.deduct_gas(amount)
+        self.deduct_gas(amount.into())
     }
 
     fn charge_native_function_before_execution(
@@ -458,5 +756,19 @@ impl GasMeter for MoveOSGasMeter {
         _locals: impl Iterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
         Ok(())
+    }
+}
+
+impl SwitchableGasMeter for MoveOSGasMeter {
+    fn stop_metering(&mut self) {
+        self.charge = false;
+    }
+
+    fn start_metering(&mut self) {
+        self.charge = true;
+    }
+
+    fn is_metering(&self) -> bool {
+        self.charge
     }
 }

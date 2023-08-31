@@ -11,7 +11,7 @@ module rooch_framework::gas_coin {
     friend rooch_framework::genesis;
 
     /// Account does not have mint capability
-    const ENoCapabilities: u64 = 1;
+    const ErrorNoCapabilities: u64 = 1;
 
     struct GasCoin has key {}
 
@@ -60,4 +60,5 @@ module rooch_framework::gas_coin {
         let MintCapStore { mint_cap } = account_storage::global_move_from<MintCapStore>(ctx,@rooch_framework);
         coin::destroy_mint_cap(mint_cap);
     }
+
 }

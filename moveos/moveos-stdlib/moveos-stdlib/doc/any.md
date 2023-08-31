@@ -70,12 +70,12 @@ extension: Option<Any>
 ## Constants
 
 
-<a name="0x2_any_ETYPE_MISMATCH"></a>
+<a name="0x2_any_ErrorTypeMismatch"></a>
 
 The type provided for <code>unpack</code> is not the same as was given for <code>pack</code>.
 
 
-<pre><code><b>const</b> <a href="any.md#0x2_any_ETYPE_MISMATCH">ETYPE_MISMATCH</a>: u64 = 1;
+<pre><code><b>const</b> <a href="any.md#0x2_any_ErrorTypeMismatch">ErrorTypeMismatch</a>: u64 = 1;
 </code></pre>
 
 
@@ -100,7 +100,7 @@ also required from <code>T</code>.
 <pre><code><b>public</b> <b>fun</b> <a href="any.md#0x2_any_pack">pack</a>&lt;T: drop + store&gt;(x: T): <a href="any.md#0x2_any_Any">Any</a> {
     <a href="any.md#0x2_any_Any">Any</a> {
         <a href="">type_name</a>: <a href="type_info.md#0x2_type_info_type_name">type_info::type_name</a>&lt;T&gt;(),
-        data: <a href="../doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(&x)
+        data: <a href="_to_bytes">bcs::to_bytes</a>(&x)
     }
 }
 </code></pre>
@@ -126,7 +126,7 @@ Unpack a value from the <code><a href="any.md#0x2_any_Any">Any</a></code> repres
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="any.md#0x2_any_unpack">unpack</a>&lt;T&gt;(x: <a href="any.md#0x2_any_Any">Any</a>): T {
-    <b>assert</b>!(<a href="type_info.md#0x2_type_info_type_name">type_info::type_name</a>&lt;T&gt;() == x.<a href="">type_name</a>, <a href="_invalid_argument">error::invalid_argument</a>(<a href="any.md#0x2_any_ETYPE_MISMATCH">ETYPE_MISMATCH</a>));
+    <b>assert</b>!(<a href="type_info.md#0x2_type_info_type_name">type_info::type_name</a>&lt;T&gt;() == x.<a href="">type_name</a>, <a href="_invalid_argument">error::invalid_argument</a>(<a href="any.md#0x2_any_ErrorTypeMismatch">ErrorTypeMismatch</a>));
     bcs::from_bytes&lt;T&gt;(x.data)
 }
 </code></pre>

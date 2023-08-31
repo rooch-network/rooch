@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** MUI Imports
 import { styled } from '@mui/material/styles'
 import Box, { BoxProps } from '@mui/material/Box'
@@ -24,12 +27,12 @@ const CleaveWrapper = styled(Box)<BoxProps>(({ theme }) => ({
       borderWidth: 2,
       padding: '15.5px 13px',
       borderColor: `${theme.palette.primary.main} !important`,
-      boxShadow: `0 1px 3px 0 ${hexToRGBA(theme.palette.primary.main, 0.4)}`
+      boxShadow: `0 1px 3px 0 ${hexToRGBA(theme.palette.primary.main, 0.4)}`,
     },
     '&::-webkit-input-placeholder': {
-      color: theme.palette.text.secondary
-    }
-  }
+      color: theme.palette.text.secondary,
+    },
+  },
 }))
 
 export default CleaveWrapper

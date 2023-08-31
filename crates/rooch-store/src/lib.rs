@@ -54,17 +54,13 @@ impl RoochStore {
     }
 
     //TODO implement a memory mock store
-    pub fn mock_rooch_store() -> Self {
-        Self::new(StoreInstance::new_db_instance(
-            RocksDB::new(
-                temp_dir().path(),
-                moveos_store::StoreMeta::get_column_family_names().to_vec(),
-                RocksdbConfig::default(),
-                None,
-            )
-            .expect("init db error"),
-        ))
-        .expect("init rooch store error")
+    pub fn mock_rooch_store() -> Result<Self> {
+        Self::new(StoreInstance::new_db_instance(RocksDB::new(
+            temp_dir().path(),
+            moveos_store::StoreMeta::get_column_family_names().to_vec(),
+            RocksdbConfig::default(),
+            None,
+        )?))
     }
 
     pub fn get_transaction_store(&self) -> &TransactionDBStore {

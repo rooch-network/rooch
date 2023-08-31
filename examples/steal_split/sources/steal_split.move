@@ -24,15 +24,15 @@ module rooch_examples::rooch_examples {
     const DECISION_SPLIT: u64 = 1;
     const DECISION_STEAL: u64 = 2;
 
-    const EStateIsNotInitialized: u64 = 0;
-    const ESignerIsNotDeployer: u64 = 1;
-    const ESignerHasInsufficientAptBalance: u64 = 2;
-    const EGameDoesNotExist: u64 = 3;
-    const EPlayerDoesNotParticipateInTheGame: u64 = 4;
-    const EIncorrectHashValue: u64 = 5;
-    const EGameNotExpiredYet: u64 = 6;
-    const EBothPlayersDoNotHaveDecisionsSubmitted: u64 = 7;
-    const EPlayerHasDecisionSubmitted: u64 = 8;
+    const ErrorStateIsNotInitialized: u64 = 0;
+    const ErrorSignerIsNotDeployer: u64 = 1;
+    const ErrorSignerHasInsufficientAptBalance: u64 = 2;
+    const ErrorGameDoesNotExist: u64 = 3;
+    const ErrorPlayerDoesNotParticipateInTheGame: u64 = 4;
+    const ErrorIncorrectHashValue: u64 = 5;
+    const ErrorGameNotExpiredYet: u64 = 6;
+    const ErrorBothPlayersDoNotHaveDecisionsSubmitted: u64 = 7;
+    const ErrorPlayerHasDecisionSubmitted: u64 = 8;
 
     struct ResouceAccountAddress has key {
         addr: address
@@ -369,42 +369,42 @@ module rooch_examples::rooch_examples {
     }
 
     fun check_if_state_exists(ctx: &mut StorageContext) {
-        assert!(account_storage::global_exists<ResouceAccountAddress>(ctx, @rooch_examples), EStateIsNotInitialized);
+        assert!(account_storage::global_exists<ResouceAccountAddress>(ctx, @rooch_examples), ErrorStateIsNotInitialized);
         let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(ctx, @rooch_examples).addr;
-        assert!(account_storage::global_exists<State>(ctx, resouce_address), EStateIsNotInitialized);
+        assert!(account_storage::global_exists<State>(ctx, resouce_address), ErrorStateIsNotInitialized);
     }
 
     fun check_if_signer_is_contract_deployer(signer: &signer) {
-        assert!(signer::address_of(signer) == @rooch_examples, ESignerIsNotDeployer);
+        assert!(signer::address_of(signer) == @rooch_examples, ErrorSignerIsNotDeployer);
     }
 
     fun check_if_account_has_enough_apt_coins(account: &signer, amount: u64, ctx: &StorageContext, ) {
-        assert!(coin::balance<WGBCOIN>(ctx, signer::address_of(account)) >= amount, ESignerHasInsufficientAptBalance);
+        assert!(coin::balance<WGBCOIN>(ctx, signer::address_of(account)) >= amount, ErrorSignerHasInsufficientAptBalance);
     }
 
     fun check_if_game_exists(games: &SimpleMap<u128, Game>, game_id: &u128) {
-        assert!(simple_map::contains_key(games, game_id), EGameDoesNotExist);
+        assert!(simple_map::contains_key(games, game_id), ErrorGameDoesNotExist);
     }
 
     fun check_if_player_participates_in_the_game(player: &signer, game: &Game) {
         let player_address = signer::address_of(player);
         assert!(
             game.player_two.player_address == player_address || game.player_one.player_address == player_address,
-            EPlayerDoesNotParticipateInTheGame
+            ErrorPlayerDoesNotParticipateInTheGame
         );
     }
 
     fun check_if_both_players_have_a_decision_submitted(game: &Game) {
         assert!(
             option::is_some(&game.player_one.decision_hash) && option::is_some(&game.player_two.decision_hash),
-            EBothPlayersDoNotHaveDecisionsSubmitted
+            ErrorBothPlayersDoNotHaveDecisionsSubmitted
         );
     }
 
     fun check_if_player_does_not_have_a_decision_submitted(game: &Game, player_address: address) {
         assert!(
             game.player_two.player_address == player_address || game.player_one.player_address == player_address,
-            EPlayerDoesNotParticipateInTheGame
+            ErrorPlayerDoesNotParticipateInTheGame
         );
         let player_data_ref = if (game.player_one.player_address == player_address) {
             &game.player_one
@@ -413,18 +413,18 @@ module rooch_examples::rooch_examples {
             &game.player_two
         }
         else {
-            abort EPlayerDoesNotParticipateInTheGame
+            abort ErrorPlayerDoesNotParticipateInTheGame
         };
 
-        assert!(option::is_none(&player_data_ref.decision_hash), EPlayerHasDecisionSubmitted);
+        assert!(option::is_none(&player_data_ref.decision_hash), ErrorPlayerHasDecisionSubmitted);
     }
 
     fun check_if_hash_is_correct(hash: vector<u8>, value: vector<u8>) {
-        assert!(hash::sha3_256(value) == hash, EIncorrectHashValue);
+        assert!(hash::sha3_256(value) == hash, ErrorIncorrectHashValue);
     }
 
     fun check_if_game_expired(game: &Game, ctx: &StorageContext) {
-        assert!(game.expiration_timestamp_in_seconds <= timestamp::now_seconds(ctx), EGameNotExpiredYet);
+        assert!(game.expiration_timestamp_in_seconds <= timestamp::now_seconds(ctx), ErrorGameNotExpiredYet);
     }
 
 

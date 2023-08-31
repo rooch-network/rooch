@@ -36,4 +36,3 @@ raw-store = { workspace = true }
 moveos-common = { workspace = true }
 moveos-config = { workspace = true }
 accumulator = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }

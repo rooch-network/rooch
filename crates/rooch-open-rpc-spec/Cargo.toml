@@ -26,3 +26,7 @@ pretty_assertions = { workspace = true }
 rooch-rpc-api = { workspace = true }
 rooch-open-rpc = { workspace = true }
 rooch-open-rpc-macros = { workspace = true }
+rooch-open-rpc-spec-builder = { workspace = true }
+
+[build-dependencies]
+rooch-open-rpc-spec-builder = { workspace = true }

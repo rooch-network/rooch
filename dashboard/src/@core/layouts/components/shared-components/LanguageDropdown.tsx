@@ -1,4 +1,7 @@
-// ** React Import
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+// ** React Imports
 import { useEffect } from 'react'
 
 // ** Icon Imports
@@ -36,13 +39,16 @@ const LanguageDropdown = ({ settings, saveSettings }: Props) => {
 
   return (
     <OptionsMenu
-      icon={<Icon icon='mdi:translate' />}
-      iconButtonProps={{ color: 'inherit', sx: { ...(layout === 'vertical' ? { mr: 0.75 } : { mx: 0.75 }) } }}
+      icon={<Icon icon="mdi:translate" />}
+      iconButtonProps={{
+        color: 'inherit',
+        sx: { ...(layout === 'vertical' ? { mr: 0.75 } : { mx: 0.75 }) },
+      }}
       menuProps={{
         sx: {
           '& .MuiMenu-paper': { mt: 4, minWidth: 130 },
-          '& .MuiMenuItem-root:not(.Mui-selected)': { color: 'text.secondary' }
-        }
+          '& .MuiMenuItem-root:not(.Mui-selected)': { color: 'text.secondary' },
+        },
       }}
       options={[
         {
@@ -53,8 +59,8 @@ const LanguageDropdown = ({ settings, saveSettings }: Props) => {
             onClick: () => {
               handleLangItemClick('en')
               saveSettings({ ...settings, direction: 'ltr' })
-            }
-          }
+            },
+          },
         },
         {
           text: 'French',
@@ -64,8 +70,8 @@ const LanguageDropdown = ({ settings, saveSettings }: Props) => {
             onClick: () => {
               handleLangItemClick('fr')
               saveSettings({ ...settings, direction: 'ltr' })
-            }
-          }
+            },
+          },
         },
         {
           text: 'Arabic',
@@ -75,9 +81,9 @@ const LanguageDropdown = ({ settings, saveSettings }: Props) => {
             onClick: () => {
               handleLangItemClick('ar')
               saveSettings({ ...settings, direction: 'rtl' })
-            }
-          }
-        }
+            },
+          },
+        },
       ]}
     />
   )

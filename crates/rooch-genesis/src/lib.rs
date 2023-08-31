@@ -5,10 +5,19 @@ use anyhow::Result;
 use move_binary_format::{errors::Location, CompiledModule};
 use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use move_vm_runtime::{config::VMConfig, native_functions::NativeFunction};
-use moveos::moveos::MoveOSConfig;
-use moveos_stdlib_builder::BuildOptions;
-use moveos_types::transaction::{MoveAction, MoveOSTransaction};
+use moveos::moveos::{MoveOS, MoveOSConfig};
+use moveos_stdlib_builder::Stdlib;
+use moveos_store::{config_store::ConfigDBStore, MoveOSStore};
+use moveos_types::genesis_info::GenesisInfo;
+use moveos_types::h256;
+use moveos_types::h256::H256;
+use moveos_types::transaction::MoveAction;
 use once_cell::sync::Lazy;
+use rooch_types::chain_id::RoochChainID;
+use rooch_types::error::GenesisError;
+use rooch_types::framework::genesis;
+use rooch_types::framework::genesis::GenesisContext;
+use rooch_types::transaction::rooch::RoochTransaction;
 use serde::{Deserialize, Serialize};
 use std::{
     fs::File,
@@ -16,12 +25,18 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub static ROOCH_GENESIS: Lazy<RoochGenesis> =
-    Lazy::new(|| RoochGenesis::build().expect("build rooch framework failed"));
+pub static ROOCH_DEV_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
+    // genesis for integration test, we need to build the stdlib every time for `private_generic` check
+    // see moveos/moveos-verifier/src/metadata.rs#L27-L30
+    RoochGenesis::build_with_option(RoochChainID::DEV.chain_id().id(), BuildOption::Fresh)
+        .expect("build rooch genesis failed")
+});
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GenesisPackage {
-    pub genesis_txs: Vec<MoveOSTransaction>,
+    pub state_root: H256,
+    pub genesis_ctx: GenesisContext,
+    pub genesis_txs: Vec<RoochTransaction>,
 }
 
 #[derive(Clone, Debug)]
@@ -30,6 +45,7 @@ pub struct RoochGenesis {
     ///config for the Move integration test
     pub config_for_test: MoveOSConfig,
     //TODO we need to add gas parameters to the GenesisPackage
+    //How to serialize the gas parameters?
     pub gas_params: rooch_framework::natives::GasParameters,
     pub genesis_package: GenesisPackage,
 }
@@ -40,15 +56,11 @@ pub enum BuildOption {
 }
 
 impl RoochGenesis {
-    fn build() -> Result<Self> {
-        if cfg!(debug_assertions) {
-            Self::build_with_option(BuildOption::Fresh)
-        } else {
-            Self::build_with_option(BuildOption::Release)
-        }
+    pub fn build(chain_id: u64) -> Result<Self> {
+        Self::build_with_option(chain_id, BuildOption::Release)
     }
 
-    pub fn build_with_option(option: BuildOption) -> Result<Self> {
+    pub fn build_with_option(chain_id: u64, option: BuildOption) -> Result<Self> {
         let config = MoveOSConfig {
             vm_config: VMConfig::default(),
         };
@@ -58,11 +70,8 @@ impl RoochGenesis {
         };
 
         let gas_params = rooch_framework::natives::GasParameters::zeros();
+        let genesis_package = GenesisPackage::build(chain_id, option)?;
 
-        let genesis_package = match option {
-            BuildOption::Fresh => GenesisPackage::build()?,
-            BuildOption::Release => GenesisPackage::load()?,
-        };
         Ok(RoochGenesis {
             config,
             config_for_test,
@@ -75,59 +84,124 @@ impl RoochGenesis {
         self.genesis_package.modules()
     }
 
-    pub fn genesis_txs(&self) -> Vec<MoveOSTransaction> {
+    pub fn genesis_txs(&self) -> Vec<RoochTransaction> {
         self.genesis_package.genesis_txs.clone()
+    }
+
+    pub fn genesis_ctx(&self) -> GenesisContext {
+        self.genesis_package.genesis_ctx.clone()
     }
 
     pub fn all_natives(&self) -> Vec<(AccountAddress, Identifier, Identifier, NativeFunction)> {
         rooch_framework::natives::all_natives(self.gas_params.clone())
     }
+
+    pub fn genesis_package_hash(&self) -> H256 {
+        h256::sha3_256_of(
+            bcs::to_bytes(&self.genesis_package)
+                .expect("genesis txs bcs to_bytes should success")
+                .as_slice(),
+        )
+    }
+
+    pub fn genesis_state_root(&self) -> H256 {
+        self.genesis_package.state_root
+    }
+
+    pub fn genesis_info(&self) -> GenesisInfo {
+        GenesisInfo {
+            genesis_package_hash: self.genesis_package_hash(),
+            state_root_hash: self.genesis_state_root(),
+        }
+    }
+
+    pub fn check_genesis(&self, config_store: &ConfigDBStore) -> Result<()> {
+        let genesis_info_result = config_store.get_genesis();
+        match genesis_info_result {
+            Ok(Some(genesis_info_from_store)) => {
+                let genesis_info_from_binary = self.genesis_info();
+
+                // We need to check the genesis package hash and genesis state root hash
+                // because the same genesis package may generate different state root hash when the Move VM is upgraded
+                if genesis_info_from_store != genesis_info_from_binary {
+                    return Err(GenesisError::GenesisVersionMismatch {
+                        from_store: genesis_info_from_store,
+                        from_binary: genesis_info_from_binary,
+                    }
+                    .into());
+                }
+            }
+            Err(e) => return Err(GenesisError::GenesisLoadFailure(e.to_string()).into()),
+            Ok(None) => {
+                return Err(GenesisError::GenesisNotExist(
+                    "genesis hash from store is none".to_string(),
+                )
+                .into())
+            }
+        }
+        Ok(())
+    }
 }
 
-static GENESIS_PACKAGE_BYTES: &[u8] = include_bytes!("../genesis/genesis");
+static GENESIS_STDLIB_BYTES: &[u8] = include_bytes!("../generated/stdlib");
 
 impl GenesisPackage {
-    pub const GENESIS_FILE_NAME: &'static str = "genesis";
-    pub const GENESIS_DIR: &'static str = "genesis";
+    fn build(chain_id: u64, build_option: BuildOption) -> Result<Self> {
+        let stdlib = match build_option {
+            BuildOption::Fresh => Self::build_stdlib()?,
+            BuildOption::Release => Self::load_stdlib()?,
+        };
 
-    fn build() -> Result<Self> {
-        let bundles =
-            moveos_stdlib_builder::Stdlib::build(BuildOptions::default())?.module_bundles()?;
-        let genesis_txs = bundles
+        let bundles = stdlib.module_bundles()?;
+
+        let genesis_txs: Vec<RoochTransaction> = bundles
             .into_iter()
-            .map(|(genesis_account, bundle)|
-        //TODO make this to RoochTransaction.
-        MoveOSTransaction::new_for_test(
-            genesis_account,
-            MoveAction::ModuleBundle(bundle),
-        ))
+            .map(|(genesis_account, bundle)| {
+                RoochTransaction::new_genesis_tx(
+                    genesis_account.into(),
+                    chain_id,
+                    MoveAction::ModuleBundle(bundle),
+                )
+            })
             .collect();
-        Ok(Self { genesis_txs })
+        //TODO put gas parameters into genesis package
+        let gas_parameters = rooch_framework::natives::GasParameters::zeros();
+        let vm_config = MoveOSConfig {
+            vm_config: VMConfig::default(),
+        };
+        let mut moveos = MoveOS::new(
+            MoveOSStore::mock_moveos_store()?,
+            rooch_framework::natives::all_natives(gas_parameters),
+            vm_config,
+        )?;
+        let genesis_ctx = genesis::GenesisContext::new(chain_id);
+        let genesis_result = moveos.init_genesis(genesis_txs.clone(), genesis_ctx.clone())?;
+        let state_root = genesis_result
+            .last()
+            .expect("genesis result should not be empty")
+            .0;
+        Ok(Self {
+            state_root,
+            genesis_ctx,
+            genesis_txs,
+        })
     }
 
-    pub fn load() -> Result<Self> {
-        let genesis_package = bcs::from_bytes(GENESIS_PACKAGE_BYTES)?;
-        Ok(genesis_package)
+    pub fn build_stdlib() -> Result<Stdlib> {
+        rooch_genesis_builder::build_stdlib()
     }
 
-    pub fn load_from<P: AsRef<Path>>(data_dir: P) -> Result<Self> {
-        let data_dir = data_dir.as_ref();
-        let genesis_file = data_dir.join(Self::GENESIS_FILE_NAME);
+    pub fn load_stdlib() -> Result<Stdlib> {
+        moveos_stdlib_builder::Stdlib::decode(GENESIS_STDLIB_BYTES)
+    }
+
+    pub fn load_from<P: AsRef<Path>>(genesis_file: P) -> Result<Self> {
         let genesis_package = bcs::from_bytes(&std::fs::read(genesis_file)?)?;
         Ok(genesis_package)
     }
 
-    pub fn save(&self) -> Result<()> {
-        self.save_to(path_in_crate(Self::GENESIS_DIR))
-    }
-
-    pub fn save_to<P: AsRef<Path>>(&self, data_dir: P) -> Result<()> {
-        let data_dir = data_dir.as_ref();
-        if !data_dir.exists() {
-            std::fs::create_dir_all(data_dir)?;
-        }
-        let genesis_file = data_dir.join(Self::GENESIS_FILE_NAME);
-        eprintln!("Save genesis to {:?}", genesis_file);
+    pub fn save_to<P: AsRef<Path>>(&self, genesis_file: P) -> Result<()> {
+        eprintln!("Save genesis to {:?}", genesis_file.as_ref());
         let mut file = File::create(genesis_file)?;
         let contents = bcs::to_bytes(&self)?;
         file.write_all(&contents)?;
@@ -138,7 +212,7 @@ impl GenesisPackage {
         self.genesis_txs
             .iter()
             .filter_map(|tx| {
-                if let MoveAction::ModuleBundle(bundle) = &tx.action {
+                if let MoveAction::ModuleBundle(bundle) = &tx.action() {
                     Some(bundle)
                 } else {
                     None
@@ -154,43 +228,46 @@ impl GenesisPackage {
     }
 }
 
-fn path_in_crate<S>(relative: S) -> PathBuf
-where
-    S: AsRef<Path>,
-{
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push(relative);
-    path
+pub fn crate_dir() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+}
+
+const MOVE_STD_ERROR_DESCRIPTIONS: &[u8] =
+    include_bytes!("../generated/move_std_error_description.errmap");
+
+pub fn move_std_error_descriptions() -> &'static [u8] {
+    MOVE_STD_ERROR_DESCRIPTIONS
+}
+
+const MOVEOS_STD_ERROR_DESCRIPTIONS: &[u8] =
+    include_bytes!("../generated/moveos_std_error_description.errmap");
+
+pub fn moveos_std_error_descriptions() -> &'static [u8] {
+    MOVEOS_STD_ERROR_DESCRIPTIONS
+}
+
+const ROOCH_FRAMEWORK_ERROR_DESCRIPTIONS: &[u8] =
+    include_bytes!("../generated/rooch_framework_error_description.errmap");
+
+pub fn rooch_framework_error_descriptions() -> &'static [u8] {
+    ROOCH_FRAMEWORK_ERROR_DESCRIPTIONS
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::GenesisPackage;
     use moveos::moveos::MoveOS;
     use moveos_store::MoveOSStore;
     use rooch_framework::natives::all_natives;
-
-    #[test]
-    fn test_genesis_package_build_and_save() {
-        let genesis_package = GenesisPackage::build().unwrap();
-        genesis_package.save().unwrap();
-    }
-
-    #[test]
-    fn test_genesis_package_load() {
-        let _genesis_package = GenesisPackage::load().unwrap();
-    }
-
-    #[test]
-    fn test_genesis_build() {
-        let genesis = super::RoochGenesis::build().expect("build rooch framework failed");
-        assert_eq!(genesis.genesis_package.genesis_txs.len(), 3);
-    }
+    use rooch_types::chain_id::RoochChainID;
 
     #[test]
     fn test_genesis_init() {
-        let genesis = super::RoochGenesis::build().expect("build rooch framework failed");
-        // let db = moveos_store::MoveOSStore::new_with_memory_store();
+        let genesis = super::RoochGenesis::build_with_option(
+            RoochChainID::DEV.chain_id().id(),
+            crate::BuildOption::Fresh,
+        )
+        .expect("build rooch framework failed");
+        assert_eq!(genesis.genesis_package.genesis_txs.len(), 3);
         let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
         let mut moveos = MoveOS::new(
             moveos_store,
@@ -198,8 +275,12 @@ mod tests {
             genesis.config,
         )
         .expect("init moveos failed");
+
         moveos
-            .init_genesis(genesis.genesis_package.genesis_txs)
+            .init_genesis(
+                genesis.genesis_package.genesis_txs,
+                genesis.genesis_package.genesis_ctx,
+            )
             .expect("init genesis failed");
     }
 }

@@ -9,6 +9,7 @@ module moveos_std::storage_context {
     use moveos_std::tx_context::{Self, TxContext};
     use moveos_std::object_id::{ObjectID};
     use moveos_std::tx_meta::{TxMeta};
+    use moveos_std::tx_result::{TxResult};
 
     #[test_only]
     use moveos_std::object_storage::{Self};
@@ -53,6 +54,16 @@ module moveos_std::storage_context {
         tx_context::sender(&self.tx_context)
     } 
 
+    /// Return the sequence number of the current transaction
+    public fun sequence_number(self: &StorageContext): u64 {
+        tx_context::sequence_number(&self.tx_context)
+    }
+
+    /// Return the maximum gas amount that can be used by the current transaction
+    public fun max_gas_amount(self: &StorageContext): u64 {
+        tx_context::max_gas_amount(&self.tx_context)
+    }
+
     /// Generate a new unique address
     public fun fresh_address(self: &mut StorageContext): address {
         tx_context::fresh_address(&mut self.tx_context)
@@ -82,10 +93,20 @@ module moveos_std::storage_context {
         tx_context::tx_meta(&self.tx_context)
     }
 
+    public fun tx_result(self: &StorageContext): TxResult {
+        tx_context::tx_result(&self.tx_context)
+    }
+
     #[test_only]
     /// Create a StorageContext for unit test
     public fun new_test_context(sender: address): StorageContext {
-        let tx_context = tx_context::new_test_context(sender);
+        new_test_context_random(sender, b"test_tx")
+    }
+
+    #[test_only]
+    /// Create a StorageContext for unit test with random seed
+    public fun new_test_context_random(sender: address, seed: vector<u8>): StorageContext {
+        let tx_context = tx_context::new_test_context_random(sender, seed);
         let object_storage = object_storage::new_with_id(object_storage::global_object_storage_handle());
         StorageContext {
             tx_context,

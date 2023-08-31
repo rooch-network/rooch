@@ -24,7 +24,7 @@ It is used to store the account's resources and modules
 -  [Function `publish_modules_entry`](#0x2_account_storage_publish_modules_entry)
 
 
-<pre><code><b>use</b> <a href="../doc/signer.md#0x1_signer">0x1::signer</a>;
+<pre><code><b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 <b>use</b> <a href="move_module.md#0x2_move_module">0x2::move_module</a>;
@@ -104,32 +104,32 @@ It is used to store the account's resources and modules
 ## Constants
 
 
-<a name="0x2_account_storage_EAccountAlreadyExists"></a>
+<a name="0x2_account_storage_ErrorAccountAlreadyExists"></a>
 
 The account with the given address already exists
 
 
-<pre><code><b>const</b> <a href="account_storage.md#0x2_account_storage_EAccountAlreadyExists">EAccountAlreadyExists</a>: u64 = 0;
+<pre><code><b>const</b> <a href="account_storage.md#0x2_account_storage_ErrorAccountAlreadyExists">ErrorAccountAlreadyExists</a>: u64 = 0;
 </code></pre>
 
 
 
-<a name="0x2_account_storage_EResourceAlreadyExists"></a>
+<a name="0x2_account_storage_ErrorResourceAlreadyExists"></a>
 
 The resource with the given type already exists
 
 
-<pre><code><b>const</b> <a href="account_storage.md#0x2_account_storage_EResourceAlreadyExists">EResourceAlreadyExists</a>: u64 = 1;
+<pre><code><b>const</b> <a href="account_storage.md#0x2_account_storage_ErrorResourceAlreadyExists">ErrorResourceAlreadyExists</a>: u64 = 1;
 </code></pre>
 
 
 
-<a name="0x2_account_storage_EResourceNotExists"></a>
+<a name="0x2_account_storage_ErrorResourceNotExists"></a>
 
 The resource with the given type not exists
 
 
-<pre><code><b>const</b> <a href="account_storage.md#0x2_account_storage_EResourceNotExists">EResourceNotExists</a>: u64 = 2;
+<pre><code><b>const</b> <a href="account_storage.md#0x2_account_storage_ErrorResourceNotExists">ErrorResourceNotExists</a>: u64 = 2;
 </code></pre>
 
 
@@ -168,7 +168,7 @@ The resource with the given type not exists
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_named_table_id">named_table_id</a>(account: <b>address</b>, table_type: u64): ObjectID{
-    <a href="object_id.md#0x2_object_id_address_to_object_id">object_id::address_to_object_id</a>(<a href="tx_context.md#0x2_tx_context_derive_id">tx_context::derive_id</a>(<a href="../doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(&account), table_type))
+    <a href="object_id.md#0x2_object_id_address_to_object_id">object_id::address_to_object_id</a>(<a href="tx_context.md#0x2_tx_context_derive_id">tx_context::derive_id</a>(<a href="_to_bytes">bcs::to_bytes</a>(&account), table_type))
 }
 </code></pre>
 
@@ -199,7 +199,7 @@ Create a new account storage space
         modules: <a href="table.md#0x2_table_new_with_id">table::new_with_id</a>(<a href="account_storage.md#0x2_account_storage_named_table_id">named_table_id</a>(account, <a href="account_storage.md#0x2_account_storage_NamedTableModule">NamedTableModule</a>)),
     };
     <b>let</b> <a href="object_storage.md#0x2_object_storage">object_storage</a> = <a href="storage_context.md#0x2_storage_context_object_storage_mut">storage_context::object_storage_mut</a>(ctx);
-    <b>assert</b>!(!<a href="object_storage.md#0x2_object_storage_contains">object_storage::contains</a>(<a href="object_storage.md#0x2_object_storage">object_storage</a>, <a href="object_id.md#0x2_object_id">object_id</a>), <a href="account_storage.md#0x2_account_storage_EAccountAlreadyExists">EAccountAlreadyExists</a>);
+    <b>assert</b>!(!<a href="object_storage.md#0x2_object_storage_contains">object_storage::contains</a>(<a href="object_storage.md#0x2_object_storage">object_storage</a>, <a href="object_id.md#0x2_object_id">object_id</a>), <a href="account_storage.md#0x2_account_storage_ErrorAccountAlreadyExists">ErrorAccountAlreadyExists</a>);
     <b>let</b> <a href="object.md#0x2_object">object</a> = <a href="object.md#0x2_object_new_with_id">object::new_with_id</a>(<a href="object_id.md#0x2_object_id">object_id</a>, account, <a href="account_storage.md#0x2_account_storage">account_storage</a>);
     <a href="object_storage.md#0x2_object_storage_add">object_storage::add</a>(<a href="object_storage.md#0x2_object_storage">object_storage</a>, <a href="object.md#0x2_object">object</a>);
 }

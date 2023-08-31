@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** React Imports
 import { ReactNode, ReactElement, useEffect } from 'react'
 
@@ -23,11 +26,11 @@ const AuthGuard = (props: AuthGuardProps) => {
         return
       }
 
-      if (auth.user === null && !window.localStorage.getItem('userData')) {
+      if (auth.accounts === null && !auth.loading) {
         if (router.asPath !== '/') {
           router.replace({
             pathname: '/login',
-            query: { returnUrl: router.asPath }
+            query: { returnUrl: router.asPath },
           })
         } else {
           router.replace('/login')
@@ -35,10 +38,10 @@ const AuthGuard = (props: AuthGuardProps) => {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [router.route]
+    [router.route, auth.accounts, auth.loading],
   )
 
-  if (auth.loading || auth.user === null) {
+  if (auth.loading || auth.accounts === null) {
     return fallback
   }
 

@@ -13,13 +13,14 @@ module moveos_std::tx_context {
     use moveos_std::copyable_any::{Self, Any};
     use moveos_std::type_info;
     use moveos_std::tx_meta::{TxMeta};
+    use moveos_std::tx_result::{TxResult};
 
     friend moveos_std::object;
     friend moveos_std::raw_table;
     friend moveos_std::account_storage;
     friend moveos_std::event;
 
-    const EInvalidContext: u64 = 1;
+    const ErrorInvalidContext: u64 = 1;
 
     /// Information about the transaction currently being executed.
     /// This cannot be constructed by a transaction--it is a privileged object created by
@@ -27,6 +28,10 @@ module moveos_std::tx_context {
     struct TxContext has drop {
         /// The address of the user that signed the current transaction
         sender: address,
+        /// Sequence number of this transaction corresponding to sender's account.
+        sequence_number: u64,
+        // The max gas to be used. 
+        max_gas_amount: u64,
         /// Hash of the current transaction
         tx_hash: vector<u8>,
         /// Counter recording the number of fresh id's created while executing
@@ -40,6 +45,16 @@ module moveos_std::tx_context {
     /// transaction
     public fun sender(self: &TxContext): address {
         self.sender
+    }
+
+    /// Return the sequence number of the current transaction
+    public fun sequence_number(self: &TxContext): u64 {
+        self.sequence_number
+    }
+
+    /// Return the max gas to be used
+    public fun max_gas_amount(self: &TxContext): u64 {
+        self.max_gas_amount
     } 
 
     /// Generate a new unique address,
@@ -102,16 +117,31 @@ module moveos_std::tx_context {
     /// The meta data is only available when executing or validating a transaction, otherwise abort(eg. readonly function call).
     public fun tx_meta(self: &TxContext): TxMeta {
         let meta = get<TxMeta>(self);
-        assert!(option::is_some(&meta), error::invalid_state(EInvalidContext));
+        assert!(option::is_some(&meta), error::invalid_state(ErrorInvalidContext));
         option::extract(&mut meta)
+    }
+
+    /// The result is only available in the `post_execute` function.
+    public fun tx_result(self: &TxContext): TxResult {
+        let result = get<TxResult>(self);
+        assert!(option::is_some(&result), error::invalid_state(ErrorInvalidContext));
+        option::extract(&mut result)
     }
 
     #[test_only]
     /// Create a TxContext for unit test
     public fun new_test_context(sender: address): TxContext {
-        let tx_hash = hash::sha3_256(b"test_tx");
+        new_test_context_random(sender, b"test_tx")
+    }
+
+    #[test_only]
+    /// Create a random TxContext for unit test
+    public fun new_test_context_random(sender: address, seed: vector<u8>): TxContext {
+        let tx_hash = hash::sha3_256(seed);
         TxContext {
             sender,
+            sequence_number: 0,
+            max_gas_amount: 100000000,
             tx_hash,
             ids_created: 0,
             map: simple_map::create(),

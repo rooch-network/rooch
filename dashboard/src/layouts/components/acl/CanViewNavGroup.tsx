@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** React Imports
 import { ReactNode } from 'react'
 
@@ -19,7 +22,7 @@ const CanViewNavGroup = (props: Props) => {
   // ** Hook
   const auth = useAuth()
 
-  if (auth.user || (navGroup && navGroup.auth === false)) {
+  if (auth.accounts || (navGroup && navGroup.auth === false)) {
     return <>{children}</>
   } else {
     return null

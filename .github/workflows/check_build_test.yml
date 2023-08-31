@@ -27,6 +27,17 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: rooch-network/rooch/.github/actions/rust-setup@main
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18.x'
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.OS }}-pnpm-
       #  with:
       #    fetch-depth: 0
       - name: Check code format
@@ -36,7 +47,9 @@ jobs:
       - name: Build
         run: cargo build
       - name: Execute rust tests
-        run: cargo nextest run --workspace --all-features
+        run: cargo nextest run --workspace --all-features --exclude rooch-framework-tests --exclude rooch-integration-test-runner -v
+      - name: Execute the framework test with 1 thread
+        run: cargo nextest run -p rooch-framework-tests -p rooch-integration-test-runner -v -j 1
       - name: Run CLI integration test
         # cargo-nextest does not support the CLI integration test powered by Cucumber Rust.
         # Use cargo test to run CLI integration tests.
@@ -50,28 +63,17 @@ jobs:
         run: cargo run --bin rooch move test -p crates/rooch-framework/
       - name: Build and test example projects
         run: ./scripts/pr.sh -e
-      ## Build and test sdk start
-      - name: Use Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '18.x'
-      - name: Cache Node.js modules
-        uses: actions/cache@v2
-        with:
-          path: ~/.pnpm-store
-          key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.OS }}-pnpm-
-      - name: Install SDK dependencies
-        run: cd sdk/typescript && npm install pnpm -g && pnpm install
+      ## Build and test app start
+      - name: Install pnpm dependencies
+        run: npm install pnpm -g && pnpm install
       - name: Gen SDK dependencie Code
-        run: cd sdk/typescript && pnpm gen
-      - name: Lint SDK
-        run: cd sdk/typescript && pnpm run lint
+        run: pnpm sdk gen
+      - name: Lint 
+        run: pnpm lint
       - name: Build SDK
-        run: cd sdk/typescript && pnpm run build
+        run: pnpm sdk build
       - name: Test SDK
-        run: cd sdk/typescript && pnpm run test
+        run: pnpm sdk test
       ## Build and test sdk end
       - uses: CatChen/check-git-status-action@v1
         with:

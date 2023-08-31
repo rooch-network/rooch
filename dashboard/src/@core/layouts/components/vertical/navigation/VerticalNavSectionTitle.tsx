@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** MUI Imports
 import Box from '@mui/material/Box'
 import Divider from '@mui/material/Divider'
@@ -22,22 +25,22 @@ interface Props {
 }
 
 // ** Styled Components
-const ListSubheader = styled((props: ListSubheaderProps) => <MuiListSubheader component='li' {...props} />)(
-  ({ theme }) => ({
-    lineHeight: 1,
-    display: 'flex',
-    position: 'static',
-    margin: theme.spacing(4, 0, 2),
-    backgroundColor: 'transparent',
-    padding: theme.spacing(2.5, 8, 2.5, 0),
-    transition: 'padding .25s ease-in-out'
-  })
-)
+const ListSubheader = styled((props: ListSubheaderProps) => (
+  <MuiListSubheader component="li" {...props} />
+))(({ theme }) => ({
+  lineHeight: 1,
+  display: 'flex',
+  position: 'static',
+  margin: theme.spacing(4, 0, 2),
+  backgroundColor: 'transparent',
+  padding: theme.spacing(2.5, 8, 2.5, 0),
+  transition: 'padding .25s ease-in-out',
+}))
 
 const TypographyHeaderText = styled(Typography)<TypographyProps>({
   fontSize: '0.75rem',
   lineHeight: 'normal',
-  textTransform: 'uppercase'
+  textTransform: 'uppercase',
 })
 
 const VerticalNavSectionTitle = (props: Props) => {
@@ -50,13 +53,13 @@ const VerticalNavSectionTitle = (props: Props) => {
   return (
     <CanViewNavSectionTitle navTitle={item}>
       <ListSubheader
-        className='nav-section-title'
+        className="nav-section-title"
         sx={{
           ...(navCollapsed &&
             !navHover && {
               pl: (collapsedNavWidth - navigationBorderWidth - 16) / 8,
-              pr: (collapsedNavWidth - navigationBorderWidth - 16) / 8
-            })
+              pr: (collapsedNavWidth - navigationBorderWidth - 16) / 8,
+            }),
         }}
       >
         {navCollapsed && !navHover ? (
@@ -64,7 +67,7 @@ const VerticalNavSectionTitle = (props: Props) => {
             sx={{
               width: '1rem',
               borderColor: 'text.disabled',
-              m: theme => `${theme.spacing(1.625, 0)} !important`
+              m: (theme) => `${theme.spacing(1.625, 0)} !important`,
             }}
           />
         ) : (
@@ -73,7 +76,7 @@ const VerticalNavSectionTitle = (props: Props) => {
               sx={{
                 width: '1rem',
                 borderColor: 'text.disabled',
-                m: theme => `${theme.spacing(0, 4, 0, 0)} !important`
+                m: (theme) => `${theme.spacing(0, 4, 0, 0)} !important`,
               }}
             />
             <TypographyHeaderText noWrap sx={{ color: 'text.disabled' }}>

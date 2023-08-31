@@ -92,7 +92,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
 
         let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
 
-        let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
+        let genesis: &RoochGenesis = &rooch_genesis::ROOCH_DEV_GENESIS;
         let mut moveos = MoveOS::new(
             moveos_store,
             genesis.all_natives(),
@@ -100,7 +100,9 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         )
         .unwrap();
 
-        moveos.init_genesis(genesis.genesis_txs()).unwrap();
+        moveos
+            .init_genesis(genesis.genesis_txs(), genesis.genesis_ctx())
+            .unwrap();
 
         let mut named_address_mapping = rooch_framework::rooch_framework_named_addresses();
         for (name, addr) in additional_mapping {

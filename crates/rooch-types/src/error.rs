@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use moveos_types::genesis_info::GenesisInfo;
 use serde::{Deserialize, Serialize};
 use std::io;
 use thiserror::Error;
@@ -87,6 +88,8 @@ pub enum RoochError {
     InvalidSignature { error: String },
     #[error("Value was not signed by the correct sender: {}", error)]
     IncorrectSigner { error: String },
+    #[error("Invalid chain ID")]
+    InvalidChainID,
 
     #[error("Clean server error: {0}")]
     CleanServerError(String),
@@ -111,4 +114,17 @@ impl From<io::Error> for RoochError {
     fn from(e: io::Error) -> Self {
         RoochError::IOError(e.to_string())
     }
+}
+
+#[derive(Debug, Error, Eq, PartialEq)]
+pub enum GenesisError {
+    #[error("Genesis version mismatch: from store({from_store:?}), from binary({from_binary:?}).")]
+    GenesisVersionMismatch {
+        from_store: GenesisInfo,
+        from_binary: GenesisInfo,
+    },
+    #[error("Genesis load fail {0}")]
+    GenesisLoadFailure(String),
+    #[error("Genesis block not exist in {0}.")]
+    GenesisNotExist(String),
 }

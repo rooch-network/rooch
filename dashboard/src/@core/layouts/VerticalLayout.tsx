@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** React Imports
 import { useState } from 'react'
 
@@ -27,7 +30,7 @@ import { hexToRGBA } from 'src/@core/utils/hex-to-rgba'
 
 const VerticalLayoutWrapper = styled('div')({
   height: '100%',
-  display: 'flex'
+  display: 'flex',
 })
 
 const MainContentWrapper = styled(Box)<BoxProps>({
@@ -35,7 +38,7 @@ const MainContentWrapper = styled(Box)<BoxProps>({
   minWidth: 0,
   display: 'flex',
   minHeight: '100vh',
-  flexDirection: 'column'
+  flexDirection: 'column',
 })
 
 const AppBarBgBlur = styled(Box)<BoxProps>({
@@ -43,7 +46,7 @@ const AppBarBgBlur = styled(Box)<BoxProps>({
   zIndex: 10,
   width: '100%',
   position: 'fixed',
-  backdropFilter: 'saturate(200%) blur(10px)'
+  backdropFilter: 'saturate(200%) blur(10px)',
 })
 
 const ContentWrapper = styled('main')(({ theme }) => ({
@@ -53,13 +56,21 @@ const ContentWrapper = styled('main')(({ theme }) => ({
   transition: 'padding .25s ease-in-out',
   [theme.breakpoints.down('sm')]: {
     paddingLeft: theme.spacing(4),
-    paddingRight: theme.spacing(4)
-  }
+    paddingRight: theme.spacing(4),
+  },
 }))
 
 const VerticalLayout = (props: LayoutProps) => {
   // ** Props
-  const { hidden, settings, children, scrollToTop, footerProps, contentHeightFixed, verticalLayoutProps } = props
+  const {
+    hidden,
+    settings,
+    children,
+    scrollToTop,
+    footerProps,
+    contentHeightFixed,
+    verticalLayoutProps,
+  } = props
 
   // ** Vars
   const { skin, appBar, navHidden, appBarBlur, contentWidth } = settings
@@ -76,7 +87,7 @@ const VerticalLayout = (props: LayoutProps) => {
 
   return (
     <>
-      <VerticalLayoutWrapper className='layout-wrapper'>
+      <VerticalLayoutWrapper className="layout-wrapper">
         {/* Navigation Menu */}
         {navHidden && !(navHidden && settings.lastLayout === 'horizontal') ? null : (
           <Navigation
@@ -98,19 +109,21 @@ const VerticalLayout = (props: LayoutProps) => {
           />
         )}
         <MainContentWrapper
-          className='layout-content-wrapper'
+          className="layout-content-wrapper"
           sx={{ ...(contentHeightFixed && { maxHeight: '100vh' }) }}
         >
           {/* Blur the empty space above the AppBar when `appBarBlur` is `true` */}
           {appBarBlur && appBar === 'fixed' && (
             <AppBarBgBlur
               sx={{
-                height: theme => theme.spacing(skin === 'bordered' ? 4.5 : 3.25),
-                background: theme =>
+                height: (theme) => theme.spacing(skin === 'bordered' ? 4.5 : 3.25),
+                background: (theme) =>
                   hexToRGBA(
-                    skin === 'bordered' ? theme.palette.background.paper : theme.palette.background.default,
-                    0.6
-                  )
+                    skin === 'bordered'
+                      ? theme.palette.background.paper
+                      : theme.palette.background.default,
+                    0.6,
+                  ),
               }}
             />
           )}
@@ -125,17 +138,17 @@ const VerticalLayout = (props: LayoutProps) => {
 
           {/* Content */}
           <ContentWrapper
-            className='layout-page-content'
+            className="layout-page-content"
             sx={{
               ...(contentHeightFixed && {
                 overflow: 'hidden',
-                '& > :first-of-type': { height: '100%' }
+                '& > :first-of-type': { height: '100%' },
               }),
               ...(contentWidth === 'boxed' && {
                 mx: 'auto',
                 '@media (min-width:1440px)': { maxWidth: 1440 },
-                '@media (min-width:1200px)': { maxWidth: '100%' }
-              })
+                '@media (min-width:1200px)': { maxWidth: '100%' },
+              }),
             }}
           >
             {children}
@@ -153,9 +166,9 @@ const VerticalLayout = (props: LayoutProps) => {
       {scrollToTop ? (
         scrollToTop(props)
       ) : (
-        <ScrollToTop className='mui-fixed'>
-          <Fab color='primary' size='small' aria-label='scroll back to top'>
-            <Icon icon='bx:up-arrow-alt' />
+        <ScrollToTop className="mui-fixed">
+          <Fab color="primary" size="small" aria-label="scroll back to top">
+            <Icon icon="bx:up-arrow-alt" />
           </Fab>
         </ScrollToTop>
       )}

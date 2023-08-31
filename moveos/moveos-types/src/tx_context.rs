@@ -4,6 +4,7 @@
 //Source origin from https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-types/src/base_types.rs
 
 use crate::addresses::MOVEOS_STD_ADDRESS;
+use crate::gas_config::GasConfig;
 use crate::h256::{self, H256};
 use crate::move_any::{AnyTrait, CopyableAny};
 use crate::move_simple_map::SimpleMap;
@@ -23,6 +24,10 @@ pub const TX_CONTEXT_STRUCT_NAME: &IdentStr = ident_str!("TxContext");
 pub struct TxContext {
     /// Signer/sender of the transaction
     pub sender: AccountAddress,
+    /// Sequence number of this transaction corresponding to sender's account.
+    pub sequence_number: u64,
+    // The max gas to be used.
+    pub max_gas_amount: u64,
     /// Hash of the current transaction
     /// Use the type `Vec<u8>` is to keep consistency with the `TxContext` type in Move
     pub tx_hash: Vec<u8>,
@@ -36,7 +41,9 @@ impl std::fmt::Debug for TxContext {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("TxContext")
             .field("sender", &self.sender)
-            .field("tx_hash", &hex::encode(&self.tx_hash))
+            .field("sequence_number", &self.sequence_number)
+            .field("max_gas_amount", &self.max_gas_amount)
+            .field("tx_hash", &self.tx_hash)
             .field("ids_created", &self.ids_created)
             .field("map", &self.map)
             .finish()
@@ -44,9 +51,16 @@ impl std::fmt::Debug for TxContext {
 }
 
 impl TxContext {
-    pub fn new(sender: AccountAddress, tx_hash: H256) -> Self {
+    pub fn new(
+        sender: AccountAddress,
+        sequence_number: u64,
+        max_gas_amount: u64,
+        tx_hash: H256,
+    ) -> Self {
         Self {
             sender,
+            sequence_number,
+            max_gas_amount,
             tx_hash: tx_hash.0.to_vec(),
             ids_created: 0,
             map: SimpleMap::create(),
@@ -55,13 +69,16 @@ impl TxContext {
 
     /// Create a new TxContext with a zero tx_hash for read-only function call cases
     pub fn new_readonly_ctx(sender: AccountAddress) -> Self {
-        Self::new(sender, H256::zero())
+        //TODO define read-only function gas limit
+        Self::new(sender, 0, GasConfig::DEFAULT_MAX_GAS_AMOUNT, H256::zero())
     }
 
     /// Spawn a new TxContext with a new `ids_created` counter and empty map
     pub fn spawn(self) -> Self {
         Self {
             sender: self.sender,
+            sequence_number: self.sequence_number,
+            max_gas_amount: self.max_gas_amount,
             tx_hash: self.tx_hash,
             ids_created: 0,
             map: SimpleMap::create(),
@@ -73,6 +90,8 @@ impl TxContext {
     pub fn zero() -> Self {
         Self {
             sender: AccountAddress::ZERO,
+            sequence_number: 0,
+            max_gas_amount: GasConfig::DEFAULT_MAX_GAS_AMOUNT,
             tx_hash: vec![0u8; h256::LENGTH],
             ids_created: 0,
             map: SimpleMap::create(),
@@ -102,7 +121,12 @@ impl TxContext {
 
     // for testing
     pub fn random_for_testing_only() -> Self {
-        Self::new(AccountAddress::random(), H256::random())
+        Self::new(
+            AccountAddress::random(),
+            0,
+            GasConfig::DEFAULT_MAX_GAS_AMOUNT,
+            H256::random(),
+        )
     }
 
     pub fn add<T: MoveState>(&mut self, value: T) -> Result<()> {
@@ -137,6 +161,8 @@ impl MoveStructState for TxContext {
     fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![
             MoveTypeLayout::Address,
+            MoveTypeLayout::U64,
+            MoveTypeLayout::U64,
             MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
             MoveTypeLayout::U64,
             MoveTypeLayout::Struct(SimpleMap::<MoveString, CopyableAny>::struct_layout()),

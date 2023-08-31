@@ -69,11 +69,11 @@ https://github.com/starcoinorg/starcoin-framework/blob/952c51116e0ef5a97c119205d
 ## Constants
 
 
-<a name="0x2_type_info_E_NATIVE_FUN_NOT_AVAILABLE"></a>
+<a name="0x2_type_info_ErrorNativeFunctionNotAvailable"></a>
 
 
 
-<pre><code><b>const</b> <a href="type_info.md#0x2_type_info_E_NATIVE_FUN_NOT_AVAILABLE">E_NATIVE_FUN_NOT_AVAILABLE</a>: u64 = 1;
+<pre><code><b>const</b> <a href="type_info.md#0x2_type_info_ErrorNativeFunctionNotAvailable">ErrorNativeFunctionNotAvailable</a>: u64 = 1;
 </code></pre>
 
 
@@ -221,7 +221,7 @@ analysis of vector size dynamism.
 
 <pre><code><b>public</b> <b>fun</b> <a href="type_info.md#0x2_type_info_size_of_val">size_of_val</a>&lt;T&gt;(val_ref: &T): u64 {
     // Return <a href="">vector</a> length of vectorized BCS representation.
-    <a href="_length">vector::length</a>(&<a href="../doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(val_ref))
+    <a href="_length">vector::length</a>(&<a href="_to_bytes">bcs::to_bytes</a>(val_ref))
 }
 </code></pre>
 

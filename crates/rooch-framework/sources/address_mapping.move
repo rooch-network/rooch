@@ -5,12 +5,13 @@ module rooch_framework::address_mapping{
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::table::{Self, Table};
     use moveos_std::account_storage;
+    use moveos_std::signer as moveos_signer;
     use rooch_framework::hash::{blake2b256};
 
     friend rooch_framework::transaction_validator;
 
     //The coin id standard is defined in [slip-0044](https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
-    //Please keep consistent with rust ChainID
+    //Please keep consistent with rust CoinID
     const COIN_TYPE_BTC: u64 = 0;
     const COIN_TYPE_ETH: u64 = 60;
     const COIN_TYPE_NOSTR: u64 = 1237;
@@ -25,7 +26,8 @@ module rooch_framework::address_mapping{
         mapping: Table<MultiChainAddress, address>,
     }
 
-    fun init(ctx: &mut StorageContext, sender: &signer) {
+    fun init(ctx: &mut StorageContext) {
+        let sender = &moveos_signer::module_signer<AddressMapping>();
         rooch_framework::core_addresses::assert_rooch_framework(sender);
         let tx_ctx = storage_context::tx_context_mut(ctx);
         let mapping = table::new<MultiChainAddress, address>(tx_ctx);
@@ -98,7 +100,7 @@ module rooch_framework::address_mapping{
         let sender_addr = signer::address_of(&sender);
         let ctx = storage_context::new_test_context(sender_addr);
         account_storage::create_account_storage(&mut ctx, @rooch_framework);
-        init(&mut ctx, &sender);
+        init(&mut ctx);
         let multi_chain_address =  MultiChainAddress{
             coin_id: COIN_TYPE_BTC,
             raw_address: x"1234567890abcdef",

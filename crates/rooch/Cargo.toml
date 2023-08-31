@@ -34,10 +34,10 @@ hex = { workspace = true }
 regex = { workspace = true }
 serde-reflection = { workspace = true }
 serde-generate = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
 rust-embed = { workspace = true }
 rocket = { workspace = true }
 parking_lot = { workspace = true }
+bcs-ext = { workspace = true }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }
@@ -67,7 +67,11 @@ rooch-key = { workspace = true }
 rooch-types = { workspace = true }
 rooch-config = { workspace = true }
 rooch-framework = { workspace = true }
+rooch-genesis = { workspace = true }
 rooch-rpc-api = { workspace = true }
 rooch-rpc-server = { workspace = true }
 rooch-rpc-client = { workspace = true }
 rooch-integration-test-runner = { workspace = true }
+
+[features]
+dashboard = []

@@ -11,6 +11,7 @@ use move_core_types::{
 };
 use moveos_types::transaction::MoveAction;
 use rooch_types::error::RoochResult;
+use rooch_types::transaction::rooch::RoochTransaction;
 use serde_reflection::{Samples, Tracer, TracerConfig};
 use std::fmt::Debug;
 use std::fs;
@@ -77,12 +78,13 @@ fn export_rooch_types_yaml(file_path: &String) -> RoochResult<()> {
         .trace_value(&mut samples, &example_struct_tag)
         .unwrap();
 
-    let example_type_tag = TypeTag::Struct(Box::new(example_struct_tag));
+    let example_type_tag: TypeTag = TypeTag::Struct(Box::new(example_struct_tag));
     tracer.trace_value(&mut samples, &example_type_tag).unwrap();
 
     // Define TypeTag and MoveAction
     tracer.trace_type::<TypeTag>(&samples).unwrap();
     tracer.trace_type::<MoveAction>(&samples).unwrap();
+    tracer.trace_type::<RoochTransaction>(&samples).unwrap();
 
     match tracer.registry() {
         Ok(registry) => {

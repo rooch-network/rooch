@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** React Imports
 import { ReactNode } from 'react'
 
@@ -18,7 +21,7 @@ const CanViewNavLink = (props: Props) => {
 
   const auth = useAuth()
 
-  if (auth.user || (navLink && navLink.auth === false)) {
+  if (auth.accounts || (navLink && navLink.auth === false)) {
     return <>{children}</>
   } else {
     return null

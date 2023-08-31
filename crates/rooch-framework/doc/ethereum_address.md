@@ -51,30 +51,30 @@
 ## Constants
 
 
-<a name="0x3_ethereum_address_EDecompressPublicKey"></a>
+<a name="0x3_ethereum_address_ETHEREUM_ADDR_LENGTH"></a>
 
 
 
-<pre><code><b>const</b> <a href="ethereum_address.md#0x3_ethereum_address_EDecompressPublicKey">EDecompressPublicKey</a>: u64 = 1;
+<pre><code><b>const</b> <a href="ethereum_address.md#0x3_ethereum_address_ETHEREUM_ADDR_LENGTH">ETHEREUM_ADDR_LENGTH</a>: u64 = 20;
 </code></pre>
 
 
 
-<a name="0x3_ethereum_address_EMalformedPublicKey"></a>
+<a name="0x3_ethereum_address_ErrorDecompressPublicKey"></a>
+
+
+
+<pre><code><b>const</b> <a href="ethereum_address.md#0x3_ethereum_address_ErrorDecompressPublicKey">ErrorDecompressPublicKey</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x3_ethereum_address_ErrorMalformedPublicKey"></a>
 
 error code
 
 
-<pre><code><b>const</b> <a href="ethereum_address.md#0x3_ethereum_address_EMalformedPublicKey">EMalformedPublicKey</a>: u64 = 0;
-</code></pre>
-
-
-
-<a name="0x3_ethereum_address_VALID_ETHEREUM_ADDR_LENGTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="ethereum_address.md#0x3_ethereum_address_VALID_ETHEREUM_ADDR_LENGTH">VALID_ETHEREUM_ADDR_LENGTH</a>: u64 = 20;
+<pre><code><b>const</b> <a href="ethereum_address.md#0x3_ethereum_address_ErrorMalformedPublicKey">ErrorMalformedPublicKey</a>: u64 = 0;
 </code></pre>
 
 
@@ -98,13 +98,13 @@ error code
     // A pubkey is a 33-bytes compressed <b>public</b> key
     <b>assert</b>!(
         <a href="_length">vector::length</a>(&pub_key) == <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_public_key_length">ecdsa_k1_recoverable::public_key_length</a>(),
-        <a href="_invalid_argument">error::invalid_argument</a>(<a href="ethereum_address.md#0x3_ethereum_address_EMalformedPublicKey">EMalformedPublicKey</a>)
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="ethereum_address.md#0x3_ethereum_address_ErrorMalformedPublicKey">ErrorMalformedPublicKey</a>)
     );
     // Decompressing the pubkey <b>to</b> a 65-bytes <b>public</b> key.
     <b>let</b> uncompressed = <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_decompress_pubkey">ecdsa_k1_recoverable::decompress_pubkey</a>(&pub_key);
     <b>assert</b>!(
         <a href="_length">vector::length</a>(&uncompressed) == <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_uncompressed_public_key_length">ecdsa_k1_recoverable::uncompressed_public_key_length</a>(),
-        <a href="_internal">error::internal</a>(<a href="ethereum_address.md#0x3_ethereum_address_EDecompressPublicKey">EDecompressPublicKey</a>)
+        <a href="_internal">error::internal</a>(<a href="ethereum_address.md#0x3_ethereum_address_ErrorDecompressPublicKey">ErrorDecompressPublicKey</a>)
     );
     // Ignore the first byte and take the last 64-bytes of the uncompressed pubkey.
     <b>let</b> uncompressed_64 = <a href="_empty">vector::empty</a>&lt;u8&gt;();
@@ -114,7 +114,7 @@ error code
         <a href="_push_back">vector::push_back</a>(&<b>mut</b> uncompressed_64, *value);
         i = i + 1;
     };
-    // Take the last 20 bytes of the <a href="../doc/hash.md#0x1_hash">hash</a> of the 64-bytes uncompressed pubkey.
+    // Take the last 20 bytes of the <a href="">hash</a> of the 64-bytes uncompressed pubkey.
     <b>let</b> hashed = hash::keccak256(&uncompressed_64);
     <b>let</b> address_bytes = <a href="_empty">vector::empty</a>&lt;u8&gt;();
     <b>let</b> i = 12;

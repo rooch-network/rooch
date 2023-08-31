@@ -6,10 +6,6 @@
 
 
 -  [Resource `Account`](#0x3_account_Account)
--  [Resource `AutoAcceptCoin`](#0x3_account_AutoAcceptCoin)
--  [Struct `DepositEvent`](#0x3_account_DepositEvent)
--  [Struct `WithdrawEvent`](#0x3_account_WithdrawEvent)
--  [Struct `AcceptCoinEvent`](#0x3_account_AcceptCoinEvent)
 -  [Resource `ResourceAccount`](#0x3_account_ResourceAccount)
 -  [Struct `SignerCapability`](#0x3_account_SignerCapability)
 -  [Constants](#@Constants_0)
@@ -26,24 +22,15 @@
 -  [Function `create_resource_address`](#0x3_account_create_resource_address)
 -  [Function `create_signer_with_capability`](#0x3_account_create_signer_with_capability)
 -  [Function `get_signer_capability_address`](#0x3_account_get_signer_capability_address)
--  [Function `is_account_accept_coin`](#0x3_account_is_account_accept_coin)
--  [Function `can_auto_accept_coin`](#0x3_account_can_auto_accept_coin)
--  [Function `do_accept_coin`](#0x3_account_do_accept_coin)
--  [Function `set_auto_accept_coin`](#0x3_account_set_auto_accept_coin)
--  [Function `withdraw`](#0x3_account_withdraw)
--  [Function `deposit`](#0x3_account_deposit)
--  [Function `transfer`](#0x3_account_transfer)
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="../doc/hash.md#0x1_hash">0x1::hash</a>;
+<b>use</b> <a href="">0x1::hash</a>;
 <b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::account_storage</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
-<b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
-<b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 <b>use</b> <a href="gas_coin.md#0x3_gas_coin">0x3::gas_coin</a>;
@@ -73,129 +60,6 @@ Resource representing an account.
 </dt>
 <dd>
 
-</dd>
-</dl>
-
-
-</details>
-
-<a name="0x3_account_AutoAcceptCoin"></a>
-
-## Resource `AutoAcceptCoin`
-
-
-
-<pre><code><b>struct</b> <a href="account.md#0x3_account_AutoAcceptCoin">AutoAcceptCoin</a> <b>has</b> key
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>enable: bool</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
-<a name="0x3_account_DepositEvent"></a>
-
-## Struct `DepositEvent`
-
-Event emitted when some amount of a coin is deposited into an account.
-
-
-<pre><code><b>struct</b> <a href="account.md#0x3_account_DepositEvent">DepositEvent</a> <b>has</b> drop, store
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>coin_type_info: <a href="_TypeInfo">type_info::TypeInfo</a></code>
-</dt>
-<dd>
- The type info for the coin that was sent
-</dd>
-<dt>
-<code>amount: u256</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
-<a name="0x3_account_WithdrawEvent"></a>
-
-## Struct `WithdrawEvent`
-
-Event emitted when some amount of a coin is withdrawn from an account.
-
-
-<pre><code><b>struct</b> <a href="account.md#0x3_account_WithdrawEvent">WithdrawEvent</a> <b>has</b> drop, store
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>coin_type_info: <a href="_TypeInfo">type_info::TypeInfo</a></code>
-</dt>
-<dd>
- The type info for the coin that was sent
-</dd>
-<dt>
-<code>amount: u256</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
-<a name="0x3_account_AcceptCoinEvent"></a>
-
-## Struct `AcceptCoinEvent`
-
-Event for accept coin
-
-
-<pre><code><b>struct</b> <a href="account.md#0x3_account_AcceptCoinEvent">AcceptCoinEvent</a> <b>has</b> drop, store
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>coin_type_info: <a href="_TypeInfo">type_info::TypeInfo</a></code>
-</dt>
-<dd>
- full info of coin
 </dd>
 </dl>
 
@@ -270,12 +134,12 @@ Event for accept coin
 
 
 
-<a name="0x3_account_EAccountAlreadyExists"></a>
+<a name="0x3_account_ErrorAccountAlreadyExists"></a>
 
 Account already exists
 
 
-<pre><code><b>const</b> <a href="account.md#0x3_account_EAccountAlreadyExists">EAccountAlreadyExists</a>: u64 = 1;
+<pre><code><b>const</b> <a href="account.md#0x3_account_ErrorAccountAlreadyExists">ErrorAccountAlreadyExists</a>: u64 = 1;
 </code></pre>
 
 
@@ -289,7 +153,67 @@ Account already exists
 
 
 
-<a name="0x3_account_DERIVE_RESOURCE_ACCOUNT_SCHEME"></a>
+<a name="0x3_account_ErrorAccountIsAlreadyResourceAccount"></a>
+
+Resource Account can't derive resource account
+
+
+<pre><code><b>const</b> <a href="account.md#0x3_account_ErrorAccountIsAlreadyResourceAccount">ErrorAccountIsAlreadyResourceAccount</a>: u64 = 7;
+</code></pre>
+
+
+
+<a name="0x3_account_ErrorAccountNotExist"></a>
+
+Account does not exist
+
+
+<pre><code><b>const</b> <a href="account.md#0x3_account_ErrorAccountNotExist">ErrorAccountNotExist</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x3_account_ErrorAddressReseved"></a>
+
+Cannot create account because address is reserved
+
+
+<pre><code><b>const</b> <a href="account.md#0x3_account_ErrorAddressReseved">ErrorAddressReseved</a>: u64 = 5;
+</code></pre>
+
+
+
+<a name="0x3_account_ErrorNoValidFrameworkReservedAddress"></a>
+
+Address to create is not a valid reserved address for Rooch framework
+
+
+<pre><code><b>const</b> <a href="account.md#0x3_account_ErrorNoValidFrameworkReservedAddress">ErrorNoValidFrameworkReservedAddress</a>: u64 = 11;
+</code></pre>
+
+
+
+<a name="0x3_account_ErrorResourceAccountAlreadyUsed"></a>
+
+An attempt to create a resource account on an account that has a committed transaction
+
+
+<pre><code><b>const</b> <a href="account.md#0x3_account_ErrorResourceAccountAlreadyUsed">ErrorResourceAccountAlreadyUsed</a>: u64 = 6;
+</code></pre>
+
+
+
+<a name="0x3_account_ErrorSequenceNumberTooBig"></a>
+
+Sequence number exceeds the maximum value for a u64
+
+
+<pre><code><b>const</b> <a href="account.md#0x3_account_ErrorSequenceNumberTooBig">ErrorSequenceNumberTooBig</a>: u64 = 3;
+</code></pre>
+
+
+
+<a name="0x3_account_SCHEME_DERIVE_RESOURCE_ACCOUNT"></a>
 
 Scheme identifier used when hashing an account's address together with a seed to derive the address (not the
 authentication key) of a resource account. This is an abuse of the notion of a scheme identifier which, for now,
@@ -298,87 +222,7 @@ authentication keys. Without such separation, an adversary could create (and get
 whose address matches an existing address of a MultiEd25519 wallet.
 
 
-<pre><code><b>const</b> <a href="account.md#0x3_account_DERIVE_RESOURCE_ACCOUNT_SCHEME">DERIVE_RESOURCE_ACCOUNT_SCHEME</a>: u8 = 255;
-</code></pre>
-
-
-
-<a name="0x3_account_EAccountIsAlreadyResourceAccount"></a>
-
-Resource Account can't derive resource account
-
-
-<pre><code><b>const</b> <a href="account.md#0x3_account_EAccountIsAlreadyResourceAccount">EAccountIsAlreadyResourceAccount</a>: u64 = 7;
-</code></pre>
-
-
-
-<a name="0x3_account_EAccountNotAcceptCoin"></a>
-
-Account hasn't accept <code>CoinType</code>
-
-
-<pre><code><b>const</b> <a href="account.md#0x3_account_EAccountNotAcceptCoin">EAccountNotAcceptCoin</a>: u64 = 15;
-</code></pre>
-
-
-
-<a name="0x3_account_EAccountNotExist"></a>
-
-Account does not exist
-
-
-<pre><code><b>const</b> <a href="account.md#0x3_account_EAccountNotExist">EAccountNotExist</a>: u64 = 2;
-</code></pre>
-
-
-
-<a name="0x3_account_EAccountWithCoinFrozen"></a>
-
-CoinStore is frozen. Coins cannot be deposited or withdrawn
-
-
-<pre><code><b>const</b> <a href="account.md#0x3_account_EAccountWithCoinFrozen">EAccountWithCoinFrozen</a>: u64 = 13;
-</code></pre>
-
-
-
-<a name="0x3_account_EAddressReseved"></a>
-
-Cannot create account because address is reserved
-
-
-<pre><code><b>const</b> <a href="account.md#0x3_account_EAddressReseved">EAddressReseved</a>: u64 = 5;
-</code></pre>
-
-
-
-<a name="0x3_account_ENoValidFrameworkReservedAddress"></a>
-
-Address to create is not a valid reserved address for Rooch framework
-
-
-<pre><code><b>const</b> <a href="account.md#0x3_account_ENoValidFrameworkReservedAddress">ENoValidFrameworkReservedAddress</a>: u64 = 11;
-</code></pre>
-
-
-
-<a name="0x3_account_EResourceAccountAlreadyUsed"></a>
-
-An attempt to create a resource account on an account that has a committed transaction
-
-
-<pre><code><b>const</b> <a href="account.md#0x3_account_EResourceAccountAlreadyUsed">EResourceAccountAlreadyUsed</a>: u64 = 6;
-</code></pre>
-
-
-
-<a name="0x3_account_ESequenceNumberTooBig"></a>
-
-Sequence number exceeds the maximum value for a u64
-
-
-<pre><code><b>const</b> <a href="account.md#0x3_account_ESequenceNumberTooBig">ESequenceNumberTooBig</a>: u64 = 3;
+<pre><code><b>const</b> <a href="account.md#0x3_account_SCHEME_DERIVE_RESOURCE_ACCOUNT">SCHEME_DERIVE_RESOURCE_ACCOUNT</a>: u8 = 255;
 </code></pre>
 
 
@@ -442,18 +286,18 @@ is returned. This way, the caller of this function can publish additional resour
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_account">create_account</a>(ctx: &<b>mut</b> StorageContext, new_address: <b>address</b>): <a href="">signer</a> {
    <b>assert</b>!(
       new_address != @vm_reserved && new_address != @rooch_framework,
-      <a href="_invalid_argument">error::invalid_argument</a>(<a href="account.md#0x3_account_EAddressReseved">EAddressReseved</a>)
+      <a href="_invalid_argument">error::invalid_argument</a>(<a href="account.md#0x3_account_ErrorAddressReseved">ErrorAddressReseved</a>)
    );
 
    // there cannot be an <a href="account.md#0x3_account_Account">Account</a> resource under new_addr already.
    <b>assert</b>!(
       !<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, new_address),
-      <a href="_already_exists">error::already_exists</a>(<a href="account.md#0x3_account_EAccountAlreadyExists">EAccountAlreadyExists</a>)
+      <a href="_already_exists">error::already_exists</a>(<a href="account.md#0x3_account_ErrorAccountAlreadyExists">ErrorAccountAlreadyExists</a>)
    );
 
    <b>let</b> new_account = <a href="account.md#0x3_account_create_account_unchecked">create_account_unchecked</a>(ctx, new_address);
-   // Make sure all <a href="account.md#0x3_account">account</a> accept GasCoin.
-   <a href="account.md#0x3_account_do_accept_coin">do_accept_coin</a>&lt;GasCoin&gt;(ctx, &new_account);
+   // initialize <a href="account.md#0x3_account">account</a> <a href="coin.md#0x3_coin">coin</a> store
+   <a href="coin.md#0x3_coin_init_account_coin_store">coin::init_account_coin_store</a>(ctx, &new_account);
    new_account
 }
 </code></pre>
@@ -490,7 +334,7 @@ create the account for system reserved addresses
           addr == @0x8 ||
           addr == @0x9 ||
           addr == @0xa,
-      <a href="_permission_denied">error::permission_denied</a>(<a href="account.md#0x3_account_ENoValidFrameworkReservedAddress">ENoValidFrameworkReservedAddress</a>),
+      <a href="_permission_denied">error::permission_denied</a>(<a href="account.md#0x3_account_ErrorNoValidFrameworkReservedAddress">ErrorNoValidFrameworkReservedAddress</a>),
    );
    <b>let</b> <a href="">signer</a> = <a href="account.md#0x3_account_create_account_unchecked">create_account_unchecked</a>(ctx, addr);
    <b>let</b> signer_cap = <a href="account.md#0x3_account_SignerCapability">SignerCapability</a> { addr };
@@ -580,7 +424,7 @@ Return the current sequence number at <code>addr</code>
 
    <b>assert</b>!(
       (*sequence_number <b>as</b> u128) &lt; <a href="account.md#0x3_account_MAX_U64">MAX_U64</a>,
-      <a href="_out_of_range">error::out_of_range</a>(<a href="account.md#0x3_account_ESequenceNumberTooBig">ESequenceNumberTooBig</a>)
+      <a href="_out_of_range">error::out_of_range</a>(<a href="account.md#0x3_account_ErrorSequenceNumberTooBig">ErrorSequenceNumberTooBig</a>)
    );
 
    *sequence_number = *sequence_number + 1;
@@ -695,10 +539,10 @@ A resource account can only be created once
    <b>let</b> source_addr = <a href="_address_of">signer::address_of</a>(source);
    <b>let</b> seed = <a href="account.md#0x3_account_generate_seed_bytes">generate_seed_bytes</a>(ctx, &source_addr);
    <b>let</b> resource_addr = <a href="account.md#0x3_account_create_resource_address">create_resource_address</a>(&source_addr, seed);
-   <b>assert</b>!(!<a href="account.md#0x3_account_is_resource_account">is_resource_account</a>(ctx, resource_addr), <a href="_invalid_state">error::invalid_state</a>(<a href="account.md#0x3_account_EAccountIsAlreadyResourceAccount">EAccountIsAlreadyResourceAccount</a>));
+   <b>assert</b>!(!<a href="account.md#0x3_account_is_resource_account">is_resource_account</a>(ctx, resource_addr), <a href="_invalid_state">error::invalid_state</a>(<a href="account.md#0x3_account_ErrorAccountIsAlreadyResourceAccount">ErrorAccountIsAlreadyResourceAccount</a>));
    <b>let</b> resource_signer = <b>if</b> (<a href="account.md#0x3_account_exists_at">exists_at</a>(ctx, resource_addr)) {
       <b>let</b> <a href="account.md#0x3_account">account</a> = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, resource_addr);
-      <b>assert</b>!(<a href="account.md#0x3_account">account</a>.sequence_number == 0, <a href="_invalid_state">error::invalid_state</a>(<a href="account.md#0x3_account_EResourceAccountAlreadyUsed">EResourceAccountAlreadyUsed</a>));
+      <b>assert</b>!(<a href="account.md#0x3_account">account</a>.sequence_number == 0, <a href="_invalid_state">error::invalid_state</a>(<a href="account.md#0x3_account_ErrorResourceAccountAlreadyUsed">ErrorResourceAccountAlreadyUsed</a>));
       <a href="account.md#0x3_account_create_signer">create_signer</a>(resource_addr)
    } <b>else</b> {
       <a href="account.md#0x3_account_create_account_unchecked">create_account_unchecked</a>(ctx, resource_addr)
@@ -738,8 +582,8 @@ involves the use of a cryptographic hash operation and should be use thoughtfull
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_create_resource_address">create_resource_address</a>(source: &<b>address</b>, seed: <a href="">vector</a>&lt;u8&gt;): <b>address</b> {
    <b>let</b> bytes = <a href="_to_bytes">bcs::to_bytes</a>(source);
    <a href="_append">vector::append</a>(&<b>mut</b> bytes, seed);
-   <a href="_push_back">vector::push_back</a>(&<b>mut</b> bytes, <a href="account.md#0x3_account_DERIVE_RESOURCE_ACCOUNT_SCHEME">DERIVE_RESOURCE_ACCOUNT_SCHEME</a>);
-   bcs::to_address(<a href="../doc/hash.md#0x1_hash_sha3_256">hash::sha3_256</a>(bytes))
+   <a href="_push_back">vector::push_back</a>(&<b>mut</b> bytes, <a href="account.md#0x3_account_SCHEME_DERIVE_RESOURCE_ACCOUNT">SCHEME_DERIVE_RESOURCE_ACCOUNT</a>);
+   bcs::to_address(<a href="_sha3_256">hash::sha3_256</a>(bytes))
 }
 </code></pre>
 
@@ -789,249 +633,6 @@ involves the use of a cryptographic hash operation and should be use thoughtfull
 
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_get_signer_capability_address">get_signer_capability_address</a>(capability: &<a href="account.md#0x3_account_SignerCapability">SignerCapability</a>): <b>address</b> {
    capability.addr
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_account_is_account_accept_coin"></a>
-
-## Function `is_account_accept_coin`
-
-Return whether the account at <code>addr</code> accept <code>Coin</code> type coins
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_is_account_accept_coin">is_account_accept_coin</a>&lt;CoinType&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): bool
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_is_account_accept_coin">is_account_accept_coin</a>&lt;CoinType&gt;(ctx: &StorageContext, addr: <b>address</b>): bool {
-   <b>if</b> (<a href="account.md#0x3_account_can_auto_accept_coin">can_auto_accept_coin</a>(ctx, addr)) {
-      <b>true</b>
-   } <b>else</b> {
-      <a href="coin.md#0x3_coin_exist_coin_store">coin::exist_coin_store</a>&lt;CoinType&gt;(ctx, addr)
-   }
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_account_can_auto_accept_coin"></a>
-
-## Function `can_auto_accept_coin`
-
-Check whether the address can auto accept coin.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_can_auto_accept_coin">can_auto_accept_coin</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): bool
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_can_auto_accept_coin">can_auto_accept_coin</a>(ctx: &StorageContext, addr: <b>address</b>): bool {
-   <b>if</b> (<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_AutoAcceptCoin">AutoAcceptCoin</a>&gt;(ctx, addr)) {
-      <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="account.md#0x3_account_AutoAcceptCoin">AutoAcceptCoin</a>&gt;(ctx, addr).enable
-   } <b>else</b> {
-      <b>false</b>
-   }
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_account_do_accept_coin"></a>
-
-## Function `do_accept_coin`
-
-Add a balance of <code>Coin</code> type to the sending account.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_do_accept_coin">do_accept_coin</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_do_accept_coin">do_accept_coin</a>&lt;CoinType&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
-   <b>let</b> addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
-   <b>if</b> (!<a href="coin.md#0x3_coin_exist_coin_store">coin::exist_coin_store</a>&lt;CoinType&gt;(ctx, addr)) {
-      <a href="coin.md#0x3_coin_initialize_coin_store">coin::initialize_coin_store</a>&lt;CoinType&gt;(ctx, <a href="account.md#0x3_account">account</a>);
-
-      <b>let</b> coin_type_info = <a href="_type_of">type_info::type_of</a>&lt;CoinType&gt;();
-      <a href="_emit">event::emit</a>&lt;<a href="account.md#0x3_account_AcceptCoinEvent">AcceptCoinEvent</a>&gt;(ctx,
-         <a href="account.md#0x3_account_AcceptCoinEvent">AcceptCoinEvent</a> {
-            coin_type_info,
-         },
-      );
-   }
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_account_set_auto_accept_coin"></a>
-
-## Function `set_auto_accept_coin`
-
-Configure whether auto-accept coins.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_set_auto_accept_coin">set_auto_accept_coin</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, enable: bool)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_set_auto_accept_coin">set_auto_accept_coin</a>(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, enable: bool)  {
-   <b>let</b> addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
-   <b>if</b> (<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_AutoAcceptCoin">AutoAcceptCoin</a>&gt;(ctx, addr)) {
-      <b>let</b> config = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="account.md#0x3_account_AutoAcceptCoin">AutoAcceptCoin</a>&gt;(ctx, addr);
-      config.enable = enable;
-   } <b>else</b> {
-      <a href="_global_move_to">account_storage::global_move_to</a>&lt;<a href="account.md#0x3_account_AutoAcceptCoin">AutoAcceptCoin</a>&gt;(ctx, <a href="account.md#0x3_account">account</a>, <a href="account.md#0x3_account_AutoAcceptCoin">AutoAcceptCoin</a>{ enable });
-   };
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_account_withdraw"></a>
-
-## Function `withdraw`
-
-Withdraw specifed <code>amount</code> of coin <code>CoinType</code> from the signing account.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_withdraw">withdraw</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_withdraw">withdraw</a>&lt;CoinType&gt;(
-   ctx: &<b>mut</b> StorageContext,
-   <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>,
-   amount: u256,
-): Coin&lt;CoinType&gt; {
-   <b>let</b> addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
-   <b>assert</b>!(
-      <a href="account.md#0x3_account_is_account_accept_coin">is_account_accept_coin</a>&lt;CoinType&gt;(ctx, addr),
-      <a href="_not_found">error::not_found</a>(<a href="account.md#0x3_account_EAccountNotAcceptCoin">EAccountNotAcceptCoin</a>),
-   );
-
-   <b>assert</b>!(
-       !<a href="coin.md#0x3_coin_is_coin_store_frozen">coin::is_coin_store_frozen</a>&lt;CoinType&gt;(ctx, addr),
-       <a href="_permission_denied">error::permission_denied</a>(<a href="account.md#0x3_account_EAccountWithCoinFrozen">EAccountWithCoinFrozen</a> ),
-   );
-
-   <b>let</b> coin_type_info = <a href="_type_of">type_info::type_of</a>&lt;CoinType&gt;();
-   <a href="_emit">event::emit</a>&lt;<a href="account.md#0x3_account_WithdrawEvent">WithdrawEvent</a>&gt;(ctx, <a href="account.md#0x3_account_WithdrawEvent">WithdrawEvent</a> {
-      coin_type_info,
-      amount,
-   });
-
-   <a href="coin.md#0x3_coin_extract_coin">coin::extract_coin</a>(ctx, addr, amount)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_account_deposit"></a>
-
-## Function `deposit`
-
-Deposit the coin balance into the recipient's account and emit an event.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_deposit">deposit</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_deposit">deposit</a>&lt;CoinType&gt;(ctx: &<b>mut</b> StorageContext, addr: <b>address</b>, <a href="coin.md#0x3_coin">coin</a>: Coin&lt;CoinType&gt;) {
-   <a href="account.md#0x3_account_try_accept_coin">try_accept_coin</a>&lt;CoinType&gt;(ctx, addr);
-   <b>assert</b>!(
-      <a href="account.md#0x3_account_is_account_accept_coin">is_account_accept_coin</a>&lt;CoinType&gt;(ctx, addr),
-      <a href="_not_found">error::not_found</a>(<a href="account.md#0x3_account_EAccountNotAcceptCoin">EAccountNotAcceptCoin</a>),
-   );
-
-   <b>assert</b>!(
-       !<a href="coin.md#0x3_coin_is_coin_store_frozen">coin::is_coin_store_frozen</a>&lt;CoinType&gt;(ctx, addr),
-       <a href="_permission_denied">error::permission_denied</a>(<a href="account.md#0x3_account_EAccountWithCoinFrozen">EAccountWithCoinFrozen</a>),
-   );
-
-   <b>let</b> coin_type_info = <a href="_type_of">type_info::type_of</a>&lt;CoinType&gt;();
-   <a href="_emit">event::emit</a>&lt;<a href="account.md#0x3_account_DepositEvent">DepositEvent</a>&gt;(ctx, <a href="account.md#0x3_account_DepositEvent">DepositEvent</a> {
-      coin_type_info,
-      amount: <a href="coin.md#0x3_coin_value">coin::value</a>(&<a href="coin.md#0x3_coin">coin</a>),
-   });
-
-   <a href="coin.md#0x3_coin_merge_coin">coin::merge_coin</a>(ctx, addr, <a href="coin.md#0x3_coin">coin</a>);
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_account_transfer"></a>
-
-## Function `transfer`
-
-Transfer <code>amount</code> of coins <code>CoinType</code> from <code>from</code> to <code><b>to</b></code>.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_transfer">transfer</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, amount: u256)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_transfer">transfer</a>&lt;CoinType&gt;(
-   ctx: &<b>mut</b> StorageContext,
-   from: &<a href="">signer</a>,
-   <b>to</b>: <b>address</b>,
-   amount: u256,
-) {
-   <b>let</b> <a href="coin.md#0x3_coin">coin</a> = <a href="account.md#0x3_account_withdraw">withdraw</a>&lt;CoinType&gt;(ctx, from, amount);
-   <a href="account.md#0x3_account_deposit">deposit</a>(ctx, <b>to</b>, <a href="coin.md#0x3_coin">coin</a>);
 }
 </code></pre>
 

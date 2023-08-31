@@ -12,15 +12,15 @@ module rooch_framework::bitcoin_validator {
     use rooch_framework::bitcoin_address::{Self, BTCAddress};
 
     /// there defines scheme for each blockchain
-    const BITCOIN_SCHEME: u64 = 2;
+    const SCHEME_BITCOIN: u64 = 2;
 
     /// error code
-    const EInvalidPublicKeyLength: u64 = 0;
+    const ErrorInvalidPublicKeyLength: u64 = 0;
 
     struct BitcoinValidator has store, drop {}
 
     public fun scheme(): u64 {
-        BITCOIN_SCHEME
+        SCHEME_BITCOIN
     }
 
     /// `rotate_authentication_key_entry` only supports rotating authentication key to a Bitcoin legacy address
@@ -36,7 +36,7 @@ module rooch_framework::bitcoin_validator {
             vector::length(&public_key) == ecdsa_k1::public_key_length()
             || vector::length(&public_key) == 20 // TODO support key generation of 20-bytes public key for Bitcoin bech32 addresses
             || vector::length(&public_key) == 32, // TODO support key generation of 32-bytes public key for Bitcoin bech32 addresses
-            error::invalid_argument(EInvalidPublicKeyLength)
+            error::invalid_argument(ErrorInvalidPublicKeyLength)
         );
 
         // User can rotate the authentication key arbitrarily, so we do not need to check the new public key with the account address.

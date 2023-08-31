@@ -78,11 +78,11 @@ Feature: Rooch CLI integration tests
       Then stop the server
 
   @serial
-  Scenario: publish in Move and module upgrade
-      Given a server for publish_in_move
+  Scenario: publish through MoveAction and module upgrade
+      Given a server for publish_through_move_action
 
       # The counter example
-      Then cmd: "move publish -p ../../examples/counter --sender-account {default} --named-addresses rooch_examples={default} --by-move"
+      Then cmd: "move publish -p ../../examples/counter --sender-account {default} --named-addresses rooch_examples={default} --by-move-action"
       Then cmd: "move view --function {default}::counter::value"
       Then assert: "{{$.move[-1].return_values[0].move_value}} == 0"
       Then cmd: "move run --function {default}::counter::increase --sender-account {default}"
@@ -92,21 +92,21 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.resource[-1].move_value.value.value}} == 1"
 
       # The entry_function_arguments example
-      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/ --sender-account {default} --named-addresses rooch_examples={default} --by-move"
+      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/ --sender-account {default} --named-addresses rooch_examples={default} --by-move-action"
       Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
       Then assert: ""{{$.move[-1]}}" contains FUNCTION_RESOLUTION_FAILURE"
-      Then cmd: "move publish -p ../../examples/entry_function_arguments/ --sender-account {default} --named-addresses rooch_examples={default} --by-move"
+      Then cmd: "move publish -p ../../examples/entry_function_arguments/ --sender-account {default} --named-addresses rooch_examples={default} --by-move-action"
       Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
       Then assert: "{{$.move[-1].output.status.type}} == executed"
       # check compatibility
-      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/ --sender-account {default} --named-addresses rooch_examples={default} --by-move"
+      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/ --sender-account {default} --named-addresses rooch_examples={default} --by-move-action"
       Then assert: ""{{$.move[-1]}}" contains MiscellaneousError"
 
       Then stop the server
 
   @serial
-  Scenario: publish in Rust and module upgrade
-      Given a server for publish_in_rust
+  Scenario: publish through Move entry function and module upgrade
+      Given a server for publish_through_entry_function
 
       # The counter example
       Then cmd: "move publish -p ../../examples/counter --sender-account {default} --named-addresses rooch_examples={default}"

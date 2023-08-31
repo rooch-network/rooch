@@ -1,0 +1,28 @@
+[package]
+name = "rooch-open-rpc-spec-builder"
+version = "0.1.0"
+
+# Workspace inherited keys
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+anyhow  = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+tokio = { workspace = true, features = ["full"] }
+fastcrypto = { workspace = true }
+rand = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+bcs = { workspace = true }
+versions = { workspace = true }
+pretty_assertions = { workspace = true }
+rooch-rpc-api = { workspace = true }
+rooch-open-rpc = { workspace = true }
+rooch-open-rpc-macros = { workspace = true }

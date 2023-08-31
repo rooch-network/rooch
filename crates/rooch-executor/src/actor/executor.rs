@@ -25,12 +25,14 @@ use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event::EventHandle;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
+use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::as_struct_tag;
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::state_resolver::{AnnotatedStateReader, StateReader};
 use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
+use moveos_types::transaction::TransactionOutput;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::tx_context::TxContext;
 use rooch_genesis::RoochGenesis;
@@ -42,8 +44,10 @@ use rooch_types::framework::auth_validator::TxValidateResult;
 use rooch_types::framework::transaction_validator::TransactionValidator;
 use rooch_types::transaction::AuthenticatorInfo;
 use rooch_types::transaction::{AbstractTransaction, TransactionSequenceMapping};
+use rooch_types::H256;
 
 pub struct ExecutorActor {
+    genesis: RoochGenesis,
     moveos: MoveOS,
     rooch_store: RoochStore,
 }
@@ -52,17 +56,47 @@ type ValidateAuthenticatorResult =
     Result<(TxValidateResult, Vec<FunctionCall>, Vec<FunctionCall>), VMStatus>;
 
 impl ExecutorActor {
-    pub fn new(moveos_store: MoveOSStore, rooch_store: RoochStore) -> Result<Self> {
-        let genesis: &RoochGenesis = &rooch_genesis::ROOCH_GENESIS;
+    pub fn new(chain_id: u64, moveos_store: MoveOSStore, rooch_store: RoochStore) -> Result<Self> {
+        let genesis: RoochGenesis = rooch_genesis::RoochGenesis::build(chain_id)?;
+        let moveos = MoveOS::new(moveos_store, genesis.all_natives(), genesis.config.clone())?;
 
-        let mut moveos = MoveOS::new(moveos_store, genesis.all_natives(), genesis.config.clone())?;
-        if moveos.state().is_genesis() {
-            moveos.init_genesis(genesis.genesis_txs())?;
-        }
-        Ok(Self {
+        let executor = Self {
+            genesis,
             moveos,
             rooch_store,
-        })
+        };
+        executor.init_or_check_genesis()
+    }
+
+    fn init_or_check_genesis(mut self) -> Result<Self> {
+        if self.moveos.state().is_genesis() {
+            let genesis_result = self
+                .moveos
+                .init_genesis(self.genesis.genesis_txs(), self.genesis.genesis_ctx())?;
+            let genesis_state_root = genesis_result
+                .last()
+                .expect("Genesis result must not empty")
+                .0;
+
+            //TODO should we save the genesis txs to sequencer?
+            for (genesis_tx, (state_root, genesis_tx_output)) in
+                self.genesis.genesis_txs().into_iter().zip(genesis_result)
+            {
+                let tx_hash = genesis_tx.tx_hash();
+                self.handle_tx_output(tx_hash, state_root, genesis_tx_output)?;
+            }
+
+            debug_assert!(
+                genesis_state_root == self.genesis.genesis_state_root(),
+                "Genesis state root mismatch"
+            );
+            let genesis_info =
+                GenesisInfo::new(self.genesis.genesis_package_hash(), genesis_state_root);
+            self.moveos.config_store().save_genesis(genesis_info)?;
+        } else {
+            self.genesis.check_genesis(self.moveos.config_store())?;
+        }
+        Ok(self)
     }
 
     pub fn resolve_or_generate(
@@ -81,7 +115,7 @@ impl ExecutorActor {
         let multi_chain_address_sender = tx.sender();
 
         let resolved_sender = self.resolve_or_generate(multi_chain_address_sender.clone())?;
-        let authenticator = tx.authenticator_info();
+        let authenticator = tx.authenticator_info()?;
 
         let mut moveos_tx = tx.construct_moveos_transaction(resolved_sender)?;
 
@@ -186,6 +220,15 @@ impl ExecutorActor {
     pub fn execute(&mut self, tx: VerifiedMoveOSTransaction) -> Result<ExecuteTransactionResult> {
         let tx_hash = tx.ctx.tx_hash();
         let (state_root, output) = self.moveos.execute_and_apply(tx)?;
+        self.handle_tx_output(tx_hash, state_root, output)
+    }
+
+    fn handle_tx_output(
+        &mut self,
+        tx_hash: H256,
+        state_root: H256,
+        output: TransactionOutput,
+    ) -> Result<ExecuteTransactionResult> {
         let event_hashes: Vec<_> = output.events.iter().map(|e| e.hash()).collect();
         let event_root = InMemoryAccumulator::from_leaves(event_hashes.as_slice()).root_hash();
 

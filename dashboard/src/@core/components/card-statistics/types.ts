@@ -1,4 +1,7 @@
-// ** Types
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+// ** React Imports
 import { IconProps } from '@iconify/react'
 import { ThemeColor } from 'src/@core/layouts/types'
 import { OptionsMenuType } from 'src/@core/components/option-menu/types'

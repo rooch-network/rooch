@@ -121,32 +121,32 @@ this result will be stored in the TxContext
 ## Constants
 
 
-<a name="0x3_auth_validator_EMustExecuteAfterValidate"></a>
+<a name="0x3_auth_validator_ErrorMustExecuteAfterValidate"></a>
 
 The function must be executed after the transaction is validated
 
 
-<pre><code><b>const</b> <a href="auth_validator.md#0x3_auth_validator_EMustExecuteAfterValidate">EMustExecuteAfterValidate</a>: u64 = 1;
+<pre><code><b>const</b> <a href="auth_validator.md#0x3_auth_validator_ErrorMustExecuteAfterValidate">ErrorMustExecuteAfterValidate</a>: u64 = 1;
 </code></pre>
 
 
 
-<a name="0x3_auth_validator_EValidateInvalidAccountAuthKey"></a>
+<a name="0x3_auth_validator_ErrorValidateInvalidAccountAuthKey"></a>
 
 The AuthKey in transaction's authenticator do not match with the sender's account auth key
 
 
-<pre><code><b>const</b> <a href="auth_validator.md#0x3_auth_validator_EValidateInvalidAccountAuthKey">EValidateInvalidAccountAuthKey</a>: u64 = 1001;
+<pre><code><b>const</b> <a href="auth_validator.md#0x3_auth_validator_ErrorValidateInvalidAccountAuthKey">ErrorValidateInvalidAccountAuthKey</a>: u64 = 1001;
 </code></pre>
 
 
 
-<a name="0x3_auth_validator_EValidateInvalidAuthenticator"></a>
+<a name="0x3_auth_validator_ErrorValidateInvalidAuthenticator"></a>
 
 InvalidAuthenticator, include invalid signature
 
 
-<pre><code><b>const</b> <a href="auth_validator.md#0x3_auth_validator_EValidateInvalidAuthenticator">EValidateInvalidAuthenticator</a>: u64 = 1002;
+<pre><code><b>const</b> <a href="auth_validator.md#0x3_auth_validator_ErrorValidateInvalidAuthenticator">ErrorValidateInvalidAuthenticator</a>: u64 = 1002;
 </code></pre>
 
 
@@ -167,7 +167,7 @@ InvalidAuthenticator, include invalid signature
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_error_invalid_account_auth_key">error_invalid_account_auth_key</a>(): u64 {
-    <a href="_invalid_argument">error::invalid_argument</a>(<a href="auth_validator.md#0x3_auth_validator_EValidateInvalidAccountAuthKey">EValidateInvalidAccountAuthKey</a>)
+    <a href="_invalid_argument">error::invalid_argument</a>(<a href="auth_validator.md#0x3_auth_validator_ErrorValidateInvalidAccountAuthKey">ErrorValidateInvalidAccountAuthKey</a>)
 }
 </code></pre>
 
@@ -191,7 +191,7 @@ InvalidAuthenticator, include invalid signature
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_error_invalid_authenticator">error_invalid_authenticator</a>(): u64 {
-    <a href="_invalid_argument">error::invalid_argument</a>(<a href="auth_validator.md#0x3_auth_validator_EValidateInvalidAuthenticator">EValidateInvalidAuthenticator</a>)
+    <a href="_invalid_argument">error::invalid_argument</a>(<a href="auth_validator.md#0x3_auth_validator_ErrorValidateInvalidAuthenticator">ErrorValidateInvalidAuthenticator</a>)
 }
 </code></pre>
 
@@ -353,7 +353,7 @@ Get the TxValidateResult from the TxContext, Only can be called after the transa
 
 <pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_validate_result_from_tx_ctx">get_validate_result_from_tx_ctx</a>(ctx: &StorageContext): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a> {
     <b>let</b> validate_result_opt = <a href="_get">storage_context::get</a>&lt;<a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a>&gt;(ctx);
-    <b>assert</b>!(<a href="_is_some">option::is_some</a>(&validate_result_opt), <a href="_invalid_state">error::invalid_state</a>(<a href="auth_validator.md#0x3_auth_validator_EMustExecuteAfterValidate">EMustExecuteAfterValidate</a>));
+    <b>assert</b>!(<a href="_is_some">option::is_some</a>(&validate_result_opt), <a href="_invalid_state">error::invalid_state</a>(<a href="auth_validator.md#0x3_auth_validator_ErrorMustExecuteAfterValidate">ErrorMustExecuteAfterValidate</a>));
     <a href="_extract">option::extract</a>(&<b>mut</b> validate_result_opt)
 }
 </code></pre>
@@ -463,7 +463,7 @@ Only can be called after the transaction is validated
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx">get_session_key_from_tx_ctx</a>(ctx: &StorageContext): <a href="">vector</a>&lt;u8&gt; {
-    <b>assert</b>!(<a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">is_validate_via_session_key</a>(ctx), <a href="_invalid_state">error::invalid_state</a>(<a href="auth_validator.md#0x3_auth_validator_EMustExecuteAfterValidate">EMustExecuteAfterValidate</a>));
+    <b>assert</b>!(<a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">is_validate_via_session_key</a>(ctx), <a href="_invalid_state">error::invalid_state</a>(<a href="auth_validator.md#0x3_auth_validator_ErrorMustExecuteAfterValidate">ErrorMustExecuteAfterValidate</a>));
     <a href="_extract">option::extract</a>(&<b>mut</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx_option">get_session_key_from_tx_ctx_option</a>(ctx))
 }
 </code></pre>

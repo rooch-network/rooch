@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // ** React Imports
 import { ElementType } from 'react'
 
@@ -52,7 +55,7 @@ const MenuNavLink = styled(ListItemButton)<
   width: '100%',
   margin: theme.spacing(0, 4),
   transition: 'padding .25s ease-in-out',
-  borderRadius: theme.shape.borderRadius
+  borderRadius: theme.shape.borderRadius,
 }))
 
 const MenuItemTextMetaWrapper = styled(Box)<BoxProps>(({ theme }) => ({
@@ -62,7 +65,7 @@ const MenuItemTextMetaWrapper = styled(Box)<BoxProps>(({ theme }) => ({
   gap: theme.spacing(2),
   justifyContent: 'space-between',
   transition: 'opacity .25s ease-in-out',
-  ...(themeConfig.menuTextTruncate && { overflow: 'hidden' })
+  ...(themeConfig.menuTextTruncate && { overflow: 'hidden' }),
 }))
 
 const VerticalNavLink = ({
@@ -74,7 +77,7 @@ const VerticalNavLink = ({
   isSubToSub,
   collapsedNavWidth,
   toggleNavVisibility,
-  navigationBorderWidth
+  navigationBorderWidth,
 }: Props) => {
   // ** Hooks
   const router = useRouter()
@@ -97,7 +100,7 @@ const VerticalNavLink = ({
     <CanViewNavLink navLink={item}>
       <ListItem
         disablePadding
-        className='nav-link'
+        className="nav-link"
         disabled={item.disabled || false}
         sx={{
           px: '0 !important',
@@ -111,11 +114,11 @@ const VerticalNavLink = ({
                 content: '""',
                 position: 'absolute',
                 backgroundColor: 'primary.main',
-                borderTopLeftRadius: theme => theme.shape.borderRadius,
-                borderBottomLeftRadius: theme => theme.shape.borderRadius
-              }
-            })
-          })
+                borderTopLeftRadius: (theme) => theme.shape.borderRadius,
+                borderBottomLeftRadius: (theme) => theme.shape.borderRadius,
+              },
+            }),
+          }),
         }}
       >
         <MenuNavLink
@@ -124,7 +127,7 @@ const VerticalNavLink = ({
           className={isNavLinkActive() ? 'active' : ''}
           href={item.path === undefined ? '/' : `${item.path}`}
           {...(item.openInNewTab ? { target: '_blank' } : null)}
-          onClick={e => {
+          onClick={(e) => {
             if (item.path === undefined) {
               e.preventDefault()
               e.stopPropagation()
@@ -136,7 +139,10 @@ const VerticalNavLink = ({
           sx={{
             py: 2.5,
             ...(item.disabled ? { pointerEvents: 'none' } : { cursor: 'pointer' }),
-            pr: navCollapsed && !navHover ? ((collapsedNavWidth - navigationBorderWidth - 22) / 4 - 8) / 2 : 4,
+            pr:
+              navCollapsed && !navHover
+                ? ((collapsedNavWidth - navigationBorderWidth - 22) / 4 - 8) / 2
+                : 4,
             pl:
               navCollapsed && !navHover
                 ? ((collapsedNavWidth - navigationBorderWidth - 22) / 4 - 8) / 2
@@ -148,29 +154,32 @@ const VerticalNavLink = ({
                   '&.active': {
                     '& .MuiTypography-root': {
                       fontWeight: 600,
-                      color: 'text.primary'
+                      color: 'text.primary',
                     },
                     '& svg': {
                       color: 'primary.main',
                       transform: 'scale(1.35)',
-                      filter: theme => `drop-shadow(0 0 2px ${theme.palette.primary.main})`
-                    }
-                  }
+                      filter: (theme) => `drop-shadow(0 0 2px ${theme.palette.primary.main})`,
+                    },
+                  },
                 }
               : {
                   '&.active': {
-                    backgroundColor: mode === 'light' ? bgColors.primaryLight.backgroundColor : 'primary.main',
+                    backgroundColor:
+                      mode === 'light' ? bgColors.primaryLight.backgroundColor : 'primary.main',
                     '& .MuiTypography-root, & svg': {
-                      color: mode === 'light' ? 'primary.main' : 'common.white'
+                      color: mode === 'light' ? 'primary.main' : 'common.white',
                     },
                     '&.active.Mui-focusVisible': {
                       '&, &:hover': {
-                        backgroundColor: theme =>
-                          mode === 'light' ? hexToRGBA(theme.palette.primary.main, 0.24) : 'primary.dark'
-                      }
-                    }
-                  }
-                })
+                        backgroundColor: (theme) =>
+                          mode === 'light'
+                            ? hexToRGBA(theme.palette.primary.main, 0.24)
+                            : 'primary.dark',
+                      },
+                    },
+                  },
+                }),
           }}
         >
           <ListItemIcon
@@ -178,7 +187,7 @@ const VerticalNavLink = ({
               transition: 'margin .25s ease-in-out',
               '& svg': { transition: 'transform .25s ease-in-out' },
               ...(navCollapsed && !navHover ? { mr: 0 } : { mr: 2.5 }),
-              ...(parent && { mr: 4.25, color: 'text.disabled' })
+              ...(parent && { mr: 4.25, color: 'text.disabled' }),
             }}
           >
             <UserIcon icon={icon as string} fontSize={parent ? '0.4375rem' : '1.375rem'} />
@@ -187,13 +196,14 @@ const VerticalNavLink = ({
           <MenuItemTextMetaWrapper
             sx={{
               ...(isSubToSub ? { ml: 2.5 } : {}),
-              ...(navCollapsed && !navHover ? { opacity: 0 } : { opacity: 1 })
+              ...(navCollapsed && !navHover ? { opacity: 0 } : { opacity: 1 }),
             }}
           >
             <Typography
               sx={{ color: 'text.secondary' }}
-              {...((themeConfig.menuTextTruncate || (!themeConfig.menuTextTruncate && navCollapsed && !navHover)) && {
-                noWrap: true
+              {...((themeConfig.menuTextTruncate ||
+                (!themeConfig.menuTextTruncate && navCollapsed && !navHover)) && {
+                noWrap: true,
               })}
             >
               <Translations text={item.title} />
@@ -205,7 +215,7 @@ const VerticalNavLink = ({
                 sx={{
                   height: 20,
                   fontWeight: 500,
-                  '& .MuiChip-label': { px: 1.5, textTransform: 'capitalize' }
+                  '& .MuiChip-label': { px: 1.5, textTransform: 'capitalize' },
                 }}
               />
             ) : null}

@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::gas::table::MoveOSGasMeter;
+use crate::gas::table::{initial_cost_schedule, MoveOSGasMeter};
 use crate::vm::moveos_vm::MoveOSVM;
 use anyhow::{bail, ensure, Result};
 use move_binary_format::errors::{vm_status_of_result, Location, PartialVMError, VMResult};
@@ -11,7 +11,7 @@ use move_core_types::{
 };
 use move_vm_runtime::config::VMConfig;
 use move_vm_runtime::native_functions::NativeFunction;
-use moveos_store::config_store::ConfigStore;
+use moveos_store::config_store::ConfigDBStore;
 use moveos_store::event_store::EventDBStore;
 use moveos_store::state_store::statedb::StateDBStore;
 use moveos_store::transaction_store::TransactionDBStore;
@@ -19,6 +19,7 @@ use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::startup_info::StartupInfo;
+use moveos_types::state::MoveState;
 use moveos_types::state_resolver::MoveOSResolverProxy;
 use moveos_types::transaction::{MoveOSTransaction, TransactionOutput, VerifiedMoveOSTransaction};
 use moveos_types::tx_context::TxContext;
@@ -74,28 +75,33 @@ impl MoveOS {
         })
     }
 
-    //TODO genesis tx should be in one transaction?
-    pub fn init_genesis(&mut self, genesis_txs: Vec<MoveOSTransaction>) -> Result<()> {
+    pub fn init_genesis<T: Into<MoveOSTransaction>, GT: MoveState + Clone>(
+        &mut self,
+        genesis_txs: Vec<T>,
+        genesis_ctx: GT,
+    ) -> Result<Vec<(H256, TransactionOutput)>> {
         ensure!(
             self.db.0.get_state_store().is_genesis(),
             "genesis already initialized"
         );
-
-        for genesis_tx in genesis_txs {
-            self.verify_and_execute_genesis_tx(genesis_tx)?;
-        }
-        //TODO return the state root genesis TransactionExecutionInfo
-        Ok(())
+        genesis_txs
+            .into_iter()
+            .map(|tx| self.verify_and_execute_genesis_tx(tx.into(), genesis_ctx.clone()))
+            .collect::<Result<Vec<_>>>()
     }
 
-    fn verify_and_execute_genesis_tx(&mut self, tx: MoveOSTransaction) -> Result<()> {
+    fn verify_and_execute_genesis_tx<GT: MoveState>(
+        &mut self,
+        tx: MoveOSTransaction,
+        genesis_ctx: GT,
+    ) -> Result<(H256, TransactionOutput)> {
         let MoveOSTransaction {
-            ctx,
+            mut ctx,
             action,
             pre_execute_functions: _,
             post_execute_functions: _,
         } = tx;
-
+        ctx.add(genesis_ctx)?;
         let mut session = self.vm.new_genesis_session(&self.db, ctx);
         let verified_action = session.verify_move_action(action)?;
         let execute_result = session.execute_move_action(verified_action);
@@ -104,8 +110,8 @@ impl MoveOS {
         if output.status != KeptVMStatus::Executed {
             bail!("genesis tx should success, error: {:?}", output.status);
         }
-        let _state_root = self.apply_transaction_output(output)?;
-        Ok(())
+        let state_root = self.apply_transaction_output(output.clone())?;
+        Ok((state_root, output))
     }
 
     pub fn state(&self) -> &StateDBStore {
@@ -124,6 +130,10 @@ impl MoveOS {
         self.db.0.get_transaction_store()
     }
 
+    pub fn config_store(&self) -> &ConfigDBStore {
+        self.db.0.get_config_store()
+    }
+
     pub fn verify(&self, tx: MoveOSTransaction) -> VMResult<VerifiedMoveOSTransaction> {
         let MoveOSTransaction {
             ctx,
@@ -132,7 +142,9 @@ impl MoveOS {
             post_execute_functions,
         } = tx;
 
-        let gas_meter = MoveOSGasMeter::new();
+        let cost_table = initial_cost_schedule();
+        let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
+        gas_meter.set_metering(false);
         let session = self
             .vm
             .new_readonly_session(&self.db, ctx.clone(), gas_meter);
@@ -163,7 +175,8 @@ impl MoveOS {
                 action
             );
         }
-        let gas_meter = MoveOSGasMeter::new();
+        let cost_table = initial_cost_schedule();
+        let gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
         let mut session = self.vm.new_session(
             &self.db,
             ctx,
@@ -243,7 +256,9 @@ impl MoveOS {
         function_call: FunctionCall,
     ) -> FunctionResult {
         //TODO limit the view function max gas usage
-        let gas_meter = MoveOSGasMeter::new();
+        let cost_table = initial_cost_schedule();
+        let mut gas_meter = MoveOSGasMeter::new(cost_table, tx_context.max_gas_amount);
+        gas_meter.set_metering(false);
         let mut session = self
             .vm
             .new_readonly_session(&self.db, tx_context.clone(), gas_meter);
