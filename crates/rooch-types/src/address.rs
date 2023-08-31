@@ -10,6 +10,7 @@ use bitcoin::{
     network::constants::Network,
 };
 use ethers::types::H160;
+use fastcrypto::secp256k1::recoverable::Secp256k1RecoverablePublicKey;
 use move_core_types::{
     account_address::AccountAddress,
     ident_str,
@@ -30,6 +31,7 @@ use proptest::{collection::vec, prelude::*};
 use proptest_derive::Arbitrary;
 use rand::{seq::SliceRandom, thread_rng};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use sha3::{Digest, Sha3_256};
 use std::fmt;
 use std::str::FromStr;
 
@@ -300,6 +302,24 @@ impl TryFrom<MultiChainAddress> for EthereumAddress {
             return Err(anyhow::anyhow!("coin type {} is invalid", value.coin));
         }
         Ok(Self(H160::from_slice(&value.raw_address)))
+    }
+}
+
+impl From<Secp256k1RecoverablePublicKey> for EthereumAddress {
+    fn from(value: Secp256k1RecoverablePublicKey) -> Self {
+        // Take uncompressed public key
+        let uncompressed_public_key_bytes = value.pubkey.serialize_uncompressed();
+        // Ignore the first byte and take the last 64-bytes of the uncompressed pubkey
+        let uncompressed_64 = uncompressed_public_key_bytes[1..].to_vec();
+        // create a SHA3-256 object
+        let mut hasher = Sha3_256::new();
+        // write input message
+        hasher.update(&uncompressed_64);
+        // read hash digest
+        let result = hasher.finalize();
+        // Take the last 20 bytes of the hash of the 64-bytes uncompressed pubkey
+        let address_bytes = result[12..32].to_vec();
+        Self(H160::from_slice(&address_bytes))
     }
 }
 

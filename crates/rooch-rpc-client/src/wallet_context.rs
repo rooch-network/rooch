@@ -4,6 +4,7 @@
 use crate::client_config::{ClientConfig, DEFAULT_EXPIRATION_SECS};
 use crate::Client;
 use anyhow::anyhow;
+use dirs::public_dir;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::gas_config::GasConfig;
 use moveos_types::transaction::MoveAction;
@@ -12,8 +13,10 @@ use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG};
 use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView};
 use rooch_types::address::RoochAddress;
+use rooch_types::coin_type::Coin;
 use rooch_types::crypto::{BuiltinScheme, Signature};
 use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::transaction::ethereum::EthereumTransaction;
 use rooch_types::transaction::{
     authenticator::Authenticator,
     rooch::{RoochTransaction, RoochTransactionData},
@@ -81,7 +84,7 @@ impl WalletContext {
         })
     }
 
-    pub async fn build_tx_data(
+    pub async fn build_rooch_tx_data(
         &self,
         sender: RoochAddress,
         action: MoveAction,
@@ -108,27 +111,30 @@ impl WalletContext {
         &self,
         sender: RoochAddress,
         action: MoveAction,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> RoochResult<RoochTransaction> {
         let kp = self
             .config
             .keystore
-            .get_key_pair_by_scheme(&sender, scheme)
+            .get_key_pair_by_coin(&sender, coin)
             .ok()
             .ok_or_else(|| {
                 RoochError::SignMessageError(format!("Cannot find key for address: [{sender}]"))
             })?;
 
-        let tx_data = self.build_tx_data(sender, action).await?;
-        let signature = Signature::new_hashed(tx_data.hash().as_bytes(), kp);
-        let auth = match kp.public().scheme() {
-            BuiltinScheme::Ed25519 => Authenticator::ed25519(signature),
-            BuiltinScheme::Ecdsa => Authenticator::ecdsa(signature),
-            BuiltinScheme::EcdsaRecoverable => Authenticator::ecdsa_recoverable(signature),
-            BuiltinScheme::MultiEd25519 => todo!(),
-            BuiltinScheme::Schnorr => Authenticator::schnorr(signature),
-        };
-        Ok(RoochTransaction::new(tx_data, auth))
+        match coin {
+            Coin::Rooch => {
+                let tx_data = self.build_rooch_tx_data(sender, action).await?;
+                let signature = Signature::new_hashed(tx_data.hash().as_bytes(), kp);
+                Ok(RoochTransaction::new(
+                    tx_data,
+                    Authenticator::rooch(signature),
+                ))
+            }
+            Coin::Ether => todo!(),
+            Coin::Bitcoin => todo!(),
+            Coin::Nostr => todo!(),
+        }
     }
 
     pub async fn execute(
@@ -146,7 +152,7 @@ impl WalletContext {
         &self,
         sender: RoochAddress,
         action: MoveAction,
-        scheme: BuiltinScheme,
+        scheme: Coin,
     ) -> RoochResult<ExecuteTransactionResponseView> {
         let tx = self.sign(sender, action, scheme).await?;
         self.execute(tx).await

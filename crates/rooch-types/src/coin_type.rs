@@ -13,9 +13,9 @@ use std::fmt::Display;
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 #[repr(u64)]
 pub enum Symbol {
-    BTC,
-    ETH,
-    ROH,
+    BTC = 0,
+    ETH = 60,
+    ROH = 20230101,
 }
 
 impl TryFrom<u64> for Symbol {
@@ -63,10 +63,10 @@ impl Display for Symbol {
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 #[repr(u64)]
 pub enum Coin {
-    Bitcoin,
-    Ether,
-    Nostr,
-    Rooch,
+    Bitcoin = 0,
+    Ether = 60,
+    Nostr = 1237,
+    Rooch = 20230101,
 }
 
 impl TryFrom<u64> for Coin {

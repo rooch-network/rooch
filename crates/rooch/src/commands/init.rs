@@ -11,6 +11,7 @@ use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_KEYSTORE_FILENAM
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use rooch_rpc_client::client_config::{ClientConfig, Env};
 use rooch_types::chain_id::RoochChainID;
+use rooch_types::coin_type::Coin;
 use rooch_types::error::RoochError;
 use rooch_types::{crypto::BuiltinScheme, error::RoochResult};
 use std::fs;
@@ -49,7 +50,7 @@ impl CommandAction<String> for Init {
                 }),
                 None => {
                     println!(
-                        "Creating config file [{:?}] with server and ed25519 crypto scheme.",
+                        "Creating config file [{:?}] with server and rooch native validator scheme.",
                         client_config_path
                     );
                     let url = if self.server_url.is_none() {
@@ -100,7 +101,7 @@ impl CommandAction<String> for Init {
                     .join(ROOCH_KEYSTORE_FILENAME);
                 let mut keystore = Keystore::from(FileBasedKeystore::new(&keystore_path)?);
                 let (new_address, phrase, scheme) =
-                    keystore.generate_and_add_new_key(BuiltinScheme::Ed25519, None, None)?;
+                    keystore.generate_and_add_new_key(Coin::Rooch, None, None)?;
                 println!(
                     "Generated new keypair for address with scheme {:?} [{new_address}]",
                     scheme.to_string()

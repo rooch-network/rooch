@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::anyhow;
 use bip32::XPrv;
 use bip32::{ChildNumber, DerivationPath};
 use bip39::{Language, Mnemonic, MnemonicType, Seed};
@@ -9,14 +8,13 @@ use fastcrypto::ed25519::Ed25519KeyPair;
 use fastcrypto::secp256k1::recoverable::{
     Secp256k1RecoverableKeyPair, Secp256k1RecoverablePrivateKey,
 };
-use fastcrypto::secp256k1::schnorr::{SchnorrKeyPair, SchnorrPrivateKey};
-use fastcrypto::secp256k1::{Secp256k1KeyPair, Secp256k1PrivateKey};
 use fastcrypto::{
     ed25519::Ed25519PrivateKey,
     traits::{KeyPair, ToFromBytes},
 };
-use rooch_types::address::RoochAddress;
-use rooch_types::crypto::{BuiltinScheme, RoochKeyPair};
+use rooch_types::address::{EthereumAddress, RoochAddress};
+use rooch_types::coin_type::Coin;
+use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::RoochError;
 use slip10_ed25519::derive_ed25519_private_key;
 use std::string::String;
@@ -39,63 +37,43 @@ pub const DERVIATION_PATH_PURPOSE_SCHNORR: u32 = 44;
 pub const DERVIATION_PATH_PURPOSE_ECDSA: u32 = 54;
 pub const DERVIATION_PATH_PURPOSE_SECP256R1: u32 = 74;
 
-pub fn derive_key_pair_from_path(
+pub fn derive_rooch_key_pair_from_path(
     seed: &[u8],
     derivation_path: Option<DerivationPath>,
-    crypto_scheme: &BuiltinScheme,
+    coin: &Coin,
 ) -> Result<(RoochAddress, RoochKeyPair), RoochError> {
-    let path = validate_path(crypto_scheme, derivation_path)?;
-    match crypto_scheme {
-        BuiltinScheme::Ed25519 => {
-            let indexes = path.into_iter().map(|i| i.into()).collect::<Vec<_>>();
-            let derived = derive_ed25519_private_key(seed, &indexes);
-            let sk = Ed25519PrivateKey::from_bytes(&derived)
-                .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
-            let kp: Ed25519KeyPair = sk.into();
-            Ok((kp.public().into(), RoochKeyPair::Ed25519(kp)))
-        }
-        BuiltinScheme::MultiEd25519 => {
-            todo!()
-        }
-        BuiltinScheme::Ecdsa => {
-            let child_xprv = XPrv::derive_from_path(seed, &path)
-                .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
-            let kp = Secp256k1KeyPair::from(
-                Secp256k1PrivateKey::from_bytes(child_xprv.private_key().to_bytes().as_slice())
-                    .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
-            );
-            Ok((kp.public().into(), RoochKeyPair::Ecdsa(kp)))
-        }
-        BuiltinScheme::EcdsaRecoverable => {
-            let child_xprv = XPrv::derive_from_path(seed, &path)
-                .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
-            let kp = Secp256k1RecoverableKeyPair::from(
-                Secp256k1RecoverablePrivateKey::from_bytes(
-                    child_xprv.private_key().to_bytes().as_slice(),
-                )
-                .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
-            );
-            Ok((kp.public().into(), RoochKeyPair::EcdsaRecoverable(kp)))
-        }
-        BuiltinScheme::Schnorr => {
-            let child_xprv = XPrv::derive_from_path(seed, &path)
-                .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
-            let kp = SchnorrKeyPair::from(
-                SchnorrPrivateKey::from_bytes(child_xprv.private_key().to_bytes().as_slice())
-                    .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
-            );
-            Ok((kp.public().into(), RoochKeyPair::Schnorr(kp)))
-        }
-    }
+    let path = validate_path(coin, derivation_path)?;
+    let indexes = path.into_iter().map(|i| i.into()).collect::<Vec<_>>();
+    let derived = derive_ed25519_private_key(seed, &indexes);
+    let sk = Ed25519PrivateKey::from_bytes(&derived)
+        .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
+    let kp: Ed25519KeyPair = sk.into();
+    Ok((kp.public().into(), RoochKeyPair::Ed25519(kp)))
+}
+
+pub fn derive_ethereum_key_pair_from_path(
+    seed: &[u8],
+    derivation_path: Option<DerivationPath>,
+    coin: &Coin,
+) -> Result<(EthereumAddress, Secp256k1RecoverableKeyPair), RoochError> {
+    let path = validate_path(coin, derivation_path)?;
+    let child_xprv = XPrv::derive_from_path(seed, &path)
+        .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
+    let kp = Secp256k1RecoverableKeyPair::from(
+        Secp256k1RecoverablePrivateKey::from_bytes(child_xprv.private_key().to_bytes().as_slice())
+            .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
+    );
+    let address = EthereumAddress::from(kp.public.clone());
+    Ok((address, kp))
 }
 
 pub fn validate_path(
-    crypto_scheme: &BuiltinScheme,
+    coin: &Coin,
     path: Option<DerivationPath>,
 ) -> Result<DerivationPath, RoochError> {
     // The derivation path must be hardened at all levels with purpose = 44, coin_type = 784
-    match crypto_scheme {
-        BuiltinScheme::Ed25519 => {
+    match coin {
+        Coin::Rooch => {
             match path {
                 Some(p) => {
                     // The derivation path must be hardened at all levels with purpose = 44, coin_type = 784
@@ -127,10 +105,7 @@ pub fn validate_path(
                 .map_err(|_| RoochError::SignatureKeyGenError("Cannot parse path".to_owned()))?),
             }
         }
-        BuiltinScheme::MultiEd25519 => {
-            todo!()
-        }
-        BuiltinScheme::Ecdsa => {
+        Coin::Ether => {
             match path {
                 Some(p) => {
                     // The derivation path must be hardened at all levels with purpose = 44, coin_type = 784
@@ -162,79 +137,32 @@ pub fn validate_path(
                 .map_err(|_| RoochError::SignatureKeyGenError("Cannot parse path".to_owned()))?),
             }
         }
-        BuiltinScheme::EcdsaRecoverable => {
-            match path {
-                Some(p) => {
-                    // The derivation path must be hardened at all levels with purpose = 44, coin_type = 784
-                    if let &[purpose, coin_type, account, change, address] = p.as_ref() {
-                        if Some(purpose)
-                            == ChildNumber::new(DERVIATION_PATH_PURPOSE_ECDSA, true).ok()
-                            && Some(coin_type)
-                                == ChildNumber::new(
-                                    DERIVATION_PATH_COIN_TYPE_SUI.try_into().unwrap(),
-                                    true,
-                                )
-                                .ok()
-                            && account.is_hardened()
-                            && change.is_hardened()
-                            && address.is_hardened()
-                        {
-                            Ok(p)
-                        } else {
-                            Err(RoochError::SignatureKeyGenError("Invalid path".to_owned()))
-                        }
-                    } else {
-                        Err(RoochError::SignatureKeyGenError("Invalid path".to_owned()))
-                    }
-                }
-                None => Ok(format!(
-                    "m/{DERVIATION_PATH_PURPOSE_ECDSA}'/{DERIVATION_PATH_COIN_TYPE_SUI}'/0'/0'/0'"
-                )
-                .parse()
-                .map_err(|_| RoochError::SignatureKeyGenError("Cannot parse path".to_owned()))?),
-            }
-        }
-        BuiltinScheme::Schnorr => {
-            match path {
-                Some(p) => {
-                    // The derivation path must be hardened at all levels with purpose = 44, coin_type = 784
-                    if let &[purpose, coin_type, account, change, address] = p.as_ref() {
-                        if Some(purpose) == ChildNumber::new(DERVIATION_PATH_PURPOSE_SCHNORR, true).ok()
-                            && Some(coin_type) == ChildNumber::new(DERIVATION_PATH_COIN_TYPE_NOSTR.try_into().unwrap(), true).ok()
-                            && account.is_hardened()
-                            && change.is_hardened()
-                            && address.is_hardened()
-                        {
-                            Ok(p)
-                        } else {
-                            Err(RoochError::SignatureKeyGenError("Invalid path".to_owned()))
-                        }
-                    } else {
-                        Err(RoochError::SignatureKeyGenError("Invalid path".to_owned()))
-                    }
-                }
-                None => Ok(format!(
-                    // for a signle key
-                    "m/{DERVIATION_PATH_PURPOSE_SCHNORR}'/{DERIVATION_PATH_COIN_TYPE_NOSTR}'/0'/0'/0'"
-                )
-                .parse()
-                .map_err(|_| RoochError::SignatureKeyGenError("Cannot parse path".to_owned()))?),
-            }
-        }
+        Coin::Bitcoin => todo!(),
+        Coin::Nostr => todo!(),
     }
 }
 
-pub fn generate_new_key(
-    crypto_scheme: BuiltinScheme,
+pub fn generate_new_rooch_key(
+    coin: Coin,
     derivation_path: Option<DerivationPath>,
     word_length: Option<String>,
-) -> Result<(RoochAddress, RoochKeyPair, BuiltinScheme, String), anyhow::Error> {
+) -> Result<(RoochAddress, RoochKeyPair, Coin, String), anyhow::Error> {
     let mnemonic = Mnemonic::new(parse_word_length(word_length)?, Language::English);
     let seed = Seed::new(&mnemonic, "");
-    match derive_key_pair_from_path(seed.as_bytes(), derivation_path, &crypto_scheme) {
-        Ok((address, kp)) => Ok((address, kp, crypto_scheme, mnemonic.phrase().to_string())),
-        Err(e) => Err(anyhow!("Failed to generate keypair: {:?}", e)),
-    }
+    let (address, kp) = derive_rooch_key_pair_from_path(seed.as_bytes(), derivation_path, &coin)?;
+    Ok((address, kp, coin, mnemonic.phrase().to_string()))
+}
+
+pub fn generate_new_ethereum_key(
+    coin: Coin,
+    derivation_path: Option<DerivationPath>,
+    word_length: Option<String>,
+) -> Result<(EthereumAddress, Secp256k1RecoverableKeyPair, Coin, String), anyhow::Error> {
+    let mnemonic = Mnemonic::new(parse_word_length(word_length)?, Language::English);
+    let seed = Seed::new(&mnemonic, "");
+    let (address, kp) =
+        derive_ethereum_key_pair_from_path(seed.as_bytes(), derivation_path, &coin)?;
+    Ok((address, kp, coin, mnemonic.phrase().to_string()))
 }
 
 fn parse_word_length(s: Option<String>) -> Result<MnemonicType, anyhow::Error> {

@@ -7688,6 +7688,7 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "serde_with",
+ "sha3 0.9.1",
  "smt",
  "strum 0.24.1",
  "strum_macros 0.24.3",

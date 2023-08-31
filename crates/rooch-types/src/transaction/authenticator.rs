@@ -12,13 +12,14 @@ use anyhow::Result;
 #[cfg(any(test, feature = "fuzzing"))]
 use fastcrypto::ed25519::Ed25519KeyPair;
 #[cfg(any(test, feature = "fuzzing"))]
+use fastcrypto::hash::Keccak256;
+#[cfg(any(test, feature = "fuzzing"))]
+use fastcrypto::secp256k1::recoverable::Secp256k1RecoverableKeyPair;
+use fastcrypto::secp256k1::recoverable::Secp256k1RecoverableSignature;
+#[cfg(any(test, feature = "fuzzing"))]
 use fastcrypto::traits::KeyPair;
 #[cfg(any(test, feature = "fuzzing"))]
-use fastcrypto::{
-    hash::Keccak256,
-    secp256k1::recoverable::{Secp256k1RecoverableKeyPair, Secp256k1RecoverableSignature},
-    traits::RecoverableSigner,
-};
+use fastcrypto::traits::RecoverableSigner;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::{collection::vec, prelude::*};
 #[cfg(any(test, feature = "fuzzing"))]

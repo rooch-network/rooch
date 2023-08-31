@@ -22,7 +22,7 @@ use rooch_config::store_config::StoreConfig;
 use rooch_config::{BaseConfig, RoochOpt};
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
-use rooch_key::key_derive::generate_new_key;
+use rooch_key::key_derive::generate_new_rooch_key;
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
 use rooch_proposer::proxy::ProposerProxy;
@@ -30,6 +30,7 @@ use rooch_rpc_api::api::RoochRpcModule;
 use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
+use rooch_types::coin_type::Coin;
 use rooch_types::error::GenesisError;
 use serde_json::json;
 use std::env;
@@ -169,14 +170,14 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
 
     // Init sequencer
     //TODO load from config
-    let (_, kp, _, _) = generate_new_key(rooch_types::crypto::BuiltinScheme::Ed25519, None, None)?;
+    let (_, kp, _, _) = generate_new_rooch_key(Coin::Rooch, None, None)?;
     let sequencer = SequencerActor::new(kp, rooch_store)
         .into_actor(Some("Sequencer"), &actor_system)
         .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
 
     // Init proposer
-    let (_, kp, _, _) = generate_new_key(rooch_types::crypto::BuiltinScheme::Ed25519, None, None)?;
+    let (_, kp, _, _) = generate_new_rooch_key(Coin::Rooch, None, None)?;
     let proposer = ProposerActor::new(kp)
         .into_actor(Some("Proposer"), &actor_system)
         .await?;
