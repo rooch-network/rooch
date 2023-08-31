@@ -8,11 +8,11 @@ use std::{
 };
 
 fn main() {
-    // build dashboard
+    // Build the dashboard if the "dashboard" feature is enabled
     if cfg!(feature = "dashboard") {
         let base_path: String;
         let dashboard_dir = "dashboard";
-        let out_put_dir = "crates/rooch/public/dashboard/";
+        let output_dir = "crates/rooch/public/dashboard/";
 
         if let Ok(output) = Command::new("git")
             .args(["rev-parse", "--show-toplevel"])
@@ -24,38 +24,42 @@ fn main() {
 
             let dashboard_path: std::path::PathBuf = Path::new(&base_path).join(dashboard_dir);
 
-            let npm_status = Command::new("npm").args(["install", "-g", "pnpm"]).status();
+            if Command::new("npm")
+                .args(["install", "-g", "pnpm"])
+                .status()
+                .is_err()
+            {
+                eprintln!("install pnpm failed");
+                process::exit(1);
+            }
 
-            if npm_status.is_err() {
+            if Command::new("pnpm").arg("i").status().is_err() {
                 eprintln!("pnpm install failed");
                 process::exit(1);
             }
 
-            let pnpm_status = Command::new("pnpm").arg("i").status();
-
-            if pnpm_status.is_err() {
-                eprintln!("pnpm install failed");
+            if Command::new("pnpm")
+                .args(["sdk", "build"])
+                .status()
+                .is_err()
+            {
+                eprintln!("pnpm sdk build failed");
                 process::exit(1);
             }
 
-            let export_status = Command::new("pnpm").args(["dashboard", "export"]).status();
-
-            if let Ok(status) = export_status {
-                if status.success() {
-                    let out_dir = dashboard_path.join("out");
-                    let destination_dir = Path::new(&base_path).join(out_put_dir);
-                    println!("{:?}", destination_dir);
-                    if let Err(err) = copy_directory(&out_dir, &destination_dir) {
-                        eprintln!("Failed to copy directory: {}", err);
-                        process::exit(1);
-                    }
-                } else {
-                    eprintln!("dashboard build failed");
-                    process::exit(1);
-                }
-            } else {
+            if Command::new("pnpm")
+                .args(["dashboard", "export"])
+                .status()
+                .is_err()
+            {
                 eprintln!("dashboard build failed");
                 process::exit(1);
+            }
+
+            let out_dir = dashboard_path.join("out");
+            let destination_dir = Path::new(&base_path).join(output_dir);
+            if let Err(err) = copy_directory(&out_dir, &destination_dir) {
+                eprintln!("Failed to copy directory: {}", err);
             }
         }
     }

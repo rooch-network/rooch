@@ -15,8 +15,9 @@
     "sourceMap": true,
     "strict": true,
     "target": "es2020",
-    "pretty": true
+    "pretty": true,
   },
   "include": ["src", "test"],
+  "exclude": ["test"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

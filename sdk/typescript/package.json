@@ -1,92 +1,95 @@
 {
-  "name": "rooch",
-  "author": "rooch.network",
-  "version": "0.0.1",
-  "description": "Rooch SDK",
-  "license": "Apache-2.0",
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "packageManager": "pnpm@8.6.6",
-  "type": "module",
-  "scripts": {
-    "clean": "rm -rf tsconfig.tsbuildinfo ./dist",
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "doc": "typedoc",
-    "vitest": "vitest",
-    "test": "pnpm test:unit && pnpm test:e2e",
-    "test:unit": "vitest run src",
-    "test:e2e": "vitest run e2e",
-    "prepublishOnly": "pnpm build",
-    "eslint:check": "eslint --max-warnings=0 .",
+	"name": "@rooch/sdk",
+	"author": "rooch.network",
+	"version": "0.0.1",
+	"description": "Rooch SDK",
+	"license": "Apache-2.0",
+	"engines": {
+		"node": ">=18.0.0"
+	},
+	"packageManager": "pnpm@8.6.6",
+	"scripts": {
+		"dev": "vite",
+		"build": "pnpm build:clean && pnpm _build:node",
+		"build:clean": "rm -rf dist",
+		"_build:browser": "tsup --platform browser --format iife --global-name roochSDK --minify",
+		"_build:node": "tsup --format cjs,esm --dts",
+		"doc": "typedoc",
+		"vitest": "vitest",
+		"test": "pnpm test:unit && pnpm test:e2e",
+		"test:unit": "vitest run src",
+		"test:e2e": "vitest run e2e",
+		"prepublishOnly": "pnpm build",
+		"eslint:check": "eslint --max-warnings=0 .",
 		"eslint:fix": "pnpm eslint:check --fix",
 		"prettier:check": "prettier -c --ignore-unknown .",
 		"prettier:fix": "prettier -w --ignore-unknown .",
 		"lint": "pnpm eslint:check && pnpm prettier:check",
 		"lint:fix": "pnpm eslint:fix && pnpm prettier:fix",
-    "gen": "rm -rf ./src/generated && pnpm run gen:types && pnpm run gen:client",
-    "gen:types": "node ./tools/serdegen/rooch_types_gen.js -o ./src/generated/runtime",
-    "gen:client": "node ./tools/generator/main.js -o ./src/generated/client"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/rooch-network/rooch.git"
-  },
-  "homepage": "https://github.com/rooch-network/rooch",
-  "bugs": {
-    "url": "https://github.com/rooch-network/rooch/issues"
-  },
-  "files": [
-    "dist"
-  ],
-  "main": "./dist/rooch.cjs",
-  "module": "./dist/rooch.js",
+		"gen": "rm -rf ./src/generated && pnpm run gen:types && pnpm run gen:client",
+		"gen:types": "node ./tools/serdegen/rooch_types_gen.js -o ./src/generated/runtime",
+		"gen:client": "node ./tools/generator/main.js -o ./src/generated/client"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/rooch-network/rooch.git"
+	},
+	"homepage": "https://github.com/rooch-network/rooch",
+	"bugs": {
+		"url": "https://github.com/rooch-network/rooch/issues"
+	},
+	"files": [
+		"dist",
+		"src"
+	],
+	"type": "module",
+	"main": "./dist/index.js",
+  "module": "./dist/index.cjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/rooch.js",
-      "require": "./dist/rooch.cjs",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
       "types": "./dist/index.d.ts"
     }
-  },
-  "keywords": [
-    "Rooch",
-    "Rooch Network",
-    "Move"
-  ],
-  "devDependencies": {
-    "@iarna/toml": "^2.2.5",
-    "@size-limit/preset-small-lib": "^8.2.4",
-    "@types/isomorphic-fetch": "^0.0.36",
-    "@types/node": "^18.15.11",
-    "@types/ws": "^8.5.5",
-    "commander": "^11.0.0",
-    "jest-fetch-mock": "^3.0.3",
-    "msw": "^1.2.1",
-    "ts-retry-promise": "^0.7.0",
-    "tsx": "^3.12.7",
-    "typedoc": "^0.24.1",
-    "typescript": "^5.0.4",
-    "vite": "^4.2.3",
-    "vite-plugin-dts": "^3.3.1",
-    "vite-plugin-node-polyfills": "^0.9.0",
-    "vitest": "^0.34.1",
-    "wait-on": "^7.0.1",
-    "ejs": "^3.1.9",
-    "fetch-mock": "^9.11.0"
-  },
-  "dependencies": {
-    "@kayahr/text-encoding": "^1.2.0",
-    "@noble/hashes": "^1.3.0",
-    "@open-rpc/client-js": "^1.8.1",
-    "@scure/bip39": "^1.2.0",
-    "@suchipi/femver": "^1.0.0",
-    "@types/isomorphic-fetch": "^0.0.36",
-    "@types/ws": "^8.5.5",
-    "events": "^3.3.0",
-    "isomorphic-fetch": "^3.0.0",
-    "superstruct": "^1.0.3",
-    "tweetnacl": "^1.0.3"
-  }
+	},
+	"keywords": [
+		"Rooch",
+		"Rooch Network",
+		"Move"
+	],
+	"devDependencies": {
+		"@iarna/toml": "^2.2.5",
+		"@size-limit/preset-small-lib": "^8.2.4",
+		"@types/isomorphic-fetch": "^0.0.36",
+		"@types/node": "^18.15.11",
+		"@types/ws": "^8.5.5",
+		"commander": "^11.0.0",
+		"jest-fetch-mock": "^3.0.3",
+		"msw": "^1.2.1",
+		"ts-retry-promise": "^0.7.0",
+		"tsx": "^3.12.7",
+		"typedoc": "^0.24.1",
+		"typescript": "^5.0.4",
+		"vite": "^4.2.3",
+		"vite-plugin-dts": "^3.3.1",
+		"vite-plugin-node-polyfills": "^0.9.0",
+		"vitest": "^0.34.1",
+		"wait-on": "^7.0.1",
+		"ejs": "^3.1.9",
+		"fetch-mock": "^9.11.0",
+		"tsup": "^6.7.0"
+	},
+	"dependencies": {
+		"@kayahr/text-encoding": "^1.2.0",
+		"@noble/hashes": "^1.3.0",
+		"@open-rpc/client-js": "^1.8.1",
+		"@scure/bip39": "^1.2.0",
+		"@suchipi/femver": "^1.0.0",
+		"@types/ws": "^8.5.5",
+		"events": "^3.3.0",
+		"isomorphic-fetch": "^3.0.0",
+		"superstruct": "^1.0.3",
+		"tweetnacl": "^1.0.3"
+	}
 }

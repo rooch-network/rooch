@@ -38,6 +38,18 @@ jobs:
           key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.OS }}-pnpm-
+            ## Build and test app start
+      - name: Install pnpm dependencies
+        run: npm install pnpm -g && pnpm install
+      - name: Gen SDK dependencie Code
+        run: pnpm sdk gen
+      - name: Lint
+        run: pnpm lint
+      - name: Build SDK
+        run: pnpm sdk build
+      - name: Test SDK
+        run: pnpm sdk test
+      ## Build and test sdk end
       #  with:
       #    fetch-depth: 0
       - name: Check code format
@@ -63,18 +75,6 @@ jobs:
         run: cargo run --bin rooch move test -p crates/rooch-framework/
       - name: Build and test example projects
         run: ./scripts/pr.sh -e
-      ## Build and test app start
-      - name: Install pnpm dependencies
-        run: npm install pnpm -g && pnpm install
-      - name: Gen SDK dependencie Code
-        run: pnpm sdk gen
-      - name: Lint 
-        run: pnpm lint
-      - name: Build SDK
-        run: pnpm sdk build
-      - name: Test SDK
-        run: pnpm sdk test
-      ## Build and test sdk end
       - uses: CatChen/check-git-status-action@v1
         with:
           fail-if-not-clean: true # optional

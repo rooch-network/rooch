@@ -21,7 +21,7 @@ export class RoochServer {
 
       this.child.on('close', (code) => {
         if (code !== 0) {
-          process.stderr.write(`子进程退出,退出码 ${code}`)
+          process.stderr.write(`Child process exit, exit code ${code}`)
         }
       })
 
