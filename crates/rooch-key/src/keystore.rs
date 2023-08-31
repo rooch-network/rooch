@@ -1,7 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::key_derive::{derive_key_pair_from_path, generate_new_key};
+use crate::key_derive::{
+    derive_ethereum_key_pair_from_path, derive_rooch_key_pair_from_path, generate_new_ethereum_key,
+    generate_new_rooch_key,
+};
 use anyhow::anyhow;
 use bip32::DerivationPath;
 use bip39::{Language, Mnemonic, Seed};
@@ -10,9 +13,11 @@ use rand::{rngs::StdRng, SeedableRng};
 use rooch_types::{
     address::RoochAddress,
     authentication_key::AuthenticationKey,
-    crypto::{get_key_pair_from_rng, BuiltinScheme, PublicKey, RoochKeyPair, Signature},
+    coin_type::Coin,
+    crypto::{get_key_pair_from_rng, PublicKey, RoochKeyPair, Signature},
     transaction::{
-        authenticator,
+        authenticator::{self, Authenticator},
+        ethereum::EthereumTransaction,
         rooch::{RoochTransaction, RoochTransactionData},
     },
 };
@@ -35,50 +40,55 @@ pub enum Keystore {
 
 #[enum_dispatch]
 pub trait AccountKeystore: Send + Sync {
-    fn add_key_pair_by_scheme(
+    fn add_key_pair_by_coin(
         &mut self,
         keypair: RoochKeyPair,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<(), anyhow::Error>;
     fn get_address_public_keys(&self) -> Vec<(RoochAddress, PublicKey)>;
-    fn get_public_key_by_scheme(&self, scheme: BuiltinScheme) -> Result<PublicKey, anyhow::Error>;
+    fn get_public_key_by_coin(&self, coin: Coin) -> Result<PublicKey, anyhow::Error>;
     fn get_key_pairs(&self, address: &RoochAddress) -> Result<Vec<&RoochKeyPair>, anyhow::Error>;
-    fn get_key_pair_by_scheme(
+    fn get_key_pair_by_coin(
         &self,
         address: &RoochAddress,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<&RoochKeyPair, signature::Error>;
-    fn update_key_pair_by_scheme(
+    fn update_key_pair_by_coin(
         &mut self,
         address: &RoochAddress,
         keypair: RoochKeyPair,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<(), anyhow::Error>;
-    fn nullify_key_pair_by_scheme(
+    fn nullify_key_pair_by_coin(
         &mut self,
         address: &RoochAddress,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<(), anyhow::Error>;
 
     fn sign_hashed(
         &self,
         address: &RoochAddress,
         msg: &[u8],
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<Signature, signature::Error>;
 
-    fn sign_transaction(
+    fn sign_rooch_transaction(
         &self,
         address: &RoochAddress,
         msg: RoochTransactionData,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<RoochTransaction, signature::Error>;
+
+    fn sign_ethereum_transaction(
+        &self,
+        transaction: EthereumTransaction,
+    ) -> Result<(EthereumTransaction, Authenticator), signature::Error>;
 
     fn sign_secure<T>(
         &self,
         address: &RoochAddress,
         msg: &T,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<Signature, signature::Error>
     where
         T: Serialize;
@@ -92,60 +102,60 @@ pub trait AccountKeystore: Send + Sync {
 
     fn generate_and_add_new_key(
         &mut self,
-        crypto_scheme: BuiltinScheme,
+        crypto_coin: Coin,
         derivation_path: Option<DerivationPath>,
         word_length: Option<String>,
-    ) -> Result<(RoochAddress, String, BuiltinScheme), anyhow::Error> {
-        let (address, kp, scheme, phrase) =
-            generate_new_key(crypto_scheme, derivation_path, word_length)?;
-        self.add_key_pair_by_scheme(kp, scheme)?;
-        Ok((address, phrase, scheme))
+    ) -> Result<(RoochAddress, String, Coin), anyhow::Error> {
+        let (address, kp, coin, phrase) =
+            generate_new_rooch_key(crypto_coin, derivation_path, word_length)?;
+        self.add_key_pair_by_coin(kp, coin)?;
+        Ok((address, phrase, coin))
     }
 
     fn import_from_mnemonic(
         &mut self,
         phrase: &str,
-        crypto_scheme: BuiltinScheme,
+        crypto_coin: Coin,
         derivation_path: Option<DerivationPath>,
     ) -> Result<RoochAddress, anyhow::Error> {
         let mnemonic = Mnemonic::from_phrase(phrase, Language::English)
             .map_err(|e| anyhow::anyhow!("Invalid mnemonic phrase: {:?}", e))?;
         let seed = Seed::new(&mnemonic, "");
-        match derive_key_pair_from_path(seed.as_bytes(), derivation_path, &crypto_scheme) {
+        match derive_rooch_key_pair_from_path(seed.as_bytes(), derivation_path, &crypto_coin) {
             Ok((address, kp)) => {
-                self.add_key_pair_by_scheme(kp, crypto_scheme)?;
+                self.add_key_pair_by_coin(kp, crypto_coin)?;
                 Ok(address)
             }
             Err(e) => Err(anyhow!("error getting keypair {:?}", e)),
         }
     }
 
-    fn update_address_with_key_pair_from_scheme(
+    fn update_address_with_key_pair_from_coin(
         &mut self,
         address: &RoochAddress,
         phrase: String,
-        crypto_scheme: BuiltinScheme,
+        crypto_coin: Coin,
         derivation_path: Option<DerivationPath>,
     ) -> Result<PublicKey, anyhow::Error> {
         let mnemonic = Mnemonic::from_phrase(phrase.as_str(), Language::English)
             .map_err(|e| anyhow::anyhow!("Invalid mnemonic phrase: {:?}", e))?;
         let seed = Seed::new(&mnemonic, "");
-        match derive_key_pair_from_path(seed.as_bytes(), derivation_path, &crypto_scheme) {
+        match derive_rooch_key_pair_from_path(seed.as_bytes(), derivation_path, &crypto_coin) {
             Ok((_, kp)) => {
                 let public_key = kp.public();
-                self.update_key_pair_by_scheme(address, kp, crypto_scheme)?;
+                self.update_key_pair_by_coin(address, kp, crypto_coin)?;
                 Ok(public_key)
             }
             Err(e) => Err(anyhow!("error getting keypair {:?}", e)),
         }
     }
 
-    fn nullify_address_with_key_pair_from_scheme(
+    fn nullify_address_with_key_pair_from_coin(
         &mut self,
         address: &RoochAddress,
-        crypto_scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<(), anyhow::Error> {
-        self.nullify_key_pair_by_scheme(address, crypto_scheme)?;
+        self.nullify_key_pair_by_coin(address, coin)?;
         Ok(())
     }
 
@@ -182,14 +192,14 @@ impl Display for Keystore {
 #[derive(Default, Serialize, Deserialize)]
 #[serde_as]
 pub(crate) struct BaseKeyStore {
-    keys: BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, RoochKeyPair>>,
+    keys: BTreeMap<RoochAddress, BTreeMap<Coin, RoochKeyPair>>,
     /// RoochAddress -> BTreeMap<AuthenticationKey, RoochKeyPair>
     #[serde_as(as = "BTreeMap<DisplayFromStr, BTreeMap<DisplayFromStr, _>>")]
     session_keys: BTreeMap<RoochAddress, BTreeMap<AuthenticationKey, RoochKeyPair>>,
 }
 
 impl BaseKeyStore {
-    pub fn new(keys: BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, RoochKeyPair>>) -> Self {
+    pub fn new(keys: BTreeMap<RoochAddress, BTreeMap<Coin, RoochKeyPair>>) -> Self {
         Self {
             keys,
             session_keys: BTreeMap::new(),
@@ -198,18 +208,18 @@ impl BaseKeyStore {
 }
 
 impl AccountKeystore for BaseKeyStore {
-    fn get_key_pair_by_scheme(
+    fn get_key_pair_by_coin(
         &self,
         address: &RoochAddress,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<&RoochKeyPair, signature::Error> {
         if let Some(inner_map) = self.keys.get(address) {
-            if let Some(keypair) = inner_map.get(&scheme) {
+            if let Some(keypair) = inner_map.get(&coin) {
                 Ok(keypair)
             } else {
                 Err(signature::Error::from_source(format!(
-                    "Scheme not found for address: [{:?}]",
-                    scheme
+                    "Coin not found for address: [{:?}]",
+                    coin
                 )))
             }
         } else {
@@ -224,11 +234,11 @@ impl AccountKeystore for BaseKeyStore {
         &self,
         address: &RoochAddress,
         msg: &[u8],
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<Signature, signature::Error> {
         Ok(Signature::new_hashed(
             msg,
-            self.get_key_pair_by_scheme(address, scheme)?,
+            self.get_key_pair_by_coin(address, coin)?,
         ))
     }
 
@@ -236,25 +246,25 @@ impl AccountKeystore for BaseKeyStore {
         &self,
         address: &RoochAddress,
         msg: &T,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<Signature, signature::Error>
     where
         T: Serialize,
     {
         Ok(Signature::new_secure(
             msg,
-            self.get_key_pair_by_scheme(address, scheme)?,
+            self.get_key_pair_by_coin(address, coin)?,
         ))
     }
 
-    fn sign_transaction(
+    fn sign_rooch_transaction(
         &self,
         address: &RoochAddress,
         msg: RoochTransactionData,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<RoochTransaction, signature::Error> {
         let kp = self
-            .get_key_pair_by_scheme(address, scheme)
+            .get_key_pair_by_coin(address, coin)
             .ok()
             .ok_or_else(|| {
                 signature::Error::from_source(format!("Cannot find key for address: [{address}]"))
@@ -262,39 +272,42 @@ impl AccountKeystore for BaseKeyStore {
 
         let signature = Signature::new_hashed(msg.hash().as_bytes(), kp);
 
-        let auth = match kp.public().scheme() {
-            BuiltinScheme::Ed25519 => authenticator::Authenticator::ed25519(signature),
-            BuiltinScheme::Ecdsa => authenticator::Authenticator::ecdsa(signature),
-            BuiltinScheme::EcdsaRecoverable => {
-                authenticator::Authenticator::ecdsa_recoverable(signature)
-            }
-            BuiltinScheme::MultiEd25519 => todo!(),
-            BuiltinScheme::Schnorr => authenticator::Authenticator::schnorr(signature),
-        };
+        let auth = authenticator::Authenticator::rooch(signature);
 
         Ok(RoochTransaction::new(msg, auth))
     }
 
-    fn add_key_pair_by_scheme(
+    fn sign_ethereum_transaction(
+        &self,
+        transaction: EthereumTransaction,
+    ) -> Result<(EthereumTransaction, Authenticator), signature::Error> {
+        let signature = EthereumTransaction::into_signature(&transaction).unwrap();
+
+        let auth = authenticator::Authenticator::ethereum(signature);
+
+        Ok((transaction, auth))
+    }
+
+    fn add_key_pair_by_coin(
         &mut self,
         keypair: RoochKeyPair,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<(), anyhow::Error> {
         let address: RoochAddress = (&keypair.public()).into();
         self.keys
             .entry(address)
             .or_insert_with(BTreeMap::new)
-            .insert(scheme, keypair);
+            .insert(coin, keypair);
         Ok(())
     }
 
-    fn get_public_key_by_scheme(&self, scheme: BuiltinScheme) -> Result<PublicKey, anyhow::Error> {
+    fn get_public_key_by_coin(&self, coin: Coin) -> Result<PublicKey, anyhow::Error> {
         for inner_map in self.keys.values() {
-            if let Some(keypair) = inner_map.get(&scheme) {
+            if let Some(keypair) = inner_map.get(&coin) {
                 return Ok(keypair.public());
             }
         }
-        Err(anyhow!("Cannot find key for scheme: [{:?}]", scheme))
+        Err(anyhow!("Cannot find key for coin: [{:?}]", coin))
     }
 
     fn get_address_public_keys(&self) -> Vec<(RoochAddress, PublicKey)> {
@@ -319,30 +332,30 @@ impl AccountKeystore for BaseKeyStore {
         }
     }
 
-    fn update_key_pair_by_scheme(
+    fn update_key_pair_by_coin(
         &mut self,
         address: &RoochAddress,
         keypair: RoochKeyPair,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<(), anyhow::Error> {
         // First, get the inner map associated with the address
         let inner_map = self.keys.entry(*address).or_insert_with(BTreeMap::new);
 
-        // Insert or update the keypair for the specified scheme in the inner map
-        inner_map.insert(scheme, keypair);
+        // Insert or update the keypair for the specified coin in the inner map
+        inner_map.insert(coin, keypair);
         Ok(())
     }
 
-    fn nullify_key_pair_by_scheme(
+    fn nullify_key_pair_by_coin(
         &mut self,
         address: &RoochAddress,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<(), anyhow::Error> {
         // First, get the inner map associated with the address
         let inner_map = self.keys.entry(*address).or_insert_with(BTreeMap::new);
 
-        // Remove or nullify the keypair for the specified scheme in the inner map
-        inner_map.remove(&scheme);
+        // Remove or nullify the keypair for the specified coin in the inner map
+        inner_map.remove(&coin);
         Ok(())
     }
 
@@ -351,8 +364,7 @@ impl AccountKeystore for BaseKeyStore {
         address: &RoochAddress,
     ) -> Result<AuthenticationKey, anyhow::Error> {
         //TODO define derivation_path for session key
-        let (_address, kp, _scheme, _phrase) =
-            generate_new_key(BuiltinScheme::Ed25519, None, None)?;
+        let (_address, kp, _coin, _phrase) = generate_new_rooch_key(Coin::Rooch, None, None)?;
         let authentication_key = kp.public().authentication_key();
         let inner_map = self
             .session_keys
@@ -385,7 +397,7 @@ impl AccountKeystore for BaseKeyStore {
 
         let signature = Signature::new_hashed(msg.hash().as_bytes(), kp);
 
-        let auth = authenticator::Authenticator::ed25519(signature);
+        let auth = authenticator::Authenticator::rooch(signature);
         Ok(RoochTransaction::new(msg, auth))
     }
 }
@@ -423,50 +435,57 @@ impl<'de> Deserialize<'de> for FileBasedKeystore {
 }
 
 impl AccountKeystore for FileBasedKeystore {
-    fn get_key_pair_by_scheme(
+    fn get_key_pair_by_coin(
         &self,
         address: &RoochAddress,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<&RoochKeyPair, signature::Error> {
-        self.keystore.get_key_pair_by_scheme(address, scheme)
+        self.keystore.get_key_pair_by_coin(address, coin)
     }
 
     fn sign_hashed(
         &self,
         address: &RoochAddress,
         msg: &[u8],
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<Signature, signature::Error> {
-        self.keystore.sign_hashed(address, msg, scheme)
+        self.keystore.sign_hashed(address, msg, coin)
     }
 
     fn sign_secure<T>(
         &self,
         address: &RoochAddress,
         msg: &T,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<Signature, signature::Error>
     where
         T: Serialize,
     {
-        self.keystore.sign_secure(address, msg, scheme)
+        self.keystore.sign_secure(address, msg, coin)
     }
 
-    fn sign_transaction(
+    fn sign_rooch_transaction(
         &self,
         address: &RoochAddress,
         msg: RoochTransactionData,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<RoochTransaction, signature::Error> {
-        self.keystore.sign_transaction(address, msg, scheme)
+        self.keystore.sign_rooch_transaction(address, msg, coin)
     }
 
-    fn add_key_pair_by_scheme(
+    fn sign_ethereum_transaction(
+        &self,
+        transaction: EthereumTransaction,
+    ) -> Result<(EthereumTransaction, Authenticator), signature::Error> {
+        self.keystore.sign_ethereum_transaction(transaction)
+    }
+
+    fn add_key_pair_by_coin(
         &mut self,
         keypair: RoochKeyPair,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<(), anyhow::Error> {
-        self.keystore.add_key_pair_by_scheme(keypair, scheme)?;
+        self.keystore.add_key_pair_by_coin(keypair, coin)?;
         //TODO should check test env at here?
         if std::env::var_os("TEST_ENV").is_none() {
             self.save()?;
@@ -474,8 +493,8 @@ impl AccountKeystore for FileBasedKeystore {
         Ok(())
     }
 
-    fn get_public_key_by_scheme(&self, scheme: BuiltinScheme) -> Result<PublicKey, anyhow::Error> {
-        self.keystore.get_public_key_by_scheme(scheme)
+    fn get_public_key_by_coin(&self, coin: Coin) -> Result<PublicKey, anyhow::Error> {
+        self.keystore.get_public_key_by_coin(coin)
     }
 
     fn get_address_public_keys(&self) -> Vec<(RoochAddress, PublicKey)> {
@@ -486,14 +505,14 @@ impl AccountKeystore for FileBasedKeystore {
         self.keystore.get_key_pairs(address)
     }
 
-    fn update_key_pair_by_scheme(
+    fn update_key_pair_by_coin(
         &mut self,
         address: &RoochAddress,
         keypair: RoochKeyPair,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .update_key_pair_by_scheme(address, keypair, scheme)?;
+            .update_key_pair_by_coin(address, keypair, coin)?;
         //TODO should check test env at here?
         if std::env::var_os("TEST_ENV").is_none() {
             self.save()?;
@@ -501,12 +520,12 @@ impl AccountKeystore for FileBasedKeystore {
         Ok(())
     }
 
-    fn nullify_key_pair_by_scheme(
+    fn nullify_key_pair_by_coin(
         &mut self,
         address: &RoochAddress,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<(), anyhow::Error> {
-        self.keystore.nullify_key_pair_by_scheme(address, scheme)?;
+        self.keystore.nullify_key_pair_by_coin(address, coin)?;
         //TODO should check test env at here?
         if std::env::var_os("TEST_ENV").is_none() {
             self.save()?;
@@ -586,33 +605,40 @@ impl AccountKeystore for InMemKeystore {
         &self,
         address: &RoochAddress,
         msg: &T,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<Signature, signature::Error>
     where
         T: Serialize,
     {
-        self.keystore.sign_secure(address, msg, scheme)
+        self.keystore.sign_secure(address, msg, coin)
     }
 
-    fn sign_transaction(
+    fn sign_rooch_transaction(
         &self,
         address: &RoochAddress,
         msg: RoochTransactionData,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<RoochTransaction, signature::Error> {
-        self.keystore.sign_transaction(address, msg, scheme)
+        self.keystore.sign_rooch_transaction(address, msg, coin)
     }
 
-    fn add_key_pair_by_scheme(
+    fn sign_ethereum_transaction(
+        &self,
+        transaction: EthereumTransaction,
+    ) -> Result<(EthereumTransaction, Authenticator), signature::Error> {
+        self.keystore.sign_ethereum_transaction(transaction)
+    }
+
+    fn add_key_pair_by_coin(
         &mut self,
         keypair: RoochKeyPair,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<(), anyhow::Error> {
-        self.keystore.add_key_pair_by_scheme(keypair, scheme)
+        self.keystore.add_key_pair_by_coin(keypair, coin)
     }
 
-    fn get_public_key_by_scheme(&self, scheme: BuiltinScheme) -> Result<PublicKey, anyhow::Error> {
-        self.keystore.get_public_key_by_scheme(scheme)
+    fn get_public_key_by_coin(&self, coin: Coin) -> Result<PublicKey, anyhow::Error> {
+        self.keystore.get_public_key_by_coin(coin)
     }
 
     fn get_address_public_keys(&self) -> Vec<(RoochAddress, PublicKey)> {
@@ -623,39 +649,39 @@ impl AccountKeystore for InMemKeystore {
         self.keystore.get_key_pairs(address)
     }
 
-    fn update_key_pair_by_scheme(
+    fn update_key_pair_by_coin(
         &mut self,
         address: &RoochAddress,
         keypair: RoochKeyPair,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .update_key_pair_by_scheme(address, keypair, scheme)
+            .update_key_pair_by_coin(address, keypair, coin)
     }
 
-    fn nullify_key_pair_by_scheme(
+    fn nullify_key_pair_by_coin(
         &mut self,
         address: &RoochAddress,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<(), anyhow::Error> {
-        self.keystore.nullify_key_pair_by_scheme(address, scheme)
+        self.keystore.nullify_key_pair_by_coin(address, coin)
     }
 
-    fn get_key_pair_by_scheme(
+    fn get_key_pair_by_coin(
         &self,
         address: &RoochAddress,
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<&RoochKeyPair, signature::Error> {
-        self.keystore.get_key_pair_by_scheme(address, scheme)
+        self.keystore.get_key_pair_by_coin(address, coin)
     }
 
     fn sign_hashed(
         &self,
         address: &RoochAddress,
         msg: &[u8],
-        scheme: BuiltinScheme,
+        coin: Coin,
     ) -> Result<Signature, signature::Error> {
-        self.keystore.sign_hashed(address, msg, scheme)
+        self.keystore.sign_hashed(address, msg, coin)
     }
 
     fn generate_session_key(
@@ -677,74 +703,40 @@ impl AccountKeystore for InMemKeystore {
 }
 
 impl InMemKeystore {
-    pub fn new_ed25519_insecure_for_tests(initial_key_number: usize) -> Self {
+    pub fn new_rooch_insecure_for_tests(initial_key_number: usize) -> Self {
         let mut rng = StdRng::from_seed([0; 32]);
         let keys = (0..initial_key_number)
             .map(|_| get_key_pair_from_rng(&mut rng))
             .map(|(ad, k)| {
                 (
                     ad,
-                    BTreeMap::from_iter(vec![(BuiltinScheme::Ed25519, RoochKeyPair::Ed25519(k))]),
+                    BTreeMap::from_iter(vec![(Coin::Rooch, RoochKeyPair::Ed25519(k))]),
                 )
             })
-            .collect::<BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, RoochKeyPair>>>();
+            .collect::<BTreeMap<RoochAddress, BTreeMap<Coin, RoochKeyPair>>>();
 
         Self {
             keystore: BaseKeyStore::new(keys),
         }
     }
 
-    pub fn new_ecdsa_insecure_for_tests(initial_key_number: usize) -> Self {
-        let mut rng = StdRng::from_seed([0; 32]);
-        let keys = (0..initial_key_number)
-            .map(|_| get_key_pair_from_rng(&mut rng))
-            .map(|(ad, k)| {
-                (
-                    ad,
-                    BTreeMap::from_iter(vec![(BuiltinScheme::Ecdsa, RoochKeyPair::Ecdsa(k))]),
-                )
-            })
-            .collect::<BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, RoochKeyPair>>>();
+    // pub fn new_ethereum_insecure_for_tests(initial_key_number: usize) -> Self {
+    //     let mut rng = StdRng::from_seed([0; 32]);
+    //     let keys = (0..initial_key_number)
+    //         .map(|_| get_key_pair_from_rng(&mut rng))
+    //         .map(|(ad, k)| {
+    //             (
+    //                 ad,
+    //                 BTreeMap::from_iter(vec![(
+    //                     Coin::Ether,
+    //                     k,
+    //                 )]),
+    //             )
+    //         })
+    //         .collect::<BTreeMap<RoochAddress, BTreeMap<Coin, RoochKeyPair>>>();
 
-        Self {
-            keystore: BaseKeyStore::new(keys),
-        }
-    }
-
-    pub fn new_ecdsa_recoverable_insecure_for_tests(initial_key_number: usize) -> Self {
-        let mut rng = StdRng::from_seed([0; 32]);
-        let keys = (0..initial_key_number)
-            .map(|_| get_key_pair_from_rng(&mut rng))
-            .map(|(ad, k)| {
-                (
-                    ad,
-                    BTreeMap::from_iter(vec![(
-                        BuiltinScheme::EcdsaRecoverable,
-                        RoochKeyPair::EcdsaRecoverable(k),
-                    )]),
-                )
-            })
-            .collect::<BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, RoochKeyPair>>>();
-
-        Self {
-            keystore: BaseKeyStore::new(keys),
-        }
-    }
-
-    pub fn new_schnorr_insecure_for_tests(initial_key_number: usize) -> Self {
-        let mut rng = StdRng::from_seed([0; 32]);
-        let keys = (0..initial_key_number)
-            .map(|_| get_key_pair_from_rng(&mut rng))
-            .map(|(ad, k)| {
-                (
-                    ad,
-                    BTreeMap::from_iter(vec![(BuiltinScheme::Schnorr, RoochKeyPair::Schnorr(k))]),
-                )
-            })
-            .collect::<BTreeMap<RoochAddress, BTreeMap<BuiltinScheme, RoochKeyPair>>>();
-
-        Self {
-            keystore: BaseKeyStore::new(keys),
-        }
-    }
+    //     Self {
+    //         keystore: BaseKeyStore::new(keys),
+    //     }
+    // }
 }

@@ -614,10 +614,10 @@ mod tests {
         traits::{KeyPair, ToFromBytes},
     };
 
-    // this test ensure the Rooch native public key to address keep the same as the old version
-    // we should also keep the Rooch native public key to address algorithm the same as the move version
+    // this test ensure the Rooch public key to address keep the same as the old version
+    // we should also keep the Rooch public key to address algorithm the same as the move version
     #[test]
-    fn test_native_public_key_to_address() {
+    fn test_rooch_public_key_to_address() {
         let private_key = Ed25519PrivateKey::from_bytes(&[0u8; 32]).unwrap();
         let keypair: Ed25519KeyPair = private_key.into();
         let address: RoochAddress = keypair.public().into();

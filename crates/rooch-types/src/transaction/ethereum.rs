@@ -4,8 +4,15 @@
 use super::{authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo};
 use crate::{address::EthereumAddress, error::RoochError};
 use anyhow::Result;
-use ethers::utils::rlp::{Decodable, Rlp};
-use fastcrypto::{secp256k1::recoverable::Secp256k1RecoverableSignature, traits::ToFromBytes};
+use ethers::{
+    types::Address,
+    utils::rlp::{Decodable, Rlp},
+};
+use fastcrypto::{
+    hash::Keccak256,
+    secp256k1::recoverable::Secp256k1RecoverableSignature,
+    traits::{RecoverableSignature, ToFromBytes},
+};
 use move_core_types::account_address::AccountAddress;
 use moveos_types::{
     h256::H256,
@@ -13,6 +20,7 @@ use moveos_types::{
     tx_context::TxContext,
 };
 use serde::{Deserialize, Serialize};
+use sha3::{Digest, Sha3_256};
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct EthereumTransaction(pub ethers::core::types::Transaction);
@@ -62,6 +70,30 @@ impl EthereumTransaction {
                 .expect("Invalid signature");
 
         Ok(recoverable_signature)
+    }
+
+    pub fn into_address(&self) -> Result<Address, RoochError> {
+        // Prepare the signed message (RLP encoding of the transaction)
+        let message = self.tx_hash().to_fixed_bytes();
+        let recoverable_signature = self.into_signature()?;
+        // Recover with Keccak256 hash to a public key
+        let public_key = recoverable_signature
+            .recover_with_hash::<Keccak256>(&message)
+            .expect("Failed to recover public key");
+        let uncompressed_public_key_bytes = public_key.pubkey.serialize_uncompressed();
+        // Ignore the first byte and take the last 64-bytes of the uncompressed pubkey
+        let uncompressed_64 = uncompressed_public_key_bytes[1..].to_vec();
+        // create a SHA3-256 object
+        let mut hasher = Sha3_256::new();
+        // write input message
+        hasher.update(&uncompressed_64);
+        // read hash digest
+        let result = hasher.finalize();
+        // Take the last 20 bytes of the hash of the 64-bytes uncompressed pubkey
+        let address_bytes = result[12..32].to_vec();
+        let address = Address::from_slice(&address_bytes);
+
+        Ok(address)
     }
 }
 
