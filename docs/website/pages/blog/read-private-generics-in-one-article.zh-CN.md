@@ -34,7 +34,7 @@ module rooch_examples::module1 {
         v: T
     }
 
-    public fun new_box<T>(value: T): Box<T> {
+    public fun new_box<T, U>(value: T): Box<T> {
         Box { v: value }
     }
 
@@ -44,7 +44,7 @@ module rooch_examples::module1 {
 
     #[test]
     fun test1() {
-        let box = new_box<u32>(123);
+        let box = new_box<u32, u64>(123);
         assert!(get_box_value(&box) == &123, 1000);
     }
 }
@@ -53,6 +53,8 @@ module rooch_examples::module1 {
 首先定义一个 `Box<T>` 类型，它是一个泛型结构体，包含了一个类型为 `T` 的字段 `v`。
 
 接着定义两个泛型函数 `new_box` 和 `get_box_value`。函数 `new_box` 用来创建 `Box<T>` 类型的值，函数 `get_box_value` 用来获取 `Box<T>` 类型中的字段值 `v: T`。
+
+> 注意：函数 `new_box` 添加了额外的类型 `U`，实际上函数并没有使用，但为了后续演示私有泛型约束特性，特意添加了 `U` 类型约束。
 
 我们简单地写一个单元测试来验证我们的代码逻辑。我们给 `new_box` 传递一个整数字面量 `123`，并创建一个包装了 `u32` 类型的 `Box<u32>` 类型的值 `box`。在断言表达式中，整数字面量引用 `&123` 会隐式推断为 `&123u32`，`get_box_value` 从 `box` 中获取到 `&123u32`，两者相等，能够顺利通过测试。
 
@@ -174,7 +176,7 @@ module rooch_examples::module1 {
     #[test_only]
     use rooch_examples::module2::{new_data, Data2};
 
-    struct Data has copy, drop {
+    struct Data has drop {
         v: u64
     }
 
@@ -182,27 +184,27 @@ module rooch_examples::module1 {
         v: T
     }
 
-    #[private_generics(T1, T2)]
-    public fun new_box<T1, T2, T3>(value: T1): Box<T1> {
+    #[private_generics(T)]
+    public fun new_box<T, U>(value: T): Box<T> {
         Box { v: value }
     }
 
-    public fun get_box_value<T: copy>(box: &Box<T>): T {
-        box.v
+    public fun get_box_value<T>(box: &Box<T>): &T {
+        &box.v
     }
 
     #[test]
     fun test1() {
         let data = Data { v: 123 };
-        let box = new_box<Data, Data, u128>(data);
+        let box = new_box<Data, u64>(data);
         assert!(get_box_value(&box).v == 123, 1000);
     }
 
     #[test]
     fun test2() {
-        let data2 = new_data(789);
-        let box2 = new_box<Data2, Data2, Data2>(data2);
-        assert!(get_box_value(&box2) == new_data(789), 2000)
+        let data2 = new_data(456);
+        let box2 = new_box<Data2, Data2>(data2);
+        assert!(get_box_value(&box2) == &new_data(456), 2000)
     }
 }
 ```
@@ -220,8 +222,8 @@ $ rooch move test
 error: resource type "Data2" in function "0x42::module1::new_box" not defined in current module or not allowed
    ┌─ ./sources/module1.move:32:20
    │
-32 │         let box2 = new_box<Data2, Data2, Data2>(data2);
-   │                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+32 │         let box2 = new_box<Data2, u64>(data2);
+   │                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 Error: extended checks failed
