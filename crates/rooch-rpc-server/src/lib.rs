@@ -266,8 +266,8 @@ fn init_storage(store_config: &StoreConfig) -> Result<(MoveOSStore, RoochStore)>
         .config_store
         .get_startup_info()?
         .map(|info| info.state_root_hash);
-    
-    if let Some(latest_state_root) = lastest_state_root{
+
+    if let Some(latest_state_root) = lastest_state_root {
         info!("Load latest state root {:?}", latest_state_root);
     }
     let moveos_store = MoveOSStore::new_with_root(moveosdb, lastest_state_root)?;
