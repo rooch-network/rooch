@@ -131,3 +131,14 @@ Feature: Rooch CLI integration tests
       Then assert: ""{{$.move[-1]}}" contains MiscellaneousError"
 
       Then stop the server
+
+ @serial
+    Scenario: coins example
+      Given a server for coins
+      Then cmd: "account create"
+      Then cmd: "move publish -p ../../examples/coins --sender-account {default} --named-addresses coins={default}"
+      Then cmd: "move run --function {default}::fixed_supply_coin::faucet --sender-account {default}"
+      #TODO change the argument `0x3` address to a user account
+      Then cmd: "move run --function 0x3::coin::transfer_entry --type-args {default}::fixed_supply_coin::FSC --args address:0x3  --args 1u256 --sender-account {default}"
+    
+      Then stop the server
