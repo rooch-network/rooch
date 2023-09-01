@@ -21,7 +21,7 @@ This module provides the foundation for typesafe Coins.
 -  [Function `genesis_init`](#0x3_coin_genesis_init)
 -  [Function `init_account_coin_store`](#0x3_coin_init_account_coin_store)
 -  [Function `balance`](#0x3_coin_balance)
--  [Function `is_coin_registered`](#0x3_coin_is_coin_registered)
+-  [Function `is_registered`](#0x3_coin_is_registered)
 -  [Function `name`](#0x3_coin_name)
 -  [Function `symbol`](#0x3_coin_symbol)
 -  [Function `decimals`](#0x3_coin_decimals)
@@ -76,6 +76,9 @@ This module provides the foundation for typesafe Coins.
 
 Core data structures
 Main structure representing a coin/coin in an account's custody.
+Note the <code>CoinType</code> must have <code>key</code> ability.
+if the <code>CoinType</code> has <code>store</code> ability, the <code><a href="coin.md#0x3_coin_Coin">Coin</a></code> is a public coin, the user can operate it directly by coin module's function.
+Otherwise, the <code><a href="coin.md#0x3_coin_Coin">Coin</a></code> is a private coin, the user can only operate it by <code>CoinType</code> module's function.
 
 
 <pre><code><b>struct</b> <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType: key&gt; <b>has</b> store
@@ -486,12 +489,22 @@ CoinStore is frozen. Coins cannot be deposited or withdrawn
 
 
 
-<a name="0x3_coin_ErrorCoinInfoAlreadyPublished"></a>
+<a name="0x3_coin_ErrorCoinInfoAlreadyRegistered"></a>
 
 <code>CoinType</code> is already registered as a coin
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinInfoAlreadyPublished">ErrorCoinInfoAlreadyPublished</a>: u64 = 1;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinInfoAlreadyRegistered">ErrorCoinInfoAlreadyRegistered</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x3_coin_ErrorCoinInfoNotRegistered"></a>
+
+<code>CoinType</code> is not registered as a coin
+
+
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinInfoNotRegistered">ErrorCoinInfoNotRegistered</a>: u64 = 0;
 </code></pre>
 
 
@@ -651,14 +664,14 @@ Returns the balance of <code>addr</code> for provided <code>CoinType</code>.
 
 </details>
 
-<a name="0x3_coin_is_coin_registered"></a>
+<a name="0x3_coin_is_registered"></a>
 
-## Function `is_coin_registered`
+## Function `is_registered`
 
 Returns <code><b>true</b></code> if the type <code>CoinType</code> is an registered coin.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_coin_registered">is_coin_registered</a>&lt;CoinType: key&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_registered">is_registered</a>&lt;CoinType: key&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): bool
 </code></pre>
 
 
@@ -667,7 +680,7 @@ Returns <code><b>true</b></code> if the type <code>CoinType</code> is an registe
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_coin_registered">is_coin_registered</a>&lt;CoinType: key&gt;(ctx: &StorageContext): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_registered">is_registered</a>&lt;CoinType: key&gt;(ctx: &StorageContext): bool {
     <b>if</b> (<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a>&gt;(ctx, @rooch_framework)) {
         <b>let</b> coin_infos = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a>&gt;(ctx, @rooch_framework);
         <a href="_contains">type_table::contains</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType&gt;&gt;(&coin_infos.coin_infos)
@@ -1270,7 +1283,7 @@ This function is protected by <code>private_generics</code>, so it can only be c
 
     <b>assert</b>!(
         !<a href="_contains">type_table::contains</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType&gt;&gt;(&coin_infos.coin_infos),
-        <a href="_already_exists">error::already_exists</a>(<a href="coin.md#0x3_coin_ErrorCoinInfoAlreadyPublished">ErrorCoinInfoAlreadyPublished</a>),
+        <a href="_already_exists">error::already_exists</a>(<a href="coin.md#0x3_coin_ErrorCoinInfoAlreadyRegistered">ErrorCoinInfoAlreadyRegistered</a>),
     );
 
     <b>assert</b>!(<a href="_length">string::length</a>(&name) &lt;= <a href="coin.md#0x3_coin_MAX_COIN_NAME_LENGTH">MAX_COIN_NAME_LENGTH</a>, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ErrorCoinNameTooLong">ErrorCoinNameTooLong</a>));
@@ -1592,8 +1605,7 @@ This public entry function requires the <code>CoinType</code> to have <code>key<
     <b>to</b>: <b>address</b>,
     amount: u256,
 ) {
-    <b>let</b> from_addr = <a href="_address_of">signer::address_of</a>(from);
-    <a href="coin.md#0x3_coin_transfer_internal">transfer_internal</a>&lt;CoinType&gt;(ctx, from_addr, <b>to</b>, amount)
+    <a href="coin.md#0x3_coin_transfer">transfer</a>&lt;CoinType&gt;(ctx, from, <b>to</b>, amount)
 }
 </code></pre>
 

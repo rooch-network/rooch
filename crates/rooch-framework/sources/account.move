@@ -4,7 +4,6 @@ module rooch_framework::account{
    use std::vector;
    use std::signer;
    use rooch_framework::gas_coin::{GasCoin};
-
    use moveos_std::bcs;
    use moveos_std::storage_context::{Self, StorageContext};
    use moveos_std::account_storage;

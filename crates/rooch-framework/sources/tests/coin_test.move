@@ -8,7 +8,7 @@ module rooch_framework::coin_test{
     use rooch_framework::coin;
     use rooch_framework::coin::{register_extend,
         supply, name, symbol, decimals, balance, value, mint_extend, burn_extend, freeze_coin_store_extend, unfreeze_coin_store_extend,
-        is_coin_store_frozen, zero, destroy_zero, is_coin_registered, deposit, extract, transfer, withdraw, withdraw_extend,
+        is_coin_store_frozen, zero, destroy_zero, is_registered, deposit, extract, transfer, withdraw, withdraw_extend,
         is_account_accept_coin, do_accept_coin, set_auto_accept_coin
     };
 
@@ -27,7 +27,12 @@ module rooch_framework::coin_test{
             decimals,
         );
     }
-   
+
+    #[test_only]
+    fun mint_and_deposit(ctx: &mut StorageContext,to_address: address, amount: u256) {
+        let coins_minted = coin::mint_extend<FakeCoin>(ctx, amount);
+        coin::deposit(ctx, to_address, coins_minted);
+    }
 
     #[test(source = @rooch_framework, destination = @0x55)]
     fun test_end_to_end(
@@ -207,12 +212,12 @@ module rooch_framework::coin_test{
 
 
     #[test]
-    public fun test_is_coin_registered() {
+    public fun test_is_registered() {
         let ctx = rooch_framework::genesis::init_for_test();
-        assert!(!is_coin_registered<FakeCoin>(&ctx), 0);
+        assert!(!is_registered<FakeCoin>(&ctx), 0);
 
         register_fake_coin(&mut ctx, 9);
-        assert!(is_coin_registered<FakeCoin>(&ctx), 1);
+        assert!(is_registered<FakeCoin>(&ctx), 1);
         moveos_std::storage_context::drop_test_context(ctx);
     }
 
@@ -382,4 +387,21 @@ module rooch_framework::coin_test{
         moveos_std::storage_context::drop_test_context(source2_ctx);
     }
 
+    #[test(from_addr= @0x33, to_addr= @0x66)]
+    fun test_transfer_to_no_exists_account(from_addr: address, to_addr: address) {
+        let ctx = rooch_framework::genesis::init_for_test();
+        register_fake_coin(&mut ctx, 9);
+
+        let from = account::create_account_for_test(&mut ctx, from_addr);
+        //assert!(!account::exists_at(&ctx, to_addr), 1000);
+        //TODO remove this line after coin::transfer can auto create account
+        account::create_account_for_test(&mut ctx, to_addr);
+
+        let amount = 100u256;
+        mint_and_deposit(&mut ctx, from_addr, amount);
+        transfer<FakeCoin>(&mut ctx, &from, to_addr, 50u256);
+        assert!(account::exists_at(&ctx, to_addr), 1000);
+        assert!(balance<FakeCoin>(&ctx, to_addr) == 50u256, 1001);
+        moveos_std::storage_context::drop_test_context(ctx);
+    }
 }
