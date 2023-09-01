@@ -157,7 +157,7 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
     let base_config = BaseConfig::load_with_opt(opt)?;
     let mut store_config = StoreConfig::default();
     store_config.merge_with_opt_then_init(opt, Arc::new(base_config))?;
-    let (moveos_store, rooch_store) = init_stroage(&store_config)?;
+    let (moveos_store, rooch_store) = init_storage(&store_config)?;
 
     // Init executor
     let executor = ExecutorActor::new(chain_id.id(), moveos_store, rooch_store.clone())?
@@ -249,7 +249,7 @@ fn _build_rpc_api<M: Send + Sync + 'static>(mut rpc_module: RpcModule<M>) -> Rpc
     rpc_module
 }
 
-fn init_stroage(store_config: &StoreConfig) -> Result<(MoveOSStore, RoochStore)> {
+fn init_storage(store_config: &StoreConfig) -> Result<(MoveOSStore, RoochStore)> {
     let (rooch_db_path, moveos_db_path) = (
         store_config.get_rooch_store_dir(),
         store_config.get_moveos_store_dir(),
@@ -266,6 +266,10 @@ fn init_stroage(store_config: &StoreConfig) -> Result<(MoveOSStore, RoochStore)>
         .config_store
         .get_startup_info()?
         .map(|info| info.state_root_hash);
+    
+    if let Some(latest_state_root) = lastest_state_root{
+        info!("Load latest state root {:?}", latest_state_root);
+    }
     let moveos_store = MoveOSStore::new_with_root(moveosdb, lastest_state_root)?;
 
     let rooch_store = RoochStore::new(StoreInstance::new_db_instance(RocksDB::new(

@@ -20,8 +20,11 @@ module rooch_framework::coin {
     // Errors.
     //
 
+    /// `CoinType` is not registered as a coin
+    const ErrorCoinInfoNotRegistered: u64 = 0;
+
     /// `CoinType` is already registered as a coin
-    const ErrorCoinInfoAlreadyPublished: u64 = 1;
+    const ErrorCoinInfoAlreadyRegistered: u64 = 1;
 
     /// Not enough coins to complete transaction
     const ErrorInSufficientBalance: u64 = 2;
@@ -55,6 +58,9 @@ module rooch_framework::coin {
     /// Core data structures
 
     /// Main structure representing a coin/coin in an account's custody.
+    /// Note the `CoinType` must have `key` ability.
+    /// if the `CoinType` has `store` ability, the `Coin` is a public coin, the user can operate it directly by coin module's function.
+    /// Otherwise, the `Coin` is a private coin, the user can only operate it by `CoinType` module's function.
     struct Coin<phantom CoinType : key> has store {
         /// Amount of coin this address has.
         /// Following the ERC20 standard, both asset balance and supply are expressed in u256
@@ -182,7 +188,7 @@ module rooch_framework::coin {
     }
 
     /// Returns `true` if the type `CoinType` is an registered coin.
-    public fun is_coin_registered<CoinType: key>(ctx: &StorageContext): bool {
+    public fun is_registered<CoinType: key>(ctx: &StorageContext): bool {
         if (account_storage::global_exists<CoinInfos>(ctx, @rooch_framework)) {
             let coin_infos = account_storage::global_borrow<CoinInfos>(ctx, @rooch_framework);
             type_table::contains<CoinInfo<CoinType>>(&coin_infos.coin_infos)
@@ -225,11 +231,13 @@ module rooch_framework::coin {
 
     fun borrow_coin_info<CoinType: key>(ctx: &StorageContext): &CoinInfo<CoinType> {
         let coin_infos = account_storage::global_borrow<CoinInfos>(ctx, @rooch_framework);
+        check_coin_info_registered<CoinType>(coin_infos);
         type_table::borrow<CoinInfo<CoinType>>(&coin_infos.coin_infos)
     }
 
     fun borrow_mut_coin_info<CoinType: key>(ctx: &mut StorageContext): &mut CoinInfo<CoinType> {
         let coin_infos = account_storage::global_borrow_mut<CoinInfos>(ctx, @rooch_framework);
+        check_coin_info_registered<CoinType>(coin_infos);
         type_table::borrow_mut<CoinInfo<CoinType>>(&mut coin_infos.coin_infos)
     }
 
@@ -282,6 +290,13 @@ module rooch_framework::coin {
         assert!(
             !is_coin_store_frozen<CoinType>(ctx, addr),
             error::permission_denied(ErrorAccountWithCoinFrozen),
+        );
+    }
+
+    fun check_coin_info_registered<CoinType: key>(coin_infos: &CoinInfos) {
+        assert!(
+            type_table::contains<CoinInfo<CoinType>>(&coin_infos.coin_infos),
+            error::not_found(ErrorCoinInfoNotRegistered),
         );
     }
 
@@ -520,7 +535,7 @@ module rooch_framework::coin {
         
         assert!(
             !type_table::contains<CoinInfo<CoinType>>(&coin_infos.coin_infos),
-            error::already_exists(ErrorCoinInfoAlreadyPublished),
+            error::already_exists(ErrorCoinInfoAlreadyRegistered),
         );
 
         assert!(string::length(&name) <= MAX_COIN_NAME_LENGTH, error::invalid_argument(ErrorCoinNameTooLong));
@@ -633,8 +648,7 @@ module rooch_framework::coin {
         to: address,
         amount: u256,
     ) {
-        let from_addr = signer::address_of(from);
-        transfer_internal<CoinType>(ctx, from_addr, to, amount)
+        transfer<CoinType>(ctx, from, to, amount)
     }
 
 }
