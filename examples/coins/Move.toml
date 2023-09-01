@@ -12,10 +12,10 @@ MoveosStdlib = { local = "../../moveos/moveos-stdlib/moveos-stdlib" }
 RoochFramework = { local = "../../crates/rooch-framework" }
 
 [addresses]
-coins =  "_"
-std =  "0x1"
-moveos_std =  "0x2"
-rooch_framework =  "0x3"
+coins = "_"
+std = "0x1"
+moveos_std = "0x2"
+rooch_framework = "0x3"
 
 [dev-addresses]
 coins = "0x42"
