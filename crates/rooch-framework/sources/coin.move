@@ -20,35 +20,30 @@ module rooch_framework::coin {
     // Errors.
     //
 
-    /// Address of account which is used to initialize a coin `CoinType` doesn't match the deployer of module
-    const ErrorCoinInfoAddressMismatch: u64 = 1;
-
-    /// `CoinType` is already initialized as a coin
-    const ErrorCoinInfoAlreadyPublished: u64 = 2;
+    /// `CoinType` is already registered as a coin
+    const ErrorCoinInfoAlreadyPublished: u64 = 1;
 
     /// Not enough coins to complete transaction
-    const ErrorInSufficientBalance: u64 = 3;
+    const ErrorInSufficientBalance: u64 = 2;
 
     /// Cannot destroy non-zero coins
-    const ErrorDestroyOfNonZeroCoin: u64 = 4;
+    const ErrorDestroyOfNonZeroCoin: u64 = 3;
 
     /// Coin amount cannot be zero
-    const ErrorZeroCoinAmount: u64 = 5;
+    const ErrorZeroCoinAmount: u64 = 4;
 
     /// Name of the coin is too long
-    const ErrorCoinNameTooLong: u64 = 6;
+    const ErrorCoinNameTooLong: u64 = 5;
 
     /// Symbol of the coin is too long
-    const ErrorCoinSymbolTooLong: u64 = 7;
+    const ErrorCoinSymbolTooLong: u64 = 6;
 
     /// CoinStore is frozen. Coins cannot be deposited or withdrawn
-    const ErrorAccountWithCoinFrozen: u64 = 8;
+    const ErrorAccountWithCoinFrozen: u64 = 7;
 
     /// Account hasn't accept `CoinType`
-    const ErrorAccountNotAcceptCoin: u64 = 9;
+    const ErrorAccountNotAcceptCoin: u64 = 8;
 
-    /// account has no capabilities (burn/mint).
-    const ErrorNoCapabilities: u64 = 12;
 
     //
     // Constants
@@ -148,15 +143,6 @@ module rooch_framework::coin {
         amount: u256,
     }
 
-    /// Capability required to mint coins.
-    struct MintCapability<phantom CoinType> has key, copy, store {}
-
-    /// Capability required to freeze a coin store.
-    struct FreezeCapability<phantom CoinType> has key, copy, store {}
-
-    /// Capability required to burn coins.
-    struct BurnCapability<phantom CoinType> has key, copy, store {}
-
     public(friend) fun genesis_init(ctx: &mut StorageContext, genesis_account: &signer) {
         let tx_ctx = storage_context::tx_context_mut(ctx);
         account_storage::global_move_to(ctx, genesis_account, CoinInfos{
@@ -195,8 +181,8 @@ module rooch_framework::coin {
         }
     }
 
-    /// Returns `true` if the type `CoinType` is an initialized coin.
-    public fun is_coin_initialized<CoinType>(ctx: &StorageContext): bool {
+    /// Returns `true` if the type `CoinType` is an registered coin.
+    public fun is_coin_registered<CoinType>(ctx: &StorageContext): bool {
         if (account_storage::global_exists<CoinInfos>(ctx, @rooch_framework)) {
             let coin_infos = account_storage::global_borrow<CoinInfos>(ctx, @rooch_framework);
             type_table::contains<CoinInfo<CoinType>>(&coin_infos.coin_infos)
@@ -334,11 +320,16 @@ module rooch_framework::coin {
         amount: u256,
     ): Coin<CoinType> {
         let addr = signer::address_of(account);
+        // the coin `frozen` only affect user withdraw, does not affect `withdraw_extend`. 
+        assert!(
+            !is_coin_store_frozen<CoinType>(ctx, addr),
+            error::permission_denied(ErrorAccountWithCoinFrozen),
+        );
         withdraw_interal<CoinType>(ctx, addr, amount) 
     }
 
     #[private_generics(CoinType)]
-    /// Withdraw specifed `amount` of coin `CoinType` from any addr
+    /// Withdraw specifed `amount` of coin `CoinType` from any addr, this function does not check the Coin `frozen` attribute
     /// This function is only called by the `CoinType` module, for the developer to extend custom withdraw logic
     public fun withdraw_extend<CoinType>(
         ctx: &mut StorageContext,
@@ -358,11 +349,7 @@ module rooch_framework::coin {
             error::not_found(ErrorAccountNotAcceptCoin),
         );
 
-        assert!(
-            !is_coin_store_frozen<CoinType>(ctx, addr),
-            error::permission_denied(ErrorAccountWithCoinFrozen),
-        );
-
+        
         ensure_coin_store<CoinType>(ctx, addr);
         let coin_type_info = type_info::type_of<CoinType>();
         event::emit<WithdrawEvent>(ctx, WithdrawEvent {
@@ -406,16 +393,6 @@ module rooch_framework::coin {
         deposit(ctx, to, coin);
     }
 
-    /// Burn `coin` with capability.
-    /// The capability `_cap` should be passed as a reference to `BurnCapability<CoinType>`.
-    public fun burn<CoinType>(
-        ctx: &mut StorageContext,
-        coin: Coin<CoinType>,
-        _cap: &BurnCapability<CoinType>,
-    ) {
-        burn_internal(ctx, coin) 
-    }
-
     #[private_generics(CoinType)]
     /// Burn `coin`
     /// This function is only called by the `CoinType` module, for the developer to extend custom burn logic
@@ -441,24 +418,8 @@ module rooch_framework::coin {
         });
     }
 
-    //TODO This function can be replaced by `withdraw_extend` and `burn`, we can remove it.
-    /// Burn `coin` from the specified `account` with capability.
-    /// The capability `burn_cap` should be passed as a reference to `BurnCapability<CoinType>`.
-    /// This function shouldn't fail as it's called as part of transaction fee burning.
-    public fun burn_from<CoinType>(
-        ctx: &mut StorageContext,
-        addr: address,
-        amount: u256,
-        burn_cap: &BurnCapability<CoinType>,
-    ) {
-        let coin_store = borrow_mut_coin_store<CoinType>(ctx, addr);
-        let coin_to_burn = extract(&mut coin_store.coin, amount);
-        burn(ctx, coin_to_burn, burn_cap);
-    }
-
     /// Destroys a zero-value coin. Calls will fail if the `value` in the passed-in `coin` is non-zero
-    /// so it is impossible to "burn" any non-zero amount of `Coin` without having
-    /// a `BurnCapability` for the specific `CoinType`.
+    /// so it is impossible to "burn" any non-zero amount of `Coin`. 
     public fun destroy_zero<CoinType>(zero_coin: Coin<CoinType>) {
         let Coin { value } = zero_coin;
         assert!(value == 0, error::invalid_argument(ErrorDestroyOfNonZeroCoin))
@@ -478,48 +439,44 @@ module rooch_framework::coin {
         Coin { value: total_value }
     }
 
+    #[private_generics(CoinType)]
     /// Freeze a CoinStore to prevent transfers
-    public fun freeze_coin_store<CoinType>(
+    public fun freeze_coin_store_extend<CoinType>(
         ctx: &mut StorageContext,
         addr: address,
-        _freeze_cap: &FreezeCapability<CoinType>,
     ) {
         ensure_coin_store<CoinType>(ctx, addr);
         let coin_store = borrow_mut_coin_store<CoinType>(ctx, addr);
         coin_store.frozen = true;
     }
 
+    #[private_generics(CoinType)]
     /// Unfreeze a CoinStore to allow transfers
-    public fun unfreeze_coin_store<CoinType>(
+    public fun unfreeze_coin_store_extend<CoinType>(
         ctx: &mut StorageContext,
         addr: address,
-        _freeze_cap: &FreezeCapability<CoinType>,
     ) {
         ensure_coin_store<CoinType>(ctx, addr);
         let coin_store = borrow_mut_coin_store<CoinType>(ctx, addr);
         coin_store.frozen = false;
     }
 
-    // #[private_generics(CoinType)]
-    /// Creates a new Coin with given `CoinType` and returns minting/freezing/burning capabilities.
+    #[private_generics(CoinType)]
+    /// Creates a new Coin with given `CoinType`
     /// The given signer also becomes the account hosting the information about the coin
     /// (name, supply, etc.).
-    public fun initialize<CoinType>(
+    /// This function is protected by `private_generics`, so it can only be called by the `CoinType` module.
+    public fun register_extend<CoinType>(
         ctx: &mut StorageContext,
-        account: &signer,
-        // addr: address,
         name: string::String,
         symbol: string::String,
         decimals: u8,
-    ): (BurnCapability<CoinType>, FreezeCapability<CoinType>, MintCapability<CoinType>) {
-        let addr = signer::address_of(account);
+    ){
+        
+        let coin_infos = account_storage::global_borrow_mut<CoinInfos>(ctx, @rooch_framework);
+        
         assert!(
-            coin_address<CoinType>() == addr,
-            error::invalid_argument(ErrorCoinInfoAddressMismatch),
-        );
-
-        assert!(
-            !account_storage::global_exists<CoinInfo<CoinType>>(ctx, addr),
+            !type_table::contains<CoinInfo<CoinType>>(&coin_infos.coin_infos),
             error::already_exists(ErrorCoinInfoAlreadyPublished),
         );
 
@@ -532,10 +489,7 @@ module rooch_framework::coin {
             decimals,
             supply: 0u256,
         };
-        let coin_infos = account_storage::global_borrow_mut<CoinInfos>(ctx, @rooch_framework);
         type_table::add(&mut coin_infos.coin_infos, coin_info);
-
-        (BurnCapability<CoinType> {}, FreezeCapability<CoinType> {}, MintCapability<CoinType> {})
     }
 
     /// "Merges" the two given coins.  The coin passed in as `dst_coin` will have a value equal
@@ -543,17 +497,6 @@ module rooch_framework::coin {
     public fun merge<CoinType>(dst_coin: &mut Coin<CoinType>, source_coin: Coin<CoinType>) {
         let Coin { value } = source_coin;
         dst_coin.value = dst_coin.value + value;
-    }
-
-    /// Mint new `Coin` with capability.
-    /// The capability `_cap` should be passed as reference to `MintCapability<CoinType>`.
-    /// Returns minted `Coin`.
-    public fun mint<CoinType>(
-        ctx: &mut StorageContext,
-        amount: u256,
-        _cap: &MintCapability<CoinType>,
-    ): Coin<CoinType> {
-        mint_internal<CoinType>(ctx, amount)
     }
 
     #[private_generics(CoinType)]
@@ -613,106 +556,6 @@ module rooch_framework::coin {
         merge<CoinType>(&mut coin_store.coin, coin)
     }
 
-    /// Destroy a freeze capability. Freeze capability is dangerous and therefore should be destroyed if not used.
-    public fun destroy_freeze_cap<CoinType>(freeze_cap: FreezeCapability<CoinType>) {
-        let FreezeCapability<CoinType> {} = freeze_cap;
-    }
-
-    /// Destroy a mint capability.
-    public fun destroy_mint_cap<CoinType>(mint_cap: MintCapability<CoinType>) {
-        let MintCapability<CoinType> {} = mint_cap;
-    }
-
-    /// Destroy a burn capability.
-    public fun destroy_burn_cap<CoinType>(burn_cap: BurnCapability<CoinType>) {
-        let BurnCapability<CoinType> {} = burn_cap;
-    }
-
-    //
-    // Data structures
-    //
-
-    /// Capabilities resource storing mint and burn capabilities.
-    /// The resource is stored on the account that initialized coin `CoinType`.
-    struct Capabilities<phantom CoinType> has key {
-        burn_cap: BurnCapability<CoinType>,
-        freeze_cap: FreezeCapability<CoinType>,
-        mint_cap: MintCapability<CoinType>,
-    }
-
-    //
-    // entry functions
-    //
-    // CoinEntry is built to make a simple walkthrough of the Coins module.
-    // It contains scripts you will need to initialize, mint, burn, transfer coins.
-
-    /// Initialize new coin `CoinType` in Rooch Blockchain.
-    /// Mint and Burn Capabilities will be stored under `account` in `Capabilities` resource.
-    /// A developer can create his own coin and care less about mint and burn capabilities
-    public entry fun initialize_entry<CoinType>(
-        ctx: &mut StorageContext,
-        account: &signer,
-        name: vector<u8>,
-        symbol: vector<u8>,
-        decimals: u8,
-    ) {
-        // let addr = signer::address_of(account);
-        let (burn_cap, freeze_cap, mint_cap) = initialize<CoinType>(
-            ctx,
-            account,
-            string::utf8(name),
-            string::utf8(symbol),
-            decimals,
-        );
-
-        account_storage::global_move_to(ctx, account, Capabilities<CoinType> {
-            burn_cap,
-            freeze_cap,
-            mint_cap
-        });
-    }
-
-    /// Create new coins `CoinType` and deposit them into dst_addr's account.
-    public entry fun mint_entry<CoinType>(
-        ctx: &mut StorageContext,
-        account: &signer,
-        dst_addr: address,
-        amount: u256,
-    ) {
-        let account_addr = signer::address_of(account);
-
-        assert!(
-            account_storage::global_exists<Capabilities<CoinType>>(ctx, account_addr),
-            error::not_found(ErrorNoCapabilities),
-        );
-
-        let cap = account_storage::global_move_from<Capabilities<CoinType>>(ctx, account_addr);
-        // let cap = account_storage::global_borrow<Capabilities<CoinType>>(ctx, account_addr);
-        let coins_minted = mint(ctx, amount, &cap.mint_cap);
-        deposit(ctx, dst_addr, coins_minted);
-        account_storage::global_move_to<Capabilities<CoinType>>(ctx, account, cap)
-    }
-
-    /// Withdraw an `amount` of coin `CoinType` from `account` and burn it.
-    public entry fun burn_entry<CoinType>(
-        ctx: &mut StorageContext,
-        account: &signer,
-        amount: u256,
-    ) {
-        let account_addr = signer::address_of(account);
-
-        assert!(
-            account_storage::global_exists<Capabilities<CoinType>>(ctx, account_addr),
-            error::not_found(ErrorNoCapabilities),
-        );
-
-        // let cap = account_storage::global_borrow<Capabilities<CoinType>>(ctx, account_addr);
-        let cap = account_storage::global_move_from<Capabilities<CoinType>>(ctx, account_addr);
-        let to_burn = withdraw<CoinType>(ctx, account, amount);
-        burn<CoinType>(ctx, to_burn, &cap.burn_cap);
-        account_storage::global_move_to<Capabilities<CoinType>>(ctx, account, cap);
-    }
-
     /// Creating a resource that stores balance of `CoinType` on user's account.
     /// Required if user wants to start accepting deposits of `CoinType` in his account.
     public entry fun accept_coin_entry<CoinType>(ctx: &mut StorageContext, account: &signer) {
@@ -740,38 +583,6 @@ module rooch_framework::coin {
         amount: u256,
     ) {
         transfer<CoinType>(ctx, from, to, amount)
-    }
-
-    /// Freeze a CoinStore to prevent transfers
-    public entry fun freeze_coin_store_entry<CoinType>(
-        ctx: &mut StorageContext,
-        account: &signer
-    ) {
-        let account_addr = signer::address_of(account);
-        assert!(
-            account_storage::global_exists<Capabilities<CoinType>>(ctx, account_addr),
-            error::not_found(ErrorNoCapabilities),
-        );
-        // let cap = account_storage::global_borrow<Capabilities<CoinType>>(ctx, account_addr);
-        let cap = account_storage::global_move_from<Capabilities<CoinType>>(ctx, account_addr);
-        freeze_coin_store(ctx, account_addr, &cap.freeze_cap);
-        account_storage::global_move_to<Capabilities<CoinType>>(ctx, account, cap)
-    }
-
-    /// Unfreeze a CoinStore to allow transfers
-    public entry fun unfreeze_coin_store_entry<CoinType>(
-        ctx: &mut StorageContext,
-        account: &signer
-    ) {
-        let account_addr = signer::address_of(account);
-        assert!(
-            account_storage::global_exists<Capabilities<CoinType>>(ctx, account_addr),
-            error::not_found(ErrorNoCapabilities),
-        );
-        let cap = account_storage::global_move_from<Capabilities<CoinType>>(ctx, account_addr);
-        // let cap = account_storage::global_borrow<Capabilities<CoinType>>(ctx, account_addr);
-        unfreeze_coin_store(ctx, account_addr, &cap.freeze_cap);
-        account_storage::global_move_to<Capabilities<CoinType>>(ctx, account, cap)
     }
 
 }

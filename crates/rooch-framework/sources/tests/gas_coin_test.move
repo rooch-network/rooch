@@ -9,7 +9,7 @@ module rooch_framework::gas_coin_test{
     #[test]
     fun test_gas_coin_init(){
         let genesis_ctx = rooch_framework::genesis::init_for_test();
-        assert!(coin::is_coin_initialized<GasCoin>(&genesis_ctx), 1000);
+        assert!(coin::is_coin_registered<GasCoin>(&genesis_ctx), 1000);
         moveos_std::storage_context::drop_test_context(genesis_ctx);
     }
 
