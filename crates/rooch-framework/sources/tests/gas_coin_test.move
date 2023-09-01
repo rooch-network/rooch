@@ -22,17 +22,6 @@ module rooch_framework::gas_coin_test{
     }
 
     #[test(user = @0x42)]
-    fun test_gas_deposit(user: address){
-        let genesis_ctx = rooch_framework::genesis::init_for_test();
-        account::create_account_for_test(&mut genesis_ctx, user);
-        let init_gas = 9999u256;
-        let gas_coin = gas_coin::mint_for_test(&mut genesis_ctx, init_gas);
-        coin::deposit(&mut genesis_ctx, user, gas_coin);
-        assert!(gas_coin::balance(&genesis_ctx, user) == init_gas, 1000);
-        moveos_std::storage_context::drop_test_context(genesis_ctx);
-    }
-
-    #[test(user = @0x42)]
     fun test_faucet(user: address){
         let genesis_ctx = rooch_framework::genesis::init_for_test();
         account::create_account_for_test(&mut genesis_ctx, user);

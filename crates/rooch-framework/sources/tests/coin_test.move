@@ -13,7 +13,7 @@ module rooch_framework::coin_test{
     };
 
     #[test_only]
-    struct FakeCoin {}
+    struct FakeCoin has key, store {}
 
     #[test_only]
     fun register_fake_coin(

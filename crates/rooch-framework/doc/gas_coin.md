@@ -141,7 +141,7 @@ Mint gas coin to the given account.
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_faucet">faucet</a>(ctx: &<b>mut</b> StorageContext, addr: <b>address</b>, amount: u256) {
     <b>let</b> <a href="coin.md#0x3_coin">coin</a> = <a href="gas_coin.md#0x3_gas_coin_mint">mint</a>(ctx, amount);
-    <a href="coin.md#0x3_coin_deposit">coin::deposit</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a>&gt;(ctx, addr, <a href="coin.md#0x3_coin">coin</a>);
+    <a href="coin.md#0x3_coin_deposit_extend">coin::deposit_extend</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a>&gt;(ctx, addr, <a href="coin.md#0x3_coin">coin</a>);
 }
 </code></pre>
 

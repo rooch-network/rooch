@@ -35,7 +35,7 @@ module rooch_framework::gas_coin {
     /// Mint gas coin to the given account.
     public(friend) fun faucet(ctx: &mut StorageContext, addr: address, amount: u256) {
         let coin = mint(ctx, amount);
-        coin::deposit<GasCoin>(ctx, addr, coin);
+        coin::deposit_extend<GasCoin>(ctx, addr, coin);
     }
 
     #[test_only]

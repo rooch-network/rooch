@@ -32,22 +32,24 @@ This module provides the foundation for typesafe Coins.
 -  [Function `do_accept_coin`](#0x3_coin_do_accept_coin)
 -  [Function `set_auto_accept_coin`](#0x3_coin_set_auto_accept_coin)
 -  [Function `withdraw`](#0x3_coin_withdraw)
--  [Function `withdraw_extend`](#0x3_coin_withdraw_extend)
 -  [Function `deposit`](#0x3_coin_deposit)
 -  [Function `transfer`](#0x3_coin_transfer)
--  [Function `burn_extend`](#0x3_coin_burn_extend)
 -  [Function `destroy_zero`](#0x3_coin_destroy_zero)
 -  [Function `extract`](#0x3_coin_extract)
 -  [Function `extract_all`](#0x3_coin_extract_all)
--  [Function `freeze_coin_store_extend`](#0x3_coin_freeze_coin_store_extend)
--  [Function `unfreeze_coin_store_extend`](#0x3_coin_unfreeze_coin_store_extend)
--  [Function `register_extend`](#0x3_coin_register_extend)
 -  [Function `merge`](#0x3_coin_merge)
--  [Function `mint_extend`](#0x3_coin_mint_extend)
 -  [Function `value`](#0x3_coin_value)
 -  [Function `zero`](#0x3_coin_zero)
 -  [Function `exist_coin_store`](#0x3_coin_exist_coin_store)
 -  [Function `is_coin_store_frozen`](#0x3_coin_is_coin_store_frozen)
+-  [Function `register_extend`](#0x3_coin_register_extend)
+-  [Function `mint_extend`](#0x3_coin_mint_extend)
+-  [Function `withdraw_extend`](#0x3_coin_withdraw_extend)
+-  [Function `deposit_extend`](#0x3_coin_deposit_extend)
+-  [Function `transfer_extend`](#0x3_coin_transfer_extend)
+-  [Function `burn_extend`](#0x3_coin_burn_extend)
+-  [Function `freeze_coin_store_extend`](#0x3_coin_freeze_coin_store_extend)
+-  [Function `unfreeze_coin_store_extend`](#0x3_coin_unfreeze_coin_store_extend)
 -  [Function `accept_coin_entry`](#0x3_coin_accept_coin_entry)
 -  [Function `enable_auto_accept_coin_entry`](#0x3_coin_enable_auto_accept_coin_entry)
 -  [Function `disable_auto_accept_coin_entry`](#0x3_coin_disable_auto_accept_coin_entry)
@@ -76,7 +78,7 @@ Core data structures
 Main structure representing a coin/coin in an account's custody.
 
 
-<pre><code><b>struct</b> <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; <b>has</b> store
+<pre><code><b>struct</b> <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType: key&gt; <b>has</b> store
 </code></pre>
 
 
@@ -104,7 +106,7 @@ Main structure representing a coin/coin in an account's custody.
 
 
 
-<pre><code><b>struct</b> <a href="coin.md#0x3_coin_CoinStore">CoinStore</a>&lt;CoinType&gt; <b>has</b> key
+<pre><code><b>struct</b> <a href="coin.md#0x3_coin_CoinStore">CoinStore</a>&lt;CoinType: key&gt; <b>has</b> key
 </code></pre>
 
 
@@ -138,7 +140,7 @@ Main structure representing a coin/coin in an account's custody.
 Information about a specific coin type. Stored on the creator of the coin's account.
 
 
-<pre><code><b>struct</b> <a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType&gt; <b>has</b> key
+<pre><code><b>struct</b> <a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType: key&gt; <b>has</b> key
 </code></pre>
 
 
@@ -627,7 +629,7 @@ Coin amount cannot be zero
 Returns the balance of <code>addr</code> for provided <code>CoinType</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_balance">balance</a>&lt;CoinType&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): u256
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_balance">balance</a>&lt;CoinType: key&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): u256
 </code></pre>
 
 
@@ -636,7 +638,7 @@ Returns the balance of <code>addr</code> for provided <code>CoinType</code>.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_balance">balance</a>&lt;CoinType&gt;(ctx: &StorageContext, addr: <b>address</b>): u256 {
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_balance">balance</a>&lt;CoinType: key&gt;(ctx: &StorageContext, addr: <b>address</b>): u256 {
     <b>if</b> (<a href="coin.md#0x3_coin_exist_coin_store">exist_coin_store</a>&lt;CoinType&gt;(ctx, addr)) {
         <a href="coin.md#0x3_coin_borrow_coin_store">borrow_coin_store</a>&lt;CoinType&gt;(ctx, addr).<a href="coin.md#0x3_coin">coin</a>.value
     } <b>else</b> {
@@ -656,7 +658,7 @@ Returns the balance of <code>addr</code> for provided <code>CoinType</code>.
 Returns <code><b>true</b></code> if the type <code>CoinType</code> is an registered coin.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_coin_registered">is_coin_registered</a>&lt;CoinType&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_coin_registered">is_coin_registered</a>&lt;CoinType: key&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): bool
 </code></pre>
 
 
@@ -665,7 +667,7 @@ Returns <code><b>true</b></code> if the type <code>CoinType</code> is an registe
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_coin_registered">is_coin_registered</a>&lt;CoinType&gt;(ctx: &StorageContext): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_coin_registered">is_coin_registered</a>&lt;CoinType: key&gt;(ctx: &StorageContext): bool {
     <b>if</b> (<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a>&gt;(ctx, @rooch_framework)) {
         <b>let</b> coin_infos = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a>&gt;(ctx, @rooch_framework);
         <a href="_contains">type_table::contains</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType&gt;&gt;(&coin_infos.coin_infos)
@@ -686,7 +688,7 @@ Returns <code><b>true</b></code> if the type <code>CoinType</code> is an registe
 Returns the name of the coin.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_name">name</a>&lt;CoinType&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): <a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_name">name</a>&lt;CoinType: key&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): <a href="_String">string::String</a>
 </code></pre>
 
 
@@ -695,7 +697,7 @@ Returns the name of the coin.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_name">name</a>&lt;CoinType&gt;(ctx: &StorageContext): <a href="_String">string::String</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_name">name</a>&lt;CoinType: key&gt;(ctx: &StorageContext): <a href="_String">string::String</a> {
     <a href="coin.md#0x3_coin_borrow_coin_info">borrow_coin_info</a>&lt;CoinType&gt;(ctx).name
 }
 </code></pre>
@@ -711,7 +713,7 @@ Returns the name of the coin.
 Returns the symbol of the coin, usually a shorter version of the name.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_symbol">symbol</a>&lt;CoinType&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): <a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_symbol">symbol</a>&lt;CoinType: key&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): <a href="_String">string::String</a>
 </code></pre>
 
 
@@ -720,7 +722,7 @@ Returns the symbol of the coin, usually a shorter version of the name.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_symbol">symbol</a>&lt;CoinType&gt;(ctx: &StorageContext): <a href="_String">string::String</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_symbol">symbol</a>&lt;CoinType: key&gt;(ctx: &StorageContext): <a href="_String">string::String</a> {
     <a href="coin.md#0x3_coin_borrow_coin_info">borrow_coin_info</a>&lt;CoinType&gt;(ctx).symbol
 }
 </code></pre>
@@ -738,7 +740,7 @@ For example, if <code>decimals</code> equals <code>2</code>, a balance of <code>
 be displayed to a user as <code>5.05</code> (<code>505 / 10 ** 2</code>).
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_decimals">decimals</a>&lt;CoinType&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): u8
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_decimals">decimals</a>&lt;CoinType: key&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): u8
 </code></pre>
 
 
@@ -747,7 +749,7 @@ be displayed to a user as <code>5.05</code> (<code>505 / 10 ** 2</code>).
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_decimals">decimals</a>&lt;CoinType&gt;(ctx: &StorageContext): u8 {
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_decimals">decimals</a>&lt;CoinType: key&gt;(ctx: &StorageContext): u8 {
     <a href="coin.md#0x3_coin_borrow_coin_info">borrow_coin_info</a>&lt;CoinType&gt;(ctx).decimals
 }
 </code></pre>
@@ -763,7 +765,7 @@ be displayed to a user as <code>5.05</code> (<code>505 / 10 ** 2</code>).
 Returns the amount of coin in existence.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_supply">supply</a>&lt;CoinType&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): u256
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_supply">supply</a>&lt;CoinType: key&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): u256
 </code></pre>
 
 
@@ -772,7 +774,7 @@ Returns the amount of coin in existence.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_supply">supply</a>&lt;CoinType&gt;(ctx: &StorageContext): u256 {
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_supply">supply</a>&lt;CoinType: key&gt;(ctx: &StorageContext): u256 {
     <a href="coin.md#0x3_coin_borrow_coin_info">borrow_coin_info</a>&lt;CoinType&gt;(ctx).supply
 }
 </code></pre>
@@ -813,7 +815,7 @@ Return true if the type <code>CoinType1</code> is same with <code>CoinType2</cod
 Return whether the account at <code>addr</code> accept <code><a href="coin.md#0x3_coin_Coin">Coin</a></code> type coins
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_account_accept_coin">is_account_accept_coin</a>&lt;CoinType&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_account_accept_coin">is_account_accept_coin</a>&lt;CoinType: key&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): bool
 </code></pre>
 
 
@@ -822,7 +824,7 @@ Return whether the account at <code>addr</code> accept <code><a href="coin.md#0x
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_account_accept_coin">is_account_accept_coin</a>&lt;CoinType&gt;(ctx: &StorageContext, addr: <b>address</b>): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_account_accept_coin">is_account_accept_coin</a>&lt;CoinType: key&gt;(ctx: &StorageContext, addr: <b>address</b>): bool {
     <b>if</b> (<a href="coin.md#0x3_coin_can_auto_accept_coin">can_auto_accept_coin</a>(ctx, addr)) {
         <b>true</b>
     } <b>else</b> {
@@ -875,7 +877,7 @@ Add a balance of <code><a href="coin.md#0x3_coin_Coin">Coin</a></code> type to t
 If user turns off AutoAcceptCoin, call this method to receive the corresponding Coin
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_do_accept_coin">do_accept_coin</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_do_accept_coin">do_accept_coin</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -884,7 +886,7 @@ If user turns off AutoAcceptCoin, call this method to receive the corresponding 
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_do_accept_coin">do_accept_coin</a>&lt;CoinType&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_do_accept_coin">do_accept_coin</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
     <b>let</b> addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
     <a href="coin.md#0x3_coin_ensure_coin_store_pass_auto_accept_flag">ensure_coin_store_pass_auto_accept_flag</a>&lt;CoinType&gt;(ctx, addr);
 }
@@ -932,9 +934,10 @@ Configure whether auto-accept coins.
 ## Function `withdraw`
 
 Withdraw specifed <code>amount</code> of coin <code>CoinType</code> from the signing account.
+This public entry function requires the <code>CoinType</code> to have <code>key</code> and <code>store</code> abilities.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_withdraw">withdraw</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_withdraw">withdraw</a>&lt;CoinType: store, key&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
 </code></pre>
 
 
@@ -943,48 +946,15 @@ Withdraw specifed <code>amount</code> of coin <code>CoinType</code> from the sig
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_withdraw">withdraw</a>&lt;CoinType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_withdraw">withdraw</a>&lt;CoinType: key + store&gt;(
     ctx: &<b>mut</b> StorageContext,
     <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>,
     amount: u256,
 ): <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
     <b>let</b> addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
     // the <a href="coin.md#0x3_coin">coin</a> `frozen` only affect user withdraw, does not affect `withdraw_extend`.
-    <b>assert</b>!(
-        !<a href="coin.md#0x3_coin_is_coin_store_frozen">is_coin_store_frozen</a>&lt;CoinType&gt;(ctx, addr),
-        <a href="_permission_denied">error::permission_denied</a>(<a href="coin.md#0x3_coin_ErrorAccountWithCoinFrozen">ErrorAccountWithCoinFrozen</a>),
-    );
-    <a href="coin.md#0x3_coin_withdraw_interal">withdraw_interal</a>&lt;CoinType&gt;(ctx, addr, amount)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_coin_withdraw_extend"></a>
-
-## Function `withdraw_extend`
-
-Withdraw specifed <code>amount</code> of coin <code>CoinType</code> from any addr, this function does not check the Coin <code>frozen</code> attribute
-This function is only called by the <code>CoinType</code> module, for the developer to extend custom withdraw logic
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_withdraw_extend">withdraw_extend</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_withdraw_extend">withdraw_extend</a>&lt;CoinType&gt;(
-    ctx: &<b>mut</b> StorageContext,
-    addr: <b>address</b>,
-    amount: u256,
-): <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
-    <a href="coin.md#0x3_coin_withdraw_interal">withdraw_interal</a>&lt;CoinType&gt;(ctx, addr, amount)
+    <a href="coin.md#0x3_coin_check_coin_store_frozen">check_coin_store_frozen</a>&lt;CoinType&gt;(ctx, addr);
+    <a href="coin.md#0x3_coin_withdraw_internal">withdraw_internal</a>&lt;CoinType&gt;(ctx, addr, amount)
 }
 </code></pre>
 
@@ -996,10 +966,11 @@ This function is only called by the <code>CoinType</code> module, for the develo
 
 ## Function `deposit`
 
-Deposit the coin balance into the recipient's account and emit an event.
+Deposit the coin into the recipient's account and emit an event.
+This public entry function requires the <code>CoinType</code> to have <code>key</code> and <code>store</code> abilities.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_deposit">deposit</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_deposit">deposit</a>&lt;CoinType: store, key&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
 </code></pre>
 
 
@@ -1008,25 +979,9 @@ Deposit the coin balance into the recipient's account and emit an event.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_deposit">deposit</a>&lt;CoinType&gt;(ctx: &<b>mut</b> StorageContext, addr: <b>address</b>, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;) {
-    <b>assert</b>!(
-        <a href="coin.md#0x3_coin_is_account_accept_coin">is_account_accept_coin</a>&lt;CoinType&gt;(ctx, addr),
-        <a href="_not_found">error::not_found</a>(<a href="coin.md#0x3_coin_ErrorAccountNotAcceptCoin">ErrorAccountNotAcceptCoin</a>),
-    );
-
-    <b>assert</b>!(
-        !<a href="coin.md#0x3_coin_is_coin_store_frozen">is_coin_store_frozen</a>&lt;CoinType&gt;(ctx, addr),
-        <a href="_permission_denied">error::permission_denied</a>(<a href="coin.md#0x3_coin_ErrorAccountWithCoinFrozen">ErrorAccountWithCoinFrozen</a>),
-    );
-
-    <a href="coin.md#0x3_coin_ensure_coin_store">ensure_coin_store</a>&lt;CoinType&gt;(ctx, addr);
-    <b>let</b> coin_type_info = <a href="_type_of">type_info::type_of</a>&lt;CoinType&gt;();
-    <a href="_emit">event::emit</a>&lt;<a href="coin.md#0x3_coin_DepositEvent">DepositEvent</a>&gt;(ctx, <a href="coin.md#0x3_coin_DepositEvent">DepositEvent</a> {
-        coin_type_info,
-        amount: <a href="coin.md#0x3_coin_value">value</a>(&<a href="coin.md#0x3_coin">coin</a>),
-    });
-
-    <a href="coin.md#0x3_coin_merge_coin">merge_coin</a>(ctx, addr, <a href="coin.md#0x3_coin">coin</a>);
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_deposit">deposit</a>&lt;CoinType: key + store&gt;(ctx: &<b>mut</b> StorageContext, addr: <b>address</b>, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;) {
+    <a href="coin.md#0x3_coin_check_coin_store_frozen">check_coin_store_frozen</a>&lt;CoinType&gt;(ctx, addr);
+    <a href="coin.md#0x3_coin_deposit_internal">deposit_internal</a>(ctx, addr, <a href="coin.md#0x3_coin">coin</a>);
 }
 </code></pre>
 
@@ -1039,9 +994,10 @@ Deposit the coin balance into the recipient's account and emit an event.
 ## Function `transfer`
 
 Transfer <code>amount</code> of coins <code>CoinType</code> from <code>from</code> to <code><b>to</b></code>.
+Any account and module can call this function to transfer coins, the <code>CoinType</code> must have <code>key</code> and <code>store</code> abilities.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_transfer">transfer</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, amount: u256)
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_transfer">transfer</a>&lt;CoinType: store, key&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, amount: u256)
 </code></pre>
 
 
@@ -1050,43 +1006,16 @@ Transfer <code>amount</code> of coins <code>CoinType</code> from <code>from</cod
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_transfer">transfer</a>&lt;CoinType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_transfer">transfer</a>&lt;CoinType: key + store&gt;(
     ctx: &<b>mut</b> StorageContext,
     from: &<a href="">signer</a>,
     <b>to</b>: <b>address</b>,
     amount: u256,
 ) {
-    <b>let</b> <a href="coin.md#0x3_coin">coin</a> = <a href="coin.md#0x3_coin_withdraw">withdraw</a>&lt;CoinType&gt;(ctx, from, amount);
-    <a href="coin.md#0x3_coin_deposit">deposit</a>(ctx, <b>to</b>, <a href="coin.md#0x3_coin">coin</a>);
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_coin_burn_extend"></a>
-
-## Function `burn_extend`
-
-Burn <code><a href="coin.md#0x3_coin">coin</a></code>
-This function is only called by the <code>CoinType</code> module, for the developer to extend custom burn logic
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_burn_extend">burn_extend</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_burn_extend">burn_extend</a>&lt;CoinType&gt;(
-    ctx: &<b>mut</b> StorageContext,
-    <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;,
-) {
-    <a href="coin.md#0x3_coin_burn_internal">burn_internal</a>(ctx, <a href="coin.md#0x3_coin">coin</a>)
+    <b>let</b> from_addr = <a href="_address_of">signer::address_of</a>(from);
+    <a href="coin.md#0x3_coin_check_coin_store_frozen">check_coin_store_frozen</a>&lt;CoinType&gt;(ctx, from_addr);
+    <a href="coin.md#0x3_coin_check_coin_store_frozen">check_coin_store_frozen</a>&lt;CoinType&gt;(ctx, <b>to</b>);
+    <a href="coin.md#0x3_coin_transfer_internal">transfer_internal</a>&lt;CoinType&gt;(ctx, from_addr, <b>to</b>, amount);
 }
 </code></pre>
 
@@ -1102,7 +1031,7 @@ Destroys a zero-value coin. Calls will fail if the <code>value</code> in the pas
 so it is impossible to "burn" any non-zero amount of <code><a href="coin.md#0x3_coin_Coin">Coin</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_destroy_zero">destroy_zero</a>&lt;CoinType&gt;(zero_coin: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_destroy_zero">destroy_zero</a>&lt;CoinType: key&gt;(zero_coin: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
 </code></pre>
 
 
@@ -1111,7 +1040,7 @@ so it is impossible to "burn" any non-zero amount of <code><a href="coin.md#0x3_
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_destroy_zero">destroy_zero</a>&lt;CoinType&gt;(zero_coin: <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;) {
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_destroy_zero">destroy_zero</a>&lt;CoinType: key&gt;(zero_coin: <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;) {
     <b>let</b> <a href="coin.md#0x3_coin_Coin">Coin</a> { value } = zero_coin;
     <b>assert</b>!(value == 0, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ErrorDestroyOfNonZeroCoin">ErrorDestroyOfNonZeroCoin</a>))
 }
@@ -1128,7 +1057,7 @@ so it is impossible to "burn" any non-zero amount of <code><a href="coin.md#0x3_
 Extracts <code>amount</code> from the passed-in <code><a href="coin.md#0x3_coin">coin</a></code>, where the original coin is modified in place.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_extract">extract</a>&lt;CoinType&gt;(<a href="coin.md#0x3_coin">coin</a>: &<b>mut</b> <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_extract">extract</a>&lt;CoinType: key&gt;(<a href="coin.md#0x3_coin">coin</a>: &<b>mut</b> <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
 </code></pre>
 
 
@@ -1137,7 +1066,7 @@ Extracts <code>amount</code> from the passed-in <code><a href="coin.md#0x3_coin"
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_extract">extract</a>&lt;CoinType&gt;(<a href="coin.md#0x3_coin">coin</a>: &<b>mut</b> <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;, amount: u256): <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_extract">extract</a>&lt;CoinType: key&gt;(<a href="coin.md#0x3_coin">coin</a>: &<b>mut</b> <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;, amount: u256): <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
     <b>assert</b>!(<a href="coin.md#0x3_coin">coin</a>.value &gt;= amount, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ErrorInSufficientBalance">ErrorInSufficientBalance</a>));
     <a href="coin.md#0x3_coin">coin</a>.value = <a href="coin.md#0x3_coin">coin</a>.value - amount;
     <a href="coin.md#0x3_coin_Coin">Coin</a> { value: amount }
@@ -1155,7 +1084,7 @@ Extracts <code>amount</code> from the passed-in <code><a href="coin.md#0x3_coin"
 Extracts the entire amount from the passed-in <code><a href="coin.md#0x3_coin">coin</a></code>, where the original coin is modified in place.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_extract_all">extract_all</a>&lt;CoinType&gt;(<a href="coin.md#0x3_coin">coin</a>: &<b>mut</b> <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_extract_all">extract_all</a>&lt;CoinType: key&gt;(<a href="coin.md#0x3_coin">coin</a>: &<b>mut</b> <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
 </code></pre>
 
 
@@ -1164,7 +1093,7 @@ Extracts the entire amount from the passed-in <code><a href="coin.md#0x3_coin">c
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_extract_all">extract_all</a>&lt;CoinType&gt;(<a href="coin.md#0x3_coin">coin</a>: &<b>mut</b> <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;): <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_extract_all">extract_all</a>&lt;CoinType: key&gt;(<a href="coin.md#0x3_coin">coin</a>: &<b>mut</b> <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;): <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
     <b>let</b> total_value = <a href="coin.md#0x3_coin">coin</a>.value;
     <a href="coin.md#0x3_coin">coin</a>.value = 0;
     <a href="coin.md#0x3_coin_Coin">Coin</a> { value: total_value }
@@ -1175,14 +1104,15 @@ Extracts the entire amount from the passed-in <code><a href="coin.md#0x3_coin">c
 
 </details>
 
-<a name="0x3_coin_freeze_coin_store_extend"></a>
+<a name="0x3_coin_merge"></a>
 
-## Function `freeze_coin_store_extend`
+## Function `merge`
 
-Freeze a CoinStore to prevent transfers
+"Merges" the two given coins.  The coin passed in as <code>dst_coin</code> will have a value equal
+to the sum of the two coins (<code>dst_coin</code> and <code>source_coin</code>).
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_freeze_coin_store_extend">freeze_coin_store_extend</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>)
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_merge">merge</a>&lt;CoinType: key&gt;(dst_coin: &<b>mut</b> <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;, source_coin: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
 </code></pre>
 
 
@@ -1191,13 +1121,9 @@ Freeze a CoinStore to prevent transfers
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_freeze_coin_store_extend">freeze_coin_store_extend</a>&lt;CoinType&gt;(
-    ctx: &<b>mut</b> StorageContext,
-    addr: <b>address</b>,
-) {
-    <a href="coin.md#0x3_coin_ensure_coin_store">ensure_coin_store</a>&lt;CoinType&gt;(ctx, addr);
-    <b>let</b> coin_store = <a href="coin.md#0x3_coin_borrow_mut_coin_store">borrow_mut_coin_store</a>&lt;CoinType&gt;(ctx, addr);
-    coin_store.frozen = <b>true</b>;
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_merge">merge</a>&lt;CoinType: key&gt;(dst_coin: &<b>mut</b> <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;, source_coin: <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;) {
+    <b>let</b> <a href="coin.md#0x3_coin_Coin">Coin</a> { value } = source_coin;
+    dst_coin.value = dst_coin.value + value;
 }
 </code></pre>
 
@@ -1205,14 +1131,14 @@ Freeze a CoinStore to prevent transfers
 
 </details>
 
-<a name="0x3_coin_unfreeze_coin_store_extend"></a>
+<a name="0x3_coin_value"></a>
 
-## Function `unfreeze_coin_store_extend`
+## Function `value`
 
-Unfreeze a CoinStore to allow transfers
+Returns the <code>value</code> passed in <code><a href="coin.md#0x3_coin">coin</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_unfreeze_coin_store_extend">unfreeze_coin_store_extend</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>)
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_value">value</a>&lt;CoinType: key&gt;(<a href="coin.md#0x3_coin">coin</a>: &<a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;): u256
 </code></pre>
 
 
@@ -1221,13 +1147,92 @@ Unfreeze a CoinStore to allow transfers
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_unfreeze_coin_store_extend">unfreeze_coin_store_extend</a>&lt;CoinType&gt;(
-    ctx: &<b>mut</b> StorageContext,
-    addr: <b>address</b>,
-) {
-    <a href="coin.md#0x3_coin_ensure_coin_store">ensure_coin_store</a>&lt;CoinType&gt;(ctx, addr);
-    <b>let</b> coin_store = <a href="coin.md#0x3_coin_borrow_mut_coin_store">borrow_mut_coin_store</a>&lt;CoinType&gt;(ctx, addr);
-    coin_store.frozen = <b>false</b>;
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_value">value</a>&lt;CoinType: key&gt;(<a href="coin.md#0x3_coin">coin</a>: &<a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;): u256 {
+    <a href="coin.md#0x3_coin">coin</a>.value
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_coin_zero"></a>
+
+## Function `zero`
+
+Create a new <code><a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;</code> with a value of <code>0</code>.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_zero">zero</a>&lt;CoinType: key&gt;(): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_zero">zero</a>&lt;CoinType: key&gt;(): <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
+    <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
+        value: 0
+    }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_coin_exist_coin_store"></a>
+
+## Function `exist_coin_store`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_exist_coin_store">exist_coin_store</a>&lt;CoinType: key&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_exist_coin_store">exist_coin_store</a>&lt;CoinType: key&gt;(ctx: &StorageContext, addr: <b>address</b>): bool {
+    <b>if</b> (<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin.md#0x3_coin_CoinStores">CoinStores</a>&gt;(ctx, addr)) {
+        <b>let</b> coin_stores = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin.md#0x3_coin_CoinStores">CoinStores</a>&gt;(ctx, addr);
+        <a href="_contains">type_table::contains</a>&lt;<a href="coin.md#0x3_coin_CoinStore">CoinStore</a>&lt;CoinType&gt;&gt;(&coin_stores.coin_stores)
+    } <b>else</b> {
+        <b>false</b>
+    }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_coin_is_coin_store_frozen"></a>
+
+## Function `is_coin_store_frozen`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_coin_store_frozen">is_coin_store_frozen</a>&lt;CoinType: key&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_coin_store_frozen">is_coin_store_frozen</a>&lt;CoinType: key&gt;(ctx: &StorageContext, addr: <b>address</b>): bool {
+    <b>if</b> (<a href="coin.md#0x3_coin_exist_coin_store">exist_coin_store</a>&lt;CoinType&gt;(ctx, addr)) {
+        <a href="coin.md#0x3_coin_borrow_coin_store">borrow_coin_store</a>&lt;CoinType&gt;(ctx, addr).frozen
+    } <b>else</b> {
+        <b>false</b>
+    }
 }
 </code></pre>
 
@@ -1245,7 +1250,7 @@ The given signer also becomes the account hosting the information about the coin
 This function is protected by <code>private_generics</code>, so it can only be called by the <code>CoinType</code> module.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_register_extend">register_extend</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, name: <a href="_String">string::String</a>, symbol: <a href="_String">string::String</a>, decimals: u8)
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_register_extend">register_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, name: <a href="_String">string::String</a>, symbol: <a href="_String">string::String</a>, decimals: u8)
 </code></pre>
 
 
@@ -1254,7 +1259,7 @@ This function is protected by <code>private_generics</code>, so it can only be c
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_register_extend">register_extend</a>&lt;CoinType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_register_extend">register_extend</a>&lt;CoinType: key&gt;(
     ctx: &<b>mut</b> StorageContext,
     name: <a href="_String">string::String</a>,
     symbol: <a href="_String">string::String</a>,
@@ -1285,33 +1290,6 @@ This function is protected by <code>private_generics</code>, so it can only be c
 
 </details>
 
-<a name="0x3_coin_merge"></a>
-
-## Function `merge`
-
-"Merges" the two given coins.  The coin passed in as <code>dst_coin</code> will have a value equal
-to the sum of the two coins (<code>dst_coin</code> and <code>source_coin</code>).
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_merge">merge</a>&lt;CoinType&gt;(dst_coin: &<b>mut</b> <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;, source_coin: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_merge">merge</a>&lt;CoinType&gt;(dst_coin: &<b>mut</b> <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;, source_coin: <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;) {
-    <b>let</b> <a href="coin.md#0x3_coin_Coin">Coin</a> { value } = source_coin;
-    dst_coin.value = dst_coin.value + value;
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_coin_mint_extend"></a>
 
 ## Function `mint_extend`
@@ -1319,7 +1297,7 @@ to the sum of the two coins (<code>dst_coin</code> and <code>source_coin</code>)
 Mint new <code><a href="coin.md#0x3_coin_Coin">Coin</a></code>, this function is only called by the <code>CoinType</code> module, for the developer to extend custom mint logic
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_mint_extend">mint_extend</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_mint_extend">mint_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
 </code></pre>
 
 
@@ -1328,7 +1306,7 @@ Mint new <code><a href="coin.md#0x3_coin_Coin">Coin</a></code>, this function is
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_mint_extend">mint_extend</a>&lt;CoinType&gt;(ctx: &<b>mut</b> StorageContext,amount: u256) : <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_mint_extend">mint_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> StorageContext,amount: u256) : <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
     <a href="coin.md#0x3_coin_mint_internal">mint_internal</a>&lt;CoinType&gt;(ctx, amount)
 }
 </code></pre>
@@ -1337,14 +1315,15 @@ Mint new <code><a href="coin.md#0x3_coin_Coin">Coin</a></code>, this function is
 
 </details>
 
-<a name="0x3_coin_value"></a>
+<a name="0x3_coin_withdraw_extend"></a>
 
-## Function `value`
+## Function `withdraw_extend`
 
-Returns the <code>value</code> passed in <code><a href="coin.md#0x3_coin">coin</a></code>.
+Withdraw specifed <code>amount</code> of coin <code>CoinType</code> from any addr, this function does not check the Coin <code>frozen</code> attribute
+This function is only called by the <code>CoinType</code> module, for the developer to extend custom withdraw logic
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_value">value</a>&lt;CoinType&gt;(<a href="coin.md#0x3_coin">coin</a>: &<a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;): u256
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_withdraw_extend">withdraw_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
 </code></pre>
 
 
@@ -1353,8 +1332,12 @@ Returns the <code>value</code> passed in <code><a href="coin.md#0x3_coin">coin</
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_value">value</a>&lt;CoinType&gt;(<a href="coin.md#0x3_coin">coin</a>: &<a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;): u256 {
-    <a href="coin.md#0x3_coin">coin</a>.value
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_withdraw_extend">withdraw_extend</a>&lt;CoinType: key&gt;(
+    ctx: &<b>mut</b> StorageContext,
+    addr: <b>address</b>,
+    amount: u256,
+): <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
+    <a href="coin.md#0x3_coin_withdraw_internal">withdraw_internal</a>&lt;CoinType&gt;(ctx, addr, amount)
 }
 </code></pre>
 
@@ -1362,14 +1345,15 @@ Returns the <code>value</code> passed in <code><a href="coin.md#0x3_coin">coin</
 
 </details>
 
-<a name="0x3_coin_zero"></a>
+<a name="0x3_coin_deposit_extend"></a>
 
-## Function `zero`
+## Function `deposit_extend`
 
-Create a new <code><a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;</code> with a value of <code>0</code>.
+Deposit the coin into the recipient's account and emit an event.
+This function is only called by the <code>CoinType</code> module, for the developer to extend custom deposit logic
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_zero">zero</a>&lt;CoinType&gt;(): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_deposit_extend">deposit_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
 </code></pre>
 
 
@@ -1378,10 +1362,8 @@ Create a new <code><a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;</cod
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_zero">zero</a>&lt;CoinType&gt;(): <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
-    <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
-        value: 0
-    }
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_deposit_extend">deposit_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> StorageContext, addr: <b>address</b>, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;) {
+    <a href="coin.md#0x3_coin_deposit_internal">deposit_internal</a>(ctx, addr, <a href="coin.md#0x3_coin">coin</a>);
 }
 </code></pre>
 
@@ -1389,13 +1371,15 @@ Create a new <code><a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;</cod
 
 </details>
 
-<a name="0x3_coin_exist_coin_store"></a>
+<a name="0x3_coin_transfer_extend"></a>
 
-## Function `exist_coin_store`
+## Function `transfer_extend`
+
+Transfer <code>amount</code> of coins <code>CoinType</code> from <code>from</code> to <code><b>to</b></code>.
+This function is only called by the <code>CoinType</code> module, for the developer to extend custom transfer logic
 
 
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_exist_coin_store">exist_coin_store</a>&lt;CoinType&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_transfer_extend">transfer_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, from: <b>address</b>, <b>to</b>: <b>address</b>, amount: u256)
 </code></pre>
 
 
@@ -1404,13 +1388,13 @@ Create a new <code><a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;</cod
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_exist_coin_store">exist_coin_store</a>&lt;CoinType&gt;(ctx: &StorageContext, addr: <b>address</b>): bool {
-    <b>if</b> (<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin.md#0x3_coin_CoinStores">CoinStores</a>&gt;(ctx, addr)) {
-        <b>let</b> coin_stores = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin.md#0x3_coin_CoinStores">CoinStores</a>&gt;(ctx, addr);
-        <a href="_contains">type_table::contains</a>&lt;<a href="coin.md#0x3_coin_CoinStore">CoinStore</a>&lt;CoinType&gt;&gt;(&coin_stores.coin_stores)
-    } <b>else</b> {
-        <b>false</b>
-    }
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_transfer_extend">transfer_extend</a>&lt;CoinType: key&gt;(
+    ctx: &<b>mut</b> StorageContext,
+    from: <b>address</b>,
+    <b>to</b>: <b>address</b>,
+    amount: u256,
+) {
+    <a href="coin.md#0x3_coin_transfer_internal">transfer_internal</a>&lt;CoinType&gt;(ctx, from, <b>to</b>, amount);
 }
 </code></pre>
 
@@ -1418,13 +1402,15 @@ Create a new <code><a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;</cod
 
 </details>
 
-<a name="0x3_coin_is_coin_store_frozen"></a>
+<a name="0x3_coin_burn_extend"></a>
 
-## Function `is_coin_store_frozen`
+## Function `burn_extend`
+
+Burn <code><a href="coin.md#0x3_coin">coin</a></code>
+This function is only called by the <code>CoinType</code> module, for the developer to extend custom burn logic
 
 
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_coin_store_frozen">is_coin_store_frozen</a>&lt;CoinType&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_burn_extend">burn_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
 </code></pre>
 
 
@@ -1433,12 +1419,71 @@ Create a new <code><a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;</cod
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_coin_store_frozen">is_coin_store_frozen</a>&lt;CoinType&gt;(ctx: &StorageContext, addr: <b>address</b>): bool {
-    <b>if</b> (<a href="coin.md#0x3_coin_exist_coin_store">exist_coin_store</a>&lt;CoinType&gt;(ctx, addr)) {
-        <a href="coin.md#0x3_coin_borrow_coin_store">borrow_coin_store</a>&lt;CoinType&gt;(ctx, addr).frozen
-    } <b>else</b> {
-        <b>false</b>
-    }
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_burn_extend">burn_extend</a>&lt;CoinType: key&gt;(
+    ctx: &<b>mut</b> StorageContext,
+    <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;,
+) {
+    <a href="coin.md#0x3_coin_burn_internal">burn_internal</a>(ctx, <a href="coin.md#0x3_coin">coin</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_coin_freeze_coin_store_extend"></a>
+
+## Function `freeze_coin_store_extend`
+
+Freeze a CoinStore to prevent transfers
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_freeze_coin_store_extend">freeze_coin_store_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_freeze_coin_store_extend">freeze_coin_store_extend</a>&lt;CoinType: key&gt;(
+    ctx: &<b>mut</b> StorageContext,
+    addr: <b>address</b>,
+) {
+    <a href="coin.md#0x3_coin_ensure_coin_store">ensure_coin_store</a>&lt;CoinType&gt;(ctx, addr);
+    <b>let</b> coin_store = <a href="coin.md#0x3_coin_borrow_mut_coin_store">borrow_mut_coin_store</a>&lt;CoinType&gt;(ctx, addr);
+    coin_store.frozen = <b>true</b>;
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_coin_unfreeze_coin_store_extend"></a>
+
+## Function `unfreeze_coin_store_extend`
+
+Unfreeze a CoinStore to allow transfers
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_unfreeze_coin_store_extend">unfreeze_coin_store_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_unfreeze_coin_store_extend">unfreeze_coin_store_extend</a>&lt;CoinType: key&gt;(
+    ctx: &<b>mut</b> StorageContext,
+    addr: <b>address</b>,
+) {
+    <a href="coin.md#0x3_coin_ensure_coin_store">ensure_coin_store</a>&lt;CoinType&gt;(ctx, addr);
+    <b>let</b> coin_store = <a href="coin.md#0x3_coin_borrow_mut_coin_store">borrow_mut_coin_store</a>&lt;CoinType&gt;(ctx, addr);
+    coin_store.frozen = <b>false</b>;
 }
 </code></pre>
 
@@ -1454,7 +1499,7 @@ Creating a resource that stores balance of <code>CoinType</code> on user's accou
 Required if user wants to start accepting deposits of <code>CoinType</code> in his account.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_accept_coin_entry">accept_coin_entry</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_accept_coin_entry">accept_coin_entry</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -1463,7 +1508,7 @@ Required if user wants to start accepting deposits of <code>CoinType</code> in h
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_accept_coin_entry">accept_coin_entry</a>&lt;CoinType&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_accept_coin_entry">accept_coin_entry</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
     <a href="coin.md#0x3_coin_do_accept_coin">do_accept_coin</a>&lt;CoinType&gt;(ctx, <a href="account.md#0x3_account">account</a>)
 }
 </code></pre>
@@ -1529,9 +1574,10 @@ The script function is reenterable.
 ## Function `transfer_entry`
 
 Transfer <code>amount</code> of coins <code>CoinType</code> from <code>from</code> to <code><b>to</b></code>.
+This public entry function requires the <code>CoinType</code> to have <code>key</code> and <code>store</code> abilities.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_transfer_entry">transfer_entry</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, amount: u256)
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_transfer_entry">transfer_entry</a>&lt;CoinType: store, key&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, amount: u256)
 </code></pre>
 
 
@@ -1540,13 +1586,14 @@ Transfer <code>amount</code> of coins <code>CoinType</code> from <code>from</cod
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_transfer_entry">transfer_entry</a>&lt;CoinType&gt;(
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_transfer_entry">transfer_entry</a>&lt;CoinType: key + store&gt;(
     ctx: &<b>mut</b> StorageContext,
     from: &<a href="">signer</a>,
     <b>to</b>: <b>address</b>,
     amount: u256,
 ) {
-    <a href="coin.md#0x3_coin_transfer">transfer</a>&lt;CoinType&gt;(ctx, from, <b>to</b>, amount)
+    <b>let</b> from_addr = <a href="_address_of">signer::address_of</a>(from);
+    <a href="coin.md#0x3_coin_transfer_internal">transfer_internal</a>&lt;CoinType&gt;(ctx, from_addr, <b>to</b>, amount)
 }
 </code></pre>
 
