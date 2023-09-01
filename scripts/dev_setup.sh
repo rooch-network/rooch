@@ -829,7 +829,6 @@ if [[ "$INSTALL_BUILD_TOOLS" == "true" ]]; then
   install_postgres
   install_pkg git "$PACKAGE_MANAGER"
   install_lcov "$PACKAGE_MANAGER"
-  install_pnpm "$PACKAGE_MANAGER"
   install_pkg unzip "$PACKAGE_MANAGER"
   install_protoc
 fi

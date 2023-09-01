@@ -9,8 +9,9 @@ module rooch_framework::transaction_validator {
     use rooch_framework::auth_validator::{Self, TxValidateResult};
     use rooch_framework::auth_validator_registry;
     use rooch_framework::session_key;
-    use rooch_framework::gas_price;
     use rooch_framework::chain_id;
+    use rooch_framework::transaction_fee;
+    use rooch_framework::gas_coin;
 
     const MAX_U64: u128 = 18446744073709551615;
 
@@ -63,16 +64,28 @@ module rooch_framework::transaction_validator {
             error::invalid_argument(ErrorValidateSequenceNuberTooOld)
         );
 
-        // [PCA12]: Check that the transaction's sequence number matches the
-        // current sequence number. Otherwise sequence number is too new by [PCA11].
+        // Check that the transaction's sequence number matches the
+        // current sequence number. Otherwise sequence number is too new.
         assert!(
             tx_sequence_number == account_sequence_number,
             error::invalid_argument(ErrorValidateSequenceNumberTooNew)
         );
 
+        let sender = storage_context::sender(ctx);
+
         // === validate gas ===
-        let _max_gas_amount = storage_context::max_gas_amount(ctx);
-        //TODO check the account can pay the gas fee
+        let max_gas_amount = storage_context::max_gas_amount(ctx);
+        let gas = transaction_fee::calculate_gas(ctx, max_gas_amount);
+        
+        // We skip the gas check for the new account, for avoid break the current testcase
+        // TODO remove the skip afater we provide the gas faucet and update all testcase
+        if(account::exists_at(ctx, sender)){
+            let gas_balance = gas_coin::balance(ctx, sender);
+            assert!(
+                gas_balance >= gas,
+                error::invalid_argument(ErrorValidateCantPayGasDeposit)
+            );
+        };
 
         // === validate the authenticator ===
 
@@ -106,6 +119,11 @@ module rooch_framework::transaction_validator {
         //Auto create account if not exist
         if (!account::exists_at(ctx, sender)) {
             account::create_account(ctx, sender);
+            // Auto get gas coin from faucet if not enough
+            // TODO remove this after we provide the gas faucet
+            let max_gas_amount = storage_context::max_gas_amount(ctx);
+            let init_gas = (max_gas_amount as u256) * 100u256;
+            gas_coin::faucet(ctx, sender, init_gas); 
         };
         //the transaction validator will put the multi chain address into the context
         let multichain_address = storage_context::get<MultiChainAddress>(ctx);
@@ -116,10 +134,6 @@ module rooch_framework::transaction_validator {
                 address_mapping::bind_no_check(ctx, sender, multichain_address);
             };
         };
-        let max_gas_amount = storage_context::max_gas_amount(ctx);
-        let gas_price = gas_price::get_gas_price_per_unit();
-        let _gas = max_gas_amount * gas_price;
-        //TODO prepare the gas coin
     }
 
     /// Transaction post_execute function.
@@ -128,7 +142,8 @@ module rooch_framework::transaction_validator {
     fun post_execute(
         ctx: &mut StorageContext,
     ) {
-    
+        let sender = storage_context::sender(ctx);
+
         // Active the session key
 
         let session_key_opt = auth_validator::get_session_key_from_tx_ctx_option(ctx);
@@ -139,9 +154,11 @@ module rooch_framework::transaction_validator {
 
         // Increment sequence number
         account::increment_sequence_number(ctx);
-
+        
         let tx_result = storage_context::tx_result(ctx);
-        let _gas_used = tx_result::gas_used(&tx_result);
-        //TODO Charge gas fee and return remaining gas
+        let gas_used = tx_result::gas_used(&tx_result);
+        let gas = transaction_fee::calculate_gas(ctx, gas_used);
+        let gas_coin = gas_coin::deduct_gas(ctx, sender, gas);
+        transaction_fee::deposit_fee(ctx, gas_coin);
     }
 }

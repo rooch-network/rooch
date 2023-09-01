@@ -285,7 +285,7 @@ is returned. This way, the caller of this function can publish additional resour
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_account">create_account</a>(ctx: &<b>mut</b> StorageContext, new_address: <b>address</b>): <a href="">signer</a> {
    <b>assert</b>!(
-      new_address != @vm_reserved && new_address != @rooch_framework,
+      new_address != @vm_reserved,
       <a href="_invalid_argument">error::invalid_argument</a>(<a href="account.md#0x3_account_ErrorAddressReseved">ErrorAddressReseved</a>)
    );
 
@@ -296,8 +296,6 @@ is returned. This way, the caller of this function can publish additional resour
    );
 
    <b>let</b> new_account = <a href="account.md#0x3_account_create_account_unchecked">create_account_unchecked</a>(ctx, new_address);
-   // initialize <a href="account.md#0x3_account">account</a> <a href="coin.md#0x3_coin">coin</a> store
-   <a href="coin.md#0x3_coin_init_account_coin_store">coin::init_account_coin_store</a>(ctx, &new_account);
    new_account
 }
 </code></pre>

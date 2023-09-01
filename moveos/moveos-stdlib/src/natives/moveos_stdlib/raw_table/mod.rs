@@ -764,8 +764,7 @@ pub fn serialize(layout: &MoveTypeLayout, val: &Value) -> PartialVMResult<Vec<u8
         partial_extension_error(format!(
             "cannot serialize table key or value, layout:{:?}, val:{:?}",
             layout, val
-        ));
-        panic!("debug")
+        ))
     })
 }
 

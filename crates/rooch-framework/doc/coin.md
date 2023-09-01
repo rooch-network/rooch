@@ -22,6 +22,7 @@ This module provides the foundation for typesafe Coins.
 -  [Resource `BurnCapability`](#0x3_coin_BurnCapability)
 -  [Resource `Capabilities`](#0x3_coin_Capabilities)
 -  [Constants](#@Constants_0)
+-  [Function `genesis_init`](#0x3_coin_genesis_init)
 -  [Function `init_account_coin_store`](#0x3_coin_init_account_coin_store)
 -  [Function `balance`](#0x3_coin_balance)
 -  [Function `is_coin_initialized`](#0x3_coin_is_coin_initialized)
@@ -35,9 +36,11 @@ This module provides the foundation for typesafe Coins.
 -  [Function `do_accept_coin`](#0x3_coin_do_accept_coin)
 -  [Function `set_auto_accept_coin`](#0x3_coin_set_auto_accept_coin)
 -  [Function `withdraw`](#0x3_coin_withdraw)
+-  [Function `withdraw_extend`](#0x3_coin_withdraw_extend)
 -  [Function `deposit`](#0x3_coin_deposit)
 -  [Function `transfer`](#0x3_coin_transfer)
 -  [Function `burn`](#0x3_coin_burn)
+-  [Function `burn_extend`](#0x3_coin_burn_extend)
 -  [Function `burn_from`](#0x3_coin_burn_from)
 -  [Function `destroy_zero`](#0x3_coin_destroy_zero)
 -  [Function `extract`](#0x3_coin_extract)
@@ -47,6 +50,7 @@ This module provides the foundation for typesafe Coins.
 -  [Function `initialize`](#0x3_coin_initialize)
 -  [Function `merge`](#0x3_coin_merge)
 -  [Function `mint`](#0x3_coin_mint)
+-  [Function `mint_extend`](#0x3_coin_mint_extend)
 -  [Function `value`](#0x3_coin_value)
 -  [Function `zero`](#0x3_coin_zero)
 -  [Function `exist_coin_store`](#0x3_coin_exist_coin_store)
@@ -66,7 +70,6 @@ This module provides the foundation for typesafe Coins.
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::account_storage</a>;
 <b>use</b> <a href="">0x2::event</a>;
@@ -719,6 +722,37 @@ Coin amount cannot be zero
 
 
 
+<a name="0x3_coin_genesis_init"></a>
+
+## Function `genesis_init`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x3_coin_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, genesis_account: &<a href="">signer</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x3_coin_genesis_init">genesis_init</a>(ctx: &<b>mut</b> StorageContext, genesis_account: &<a href="">signer</a>) {
+    <b>let</b> tx_ctx = <a href="_tx_context_mut">storage_context::tx_context_mut</a>(ctx);
+    <a href="_global_move_to">account_storage::global_move_to</a>(ctx, genesis_account, <a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a>{
+        coin_infos: <a href="_new">type_table::new</a>(tx_ctx),
+    });
+    <b>let</b> tx_ctx = <a href="_tx_context_mut">storage_context::tx_context_mut</a>(ctx);
+    <a href="_global_move_to">account_storage::global_move_to</a>(ctx, genesis_account, <a href="coin.md#0x3_coin_AutoAcceptCoins">AutoAcceptCoins</a>{
+        auto_accept_coins: <a href="_new">table::new</a>&lt;<b>address</b>, bool&gt;(tx_ctx),
+    });
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x3_coin_init_account_coin_store"></a>
 
 ## Function `init_account_coin_store`
@@ -1075,24 +1109,37 @@ Withdraw specifed <code>amount</code> of coin <code>CoinType</code> from the sig
     amount: u256,
 ): <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
     <b>let</b> addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
-    <b>assert</b>!(
-        <a href="coin.md#0x3_coin_is_account_accept_coin">is_account_accept_coin</a>&lt;CoinType&gt;(ctx, addr),
-        <a href="_not_found">error::not_found</a>(<a href="coin.md#0x3_coin_ErrorAccountNotAcceptCoin">ErrorAccountNotAcceptCoin</a>),
-    );
+    <a href="coin.md#0x3_coin_withdraw_interal">withdraw_interal</a>&lt;CoinType&gt;(ctx, addr, amount)
+}
+</code></pre>
 
-    <b>assert</b>!(
-        !<a href="coin.md#0x3_coin_is_coin_store_frozen">is_coin_store_frozen</a>&lt;CoinType&gt;(ctx, addr),
-        <a href="_permission_denied">error::permission_denied</a>(<a href="coin.md#0x3_coin_ErrorAccountWithCoinFrozen">ErrorAccountWithCoinFrozen</a>),
-    );
 
-    <a href="coin.md#0x3_coin_ensure_coin_store">ensure_coin_store</a>&lt;CoinType&gt;(ctx, addr);
-    <b>let</b> coin_type_info = <a href="_type_of">type_info::type_of</a>&lt;CoinType&gt;();
-    <a href="_emit">event::emit</a>&lt;<a href="coin.md#0x3_coin_WithdrawEvent">WithdrawEvent</a>&gt;(ctx, <a href="coin.md#0x3_coin_WithdrawEvent">WithdrawEvent</a> {
-        coin_type_info,
-        amount,
-    });
 
-    <a href="coin.md#0x3_coin_extract_coin">extract_coin</a>(ctx, addr, amount)
+</details>
+
+<a name="0x3_coin_withdraw_extend"></a>
+
+## Function `withdraw_extend`
+
+Withdraw specifed <code>amount</code> of coin <code>CoinType</code> from any addr
+This function is only called by the <code>CoinType</code> module, for the developer to extend custom withdraw logic
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_withdraw_extend">withdraw_extend</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_withdraw_extend">withdraw_extend</a>&lt;CoinType&gt;(
+    ctx: &<b>mut</b> StorageContext,
+    addr: <b>address</b>,
+    amount: u256,
+): <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
+    <a href="coin.md#0x3_coin_withdraw_interal">withdraw_interal</a>&lt;CoinType&gt;(ctx, addr, amount)
 }
 </code></pre>
 
@@ -1195,15 +1242,36 @@ The capability <code>_cap</code> should be passed as a reference to <code><a hre
     <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;,
     _cap: &<a href="coin.md#0x3_coin_BurnCapability">BurnCapability</a>&lt;CoinType&gt;,
 ) {
-    <b>let</b> <a href="coin.md#0x3_coin_Coin">Coin</a> { value: amount } = <a href="coin.md#0x3_coin">coin</a>;
+    <a href="coin.md#0x3_coin_burn_internal">burn_internal</a>(ctx, <a href="coin.md#0x3_coin">coin</a>)
+}
+</code></pre>
 
-    <b>let</b> coin_type_info = <a href="_type_of">type_info::type_of</a>&lt;CoinType&gt;();
-    <b>let</b> coin_info = <a href="coin.md#0x3_coin_borrow_mut_coin_info">borrow_mut_coin_info</a>&lt;CoinType&gt;(ctx);
-    coin_info.supply = coin_info.supply - amount;
-    <a href="_emit">event::emit</a>&lt;<a href="coin.md#0x3_coin_BurnEvent">BurnEvent</a>&gt;(ctx, <a href="coin.md#0x3_coin_BurnEvent">BurnEvent</a> {
-        coin_type_info,
-        amount,
-    });
+
+
+</details>
+
+<a name="0x3_coin_burn_extend"></a>
+
+## Function `burn_extend`
+
+Burn <code><a href="coin.md#0x3_coin">coin</a></code>
+This function is only called by the <code>CoinType</code> module, for the developer to extend custom burn logic
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_burn_extend">burn_extend</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_burn_extend">burn_extend</a>&lt;CoinType&gt;(
+    ctx: &<b>mut</b> StorageContext,
+    <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;,
+) {
+    <a href="coin.md#0x3_coin_burn_internal">burn_internal</a>(ctx, <a href="coin.md#0x3_coin">coin</a>)
 }
 </code></pre>
 
@@ -1496,14 +1564,32 @@ Returns minted <code><a href="coin.md#0x3_coin_Coin">Coin</a></code>.
     amount: u256,
     _cap: &<a href="coin.md#0x3_coin_MintCapability">MintCapability</a>&lt;CoinType&gt;,
 ): <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
-   <b>let</b> coin_info = <a href="coin.md#0x3_coin_borrow_mut_coin_info">borrow_mut_coin_info</a>&lt;CoinType&gt;(ctx);
-    coin_info.supply = coin_info.supply + amount;
-    <b>let</b> coin_type_info = <a href="_type_of">type_info::type_of</a>&lt;CoinType&gt;();
-    <a href="_emit">event::emit</a>&lt;<a href="coin.md#0x3_coin_MintEvent">MintEvent</a>&gt;(ctx, <a href="coin.md#0x3_coin_MintEvent">MintEvent</a> {
-        coin_type_info,
-        amount,
-    });
-    <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; { value: amount }
+    <a href="coin.md#0x3_coin_mint_internal">mint_internal</a>&lt;CoinType&gt;(ctx, amount)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_coin_mint_extend"></a>
+
+## Function `mint_extend`
+
+Mint new <code><a href="coin.md#0x3_coin_Coin">Coin</a></code>, this function is only called by the <code>CoinType</code> module, for the developer to extend custom mint logic
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_mint_extend">mint_extend</a>&lt;CoinType&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_mint_extend">mint_extend</a>&lt;CoinType&gt;(ctx: &<b>mut</b> StorageContext,amount: u256) : <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
+    <a href="coin.md#0x3_coin_mint_internal">mint_internal</a>&lt;CoinType&gt;(ctx, amount)
 }
 </code></pre>
 
