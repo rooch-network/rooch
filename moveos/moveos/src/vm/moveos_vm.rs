@@ -356,7 +356,7 @@ where
             .get_mut::<NativeModuleContext>();
         let init_functions = ctx.init_functions.clone();
         if !init_functions.is_empty() {
-            self.execute_init_modules(init_functions)
+            self.execute_init_modules(init_functions.into_iter().collect())
         } else {
             Ok(())
         }

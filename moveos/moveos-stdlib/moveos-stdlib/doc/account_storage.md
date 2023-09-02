@@ -26,6 +26,7 @@ It is used to store the account's resources and modules
 
 <pre><code><b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 <b>use</b> <a href="move_module.md#0x2_move_module">0x2::move_module</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
@@ -467,7 +468,9 @@ Publish modules to the account's storage
             upgrade_flag = <b>true</b>;
         } <b>else</b> {
             // request init function invoking
-            <a href="move_module.md#0x2_move_module_request_init_functions">move_module::request_init_functions</a>(module_names_with_init_fn, account_address);
+            <b>if</b> (<a href="_contains">vector::contains</a>(&module_names_with_init_fn, &name)) {
+                <a href="move_module.md#0x2_move_module_request_init_functions">move_module::request_init_functions</a>(<a href="_singleton">vector::singleton</a>(<b>copy</b> name), account_address);
+            }
         };
         <a href="table.md#0x2_table_add">table::add</a>(&<b>mut</b> <a href="account_storage.md#0x2_account_storage">account_storage</a>.modules, name, m);
         i = i + 1;
