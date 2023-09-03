@@ -13,7 +13,6 @@ use hyper::Method;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
-use moveos_config::store_config::RocksdbConfig;
 use moveos_store::{MoveOSDB, MoveOSStore};
 use raw_store::errors::RawStoreError;
 use raw_store::rocks::RocksDB;
