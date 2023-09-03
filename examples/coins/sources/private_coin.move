@@ -14,10 +14,6 @@ module coins::private_coin {
 
 
     fun init(ctx: &mut StorageContext) {
-        //TODO remove this check after https://github.com/rooch-network/rooch/issues/742 is fixed
-        if (coin::is_registered<PRC>(ctx)) {
-            return
-        };
         coin::register_extend<PRC>(
             ctx,
             string::utf8(b"Private Coin"),

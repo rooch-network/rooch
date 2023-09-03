@@ -16,10 +16,6 @@ module coins::fixed_supply_coin {
 
 
     fun init(ctx: &mut StorageContext) {
-        //TODO remove this check after https://github.com/rooch-network/rooch/issues/742 is fixed
-        if (coin::is_registered<FSC>(ctx)) {
-            return
-        };
         coin::register_extend<FSC>(
             ctx,
             string::utf8(b"Fixed Supply Coin"),

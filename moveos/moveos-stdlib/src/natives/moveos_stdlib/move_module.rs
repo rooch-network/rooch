@@ -24,7 +24,7 @@ use move_vm_types::{
     values::{Struct, Value, Vector, VectorRef},
 };
 use smallvec::smallvec;
-use std::collections::VecDeque;
+use std::collections::{BTreeSet, VecDeque};
 
 // ========================================================================================
 
@@ -32,7 +32,7 @@ use std::collections::VecDeque;
 #[derive(Tid)]
 pub struct NativeModuleContext<'a> {
     resolver: &'a dyn ModuleResolver<Error = anyhow::Error>,
-    pub init_functions: Vec<ModuleId>,
+    pub init_functions: BTreeSet<ModuleId>,
 }
 
 impl<'a> NativeModuleContext<'a> {
@@ -41,7 +41,7 @@ impl<'a> NativeModuleContext<'a> {
     pub fn new(resolver: &'a dyn ModuleResolver<Error = anyhow::Error>) -> Self {
         Self {
             resolver,
-            init_functions: vec![],
+            init_functions: BTreeSet::new(),
         }
     }
 }
@@ -206,7 +206,7 @@ fn request_init_functions(
                 PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE).with_message(e.to_string())
             })?,
         );
-        module_context.init_functions.push(module_id);
+        module_context.init_functions.insert(module_id);
     }
     Ok(NativeResult::ok(cost, smallvec![]))
 }

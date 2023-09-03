@@ -194,7 +194,9 @@ module moveos_std::account_storage {
                 upgrade_flag = true;
             } else {
                 // request init function invoking
-                move_module::request_init_functions(module_names_with_init_fn, account_address);
+                if (vector::contains(&module_names_with_init_fn, &name)) {
+                    move_module::request_init_functions(vector::singleton(copy name), account_address);
+                }
             };
             table::add(&mut account_storage.modules, name, m);
             i = i + 1;
