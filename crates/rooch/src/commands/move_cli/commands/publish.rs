@@ -10,7 +10,7 @@ use move_bytecode_utils::Modules;
 use move_cli::Move;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
-use rooch_types::coin_type::Coin;
+use rooch_types::coin_type::CoinID;
 use rooch_types::{crypto::BuiltinScheme, transaction::rooch::RoochTransaction};
 
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
@@ -43,9 +43,9 @@ pub struct Publish {
     #[clap(long, parse(try_from_str = crate::utils::parse_map), default_value = "")]
     pub(crate) named_addresses: BTreeMap<String, String>,
 
-    /// Command line input of coin schemes
-    #[clap(short = 'c', long = "coin", default_value = "rooch", arg_enum)]
-    pub coin: Coin,
+    /// Command line input of coin ids
+    #[clap(short = 'c', long = "coin-id", default_value = "rooch", arg_enum)]
+    pub coin_id: CoinID,
 
     /// Whether publish modules by `MoveAction::ModuleBundle`?
     /// If not set, publish moduels through Move entry function
@@ -146,11 +146,17 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                     let tx = RoochTransaction::new(tx_data, authenticator.into());
                     context.execute(tx).await?
                 }
-                None => context.sign_and_execute(sender, action, self.coin).await?,
+                None => {
+                    context
+                        .sign_and_execute(sender, action, self.coin_id)
+                        .await?
+                }
             }
         } else {
             let action = MoveAction::ModuleBundle(bundles);
-            context.sign_and_execute(sender, action, self.coin).await?
+            context
+                .sign_and_execute(sender, action, self.coin_id)
+                .await?
         };
         context.assert_execute_success(tx_result)
     }

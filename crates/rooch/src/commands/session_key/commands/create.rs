@@ -7,7 +7,7 @@ use moveos_types::module_binding::MoveFunctionCaller;
 use rooch_key::keystore::AccountKeystore;
 use rooch_types::{
     address::RoochAddress,
-    coin_type::Coin,
+    coin_type::CoinID,
     crypto::BuiltinScheme,
     error::{RoochError, RoochResult},
     framework::session_key::{SessionKey, SessionKeyModule, SessionScope},
@@ -65,7 +65,7 @@ impl CreateCommand {
         println!("Generated new session key {session_auth_key} for address [{sender}]",);
 
         let result = context
-            .sign_and_execute(sender, action, Coin::Rooch)
+            .sign_and_execute(sender, action, CoinID::Rooch)
             .await?;
         context.assert_execute_success(result)?;
         let client = context.get_client().await?;

@@ -36,7 +36,7 @@ impl<'a> TransactionValidator<'a> {
             vec![],
             vec![
                 MoveValue::U64(auth.chain_id).simple_serialize().unwrap(),
-                MoveValue::U64(auth.authenticator.scheme)
+                MoveValue::U64(auth.authenticator.coin_id)
                     .simple_serialize()
                     .unwrap(),
                 MoveValue::vector_u8(auth.authenticator.payload)

@@ -8,7 +8,7 @@ use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_types::{
     address::RoochAddress,
     authentication_key::AuthenticationKeyType,
-    coin_type::Coin,
+    coin_type::CoinID,
     crypto::{BuiltinScheme, PublicKey},
     error::{RoochError, RoochResult},
     framework::native_validator::{NativeValidator, NativeValidatorModule},
@@ -17,7 +17,7 @@ use rooch_types::{
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use std::str::FromStr;
 
-/// Update an address with a new keypair from scheme to rooch.keystore
+/// Update an address with a new keypair from coin id to rooch.keystore
 #[derive(Debug, Parser)]
 pub struct UpdateCommand {
     /// Rooch address in string format.
@@ -30,9 +30,9 @@ pub struct UpdateCommand {
     /// Authentication key type. Select an authentication key type with the Rooch address (Bitcoin P2PKH authentication key address leading with "1" or Bitcoin P2SH authentication key address leading with "3")
     #[clap(short = 't', long = "authentication-key-type", arg_enum)]
     pub authentication_key_type: Option<AuthenticationKeyType>,
-    /// Command line input of coin schemes
-    #[clap(short = 'c', long = "coin", arg_enum)]
-    pub coin: Coin,
+    /// Command line input of coin ids
+    #[clap(short = 'c', long = "coin-id", arg_enum)]
+    pub coin_id: CoinID,
 }
 
 #[async_trait]
@@ -42,8 +42,8 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
 
         let mut context = self.context_options.build().await?;
 
-        match self.coin {
-            Coin::Rooch => {
+        match self.coin_id {
+            CoinID::Rooch => {
                 let existing_address =
                     RoochAddress::from_str(self.address.as_str()).map_err(|e| {
                         RoochError::CommandArgumentError(format!(
@@ -55,10 +55,10 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                 let public_key: PublicKey = context
                     .config
                     .keystore
-                    .update_address_with_key_pair_from_coin(
+                    .update_address_with_key_pair_from_coin_id(
                         &existing_address,
                         self.mnemonic_phrase,
-                        self.coin,
+                        self.coin_id,
                         None,
                     )
                     .map_err(|e| RoochError::UpdateAccountError(e.to_string()))?;
@@ -68,31 +68,26 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                     AccountAddress::from(existing_address).to_hex_literal()
                 );
                 println!(
-                    "Generated a new keypair for an existing address {:?} on coin scheme {:?}",
+                    "Generated a new keypair for an existing address {:?} on coin id {:?}",
                     existing_address,
-                    self.coin.to_owned()
+                    self.coin_id.to_owned()
                 );
 
                 // Get public key reference
                 let public_key = public_key.as_ref().to_vec();
-
-                // Get decimal prefix or version from the input address type
-                let decimal_prefix_or_version: Option<u8> = self
-                    .authentication_key_type
-                    .map(|addr_type| addr_type.decimal_prefix_or_version());
 
                 // Create MoveAction from native validator
                 let action = NativeValidatorModule::rotate_authentication_key_action(public_key);
 
                 // Execute the Move call as a transaction
                 let result = context
-                    .sign_and_execute(existing_address, action, self.coin)
+                    .sign_and_execute(existing_address, action, self.coin_id)
                     .await?;
                 context.assert_execute_success(result)
             }
-            Coin::Bitcoin => todo!(),
-            Coin::Ether => todo!(),
-            Coin::Nostr => todo!(),
+            CoinID::Bitcoin => todo!(),
+            CoinID::Ether => todo!(),
+            CoinID::Nostr => todo!(),
         }
     }
 }

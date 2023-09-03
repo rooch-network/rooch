@@ -25,7 +25,7 @@ use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_types::{
     account::AccountModule,
     address::RoochAddress,
-    coin_type::Coin,
+    coin_type::CoinID,
     crypto::BuiltinScheme,
     error::{RoochError, RoochResult},
     transaction::{
@@ -59,7 +59,7 @@ impl CreateCommand {
             context
                 .config
                 .keystore
-                .generate_and_add_new_key(Coin::Rooch, None, None)?;
+                .generate_and_add_new_key(CoinID::Rooch, None, None)?;
 
         println!("{}", AccountAddress::from(new_address).to_hex_literal());
         println!(
