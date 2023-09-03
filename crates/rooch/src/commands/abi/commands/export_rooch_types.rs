@@ -4,12 +4,12 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use moveos_types::move_string::{MoveAsciiString, MoveString};
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
     language_storage::{StructTag, TypeTag},
 };
+use moveos_types::move_string::{MoveAsciiString, MoveString};
 use moveos_types::transaction::MoveAction;
 use rooch_types::error::RoochResult;
 use rooch_types::transaction::rooch::RoochTransaction;
@@ -90,10 +90,14 @@ fn export_rooch_types_yaml(file_path: &String) -> RoochResult<()> {
 
     // More types
     let example_ascii_string: MoveAsciiString = MoveAsciiString::from_str("test").unwrap();
-    tracer.trace_value(&mut samples, &example_ascii_string).unwrap();
+    tracer
+        .trace_value(&mut samples, &example_ascii_string)
+        .unwrap();
     let example_move_string: MoveString = MoveString::from_str("test").unwrap();
-    tracer.trace_value(&mut samples, &example_move_string).unwrap();
-    
+    tracer
+        .trace_value(&mut samples, &example_move_string)
+        .unwrap();
+
     match tracer.registry() {
         Ok(registry) => {
             let data: String = serde_json::to_string_pretty(&registry).unwrap();
