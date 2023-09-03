@@ -35,10 +35,12 @@ export type TypeTag =
   | 'U128'
   | 'Address'
   | 'Signer'
+  | 'Ascii'
+  | 'String'
   | { Vector: TypeTag }
   | { Struct: StructTag }
 
-export type ArgType = Bool | U8 | U64 | U128 | AccountAddress | ArgType[]
+export type ArgType = Bool | U8 | U64 | U128 | string | AccountAddress | ArgType[]
 export type Arg = {
   type: TypeTag
   value: ArgType

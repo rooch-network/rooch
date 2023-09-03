@@ -10,9 +10,7 @@ import {
   encodeStructTypeTags,
   encodeArg,
 } from './tx'
-import {
-  toHexString
-} from './hex'
+import { toHexString } from './hex'
 import { TypeTag, StructTag, AccountAddress, Arg } from '../types'
 import * as rooch_types from '../generated/runtime/rooch_types/mod'
 import { bytes } from '../generated/runtime/serde/mod'
@@ -84,7 +82,7 @@ describe('encodeStructTypeTags', () => {
 describe('encodeArg', () => {
   it('should encode Vector TypeTag', () => {
     const arg = {
-      type: {Vector: 'U8'},
+      type: { Vector: 'U8' },
       value: [100],
     } as Arg
 

@@ -6,7 +6,7 @@ import { IAccount, CallOption } from './interface'
 import { IProvider } from '../provider'
 import { IAuthorizer, IAuthorization, PrivateKeyAuth } from '../auth'
 import { AccountAddress, FunctionId, TypeTag, Arg } from '../types'
-import { BcsSerializer } from '../generated/runtime/bcs/mod'
+import { BcsSerializer } from '../types/bcs'
 import {
   RoochTransaction,
   RoochTransactionData,
@@ -21,7 +21,6 @@ import {
   addressToSeqNumber,
 } from '../utils'
 import { Ed25519Keypair } from '../utils/keypairs'
-import { bigint } from 'superstruct'
 
 export class Account implements IAccount {
   private provider: IProvider
@@ -106,11 +105,15 @@ export class Account implements IAccount {
     return new Account(this.provider, this.address, auth)
   }
 
-  private async registerSessionKey(authKey: AccountAddress, scope: string): Promise<void> {
+  async registerSessionKey(authKey: AccountAddress, scope: string): Promise<void> {
     const parts = scope.split('::')
     if (parts.length !== 3) {
       throw new Error('invalid scope')
     }
+
+    const scopeModuleAddress = parts[0]
+    const scopeModuleName = parts[1]
+    const scopeFunctionName = parts[2]
 
     await this.runFunction(
       '0x3::session_key::create_session_key_entry',
@@ -121,28 +124,28 @@ export class Account implements IAccount {
           value: addressToSeqNumber(authKey),
         },
         {
-          type: { Vector: 'Address' },
-          value: Array.from(parts[0]),
+          type: 'Address',
+          value: scopeModuleAddress,
         },
         {
-          type: { Vector: 'U8' },
-          value: Array.from(parts[1]),
+          type: 'Ascii',
+          value: scopeModuleName,
         },
         {
-          type: { Vector: 'U8' },
-          value: Array.from(parts[2]),
+          type: 'Ascii',
+          value: scopeFunctionName,
         },
         {
-          type: { Vector: 'U64' },
+          type: 'U64',
           value: BigInt(3600),
         },
         {
-          type: { Vector: 'U64' },
+          type: 'U64',
           value: BigInt(300),
-        }
+        },
       ],
       {
-        maxGasAmount: 1000000,
+        maxGasAmount: 100000000,
       },
     )
   }

@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { fromHexString } from './hex'
 import { ROOCH_ADDRESS_LENGTH } from '../constants'
-import * as rooch_types from '../generated/runtime/rooch_types/mod'
-import { bytes as Bytes, Seq, Tuple, ListTuple, uint8 } from '../generated/runtime/serde/mod'
-import { BcsSerializer } from '../generated/runtime/bcs/mod'
 import { AccountAddress, FunctionId, TypeTag, StructTag, Arg } from '../types'
+import * as rooch_types from '../types/bcs'
+import { bytes as Bytes, Seq, Tuple, ListTuple, uint8, BcsSerializer } from '../types/bcs'
 import { parseFunctionId, normalizeRoochAddress } from './encode'
 
 export function encodeFunctionCall(
@@ -49,11 +48,13 @@ export function typeTagToSCS(ty: TypeTag): rooch_types.TypeTag {
   if (ty === 'Signer') {
     return new rooch_types.TypeTagVariantsigner()
   }
-  if ('Vector' in ty) {
-    return new rooch_types.TypeTagVariantvector(typeTagToSCS(ty.Vector))
+  if ((ty as { Vector: TypeTag }).Vector) {
+    return new rooch_types.TypeTagVariantvector(typeTagToSCS((ty as { Vector: TypeTag }).Vector))
   }
-  if ('Struct' in ty) {
-    return new rooch_types.TypeTagVariantstruct(structTagToSCS(ty.Struct))
+  if ((ty as { Struct: StructTag }).Struct) {
+    return new rooch_types.TypeTagVariantstruct(
+      structTagToSCS((ty as { Struct: StructTag }).Struct),
+    )
   }
   throw new Error(`invalid type tag: ${ty}`)
 }
@@ -112,6 +113,14 @@ function bytesToSeq(byteArray: Bytes): Seq<number> {
   return Array.from(byteArray)
 }
 
+function stringToSeq(str: string): Seq<number> {
+  const seq = new Array<number>()
+  for (let i = 0; i < str.length; i++) {
+    seq.push(str.charCodeAt(i))
+  }
+  return seq
+}
+
 function bytesArrayToSeqSeq(input: Bytes[]): Seq<Seq<number>> {
   return input.map((byteArray) => bytesToSeq(byteArray))
 }
@@ -165,6 +174,14 @@ function serializeValue(value: any, type: TypeTag, se: BcsSerializer) {
     const list = addressToListTuple(normalizeRoochAddress(value as string))
     const accountAddress = new rooch_types.AccountAddress(list)
     accountAddress.serialize(se)
+  } else if (type === 'Ascii') {
+    const bytes = stringToSeq(value as string)
+    const moveAsciiString = new rooch_types.MoveAsciiString(bytes)
+    moveAsciiString.serialize(se)
+  } else if (type === 'String') {
+    const bytes = stringToSeq(value as string)
+    const moveString = new rooch_types.MoveString(bytes)
+    moveString.serialize(se)
   } else if ((type as { Vector: TypeTag }).Vector) {
     const vectorValues = value as any[]
     se.serializeLen(vectorValues.length)
