@@ -2,7 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { JsonRpcProvider, Ed25519Keypair, PrivateKeyAuth, Account } from '../../src'
+import {
+  JsonRpcProvider,
+  Ed25519Keypair,
+  PrivateKeyAuth,
+  Account,
+  addressToSeqNumber,
+} from '../../src'
 import { RoochServer } from './servers/rooch-server'
 
 describe('SDK', () => {
@@ -59,6 +65,107 @@ describe('SDK', () => {
       )
 
       expect(tx).toBeDefined()
+    })
+  })
+
+  describe('#sessionKey', () => {
+    it('Create session account by registerSessionKey should be ok', async () => {
+      const provider = new JsonRpcProvider()
+
+      const kp = Ed25519Keypair.deriveKeypair(
+        'fiber tube acid imitate frost coffee choose crowd grass topple donkey submit',
+      )
+      const roochAddress = kp.getPublicKey().toRoochAddress()
+      const authorizer = new PrivateKeyAuth(kp)
+
+      console.log('roochAddress:', roochAddress)
+
+      const account = new Account(provider, roochAddress, authorizer)
+      expect(account).toBeDefined()
+
+      // create session account
+      const kp2 = Ed25519Keypair.generate()
+      await account.registerSessionKey(
+        kp2.getPublicKey().toRoochAddress(),
+        '0x3::empty::empty',
+        3600,
+        100,
+      )
+      const auth = new PrivateKeyAuth(kp2)
+      const sessionAccount = new Account(provider, roochAddress, auth)
+
+      // view session Keys
+      const sessionKey = kp2.getPublicKey().toRoochAddress()
+      const session = await provider.executeViewFunction(
+        '0x3::session_key::get_session_key',
+        [],
+        [
+          {
+            type: 'Address',
+            value: roochAddress,
+          },
+          {
+            type: { Vector: 'U8' },
+            value: addressToSeqNumber(sessionKey),
+          },
+        ],
+      )
+      console.log('session:', JSON.stringify(session))
+
+      // run function with sessoin key
+      const tx = await sessionAccount.runFunction('0x3::empty::empty', [], [], {
+        maxGasAmount: 100000000,
+      })
+
+      expect(tx).toBeDefined()
+    })
+
+    it('Create session account by createSessionAccount should be ok', async () => {
+      const provider = new JsonRpcProvider()
+
+      const kp = Ed25519Keypair.generate()
+      const roochAddress = kp.getPublicKey().toRoochAddress()
+      const authorizer = new PrivateKeyAuth(kp)
+
+      console.log('roochAddress:', roochAddress)
+
+      const account = new Account(provider, roochAddress, authorizer)
+      expect(account).toBeDefined()
+
+      // create session account
+      const sessionAccount = await account.createSessionAccount('0x3::empty::empty', 3600, 100)
+      expect(sessionAccount).toBeDefined()
+
+      // run function with sessoin key
+      const tx = await sessionAccount.runFunction('0x3::empty::empty', [], [], {
+        maxGasAmount: 100000000,
+      })
+
+      expect(tx).toBeDefined()
+    })
+
+    it('Session account runFunction out of score should fail', async () => {
+      const provider = new JsonRpcProvider()
+
+      const kp = Ed25519Keypair.generate()
+      const roochAddress = kp.getPublicKey().toRoochAddress()
+      const authorizer = new PrivateKeyAuth(kp)
+
+      console.log('roochAddress:', roochAddress)
+
+      const account = new Account(provider, roochAddress, authorizer)
+      expect(account).toBeDefined()
+
+      // create session account
+      const sessionAccount = await account.createSessionAccount('0x3::account::*', 3600, 100)
+      expect(sessionAccount).toBeDefined()
+
+      expect(async () => {
+        // run function out of scope
+        await sessionAccount.runFunction('0x3::empty::empty', [], [], {
+          maxGasAmount: 100000000,
+        })
+      }).rejects.toThrow()
     })
   })
 })

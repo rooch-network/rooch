@@ -7,9 +7,8 @@ export type Bool = boolean
 export type U8 = number
 export type U16 = number
 export type U64 = bigint
-export type U128 = number
-export type U256 = string
-export type I64 = number
+export type U128 = bigint
+export type U256 = bigint
 export type BlockNumber = number
 export type AuthenticationKey = string
 export type MultiEd25519PublicKey = string
@@ -36,10 +35,12 @@ export type TypeTag =
   | 'U128'
   | 'Address'
   | 'Signer'
+  | 'Ascii'
+  | 'String'
   | { Vector: TypeTag }
   | { Struct: StructTag }
 
-export type ArgType = Bool | U8 | U64 | U128 | AccountAddress
+export type ArgType = Bool | U8 | U64 | U128 | string | AccountAddress | ArgType[]
 export type Arg = {
   type: TypeTag
   value: ArgType

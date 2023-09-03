@@ -9,6 +9,7 @@ use move_core_types::{
     identifier::Identifier,
     language_storage::{StructTag, TypeTag},
 };
+use moveos_types::move_string::{MoveAsciiString, MoveString};
 use moveos_types::transaction::MoveAction;
 use rooch_types::error::RoochResult;
 use rooch_types::transaction::rooch::RoochTransaction;
@@ -16,6 +17,7 @@ use serde_reflection::{Samples, Tracer, TracerConfig};
 use std::fmt::Debug;
 use std::fs;
 use std::path::Path;
+use std::str::FromStr;
 
 #[derive(Debug, Parser)]
 pub struct ExportRoochTypesCommand {
@@ -85,6 +87,16 @@ fn export_rooch_types_yaml(file_path: &String) -> RoochResult<()> {
     tracer.trace_type::<TypeTag>(&samples).unwrap();
     tracer.trace_type::<MoveAction>(&samples).unwrap();
     tracer.trace_type::<RoochTransaction>(&samples).unwrap();
+
+    // More types
+    let example_ascii_string: MoveAsciiString = MoveAsciiString::from_str("test").unwrap();
+    tracer
+        .trace_value(&mut samples, &example_ascii_string)
+        .unwrap();
+    let example_move_string: MoveString = MoveString::from_str("test").unwrap();
+    tracer
+        .trace_value(&mut samples, &example_move_string)
+        .unwrap();
 
     match tracer.registry() {
         Ok(registry) => {

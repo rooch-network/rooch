@@ -4,16 +4,23 @@
 import { DEFAULT_MAX_GAS_AMOUNT } from '../constants'
 import { IAccount, CallOption } from './interface'
 import { IProvider } from '../provider'
-import { IAuthorizer, IAuthorization } from '../auth'
+import { IAuthorizer, IAuthorization, PrivateKeyAuth } from '../auth'
 import { AccountAddress, FunctionId, TypeTag, Arg } from '../types'
-import { BcsSerializer } from '../generated/runtime/bcs/mod'
+import { BcsSerializer } from '../types/bcs'
 import {
   RoochTransaction,
   RoochTransactionData,
   AccountAddress as BCSAccountAddress,
   Authenticator,
 } from '../generated/runtime/rooch_types/mod'
-import { encodeArgs, encodeFunctionCall, addressToListTuple, uint8Array2SeqNumber } from '../utils'
+import {
+  encodeArg,
+  encodeFunctionCall,
+  addressToListTuple,
+  uint8Array2SeqNumber,
+  addressToSeqNumber,
+} from '../utils'
+import { Ed25519Keypair } from '../utils/keypairs'
 
 export class Account implements IAccount {
   private provider: IProvider
@@ -35,7 +42,7 @@ export class Account implements IAccount {
     opts: CallOption,
   ): Promise<string> {
     const number = await this.sequenceNumber()
-    const bcsArgs = args.map((arg) => encodeArgs(arg))
+    const bcsArgs = args.map((arg) => encodeArg(arg))
     const scriptFunction = encodeFunctionCall(funcId, tyArgs, bcsArgs)
     const txData = new RoochTransactionData(
       new BCSAccountAddress(addressToListTuple(this.address)),
@@ -89,5 +96,74 @@ export class Account implements IAccount {
     }
 
     return 0
+  }
+
+  async createSessionAccount(
+    scope: string,
+    expirationTime: number,
+    maxInactiveInterval: number,
+    opts?: CallOption,
+  ): Promise<IAccount> {
+    const kp = Ed25519Keypair.generate()
+    await this.registerSessionKey(
+      kp.getPublicKey().toRoochAddress(),
+      scope,
+      expirationTime,
+      maxInactiveInterval,
+      opts,
+    )
+    const auth = new PrivateKeyAuth(kp)
+    return new Account(this.provider, this.address, auth)
+  }
+
+  async registerSessionKey(
+    authKey: AccountAddress,
+    scope: string,
+    expirationTime: number,
+    maxInactiveInterval: number,
+    opts?: CallOption,
+  ): Promise<void> {
+    const parts = scope.split('::')
+    if (parts.length !== 3) {
+      throw new Error('invalid scope')
+    }
+
+    const scopeModuleAddress = parts[0]
+    const scopeModuleName = parts[1]
+    const scopeFunctionName = parts[2]
+
+    await this.runFunction(
+      '0x3::session_key::create_session_key_entry',
+      [],
+      [
+        {
+          type: { Vector: 'U8' },
+          value: addressToSeqNumber(authKey),
+        },
+        {
+          type: 'Address',
+          value: scopeModuleAddress,
+        },
+        {
+          type: 'Ascii',
+          value: scopeModuleName,
+        },
+        {
+          type: 'Ascii',
+          value: scopeFunctionName,
+        },
+        {
+          type: 'U64',
+          value: BigInt(expirationTime),
+        },
+        {
+          type: 'U64',
+          value: BigInt(maxInactiveInterval),
+        },
+      ],
+      opts || {
+        maxGasAmount: 100000000,
+      },
+    )
   }
 }

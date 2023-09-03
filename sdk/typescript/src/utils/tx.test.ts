@@ -8,8 +8,10 @@ import {
   structTagToSCS,
   addressToSCS,
   encodeStructTypeTags,
+  encodeArg,
 } from './tx'
-import { TypeTag, StructTag, AccountAddress } from '../types'
+import { toHexString } from './hex'
+import { TypeTag, StructTag, AccountAddress, Arg } from '../types'
 import * as rooch_types from '../generated/runtime/rooch_types/mod'
 import { bytes } from '../generated/runtime/serde/mod'
 
@@ -74,5 +76,18 @@ describe('encodeStructTypeTags', () => {
     expect(result).toHaveLength(1)
     expect(result[0]).toHaveProperty('Struct')
     // Add more assertions to check the properties of the result object.
+  })
+})
+
+describe('encodeArg', () => {
+  it('should encode Vector TypeTag', () => {
+    const arg = {
+      type: { Vector: 'U8' },
+      value: [100],
+    } as Arg
+
+    const result = encodeArg(arg)
+
+    expect(toHexString(result)).toBe('0x0164')
   })
 })

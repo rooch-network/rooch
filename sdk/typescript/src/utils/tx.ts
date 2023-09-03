@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { fromHexString } from './hex'
 import { ROOCH_ADDRESS_LENGTH } from '../constants'
-import * as rooch_types from '../generated/runtime/rooch_types/mod'
-import { bytes as Bytes, Seq, Tuple, ListTuple, uint8 } from '../generated/runtime/serde/mod'
-import { BcsSerializer } from '../generated/runtime/bcs/mod'
 import { AccountAddress, FunctionId, TypeTag, StructTag, Arg } from '../types'
-import { parseFunctionId } from './encode'
+import * as rooch_types from '../types/bcs'
+import { bytes as Bytes, Seq, Tuple, ListTuple, uint8, BcsSerializer } from '../types/bcs'
+import { parseFunctionId, normalizeRoochAddress } from './encode'
 
 export function encodeFunctionCall(
   functionId: FunctionId,
@@ -49,11 +48,13 @@ export function typeTagToSCS(ty: TypeTag): rooch_types.TypeTag {
   if (ty === 'Signer') {
     return new rooch_types.TypeTagVariantsigner()
   }
-  if ('Vector' in ty) {
-    return new rooch_types.TypeTagVariantvector(typeTagToSCS(ty.Vector))
+  if ((ty as { Vector: TypeTag }).Vector) {
+    return new rooch_types.TypeTagVariantvector(typeTagToSCS((ty as { Vector: TypeTag }).Vector))
   }
-  if ('Struct' in ty) {
-    return new rooch_types.TypeTagVariantstruct(structTagToSCS(ty.Struct))
+  if ((ty as { Struct: StructTag }).Struct) {
+    return new rooch_types.TypeTagVariantstruct(
+      structTagToSCS((ty as { Struct: StructTag }).Struct),
+    )
   }
   throw new Error(`invalid type tag: ${ty}`)
 }
@@ -108,8 +109,20 @@ function encodeStructTypeTag(str: string): TypeTag {
   return result
 }
 
+function bytesToSeq(byteArray: Bytes): Seq<number> {
+  return Array.from(byteArray)
+}
+
+function stringToSeq(str: string): Seq<number> {
+  const seq = new Array<number>()
+  for (let i = 0; i < str.length; i++) {
+    seq.push(str.charCodeAt(i))
+  }
+  return seq
+}
+
 function bytesArrayToSeqSeq(input: Bytes[]): Seq<Seq<number>> {
-  return input.map((byteArray) => Array.from(byteArray))
+  return input.map((byteArray) => bytesToSeq(byteArray))
 }
 
 export function addressToListTuple(ethAddress: string): ListTuple<[uint8]> {
@@ -118,7 +131,7 @@ export function addressToListTuple(ethAddress: string): ListTuple<[uint8]> {
 
   // Check if the address is valid
   if (cleanedEthAddress.length !== ROOCH_ADDRESS_LENGTH) {
-    throw new Error('Invalid Ethereum address')
+    throw new Error('Invalid Rooch address')
   }
 
   // Convert to list of tuples
@@ -131,28 +144,62 @@ export function addressToListTuple(ethAddress: string): ListTuple<[uint8]> {
   return listTuple
 }
 
-export function encodeArgs(arg: Arg): Bytes {
-  const se = new BcsSerializer()
+export function addressToSeqNumber(ethAddress: string): Seq<number> {
+  // Remove '0x' prefix
+  const cleanedEthAddress = ethAddress.startsWith('0x') ? ethAddress.slice(2) : ethAddress
 
-  if (arg.type === 'Bool') {
-    se.serializeBool(arg.value as boolean)
-  } else if (arg.type === 'U8') {
-    se.serializeU8(arg.value as number)
-  } else if (arg.type === 'U64') {
-    se.serializeU64(arg.value as bigint | number)
-  } else if (arg.type === 'U128') {
-    se.serializeU128(arg.value as bigint | number)
-  } else if (arg.type === 'Address') {
-    const list = addressToListTuple(arg.value as string)
-    const accountAddress = new rooch_types.AccountAddress(list)
-    accountAddress.serialize(se)
+  // Check if the address is valid
+  if (cleanedEthAddress.length !== ROOCH_ADDRESS_LENGTH) {
+    throw new Error('Invalid Ethereum address')
   }
 
+  // Convert to list of tuples
+  const seqNumber: Seq<number> = []
+  for (let i = 0; i < cleanedEthAddress.length; i += 2) {
+    const byte = parseInt(cleanedEthAddress.slice(i, i + 2), 16)
+    seqNumber.push(byte)
+  }
+
+  return seqNumber
+}
+
+function serializeValue(value: any, type: TypeTag, se: BcsSerializer) {
+  if (type === 'Bool') {
+    se.serializeBool(value)
+  } else if (type === 'U8') {
+    se.serializeU8(value)
+  } else if (type === 'U64') {
+    se.serializeU64(value)
+  } else if (type === 'Address') {
+    const list = addressToListTuple(normalizeRoochAddress(value as string))
+    const accountAddress = new rooch_types.AccountAddress(list)
+    accountAddress.serialize(se)
+  } else if (type === 'Ascii') {
+    const bytes = stringToSeq(value as string)
+    const moveAsciiString = new rooch_types.MoveAsciiString(bytes)
+    moveAsciiString.serialize(se)
+  } else if (type === 'String') {
+    const bytes = stringToSeq(value as string)
+    const moveString = new rooch_types.MoveString(bytes)
+    moveString.serialize(se)
+  } else if ((type as { Vector: TypeTag }).Vector) {
+    const vectorValues = value as any[]
+    se.serializeLen(vectorValues.length)
+
+    for (let item of vectorValues) {
+      serializeValue(item, (type as { Vector: TypeTag }).Vector, se)
+    }
+  }
+}
+
+export function encodeArg(arg: Arg): Bytes {
+  const se = new BcsSerializer()
+  serializeValue(arg.value, arg.type, se)
   return se.getBytes()
 }
 
 export const encodeMoveCallData = (funcId: FunctionId, tyArgs: TypeTag[], args: Arg[]) => {
-  const bcsArgs = args?.map((arg) => encodeArgs(arg))
+  const bcsArgs = args?.map((arg) => encodeArg(arg))
   const scriptFunction = encodeFunctionCall(funcId, tyArgs, bcsArgs)
 
   const payloadInHex = (() => {

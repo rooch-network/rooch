@@ -5,7 +5,7 @@ import { Bytes } from '../types'
 import { Keypair } from '../utils/crypto'
 import { IAuthorization, IAuthorizer } from './interface'
 
-export const SCHEME_ED25519: number = 0
+const SCHEME_ED25519: number = 0
 
 export class PrivateKeyAuth implements IAuthorizer {
   private pk: Keypair
