@@ -55,6 +55,7 @@ pub fn http_client(url: impl AsRef<str>) -> Result<HttpClient> {
 pub struct ServerHandle {
     handle: jsonrpsee::server::ServerHandle,
     timer: Timer,
+    _store_config: StoreConfig,
 }
 
 impl ServerHandle {
@@ -231,7 +232,11 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
     info!("JSON-RPC HTTP Server start listening {:?}", addr);
     info!("Available JSON-RPC methods : {:?}", methods_names);
 
-    Ok(ServerHandle { handle, timer })
+    Ok(ServerHandle {
+        handle,
+        timer,
+        _store_config: store_config,
+    })
 }
 
 fn _build_rpc_api<M: Send + Sync + 'static>(mut rpc_module: RpcModule<M>) -> RpcModule<M> {
@@ -259,7 +264,7 @@ fn init_storage(store_config: &StoreConfig) -> Result<(MoveOSStore, RoochStore)>
     let moveosdb = MoveOSDB::new(StoreInstance::new_db_instance(RocksDB::new(
         moveos_db_path,
         moveos_store::StoreMeta::get_column_family_names().to_vec(),
-        RocksdbConfig::default(),
+        store_config.rocksdb_config(),
         None,
     )?))?;
     let lastest_state_root = moveosdb
@@ -275,7 +280,7 @@ fn init_storage(store_config: &StoreConfig) -> Result<(MoveOSStore, RoochStore)>
     let rooch_store = RoochStore::new(StoreInstance::new_db_instance(RocksDB::new(
         rooch_db_path,
         rooch_store::StoreMeta::get_column_family_names().to_vec(),
-        RocksdbConfig::default(),
+        store_config.rocksdb_config(),
         None,
     )?))?;
     Ok((moveos_store, rooch_store))
