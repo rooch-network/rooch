@@ -8,6 +8,14 @@ export interface CallOption {
 }
 
 export interface IAccount {
+  /**
+   * Run move function by current account
+   *
+   * @param funcId FunctionId the function like '0x3::empty::empty'
+   * @param tyArgs Generic parameter list
+   * @param args parameter list
+   * @param opts Call option
+   */
   runFunction(
     funcId: FunctionId,
     tyArgs?: TypeTag[],
@@ -16,11 +24,17 @@ export interface IAccount {
   ): Promise<string>
 
   /**
-   * createSessionAccount
+   * Create session account with scope
    *
-   * create a sub account with session key
-   *
-   * @param scope
+   * @param scope string the scope of created account
+   * @param expirationTime  number The expiration time of created account
+   * @param maxInactiveInterval  number The max inactive interval
+   * @param opts CallOption
    */
-  createSessionAccount(scope: string): Promise<IAccount>
+  createSessionAccount(
+    scope: string,
+    expirationTime: number,
+    maxInactiveInterval: number,
+    opts?: CallOption,
+  ): Promise<IAccount>
 }

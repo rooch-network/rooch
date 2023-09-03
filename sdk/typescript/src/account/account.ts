@@ -98,14 +98,31 @@ export class Account implements IAccount {
     return 0
   }
 
-  async createSessionAccount(scope: string): Promise<IAccount> {
+  async createSessionAccount(
+    scope: string,
+    expirationTime: number,
+    maxInactiveInterval: number,
+    opts?: CallOption,
+  ): Promise<IAccount> {
     const kp = Ed25519Keypair.generate()
-    await this.registerSessionKey(kp.getPublicKey().toRoochAddress(), scope)
+    await this.registerSessionKey(
+      kp.getPublicKey().toRoochAddress(),
+      scope,
+      expirationTime,
+      maxInactiveInterval,
+      opts,
+    )
     const auth = new PrivateKeyAuth(kp)
     return new Account(this.provider, this.address, auth)
   }
 
-  async registerSessionKey(authKey: AccountAddress, scope: string): Promise<void> {
+  async registerSessionKey(
+    authKey: AccountAddress,
+    scope: string,
+    expirationTime: number,
+    maxInactiveInterval: number,
+    opts?: CallOption,
+  ): Promise<void> {
     const parts = scope.split('::')
     if (parts.length !== 3) {
       throw new Error('invalid scope')
@@ -137,14 +154,14 @@ export class Account implements IAccount {
         },
         {
           type: 'U64',
-          value: BigInt(3600),
+          value: BigInt(expirationTime),
         },
         {
           type: 'U64',
-          value: BigInt(300),
+          value: BigInt(maxInactiveInterval),
         },
       ],
-      {
+      opts || {
         maxGasAmount: 100000000,
       },
     )
