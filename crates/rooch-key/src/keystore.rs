@@ -13,7 +13,7 @@ use rand::{rngs::StdRng, SeedableRng};
 use rooch_types::{
     address::RoochAddress,
     authentication_key::AuthenticationKey,
-    coin_type::Coin,
+    coin_type::CoinID,
     crypto::{get_key_pair_from_rng, PublicKey, RoochKeyPair, Signature},
     transaction::{
         authenticator::{self, Authenticator},
@@ -40,43 +40,43 @@ pub enum Keystore {
 
 #[enum_dispatch]
 pub trait AccountKeystore: Send + Sync {
-    fn add_key_pair_by_coin(
+    fn add_key_pair_by_coin_id(
         &mut self,
         keypair: RoochKeyPair,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<(), anyhow::Error>;
     fn get_address_public_keys(&self) -> Vec<(RoochAddress, PublicKey)>;
-    fn get_public_key_by_coin(&self, coin: Coin) -> Result<PublicKey, anyhow::Error>;
+    fn get_public_key_by_coin_id(&self, coin_id: CoinID) -> Result<PublicKey, anyhow::Error>;
     fn get_key_pairs(&self, address: &RoochAddress) -> Result<Vec<&RoochKeyPair>, anyhow::Error>;
-    fn get_key_pair_by_coin(
+    fn get_key_pair_by_coin_id(
         &self,
         address: &RoochAddress,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<&RoochKeyPair, signature::Error>;
-    fn update_key_pair_by_coin(
+    fn update_key_pair_by_coin_id(
         &mut self,
         address: &RoochAddress,
         keypair: RoochKeyPair,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<(), anyhow::Error>;
-    fn nullify_key_pair_by_coin(
+    fn nullify_key_pair_by_coin_id(
         &mut self,
         address: &RoochAddress,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<(), anyhow::Error>;
 
     fn sign_hashed(
         &self,
         address: &RoochAddress,
         msg: &[u8],
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<Signature, signature::Error>;
 
     fn sign_rooch_transaction(
         &self,
         address: &RoochAddress,
         msg: RoochTransactionData,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<RoochTransaction, signature::Error>;
 
     fn sign_ethereum_transaction(
@@ -88,7 +88,7 @@ pub trait AccountKeystore: Send + Sync {
         &self,
         address: &RoochAddress,
         msg: &T,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<Signature, signature::Error>
     where
         T: Serialize;
@@ -102,60 +102,60 @@ pub trait AccountKeystore: Send + Sync {
 
     fn generate_and_add_new_key(
         &mut self,
-        crypto_coin: Coin,
+        coin_id: CoinID,
         derivation_path: Option<DerivationPath>,
         word_length: Option<String>,
-    ) -> Result<(RoochAddress, String, Coin), anyhow::Error> {
-        let (address, kp, coin, phrase) =
-            generate_new_rooch_key(crypto_coin, derivation_path, word_length)?;
-        self.add_key_pair_by_coin(kp, coin)?;
-        Ok((address, phrase, coin))
+    ) -> Result<(RoochAddress, String, CoinID), anyhow::Error> {
+        let (address, kp, coin_id, phrase) =
+            generate_new_rooch_key(coin_id, derivation_path, word_length)?;
+        self.add_key_pair_by_coin_id(kp, coin_id)?;
+        Ok((address, phrase, coin_id))
     }
 
     fn import_from_mnemonic(
         &mut self,
         phrase: &str,
-        crypto_coin: Coin,
+        coin_id: CoinID,
         derivation_path: Option<DerivationPath>,
     ) -> Result<RoochAddress, anyhow::Error> {
         let mnemonic = Mnemonic::from_phrase(phrase, Language::English)
             .map_err(|e| anyhow::anyhow!("Invalid mnemonic phrase: {:?}", e))?;
         let seed = Seed::new(&mnemonic, "");
-        match derive_rooch_key_pair_from_path(seed.as_bytes(), derivation_path, &crypto_coin) {
+        match derive_rooch_key_pair_from_path(seed.as_bytes(), derivation_path, &coin_id) {
             Ok((address, kp)) => {
-                self.add_key_pair_by_coin(kp, crypto_coin)?;
+                self.add_key_pair_by_coin_id(kp, coin_id)?;
                 Ok(address)
             }
             Err(e) => Err(anyhow!("error getting keypair {:?}", e)),
         }
     }
 
-    fn update_address_with_key_pair_from_coin(
+    fn update_address_with_key_pair_from_coin_id(
         &mut self,
         address: &RoochAddress,
         phrase: String,
-        crypto_coin: Coin,
+        coin_id: CoinID,
         derivation_path: Option<DerivationPath>,
     ) -> Result<PublicKey, anyhow::Error> {
         let mnemonic = Mnemonic::from_phrase(phrase.as_str(), Language::English)
             .map_err(|e| anyhow::anyhow!("Invalid mnemonic phrase: {:?}", e))?;
         let seed = Seed::new(&mnemonic, "");
-        match derive_rooch_key_pair_from_path(seed.as_bytes(), derivation_path, &crypto_coin) {
+        match derive_rooch_key_pair_from_path(seed.as_bytes(), derivation_path, &coin_id) {
             Ok((_, kp)) => {
                 let public_key = kp.public();
-                self.update_key_pair_by_coin(address, kp, crypto_coin)?;
+                self.update_key_pair_by_coin_id(address, kp, coin_id)?;
                 Ok(public_key)
             }
             Err(e) => Err(anyhow!("error getting keypair {:?}", e)),
         }
     }
 
-    fn nullify_address_with_key_pair_from_coin(
+    fn nullify_address_with_key_pair_from_coin_id(
         &mut self,
         address: &RoochAddress,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<(), anyhow::Error> {
-        self.nullify_key_pair_by_coin(address, coin)?;
+        self.nullify_key_pair_by_coin_id(address, coin_id)?;
         Ok(())
     }
 
@@ -192,14 +192,14 @@ impl Display for Keystore {
 #[derive(Default, Serialize, Deserialize)]
 #[serde_as]
 pub(crate) struct BaseKeyStore {
-    keys: BTreeMap<RoochAddress, BTreeMap<Coin, RoochKeyPair>>,
+    keys: BTreeMap<RoochAddress, BTreeMap<CoinID, RoochKeyPair>>,
     /// RoochAddress -> BTreeMap<AuthenticationKey, RoochKeyPair>
     #[serde_as(as = "BTreeMap<DisplayFromStr, BTreeMap<DisplayFromStr, _>>")]
     session_keys: BTreeMap<RoochAddress, BTreeMap<AuthenticationKey, RoochKeyPair>>,
 }
 
 impl BaseKeyStore {
-    pub fn new(keys: BTreeMap<RoochAddress, BTreeMap<Coin, RoochKeyPair>>) -> Self {
+    pub fn new(keys: BTreeMap<RoochAddress, BTreeMap<CoinID, RoochKeyPair>>) -> Self {
         Self {
             keys,
             session_keys: BTreeMap::new(),
@@ -208,18 +208,18 @@ impl BaseKeyStore {
 }
 
 impl AccountKeystore for BaseKeyStore {
-    fn get_key_pair_by_coin(
+    fn get_key_pair_by_coin_id(
         &self,
         address: &RoochAddress,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<&RoochKeyPair, signature::Error> {
         if let Some(inner_map) = self.keys.get(address) {
-            if let Some(keypair) = inner_map.get(&coin) {
+            if let Some(keypair) = inner_map.get(&coin_id) {
                 Ok(keypair)
             } else {
                 Err(signature::Error::from_source(format!(
-                    "Coin not found for address: [{:?}]",
-                    coin
+                    "CoinID not found for address: [{:?}]",
+                    coin_id
                 )))
             }
         } else {
@@ -234,11 +234,11 @@ impl AccountKeystore for BaseKeyStore {
         &self,
         address: &RoochAddress,
         msg: &[u8],
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<Signature, signature::Error> {
         Ok(Signature::new_hashed(
             msg,
-            self.get_key_pair_by_coin(address, coin)?,
+            self.get_key_pair_by_coin_id(address, coin_id)?,
         ))
     }
 
@@ -246,14 +246,14 @@ impl AccountKeystore for BaseKeyStore {
         &self,
         address: &RoochAddress,
         msg: &T,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<Signature, signature::Error>
     where
         T: Serialize,
     {
         Ok(Signature::new_secure(
             msg,
-            self.get_key_pair_by_coin(address, coin)?,
+            self.get_key_pair_by_coin_id(address, coin_id)?,
         ))
     }
 
@@ -261,10 +261,10 @@ impl AccountKeystore for BaseKeyStore {
         &self,
         address: &RoochAddress,
         msg: RoochTransactionData,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<RoochTransaction, signature::Error> {
         let kp = self
-            .get_key_pair_by_coin(address, coin)
+            .get_key_pair_by_coin_id(address, coin_id)
             .ok()
             .ok_or_else(|| {
                 signature::Error::from_source(format!("Cannot find key for address: [{address}]"))
@@ -288,26 +288,26 @@ impl AccountKeystore for BaseKeyStore {
         Ok((transaction, auth))
     }
 
-    fn add_key_pair_by_coin(
+    fn add_key_pair_by_coin_id(
         &mut self,
         keypair: RoochKeyPair,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<(), anyhow::Error> {
         let address: RoochAddress = (&keypair.public()).into();
         self.keys
             .entry(address)
             .or_insert_with(BTreeMap::new)
-            .insert(coin, keypair);
+            .insert(coin_id, keypair);
         Ok(())
     }
 
-    fn get_public_key_by_coin(&self, coin: Coin) -> Result<PublicKey, anyhow::Error> {
+    fn get_public_key_by_coin_id(&self, coin_id: CoinID) -> Result<PublicKey, anyhow::Error> {
         for inner_map in self.keys.values() {
-            if let Some(keypair) = inner_map.get(&coin) {
+            if let Some(keypair) = inner_map.get(&coin_id) {
                 return Ok(keypair.public());
             }
         }
-        Err(anyhow!("Cannot find key for coin: [{:?}]", coin))
+        Err(anyhow!("Cannot find key for coin id: [{:?}]", coin_id))
     }
 
     fn get_address_public_keys(&self) -> Vec<(RoochAddress, PublicKey)> {
@@ -332,30 +332,30 @@ impl AccountKeystore for BaseKeyStore {
         }
     }
 
-    fn update_key_pair_by_coin(
+    fn update_key_pair_by_coin_id(
         &mut self,
         address: &RoochAddress,
         keypair: RoochKeyPair,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<(), anyhow::Error> {
         // First, get the inner map associated with the address
         let inner_map = self.keys.entry(*address).or_insert_with(BTreeMap::new);
 
         // Insert or update the keypair for the specified coin in the inner map
-        inner_map.insert(coin, keypair);
+        inner_map.insert(coin_id, keypair);
         Ok(())
     }
 
-    fn nullify_key_pair_by_coin(
+    fn nullify_key_pair_by_coin_id(
         &mut self,
         address: &RoochAddress,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<(), anyhow::Error> {
         // First, get the inner map associated with the address
         let inner_map = self.keys.entry(*address).or_insert_with(BTreeMap::new);
 
         // Remove or nullify the keypair for the specified coin in the inner map
-        inner_map.remove(&coin);
+        inner_map.remove(&coin_id);
         Ok(())
     }
 
@@ -364,7 +364,7 @@ impl AccountKeystore for BaseKeyStore {
         address: &RoochAddress,
     ) -> Result<AuthenticationKey, anyhow::Error> {
         //TODO define derivation_path for session key
-        let (_address, kp, _coin, _phrase) = generate_new_rooch_key(Coin::Rooch, None, None)?;
+        let (_address, kp, _coin_id, _phrase) = generate_new_rooch_key(CoinID::Rooch, None, None)?;
         let authentication_key = kp.public().authentication_key();
         let inner_map = self
             .session_keys
@@ -435,42 +435,42 @@ impl<'de> Deserialize<'de> for FileBasedKeystore {
 }
 
 impl AccountKeystore for FileBasedKeystore {
-    fn get_key_pair_by_coin(
+    fn get_key_pair_by_coin_id(
         &self,
         address: &RoochAddress,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<&RoochKeyPair, signature::Error> {
-        self.keystore.get_key_pair_by_coin(address, coin)
+        self.keystore.get_key_pair_by_coin_id(address, coin_id)
     }
 
     fn sign_hashed(
         &self,
         address: &RoochAddress,
         msg: &[u8],
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<Signature, signature::Error> {
-        self.keystore.sign_hashed(address, msg, coin)
+        self.keystore.sign_hashed(address, msg, coin_id)
     }
 
     fn sign_secure<T>(
         &self,
         address: &RoochAddress,
         msg: &T,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<Signature, signature::Error>
     where
         T: Serialize,
     {
-        self.keystore.sign_secure(address, msg, coin)
+        self.keystore.sign_secure(address, msg, coin_id)
     }
 
     fn sign_rooch_transaction(
         &self,
         address: &RoochAddress,
         msg: RoochTransactionData,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<RoochTransaction, signature::Error> {
-        self.keystore.sign_rooch_transaction(address, msg, coin)
+        self.keystore.sign_rooch_transaction(address, msg, coin_id)
     }
 
     fn sign_ethereum_transaction(
@@ -480,12 +480,12 @@ impl AccountKeystore for FileBasedKeystore {
         self.keystore.sign_ethereum_transaction(transaction)
     }
 
-    fn add_key_pair_by_coin(
+    fn add_key_pair_by_coin_id(
         &mut self,
         keypair: RoochKeyPair,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<(), anyhow::Error> {
-        self.keystore.add_key_pair_by_coin(keypair, coin)?;
+        self.keystore.add_key_pair_by_coin_id(keypair, coin_id)?;
         //TODO should check test env at here?
         if std::env::var_os("TEST_ENV").is_none() {
             self.save()?;
@@ -493,8 +493,8 @@ impl AccountKeystore for FileBasedKeystore {
         Ok(())
     }
 
-    fn get_public_key_by_coin(&self, coin: Coin) -> Result<PublicKey, anyhow::Error> {
-        self.keystore.get_public_key_by_coin(coin)
+    fn get_public_key_by_coin_id(&self, coin_id: CoinID) -> Result<PublicKey, anyhow::Error> {
+        self.keystore.get_public_key_by_coin_id(coin_id)
     }
 
     fn get_address_public_keys(&self) -> Vec<(RoochAddress, PublicKey)> {
@@ -505,14 +505,14 @@ impl AccountKeystore for FileBasedKeystore {
         self.keystore.get_key_pairs(address)
     }
 
-    fn update_key_pair_by_coin(
+    fn update_key_pair_by_coin_id(
         &mut self,
         address: &RoochAddress,
         keypair: RoochKeyPair,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .update_key_pair_by_coin(address, keypair, coin)?;
+            .update_key_pair_by_coin_id(address, keypair, coin_id)?;
         //TODO should check test env at here?
         if std::env::var_os("TEST_ENV").is_none() {
             self.save()?;
@@ -520,12 +520,13 @@ impl AccountKeystore for FileBasedKeystore {
         Ok(())
     }
 
-    fn nullify_key_pair_by_coin(
+    fn nullify_key_pair_by_coin_id(
         &mut self,
         address: &RoochAddress,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<(), anyhow::Error> {
-        self.keystore.nullify_key_pair_by_coin(address, coin)?;
+        self.keystore
+            .nullify_key_pair_by_coin_id(address, coin_id)?;
         //TODO should check test env at here?
         if std::env::var_os("TEST_ENV").is_none() {
             self.save()?;
@@ -605,21 +606,21 @@ impl AccountKeystore for InMemKeystore {
         &self,
         address: &RoochAddress,
         msg: &T,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<Signature, signature::Error>
     where
         T: Serialize,
     {
-        self.keystore.sign_secure(address, msg, coin)
+        self.keystore.sign_secure(address, msg, coin_id)
     }
 
     fn sign_rooch_transaction(
         &self,
         address: &RoochAddress,
         msg: RoochTransactionData,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<RoochTransaction, signature::Error> {
-        self.keystore.sign_rooch_transaction(address, msg, coin)
+        self.keystore.sign_rooch_transaction(address, msg, coin_id)
     }
 
     fn sign_ethereum_transaction(
@@ -629,16 +630,16 @@ impl AccountKeystore for InMemKeystore {
         self.keystore.sign_ethereum_transaction(transaction)
     }
 
-    fn add_key_pair_by_coin(
+    fn add_key_pair_by_coin_id(
         &mut self,
         keypair: RoochKeyPair,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<(), anyhow::Error> {
-        self.keystore.add_key_pair_by_coin(keypair, coin)
+        self.keystore.add_key_pair_by_coin_id(keypair, coin_id)
     }
 
-    fn get_public_key_by_coin(&self, coin: Coin) -> Result<PublicKey, anyhow::Error> {
-        self.keystore.get_public_key_by_coin(coin)
+    fn get_public_key_by_coin_id(&self, coin_id: CoinID) -> Result<PublicKey, anyhow::Error> {
+        self.keystore.get_public_key_by_coin_id(coin_id)
     }
 
     fn get_address_public_keys(&self) -> Vec<(RoochAddress, PublicKey)> {
@@ -649,39 +650,39 @@ impl AccountKeystore for InMemKeystore {
         self.keystore.get_key_pairs(address)
     }
 
-    fn update_key_pair_by_coin(
+    fn update_key_pair_by_coin_id(
         &mut self,
         address: &RoochAddress,
         keypair: RoochKeyPair,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .update_key_pair_by_coin(address, keypair, coin)
+            .update_key_pair_by_coin_id(address, keypair, coin_id)
     }
 
-    fn nullify_key_pair_by_coin(
+    fn nullify_key_pair_by_coin_id(
         &mut self,
         address: &RoochAddress,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<(), anyhow::Error> {
-        self.keystore.nullify_key_pair_by_coin(address, coin)
+        self.keystore.nullify_key_pair_by_coin_id(address, coin_id)
     }
 
-    fn get_key_pair_by_coin(
+    fn get_key_pair_by_coin_id(
         &self,
         address: &RoochAddress,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<&RoochKeyPair, signature::Error> {
-        self.keystore.get_key_pair_by_coin(address, coin)
+        self.keystore.get_key_pair_by_coin_id(address, coin_id)
     }
 
     fn sign_hashed(
         &self,
         address: &RoochAddress,
         msg: &[u8],
-        coin: Coin,
+        coin_id: CoinID,
     ) -> Result<Signature, signature::Error> {
-        self.keystore.sign_hashed(address, msg, coin)
+        self.keystore.sign_hashed(address, msg, coin_id)
     }
 
     fn generate_session_key(
@@ -710,10 +711,10 @@ impl InMemKeystore {
             .map(|(ad, k)| {
                 (
                     ad,
-                    BTreeMap::from_iter(vec![(Coin::Rooch, RoochKeyPair::Ed25519(k))]),
+                    BTreeMap::from_iter(vec![(CoinID::Rooch, RoochKeyPair::Ed25519(k))]),
                 )
             })
-            .collect::<BTreeMap<RoochAddress, BTreeMap<Coin, RoochKeyPair>>>();
+            .collect::<BTreeMap<RoochAddress, BTreeMap<CoinID, RoochKeyPair>>>();
 
         Self {
             keystore: BaseKeyStore::new(keys),
@@ -728,12 +729,12 @@ impl InMemKeystore {
     //             (
     //                 ad,
     //                 BTreeMap::from_iter(vec![(
-    //                     Coin::Ether,
+    //                     CoinID::Ether,
     //                     k,
     //                 )]),
     //             )
     //         })
-    //         .collect::<BTreeMap<RoochAddress, BTreeMap<Coin, RoochKeyPair>>>();
+    //         .collect::<BTreeMap<RoochAddress, BTreeMap<CoinID, RoochKeyPair>>>();
 
     //     Self {
     //         keystore: BaseKeyStore::new(keys),

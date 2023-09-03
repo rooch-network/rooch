@@ -9,7 +9,7 @@ use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, TypeTagView};
 use rooch_types::{
     address::RoochAddress,
-    coin_type::Coin,
+    coin_type::CoinID,
     crypto::BuiltinScheme,
     error::{RoochError, RoochResult},
     transaction::rooch::RoochTransaction,
@@ -55,9 +55,9 @@ pub struct RunFunction {
     #[clap(flatten)]
     tx_options: TransactionOptions,
 
-    /// Command line input of coin schemes
-    #[clap(short = 'c', long = "coin", default_value = "rooch", arg_enum)]
-    pub coin: Coin,
+    /// Command line input of coin ids
+    #[clap(short = 'c', long = "coin-id", default_value = "rooch", arg_enum)]
+    pub coin_id: CoinID,
 }
 
 #[async_trait]
@@ -102,7 +102,7 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                     .map_err(|e| RoochError::SignMessageError(e.to_string()))?;
                 context.execute(tx).await
             }
-            (None, None) => context.sign_and_execute(sender, action, self.coin).await,
+            (None, None) => context.sign_and_execute(sender, action, self.coin_id).await,
         }
     }
 }

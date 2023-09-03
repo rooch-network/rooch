@@ -7,7 +7,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{coin_type::Coin, crypto::Signature};
+use crate::{coin_type::CoinID, crypto::Signature};
 use anyhow::Result;
 #[cfg(any(test, feature = "fuzzing"))]
 use fastcrypto::ed25519::Ed25519KeyPair;
@@ -31,7 +31,7 @@ use std::{fmt, str::FromStr};
 /// It is a part of `AccountAbstraction`
 
 pub trait BuiltinAuthenticator {
-    fn scheme(&self) -> Coin;
+    fn coin_id(&self) -> CoinID;
     fn payload(&self) -> Vec<u8>;
 }
 
@@ -41,8 +41,8 @@ pub struct RoochAuthenticator {
 }
 
 impl BuiltinAuthenticator for RoochAuthenticator {
-    fn scheme(&self) -> Coin {
-        Coin::Rooch
+    fn coin_id(&self) -> CoinID {
+        CoinID::Rooch
     }
     fn payload(&self) -> Vec<u8> {
         self.signature.as_ref().to_vec()
@@ -77,8 +77,8 @@ pub struct EthereumAuthenticator {
 }
 
 impl BuiltinAuthenticator for EthereumAuthenticator {
-    fn scheme(&self) -> Coin {
-        Coin::Ether
+    fn coin_id(&self) -> CoinID {
+        CoinID::Ether
     }
     fn payload(&self) -> Vec<u8> {
         self.signature.as_ref().to_vec()
@@ -114,9 +114,9 @@ where
     T: BuiltinAuthenticator,
 {
     fn from(value: T) -> Self {
-        let scheme = value.scheme() as u64;
+        let coin_id = value.coin_id() as u64;
         let payload = value.payload();
-        Authenticator { scheme, payload }
+        Authenticator { coin_id, payload }
     }
 }
 
@@ -134,14 +134,14 @@ impl From<Secp256k1RecoverableSignature> for Authenticator {
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct Authenticator {
-    pub scheme: u64,
+    pub coin_id: u64,
     pub payload: Vec<u8>,
 }
 
 impl Authenticator {
     /// Unique identifier for the signature scheme
-    pub fn scheme(&self) -> u64 {
-        self.scheme
+    pub fn coin_id(&self) -> u64 {
+        self.coin_id
     }
 
     /// Create a single-signature rooch authenticator
@@ -155,8 +155,8 @@ impl Authenticator {
     }
 
     /// Create a custom authenticator
-    pub fn new(scheme: u64, payload: Vec<u8>) -> Self {
-        Self { scheme, payload }
+    pub fn new(coin_id: u64, payload: Vec<u8>) -> Self {
+        Self { coin_id, payload }
     }
 }
 
@@ -174,8 +174,8 @@ impl fmt::Display for Authenticator {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Authenticator[scheme id: {:?}, payload: {}]",
-            self.scheme(),
+            "Authenticator[coin id: {:?}, payload: {}]",
+            self.coin_id(),
             hex::encode(&self.payload),
         )
     }

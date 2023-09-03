@@ -4,7 +4,6 @@
 use crate::client_config::{ClientConfig, DEFAULT_EXPIRATION_SECS};
 use crate::Client;
 use anyhow::anyhow;
-use dirs::public_dir;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::gas_config::GasConfig;
 use moveos_types::transaction::MoveAction;
@@ -13,10 +12,9 @@ use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG};
 use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView};
 use rooch_types::address::RoochAddress;
-use rooch_types::coin_type::Coin;
-use rooch_types::crypto::{BuiltinScheme, Signature};
+use rooch_types::coin_type::CoinID;
+use rooch_types::crypto::Signature;
 use rooch_types::error::{RoochError, RoochResult};
-use rooch_types::transaction::ethereum::EthereumTransaction;
 use rooch_types::transaction::{
     authenticator::Authenticator,
     rooch::{RoochTransaction, RoochTransactionData},
@@ -111,19 +109,19 @@ impl WalletContext {
         &self,
         sender: RoochAddress,
         action: MoveAction,
-        coin: Coin,
+        coin_id: CoinID,
     ) -> RoochResult<RoochTransaction> {
         let kp = self
             .config
             .keystore
-            .get_key_pair_by_coin(&sender, coin)
+            .get_key_pair_by_coin_id(&sender, coin_id)
             .ok()
             .ok_or_else(|| {
                 RoochError::SignMessageError(format!("Cannot find key for address: [{sender}]"))
             })?;
 
-        match coin {
-            Coin::Rooch => {
+        match coin_id {
+            CoinID::Rooch => {
                 let tx_data = self.build_rooch_tx_data(sender, action).await?;
                 let signature = Signature::new_hashed(tx_data.hash().as_bytes(), kp);
                 Ok(RoochTransaction::new(
@@ -131,9 +129,9 @@ impl WalletContext {
                     Authenticator::rooch(signature),
                 ))
             }
-            Coin::Ether => todo!(),
-            Coin::Bitcoin => todo!(),
-            Coin::Nostr => todo!(),
+            CoinID::Ether => todo!(),
+            CoinID::Bitcoin => todo!(),
+            CoinID::Nostr => todo!(),
         }
     }
 
@@ -152,9 +150,9 @@ impl WalletContext {
         &self,
         sender: RoochAddress,
         action: MoveAction,
-        scheme: Coin,
+        coin_id: CoinID,
     ) -> RoochResult<ExecuteTransactionResponseView> {
-        let tx = self.sign(sender, action, scheme).await?;
+        let tx = self.sign(sender, action, coin_id).await?;
         self.execute(tx).await
     }
 

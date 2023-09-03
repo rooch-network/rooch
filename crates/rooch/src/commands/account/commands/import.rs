@@ -7,7 +7,7 @@ use std::fmt::Debug;
 use async_trait::async_trait;
 use rooch_key::keystore::AccountKeystore;
 use rooch_types::{
-    coin_type::Coin,
+    coin_type::CoinID,
     crypto::BuiltinScheme,
     error::{RoochError, RoochResult},
 };
@@ -33,12 +33,12 @@ impl CommandAction<()> for ImportCommand {
         let address = context
             .config
             .keystore
-            .import_from_mnemonic(&self.mnemonic_phrase, Coin::Rooch, None)
+            .import_from_mnemonic(&self.mnemonic_phrase, CoinID::Rooch, None)
             .map_err(|e| RoochError::ImportAccountError(e.to_string()))?;
 
         println!(
             "Key imported for address on scheme {:?}: [{address}]",
-            Coin::Rooch.to_owned()
+            CoinID::Rooch.to_owned()
         );
 
         Ok(())

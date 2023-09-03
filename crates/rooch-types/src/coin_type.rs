@@ -62,49 +62,49 @@ impl Display for Symbol {
 )]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 #[repr(u64)]
-pub enum Coin {
+pub enum CoinID {
     Bitcoin = 0,
     Ether = 60,
     Nostr = 1237,
     Rooch = 20230101,
 }
 
-impl TryFrom<u64> for Coin {
+impl TryFrom<u64> for CoinID {
     type Error = anyhow::Error;
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
         match value {
-            0 => Ok(Coin::Bitcoin),
-            60 => Ok(Coin::Ether),
-            1237 => Ok(Coin::Nostr),
-            20230101 => Ok(Coin::Rooch),
+            0 => Ok(CoinID::Bitcoin),
+            60 => Ok(CoinID::Ether),
+            1237 => Ok(CoinID::Nostr),
+            20230101 => Ok(CoinID::Rooch),
             _ => Err(anyhow::anyhow!("coin id {} is invalid", value)),
         }
     }
 }
 
-impl TryFrom<&str> for Coin {
+impl TryFrom<&str> for CoinID {
     type Error = anyhow::Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let value = value.to_lowercase();
         match value.as_str() {
-            "bitcoin" => Ok(Coin::Bitcoin),
-            "ether" => Ok(Coin::Ether),
-            "nostr" => Ok(Coin::Nostr),
-            "rooch" => Ok(Coin::Rooch),
+            "bitcoin" => Ok(CoinID::Bitcoin),
+            "ether" => Ok(CoinID::Ether),
+            "nostr" => Ok(CoinID::Nostr),
+            "rooch" => Ok(CoinID::Rooch),
             _ => Err(anyhow::anyhow!("coin id {} is invalid", value)),
         }
     }
 }
 
-impl Display for Coin {
+impl Display for CoinID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Coin::Bitcoin => write!(f, "Bitcoin"),
-            Coin::Ether => write!(f, "Ether"),
-            Coin::Nostr => write!(f, "Nostr"),
-            Coin::Rooch => write!(f, "Rooch"),
+            CoinID::Bitcoin => write!(f, "Bitcoin"),
+            CoinID::Ether => write!(f, "Ether"),
+            CoinID::Nostr => write!(f, "Nostr"),
+            CoinID::Rooch => write!(f, "Rooch"),
         }
     }
 }
