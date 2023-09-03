@@ -13,6 +13,7 @@ use moveos_types::h256;
 use moveos_types::h256::H256;
 use moveos_types::transaction::MoveAction;
 use once_cell::sync::Lazy;
+use rooch_framework::natives::gas_parameter::gas_member::InitialGasSchedule;
 use rooch_types::chain_id::RoochChainID;
 use rooch_types::error::GenesisError;
 use rooch_types::framework::genesis;
@@ -165,7 +166,7 @@ impl GenesisPackage {
             })
             .collect();
         //TODO put gas parameters into genesis package
-        let gas_parameters = rooch_framework::natives::GasParameters::zeros();
+        let gas_parameters = rooch_framework::natives::GasParameters::initial();
         let vm_config = MoveOSConfig {
             vm_config: VMConfig::default(),
         };

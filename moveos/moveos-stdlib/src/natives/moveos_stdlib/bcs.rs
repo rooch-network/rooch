@@ -3,6 +3,7 @@
 
 use crate::natives::helpers::{make_module_natives, make_native};
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
+use move_core_types::gas_algebra::InternalGas;
 use move_core_types::vm_status::StatusCode;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
@@ -12,11 +13,13 @@ use smallvec::smallvec;
 use std::collections::VecDeque;
 
 #[derive(Debug, Clone)]
-pub struct FromBytesGasParameters {}
+pub struct FromBytesGasParameters {
+    pub base: InternalGas,
+}
 
 impl FromBytesGasParameters {
     pub fn zeros() -> Self {
-        Self {}
+        Self { base: 0.into() }
     }
 }
 
