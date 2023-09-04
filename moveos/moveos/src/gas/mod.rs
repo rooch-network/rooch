@@ -3,6 +3,7 @@
 
 use move_vm_types::gas::{GasMeter, UnmeteredGasMeter};
 
+pub mod parameter;
 pub mod table;
 
 pub trait SwitchableGasMeter: GasMeter {

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_binary_format::errors::PartialVMResult;
+use move_core_types::gas_algebra::InternalGas;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, values::Value,
@@ -11,11 +12,13 @@ use std::{collections::VecDeque, sync::Arc};
 use crate::natives::helpers::make_module_natives;
 
 #[derive(Debug, Clone)]
-pub struct ToBytesGasParameters {}
+pub struct ToBytesGasParameters {
+    pub base: InternalGas,
+}
 
 impl ToBytesGasParameters {
     pub fn zeros() -> Self {
-        Self {}
+        Self { base: 0.into() }
     }
 }
 
@@ -38,11 +41,13 @@ pub fn make_native_to_bytes(gas_params: ToBytesGasParameters) -> NativeFunction 
 }
 
 #[derive(Debug, Clone)]
-pub struct FromBytesGasParameters {}
+pub struct FromBytesGasParameters {
+    pub base: InternalGas,
+}
 
 impl FromBytesGasParameters {
     pub fn zeros() -> Self {
-        Self {}
+        Self { base: 0.into() }
     }
 }
 

@@ -11,16 +11,16 @@ pub mod moveos_stdlib;
 
 #[derive(Debug, Clone)]
 pub struct GasParameters {
-    move_stdlib: move_stdlib::natives::GasParameters,
-    move_nursery: move_stdlib::natives::NurseryGasParameters,
-    table_extension: raw_table::GasParameters,
-    type_info: moveos_stdlib::type_info::GasParameters,
-    rlp: moveos_stdlib::rlp::GasParameters,
-    bcd: moveos_stdlib::bcs::GasParameters,
-    events: moveos_stdlib::event::GasParameters,
-    test_helper: moveos_stdlib::test_helper::GasParameters,
-    signer: moveos_stdlib::signer::GasParameters,
-    move_module: moveos_stdlib::move_module::GasParameters,
+    pub move_stdlib: move_stdlib::natives::GasParameters,
+    pub move_nursery: move_stdlib::natives::NurseryGasParameters,
+    pub table_extension: raw_table::GasParameters,
+    pub type_info: moveos_stdlib::type_info::GasParameters,
+    pub rlp: moveos_stdlib::rlp::GasParameters,
+    pub bcd: moveos_stdlib::bcs::GasParameters,
+    pub events: moveos_stdlib::event::GasParameters,
+    pub test_helper: moveos_stdlib::test_helper::GasParameters,
+    pub signer: moveos_stdlib::signer::GasParameters,
+    pub move_module: moveos_stdlib::move_module::GasParameters,
 }
 
 impl GasParameters {

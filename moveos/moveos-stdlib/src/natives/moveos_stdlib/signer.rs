@@ -15,7 +15,7 @@ use crate::natives::helpers::make_module_natives;
 
 #[derive(Debug, Clone)]
 pub struct ModuleSignerGasParameters {
-    base: InternalGas,
+    pub base: InternalGas,
 }
 
 impl ModuleSignerGasParameters {
@@ -63,7 +63,7 @@ pub fn make_native_module_signer(gas_params: ModuleSignerGasParameters) -> Nativ
 
 #[derive(Debug, Clone)]
 pub struct GasParameters {
-    module_signer: ModuleSignerGasParameters,
+    pub module_signer: ModuleSignerGasParameters,
 }
 
 impl GasParameters {

@@ -16,6 +16,7 @@ use move_vm_types::{
 use crate::natives::helpers::{make_module_natives, make_native};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 
+use move_core_types::gas_algebra::InternalGas;
 use smallvec::smallvec;
 use std::collections::VecDeque;
 
@@ -61,11 +62,13 @@ pub fn native_verify(
 }
 
 #[derive(Debug, Clone)]
-pub struct FromBytesGasParameters {}
+pub struct FromBytesGasParameters {
+    pub base: InternalGas,
+}
 
 impl FromBytesGasParameters {
     pub fn zeros() -> Self {
-        Self {}
+        Self { base: 0.into() }
     }
 }
 
