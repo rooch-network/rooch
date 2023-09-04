@@ -7364,6 +7364,7 @@ dependencies = [
  "bip32",
  "derive_more",
  "enum_dispatch",
+ "ethers",
  "eyre",
  "fastcrypto",
  "move-core-types",

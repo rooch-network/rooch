@@ -52,7 +52,7 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                         ))
                     })?;
 
-                let public_key: PublicKey = context
+                let kp = context
                     .config
                     .keystore
                     .update_address_with_key_pair_from_coin_id(
@@ -72,6 +72,9 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                     existing_address,
                     self.coin_id.to_owned()
                 );
+
+                // Get public key
+                let public_key = kp.into();
 
                 // Get public key reference
                 let public_key = public_key.as_ref().to_vec();

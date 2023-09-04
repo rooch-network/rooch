@@ -4,10 +4,7 @@
 use super::{authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo};
 use crate::{address::EthereumAddress, error::RoochError};
 use anyhow::Result;
-use ethers::{
-    types::Address,
-    utils::rlp::{Decodable, Rlp},
-};
+use ethers::utils::rlp::{Decodable, Rlp};
 use fastcrypto::{
     hash::Keccak256,
     secp256k1::recoverable::Secp256k1RecoverableSignature,
@@ -20,12 +17,11 @@ use moveos_types::{
     tx_context::TxContext,
 };
 use serde::{Deserialize, Serialize};
-use sha3::{Digest, Sha3_256};
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub struct EthereumTransaction(pub ethers::core::types::Transaction);
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct EthereumTransactionData(pub ethers::core::types::Transaction);
 
-impl EthereumTransaction {
+impl EthereumTransactionData {
     //This function is just a demo, we should define the Ethereum calldata's MoveAction standard
     pub fn decode_calldata_to_action(&self) -> Result<MoveAction> {
         //Maybe we should use RLP to encode the MoveAction
@@ -72,7 +68,7 @@ impl EthereumTransaction {
         Ok(recoverable_signature)
     }
 
-    pub fn into_address(&self) -> Result<Address, RoochError> {
+    pub fn into_address(&self) -> Result<EthereumAddress, RoochError> {
         // Prepare the signed message (RLP encoding of the transaction)
         let message = self.tx_hash().to_fixed_bytes();
         let recoverable_signature = self.into_signature()?;
@@ -80,24 +76,29 @@ impl EthereumTransaction {
         let public_key = recoverable_signature
             .recover_with_hash::<Keccak256>(&message)
             .expect("Failed to recover public key");
-        let uncompressed_public_key_bytes = public_key.pubkey.serialize_uncompressed();
-        // Ignore the first byte and take the last 64-bytes of the uncompressed pubkey
-        let uncompressed_64 = uncompressed_public_key_bytes[1..].to_vec();
-        // create a SHA3-256 object
-        let mut hasher = Sha3_256::new();
-        // write input message
-        hasher.update(&uncompressed_64);
-        // read hash digest
-        let result = hasher.finalize();
-        // Take the last 20 bytes of the hash of the 64-bytes uncompressed pubkey
-        let address_bytes = result[12..32].to_vec();
-        let address = Address::from_slice(&address_bytes);
+        // Get the address
+        let address = EthereumAddress::from(public_key);
 
         Ok(address)
     }
 }
 
-impl AbstractTransaction for EthereumTransaction {
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct EthereumTransaction {
+    data: EthereumTransactionData,
+    authenticator: Authenticator,
+}
+
+impl EthereumTransaction {
+    pub fn new(data: EthereumTransactionData, authenticator: Authenticator) -> Self {
+        Self {
+            data,
+            authenticator,
+        }
+    }
+}
+
+impl AbstractTransaction for EthereumTransactionData {
     fn transaction_type(&self) -> super::TransactionType {
         super::TransactionType::Ethereum
     }

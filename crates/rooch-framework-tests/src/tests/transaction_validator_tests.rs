@@ -26,7 +26,7 @@ fn test_validate_ed25519() {
         .as_module_bundle::<rooch_types::framework::transaction_validator::TransactionValidator>(
     );
 
-    let keystore = InMemKeystore::new_ed25519_insecure_for_tests(1);
+    let keystore = InMemKeystore::new_rooch_insecure_for_tests(1);
     let sender = keystore.addresses()[0];
     let sequence_number = 0;
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
@@ -124,7 +124,7 @@ fn test_session_key_ed25519() {
     tracing_subscriber::fmt::init();
     let mut binding_test = binding_test::RustBindingTest::new().unwrap();
 
-    let mut keystore = InMemKeystore::new_ed25519_insecure_for_tests(1);
+    let mut keystore = InMemKeystore::new_rooch_insecure_for_tests(1);
     let sender = keystore.addresses()[0];
     let sequence_number = 0;
 

@@ -8,10 +8,8 @@ use fastcrypto::ed25519::Ed25519KeyPair;
 use fastcrypto::secp256k1::recoverable::{
     Secp256k1RecoverableKeyPair, Secp256k1RecoverablePrivateKey,
 };
-use fastcrypto::{
-    ed25519::Ed25519PrivateKey,
-    traits::{KeyPair, ToFromBytes},
-};
+use fastcrypto::traits::KeyPair;
+use fastcrypto::{ed25519::Ed25519PrivateKey, traits::ToFromBytes};
 use rooch_types::address::{EthereumAddress, RoochAddress};
 use rooch_types::coin_type::CoinID;
 use rooch_types::crypto::RoochKeyPair;
@@ -37,34 +35,49 @@ pub const DERVIATION_PATH_PURPOSE_SCHNORR: u32 = 44;
 pub const DERVIATION_PATH_PURPOSE_ECDSA: u32 = 54;
 pub const DERVIATION_PATH_PURPOSE_SECP256R1: u32 = 74;
 
-pub fn derive_rooch_key_pair_from_path(
-    seed: &[u8],
-    derivation_path: Option<DerivationPath>,
-    coin_id: &CoinID,
-) -> Result<(RoochAddress, RoochKeyPair), RoochError> {
-    let path = validate_path(coin_id, derivation_path)?;
-    let indexes = path.into_iter().map(|i| i.into()).collect::<Vec<_>>();
-    let derived = derive_ed25519_private_key(seed, &indexes);
-    let sk = Ed25519PrivateKey::from_bytes(&derived)
-        .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
-    let kp: Ed25519KeyPair = sk.into();
-    Ok((kp.public().into(), RoochKeyPair::Ed25519(kp)))
+pub trait CoinOperations<Addr, KeyPair> {
+    fn derive_key_pair_from_path(
+        &self,
+        seed: &[u8],
+        derivation_path: Option<DerivationPath>,
+    ) -> Result<(Addr, KeyPair), RoochError>;
 }
 
-pub fn derive_ethereum_key_pair_from_path(
-    seed: &[u8],
-    derivation_path: Option<DerivationPath>,
-    coin_id: &CoinID,
-) -> Result<(EthereumAddress, Secp256k1RecoverableKeyPair), RoochError> {
-    let path = validate_path(coin_id, derivation_path)?;
-    let child_xprv = XPrv::derive_from_path(seed, &path)
-        .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
-    let kp = Secp256k1RecoverableKeyPair::from(
-        Secp256k1RecoverablePrivateKey::from_bytes(child_xprv.private_key().to_bytes().as_slice())
+impl CoinOperations<RoochAddress, RoochKeyPair> for CoinID {
+    fn derive_key_pair_from_path(
+        &self,
+        seed: &[u8],
+        derivation_path: Option<DerivationPath>,
+    ) -> Result<(RoochAddress, RoochKeyPair), RoochError> {
+        let path = validate_path(self, derivation_path)?; // Pass the CoinID itself
+        let indexes = path.into_iter().map(|i| i.into()).collect::<Vec<_>>();
+        let derived = derive_ed25519_private_key(seed, &indexes);
+        let sk = Ed25519PrivateKey::from_bytes(&derived)
+            .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
+        let kp: Ed25519KeyPair = sk.into();
+        let address: RoochAddress = kp.public().into();
+        Ok((address.into(), kp.into())) // Cast to KeyPair
+    }
+}
+
+impl CoinOperations<EthereumAddress, Secp256k1RecoverableKeyPair> for CoinID {
+    fn derive_key_pair_from_path(
+        &self,
+        seed: &[u8],
+        derivation_path: Option<DerivationPath>,
+    ) -> Result<(EthereumAddress, Secp256k1RecoverableKeyPair), RoochError> {
+        let path = validate_path(self, derivation_path)?; // Pass the CoinID itself
+        let child_xprv = XPrv::derive_from_path(seed, &path)
+            .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
+        let kp = Secp256k1RecoverableKeyPair::from(
+            Secp256k1RecoverablePrivateKey::from_bytes(
+                child_xprv.private_key().to_bytes().as_slice(),
+            )
             .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
-    );
-    let address = EthereumAddress::from(kp.public.clone());
-    Ok((address, kp))
+        );
+        let address: EthereumAddress = EthereumAddress::from(kp.public.clone());
+        Ok((address.into(), kp.into())) // Cast to KeyPair
+    }
 }
 
 pub fn validate_path(
@@ -142,28 +155,21 @@ pub fn validate_path(
     }
 }
 
-pub fn generate_new_rooch_key(
+pub fn generate_new_key_pair<Addr, KeyPair>(
     coin_id: CoinID,
     derivation_path: Option<DerivationPath>,
     word_length: Option<String>,
-) -> Result<(RoochAddress, RoochKeyPair, CoinID, String), anyhow::Error> {
+) -> Result<(Addr, KeyPair, CoinID, String), anyhow::Error>
+where
+    CoinID: CoinOperations<Addr, KeyPair>,
+{
     let mnemonic = Mnemonic::new(parse_word_length(word_length)?, Language::English);
     let seed = Seed::new(&mnemonic, "");
-    let (address, kp) =
-        derive_rooch_key_pair_from_path(seed.as_bytes(), derivation_path, &coin_id)?;
-    Ok((address, kp, coin_id, mnemonic.phrase().to_string()))
-}
 
-pub fn generate_new_ethereum_key(
-    coin_id: CoinID,
-    derivation_path: Option<DerivationPath>,
-    word_length: Option<String>,
-) -> Result<(EthereumAddress, Secp256k1RecoverableKeyPair, CoinID, String), anyhow::Error> {
-    let mnemonic = Mnemonic::new(parse_word_length(word_length)?, Language::English);
-    let seed = Seed::new(&mnemonic, "");
-    let (address, kp) =
-        derive_ethereum_key_pair_from_path(seed.as_bytes(), derivation_path, &coin_id)?;
-    Ok((address, kp, coin_id, mnemonic.phrase().to_string()))
+    let (address, key_pair) =
+        coin_id.derive_key_pair_from_path(seed.as_bytes(), derivation_path)?;
+
+    Ok((address, key_pair, coin_id, mnemonic.phrase().to_string()))
 }
 
 fn parse_word_length(s: Option<String>) -> Result<MnemonicType, anyhow::Error> {
