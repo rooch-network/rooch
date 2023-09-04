@@ -1,0 +1,56 @@
+---
+title: Rooch 周报 2023-09-04
+description: "实现交易费逻辑，新增 Session Key SDK 实现，重构 flexEmu、genesis 相关内容、私有泛型例子 和 coin 模块，新增私有泛型文章，对 Rooch 的相关功能做了改进"
+author: geometryolife
+category: Rooch Weekly
+date: 2023/09/04
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch 的开发进展
+
+### 新特性
+
+- **make dev as  default chain id and fixup warning when CI check (#725)** (2023-08-30) @Bai Chuan
+- **[Framework] Implement basic transaction fee logic (#738)** (2023-09-01) @jolestar
+- **Feature owen sdk session key (#747)** (2023-09-03) @Owen Wu
+
+### 重大重构
+
+- **refactor: OMO rename to flexEmu  (#688)** (2023-08-28) @Triplex
+- **Refactor genesis tx (#711)** (2023-08-29) @jolestar
+- **Calculate gas consumption after executing transactions in the virtual machine. (#717)** (2023-08-29) @stevenlaw123
+- **Refactor coin by change the coinstore from resource to typetable (#720)** (2023-08-30) @Bai Chuan
+- **Refactor genesis and stdlib builder (#719)** (2023-08-30) @jolestar
+- **Refactor genesis builder (#727)** (2023-08-30) @jolestar
+- **Refactor the private generics example and add a tutorial article (#687)** (2023-08-31) @Joe Chen
+- **[Framework]Refactor coin module  (#740)** (2023-09-01) @jolestar
+
+### 改进和修复
+
+- **publish in move as default (#708)** (2023-08-28) @0xPause
+- **Bugfix owen sdk e2e test fail (#707)** (2023-08-28) @Owen Wu
+- **add weekly 2023-08-28 (#710)** (2023-08-28) @Joe Chen
+- **Feature/monorepo (#713)** (2023-08-29) @sven Tan
+- **[gh-663] unify scheme, variables and constant errors, add script and GitHub Action for checking error prefixes.  (#664)** (2023-08-28) @feliciss
+- **[Refactor] Remove signer argument from init func (#718)** (2023-08-29) @WGB5445
+- **Feature owen sdk e2e ci check (#715)** (2023-08-29) @Owen Wu
+- **docs: add interactive game blog in CN (#694)** (2023-08-30) @Triplex
+- **docs(blog): refine igame zh-CN (#726)** (2023-08-30) @Triplex
+- **[gh-714] fix build directory. (#732)** (2023-08-30) @feliciss
+- **[stdlib] remove the incorrect reference links from move docs (#736)** (2023-08-31) @jolestar
+- **Feature/dashboard sdk (#733)** (2023-08-31) @sven Tan
+- **[Examples] Coin examples (#743)** (2023-09-01) @jolestar
+- **fixed tempdir drop after server start (#746)** (2023-09-03) @Bai Chuan
+- **fix repeated init function request (#745)** (2023-09-03) @0xPause
+
+### Rooch 社区开发会议
+
+- 讨论 `coin` 模块重构以及交易费的实现，参见 [#738](https://github.com/rooch-network/rooch/pull/738)
+- 讨论交易上下文的 `respawn`、`pre_execute` 和 `post_execute` 的错误处理问题
+- 讨论启动测试网所需完成的内容，参见 [#604](https://github.com/rooch-network/rooch/issues/604)
+- 分享全链游戏
+- [会议录屏](https://drive.google.com/file/d/15W957dgDLAMP-EKWF1P-RzLROuYUFWry/view?usp=sharing)
