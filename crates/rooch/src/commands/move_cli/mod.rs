@@ -88,6 +88,7 @@ impl CommandAction<String> for MoveCli {
                 .map_err(RoochError::from),
             MoveCommand::Test(c) => c
                 .execute(move_args.package_path, move_args.build_config)
+                .await
                 .map(|_| "Success".to_owned())
                 .map_err(RoochError::from),
             MoveCommand::Publish(c) => c.execute_serialized().await,
