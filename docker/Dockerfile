@@ -13,6 +13,9 @@ RUN set -eux; \
         libclang-dev clang \
         llvm \
         lld \
+        libsnappy-dev \
+        g++ \
+        cmake \
         protobuf-compiler; \
     rm -rf /var/lib/apt/lists/*
 
