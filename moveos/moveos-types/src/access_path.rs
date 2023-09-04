@@ -235,6 +235,13 @@ impl AccessPath {
         })
     }
 
+    pub fn table_without_keys(table_handle: ObjectID) -> Self {
+        AccessPath(Path::Table {
+            table_handle,
+            keys: None,
+        })
+    }
+
     /// Convert AccessPath to TableQuery, return the table handle and keys
     /// All other AccessPath is a shortcut for TableQuery
     pub fn into_table_query(self) -> (ObjectID, Option<Vec<Vec<u8>>>) {

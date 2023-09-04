@@ -27,6 +27,7 @@ This module provides the foundation for typesafe Coins.
 -  [Function `decimals`](#0x3_coin_decimals)
 -  [Function `supply`](#0x3_coin_supply)
 -  [Function `is_same_coin`](#0x3_coin_is_same_coin)
+-  [Function `coin_store_handle`](#0x3_coin_coin_store_handle)
 -  [Function `is_account_accept_coin`](#0x3_coin_is_account_accept_coin)
 -  [Function `can_auto_accept_coin`](#0x3_coin_can_auto_accept_coin)
 -  [Function `do_accept_coin`](#0x3_coin_do_accept_coin)
@@ -57,9 +58,11 @@ This module provides the foundation for typesafe Coins.
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
+<b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::account_storage</a>;
 <b>use</b> <a href="">0x2::event</a>;
+<b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
 <b>use</b> <a href="">0x2::table</a>;
@@ -814,6 +817,37 @@ Return true if the type <code>CoinType1</code> is same with <code>CoinType2</cod
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_same_coin">is_same_coin</a>&lt;CoinType1, CoinType2&gt;(): bool {
     <b>return</b> type_of&lt;CoinType1&gt;() == type_of&lt;CoinType2&gt;()
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_coin_coin_store_handle"></a>
+
+## Function `coin_store_handle`
+
+Return coin store handle for addr with coin type <code>CoinType</code>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_store_handle">coin_store_handle</a>&lt;CoinType: key&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="_ObjectID">object_id::ObjectID</a>&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_store_handle">coin_store_handle</a>&lt;CoinType: key&gt;(ctx: &StorageContext, addr: <b>address</b>): Option&lt;ObjectID&gt; {
+    <b>if</b> (<a href="coin.md#0x3_coin_exist_coin_store">exist_coin_store</a>&lt;CoinType&gt;(ctx, addr))
+    {
+        <b>let</b> coin_stores = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin.md#0x3_coin_CoinStores">CoinStores</a>&gt;(ctx, addr);
+        <a href="_some">option::some</a>(*<a href="_handle">type_table::handle</a>&lt;CoinType&gt;(&coin_stores.coin_stores))
+    } <b>else</b> {
+        <a href="_none">option::none</a>&lt;ObjectID&gt;()
+    }
 }
 </code></pre>
 

@@ -8,6 +8,7 @@ pub mod account_authentication;
 pub mod address_mapping;
 pub mod auth_validator;
 pub mod bitcoin_validator;
+pub mod coin;
 pub mod empty;
 pub mod ethereum_validator;
 pub mod genesis;

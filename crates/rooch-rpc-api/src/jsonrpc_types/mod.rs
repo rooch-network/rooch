@@ -11,8 +11,10 @@ mod rooch_types;
 mod state_view;
 mod transaction_argument_view;
 
+pub mod account_view;
 pub mod bytes;
 pub mod eth;
+
 pub use self::rooch_types::*;
 pub use execute_tx_response::*;
 pub use function_return_value_view::*;

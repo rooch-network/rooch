@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::CommandAction;
+use crate::commands::account::commands::balance::BalanceCommand;
 use async_trait::async_trait;
 use commands::{
     create::CreateCommand, import::ImportCommand, list::ListCommand, nullify::NullifyCommand,
@@ -34,6 +35,7 @@ impl CommandAction<String> for Account {
             AccountCommand::Switch(switch) => switch.execute().await.map(|_| "".to_owned()),
             AccountCommand::Update(update) => update.execute().await.map(|_| "".to_owned()),
             AccountCommand::Nullify(nullify) => nullify.execute().await.map(|_| "".to_owned()),
+            AccountCommand::Balance(balance) => balance.execute().await.map(|_| "".to_owned()),
         }
         .map_err(RoochError::from)
     }
@@ -48,4 +50,5 @@ pub enum AccountCommand {
     Switch(SwitchCommand),
     Update(UpdateCommand),
     Nullify(NullifyCommand),
+    Balance(BalanceCommand),
 }

@@ -11,7 +11,10 @@ use moveos_types::{
     transaction::FunctionCall,
     tx_context::TxContext,
 };
-use rooch_rpc_api::jsonrpc_types::{AnnotatedFunctionResultView, EventPageView, StructTagView};
+use rooch_rpc_api::jsonrpc_types::{
+    AccessPathView, AnnotatedFunctionResultView, EventPageView, ListAnnotatedStatesPageView,
+    ListStatesPageView, StrView, StructTagView,
+};
 use rooch_rpc_api::{
     api::rooch_api::RoochAPIClient,
     jsonrpc_types::{
@@ -166,6 +169,32 @@ impl Client {
             .get_events_by_event_handle(event_handle_type, cursor, limit)
             .await?;
         Ok(s)
+    }
+
+    pub async fn list_states(
+        &self,
+        access_path: AccessPathView,
+        cursor: Option<StrView<Vec<u8>>>,
+        limit: Option<usize>,
+    ) -> Result<ListStatesPageView> {
+        Ok(self
+            .rpc
+            .http
+            .list_states(access_path, cursor, limit)
+            .await?)
+    }
+
+    pub async fn list_annotated_states(
+        &self,
+        access_path: AccessPathView,
+        cursor: Option<StrView<Vec<u8>>>,
+        limit: Option<usize>,
+    ) -> Result<ListAnnotatedStatesPageView> {
+        Ok(self
+            .rpc
+            .http
+            .list_annotated_states(access_path, cursor, limit)
+            .await?)
     }
 }
 

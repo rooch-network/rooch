@@ -2,9 +2,12 @@
 module rooch_framework::coin {
     use std::string;
     use std::error;
+    use std::option;
+    use std::option::Option;
+    use moveos_std::object_id::ObjectID;
     use moveos_std::table;
     use moveos_std::table::Table;
-    use moveos_std::type_table::TypeTable;
+    use moveos_std::type_table::{TypeTable};
     use moveos_std::storage_context;
     use moveos_std::type_table;
     use moveos_std::account_storage;
@@ -223,6 +226,17 @@ module rooch_framework::coin {
     /// Return true if the type `CoinType1` is same with `CoinType2`
     public fun is_same_coin<CoinType1, CoinType2>(): bool {
         return type_of<CoinType1>() == type_of<CoinType2>()
+    }
+
+    /// Return coin store handle for addr with coin type `CoinType`
+    public fun coin_store_handle<CoinType: key>(ctx: &StorageContext, addr: address): Option<ObjectID> {
+        if (exist_coin_store<CoinType>(ctx, addr))
+        {
+            let coin_stores = account_storage::global_borrow<CoinStores>(ctx, addr);
+            option::some(*type_table::handle<CoinType>(&coin_stores.coin_stores))
+        } else {
+            option::none<ObjectID>()
+        }
     }
 
     //

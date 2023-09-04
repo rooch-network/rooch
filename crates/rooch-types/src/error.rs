@@ -66,6 +66,10 @@ pub enum RoochError {
     RotateAuthenticationKeyError(String),
     #[error("Remove authentication key error: {0}")]
     RemoveAuthenticationKeyError(String),
+    #[error("Account not found error: {0}")]
+    AccountNotFoundError(String),
+    #[error("Account balance error: {0}")]
+    AccountBalanceError(String),
 
     //#[error("base64 decode error: {0}")]
     //Base64DecodeError(String),

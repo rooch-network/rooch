@@ -64,6 +64,11 @@ module moveos_std::type_table {
     public fun contains<V: key>(table: &TypeTable): bool {
         raw_table::contains<String>(&table.handle, key<V>())
     }
+
+    /// Returns table handle of `table`.
+    public fun handle<V: key>(table: &TypeTable): &ObjectID {
+        &table.handle
+    }
   
     #[test_only]
     /// Testing only: allows to drop a table even if it is not empty.
