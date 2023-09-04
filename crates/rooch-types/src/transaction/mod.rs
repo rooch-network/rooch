@@ -72,7 +72,7 @@ pub trait AbstractTransaction {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum TypedTransaction {
     Rooch(rooch::RoochTransaction),
-    Ethereum(ethereum::EthereumTransaction),
+    Ethereum(ethereum::EthereumTransactionData),
 }
 
 impl TryFrom<RawTransaction> for TypedTransaction {
@@ -85,7 +85,7 @@ impl TryFrom<RawTransaction> for TypedTransaction {
                 Ok(TypedTransaction::Rooch(tx))
             }
             TransactionType::Ethereum => {
-                let tx = ethereum::EthereumTransaction::decode(&raw.raw)?;
+                let tx = ethereum::EthereumTransactionData::decode(&raw.raw)?;
                 Ok(TypedTransaction::Ethereum(tx))
             }
         }

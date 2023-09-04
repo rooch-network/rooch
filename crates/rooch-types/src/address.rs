@@ -31,9 +31,11 @@ use proptest::{collection::vec, prelude::*};
 use proptest_derive::Arbitrary;
 use rand::{seq::SliceRandom, thread_rng};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde_with::serde_as;
 use sha3::{Digest, Sha3_256};
 use std::fmt;
 use std::str::FromStr;
+use strum_macros::Display;
 
 /// The address type that Rooch supports
 pub trait RoochSupportedAddress:
@@ -281,8 +283,16 @@ prop_compose! {
 }
 
 /// Ethereum address type
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Ord, PartialOrd)]
+#[serde_as]
 pub struct EthereumAddress(pub H160);
+
+impl fmt::Display for EthereumAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Write the Ethereum address as a hexadecimal string with a "0x" prefix
+        write!(f, "0x{}", self.0)
+    }
+}
 
 impl RoochSupportedAddress for EthereumAddress {
     fn random() -> Self {
