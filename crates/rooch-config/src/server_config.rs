@@ -21,6 +21,13 @@ impl ServerConfig {
 
         format!("{}://{}:{}", schema, self.host, self.port)
     }
+
+    pub fn new_with_port(port: u16) -> Self {
+        Self {
+            port,
+            ..Default::default()
+        }
+    }
 }
 
 impl Display for ServerConfig {
