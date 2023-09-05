@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ErrCallbackType } from 'src/context/types'
+import { Ed25519Keypair } from '@rooch/sdk'
 
 export type AddAccountBySecretKeyParams = {
   key: string
@@ -14,8 +15,8 @@ export enum WalletType {
 }
 
 export enum AccountType {
-  ETH,
-  ROOCH,
+  ETH = 'ETH',
+  ROOCH = 'Rooch',
 }
 
 export type SupportWalletType = {
@@ -25,7 +26,7 @@ export type SupportWalletType = {
 
 export type AccountDataType = {
   address: string
-  kp: string | null
+  kp: Ed25519Keypair | null
   activate: boolean
   type: AccountType
 }
@@ -36,8 +37,8 @@ export type AuthValuesType = {
   setLoading: (value: boolean) => void
   supportWallets: SupportWalletType[]
   accounts: Map<string, AccountDataType> | null
-  addAccount: (value: AccountDataType | null) => void
   defaultAccount: () => AccountDataType | null
   loginByWallet: (walletType: WalletType, errorCallback?: ErrCallbackType) => void
+  loginByNewAccount: (errorCallback?: ErrCallbackType) => void
   loginBySecretKey: (params: AddAccountBySecretKeyParams, errorCallback?: ErrCallbackType) => void
 }

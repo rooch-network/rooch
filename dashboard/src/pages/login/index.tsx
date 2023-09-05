@@ -109,14 +109,16 @@ const LoginPage = () => {
       case InputType.Connect:
         auth.loginByWallet(selectWallet!)
         break
-      case InputType.Create:
-        break
       case InputType.Import:
         auth.loginBySecretKey({ key: secretKey, rememberMe: false })
         break
       case InputType.Oauth:
         break
     }
+  }
+
+  const createAccount = () => {
+      auth.loginByNewAccount()
   }
 
   return (
@@ -211,6 +213,8 @@ const LoginPage = () => {
                 />
                 {auth.supportWallets.length > 0 ? (
                   <Button
+                    variant='text'
+                    size='small'
                     onClick={() => {
                       if (inputType === InputType.Connect) {
                         setInputType(InputType.Import)
@@ -240,7 +244,7 @@ const LoginPage = () => {
                   New on our platform?
                 </Typography>
                 <Typography>
-                  <LinkStyled href="/">Create an account</LinkStyled>
+                  <Button size='small' variant='text' onClick={createAccount}>Create an account</Button>
                 </Typography>
               </Box>
               <Divider sx={{ my: `${theme.spacing(6)} !important` }}>or</Divider>
@@ -252,14 +256,6 @@ const LoginPage = () => {
                   onClick={(e) => e.preventDefault()}
                 >
                   <Icon icon="bxl:facebook-circle" />
-                </IconButton>
-                <IconButton
-                  href="/"
-                  component={Link}
-                  onClick={(e) => e.preventDefault()}
-                  sx={{ color: theme.palette.mode === 'light' ? '#272727' : 'grey.300' }}
-                >
-                  <Icon icon="bxl:github" />
                 </IconButton>
                 <IconButton
                   href="/"

@@ -3,6 +3,14 @@
 
 import { PaymentTypes } from './types'
 
+export const  formatAddress = (address: string) => {
+  let shortAddress = address.substring(0, 6)
+  shortAddress += '...'
+  shortAddress += address.substring(address.length-6, address.length)
+
+  return shortAddress
+}
+
 /**
  ** Format and return date in Humanize format
  ** Intl docs: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/format

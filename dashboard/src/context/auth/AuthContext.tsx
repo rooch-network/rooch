@@ -26,7 +26,7 @@ import { ErrCallbackType } from 'src/context/types'
 import { useMetamask } from 'src/hooks/useMetamask'
 
 // ** Rooch SDK
-import { Ed25519Keypair } from '@rooch/sdk'
+import { bcsTypes, Ed25519Keypair } from '@rooch/sdk'
 
 // ** Defaults
 const defaultProvider: AuthValuesType = {
@@ -34,10 +34,10 @@ const defaultProvider: AuthValuesType = {
   setLoading: () => Boolean,
   accounts: null,
   supportWallets: [],
-  addAccount: () => null,
   defaultAccount: () => null,
   logout: () => Promise.resolve(),
   loginByWallet: () => Promise.resolve(),
+  loginByNewAccount: () => Promise.resolve(),
   loginBySecretKey: () => Promise.resolve(),
 }
 
@@ -63,22 +63,18 @@ const AuthProvider = ({ children }: Props) => {
     const initAuth = async (): Promise<void> => {
       setLoading(true)
 
-      const kp = Ed25519Keypair.generate()
+      const secretKey = window.localStorage.getItem(authConfig.secretKey)
 
-      console.log(kp.getPublicKey().toRoochAddress())
+      if (secretKey) {
+        const sk = bcsTypes.fromB64(secretKey)
+        const kp = Ed25519Keypair.fromSecretKey(sk)
 
-      const allSecretKey = window.localStorage.getItem(authConfig.secretKey)
-
-      if (allSecretKey) {
-        // TODO: Parse key
-        const acc = new Map<string, AccountDataType>()
-        acc.set('0x12345', {
-          address: '0x12345',
-          kp: null,
+        setAccountWrapper({
+          address: kp.toRoochAddress(),
+          kp: kp,
           activate: true,
           type: AccountType.ROOCH,
         })
-        setAccounts(acc)
       }
     }
 
@@ -100,6 +96,19 @@ const AuthProvider = ({ children }: Props) => {
     window.localStorage.setItem(authConfig.secretKey, '000')
 
     loginSuccess()
+  }
+
+  const setAccountWrapper = (account: AccountDataType) => {
+    let _accounts = accounts
+    if (!_accounts) {
+      _accounts = new Map()
+    }
+
+    _accounts.set(account.address, {
+      ...account,
+    })
+
+    setAccounts(_accounts)
   }
 
   /// ** Impl fun
@@ -150,8 +159,23 @@ const AuthProvider = ({ children }: Props) => {
     tmpLogin()
   }
 
-  const addAccount = () => {
-    tmpLogin()
+  const loginByNewAccount = () => {
+    const kp = Ed25519Keypair.generate()
+
+    window.localStorage.setItem(authConfig.secretKey, kp.export().privateKey)
+
+    setAccountWrapper({
+      address: kp.toRoochAddress(),
+      kp: kp,
+      activate: true,
+      type: AccountType.ROOCH,
+    })
+
+    console.log("login")
+    console.log(kp.toRoochAddress())
+    console.log(kp.export().privateKey)
+
+    loginSuccess()
   }
 
   const handleLogout = () => {
@@ -163,7 +187,7 @@ const AuthProvider = ({ children }: Props) => {
   const defaultAccount = (): AccountDataType => {
     return {
       address: 'aa',
-      kp: 'aa',
+      kp: null,
       activate: true,
       type: AccountType.ROOCH,
     }
@@ -193,10 +217,10 @@ const AuthProvider = ({ children }: Props) => {
     accounts: getAccounts(),
     setAccounts,
     supportWallets: supportWallets(),
-    addAccount,
     defaultAccount,
     loginByWallet,
     loginBySecretKey,
+    loginByNewAccount,
     logout: handleLogout,
   }
 

@@ -19,9 +19,9 @@ const navigation = (): VerticalNavItemsType => {
       sectionTitle: 'Tutorial',
     },
     {
-      title: 'Publich Package',
+      title: 'Publish Package',
       icon: 'bxs-package',
-      path: '/tutorial/publich/package',
+      path: '/tutorial/publish/package',
     },
     {
       sectionTitle: 'Transaction',
@@ -29,7 +29,7 @@ const navigation = (): VerticalNavItemsType => {
     {
       title: 'Transaction List',
       icon: 'bx-list-ol',
-      path: '/transcation/list',
+      path: '/transaction/list',
     },
     {
       sectionTitle: 'Wallet & Assets',

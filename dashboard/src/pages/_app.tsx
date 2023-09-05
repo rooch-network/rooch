@@ -1,5 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+
 // ** React Imports
 import { ReactNode } from 'react'
 
@@ -8,6 +9,10 @@ import Head from 'next/head'
 import { Router } from 'next/router'
 import type { NextPage } from 'next'
 import type { AppProps } from 'next/app'
+
+// ** Store Imports
+import { store } from 'src/store'
+import { Provider } from 'react-redux'
 
 // ** Loader Import
 import NProgress from 'nprogress'
@@ -111,7 +116,8 @@ const App = (props: ExtendedAppProps) => {
   const guestGuard = Component.guestGuard ?? false
 
   return (
-    <CacheProvider value={emotionCache}>
+    <Provider store={store}>
+      <CacheProvider value={emotionCache}>
       <Head>
         <title>{`${themeConfig.templateName} - Dashboard`}</title>
         <meta name="description" content={`${themeConfig.templateName} – Dashboard`} />
@@ -143,6 +149,7 @@ const App = (props: ExtendedAppProps) => {
         </AuthProvider>
       </MetamaskProvider>
     </CacheProvider>
+    </Provider>
   )
 }
 
