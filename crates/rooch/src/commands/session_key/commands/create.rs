@@ -8,7 +8,6 @@ use rooch_key::keystore::AccountKeystore;
 use rooch_types::{
     address::RoochAddress,
     coin_type::CoinID,
-    crypto::BuiltinScheme,
     error::{RoochError, RoochResult},
     framework::session_key::{SessionKey, SessionKeyModule, SessionScope},
 };

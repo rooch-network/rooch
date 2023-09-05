@@ -12,9 +12,10 @@ module rooch_framework::address_mapping{
 
     //The coin id standard is defined in [slip-0044](https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
     //Please keep consistent with rust Symbol
-    const COIN_TYPE_BTC: u64 = 0;
-    const COIN_TYPE_ETH: u64 = 60;
-    const COIN_TYPE_ROH: u64 = 20230101;
+    const COIN_ID_BITCOIN: u64 = 0;
+    const COIN_ID_ETHER: u64 = 60;
+    const COIN_ID_NOSTR: u64 = 60;
+    const COIN_ID_ROOCH: u64 = 20230101;
 
     struct MultiChainAddress has copy, store, drop {
         coin_id: u64,
@@ -36,7 +37,7 @@ module rooch_framework::address_mapping{
     }
 
     public fun is_rooch_address(maddress: &MultiChainAddress) : bool{
-        maddress.coin_id == COIN_TYPE_ROH
+        maddress.coin_id == COIN_ID_ROOCH
     }
 
     /// Resolve a multi-chain address to a rooch address
@@ -101,7 +102,7 @@ module rooch_framework::address_mapping{
         account_storage::create_account_storage(&mut ctx, @rooch_framework);
         init(&mut ctx);
         let multi_chain_address =  MultiChainAddress{
-            coin_id: COIN_TYPE_BTC,
+            coin_id: COIN_ID_BITCOIN,
             raw_address: x"1234567890abcdef",
         };
         bind(&mut ctx, &sender, multi_chain_address);

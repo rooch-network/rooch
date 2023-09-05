@@ -2,9 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo};
-use crate::{address::EthereumAddress, error::RoochError};
+use crate::{address::EthereumAddress, chain_id::RoochChainID, error::RoochError};
 use anyhow::Result;
-use ethers::utils::rlp::{Decodable, Rlp};
+use ethers::{
+    types::{Bytes, OtherFields, Transaction, U256, U64},
+    utils::rlp::{Decodable, Rlp},
+};
 use fastcrypto::{
     hash::Keccak256,
     secp256k1::recoverable::Secp256k1RecoverableSignature,
@@ -19,9 +22,36 @@ use moveos_types::{
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub struct EthereumTransactionData(pub ethers::core::types::Transaction);
+pub struct EthereumTransactionData(pub Transaction);
 
 impl EthereumTransactionData {
+    pub fn new_for_test(sender: EthereumAddress, nonce: U256, action: Bytes) -> Self {
+        let transaction = Transaction {
+            hash: H256::zero(),
+            nonce,
+            block_hash: None,
+            block_number: None,
+            transaction_index: None,
+            from: sender.0,
+            to: None,
+            value: U256::zero(),
+            gas_price: None,
+            gas: U256::zero(),
+            input: action,
+            v: U64::zero(),
+            r: U256::zero(),
+            s: U256::zero(),
+            transaction_type: None,
+            access_list: None,
+            max_priority_fee_per_gas: None,
+            max_fee_per_gas: None,
+            chain_id: Some(U256::from(RoochChainID::DEV.chain_id().id())),
+            other: OtherFields::default(),
+        };
+
+        Self(transaction)
+    }
+
     //This function is just a demo, we should define the Ethereum calldata's MoveAction standard
     pub fn decode_calldata_to_action(&self) -> Result<MoveAction> {
         //Maybe we should use RLP to encode the MoveAction

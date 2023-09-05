@@ -283,7 +283,7 @@ prop_compose! {
 }
 
 /// Ethereum address type
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Ord, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Ord, PartialOrd, Copy)]
 #[serde_as]
 pub struct EthereumAddress(pub H160);
 

@@ -6,10 +6,8 @@ use anyhow::anyhow;
 use bip32::DerivationPath;
 use bip39::{Language, Mnemonic, Seed};
 use enum_dispatch::enum_dispatch;
-use ethers::types::Address;
 use fastcrypto::{
-    ed25519::Ed25519KeyPair,
-    hash::{Digest, Keccak256, Sha3_256},
+    hash::Keccak256,
     secp256k1::recoverable::{
         Secp256k1RecoverableKeyPair, Secp256k1RecoverablePublicKey, Secp256k1RecoverableSignature,
     },
@@ -22,11 +20,11 @@ use rooch_types::{
     coin_type::CoinID,
     crypto::{
         get_ethereum_key_pair_from_rng, get_rooch_key_pair_from_rng, PublicKey, RoochKeyPair,
-        RoochSignature, Signature,
+        Signature,
     },
     transaction::{
-        authenticator::{self, Authenticator},
-        ethereum::{self, EthereumTransaction, EthereumTransactionData},
+        authenticator,
+        ethereum::{EthereumTransaction, EthereumTransactionData},
         rooch::{RoochTransaction, RoochTransactionData},
     },
 };
@@ -42,15 +40,13 @@ use std::path::{Path, PathBuf};
 
 #[derive(Serialize, Deserialize)]
 #[enum_dispatch(AccountKeystore)]
-pub enum Keystore {
-    RoochFile(FileBasedKeystore<RoochAddress, RoochKeyPair>),
-    RoochInMem(InMemKeystore<RoochAddress, RoochKeyPair>),
-    EthereumFile(FileBasedKeystore<EthereumAddress, Secp256k1RecoverableKeyPair>),
-    EthereumInMem(InMemKeystore<EthereumAddress, Secp256k1RecoverableKeyPair>),
+pub enum Keystore<K: Ord, V> {
+    File(FileBasedKeystore<K, V>),
+    InMem(InMemKeystore<K, V>),
 }
 
 #[enum_dispatch]
-pub trait AccountKeystore<Addr, PubKey, KeyPair, Sig, Transaction, TransactionData>:
+pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, Transaction, TransactionData>:
     Send + Sync
 {
     fn add_key_pair_by_coin_id(
@@ -118,7 +114,7 @@ pub trait AccountKeystore<Addr, PubKey, KeyPair, Sig, Transaction, TransactionDa
         CoinID: CoinOperations<Addr, KeyPair>,
     {
         let (address, kp, coin_id, phrase) =
-            generate_new_key_pair(coin_id, derivation_path, word_length)?;
+            generate_new_key_pair::<Addr, KeyPair>(coin_id, derivation_path, word_length)?;
         self.add_key_pair_by_coin_id(kp, coin_id)?;
         Ok((address, phrase, coin_id))
     }
@@ -155,12 +151,17 @@ pub trait AccountKeystore<Addr, PubKey, KeyPair, Sig, Transaction, TransactionDa
     {
         let mnemonic = Mnemonic::from_phrase(&phrase, Language::English)?;
         let seed = Seed::new(&mnemonic, "");
+        let derivation_path_clone = derivation_path.clone();
 
+        // Consider adding Clone capabilities
         match coin_id.derive_key_pair_from_path(seed.as_bytes(), derivation_path)? {
             (_, kp) => {
                 self.update_key_pair_by_coin_id(address, kp, coin_id)?;
-                Ok(kp)
             }
+        };
+
+        match coin_id.derive_key_pair_from_path(seed.as_bytes(), derivation_path_clone)? {
+            (_, kp) => Ok(kp),
         }
     }
 
@@ -183,29 +184,388 @@ pub trait AccountKeystore<Addr, PubKey, KeyPair, Sig, Transaction, TransactionDa
     ) -> Result<Transaction, signature::Error>;
 }
 
-impl Display for Keystore {
+impl
+    AccountKeystore<
+        RoochAddress,
+        PublicKey,
+        RoochKeyPair,
+        Signature,
+        RoochTransaction,
+        RoochTransactionData,
+    > for Keystore<RoochAddress, RoochKeyPair>
+{
+    fn sign_transaction_via_session_key(
+        &self,
+        address: &RoochAddress,
+        msg: RoochTransactionData,
+        authentication_key: &AuthenticationKey,
+    ) -> Result<RoochTransaction, signature::Error> {
+        // Implement this method by delegating the call to the appropriate variant (File or InMem)
+        match self {
+            Keystore::File(file_keystore) => {
+                file_keystore.sign_transaction_via_session_key(address, msg, authentication_key)
+            }
+            Keystore::InMem(inmem_keystore) => {
+                inmem_keystore.sign_transaction_via_session_key(address, msg, authentication_key)
+            }
+        }
+    }
+
+    fn add_key_pair_by_coin_id(
+        &mut self,
+        keypair: RoochKeyPair,
+        coin_id: CoinID,
+    ) -> Result<(), anyhow::Error> {
+        // Implement this method to add a key pair to the appropriate variant (File or InMem)
+        match self {
+            Keystore::File(file_keystore) => {
+                file_keystore.add_key_pair_by_coin_id(keypair, coin_id)
+            }
+            Keystore::InMem(inmem_keystore) => {
+                inmem_keystore.add_key_pair_by_coin_id(keypair, coin_id)
+            }
+        }
+    }
+
+    fn get_address_public_keys(&self) -> Vec<(RoochAddress, PublicKey)> {
+        // Implement this method to collect public keys from the appropriate variant (File or InMem)
+        match self {
+            Keystore::File(file_keystore) => file_keystore.get_address_public_keys(),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.get_address_public_keys(),
+        }
+    }
+
+    fn get_public_key_by_coin_id(&self, coin_id: CoinID) -> Result<PublicKey, anyhow::Error> {
+        // Implement this method to get the public key by coin ID from the appropriate variant (File or InMem)
+        match self {
+            Keystore::File(file_keystore) => file_keystore.get_public_key_by_coin_id(coin_id),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.get_public_key_by_coin_id(coin_id),
+        }
+    }
+
+    fn get_key_pairs(&self, address: &RoochAddress) -> Result<Vec<&RoochKeyPair>, anyhow::Error> {
+        // Implement this method to get key pairs for the given address from the appropriate variant (File or InMem)
+        match self {
+            Keystore::File(file_keystore) => file_keystore.get_key_pairs(address),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.get_key_pairs(address),
+        }
+    }
+
+    fn get_key_pair_by_coin_id(
+        &self,
+        address: &RoochAddress,
+        coin_id: CoinID,
+    ) -> Result<&RoochKeyPair, signature::Error> {
+        // Implement this method to get the key pair by coin ID from the appropriate variant (File or InMem)
+        match self {
+            Keystore::File(file_keystore) => {
+                file_keystore.get_key_pair_by_coin_id(address, coin_id)
+            }
+            Keystore::InMem(inmem_keystore) => {
+                inmem_keystore.get_key_pair_by_coin_id(address, coin_id)
+            }
+        }
+    }
+
+    fn update_key_pair_by_coin_id(
+        &mut self,
+        address: &RoochAddress,
+        keypair: RoochKeyPair,
+        coin_id: CoinID,
+    ) -> Result<(), anyhow::Error> {
+        // Implement this method to update the key pair by coin ID for the appropriate variant (File or InMem)
+        match self {
+            Keystore::File(file_keystore) => {
+                file_keystore.update_key_pair_by_coin_id(address, keypair, coin_id)
+            }
+            Keystore::InMem(inmem_keystore) => {
+                inmem_keystore.update_key_pair_by_coin_id(address, keypair, coin_id)
+            }
+        }
+    }
+
+    fn nullify_key_pair_by_coin_id(
+        &mut self,
+        address: &RoochAddress,
+        coin_id: CoinID,
+    ) -> Result<(), anyhow::Error> {
+        // Implement this method to nullify the key pair by coin ID for the appropriate variant (File or InMem)
+        match self {
+            Keystore::File(file_keystore) => {
+                file_keystore.nullify_key_pair_by_coin_id(address, coin_id)
+            }
+            Keystore::InMem(inmem_keystore) => {
+                inmem_keystore.nullify_key_pair_by_coin_id(address, coin_id)
+            }
+        }
+    }
+
+    fn sign_hashed(
+        &self,
+        address: &RoochAddress,
+        msg: &[u8],
+        coin_id: CoinID,
+    ) -> Result<Signature, signature::Error> {
+        // Implement this method to sign a hashed message for the appropriate variant (File or InMem)
+        match self {
+            Keystore::File(file_keystore) => file_keystore.sign_hashed(address, msg, coin_id),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.sign_hashed(address, msg, coin_id),
+        }
+    }
+
+    fn sign_transaction(
+        &self,
+        address: &RoochAddress,
+        msg: RoochTransactionData,
+        coin_id: CoinID,
+    ) -> Result<RoochTransaction, signature::Error> {
+        // Implement this method to sign a transaction for the appropriate variant (File or InMem)
+        match self {
+            Keystore::File(file_keystore) => file_keystore.sign_transaction(address, msg, coin_id),
+            Keystore::InMem(inmem_keystore) => {
+                inmem_keystore.sign_transaction(address, msg, coin_id)
+            }
+        }
+    }
+
+    fn sign_secure<T>(
+        &self,
+        address: &RoochAddress,
+        msg: &T,
+        coin_id: CoinID,
+    ) -> Result<Signature, signature::Error>
+    where
+        T: Serialize,
+    {
+        // Implement this method to sign a secure message for the appropriate variant (File or InMem)
+        match self {
+            Keystore::File(file_keystore) => file_keystore.sign_secure(address, msg, coin_id),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.sign_secure(address, msg, coin_id),
+        }
+    }
+
+    fn generate_session_key(
+        &mut self,
+        address: &RoochAddress,
+    ) -> Result<AuthenticationKey, anyhow::Error> {
+        // Implement this method to generate a session key for the appropriate variant (File or InMem)
+        match self {
+            Keystore::File(file_keystore) => file_keystore.generate_session_key(address),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.generate_session_key(address),
+        }
+    }
+}
+
+impl
+    AccountKeystore<
+        EthereumAddress,
+        Secp256k1RecoverablePublicKey,
+        Secp256k1RecoverableKeyPair,
+        Secp256k1RecoverableSignature,
+        EthereumTransaction,
+        EthereumTransactionData,
+    > for Keystore<EthereumAddress, Secp256k1RecoverableKeyPair>
+{
+    fn sign_transaction_via_session_key(
+        &self,
+        address: &EthereumAddress,
+        msg: EthereumTransactionData,
+        authentication_key: &AuthenticationKey,
+    ) -> Result<EthereumTransaction, signature::Error> {
+        match self {
+            Keystore::File(file_keystore) => {
+                file_keystore.sign_transaction_via_session_key(address, msg, authentication_key)
+            }
+            Keystore::InMem(inmem_keystore) => {
+                inmem_keystore.sign_transaction_via_session_key(address, msg, authentication_key)
+            }
+        }
+    }
+
+    fn add_key_pair_by_coin_id(
+        &mut self,
+        keypair: Secp256k1RecoverableKeyPair,
+        coin_id: CoinID,
+    ) -> Result<(), anyhow::Error> {
+        // Implement this method to add a key pair to the appropriate variant (File or InMem)
+        match self {
+            Keystore::File(file_keystore) => {
+                file_keystore.add_key_pair_by_coin_id(keypair, coin_id)
+            }
+            Keystore::InMem(inmem_keystore) => {
+                inmem_keystore.add_key_pair_by_coin_id(keypair, coin_id)
+            }
+        }
+    }
+
+    fn get_address_public_keys(&self) -> Vec<(EthereumAddress, Secp256k1RecoverablePublicKey)> {
+        // Implement this method to collect public keys from the appropriate variant (File or InMem)
+        match self {
+            Keystore::File(file_keystore) => file_keystore.get_address_public_keys(),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.get_address_public_keys(),
+        }
+    }
+
+    fn get_public_key_by_coin_id(
+        &self,
+        coin_id: CoinID,
+    ) -> Result<Secp256k1RecoverablePublicKey, anyhow::Error> {
+        // Implement this method to get the public key by coin ID from the appropriate variant (File or InMem)
+        match self {
+            Keystore::File(file_keystore) => file_keystore.get_public_key_by_coin_id(coin_id),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.get_public_key_by_coin_id(coin_id),
+        }
+    }
+
+    fn get_key_pairs(
+        &self,
+        address: &EthereumAddress,
+    ) -> Result<Vec<&Secp256k1RecoverableKeyPair>, anyhow::Error> {
+        // Implement this method to get key pairs for the given address from the appropriate variant (File or InMem)
+        match self {
+            Keystore::File(file_keystore) => file_keystore.get_key_pairs(address),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.get_key_pairs(address),
+        }
+    }
+
+    fn get_key_pair_by_coin_id(
+        &self,
+        address: &EthereumAddress,
+        coin_id: CoinID,
+    ) -> Result<&Secp256k1RecoverableKeyPair, signature::Error> {
+        // Implement this method to get a key pair by coin ID from the appropriate variant (File or InMem)
+        match self {
+            Keystore::File(file_keystore) => {
+                file_keystore.get_key_pair_by_coin_id(address, coin_id)
+            }
+            Keystore::InMem(inmem_keystore) => {
+                inmem_keystore.get_key_pair_by_coin_id(address, coin_id)
+            }
+        }
+    }
+
+    fn update_key_pair_by_coin_id(
+        &mut self,
+        address: &EthereumAddress,
+        keypair: Secp256k1RecoverableKeyPair,
+        coin_id: CoinID,
+    ) -> Result<(), anyhow::Error> {
+        // Implement this method to update a key pair by coin ID in the appropriate variant (File or InMem)
+        match self {
+            Keystore::File(file_keystore) => {
+                file_keystore.update_key_pair_by_coin_id(address, keypair, coin_id)
+            }
+            Keystore::InMem(inmem_keystore) => {
+                inmem_keystore.update_key_pair_by_coin_id(address, keypair, coin_id)
+            }
+        }
+    }
+
+    fn nullify_key_pair_by_coin_id(
+        &mut self,
+        address: &EthereumAddress,
+        coin_id: CoinID,
+    ) -> Result<(), anyhow::Error> {
+        // Implement this method to nullify a key pair by coin ID in the appropriate variant (File or InMem)
+        match self {
+            Keystore::File(file_keystore) => {
+                file_keystore.nullify_key_pair_by_coin_id(address, coin_id)
+            }
+            Keystore::InMem(inmem_keystore) => {
+                inmem_keystore.nullify_key_pair_by_coin_id(address, coin_id)
+            }
+        }
+    }
+
+    fn sign_hashed(
+        &self,
+        address: &EthereumAddress,
+        msg: &[u8],
+        coin_id: CoinID,
+    ) -> Result<Secp256k1RecoverableSignature, signature::Error> {
+        // Implement this method to sign a hashed message with the key pair for the given address and coin ID
+        match self {
+            Keystore::File(file_keystore) => file_keystore.sign_hashed(address, msg, coin_id),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.sign_hashed(address, msg, coin_id),
+        }
+    }
+
+    fn sign_transaction(
+        &self,
+        address: &EthereumAddress,
+        msg: EthereumTransactionData,
+        coin_id: CoinID,
+    ) -> Result<EthereumTransaction, signature::Error> {
+        // Implement this method to sign a transaction with the key pair for the given address and coin ID
+        match self {
+            Keystore::File(file_keystore) => file_keystore.sign_transaction(address, msg, coin_id),
+            Keystore::InMem(inmem_keystore) => {
+                inmem_keystore.sign_transaction(address, msg, coin_id)
+            }
+        }
+    }
+
+    fn sign_secure<T>(
+        &self,
+        address: &EthereumAddress,
+        msg: &T,
+        coin_id: CoinID,
+    ) -> Result<Secp256k1RecoverableSignature, signature::Error>
+    where
+        T: Serialize,
+    {
+        // Implement this method to sign a serializable message with the key pair for the given address and coin ID
+        match self {
+            Keystore::File(file_keystore) => file_keystore.sign_secure(address, msg, coin_id),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.sign_secure(address, msg, coin_id),
+        }
+    }
+
+    fn generate_session_key(
+        &mut self,
+        address: &EthereumAddress,
+    ) -> Result<AuthenticationKey, anyhow::Error> {
+        // Implement this method to generate a session key for the given address
+        match self {
+            Keystore::File(file_keystore) => file_keystore.generate_session_key(address),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.generate_session_key(address),
+        }
+    }
+}
+
+impl Display for Keystore<RoochAddress, RoochKeyPair> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut writer = String::new();
         match self {
-            Keystore::RoochFile(file) => {
+            Keystore::File(file) => {
                 writeln!(writer, "Keystore Type : Rooch File")?;
                 write!(writer, "Keystore Path : {:?}", file.path)?;
-                write!(f, "{}", writer)
+                write!(f, "{}", writer)?;
             }
-            Keystore::RoochInMem(_) => {
+            Keystore::InMem(_) => {
                 writeln!(writer, "Keystore Type : Rooch InMem")?;
-                write!(f, "{}", writer)
-            }
-            Keystore::EthereumFile(file) => {
-                writeln!(writer, "Keystore Type : Ethereum File")?;
-                write!(writer, "Keystore Path : {:?}", file.path)?;
-                write!(f, "{}", writer)
-            }
-            Keystore::EthereumInMem(_) => {
-                writeln!(writer, "Keystore Type : Ethereum InMem")?;
-                write!(f, "{}", writer)
+                write!(f, "{}", writer)?;
             }
         }
+        Ok(())
+    }
+}
+
+impl Display for Keystore<EthereumAddress, Secp256k1RecoverableKeyPair> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut writer = String::new();
+        match self {
+            Keystore::File(file) => {
+                writeln!(writer, "Keystore Type : Ethereum File")?;
+                write!(writer, "Keystore Path : {:?}", file.path)?;
+                write!(f, "{}", writer)?;
+            }
+            Keystore::InMem(_) => {
+                writeln!(writer, "Keystore Type : Ethereum InMem")?;
+                write!(f, "{}", writer)?;
+            }
+        }
+        Ok(())
     }
 }
 
@@ -233,14 +593,6 @@ where
             keys,
             session_keys: BTreeMap::new(),
         }
-    }
-
-    pub fn insert_session_keys(
-        &mut self,
-        address: K,
-        session_keys: BTreeMap<AuthenticationKey, V>,
-    ) {
-        self.session_keys.insert(address, session_keys);
     }
 }
 
@@ -497,9 +849,9 @@ impl
 
     fn sign_transaction(
         &self,
-        address: &EthereumAddress,
+        _address: &EthereumAddress,
         msg: EthereumTransactionData,
-        coin_id: CoinID,
+        _coin_id: CoinID,
     ) -> Result<EthereumTransaction, signature::Error> {
         let signature = EthereumTransactionData::into_signature(&msg).unwrap();
         let auth = authenticator::Authenticator::ethereum(signature);
@@ -594,7 +946,7 @@ impl
         address: &EthereumAddress,
     ) -> Result<AuthenticationKey, anyhow::Error> {
         //TODO define derivation_path for session key
-        let (address, kp, _coin_id, _phrase) = generate_new_key_pair::<
+        let (_, kp, _coin_id, _phrase) = generate_new_key_pair::<
             EthereumAddress,
             Secp256k1RecoverableKeyPair,
         >(CoinID::Ether, None, None)?;
@@ -602,7 +954,7 @@ impl
         let authentication_key = AuthenticationKey::new(authentication_key_bytes);
         let inner_map = self
             .session_keys
-            .entry(address)
+            .entry(*address)
             .or_insert_with(BTreeMap::new);
         inner_map.insert(authentication_key.clone(), kp);
         Ok(authentication_key)
@@ -636,47 +988,10 @@ impl
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct FileBasedKeystore<K: Ord, V> {
     keystore: BaseKeyStore<K, V>,
     path: Option<PathBuf>,
-}
-
-impl<K: Ord, V> Serialize for FileBasedKeystore<K, V> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(
-            self.path
-                .as_ref()
-                .unwrap_or(&PathBuf::default())
-                .to_str()
-                .unwrap_or(""),
-        )
-    }
-}
-
-impl<'de> Deserialize<'de> for FileBasedKeystore<RoochAddress, RoochKeyPair> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        use serde::de::Error;
-        FileBasedKeystore::new_rooch(&PathBuf::from(String::deserialize(deserializer)?))
-            .map_err(D::Error::custom)
-    }
-}
-
-impl<'de> Deserialize<'de> for FileBasedKeystore<EthereumAddress, Secp256k1RecoverableKeyPair> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        use serde::de::Error;
-        FileBasedKeystore::new_ethereum(&PathBuf::from(String::deserialize(deserializer)?))
-            .map_err(D::Error::custom)
-    }
 }
 
 impl
@@ -930,7 +1245,7 @@ impl
 }
 
 impl FileBasedKeystore<RoochAddress, RoochKeyPair> {
-    pub fn new_rooch(path: &PathBuf) -> Result<Self, anyhow::Error> {
+    pub fn new(path: &PathBuf) -> Result<Self, anyhow::Error> {
         let keystore = if path.exists() {
             let reader = BufReader::new(File::open(path).map_err(|e| {
                 anyhow!(
@@ -979,7 +1294,7 @@ impl FileBasedKeystore<RoochAddress, RoochKeyPair> {
 }
 
 impl FileBasedKeystore<EthereumAddress, Secp256k1RecoverableKeyPair> {
-    pub fn new_ethereum(path: &PathBuf) -> Result<Self, anyhow::Error> {
+    pub fn new(path: &PathBuf) -> Result<Self, anyhow::Error> {
         let keystore = if path.exists() {
             let reader = BufReader::new(File::open(path).map_err(|e| {
                 anyhow!(
