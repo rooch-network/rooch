@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::jsonrpc_types::TypeInfoView;
+use crate::jsonrpc_types::StructTagView;
 use move_core_types::u256::U256;
 use rooch_types::account::{AccountInfo, BalanceInfo};
 use serde::{Deserialize, Serialize};
@@ -52,12 +52,12 @@ impl From<AccountInfoView> for AccountInfo {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BalanceInfoView {
-    pub coin_type: TypeInfoView,
+    pub coin_type: StructTagView,
     pub balance: U256,
 }
 //
 // impl BalanceInfoView {
-//     pub fn new(coin_type: TypeInfo, balance: U256) -> Self {
+//     pub fn new(coin_type: StructTag, balance: U256) -> Self {
 //         Self { coin_type, balance }
 //     }
 // }

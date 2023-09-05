@@ -828,10 +828,10 @@ Return true if the type <code>CoinType1</code> is same with <code>CoinType2</cod
 
 ## Function `coin_store_handle`
 
-Return coin store handle for addr with coin type <code>CoinType</code>
+Return coin store handle for addr
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_store_handle">coin_store_handle</a>&lt;CoinType: key&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="_ObjectID">object_id::ObjectID</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_store_handle">coin_store_handle</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="_ObjectID">object_id::ObjectID</a>&gt;
 </code></pre>
 
 
@@ -840,11 +840,11 @@ Return coin store handle for addr with coin type <code>CoinType</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_store_handle">coin_store_handle</a>&lt;CoinType: key&gt;(ctx: &StorageContext, addr: <b>address</b>): Option&lt;ObjectID&gt; {
-    <b>if</b> (<a href="coin.md#0x3_coin_exist_coin_store">exist_coin_store</a>&lt;CoinType&gt;(ctx, addr))
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_store_handle">coin_store_handle</a>(ctx: &StorageContext, addr: <b>address</b>): Option&lt;ObjectID&gt; {
+    <b>if</b> (<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin.md#0x3_coin_CoinStores">CoinStores</a>&gt;(ctx, addr))
     {
         <b>let</b> coin_stores = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin.md#0x3_coin_CoinStores">CoinStores</a>&gt;(ctx, addr);
-        <a href="_some">option::some</a>(*<a href="_handle">type_table::handle</a>&lt;CoinType&gt;(&coin_stores.coin_stores))
+        <a href="_some">option::some</a>(*<a href="_handle">type_table::handle</a>(&coin_stores.coin_stores))
     } <b>else</b> {
         <a href="_none">option::none</a>&lt;ObjectID&gt;()
     }

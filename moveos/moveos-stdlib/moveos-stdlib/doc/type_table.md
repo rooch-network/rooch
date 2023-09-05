@@ -244,7 +244,7 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 Returns table handle of <code><a href="table.md#0x2_table">table</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_handle">handle</a>&lt;V: key&gt;(<a href="table.md#0x2_table">table</a>: &<a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>): &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_handle">handle</a>(<a href="table.md#0x2_table">table</a>: &<a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>): &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
 </code></pre>
 
 
@@ -253,7 +253,7 @@ Returns table handle of <code><a href="table.md#0x2_table">table</a></code>.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_handle">handle</a>&lt;V: key&gt;(<a href="table.md#0x2_table">table</a>: &<a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a>): &ObjectID {
+<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_handle">handle</a>(<a href="table.md#0x2_table">table</a>: &<a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a>): &ObjectID {
     &<a href="table.md#0x2_table">table</a>.handle
 }
 </code></pre>

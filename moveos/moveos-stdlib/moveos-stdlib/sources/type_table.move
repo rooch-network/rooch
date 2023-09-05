@@ -66,7 +66,7 @@ module moveos_std::type_table {
     }
 
     /// Returns table handle of `table`.
-    public fun handle<V: key>(table: &TypeTable): &ObjectID {
+    public fun handle(table: &TypeTable): &ObjectID {
         &table.handle
     }
   

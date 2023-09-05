@@ -228,12 +228,12 @@ module rooch_framework::coin {
         return type_of<CoinType1>() == type_of<CoinType2>()
     }
 
-    /// Return coin store handle for addr with coin type `CoinType`
-    public fun coin_store_handle<CoinType: key>(ctx: &StorageContext, addr: address): Option<ObjectID> {
-        if (exist_coin_store<CoinType>(ctx, addr))
+    /// Return coin store handle for addr
+    public fun coin_store_handle(ctx: &StorageContext, addr: address): Option<ObjectID> {
+        if (account_storage::global_exists<CoinStores>(ctx, addr))
         {
             let coin_stores = account_storage::global_borrow<CoinStores>(ctx, addr);
-            option::some(*type_table::handle<CoinType>(&coin_stores.coin_stores))
+            option::some(*type_table::handle(&coin_stores.coin_stores))
         } else {
             option::none<ObjectID>()
         }
