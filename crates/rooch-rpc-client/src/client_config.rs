@@ -3,9 +3,11 @@
 
 use crate::{Client, ClientBuilder};
 use anyhow::anyhow;
+use fastcrypto::secp256k1::recoverable::Secp256k1RecoverableKeyPair;
 use rooch_config::config::Config;
 use rooch_config::server_config::ServerConfig;
 use rooch_key::keystore::Keystore;
+use rooch_types::address::EthereumAddress;
 use rooch_types::address::RoochAddress;
 use rooch_types::chain_id::RoochChainID;
 use rooch_types::crypto::RoochKeyPair;
@@ -27,6 +29,44 @@ pub struct ClientConfig<K: Ord, V> {
 
 impl ClientConfig<RoochAddress, RoochKeyPair> {
     pub fn new(keystore: Keystore<RoochAddress, RoochKeyPair>) -> Self {
+        ClientConfig {
+            keystore,
+            active_address: None,
+            envs: vec![],
+            active_env: None,
+        }
+    }
+
+    pub fn get_env(&self, alias: &Option<String>) -> Option<&Env> {
+        if let Some(alias) = alias {
+            self.envs.iter().find(|env| &env.alias == alias)
+        } else {
+            self.envs.first()
+        }
+    }
+
+    pub fn get_active_env(&self) -> Result<&Env, anyhow::Error> {
+        self.get_env(&self.active_env).ok_or_else(|| {
+            anyhow!(
+                "Environment configuration not found for env [{}]",
+                self.active_env.as_deref().unwrap_or("None")
+            )
+        })
+    }
+
+    pub fn add_env(&mut self, env: Env) {
+        if !self
+            .envs
+            .iter()
+            .any(|other_env| other_env.alias == env.alias)
+        {
+            self.envs.push(env)
+        }
+    }
+}
+
+impl ClientConfig<EthereumAddress, Secp256k1RecoverableKeyPair> {
+    pub fn new(keystore: Keystore<EthereumAddress, Secp256k1RecoverableKeyPair>) -> Self {
         ClientConfig {
             keystore,
             active_address: None,
@@ -120,8 +160,33 @@ impl Display for Env {
 }
 
 impl Config for ClientConfig<RoochAddress, RoochKeyPair> {}
+impl Config for ClientConfig<EthereumAddress, Secp256k1RecoverableKeyPair> {}
 
 impl Display for ClientConfig<RoochAddress, RoochKeyPair> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut writer = String::new();
+
+        writeln!(writer, "Managed addresses : {}", self.keystore)?;
+        write!(writer, "Active address: ")?;
+        match self.active_address {
+            Some(r) => writeln!(writer, "{}", r)?,
+            None => writeln!(writer, "None")?,
+        };
+        writeln!(writer, "{}", self.keystore)?;
+        write!(writer, "server: ")?;
+
+        if let Ok(env) = self.get_active_env() {
+            write!(writer, "{}", env)?;
+        }
+        match &self.active_env {
+            Some(r) => writeln!(writer, "{}", r)?,
+            None => writeln!(writer, "None")?,
+        };
+        write!(f, "{}", writer)
+    }
+}
+
+impl Display for ClientConfig<EthereumAddress, Secp256k1RecoverableKeyPair> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut writer = String::new();
 

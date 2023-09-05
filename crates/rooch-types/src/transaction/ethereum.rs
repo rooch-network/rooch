@@ -5,7 +5,7 @@ use super::{authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo
 use crate::{address::EthereumAddress, chain_id::RoochChainID, error::RoochError};
 use anyhow::Result;
 use ethers::{
-    types::{Bytes, OtherFields, Transaction, U256, U64},
+    types::{transaction::eip2930::AccessList, Bytes, OtherFields, Transaction, H160, U256, U64},
     utils::rlp::{Decodable, Rlp},
 };
 use fastcrypto::{
@@ -25,6 +25,54 @@ use serde::{Deserialize, Serialize};
 pub struct EthereumTransactionData(pub Transaction);
 
 impl EthereumTransactionData {
+    pub fn new(
+        hash: H256,
+        nonce: U256,
+        block_hash: Option<H256>,
+        block_number: Option<U64>,
+        transaction_index: Option<U64>,
+        from: H160,
+        to: Option<H160>,
+        value: U256,
+        gas_price: Option<U256>,
+        gas: U256,
+        input: Bytes,
+        v: U64,
+        r: U256,
+        s: U256,
+        transaction_type: Option<U64>,
+        access_list: Option<AccessList>,
+        max_priority_fee_per_gas: Option<U256>,
+        max_fee_per_gas: Option<U256>,
+        chain_id: Option<U256>,
+        other: OtherFields,
+    ) -> Self {
+        let transaction = Transaction {
+            hash,
+            nonce,
+            block_hash,
+            block_number,
+            transaction_index,
+            from,
+            to,
+            value,
+            gas_price,
+            gas,
+            input,
+            v,
+            r,
+            s,
+            transaction_type,
+            access_list,
+            max_priority_fee_per_gas,
+            max_fee_per_gas,
+            chain_id,
+            other,
+        };
+
+        Self(transaction)
+    }
+
     pub fn new_for_test(sender: EthereumAddress, nonce: U256, action: Bytes) -> Self {
         let transaction = Transaction {
             hash: H256::zero(),

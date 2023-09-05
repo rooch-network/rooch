@@ -19,6 +19,8 @@ jsonrpsee = { workspace = true }
 rand = { workspace = true }
 serde_json = { workspace = true }
 log = { workspace = true }
+fastcrypto = { workspace = true }
+ethers = { workspace = true }
 
 move-core-types = { workspace = true }
 

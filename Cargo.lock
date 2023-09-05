@@ -7533,6 +7533,8 @@ dependencies = [
  "bcs",
  "clap 3.2.25",
  "dirs 4.0.0",
+ "ethers",
+ "fastcrypto",
  "futures",
  "jsonrpsee",
  "log",

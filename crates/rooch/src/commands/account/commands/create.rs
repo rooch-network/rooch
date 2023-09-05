@@ -1,16 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::cli_types::WalletContextOptions;
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
-use rooch_types::{
-    account::AccountModule,
-    coin_type::CoinID,
-    error::RoochResult,
-};
-use crate::cli_types::WalletContextOptions;
+use rooch_types::{account::AccountModule, coin_type::CoinID, error::RoochResult};
 
 /// Create a new account on-chain
 ///
