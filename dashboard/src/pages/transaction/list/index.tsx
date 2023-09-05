@@ -102,10 +102,6 @@ const InvoiceList = () => {
   // ** State
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 })
 
-  useEffect(() => {
-    console.log(paginationModel)
-  }, [paginationModel])
-
   // ** Hooks
   const dispatch = useDispatch<AppDispatch>()
   const store = useSelector((state: RootState) => state.transaction)
