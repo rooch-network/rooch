@@ -8,7 +8,6 @@ use async_trait::async_trait;
 use rooch_key::keystore::AccountKeystore;
 use rooch_types::{
     coin_type::CoinID,
-    crypto::BuiltinScheme,
     error::{RoochError, RoochResult},
 };
 

@@ -11,7 +11,6 @@ use rooch_key::keystore::AccountKeystore;
 use rooch_types::{
     address::RoochAddress,
     coin_type::CoinID,
-    crypto::{self, BuiltinScheme},
     error::{RoochError, RoochResult},
     framework::native_validator::NativeValidatorModule,
 };

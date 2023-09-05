@@ -9,9 +9,8 @@ use rooch_types::{
     address::RoochAddress,
     authentication_key::AuthenticationKeyType,
     coin_type::CoinID,
-    crypto::{BuiltinScheme, PublicKey},
     error::{RoochError, RoochResult},
-    framework::native_validator::{NativeValidator, NativeValidatorModule},
+    framework::native_validator::NativeValidatorModule,
 };
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
@@ -74,7 +73,7 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                 );
 
                 // Get public key
-                let public_key = kp.into();
+                let public_key = kp.public();
 
                 // Get public key reference
                 let public_key = public_key.as_ref().to_vec();

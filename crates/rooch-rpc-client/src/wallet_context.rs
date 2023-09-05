@@ -13,7 +13,7 @@ use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView};
 use rooch_types::address::RoochAddress;
 use rooch_types::coin_type::CoinID;
-use rooch_types::crypto::Signature;
+use rooch_types::crypto::{RoochKeyPair, Signature};
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::{
     authenticator::Authenticator,
@@ -28,14 +28,14 @@ use tokio::sync::RwLock;
 
 pub struct WalletContext {
     client: Arc<RwLock<Option<Client>>>,
-    pub config: PersistedConfig<ClientConfig>,
+    pub config: PersistedConfig<ClientConfig<RoochAddress, RoochKeyPair>>,
 }
 
 impl WalletContext {
     pub async fn new(config_path: Option<PathBuf>) -> Result<Self, anyhow::Error> {
         let config_dir = config_path.unwrap_or(rooch_config_dir()?);
         let config_path = config_dir.join(ROOCH_CLIENT_CONFIG);
-        let config: ClientConfig = PersistedConfig::read(&config_path).map_err(|err| {
+        let config: ClientConfig<RoochAddress, RoochKeyPair> = PersistedConfig::read(&config_path).map_err(|err| {
             anyhow!(
                 "Cannot open wallet config file at {:?}. Err: {err}, Use `rooch init` to configuration",
                 config_path

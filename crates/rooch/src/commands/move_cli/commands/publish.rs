@@ -11,7 +11,7 @@ use move_cli::Move;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_types::coin_type::CoinID;
-use rooch_types::{crypto::BuiltinScheme, transaction::rooch::RoochTransaction};
+use rooch_types::transaction::rooch::RoochTransaction;
 
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use moveos::vm::dependency_order::sort_by_dependency_order;

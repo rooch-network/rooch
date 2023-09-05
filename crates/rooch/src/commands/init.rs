@@ -10,10 +10,12 @@ use rooch_config::config::Config;
 use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_KEYSTORE_FILENAME};
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use rooch_rpc_client::client_config::{ClientConfig, Env};
+use rooch_types::address::RoochAddress;
 use rooch_types::chain_id::RoochChainID;
 use rooch_types::coin_type::CoinID;
+use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::RoochError;
-use rooch_types::{crypto::BuiltinScheme, error::RoochResult};
+use rooch_types::error::RoochResult;
 use std::fs;
 
 /// Tool for init with rooch
@@ -99,7 +101,14 @@ impl CommandAction<String> for Init {
                     .parent()
                     .unwrap_or(&rooch_config_dir()?)
                     .join(ROOCH_KEYSTORE_FILENAME);
-                let mut keystore = Keystore::from(FileBasedKeystore::new(&keystore_path)?);
+
+                let keystore_result =
+                    FileBasedKeystore::<RoochAddress, RoochKeyPair>::new(&keystore_path);
+                let mut keystore = match keystore_result {
+                    Ok(file_keystore) => Keystore::File(file_keystore),
+                    Err(error) => return Err(RoochError::GenerateKeyError(error.to_string())),
+                };
+
                 let (new_address, phrase, scheme) =
                     keystore.generate_and_add_new_key(CoinID::Rooch, None, None)?;
                 println!(

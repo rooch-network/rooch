@@ -10,7 +10,6 @@ use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, TypeTagView};
 use rooch_types::{
     address::RoochAddress,
     coin_type::CoinID,
-    crypto::BuiltinScheme,
     error::{RoochError, RoochResult},
     transaction::rooch::RoochTransaction,
 };
