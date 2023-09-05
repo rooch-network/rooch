@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // ** React Imports
-import { useEffect } from 'react'
+// import { useEffect } from 'react'
 
 // ** Icon Imports
 import Icon from 'src/@core/components/icon'
@@ -28,7 +28,7 @@ const LanguageDropdown = ({ settings, saveSettings }: Props) => {
   // ** Vars
   const { layout } = settings
 
-  const handleLangItemClick = (lang: 'en' | 'cn' ) => {
+  const handleLangItemClick = (lang: 'en' | 'cn') => {
     // TODO: Chinese has not been configured
     // i18n.changeLanguage(lang)
   }
@@ -73,7 +73,7 @@ const LanguageDropdown = ({ settings, saveSettings }: Props) => {
               saveSettings({ ...settings, direction: 'ltr' })
             },
           },
-        }
+        },
       ]}
     />
   )

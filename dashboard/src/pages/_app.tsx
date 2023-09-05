@@ -118,37 +118,37 @@ const App = (props: ExtendedAppProps) => {
   return (
     <Provider store={store}>
       <CacheProvider value={emotionCache}>
-      <Head>
-        <title>{`${themeConfig.templateName} - Dashboard`}</title>
-        <meta name="description" content={`${themeConfig.templateName} – Dashboard`} />
-        <meta name="keywords" content="Rooch, Dashboard" />
-        <meta name="viewport" content="initial-scale=1, width=device-width" />
-      </Head>
+        <Head>
+          <title>{`${themeConfig.templateName} - Dashboard`}</title>
+          <meta name="description" content={`${themeConfig.templateName} – Dashboard`} />
+          <meta name="keywords" content="Rooch, Dashboard" />
+          <meta name="viewport" content="initial-scale=1, width=device-width" />
+        </Head>
 
-      <MetamaskProvider>
-        <AuthProvider>
-          <SettingsProvider {...(setConfig ? { pageSettings: setConfig() } : {})}>
-            <SettingsConsumer>
-              {({ settings }) => {
-                return (
-                  <ThemeComponent settings={settings}>
-                    <Guard authGuard={authGuard} guestGuard={guestGuard}>
-                      {getLayout(<Component {...pageProps} />)}
-                    </Guard>
-                    <ReactHotToast>
-                      <Toaster
-                        position={settings.toastPosition}
-                        toastOptions={{ className: 'react-hot-toast' }}
-                      />
-                    </ReactHotToast>
-                  </ThemeComponent>
-                )
-              }}
-            </SettingsConsumer>
-          </SettingsProvider>
-        </AuthProvider>
-      </MetamaskProvider>
-    </CacheProvider>
+        <MetamaskProvider>
+          <AuthProvider>
+            <SettingsProvider {...(setConfig ? { pageSettings: setConfig() } : {})}>
+              <SettingsConsumer>
+                {({ settings }) => {
+                  return (
+                    <ThemeComponent settings={settings}>
+                      <Guard authGuard={authGuard} guestGuard={guestGuard}>
+                        {getLayout(<Component {...pageProps} />)}
+                      </Guard>
+                      <ReactHotToast>
+                        <Toaster
+                          position={settings.toastPosition}
+                          toastOptions={{ className: 'react-hot-toast' }}
+                        />
+                      </ReactHotToast>
+                    </ThemeComponent>
+                  )
+                }}
+              </SettingsConsumer>
+            </SettingsProvider>
+          </AuthProvider>
+        </MetamaskProvider>
+      </CacheProvider>
     </Provider>
   )
 }

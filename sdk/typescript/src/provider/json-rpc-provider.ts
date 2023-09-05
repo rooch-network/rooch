@@ -5,7 +5,14 @@ import { HTTPTransport, RequestManager } from '@open-rpc/client-js'
 import { JsonRpcClient } from '../generated/client'
 import { Connection, LocalnetConnection } from './connection'
 import { bytes } from '../types/bcs'
-import { FunctionId, TypeTag, Arg, AnnotatedFunctionResultView, TransactionView, TransactionExecutionInfoView } from '../types'
+import {
+  FunctionId,
+  TypeTag,
+  Arg,
+  AnnotatedFunctionResultView,
+  TransactionView,
+  TransactionExecutionInfoView,
+} from '../types'
 import { functionIdToStirng, typeTagToString, encodeArg, toHexString } from '../utils'
 
 import { ROOCH_DEV_CHIAN_ID } from '../constants'
@@ -105,10 +112,7 @@ export class JsonRpcProvider {
     return this.client.rooch_sendRawTransaction(playload)
   }
 
-  async getTransactionByIndex(
-    start: number,
-    limit: number,
-  ): Promise<TransactionView[]> {
+  async getTransactionByIndex(start: number, limit: number): Promise<TransactionView[]> {
     return await this.client.rooch_getTransactionByIndex(start, limit)
   }
 

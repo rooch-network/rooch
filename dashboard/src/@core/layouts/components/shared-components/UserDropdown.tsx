@@ -23,7 +23,7 @@ import { useAuth } from 'src/hooks/useAuth'
 
 // ** Type Imports
 import { Settings } from 'src/@core/context/settingsContext'
-import {formatAddress} from "../../../utils/format";
+import { formatAddress } from '../../../utils/format'
 
 interface AccountType {
   title: string
@@ -82,13 +82,13 @@ const UserDropdown = (props: Props) => {
 
   return (
     <Fragment>
-        <Button variant='text' size='small' onClick={handleDropdownOpen}>
-          <Box sx={{ mr: 0, display: 'flex', flexDirection: 'column', textAlign: 'center' }}>
-            <Typography sx={{ fontWeight: 500 }}>{data[0].title}</Typography>
-            <Typography variant="body2" sx={{ mb: 0.5, color: 'text.disabled' }}>
-              {formatAddress(data[0].address)}
-            </Typography>
-          </Box>
+      <Button variant="text" size="small" onClick={handleDropdownOpen}>
+        <Box sx={{ mr: 0, display: 'flex', flexDirection: 'column', textAlign: 'center' }}>
+          <Typography sx={{ fontWeight: 500 }}>{data[0].title}</Typography>
+          <Typography variant="body2" sx={{ mb: 0.5, color: 'text.disabled' }}>
+            {formatAddress(data[0].address)}
+          </Typography>
+        </Box>
       </Button>
       <Menu
         anchorEl={anchorEl}
@@ -115,12 +115,12 @@ const UserDropdown = (props: Props) => {
         <MenuItem
           onClick={handleLogout}
           sx={{
-          py: 2,
+            py: 2,
             px: 4,
             color: 'text.secondary',
             '& svg': { mr: 2, fontSize: '1.25rem', color: 'text.secondary' },
           }}
-          >
+        >
           <Icon icon="bxs-user-x" />
           Create Account
         </MenuItem>
@@ -128,12 +128,12 @@ const UserDropdown = (props: Props) => {
         <MenuItem
           onClick={handleLogout}
           sx={{
-          py: 2,
+            py: 2,
             px: 4,
             color: 'text.secondary',
             '& svg': { mr: 2, fontSize: '1.25rem', color: 'text.secondary' },
           }}
-          >
+        >
           <Icon icon="bxs-user-account" />
           Connect Wallet
         </MenuItem>

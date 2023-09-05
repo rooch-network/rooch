@@ -16,7 +16,7 @@ import Typography from '@mui/material/Typography'
 import IconButton from '@mui/material/IconButton'
 import CardContent from '@mui/material/CardContent'
 import FormControl from '@mui/material/FormControl'
-import { styled, useTheme } from '@mui/material/styles'
+import { useTheme } from '@mui/material/styles'
 import MenuItem from '@mui/material/MenuItem'
 import Select, { SelectChangeEvent } from '@mui/material/Select'
 import FormControlLabel from '@mui/material/FormControlLabel'
@@ -42,13 +42,6 @@ import { useAuth } from 'src/hooks/useAuth'
 // ** Demo Imports
 import AuthIllustrationWrapper from 'src/views/pages/auth/AuthIllustrationWrapper'
 import { WalletType } from 'src/context/auth/types'
-
-// ** Styled Components
-const LinkStyled = styled(Link)(({ theme }) => ({
-  fontSize: '0.875rem',
-  textDecoration: 'none',
-  color: theme.palette.primary.main,
-}))
 
 const schema = yup.object().shape({
   secretKey: yup.string().min(43).required(),
@@ -118,7 +111,7 @@ const LoginPage = () => {
   }
 
   const createAccount = () => {
-      auth.loginByNewAccount()
+    auth.loginByNewAccount()
   }
 
   return (
@@ -213,8 +206,8 @@ const LoginPage = () => {
                 />
                 {auth.supportWallets.length > 0 ? (
                   <Button
-                    variant='text'
-                    size='small'
+                    variant="text"
+                    size="small"
                     onClick={() => {
                       if (inputType === InputType.Connect) {
                         setInputType(InputType.Import)
@@ -244,7 +237,9 @@ const LoginPage = () => {
                   New on our platform?
                 </Typography>
                 <Typography>
-                  <Button size='small' variant='text' onClick={createAccount}>Create an account</Button>
+                  <Button size="small" variant="text" onClick={createAccount}>
+                    Create an account
+                  </Button>
                 </Typography>
               </Box>
               <Divider sx={{ my: `${theme.spacing(6)} !important` }}>or</Divider>

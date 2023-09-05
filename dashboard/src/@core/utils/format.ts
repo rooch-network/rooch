@@ -3,10 +3,10 @@
 
 import { PaymentTypes } from './types'
 
-export const  formatAddress = (address: string) => {
+export const formatAddress = (address: string) => {
   let shortAddress = address.substring(0, 6)
   shortAddress += '...'
-  shortAddress += address.substring(address.length-6, address.length)
+  shortAddress += address.substring(address.length - 6, address.length)
 
   return shortAddress
 }

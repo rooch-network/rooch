@@ -2,20 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // ** Redux Imports
-import { Dispatch } from 'redux'
+// import { Dispatch } from 'redux'
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 
 // ** sdk import
 import { JsonRpcProvider, TransactionView } from '@rooch/sdk'
 
 interface DataParams {
-  start: number,
+  start: number
   end: number
 }
 
 // ** Fetch Transaction
 export const fetchData = createAsyncThunk('Transaction/fetchData', async (params: DataParams) => {
-
   const jp = new JsonRpcProvider()
   let result = await jp.getTransactionByIndex(params.start, params.end)
 

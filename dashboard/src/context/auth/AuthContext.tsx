@@ -171,7 +171,7 @@ const AuthProvider = ({ children }: Props) => {
       type: AccountType.ROOCH,
     })
 
-    console.log("login")
+    console.log('login')
     console.log(kp.toRoochAddress())
     console.log(kp.export().privateKey)
 

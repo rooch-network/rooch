@@ -12,15 +12,13 @@ import Icon from 'src/@core/components/icon'
 import { Settings } from 'src/@core/context/settingsContext'
 
 // ** Components
-import LanguageToggler from 'src/@core/layouts/components/shared-components/LanguageToggler'
 import LanguageDropdown from 'src/@core/layouts/components/shared-components/LanguageDropdown'
 import ModeToggler from 'src/@core/layouts/components/shared-components/ModeToggler'
 import UserDropdown from 'src/@core/layouts/components/shared-components/UserDropdown'
 import Autocomplete from 'src/layouts/components/Autocomplete'
 
 // ** Hooks
-import {useAuth} from 'src/hooks/useAuth'
-
+import { useAuth } from 'src/hooks/useAuth'
 
 interface Props {
   hidden: boolean
@@ -47,17 +45,19 @@ const AppBarContent = (props: Props) => {
         ) : null}
 
         <Autocomplete hidden={hidden} settings={settings} />
-
       </Box>
       <Box className="actions-right" sx={{ display: 'flex', alignItems: 'center' }}>
         <ModeToggler settings={settings} saveSettings={saveSettings} />
-        <LanguageDropdown settings={settings} saveSettings={saveSettings}/>
-        <UserDropdown settings={settings} data={Array.from(auth.accounts!).map((k, v) => {
+        <LanguageDropdown settings={settings} saveSettings={saveSettings} />
+        <UserDropdown
+          settings={settings}
+          data={Array.from(auth.accounts!).map((k, v) => {
             return {
-              title:k[1].type,
-              address:k[0]
+              title: k[1].type,
+              address: k[0],
             }
-        })} />
+          })}
+        />
       </Box>
     </Box>
   )
