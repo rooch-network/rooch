@@ -21,7 +21,8 @@ pub struct StartCommand {
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
     pub chain_id: Option<RoochChainID>,
 
-    #[clap(long, short = 'p', help = R_OPT_NET_HELP)]
+    /// The port on which the server should listen defaults to `50051`
+    #[clap(long, short = 'p')]
     pub port: Option<u16>,
 }
 
