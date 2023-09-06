@@ -34,6 +34,11 @@ schemars = { workspace = true }
 serde_with = { workspace = true }
 rand = { workspace = true }
 fastcrypto = { workspace = true }
+fixed-hash = { workspace = true }
+uint = { workspace = true }
+bytes = { workspace = true }
+open-fastrlp = { workspace = true }
+const-hex = { workspace = true }
 
 move-core-types = { workspace = true }
 move-resource-viewer = { workspace = true }
@@ -46,4 +51,3 @@ rooch-types = { workspace = true }
 rooch-config = { workspace = true }
 rooch-open-rpc = { workspace = true }
 rooch-open-rpc-macros = { workspace = true }
-ethereum-open-rpc-macros = { workspace = true }

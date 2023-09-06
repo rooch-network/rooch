@@ -2,10 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::service::RpcService;
-use ethers::types::{
-    transaction::eip2930::AccessList, Address, Block, BlockNumber, Bloom, Bytes, OtherFields,
-    Transaction, TransactionReceipt, Withdrawal, H160, U256, U64,
-};
 use jsonrpsee::{
     core::{async_trait, Error as JsonRpcError, RpcResult},
     RpcModule,

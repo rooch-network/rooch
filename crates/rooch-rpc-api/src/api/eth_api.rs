@@ -1,23 +1,19 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::jsonrpc_types::eth::{CallRequest, EthFeeHistory};
-// use ethereum_open_rpc_macros::open_rpc;
+use crate::jsonrpc_types::{eth::{CallRequest, EthFeeHistory, transaction::{Transaction, TransactionReceipt, TransactionRequest}, primitive_types::{H256, H160, U256}, ethereum_types::{block::{BlockNumber, Block}}}, bytes::Bytes};
 use async_trait::async_trait;
-use ethers::types::{
-    Block, BlockNumber, Bytes, Transaction, TransactionReceipt, TransactionRequest, TxHash, H160,
-    U256,
-};
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
-use rooch_types::H256;
+use rooch_open_rpc_macros::open_rpc;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::string::String;
 
-#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Debug)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Debug, JsonSchema)]
 pub enum TransactionType {
     Full(Transaction),
-    Hash(TxHash),
+    Hash(H256),
 }
 
 impl Default for TransactionType {
@@ -26,7 +22,7 @@ impl Default for TransactionType {
     }
 }
 
-// #[open_rpc(namespace = "ethereum")]
+#[open_rpc(namespace = "ethereum")]
 #[rpc(server, client, namespace = "ethereum")]
 #[async_trait]
 pub trait EthAPI {

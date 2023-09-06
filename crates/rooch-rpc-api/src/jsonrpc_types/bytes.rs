@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use rustc_hex::{FromHex, ToHex};
+use schemars::JsonSchema;
 use serde::{
     de::{Error, Visitor},
     Deserialize, Deserializer, Serialize, Serializer,
@@ -9,7 +10,7 @@ use serde::{
 use std::fmt;
 
 /// Wrapper structure around vector of bytes.
-#[derive(Debug, PartialEq, Eq, Default, Hash, Clone)]
+#[derive(Debug, PartialEq, Eq, Default, Hash, Clone, JsonSchema)]
 pub struct Bytes(pub Vec<u8>);
 
 impl Bytes {

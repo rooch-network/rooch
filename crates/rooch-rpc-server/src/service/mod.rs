@@ -160,14 +160,14 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn get_transaction_by_indices(
+    pub async fn get_transaction_by_index(
         &self,
         start: u64,
         limit: u64,
     ) -> Result<Vec<TypedTransaction>> {
         let resp = self
             .sequencer
-            .get_transaction_by_indices(start, limit)
+            .get_transaction_by_index(start, limit)
             .await?;
         Ok(resp)
     }

@@ -3,9 +3,9 @@
 
 use anyhow::Result;
 use coerce::actor::message::Message;
+use moveos_types::h256::H256;
 use rooch_types::{
     transaction::{TransactionSequenceInfo, TypedTransaction},
-    H256,
 };
 
 /// Transaction Sequence Message

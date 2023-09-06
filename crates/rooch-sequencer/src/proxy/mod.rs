@@ -10,9 +10,9 @@ use crate::{
 };
 use anyhow::Result;
 use coerce::actor::ActorRef;
+use moveos_types::h256::H256;
 use rooch_types::{
     transaction::{TransactionSequenceInfo, TypedTransaction},
-    H256,
 };
 
 #[derive(Clone)]
@@ -46,7 +46,7 @@ impl SequencerProxy {
             .await?
     }
 
-    pub async fn get_transaction_by_indices(
+    pub async fn get_transaction_by_index(
         &self,
         start: u64,
         limit: u64,

@@ -3,8 +3,9 @@
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
+use moveos_types::h256::H256;
 use rooch_rpc_api::jsonrpc_types::TransactionView;
-use rooch_types::{error::RoochResult, H256};
+use rooch_types::{error::RoochResult};
 
 /// Get transaction by hash
 #[derive(Debug, clap::Parser)]

@@ -3,11 +3,13 @@
 
 use crate::jsonrpc_types::bytes::Bytes;
 use crate::jsonrpc_types::eth::AccessList;
-use ethers::types::{H160, U256, U64};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use super::{primitive_types::{U256, H160}, ethereum_types::uint::U64};
+
 /// Call request
-#[derive(Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 pub struct CallRequest {

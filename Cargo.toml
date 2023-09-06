@@ -35,7 +35,6 @@ members = [
     "crates/rooch-open-rpc-spec",
     "crates/rooch-open-rpc-spec-builder",
     "crates/rooch-open-rpc-macros",
-    "crates/ethereum-open-rpc-macros",
     "crates/rooch-store"
 ]
 
@@ -95,7 +94,6 @@ rooch-open-rpc = { path = "crates/rooch-open-rpc" }
 rooch-open-rpc-spec = { path = "crates/rooch-open-rpc-spec" }
 rooch-open-rpc-spec-builder = { path = "crates/rooch-open-rpc-spec-builder" }
 rooch-open-rpc-macros = { path = "crates/rooch-open-rpc-macros" }
-ethereum-open-rpc-macros = { path = "crates/ethereum-open-rpc-macros" }
 rooch-store = { path = "crates/rooch-store" }
 
 # External crate dependencies.
@@ -105,7 +103,6 @@ anyhow = "1.0.62"
 async-trait = "0"
 backtrace = "0.3"
 bcs = "0.1.3"
-bytes = "1.0.1"
 bech32 = "0.9.1"
 better_any = "0.1.1"
 bitcoin = "0.30.1"
@@ -204,6 +201,11 @@ bitcoin-bech32 = "0.13.0"
 bs58 = "0.5.0"
 dirs-next = "2.0.0"
 anstream = { version = "0.3" }
+fixed-hash = "0.8.0"
+uint = "0.9.5"
+bytes = "1.4.0"
+open-fastrlp = "0.1.4"
+const-hex = "1.6.2"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES

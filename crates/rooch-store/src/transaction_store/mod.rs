@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use moveos_types::h256::H256;
 use raw_store::CodecKVStore;
 use rooch_types::error::RoochError;
 use rooch_types::transaction::{
     AbstractTransaction, TransactionSequenceInfo, TransactionSequenceMapping, TypedTransaction,
 };
-use rooch_types::H256;
 
 use crate::{
     SEQ_TRANSACTION_PREFIX_NAME, TX_SEQ_MAPPING_PREFIX_NAME, TYPED_TRANSACTION_PREFIX_NAME,
@@ -34,7 +34,7 @@ pub trait TransactionStore {
     fn save_transaction(&mut self, transaction: TypedTransaction) -> Result<()>;
     fn get_tx_by_hash(&self, hash: H256) -> Result<Option<TypedTransaction>>;
     fn get_tx_by_hash_and_index(&self, hash: H256, index: u64) -> Result<TypedTransaction>;
-    fn get_tx_by_indices(&self, start: u64, limit: u64) -> Result<Vec<TypedTransaction>>;
+    fn get_tx_by_index(&self, start: u64, limit: u64) -> Result<Vec<TypedTransaction>>;
 
     fn save_tx_seq_info(&self, tx_seq_info: TransactionSequenceInfo) -> Result<()>;
     fn get_tx_seq_infos_by_tx_order(
@@ -89,7 +89,7 @@ impl TransactionDBStore {
     }
 
     // TODO: implements get type tx by indices
-    pub fn get_tx_by_indices(&self, _start: u64, _limit: u64) -> Result<Vec<TypedTransaction>> {
+    pub fn get_tx_by_index(&self, _start: u64, _limit: u64) -> Result<Vec<TypedTransaction>> {
         Ok(vec![])
     }
 

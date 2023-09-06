@@ -5,13 +5,13 @@ use crate::transaction_store::{TransactionDBStore, TransactionStore};
 use anyhow::Result;
 use moveos_config::store_config::RocksdbConfig;
 use moveos_config::temp_dir;
+use moveos_types::h256::H256;
 use once_cell::sync::Lazy;
 use raw_store::rocks::RocksDB;
 use raw_store::{ColumnFamilyName, StoreInstance};
 use rooch_types::transaction::{
     TransactionSequenceInfo, TransactionSequenceMapping, TypedTransaction,
 };
-use rooch_types::H256;
 use std::fmt::{Debug, Display, Formatter};
 
 pub mod transaction_store;
@@ -94,8 +94,8 @@ impl TransactionStore for RoochStore {
             .get_tx_by_hash_and_index(hash, index)?)
     }
 
-    fn get_tx_by_indices(&self, start: u64, limit: u64) -> Result<Vec<TypedTransaction>> {
-        self.transaction_store.get_tx_by_indices(start, limit)
+    fn get_tx_by_index(&self, start: u64, limit: u64) -> Result<Vec<TypedTransaction>> {
+        self.transaction_store.get_tx_by_index(start, limit)
     }
 
     fn save_tx_seq_info(&self, tx_seq_info: TransactionSequenceInfo) -> Result<()> {

@@ -14,12 +14,10 @@ use moveos_types::{
 };
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, EventPageView, ListAnnotatedStatesPageView,
-    ListStatesPageView, StrView, StructTagView,
+    ListStatesPageView, StrView, StructTagView, eth::{EthFeeHistory, CallRequest, primitive_types::H160}
 };
-use rooch_rpc_api::api::rooch_api::RoochAPI;
-use rooch_rpc_api::api::eth_api::EthAPI;
 use rooch_types::{
-    account::Account, address::{RoochAddress, EthereumAddress}, transaction::{rooch::RoochTransaction, ethereum::{EthereumTransaction, EthereumTransactionData}, TransactionType}, H256, H160,
+    account::Account, address::{RoochAddress, EthereumAddress}, transaction::{rooch::RoochTransaction, ethereum::{EthereumTransaction, EthereumTransactionData}, TransactionType}
 };
 use tonic::async_trait;
 use std::sync::Arc;
@@ -50,7 +48,7 @@ impl ClientBuilder {
         self
     }
 
-    async fn build(self, http: impl AsRef<str>, ethereum_url: &str) -> Result<Client> {
+    async fn build(self, http: impl AsRef<str>) -> Result<Client> {
         // TODO: add verison info
 
         let http_client = HttpClientBuilder::default()
@@ -61,7 +59,6 @@ impl ClientBuilder {
 
         Ok(Client {
             rpc: Arc::new(RpcClient { http: http_client.clone() }),
-            ethereum_rpc: Arc::new(EthereumRpcClient { http: http_client.clone() }),
         })
     }
 }
@@ -80,11 +77,6 @@ pub(crate) struct RpcClient {
     http: HttpClient,
 }
 
-#[derive(Clone, Debug)]
-pub(crate) struct EthereumRpcClient {
-    http: HttpClient,
-}
-
 impl std::fmt::Debug for RpcClient {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "RPC client. Http: {:?}", self.http)
@@ -94,13 +86,11 @@ impl std::fmt::Debug for RpcClient {
 #[derive(Clone, Debug)]
 pub struct Client {
     rpc: Arc<RpcClient>,
-    ethereum_rpc: Arc<EthereumRpcClient>,
 }
 
 // TODO: call args are uniformly defined in jsonrpc types?
 // example execute_view_function get_events_by_event_handle
-#[async_trait]
-impl RoochAPI for Client
+impl Client
 {
     async fn execute_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView> {
         let tx_payload = bcs::to_bytes(&tx)?;
@@ -206,27 +196,27 @@ impl RoochAPI for Client
 }
 
 #[async_trait]
-impl<M, S> EthAPI for Client<M, S>
+impl<M, S> EthAPI for Client
 where
     M: Middleware + Send + Sync,
     S: Signer + Send + Sync,
 {
     async fn net_version(&self) -> RpcResult<String> {
-        self.ethereum_rpc
+        self.rpc
             .http
             .get_net_version()
             .await?
     }
 
     async fn get_chain_id(&self) -> RpcResult<String> {
-        self.ethereum_rpc
+        self.rpc
             .http
             .get_chainid()
             .await?
     }
 
     async fn get_block_number(&self) -> RpcResult<String> {
-        self.ethereum_rpc
+        self.rpc
             .http
             .get_block_number()
             .await?
@@ -237,14 +227,14 @@ where
         num: BlockNumber,
         include_txs: bool,
     ) -> RpcResult<Block<TransactionType>> {
-        self.ethereum_rpc
+        self.rpc
             .http
             .debug_trace_block_by_number(Some(num), include_txs)
             .await?
     }
 
     async fn get_balance(&self, address: H160, num: Option<BlockNumber>) -> RpcResult<U256> {
-        self.ethereum_rpc
+        self.rpc
             .http
             .get_balance(address, num)
             .await?
@@ -255,7 +245,7 @@ where
         request: CallRequest,
         num: Option<BlockNumber>,
     ) -> RpcResult<U256> {
-        self.ethereum_rpc
+        self.rpc
             .http
             .estimate_gas(request, num)
             .await?
@@ -267,14 +257,14 @@ where
         newest_block: BlockNumber,
         reward_percentiles: Option<Vec<f64>>,
     ) -> RpcResult<EthFeeHistory> {
-        self.ethereum_rpc
+        self.rpc
             .http
             .fee_history(block_count, newest_block, reward_percentiles)
             .await?
     }
 
     async fn gas_price(&self) -> RpcResult<U256> {
-        self.ethereum_rpc
+        self.rpc
             .http
             .get_gas_price()
             .await?
@@ -285,28 +275,28 @@ where
         address: H160,
         num: Option<BlockNumber>,
     ) -> RpcResult<U256> {
-        self.ethereum_rpc
+        self.rpc
             .http
             .get_transaction_count(address, num)
             .await?
     }
 
     async fn send_raw_transaction(&self, bytes: Bytes) -> RpcResult<H256> {
-        self.ethereum_rpc
+        self.rpc
             .http
             .send_raw_transaction(bytes)
             .await?
     }
 
     async fn transaction_receipt(&self, hash: H256) -> RpcResult<Option<TransactionReceipt>> {
-        self.ethereum_rpc
+        self.rpc
             .http
             .get_transaction_receipt(hash)
             .await?
     }
 
     async fn transaction_by_hash_and_index(&self, hash: H256, index: u64) -> RpcResult<Option<Transaction>> {
-        self.ethereum_rpc
+        self.rpc
             .http
             .get_transaction_by_block_and_index(hash, index)
             .await?
@@ -317,7 +307,7 @@ where
         hash: H256,
         include_txs: bool,
     ) -> RpcResult<Block<TransactionType>> {
-        self.ethereum_rpc
+        self.rpc
             .http
             .debug_trace_block_by_hash(hash, include_txs)
             .await?

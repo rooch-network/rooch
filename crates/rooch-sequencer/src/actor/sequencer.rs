@@ -8,7 +8,7 @@ use crate::messages::{
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
-use moveos_types::h256;
+use moveos_types::h256::{self, H256};
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
 use rooch_types::{
@@ -17,7 +17,6 @@ use rooch_types::{
 };
 use rooch_types::{
     transaction::{TransactionSequenceInfo, TypedTransaction},
-    H256,
 };
 
 pub struct SequencerActor {
@@ -109,6 +108,6 @@ impl Handler<TransactionByIndicesMessage> for SequencerActor {
         msg: TransactionByIndicesMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<TypedTransaction>> {
-        self.rooch_store.get_tx_by_indices(msg.start, msg.limit)
+        self.rooch_store.get_tx_by_index(msg.start, msg.limit)
     }
 }

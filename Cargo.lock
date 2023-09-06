@@ -2392,18 +2392,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ethereum-open-rpc-macros"
-version = "0.1.0"
-dependencies = [
- "derive-syn-parse",
- "itertools",
- "proc-macro2 1.0.66",
- "quote 1.0.33",
- "syn 1.0.109",
- "unescape",
-]
-
-[[package]]
 name = "ethereum-types"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7507,13 +7495,15 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bcs",
+ "bytes",
  "chrono",
  "clap 3.2.25",
  "coerce",
+ "const-hex",
  "derive_builder",
- "ethereum-open-rpc-macros",
  "ethers",
  "fastcrypto",
+ "fixed-hash 0.8.0",
  "futures",
  "hex",
  "jsonrpsee",
@@ -7522,6 +7512,7 @@ dependencies = [
  "move-core-types",
  "move-resource-viewer",
  "moveos-types",
+ "open-fastrlp",
  "rand 0.8.5",
  "rooch-config",
  "rooch-open-rpc",
@@ -7536,6 +7527,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tonic",
+ "uint",
 ]
 
 [[package]]

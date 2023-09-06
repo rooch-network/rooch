@@ -108,7 +108,6 @@ pub struct Env {
     pub chain_id: u64,
     pub alias: String,
     pub rpc: String,
-    pub ethereum_rpc: String,
     pub ws: Option<String>,
 }
 
@@ -128,7 +127,7 @@ impl Env {
             builder = builder.max_concurrent_requests(max_concurrent_requests as usize);
         }
 
-        builder.build(&self.rpc, &self.ethereum_rpc).await
+        builder.build(&self.rpc).await
     }
 }
 
@@ -138,7 +137,6 @@ impl Default for Env {
             chain_id: RoochChainID::DEV.chain_id().id(),
             alias: "default".to_string(),
             rpc: ServerConfig::default().url(false),
-            ethereum_rpc: ServerConfig::default().url(false),
             ws: None,
         }
     }
