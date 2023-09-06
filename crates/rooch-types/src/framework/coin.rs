@@ -68,24 +68,7 @@ impl AnnotatedCoinStore {
     /// Create a new AnnotatedCoinStore from a AnnotatedMoveStruct
     pub fn new_from_annotated_struct(annotated_struct: AnnotatedMoveStruct) -> Result<Self> {
         let annotated_coin_store_type = annotated_struct.type_;
-        //         "move_value": {
-        //         "abilities": 8,
-        //         "type": "0x3::coin::CoinStore<0xe1176537c0175d336353dad12f7eb60c658ce526eeb3cd08409e6fd8c2dfa1d7::fixed_supply_coin::FSC>",
-        //         "value": {
-        //             "coin": {
-        //                 "abilities": 4,
-        //                 "type": "0x3::coin::Coin<0xe1176537c0175d336353dad12f7eb60c658ce526eeb3cd08409e6fd8c2dfa1d7::fixed_supply_coin::FSC>",
-        //                 "value": {
-        //                     "value": "10000"
-        //                 }
-        //             },
-        //             "frozen": false
-        //         }
-        //     }
-        //     },
-
         let mut fields = annotated_struct.value.into_iter();
-        // let object_id = ObjectID::try_from(fields.next().expect("Object should have id").1)?;
         let annotated_coin = match fields.next().expect("CoinStore should have coin field") {
             (field_name, AnnotatedMoveValue::Struct(filed_value)) => {
                 debug_assert!(
@@ -104,18 +87,16 @@ impl AnnotatedCoinStore {
                             field_name.as_str() == "value",
                             "CoinValue value field name should be value"
                         );
-                        // String::from_utf8(inner_filed_value)
                         U256::from_bytes(inner_filed_value.as_slice())
                     }
                     _ => bail!("CoinValue value field should be value"),
                 }?;
 
                 let coin = Coin { value: coin_value };
-                let annotated_coin = AnnotatedCoin {
+                AnnotatedCoin {
                     type_: coin_type_,
                     value: coin,
-                };
-                annotated_coin
+                }
             }
             _ => bail!("CoinStore coin field should be struct"),
         };
@@ -147,7 +128,7 @@ impl AnnotatedCoinStore {
     }
 
     pub fn get_coin_value(&self) -> U256 {
-        self.value.coin.value.value.clone()
+        self.value.coin.value.value
     }
 }
 

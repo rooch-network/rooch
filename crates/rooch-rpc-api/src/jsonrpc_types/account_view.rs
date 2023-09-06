@@ -26,7 +26,7 @@ impl From<AccountInfo> for AccountInfoView {
         let balances = account_info
             .balances
             .iter()
-            .map(|v| v.clone().map(|balance| balance.clone().into()))
+            .map(|v| v.clone().map(|balance| balance.into()))
             .collect();
 
         AccountInfoView {
@@ -41,7 +41,7 @@ impl From<AccountInfoView> for AccountInfo {
         let balances = account_info
             .balances
             .iter()
-            .map(|v| v.clone().map(|balance| balance.clone().into()))
+            .map(|v| v.clone().map(|balance| balance.into()))
             .collect();
         AccountInfo {
             sequence_number: account_info.sequence_number,
@@ -55,12 +55,6 @@ pub struct BalanceInfoView {
     pub coin_type: StructTagView,
     pub balance: U256,
 }
-//
-// impl BalanceInfoView {
-//     pub fn new(coin_type: StructTag, balance: U256) -> Self {
-//         Self { coin_type, balance }
-//     }
-// }
 
 impl From<BalanceInfo> for BalanceInfoView {
     fn from(balance_info: BalanceInfo) -> Self {

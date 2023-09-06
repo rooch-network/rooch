@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use move_core_types::vm_status::VMStatus;
 use moveos_types::genesis_info::GenesisInfo;
 use serde::{Deserialize, Serialize};
 use std::io;
@@ -36,6 +37,8 @@ pub enum RoochError {
     UnableToReadFile(String, String),
     #[error("Error: {0}")]
     UnexpectedError(String),
+    #[error("Error: {0}")]
+    UnexpectedVMStatusError(String),
 
     #[error("Simulation failed with status: {0}")]
     SimulationError(String),
@@ -117,6 +120,12 @@ impl From<bcs::Error> for RoochError {
 impl From<io::Error> for RoochError {
     fn from(e: io::Error) -> Self {
         RoochError::IOError(e.to_string())
+    }
+}
+
+impl From<VMStatus> for RoochError {
+    fn from(e: VMStatus) -> Self {
+        RoochError::UnexpectedVMStatusError(e.to_string())
     }
 }
 
