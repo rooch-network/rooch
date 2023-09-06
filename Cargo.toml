@@ -35,6 +35,7 @@ members = [
     "crates/rooch-open-rpc-spec",
     "crates/rooch-open-rpc-spec-builder",
     "crates/rooch-open-rpc-macros",
+    "crates/ethereum-open-rpc-macros",
     "crates/rooch-store"
 ]
 
@@ -94,6 +95,7 @@ rooch-open-rpc = { path = "crates/rooch-open-rpc" }
 rooch-open-rpc-spec = { path = "crates/rooch-open-rpc-spec" }
 rooch-open-rpc-spec-builder = { path = "crates/rooch-open-rpc-spec-builder" }
 rooch-open-rpc-macros = { path = "crates/rooch-open-rpc-macros" }
+ethereum-open-rpc-macros = { path = "crates/ethereum-open-rpc-macros" }
 rooch-store = { path = "crates/rooch-store" }
 
 # External crate dependencies.

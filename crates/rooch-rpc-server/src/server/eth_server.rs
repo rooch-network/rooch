@@ -307,41 +307,43 @@ impl EthAPIServer for EthServer {
         Ok(result)
     }
 
-    async fn transaction_by_hash(&self, hash: H256) -> RpcResult<Option<Transaction>> {
+    async fn transaction_by_hash_and_index(
+        &self,
+        hash: H256,
+        index: u64,
+    ) -> RpcResult<Option<Transaction>> {
         let resp = self
             .rpc_service
-            .get_transaction_by_hash(hash)
-            .await?
-            .map(Into::into);
+            .get_transaction_by_hash_and_index(hash, index)
+            .await?;
 
-        let transaction = resp.map(|_transaction_view: TransactionView| -> Transaction {
-            Transaction {
-                hash: H256::from_str("0x7fd17d4a368fccdba4291ab121e48c96329b7dc3d027a373643fb23c20a19a3f").unwrap(),
-                nonce: U256::from(4391989),
-                block_hash: Some(H256::from_str("0xc2794a16acacd9f7670379ffd12b6968ff98e2a602f57d7d1f880220aa5a4973").unwrap()),
-                block_number: Some(8453214u64.into()),
-                transaction_index: Some(0u64.into()),
-                from: Address::from_str("0xdeaddeaddeaddeaddeaddeaddeaddeaddead0001").unwrap(),
-                to: Some(Address::from_str("0x4200000000000000000000000000000000000015").unwrap()),
-                value: U256::zero(),
-                gas_price: Some(U256::zero()),
-                gas: U256::from(1000000u64),
-                input: Bytes::from(
-                    hex::decode("015d8eb90000000000000000000000000000000000000000000000000000000000878c1c00000000000000000000000000000000000000000000000000000000644662bc0000000000000000000000000000000000000000000000000000001ee24fba17b7e19cc10812911dfa8a438e0a81a9933f843aa5b528899b8d9e221b649ae0df00000000000000000000000000000000000000000000000000000000000000060000000000000000000000007431310e026b69bfc676c0013e12a1a11411eec9000000000000000000000000000000000000000000000000000000000000083400000000000000000000000000000000000000000000000000000000000f4240").unwrap()
-                ),
-                v: U64::zero(),
-                r: U256::zero(),
-                s: U256::zero(),
-                transaction_type: Some(U64::from(126)),
-                access_list: None,
-                max_priority_fee_per_gas: None,
-                max_fee_per_gas: None,
-                chain_id: None,
-                other: Default::default()
-            }
-        });
+        // Create a new Transaction instance and populate its fields
+        let transaction = Transaction {
+            hash: resp.tx_hash().clone(),
+            nonce: U256::from(4391989),
+            block_hash: Some(H256::from_str("0xc2794a16acacd9f7670379ffd12b6968ff98e2a602f57d7d1f880220aa5a4973").unwrap()),
+            block_number: Some(8453214u64.into()),
+            transaction_index: Some(0u64.into()),
+            from: EthereumAddress::try_from(resp.sender().clone())?.0,
+            to: Some(Address::from_str("0x4200000000000000000000000000000000000015").unwrap()),
+            value: U256::zero(),
+            gas_price: Some(U256::zero()),
+            gas: U256::from(1000000u64),
+            input: Bytes::from(
+                hex::decode("015d8eb90000000000000000000000000000000000000000000000000000000000878c1c00000000000000000000000000000000000000000000000000000000644662bc0000000000000000000000000000000000000000000000000000001ee24fba17b7e19cc10812911dfa8a438e0a81a9933f843aa5b528899b8d9e221b649ae0df00000000000000000000000000000000000000000000000000000000000000060000000000000000000000007431310e026b69bfc676c0013e12a1a11411eec9000000000000000000000000000000000000000000000000000000000000083400000000000000000000000000000000000000000000000000000000000f4240").unwrap()
+            ),
+            v: U64::zero(),
+            r: U256::zero(),
+            s: U256::zero(),
+            transaction_type: Some(U64::from(126)),
+            access_list: None,
+            max_priority_fee_per_gas: None,
+            max_fee_per_gas: None,
+            chain_id: None,
+            other: Default::default(),
+        };
 
-        Ok(transaction)
+        Ok(Some(transaction))
     }
 
     async fn block_by_hash(

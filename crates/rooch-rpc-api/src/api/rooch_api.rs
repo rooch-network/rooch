@@ -7,12 +7,14 @@ use crate::jsonrpc_types::{
     ListAnnotatedStatesPageView, ListStatesPageView, StateView, StrView, StructTagView,
     TransactionExecutionInfoView, TransactionInfoPageView, TransactionView,
 };
+use async_trait::async_trait;
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 use rooch_open_rpc_macros::open_rpc;
 
 #[open_rpc(namespace = "rooch")]
 #[rpc(server, client, namespace = "rooch")]
+#[async_trait]
 pub trait RoochAPI {
     /// Send the signed transaction in bcs hex format
     /// This method does not block waiting for the transaction to be executed.

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::eth::{CallRequest, EthFeeHistory};
+// use ethereum_open_rpc_macros::open_rpc;
+use async_trait::async_trait;
 use ethers::types::{
     Block, BlockNumber, Bytes, Transaction, TransactionReceipt, TransactionRequest, TxHash, H160,
     U256,
@@ -24,9 +26,9 @@ impl Default for TransactionType {
     }
 }
 
-// TODO: open rpc
-// Define a rpc server api
-#[rpc(server, client)]
+// #[open_rpc(namespace = "ethereum")]
+#[rpc(server, client, namespace = "ethereum")]
+#[async_trait]
 pub trait EthAPI {
     /// Returns the network version.
     #[method(name = "net_version")]
@@ -94,8 +96,12 @@ pub trait EthAPI {
     async fn transaction_receipt(&self, hash: H256) -> RpcResult<Option<TransactionReceipt>>;
 
     /// Get transaction by its hash.
-    #[method(name = "eth_getTransactionByHash")]
-    async fn transaction_by_hash(&self, hash: H256) -> RpcResult<Option<Transaction>>;
+    #[method(name = "eth_getTransactionByHashAndIndex")]
+    async fn transaction_by_hash_and_index(
+        &self,
+        hash: H256,
+        index: u64,
+    ) -> RpcResult<Option<Transaction>>;
 
     /// Returns block with given hash.
     #[method(name = "eth_getBlockByHash")]

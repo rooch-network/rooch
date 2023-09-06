@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
+use ethers::{providers::{Http, Middleware, Provider}, types::{Address, BlockId, U256, Block, Transaction, TransactionReceipt, transaction::eip2718::TypedTransaction, U64, Bytes, BlockNumber}, signers::{Wallet, Signer}};
+use jsonrpsee::{http_client::{HttpClient, HttpClientBuilder}, core::RpcResult};
 use moveos_types::{
     access_path::AccessPath,
     function_return_value::FunctionResult,
@@ -15,15 +16,12 @@ use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, EventPageView, ListAnnotatedStatesPageView,
     ListStatesPageView, StrView, StructTagView,
 };
-use rooch_rpc_api::{
-    api::rooch_api::RoochAPIClient,
-    jsonrpc_types::{
-        AnnotatedStateView, ExecuteTransactionResponseView, StateView, TransactionView,
-    },
-};
+use rooch_rpc_api::api::rooch_api::RoochAPI;
+use rooch_rpc_api::api::eth_api::EthAPI;
 use rooch_types::{
-    account::Account, address::RoochAddress, transaction::rooch::RoochTransaction, H256,
+    account::Account, address::{RoochAddress, EthereumAddress}, transaction::{rooch::RoochTransaction, ethereum::{EthereumTransaction, EthereumTransactionData}, TransactionType}, H256, H160,
 };
+use tonic::async_trait;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -52,7 +50,7 @@ impl ClientBuilder {
         self
     }
 
-    pub async fn build(self, http: impl AsRef<str>) -> Result<Client> {
+    async fn build(self, http: impl AsRef<str>, ethereum_url: &str) -> Result<Client> {
         // TODO: add verison info
 
         let http_client = HttpClientBuilder::default()
@@ -62,7 +60,8 @@ impl ClientBuilder {
             .build(http)?;
 
         Ok(Client {
-            rpc: Arc::new(RpcClient { http: http_client }),
+            rpc: Arc::new(RpcClient { http: http_client.clone() }),
+            ethereum_rpc: Arc::new(EthereumRpcClient { http: http_client.clone() }),
         })
     }
 }
@@ -81,6 +80,11 @@ pub(crate) struct RpcClient {
     http: HttpClient,
 }
 
+#[derive(Clone, Debug)]
+pub(crate) struct EthereumRpcClient {
+    http: HttpClient,
+}
+
 impl std::fmt::Debug for RpcClient {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "RPC client. Http: {:?}", self.http)
@@ -90,21 +94,24 @@ impl std::fmt::Debug for RpcClient {
 #[derive(Clone, Debug)]
 pub struct Client {
     rpc: Arc<RpcClient>,
+    ethereum_rpc: Arc<EthereumRpcClient>,
 }
 
 // TODO: call args are uniformly defined in jsonrpc types?
 // example execute_view_function get_events_by_event_handle
-impl Client {
-    pub async fn execute_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView> {
+#[async_trait]
+impl RoochAPI for Client
+{
+    async fn execute_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView> {
         let tx_payload = bcs::to_bytes(&tx)?;
         self.rpc
-            .http
+            .http            
             .execute_raw_transaction(tx_payload.into())
             .await
             .map_err(|e| anyhow::anyhow!(e))
     }
 
-    pub async fn execute_view_function(
+    async fn execute_view_function(
         &self,
         function_call: FunctionCall,
     ) -> Result<AnnotatedFunctionResultView> {
@@ -115,11 +122,11 @@ impl Client {
             .map_err(|e| anyhow::anyhow!(e))
     }
 
-    pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<StateView>>> {
+    async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<StateView>>> {
         Ok(self.rpc.http.get_states(access_path.into()).await?)
     }
 
-    pub async fn get_annotated_states(
+    async fn get_annotated_states(
         &self,
         access_path: AccessPath,
     ) -> Result<Vec<Option<AnnotatedStateView>>> {
@@ -130,11 +137,11 @@ impl Client {
             .await?)
     }
 
-    pub async fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<TransactionView>> {
+    async fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<TransactionView>> {
         Ok(self.rpc.http.get_transaction_by_hash(hash.into()).await?)
     }
 
-    pub async fn get_transaction_by_index(
+    async fn get_transaction_by_index(
         &self,
         start: u64,
         limit: u64,
@@ -143,7 +150,7 @@ impl Client {
         Ok(s)
     }
 
-    pub async fn get_sequence_number(&self, sender: RoochAddress) -> Result<u64> {
+    async fn get_sequence_number(&self, sender: RoochAddress) -> Result<u64> {
         Ok(self
             .get_states(AccessPath::resource(sender.into(), Account::struct_tag()))
             .await?
@@ -157,7 +164,7 @@ impl Client {
             .map_or(0, |account| account.sequence_number))
     }
 
-    pub async fn get_events_by_event_handle(
+    async fn get_events_by_event_handle(
         &self,
         event_handle_type: StructTagView,
         cursor: Option<u64>,
@@ -195,6 +202,125 @@ impl Client {
             .http
             .list_annotated_states(access_path, cursor, limit)
             .await?)
+    }
+}
+
+#[async_trait]
+impl<M, S> EthAPI for Client<M, S>
+where
+    M: Middleware + Send + Sync,
+    S: Signer + Send + Sync,
+{
+    async fn net_version(&self) -> RpcResult<String> {
+        self.ethereum_rpc
+            .http
+            .get_net_version()
+            .await?
+    }
+
+    async fn get_chain_id(&self) -> RpcResult<String> {
+        self.ethereum_rpc
+            .http
+            .get_chainid()
+            .await?
+    }
+
+    async fn get_block_number(&self) -> RpcResult<String> {
+        self.ethereum_rpc
+            .http
+            .get_block_number()
+            .await?
+    }
+
+    async fn get_block_by_number(
+        &self,
+        num: BlockNumber,
+        include_txs: bool,
+    ) -> RpcResult<Block<TransactionType>> {
+        self.ethereum_rpc
+            .http
+            .debug_trace_block_by_number(Some(num), include_txs)
+            .await?
+    }
+
+    async fn get_balance(&self, address: H160, num: Option<BlockNumber>) -> RpcResult<U256> {
+        self.ethereum_rpc
+            .http
+            .get_balance(address, num)
+            .await?
+    }
+
+    async fn estimate_gas(
+        &self,
+        request: CallRequest,
+        num: Option<BlockNumber>,
+    ) -> RpcResult<U256> {
+        self.ethereum_rpc
+            .http
+            .estimate_gas(request, num)
+            .await?
+    }
+
+    async fn fee_history(
+        &self,
+        block_count: U256,
+        newest_block: BlockNumber,
+        reward_percentiles: Option<Vec<f64>>,
+    ) -> RpcResult<EthFeeHistory> {
+        self.ethereum_rpc
+            .http
+            .fee_history(block_count, newest_block, reward_percentiles)
+            .await?
+    }
+
+    async fn gas_price(&self) -> RpcResult<U256> {
+        self.ethereum_rpc
+            .http
+            .get_gas_price()
+            .await?
+    }
+
+    async fn transaction_count(
+        &self,
+        address: H160,
+        num: Option<BlockNumber>,
+    ) -> RpcResult<U256> {
+        self.ethereum_rpc
+            .http
+            .get_transaction_count(address, num)
+            .await?
+    }
+
+    async fn send_raw_transaction(&self, bytes: Bytes) -> RpcResult<H256> {
+        self.ethereum_rpc
+            .http
+            .send_raw_transaction(bytes)
+            .await?
+    }
+
+    async fn transaction_receipt(&self, hash: H256) -> RpcResult<Option<TransactionReceipt>> {
+        self.ethereum_rpc
+            .http
+            .get_transaction_receipt(hash)
+            .await?
+    }
+
+    async fn transaction_by_hash_and_index(&self, hash: H256, index: u64) -> RpcResult<Option<Transaction>> {
+        self.ethereum_rpc
+            .http
+            .get_transaction_by_block_and_index(hash, index)
+            .await?
+    }
+
+    async fn block_by_hash(
+        &self,
+        hash: H256,
+        include_txs: bool,
+    ) -> RpcResult<Block<TransactionType>> {
+        self.ethereum_rpc
+            .http
+            .debug_trace_block_by_hash(hash, include_txs)
+            .await?
     }
 }
 

@@ -46,3 +46,4 @@ rooch-types = { workspace = true }
 rooch-config = { workspace = true }
 rooch-open-rpc = { workspace = true }
 rooch-open-rpc-macros = { workspace = true }
+ethereum-open-rpc-macros = { workspace = true }

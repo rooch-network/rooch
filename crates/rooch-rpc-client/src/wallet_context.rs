@@ -4,7 +4,7 @@
 use crate::client_config::{ClientConfig, DEFAULT_EXPIRATION_SECS};
 use crate::Client;
 use anyhow::anyhow;
-use ethers::types::{OtherFields, Transaction, H256, U256, U64};
+use ethers::types::{Bytes, OtherFields, Transaction, TransactionReceipt, H256, U256, U64, BlockNumber};
 use fastcrypto::hash::Keccak256;
 use fastcrypto::secp256k1::recoverable::Secp256k1RecoverableKeyPair;
 use fastcrypto::traits::RecoverableSigner;
@@ -96,7 +96,7 @@ impl WalletContext<RoochAddress, RoochKeyPair> {
         let client = self.get_client().await?;
         let chain_id = self.config.get_active_env()?.chain_id;
         let sequence_number = client
-            .get_sequence_number(sender)
+            .transaction_count(sender.0, Some(BlockNumber::Latest))
             .await
             .map_err(RoochError::from)?;
         log::debug!("use sequence_number: {}", sequence_number);
@@ -248,16 +248,16 @@ impl WalletContext<EthereumAddress, Secp256k1RecoverableKeyPair> {
     ) -> RoochResult<EthereumTransactionData> {
         let client = self.get_client().await?;
         let chain_id = self.config.get_active_env()?.chain_id;
-        let sequence_number = client
-            .get_sequence_number(sender)
+        let nonce = client
+            .transaction_count(sender.0, Some(BlockNumber::Latest))
             .await
             .map_err(RoochError::from)?;
-        log::debug!("use sequence_number: {}", sequence_number);
+        log::debug!("use nonce: {}", nonce);
 
         // Create a new Transaction instance by providing values for its fields
         let transaction = Transaction {
             hash: H256::zero(),
-            nonce: sequence_number,
+            nonce,
             block_hash: None,
             block_number: None,
             transaction_index: None,
@@ -265,8 +265,8 @@ impl WalletContext<EthereumAddress, Secp256k1RecoverableKeyPair> {
             to: None,
             value: U256::zero(),
             gas_price: None,
-            gas: GasConfig::DEFAULT_MAX_GAS_AMOUNT.into(), // You can adjust this value as needed
-            input: action, // Assuming action is a MoveAction with an encode() method
+            gas: GasConfig::DEFAULT_MAX_GAS_AMOUNT.into(),
+            input: Bytes::from(action.encode()?),
             v: U64::zero(),
             r: U256::zero(),
             s: U256::zero(),
@@ -307,15 +307,17 @@ impl WalletContext<EthereumAddress, Secp256k1RecoverableKeyPair> {
         ))
     }
 
-    pub async fn execute(
-        &self,
-        tx: EthereumTransaction,
-    ) -> RoochResult<ExecuteTransactionResponseView> {
+    pub async fn execute(&self, tx: EthereumTransactionData) -> RoochResult<TransactionReceipt> {
         let client = self.get_client().await?;
-        client
-            .execute_tx(tx)
+        let tx = client
+            .send_raw_transaction(tx.0.rlp())
             .await
-            .map_err(|e| RoochError::TransactionError(e.to_string()))
+            .map_err(|e| RoochError::TransactionError(e.to_string()))?;
+        let tx_receipt = client
+            .transaction_receipt(tx)
+            .await
+            .map_err(|e| RoochError::TransactionError(e.to_string()))?;
+        Ok(tx_receipt)
     }
 
     pub async fn sign_and_execute(
@@ -323,7 +325,7 @@ impl WalletContext<EthereumAddress, Secp256k1RecoverableKeyPair> {
         sender: EthereumAddress,
         action: MoveAction,
         coin_id: CoinID,
-    ) -> RoochResult<ExecuteTransactionResponseView> {
+    ) -> RoochResult<TransactionReceipt> {
         let tx = self.sign(sender, action, coin_id).await?;
         self.execute(tx).await
     }
@@ -350,12 +352,12 @@ impl WalletContext<EthereumAddress, Secp256k1RecoverableKeyPair> {
 
     pub fn assert_execute_success(
         &self,
-        result: ExecuteTransactionResponseView,
-    ) -> RoochResult<ExecuteTransactionResponseView> {
-        if KeptVMStatusView::Executed != result.execution_info.status {
+        result: TransactionReceipt,
+    ) -> RoochResult<TransactionReceipt> {
+        if U64::one() != result.status {
             Err(RoochError::TransactionError(format!(
                 "Transaction execution failed: {:?}",
-                result.execution_info.status
+                result.status
             )))
         } else {
             Ok(result)

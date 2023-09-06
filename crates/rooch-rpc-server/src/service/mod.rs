@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Ok, Result};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
@@ -148,14 +148,26 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn get_transaction_by_index(
+    pub async fn get_transaction_by_hash_and_index(
+        &self,
+        hash: H256,
+        index: u64,
+    ) -> Result<TypedTransaction> {
+        let resp = self
+            .sequencer
+            .get_transaction_by_hash_and_index(hash, index)
+            .await?;
+        Ok(resp)
+    }
+
+    pub async fn get_transaction_by_indices(
         &self,
         start: u64,
         limit: u64,
     ) -> Result<Vec<TypedTransaction>> {
         let resp = self
             .sequencer
-            .get_transaction_by_index(start, limit)
+            .get_transaction_by_indices(start, limit)
             .await?;
         Ok(resp)
     }

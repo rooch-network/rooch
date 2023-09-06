@@ -2392,6 +2392,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "ethereum-open-rpc-macros"
+version = "0.1.0"
+dependencies = [
+ "derive-syn-parse",
+ "itertools",
+ "proc-macro2 1.0.66",
+ "quote 1.0.33",
+ "syn 1.0.109",
+ "unescape",
+]
+
+[[package]]
 name = "ethereum-types"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7499,6 +7511,7 @@ dependencies = [
  "clap 3.2.25",
  "coerce",
  "derive_builder",
+ "ethereum-open-rpc-macros",
  "ethers",
  "fastcrypto",
  "futures",

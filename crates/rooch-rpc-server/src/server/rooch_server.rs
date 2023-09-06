@@ -223,7 +223,7 @@ impl RoochAPIServer for RoochServer {
     ) -> RpcResult<Vec<TransactionView>> {
         let resp = self
             .rpc_service
-            .get_transaction_by_index(start, limit)
+            .get_transaction_by_indices(start, limit)
             .await?
             .iter()
             .map(|s| TransactionView::from(s.clone()))
