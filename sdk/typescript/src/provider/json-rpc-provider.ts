@@ -5,7 +5,14 @@ import { HTTPTransport, RequestManager } from '@open-rpc/client-js'
 import { JsonRpcClient } from '../generated/client'
 import { Connection, LocalnetConnection } from './connection'
 import { bytes } from '../types/bcs'
-import { FunctionId, TypeTag, Arg, AnnotatedFunctionResultView } from '../types'
+import {
+  FunctionId,
+  TypeTag,
+  Arg,
+  AnnotatedFunctionResultView,
+  TransactionView,
+  TransactionExecutionInfoView,
+} from '../types'
 import { functionIdToStirng, typeTagToString, encodeArg, toHexString } from '../utils'
 
 import { ROOCH_DEV_CHIAN_ID } from '../constants'
@@ -103,6 +110,16 @@ export class JsonRpcProvider {
   // This method does not block waiting for the transaction to be executed.
   async sendRawTransaction(playload: bytes): Promise<string> {
     return this.client.rooch_sendRawTransaction(playload)
+  }
+
+  async getTransactionByIndex(start: number, limit: number): Promise<TransactionView[]> {
+    return await this.client.rooch_getTransactionByIndex(start, limit)
+  }
+
+  async getTransactionInfosByTxHash(
+    tx_hashes: string[],
+  ): Promise<TransactionExecutionInfoView | null[]> {
+    return await this.client.rooch_getTransactionInfosByTxHash(tx_hashes)
   }
 
   // TODO: wait bcs

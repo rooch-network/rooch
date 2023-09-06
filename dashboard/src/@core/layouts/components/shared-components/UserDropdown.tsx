@@ -23,38 +23,21 @@ import { useAuth } from 'src/hooks/useAuth'
 
 // ** Type Imports
 import { Settings } from 'src/@core/context/settingsContext'
+import { formatAddress } from '../../../utils/format'
 
-interface DataType {
+interface AccountType {
   title: string
   address: string
 }
 
-const data: DataType[] = [
-  {
-    title: 'Rooch Account1',
-    address: '0x123456asdasx',
-  },
-  {
-    title: 'Rooch Account1',
-    address: '0x123456asddffff',
-  },
-  {
-    title: 'Rooch Account1',
-    address: '0x123456aas',
-  },
-  {
-    title: 'Rooch Account1',
-    address: '0x123456',
-  },
-]
-
 interface Props {
   settings: Settings
+  data: AccountType[]
 }
 
 const UserDropdown = (props: Props) => {
   // ** Props
-  const { settings } = props
+  const { settings, data } = props
 
   // ** States
   const [anchorEl, setAnchorEl] = useState<Element | null>(null)
@@ -97,17 +80,15 @@ const UserDropdown = (props: Props) => {
     handleDropdownClose()
   }
 
-  // TODO: sm not support
   return (
     <Fragment>
-      <Box sx={{ mr: 6, display: 'flex', flexDirection: 'column' }}>
-        <Typography sx={{ fontWeight: 500 }}>Rooch Account</Typography>
-        <Typography variant="body2" sx={{ mb: 0.5, color: 'text.disabled' }}>
-          0x123456...
-        </Typography>
-      </Box>
-      <Button size="small" variant="outlined" onClick={handleDropdownOpen}>
-        Switch Account
+      <Button variant="text" size="small" onClick={handleDropdownOpen}>
+        <Box sx={{ mr: 0, display: 'flex', flexDirection: 'column', textAlign: 'center' }}>
+          <Typography sx={{ fontWeight: 500 }}>{data[0].title}</Typography>
+          <Typography variant="body2" sx={{ mb: 0.5, color: 'text.disabled' }}>
+            {formatAddress(data[0].address)}
+          </Typography>
+        </Box>
       </Button>
       <Menu
         anchorEl={anchorEl}
@@ -124,12 +105,38 @@ const UserDropdown = (props: Props) => {
               <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                 <Typography sx={{ fontWeight: 500 }}>{value.title}</Typography>
                 <Typography variant="body2" noWrap={true} sx={{ mb: 0.5, color: 'text.disabled' }}>
-                  {value.address}
+                  {formatAddress(value.address)}
                 </Typography>
               </Box>
             </Box>
           </MenuItem>
         ))}
+        <Divider />
+        <MenuItem
+          onClick={handleLogout}
+          sx={{
+            py: 2,
+            px: 4,
+            color: 'text.secondary',
+            '& svg': { mr: 2, fontSize: '1.25rem', color: 'text.secondary' },
+          }}
+        >
+          <Icon icon="bxs-user-x" />
+          Create Account
+        </MenuItem>
+        <Divider />
+        <MenuItem
+          onClick={handleLogout}
+          sx={{
+            py: 2,
+            px: 4,
+            color: 'text.secondary',
+            '& svg': { mr: 2, fontSize: '1.25rem', color: 'text.secondary' },
+          }}
+        >
+          <Icon icon="bxs-user-account" />
+          Connect Wallet
+        </MenuItem>
         <Divider />
         <MenuItem
           onClick={handleLogout}
