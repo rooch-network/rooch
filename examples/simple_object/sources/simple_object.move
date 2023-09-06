@@ -5,7 +5,7 @@ module simple_object::simple_object {
     use moveos_std::storage_context::{StorageContext, tx_context};
     use moveos_std::object_id::ObjectID;
     use moveos_std::object::{Self, Object};
-    use moveos_std::table::Table;
+    use moveos_std::table::{Self, Table};
 
     struct Student {
         name: String,
@@ -56,11 +56,26 @@ module simple_object::simple_object {
     //     age: u32,
     //     stu_id: u128
     // ): Object<Student> {
-    //     let stu_info = {name, age, stu_id, };
+    //     let stu_info = {
+    //         name,
+    //         age,
+    //         stu_id,
+    //     };
     //     let tx_ctx = storage_context::tx_context_mut(storage_ctx);
     //     let owner = storage_context::sender(storage_ctx);
     //     let student = object::new(tx_ctx, owner, stu_info);
     //     student
     // }
 
+    // fun add_transcript_table_item(
+    //     storage_ctx: &StorageContext,
+    //     table: &mut Table<String, u32>,
+    //     key: String,
+    //     value: u32
+    // ) {
+    //     table::add(table, key, value);
+    //     event::emit(storage_ctx, StudentObjectCreated{
+    //
+    //     })
+    // }
 }
