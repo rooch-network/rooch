@@ -69,10 +69,30 @@ impl CommandAction<String> for MoveCli {
                 .execute(move_args.package_path, move_args.build_config)
                 .map(|_| "Success".to_owned())
                 .map_err(RoochError::from),
-            MoveCommand::Errmap(c) => c
-                .execute(move_args.package_path, move_args.build_config)
-                .map(|_| "Success".to_owned())
-                .map_err(RoochError::from),
+            MoveCommand::Errmap(mut c) => {
+                match c.error_prefix {
+                    Some(prefix) => {
+                        if prefix == "Error" {
+                            c.error_prefix = Some("Error".to_owned());
+                        } else if prefix == "E" {
+                            c.error_prefix = Some("E".to_owned());
+                        } else {
+                            return Err(RoochError::CommandArgumentError(
+                                "Invalid error prefix. Use --error-prefix \"E\" for move-stdlib, --error-prefix \"Error\" for moveos-stdlib and rooch-framework, etc.".to_owned(),
+                            ));
+                        }
+                    }
+                    None => {
+                        return Err(RoochError::CommandArgumentError(
+                            "Error prefix not provided. Use --error-prefix \"E\" for move-stdlib, --error-prefix \"Error\" for moveos-stdlib and rooch-framework, etc.".to_owned(),
+                        ));
+                    }
+                }
+
+                c.execute(move_args.package_path, move_args.build_config)
+                    .map(|_| "Success".to_owned())
+                    .map_err(RoochError::from)
+            }
             MoveCommand::Info(c) => c
                 .execute(move_args.package_path, move_args.build_config)
                 .map(|_| "Success".to_owned())
