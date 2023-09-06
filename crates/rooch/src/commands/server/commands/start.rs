@@ -20,6 +20,10 @@ pub struct StartCommand {
     // #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
     pub chain_id: Option<RoochChainID>,
+
+    /// The port on which the server should listen defaults to `50051`
+    #[clap(long, short = 'p')]
+    pub port: Option<u16>,
 }
 
 #[async_trait]
@@ -30,6 +34,7 @@ impl CommandAction<()> for StartCommand {
             base_data_dir: None,
             chain_id: self.chain_id,
             store: None,
+            port: self.port,
         };
         service.start(&rooch_opt).await.map_err(RoochError::from)?;
 

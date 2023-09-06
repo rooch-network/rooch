@@ -74,6 +74,10 @@ pub struct RoochOpt {
     // /// This option only work for node init start.
     // pub genesis_config: Option<String>,
     pub store: Option<StoreConfig>,
+
+    /// Optional custom port, which the rooch server should listen on.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub port: Option<u16>,
 }
 
 impl std::fmt::Display for RoochOpt {
@@ -92,6 +96,7 @@ impl RoochOpt {
             base_data_dir: None,
             chain_id: Some(RoochChainID::DEV),
             store: None,
+            port: None,
         }
     }
 }

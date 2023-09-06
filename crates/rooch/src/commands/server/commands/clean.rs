@@ -23,6 +23,7 @@ impl CleanCommand {
             base_data_dir: None,
             chain_id: self.chain_id.clone(),
             store: None,
+            port: None,
         };
         let base_config = BaseConfig::load_with_opt(&opt)?;
         let mut store_config = StoreConfig::default();

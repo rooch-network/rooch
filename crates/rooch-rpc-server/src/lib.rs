@@ -147,7 +147,9 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
     // tracing_subscriber can only be inited once.
     let _ = tracing_subscriber::fmt::try_init();
 
-    let config = ServerConfig::default();
+    let config = opt.port.map_or(ServerConfig::default(), |port| {
+        ServerConfig::new_with_port(port)
+    });
     let chain_id = opt.chain_id.clone().unwrap_or_default().chain_id();
 
     let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
