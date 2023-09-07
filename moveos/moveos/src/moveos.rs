@@ -104,9 +104,17 @@ impl MoveOS {
         ctx.add(genesis_ctx)?;
         let mut session = self.vm.new_genesis_session(&self.db, ctx);
         let verified_action = session.verify_move_action(action)?;
-        let execute_result = session.execute_move_action(verified_action);
-        let vm_status = vm_status_of_result(execute_result);
-        let (_ctx, output) = session.finish_with_extensions(vm_status)?;
+        let (session, status, gas_used) =
+            match session.execute_move_action_with_pre_and_post(verified_action) {
+                Ok((sess, status, gas_used)) => (sess, status, gas_used),
+                Err((sess, vm_err)) => {
+                    let status = vm_err.into_vm_status();
+                    // TODO: charge gas fee for pre_execute and post_execute.
+                    // For now, we charge 0 gas fee for pre_execute and post_execute.
+                    (sess, KeptVMStatus::Executed, 0)
+                }
+            };
+        let (_ctx, output) = session.finish_with_extensions(status, gas_used)?;
         if output.status != KeptVMStatus::Executed {
             bail!("genesis tx should success, error: {:?}", output.status);
         }
@@ -150,7 +158,7 @@ impl MoveOS {
             .new_readonly_session(&self.db, ctx.clone(), gas_meter);
 
         let verified_action = session.verify_move_action(action)?;
-        let (_, _) = session.finish_with_extensions(VMStatus::Executed)?;
+        let (_, _) = session.finish_with_extensions(KeptVMStatus::Executed, 0)?;
         Ok(VerifiedMoveOSTransaction {
             ctx,
             action: verified_action,
@@ -184,12 +192,16 @@ impl MoveOS {
             post_execute_functions,
             gas_meter,
         );
-        let execute_result = session.execute_move_action(action);
-        if execute_result.is_err() {
-            log::warn!("execute tx({}) error: {:?}", tx_hash, execute_result);
-        }
-        let vm_status = vm_status_of_result(execute_result);
-        let (_ctx, output) = session.finish_with_extensions(vm_status)?;
+        let (session, status, gas_used) =
+            match session.execute_move_action_with_pre_and_post(action) {
+                Ok((sess, status, gas_used)) => (sess, status, gas_used),
+                Err((sess, vm_err)) => {
+                    // TODO: charge gas fee for pre_execute and post_execute.
+                    // For now, we charge 0 gas fee for pre_execute and post_execute.
+                    (sess, KeptVMStatus::Executed, 0)
+                }
+            };
+        let (_ctx, output) = session.finish_with_extensions(status, gas_used)?;
         Ok(output)
     }
 
@@ -267,7 +279,7 @@ impl MoveOS {
         match result {
             Ok(return_values) => {
                 // if execute success, finish the session to check if it change the state
-                match session.finish_with_extensions(VMStatus::Executed) {
+                match session.finish_with_extensions(KeptVMStatus::Executed, 0) {
                     Ok(_) => FunctionResult::ok(return_values),
                     Err(e) => FunctionResult::err(e),
                 }

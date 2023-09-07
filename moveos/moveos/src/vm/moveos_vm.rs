@@ -5,9 +5,10 @@ use super::{
     data_cache::{into_change_set, MoveosDataCache},
     tx_argument_resolver::TxArgumentResolver,
 };
+use itertools::any;
 use move_binary_format::{
     compatibility::Compatibility,
-    errors::{Location, PartialVMError, VMError, VMResult},
+    errors::{vm_status_of_result, Location, PartialVMError, VMError, VMResult},
     file_format::AbilitySet,
     CompiledModule,
 };
@@ -32,6 +33,7 @@ use move_vm_types::{
     data_store::DataStore,
     loaded_data::runtime_types::{CachedStructIndex, StructType, Type},
 };
+
 use moveos_stdlib::natives::moveos_stdlib::{
     move_module::NativeModuleContext,
     raw_table::{NativeTableContext, TableData},
@@ -149,7 +151,7 @@ where
         }
         let ctx = StorageContext::new(ctx);
         let table_data = Arc::new(RwLock::new(TableData::default()));
-        let s = Self {
+        Self {
             vm,
             remote,
             session: Self::new_inner_session(vm, remote, table_data.clone()),
@@ -159,8 +161,7 @@ where
             post_execute_functions,
             gas_meter,
             read_only,
-        };
-        s.pre_execute()
+        }
     }
 
     /// Re spawn a new session with the same context.
@@ -170,13 +171,11 @@ where
         //But we need some TxContext value in the pre_execute and post_execute function, such as the TxValidateResult.
         //We need to find a solution.
         let ctx = StorageContext::new(self.ctx.tx_context.spawn());
-        let s = Self {
+        Self {
             session: Self::new_inner_session(self.vm, self.remote, self.table_data.clone()),
             ctx,
             ..self
-        };
-        //Because the session is respawned, the pre_execute function should be called again.
-        s.pre_execute()
+        }
     }
 
     fn new_inner_session(
@@ -348,6 +347,55 @@ where
         action_result
     }
 
+    /// Execute a move action like execute_move_action,
+    /// but with pre_execute before execute_move_action and post_execute after execute_move_action
+    /// Return the (session, status, gas_used) if `execute_move_action` success,
+    /// otherwise return error of pre or post execute.
+    pub fn execute_move_action_with_pre_and_post(
+        mut self,
+        action: VerifiedMoveAction,
+    ) -> Result<(Self, KeptVMStatus, u64), (Self, VMError)> {
+        if let Err(e) = self.pre_execute() {
+            return Err((self, e));
+        }
+        let execute_result = self.execute_move_action(action);
+        let vm_status = vm_status_of_result(execute_result);
+        let (post_execute_session, status, gas_used) = match vm_status.keep_or_discard() {
+            Ok(status) => {
+                let mut post_session = match &status {
+                    KeptVMStatus::Executed => self,
+                    _error => {
+                        //if the execution failed, we need to start a new session, and discard the transaction changes
+                        // and increment the sequence number or reduce the gas in new session.
+                        let mut s = self.respawn();
+                        //Because the session is respawned, the pre_execute function should be called again.
+                        if let Err(e) = s.pre_execute() {
+                            return Err((s, e));
+                        }
+                        s
+                    }
+                };
+                let gas_used = match post_session.post_execute(status.clone()) {
+                    Ok(post_gas_used) => post_gas_used,
+                    Err(err) => {
+                        return Err((post_session, err));
+                    }
+                };
+                (post_session, status, gas_used)
+            }
+            Err(discard_status) => {
+                //This should not happen, if it happens, it means that the VM or verifer has a bug
+                return Err((
+                    self,
+                    PartialVMError::new(discard_status)
+                        .with_message(format!("Discard status: {:?}", discard_status))
+                        .finish(Location::Undefined),
+                ));
+            }
+        };
+        Ok((post_execute_session, status, gas_used))
+    }
+
     /// Resolve pending init functions request registered via the NativeModuleContext.
     fn resolve_pending_init_functions(&mut self) -> VMResult<()> {
         let ctx = self
@@ -450,17 +498,9 @@ where
 
     pub fn finish_with_extensions(
         self,
-        vm_status: VMStatus,
+        status: KeptVMStatus,
+        gas_used: u64,
     ) -> VMResult<(TxContext, TransactionOutput)> {
-        let (finalized_session, status, gas_used) = match vm_status.keep_or_discard() {
-            Ok(status) => self.post_execute(status),
-            Err(discard_status) => {
-                //This should not happen, if it happens, it means that the VM or verifer has a bug
-                //TODO try to handle this error
-                panic!("Discard status: {:?}", discard_status);
-            }
-        };
-
         let MoveOSSession {
             vm: _,
             remote: _,
@@ -471,7 +511,7 @@ where
             post_execute_functions: _,
             gas_meter: _,
             read_only,
-        } = finalized_session;
+        } = self;
         let (changeset, raw_events, extensions) = session.finish_with_extensions()?;
         drop(extensions);
 
@@ -526,66 +566,47 @@ where
         ))
     }
 
-    fn pre_execute(self) -> Self {
+    fn pre_execute(&mut self) -> VMResult<()> {
         // the read_only function should not execute pre_execute function
         // this ensure via the check in new_session
-        let mut pre_execute_session = self;
+
         // we do not charge gas for pre_execute function
         // TODO should we charge gas for custom authencation validator?
-        pre_execute_session.gas_meter.stop_metering();
-        for function_call in pre_execute_session.pre_execute_functions.clone() {
+        self.gas_meter.stop_metering();
+        for function_call in self.pre_execute_functions.clone() {
             let pre_execute_function_id = function_call.function_id.clone();
-            let result = pre_execute_session.execute_function_bypass_visibility(function_call);
+            let result = self.execute_function_bypass_visibility(function_call);
             if let Err(e) = result {
-                //TODO handle pre_execute function error
-                //Because if we allow user to write pre_execute function, we need to handle the error
-                log::error!(
-                    "pre_execute function {} error: {:?}",
-                    pre_execute_function_id,
-                    e
-                );
-                panic!("pre_execute function should success")
+                return Err(e);
             }
         }
-        pre_execute_session.gas_meter.start_metering();
-        pre_execute_session
+        self.gas_meter.start_metering();
+        Ok(())
     }
 
-    fn post_execute(self, execute_status: KeptVMStatus) -> (Self, KeptVMStatus, u64) {
+    fn post_execute(&mut self, execute_status: KeptVMStatus) -> VMResult<u64> {
         if self.read_only {
             //TODO calculate readonly function gas usage
-            (self, execute_status, 0)
+            Ok(0)
         } else {
-            let mut post_execute_session = match &execute_status {
-                KeptVMStatus::Executed => self,
-                _error => {
-                    //if the execution failed, we need to start a new session, and discard the transaction changes
-                    // and increment the sequence number or reduce the gas in new session.
-                    self.respawn()
-                }
-            };
-            let max_gas_amount = post_execute_session.ctx.tx_context.max_gas_amount;
-            let gas_left: u64 = post_execute_session.gas_meter.balance_internal().into();
+            let max_gas_amount = self.ctx.tx_context.max_gas_amount;
+            let gas_left: u64 = self.gas_meter.balance_internal().into();
             let gas_used = max_gas_amount.checked_sub(gas_left).unwrap_or_else(|| panic!("gas_left({gas_left}) should always be less than or equal to max gas amount({max_gas_amount})"));
 
             // we do not charge gas for post_execute function
-            post_execute_session.gas_meter.stop_metering();
+            self.gas_meter.stop_metering();
 
             //TODO is it a good approach to add tx_result to TxContext?
             let tx_result = TxResult::new(&execute_status, gas_used);
-            post_execute_session
-                .ctx
+            self.ctx
                 .tx_context
                 .add(tx_result)
                 .expect("Add tx_result to TxContext should always success");
 
-            for function_call in post_execute_session.post_execute_functions.clone() {
-                //TODO handle post_execute function error
-                post_execute_session
-                    .execute_function_bypass_visibility(function_call)
-                    .expect("post_execute function should always success");
+            for function_call in self.post_execute_functions.clone() {
+                self.execute_function_bypass_visibility(function_call)?;
             }
-            (post_execute_session, execute_status, gas_used)
+            Ok(gas_used)
         }
     }
 
