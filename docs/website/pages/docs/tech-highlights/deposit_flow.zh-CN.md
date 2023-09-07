@@ -7,7 +7,7 @@
 Rooch 具备多链资产结算的能力，对于每一条 L1 来说，其存款流程一致（注：合约名及其参数受不同智能合约语言影响略有不同）。都是从 L1
 的消息开始经过层层封装传递到 L2 对应的合约之中进行消费：
 
-<img alt="Rooch Deposit Flow" height="300" src="../../../public/docs/deposit_flow.jpeg" width="600"/>
+<img alt="Rooch Deposit Flow" height="351" src="../../../public/docs/deposit_flow.jpeg" width="700"/>
 
 我们需要保证来自 L1 的消息能够 `rooch_node` 正确的解析并中继给相应的合约，从协议栈的角度来看：
 
