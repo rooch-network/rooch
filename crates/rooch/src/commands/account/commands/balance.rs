@@ -4,9 +4,11 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
+use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
 use moveos_types::module_binding::{ModuleBinding, MoveFunctionCaller};
 use moveos_types::move_option::MoveOption;
+use moveos_types::move_types::get_first_ty_as_struct_tag;
 use moveos_types::object::ObjectID;
 use moveos_types::state::MoveStructState;
 use moveos_types::state_resolver::resource_tag_to_key;
@@ -16,8 +18,10 @@ use rooch_rpc_api::api::MAX_RESULT_LIMIT_USIZE;
 use rooch_rpc_api::jsonrpc_types::account_view::AccountInfoView;
 use rooch_rpc_api::jsonrpc_types::{AccountAddressView, AnnotatedCoinStoreView, StructTagView};
 use rooch_types::account::BalanceInfo;
+use rooch_types::addresses::ROOCH_FRAMEWORK_ADDRESS_LITERAL;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::framework::coin::CoinModule;
+use std::str::FromStr;
 
 /// Show a account info, only the accounts managed by the current node are supported
 #[derive(Debug, Parser)]
@@ -26,10 +30,9 @@ pub struct BalanceCommand {
     /// The account's address to show balance, if absent, show the default active account.
     address: Option<AccountAddressView>,
 
-    /// Struct name as `<ADDRESS>::<MODULE_ID>::<STRUCT_NAME><TypeParam1?, TypeParam2?>`
-    /// Example: `0x123::counter::Counter`, `0x123::counter::Box<0x123::counter::Counter>`
-    #[clap(long = "coin_type")]
-    /// The block number or block hash for get state, if absent, use latest block state_root.
+    /// Struct name as `<ADDRESS>::<MODULE_ID>::<STRUCT_NAME><TypeParam>`
+    /// Example: `0x3::gas_coin::GasCoin`, `0x123::Coin::Box<0x123::coin_box::FCoin>`
+    #[clap(long)]
     coin_type: Option<StructTagView>,
 
     #[clap(flatten)]
@@ -73,7 +76,13 @@ impl CommandAction<()> for BalanceCommand {
 
         let mut result = AccountInfoView::new(0u64, vec![]);
         if let Some(coin_type_opt) = self.coin_type {
-            let key = resource_tag_to_key(&coin_type_opt.0);
+            let coin_store_type = format!(
+                "{}::coin::CoinStore<0x{}>",
+                ROOCH_FRAMEWORK_ADDRESS_LITERAL,
+                coin_type_opt.0.to_canonical_string()
+            );
+            let key = resource_tag_to_key(&StructTag::from_str(coin_store_type.as_str())?);
+            // let key = resource_tag_to_key(&coin_type_opt.0);
             let _hex_key = hex::encode(key.clone());
             let keys = vec![key];
             let mut states = client
@@ -89,10 +98,11 @@ impl CommandAction<()> for BalanceCommand {
             let annotated_coin_store_view =
                 AnnotatedCoinStoreView::new_from_annotated_move_value_view(state.move_value)?;
 
-            let balance_info = BalanceInfo::new(
-                annotated_coin_store_view.get_coin_type().into(),
-                annotated_coin_store_view.get_coin_value().into(),
-            );
+            let coin_type =
+                get_first_ty_as_struct_tag(annotated_coin_store_view.get_coin_type_().into())
+                    .expect("Coin type expected get_first_ty_as_struct_tag succ");
+            let balance_info =
+                BalanceInfo::new(coin_type, annotated_coin_store_view.get_coin_value().into());
             result.balances.push(Some(balance_info.into()))
         } else {
             let states = client
@@ -114,10 +124,11 @@ impl CommandAction<()> for BalanceCommand {
                         )
                         .expect("AnnotatedCoinStoreView expected return value");
 
-                    let balance_info = BalanceInfo::new(
-                        coin_store_view.get_coin_type().into(),
-                        coin_store_view.get_coin_value().into(),
-                    );
+                    let coin_type =
+                        get_first_ty_as_struct_tag(coin_store_view.get_coin_type_().into())
+                            .expect("Coin type expected get_first_ty_as_struct_tag succ");
+                    let balance_info =
+                        BalanceInfo::new(coin_type, coin_store_view.get_coin_value().into());
                     Some(balance_info.into())
                 })
                 .collect();

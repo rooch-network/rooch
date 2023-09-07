@@ -123,7 +123,7 @@ impl AnnotatedCoinStore {
         Ok(annotated_coin_store)
     }
 
-    pub fn get_coin_type(&self) -> StructTag {
+    pub fn get_coin_type__(&self) -> StructTag {
         self.value.coin.type_.clone()
     }
 

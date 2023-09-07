@@ -256,7 +256,7 @@ impl AnnotatedCoinStoreView {
         }
     }
 
-    pub fn get_coin_type(&self) -> StructTagView {
+    pub fn get_coin_type_(&self) -> StructTagView {
         self.value.coin.type_.clone()
     }
 
