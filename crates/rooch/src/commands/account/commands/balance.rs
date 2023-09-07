@@ -70,8 +70,9 @@ impl CommandAction<()> for BalanceCommand {
                     .expect("Expected Option<ObjectID>");
                 result.into()
             })?;
+        // let coin_module = client.as_module_binding::<CoinModule>();
+        // let coin_store_handle_opt = coin_module.coin_store_handle(addr)?;
         let coin_store_handle = coin_store_handle_opt
-            // .expect(format!("Failed to get coin store handle via {}", addr).as_str());
             .unwrap_or_else(|| panic!("Failed to get coin store handle via {}", addr));
 
         let mut result = AccountInfoView::new(0u64, vec![]);
@@ -82,7 +83,6 @@ impl CommandAction<()> for BalanceCommand {
                 coin_type_opt.0.to_canonical_string()
             );
             let key = resource_tag_to_key(&StructTag::from_str(coin_store_type.as_str())?);
-            // let key = resource_tag_to_key(&coin_type_opt.0);
             let _hex_key = hex::encode(key.clone());
             let keys = vec![key];
             let mut states = client
