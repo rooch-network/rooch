@@ -14,6 +14,7 @@ TypeTable is a table use struct Type as Key, struct as Value
 -  [Function `borrow_mut`](#0x2_type_table_borrow_mut)
 -  [Function `remove`](#0x2_type_table_remove)
 -  [Function `contains`](#0x2_type_table_contains)
+-  [Function `handle`](#0x2_type_table_handle)
 -  [Function `destroy_empty`](#0x2_type_table_destroy_empty)
 
 
@@ -229,6 +230,31 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 
 <pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_contains">contains</a>&lt;V: key&gt;(<a href="table.md#0x2_table">table</a>: &<a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a>): bool {
     <a href="raw_table.md#0x2_raw_table_contains">raw_table::contains</a>&lt;String&gt;(&<a href="table.md#0x2_table">table</a>.handle, <a href="type_table.md#0x2_type_table_key">key</a>&lt;V&gt;())
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_type_table_handle"></a>
+
+## Function `handle`
+
+Returns table handle of <code><a href="table.md#0x2_table">table</a></code>.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_handle">handle</a>(<a href="table.md#0x2_table">table</a>: &<a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>): &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_handle">handle</a>(<a href="table.md#0x2_table">table</a>: &<a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a>): &ObjectID {
+    &<a href="table.md#0x2_table">table</a>.handle
 }
 </code></pre>
 

@@ -293,3 +293,15 @@ pub fn random_struct_tag() -> StructTag {
 pub fn random_type_tag() -> TypeTag {
     TypeTag::Struct(Box::new(random_struct_tag()))
 }
+
+pub fn get_first_ty_as_struct_tag(struct_tag: StructTag) -> Result<StructTag> {
+    if let Some(first_ty) = struct_tag.type_params.first() {
+        let first_ty_as_struct_tag = match first_ty {
+            TypeTag::Struct(first_struct_tag) => *first_struct_tag.clone(),
+            _ => bail!("Invalid struct tag: {:?}", struct_tag),
+        };
+        Ok(first_ty_as_struct_tag)
+    } else {
+        bail!("Invalid struct tag: {:?}", struct_tag)
+    }
+}

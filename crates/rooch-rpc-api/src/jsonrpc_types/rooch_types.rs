@@ -3,13 +3,18 @@
 
 use crate::jsonrpc_types::{
     move_types::{MoveActionTypeView, MoveActionView},
-    AnnotatedMoveStructView, AnnotatedStateView, EventView, H256View, StateView, StrView,
-    TransactionExecutionInfoView,
+    AnnotatedMoveStructView, AnnotatedMoveValueView, AnnotatedStateView, EventView, H256View,
+    StateView, StrView, StructTagView, TransactionExecutionInfoView,
 };
+use anyhow::bail;
+use anyhow::Result;
+use move_core_types::u256::U256;
 use moveos_types::event::AnnotatedMoveOSEvent;
+use moveos_types::state::MoveState;
 use rooch_types::transaction::{AbstractTransaction, TransactionType, TypedTransaction};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 
 use super::AccountAddressView;
 
@@ -114,3 +119,148 @@ impl From<AnnotatedMoveOSEvent> for AnnotatedEventView {
 //         }
 //     }
 // }
+
+#[serde_as]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CoinView {
+    value: StrView<U256>,
+}
+
+impl CoinView {
+    pub fn new(value: StrView<U256>) -> Self {
+        CoinView { value }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AnnotatedCoinView {
+    type_: StructTagView,
+    value: CoinView,
+}
+
+impl AnnotatedCoinView {
+    pub fn new(type_: StructTagView, value: CoinView) -> Self {
+        AnnotatedCoinView { type_, value }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CompoundCoinStoreView {
+    coin: AnnotatedCoinView,
+    frozen: bool,
+}
+
+impl CompoundCoinStoreView {
+    pub fn new(coin: AnnotatedCoinView, frozen: bool) -> Self {
+        CompoundCoinStoreView { coin, frozen }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AnnotatedCoinStoreView {
+    type_: StructTagView,
+    value: CompoundCoinStoreView,
+}
+
+impl AnnotatedCoinStoreView {
+    pub fn new(type_: StructTagView, value: CompoundCoinStoreView) -> Self {
+        AnnotatedCoinStoreView { type_, value }
+    }
+
+    /// Create a new AnnotatedCoinStoreView from a AnnotatedMoveValueView
+    pub fn new_from_annotated_move_value_view(
+        annotated_move_value_view: AnnotatedMoveValueView,
+    ) -> Result<Self> {
+        match annotated_move_value_view {
+            AnnotatedMoveValueView::Struct(annotated_struct_view) => {
+                let annotated_coin_store_type = annotated_struct_view.type_;
+                let mut fields = annotated_struct_view.value.into_iter();
+                let annotated_coin = match fields.next().expect("CoinStore should have coin field")
+                {
+                    (field_name, AnnotatedMoveValueView::Struct(filed_value)) => {
+                        debug_assert!(
+                            field_name.as_str() == "coin",
+                            "CoinStore coin field name should be coin"
+                        );
+
+                        let coin_type_ = filed_value.type_;
+
+                        let mut inner_fields = filed_value.value.into_iter();
+                        let coin_value = match inner_fields
+                            .next()
+                            .expect("CoinValue should have value field")
+                        {
+                            (field_name, AnnotatedMoveValueView::Bytes(inner_filed_value)) => {
+                                debug_assert!(
+                                    field_name.as_str() == "value",
+                                    "CoinValue value field name should be value"
+                                );
+                                U256::from_bytes(inner_filed_value.0.as_slice())?
+                            }
+                            (field_name, AnnotatedMoveValueView::U64(inner_filed_value)) => {
+                                debug_assert!(
+                                    field_name.as_str() == "value",
+                                    "CoinValue value field name should be value"
+                                );
+                                U256::from(inner_filed_value.0)
+                            }
+                            (field_name, AnnotatedMoveValueView::U128(inner_filed_value)) => {
+                                debug_assert!(
+                                    field_name.as_str() == "value",
+                                    "CoinValue value field name should be value"
+                                );
+                                U256::from(inner_filed_value.0)
+                            }
+                            (field_name, AnnotatedMoveValueView::U256(inner_filed_value)) => {
+                                debug_assert!(
+                                    field_name.as_str() == "value",
+                                    "CoinValue value field name should be value"
+                                );
+                                inner_filed_value.0
+                            }
+                            _ => bail!("CoinValue value field should be value"),
+                        };
+                        let coin = CoinView {
+                            value: StrView(coin_value),
+                        };
+                        AnnotatedCoinView {
+                            type_: coin_type_,
+                            value: coin,
+                        }
+                    }
+                    _ => bail!("CoinStore coin field should be struct"),
+                };
+                let frozen = match fields.next().expect("CoinStore should have frozen field") {
+                    (field_name, AnnotatedMoveValueView::Bool(filed_value)) => {
+                        debug_assert!(
+                            field_name.as_str() == "frozen",
+                            "CoinStore field name should be frozen"
+                        );
+                        filed_value
+                    }
+                    _ => bail!("CoinStore frozen field should be bool"),
+                };
+                let compose_coin_store = CompoundCoinStoreView {
+                    coin: annotated_coin,
+                    frozen,
+                };
+
+                let annotated_coin_store_view = AnnotatedCoinStoreView {
+                    type_: annotated_coin_store_type,
+                    value: compose_coin_store,
+                };
+
+                Ok(annotated_coin_store_view)
+            }
+            _ => bail!("CoinValue value field should be value"),
+        }
+    }
+
+    pub fn get_coin_type_(&self) -> StructTagView {
+        self.value.coin.type_.clone()
+    }
+
+    pub fn get_coin_value(&self) -> StrView<U256> {
+        self.value.coin.value.value
+    }
+}

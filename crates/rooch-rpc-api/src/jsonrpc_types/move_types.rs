@@ -26,6 +26,7 @@ use moveos_types::{
 use fastcrypto::encoding::Hex;
 use serde_with::serde_as;
 
+use moveos_types::moveos_std::type_info::TypeInfo;
 use moveos_types::{
     move_string::{MoveAsciiString, MoveString},
     state::MoveStructState,
@@ -70,7 +71,7 @@ impl From<AnnotatedMoveStruct> for AnnotatedMoveStructView {
 
 // impl TryFrom<AnnotatedMoveStructView> for AnnotatedMoveStruct {
 //     type Error = anyhow::Error;
-
+//
 //     fn try_from(value: AnnotatedMoveStructView) -> Result<Self, Self::Error> {
 //         Ok(Self {
 //             abilities: AbilitySet::from_u8(value.abilities)
@@ -487,6 +488,43 @@ impl From<EventView> for Event {
             type_tag: event.type_tag.into(),
             event_data: event.event_data.0,
             event_index: event.event_index,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct TypeInfoView {
+    pub account_address: AccountAddress,
+    pub module_name: StrView<Vec<u8>>,
+    pub struct_name: StrView<Vec<u8>>,
+}
+
+impl std::fmt::Display for TypeInfoView {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}::{:?}::{:?}",
+            &self.account_address, self.module_name, &self.struct_name
+        )
+    }
+}
+
+impl From<TypeInfo> for TypeInfoView {
+    fn from(type_info: TypeInfo) -> Self {
+        TypeInfoView {
+            account_address: type_info.account_address,
+            module_name: type_info.module_name.into(),
+            struct_name: type_info.struct_name.into(),
+        }
+    }
+}
+
+impl From<TypeInfoView> for TypeInfo {
+    fn from(type_info: TypeInfoView) -> Self {
+        TypeInfo {
+            account_address: type_info.account_address,
+            module_name: type_info.module_name.into(),
+            struct_name: type_info.struct_name.into(),
         }
     }
 }
