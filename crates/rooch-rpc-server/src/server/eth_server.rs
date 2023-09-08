@@ -24,6 +24,7 @@ use rooch_types::chain_id::ChainID;
 use rooch_types::{
     account::Account,
     address::{EthereumAddress, MultiChainAddress},
+    framework::coin::Coin,
     transaction::{ethereum::EthereumTransaction, AbstractTransaction, TypedTransaction},
     H256,
 };
@@ -177,8 +178,39 @@ impl EthAPIServer for EthServer {
         Ok(block)
     }
 
-    async fn get_balance(&self, _address: H160, _num: Option<BlockNumber>) -> RpcResult<U256> {
-        Ok(U256::from(100) * U256::from(10_u64.pow(18)))
+    async fn get_balance(&self, address: H160, _num: Option<BlockNumber>) -> RpcResult<U256> {
+        let account_address = self
+            .rpc_service
+            .resolve_address(MultiChainAddress::from(EthereumAddress(address)))
+            .await?;
+
+        dbg!(&account_address);
+
+        let result = self
+            .rpc_service
+            .get_annotated_states(AccessPath::resource(account_address, Coin::struct_tag()))
+            .await?
+            .pop()
+            .flatten();
+
+        let res = self
+            .rpc_service
+            .list_states(
+                AccessPath::resource(account_address, Account::struct_tag()),
+                None,
+                1000,
+            )
+            .await;
+
+        Ok(self
+            .rpc_service
+            .get_states(AccessPath::resource(account_address, Account::struct_tag()))
+            .await?
+            .pop()
+            .flatten()
+            .map(|state_view| state_view.as_move_state::<Account>())
+            .transpose()?
+            .map_or(0.into(), |account| account.sequence_number.into()))
     }
 
     async fn estimate_gas(
@@ -458,5 +490,35 @@ impl EthAPIServer for EthServer {
 impl RoochRpcModule for EthServer {
     fn rpc(self) -> RpcModule<Self> {
         self.into_rpc()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use move_core_types::vm_status::KeptVMStatus;
+    use moveos_store::MoveOSStore;
+    use moveos_types::transaction::TransactionExecutionInfo;
+    use raw_store::CodecKVStore;
+    use rooch_types::H256;
+
+    #[tokio::test]
+    async fn test_get_eth_balance() {
+        let store = MoveOSStore::mock_moveos_store().unwrap();
+
+        let transaction_info1 = TransactionExecutionInfo::new(
+            H256::random(),
+            H256::random(),
+            H256::random(),
+            rand::random(),
+            KeptVMStatus::Executed,
+        );
+        let id = transaction_info1.tx_hash;
+        store
+            .get_transaction_store()
+            .kv_put(id, transaction_info1.clone())
+            .unwrap();
+        let transaction_info2 = store.get_transaction_store().kv_get(id).unwrap();
+        assert!(transaction_info2.is_some());
+        assert_eq!(transaction_info1, transaction_info2.unwrap());
     }
 }

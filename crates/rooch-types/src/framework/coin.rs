@@ -8,7 +8,7 @@ use move_core_types::u256::U256;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use moveos_types::object::ObjectID;
-use moveos_types::state::MoveState;
+use moveos_types::state::{MoveState, MoveStructType};
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_option::MoveOption,
@@ -28,6 +28,12 @@ impl Coin {
     pub fn new(value: U256) -> Self {
         Coin { value }
     }
+}
+
+impl MoveStructType for Coin {
+    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = ident_str!("coin");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Coin");
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
