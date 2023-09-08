@@ -11,12 +11,10 @@ use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_types::h256::{self, H256};
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
+use rooch_types::transaction::{TransactionSequenceInfo, TypedTransaction};
 use rooch_types::{
     crypto::{RoochKeyPair, Signature},
     transaction::AbstractTransaction,
-};
-use rooch_types::{
-    transaction::{TransactionSequenceInfo, TypedTransaction},
 };
 
 pub struct SequencerActor {

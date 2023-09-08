@@ -4,9 +4,7 @@
 use anyhow::Result;
 use coerce::actor::message::Message;
 use moveos_types::h256::H256;
-use rooch_types::{
-    transaction::{TransactionSequenceInfo, TypedTransaction},
-};
+use rooch_types::transaction::{TransactionSequenceInfo, TypedTransaction};
 
 /// Transaction Sequence Message
 #[derive(Debug)]

@@ -109,8 +109,8 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                     .map_err(|e| RoochError::UpdateAccountError(e.to_string()))?;
 
                 println!(
-                    "{}",
-                    AccountAddress::from(existing_address).to_hex_literal()
+                    "{:?}",
+                    AccountAddress::from_hex_literal(&existing_address.0.to_string())
                 );
                 println!(
                     "Generated a new keypair for an existing address {:?} on coin id {:?}",

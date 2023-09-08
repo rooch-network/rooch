@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use hex::FromHexError;
 use rustc_hex::{FromHex, ToHex};
 use schemars::JsonSchema;
 use serde::{
@@ -15,12 +16,19 @@ pub struct Bytes(pub Vec<u8>);
 
 impl Bytes {
     /// Simple constructor.
-    pub fn new(bytes: Vec<u8>) -> Bytes {
-        Bytes(bytes)
+    pub fn new(bytes: Vec<u8>) -> Self {
+        Self(bytes)
     }
     /// Convert back to vector
     pub fn into_vec(self) -> Vec<u8> {
         self.0
+    }
+    /// Convert from a hexadecimal string representation of bytes.
+    pub fn from_str(hex_string: &str) -> Result<Self, FromHexError> {
+        // Use the `hex` crate to parse the hexadecimal string into bytes.
+        let bytes = hex::decode(hex_string)?;
+
+        Ok(Self(bytes))
     }
 }
 

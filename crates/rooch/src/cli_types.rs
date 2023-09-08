@@ -3,11 +3,14 @@
 
 use async_trait::async_trait;
 use clap::Parser;
+use fastcrypto::secp256k1::recoverable::Secp256k1RecoverableKeyPair;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::transaction_argument::TransactionArgument;
 use move_core_types::u256::U256;
 use rooch_rpc_client::wallet_context::WalletContext;
+use rooch_types::address::{EthereumAddress, RoochAddress};
 use rooch_types::authentication_key::AuthenticationKey;
+use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::authenticator::Authenticator;
 use serde::Serialize;
@@ -95,9 +98,12 @@ pub struct WalletContextOptions {
     pub config_dir: Option<PathBuf>,
 }
 
+// TODO RoochAddress and RoochKeyPair
 impl WalletContextOptions {
-    pub async fn build(&self) -> RoochResult<WalletContext> {
-        WalletContext::new(self.config_dir.clone())
+    pub async fn build(
+        &self,
+    ) -> RoochResult<WalletContext<EthereumAddress, Secp256k1RecoverableKeyPair>> {
+        WalletContext::<EthereumAddress, Secp256k1RecoverableKeyPair>::new(self.config_dir.clone())
             .await
             .map_err(RoochError::from)
     }

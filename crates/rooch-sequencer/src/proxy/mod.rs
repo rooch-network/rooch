@@ -11,9 +11,7 @@ use crate::{
 use anyhow::Result;
 use coerce::actor::ActorRef;
 use moveos_types::h256::H256;
-use rooch_types::{
-    transaction::{TransactionSequenceInfo, TypedTransaction},
-};
+use rooch_types::transaction::{TransactionSequenceInfo, TypedTransaction};
 
 #[derive(Clone)]
 pub struct SequencerProxy {

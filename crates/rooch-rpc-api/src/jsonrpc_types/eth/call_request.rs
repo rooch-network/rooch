@@ -1,12 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::jsonrpc_types::bytes::Bytes;
 use crate::jsonrpc_types::eth::AccessList;
+use crate::jsonrpc_types::{bytes::Bytes, H160View};
+use crate::jsonrpc_types::{U256View, U64View};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-
-use super::{primitive_types::{U256, H160}, ethereum_types::uint::U64};
 
 /// Call request
 #[derive(Debug, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -15,29 +14,29 @@ use super::{primitive_types::{U256, H160}, ethereum_types::uint::U64};
 pub struct CallRequest {
     /// transaction type. Defaults to legacy type.
     #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
-    pub transaction_type: Option<U64>,
+    pub transaction_type: Option<U64View>,
     /// From
-    pub from: Option<H160>,
+    pub from: Option<H160View>,
     /// To
-    pub to: Option<H160>,
+    pub to: Option<H160View>,
     /// Gas Price
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub gas_price: Option<U256>,
+    pub gas_price: Option<U256View>,
     /// Max fee per gas
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_fee_per_gas: Option<U256>,
+    pub max_fee_per_gas: Option<U256View>,
     /// Gas
-    pub gas: Option<U256>,
+    pub gas: Option<U256View>,
     /// Value
-    pub value: Option<U256>,
+    pub value: Option<U256View>,
     /// Data
     pub data: Option<Bytes>,
     /// Nonce
-    pub nonce: Option<U256>,
+    pub nonce: Option<U256View>,
     /// Access list
     #[serde(skip_serializing_if = "Option::is_none")]
     pub access_list: Option<AccessList>,
     /// Miner bribe
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_priority_fee_per_gas: Option<U256>,
+    pub max_priority_fee_per_gas: Option<U256View>,
 }

@@ -1,12 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use ethers::utils::rlp::{Decodable, Encodable, RlpStream, self};
+use ethers::utils::rlp::{self, Decodable, Encodable, RlpStream};
 use schemars::JsonSchema;
 use serde::{ser::Error as SerializationError, Deserialize, Deserializer, Serialize, Serializer};
 use std::{cmp::Ordering, str::FromStr};
 
-use super::lib::Address;
+use crate::jsonrpc_types::H160View;
 
 /// ENS name or Ethereum Address. Not RLP encoded/serialized if it's a name.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
@@ -15,5 +15,5 @@ pub enum NameOrAddress {
     /// An ENS Name (format does not get checked)
     Name(String),
     /// An Ethereum Address
-    Address(Address),
+    Address(H160View),
 }

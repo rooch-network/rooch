@@ -163,7 +163,7 @@ impl EthereumTransactionData {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct EthereumTransaction {
-    data: EthereumTransactionData,
+    pub data: EthereumTransactionData,
     authenticator: Authenticator,
 }
 

@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use self::authenticator::Authenticator;
-use crate::{address::MultiChainAddress};
+use crate::address::MultiChainAddress;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
-use moveos_types::{transaction::MoveOSTransaction, h256::H256};
+use moveos_types::{h256::H256, transaction::MoveOSTransaction};
 use serde::{Deserialize, Serialize};
 
 pub mod authenticator;
