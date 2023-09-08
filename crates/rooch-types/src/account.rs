@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
+use crate::framework::coin;
 use move_core_types::language_storage::StructTag;
 use move_core_types::u256::U256;
 use move_core_types::{
@@ -90,18 +91,42 @@ impl AccountInfo {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BalanceInfo {
     pub coin_type: StructTag,
+    pub symbol: String,
     pub balance: U256,
+    pub decimals: u8,
 }
 
 impl BalanceInfo {
-    pub fn new(coin_type: StructTag, balance: U256) -> Self {
-        Self { coin_type, balance }
+    pub fn new(coin_type: StructTag, symbol: String, balance: U256, decimals: u8) -> Self {
+        Self {
+            coin_type,
+            symbol,
+            balance,
+            decimals,
+        }
+    }
+
+    pub fn new_with_default(coin_type: StructTag, balance: U256) -> Self {
+        let default_symbol = coin_type.name.to_string();
+        let default_decimals = coin::DEFAULT_DECIMALS;
+        Self {
+            coin_type,
+            symbol: default_symbol,
+            balance,
+            decimals: default_decimals,
+        }
     }
 
     pub fn random() -> Self {
         let coin_type = random_struct_tag();
-        // let coin_type = StructTag::new(struct_tag.address, struct_tag.module, struct_tag.name);
         let balance = U256::zero();
-        BalanceInfo { coin_type, balance }
+        let symbol = coin_type.name.to_string();
+
+        BalanceInfo {
+            coin_type,
+            symbol,
+            balance,
+            decimals: 9u8,
+        }
     }
 }

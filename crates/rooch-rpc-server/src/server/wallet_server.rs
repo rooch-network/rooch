@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::service::RpcService;
+use crate::service::rpc_service::RpcService;
 use ethers::types::Bytes;
 use jsonrpsee::core::{async_trait, RpcResult};
 use jsonrpsee::RpcModule;

@@ -7,7 +7,10 @@ pub mod eth_api;
 pub mod rooch_api;
 pub mod wallet_api;
 
-pub const MAX_RESULT_LIMIT: u64 = 50;
+pub const DEFAULT_RESULT_LIMIT: u64 = 50;
+pub const DEFAULT_RESULT_LIMIT_USIZE: usize = DEFAULT_RESULT_LIMIT as usize;
+
+pub const MAX_RESULT_LIMIT: u64 = 200;
 pub const MAX_RESULT_LIMIT_USIZE: usize = MAX_RESULT_LIMIT as usize;
 
 // pub fn validate_limit(limit: Option<usize>, max: usize) -> Result<usize, anyhow::Error> {

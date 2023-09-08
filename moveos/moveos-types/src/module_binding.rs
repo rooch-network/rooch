@@ -15,7 +15,7 @@ use move_core_types::{
     value::MoveValue,
 };
 
-pub trait MoveFunctionCaller {
+pub trait MoveFunctionCaller: Send + Sync {
     fn call_function(&self, ctx: &TxContext, call: FunctionCall) -> Result<FunctionResult>;
 
     fn as_module_binding<'a, M: ModuleBinding<'a>>(&'a self) -> M

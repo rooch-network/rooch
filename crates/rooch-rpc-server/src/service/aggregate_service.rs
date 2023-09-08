@@ -1,0 +1,155 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+use crate::service::rpc_service::RpcService;
+use anyhow::Result;
+use move_core_types::account_address::AccountAddress;
+use move_core_types::language_storage::StructTag;
+use moveos_types::access_path::AccessPath;
+use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::move_types::get_first_ty_as_struct_tag;
+use moveos_types::state_resolver::resource_tag_to_key;
+use rooch_rpc_api::api::MAX_RESULT_LIMIT_USIZE;
+use rooch_types::account::BalanceInfo;
+use rooch_types::addresses::ROOCH_FRAMEWORK_ADDRESS_LITERAL;
+use rooch_types::framework::coin::{AnnotatedCoinInfo, AnnotatedCoinStore, CoinModule};
+use std::collections::HashMap;
+use std::str::FromStr;
+
+/// AggregateService is aggregate RPC service and MoveFunctionCaller.
+#[derive(Clone)]
+pub struct AggregateService {
+    rpc_service: RpcService,
+}
+
+impl AggregateService {
+    pub fn new(rpc_service: RpcService) -> Self {
+        Self { rpc_service }
+    }
+}
+
+impl AggregateService {
+    pub async fn get_balances(
+        &self,
+        account_addr: AccountAddress,
+        coin_type: Option<StructTag>,
+        cursor: Option<Vec<u8>>,
+        limit: usize,
+    ) -> Result<Vec<Option<(Option<Vec<u8>>, BalanceInfo)>>> {
+        // let call = FunctionCall::new(
+        //     CoinModule::function_id(CoinModule::COIN_STORE_HANDLE_FUNCTION_NAME),
+        //     vec![],
+        //     vec![account_addr.to_vec()],
+        // );
+        // let coin_store_handle_opt: Option<ObjectID> = client
+        //     .call_function(&ctx, call)?
+        //     .into_result()
+        //     .map(|values| {
+        //         let value = values.get(0).expect("Expected return value");
+        //         let result = MoveOption::<ObjectID>::from_bytes(&value.value)
+        //             .expect("Expected Option<ObjectID>");
+        //         result
+        //     })?;
+
+        let coin_module = self.rpc_service.as_module_binding::<CoinModule>();
+
+        // contruct coin info map for handle decimals
+        let coin_info_handle = coin_module
+            .coin_info_handle()?
+            .expect("Get coin info handle should succ");
+
+        //TODO Extract to signle module as cache to load all token info, as well as to avoid query every time
+        let mut coin_info_table = HashMap::new();
+        let coin_info_states = self
+            .rpc_service
+            .list_annotated_states(
+                AccessPath::table_without_keys(coin_info_handle),
+                None,
+                MAX_RESULT_LIMIT_USIZE,
+            )
+            .await?;
+        let coin_info_data = coin_info_states
+            .into_iter()
+            .map(|item| {
+                item.map(|(_key, state)| {
+                    AnnotatedCoinInfo::new_from_annotated_move_value(state.move_value)
+                        .expect("AnnotatedCoinInfo expected return value")
+                })
+            })
+            .collect::<Vec<_>>();
+        for coin_info in coin_info_data.into_iter().flatten() {
+            coin_info_table.insert(coin_info.struct_type, coin_info.value);
+        }
+
+        let coin_store_handle = coin_module
+            .coin_store_handle(account_addr)?
+            .expect("Get coin store handle should succ");
+
+        // let mut account_info = AccountInfo::new(0u64, vec![]);
+        let mut result = vec![];
+        if let Some(coin_type) = coin_type {
+            let coin_store_type = format!(
+                "{}::coin::CoinStore<0x{}>",
+                ROOCH_FRAMEWORK_ADDRESS_LITERAL,
+                coin_type.to_canonical_string()
+            );
+            let key = resource_tag_to_key(&StructTag::from_str(coin_store_type.as_str())?);
+            let keys = vec![key];
+            let mut states = self
+                .rpc_service
+                .get_annotated_states(AccessPath::table(coin_store_handle, keys))
+                .await?;
+
+            let state = states.pop().flatten().expect("State expected return value");
+            let annotated_coin_store =
+                AnnotatedCoinStore::new_from_annotated_move_value(state.move_value)?;
+
+            let balance_info =
+                BalanceInfo::new_with_default(coin_type, annotated_coin_store.get_coin_value());
+            result.push(Some((None, balance_info)))
+        } else {
+            //TODO If the coin store list exceeds MAX_RESULT_LIMIT_USIZE, consider supporting traverse or pagination
+            let states = self
+                .rpc_service
+                .list_annotated_states(
+                    AccessPath::table_without_keys(coin_store_handle),
+                    cursor,
+                    limit,
+                )
+                .await?;
+
+            let mut data = states
+                .into_iter()
+                .map(|item| {
+                    item.map(|(key, state)| {
+                        let coin_store =
+                            AnnotatedCoinStore::new_from_annotated_move_value(state.move_value)
+                                .expect("AnnotatedCoinStore expected return value");
+
+                        let coin_type =
+                            get_first_ty_as_struct_tag(coin_store.get_coin_struct_type())
+                                .expect("Coin type expected get_first_ty_as_struct_tag succ");
+                        // let inner_coin_info = coin_info_table
+                        //     .get(&coin_type)
+                        //     .expect("Get coin info by coin type expected return value");
+                        let balance_info =
+                            BalanceInfo::new_with_default(coin_type, coin_store.get_coin_value());
+                        (Some(key), balance_info)
+                    })
+                })
+                .collect::<Vec<_>>();
+
+            result.append(&mut data);
+        };
+
+        // for (_key, ref mut balance_info) in &mut result {
+        //     let coin_info = coin_info_table
+        //         .get(&balance_info.coin_type)
+        //         .expect("Get coin info by coin type expected return value");
+        //     balance_info.symbol = coin_info.symbol.clone();
+        //     balance_info.decimals = coin_info.decimals;
+        // }
+
+        Ok(result)
+    }
+}

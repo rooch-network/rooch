@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::service::RpcService;
+use crate::service::rpc_service::RpcService;
 use ethers::types::{
     transaction::eip2930::AccessList, Address, Block, BlockNumber, Bloom, Bytes, OtherFields,
     Transaction, TransactionReceipt, Withdrawal, H160, U256, U64,

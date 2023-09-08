@@ -1,21 +1,25 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::service::RpcService;
+use crate::service::aggregate_service::AggregateService;
+use crate::service::rpc_service::RpcService;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     RpcModule,
 };
+use move_core_types::language_storage::StructTag;
 use moveos_types::h256::H256;
+use rooch_rpc_api::api::{MAX_RESULT_LIMIT, MAX_RESULT_LIMIT_USIZE};
+use rooch_rpc_api::jsonrpc_types::account_view::BalanceInfoView;
 use rooch_rpc_api::jsonrpc_types::{
-    AccessPathView, AnnotatedEventView, AnnotatedStateView, EventFilterView, EventPageView,
-    ExecuteTransactionResponseView, FunctionCallView, H256View, ListAnnotatedStatesPageView,
-    ListStatesPageView, StateView, StrView, StructTagView, TransactionExecutionInfoView,
-    TransactionInfoPageView, TransactionView,
+    AccessPathView, AccountAddressView, AnnotatedEventView, AnnotatedStateView, EventFilterView,
+    EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
+    ListAnnotatedStatesPageView, ListBalanceInfoPageView, ListStatesPageView, StateView, StrView,
+    StructTagView, TransactionExecutionInfoView, TransactionInfoPageView, TransactionView,
 };
-use rooch_rpc_api::{api::rooch_api::RoochAPIServer, api::MAX_RESULT_LIMIT};
+use rooch_rpc_api::{api::rooch_api::RoochAPIServer, api::DEFAULT_RESULT_LIMIT};
 use rooch_rpc_api::{
-    api::{RoochRpcModule, MAX_RESULT_LIMIT_USIZE},
+    api::{RoochRpcModule, DEFAULT_RESULT_LIMIT_USIZE},
     jsonrpc_types::AnnotatedFunctionResultView,
 };
 use rooch_types::transaction::rooch::RoochTransaction;
@@ -25,11 +29,15 @@ use tracing::info;
 
 pub struct RoochServer {
     rpc_service: RpcService,
+    aggregate_service: AggregateService,
 }
 
 impl RoochServer {
-    pub fn new(rpc_service: RpcService) -> Self {
-        Self { rpc_service }
+    pub fn new(rpc_service: RpcService, aggregate_service: AggregateService) -> Self {
+        Self {
+            rpc_service,
+            aggregate_service,
+        }
     }
 }
 
@@ -100,7 +108,7 @@ impl RoochAPIServer for RoochServer {
         limit: Option<usize>,
     ) -> RpcResult<ListStatesPageView> {
         let limit_of = min(
-            limit.unwrap_or(MAX_RESULT_LIMIT_USIZE),
+            limit.unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
         );
         let cursor_of = cursor.clone().map(|v| v.0);
@@ -136,7 +144,7 @@ impl RoochAPIServer for RoochServer {
         limit: Option<usize>,
     ) -> RpcResult<ListAnnotatedStatesPageView> {
         let limit_of = min(
-            limit.unwrap_or(MAX_RESULT_LIMIT_USIZE),
+            limit.unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
         );
         let cursor_of = cursor.clone().map(|v| v.0);
@@ -172,7 +180,7 @@ impl RoochAPIServer for RoochServer {
         limit: Option<u64>,
     ) -> RpcResult<EventPageView> {
         // NOTE: fetch one more object to check if there is next page
-        let limit_of = min(limit.unwrap_or(MAX_RESULT_LIMIT), MAX_RESULT_LIMIT);
+        let limit_of = min(limit.unwrap_or(DEFAULT_RESULT_LIMIT), MAX_RESULT_LIMIT);
         let mut data: Vec<Option<AnnotatedEventView>> = self
             .rpc_service
             .get_events_by_event_handle(event_handle_type.into(), cursor, limit_of + 1)
@@ -238,7 +246,7 @@ impl RoochAPIServer for RoochServer {
         limit: Option<u64>,
     ) -> RpcResult<TransactionInfoPageView> {
         // NOTE: fetch one more object to check if there is next page
-        let limit_of = limit.unwrap_or(MAX_RESULT_LIMIT);
+        let limit_of = limit.unwrap_or(DEFAULT_RESULT_LIMIT);
 
         let mut tx_seq_mapping = self
             .rpc_service
@@ -286,6 +294,50 @@ impl RoochAPIServer for RoochServer {
             .collect();
 
         Ok(result)
+    }
+
+    /// get account balances by AccountAddress
+    async fn get_balances(
+        &self,
+        account_addr: AccountAddressView,
+        coin_type: Option<StructTagView>,
+        cursor: Option<StrView<Vec<u8>>>,
+        limit: Option<usize>,
+    ) -> RpcResult<ListBalanceInfoPageView> {
+        let limit_of = min(
+            limit.unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
+            MAX_RESULT_LIMIT_USIZE,
+        );
+        let cursor_of = cursor.clone().map(|v| v.0);
+        let coin_type: Option<StructTag> = coin_type.map(|type_| type_.into());
+
+        let mut data = self
+            .aggregate_service
+            .get_balances(account_addr.into(), coin_type, cursor_of, limit_of + 1)
+            .await?
+            .into_iter()
+            .map(|item| item.map(|(key, balance_info)| (key, BalanceInfoView::from(balance_info))))
+            .collect::<Vec<_>>();
+
+        let has_next_page = data.len() > limit_of;
+        data.truncate(limit_of);
+
+        let next_cursor = data
+            .last()
+            .cloned()
+            .flatten()
+            .map_or(cursor, |(key, _balance_info)| key.map(StrView));
+
+        let result = data
+            .into_iter()
+            .map(|item| item.map(|(_key, balance_info)| balance_info))
+            .collect();
+
+        Ok(ListBalanceInfoPageView {
+            data: result,
+            next_cursor,
+            has_next_page,
+        })
     }
 }
 
