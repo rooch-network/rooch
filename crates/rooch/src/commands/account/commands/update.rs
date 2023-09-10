@@ -30,7 +30,7 @@ pub struct UpdateCommand {
     #[clap(short = 't', long = "authentication-key-type", arg_enum)]
     pub authentication_key_type: Option<AuthenticationKeyType>,
     /// Command line input of coin ids
-    #[clap(short = 'c', long = "coin-id", arg_enum)]
+    #[clap(short = 'c', long = "coin-id", default_value = "rooch", arg_enum)]
     pub coin_id: CoinID,
 }
 
