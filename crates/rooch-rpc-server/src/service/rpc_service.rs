@@ -7,11 +7,9 @@ use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
 use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event_filter::EventFilter;
-use moveos_types::function_return_value::{AnnotatedFunctionResult, FunctionResult};
-use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
-use moveos_types::tx_context::TxContext;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_proposer::proxy::ProposerProxy;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponse;
@@ -186,14 +184,14 @@ impl RpcService {
     }
 }
 
-impl MoveFunctionCaller for RpcService {
-    fn call_function(
-        &self,
-        _ctx: &TxContext,
-        function_call: FunctionCall,
-    ) -> Result<FunctionResult> {
-        let function_result =
-            futures::executor::block_on(self.execute_view_function(function_call))?;
-        function_result.try_into()
-    }
-}
+// impl MoveFunctionCaller for RpcService {
+//     fn call_function(
+//         &self,
+//         _ctx: &TxContext,
+//         function_call: FunctionCall,
+//     ) -> Result<FunctionResult> {
+//         let function_result =
+//             futures::executor::block_on(self.execute_view_function(function_call))?;
+//         function_result.try_into()
+//     }
+// }

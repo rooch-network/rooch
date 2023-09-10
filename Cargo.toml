@@ -165,7 +165,7 @@ smallvec = "1.6.1"
 thiserror = "1.0.34"
 tiny-keccak = { version = "2", features = ["keccak", "sha3"] }
 tiny-bip39 = "1.0.0"
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1.28.1", features = ["full"] }
 tonic = { version = "0.8", features = ["gzip"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
