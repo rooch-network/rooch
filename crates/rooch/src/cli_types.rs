@@ -98,9 +98,13 @@ pub struct WalletContextOptions {
     pub config_dir: Option<PathBuf>,
 }
 
-// TODO RoochAddress and RoochKeyPair
 impl WalletContextOptions {
-    pub async fn build(
+    pub async fn rooch_build(&self) -> RoochResult<WalletContext<RoochAddress, RoochKeyPair>> {
+        WalletContext::<RoochAddress, RoochKeyPair>::new(self.config_dir.clone())
+            .await
+            .map_err(RoochError::from)
+    }
+    pub async fn ethereum_build(
         &self,
     ) -> RoochResult<WalletContext<EthereumAddress, Secp256k1RecoverableKeyPair>> {
         WalletContext::<EthereumAddress, Secp256k1RecoverableKeyPair>::new(self.config_dir.clone())

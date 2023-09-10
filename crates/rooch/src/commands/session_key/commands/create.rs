@@ -38,7 +38,7 @@ pub struct CreateCommand {
 
 impl CreateCommand {
     pub async fn execute(self) -> RoochResult<SessionKey> {
-        let mut context = self.context_options.build().await?;
+        let mut context = self.context_options.rooch_build().await?;
 
         if self.tx_options.sender_account.is_none() {
             return Err(RoochError::CommandArgumentError(

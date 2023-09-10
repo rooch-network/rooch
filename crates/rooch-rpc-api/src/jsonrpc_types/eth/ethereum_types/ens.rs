@@ -1,10 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use ethers::utils::rlp::{self, Decodable, Encodable, RlpStream};
 use schemars::JsonSchema;
-use serde::{ser::Error as SerializationError, Deserialize, Deserializer, Serialize, Serializer};
-use std::{cmp::Ordering, str::FromStr};
+use serde::{Deserialize, Serialize};
 
 use crate::jsonrpc_types::H160View;
 

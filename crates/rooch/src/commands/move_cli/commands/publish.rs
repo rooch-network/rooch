@@ -68,7 +68,7 @@ impl Publish {
 #[async_trait]
 impl CommandAction<ExecuteTransactionResponseView> for Publish {
     async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
-        let context = self.context_options.build().await?;
+        let context = self.context_options.rooch_build().await?;
 
         let package_path = self.move_args.package_path;
         let config = self.move_args.build_config;
@@ -140,7 +140,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
             );
             match self.tx_options.authenticator {
                 Some(authenticator) => {
-                    let tx_data = context.build_rooch_tx_data(sender, action).await?;
+                    let tx_data = context.build_tx_data(sender, action).await?;
                     //TODO the authenticator usually is associalted with the RoochTransactinData
                     //So we need to find a way to let user generate the authenticator based on the tx_data.
                     let tx = RoochTransaction::new(tx_data, authenticator.into());

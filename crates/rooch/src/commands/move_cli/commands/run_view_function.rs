@@ -66,7 +66,7 @@ impl CommandAction<AnnotatedFunctionResultView> for RunViewFunction {
             args,
         };
 
-        let client = self.context.build().await?.get_client().await?;
+        let client = self.context.rooch_build().await?.get_client().await?;
         client
             .execute_view_function(function_call)
             .await

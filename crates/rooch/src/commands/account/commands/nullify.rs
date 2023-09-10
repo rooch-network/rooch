@@ -34,7 +34,7 @@ pub struct NullifyCommand {
 #[async_trait]
 impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
     async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
-        let mut context = self.context_options.build().await?;
+        let mut context = self.context_options.rooch_build().await?;
 
         match self.coin_id {
             CoinID::Rooch => {

@@ -28,7 +28,7 @@ use rooch_types::{
         rooch::{RoochTransaction, RoochTransactionData},
     },
 };
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::collections::BTreeMap;
 use std::fmt::Write;

@@ -35,7 +35,6 @@ use serde_with::serde_as;
 use sha3::{Digest, Sha3_256};
 use std::fmt;
 use std::str::FromStr;
-use strum_macros::Display;
 
 /// The address type that Rooch supports
 pub trait RoochSupportedAddress:
@@ -348,6 +347,12 @@ impl FromStr for EthereumAddress {
 impl From<EthereumAddress> for H160 {
     fn from(address: EthereumAddress) -> Self {
         H160::from(address.0 .0)
+    }
+}
+
+impl From<H160> for EthereumAddress {
+    fn from(h160: H160) -> Self {
+        Self(h160)
     }
 }
 

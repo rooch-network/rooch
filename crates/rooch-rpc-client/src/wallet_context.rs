@@ -17,7 +17,6 @@ use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG};
 use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::bytes::Bytes;
 use rooch_rpc_api::jsonrpc_types::eth::ethereum_types::block::BlockNumber;
-use rooch_rpc_api::jsonrpc_types::eth::ethereum_types::other_fields::OtherFields;
 use rooch_rpc_api::jsonrpc_types::eth::TransactionReceipt;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView};
 use rooch_types::address::{EthereumAddress, RoochAddress};
@@ -311,10 +310,10 @@ impl WalletContext<EthereumAddress, Secp256k1RecoverableKeyPair> {
         ))
     }
 
-    pub async fn execute(&self, tx: EthereumTransactionData) -> RoochResult<TransactionReceipt> {
+    pub async fn execute(&self, tx: EthereumTransaction) -> RoochResult<TransactionReceipt> {
         let client = self.get_client().await?;
         let tx = client
-            .send_raw_transaction(Bytes::new(tx.0.rlp().to_vec()))
+            .send_raw_transaction(Bytes::new(tx.data.0.rlp().to_vec()))
             .await
             .map_err(|e| RoochError::TransactionError(e.to_string()))?;
         let tx_receipt = client
@@ -332,7 +331,7 @@ impl WalletContext<EthereumAddress, Secp256k1RecoverableKeyPair> {
         coin_id: CoinID,
     ) -> RoochResult<TransactionReceipt> {
         let tx = self.sign(sender, action, coin_id).await?;
-        self.execute(tx.data).await
+        self.execute(tx).await
     }
 
     fn parse(&self, account: String) -> Result<H160, RoochError> {

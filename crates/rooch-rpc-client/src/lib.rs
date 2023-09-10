@@ -3,10 +3,7 @@
 
 use anyhow::Result;
 use ethers::types::{H160, U256};
-use jsonrpsee::{
-    core::RpcResult,
-    http_client::{HttpClient, HttpClientBuilder},
-};
+use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use moveos_types::{
     access_path::AccessPath,
     function_return_value::FunctionResult,
@@ -27,21 +24,13 @@ use rooch_rpc_api::{
             CallRequest, EthFeeHistory, Transaction, TransactionReceipt,
         },
         AccessPathView, AnnotatedFunctionResultView, AnnotatedStateView, EventPageView,
-        ExecuteTransactionResponseView, H160View, H256View, ListAnnotatedStatesPageView,
-        ListStatesPageView, StateView, StrView, StructTagView, TransactionView, U256View,
+        ExecuteTransactionResponseView, ListAnnotatedStatesPageView, ListStatesPageView, StateView,
+        StrView, StructTagView, TransactionView,
     },
 };
-use rooch_types::{
-    account::Account,
-    address::{EthereumAddress, RoochAddress},
-    transaction::{
-        ethereum::{EthereumTransaction, EthereumTransactionData},
-        rooch::RoochTransaction,
-    },
-};
+use rooch_types::{account::Account, address::RoochAddress, transaction::rooch::RoochTransaction};
 use std::sync::Arc;
 use std::time::Duration;
-use tonic::async_trait;
 
 pub mod client_config;
 pub mod wallet_context;
@@ -285,7 +274,7 @@ impl Client {
         &self,
         hash: H256,
         index: u64,
-    ) -> Result<Option<Transaction>> {
+    ) -> Result<Transaction> {
         Ok(self
             .rpc
             .http

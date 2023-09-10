@@ -33,7 +33,7 @@ pub struct Build {
 
 impl Build {
     pub async fn execute(self, path: Option<PathBuf>, config: BuildConfig) -> anyhow::Result<()> {
-        let context = self.config_options.build().await?;
+        let context = self.config_options.rooch_build().await?;
 
         let mut config = config;
         config.additional_named_addresses = context.parse_account_args(self.named_addresses)?;

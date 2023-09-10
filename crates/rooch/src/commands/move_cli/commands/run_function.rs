@@ -6,13 +6,22 @@ use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
 use rooch_key::keystore::AccountKeystore;
-use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, TypeTagView};
+use rooch_rpc_api::jsonrpc_types::{
+    eth::TransactionReceipt, ExecuteTransactionResponseView, TypeTagView,
+};
 use rooch_types::{
-    address::RoochAddress,
+    address::{EthereumAddress, RoochAddress},
     coin_type::CoinID,
     error::{RoochError, RoochResult},
-    transaction::rooch::RoochTransaction,
+    transaction::{ethereum::EthereumTransaction, rooch::RoochTransaction},
 };
+use serde::Serialize;
+
+#[derive(Serialize)]
+pub enum ExecuteResult {
+    Response(ExecuteTransactionResponseView),
+    Receipt(TransactionReceipt),
+}
 
 /// Run a Move function
 #[derive(Parser)]
@@ -60,8 +69,8 @@ pub struct RunFunction {
 }
 
 #[async_trait]
-impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
-    async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
+impl CommandAction<ExecuteResult> for RunFunction {
+    async fn execute(self) -> RoochResult<ExecuteResult> {
         let args: Vec<Vec<u8>> = self
             .args
             .into_iter()
@@ -73,35 +82,81 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                 "--sender-account required".to_owned(),
             ));
         }
+        match self.coin_id {
+            CoinID::Bitcoin => todo!(),
+            CoinID::Ether => {
+                let context = self.context.ethereum_build().await?;
+                let sender: EthereumAddress = context
+                    .parse_account_arg(self.tx_options.sender_account.unwrap())?
+                    .into();
 
-        let context = self.context.build().await?;
-        let sender: RoochAddress = context
-            .parse_account_arg(self.tx_options.sender_account.unwrap())?
-            .into();
+                let action = MoveAction::new_function_call(
+                    self.function,
+                    self.type_args.into_iter().map(Into::into).collect(),
+                    args,
+                );
 
-        let action = MoveAction::new_function_call(
-            self.function,
-            self.type_args.into_iter().map(Into::into).collect(),
-            args,
-        );
-        match (self.tx_options.authenticator, self.tx_options.session_key) {
-            (Some(authenticator), _) => {
-                let tx_data = context.build_rooch_tx_data(sender, action).await?;
-                //TODO the authenticator usually is associalted with the RoochTransactinData
-                //So we need to find a way to let user generate the authenticator based on the tx_data.
-                let tx = RoochTransaction::new(tx_data, authenticator.into());
-                context.execute(tx).await
+                let result = match (self.tx_options.authenticator, self.tx_options.session_key) {
+                    (Some(authenticator), _) => {
+                        let tx_data = context.build_tx_data(sender, action).await?;
+                        let tx = EthereumTransaction::new(tx_data, authenticator.into());
+                        context.execute(tx).await?
+                    }
+                    (_, Some(session_key)) => {
+                        let tx_data = context.build_tx_data(sender, action).await?;
+                        let tx = context
+                            .config
+                            .keystore
+                            .sign_transaction_via_session_key(&sender, tx_data, &session_key)
+                            .map_err(|e| RoochError::SignMessageError(e.to_string()))?;
+                        context.execute(tx).await?
+                    }
+                    (None, None) => {
+                        context
+                            .sign_and_execute(sender, action, self.coin_id)
+                            .await?
+                    }
+                };
+
+                Ok(ExecuteResult::Receipt(result))
             }
-            (_, Some(session_key)) => {
-                let tx_data = context.build_rooch_tx_data(sender, action).await?;
-                let tx = context
-                    .config
-                    .keystore
-                    .sign_transaction_via_session_key(&sender, tx_data, &session_key)
-                    .map_err(|e| RoochError::SignMessageError(e.to_string()))?;
-                context.execute(tx).await
+            CoinID::Rooch => {
+                let context = self.context.rooch_build().await?;
+                let sender: RoochAddress = context
+                    .parse_account_arg(self.tx_options.sender_account.unwrap())?
+                    .into();
+
+                let action = MoveAction::new_function_call(
+                    self.function,
+                    self.type_args.into_iter().map(Into::into).collect(),
+                    args,
+                );
+
+                let result = match (self.tx_options.authenticator, self.tx_options.session_key) {
+                    (Some(authenticator), _) => {
+                        let tx_data = context.build_tx_data(sender, action).await?;
+                        let tx = RoochTransaction::new(tx_data, authenticator.into());
+                        context.execute(tx).await?
+                    }
+                    (_, Some(session_key)) => {
+                        let tx_data = context.build_tx_data(sender, action).await?;
+                        let tx = context
+                            .config
+                            .keystore
+                            .sign_transaction_via_session_key(&sender, tx_data, &session_key)
+                            .map_err(|e| RoochError::SignMessageError(e.to_string()))?;
+                        context.execute(tx).await?
+                    }
+                    (None, None) => {
+                        context
+                            .sign_and_execute(sender, action, self.coin_id)
+                            .await?
+                    }
+                };
+
+                Ok(ExecuteResult::Response(result))
             }
-            (None, None) => context.sign_and_execute(sender, action, self.coin_id).await,
+            CoinID::Nostr => todo!(),
         }
     }
 }

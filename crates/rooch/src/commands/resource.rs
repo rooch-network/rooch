@@ -3,12 +3,13 @@
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
+use clap::Parser;
 use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
 use moveos_types::access_path::AccessPath;
 use rooch_rpc_api::jsonrpc_types::AnnotatedStateView;
 use rooch_types::error::RoochResult;
 
-#[derive(Debug, clap::Parser)]
+#[derive(Debug, Parser)]
 
 /// Get account resource by tag
 pub struct ResourceCommand {
@@ -28,7 +29,12 @@ pub struct ResourceCommand {
 #[async_trait]
 impl CommandAction<Option<AnnotatedStateView>> for ResourceCommand {
     async fn execute(self) -> RoochResult<Option<AnnotatedStateView>> {
-        let client = self.context_options.build().await?.get_client().await?;
+        let client = self
+            .context_options
+            .rooch_build()
+            .await?
+            .get_client()
+            .await?;
 
         let resp = client
             .get_annotated_states(AccessPath::resource(self.address, self.resource))

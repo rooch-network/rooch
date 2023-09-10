@@ -4,7 +4,6 @@
 use anyhow::Result;
 use moveos_types::h256::H256;
 use raw_store::CodecKVStore;
-use rooch_types::error::RoochError;
 use rooch_types::transaction::{
     AbstractTransaction, TransactionSequenceInfo, TransactionSequenceMapping, TypedTransaction,
 };

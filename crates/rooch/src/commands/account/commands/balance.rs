@@ -45,7 +45,7 @@ pub struct BalanceCommand {
 #[async_trait]
 impl CommandAction<()> for BalanceCommand {
     async fn execute(self) -> RoochResult<()> {
-        let context = self.context_options.build().await?;
+        let context = self.context_options.rooch_build().await?;
 
         let addr_view: Option<AccountAddress> = if let Some(address) = self.address {
             Some(address.into())

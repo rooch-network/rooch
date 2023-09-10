@@ -4,36 +4,37 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use rooch_rpc_api::jsonrpc_types::TransactionView;
+use moveos_types::h256::H256;
+use rooch_rpc_api::jsonrpc_types::eth::Transaction;
 use rooch_types::error::RoochResult;
 
-/// Get transaction by index for Rooch
+/// Get transaction by hash for Ethereum blockchain
 #[derive(Debug, Parser)]
-pub struct GetByIndexCommand {
-    /// start position
+pub struct GetByHashAndIndexCommand {
+    /// Transaction's hash
     #[clap(long)]
-    pub cursor: u64,
+    pub hash: H256,
 
-    /// end position
+    /// Transaction's index
     #[clap(long)]
-    pub limit: u64,
+    pub index: u64,
 
     #[clap(flatten)]
     pub(crate) context_options: WalletContextOptions,
 }
 
 #[async_trait]
-impl CommandAction<Vec<TransactionView>> for GetByIndexCommand {
-    async fn execute(self) -> RoochResult<Vec<TransactionView>> {
+impl CommandAction<Transaction> for GetByHashAndIndexCommand {
+    async fn execute(self) -> RoochResult<Transaction> {
         let client = self
             .context_options
-            .rooch_build()
+            .ethereum_build()
             .await?
             .get_client()
             .await?;
 
         let resp = client
-            .get_transaction_by_index(self.cursor, self.limit)
+            .transaction_by_hash_and_index(self.hash, self.index)
             .await?;
 
         Ok(resp)

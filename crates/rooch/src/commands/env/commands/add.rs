@@ -24,7 +24,7 @@ pub struct AddCommand {
 
 impl AddCommand {
     pub async fn execute(self) -> RoochResult<()> {
-        let mut context = self.context_options.build().await?;
+        let mut context = self.context_options.rooch_build().await?;
         let AddCommand {
             chain_id,
             alias,

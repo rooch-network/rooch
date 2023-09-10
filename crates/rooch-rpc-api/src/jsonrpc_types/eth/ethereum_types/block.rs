@@ -9,7 +9,7 @@ use crate::jsonrpc_types::{H160View, H256View, H64View, U256View, U64View};
 
 use super::{bloom::Bloom, other_fields::OtherFields, withdrawal::Withdrawal};
 use schemars::JsonSchema;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize};
 /// The block type returned from RPC calls.
 ///
 /// This is generic over a `TX` type which will be either the hash or the full transaction,

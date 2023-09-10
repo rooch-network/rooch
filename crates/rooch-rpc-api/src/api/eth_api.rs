@@ -10,7 +10,6 @@ use crate::jsonrpc_types::{
     },
     H160View, H256View, U256View,
 };
-use async_trait::async_trait;
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 use moveos_types::h256::H256;
@@ -114,7 +113,7 @@ pub trait EthAPI {
         &self,
         hash: H256View,
         index: u64,
-    ) -> RpcResult<Option<Transaction>>;
+    ) -> RpcResult<Transaction>;
 
     /// Returns block with given hash.
     #[method(name = "eth_getBlockByHash")]

@@ -40,7 +40,7 @@ pub struct New {
 impl New {
     async fn get_active_account_address_from_config(&self) -> Result<String, RoochError> {
         // build wallet context options
-        let context = self.wallet_context_options.build().await?;
+        let context = self.wallet_context_options.rooch_build().await?;
         // get active account address value
         match context.config.active_address {
             Some(address) => Ok(AccountAddress::from(address).to_hex_literal()),

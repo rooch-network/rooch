@@ -24,7 +24,7 @@ pub struct SwitchCommand {
 #[async_trait]
 impl CommandAction<()> for SwitchCommand {
     async fn execute(self) -> RoochResult<()> {
-        let mut context = self.context_options.build().await?;
+        let mut context = self.context_options.rooch_build().await?;
         let rooch_address = RoochAddress::from_str(self.address.as_str()).map_err(|e| {
             RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
         })?;

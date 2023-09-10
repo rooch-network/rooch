@@ -3,12 +3,16 @@
 
 use crate::cli_types::CommandAction;
 use async_trait::async_trait;
-use commands::{get_tx_by_hash::GetByHashCommand, get_tx_by_index::GetByIndexCommand};
+use clap::{Parser, Subcommand};
+use commands::{
+    get_tx_by_hash::GetByHashCommand, get_tx_by_hash_and_index::GetByHashAndIndexCommand,
+    get_tx_by_index::GetByIndexCommand,
+};
 use rooch_types::error::RoochResult;
 pub mod commands;
 
 /// Tool for interacting with transaction
-#[derive(clap::Parser)]
+#[derive(Parser)]
 pub struct Transaction {
     #[clap(subcommand)]
     cmd: TransactionCommand,
@@ -20,12 +24,14 @@ impl CommandAction<String> for Transaction {
         match self.cmd {
             TransactionCommand::GetByHash(cmd) => cmd.execute_serialized().await,
             TransactionCommand::GetByIndex(cmd) => cmd.execute_serialized().await,
+            TransactionCommand::GetByHashAndIndex(cmd) => cmd.execute_serialized().await,
         }
     }
 }
 
-#[derive(clap::Subcommand)]
+#[derive(Subcommand)]
 pub enum TransactionCommand {
     GetByHash(GetByHashCommand),
     GetByIndex(GetByIndexCommand),
+    GetByHashAndIndex(GetByHashAndIndexCommand),
 }

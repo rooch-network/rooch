@@ -9,10 +9,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#![cfg_attr(not(feature = "std"), no_std)]
-
-use core::{mem, ops};
-
 use fixed_hash::construct_fixed_hash;
 #[cfg(feature = "codec")]
 use impl_codec::impl_fixed_hash_codec;
@@ -24,7 +20,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 // 3 according to yellowpaper
-const BLOOM_BITS: u32 = 3;
+// const BLOOM_BITS: u32 = 3;
 const BLOOM_SIZE: usize = 256;
 
 construct_fixed_hash! {

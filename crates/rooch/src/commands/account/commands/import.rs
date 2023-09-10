@@ -27,7 +27,7 @@ impl CommandAction<()> for ImportCommand {
     async fn execute(self) -> RoochResult<()> {
         println!("{:?}", self.mnemonic_phrase);
 
-        let mut context = self.context_options.build().await?;
+        let mut context = self.context_options.rooch_build().await?;
 
         let address = context
             .config

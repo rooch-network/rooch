@@ -1,7 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use self::authenticator::Authenticator;
+use self::{
+    authenticator::Authenticator, ethereum::EthereumTransactionData, rooch::RoochTransaction,
+};
 use crate::address::MultiChainAddress;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
@@ -71,8 +73,8 @@ pub trait AbstractTransaction {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum TypedTransaction {
-    Rooch(rooch::RoochTransaction),
-    Ethereum(ethereum::EthereumTransactionData),
+    Rooch(RoochTransaction),
+    Ethereum(EthereumTransactionData),
 }
 
 impl TryFrom<RawTransaction> for TypedTransaction {

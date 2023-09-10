@@ -48,7 +48,7 @@ impl Test {
         path: Option<PathBuf>,
         build_config: BuildConfig,
     ) -> anyhow::Result<()> {
-        let context = self.config_options.build().await?;
+        let context = self.config_options.rooch_build().await?;
 
         let mut build_config = build_config;
         build_config.additional_named_addresses =

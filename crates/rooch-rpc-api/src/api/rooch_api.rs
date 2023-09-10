@@ -7,7 +7,6 @@ use crate::jsonrpc_types::{
     ListAnnotatedStatesPageView, ListStatesPageView, StateView, StrView, StructTagView,
     TransactionExecutionInfoView, TransactionInfoPageView, TransactionView,
 };
-use async_trait::async_trait;
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 use rooch_open_rpc_macros::open_rpc;

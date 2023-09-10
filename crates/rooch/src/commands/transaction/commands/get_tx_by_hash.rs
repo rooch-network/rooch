@@ -3,12 +3,13 @@
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
+use clap::Parser;
 use moveos_types::h256::H256;
 use rooch_rpc_api::jsonrpc_types::TransactionView;
 use rooch_types::error::RoochResult;
 
-/// Get transaction by hash
-#[derive(Debug, clap::Parser)]
+/// Get transaction by hash for Rooch
+#[derive(Debug, Parser)]
 pub struct GetByHashCommand {
     /// Transaction's hash
     #[clap(long)]
@@ -21,7 +22,12 @@ pub struct GetByHashCommand {
 #[async_trait]
 impl CommandAction<Option<TransactionView>> for GetByHashCommand {
     async fn execute(self) -> RoochResult<Option<TransactionView>> {
-        let client = self.context_options.build().await?.get_client().await?;
+        let client = self
+            .context_options
+            .rooch_build()
+            .await?
+            .get_client()
+            .await?;
 
         let resp = client.get_transaction_by_hash(self.hash).await?;
 

@@ -9,10 +9,6 @@ use jsonrpsee::{
 };
 use moveos_types::{access_path::AccessPath, h256::H256, state::MoveStructType};
 use rand::Rng;
-use rooch_rpc_api::jsonrpc_types::{
-    eth::{CallRequest, EthFeeHistory},
-    TransactionView,
-};
 use rooch_rpc_api::{
     api::{
         eth_api::{EthAPIServer, TransactionType},
@@ -27,7 +23,7 @@ use rooch_rpc_api::{
                 other_fields::OtherFields,
                 withdrawal::Withdrawal,
             },
-            AccessList, Transaction, TransactionReceipt,
+            AccessList, CallRequest, EthFeeHistory, Transaction, TransactionReceipt,
         },
         H160View, H256View, U256View, U64View,
     },
@@ -35,7 +31,7 @@ use rooch_rpc_api::{
 use rooch_types::{
     account::Account,
     address::{EthereumAddress, MultiChainAddress},
-    transaction::{ethereum::EthereumTransaction, AbstractTransaction, TypedTransaction},
+    transaction::{AbstractTransaction, TypedTransaction},
 };
 use rooch_types::{chain_id::ChainID, transaction::ethereum::EthereumTransactionData};
 use std::iter;
@@ -357,7 +353,7 @@ impl EthAPIServer for EthServer {
         &self,
         hash: H256View,
         index: u64,
-    ) -> RpcResult<Option<Transaction>> {
+    ) -> RpcResult<Transaction> {
         let resp = self
             .rpc_service
             .get_transaction_by_hash_and_index(hash.into(), index)
@@ -389,7 +385,7 @@ impl EthAPIServer for EthServer {
             other: Default::default(),
         };
 
-        Ok(Some(transaction))
+        Ok(transaction)
     }
 
     async fn block_by_hash(

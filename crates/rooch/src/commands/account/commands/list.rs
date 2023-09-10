@@ -18,7 +18,7 @@ pub struct ListCommand {
 #[async_trait]
 impl CommandAction<()> for ListCommand {
     async fn execute(self) -> RoochResult<()> {
-        let context = self.context_options.build().await?;
+        let context = self.context_options.rooch_build().await?;
         let active_address = context.config.active_address;
 
         println!(
