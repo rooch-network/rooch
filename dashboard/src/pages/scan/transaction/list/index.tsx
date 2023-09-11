@@ -14,11 +14,8 @@ import Typography from '@mui/material/Typography'
 import { DataGrid, GridColDef } from '@mui/x-data-grid'
 
 // ** Store & Actions Imports
-import { useDispatch, useSelector } from 'react-redux'
-import { fetchData } from 'src/store/transaction'
-
-// ** Types Imports
-import { RootState, AppDispatch } from 'src/store'
+import { fetchData } from 'src/store/scan/transaction'
+import { useAppDispatch, useAppSelector } from 'src/store'
 
 // ** SDK Imports
 import { TransactionView } from '@rooch/sdk'
@@ -103,8 +100,8 @@ const InvoiceList = () => {
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 })
 
   // ** Hooks
-  const dispatch = useDispatch<AppDispatch>()
-  const store = useSelector((state: RootState) => state.transaction)
+  const dispatch = useAppDispatch()
+  const store = useAppSelector((state) => state.transaction)
 
   useEffect(() => {
     dispatch(fetchData({ start: 0, end: 10 }))

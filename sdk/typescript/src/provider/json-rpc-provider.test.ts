@@ -3,7 +3,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import fetchMock from 'fetch-mock'
-import { LocalnetConnection } from './connection'
+import { LocalNetConnection } from './connection'
 import { JsonRpcProvider } from './json-rpc-provider'
 
 describe('provider', () => {
@@ -36,7 +36,7 @@ describe('provider', () => {
         return mock
       })
 
-      const provider = new JsonRpcProvider(LocalnetConnection, {
+      const provider = new JsonRpcProvider(LocalNetConnection, {
         chainID: 1,
         fetcher: mockFetch,
       })
@@ -69,7 +69,7 @@ describe('provider', () => {
         return mock
       })
 
-      const provider = new JsonRpcProvider(LocalnetConnection, {
+      const provider = new JsonRpcProvider(LocalNetConnection, {
         chainID: 1,
         fetcher: mockFetch,
       })
@@ -82,6 +82,50 @@ describe('provider', () => {
       } catch (err: any) {
         expect(err).to.be.an('error')
       }
+    })
+
+    describe('#getAnnotatedStates', () => {
+      it('should get annotated statues ok', async () => {
+        const mockFetch = vi.fn().mockImplementation(() => {
+          const mock = fetchMock.sandbox()
+
+          const body = {
+            jsonrpc: '2.0',
+            result: [
+              {
+                value: {
+                  type_tag: 'u64',
+                  value: '0x0000000000000000',
+                },
+                move_value: '0',
+              },
+            ],
+            id: '0',
+          }
+
+          mock.post('*', JSON.stringify(body))
+
+          return mock
+        })
+
+        const provider = new JsonRpcProvider(LocalNetConnection, {
+          chainID: 1,
+          fetcher: mockFetch,
+        })
+        expect(provider).toBeDefined()
+
+        try {
+          const assetsPath =
+              '/object::0x1'
+          const result = await provider.getAnnotatedStates(assetsPath)
+
+          console.log(result)
+
+          expect(result).toHaveLength(1)
+        } catch (err: any) {
+          expect(err).to.be.an('error')
+        }
+      })
     })
   })
 })

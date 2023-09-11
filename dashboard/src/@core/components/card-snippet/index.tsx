@@ -31,13 +31,14 @@ import { CardSnippetProps } from './types'
 // ** Hooks
 import useClipboard from 'src/@core/hooks/useClipboard'
 
+// TODO: prismjs theme config
 const CardSnippet = (props: CardSnippetProps) => {
   // ** Props
-  const { id, sx, code, title, children, className } = props
+  const { id, sx, defaultShow, fullHeight, codes, title, children, className } = props
 
   // ** States
-  const [showCode, setShowCode] = useState<boolean>(false)
-  const [tabValue, setTabValue] = useState<'tsx' | 'jsx'>(code.tsx !== null ? 'tsx' : 'jsx')
+  const [showCode, setShowCode] = useState<boolean>(defaultShow ?? false)
+  const [tabValue, setTabValue] = useState<number>(0)
 
   // ** Hooks
   const clipboard = useClipboard()
@@ -49,13 +50,7 @@ const CardSnippet = (props: CardSnippetProps) => {
   }, [showCode, tabValue])
 
   const codeToCopy = () => {
-    if (code.tsx !== null && tabValue === 'tsx') {
-      return code.tsx.props.children.props.children
-    } else if (code.jsx !== null && tabValue === 'jsx') {
-      return code.jsx.props.children.props.children
-    } else {
-      return ''
-    }
+    return codes[tabValue].code
   }
 
   const handleClick = () => {
@@ -66,76 +61,84 @@ const CardSnippet = (props: CardSnippetProps) => {
   }
 
   const renderCode = () => {
-    if (code[tabValue] !== null) {
-      return code[tabValue]
-    } else {
-      return null
-    }
+    const code = codes[tabValue]
+    const className = `language-${code.lng}`
+
+    return (
+      <div>
+        <pre className={className}>
+          <code className={className}>{code.code}</code>
+        </pre>
+      </div>
+    )
   }
 
   return (
     <Card
       className={className}
       sx={{ '& .MuiCardHeader-action': { lineHeight: 0.8 }, ...sx }}
-      id={id || `card-snippet--${title.toLowerCase().replace(/ /g, '-')}`}
+      id={id || `card-snippet--${title?.toLowerCase().replace(/ /g, '-') ?? 'default'}`}
     >
-      <CardHeader
-        title={title}
-        {...(hidden
-          ? {}
-          : {
-              action: (
-                <IconButton onClick={() => setShowCode(!showCode)}>
-                  <Icon icon="bx:code" fontSize={20} />
-                </IconButton>
-              ),
-            })}
-      />
-      <CardContent>{children}</CardContent>
-      {hidden ? null : (
-        <Collapse in={showCode}>
-          <Divider sx={{ my: '0 !important' }} />
+      {title ? (
+        <CardHeader
+          title={title}
+          {...(hidden || defaultShow
+            ? {}
+            : {
+                action: (
+                  <IconButton onClick={() => setShowCode(!showCode)}>
+                    <Icon icon="bx:code" fontSize={20} />
+                  </IconButton>
+                ),
+              })}
+        />
+      ) : null}
+      {children ? <CardContent>{children}</CardContent> : null}
+      <Collapse in={showCode}>
+        {title ? <Divider sx={{ my: '0 !important' }} /> : null}
+        <CardContent
+          sx={{
+            position: 'relative',
+            ...(fullHeight
+              ? { '& pre': { m: '0 !important' } }
+              : {
+                  '& pre': {
+                    m: '0 !important',
+                    maxHeight: 500,
+                  },
+                }),
+          }}
+        >
+          <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+            <ToggleButtonGroup
+              exclusive
+              size="small"
+              color="primary"
+              value={tabValue}
+              onChange={(e, newValue) => (newValue !== null ? setTabValue(newValue) : null)}
+            >
+              {codes.map((v, i) => (
+                <ToggleButton value={i}>{v.lng}</ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+          </Box>
 
-          <CardContent
-            sx={{ position: 'relative', '& pre': { m: '0 !important', maxHeight: 500 } }}
-          >
-            <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-              <ToggleButtonGroup
-                exclusive
-                size="small"
-                color="primary"
-                value={tabValue}
-                onChange={(e, newValue) => (newValue !== null ? setTabValue(newValue) : null)}
-              >
-                {code.tsx !== null ? (
-                  <ToggleButton value="tsx">
-                    <Icon icon="bxl:typescript" fontSize={20} />
-                  </ToggleButton>
-                ) : null}
-                {code.jsx !== null ? (
-                  <ToggleButton value="jsx">
-                    <Icon icon="bxl:javascript" fontSize={20} />
-                  </ToggleButton>
-                ) : null}
-              </ToggleButtonGroup>
-            </Box>
-            <Tooltip title="Copy the source" placement="top">
-              <IconButton
-                onClick={handleClick}
-                sx={{
-                  top: '5rem',
-                  color: 'grey.100',
-                  right: '2.5625rem',
-                  position: 'absolute',
-                }}
-              >
-                <Icon icon="bx:copy" fontSize={20} />
-              </IconButton>
-            </Tooltip>
-            <div>{renderCode()}</div>
-          </CardContent>
-        </Collapse>
-      )}
+          <Tooltip title="Copy the source" placement="top">
+            <IconButton
+              onClick={handleClick}
+              sx={{
+                top: '5rem',
+                color: 'grey.100',
+                right: '2.5625rem',
+                position: 'absolute',
+              }}
+            >
+              <Icon icon="bx:copy" fontSize={20} />
+            </IconButton>
+          </Tooltip>
+          <div>{renderCode()}</div>
+        </CardContent>
+      </Collapse>
     </Card>
   )
 }

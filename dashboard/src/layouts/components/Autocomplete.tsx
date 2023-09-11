@@ -430,8 +430,7 @@ const AutocompleteComponent = ({ hidden, settings }: Props) => {
   }
 
   // Handle click event on a list item in search result
-  const handleOptionClick = (obj: AppBarSearchType) => {
-    console.log('handleOptionClick')
+  const handleOptionClick = (_: AppBarSearchType) => {
     setSearchValue('')
     setOpenDialog(false)
 
