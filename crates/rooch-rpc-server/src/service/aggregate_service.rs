@@ -44,7 +44,7 @@ impl AggregateService {
         let coin_module = self.as_module_binding::<CoinModule>();
         let coin_info_handle = coin_module
             .coin_info_handle()?
-            .expect("Get coin info handle should succ");
+            .expect("Get coin info handle should succ.");
 
         // contruct coin info map for handle decimals
         //TODO Extract to signle module as cache to load all token info, as well as to avoid query every time
@@ -160,8 +160,7 @@ impl MoveFunctionCaller for AggregateService {
         let rpc_service = self.rpc_service.clone();
         let function_result = futures::executor::block_on(
             RUNTIME.spawn(async move { rpc_service.execute_view_function(function_call).await }),
-        )?
-        .unwrap();
+        )??;
 
         function_result.try_into()
     }

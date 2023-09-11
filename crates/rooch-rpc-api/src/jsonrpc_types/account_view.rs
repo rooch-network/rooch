@@ -61,10 +61,10 @@ pub struct BalanceInfoView {
 }
 
 impl BalanceInfoView {
-    //TODO implements big decimal calculation
+    //TODO implements big decimal calculation for Decimal point display
     pub fn get_balance_show(&self) -> String {
         let balance = U256::div(self.balance.0, U256::from(10u32.pow(self.decimals as u32)));
-        format!("{:.}", balance.to_string())
+        balance.to_string()
     }
 }
 
