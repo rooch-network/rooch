@@ -5,7 +5,7 @@ use crate::gas::table::{initial_cost_schedule, MoveOSGasMeter};
 use crate::vm::moveos_vm::MoveOSVM;
 use anyhow::{bail, ensure, Result};
 use move_binary_format::errors::{vm_status_of_result, Location, PartialVMError, VMResult};
-use move_core_types::vm_status::{KeptVMStatus, VMStatus};
+use move_core_types::vm_status::KeptVMStatus;
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, vm_status::StatusCode,
 };
@@ -18,7 +18,6 @@ use moveos_store::transaction_store::TransactionDBStore;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
-use moveos_types::move_types::FunctionId;
 use moveos_types::moveos_std::tx_result::TxResult;
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::MoveState;
@@ -26,8 +25,6 @@ use moveos_types::state_resolver::MoveOSResolverProxy;
 use moveos_types::transaction::{MoveOSTransaction, TransactionOutput, VerifiedMoveOSTransaction};
 use moveos_types::tx_context::TxContext;
 use moveos_types::{h256::H256, transaction::FunctionCall};
-use once_cell::sync::Lazy;
-use rooch_types::framework::transaction_validator::TransactionValidator;
 
 pub struct MoveOSConfig {
     pub vm_config: VMConfig,
@@ -116,9 +113,9 @@ impl MoveOS {
         let verified_action = session.verify_move_action(action)?;
 
         // execute main tx
-        let execute_result = session.execute_move_action(action);
+        let execute_result = session.execute_move_action(verified_action);
         let status = match vm_status_of_result(execute_result).keep_or_discard() {
-            Ok(statue) => status,
+            Ok(status) => status,
             Err(discard_status) => {
                 bail!("Discard status: {:?}", discard_status);
             }
@@ -179,7 +176,7 @@ impl MoveOS {
 
     pub fn execute(&self, tx: VerifiedMoveOSTransaction) -> Result<TransactionOutput> {
         let VerifiedMoveOSTransaction {
-            mut ctx,
+            ctx,
             action,
             pre_execute_functions,
             post_execute_functions,
@@ -193,6 +190,7 @@ impl MoveOS {
                 action
             );
         }
+        let system_env = ctx.map.clone();
         let cost_table = initial_cost_schedule();
         let gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
         let mut session = self.vm.new_session(&self.db, ctx, gas_meter);
@@ -204,9 +202,7 @@ impl MoveOS {
             .expect("system_pre_execute should not fail.");
 
         // user pre_execute
-        session
-            .execute_function_call(pre_execute_functions.clone(), true)
-            .map_err(|e| bail!("pre_execute failed: {:?}", e))?;
+        session.execute_function_call(pre_execute_functions.clone(), true)?;
 
         // execute main tx
         let execute_result = session.execute_move_action(action);
@@ -220,21 +216,19 @@ impl MoveOS {
                     _error => {
                         //if the execution failed, we need to start a new session, and discard the transaction changes
                         // and increment the sequence number or reduce the gas in new session.
-                        let mut s = session.respawn();
+                        let mut s = session.respawn(system_env);
                         //Because the session is respawned, the pre_execute function should be called again.
-                        s.execute_function_call(pre_execute_functions.clone(), true)
-                            .map_err(|e| bail!("pre_execute failed: {:?}", e))?;
+                        s.execute_function_call(pre_execute_functions.clone(), true)?;
                         s
                     }
                 };
-                post_session
-                    .execute_function_call(post_execute_functions.clone(), true)
-                    .map_err(|e| bail!("post_execute failed: {:?}", e))?;
+                post_session.execute_function_call(post_execute_functions.clone(), true)?;
                 (post_session, status)
             }
             Err(discard_status) => {
                 //This should not happen, if it happens, it means that the VM or verifer has a bug
-                bail!("Discard status: {:?}", discard_status);
+                // bail!("Discard status: {:?}", discard_status);
+                panic!("Discard status: {:?}", discard_status);
             }
         };
 
@@ -242,7 +236,10 @@ impl MoveOS {
         let gas_used = post_session.query_gas_used();
         //TODO is it a good approach to add tx_result to TxContext?
         let tx_result = TxResult::new(&status, gas_used);
-        ctx.add(tx_result)
+        post_session
+            .storage_context_mut()
+            .tx_context
+            .add(tx_result)
             .expect("Add tx_result to TxContext should always success");
 
         // system post_execute
@@ -251,7 +248,7 @@ impl MoveOS {
             .execute_function_call(self.system_post_execute_functions.clone(), false)
             .expect("system_post_execute should not fail.");
 
-        let (_ctx, output) = session.finish_with_extensions(status)?;
+        let (_ctx, output) = post_session.finish_with_extensions(status)?;
         Ok(output)
     }
 

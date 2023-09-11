@@ -97,6 +97,8 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             moveos_store,
             genesis.all_natives(),
             genesis.config_for_test.clone(),
+            vec![],
+            vec![],
         )
         .unwrap();
 

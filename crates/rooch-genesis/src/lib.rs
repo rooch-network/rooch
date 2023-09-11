@@ -174,6 +174,8 @@ impl GenesisPackage {
             MoveOSStore::mock_moveos_store()?,
             rooch_framework::natives::all_natives(gas_parameters),
             vm_config,
+            vec![],
+            vec![],
         )?;
         let genesis_ctx = genesis::GenesisContext::new(chain_id);
         let genesis_result = moveos.init_genesis(genesis_txs.clone(), genesis_ctx.clone())?;
@@ -274,6 +276,8 @@ mod tests {
             moveos_store,
             all_natives(genesis.gas_params),
             genesis.config,
+            vec![],
+            vec![],
         )
         .expect("init moveos failed");
 

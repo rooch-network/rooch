@@ -42,7 +42,7 @@ use rooch_types::framework::address_mapping::AddressMapping;
 use rooch_types::framework::auth_validator::AuthValidatorCaller;
 use rooch_types::framework::auth_validator::TxValidateResult;
 use rooch_types::framework::transaction_validator::TransactionValidator;
-use rooch_types::framework::{SYSTEM_POST_EXECUTE_FUNCTIONS, SYSTEM_PRE_EXECUTE_FUNCTIONS};
+use rooch_types::framework::{system_post_execute_functions, system_pre_execute_functions};
 use rooch_types::transaction::AuthenticatorInfo;
 use rooch_types::transaction::{AbstractTransaction, TransactionSequenceMapping};
 use rooch_types::H256;
@@ -63,8 +63,8 @@ impl ExecutorActor {
             moveos_store,
             genesis.all_natives(),
             genesis.config.clone(),
-            SYSTEM_PRE_EXECUTE_FUNCTIONS.clone(),
-            SYSTEM_POST_EXECUTE_FUNCTIONS.clone(),
+            system_pre_execute_functions(),
+            system_post_execute_functions(),
         )?;
 
         let executor = Self {

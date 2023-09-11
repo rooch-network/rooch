@@ -74,14 +74,14 @@ impl TxContext {
     }
 
     /// Spawn a new TxContext with a new `ids_created` counter and empty map
-    pub fn spawn(self) -> Self {
+    pub fn spawn(self, env: SimpleMap<MoveString, CopyableAny>) -> Self {
         Self {
             sender: self.sender,
             sequence_number: self.sequence_number,
             max_gas_amount: self.max_gas_amount,
             tx_hash: self.tx_hash,
             ids_created: 0,
-            map: SimpleMap::create(),
+            map: env,
         }
     }
 

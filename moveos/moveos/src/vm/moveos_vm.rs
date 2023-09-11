@@ -5,10 +5,9 @@ use super::{
     data_cache::{into_change_set, MoveosDataCache},
     tx_argument_resolver::TxArgumentResolver,
 };
-use itertools::any;
 use move_binary_format::{
     compatibility::Compatibility,
-    errors::{vm_status_of_result, Location, PartialVMError, VMError, VMResult},
+    errors::{Location, PartialVMError, VMError, VMResult},
     file_format::AbilitySet,
     CompiledModule,
 };
@@ -20,7 +19,7 @@ use move_core_types::{
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
     value::MoveTypeLayout,
-    vm_status::{KeptVMStatus, StatusCode, VMStatus},
+    vm_status::{KeptVMStatus, StatusCode},
 };
 use move_vm_runtime::{
     config::VMConfig,
@@ -41,8 +40,11 @@ use moveos_stdlib::natives::moveos_stdlib::{
 use moveos_types::{
     event::{Event, EventID},
     function_return_value::FunctionReturnValue,
+    move_any::CopyableAny,
+    move_simple_map::SimpleMap,
+    move_string::MoveString,
     move_types::FunctionId,
-    moveos_std::{module_upgrade_flag::ModuleUpgradeFlag, tx_result::TxResult},
+    moveos_std::module_upgrade_flag::ModuleUpgradeFlag,
     object::ObjectID,
     state_resolver::MoveOSResolver,
     storage_context::StorageContext,
@@ -50,9 +52,7 @@ use moveos_types::{
     tx_context::TxContext,
 };
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
-use once_cell::sync::Lazy;
 use parking_lot::RwLock;
-use rooch_types::framework::transaction_validator::TransactionValidator;
 use std::{borrow::Borrow, sync::Arc};
 
 /// MoveOSVM is a wrapper of MoveVM with MoveOS specific features.
@@ -141,12 +141,12 @@ where
     }
 
     /// Re spawn a new session with the same context.
-    pub fn respawn(self) -> Self {
+    pub fn respawn(self, env: SimpleMap<MoveString, CopyableAny>) -> Self {
         //FIXME
         //The TxContext::spawn function will reset the ids_created and kv map.
         //But we need some TxContext value in the pre_execute and post_execute function, such as the TxValidateResult.
         //We need to find a solution.
-        let ctx = StorageContext::new(self.ctx.tx_context.spawn());
+        let ctx = StorageContext::new(self.ctx.tx_context.spawn(env));
         let table_data = Arc::new(RwLock::new(TableData::default()));
         Self {
             session: Self::new_inner_session(self.vm, self.remote, table_data.clone()),
@@ -430,7 +430,6 @@ where
         status: KeptVMStatus,
     ) -> VMResult<(TxContext, TransactionOutput)> {
         let gas_used = self.query_gas_used();
-        let mut session = self;
         let MoveOSSession {
             vm: _,
             remote: _,
@@ -439,7 +438,7 @@ where
             table_data,
             gas_meter: _,
             read_only,
-        } = session;
+        } = self;
         let (changeset, raw_events, extensions) = session.finish_with_extensions()?;
         drop(extensions);
 
@@ -587,6 +586,10 @@ where
 
     pub fn runtime_session(&self) -> &Session<'r, 'l, MoveosDataCache<'r, 'l, S>> {
         self.session.borrow()
+    }
+
+    pub(crate) fn storage_context_mut(&mut self) -> &mut StorageContext {
+        &mut self.ctx
     }
 }
 
