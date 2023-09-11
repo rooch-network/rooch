@@ -321,7 +321,7 @@ fn call_script_with_args_ty_args_signers(
     let cost_table = initial_cost_schedule();
     let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
     gas_meter.set_metering(false);
-    let mut session = moveos_vm.new_session(&remote_view, ctx, vec![], vec![], gas_meter);
+    let mut session = moveos_vm.new_session(&remote_view, ctx, gas_meter);
 
     let script_action = MoveAction::new_script_call(
         script,
@@ -352,7 +352,7 @@ fn call_script_function_with_args_ty_args_signers(
     let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
     gas_meter.set_metering(false);
     let mut session: crate::vm::moveos_vm::MoveOSSession<'_, '_, RemoteStore, MoveOSGasMeter> =
-        moveos_vm.new_session(&remote_view, ctx, vec![], vec![], gas_meter);
+        moveos_vm.new_session(&remote_view, ctx, gas_meter);
 
     let function_action = MoveAction::new_function_call(
         FunctionId::new(id, function_name),
@@ -836,7 +836,7 @@ fn call_missing_item() {
     let cost_table = initial_cost_schedule();
     let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
     gas_meter.set_metering(false);
-    let mut session = moveos_vm.new_session(&remote_view, ctx.clone(), vec![], vec![], gas_meter);
+    let mut session = moveos_vm.new_session(&remote_view, ctx.clone(), gas_meter);
     let func_call = FunctionCall::new(
         FunctionId::new(id.clone(), function_name.into()),
         vec![],
@@ -855,7 +855,7 @@ fn call_missing_item() {
     let cost_table = initial_cost_schedule();
     let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
     gas_meter.set_metering(false);
-    let mut session = moveos_vm.new_session(&remote_view, ctx, vec![], vec![], gas_meter);
+    let mut session = moveos_vm.new_session(&remote_view, ctx, gas_meter);
     let error = session
         .execute_function_bypass_visibility(func_call)
         .err()

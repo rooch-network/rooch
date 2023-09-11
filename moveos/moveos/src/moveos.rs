@@ -218,11 +218,11 @@ impl MoveOS {
                         // and increment the sequence number or reduce the gas in new session.
                         let mut s = session.respawn(system_env);
                         //Because the session is respawned, the pre_execute function should be called again.
-                        s.execute_function_call(pre_execute_functions.clone(), true)?;
+                        s.execute_function_call(pre_execute_functions, true)?;
                         s
                     }
                 };
-                post_session.execute_function_call(post_execute_functions.clone(), true)?;
+                post_session.execute_function_call(post_execute_functions, true)?;
                 (post_session, status)
             }
             Err(discard_status) => {
