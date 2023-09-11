@@ -270,16 +270,8 @@ impl Client {
         Ok(self.rpc.http.transaction_receipt(hash.into()).await?)
     }
 
-    pub async fn transaction_by_hash_and_index(
-        &self,
-        hash: H256,
-        index: u64,
-    ) -> Result<Transaction> {
-        Ok(self
-            .rpc
-            .http
-            .transaction_by_hash_and_index(hash.into(), index)
-            .await?)
+    pub async fn transaction_by_hash(&self, hash: H256) -> Result<Option<Transaction>> {
+        Ok(self.rpc.http.transaction_by_hash(hash.into()).await?)
     }
 
     pub async fn block_by_hash(

@@ -349,15 +349,12 @@ impl EthAPIServer for EthServer {
         Ok(result)
     }
 
-    async fn transaction_by_hash_and_index(
-        &self,
-        hash: H256View,
-        index: u64,
-    ) -> RpcResult<Transaction> {
+    async fn transaction_by_hash(&self, hash: H256View) -> RpcResult<Option<Transaction>> {
         let resp = self
             .rpc_service
-            .get_transaction_by_hash_and_index(hash.into(), index)
-            .await?;
+            .get_transaction_by_hash(hash.into())
+            .await?
+            .unwrap();
 
         // Create a new Transaction instance and populate its fields
         let transaction = Transaction {
@@ -385,7 +382,7 @@ impl EthAPIServer for EthServer {
             other: Default::default(),
         };
 
-        Ok(transaction)
+        Ok(Some(transaction))
     }
 
     async fn block_by_hash(

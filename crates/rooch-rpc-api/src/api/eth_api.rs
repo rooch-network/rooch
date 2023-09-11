@@ -108,12 +108,8 @@ pub trait EthAPI {
     async fn transaction_receipt(&self, hash: H256View) -> RpcResult<Option<TransactionReceipt>>;
 
     /// Get transaction by its hash.
-    #[method(name = "eth_getTransactionByHashAndIndex")]
-    async fn transaction_by_hash_and_index(
-        &self,
-        hash: H256View,
-        index: u64,
-    ) -> RpcResult<Transaction>;
+    #[method(name = "eth_getTransactionByHash")]
+    async fn transaction_by_hash(&self, hash: H256View) -> RpcResult<Option<Transaction>>;
 
     /// Returns block with given hash.
     #[method(name = "eth_getBlockByHash")]

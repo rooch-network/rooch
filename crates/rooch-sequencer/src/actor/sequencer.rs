@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::messages::{
-    TransactionByHashAndIndexMessage, TransactionByHashMessage, TransactionByIndicesMessage,
-    TransactionSequenceMessage,
+    TransactionByHashMessage, TransactionByIndicesMessage, TransactionSequenceMessage,
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -84,18 +83,6 @@ impl Handler<TransactionByHashMessage> for SequencerActor {
         _ctx: &mut ActorContext,
     ) -> Result<Option<TypedTransaction>> {
         self.rooch_store.get_tx_by_hash(msg.hash)
-    }
-}
-
-#[async_trait]
-impl Handler<TransactionByHashAndIndexMessage> for SequencerActor {
-    async fn handle(
-        &mut self,
-        msg: TransactionByHashAndIndexMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<TypedTransaction> {
-        self.rooch_store
-            .get_tx_by_hash_and_index(msg.hash, msg.index)
     }
 }
 

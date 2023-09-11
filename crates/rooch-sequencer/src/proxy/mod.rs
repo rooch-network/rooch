@@ -3,10 +3,7 @@
 
 use crate::{
     actor::sequencer::SequencerActor,
-    messages::{
-        TransactionByHashAndIndexMessage, TransactionByHashMessage, TransactionByIndicesMessage,
-        TransactionSequenceMessage,
-    },
+    messages::{TransactionByHashMessage, TransactionByIndicesMessage, TransactionSequenceMessage},
 };
 use anyhow::Result;
 use coerce::actor::ActorRef;
@@ -32,16 +29,6 @@ impl SequencerProxy {
 
     pub async fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<TypedTransaction>> {
         self.actor.send(TransactionByHashMessage { hash }).await?
-    }
-
-    pub async fn get_transaction_by_hash_and_index(
-        &self,
-        hash: H256,
-        index: u64,
-    ) -> Result<TypedTransaction> {
-        self.actor
-            .send(TransactionByHashAndIndexMessage { hash, index })
-            .await?
     }
 
     pub async fn get_transaction_by_index(

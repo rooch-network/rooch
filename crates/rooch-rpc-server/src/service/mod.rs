@@ -149,18 +149,6 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn get_transaction_by_hash_and_index(
-        &self,
-        hash: H256,
-        index: u64,
-    ) -> Result<TypedTransaction> {
-        let resp = self
-            .sequencer
-            .get_transaction_by_hash_and_index(hash, index)
-            .await?;
-        Ok(resp)
-    }
-
     pub async fn get_transaction_by_index(
         &self,
         start: u64,

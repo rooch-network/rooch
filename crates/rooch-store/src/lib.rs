@@ -88,12 +88,6 @@ impl TransactionStore for RoochStore {
         self.transaction_store.get_tx_by_hash(hash)
     }
 
-    fn get_tx_by_hash_and_index(&self, hash: H256, index: u64) -> Result<TypedTransaction> {
-        Ok(self
-            .transaction_store
-            .get_tx_by_hash_and_index(hash, index)?)
-    }
-
     fn get_tx_by_index(&self, start: u64, limit: u64) -> Result<Vec<TypedTransaction>> {
         self.transaction_store.get_tx_by_index(start, limit)
     }
