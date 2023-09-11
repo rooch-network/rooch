@@ -11,3 +11,304 @@ import PostHeader from "/components/blog/postHeader";
 <PostHeader />
 
 ## What is private generic functions
+
+Private generic functions are a type of generic function specially designed for Rooch. Compared with general generic functions, they have stricter constraints.
+
+Simply put, a private generic function is a generic function annotated with the `#[private_generics(T1 [, T2, ... Tn])]` attribute.
+
+## Effect
+
+Private generic functions can determine whether the generic type is defined **in the module where the caller is located**. If not, it cannot be used. For general generic functions, types defined by other modules can still be used normally after being imported into the current module through the `use` statement.
+
+This means that private generic functions are only available for **custom types** and cannot be used for types defined by other modules and built-in types.
+
+## Example
+
+### Private generic function does not accept built-in types
+
+Let's first look at an example without using private generic functions.
+
+```move
+module rooch_examples::module1 {
+    struct Box<T> has drop {
+        v: T
+    }
+
+    public fun new_box<T, U>(value: T): Box<T> {
+        Box { v: value }
+    }
+
+    public fun get_box_value<T>(box: &Box<T>): &T {
+        &box.v
+    }
+
+    #[test]
+    fun test1() {
+        let box = new_box<u32, u64>(123);
+        assert!(get_box_value(&box) == &123, 1000);
+    }
+}
+```
+
+First define a `Box<T>` type, which is a generic structure that contains a field `v` of type `T`.
+
+Then define two generic functions `new_box` and `get_box_value`. The function `new_box` is used to create a value of type `Box<T>`, and the function `get_box_value` is used to obtain the field value `v:<T>` in type `Box<T>`.
+
+> Note: The function `new_box` adds an additional type `U`. In fact, the function does not use it, but for the subsequent demonstration of the private generic constraint feature, the `U` type constraint is specially added.
+
+We simply write a unit test to verify our code logic. We pass `new_box` an integer literal `123` and create a box value of type `Box<u32>` that wraps a `u32` type. In the assertion expression, the integer literal reference `&123` is implicitly inferred as `&123u32`, and `get_box_value` obtains `&123u32` from the `box`. The two are equal and can pass the test successfully.
+
+Run unit tests:
+
+```shell
+$ rooch move test
+INCLUDING DEPENDENCY MoveStdlib
+INCLUDING DEPENDENCY MoveosStdlib
+BUILDING private_generics
+Running Move unit tests
+[ PASS    ] 0x42::module1::test1
+Test result: OK. Total tests: 1; passed: 1; failed: 0
+Success
+```
+
+Next, we perform **private generic constraints** on the generic function `new_box`, add the `#[private_generics(T)]` attribute annotation in the previous line of the function, and leave other places unchanged:
+
+```shell
+#[private_generics(T)]
+public fun new_box<T, U>(value: T): Box<T> {
+	Box { v: value }
+}
+```
+With the addition of a private generic constraint, type `T` must be defined within the current module when the function is called. Obviously the **built-in** type `u32` is not defined in the current module, so if you run the code at this time, an error will be reported, as follows:
+
+```shell
+$ rooch move test
+error: resource type "U32" in function "0x42::module1::new_box" not defined in current module or not allowed
+   ┌─ ./sources/module1.move:17:19
+   │
+17 │         let box = new_box<u32, u64>(123);
+   │                   ^^^^^^^^^^^^^^^^^^^^^^
+
+
+Error: extended checks failed
+```
+
+Private generics do not constrain type `U`, so it does not check whether the type `U` is declared in the current module.
+
+### Private generic functions use custom types defined by the current module
+
+Based on the above code, we slightly modify it:
+
+```move
+module rooch_examples::module1 {
+    struct Data has drop {
+        v: u64
+    }
+
+    struct Box<T> has drop {
+        v: T
+    }
+
+    #[private_generics(T)]
+    public fun new_box<T, U>(value: T): Box<T> {
+        Box { v: value }
+    }
+
+    public fun get_box_value<T>(box: &Box<T>): &T {
+        &box.v
+    }
+
+    #[test]
+    fun test1() {
+        let data = Data { v: 123 };
+        let box = new_box<Data, u64>(data);
+        assert!(get_box_value(&box).v == 123, 1000);
+    }
+}
+```
+
+First, add a new custom type `Data`, which is a common structure that contains a `u64` type field `v`.
+
+Then modify the unit test function `test1`, construct a `Data` type data `data`, and modify the generic type parameter `u32` of the private generic function `new_box` to `Data`. In the assertion, use the member operator `.` Get the `u64` integer value within `data` for comparison.
+
+At this point, run the test again and the test example can pass the test successfully:
+
+```shell
+$ rooch move test
+INCLUDING DEPENDENCY MoveStdlib
+INCLUDING DEPENDENCY MoveosStdlib
+BUILDING private_generics
+Running Move unit tests
+[ PASS    ] 0x42::module1::test1
+Test result: OK. Total tests: 1; passed: 1; failed: 0
+Success
+```
+
+The private generic function is called in `module1`, and the custom type `Data` is also defined in the **current** module, so `Data` can pass the function's private generic constraints.
+
+Next we will demonstrate defining a custom type in another module, importing this custom type into the current module through the `use` statement, and passing it to the private generic function. Guess if it can be used normally?
+
+### Private generic functions do not accept custom types defined by other modules
+
+We define a new module called `module2`:
+
+```move
+module rooch_examples::module2 {
+    struct Data2 has copy, drop {
+        v: u64
+    }
+
+    public fun new_data(value: u64): Data2 {
+        Data2 {
+            v: value
+        }
+    }
+}
+```
+
+In this module, we define a new type `Data2` and a function `new_data` that creates this type. Because in Move, all structures can only be constructed in the module in which they are declared, and fields can only be accessed within the module of the structure, so in order to be constructed by an external module, there must be a corresponding function.
+
+Next, we continue to modify `module1`:
+
+```move
+module rooch_examples::module1 {
+    #[test_only]
+    use rooch_examples::module2::{new_data, Data2};
+
+    struct Data has drop {
+        v: u64
+    }
+
+    struct Box<T> has drop {
+        v: T
+    }
+
+    #[private_generics(T)]
+    public fun new_box<T, U>(value: T): Box<T> {
+        Box { v: value }
+    }
+
+    public fun get_box_value<T>(box: &Box<T>): &T {
+        &box.v
+    }
+
+    #[test]
+    fun test1() {
+        let data = Data { v: 123 };
+        let box = new_box<Data, u64>(data);
+        assert!(get_box_value(&box).v == 123, 1000);
+    }
+
+    #[test]
+    fun test2() {
+        let data2 = new_data(456);
+        let box2 = new_box<Data2, Data2>(data2);
+        assert!(get_box_value(&box2) == &new_data(456), 2000)
+    }
+}
+```
+
+We import the types and functions defined by `module2` and then create the unit test `test2`.
+
+In the test, we call the `new_data` function to create a value `data2` of `module2::Data2` type, and modify the type parameter of the private generic function to `Data2`.
+
+Note that the type parameter `Data2` passed when calling the private generic function at this time is defined in the external module and obviously cannot pass the private generic constraint!
+
+At this point, run the unit test:
+
+```shell
+$ rooch move test
+error: resource type "Data2" in function "0x42::module1::new_box" not defined in current module or not allowed
+   ┌─ ./sources/module1.move:32:20
+   │
+32 │         let box2 = new_box<Data2, u64>(data2);
+   │                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Error: extended checks failed
+```
+
+### Modules can call private generic functions defined by other modules
+
+Next, we do a small test to check whether other modules can call the private generic function.
+
+Let’s create a new module `module3`:
+
+```move
+module rooch_examples::module3 {
+    #[test_only]
+    use rooch_examples::module1::{new_box, get_box_value};
+
+    struct Data3 has copy, drop {
+        v: u64
+    }
+
+    #[test]
+    fun test3() {
+        let data3 = Data3 { v: 789 };
+        let box3 = new_box<Data3, u8>(data3);
+        assert!(get_box_value(&box3) == &Data3 { v: 789 }, 3000);
+    }
+}
+```
+
+It can be seen that at this time `module3` imports the private generic function `new_box` defined by `module1` and the generic function `get_box_value` that obtains the `Box<T>` type.
+
+At this time, we comment out the unit test `test2` in `module1` and rerun the unit test:
+
+```shell
+$ rooch move test
+INCLUDING DEPENDENCY MoveStdlib
+INCLUDING DEPENDENCY MoveosStdlib
+BUILDING private_generics
+Running Move unit tests
+[ PASS    ] 0x42::module1::test1
+[ PASS    ] 0x42::module3::test3
+Test result: OK. Total tests: 2; passed: 2; failed: 0
+Success
+```
+### Application
+
+Such a function is defined in the MoveOS standard library:
+
+```move
+#[private_generics(T)]
+/// Move a resource to the account's storage
+/// This function equates to `move_to<T>(&signer, resource)` instruction in Move
+public fun global_move_to<T: key>(ctx: &mut StorageContext, account: &signer, resource: T){
+    let account_address = signer::address_of(account);
+    //Auto create the account storage when move resource to the account
+    ensure_account_storage(ctx, account_address);
+    let account_storage = borrow_account_storage_mut(storage_context::object_storage_mut(ctx), account_address);
+    add_resource_to_account_storage(account_storage, resource);
+}
+```
+
+The function `global_move_to` is a private generic function, and the type `T` constrained by the private generic is a resource type. Calling the function requires passing three parameters (storage context, signer, resource).
+
+First, the address of calling the current function is obtained and stored in `account_address`. `ensure_account_storage` ensures that the account storage exists. Then, `borrow_account_storage_mut` is called to obtain the variable borrow in the account. Finally, `add_resource_to_account_storage` is called to add the `resource` to the account storage.
+
+For a private generic function like this, the module that calls it must define the type of private generic constraint. Let's take a look at an example used in Rooch Framework:
+
+```move
+public(friend) fun init_authentication_keys(ctx: &mut StorageContext, account: &signer) {
+  let authentication_keys = AuthenticationKeys {
+     authentication_keys: type_table::new(storage_context::tx_context_mut(ctx)),
+  };
+  account_storage::global_move_to<AuthenticationKeys>(ctx, account, authentication_keys);
+}
+```
+
+The `init_authentication_keys` function in `account_authentication.move` uses the `global_move_to` private generic function, which means `AuthenticationKeys` must also be defined in the current module.
+
+We can find the definition of the `AuthenticationKeys` type at the beginning of the current module:
+
+```move
+struct AuthenticationKeys has key{
+  authentication_keys: TypeTable,
+}
+```
+
+## Summary
+
+We have used four small examples to demonstrate how to define and use private generic functions, and show you how to use private generic functions in Rooch Framework. After reading this, I believe you have fully mastered it. Understand the concept, function and usage of private generic functions in Rooch.
