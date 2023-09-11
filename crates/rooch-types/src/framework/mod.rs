@@ -16,3 +16,19 @@ pub mod native_validator;
 pub mod nostr_validator;
 pub mod session_key;
 pub mod transaction_validator;
+
+/// MoveOS system pre_execute functions registry.
+/// The registry is used to filter out system pre_execute functions.
+/// All system pre_execute functions are called before other pre_execute functions.
+/// TODO: is there a better way to construct this registry? Should we register
+/// system pre_execute functions on-chain and dynamically?
+static SYSTEM_PRE_EXECUTE_FUNCTIONS: Lazy<[FunctionCall]> =
+    Lazy::new(|| [TransactionValidator::pre_execute_function_call()]);
+
+/// MoveOS system post_execute functions registry.
+/// The registry is used to filter out system post_execute functions.
+/// All system post_execute functions are called after other post_execute functions.
+/// TODO: is there a better way to construct this registry? Should we register
+/// system pre_execute functions on-chain and dynamically?
+static SYSTEM_POST_EXECUTE_FUNCTIONS: Lazy<[FunctionCall]> =
+    Lazy::new(|| [TransactionValidator::post_execute_function_call()]);

@@ -42,6 +42,7 @@ use rooch_types::framework::address_mapping::AddressMapping;
 use rooch_types::framework::auth_validator::AuthValidatorCaller;
 use rooch_types::framework::auth_validator::TxValidateResult;
 use rooch_types::framework::transaction_validator::TransactionValidator;
+use rooch_types::framework::{SYSTEM_POST_EXECUTE_FUNCTIONS, SYSTEM_PRE_EXECUTE_FUNCTIONS};
 use rooch_types::transaction::AuthenticatorInfo;
 use rooch_types::transaction::{AbstractTransaction, TransactionSequenceMapping};
 use rooch_types::H256;
@@ -58,7 +59,13 @@ type ValidateAuthenticatorResult =
 impl ExecutorActor {
     pub fn new(chain_id: u64, moveos_store: MoveOSStore, rooch_store: RoochStore) -> Result<Self> {
         let genesis: RoochGenesis = rooch_genesis::RoochGenesis::build(chain_id)?;
-        let moveos = MoveOS::new(moveos_store, genesis.all_natives(), genesis.config.clone())?;
+        let moveos = MoveOS::new(
+            moveos_store,
+            genesis.all_natives(),
+            genesis.config.clone(),
+            SYSTEM_PRE_EXECUTE_FUNCTIONS.clone(),
+            SYSTEM_POST_EXECUTE_FUNCTIONS.clone(),
+        )?;
 
         let executor = Self {
             genesis,
@@ -172,16 +179,12 @@ impl ExecutorActor {
                             .into_result();
                         match auth_validator_function_result {
                             Ok(_) => {
-                                // pre_execute_function: TransactionValidator first, then AuthValidator
-                                let pre_execute_functions = vec![
-                                    TransactionValidator::pre_execute_function_call(),
-                                    auth_validator_caller.pre_execute_function_call(),
-                                ];
-                                // post_execute_function: AuthValidator first, then TransactionValidator
-                                let post_execute_functions = vec![
-                                    auth_validator_caller.post_execute_function_call(),
-                                    TransactionValidator::post_execute_function_call(),
-                                ];
+                                // pre_execute_function: AuthValidator
+                                let pre_execute_functions =
+                                    vec![auth_validator_caller.pre_execute_function_call()];
+                                // post_execute_function: AuthValidator
+                                let post_execute_functions =
+                                    vec![auth_validator_caller.post_execute_function_call()];
                                 Ok((
                                     tx_validate_result,
                                     pre_execute_functions,
@@ -192,10 +195,8 @@ impl ExecutorActor {
                         }
                     }
                     None => {
-                        let pre_execute_functions =
-                            vec![TransactionValidator::pre_execute_function_call()];
-                        let post_execute_functions =
-                            vec![TransactionValidator::post_execute_function_call()];
+                        let pre_execute_functions = vec![];
+                        let post_execute_functions = vec![];
                         Ok((
                             tx_validate_result,
                             pre_execute_functions,

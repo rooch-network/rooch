@@ -50,7 +50,9 @@ use moveos_types::{
     tx_context::TxContext,
 };
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
+use once_cell::sync::Lazy;
 use parking_lot::RwLock;
+use rooch_types::framework::transaction_validator::TransactionValidator;
 use std::{borrow::Borrow, sync::Arc};
 
 /// MoveOSVM is a wrapper of MoveVM with MoveOS specific features.
@@ -72,19 +74,9 @@ impl MoveOSVM {
         &self,
         remote: &'r S,
         ctx: TxContext,
-        pre_execute_functions: Vec<FunctionCall>,
-        post_execute_functions: Vec<FunctionCall>,
         gas_meter: G,
     ) -> MoveOSSession<'r, '_, S, G> {
-        MoveOSSession::new(
-            &self.inner,
-            remote,
-            ctx,
-            pre_execute_functions,
-            post_execute_functions,
-            gas_meter,
-            false,
-        )
+        MoveOSSession::new(&self.inner, remote, ctx, gas_meter, false)
     }
 
     pub fn new_genesis_session<'r, S: MoveOSResolver>(
@@ -97,7 +89,7 @@ impl MoveOSVM {
         let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
         gas_meter.set_metering(false);
         // Genesis session do not need to execute pre_execute and post_execute function
-        MoveOSSession::new(&self.inner, remote, ctx, vec![], vec![], gas_meter, false)
+        MoveOSSession::new(&self.inner, remote, ctx, gas_meter, false)
     }
 
     pub fn new_readonly_session<'r, S: MoveOSResolver, G: SwitchableGasMeter>(
@@ -106,7 +98,7 @@ impl MoveOSVM {
         ctx: TxContext,
         gas_meter: G,
     ) -> MoveOSSession<'r, '_, S, G> {
-        MoveOSSession::new(&self.inner, remote, ctx, vec![], vec![], gas_meter, true)
+        MoveOSSession::new(&self.inner, remote, ctx, gas_meter, true)
     }
 }
 
@@ -119,8 +111,6 @@ pub struct MoveOSSession<'r, 'l, S, G> {
     session: Session<'r, 'l, MoveosDataCache<'r, 'l, S>>,
     ctx: StorageContext,
     table_data: Arc<RwLock<TableData>>,
-    pre_execute_functions: Vec<FunctionCall>,
-    post_execute_functions: Vec<FunctionCall>,
     gas_meter: G,
     read_only: bool,
 }
@@ -134,21 +124,9 @@ where
         vm: &'l MoveVM,
         remote: &'r S,
         ctx: TxContext,
-        pre_execute_functions: Vec<FunctionCall>,
-        post_execute_functions: Vec<FunctionCall>,
         gas_meter: G,
         read_only: bool,
     ) -> Self {
-        if read_only {
-            assert!(
-                pre_execute_functions.is_empty(),
-                "pre_execute_function is not allowed in read only session"
-            );
-            assert!(
-                post_execute_functions.is_empty(),
-                "post_execute_function is not allowed in read only session"
-            );
-        }
         let ctx = StorageContext::new(ctx);
         let table_data = Arc::new(RwLock::new(TableData::default()));
         Self {
@@ -157,8 +135,6 @@ where
             session: Self::new_inner_session(vm, remote, table_data.clone()),
             ctx,
             table_data,
-            pre_execute_functions,
-            post_execute_functions,
             gas_meter,
             read_only,
         }
@@ -171,9 +147,11 @@ where
         //But we need some TxContext value in the pre_execute and post_execute function, such as the TxValidateResult.
         //We need to find a solution.
         let ctx = StorageContext::new(self.ctx.tx_context.spawn());
+        let table_data = Arc::new(RwLock::new(TableData::default()));
         Self {
-            session: Self::new_inner_session(self.vm, self.remote, self.table_data.clone()),
+            session: Self::new_inner_session(self.vm, self.remote, table_data.clone()),
             ctx,
+            table_data,
             ..self
         }
     }
@@ -258,7 +236,7 @@ where
     /// The caller should ensure call verify_move_action before execute.
     /// Once we start executing transactions, we must ensure that the transaction execution has a result, regardless of success or failure,
     /// and we need to save the result and deduct gas
-    pub fn execute_move_action(&mut self, action: VerifiedMoveAction) -> VMResult<()> {
+    pub(crate) fn execute_move_action(&mut self, action: VerifiedMoveAction) -> VMResult<()> {
         let action_result = match action {
             VerifiedMoveAction::Script { call } => {
                 let loaded_function = self
@@ -345,55 +323,6 @@ where
         }
 
         action_result
-    }
-
-    /// Execute a move action like execute_move_action,
-    /// but with pre_execute before execute_move_action and post_execute after execute_move_action
-    /// Return the (session, status, gas_used) if `execute_move_action` success,
-    /// otherwise return error of pre or post execute.
-    pub fn execute_move_action_with_pre_and_post(
-        mut self,
-        action: VerifiedMoveAction,
-    ) -> Result<(Self, KeptVMStatus, u64), (Self, VMError)> {
-        if let Err(e) = self.pre_execute() {
-            return Err((self, e));
-        }
-        let execute_result = self.execute_move_action(action);
-        let vm_status = vm_status_of_result(execute_result);
-        let (post_execute_session, status, gas_used) = match vm_status.keep_or_discard() {
-            Ok(status) => {
-                let mut post_session = match &status {
-                    KeptVMStatus::Executed => self,
-                    _error => {
-                        //if the execution failed, we need to start a new session, and discard the transaction changes
-                        // and increment the sequence number or reduce the gas in new session.
-                        let mut s = self.respawn();
-                        //Because the session is respawned, the pre_execute function should be called again.
-                        if let Err(e) = s.pre_execute() {
-                            return Err((s, e));
-                        }
-                        s
-                    }
-                };
-                let gas_used = match post_session.post_execute(status.clone()) {
-                    Ok(post_gas_used) => post_gas_used,
-                    Err(err) => {
-                        return Err((post_session, err));
-                    }
-                };
-                (post_session, status, gas_used)
-            }
-            Err(discard_status) => {
-                //This should not happen, if it happens, it means that the VM or verifer has a bug
-                return Err((
-                    self,
-                    PartialVMError::new(discard_status)
-                        .with_message(format!("Discard status: {:?}", discard_status))
-                        .finish(Location::Undefined),
-                ));
-            }
-        };
-        Ok((post_execute_session, status, gas_used))
     }
 
     /// Resolve pending init functions request registered via the NativeModuleContext.
@@ -499,19 +428,18 @@ where
     pub fn finish_with_extensions(
         self,
         status: KeptVMStatus,
-        gas_used: u64,
     ) -> VMResult<(TxContext, TransactionOutput)> {
+        let gas_used = self.query_gas_used();
+        let mut session = self;
         let MoveOSSession {
             vm: _,
             remote: _,
             session,
             ctx,
             table_data,
-            pre_execute_functions: _,
-            post_execute_functions: _,
             gas_meter: _,
             read_only,
-        } = self;
+        } = session;
         let (changeset, raw_events, extensions) = session.finish_with_extensions()?;
         drop(extensions);
 
@@ -566,47 +494,40 @@ where
         ))
     }
 
-    fn pre_execute(&mut self) -> VMResult<()> {
-        // the read_only function should not execute pre_execute function
-        // this ensure via the check in new_session
-
-        // we do not charge gas for pre_execute function
-        // TODO should we charge gas for custom authencation validator?
-        self.gas_meter.stop_metering();
-        for function_call in self.pre_execute_functions.clone() {
-            let pre_execute_function_id = function_call.function_id.clone();
+    pub(crate) fn execute_function_call(
+        &mut self,
+        functions: Vec<FunctionCall>,
+        meter_gas: bool,
+    ) -> VMResult<()> {
+        if !meter_gas {
+            self.gas_meter.stop_metering();
+        }
+        for function_call in functions {
             let result = self.execute_function_bypass_visibility(function_call);
             if let Err(e) = result {
+                if !meter_gas {
+                    self.gas_meter.start_metering();
+                }
                 return Err(e);
             }
+            // TODO: how to handle function call with returned values?
         }
-        self.gas_meter.start_metering();
+        if !meter_gas {
+            self.gas_meter.start_metering();
+        }
         Ok(())
     }
 
-    fn post_execute(&mut self, execute_status: KeptVMStatus) -> VMResult<u64> {
+    pub(crate) fn query_gas_used(&self) -> u64 {
         if self.read_only {
             //TODO calculate readonly function gas usage
-            Ok(0)
+            0
         } else {
             let max_gas_amount = self.ctx.tx_context.max_gas_amount;
             let gas_left: u64 = self.gas_meter.balance_internal().into();
-            let gas_used = max_gas_amount.checked_sub(gas_left).unwrap_or_else(|| panic!("gas_left({gas_left}) should always be less than or equal to max gas amount({max_gas_amount})"));
-
-            // we do not charge gas for post_execute function
-            self.gas_meter.stop_metering();
-
-            //TODO is it a good approach to add tx_result to TxContext?
-            let tx_result = TxResult::new(&execute_status, gas_used);
-            self.ctx
-                .tx_context
-                .add(tx_result)
-                .expect("Add tx_result to TxContext should always success");
-
-            for function_call in self.post_execute_functions.clone() {
-                self.execute_function_bypass_visibility(function_call)?;
-            }
-            Ok(gas_used)
+            max_gas_amount.checked_sub(gas_left).unwrap_or_else(
+                || panic!("gas_left({gas_left}) should always be less than or equal to max gas amount({max_gas_amount})")
+            )
         }
     }
 
