@@ -121,7 +121,7 @@ ethereum-types = "0.14.1"
 ethers = { version = "2.0.7", features = ["legacy"] }
 eyre = "0.6.8"
 fastcrypto = { git = "https://github.com/rooch-network/fastcrypto", rev = "aa5f9f308b6598779820db8b673050c10cfcc3c1" }
-futures = "0.3"
+futures = "0.3.28"
 hex = "0.4.3"
 rustc-hex = "1.0"
 rust-embed = "6.8.1"
@@ -202,6 +202,7 @@ bitcoin-bech32 = "0.13.0"
 bs58 = "0.5.0"
 dirs-next = "2.0.0"
 anstream = { version = "0.3" }
+bigdecimal = { version = "0.3.0", features = ["serde"] }
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES

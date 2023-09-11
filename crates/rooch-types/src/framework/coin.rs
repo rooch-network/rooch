@@ -54,7 +54,7 @@ impl<'a> CoinModule<'a> {
     pub fn coin_info_handle(&self) -> Result<Option<ObjectID>> {
         let ctx = TxContext::zero();
         let call = FunctionCall::new(
-            Self::function_id(Self::COIN_STORE_HANDLE_FUNCTION_NAME),
+            Self::function_id(Self::COIN_INFO_HANDLE_FUNCTION_NAME),
             vec![],
             vec![],
         );
@@ -133,115 +133,32 @@ impl AnnotatedCoinStore {
         AnnotatedCoinStore { struct_type, value }
     }
 
-    // /// Create a new AnnotatedCoinStore from a AnnotatedMoveStruct
-    // pub fn new_from_annotated_struct(annotated_struct: AnnotatedMoveStruct) -> Result<Self> {
-    //     let annotated_coin_store_type = annotated_struct.type_;
-    //     let mut fields = annotated_struct.value.into_iter();
-    //     let annotated_coin = match fields.next().expect("CoinStore should have coin field") {
-    //         (field_name, AnnotatedMoveValue::Struct(filed_value)) => {
-    //             debug_assert!(
-    //                 field_name.as_str() == "coin",
-    //                 "CoinStore coin field name should be coin"
-    //             );
-    //
-    //             let coin_struct_type = filed_value.type_;
-    //             let mut inner_fields = filed_value.value.into_iter();
-    //             let coin_value = match inner_fields
-    //                 .next()
-    //                 .expect("CoinValue should have value field")
-    //             {
-    //                 (field_name, AnnotatedMoveValue::Bytes(inner_filed_value)) => {
-    //                     debug_assert!(
-    //                         field_name.as_str() == "value",
-    //                         "CoinValue value field name should be value"
-    //                     );
-    //                     U256::from_bytes(inner_filed_value.as_slice())
-    //                 }
-    //                 _ => bail!("CoinValue value field should be value"),
-    //             }?;
-    //
-    //             let coin = Coin { value: coin_value };
-    //             AnnotatedCoin {
-    //                 struct_type: coin_type_,
-    //                 value: coin,
-    //             }
-    //         }
-    //         _ => bail!("CoinStore coin field should be struct"),
-    //     };
-    //     let frozen = match fields.next().expect("CoinStore should have frozen field") {
-    //         (field_name, AnnotatedMoveValue::Bool(filed_value)) => {
-    //             debug_assert!(
-    //                 field_name.as_str() == "frozen",
-    //                 "CoinStore field name should be frozen"
-    //             );
-    //             filed_value
-    //         }
-    //         _ => bail!("CoinStore frozen field should be bool"),
-    //     };
-    //     let compose_coin_store = CompoundCoinStore {
-    //         coin: annotated_coin,
-    //         frozen,
-    //     };
-    //
-    //     let annotated_coin_store = AnnotatedCoinStore {
-    //         struct_type: annotated_coin_store_type,
-    //         value: compose_coin_store,
-    //     };
-    //
-    //     Ok(annotated_coin_store)
-    // }
-
     /// Create a new AnnotatedCoinStore from a AnnotatedMoveValue
     pub fn new_from_annotated_move_value(annotated_move_value: AnnotatedMoveValue) -> Result<Self> {
-        // pub fn new_from_annotated_move_value(
-        //     annotated_move_value: AnnotatedMoveValueView,
-        // ) -> Result<Self> {
         match annotated_move_value {
             AnnotatedMoveValue::Struct(annotated_struct) => {
                 let annotated_coin_store_type = annotated_struct.type_;
                 let mut fields = annotated_struct.value.into_iter();
                 let annotated_coin = match fields.next().expect("CoinStore should have coin field")
                 {
-                    (field_name, AnnotatedMoveValue::Struct(filed_value)) => {
+                    (field_name, AnnotatedMoveValue::Struct(field_value)) => {
                         debug_assert!(
                             field_name.as_str() == "coin",
                             "CoinStore coin field name should be coin"
                         );
+                        let coin_struct_type = field_value.type_;
 
-                        let coin_struct_type = filed_value.type_;
-
-                        let mut inner_fields = filed_value.value.into_iter();
+                        let mut inner_fields = field_value.value.into_iter();
                         let coin_value = match inner_fields
                             .next()
                             .expect("CoinValue should have value field")
                         {
-                            (field_name, AnnotatedMoveValue::Bytes(inner_filed_value)) => {
+                            (field_name, AnnotatedMoveValue::U256(inner_field_value)) => {
                                 debug_assert!(
                                     field_name.as_str() == "value",
                                     "CoinValue value field name should be value"
                                 );
-                                U256::from_bytes(inner_filed_value.as_slice())?
-                            }
-                            (field_name, AnnotatedMoveValue::U64(inner_filed_value)) => {
-                                debug_assert!(
-                                    field_name.as_str() == "value",
-                                    "CoinValue value field name should be value"
-                                );
-                                U256::from(inner_filed_value)
-                            }
-                            (field_name, AnnotatedMoveValue::U128(inner_filed_value)) => {
-                                debug_assert!(
-                                    field_name.as_str() == "value",
-                                    "CoinValue value field name should be value"
-                                );
-                                U256::from(inner_filed_value)
-                            }
-                            (field_name, AnnotatedMoveValue::U256(inner_filed_value)) => {
-                                debug_assert!(
-                                    field_name.as_str() == "value",
-                                    "CoinValue value field name should be value"
-                                );
-                                inner_filed_value
+                                inner_field_value
                             }
                             _ => bail!("CoinValue value field should be value"),
                         };
@@ -254,12 +171,12 @@ impl AnnotatedCoinStore {
                     _ => bail!("CoinStore coin field should be struct"),
                 };
                 let frozen = match fields.next().expect("CoinStore should have frozen field") {
-                    (field_name, AnnotatedMoveValue::Bool(filed_value)) => {
+                    (field_name, AnnotatedMoveValue::Bool(field_value)) => {
                         debug_assert!(
                             field_name.as_str() == "frozen",
                             "CoinStore field name should be frozen"
                         );
-                        filed_value
+                        field_value
                     }
                     _ => bail!("CoinStore frozen field should be bool"),
                 };
@@ -295,6 +212,46 @@ pub struct CoinInfo {
     pub decimals: u8,
     pub supply: U256,
 }
+//
+// #[derive(Debug, Clone, Serialize, Deserialize)]
+// pub struct CoinInfo<T> {
+//     pub name: String,
+//     pub symbol: String,
+//     pub decimals: u8,
+//     pub supply: U256,
+//     pub coin_type: std::marker::PhantomData<T>,
+// }
+//
+// impl<T> MoveStructType for CoinInfo<T>
+//     where T: MoveStructType, {
+//     const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+//     const MODULE_NAME: &'static IdentStr = ident_str!("coin");
+//     const STRUCT_NAME: &'static IdentStr = ident_str!("CoinInfo");
+//
+//     fn struct_tag() -> move_core_types::language_storage::StructTag {
+//         move_core_types::language_storage::StructTag {
+//             address: Self::ADDRESS,
+//             module: Self::MODULE_NAME.to_owned(),
+//             name: Self::STRUCT_NAME.to_owned(),
+//             type_params: vec![T::type_tag()],
+//         }
+//     }
+// }
+//
+// impl<T> MoveStructState for CoinInfo<T> where T: MoveStructType, {
+//     fn struct_layout() -> move_core_types::value::MoveStructLayout {
+//         move_core_types::value::MoveStructLayout::new(vec![
+//             move_core_types::value::MoveTypeLayout::Vector(Box::new(
+//                 move_core_types::value::MoveTypeLayout::U8,
+//             )),
+//             move_core_types::value::MoveTypeLayout::Vector(Box::new(
+//                 move_core_types::value::MoveTypeLayout::U8,
+//             )),
+//             move_core_types::value::MoveTypeLayout::U8,
+//             move_core_types::value::MoveTypeLayout::U256,
+//         ])
+//     }
+// }
 
 impl CoinInfo {
     pub fn new(name: String, symbol: String, decimals: u8, supply: U256) -> Self {
@@ -326,42 +283,60 @@ impl AnnotatedCoinInfo {
                 let mut fields = annotated_struct.value.into_iter();
 
                 let name = match fields.next().expect("CoinInfo should have name field") {
-                    (field_name, AnnotatedMoveValue::Bytes(filed_value)) => {
-                        debug_assert!(
-                            field_name.as_str() == "name",
-                            "CoinInfo field name should be name"
-                        );
-                        String::from_utf8(filed_value)?
+                    (_field_name, AnnotatedMoveValue::Struct(field_value)) => {
+                        let mut inner_fields = field_value.value.into_iter();
+                        match inner_fields
+                            .next()
+                            .expect("CoinInfo name struct should have field")
+                        {
+                            (field_name, AnnotatedMoveValue::Bytes(field_value)) => {
+                                debug_assert!(
+                                    field_name.as_str() == "bytes",
+                                    "CoinInfo inner field name should be bytes"
+                                );
+                                String::from_utf8(field_value)?
+                            }
+                            _ => bail!("CoinInfo name field should be Bytes"),
+                        }
                     }
                     _ => bail!("CoinInfo name field should be String"),
                 };
                 let symbol = match fields.next().expect("CoinInfo should have symbol field") {
-                    (field_name, AnnotatedMoveValue::Bytes(filed_value)) => {
-                        debug_assert!(
-                            field_name.as_str() == "symbol",
-                            "CoinInfo field symbol should be symbol"
-                        );
-                        String::from_utf8(filed_value)?
+                    (_field_name, AnnotatedMoveValue::Struct(field_value)) => {
+                        let mut inner_fields = field_value.value.into_iter();
+                        match inner_fields
+                            .next()
+                            .expect("CoinInfo symbol struct should have field")
+                        {
+                            (field_name, AnnotatedMoveValue::Bytes(field_value)) => {
+                                debug_assert!(
+                                    field_name.as_str() == "bytes",
+                                    "CoinInfo field symbol should be symbol"
+                                );
+                                String::from_utf8(field_value)?
+                            }
+                            _ => bail!("CoinInfo symbol field should be Bytes"),
+                        }
                     }
                     _ => bail!("CoinInfo symbol field should be String"),
                 };
                 let decimals = match fields.next().expect("CoinInfo should have decimals field") {
-                    (field_name, AnnotatedMoveValue::U8(filed_value)) => {
+                    (field_name, AnnotatedMoveValue::U8(field_value)) => {
                         debug_assert!(
                             field_name.as_str() == "decimals",
                             "CoinInfo field decimals should be decimals"
                         );
-                        filed_value
+                        field_value
                     }
                     _ => bail!("CoinInfo decimals field should be u8"),
                 };
                 let supply = match fields.next().expect("CoinInfo should have supply field") {
-                    (field_name, AnnotatedMoveValue::U256(filed_value)) => {
+                    (field_name, AnnotatedMoveValue::U256(field_value)) => {
                         debug_assert!(
                             field_name.as_str() == "supply",
                             "CoinInfo field supply should be supply"
                         );
-                        filed_value
+                        field_value
                     }
                     _ => bail!("CoinInfo supply field should be U256"),
                 };

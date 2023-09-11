@@ -6,6 +6,7 @@ use move_core_types::u256::U256;
 use rooch_types::account::{AccountInfo, BalanceInfo};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::ops::Div;
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct AccountInfoView {
@@ -57,6 +58,14 @@ pub struct BalanceInfoView {
     pub symbol: String,
     pub balance: StrView<U256>,
     pub decimals: u8,
+}
+
+impl BalanceInfoView {
+    //TODO implements big decimal calculation
+    pub fn get_balance_show(&self) -> String {
+        let balance = U256::div(self.balance.0, U256::from(10u32.pow(self.decimals as u32)));
+        format!("{:.}", balance.to_string())
+    }
 }
 
 impl From<BalanceInfo> for BalanceInfoView {

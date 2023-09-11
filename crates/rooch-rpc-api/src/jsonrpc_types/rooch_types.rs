@@ -195,109 +195,6 @@ impl From<AnnotatedCoinStoreView> for AnnotatedCoinStore {
     }
 }
 
-// impl AnnotatedCoinStoreView {
-//     pub fn new(struct_type: StructTagView, value: CompoundCoinStoreView) -> Self {
-//         AnnotatedCoinStoreView { struct_type, value }
-//     }
-//
-//     /// Create a new AnnotatedCoinStoreView from a AnnotatedMoveValueView
-//     pub fn new_from_annotated_move_value_view(
-//         annotated_move_value_view: AnnotatedMoveValueView,
-//     ) -> Result<Self> {
-//         match annotated_move_value_view {
-//             AnnotatedMoveValueView::Struct(annotated_struct_view) => {
-//                 let annotated_coin_store_type = annotated_struct_view.type_;
-//                 let mut fields = annotated_struct_view.value.into_iter();
-//                 let annotated_coin = match fields.next().expect("CoinStore should have coin field")
-//                 {
-//                     (field_name, AnnotatedMoveValueView::Struct(filed_value)) => {
-//                         debug_assert!(
-//                             field_name.as_str() == "coin",
-//                             "CoinStore coin field name should be coin"
-//                         );
-//
-//                         let coin_type_ = filed_value.type_;
-//
-//                         let mut inner_fields = filed_value.value.into_iter();
-//                         let coin_value = match inner_fields
-//                             .next()
-//                             .expect("CoinValue should have value field")
-//                         {
-//                             (field_name, AnnotatedMoveValueView::Bytes(inner_filed_value)) => {
-//                                 debug_assert!(
-//                                     field_name.as_str() == "value",
-//                                     "CoinValue value field name should be value"
-//                                 );
-//                                 U256::from_bytes(inner_filed_value.0.as_slice())?
-//                             }
-//                             (field_name, AnnotatedMoveValueView::U64(inner_filed_value)) => {
-//                                 debug_assert!(
-//                                     field_name.as_str() == "value",
-//                                     "CoinValue value field name should be value"
-//                                 );
-//                                 U256::from(inner_filed_value.0)
-//                             }
-//                             (field_name, AnnotatedMoveValueView::U128(inner_filed_value)) => {
-//                                 debug_assert!(
-//                                     field_name.as_str() == "value",
-//                                     "CoinValue value field name should be value"
-//                                 );
-//                                 U256::from(inner_filed_value.0)
-//                             }
-//                             (field_name, AnnotatedMoveValueView::U256(inner_filed_value)) => {
-//                                 debug_assert!(
-//                                     field_name.as_str() == "value",
-//                                     "CoinValue value field name should be value"
-//                                 );
-//                                 inner_filed_value.0
-//                             }
-//                             _ => bail!("CoinValue value field should be value"),
-//                         };
-//                         let coin = CoinView {
-//                             value: StrView(coin_value),
-//                         };
-//                         AnnotatedCoinView {
-//                             type_: coin_type_,
-//                             value: coin,
-//                         }
-//                     }
-//                     _ => bail!("CoinStore coin field should be struct"),
-//                 };
-//                 let frozen = match fields.next().expect("CoinStore should have frozen field") {
-//                     (field_name, AnnotatedMoveValueView::Bool(filed_value)) => {
-//                         debug_assert!(
-//                             field_name.as_str() == "frozen",
-//                             "CoinStore field name should be frozen"
-//                         );
-//                         filed_value
-//                     }
-//                     _ => bail!("CoinStore frozen field should be bool"),
-//                 };
-//                 let compose_coin_store = CompoundCoinStoreView {
-//                     coin: annotated_coin,
-//                     frozen,
-//                 };
-//
-//                 let annotated_coin_store_view = AnnotatedCoinStoreView {
-//                     type_: annotated_coin_store_type,
-//                     value: compose_coin_store,
-//                 };
-//
-//                 Ok(annotated_coin_store_view)
-//             }
-//             _ => bail!("CoinValue value field should be value"),
-//         }
-//     }
-//
-//     pub fn get_coin_type_(&self) -> StructTagView {
-//         self.value.coin.type_.clone()
-//     }
-//
-//     pub fn get_coin_value(&self) -> StrView<U256> {
-//         self.value.coin.value.value
-//     }
-// }
-
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct CoinInfoView {
     name: String,
@@ -306,29 +203,11 @@ pub struct CoinInfoView {
     supply: StrView<U256>,
 }
 
-// impl CoinInfoView {
-//     pub fn new(name: String, symbol: String, decimals: u8, supply: StrView<U256>) -> Self {
-//         CoinInfoView {
-//             name,
-//             symbol,
-//             decimals,
-//             supply,
-//         }
-//     }
-// }
-
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct AnnotatedCoinInfoView {
     struct_type: StructTagView,
     value: CoinInfoView,
 }
-
-// pub struct CoinInfoView {
-//     name: String,
-//     symbol: String,
-//     decimals: u8,
-//     supply: StrView<U256>,
-// }
 
 impl From<AnnotatedCoinInfo> for AnnotatedCoinInfoView {
     fn from(annotated_coin_info: AnnotatedCoinInfo) -> Self {
@@ -357,85 +236,3 @@ impl From<AnnotatedCoinInfoView> for AnnotatedCoinInfo {
         AnnotatedCoinInfo::new(annotated_coin_info.struct_type.into(), coin_info)
     }
 }
-
-// impl AnnotatedCoinInfoView {
-//     pub fn new(struct_type: StructTagView, value: CoinInfoView) -> Self {
-//         AnnotatedCoinInfoView { struct_type, value }
-//     }
-//
-//     /// Create a new AnnotatedCoinInfoView from a AnnotatedMoveValueView
-//     pub fn new_from_annotated_move_value_view(
-//         annotated_move_value_view: AnnotatedMoveValueView,
-//     ) -> Result<Self> {
-//         match annotated_move_value_view {
-//             AnnotatedMoveValueView::Struct(annotated_struct_view) => {
-//                 let struct_type = annotated_struct_view.type_;
-//                 let mut fields = annotated_struct_view.value.into_iter();
-//
-//                 let name = match fields.next().expect("CoinInfo should have name field") {
-//                     (field_name, AnnotatedMoveValueView::Bytes(filed_value)) => {
-//                         debug_assert!(
-//                             field_name.as_str() == "name",
-//                             "CoinInfo field name should be name"
-//                         );
-//                         String::from_utf8(filed_value.0)?
-//                     }
-//                     _ => bail!("CoinInfo name field should be String"),
-//                 };
-//                 let symbol = match fields.next().expect("CoinInfo should have symbol field") {
-//                     (field_name, AnnotatedMoveValueView::Bytes(filed_value)) => {
-//                         debug_assert!(
-//                             field_name.as_str() == "symbol",
-//                             "CoinInfo field symbol should be symbol"
-//                         );
-//                         String::from_utf8(filed_value.0)?
-//                     }
-//                     _ => bail!("CoinInfo symbol field should be String"),
-//                 };
-//                 let decimals = match fields.next().expect("CoinInfo should have decimals field") {
-//                     (field_name, AnnotatedMoveValueView::U8(filed_value)) => {
-//                         debug_assert!(
-//                             field_name.as_str() == "decimals",
-//                             "CoinInfo field decimals should be decimals"
-//                         );
-//                         filed_value
-//                     }
-//                     _ => bail!("CoinInfo decimals field should be u8"),
-//                 };
-//                 let supply = match fields.next().expect("CoinInfo should have supply field") {
-//                     (field_name, AnnotatedMoveValueView::U256(filed_value)) => {
-//                         debug_assert!(
-//                             field_name.as_str() == "supply",
-//                             "CoinInfo field supply should be supply"
-//                         );
-//                         filed_value
-//                     }
-//                     _ => bail!("CoinInfo supply field should be U256"),
-//                 };
-//
-//                 let coin_info_view = CoinInfoView {
-//                     name,
-//                     symbol,
-//                     decimals,
-//                     supply,
-//                 };
-//
-//                 let annotated_coin_info_view = AnnotatedCoinInfoView {
-//                     type_,
-//                     value: coin_info_view,
-//                 };
-//
-//                 Ok(annotated_coin_info_view)
-//             }
-//             _ => bail!("CoinInfo value field should be struct"),
-//         }
-//     }
-//
-//     pub fn get_struct_type(&self) -> StructTagView {
-//         self.struct_type.clone()
-//     }
-//
-//     pub fn get_decimals(&self) -> u8 {
-//         self.value.decimals
-//     }
-// }

@@ -183,15 +183,3 @@ impl RpcService {
         Ok(resp)
     }
 }
-
-// impl MoveFunctionCaller for RpcService {
-//     fn call_function(
-//         &self,
-//         _ctx: &TxContext,
-//         function_call: FunctionCall,
-//     ) -> Result<FunctionResult> {
-//         let function_result =
-//             futures::executor::block_on(self.execute_view_function(function_call))?;
-//         function_result.try_into()
-//     }
-// }
