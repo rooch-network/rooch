@@ -115,8 +115,7 @@ describe('provider', () => {
         expect(provider).toBeDefined()
 
         try {
-          const assetsPath =
-              '/object::0x1'
+          const assetsPath = '/object::0x1'
           const result = await provider.getAnnotatedStates(assetsPath)
 
           console.log(result)

@@ -79,7 +79,7 @@ describe('SDK', () => {
   describe('#getAnnotatedStates', () => {
     it('get annotated states should be ok', async () => {
       const provider = new JsonRpcProvider()
-      const result = provider.getAnnotatedStates("/object/0x1")
+      const result = provider.getAnnotatedStates('/object/0x1')
       console.log(result)
       expect(result).toBeDefined()
     })

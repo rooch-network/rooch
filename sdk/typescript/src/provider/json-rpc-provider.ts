@@ -116,16 +116,14 @@ export class JsonRpcProvider {
   }
 
   async getTransactionInfosByTxHash(
-    tx_hashes: string[],
+    txHashes: string[],
   ): Promise<TransactionExecutionInfoView | null[]> {
-    return await this.client.rooch_getTransactionInfosByTxHash(tx_hashes)
+    return await this.client.rooch_getTransactionInfosByTxHash(txHashes)
   }
 
   // Get the annotated states by access_path The annotated states include the decoded move value of the state
-  async getAnnotatedStates(
-    access_path: string,
-  ): Promise<AnnotatedStateView | null[]> {
-    return await this.client.rooch_getAnnotatedStates(access_path)
+  async getAnnotatedStates(accessPath: string): Promise<AnnotatedStateView | null[]> {
+    return await this.client.rooch_getAnnotatedStates(accessPath)
   }
 
   // TODO: wait bcs
