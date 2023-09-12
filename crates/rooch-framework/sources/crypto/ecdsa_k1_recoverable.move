@@ -50,21 +50,21 @@ module rooch_framework::ecdsa_k1_recoverable {
         let i = scheme_length() + signature_length();
         let public_key_position = scheme_length() + signature_length() + public_key_length();
         while (i < public_key_position) {
-                let value = vector::borrow(authenticator_payload, i);
-                vector::push_back(&mut public_key, *value);
-                i = i + 1;
+            let value = vector::borrow(authenticator_payload, i);
+            vector::push_back(&mut public_key, *value);
+            i = i + 1;
         };
         public_key
     }
 
     public fun get_signature_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
         let sign = vector::empty<u8>();
-        let i = scheme_length();
-        let signature_position = signature_length() + 1;
+        let i = 0; // TODO: do we need scheme_length here?
+        let signature_position = signature_length();
         while (i < signature_position) {
-                let value = vector::borrow(authenticator_payload, i);
-                vector::push_back(&mut sign, *value);
-                i = i + 1;
+            let value = vector::borrow(authenticator_payload, i);
+            vector::push_back(&mut sign, *value);
+            i = i + 1;
         };
         sign
     }

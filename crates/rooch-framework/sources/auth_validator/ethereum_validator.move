@@ -97,7 +97,6 @@ module rooch_framework::ethereum_validator {
         validate_signature(&authenticator_payload, &tx_hash);
 
         // TODO compare the auth_key from the payload with the auth_key from the account
-        std::debug::print(ctx);
     }
 
     fun pre_execute(
