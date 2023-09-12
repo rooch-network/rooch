@@ -15,7 +15,8 @@ use fastcrypto::{
 };
 use move_core_types::account_address::AccountAddress;
 use moveos_types::{
-    h256::H256,
+    gas_config::GasConfig,
+    h256::{self, H256},
     transaction::{MoveAction, MoveOSTransaction},
     tx_context::TxContext,
 };
@@ -26,21 +27,23 @@ pub struct EthereumTransactionData(pub Transaction);
 
 impl EthereumTransactionData {
     pub fn new_for_test(sender: EthereumAddress, nonce: U256, action: Bytes) -> Self {
+        let sender_and_action = (sender, action.clone());
+        let tx_hash = h256::sha3_256_of(bcs::to_bytes(&sender_and_action).unwrap().as_slice());
         let transaction = Transaction {
-            hash: H256::zero(),
+            hash: tx_hash,
             nonce,
             block_hash: None,
             block_number: None,
             transaction_index: None,
             from: sender.0,
             to: None,
-            value: U256::zero(),
+            value: U256::default(),
             gas_price: None,
-            gas: U256::zero(),
+            gas: GasConfig::DEFAULT_MAX_GAS_AMOUNT.into(),
             input: action,
-            v: U64::zero(),
-            r: U256::zero(),
-            s: U256::zero(),
+            v: U64::default(),
+            r: U256::default(),
+            s: U256::default(),
             transaction_type: None,
             access_list: None,
             max_priority_fee_per_gas: None,
