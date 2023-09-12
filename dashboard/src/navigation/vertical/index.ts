@@ -24,12 +24,17 @@ const navigation = (): VerticalNavItemsType => {
       path: '/tutorial/publish/package',
     },
     {
-      sectionTitle: 'Transaction',
+      sectionTitle: 'Scan',
     },
     {
-      title: 'Transaction List',
-      icon: 'bx-list-ol',
-      path: '/transaction/list',
+      title: 'State',
+      icon: 'bxs-tree',
+      path: '/scan/state/list',
+    },
+    {
+      title: 'Transaction',
+      icon: 'bx-collection',
+      path: '/scan/transaction/list',
     },
     {
       sectionTitle: 'Wallet & Assets',

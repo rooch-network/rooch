@@ -22,6 +22,6 @@ export class Connection {
   }
 }
 
-export const LocalnetConnection = new Connection({
+export const LocalNetConnection = new Connection({
   url: 'http://127.0.0.1:50051',
 })

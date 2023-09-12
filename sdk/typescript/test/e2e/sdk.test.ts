@@ -69,9 +69,18 @@ describe('SDK', () => {
   })
 
   describe('#getTransactionByIndex', () => {
-    it('view function should be ok', async () => {
+    it('get transaction by index should be ok', async () => {
       const provider = new JsonRpcProvider()
       const result = provider.getTransactionByIndex(0, 10)
+      expect(result).toBeDefined()
+    })
+  })
+
+  describe('#getAnnotatedStates', () => {
+    it('get annotated states should be ok', async () => {
+      const provider = new JsonRpcProvider()
+      const result = provider.getAnnotatedStates('/object/0x1')
+      console.log(result)
       expect(result).toBeDefined()
     })
   })

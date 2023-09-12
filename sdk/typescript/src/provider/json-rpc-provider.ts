@@ -3,7 +3,7 @@
 import fetch from 'isomorphic-fetch'
 import { HTTPTransport, RequestManager } from '@open-rpc/client-js'
 import { JsonRpcClient } from '../generated/client'
-import { Connection, LocalnetConnection } from './connection'
+import { Connection, LocalNetConnection } from './connection'
 import { bytes } from '../types/bcs'
 import {
   FunctionId,
@@ -11,6 +11,7 @@ import {
   Arg,
   AnnotatedFunctionResultView,
   TransactionView,
+  AnnotatedStateView,
   TransactionExecutionInfoView,
 } from '../types'
 import { functionIdToStirng, typeTagToString, encodeArg, toHexString } from '../utils'
@@ -48,7 +49,7 @@ export class JsonRpcProvider {
   private cacheExpiry: number | undefined
 
   constructor(
-    connection: Connection = LocalnetConnection,
+    connection: Connection = LocalNetConnection,
     public options: RpcProviderOptions = DEFAULT_OPTIONS,
   ) {
     this.connection = connection
@@ -78,9 +79,7 @@ export class JsonRpcProvider {
     }
 
     try {
-      this.client.getRpcApiVersion()
-      const resp = await this.client.getRpcApiVersion()
-      this.rpcApiVersion = resp
+      this.rpcApiVersion = await this.client.getRpcApiVersion()
       this.cacheExpiry =
         // Date.now() is in milliseconds, but the timeout is in seconds
         Date.now() + (this.options.versionCacheTimeoutInSeconds ?? 0) * 1000
@@ -117,24 +116,23 @@ export class JsonRpcProvider {
   }
 
   async getTransactionInfosByTxHash(
-    tx_hashes: string[],
+    txHashes: string[],
   ): Promise<TransactionExecutionInfoView | null[]> {
-    return await this.client.rooch_getTransactionInfosByTxHash(tx_hashes)
+    return await this.client.rooch_getTransactionInfosByTxHash(txHashes)
+  }
+
+  // Get the annotated states by access_path The annotated states include the decoded move value of the state
+  async getAnnotatedStates(accessPath: string): Promise<AnnotatedStateView | null[]> {
+    return await this.client.rooch_getAnnotatedStates(accessPath)
   }
 
   // TODO: wait bcs
-  // // Get the annotated states by access_path The annotated states include the decoded move value of the state
-  // async getAnnotatedStates(
-  //   access_path: string,
-  // ): Promise<AnnotatedStateView | null[]> {
-  //   return await this.rpcClient.rooch_getAnnotatedStates(access_path)
-  // }
 
   // // Get the events by event filter
   // async getEvents(
   //   filter: EventFilterView,
   // ): Promise<AnnotatedEventView | null[]> {
-  //   return await this.rpcClient.rooch_getEvents(filter)
+  //   return await this.client.rooch_getEvents(filter)
   // }
 
   // // Get the events by event handle id

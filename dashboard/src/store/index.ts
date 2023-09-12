@@ -3,13 +3,16 @@
 
 // ** Toolkit imports
 import { configureStore } from '@reduxjs/toolkit'
+import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux'
 
 // ** Reducers
-import transaction from 'src/store/transaction'
+import transaction from 'src/store/scan/transaction'
+import state from 'src/store/scan/state'
 
 export const store = configureStore({
   reducer: {
     transaction,
+    state,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -19,3 +22,6 @@ export const store = configureStore({
 
 export type AppDispatch = typeof store.dispatch
 export type RootState = ReturnType<typeof store.getState>
+
+export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector
+export const useAppDispatch = () => useDispatch<AppDispatch>()
