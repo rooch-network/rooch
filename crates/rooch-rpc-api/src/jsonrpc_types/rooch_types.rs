@@ -137,13 +137,14 @@ impl CoinView {
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct AnnotatedCoinView {
-    struct_type: StructTagView,
+    #[serde(rename = "type")]
+    type_: StructTagView,
     value: CoinView,
 }
 
 impl AnnotatedCoinView {
-    pub fn new(struct_type: StructTagView, value: CoinView) -> Self {
-        AnnotatedCoinView { struct_type, value }
+    pub fn new(type_: StructTagView, value: CoinView) -> Self {
+        AnnotatedCoinView { type_, value }
     }
 }
 
@@ -161,7 +162,8 @@ impl CompoundCoinStoreView {
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct AnnotatedCoinStoreView {
-    struct_type: StructTagView,
+    #[serde(rename = "type")]
+    type_: StructTagView,
     value: CompoundCoinStoreView,
 }
 
@@ -171,7 +173,7 @@ impl From<AnnotatedCoinStore> for AnnotatedCoinStoreView {
             value: StrView(coin_store.value.coin.value.value),
         };
         let annotated_coin = AnnotatedCoinView {
-            struct_type: coin_store.value.coin.struct_type.into(),
+            type_: coin_store.value.coin.type_.into(),
             value: coin,
         };
         let compose_coin_store = CompoundCoinStoreView {
@@ -179,7 +181,7 @@ impl From<AnnotatedCoinStore> for AnnotatedCoinStoreView {
             frozen: coin_store.value.frozen,
         };
         AnnotatedCoinStoreView {
-            struct_type: coin_store.struct_type.into(),
+            type_: coin_store.type_.into(),
             value: compose_coin_store,
         }
     }
@@ -188,10 +190,10 @@ impl From<AnnotatedCoinStore> for AnnotatedCoinStoreView {
 impl From<AnnotatedCoinStoreView> for AnnotatedCoinStore {
     fn from(coin_store: AnnotatedCoinStoreView) -> Self {
         let coin = Coin::new(coin_store.value.coin.value.value.0);
-        let annotated_coin = AnnotatedCoin::new(coin_store.value.coin.struct_type.into(), coin);
+        let annotated_coin = AnnotatedCoin::new(coin_store.value.coin.type_.into(), coin);
         let compose_coin_store = CompoundCoinStore::new(annotated_coin, coin_store.value.frozen);
 
-        AnnotatedCoinStore::new(coin_store.struct_type.into(), compose_coin_store)
+        AnnotatedCoinStore::new(coin_store.type_.into(), compose_coin_store)
     }
 }
 
@@ -205,7 +207,8 @@ pub struct CoinInfoView {
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct AnnotatedCoinInfoView {
-    struct_type: StructTagView,
+    #[serde(rename = "type")]
+    type_: StructTagView,
     value: CoinInfoView,
 }
 
@@ -218,7 +221,7 @@ impl From<AnnotatedCoinInfo> for AnnotatedCoinInfoView {
             supply: StrView(annotated_coin_info.value.supply),
         };
         AnnotatedCoinInfoView {
-            struct_type: annotated_coin_info.struct_type.into(),
+            type_: annotated_coin_info.type_.into(),
             value: coin_info,
         }
     }
@@ -233,6 +236,6 @@ impl From<AnnotatedCoinInfoView> for AnnotatedCoinInfo {
             annotated_coin_info.value.supply.0,
         );
 
-        AnnotatedCoinInfo::new(annotated_coin_info.struct_type.into(), coin_info)
+        AnnotatedCoinInfo::new(annotated_coin_info.type_.into(), coin_info)
     }
 }

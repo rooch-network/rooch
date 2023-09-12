@@ -51,7 +51,7 @@ impl<'a> CoinModule<'a> {
         Ok(result)
     }
 
-    pub fn coin_info_handle(&self) -> Result<Option<ObjectID>> {
+    pub fn coin_info_handle(&self) -> Result<ObjectID> {
         let ctx = TxContext::zero();
         let call = FunctionCall::new(
             Self::function_id(Self::COIN_INFO_HANDLE_FUNCTION_NAME),
@@ -66,9 +66,8 @@ impl<'a> CoinModule<'a> {
                 let value = values
                     .get(0)
                     .expect("Coin info handle expected return value");
-                let result = MoveOption::<ObjectID>::from_bytes(&value.value)
-                    .expect("Coin info handle expected Option<ObjectID>");
-                result.into()
+                bcs::from_bytes::<ObjectID>(&value.value)
+                    .expect("Coin info handle expected Option<ObjectID>")
             })?;
         Ok(result)
     }
@@ -100,13 +99,14 @@ impl Coin {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AnnotatedCoin {
-    pub struct_type: StructTag,
+    #[serde(rename = "type")]
+    pub type_: StructTag,
     pub value: Coin,
 }
 
 impl AnnotatedCoin {
-    pub fn new(struct_type: StructTag, value: Coin) -> Self {
-        AnnotatedCoin { struct_type, value }
+    pub fn new(type_: StructTag, value: Coin) -> Self {
+        AnnotatedCoin { type_, value }
     }
 }
 
@@ -124,13 +124,14 @@ impl CompoundCoinStore {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AnnotatedCoinStore {
-    pub struct_type: StructTag,
+    #[serde(rename = "type")]
+    pub type_: StructTag,
     pub value: CompoundCoinStore,
 }
 
 impl AnnotatedCoinStore {
-    pub fn new(struct_type: StructTag, value: CompoundCoinStore) -> Self {
-        AnnotatedCoinStore { struct_type, value }
+    pub fn new(type_: StructTag, value: CompoundCoinStore) -> Self {
+        AnnotatedCoinStore { type_, value }
     }
 
     /// Create a new AnnotatedCoinStore from a AnnotatedMoveValue
@@ -146,7 +147,7 @@ impl AnnotatedCoinStore {
                             field_name.as_str() == "coin",
                             "CoinStore coin field name should be coin"
                         );
-                        let coin_struct_type = field_value.type_;
+                        let coin_type = field_value.type_;
 
                         let mut inner_fields = field_value.value.into_iter();
                         let coin_value = match inner_fields
@@ -164,7 +165,7 @@ impl AnnotatedCoinStore {
                         };
                         let coin = Coin { value: coin_value };
                         AnnotatedCoin {
-                            struct_type: coin_struct_type,
+                            type_: coin_type,
                             value: coin,
                         }
                     }
@@ -186,7 +187,7 @@ impl AnnotatedCoinStore {
                 };
 
                 let annotated_coin_store = AnnotatedCoinStore {
-                    struct_type: annotated_coin_store_type,
+                    type_: annotated_coin_store_type,
                     value: compose_coin_store,
                 };
 
@@ -196,8 +197,8 @@ impl AnnotatedCoinStore {
         }
     }
 
-    pub fn get_coin_struct_type(&self) -> StructTag {
-        self.value.coin.struct_type.clone()
+    pub fn get_coin_type(&self) -> StructTag {
+        self.value.coin.type_.clone()
     }
 
     pub fn get_coin_value(&self) -> U256 {
@@ -266,20 +267,21 @@ impl CoinInfo {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AnnotatedCoinInfo {
-    pub struct_type: StructTag,
+    #[serde(rename = "type")]
+    pub type_: StructTag,
     pub value: CoinInfo,
 }
 
 impl AnnotatedCoinInfo {
-    pub fn new(struct_type: StructTag, value: CoinInfo) -> Self {
-        AnnotatedCoinInfo { struct_type, value }
+    pub fn new(type_: StructTag, value: CoinInfo) -> Self {
+        AnnotatedCoinInfo { type_, value }
     }
 
     /// Create a new AnnotatedCoinInfo from a AnnotatedMoveValue
     pub fn new_from_annotated_move_value(annotated_move_value: AnnotatedMoveValue) -> Result<Self> {
         match annotated_move_value {
             AnnotatedMoveValue::Struct(annotated_struct) => {
-                let struct_type = annotated_struct.type_;
+                let type_ = annotated_struct.type_;
                 let mut fields = annotated_struct.value.into_iter();
 
                 let name = match fields.next().expect("CoinInfo should have name field") {
@@ -349,7 +351,7 @@ impl AnnotatedCoinInfo {
                 };
 
                 let annotated_coin_info = AnnotatedCoinInfo {
-                    struct_type,
+                    type_,
                     value: coin_info,
                 };
 
@@ -359,8 +361,8 @@ impl AnnotatedCoinInfo {
         }
     }
 
-    pub fn get_struct_type(&self) -> StructTag {
-        self.struct_type.clone()
+    pub fn get_type(&self) -> StructTag {
+        self.type_.clone()
     }
 
     pub fn get_decimals(&self) -> u8 {

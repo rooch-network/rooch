@@ -42,9 +42,7 @@ impl AggregateService {
         limit: usize,
     ) -> Result<Vec<Option<(Option<Vec<u8>>, BalanceInfo)>>> {
         let coin_module = self.as_module_binding::<CoinModule>();
-        let coin_info_handle = coin_module
-            .coin_info_handle()?
-            .expect("Get coin info handle should succ.");
+        let coin_info_handle = coin_module.coin_info_handle()?;
 
         // contruct coin info map for handle decimals
         //TODO Extract to signle module as cache to load all token info, as well as to avoid query every time
@@ -67,14 +65,16 @@ impl AggregateService {
             })
             .collect::<Vec<_>>();
         for coin_info in coin_info_data.into_iter().flatten() {
-            let coin_type = get_first_ty_as_struct_tag(coin_info.struct_type)
+            let coin_type = get_first_ty_as_struct_tag(coin_info.get_type())
                 .expect("Coin type expected get_first_ty_as_struct_tag succ");
             coin_info_table.insert(coin_type, coin_info.value);
         }
 
-        let coin_store_handle = coin_module
-            .coin_store_handle(account_addr)?
-            .expect("Get coin store handle should succ");
+        let coin_store_handle = coin_module.coin_store_handle(account_addr)?;
+        let coin_store_handle = match coin_store_handle {
+            Some(v) => v,
+            None => anyhow::bail!("Coin store handle does not exist"),
+        };
 
         let mut result = vec![];
         if let Some(coin_type) = coin_type {
@@ -116,9 +116,8 @@ impl AggregateService {
                             AnnotatedCoinStore::new_from_annotated_move_value(state.move_value)
                                 .expect("AnnotatedCoinStore expected return value");
 
-                        let coin_type =
-                            get_first_ty_as_struct_tag(coin_store.get_coin_struct_type())
-                                .expect("Coin type expected get_first_ty_as_struct_tag succ");
+                        let coin_type = get_first_ty_as_struct_tag(coin_store.get_coin_type())
+                            .expect("Coin type expected get_first_ty_as_struct_tag succ");
                         let balance_info =
                             BalanceInfo::new_with_default(coin_type, coin_store.get_coin_value());
                         (Some(key), balance_info)

@@ -863,7 +863,7 @@ Return coin store handle for addr
 Return coin info handle
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_info_handle">coin_info_handle</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): <a href="_Option">option::Option</a>&lt;<a href="_ObjectID">object_id::ObjectID</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_info_handle">coin_info_handle</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): <a href="_ObjectID">object_id::ObjectID</a>
 </code></pre>
 
 
@@ -872,14 +872,10 @@ Return coin info handle
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_info_handle">coin_info_handle</a>(ctx: &StorageContext): Option&lt;ObjectID&gt; {
-    <b>if</b> (<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a>&gt;(ctx, @rooch_framework))
-        {
-            <b>let</b> coin_infos = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a>&gt;(ctx, @rooch_framework);
-            <a href="_some">option::some</a>(*<a href="_handle">type_table::handle</a>(&coin_infos.coin_infos))
-        } <b>else</b> {
-        <a href="_none">option::none</a>&lt;ObjectID&gt;()
-    }
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_info_handle">coin_info_handle</a>(ctx: &StorageContext): ObjectID {
+    // <a href="coin.md#0x3_coin">coin</a> info ensured via the Genesis transaction, so it should always exist
+    <b>let</b> coin_infos = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a>&gt;(ctx, @rooch_framework);
+    *<a href="_handle">type_table::handle</a>(&coin_infos.coin_infos)
 }
 </code></pre>
 
