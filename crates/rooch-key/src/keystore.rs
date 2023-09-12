@@ -24,7 +24,7 @@ use rooch_types::{
     },
     transaction::{
         authenticator,
-        ethereum::{EthereumTransaction, EthereumTransactionData},
+        ethereum::EthereumTransactionData,
         rooch::{RoochTransaction, RoochTransactionData},
     },
 };
@@ -46,9 +46,9 @@ pub enum Keystore<K: Ord, V> {
 }
 
 #[enum_dispatch]
-pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, Transaction, TransactionData>:
-    Send + Sync
-{
+pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData>: Send + Sync {
+    type Transaction;
+
     fn add_key_pair_by_coin_id(
         &mut self,
         keypair: KeyPair,
@@ -86,7 +86,7 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, Transaction, Transac
         address: &Addr,
         msg: TransactionData,
         coin_id: CoinID,
-    ) -> Result<Transaction, signature::Error>;
+    ) -> Result<Self::Transaction, signature::Error>;
 
     fn sign_secure<T>(
         &self,
@@ -178,19 +178,14 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, Transaction, Transac
         address: &Addr,
         msg: TransactionData,
         authentication_key: &AuthenticationKey,
-    ) -> Result<Transaction, signature::Error>;
+    ) -> Result<Self::Transaction, signature::Error>;
 }
 
-impl
-    AccountKeystore<
-        RoochAddress,
-        PublicKey,
-        RoochKeyPair,
-        Signature,
-        RoochTransaction,
-        RoochTransactionData,
-    > for Keystore<RoochAddress, RoochKeyPair>
+impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTransactionData>
+    for Keystore<RoochAddress, RoochKeyPair>
 {
+    type Transaction = RoochTransaction;
+
     fn sign_transaction_via_session_key(
         &self,
         address: &RoochAddress,
@@ -359,16 +354,17 @@ impl
         Secp256k1RecoverablePublicKey,
         Secp256k1RecoverableKeyPair,
         Secp256k1RecoverableSignature,
-        EthereumTransaction,
         EthereumTransactionData,
     > for Keystore<EthereumAddress, Secp256k1RecoverableKeyPair>
 {
+    type Transaction = (EthereumTransactionData, Secp256k1RecoverableSignature);
+
     fn sign_transaction_via_session_key(
         &self,
         address: &EthereumAddress,
         msg: EthereumTransactionData,
         authentication_key: &AuthenticationKey,
-    ) -> Result<EthereumTransaction, signature::Error> {
+    ) -> Result<(EthereumTransactionData, Secp256k1RecoverableSignature), signature::Error> {
         match self {
             Keystore::File(file_keystore) => {
                 file_keystore.sign_transaction_via_session_key(address, msg, authentication_key)
@@ -492,7 +488,7 @@ impl
         address: &EthereumAddress,
         msg: EthereumTransactionData,
         coin_id: CoinID,
-    ) -> Result<EthereumTransaction, signature::Error> {
+    ) -> Result<(EthereumTransactionData, Secp256k1RecoverableSignature), signature::Error> {
         // Implement this method to sign a transaction with the key pair for the given address and coin ID
         match self {
             Keystore::File(file_keystore) => file_keystore.sign_transaction(address, msg, coin_id),
@@ -593,16 +589,11 @@ where
     }
 }
 
-impl
-    AccountKeystore<
-        RoochAddress,
-        PublicKey,
-        RoochKeyPair,
-        Signature,
-        RoochTransaction,
-        RoochTransactionData,
-    > for BaseKeyStore<RoochAddress, RoochKeyPair>
+impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTransactionData>
+    for BaseKeyStore<RoochAddress, RoochKeyPair>
 {
+    type Transaction = RoochTransaction;
+
     fn get_key_pair_by_coin_id(
         &self,
         address: &RoochAddress,
@@ -793,10 +784,11 @@ impl
         Secp256k1RecoverablePublicKey,
         Secp256k1RecoverableKeyPair,
         Secp256k1RecoverableSignature,
-        EthereumTransaction,
         EthereumTransactionData,
     > for BaseKeyStore<EthereumAddress, Secp256k1RecoverableKeyPair>
 {
+    type Transaction = (EthereumTransactionData, Secp256k1RecoverableSignature);
+
     fn get_key_pair_by_coin_id(
         &self,
         address: &EthereumAddress,
@@ -849,10 +841,9 @@ impl
         _address: &EthereumAddress,
         msg: EthereumTransactionData,
         _coin_id: CoinID,
-    ) -> Result<EthereumTransaction, signature::Error> {
+    ) -> Result<(EthereumTransactionData, Secp256k1RecoverableSignature), signature::Error> {
         let signature = EthereumTransactionData::into_signature(&msg).unwrap();
-        let auth = authenticator::Authenticator::ethereum(signature);
-        Ok(EthereumTransaction::new(msg, auth))
+        Ok((msg, signature))
     }
 
     fn add_key_pair_by_coin_id(
@@ -956,7 +947,7 @@ impl
         address: &EthereumAddress,
         msg: EthereumTransactionData,
         authentication_key: &AuthenticationKey,
-    ) -> Result<EthereumTransaction, signature::Error> {
+    ) -> Result<(EthereumTransactionData, Secp256k1RecoverableSignature), signature::Error> {
         let kp = self
             .session_keys
             .get(address)
@@ -974,8 +965,7 @@ impl
 
         let signature = kp.sign_recoverable_with_hash::<Keccak256>(msg.0.hash().as_bytes());
 
-        let auth = authenticator::Authenticator::ethereum(signature);
-        Ok(EthereumTransaction::new(msg, auth))
+        Ok((msg, signature))
     }
 }
 
@@ -985,16 +975,11 @@ pub struct FileBasedKeystore<K: Ord, V> {
     path: Option<PathBuf>,
 }
 
-impl
-    AccountKeystore<
-        RoochAddress,
-        PublicKey,
-        RoochKeyPair,
-        Signature,
-        RoochTransaction,
-        RoochTransactionData,
-    > for FileBasedKeystore<RoochAddress, RoochKeyPair>
+impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTransactionData>
+    for FileBasedKeystore<RoochAddress, RoochKeyPair>
 {
+    type Transaction = RoochTransaction;
+
     fn get_key_pair_by_coin_id(
         &self,
         address: &RoochAddress,
@@ -1113,10 +1098,11 @@ impl
         Secp256k1RecoverablePublicKey,
         Secp256k1RecoverableKeyPair,
         Secp256k1RecoverableSignature,
-        EthereumTransaction,
         EthereumTransactionData,
     > for FileBasedKeystore<EthereumAddress, Secp256k1RecoverableKeyPair>
 {
+    type Transaction = (EthereumTransactionData, Secp256k1RecoverableSignature);
+
     fn get_key_pair_by_coin_id(
         &self,
         address: &EthereumAddress,
@@ -1151,7 +1137,7 @@ impl
         address: &EthereumAddress,
         msg: EthereumTransactionData,
         coin_id: CoinID,
-    ) -> Result<EthereumTransaction, signature::Error> {
+    ) -> Result<(EthereumTransactionData, Secp256k1RecoverableSignature), signature::Error> {
         self.keystore.sign_transaction(address, msg, coin_id)
     }
 
@@ -1229,7 +1215,7 @@ impl
         address: &EthereumAddress,
         msg: EthereumTransactionData,
         authentication_key: &AuthenticationKey,
-    ) -> Result<EthereumTransaction, signature::Error> {
+    ) -> Result<(EthereumTransactionData, Secp256k1RecoverableSignature), signature::Error> {
         self.keystore
             .sign_transaction_via_session_key(address, msg, authentication_key)
     }
@@ -1338,16 +1324,11 @@ pub struct InMemKeystore<K: Ord, V> {
     keystore: BaseKeyStore<K, V>,
 }
 
-impl
-    AccountKeystore<
-        RoochAddress,
-        PublicKey,
-        RoochKeyPair,
-        Signature,
-        RoochTransaction,
-        RoochTransactionData,
-    > for InMemKeystore<RoochAddress, RoochKeyPair>
+impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTransactionData>
+    for InMemKeystore<RoochAddress, RoochKeyPair>
 {
+    type Transaction = RoochTransaction;
+
     fn sign_secure<T>(
         &self,
         address: &RoochAddress,
@@ -1448,10 +1429,11 @@ impl
         Secp256k1RecoverablePublicKey,
         Secp256k1RecoverableKeyPair,
         Secp256k1RecoverableSignature,
-        EthereumTransaction,
         EthereumTransactionData,
     > for InMemKeystore<EthereumAddress, Secp256k1RecoverableKeyPair>
 {
+    type Transaction = (EthereumTransactionData, Secp256k1RecoverableSignature);
+
     fn sign_secure<T>(
         &self,
         address: &EthereumAddress,
@@ -1469,7 +1451,7 @@ impl
         address: &EthereumAddress,
         msg: EthereumTransactionData,
         coin_id: CoinID,
-    ) -> Result<EthereumTransaction, signature::Error> {
+    ) -> Result<(EthereumTransactionData, Secp256k1RecoverableSignature), signature::Error> {
         self.keystore.sign_transaction(address, msg, coin_id)
     }
 
@@ -1546,7 +1528,7 @@ impl
         address: &EthereumAddress,
         msg: EthereumTransactionData,
         authentication_key: &AuthenticationKey,
-    ) -> Result<EthereumTransaction, signature::Error> {
+    ) -> Result<(EthereumTransactionData, Secp256k1RecoverableSignature), signature::Error> {
         self.keystore
             .sign_transaction_via_session_key(address, msg, authentication_key)
     }

@@ -12,14 +12,7 @@ use anyhow::Result;
 #[cfg(any(test, feature = "fuzzing"))]
 use fastcrypto::ed25519::Ed25519KeyPair;
 #[cfg(any(test, feature = "fuzzing"))]
-use fastcrypto::hash::Keccak256;
-#[cfg(any(test, feature = "fuzzing"))]
-use fastcrypto::secp256k1::recoverable::Secp256k1RecoverableKeyPair;
-use fastcrypto::secp256k1::recoverable::Secp256k1RecoverableSignature;
-#[cfg(any(test, feature = "fuzzing"))]
 use fastcrypto::traits::KeyPair;
-#[cfg(any(test, feature = "fuzzing"))]
-use fastcrypto::traits::RecoverableSigner;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::{collection::vec, prelude::*};
 #[cfg(any(test, feature = "fuzzing"))]
@@ -71,44 +64,6 @@ prop_compose! {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct EthereumAuthenticator {
-    pub signature: Secp256k1RecoverableSignature,
-}
-
-impl BuiltinAuthenticator for EthereumAuthenticator {
-    fn coin_id(&self) -> CoinID {
-        CoinID::Ether
-    }
-    fn payload(&self) -> Vec<u8> {
-        self.signature.as_ref().to_vec()
-    }
-}
-
-#[cfg(any(test, feature = "fuzzing"))]
-impl Arbitrary for EthereumAuthenticator {
-    type Parameters = ();
-    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
-        arb_ethereum_authenticator().boxed()
-    }
-    type Strategy = BoxedStrategy<Self>;
-}
-
-#[cfg(any(test, feature = "fuzzing"))]
-prop_compose! {
-    fn arb_ethereum_authenticator()(
-     seed in any::<u64>(),
-     message in vec(any::<u8>(), 1..1000),
-    ) -> EthereumAuthenticator {
-        let mut rng = StdRng::seed_from_u64(seed);
-        let kp = Secp256k1RecoverableKeyPair::generate(&mut rng);
-        let ethereum_signature = kp.sign_recoverable_with_hash::<Keccak256>(&message);
-        EthereumAuthenticator {
-            signature: ethereum_signature
-        }
-    }
-}
-
 impl<T> From<T> for Authenticator
 where
     T: BuiltinAuthenticator,
@@ -123,12 +78,6 @@ where
 impl From<Signature> for Authenticator {
     fn from(signature: Signature) -> Self {
         Authenticator::rooch(signature)
-    }
-}
-
-impl From<Secp256k1RecoverableSignature> for Authenticator {
-    fn from(ethereum_signature: Secp256k1RecoverableSignature) -> Self {
-        Authenticator::ethereum(ethereum_signature)
     }
 }
 
@@ -147,11 +96,6 @@ impl Authenticator {
     /// Create a single-signature rooch authenticator
     pub fn rooch(signature: Signature) -> Self {
         RoochAuthenticator { signature }.into()
-    }
-
-    /// Create a single-signature ethereum authenticator
-    pub fn ethereum(signature: Secp256k1RecoverableSignature) -> Self {
-        EthereumAuthenticator { signature }.into()
     }
 
     /// Create a custom authenticator
@@ -186,13 +130,6 @@ mod tests {
     use proptest::prelude::*;
 
     proptest! {
-        #[test]
-        fn test_ethereum_authenticator_serialize_deserialize(authenticator in any::<super::EthereumAuthenticator>()) {
-            let serialized = serde_json::to_string(&authenticator).unwrap();
-            let deserialized: super:: EthereumAuthenticator = serde_json::from_str(&serialized).unwrap();
-            assert_eq!(authenticator.signature, deserialized.signature);
-        }
-
         #[test]
         fn test_rooch_authenticator_serialize_deserialize(authenticator in any::<super::RoochAuthenticator>()) {
             let serialized = serde_json::to_string(&authenticator).unwrap();
