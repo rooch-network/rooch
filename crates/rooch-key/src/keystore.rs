@@ -562,7 +562,7 @@ impl Display for Keystore<EthereumAddress, Secp256k1RecoverableKeyPair> {
     }
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize)]
 #[serde_as]
 pub(crate) struct BaseKeyStore<K, V>
 where
@@ -571,7 +571,6 @@ where
     keys: BTreeMap<K, BTreeMap<CoinID, V>>,
     /// RoochAddress -> BTreeMap<AuthenticationKey, RoochKeyPair>
     /// EthereumAddress -> BTreeMap<AuthenticationKey, Secp256k1RecoverableKeyPair>
-
     #[serde_as(as = "BTreeMap<DisplayFromStr, BTreeMap<DisplayFromStr, _>>")]
     session_keys: BTreeMap<K, BTreeMap<AuthenticationKey, V>>,
 }
@@ -1319,7 +1318,7 @@ impl FileBasedKeystore<EthereumAddress, Secp256k1RecoverableKeyPair> {
     }
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize)]
 pub struct InMemKeystore<K: Ord, V> {
     keystore: BaseKeyStore<K, V>,
 }

@@ -12,7 +12,7 @@ module rooch_framework::nostr_validator {
     use rooch_framework::auth_validator;
 
     /// there defines scheme for each blockchain
-    const SCHEME_NOSTR: u64 = 4;
+    const SCHEME_NOSTR: u64 = 3;
 
     /// error code
     const ErrorInvalidPublicKeyLength: u64 = 0;

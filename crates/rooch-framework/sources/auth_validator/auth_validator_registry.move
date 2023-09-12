@@ -14,8 +14,6 @@ module rooch_framework::auth_validator_registry{
     const ErrorValidatorUnregistered: u64 = 1;
     const ErrorValidatorAlreadyRegistered: u64 = 2;
 
-    
-
     struct AuthValidatorWithType<phantom ValidatorType: store> has key {
         id: u64,
     }

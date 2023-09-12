@@ -12,7 +12,7 @@ module rooch_framework::bitcoin_validator {
     use rooch_framework::bitcoin_address::{Self, BTCAddress};
 
     /// there defines scheme for each blockchain
-    const SCHEME_BITCOIN: u64 = 2;
+    const SCHEME_BITCOIN: u64 = 1;
 
     /// error code
     const ErrorInvalidPublicKeyLength: u64 = 0;

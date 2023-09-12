@@ -81,7 +81,7 @@ error code
 there defines scheme for each blockchain
 
 
-<pre><code><b>const</b> <a href="ethereum_validator.md#0x3_ethereum_validator_SCHEME_ETHEREUM">SCHEME_ETHEREUM</a>: u64 = 3;
+<pre><code><b>const</b> <a href="ethereum_validator.md#0x3_ethereum_validator_SCHEME_ETHEREUM">SCHEME_ETHEREUM</a>: u64 = 2;
 </code></pre>
 
 

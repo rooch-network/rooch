@@ -1,8 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{AbstractTransaction, AuthenticatorInfo};
-use crate::{address::EthereumAddress, chain_id::RoochChainID, error::RoochError};
+use super::{authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo};
+use crate::{
+    address::EthereumAddress, chain_id::RoochChainID, coin_type::CoinID, error::RoochError,
+};
 use anyhow::Result;
 use ethers::{
     types::{Bytes, OtherFields, Transaction, U256, U64},
@@ -151,8 +153,12 @@ impl AbstractTransaction for EthereumTransactionData {
         EthereumAddress(self.0.from).into()
     }
 
-    // Leave authenticator_info empty as Ethereum doesn't need authenticator: https://github.com/rooch-network/rooch/pull/787#discussion_r1322417316
     fn authenticator_info(&self) -> Result<AuthenticatorInfo> {
-        todo!()
+        let chain_id = self.0.chain_id.ok_or(RoochError::InvalidChainID)?.as_u64();
+        let authenticator = Authenticator::new(
+            CoinID::Ether as u64,
+            self.into_signature()?.as_bytes().to_vec(),
+        );
+        Ok(AuthenticatorInfo::new(chain_id, authenticator))
     }
 }

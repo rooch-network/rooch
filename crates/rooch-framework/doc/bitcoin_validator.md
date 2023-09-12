@@ -81,7 +81,7 @@ error code
 there defines scheme for each blockchain
 
 
-<pre><code><b>const</b> <a href="bitcoin_validator.md#0x3_bitcoin_validator_SCHEME_BITCOIN">SCHEME_BITCOIN</a>: u64 = 2;
+<pre><code><b>const</b> <a href="bitcoin_validator.md#0x3_bitcoin_validator_SCHEME_BITCOIN">SCHEME_BITCOIN</a>: u64 = 1;
 </code></pre>
 
 

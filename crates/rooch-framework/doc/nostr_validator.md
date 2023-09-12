@@ -83,7 +83,7 @@ error code
 there defines scheme for each blockchain
 
 
-<pre><code><b>const</b> <a href="nostr_validator.md#0x3_nostr_validator_SCHEME_NOSTR">SCHEME_NOSTR</a>: u64 = 4;
+<pre><code><b>const</b> <a href="nostr_validator.md#0x3_nostr_validator_SCHEME_NOSTR">SCHEME_NOSTR</a>: u64 = 3;
 </code></pre>
 
 
