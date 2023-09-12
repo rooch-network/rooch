@@ -61,10 +61,6 @@ where
         }
         false
     }
-
-    pub fn swap(&mut self, other: &mut Self) {
-        std::mem::swap(self, other);
-    }
 }
 
 impl<Key, Value> MoveStructType for Element<Key, Value>
