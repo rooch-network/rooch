@@ -641,6 +641,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "bigdecimal"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a6773ddc0eafc0e509fb60e48dff7f450f8e674a0686ae8605e8d9901bd5eefa"
+dependencies = [
+ "num-bigint",
+ "num-integer",
+ "num-traits 0.2.16",
+ "serde 1.0.188",
+]
+
+[[package]]
 name = "binascii"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7492,6 +7504,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bcs",
+ "bigdecimal",
  "chrono",
  "clap 3.2.25",
  "coerce",
@@ -7566,6 +7579,7 @@ dependencies = [
  "hex",
  "hyper",
  "jsonrpsee",
+ "lazy_static 1.4.0",
  "log",
  "move-binary-format",
  "move-bytecode-utils",

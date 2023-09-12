@@ -432,22 +432,22 @@ impl AnnotatedObject {
         let mut fields = object_struct.value.into_iter();
         let object_id = ObjectID::try_from(fields.next().expect("Object should have id").1)?;
         let owner = match fields.next().expect("Object should have owner") {
-            (field_name, AnnotatedMoveValue::Address(filed_value)) => {
+            (field_name, AnnotatedMoveValue::Address(field_value)) => {
                 debug_assert!(
                     field_name.as_str() == "owner",
                     "Object owner field name should be owner"
                 );
-                filed_value
+                field_value
             }
             _ => bail!("Object owner field should be address"),
         };
         let value = match fields.next().expect("Object should have value") {
-            (field_name, AnnotatedMoveValue::Struct(filed_value)) => {
+            (field_name, AnnotatedMoveValue::Struct(field_value)) => {
                 debug_assert!(
                     field_name.as_str() == "value",
                     "Object value field name should be value"
                 );
-                filed_value
+                field_value
             }
             _ => bail!("Object value field should be struct"),
         };

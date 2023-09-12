@@ -239,6 +239,13 @@ module rooch_framework::coin {
         }
     }
 
+    /// Return coin info handle
+    public fun coin_info_handle(ctx: &StorageContext): ObjectID {
+        // coin info ensured via the Genesis transaction, so it should always exist
+        let coin_infos = account_storage::global_borrow<CoinInfos>(ctx, @rooch_framework);
+        *type_table::handle(&coin_infos.coin_infos)
+    }
+
     //
     // Helper functions
     //

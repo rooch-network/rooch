@@ -40,6 +40,8 @@ rand = { workspace = true }
 fastcrypto = { workspace = true }
 hyper = { workspace = true }
 log = { workspace = true }
+lazy_static = { workspace = true }
+
 
 move-core-types = { workspace = true }
 move-resource-viewer = { workspace = true }

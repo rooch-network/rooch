@@ -12,8 +12,9 @@ use moveos_types::{
     tx_context::TxContext,
 };
 use rooch_rpc_api::jsonrpc_types::{
-    AccessPathView, AnnotatedFunctionResultView, EventPageView, ListAnnotatedStatesPageView,
-    ListStatesPageView, StrView, StructTagView,
+    AccessPathView, AccountAddressView, AnnotatedFunctionResultView, EventPageView,
+    ListAnnotatedStatesPageView, ListBalanceInfoPageView, ListStatesPageView, StrView,
+    StructTagView,
 };
 use rooch_rpc_api::{
     api::rooch_api::RoochAPIClient,
@@ -194,6 +195,20 @@ impl Client {
             .rpc
             .http
             .list_annotated_states(access_path, cursor, limit)
+            .await?)
+    }
+
+    pub async fn get_balances(
+        &self,
+        account_addr: AccountAddressView,
+        coin_type: Option<StructTagView>,
+        cursor: Option<StrView<Vec<u8>>>,
+        limit: Option<usize>,
+    ) -> Result<ListBalanceInfoPageView> {
+        Ok(self
+            .rpc
+            .http
+            .get_balances(account_addr, coin_type, cursor, limit)
             .await?)
     }
 }

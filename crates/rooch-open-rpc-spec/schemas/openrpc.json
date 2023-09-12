@@ -86,6 +86,46 @@
       }
     },
     {
+      "name": "rooch_getBalances",
+      "description": "get account balances by AccountAddress",
+      "params": [
+        {
+          "name": "account_addr",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+          }
+        },
+        {
+          "name": "coin_type",
+          "schema": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+          }
+        },
+        {
+          "name": "cursor",
+          "schema": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          }
+        },
+        {
+          "name": "limit",
+          "schema": {
+            "type": "integer",
+            "format": "uint",
+            "minimum": 0.0
+          }
+        }
+      ],
+      "result": {
+        "name": "ListBalanceInfoPageView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/PageView_for_Nullable_BalanceInfoView_and_alloc::vec::Vec<u8>"
+        }
+      }
+    },
+    {
       "name": "rooch_getEvents",
       "description": "Get the events by event filter",
       "params": [
@@ -560,6 +600,31 @@
           },
           "scheme": {
             "$ref": "#/components/schemas/u64"
+          }
+        }
+      },
+      "BalanceInfoView": {
+        "type": "object",
+        "required": [
+          "balance",
+          "coin_type",
+          "decimals",
+          "symbol"
+        ],
+        "properties": {
+          "balance": {
+            "$ref": "#/components/schemas/move_core_types::u256::U256"
+          },
+          "coin_type": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+          },
+          "decimals": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          },
+          "symbol": {
+            "type": "string"
           }
         }
       },
@@ -1134,6 +1199,42 @@
               "anyOf": [
                 {
                   "$ref": "#/components/schemas/AnnotatedStateView"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "has_next_page": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "PageView_for_Nullable_BalanceInfoView_and_alloc::vec::Vec<u8>": {
+        "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
+        "type": "object",
+        "required": [
+          "data",
+          "has_next_page"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/BalanceInfoView"
                 },
                 {
                   "type": "null"

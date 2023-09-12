@@ -28,6 +28,7 @@ This module provides the foundation for typesafe Coins.
 -  [Function `supply`](#0x3_coin_supply)
 -  [Function `is_same_coin`](#0x3_coin_is_same_coin)
 -  [Function `coin_store_handle`](#0x3_coin_coin_store_handle)
+-  [Function `coin_info_handle`](#0x3_coin_coin_info_handle)
 -  [Function `is_account_accept_coin`](#0x3_coin_is_account_accept_coin)
 -  [Function `can_auto_accept_coin`](#0x3_coin_can_auto_accept_coin)
 -  [Function `do_accept_coin`](#0x3_coin_do_accept_coin)
@@ -848,6 +849,33 @@ Return coin store handle for addr
     } <b>else</b> {
         <a href="_none">option::none</a>&lt;ObjectID&gt;()
     }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_coin_coin_info_handle"></a>
+
+## Function `coin_info_handle`
+
+Return coin info handle
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_info_handle">coin_info_handle</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): <a href="_ObjectID">object_id::ObjectID</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_info_handle">coin_info_handle</a>(ctx: &StorageContext): ObjectID {
+    // <a href="coin.md#0x3_coin">coin</a> info ensured via the Genesis transaction, so it should always exist
+    <b>let</b> coin_infos = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a>&gt;(ctx, @rooch_framework);
+    *<a href="_handle">type_table::handle</a>(&coin_infos.coin_infos)
 }
 </code></pre>
 

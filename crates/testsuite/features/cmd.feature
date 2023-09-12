@@ -33,6 +33,12 @@ Feature: Rooch CLI integration tests
       Then cmd: "move run --function {default}::event_test::emit_event --sender-account {default} --args 10u64"
       Then cmd: "event get-events-by-event-handle --event_handle_type {default}::event_test::WithdrawEvent --cursor 0 --limit 1"
 
+      # account balance
+      Then cmd: "move publish -p ../../examples/coins --sender-account {default} --named-addresses coins={default}"
+      Then cmd: "move run --function {default}::fixed_supply_coin::faucet --sender-account {default}"
+      Then cmd: "account balance"
+      Then cmd: "account balance --coin-type {default}::fixed_supply_coin::FSC"
+
       Then stop the server
 
     @serial

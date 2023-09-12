@@ -4,7 +4,8 @@
 use crate::server::eth_server::EthServer;
 use crate::server::rooch_server::RoochServer;
 use crate::server::wallet_server::WalletServer;
-use crate::service::RpcService;
+use crate::service::aggregate_service::AggregateService;
+use crate::service::rpc_service::RpcService;
 use anyhow::Result;
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::{system::ActorSystem, IntoActor};
@@ -191,6 +192,7 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
     );
 
     let rpc_service = RpcService::new(executor_proxy, sequencer_proxy, proposer_proxy);
+    let aggregate_service = AggregateService::new(rpc_service.clone());
 
     let acl = match env::var("ACCESS_CONTROL_ALLOW_ORIGIN") {
         Ok(value) => {
@@ -221,7 +223,10 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
         .await?;
 
     let mut rpc_module_builder = RpcModuleBuilder::new();
-    rpc_module_builder.register_module(RoochServer::new(rpc_service.clone()))?;
+    rpc_module_builder.register_module(RoochServer::new(
+        rpc_service.clone(),
+        aggregate_service.clone(),
+    ))?;
     rpc_module_builder.register_module(WalletServer::new(rpc_service.clone()))?;
 
     rpc_module_builder.register_module(EthServer::new(chain_id, rpc_service.clone()))?;
