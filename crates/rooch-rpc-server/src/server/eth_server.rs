@@ -23,7 +23,7 @@ use rooch_rpc_api::jsonrpc_types::{
 use rooch_types::{
     account::Account,
     address::{EthereumAddress, MultiChainAddress},
-    transaction::{ethereum::EthereumTransaction, AbstractTransaction, TypedTransaction},
+    transaction::{AbstractTransaction, TypedTransaction},
     H256,
 };
 use rooch_types::{chain_id::ChainID, transaction::ethereum::EthereumTransactionData};

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    address::{self, EthereumAddress, RoochAddress},
+    address::{EthereumAddress, RoochAddress},
     authentication_key::AuthenticationKey,
     error::{RoochError, RoochResult},
     framework::native_validator::NativeValidatorModule,
@@ -10,7 +10,6 @@ use crate::{
 use clap::ArgEnum;
 use derive_more::{AsMut, AsRef, From};
 pub use enum_dispatch::enum_dispatch;
-use ethers::types::Address;
 use eyre::eyre;
 use fastcrypto::encoding::{Base64, Encoding};
 use fastcrypto::error::FastCryptoError;
@@ -34,7 +33,6 @@ use schemars::JsonSchema;
 use serde::ser::Serializer;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_with::{serde_as, Bytes};
-use sha3::{Digest, Sha3_256};
 use std::{hash::Hash, str::FromStr};
 use strum_macros::{Display, EnumString};
 

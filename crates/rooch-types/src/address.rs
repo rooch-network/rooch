@@ -35,7 +35,6 @@ use serde_with::serde_as;
 use sha3::{Digest, Sha3_256};
 use std::fmt;
 use std::str::FromStr;
-use strum_macros::Display;
 
 /// The address type that Rooch supports
 pub trait RoochSupportedAddress:

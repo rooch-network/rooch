@@ -56,7 +56,7 @@ impl CoinOperations<RoochAddress, RoochKeyPair> for CoinID {
             .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
         let kp: Ed25519KeyPair = sk.into();
         let address: RoochAddress = kp.public().into();
-        Ok((address.into(), kp.into())) // Cast to KeyPair
+        Ok((address, kp.into())) // Cast to KeyPair
     }
 }
 
@@ -76,7 +76,7 @@ impl CoinOperations<EthereumAddress, Secp256k1RecoverableKeyPair> for CoinID {
             .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
         );
         let address: EthereumAddress = EthereumAddress::from(kp.public.clone());
-        Ok((address.into(), kp.into())) // Cast to KeyPair
+        Ok((address, kp)) // Cast to KeyPair
     }
 }
 

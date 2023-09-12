@@ -28,7 +28,7 @@ use rooch_types::{
         rooch::{RoochTransaction, RoochTransactionData},
     },
 };
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::collections::BTreeMap;
 use std::fmt::Write;
@@ -131,11 +131,10 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, Transaction, Transac
         let mnemonic = Mnemonic::from_phrase(phrase, Language::English)?;
         let seed = Seed::new(&mnemonic, "");
 
-        match coin_id.derive_key_pair_from_path(seed.as_bytes(), derivation_path)? {
-            (address, kp) => {
-                self.add_key_pair_by_coin_id(kp, coin_id)?;
-                Ok(address)
-            }
+        let (address, kp) = coin_id.derive_key_pair_from_path(seed.as_bytes(), derivation_path)?;
+        {
+            self.add_key_pair_by_coin_id(kp, coin_id)?;
+            Ok(address)
         }
     }
 
@@ -154,15 +153,13 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, Transaction, Transac
         let derivation_path_clone = derivation_path.clone();
 
         // Consider adding Clone capabilities
-        match coin_id.derive_key_pair_from_path(seed.as_bytes(), derivation_path)? {
-            (_, kp) => {
-                self.update_key_pair_by_coin_id(address, kp, coin_id)?;
-            }
+        let (_, kp) = coin_id.derive_key_pair_from_path(seed.as_bytes(), derivation_path)?;
+        {
+            self.update_key_pair_by_coin_id(address, kp, coin_id)?;
         };
 
-        match coin_id.derive_key_pair_from_path(seed.as_bytes(), derivation_path_clone)? {
-            (_, kp) => Ok(kp),
-        }
+        let (_, kp) = coin_id.derive_key_pair_from_path(seed.as_bytes(), derivation_path_clone)?;
+        Ok(kp)
     }
 
     fn nullify_address_with_key_pair_from_coin_id(
@@ -888,7 +885,7 @@ impl
         for (address, inner_map) in &self.keys {
             for keypair in inner_map.values() {
                 let public_key = keypair.public.clone();
-                result.push((address.clone(), public_key));
+                result.push((*address, public_key));
             }
         }
         result
@@ -915,10 +912,7 @@ impl
         coin_id: CoinID,
     ) -> Result<(), anyhow::Error> {
         // First, get the inner map associated with the address
-        let inner_map = self
-            .keys
-            .entry(address.clone())
-            .or_insert_with(BTreeMap::new);
+        let inner_map = self.keys.entry(*address).or_insert_with(BTreeMap::new);
 
         // Insert or update the keypair for the specified coin in the inner map
         inner_map.insert(coin_id, keypair);
@@ -931,10 +925,7 @@ impl
         coin_id: CoinID,
     ) -> Result<(), anyhow::Error> {
         // First, get the inner map associated with the address
-        let inner_map = self
-            .keys
-            .entry(address.clone())
-            .or_insert_with(BTreeMap::new);
+        let inner_map = self.keys.entry(*address).or_insert_with(BTreeMap::new);
 
         // Remove or nullify the keypair for the specified coin in the inner map
         inner_map.remove(&coin_id);
