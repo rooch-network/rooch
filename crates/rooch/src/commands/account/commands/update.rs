@@ -7,7 +7,6 @@ use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_types::{
     address::RoochAddress,
-    authentication_key::AuthenticationKeyType,
     coin_type::CoinID,
     error::{RoochError, RoochResult},
     framework::native_validator::NativeValidatorModule,
@@ -26,9 +25,6 @@ pub struct UpdateCommand {
     mnemonic_phrase: String,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
-    /// Authentication key type. Select an authentication key type with the Rooch address (Bitcoin P2PKH authentication key address leading with "1" or Bitcoin P2SH authentication key address leading with "3")
-    #[clap(short = 't', long = "authentication-key-type", arg_enum)]
-    pub authentication_key_type: Option<AuthenticationKeyType>,
     /// Command line input of coin ids
     #[clap(short = 'c', long = "coin-id", arg_enum)]
     pub coin_id: CoinID,

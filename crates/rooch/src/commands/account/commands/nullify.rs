@@ -27,7 +27,7 @@ pub struct NullifyCommand {
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
     /// Command line input of coin ids
-    #[clap(short = 'c', long = "coin_id", arg_enum)]
+    #[clap(short = 'c', long = "coin-id", arg_enum)]
     pub coin_id: CoinID,
 }
 
