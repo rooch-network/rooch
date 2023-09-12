@@ -77,8 +77,8 @@ impl std::fmt::Display for Symbol {
 #[strum(serialize_all = "lowercase")]
 pub enum CoinID {
     Rooch = 0,
-    Bitcoin = 1,
-    Ether = 2,
+    Ether = 1,
+    Bitcoin = 2,
     Nostr = 3,
 }
 
@@ -88,8 +88,8 @@ impl TryFrom<u64> for CoinID {
     fn try_from(value: u64) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(CoinID::Rooch),
-            1 => Ok(CoinID::Bitcoin),
-            2 => Ok(CoinID::Ether),
+            1 => Ok(CoinID::Ether),
+            2 => Ok(CoinID::Bitcoin),
             3 => Ok(CoinID::Nostr),
             _ => Err(anyhow::anyhow!("coin id {} is invalid", value)),
         }
