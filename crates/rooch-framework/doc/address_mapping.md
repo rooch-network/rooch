@@ -117,7 +117,7 @@
 
 
 
-<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_COIN_ID_NOSTR">COIN_ID_NOSTR</a>: u64 = 60;
+<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_COIN_ID_NOSTR">COIN_ID_NOSTR</a>: u64 = 1237;
 </code></pre>
 
 

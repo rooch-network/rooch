@@ -14,7 +14,7 @@ module rooch_framework::address_mapping{
     //Please keep consistent with rust Symbol
     const COIN_ID_BITCOIN: u64 = 0;
     const COIN_ID_ETHER: u64 = 60;
-    const COIN_ID_NOSTR: u64 = 60;
+    const COIN_ID_NOSTR: u64 = 1237;
     const COIN_ID_ROOCH: u64 = 20230101;
 
     struct MultiChainAddress has copy, store, drop {
