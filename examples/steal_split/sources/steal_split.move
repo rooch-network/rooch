@@ -10,12 +10,14 @@ module rooch_examples::rooch_examples {
     use moveos_std::event::Self;
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::storage_context::StorageContext;
-    use rooch_examples::coin;
+    use rooch_framework::coin;
     use rooch_examples::timestamp;
     use rooch_framework::account::{Self, SignerCapability};
 
     #[test_only]
     use moveos_std::storage_context;
+    #[test_only]
+    use rooch_framework::genesis;
 
     const SEED: vector<u8> = b"SEED";
     const EXPIRATION_TIME_IN_SECONDS: u64 = 60 * 60;
@@ -44,10 +46,10 @@ module rooch_examples::rooch_examples {
         cap: SignerCapability,
     }
 
-    struct WGBCOIN {}
+    struct WGBCOIN has key, store {}
 
     struct Game has store, copy, drop {
-        prize_pool_amount: u64,
+        prize_pool_amount: u256,
         player_one: PlayerData,
         player_two: PlayerData,
         expiration_timestamp_in_seconds: u64,
@@ -62,7 +64,7 @@ module rooch_examples::rooch_examples {
 
     struct CreateGameEvent has store, drop {
         game_id: u128,
-        prize_pool_amount: u64,
+        prize_pool_amount: u256,
         player_one_address: address,
         player_two_address: address,
         expiration_timestamp_in_seconds: u64,
@@ -89,7 +91,7 @@ module rooch_examples::rooch_examples {
         game_id: u128,
         player_one_decision: u64,
         player_two_decision: u64,
-        prize_pool_amount: u64,
+        prize_pool_amount: u256,
         event_creation_timestamp_in_seconds: u64
     }
 
@@ -97,7 +99,7 @@ module rooch_examples::rooch_examples {
         game_id: u128,
         player_one_decision: u64,
         player_two_decision: u64,
-        prize_pool_amount: u64,
+        prize_pool_amount: u256,
         event_creation_timestamp_in_seconds: u64
     }
 
@@ -109,17 +111,13 @@ module rooch_examples::rooch_examples {
         account_storage::global_move_to(ctx, account, ResouceAccountAddress {
             addr: resource_address
         });
+        
+        coin::register_extend<WGBCOIN>(ctx,string::utf8(b"WGBCOIN"),string::utf8(b"WGB"), 8);
 
-        let (burn_cap, freeze_cap, mint_cap) = coin::initialize<WGBCOIN>(account);
-
-        let coin = coin::mint(1000 * 1000 * 1000, &mint_cap);
-        coin::register<WGBCOIN>(account, ctx);
-        coin::register<WGBCOIN>(&signer, ctx);
-        coin::merge(coin::global_borrow_mut<WGBCOIN>(ctx, signer::address_of(account)), coin);
-
-        coin::destroy_burn_cap(burn_cap);
-        coin::destroy_freeze_cap(freeze_cap);
-        coin::destroy_mint_cap(mint_cap);
+        let coin = coin::mint_extend<WGBCOIN>(ctx, 1000 * 1000 * 1000);
+        coin::do_accept_coin<WGBCOIN>(ctx,account);
+        coin::do_accept_coin<WGBCOIN>(ctx,&signer);
+        coin::deposit_extend(ctx, signer::address_of(account), coin);
 
         account_storage::global_move_to(ctx, &signer, State {
             next_game_id: 0,
@@ -130,7 +128,7 @@ module rooch_examples::rooch_examples {
 
     public entry fun create_game(
         account: &signer,
-        prize_pool_amount: u64,
+        prize_pool_amount: u256,
         player_one_address: address,
         player_two_address: address,
         ctx: &mut StorageContext
@@ -164,7 +162,7 @@ module rooch_examples::rooch_examples {
             let state_mut_ref = account_storage::global_borrow_mut<State>(ctx, resouce_address);
             simple_map::add(&mut state_mut_ref.games, next_game_id, new_game);
         };
-        coin::transfer<WGBCOIN>(account, resouce_address, prize_pool_amount, ctx);
+        coin::transfer<WGBCOIN>(ctx, account, resouce_address, prize_pool_amount);
         event::emit(ctx,
             CreateGameEvent {
                 game_id: next_game_id,
@@ -247,16 +245,16 @@ module rooch_examples::rooch_examples {
                     let player_one_amount = game.prize_pool_amount / 2;
                     let player_two_amount = game.prize_pool_amount - player_one_amount;
                     coin::transfer<WGBCOIN>(
+                        ctx,
                         resouce_account_signer,
                         game.player_one.player_address,
-                        player_one_amount,
-                        ctx
+                        player_one_amount
                     );
                     coin::transfer<WGBCOIN>(
+                        ctx,
                         resouce_account_signer,
                         game.player_two.player_address,
-                        player_two_amount,
-                        ctx
+                        player_two_amount
                     );
                 }else if ((game.player_one.decision != game.player_two.decision)) {
                     let steal_player_address = if (game.player_one.decision == DECISION_SPLIT) {
@@ -264,9 +262,9 @@ module rooch_examples::rooch_examples {
                     }else {
                         game.player_one.player_address
                     };
-                    coin::transfer<WGBCOIN>(resouce_account_signer, steal_player_address, game.prize_pool_amount, ctx);
+                    coin::transfer<WGBCOIN>(ctx, resouce_account_signer, steal_player_address, game.prize_pool_amount);
                 }else {
-                    coin::transfer<WGBCOIN>(resouce_account_signer, @rooch_examples, game.prize_pool_amount, ctx);
+                    coin::transfer<WGBCOIN>(ctx, resouce_account_signer, @rooch_examples, game.prize_pool_amount);
                 };
                 event::emit(ctx,
                     ConcludeGameEvent {
@@ -309,20 +307,25 @@ module rooch_examples::rooch_examples {
         check_if_game_expired(&game, ctx);
 
         if (game.player_one.decision == game.player_two.decision) {
-            coin::transfer<WGBCOIN>(resouce_account_signer, @rooch_examples, game.prize_pool_amount, ctx);
+            coin::transfer<WGBCOIN>(
+                ctx, 
+                resouce_account_signer, 
+                @rooch_examples, 
+                game.prize_pool_amount
+            );
         }else if (game.player_one.decision != DECISION_NOT_MADE) {
             coin::transfer<WGBCOIN>(
+                ctx,
                 resouce_account_signer,
                 game.player_one.player_address,
-                game.prize_pool_amount,
-                ctx
+                game.prize_pool_amount
             );
         }else {
             coin::transfer<WGBCOIN>(
+                ctx,
                 resouce_account_signer,
                 game.player_two.player_address,
-                game.prize_pool_amount,
-                ctx
+                game.prize_pool_amount
             );
         };
 
@@ -378,7 +381,7 @@ module rooch_examples::rooch_examples {
         assert!(signer::address_of(signer) == @rooch_examples, ErrorSignerIsNotDeployer);
     }
 
-    fun check_if_account_has_enough_apt_coins(account: &signer, amount: u64, ctx: &StorageContext, ) {
+    fun check_if_account_has_enough_apt_coins(account: &signer, amount: u256, ctx: &StorageContext, ) {
         assert!(coin::balance<WGBCOIN>(ctx, signer::address_of(account)) >= amount, ErrorSignerHasInsufficientAptBalance);
     }
 
@@ -430,7 +433,7 @@ module rooch_examples::rooch_examples {
 
     #[test]
     fun test_init() {
-        let storage_context = storage_context::new_test_context(@rooch_examples);
+        let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
 
         let account = &account::create_account_for_test(ctx, @rooch_examples);
@@ -447,14 +450,14 @@ module rooch_examples::rooch_examples {
             account::create_signer_with_capability(&state.cap) == account::create_signer_for_test(resouce_address),
             13
         );
-        assert!(coin::is_account_registered<WGBCOIN>(ctx, resouce_address), 12);
+        assert!(coin::is_account_accept_coin<WGBCOIN>(ctx, resouce_address), 12);
         storage_context::drop_test_context(storage_context);
     }
 
     #[test]
     #[expected_failure(abort_code = 196615, location = rooch_framework::account)]
     fun test_init_again() {
-        let storage_context = storage_context::new_test_context(@rooch_examples);
+        let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
         let account = &account::create_account_for_test(ctx, @rooch_examples);
         let _move_os = &account::create_account_for_test(ctx, @moveos_std);
@@ -467,19 +470,21 @@ module rooch_examples::rooch_examples {
 
     #[test]
     fun test_create_game() {
-        let storage_context = storage_context::new_test_context(@rooch_examples);
+        let storage_context = genesis::init_for_test();
+        
         let ctx = &mut storage_context;
 
         let account = &account::create_account_for_test(ctx, @rooch_examples);
         let _move_os = &account::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
-
+ 
         init(account, ctx);
 
-        let prize_pool_amount = 1000;
+        let prize_pool_amount:u256 = 1000;
         let player_one_address = @0xACE;
         let player_two_address = @0xCAFE;
 
+        
         timestamp::update_global_time_for_test_secs(10, ctx);
         create_game(account, prize_pool_amount, player_one_address, player_two_address, ctx);
         let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(ctx, @rooch_examples).addr;
@@ -511,7 +516,7 @@ module rooch_examples::rooch_examples {
 
     #[test]
     fun test_submit_decision() {
-        let storage_context = storage_context::new_test_context(@rooch_examples);
+        let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
 
         let account = &account::create_account_for_test(ctx, @rooch_examples);
@@ -520,7 +525,7 @@ module rooch_examples::rooch_examples {
 
         init(account, ctx);
 
-        let prize_pool_amount = 1000;
+        let prize_pool_amount:u256 = 1000;
         let player_one_address = @0xACE;
         let player_two_address = @0xCAFE;
         timestamp::update_global_time_for_test_secs(10, ctx);
@@ -574,7 +579,7 @@ module rooch_examples::rooch_examples {
     #[test]
     #[expected_failure(abort_code = 8, location = Self)]
     fun test_submit_decision_player_one_has_a_decision_submitted() {
-        let storage_context = storage_context::new_test_context(@rooch_examples);
+        let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
 
         let account = &account::create_account_for_test(ctx, @rooch_examples);
@@ -583,7 +588,7 @@ module rooch_examples::rooch_examples {
 
         init(account, ctx);
 
-        let prize_pool_amount = 1000;
+        let prize_pool_amount:u256 = 1000;
         let player_one_address = @0xACE;
         let player_two_address = @0xCAFE;
         timestamp::update_global_time_for_test_secs(10, ctx);
@@ -611,7 +616,7 @@ module rooch_examples::rooch_examples {
 
     #[test]
     fun test_reveal_decision_split() {
-        let storage_context = storage_context::new_test_context(@rooch_examples);
+        let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
 
         let account = &account::create_account_for_test(ctx, @rooch_examples);
@@ -620,7 +625,7 @@ module rooch_examples::rooch_examples {
 
         init(account, ctx);
 
-        let prize_pool_amount = 1000;
+        let prize_pool_amount:u256 = 1000;
         let player_one_address = @0xACE;
         let player_two_address = @0xCAFE;
         timestamp::update_global_time_for_test_secs(10, ctx);
@@ -634,8 +639,8 @@ module rooch_examples::rooch_examples {
 
         create_game(account, prize_pool_amount, player_one_address, player_two_address, ctx);
 
-        coin::register<WGBCOIN>(&player_one, ctx);
-        coin::register<WGBCOIN>(&player_two, ctx);
+        coin::do_accept_coin<WGBCOIN>(ctx, &player_one);
+        coin::do_accept_coin<WGBCOIN>(ctx, &player_two);
         let player_one_salt = b"saltsaltsalt";
         let decision = bcs::to_bytes(&DECISION_SPLIT);
         vector::append(&mut decision, player_one_salt);
@@ -701,7 +706,7 @@ module rooch_examples::rooch_examples {
 
     #[test]
     fun test_reveal_decision_player_one_steals() {
-        let storage_context = storage_context::new_test_context(@rooch_examples);
+        let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
 
         let account = &account::create_account_for_test(ctx, @rooch_examples);
@@ -710,7 +715,7 @@ module rooch_examples::rooch_examples {
 
         init(account, ctx);
 
-        let prize_pool_amount = 1000;
+        let prize_pool_amount:u256 = 1000;
         let player_one_address = @0xACE;
         let player_two_address = @0xCAFE;
         timestamp::update_global_time_for_test_secs(10, ctx);
@@ -724,8 +729,8 @@ module rooch_examples::rooch_examples {
 
         create_game(account, prize_pool_amount, player_one_address, player_two_address, ctx);
 
-        coin::register<WGBCOIN>(&player_one, ctx);
-        coin::register<WGBCOIN>(&player_two, ctx);
+        coin::do_accept_coin<WGBCOIN>(ctx, &player_one);
+        coin::do_accept_coin<WGBCOIN>(ctx, &player_two);
         let player_one_salt = b"saltsaltsalt";
         let decision = bcs::to_bytes(&DECISION_STEAL);
         vector::append(&mut decision, player_one_salt);
@@ -766,7 +771,7 @@ module rooch_examples::rooch_examples {
 
     #[test]
     fun test_reveal_decision_player_two_steals() {
-        let storage_context = storage_context::new_test_context(@rooch_examples);
+        let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
 
         let account = &account::create_account_for_test(ctx, @rooch_examples);
@@ -775,7 +780,7 @@ module rooch_examples::rooch_examples {
 
         init(account, ctx);
 
-        let prize_pool_amount = 1000;
+        let prize_pool_amount:u256 = 1000;
         let player_one_address = @0xACE;
         let player_two_address = @0xCAFE;
         timestamp::update_global_time_for_test_secs(10, ctx);
@@ -789,8 +794,8 @@ module rooch_examples::rooch_examples {
 
         create_game(account, prize_pool_amount, player_one_address, player_two_address, ctx);
 
-        coin::register<WGBCOIN>(&player_one, ctx);
-        coin::register<WGBCOIN>(&player_two, ctx);
+        coin::do_accept_coin<WGBCOIN>(ctx, &player_one);
+        coin::do_accept_coin<WGBCOIN>(ctx, &player_two);
         let player_one_salt = b"saltsaltsalt";
         let decision = bcs::to_bytes(&DECISION_SPLIT);
         vector::append(&mut decision, player_one_salt);
@@ -833,7 +838,7 @@ module rooch_examples::rooch_examples {
 
     #[test]
     fun test_reveal_decision_both_players_steal() {
-        let storage_context = storage_context::new_test_context(@rooch_examples);
+        let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
 
         let account = &account::create_account_for_test(ctx, @rooch_examples);
@@ -842,7 +847,7 @@ module rooch_examples::rooch_examples {
 
         init(account, ctx);
 
-        let prize_pool_amount = 1000;
+        let prize_pool_amount:u256 = 1000;
         let player_one_address = @0xACE;
         let player_two_address = @0xCAFE;
         timestamp::update_global_time_for_test_secs(10, ctx);
@@ -856,8 +861,8 @@ module rooch_examples::rooch_examples {
 
         create_game(account, prize_pool_amount, player_one_address, player_two_address, ctx);
 
-        coin::register<WGBCOIN>(&player_one, ctx);
-        coin::register<WGBCOIN>(&player_two, ctx);
+        coin::do_accept_coin<WGBCOIN>(ctx, &player_one);
+        coin::do_accept_coin<WGBCOIN>(ctx, &player_two);
         let player_one_salt = b"saltsaltsalt";
         let decision = bcs::to_bytes(&DECISION_STEAL);
         vector::append(&mut decision, player_one_salt);
@@ -901,7 +906,7 @@ module rooch_examples::rooch_examples {
     #[test]
     #[expected_failure(abort_code = 7, location = Self)]
     fun test_reveal_decision_player_one_does_not_have_a_decision_submitted() {
-        let storage_context = storage_context::new_test_context(@rooch_examples);
+        let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
 
         let account = &account::create_account_for_test(ctx, @rooch_examples);
@@ -910,7 +915,7 @@ module rooch_examples::rooch_examples {
 
         init(account, ctx);
 
-        let prize_pool_amount = 1000;
+        let prize_pool_amount:u256 = 1000;
         let player_one_address = @0xACE;
         let player_two_address = @0xCAFE;
         timestamp::update_global_time_for_test_secs(10, ctx);
@@ -924,8 +929,8 @@ module rooch_examples::rooch_examples {
 
         create_game(account, prize_pool_amount, player_one_address, player_two_address, ctx);
 
-        coin::register<WGBCOIN>(&player_one, ctx);
-        coin::register<WGBCOIN>(&player_two, ctx);
+        coin::do_accept_coin<WGBCOIN>(ctx, &player_one);
+        coin::do_accept_coin<WGBCOIN>(ctx, &player_two);
 
         let player_two_salt = b"saltyyyy";
         let player_two_decision = bcs::to_bytes(&DECISION_STEAL);
@@ -941,7 +946,7 @@ module rooch_examples::rooch_examples {
 
     #[test]
     fun test_release_funds_after_expiration_transfer_to_creator() {
-        let storage_context = storage_context::new_test_context(@rooch_examples);
+        let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
 
         let account = &account::create_account_for_test(ctx, @rooch_examples);
@@ -950,7 +955,7 @@ module rooch_examples::rooch_examples {
 
         init(account, ctx);
 
-        let prize_pool_amount = 1000;
+        let prize_pool_amount:u256 = 1000;
         let player_one_address = @0xACE;
         let player_two_address = @0xCAFE;
         timestamp::update_global_time_for_test_secs(10, ctx);
@@ -964,8 +969,8 @@ module rooch_examples::rooch_examples {
 
         create_game(account, prize_pool_amount, player_one_address, player_two_address, ctx);
 
-        coin::register<WGBCOIN>(&player_one, ctx);
-        coin::register<WGBCOIN>(&player_two, ctx);
+        coin::do_accept_coin<WGBCOIN>(ctx, &player_one);
+        coin::do_accept_coin<WGBCOIN>(ctx, &player_two);
 
         timestamp::update_global_time_for_test_secs(3612, ctx);
         release_funds_after_expiration(account, 0, ctx);
@@ -988,7 +993,7 @@ module rooch_examples::rooch_examples {
 
     #[test]
     fun test_release_funds_after_expiration_transfer_to_player_one() {
-        let storage_context = storage_context::new_test_context(@rooch_examples);
+        let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
 
         let account = &account::create_account_for_test(ctx, @rooch_examples);
@@ -997,7 +1002,7 @@ module rooch_examples::rooch_examples {
 
         init(account, ctx);
 
-        let prize_pool_amount = 1000;
+        let prize_pool_amount:u256 = 1000;
         let player_one_address = @0xACE;
         let player_two_address = @0xCAFE;
         timestamp::update_global_time_for_test_secs(10, ctx);
@@ -1011,8 +1016,8 @@ module rooch_examples::rooch_examples {
 
         create_game(account, prize_pool_amount, player_one_address, player_two_address, ctx);
 
-        coin::register<WGBCOIN>(&player_one, ctx);
-        coin::register<WGBCOIN>(&player_two, ctx);
+        coin::do_accept_coin<WGBCOIN>(ctx, &player_one);
+        coin::do_accept_coin<WGBCOIN>(ctx, &player_two);
         let player_one_salt = b"saltsaltsalt";
         let decision = bcs::to_bytes(&DECISION_STEAL);
         vector::append(&mut decision, player_one_salt);
