@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::gas::table::{initial_cost_schedule, MoveOSGasMeter};
-use crate::vm::moveos_vm::MoveOSVM;
+use crate::vm::moveos_vm::{MoveOSSession, MoveOSVM};
 use anyhow::{bail, ensure, Result};
+use move_binary_format::errors::VMError;
 use move_binary_format::errors::{vm_status_of_result, Location, PartialVMError, VMResult};
-use move_core_types::vm_status::KeptVMStatus;
+use move_core_types::vm_status::{KeptVMStatus, VMStatus};
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, vm_status::StatusCode,
 };
@@ -22,7 +23,9 @@ use moveos_types::moveos_std::tx_result::TxResult;
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::MoveState;
 use moveos_types::state_resolver::MoveOSResolverProxy;
-use moveos_types::transaction::{MoveOSTransaction, TransactionOutput, VerifiedMoveOSTransaction};
+use moveos_types::transaction::{
+    MoveOSTransaction, TransactionOutput, VerifiedMoveAction, VerifiedMoveOSTransaction,
+};
 use moveos_types::tx_context::TxContext;
 use moveos_types::{h256::H256, transaction::FunctionCall};
 
@@ -190,6 +193,10 @@ impl MoveOS {
                 action
             );
         }
+
+        // When a session is respawned, all the variables in TxContext kv store will be cleaned.
+        // The variables in TxContext kv store before this executions should not be cleaned,
+        // So we keep a backup here, and then insert to the TxContext kv store when session respawed.
         let system_env = ctx.map.clone();
         let cost_table = initial_cost_schedule();
         let gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
@@ -201,55 +208,31 @@ impl MoveOS {
             .execute_function_call(self.system_pre_execute_functions.clone(), false)
             .expect("system_pre_execute should not fail.");
 
-        // user pre_execute
-        session.execute_function_call(pre_execute_functions.clone(), true)?;
-
-        // execute main tx
-        let execute_result = session.execute_move_action(action);
-        let vm_status = vm_status_of_result(execute_result);
-
-        // user post_execute
-        let (mut post_session, status) = match vm_status.keep_or_discard() {
-            Ok(status) => {
-                let mut post_session = match &status {
-                    KeptVMStatus::Executed => session,
-                    _error => {
-                        //if the execution failed, we need to start a new session, and discard the transaction changes
-                        // and increment the sequence number or reduce the gas in new session.
-                        let mut s = session.respawn(system_env);
-                        //Because the session is respawned, the pre_execute function should be called again.
-                        s.execute_function_call(pre_execute_functions, true)?;
-                        s
-                    }
-                };
-                post_session.execute_function_call(post_execute_functions, true)?;
-                (post_session, status)
+        match self.execute_user_action(
+            &mut session,
+            action,
+            pre_execute_functions.clone(),
+            post_execute_functions.clone(),
+        ) {
+            Ok(status) => self.execution_cleanup(session, status),
+            Err((vm_err, need_respawn)) => {
+                if need_respawn {
+                    let mut s = session.respawn(system_env);
+                    //Because the session is respawned, the pre_execute function should be called again.
+                    s.execute_function_call(self.system_pre_execute_functions.clone(), false)
+                        .expect("system_pre_execute should not fail.");
+                    let result = self.execute_pre_and_post(
+                        &mut s,
+                        pre_execute_functions,
+                        post_execute_functions,
+                    );
+                    let status = vm_status_of_result(result);
+                    self.execution_cleanup(s, status)
+                } else {
+                    self.execution_cleanup(session, vm_err.into_vm_status())
+                }
             }
-            Err(discard_status) => {
-                //This should not happen, if it happens, it means that the VM or verifer has a bug
-                // bail!("Discard status: {:?}", discard_status);
-                panic!("Discard status: {:?}", discard_status);
-            }
-        };
-
-        // update txn result to TxContext
-        let gas_used = post_session.query_gas_used();
-        //TODO is it a good approach to add tx_result to TxContext?
-        let tx_result = TxResult::new(&status, gas_used);
-        post_session
-            .storage_context_mut()
-            .tx_context
-            .add(tx_result)
-            .expect("Add tx_result to TxContext should always success");
-
-        // system post_execute
-        // we do not charge gas for system_post_execute function
-        post_session
-            .execute_function_call(self.system_post_execute_functions.clone(), false)
-            .expect("system_post_execute should not fail.");
-
-        let (_ctx, output) = post_session.finish_with_extensions(status)?;
-        Ok(output)
+        }
     }
 
     pub fn execute_and_apply(
@@ -333,6 +316,96 @@ impl MoveOS {
             }
             Err(e) => FunctionResult::err(e),
         }
+    }
+
+    // Execute use action with pre_execute and post_execute.
+    // Return the user action execution status if success,
+    // else return VMError and a bool which indicate if we should respawn the session.
+    fn execute_user_action(
+        &self,
+        session: &mut MoveOSSession<'_, '_, MoveOSResolverProxy<MoveOSStore>, MoveOSGasMeter>,
+        action: VerifiedMoveAction,
+        pre_execute_functions: Vec<FunctionCall>,
+        post_execute_functions: Vec<FunctionCall>,
+    ) -> Result<VMStatus, (VMError, bool)> {
+        // user pre_execute
+        // If the pre_execute failed, we finish the session directly and return the TransactionOutput.
+        session
+            .execute_function_call(pre_execute_functions, true)
+            .map_err(|e| (e, false))?;
+
+        // execute main tx
+        let execute_result = session.execute_move_action(action);
+        let vm_status = vm_status_of_result(execute_result);
+
+        // If the user action or post_execute failed, we need respawn the session,
+        // and execute system_pre_execute, system_post_execute and user pre_execute, user post_execute.
+        let status = match vm_status.clone().keep_or_discard() {
+            Ok(status) => {
+                if status != KeptVMStatus::Executed {
+                    return Err((
+                        // The VMError will not be used.
+                        PartialVMError::new(StatusCode::UNKNOWN_STATUS).finish(Location::Undefined),
+                        true,
+                    ));
+                }
+                session
+                    .execute_function_call(post_execute_functions, true)
+                    .map_err(|e| (e, true))?;
+                vm_status
+            }
+            Err(discard_status) => {
+                //This should not happen, if it happens, it means that the VM or verifer has a bug
+                // bail!("Discard status: {:?}", discard_status);
+                panic!("Discard status: {:?}", discard_status);
+            }
+        };
+        Ok(status)
+    }
+
+    // Execute pre_execute and post_execute only.
+    fn execute_pre_and_post(
+        &self,
+        session: &mut MoveOSSession<'_, '_, MoveOSResolverProxy<MoveOSStore>, MoveOSGasMeter>,
+        pre_execute_functions: Vec<FunctionCall>,
+        post_execute_functions: Vec<FunctionCall>,
+    ) -> VMResult<()> {
+        session.execute_function_call(pre_execute_functions, true)?;
+        session.execute_function_call(post_execute_functions, true)?;
+        Ok(())
+    }
+
+    fn execution_cleanup(
+        &self,
+        mut session: MoveOSSession<'_, '_, MoveOSResolverProxy<MoveOSStore>, MoveOSGasMeter>,
+        status: VMStatus,
+    ) -> Result<TransactionOutput> {
+        let kept_status = match status.keep_or_discard() {
+            Ok(kept_status) => kept_status,
+            Err(discard_status) => {
+                //This should not happen, if it happens, it means that the VM or verifer has a bug
+                // bail!("Discard status: {:?}", discard_status);
+                panic!("Discard status: {:?}", discard_status);
+            }
+        };
+        // update txn result to TxContext
+        let gas_used = session.query_gas_used();
+        //TODO is it a good approach to add tx_result to TxContext?
+        let tx_result = TxResult::new(&kept_status, gas_used);
+        session
+            .storage_context_mut()
+            .tx_context
+            .add(tx_result)
+            .expect("Add tx_result to TxContext should always success");
+
+        // system post_execute
+        // we do not charge gas for system_post_execute function
+        session
+            .execute_function_call(self.system_post_execute_functions.clone(), false)
+            .expect("system_post_execute should not fail.");
+
+        let (_ctx, output) = session.finish_with_extensions(kept_status)?;
+        Ok(output)
     }
 }
 
