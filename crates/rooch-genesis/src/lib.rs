@@ -264,7 +264,7 @@ mod tests {
     #[test]
     fn test_genesis_init() {
         let genesis = super::RoochGenesis::build_with_option(
-            RoochChainID::DEV.chain_id().id(),
+            RoochChainID::DEV.genesis_ctx(),
             crate::BuildOption::Fresh,
         )
         .expect("build rooch framework failed");

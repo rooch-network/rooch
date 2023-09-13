@@ -95,8 +95,8 @@ fi
 cargo build
 
 if [ ! -z "$ALSO_TEST" ]; then
-    cargo run --package rooch-genesis
-    cargo nextest run --workspace --all-features
+    cargo nextest run --workspace --all-features --exclude rooch-framework-tests --exclude rooch-integration-test-runner -v
+    cargo nextest run -p rooch-framework-tests -p rooch-integration-test-runner -v -j 1
     cargo test -p testsuite --test integration
 fi
 
