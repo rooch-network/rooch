@@ -79,6 +79,7 @@ module rooch_framework::timestamp {
 
     #[test_only]
     public fun fast_forward_seconds(ctx: &mut StorageContext, timestamp_seconds: u64) {
-        update_global_time_for_test_secs(ctx, now_seconds() + timestamp_seconds);
+        let now_seconds = now_seconds(ctx);
+        update_global_time_for_test_secs(ctx, now_seconds + timestamp_seconds);
     }
 }
