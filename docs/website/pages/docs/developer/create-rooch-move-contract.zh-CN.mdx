@@ -1,0 +1,38 @@
+# 创建 Rooch Move 合约
+
+本小节介绍如何使用 Rooch CLI 创建 Move 合约。
+
+## 创建项目
+
+```shell
+rooch move new hello_rooch
+```
+
+执行这个 Rooch CLI 命令后会创建并自动初始化一个 Rooch 合约项目，在项目的根目录，包含一个用于存放 Move 合约代码的 `sources` 目录，以及一个名为 `Move.toml` 的清单文件，用于声明当前项目的名称、版本、地址别名（命名地址）和项目的依赖。
+
+`hello-rooch` 项目的 `Move.toml` 文件内容：
+
+```toml
+[package]
+name = "hello_rooch"
+version = "0.0.1"
+
+[dependencies]
+MoveStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "moveos/moveos-stdlib/move-stdlib", rev = "main" }
+MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "moveos/moveos-stdlib/moveos-stdlib", rev = "main" }
+RoochFramework = { git = "https://github.com/rooch-network/rooch.git", subdir = "crates/rooch-framework", rev = "main" }
+
+[addresses]
+hello_rooch = "0xf5ecfc49f55e283119104978b60995b0ec84a5bd760a0305b24b9a4175deff7b"
+std = "0x1"
+moveos_std = "0x2"
+rooch_framework = "0x3"
+```
+
+## 编写合约
+
+```move
+si
+```
+
+<++>
