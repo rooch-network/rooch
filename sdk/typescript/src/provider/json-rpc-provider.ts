@@ -111,7 +111,7 @@ export class JsonRpcProvider {
     return this.client.rooch_sendRawTransaction(playload)
   }
 
-  async getTransactions(tx_hashes: string[]): Promise<TransactionView[]> {
+  async getTransactions(tx_hashes: string[]): Promise<TransactionView | null[]> {
     return await this.client.rooch_getTransactions(tx_hashes)
   }
 

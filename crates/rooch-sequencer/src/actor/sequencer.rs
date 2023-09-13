@@ -40,7 +40,7 @@ impl SequencerActor {
         let last_order = if is_genesis {
             last_order.unwrap_or(0u128)
         } else {
-            return Err(anyhow::anyhow!("Invalid sequencer order"));
+            last_order.expect("Invalid sequencer order")
         };
 
         Ok(Self {
