@@ -10,7 +10,8 @@ use move_bytecode_utils::Modules;
 use move_cli::Move;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
-use rooch_types::{crypto::BuiltinScheme, transaction::rooch::RoochTransaction};
+use rooch_types::coin_type::CoinID;
+use rooch_types::transaction::rooch::RoochTransaction;
 
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use moveos::vm::dependency_order::sort_by_dependency_order;
@@ -42,9 +43,9 @@ pub struct Publish {
     #[clap(long, parse(try_from_str = crate::utils::parse_map), default_value = "")]
     pub(crate) named_addresses: BTreeMap<String, String>,
 
-    /// Command line input of crypto schemes (ed25519, multi-ed25519, ecdsa, ecdsa-recoverable or schnorr)
-    #[clap(short = 's', long = "scheme", default_value = "ed25519", arg_enum)]
-    pub crypto_schemes: BuiltinScheme,
+    /// Command line input of coin ids
+    #[clap(short = 'c', long = "coin-id", default_value = "rooch", arg_enum)]
+    pub coin_id: CoinID,
 
     /// Whether publish modules by `MoveAction::ModuleBundle`?
     /// If not set, publish moduels through Move entry function
@@ -139,7 +140,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
             );
             match self.tx_options.authenticator {
                 Some(authenticator) => {
-                    let tx_data = context.build_tx_data(sender, action).await?;
+                    let tx_data = context.build_rooch_tx_data(sender, action).await?;
                     //TODO the authenticator usually is associalted with the RoochTransactinData
                     //So we need to find a way to let user generate the authenticator based on the tx_data.
                     let tx = RoochTransaction::new(tx_data, authenticator.into());
@@ -147,14 +148,14 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                 }
                 None => {
                     context
-                        .sign_and_execute(sender, action, self.crypto_schemes)
+                        .sign_and_execute(sender, action, self.coin_id)
                         .await?
                 }
             }
         } else {
             let action = MoveAction::ModuleBundle(bundles);
             context
-                .sign_and_execute(sender, action, self.crypto_schemes)
+                .sign_and_execute(sender, action, self.coin_id)
                 .await?
         };
         context.assert_execute_success(tx_result)

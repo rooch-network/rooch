@@ -76,7 +76,7 @@ module rooch_framework::transaction_validator {
         // === validate gas ===
         let max_gas_amount = storage_context::max_gas_amount(ctx);
         let gas = transaction_fee::calculate_gas(ctx, max_gas_amount);
-        
+
         // We skip the gas check for the new account, for avoid break the current testcase
         // TODO remove the skip afater we provide the gas faucet and update all testcase
         if(account::exists_at(ctx, sender)){

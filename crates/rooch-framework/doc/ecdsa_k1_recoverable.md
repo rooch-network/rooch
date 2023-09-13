@@ -280,9 +280,9 @@ built-in functions
     <b>let</b> i = <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_scheme_length">scheme_length</a>() + <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_signature_length">signature_length</a>();
     <b>let</b> public_key_position = <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_scheme_length">scheme_length</a>() + <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_signature_length">signature_length</a>() + <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_public_key_length">public_key_length</a>();
     <b>while</b> (i &lt; public_key_position) {
-            <b>let</b> value = <a href="_borrow">vector::borrow</a>(authenticator_payload, i);
-            <a href="_push_back">vector::push_back</a>(&<b>mut</b> public_key, *value);
-            i = i + 1;
+        <b>let</b> value = <a href="_borrow">vector::borrow</a>(authenticator_payload, i);
+        <a href="_push_back">vector::push_back</a>(&<b>mut</b> public_key, *value);
+        i = i + 1;
     };
     public_key
 }
@@ -309,12 +309,12 @@ built-in functions
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_get_signature_from_authenticator_payload">get_signature_from_authenticator_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
     <b>let</b> sign = <a href="_empty">vector::empty</a>&lt;u8&gt;();
-    <b>let</b> i = <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_scheme_length">scheme_length</a>();
-    <b>let</b> signature_position = <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_signature_length">signature_length</a>() + 1;
+    <b>let</b> i = 0; // TODO: do we need scheme_length here?
+    <b>let</b> signature_position = <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_signature_length">signature_length</a>();
     <b>while</b> (i &lt; signature_position) {
-            <b>let</b> value = <a href="_borrow">vector::borrow</a>(authenticator_payload, i);
-            <a href="_push_back">vector::push_back</a>(&<b>mut</b> sign, *value);
-            i = i + 1;
+        <b>let</b> value = <a href="_borrow">vector::borrow</a>(authenticator_payload, i);
+        <a href="_push_back">vector::push_back</a>(&<b>mut</b> sign, *value);
+        i = i + 1;
     };
     sign
 }

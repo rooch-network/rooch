@@ -3,12 +3,13 @@
 
 use super::{authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo};
 use crate::{
-    address::EthereumAddress,
-    crypto::{BuiltinScheme, EcdsaRecoverableRoochSignature, Signature},
-    error::RoochError,
+    address::EthereumAddress, chain_id::RoochChainID, coin_type::CoinID, error::RoochError,
 };
 use anyhow::Result;
-use ethers::utils::rlp::{Decodable, Rlp};
+use ethers::{
+    types::{Bytes, OtherFields, Transaction, U256, U64},
+    utils::rlp::{Decodable, Rlp},
+};
 use fastcrypto::{
     hash::Keccak256,
     secp256k1::recoverable::Secp256k1RecoverableSignature,
@@ -16,16 +17,46 @@ use fastcrypto::{
 };
 use move_core_types::account_address::AccountAddress;
 use moveos_types::{
-    h256::H256,
+    gas_config::GasConfig,
+    h256::{self, H256},
     transaction::{MoveAction, MoveOSTransaction},
     tx_context::TxContext,
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub struct EthereumTransaction(pub ethers::core::types::Transaction);
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct EthereumTransactionData(pub Transaction);
 
-impl EthereumTransaction {
+impl EthereumTransactionData {
+    pub fn new_for_test(sender: EthereumAddress, nonce: U256, action: Bytes) -> Self {
+        let sender_and_action = (sender, action.clone());
+        let tx_hash = h256::sha3_256_of(bcs::to_bytes(&sender_and_action).unwrap().as_slice());
+        let transaction = Transaction {
+            hash: tx_hash,
+            nonce,
+            block_hash: None,
+            block_number: None,
+            transaction_index: None,
+            from: sender.0,
+            to: None,
+            value: U256::one(),
+            gas_price: None,
+            gas: GasConfig::DEFAULT_MAX_GAS_AMOUNT.into(),
+            input: action,
+            v: U64::one(),
+            r: U256::one(),
+            s: U256::one(),
+            transaction_type: None,
+            access_list: None,
+            max_priority_fee_per_gas: None,
+            max_fee_per_gas: None,
+            chain_id: Some(U256::from(RoochChainID::DEV.chain_id().id())),
+            other: OtherFields::default(),
+        };
+
+        Self(transaction)
+    }
+
     //This function is just a demo, we should define the Ethereum calldata's MoveAction standard
     pub fn decode_calldata_to_action(&self) -> Result<MoveAction> {
         //Maybe we should use RLP to encode the MoveAction
@@ -45,17 +76,12 @@ impl EthereumTransaction {
         }
     }
 
-    pub fn convert_eth_transaction_signature_to_rooch_signature(
-        &self,
-    ) -> Result<Signature, RoochError> {
+    pub fn into_signature(&self) -> Result<Secp256k1RecoverableSignature, RoochError> {
         let r = self.0.r;
         let s = self.0.s;
         let v = self.0.v.as_u64();
 
         let recovery_id = Self::normalize_recovery_id(v);
-
-        // Prepare the signed message (RLP encoding of the transaction)
-        let message = self.tx_hash().to_fixed_bytes();
 
         // Convert `U256` values `r` and `s` to arrays of `u8`
         let mut r_bytes = [0u8; 32];
@@ -74,33 +100,25 @@ impl EthereumTransaction {
             <Secp256k1RecoverableSignature as ToFromBytes>::from_bytes(&rsv_signature)
                 .expect("Invalid signature");
 
+        Ok(recoverable_signature)
+    }
+
+    pub fn into_address(&self) -> Result<EthereumAddress, RoochError> {
+        // Prepare the signed message (RLP encoding of the transaction)
+        let message = self.tx_hash().to_fixed_bytes();
+        let recoverable_signature = self.into_signature()?;
         // Recover with Keccak256 hash to a public key
         let public_key = recoverable_signature
             .recover_with_hash::<Keccak256>(&message)
             .expect("Failed to recover public key");
+        // Get the address
+        let address = EthereumAddress::from(public_key);
 
-        // Combine the scheme, recoverable signature and public key as the following order to construct the final signature
-        // 1. The Rooch crypto scheme
-        // 2. The RSV signature
-        // 3. The public key
-        let mut scheme_rsv_signature_pubkey = Vec::new();
-        scheme_rsv_signature_pubkey.push(BuiltinScheme::EcdsaRecoverable.flag());
-        scheme_rsv_signature_pubkey.extend_from_slice(&rsv_signature);
-        scheme_rsv_signature_pubkey.extend_from_slice(public_key.as_bytes());
-
-        // Parse the "scheme_rsv_signature_pubkey" signature
-        // 99 length with 1 byte scheme following with 65 bytes recoverable signature and 33 bytes public key
-        let signature: Signature = <EcdsaRecoverableRoochSignature as ToFromBytes>::from_bytes(
-            &scheme_rsv_signature_pubkey,
-        )
-        .unwrap()
-        .into();
-
-        Ok(signature)
+        Ok(address)
     }
 }
 
-impl AbstractTransaction for EthereumTransaction {
+impl AbstractTransaction for EthereumTransactionData {
     fn transaction_type(&self) -> super::TransactionType {
         super::TransactionType::Ethereum
     }
@@ -120,14 +138,6 @@ impl AbstractTransaction for EthereumTransaction {
         self.0.hash()
     }
 
-    fn authenticator_info(&self) -> Result<AuthenticatorInfo> {
-        let chain_id = self.0.chain_id.ok_or(RoochError::InvalidChainID)?.as_u64();
-        let authenticator = Authenticator::ecdsa_recoverable(
-            self.convert_eth_transaction_signature_to_rooch_signature()?,
-        );
-        Ok(AuthenticatorInfo::new(chain_id, authenticator))
-    }
-
     fn construct_moveos_transaction(
         self,
         resolved_sender: AccountAddress,
@@ -141,5 +151,14 @@ impl AbstractTransaction for EthereumTransaction {
 
     fn sender(&self) -> crate::address::MultiChainAddress {
         EthereumAddress(self.0.from).into()
+    }
+
+    fn authenticator_info(&self) -> Result<AuthenticatorInfo> {
+        let chain_id = self.0.chain_id.ok_or(RoochError::InvalidChainID)?.as_u64();
+        let authenticator = Authenticator::new(
+            CoinID::Ether as u64,
+            self.into_signature()?.as_bytes().to_vec(),
+        );
+        Ok(AuthenticatorInfo::new(chain_id, authenticator))
     }
 }

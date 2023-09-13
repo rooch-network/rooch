@@ -5,9 +5,10 @@ use crate::{Client, ClientBuilder};
 use anyhow::anyhow;
 use rooch_config::config::Config;
 use rooch_config::server_config::ServerConfig;
-use rooch_key::keystore::{AccountKeystore, Keystore};
+use rooch_key::keystore::Keystore;
 use rooch_types::address::RoochAddress;
 use rooch_types::chain_id::RoochChainID;
+use rooch_types::crypto::RoochKeyPair;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_with::serde_as;
@@ -17,15 +18,15 @@ pub const DEFAULT_EXPIRATION_SECS: u64 = 30;
 
 #[serde_as]
 #[derive(Serialize, Deserialize)]
-pub struct ClientConfig {
-    pub keystore: Keystore,
-    pub active_address: Option<RoochAddress>,
+pub struct ClientConfig<K: Ord, V> {
+    pub keystore: Keystore<K, V>,
+    pub active_address: Option<K>,
     pub envs: Vec<Env>,
     pub active_env: Option<String>,
 }
 
-impl ClientConfig {
-    pub fn new(keystore: Keystore) -> Self {
+impl ClientConfig<RoochAddress, RoochKeyPair> {
+    pub fn new(keystore: Keystore<RoochAddress, RoochKeyPair>) -> Self {
         ClientConfig {
             keystore,
             active_address: None,
@@ -118,17 +119,13 @@ impl Display for Env {
     }
 }
 
-impl Config for ClientConfig {}
+impl Config for ClientConfig<RoochAddress, RoochKeyPair> {}
 
-impl Display for ClientConfig {
+impl Display for ClientConfig<RoochAddress, RoochKeyPair> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut writer = String::new();
 
-        writeln!(
-            writer,
-            "Managed addresses : {}",
-            self.keystore.addresses().len()
-        )?;
+        writeln!(writer, "Managed addresses : {}", self.keystore)?;
         write!(writer, "Active address: ")?;
         match self.active_address {
             Some(r) => writeln!(writer, "{}", r)?,

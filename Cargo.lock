@@ -7220,8 +7220,10 @@ name = "rooch-framework-tests"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bcs",
  "better_any",
  "datatest-stable 0.1.3",
+ "ethers",
  "fastcrypto",
  "hex",
  "linked-hash-map",
@@ -7376,6 +7378,7 @@ dependencies = [
  "bip32",
  "derive_more",
  "enum_dispatch",
+ "ethers",
  "eyre",
  "fastcrypto",
  "move-core-types",
@@ -7702,6 +7705,7 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "serde_with",
+ "sha3 0.9.1",
  "smt",
  "strum 0.24.1",
  "strum_macros 0.24.3",

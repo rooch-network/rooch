@@ -88,7 +88,7 @@ impl RoochTransaction {
     ) -> Self {
         Self {
             data: RoochTransactionData::new(genesis_address, 0, chain_id, u64::max_value(), action),
-            authenticator: Authenticator::ed25519(Signature::Ed25519RoochSignature(
+            authenticator: Authenticator::rooch(Signature::Ed25519RoochSignature(
                 Ed25519RoochSignature::default(),
             )),
         }

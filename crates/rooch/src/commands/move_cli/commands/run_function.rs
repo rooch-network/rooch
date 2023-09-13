@@ -9,7 +9,7 @@ use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, TypeTagView};
 use rooch_types::{
     address::RoochAddress,
-    crypto::BuiltinScheme,
+    coin_type::CoinID,
     error::{RoochError, RoochResult},
     transaction::rooch::RoochTransaction,
 };
@@ -54,9 +54,9 @@ pub struct RunFunction {
     #[clap(flatten)]
     tx_options: TransactionOptions,
 
-    /// Command line input of crypto schemes (ed25519, multi-ed25519, ecdsa, ecdsa-recoverable, or schnorr)
-    #[clap(short = 's', long = "scheme", default_value = "ed25519", arg_enum)]
-    pub crypto_schemes: BuiltinScheme,
+    /// Command line input of coin ids
+    #[clap(short = 'c', long = "coin-id", default_value = "rooch", arg_enum)]
+    pub coin_id: CoinID,
 }
 
 #[async_trait]
@@ -86,14 +86,14 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
         );
         match (self.tx_options.authenticator, self.tx_options.session_key) {
             (Some(authenticator), _) => {
-                let tx_data = context.build_tx_data(sender, action).await?;
+                let tx_data = context.build_rooch_tx_data(sender, action).await?;
                 //TODO the authenticator usually is associalted with the RoochTransactinData
                 //So we need to find a way to let user generate the authenticator based on the tx_data.
                 let tx = RoochTransaction::new(tx_data, authenticator.into());
                 context.execute(tx).await
             }
             (_, Some(session_key)) => {
-                let tx_data = context.build_tx_data(sender, action).await?;
+                let tx_data = context.build_rooch_tx_data(sender, action).await?;
                 let tx = context
                     .config
                     .keystore
@@ -101,11 +101,7 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                     .map_err(|e| RoochError::SignMessageError(e.to_string()))?;
                 context.execute(tx).await
             }
-            (None, None) => {
-                context
-                    .sign_and_execute(sender, action, self.crypto_schemes)
-                    .await
-            }
+            (None, None) => context.sign_and_execute(sender, action, self.coin_id).await,
         }
     }
 }

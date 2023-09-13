@@ -12,7 +12,8 @@ use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG};
 use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView};
 use rooch_types::address::RoochAddress;
-use rooch_types::crypto::{BuiltinScheme, Signature};
+use rooch_types::coin_type::CoinID;
+use rooch_types::crypto::{RoochKeyPair, Signature};
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::{
     authenticator::Authenticator,
@@ -27,14 +28,14 @@ use tokio::sync::RwLock;
 
 pub struct WalletContext {
     client: Arc<RwLock<Option<Client>>>,
-    pub config: PersistedConfig<ClientConfig>,
+    pub config: PersistedConfig<ClientConfig<RoochAddress, RoochKeyPair>>,
 }
 
 impl WalletContext {
     pub async fn new(config_path: Option<PathBuf>) -> Result<Self, anyhow::Error> {
         let config_dir = config_path.unwrap_or(rooch_config_dir()?);
         let config_path = config_dir.join(ROOCH_CLIENT_CONFIG);
-        let config: ClientConfig = PersistedConfig::read(&config_path).map_err(|err| {
+        let config: ClientConfig<RoochAddress, RoochKeyPair> = PersistedConfig::read(&config_path).map_err(|err| {
             anyhow!(
                 "Cannot open wallet config file at {:?}. Err: {err}, Use `rooch init` to configuration",
                 config_path
@@ -81,7 +82,7 @@ impl WalletContext {
         })
     }
 
-    pub async fn build_tx_data(
+    pub async fn build_rooch_tx_data(
         &self,
         sender: RoochAddress,
         action: MoveAction,
@@ -108,27 +109,30 @@ impl WalletContext {
         &self,
         sender: RoochAddress,
         action: MoveAction,
-        scheme: BuiltinScheme,
+        coin_id: CoinID,
     ) -> RoochResult<RoochTransaction> {
         let kp = self
             .config
             .keystore
-            .get_key_pair_by_scheme(&sender, scheme)
+            .get_key_pair_by_coin_id(&sender, coin_id)
             .ok()
             .ok_or_else(|| {
                 RoochError::SignMessageError(format!("Cannot find key for address: [{sender}]"))
             })?;
 
-        let tx_data = self.build_tx_data(sender, action).await?;
-        let signature = Signature::new_hashed(tx_data.hash().as_bytes(), kp);
-        let auth = match kp.public().scheme() {
-            BuiltinScheme::Ed25519 => Authenticator::ed25519(signature),
-            BuiltinScheme::Ecdsa => Authenticator::ecdsa(signature),
-            BuiltinScheme::EcdsaRecoverable => Authenticator::ecdsa_recoverable(signature),
-            BuiltinScheme::MultiEd25519 => todo!(),
-            BuiltinScheme::Schnorr => Authenticator::schnorr(signature),
-        };
-        Ok(RoochTransaction::new(tx_data, auth))
+        match coin_id {
+            CoinID::Rooch => {
+                let tx_data = self.build_rooch_tx_data(sender, action).await?;
+                let signature = Signature::new_hashed(tx_data.hash().as_bytes(), kp);
+                Ok(RoochTransaction::new(
+                    tx_data,
+                    Authenticator::rooch(signature),
+                ))
+            }
+            CoinID::Ether => todo!(),
+            CoinID::Bitcoin => todo!(),
+            CoinID::Nostr => todo!(),
+        }
     }
 
     pub async fn execute(
@@ -146,9 +150,9 @@ impl WalletContext {
         &self,
         sender: RoochAddress,
         action: MoveAction,
-        scheme: BuiltinScheme,
+        coin_id: CoinID,
     ) -> RoochResult<ExecuteTransactionResponseView> {
-        let tx = self.sign(sender, action, scheme).await?;
+        let tx = self.sign(sender, action, coin_id).await?;
         self.execute(tx).await
     }
 

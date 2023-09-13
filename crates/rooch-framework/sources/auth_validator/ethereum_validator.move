@@ -12,7 +12,7 @@ module rooch_framework::ethereum_validator {
     use rooch_framework::ethereum_address::{Self, ETHAddress};
 
     /// there defines scheme for each blockchain
-    const SCHEME_ETHEREUM: u64 = 3;
+    const SCHEME_ETHEREUM: u64 = 1;
 
     /// error code
     const ErrorInvalidPublicKeyLength: u64 = 0;
@@ -97,7 +97,6 @@ module rooch_framework::ethereum_validator {
         validate_signature(&authenticator_payload, &tx_hash);
 
         // TODO compare the auth_key from the payload with the auth_key from the account
-        std::debug::print(ctx);
     }
 
     fun pre_execute(
