@@ -218,7 +218,7 @@ module moveos_std::account_storage {
         let module_vec = vector::empty<MoveModule>();
         while (i < n_modules) {
             let code_bytes = vector::pop_back(&mut modules);
-                        let m = move_module::new(code_bytes);
+            let m = move_module::new(code_bytes);
             vector::push_back(&mut module_vec, m);
             i = i + 1;
         };

@@ -512,7 +512,7 @@ The order of modules must be sorted by dependency order.
     <b>let</b> module_vec = <a href="_empty">vector::empty</a>&lt;MoveModule&gt;();
     <b>while</b> (i &lt; n_modules) {
         <b>let</b> code_bytes = <a href="_pop_back">vector::pop_back</a>(&<b>mut</b> modules);
-                    <b>let</b> m = <a href="move_module.md#0x2_move_module_new">move_module::new</a>(code_bytes);
+        <b>let</b> m = <a href="move_module.md#0x2_move_module_new">move_module::new</a>(code_bytes);
         <a href="_push_back">vector::push_back</a>(&<b>mut</b> module_vec, m);
         i = i + 1;
     };
