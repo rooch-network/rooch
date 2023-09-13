@@ -163,6 +163,7 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
     let (moveos_store, rooch_store) = init_storage(&store_config)?;
 
     // Init executor
+    let is_genesis = moveos_store.statedb.is_genesis();
     let executor = ExecutorActor::new(chain_id.id(), moveos_store, rooch_store.clone())?
         .into_actor(Some("Executor"), &actor_system)
         .await?;
@@ -171,7 +172,7 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
     // Init sequencer
     //TODO load from config
     let (_, kp, _, _) = generate_new_key(rooch_types::crypto::BuiltinScheme::Ed25519, None, None)?;
-    let sequencer = SequencerActor::new(kp, rooch_store)
+    let sequencer = SequencerActor::new(kp, rooch_store, is_genesis)?
         .into_actor(Some("Sequencer"), &actor_system)
         .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());

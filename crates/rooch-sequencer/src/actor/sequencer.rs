@@ -8,8 +8,10 @@ use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_types::h256;
+use rooch_store::meta_store::MetaStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
+use rooch_types::sequencer::SequencerOrder;
 use rooch_types::{
     crypto::{RoochKeyPair, Signature},
     transaction::AbstractTransaction,
@@ -26,12 +28,26 @@ pub struct SequencerActor {
 }
 
 impl SequencerActor {
-    pub fn new(sequencer_key: RoochKeyPair, rooch_store: RoochStore) -> Self {
-        Self {
-            last_order: 0,
+    pub fn new(
+        sequencer_key: RoochKeyPair,
+        rooch_store: RoochStore,
+        is_genesis: bool,
+    ) -> Result<Self> {
+        let last_order = rooch_store
+            .get_meta_store()
+            .get_sequencer_order()?
+            .map(|order| order.last_order);
+        let last_order = if is_genesis {
+            last_order.unwrap_or(0u128)
+        } else {
+            return Err(anyhow::anyhow!("Invalid sequencer order"));
+        };
+
+        Ok(Self {
+            last_order,
             sequencer_key,
             rooch_store,
-        }
+        })
     }
 }
 
@@ -68,6 +84,10 @@ impl Handler<TransactionSequenceMessage> for SequencerActor {
                     e
                 )
             });
+
+        let _ = self
+            .rooch_store
+            .save_sequencer_order(SequencerOrder::new(self.last_order))?;
 
         let tx_accumulator_root = H256::random();
         Ok(TransactionSequenceInfo {
