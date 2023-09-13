@@ -33,7 +33,7 @@ use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
 use rooch_types::address::RoochAddress;
-use rooch_types::coin_type::CoinID;
+use rooch_types::chain_id::RoochChainID;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::GenesisError;
 use serde_json::json;
@@ -185,7 +185,7 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
 
     // Init proposer
     let (_, kp, _, _) =
-        generate_new_key_pair::<RoochAddress, RoochKeyPair>(CoinID::Rooch, None, None)?;
+        generate_new_key_pair::<RoochAddress, RoochKeyPair>(RoochChainID::DEV, None, None)?;
     let proposer = ProposerActor::new(kp)
         .into_actor(Some("Proposer"), &actor_system)
         .await?;

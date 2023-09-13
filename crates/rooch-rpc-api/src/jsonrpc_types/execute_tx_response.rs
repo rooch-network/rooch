@@ -80,14 +80,14 @@ impl From<KeptVMStatus> for KeptVMStatusView {
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct AuthenticatorView {
-    pub coin_id: StrView<u64>,
+    pub multichain_id: StrView<u64>,
     pub payload: StrView<Vec<u8>>,
 }
 
 impl From<Authenticator> for AuthenticatorView {
     fn from(authenticator: Authenticator) -> Self {
         Self {
-            coin_id: StrView(authenticator.coin_id),
+            multichain_id: StrView(authenticator.multichain_id),
             payload: StrView(authenticator.payload),
         }
     }

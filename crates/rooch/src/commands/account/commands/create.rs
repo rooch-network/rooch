@@ -6,7 +6,7 @@ use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
-use rooch_types::{account::AccountModule, coin_type::CoinID, error::RoochResult};
+use rooch_types::{account::AccountModule, chain_id::RoochChainID, error::RoochResult};
 
 /// Create a new account on-chain
 ///
@@ -27,7 +27,7 @@ impl CreateCommand {
             context
                 .config
                 .keystore
-                .generate_and_add_new_key(CoinID::Rooch, None, None)?;
+                .generate_and_add_new_key(RoochChainID::DEV, None, None)?;
 
         println!("{}", AccountAddress::from(new_address).to_hex_literal());
         println!(

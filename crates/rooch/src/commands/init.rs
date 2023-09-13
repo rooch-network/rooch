@@ -12,7 +12,6 @@ use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use rooch_rpc_client::client_config::{ClientConfig, Env};
 use rooch_types::address::RoochAddress;
 use rooch_types::chain_id::RoochChainID;
-use rooch_types::coin_type::CoinID;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::RoochError;
 use rooch_types::error::RoochResult;
@@ -110,7 +109,7 @@ impl CommandAction<String> for Init {
                 };
 
                 let (new_address, phrase, scheme) =
-                    keystore.generate_and_add_new_key(CoinID::Rooch, None, None)?;
+                    keystore.generate_and_add_new_key(RoochChainID::DEV, None, None)?;
                 println!(
                     "Generated new keypair for address with scheme {:?} [{new_address}]",
                     scheme.to_string()

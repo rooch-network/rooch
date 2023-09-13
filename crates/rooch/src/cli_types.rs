@@ -33,7 +33,7 @@ pub trait CommandAction<T: Serialize + Send>: Sized + Send {
 
 #[derive(Debug)]
 pub struct AuthenticatorOptions {
-    pub coin_id: u64,
+    pub multichain_id: u64,
     pub payload: Vec<u8>,
 }
 
@@ -41,10 +41,10 @@ impl FromStr for AuthenticatorOptions {
     type Err = RoochError;
     fn from_str(s: &str) -> RoochResult<Self> {
         let mut split = s.split(':');
-        let coin_id = split.next().ok_or_else(|| {
+        let multichain_id = split.next().ok_or_else(|| {
             RoochError::CommandArgumentError(format!("Invalid authenticator argument: {}", s))
         })?;
-        let coin_id = coin_id.parse::<u64>().map_err(|_| {
+        let multichain_id = multichain_id.parse::<u64>().map_err(|_| {
             RoochError::CommandArgumentError(format!("Invalid authenticator argument: {}", s))
         })?;
         let payload = split.next().ok_or_else(|| {
@@ -53,14 +53,17 @@ impl FromStr for AuthenticatorOptions {
         let payload = hex::decode(payload.strip_prefix("0x").unwrap_or(payload)).map_err(|_| {
             RoochError::CommandArgumentError(format!("Invalid authenticator argument: {}", s))
         })?;
-        Ok(AuthenticatorOptions { coin_id, payload })
+        Ok(AuthenticatorOptions {
+            multichain_id,
+            payload,
+        })
     }
 }
 
 impl From<AuthenticatorOptions> for Authenticator {
     fn from(options: AuthenticatorOptions) -> Self {
         Authenticator {
-            coin_id: options.coin_id,
+            multichain_id: options.multichain_id,
             payload: options.payload,
         }
     }
@@ -77,7 +80,7 @@ pub struct TransactionOptions {
     pub(crate) sender_account: Option<String>,
 
     /// Custom the transaction's authenticator
-    /// format: `coin_id:payload`, coin_id is u64, payload is hex string
+    /// format: `multichain_id:payload`, multichain_id is u64, payload is hex string
     /// example: 123:0x2abc
     #[clap(long)]
     pub(crate) authenticator: Option<AuthenticatorOptions>,

@@ -18,6 +18,7 @@ pub const CHAIN_ID_MAIN: u64 = 20230101;
 #[derive(
     Clone, Copy, Debug, Deserialize, Serialize, Hash, Eq, PartialEq, PartialOrd, Ord, JsonSchema,
 )]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub struct ChainID {
     id: u64,
 }
@@ -72,7 +73,20 @@ impl Into<u64> for ChainID {
     }
 }
 
-#[derive(Debug, Copy, Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(
+    Debug,
+    Copy,
+    Clone,
+    Default,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Serialize,
+    Deserialize,
+    JsonSchema,
+)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 #[repr(u64)]
 pub enum BuiltinChainID {
@@ -202,8 +216,11 @@ impl BuiltinChainID {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
+#[derive(
+    Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Deserialize, Serialize, JsonSchema,
+)]
 #[allow(clippy::upper_case_acronyms)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub struct CustomChainID {
     chain_name: String,
     chain_id: ChainID,
@@ -255,8 +272,11 @@ impl FromStr for CustomChainID {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, JsonSchema, Serialize, Deserialize)]
+#[derive(
+    Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, JsonSchema, Serialize, Deserialize,
+)]
 #[allow(clippy::upper_case_acronyms)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub enum RoochChainID {
     Builtin(BuiltinChainID),
     Custom(CustomChainID),
@@ -275,6 +295,25 @@ impl Display for RoochChainID {
 impl From<BuiltinChainID> for RoochChainID {
     fn from(chain_id: BuiltinChainID) -> Self {
         RoochChainID::Builtin(chain_id)
+    }
+}
+
+impl From<CustomChainID> for RoochChainID {
+    fn from(chain_id: CustomChainID) -> Self {
+        RoochChainID::Custom(chain_id)
+    }
+}
+
+impl TryFrom<ChainID> for RoochChainID {
+    type Error = anyhow::Error;
+
+    fn try_from(chain_id: ChainID) -> Result<Self, Self::Error> {
+        Ok(match chain_id.id() {
+            CHAIN_ID_DEV => RoochChainID::DEV,
+            CHAIN_ID_TEST => RoochChainID::TEST,
+            CHAIN_ID_MAIN => RoochChainID::MAIN,
+            id => RoochChainID::Custom(CustomChainID::from_str(id.to_string().as_str())?),
+        })
     }
 }
 
@@ -337,6 +376,10 @@ impl RoochChainID {
             bail!("Only support test or dev chain_id.")
         }
         Ok(())
+    }
+
+    pub fn is_builtin(&self) -> bool {
+        self.is_test() || self.is_dev() || self.is_main()
     }
 
     pub fn is_test_or_dev(&self) -> bool {

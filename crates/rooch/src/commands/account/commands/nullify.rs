@@ -3,14 +3,14 @@
 
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
+use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use std::fmt::Debug;
 
 use async_trait::async_trait;
-use rooch_key::keystore::AccountKeystore;
 use rooch_types::{
     address::RoochAddress,
-    coin_type::CoinID,
+    chain_id::RoochChainID,
     error::{RoochError, RoochResult},
     framework::native_validator::NativeValidatorModule,
 };
@@ -26,9 +26,9 @@ pub struct NullifyCommand {
     address: String,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
-    /// Command line input of coin ids
-    #[clap(short = 'c', long = "coin-id", arg_enum)]
-    pub coin_id: CoinID,
+    /// Command line input of multichain ids
+    #[clap(short = 'm', long = "multichain-id")]
+    pub multichain_id: RoochChainID,
 }
 
 #[async_trait]
@@ -36,8 +36,8 @@ impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
     async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
         let mut context = self.context_options.build().await?;
 
-        match self.coin_id {
-            CoinID::Rooch => {
+        match self.multichain_id {
+            RoochChainID::Builtin(_) => {
                 let existing_address =
                     RoochAddress::from_str(self.address.as_str()).map_err(|e| {
                         RoochError::CommandArgumentError(format!(
@@ -56,7 +56,7 @@ impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
 
                 // Execute the Move call as a transaction
                 let mut result = context
-                    .sign_and_execute(existing_address, action, self.coin_id)
+                    .sign_and_execute(existing_address, action, self.multichain_id.clone())
                     .await?;
                 result = context.assert_execute_success(result)?;
 
@@ -64,21 +64,22 @@ impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
                 context
                     .config
                     .keystore
-                    .nullify_address_with_key_pair_from_coin_id(&existing_address, CoinID::Rooch)
+                    .nullify_address_with_key_pair_from_multichain_id(
+                        &existing_address,
+                        RoochChainID::DEV,
+                    )
                     .map_err(|e| RoochError::NullifyAccountError(e.to_string()))?;
 
                 println!(
                     "Dropped a keypair from an existing address {:?} on coin id {:?}",
                     existing_address,
-                    self.coin_id.to_owned()
+                    self.multichain_id.chain_id().id()
                 );
 
                 // Return transaction result
                 Ok(result)
             }
-            CoinID::Ether => todo!(),
-            CoinID::Bitcoin => todo!(),
-            CoinID::Nostr => todo!(),
+            RoochChainID::Custom(_) => todo!(),
         }
     }
 }

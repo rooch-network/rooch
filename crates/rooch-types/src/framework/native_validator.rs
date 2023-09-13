@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{addresses::ROOCH_FRAMEWORK_ADDRESS, coin_type::CoinID};
+use crate::{addresses::ROOCH_FRAMEWORK_ADDRESS, chain_id::RoochChainID};
 use anyhow::Result;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
@@ -16,8 +16,8 @@ use moveos_types::{
 pub struct NativeValidator {}
 
 impl NativeValidator {
-    pub fn coin_id() -> CoinID {
-        CoinID::Rooch
+    pub fn multichain_id() -> RoochChainID {
+        RoochChainID::DEV
     }
 }
 

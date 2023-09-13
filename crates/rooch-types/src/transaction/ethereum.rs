@@ -3,7 +3,9 @@
 
 use super::{authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo};
 use crate::{
-    address::EthereumAddress, chain_id::RoochChainID, coin_type::CoinID, error::RoochError,
+    address::EthereumAddress,
+    chain_id::{CustomChainID, RoochChainID},
+    error::RoochError,
 };
 use anyhow::Result;
 use ethers::{
@@ -156,7 +158,7 @@ impl AbstractTransaction for EthereumTransactionData {
     fn authenticator_info(&self) -> Result<AuthenticatorInfo> {
         let chain_id = self.0.chain_id.ok_or(RoochError::InvalidChainID)?.as_u64();
         let authenticator = Authenticator::new(
-            CoinID::Ether as u64,
+            CustomChainID::ethereum().chain_id().id(),
             self.into_signature()?.as_bytes().to_vec(),
         );
         Ok(AuthenticatorInfo::new(chain_id, authenticator))

@@ -12,7 +12,7 @@ use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG};
 use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView};
 use rooch_types::address::RoochAddress;
-use rooch_types::coin_type::CoinID;
+use rooch_types::chain_id::{CustomChainID, RoochChainID};
 use rooch_types::crypto::{RoochKeyPair, Signature};
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::{
@@ -109,19 +109,19 @@ impl WalletContext {
         &self,
         sender: RoochAddress,
         action: MoveAction,
-        coin_id: CoinID,
+        multichain_id: RoochChainID,
     ) -> RoochResult<RoochTransaction> {
         let kp = self
             .config
             .keystore
-            .get_key_pair_by_coin_id(&sender, coin_id)
+            .get_key_pair_by_multichain_id(&sender, multichain_id.clone())
             .ok()
             .ok_or_else(|| {
                 RoochError::SignMessageError(format!("Cannot find key for address: [{sender}]"))
             })?;
 
-        match coin_id {
-            CoinID::Rooch => {
+        match multichain_id {
+            RoochChainID::Builtin(_) => {
                 let tx_data = self.build_rooch_tx_data(sender, action).await?;
                 let signature = Signature::new_hashed(tx_data.hash().as_bytes(), kp);
                 Ok(RoochTransaction::new(
@@ -129,9 +129,19 @@ impl WalletContext {
                     Authenticator::rooch(signature),
                 ))
             }
-            CoinID::Ether => todo!(),
-            CoinID::Bitcoin => todo!(),
-            CoinID::Nostr => todo!(),
+            RoochChainID::Custom(custom_chain_id) => {
+                if custom_chain_id == CustomChainID::ethereum() {
+                    todo!()
+                } else if custom_chain_id == CustomChainID::bitcoin() {
+                    todo!()
+                } else if custom_chain_id == CustomChainID::nostr() {
+                    todo!()
+                } else {
+                    Err(RoochError::UnexpectedError(
+                        "Unexpected custom chain id".to_owned(),
+                    ))
+                }
+            }
         }
     }
 
@@ -150,9 +160,9 @@ impl WalletContext {
         &self,
         sender: RoochAddress,
         action: MoveAction,
-        coin_id: CoinID,
+        multichain_id: RoochChainID,
     ) -> RoochResult<ExecuteTransactionResponseView> {
-        let tx = self.sign(sender, action, coin_id).await?;
+        let tx = self.sign(sender, action, multichain_id).await?;
         self.execute(tx).await
     }
 
