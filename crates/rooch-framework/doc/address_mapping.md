@@ -47,7 +47,7 @@
 
 <dl>
 <dt>
-<code>coin_id: u64</code>
+<code>multichain_id: u64</code>
 </dt>
 <dd>
 
@@ -95,38 +95,38 @@
 ## Constants
 
 
-<a name="0x3_address_mapping_COIN_ID_BITCOIN"></a>
+<a name="0x3_address_mapping_MULTICHAIN_ID_BITCOIN"></a>
 
 
 
-<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_COIN_ID_BITCOIN">COIN_ID_BITCOIN</a>: u64 = 0;
+<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_MULTICHAIN_ID_BITCOIN">MULTICHAIN_ID_BITCOIN</a>: u64 = 0;
 </code></pre>
 
 
 
-<a name="0x3_address_mapping_COIN_ID_ETHER"></a>
+<a name="0x3_address_mapping_MULTICHAIN_ID_ETHER"></a>
 
 
 
-<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_COIN_ID_ETHER">COIN_ID_ETHER</a>: u64 = 60;
+<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_MULTICHAIN_ID_ETHER">MULTICHAIN_ID_ETHER</a>: u64 = 60;
 </code></pre>
 
 
 
-<a name="0x3_address_mapping_COIN_ID_NOSTR"></a>
+<a name="0x3_address_mapping_MULTICHAIN_ID_NOSTR"></a>
 
 
 
-<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_COIN_ID_NOSTR">COIN_ID_NOSTR</a>: u64 = 1237;
+<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_MULTICHAIN_ID_NOSTR">MULTICHAIN_ID_NOSTR</a>: u64 = 1237;
 </code></pre>
 
 
 
-<a name="0x3_address_mapping_COIN_ID_ROOCH"></a>
+<a name="0x3_address_mapping_MULTICHAIN_ID_ROOCH"></a>
 
 
 
-<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_COIN_ID_ROOCH">COIN_ID_ROOCH</a>: u64 = 20230101;
+<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_MULTICHAIN_ID_ROOCH">MULTICHAIN_ID_ROOCH</a>: u64 = 20230103;
 </code></pre>
 
 
@@ -147,7 +147,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_is_rooch_address">is_rooch_address</a>(maddress: &<a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">MultiChainAddress</a>) : bool{
-    maddress.coin_id == <a href="address_mapping.md#0x3_address_mapping_COIN_ID_ROOCH">COIN_ID_ROOCH</a>
+    maddress.multichain_id == <a href="address_mapping.md#0x3_address_mapping_MULTICHAIN_ID_ROOCH">MULTICHAIN_ID_ROOCH</a>
 }
 </code></pre>
 

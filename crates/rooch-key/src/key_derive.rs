@@ -66,7 +66,7 @@ impl CoinOperations<EthereumAddress, Secp256k1RecoverableKeyPair> for RoochChain
         seed: &[u8],
         derivation_path: Option<DerivationPath>,
     ) -> Result<(EthereumAddress, Secp256k1RecoverableKeyPair), RoochError> {
-        let path = validate_path(self, derivation_path)?; // Pass the CoinID itself
+        let path = validate_path(self, derivation_path)?;
         let child_xprv = XPrv::derive_from_path(seed, &path)
             .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
         let kp = Secp256k1RecoverableKeyPair::from(

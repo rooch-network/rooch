@@ -6,7 +6,7 @@ use fastcrypto::secp256k1::recoverable::Secp256k1RecoverableKeyPair;
 use moveos_types::transaction::MoveAction;
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
 use rooch_types::address::{EthereumAddress, MultiChainAddress};
-use rooch_types::coin_type::CoinID;
+use rooch_types::chain_id::{CustomChainID, RoochChainID};
 use rooch_types::framework::empty::Empty;
 use rooch_types::transaction::ethereum::EthereumTransactionData;
 use rooch_types::transaction::AbstractTransaction;
@@ -31,7 +31,11 @@ fn test_validate() {
         Bytes::try_from(bcs::to_bytes(&action).unwrap()).expect("Convert action to bytes failed.");
     let tx_data = EthereumTransactionData::new_for_test(sender, sequence_number, action_bytes);
     keystore
-        .sign_transaction(&sender, tx_data.clone(), CoinID::Ether)
+        .sign_transaction(
+            &sender,
+            tx_data.clone(),
+            RoochChainID::from(CustomChainID::ethereum()),
+        )
         .unwrap();
     let auth_info = tx_data.authenticator_info().unwrap();
     let multichain_address = MultiChainAddress::from(sender);
