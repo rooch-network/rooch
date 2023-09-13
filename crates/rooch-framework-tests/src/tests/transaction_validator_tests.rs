@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use ethers::types::{Bytes, U256};
+use fastcrypto::secp256k1::recoverable::Secp256k1RecoverableKeyPair;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::language_storage::ModuleId;
@@ -9,10 +11,13 @@ use move_core_types::vm_status::{AbortLocation, VMStatus};
 use moveos_types::move_types::FunctionId;
 use moveos_types::{module_binding::ModuleBinding, transaction::MoveAction};
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
+use rooch_types::address::{EthereumAddress, MultiChainAddress, RoochAddress};
+use rooch_types::coin_type::CoinID;
+use rooch_types::crypto::RoochKeyPair;
 use rooch_types::framework::session_key::SessionKeyModule;
+use rooch_types::transaction::ethereum::EthereumTransactionData;
 use rooch_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, framework::empty::Empty};
 use rooch_types::{
-    crypto::BuiltinScheme,
     framework::session_key::SessionScope,
     transaction::{rooch::RoochTransactionData, AbstractTransaction},
 };
@@ -20,19 +25,19 @@ use rooch_types::{
 use crate::binding_test;
 
 #[test]
-fn test_validate_ed25519() {
+fn test_validate_rooch() {
     let binding_test = binding_test::RustBindingTest::new().unwrap();
     let transaction_validator = binding_test
         .as_module_bundle::<rooch_types::framework::transaction_validator::TransactionValidator>(
     );
 
-    let keystore = InMemKeystore::new_ed25519_insecure_for_tests(1);
+    let keystore = InMemKeystore::<RoochAddress, RoochKeyPair>::new_insecure_for_tests(1);
     let sender = keystore.addresses()[0];
     let sequence_number = 0;
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore
-        .sign_transaction(&sender, tx_data, BuiltinScheme::Ed25519)
+        .sign_transaction(&sender, tx_data, CoinID::Rooch)
         .unwrap();
     let auth_info = tx.authenticator_info().unwrap();
     let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
@@ -45,22 +50,33 @@ fn test_validate_ed25519() {
 }
 
 #[test]
-fn test_validate_ecdsa() {
+fn test_validate_ethereum() {
     let binding_test = binding_test::RustBindingTest::new().unwrap();
     let transaction_validator = binding_test
         .as_module_bundle::<rooch_types::framework::transaction_validator::TransactionValidator>(
     );
+    let address_mapping =
+        binding_test.as_module_bundle::<rooch_types::framework::address_mapping::AddressMapping>();
 
-    let keystore = InMemKeystore::new_ecdsa_insecure_for_tests(1);
+    let keystore =
+        InMemKeystore::<EthereumAddress, Secp256k1RecoverableKeyPair>::new_insecure_for_tests(1);
     let sender = keystore.addresses()[0];
-    let sequence_number = 0;
+    let sequence_number = U256::zero();
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
-    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
-    let tx = keystore
-        .sign_transaction(&sender, tx_data, BuiltinScheme::Ecdsa)
+    let action_bytes =
+        Bytes::try_from(bcs::to_bytes(&action).unwrap()).expect("Convert action to bytes failed.");
+    let tx_data = EthereumTransactionData::new_for_test(sender, sequence_number, action_bytes);
+    keystore
+        .sign_transaction(&sender, tx_data.clone(), CoinID::Ether)
         .unwrap();
-    let auth_info = tx.authenticator_info().unwrap();
-    let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
+    let auth_info = tx_data.authenticator_info().unwrap();
+    let multichain_address = MultiChainAddress::from(sender);
+    let resolved_sender = address_mapping
+        .resovle_or_generate(multichain_address)
+        .expect("Resolve multichain address should succeed");
+    let move_tx = tx_data
+        .construct_moveos_transaction(resolved_sender)
+        .unwrap();
 
     transaction_validator
         .validate(&move_tx.ctx, auth_info)
@@ -70,61 +86,11 @@ fn test_validate_ecdsa() {
 }
 
 #[test]
-fn test_validate_ecdsa_recoverable() {
-    let binding_test = binding_test::RustBindingTest::new().unwrap();
-    let transaction_validator = binding_test
-        .as_module_bundle::<rooch_types::framework::transaction_validator::TransactionValidator>(
-    );
-
-    let keystore = InMemKeystore::new_ecdsa_recoverable_insecure_for_tests(1);
-    let sender = keystore.addresses()[0];
-    let sequence_number = 0;
-    let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
-    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
-    let tx = keystore
-        .sign_transaction(&sender, tx_data, BuiltinScheme::EcdsaRecoverable)
-        .unwrap();
-    let auth_info = tx.authenticator_info().unwrap();
-    let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
-
-    transaction_validator
-        .validate(&move_tx.ctx, auth_info)
-        .unwrap()
-        .into_result()
-        .unwrap();
-}
-
-#[test]
-fn test_validate_schnorr() {
-    let binding_test = binding_test::RustBindingTest::new().unwrap();
-    let transaction_validator = binding_test
-        .as_module_bundle::<rooch_types::framework::transaction_validator::TransactionValidator>(
-    );
-
-    let keystore = InMemKeystore::new_schnorr_insecure_for_tests(1);
-    let sender = keystore.addresses()[0];
-    let sequence_number = 0;
-    let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
-    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
-    let tx = keystore
-        .sign_transaction(&sender, tx_data, BuiltinScheme::Schnorr)
-        .unwrap();
-    let auth_info = tx.authenticator_info().unwrap();
-    let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
-
-    transaction_validator
-        .validate(&move_tx.ctx, auth_info)
-        .unwrap()
-        .into_result()
-        .unwrap();
-}
-
-#[test]
-fn test_session_key_ed25519() {
+fn test_session_key_rooch() {
     tracing_subscriber::fmt::init();
     let mut binding_test = binding_test::RustBindingTest::new().unwrap();
 
-    let mut keystore = InMemKeystore::new_ed25519_insecure_for_tests(1);
+    let mut keystore = InMemKeystore::<RoochAddress, RoochKeyPair>::new_insecure_for_tests(1);
     let sender = keystore.addresses()[0];
     let sequence_number = 0;
 
@@ -145,7 +111,7 @@ fn test_session_key_ed25519() {
     );
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore
-        .sign_transaction(&sender, tx_data, BuiltinScheme::Ed25519)
+        .sign_transaction(&sender, tx_data, CoinID::Rooch)
         .unwrap();
     binding_test.execute(tx).unwrap();
 

@@ -3,11 +3,11 @@
 
 use moveos_types::transaction::MoveAction;
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
+use rooch_types::address::RoochAddress;
+use rooch_types::coin_type::CoinID;
+use rooch_types::crypto::RoochKeyPair;
 use rooch_types::framework::empty::Empty;
-use rooch_types::{
-    crypto::BuiltinScheme,
-    transaction::{rooch::RoochTransactionData, AbstractTransaction},
-};
+use rooch_types::transaction::{rooch::RoochTransactionData, AbstractTransaction};
 
 use crate::binding_test;
 
@@ -18,13 +18,13 @@ fn test_validate() {
         .as_module_bundle::<rooch_types::framework::native_validator::NativeValidatorModule>(
     );
 
-    let keystore = InMemKeystore::new_ed25519_insecure_for_tests(1);
+    let keystore = InMemKeystore::<RoochAddress, RoochKeyPair>::new_insecure_for_tests(1);
     let sender = keystore.addresses()[0];
     let sequence_number = 0;
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore
-        .sign_transaction(&sender, tx_data, BuiltinScheme::Ed25519)
+        .sign_transaction(&sender, tx_data, CoinID::Rooch)
         .unwrap();
     let auth_info = tx.authenticator_info().unwrap();
     let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();

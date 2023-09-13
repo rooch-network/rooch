@@ -24,6 +24,8 @@ serde_bytes = { workspace = true }
 sha3 = { workspace = true }
 smallvec = { workspace = true }
 hex = { workspace = true }
+ethers = { workspace = true }
+bcs = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }

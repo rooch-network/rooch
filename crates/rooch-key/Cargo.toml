@@ -34,6 +34,7 @@ move-core-types = { workspace = true }
 moveos-types = { workspace = true }
 proptest = {optional = true, workspace = true }
 proptest-derive = {optional = true, workspace = true }
+ethers = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

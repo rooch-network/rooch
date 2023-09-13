@@ -20,13 +20,13 @@ use rooch_rpc_api::jsonrpc_types::{
     eth::{CallRequest, EthFeeHistory},
     TransactionView,
 };
-use rooch_types::chain_id::ChainID;
 use rooch_types::{
     account::Account,
     address::{EthereumAddress, MultiChainAddress},
-    transaction::{ethereum::EthereumTransaction, AbstractTransaction, TypedTransaction},
+    transaction::{AbstractTransaction, TypedTransaction},
     H256,
 };
+use rooch_types::{chain_id::ChainID, transaction::ethereum::EthereumTransactionData};
 use std::iter;
 use std::str::FromStr;
 use std::time::SystemTime;
@@ -267,7 +267,7 @@ impl EthAPIServer for EthServer {
 
     async fn send_raw_transaction(&self, bytes: Bytes) -> RpcResult<H256> {
         info!("send_raw_transaction: {:?}", bytes);
-        let eth_tx = EthereumTransaction::decode(&bytes)?;
+        let eth_tx = EthereumTransactionData::decode(&bytes)?;
         info!("send_raw_transaction input: {:?}", eth_tx.0.input);
         let action = eth_tx.decode_calldata_to_action()?;
         info!(
