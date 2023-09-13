@@ -34,7 +34,7 @@ pub trait EthAPI {
 
     /// Returns the chain ID of the current network.
     #[method(name = "eth_chainId")]
-    async fn get_chain_id(&self) -> RpcResult<String>;
+    async fn eth_chain_id(&self) -> RpcResult<String>;
 
     /// Returns the number of most recent block.
     #[method(name = "eth_blockNumber")]

@@ -53,13 +53,22 @@ pub trait ModuleBinding<'a> {
         ty_args: Vec<TypeTag>,
         args: Vec<MoveValue>,
     ) -> MoveAction {
-        MoveAction::Function(FunctionCall::new(
+        MoveAction::Function(Self::create_function_call(function_name, ty_args, args))
+    }
+
+    /// Çonstruct a FunctionCall
+    fn create_function_call(
+        function_name: &IdentStr,
+        ty_args: Vec<TypeTag>,
+        args: Vec<MoveValue>,
+    ) -> FunctionCall {
+        FunctionCall::new(
             Self::function_id(function_name),
             ty_args,
             args.into_iter()
                 .map(|v| v.simple_serialize().expect("Failed to serialize MoveValue"))
                 .collect(),
-        ))
+        )
     }
 
     fn new(caller: &'a impl MoveFunctionCaller) -> Self

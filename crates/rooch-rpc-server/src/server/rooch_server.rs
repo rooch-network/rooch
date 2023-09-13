@@ -43,6 +43,11 @@ impl RoochServer {
 
 #[async_trait]
 impl RoochAPIServer for RoochServer {
+    async fn get_chain_id(&self) -> RpcResult<StrView<u64>> {
+        let chain_id = self.rpc_service.get_chain_id();
+        Ok(StrView(chain_id))
+    }
+
     async fn send_raw_transaction(&self, payload: StrView<Vec<u8>>) -> RpcResult<H256View> {
         info!("send_raw_transaction payload: {:?}", payload);
         let tx = bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;

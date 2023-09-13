@@ -41,6 +41,7 @@ use rooch_types::address::MultiChainAddress;
 use rooch_types::framework::address_mapping::AddressMapping;
 use rooch_types::framework::auth_validator::AuthValidatorCaller;
 use rooch_types::framework::auth_validator::TxValidateResult;
+use rooch_types::framework::genesis::GenesisContext;
 use rooch_types::framework::transaction_validator::TransactionValidator;
 use rooch_types::framework::{system_post_execute_functions, system_pre_execute_functions};
 use rooch_types::transaction::AuthenticatorInfo;
@@ -57,8 +58,12 @@ type ValidateAuthenticatorResult =
     Result<(TxValidateResult, Vec<FunctionCall>, Vec<FunctionCall>), VMStatus>;
 
 impl ExecutorActor {
-    pub fn new(chain_id: u64, moveos_store: MoveOSStore, rooch_store: RoochStore) -> Result<Self> {
-        let genesis: RoochGenesis = rooch_genesis::RoochGenesis::build(chain_id)?;
+    pub fn new(
+        genesis_ctx: GenesisContext,
+        moveos_store: MoveOSStore,
+        rooch_store: RoochStore,
+    ) -> Result<Self> {
+        let genesis: RoochGenesis = rooch_genesis::RoochGenesis::build(genesis_ctx)?;
         let moveos = MoveOS::new(
             moveos_store,
             genesis.all_natives(),

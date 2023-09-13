@@ -432,7 +432,7 @@ If the session key is expired or invalid, abort the tx, otherwise return option:
     <b>let</b> session_keys = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender_addr);
     <b>assert</b>!(<a href="_contains">table::contains</a>(&session_keys.keys, authentication_key), <a href="_not_found">error::not_found</a>(<a href="session_key.md#0x3_session_key_ErrorSessionKeyIsInvalid">ErrorSessionKeyIsInvalid</a>));
     <b>let</b> <a href="session_key.md#0x3_session_key">session_key</a> = <a href="_borrow_mut">table::borrow_mut</a>(&<b>mut</b> session_keys.keys, authentication_key);
-    //TODO set the last active time <b>to</b> now when the timestamp is supported
+    //TODO set the last active time <b>to</b> now when the <a href="timestamp.md#0x3_timestamp">timestamp</a> is supported
     <a href="session_key.md#0x3_session_key">session_key</a>.last_active_time = <a href="session_key.md#0x3_session_key">session_key</a>.last_active_time + 1;
 }
 </code></pre>

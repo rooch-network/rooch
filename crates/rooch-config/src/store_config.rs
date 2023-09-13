@@ -123,24 +123,24 @@ impl StoreConfig {
 impl ConfigModule for StoreConfig {
     fn merge_with_opt(&mut self, opt: &RoochOpt, base: Arc<BaseConfig>) -> Result<()> {
         self.base = Some(base);
-        if opt.store.is_some() {
-            let store_config = opt.store.clone().unwrap();
-            if store_config.max_open_files.is_some() {
-                self.max_open_files = store_config.max_open_files;
-            }
-            if store_config.max_total_wal_size.is_some() {
-                self.max_total_wal_size = store_config.max_total_wal_size;
-            }
-            if store_config.cache_size.is_some() {
-                self.cache_size = store_config.cache_size;
-            }
-            if store_config.bytes_per_sync.is_some() {
-                self.bytes_per_sync = store_config.bytes_per_sync;
-            }
-            if store_config.wal_bytes_per_sync.is_some() {
-                self.wal_bytes_per_sync = store_config.wal_bytes_per_sync;
-            }
+
+        let store_config = opt.store.clone();
+        if store_config.max_open_files.is_some() {
+            self.max_open_files = store_config.max_open_files;
         }
+        if store_config.max_total_wal_size.is_some() {
+            self.max_total_wal_size = store_config.max_total_wal_size;
+        }
+        if store_config.cache_size.is_some() {
+            self.cache_size = store_config.cache_size;
+        }
+        if store_config.bytes_per_sync.is_some() {
+            self.bytes_per_sync = store_config.bytes_per_sync;
+        }
+        if store_config.wal_bytes_per_sync.is_some() {
+            self.wal_bytes_per_sync = store_config.wal_bytes_per_sync;
+        }
+
         Ok(())
     }
 }

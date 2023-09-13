@@ -12,10 +12,13 @@ pub mod address_mapping;
 pub mod auth_validator;
 pub mod coin;
 pub mod empty;
+pub mod ethereum_address;
+pub mod ethereum_light_client;
 pub mod ethereum_validator;
 pub mod genesis;
 pub mod native_validator;
 pub mod session_key;
+pub mod timestamp;
 pub mod transaction_validator;
 
 /// MoveOS system pre_execute functions registry.

@@ -16,15 +16,16 @@ rust-version = { workspace = true }
 [dependencies]
 anyhow = { workspace = true }
 better_any = { workspace = true }
+ethers = { workspace = true }
 fastcrypto = { workspace = true }
 linked-hash-map = { workspace = true }
 once_cell = { workspace = true }
 serde = { workspace = true }
 serde_bytes = { workspace = true }
+serde_json = { workspace = true }
 sha3 = { workspace = true }
 smallvec = { workspace = true }
 hex = { workspace = true }
-ethers = { workspace = true }
 bcs = { workspace = true }
 
 move-binary-format = { workspace = true }

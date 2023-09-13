@@ -8,13 +8,16 @@ use moveos_types::access_path::AccessPath;
 use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event_filter::EventFilter;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
-use moveos_types::state::{AnnotatedState, State};
+use moveos_types::state::{AnnotatedState, MoveStructType, State};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_proposer::proxy::ProposerProxy;
-use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponse;
+use rooch_relayer::TxSubmiter;
+use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponse, ExecuteTransactionResponseView};
 use rooch_sequencer::proxy::SequencerProxy;
+use rooch_types::account::Account;
 use rooch_types::address::{MultiChainAddress, RoochAddress};
+use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::TransactionSequenceMapping;
 use rooch_types::{transaction::TypedTransaction, H256};
 
@@ -23,6 +26,7 @@ use rooch_types::{transaction::TypedTransaction, H256};
 /// The RpcService encapsulates the logic of the functions, and the RPC server handle the response format.
 #[derive(Clone)]
 pub struct RpcService {
+    chain_id: u64,
     executor: ExecutorProxy,
     sequencer: SequencerProxy,
     proposer: ProposerProxy,
@@ -30,11 +34,13 @@ pub struct RpcService {
 
 impl RpcService {
     pub fn new(
+        chain_id: u64,
         executor: ExecutorProxy,
         sequencer: SequencerProxy,
         proposer: ProposerProxy,
     ) -> Self {
         Self {
+            chain_id,
             executor,
             sequencer,
             proposer,
@@ -43,6 +49,10 @@ impl RpcService {
 }
 
 impl RpcService {
+    pub fn get_chain_id(&self) -> u64 {
+        self.chain_id
+    }
+
     pub async fn quene_tx(&self, tx: TypedTransaction) -> Result<()> {
         //TODO implement quene tx and do not wait to execute
         let _ = self.execute_tx(tx).await?;
@@ -181,5 +191,27 @@ impl RpcService {
             .get_transaction_infos_by_tx_hash(tx_hashes)
             .await?;
         Ok(resp)
+    }
+}
+
+//TODO we need to make the RpcService to an Actor, and implement TxSubmiter for it's actor proxy.
+#[async_trait::async_trait]
+impl TxSubmiter for RpcService {
+    async fn get_chain_id(&self) -> Result<u64> {
+        Ok(self.get_chain_id())
+    }
+    //TODO provide a trait to abstract the async state reader, elemiate the duplicated code bwteen RpcService and Client
+    async fn get_sequence_number(&self, address: RoochAddress) -> Result<u64> {
+        Ok(self
+            .get_states(AccessPath::resource(address.into(), Account::struct_tag()))
+            .await?
+            .pop()
+            .flatten()
+            .map(|state| state.as_move_state::<Account>())
+            .transpose()?
+            .map_or(0, |account| account.sequence_number))
+    }
+    async fn submit_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView> {
+        Ok(self.execute_tx(TypedTransaction::Rooch(tx)).await?.into())
     }
 }

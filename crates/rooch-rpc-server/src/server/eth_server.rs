@@ -52,7 +52,7 @@ impl EthAPIServer for EthServer {
         Ok(String::from("1"))
     }
 
-    async fn get_chain_id(&self) -> RpcResult<String> {
+    async fn eth_chain_id(&self) -> RpcResult<String> {
         Ok(format!("0x{:x}", self.chain_id.id()))
     }
 
