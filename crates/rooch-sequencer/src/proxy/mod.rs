@@ -3,7 +3,7 @@
 
 use crate::{
     actor::sequencer::SequencerActor,
-    messages::{TransactionByHashMessage, TransactionByIndexMessage, TransactionSequenceMessage},
+    messages::{GetTransactionsMessage, TransactionByHashMessage, TransactionSequenceMessage},
 };
 use anyhow::Result;
 use coerce::actor::ActorRef;
@@ -33,13 +33,12 @@ impl SequencerProxy {
         self.actor.send(TransactionByHashMessage { hash }).await?
     }
 
-    pub async fn get_transaction_by_index(
+    pub async fn get_transactions(
         &self,
-        start: u64,
-        limit: u64,
-    ) -> Result<Vec<TypedTransaction>> {
+        tx_hashes: Vec<H256>,
+    ) -> Result<Vec<Option<TypedTransaction>>> {
         self.actor
-            .send(TransactionByIndexMessage { start, limit })
+            .send(GetTransactionsMessage { tx_hashes })
             .await?
     }
 }

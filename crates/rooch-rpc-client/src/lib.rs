@@ -135,15 +135,6 @@ impl Client {
         Ok(self.rpc.http.get_transaction_by_hash(hash.into()).await?)
     }
 
-    pub async fn get_transaction_by_index(
-        &self,
-        start: u64,
-        limit: u64,
-    ) -> Result<Vec<TransactionView>> {
-        let s = self.rpc.http.get_transaction_by_index(start, limit).await?;
-        Ok(s)
-    }
-
     pub async fn get_sequence_number(&self, sender: RoochAddress) -> Result<u64> {
         Ok(self
             .get_states(AccessPath::resource(sender.into(), Account::struct_tag()))

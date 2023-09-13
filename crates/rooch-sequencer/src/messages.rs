@@ -30,11 +30,10 @@ impl Message for TransactionByHashMessage {
 
 /// Transaction By Index Message
 #[derive(Debug)]
-pub struct TransactionByIndexMessage {
-    pub start: u64,
-    pub limit: u64,
+pub struct GetTransactionsMessage {
+    pub tx_hashes: Vec<H256>,
 }
 
-impl Message for TransactionByIndexMessage {
-    type Result = Result<Vec<TypedTransaction>>;
+impl Message for GetTransactionsMessage {
+    type Result = Result<Vec<Option<TypedTransaction>>>;
 }

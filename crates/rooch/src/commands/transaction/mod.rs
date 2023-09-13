@@ -3,7 +3,7 @@
 
 use crate::cli_types::CommandAction;
 use async_trait::async_trait;
-use commands::{get_tx_by_hash::GetByHashCommand, get_tx_by_index::GetByIndexCommand};
+use commands::get_tx_by_hash::GetByHashCommand;
 use rooch_types::error::RoochResult;
 pub mod commands;
 
@@ -19,7 +19,6 @@ impl CommandAction<String> for Transaction {
     async fn execute(self) -> RoochResult<String> {
         match self.cmd {
             TransactionCommand::GetByHash(cmd) => cmd.execute_serialized().await,
-            TransactionCommand::GetByIndex(cmd) => cmd.execute_serialized().await,
         }
     }
 }
@@ -27,5 +26,4 @@ impl CommandAction<String> for Transaction {
 #[derive(clap::Subcommand)]
 pub enum TransactionCommand {
     GetByHash(GetByHashCommand),
-    GetByIndex(GetByIndexCommand),
 }

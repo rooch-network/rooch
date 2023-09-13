@@ -513,6 +513,16 @@ CoinStore is frozen. Coins cannot be deposited or withdrawn
 
 
 
+<a name="0x3_coin_ErrorCoinInfosNotFound"></a>
+
+Global CoinInfos should exist
+
+
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinInfosNotFound">ErrorCoinInfosNotFound</a>: u64 = 9;
+</code></pre>
+
+
+
 <a name="0x3_coin_ErrorCoinNameTooLong"></a>
 
 Name of the coin is too long
@@ -874,6 +884,7 @@ Return coin info handle
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_info_handle">coin_info_handle</a>(ctx: &StorageContext): ObjectID {
     // <a href="coin.md#0x3_coin">coin</a> info ensured via the Genesis transaction, so it should always exist
+    <b>assert</b>!(<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a>&gt;(ctx, @rooch_framework), <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ErrorCoinInfosNotFound">ErrorCoinInfosNotFound</a>));
     <b>let</b> coin_infos = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a>&gt;(ctx, @rooch_framework);
     *<a href="_handle">type_table::handle</a>(&coin_infos.coin_infos)
 }

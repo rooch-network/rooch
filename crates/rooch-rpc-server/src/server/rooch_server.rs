@@ -224,17 +224,20 @@ impl RoochAPIServer for RoochServer {
         Ok(resp)
     }
 
-    async fn get_transaction_by_index(
+    async fn get_transactions(
         &self,
-        start: u64,
-        limit: u64,
-    ) -> RpcResult<Vec<TransactionView>> {
+        tx_hashes: Vec<H256View>,
+    ) -> RpcResult<Vec<Option<TransactionView>>> {
+        let hashes: Vec<H256> = tx_hashes
+            .iter()
+            .map(|m| (*m).clone().into())
+            .collect::<Vec<_>>();
         let resp = self
             .rpc_service
-            .get_transaction_by_index(start, limit)
+            .get_transactions(hashes)
             .await?
             .iter()
-            .map(|s| TransactionView::from(s.clone()))
+            .map(|tx| tx.clone().map(TransactionView::from))
             .collect();
 
         Ok(resp)

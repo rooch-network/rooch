@@ -240,39 +240,6 @@
       }
     },
     {
-      "name": "rooch_getTransactionByIndex",
-      "params": [
-        {
-          "name": "start",
-          "required": true,
-          "schema": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          }
-        },
-        {
-          "name": "limit",
-          "required": true,
-          "schema": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          }
-        }
-      ],
-      "result": {
-        "name": "Vec<TransactionView>",
-        "required": true,
-        "schema": {
-          "type": "array",
-          "items": {
-            "$ref": "#/components/schemas/TransactionView"
-          }
-        }
-      }
-    },
-    {
       "name": "rooch_getTransactionInfosByTxHash",
       "params": [
         {
@@ -329,6 +296,38 @@
         "required": true,
         "schema": {
           "$ref": "#/components/schemas/PageView_for_Nullable_TransactionExecutionInfoView_and_uint128"
+        }
+      }
+    },
+    {
+      "name": "rooch_getTransactions",
+      "params": [
+        {
+          "name": "tx_hashes",
+          "required": true,
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/H256View"
+            }
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec<Option<TransactionView>>",
+        "required": true,
+        "schema": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TransactionView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
         }
       }
     },

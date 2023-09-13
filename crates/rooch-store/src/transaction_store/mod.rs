@@ -32,7 +32,7 @@ derive_store!(TxSeqMappingStore, u128, H256, TX_SEQ_MAPPING_PREFIX_NAME);
 pub trait TransactionStore {
     fn save_transaction(&mut self, transaction: TypedTransaction) -> Result<()>;
     fn get_tx_by_hash(&self, hash: H256) -> Result<Option<TypedTransaction>>;
-    fn get_tx_by_index(&self, start: u64, limit: u64) -> Result<Vec<TypedTransaction>>;
+    fn get_transactions(&self, tx_hashes: Vec<H256>) -> Result<Vec<Option<TypedTransaction>>>;
 
     fn save_tx_seq_info(&self, tx_seq_info: TransactionSequenceInfo) -> Result<()>;
     fn get_tx_seq_infos_by_tx_order(
@@ -73,9 +73,8 @@ impl TransactionDBStore {
         self.typed_tx_store.kv_get(hash)
     }
 
-    //TODO implements get type tx by index
-    pub fn get_tx_by_index(&self, _cursor: u64, _limit: u64) -> Result<Vec<TypedTransaction>> {
-        Ok(vec![])
+    pub fn get_transactions(&self, tx_hashes: Vec<H256>) -> Result<Vec<Option<TypedTransaction>>> {
+        self.typed_tx_store.multiple_get(tx_hashes)
     }
 
     pub fn save_tx_seq_info(&self, tx_seq_info: TransactionSequenceInfo) -> Result<()> {
