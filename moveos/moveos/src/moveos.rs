@@ -221,13 +221,16 @@ impl MoveOS {
                     //Because the session is respawned, the pre_execute function should be called again.
                     s.execute_function_call(self.system_pre_execute_functions.clone(), false)
                         .expect("system_pre_execute should not fail.");
-                    let result = self.execute_pre_and_post(
+                    let _ = self.execute_pre_and_post(
                         &mut s,
                         pre_execute_functions,
                         post_execute_functions,
                     );
-                    let status = vm_status_of_result(result);
-                    self.execution_cleanup(s, status)
+                    // when respawn session, VM error occurs in user move action or post execution.
+                    // We just cleanup with the VM error return by `execute_user_action`, ignore
+                    // the result of `execute_pre_and_post`
+                    // TODO: do we need to handle the result of `execute_pre_and_post` after respawn?
+                    self.execution_cleanup(s, vm_err.into_vm_status())
                 } else {
                     self.execution_cleanup(session, vm_err.into_vm_status())
                 }

@@ -210,16 +210,20 @@ module moveos_std::account_storage {
         }
     }
     
+    /// Entry function to publish modules
+    /// The order of modules must be sorted by dependency order.
     public entry fun publish_modules_entry(ctx: &mut StorageContext, account: &signer, modules: vector<vector<u8>>) {
         let n_modules = vector::length(&modules);
         let i = 0;
         let module_vec = vector::empty<MoveModule>();
         while (i < n_modules) {
             let code_bytes = vector::pop_back(&mut modules);
-            let m = move_module::new(code_bytes);
+                        let m = move_module::new(code_bytes);
             vector::push_back(&mut module_vec, m);
             i = i + 1;
         };
+        // The input modules are sorted by dependency order which must not be changed.
+        vector::reverse(&mut module_vec);
         publish_modules(ctx, account, module_vec);
     }
 
