@@ -111,8 +111,8 @@ export class JsonRpcProvider {
     return this.client.rooch_sendRawTransaction(playload)
   }
 
-  async getTransactionByIndex(start: number, limit: number): Promise<TransactionView[]> {
-    return await this.client.rooch_getTransactionByIndex(start, limit)
+  async getTransactions(tx_hashes: string[]): Promise<TransactionView[]> {
+    return await this.client.rooch_getTransactions(tx_hashes)
   }
 
   async getTransactionInfosByTxHash(
@@ -157,11 +157,11 @@ export class JsonRpcProvider {
   //   return this.rpcClient.rooch_getTransactionByHash(hash)
   // }
 
-  // async getTransactionByIndex(
+  // async getTransactions(
   //   start: number,
   //   limit: number,
   // ): Promise<TransactionView[]> {
-  //   return await this.rpcClient.rooch_getTransactionByIndex(start, limit)
+  //   return await this.rpcClient.rooch_getTransactions(start, limit)
   // }
 
   // async getTransactionInfosByTxHash(
