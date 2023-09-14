@@ -1,0 +1,36 @@
+# Start the Rooch service
+
+## Introduction
+
+As a Layer2, Rooch aims to provide multi-chain friendly development services. Rooch can be regarded as an infrastructure platform that specifically provides container services for blockchain.
+
+This section will introduce how to use Rooch CLI to start local services.
+
+In the current version, we provide the `rooch server start` and `rooch server clean` commands to start the Rooch local service and clean the server storage respectively.
+
+Because Rooch is in the process of rapid development and iteration, you will encounter compatibility issues when deploying contracts. At this time, you can use the `clean` command to clean up old data.
+
+## Start service
+
+When we finish writing the Rooch Move contract project, we need to start the Rooch container service to simulate the behavior of the chain:
+
+```shell
+$ rooch server start
+
+StoreConfig init store dir "/tmp/.tmpHkNH5Q/dev/roochdb/rooch_store" "/tmp/.tmpHkNH5Q/dev/roochdb/moveos_store"
+2023-09-14T08:21:33.234354Z  INFO moveos_common::utils: set max open fds 45056
+2023-09-14T08:21:34.013627Z  INFO rooch_rpc_server: acl=Const("*")
+2023-09-14T08:21:34.013899Z  INFO rooch_rpc_server: JSON-RPC HTTP Server start listening 0.0.0.0:50051
+2023-09-14T08:21:34.013910Z  INFO rooch_rpc_server: Available JSON-RPC methods : ["eth_blockNumber", "eth_sendTransaction", "eth_sendRawTransaction", "net_version", "rooch_listAnnotatedStates", "rooch_sendRawTransaction", "rooch_getAnnotatedStates", "rooch_executeRawTransaction", "eth_estimateGas", "rooch_executeViewFunction", "rooch_getBalances", "rooch_getEvents", "rooch_getStates", "eth_getBalance", "eth_gasPrice", "eth_getTransactionByHash", "eth_getTransactionCount", "rooch_getTransactionByIndex", "rooch_getEventsByEventHandle", "eth_getTransactionReceipt", "rooch_getTransactionByHash", "eth_getBlockByNumber", "eth_feeHistory", "eth_getBlockByHash", "rooch_listStates", "rooch_getTransactionInfosByTxOrder", "eth_chainId", "rooch_getTransactionInfosByTxHash", "wallet_sign", "wallet_accounts"]
+```
+
+## Solve data compatibility issues
+
+If you encounter service data conflicts, first execute the clear command and then continue to start the service:
+
+```shell
+$ rooch server clean
+
+StoreConfig init store dir "/tmp/.tmpJmbojW/dev/roochdb/rooch_store" "/tmp/.tmpJmbojW/dev/roochdb/moveos_store"
+Rooch server storage successfully cleaned
+```
