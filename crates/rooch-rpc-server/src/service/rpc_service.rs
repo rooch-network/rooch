@@ -15,7 +15,7 @@ use rooch_proposer::proxy::ProposerProxy;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponse;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::address::{MultiChainAddress, RoochAddress};
-use rooch_types::transaction::TransactionSequenceMapping;
+use rooch_types::transaction::{TransactionSequenceInfo, TransactionSequenceMapping};
 use rooch_types::{transaction::TypedTransaction, H256};
 
 /// RpcService is the implementation of the RPC service.
@@ -156,25 +156,36 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn get_tx_seq_mapping_by_order(
+    pub async fn get_transaction_sequence_infos(
+        &self,
+        orders: Vec<u128>,
+    ) -> Result<Vec<Option<TransactionSequenceInfo>>> {
+        let resp = self
+            .sequencer
+            .get_transaction_sequence_infos(orders)
+            .await?;
+        Ok(resp)
+    }
+
+    pub async fn get_tx_sequence_mapping_by_order(
         &self,
         cursor: Option<u128>,
         limit: u64,
     ) -> Result<Vec<TransactionSequenceMapping>> {
         let resp = self
-            .executor
-            .get_tx_seq_mapping_by_order(cursor, limit)
+            .sequencer
+            .get_transaction_sequence_mapping_by_order(cursor, limit)
             .await?;
         Ok(resp)
     }
 
-    pub async fn get_transaction_infos_by_hash(
+    pub async fn get_transaction_execution_infos_by_hash(
         &self,
         tx_hashes: Vec<H256>,
     ) -> Result<Vec<Option<TransactionExecutionInfo>>> {
         let resp = self
             .executor
-            .get_transaction_infos_by_hash(tx_hashes)
+            .get_transaction_execution_infos_by_hash(tx_hashes)
             .await?;
         Ok(resp)
     }

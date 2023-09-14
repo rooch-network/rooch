@@ -22,7 +22,7 @@ pub mod transaction_store;
 // pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
 pub const TYPED_TRANSACTION_PREFIX_NAME: ColumnFamilyName = "typed_transaction";
 pub const SEQ_TRANSACTION_PREFIX_NAME: ColumnFamilyName = "seq_transaction";
-pub const TX_SEQ_MAPPING_PREFIX_NAME: ColumnFamilyName = "tx_seq_mapping";
+pub const TX_SEQ_MAPPING_PREFIX_NAME: ColumnFamilyName = "tx_sequence_mapping";
 
 pub const META_SEQUENCER_ORDER_PREFIX_NAME: ColumnFamilyName = "meta_sequencer_order";
 
@@ -107,31 +107,32 @@ impl TransactionStore for RoochStore {
         self.transaction_store.get_transactions(tx_hashes)
     }
 
-    fn save_tx_seq_info(&self, tx_seq_info: TransactionSequenceInfo) -> Result<()> {
-        self.transaction_store.save_tx_seq_info(tx_seq_info)
+    fn save_tx_sequence_info(&self, tx_sequence_info: TransactionSequenceInfo) -> Result<()> {
+        self.transaction_store
+            .save_tx_sequence_info(tx_sequence_info)
     }
 
-    fn get_tx_seq_infos_by_order(
+    fn get_tx_sequence_infos_by_order(
         &self,
         cursor: Option<u128>,
         limit: u64,
     ) -> Result<Vec<TransactionSequenceInfo>> {
         self.transaction_store
-            .get_tx_seq_infos_by_order(cursor, limit)
+            .get_tx_sequence_infos_by_order(cursor, limit)
     }
 
-    fn save_tx_seq_info_mapping(&self, tx_order: u128, tx_hash: H256) -> Result<()> {
+    fn save_tx_sequence_info_mapping(&self, tx_order: u128, tx_hash: H256) -> Result<()> {
         self.transaction_store
-            .save_tx_seq_info_mapping(tx_order, tx_hash)
+            .save_tx_sequence_info_mapping(tx_order, tx_hash)
     }
 
-    fn get_tx_seq_mapping_by_order(
+    fn get_tx_sequence_mapping_by_order(
         &self,
         cursor: Option<u128>,
         limit: u64,
     ) -> Result<Vec<TransactionSequenceMapping>> {
         self.transaction_store
-            .get_tx_seq_mapping_by_order(cursor, limit)
+            .get_tx_sequence_mapping_by_order(cursor, limit)
     }
 }
 

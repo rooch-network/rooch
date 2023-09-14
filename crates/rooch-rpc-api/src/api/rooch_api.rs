@@ -5,8 +5,8 @@ use crate::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedEventView, AnnotatedFunctionResultView,
     AnnotatedStateView, EventFilterView, EventPageView, ExecuteTransactionResponseView,
     FunctionCallView, H256View, ListAnnotatedStatesPageView, ListBalanceInfoPageView,
-    ListStatesPageView, StateView, StrView, StructTagView, TransactionExecutionInfoView,
-    TransactionInfoPageView, TransactionView,
+    ListStatesPageView, StateView, StrView, StructTagView, TransactionReturnPageView,
+    TransactionView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -92,18 +92,12 @@ pub trait RoochAPI {
         tx_hashes: Vec<H256View>,
     ) -> RpcResult<Vec<Option<TransactionView>>>;
 
-    #[method(name = "getTransactiosByOrder")]
+    #[method(name = "getTransactionsByOrder")]
     async fn get_transactions_by_order(
         &self,
         cursor: Option<u128>,
         limit: Option<u64>,
-    ) -> RpcResult<TransactionInfoPageView>;
-
-    #[method(name = "getTransactionInfosByHash")]
-    async fn get_transaction_infos_by_hash(
-        &self,
-        tx_hashes: Vec<H256View>,
-    ) -> RpcResult<Vec<Option<TransactionExecutionInfoView>>>;
+    ) -> RpcResult<TransactionReturnPageView>;
 
     /// get account balances by AccountAddress
     #[method(name = "getBalances")]

@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::account_view::BalanceInfoView;
+use crate::jsonrpc_types::transaction_view::TransactionReturnView;
 use crate::jsonrpc_types::{
     move_types::{MoveActionTypeView, MoveActionView},
     AnnotatedMoveStructView, AnnotatedStateView, EventView, H256View, StateView, StrView,
-    StructTagView, TransactionExecutionInfoView,
+    StructTagView,
 };
 use move_core_types::u256::U256;
 use moveos_types::event::AnnotatedMoveOSEvent;
@@ -21,7 +22,7 @@ use std::string::String;
 use super::AccountAddressView;
 
 pub type EventPageView = PageView<Option<AnnotatedEventView>, u64>;
-pub type TransactionInfoPageView = PageView<Option<TransactionExecutionInfoView>, u128>;
+pub type TransactionReturnPageView = PageView<TransactionReturnView, u128>;
 pub type ListStatesPageView = PageView<Option<StateView>, StrView<Vec<u8>>>;
 pub type ListAnnotatedStatesPageView = PageView<Option<AnnotatedStateView>, StrView<Vec<u8>>>;
 pub type ListBalanceInfoPageView = PageView<Option<BalanceInfoView>, StrView<Vec<u8>>>;

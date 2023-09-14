@@ -7,8 +7,7 @@ use super::messages::{
     StatesMessage, ValidateTransactionMessage,
 };
 use crate::actor::messages::{
-    GetTransactionInfosByHashMessage, GetTxSeqMappingByOrderMessage, ListAnnotatedStatesMessage,
-    ListStatesMessage,
+    GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage, ListStatesMessage,
 };
 use accumulator::inmemory::InMemoryAccumulator;
 use anyhow::Result;
@@ -43,8 +42,8 @@ use rooch_types::framework::auth_validator::AuthValidatorCaller;
 use rooch_types::framework::auth_validator::TxValidateResult;
 use rooch_types::framework::transaction_validator::TransactionValidator;
 use rooch_types::framework::{system_post_execute_functions, system_pre_execute_functions};
+use rooch_types::transaction::AbstractTransaction;
 use rooch_types::transaction::AuthenticatorInfo;
-use rooch_types::transaction::{AbstractTransaction, TransactionSequenceMapping};
 use rooch_types::H256;
 
 pub struct ExecutorActor {
@@ -242,7 +241,7 @@ impl ExecutorActor {
         );
         self.moveos
             .transaction_store()
-            .save_tx_exec_info(transaction_info.clone())
+            .save_tx_execution_info(transaction_info.clone())
             .map_err(|e| {
                 anyhow::anyhow!(
                     "ExecuteTransactionMessage handler save tx info failed: {:?} {}",
@@ -446,28 +445,15 @@ impl Handler<GetEventsMessage> for ExecutorActor {
 }
 
 #[async_trait]
-impl Handler<GetTxSeqMappingByOrderMessage> for ExecutorActor {
+impl Handler<GetTxExecutionInfosByHashMessage> for ExecutorActor {
     async fn handle(
         &mut self,
-        msg: GetTxSeqMappingByOrderMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<Vec<TransactionSequenceMapping>> {
-        let GetTxSeqMappingByOrderMessage { cursor, limit } = msg;
-        let rooch_tx_store = self.rooch_store.get_transaction_store();
-        rooch_tx_store.get_tx_seq_mapping_by_order(cursor, limit)
-    }
-}
-
-#[async_trait]
-impl Handler<GetTransactionInfosByHashMessage> for ExecutorActor {
-    async fn handle(
-        &mut self,
-        msg: GetTransactionInfosByHashMessage,
+        msg: GetTxExecutionInfosByHashMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<Option<TransactionExecutionInfo>>> {
-        let GetTransactionInfosByHashMessage { tx_hashes } = msg;
+        let GetTxExecutionInfosByHashMessage { tx_hashes } = msg;
         self.moveos
             .transaction_store()
-            .multi_get_tx_exec_infos(tx_hashes)
+            .multi_get_tx_execution_infos(tx_hashes)
     }
 }

@@ -16,7 +16,7 @@ use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use rooch_types::address::MultiChainAddress;
-use rooch_types::transaction::{AbstractTransaction, TransactionSequenceMapping};
+use rooch_types::transaction::AbstractTransaction;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
@@ -125,20 +125,10 @@ impl Message for GetEventsMessage {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct GetTxSeqMappingByOrderMessage {
-    pub cursor: Option<u128>,
-    pub limit: u64,
-}
-
-impl Message for GetTxSeqMappingByOrderMessage {
-    type Result = Result<Vec<TransactionSequenceMapping>>;
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GetTransactionInfosByHashMessage {
+pub struct GetTxExecutionInfosByHashMessage {
     pub tx_hashes: Vec<H256>,
 }
 
-impl Message for GetTransactionInfosByHashMessage {
+impl Message for GetTxExecutionInfosByHashMessage {
     type Result = Result<Vec<Option<TransactionExecutionInfo>>>;
 }

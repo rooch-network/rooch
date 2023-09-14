@@ -14,6 +14,7 @@ mod transaction_argument_view;
 pub mod account_view;
 pub mod bytes;
 pub mod eth;
+pub mod transaction_view;
 
 pub use self::rooch_types::*;
 pub use execute_tx_response::*;

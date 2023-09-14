@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::messages::{
-    GetTransactionByHashMessage, GetTransactionsByHashMessage, TransactionSequenceMessage,
+    GetTransactionByHashMessage, GetTransactionsByHashMessage, GetTxSequenceInfosMessage,
+    GetTxSequenceMappingByOrderMessage, TransactionSequenceMessage,
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -12,6 +13,7 @@ use rooch_store::meta_store::MetaStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
 use rooch_types::sequencer::SequencerOrder;
+use rooch_types::transaction::TransactionSequenceMapping;
 use rooch_types::{
     crypto::{RoochKeyPair, Signature},
     transaction::AbstractTransaction,
@@ -69,32 +71,22 @@ impl Handler<TransactionSequenceMessage> for SequencerActor {
         let tx_order_signature = Signature::new_hashed(&witness_hash.0, &self.sequencer_key).into();
         self.last_order = tx_order;
 
-        let _ = self.rooch_store.save_transaction(tx).map_err(|e| {
-            anyhow::anyhow!(
-                "TransactionSequenceMessage handler save transaction failed: {}",
-                e
-            )
-        });
-        let _ = self
-            .rooch_store
-            .save_tx_seq_info_mapping(tx_order, hash)
-            .map_err(|e| {
-                anyhow::anyhow!(
-                    "TransactionSequenceMessage handler save tx seq mapping failed: {}",
-                    e
-                )
-            });
+        self.rooch_store.save_transaction(tx)?;
+        self.rooch_store
+            .save_tx_sequence_info_mapping(tx_order, hash)?;
 
-        let _ = self
-            .rooch_store
+        self.rooch_store
             .save_sequencer_order(SequencerOrder::new(self.last_order))?;
 
         let tx_accumulator_root = H256::random();
-        Ok(TransactionSequenceInfo {
+        let tx_sequence_info = TransactionSequenceInfo {
             tx_order,
             tx_order_signature,
             tx_accumulator_root,
-        })
+        };
+        self.rooch_store
+            .save_tx_sequence_info(tx_sequence_info.clone())?;
+        Ok(tx_sequence_info)
     }
 }
 
@@ -117,5 +109,33 @@ impl Handler<GetTransactionsByHashMessage> for SequencerActor {
         _ctx: &mut ActorContext,
     ) -> Result<Vec<Option<TypedTransaction>>> {
         self.rooch_store.get_transactions_by_hash(msg.tx_hashes)
+    }
+}
+
+#[async_trait]
+impl Handler<GetTxSequenceMappingByOrderMessage> for SequencerActor {
+    async fn handle(
+        &mut self,
+        msg: GetTxSequenceMappingByOrderMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<TransactionSequenceMapping>> {
+        let GetTxSequenceMappingByOrderMessage { cursor, limit } = msg;
+        self.rooch_store
+            .get_transaction_store()
+            .get_tx_sequence_mapping_by_order(cursor, limit)
+    }
+}
+
+#[async_trait]
+impl Handler<GetTxSequenceInfosMessage> for SequencerActor {
+    async fn handle(
+        &mut self,
+        msg: GetTxSequenceInfosMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<Option<TransactionSequenceInfo>>> {
+        let GetTxSequenceInfosMessage { orders } = msg;
+        self.rooch_store
+            .get_transaction_store()
+            .get_tx_sequence_infos(orders)
     }
 }
