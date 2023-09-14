@@ -12,7 +12,7 @@ import {
   AnnotatedFunctionResultView,
   TransactionView,
   AnnotatedStateView,
-  TransactionExecutionInfoView,
+  // TransactionExecutionInfoView,
 } from '../types'
 import { functionIdToStirng, typeTagToString, encodeArg, toHexString } from '../utils'
 
@@ -111,15 +111,15 @@ export class JsonRpcProvider {
     return this.client.rooch_sendRawTransaction(playload)
   }
 
-  async getTransactions(tx_hashes: string[]): Promise<TransactionView | null[]> {
-    return await this.client.rooch_getTransactions(tx_hashes)
+  async getTransactionsByHash(tx_hashes: string[]): Promise<TransactionView | null[]> {
+    return await this.client.rooch_getTransactionsByHash(tx_hashes)
   }
 
-  async getTransactionInfosByHash(
-    txHashes: string[],
-  ): Promise<TransactionExecutionInfoView | null[]> {
-    return await this.client.rooch_getTransactionInfosByHash(txHashes)
-  }
+  // async getTransactionInfosByHash(
+  //   txHashes: string[],
+  // ): Promise<TransactionExecutionInfoView | null[]> {
+  //   return await this.client.rooch_getTransactionInfosByHash(txHashes)
+  // }
 
   // Get the annotated states by access_path The annotated states include the decoded move value of the state
   async getAnnotatedStates(accessPath: string): Promise<AnnotatedStateView | null[]> {
@@ -157,7 +157,7 @@ export class JsonRpcProvider {
   //   return this.rpcClient.rooch_getTransactionByHash(hash)
   // }
 
-  // async getTransactions(
+  // async getTransactionsByHash(
   //   start: number,
   //   limit: number,
   // ): Promise<TransactionView[]> {

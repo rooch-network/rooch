@@ -33,7 +33,8 @@ export const TransactionSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(fetchData.fulfilled, (state, action) => {
-      state.allData = action.payload
+      // TODO need fixed after transaction RPC refactor
+      // state.allData = action.payload
     })
   },
 })
