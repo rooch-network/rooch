@@ -105,7 +105,6 @@ describe('SDK', () => {
       await account.registerSessionKey(
         kp2.getPublicKey().toRoochAddress(),
         '0x3::empty::empty',
-        3600,
         100,
       )
       const auth = new PrivateKeyAuth(kp2)
@@ -150,7 +149,7 @@ describe('SDK', () => {
       expect(account).toBeDefined()
 
       // create session account
-      const sessionAccount = await account.createSessionAccount('0x3::empty::empty', 3600, 100)
+      const sessionAccount = await account.createSessionAccount('0x3::empty::empty', 100)
       expect(sessionAccount).toBeDefined()
 
       // run function with sessoin key
