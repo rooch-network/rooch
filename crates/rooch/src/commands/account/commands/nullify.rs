@@ -10,7 +10,6 @@ use std::fmt::Debug;
 use async_trait::async_trait;
 use rooch_types::{
     address::RoochAddress,
-    chain_id::{BuiltinChainID, RoochChainID},
     error::{RoochError, RoochResult},
     framework::native_validator::NativeValidatorModule,
     multichain_id::RoochMultiChainID,
@@ -54,7 +53,7 @@ impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
 
             // Execute the Move call as a transaction
             let mut result = context
-                .sign_and_execute(existing_address, action, self.multichain_id.clone())
+                .sign_and_execute(existing_address, action, self.multichain_id)
                 .await?;
             result = context.assert_execute_success(result)?;
 
@@ -64,7 +63,7 @@ impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
                 .keystore
                 .nullify_address_with_key_pair_from_multichain_id(
                     &existing_address,
-                    RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev)),
+                    RoochMultiChainID::Rooch,
                 )
                 .map_err(|e| RoochError::NullifyAccountError(e.to_string()))?;
 

@@ -58,11 +58,7 @@ fn test_submit_block() {
     let action = MoveAction::Function(rooch_types::framework::ethereum_light_client::EthereumLightClientModule::create_submit_new_block_call(&block_header));
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore
-        .sign_transaction(
-            &sender,
-            tx_data,
-            RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev)),
-        )
+        .sign_transaction(&sender, tx_data, RoochMultiChainID::Rooch)
         .unwrap();
     binding_test.execute(tx).unwrap();
 

@@ -2,12 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo};
-use crate::{
-    address::EthereumAddress,
-    chain_id::{BuiltinChainID, RoochChainID},
-    error::RoochError,
-    multichain_id::RoochMultiChainID,
-};
+use crate::{address::EthereumAddress, error::RoochError, multichain_id::RoochMultiChainID};
 use anyhow::Result;
 use ethers::{
     types::{Bytes, OtherFields, Transaction, U256, U64},
@@ -54,9 +49,7 @@ impl EthereumTransactionData {
             max_priority_fee_per_gas: None,
             max_fee_per_gas: None,
             chain_id: Some(U256::from(
-                RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev))
-                    .multichain_id()
-                    .id(), // TODO use Ethereum multichain id and build a multichain genesis init
+                RoochMultiChainID::Rooch.multichain_id().id(), // TODO use Ethereum multichain id and build a multichain genesis init
             )),
             other: OtherFields::default(),
         };

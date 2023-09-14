@@ -31,7 +31,7 @@ fn test_validate() {
         Bytes::try_from(bcs::to_bytes(&action).unwrap()).expect("Convert action to bytes failed.");
     let tx_data = EthereumTransactionData::new_for_test(sender, sequence_number, action_bytes);
     keystore
-        .sign_transaction(&sender, tx_data.clone(), RoochMultiChainID::ETHER)
+        .sign_transaction(&sender, tx_data.clone(), RoochMultiChainID::Ether)
         .unwrap();
     let auth_info = tx_data.authenticator_info().unwrap();
     let multichain_address = MultiChainAddress::from(sender);

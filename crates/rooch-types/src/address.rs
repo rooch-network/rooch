@@ -3,7 +3,7 @@
 
 use crate::{
     addresses::ROOCH_FRAMEWORK_ADDRESS,
-    chain_id::{BuiltinChainID, RoochChainID},
+    chain_id::BuiltinChainID,
     multichain_id::{MultiChainID, RoochMultiChainID},
 };
 use anyhow::Result;
@@ -204,11 +204,8 @@ impl From<RoochAddress> for AccountAddress {
 
 impl From<RoochAddress> for MultiChainAddress {
     fn from(address: RoochAddress) -> Self {
-        Self::new(
-            RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev)),
-            address.0.as_bytes().to_vec(),
-        )
-        .expect("RoochAddress to MultiChainAddress should success")
+        Self::new(RoochMultiChainID::Rooch, address.0.as_bytes().to_vec())
+            .expect("RoochAddress to MultiChainAddress should success")
     }
 }
 
@@ -216,9 +213,7 @@ impl TryFrom<MultiChainAddress> for RoochAddress {
     type Error = anyhow::Error;
 
     fn try_from(value: MultiChainAddress) -> Result<Self, Self::Error> {
-        if value.multichain_id
-            != RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev))
-        {
+        if value.multichain_id != RoochMultiChainID::Rooch {
             return Err(anyhow::anyhow!(
                 "multichain_id type {} is invalid",
                 value.multichain_id
@@ -319,7 +314,7 @@ impl RoochSupportedAddress for EthereumAddress {
 
 impl From<EthereumAddress> for MultiChainAddress {
     fn from(address: EthereumAddress) -> Self {
-        Self::new(RoochMultiChainID::ETHER, address.0.as_bytes().to_vec())
+        Self::new(RoochMultiChainID::Ether, address.0.as_bytes().to_vec())
             .expect("EthereumAddress to MultiChainAddress should success")
     }
 }
@@ -328,7 +323,7 @@ impl TryFrom<MultiChainAddress> for EthereumAddress {
     type Error = anyhow::Error;
 
     fn try_from(value: MultiChainAddress) -> Result<Self, Self::Error> {
-        if value.multichain_id != RoochMultiChainID::ETHER {
+        if value.multichain_id != RoochMultiChainID::Ether {
             return Err(anyhow::anyhow!(
                 "multichain_id type {} is invalid",
                 value.multichain_id
@@ -397,7 +392,7 @@ impl RoochSupportedAddress for BitcoinAddress {
 impl From<BitcoinAddress> for MultiChainAddress {
     fn from(address: BitcoinAddress) -> Self {
         Self::new(
-            RoochMultiChainID::BITCOIN,
+            RoochMultiChainID::Bitcoin,
             address.0.to_string().into_bytes(),
         )
         .expect("BitcoinAddress to MultiChainAddress should succeed")
@@ -408,7 +403,7 @@ impl TryFrom<MultiChainAddress> for BitcoinAddress {
     type Error = anyhow::Error;
 
     fn try_from(value: MultiChainAddress) -> Result<Self, Self::Error> {
-        if value.multichain_id != RoochMultiChainID::BITCOIN {
+        if value.multichain_id != RoochMultiChainID::Bitcoin {
             return Err(anyhow::anyhow!(
                 "multichain_id type {} is invalid",
                 value.multichain_id
@@ -434,7 +429,7 @@ impl RoochSupportedAddress for NostrAddress {
 
 impl From<NostrAddress> for MultiChainAddress {
     fn from(address: NostrAddress) -> Self {
-        Self::new(RoochMultiChainID::NOSTR, address.0.serialize().to_vec())
+        Self::new(RoochMultiChainID::Nostr, address.0.serialize().to_vec())
             .expect("NostrAddress to MultiChainAddress should succeed")
     }
 }
@@ -443,7 +438,7 @@ impl TryFrom<MultiChainAddress> for NostrAddress {
     type Error = anyhow::Error;
 
     fn try_from(value: MultiChainAddress) -> Result<Self, Self::Error> {
-        if value.multichain_id != RoochMultiChainID::NOSTR {
+        if value.multichain_id != RoochMultiChainID::Nostr {
             return Err(anyhow::anyhow!(
                 "multichain_id type {} is invalid",
                 value.multichain_id

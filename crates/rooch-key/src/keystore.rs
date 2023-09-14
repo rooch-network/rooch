@@ -17,7 +17,6 @@ use rand::{rngs::StdRng, SeedableRng};
 use rooch_types::{
     address::{EthereumAddress, RoochAddress},
     authentication_key::AuthenticationKey,
-    chain_id::{BuiltinChainID, RoochChainID},
     crypto::{
         get_ethereum_key_pair_from_rng, get_rooch_key_pair_from_rng, PublicKey, RoochKeyPair,
         Signature,
@@ -119,7 +118,7 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData>: Se
     {
         let (address, kp, multichain_id, phrase) =
             generate_new_key_pair::<Addr, KeyPair>(multichain_id, derivation_path, word_length)?;
-        self.add_key_pair_by_multichain_id(kp, multichain_id.clone())?;
+        self.add_key_pair_by_multichain_id(kp, multichain_id)?;
         Ok((address, phrase, multichain_id))
     }
 
@@ -160,7 +159,7 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData>: Se
         // Consider adding Clone capabilities
         let (_, kp) = multichain_id.derive_key_pair_from_path(seed.as_bytes(), derivation_path)?;
         {
-            self.update_key_pair_by_multichain_id(address, kp, multichain_id.clone())?;
+            self.update_key_pair_by_multichain_id(address, kp, multichain_id)?;
         };
 
         let (_, kp) =
@@ -773,12 +772,12 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         address: &RoochAddress,
     ) -> Result<AuthenticationKey, anyhow::Error> {
         //TODO define derivation_path for session key
-        let (_address, kp, _multichain_id, _phrase) =
-            generate_new_key_pair::<RoochAddress, RoochKeyPair>(
-                RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev)),
-                None,
-                None,
-            )?;
+        let (_address, kp, _multichain_id, _phrase) = generate_new_key_pair::<
+            RoochAddress,
+            RoochKeyPair,
+        >(
+            RoochMultiChainID::Rooch, None, None
+        )?;
         let authentication_key = kp.public().authentication_key();
         let inner_map = self
             .session_keys
@@ -972,7 +971,7 @@ impl
         let (_, kp, _multichain_id, _phrase) = generate_new_key_pair::<
             EthereumAddress,
             Secp256k1RecoverableKeyPair,
-        >(RoochMultiChainID::ETHER, None, None)?;
+        >(RoochMultiChainID::Ether, None, None)?;
         let authentication_key_bytes = address.0.as_bytes().to_vec();
         let authentication_key = AuthenticationKey::new(authentication_key_bytes);
         let inner_map = self
@@ -1599,12 +1598,7 @@ impl InMemKeystore<RoochAddress, RoochKeyPair> {
             .map(|(ad, k)| {
                 (
                     ad,
-                    BTreeMap::from_iter(vec![(
-                        RoochMultiChainID::as_multichain(&RoochChainID::Builtin(
-                            BuiltinChainID::Dev,
-                        )),
-                        RoochKeyPair::Ed25519(k),
-                    )]),
+                    BTreeMap::from_iter(vec![(RoochMultiChainID::Rooch, RoochKeyPair::Ed25519(k))]),
                 )
             })
             .collect::<BTreeMap<RoochAddress, BTreeMap<RoochMultiChainID, RoochKeyPair>>>();
@@ -1619,7 +1613,7 @@ impl InMemKeystore<EthereumAddress, Secp256k1RecoverableKeyPair> {
         let mut rng = StdRng::from_seed([0; 32]);
         let keys = (0..initial_key_number)
             .map(|_| get_ethereum_key_pair_from_rng(&mut rng))
-            .map(|(ad, k)| (ad, BTreeMap::from_iter(vec![(RoochMultiChainID::ETHER, k)])))
+            .map(|(ad, k)| (ad, BTreeMap::from_iter(vec![(RoochMultiChainID::Ether, k)])))
             .collect::<BTreeMap<EthereumAddress, BTreeMap<RoochMultiChainID, Secp256k1RecoverableKeyPair>>>();
 
         Self {

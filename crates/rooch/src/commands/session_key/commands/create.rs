@@ -7,7 +7,6 @@ use moveos_types::module_binding::MoveFunctionCaller;
 use rooch_key::keystore::AccountKeystore;
 use rooch_types::{
     address::RoochAddress,
-    chain_id::{BuiltinChainID, RoochChainID},
     error::{RoochError, RoochResult},
     framework::session_key::{SessionKey, SessionKeyModule, SessionScope},
     multichain_id::RoochMultiChainID,
@@ -61,11 +60,7 @@ impl CreateCommand {
         println!("Generated new session key {session_auth_key} for address [{sender}]",);
 
         let result = context
-            .sign_and_execute(
-                sender,
-                action,
-                RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev)),
-            )
+            .sign_and_execute(sender, action, RoochMultiChainID::Rooch)
             .await?;
         context.assert_execute_success(result)?;
         let client = context.get_client().await?;

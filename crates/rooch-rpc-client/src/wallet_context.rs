@@ -114,7 +114,7 @@ impl WalletContext {
         let kp = self
             .config
             .keystore
-            .get_key_pair_by_multichain_id(&sender, multichain_id.clone())
+            .get_key_pair_by_multichain_id(&sender, multichain_id)
             .ok()
             .ok_or_else(|| {
                 RoochError::SignMessageError(format!("Cannot find key for address: [{sender}]"))

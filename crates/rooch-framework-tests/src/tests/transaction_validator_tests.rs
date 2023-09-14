@@ -39,11 +39,7 @@ fn test_validate_rooch() {
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore
-        .sign_transaction(
-            &sender,
-            tx_data,
-            RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev)),
-        )
+        .sign_transaction(&sender, tx_data, RoochMultiChainID::Rooch)
         .unwrap();
     let auth_info = tx.authenticator_info().unwrap();
     let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
@@ -73,7 +69,7 @@ fn test_validate_ethereum() {
         Bytes::try_from(bcs::to_bytes(&action).unwrap()).expect("Convert action to bytes failed.");
     let tx_data = EthereumTransactionData::new_for_test(sender, sequence_number, action_bytes);
     let (_, _sig) = keystore
-        .sign_transaction(&sender, tx_data.clone(), RoochMultiChainID::ETHER)
+        .sign_transaction(&sender, tx_data.clone(), RoochMultiChainID::Ether)
         .unwrap();
     let auth_info = tx_data.authenticator_info().unwrap();
     let multichain_address = MultiChainAddress::from(sender);
@@ -115,11 +111,7 @@ fn test_session_key_rooch() {
     );
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore
-        .sign_transaction(
-            &sender,
-            tx_data,
-            RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev)),
-        )
+        .sign_transaction(&sender, tx_data, RoochMultiChainID::Rooch)
         .unwrap();
     binding_test.execute(tx).unwrap();
 

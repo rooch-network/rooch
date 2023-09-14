@@ -49,7 +49,7 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                 .update_address_with_key_pair_from_multichain_id(
                     &existing_address,
                     self.mnemonic_phrase,
-                    self.multichain_id.clone(),
+                    self.multichain_id,
                     None,
                 )
                 .map_err(|e| RoochError::UpdateAccountError(e.to_string()))?;

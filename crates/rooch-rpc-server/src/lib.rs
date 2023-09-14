@@ -33,7 +33,6 @@ use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
 use rooch_types::address::RoochAddress;
-use rooch_types::chain_id::{BuiltinChainID, RoochChainID};
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::GenesisError;
 use rooch_types::multichain_id::RoochMultiChainID;
@@ -177,22 +176,16 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
 
     // Init sequencer
     //TODO load from config
-    let (_, kp, _, _) = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
-        RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev)),
-        None,
-        None,
-    )?;
+    let (_, kp, _, _) =
+        generate_new_key_pair::<RoochAddress, RoochKeyPair>(RoochMultiChainID::Rooch, None, None)?;
     let sequencer = SequencerActor::new(kp, rooch_store, is_genesis)?
         .into_actor(Some("Sequencer"), &actor_system)
         .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
 
     // Init proposer
-    let (_, kp, _, _) = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
-        RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev)),
-        None,
-        None,
-    )?;
+    let (_, kp, _, _) =
+        generate_new_key_pair::<RoochAddress, RoochKeyPair>(RoochMultiChainID::Rooch, None, None)?;
     let proposer = ProposerActor::new(kp)
         .into_actor(Some("Proposer"), &actor_system)
         .await?;
@@ -218,7 +211,7 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
     if let Some(eth_rpc_url) = &opt.eth_rpc_url {
         //TODO load from config
         let (_, kp, _, _) = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
-            RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev)),
+            RoochMultiChainID::Rooch,
             None,
             None,
         )?;

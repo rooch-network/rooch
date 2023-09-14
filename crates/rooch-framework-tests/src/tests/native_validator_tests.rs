@@ -25,11 +25,7 @@ fn test_validate() {
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore
-        .sign_transaction(
-            &sender,
-            tx_data,
-            RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev)),
-        )
+        .sign_transaction(&sender, tx_data, RoochMultiChainID::Rooch)
         .unwrap();
     let auth_info = tx.authenticator_info().unwrap();
     let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();

@@ -6,12 +6,7 @@ use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
-use rooch_types::{
-    account::AccountModule,
-    chain_id::{BuiltinChainID, RoochChainID},
-    error::RoochResult,
-    multichain_id::RoochMultiChainID,
-};
+use rooch_types::{account::AccountModule, error::RoochResult, multichain_id::RoochMultiChainID};
 
 /// Create a new account on-chain
 ///
@@ -28,12 +23,10 @@ impl CreateCommand {
     pub async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
         let mut context = self.context_options.build().await?;
 
-        let (new_address, phrase, multichain_id) =
-            context.config.keystore.generate_and_add_new_key(
-                RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev)),
-                None,
-                None,
-            )?;
+        let (new_address, phrase, multichain_id) = context
+            .config
+            .keystore
+            .generate_and_add_new_key(RoochMultiChainID::Rooch, None, None)?;
 
         println!("{}", AccountAddress::from(new_address).to_hex_literal());
         println!(

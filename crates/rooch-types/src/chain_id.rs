@@ -84,9 +84,9 @@ pub enum BuiltinChainID {
 impl Display for BuiltinChainID {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            BuiltinChainID::Dev => write!(f, "Dev"),
-            BuiltinChainID::Test => write!(f, "Test"),
-            BuiltinChainID::Main => write!(f, "Main"),
+            BuiltinChainID::Dev => write!(f, "dev"),
+            BuiltinChainID::Test => write!(f, "test"),
+            BuiltinChainID::Main => write!(f, "main"),
         }
     }
 }
