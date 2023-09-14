@@ -104,7 +104,7 @@ const InvoiceList = () => {
   const store = useAppSelector((state) => state.transaction)
 
   useEffect(() => {
-    dispatch(fetchData({ start: 0, end: 10 }))
+    dispatch(fetchData({ cursor: 0, limit: 10 }))
   }, [dispatch])
 
   return (
