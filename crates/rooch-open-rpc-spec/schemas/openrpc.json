@@ -240,7 +240,7 @@
       }
     },
     {
-      "name": "rooch_getTransactionInfosByTxHash",
+      "name": "rooch_getTransactionInfosByHash",
       "params": [
         {
           "name": "tx_hashes",
@@ -272,35 +272,7 @@
       }
     },
     {
-      "name": "rooch_getTransactionInfosByTxOrder",
-      "params": [
-        {
-          "name": "cursor",
-          "schema": {
-            "type": "integer",
-            "format": "uint128",
-            "minimum": 0.0
-          }
-        },
-        {
-          "name": "limit",
-          "schema": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          }
-        }
-      ],
-      "result": {
-        "name": "TransactionInfoPageView",
-        "required": true,
-        "schema": {
-          "$ref": "#/components/schemas/PageView_for_Nullable_TransactionExecutionInfoView_and_uint128"
-        }
-      }
-    },
-    {
-      "name": "rooch_getTransactions",
+      "name": "rooch_getTransactionsByHash",
       "params": [
         {
           "name": "tx_hashes",
@@ -328,6 +300,34 @@
               }
             ]
           }
+        }
+      }
+    },
+    {
+      "name": "rooch_getTransactiosByOrder",
+      "params": [
+        {
+          "name": "cursor",
+          "schema": {
+            "type": "integer",
+            "format": "uint128",
+            "minimum": 0.0
+          }
+        },
+        {
+          "name": "limit",
+          "schema": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      ],
+      "result": {
+        "name": "TransactionInfoPageView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/PageView_for_Nullable_TransactionExecutionInfoView_and_uint128"
         }
       }
     },

@@ -31,17 +31,20 @@ derive_store!(TxSeqMappingStore, u128, H256, TX_SEQ_MAPPING_PREFIX_NAME);
 
 pub trait TransactionStore {
     fn save_transaction(&mut self, transaction: TypedTransaction) -> Result<()>;
-    fn get_tx_by_hash(&self, hash: H256) -> Result<Option<TypedTransaction>>;
-    fn get_transactions(&self, tx_hashes: Vec<H256>) -> Result<Vec<Option<TypedTransaction>>>;
+    fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<TypedTransaction>>;
+    fn get_transactions_by_hash(
+        &self,
+        tx_hashes: Vec<H256>,
+    ) -> Result<Vec<Option<TypedTransaction>>>;
 
     fn save_tx_seq_info(&self, tx_seq_info: TransactionSequenceInfo) -> Result<()>;
-    fn get_tx_seq_infos_by_tx_order(
+    fn get_tx_seq_infos_by_order(
         &self,
         cursor: Option<u128>,
         limit: u64,
     ) -> Result<Vec<TransactionSequenceInfo>>;
     fn save_tx_seq_info_mapping(&self, tx_order: u128, tx_hash: H256) -> Result<()>;
-    fn get_tx_seq_mapping_by_tx_order(
+    fn get_tx_seq_mapping_by_order(
         &self,
         cursor: Option<u128>,
         limit: u64,
@@ -69,7 +72,7 @@ impl TransactionDBStore {
             .kv_put(transaction.tx_hash(), transaction)
     }
 
-    pub fn get_tx_by_hash(&self, hash: H256) -> Result<Option<TypedTransaction>> {
+    pub fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<TypedTransaction>> {
         self.typed_tx_store.kv_get(hash)
     }
 
@@ -81,7 +84,7 @@ impl TransactionDBStore {
         self.seq_tx_store.kv_put(tx_seq_info.tx_order, tx_seq_info)
     }
 
-    pub fn get_tx_seq_infos_by_tx_order(
+    pub fn get_tx_seq_infos_by_order(
         &self,
         cursor: Option<u128>,
         limit: u64,
@@ -92,7 +95,7 @@ impl TransactionDBStore {
         let mut iter = self.seq_tx_store.iter()?;
         iter.seek(bcs::to_bytes(&start)?).map_err(|e| {
             anyhow::anyhow!(
-                "Rooch TransactionStore get_tx_seq_infos_by_tx_order seek: {:?}",
+                "Rooch TransactionStore get_tx_seq_infos_by_order seek: {:?}",
                 e
             )
         })?;
@@ -118,7 +121,7 @@ impl TransactionDBStore {
         self.tx_seq_mapping.kv_put(tx_order, tx_hash)
     }
 
-    pub fn get_tx_seq_mapping_by_tx_order(
+    pub fn get_tx_seq_mapping_by_order(
         &self,
         cursor: Option<u128>,
         limit: u64,
@@ -129,7 +132,7 @@ impl TransactionDBStore {
         let mut iter = self.tx_seq_mapping.iter()?;
         iter.seek(bcs::to_bytes(&start)?).map_err(|e| {
             anyhow::anyhow!(
-                "Rooch TransactionStore get_tx_seq_mapping_by_tx_order seek: {:?}",
+                "Rooch TransactionStore get_tx_seq_mapping_by_order seek: {:?}",
                 e
             )
         })?;

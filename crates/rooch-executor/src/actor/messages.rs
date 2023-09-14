@@ -125,20 +125,20 @@ impl Message for GetEventsMessage {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct GetTxSeqMappingByTxOrderMessage {
+pub struct GetTxSeqMappingByOrderMessage {
     pub cursor: Option<u128>,
     pub limit: u64,
 }
 
-impl Message for GetTxSeqMappingByTxOrderMessage {
+impl Message for GetTxSeqMappingByOrderMessage {
     type Result = Result<Vec<TransactionSequenceMapping>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct GetTransactionInfosByTxHashMessage {
+pub struct GetTransactionInfosByHashMessage {
     pub tx_hashes: Vec<H256>,
 }
 
-impl Message for GetTransactionInfosByTxHashMessage {
+impl Message for GetTransactionInfosByHashMessage {
     type Result = Result<Vec<Option<TransactionExecutionInfo>>>;
 }

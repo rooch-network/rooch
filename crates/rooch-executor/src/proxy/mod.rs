@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{
-    GetTransactionInfosByTxHashMessage, GetTxSeqMappingByTxOrderMessage,
-    ListAnnotatedStatesMessage, ListStatesMessage,
+    GetTransactionInfosByHashMessage, GetTxSeqMappingByOrderMessage, ListAnnotatedStatesMessage,
+    ListStatesMessage,
 };
 use crate::actor::{
     executor::ExecutorActor,
@@ -135,22 +135,22 @@ impl ExecutorProxy {
         self.actor.send(GetEventsMessage { filter }).await?
     }
 
-    pub async fn get_tx_seq_mapping_by_tx_order(
+    pub async fn get_tx_seq_mapping_by_order(
         &self,
         cursor: Option<u128>,
         limit: u64,
     ) -> Result<Vec<TransactionSequenceMapping>> {
         self.actor
-            .send(GetTxSeqMappingByTxOrderMessage { cursor, limit })
+            .send(GetTxSeqMappingByOrderMessage { cursor, limit })
             .await?
     }
 
-    pub async fn get_transaction_infos_by_tx_hash(
+    pub async fn get_transaction_infos_by_hash(
         &self,
         tx_hashes: Vec<H256>,
     ) -> Result<Vec<Option<TransactionExecutionInfo>>> {
         self.actor
-            .send(GetTransactionInfosByTxHashMessage { tx_hashes })
+            .send(GetTransactionInfosByHashMessage { tx_hashes })
             .await?
     }
 }

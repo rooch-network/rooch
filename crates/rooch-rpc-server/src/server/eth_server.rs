@@ -285,7 +285,7 @@ impl EthAPIServer for EthServer {
     async fn transaction_receipt(&self, hash: H256) -> RpcResult<Option<TransactionReceipt>> {
         let result = self
             .rpc_service
-            .get_transaction_infos_by_tx_hash(vec![hash])
+            .get_transaction_infos_by_hash(vec![hash])
             .await?
             .into_iter()
             .last()

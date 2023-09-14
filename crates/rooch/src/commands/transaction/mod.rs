@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::CommandAction;
+use crate::commands::transaction::commands::get_tx_by_hash::GetByHashCommand;
 use async_trait::async_trait;
-use commands::get_tx_by_hash::GetByHashCommand;
 use rooch_types::error::RoochResult;
+
 pub mod commands;
 
 /// Tool for interacting with transaction

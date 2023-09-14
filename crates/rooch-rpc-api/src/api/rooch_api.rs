@@ -86,21 +86,21 @@ pub trait RoochAPI {
     #[method(name = "getTransactionByHash")]
     async fn get_transaction_by_hash(&self, hash: H256View) -> RpcResult<Option<TransactionView>>;
 
-    #[method(name = "getTransactions")]
-    async fn get_transactions(
+    #[method(name = "getTransactionsByHash")]
+    async fn get_transactions_by_hash(
         &self,
         tx_hashes: Vec<H256View>,
     ) -> RpcResult<Vec<Option<TransactionView>>>;
 
-    #[method(name = "getTransactionInfosByTxOrder")]
-    async fn get_transaction_infos_by_tx_order(
+    #[method(name = "getTransactiosByOrder")]
+    async fn get_transactions_by_order(
         &self,
         cursor: Option<u128>,
         limit: Option<u64>,
     ) -> RpcResult<TransactionInfoPageView>;
 
-    #[method(name = "getTransactionInfosByTxHash")]
-    async fn get_transaction_infos_by_tx_hash(
+    #[method(name = "getTransactionInfosByHash")]
+    async fn get_transaction_infos_by_hash(
         &self,
         tx_hashes: Vec<H256View>,
     ) -> RpcResult<Vec<Option<TransactionExecutionInfoView>>>;

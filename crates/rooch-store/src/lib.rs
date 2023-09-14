@@ -96,11 +96,14 @@ impl TransactionStore for RoochStore {
         self.transaction_store.save_transaction(transaction)
     }
 
-    fn get_tx_by_hash(&self, hash: H256) -> Result<Option<TypedTransaction>> {
-        self.transaction_store.get_tx_by_hash(hash)
+    fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<TypedTransaction>> {
+        self.transaction_store.get_transaction_by_hash(hash)
     }
 
-    fn get_transactions(&self, tx_hashes: Vec<H256>) -> Result<Vec<Option<TypedTransaction>>> {
+    fn get_transactions_by_hash(
+        &self,
+        tx_hashes: Vec<H256>,
+    ) -> Result<Vec<Option<TypedTransaction>>> {
         self.transaction_store.get_transactions(tx_hashes)
     }
 
@@ -108,13 +111,13 @@ impl TransactionStore for RoochStore {
         self.transaction_store.save_tx_seq_info(tx_seq_info)
     }
 
-    fn get_tx_seq_infos_by_tx_order(
+    fn get_tx_seq_infos_by_order(
         &self,
         cursor: Option<u128>,
         limit: u64,
     ) -> Result<Vec<TransactionSequenceInfo>> {
         self.transaction_store
-            .get_tx_seq_infos_by_tx_order(cursor, limit)
+            .get_tx_seq_infos_by_order(cursor, limit)
     }
 
     fn save_tx_seq_info_mapping(&self, tx_order: u128, tx_hash: H256) -> Result<()> {
@@ -122,13 +125,13 @@ impl TransactionStore for RoochStore {
             .save_tx_seq_info_mapping(tx_order, tx_hash)
     }
 
-    fn get_tx_seq_mapping_by_tx_order(
+    fn get_tx_seq_mapping_by_order(
         &self,
         cursor: Option<u128>,
         limit: u64,
     ) -> Result<Vec<TransactionSequenceMapping>> {
         self.transaction_store
-            .get_tx_seq_mapping_by_tx_order(cursor, limit)
+            .get_tx_seq_mapping_by_order(cursor, limit)
     }
 }
 

@@ -224,7 +224,7 @@ impl RoochAPIServer for RoochServer {
         Ok(resp)
     }
 
-    async fn get_transactions(
+    async fn get_transactions_by_hash(
         &self,
         tx_hashes: Vec<H256View>,
     ) -> RpcResult<Vec<Option<TransactionView>>> {
@@ -234,7 +234,7 @@ impl RoochAPIServer for RoochServer {
             .collect::<Vec<_>>();
         let resp = self
             .rpc_service
-            .get_transactions(hashes)
+            .get_transactions_by_hash(hashes)
             .await?
             .iter()
             .map(|tx| tx.clone().map(TransactionView::from))
@@ -243,17 +243,16 @@ impl RoochAPIServer for RoochServer {
         Ok(resp)
     }
 
-    async fn get_transaction_infos_by_tx_order(
+    async fn get_transactions_by_order(
         &self,
         cursor: Option<u128>,
         limit: Option<u64>,
     ) -> RpcResult<TransactionInfoPageView> {
-        // NOTE: fetch one more object to check if there is next page
         let limit_of = limit.unwrap_or(DEFAULT_RESULT_LIMIT);
 
         let mut tx_seq_mapping = self
             .rpc_service
-            .get_tx_seq_mapping_by_tx_order(cursor, limit_of + 1)
+            .get_tx_seq_mapping_by_order(cursor, limit_of + 1)
             .await?;
 
         let has_next_page = (tx_seq_mapping.len() as u64) > limit_of;
@@ -266,7 +265,7 @@ impl RoochAPIServer for RoochServer {
 
         let result = self
             .rpc_service
-            .get_transaction_infos_by_tx_hash(tx_hashes)
+            .get_transaction_infos_by_hash(tx_hashes)
             .await?
             .into_iter()
             .map(|tx_info| tx_info.map(TransactionExecutionInfoView::from))
@@ -279,7 +278,7 @@ impl RoochAPIServer for RoochServer {
         })
     }
 
-    async fn get_transaction_infos_by_tx_hash(
+    async fn get_transaction_infos_by_hash(
         &self,
         tx_hashes: Vec<H256View>,
     ) -> RpcResult<Vec<Option<TransactionExecutionInfoView>>> {
@@ -290,7 +289,7 @@ impl RoochAPIServer for RoochServer {
 
         let result = self
             .rpc_service
-            .get_transaction_infos_by_tx_hash(hashes)
+            .get_transaction_infos_by_hash(hashes)
             .await?
             .into_iter()
             .map(|tx_info| tx_info.map(TransactionExecutionInfoView::from))

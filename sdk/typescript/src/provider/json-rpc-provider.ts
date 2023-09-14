@@ -115,10 +115,10 @@ export class JsonRpcProvider {
     return await this.client.rooch_getTransactions(tx_hashes)
   }
 
-  async getTransactionInfosByTxHash(
+  async getTransactionInfosByHash(
     txHashes: string[],
   ): Promise<TransactionExecutionInfoView | null[]> {
-    return await this.client.rooch_getTransactionInfosByTxHash(txHashes)
+    return await this.client.rooch_getTransactionInfosByHash(txHashes)
   }
 
   // Get the annotated states by access_path The annotated states include the decoded move value of the state
@@ -164,17 +164,17 @@ export class JsonRpcProvider {
   //   return await this.rpcClient.rooch_getTransactions(start, limit)
   // }
 
-  // async getTransactionInfosByTxHash(
+  // async getTransactionInfosByHash(
   //   tx_hashes: string[],
   // ): Promise<TransactionExecutionInfoView | null[]> {
-  //   return await this.rpcClient.rooch_getTransactionInfosByTxHash(tx_hashes)
+  //   return await this.rpcClient.rooch_getTransactionInfosByHash(tx_hashes)
   // }
 
-  // async getTransactionInfosByTxOrder(
+  // async getTransactionInfosByOrder(
   //   cursor: number,
   //   limit: number,
   // ): Promise<PageView_for_Nullable_TransactionExecutionInfoView_and_uint128> {
-  //   return await this.rpcClient.rooch_getTransactionInfosByTxOrder(
+  //   return await this.rpcClient.rooch_getTransactionInfosByOrder(
   //     cursor,
   //     limit,
   //   )

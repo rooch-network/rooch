@@ -148,33 +148,33 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn get_transactions(
+    pub async fn get_transactions_by_hash(
         &self,
         tx_hashes: Vec<H256>,
     ) -> Result<Vec<Option<TypedTransaction>>> {
-        let resp = self.sequencer.get_transactions(tx_hashes).await?;
+        let resp = self.sequencer.get_transactions_by_hash(tx_hashes).await?;
         Ok(resp)
     }
 
-    pub async fn get_tx_seq_mapping_by_tx_order(
+    pub async fn get_tx_seq_mapping_by_order(
         &self,
         cursor: Option<u128>,
         limit: u64,
     ) -> Result<Vec<TransactionSequenceMapping>> {
         let resp = self
             .executor
-            .get_tx_seq_mapping_by_tx_order(cursor, limit)
+            .get_tx_seq_mapping_by_order(cursor, limit)
             .await?;
         Ok(resp)
     }
 
-    pub async fn get_transaction_infos_by_tx_hash(
+    pub async fn get_transaction_infos_by_hash(
         &self,
         tx_hashes: Vec<H256>,
     ) -> Result<Vec<Option<TransactionExecutionInfo>>> {
         let resp = self
             .executor
-            .get_transaction_infos_by_tx_hash(tx_hashes)
+            .get_transaction_infos_by_hash(tx_hashes)
             .await?;
         Ok(resp)
     }

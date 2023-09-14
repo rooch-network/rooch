@@ -18,22 +18,22 @@ impl Message for TransactionSequenceMessage {
     type Result = Result<TransactionSequenceInfo>;
 }
 
-/// Transaction By Hash Message
+/// Get Transaction By Hash Message
 #[derive(Debug)]
-pub struct TransactionByHashMessage {
+pub struct GetTransactionByHashMessage {
     pub hash: H256,
 }
 
-impl Message for TransactionByHashMessage {
+impl Message for GetTransactionByHashMessage {
     type Result = Result<Option<TypedTransaction>>;
 }
 
-/// Transaction By Index Message
+/// Get Transactions By Hash Message
 #[derive(Debug)]
-pub struct GetTransactionsMessage {
+pub struct GetTransactionsByHashMessage {
     pub tx_hashes: Vec<H256>,
 }
 
-impl Message for GetTransactionsMessage {
+impl Message for GetTransactionsByHashMessage {
     type Result = Result<Vec<Option<TypedTransaction>>>;
 }

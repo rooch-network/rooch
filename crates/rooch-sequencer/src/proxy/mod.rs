@@ -1,16 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    actor::sequencer::SequencerActor,
-    messages::{GetTransactionsMessage, TransactionByHashMessage, TransactionSequenceMessage},
-};
+use crate::messages::{GetTransactionByHashMessage, GetTransactionsByHashMessage};
+use crate::{actor::sequencer::SequencerActor, messages::TransactionSequenceMessage};
 use anyhow::Result;
 use coerce::actor::ActorRef;
-use rooch_types::{
-    transaction::{TransactionSequenceInfo, TypedTransaction},
-    H256,
-};
+use rooch_types::transaction::TypedTransaction;
+use rooch_types::{transaction::TransactionSequenceInfo, H256};
 
 #[derive(Clone)]
 pub struct SequencerProxy {
@@ -30,15 +26,17 @@ impl SequencerProxy {
     }
 
     pub async fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<TypedTransaction>> {
-        self.actor.send(TransactionByHashMessage { hash }).await?
+        self.actor
+            .send(GetTransactionByHashMessage { hash })
+            .await?
     }
 
-    pub async fn get_transactions(
+    pub async fn get_transactions_by_hash(
         &self,
         tx_hashes: Vec<H256>,
     ) -> Result<Vec<Option<TypedTransaction>>> {
         self.actor
-            .send(GetTransactionsMessage { tx_hashes })
+            .send(GetTransactionsByHashMessage { tx_hashes })
             .await?
     }
 }
