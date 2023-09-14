@@ -31,8 +31,25 @@ rooch_framework = "0x3"
 
 ## 编写合约
 
+我们简单编写一个 Move 合约，演示将一个“Hello Rooch！”字符串存储到 Rooch 的帐户存储中。
+
 ```move
-si
+module hello_rooch::hello_rooch {
+    use std::string;
+    use moveos_std::account_storage;
+    use moveos_std::storage_context::StorageContext;
+
+    struct HelloMessage has key {
+        text: string::String
+    }
+
+    entry fun say_hello(ctx: &mut StorageContext, owner: &signer) {
+        let hello = HelloMessage { text: string::utf8(b"Hello Rooch!") };
+        account_storage::global_move_to(ctx, owner, hello);
+    }
+}
 ```
 
-<++>
+定义一个 `HelloMessage` 类型，这是包含一个 `text` 字段的结构体。
+
+接着定义一个入口函数 `say_hello`，构建一个存储着 `Hello Rooch!` 的资源实例，并将其移动到帐户存储中。

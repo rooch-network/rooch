@@ -1,1 +1,55 @@
-# Create Rooch Move Contract
+# Create Rooch Move contract
+
+This section introduces how to use Rooch CLI to create a Move contract.
+
+## Create project
+
+```shell
+rooch move new hello_rooch
+```
+
+After executing this Rooch CLI command, a Rooch contract project will be created and automatically initialized. The root directory of the project contains a `sources` directory for storing the Move contract code, and a manifest file named `Move.toml` for declaring the current project. The name, version, address alias (named address) and project dependencies.
+
+Contents of the `Move.toml` file of the `hello-rooch` project:
+
+```toml
+[package]
+name = "hello_rooch"
+version = "0.0.1"
+
+[dependencies]
+MoveStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "moveos/moveos-stdlib/move-stdlib", rev = "main" }
+MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "moveos/moveos-stdlib/moveos-stdlib", rev = "main" }
+RoochFramework = { git = "https://github.com/rooch-network/rooch.git", subdir = "crates/rooch-framework", rev = "main" }
+
+[addresses]
+hello_rooch = "0xf5ecfc49f55e283119104978b60995b0ec84a5bd760a0305b24b9a4175deff7b"
+std = "0x1"
+moveos_std = "0x2"
+rooch_framework = "0x3"
+```
+
+## Write a contract
+
+We simply write a Move contract to demonstrate storing a "Hello Rooch!" string into Rooch's account storage.
+
+```move
+module hello_rooch::hello_rooch {
+    use std::string;
+    use moveos_std::account_storage;
+    use moveos_std::storage_context::StorageContext;
+
+    struct HelloMessage has key {
+        text: string::String
+    }
+
+    entry fun say_hello(ctx: &mut StorageContext, owner: &signer) {
+        let hello = HelloMessage { text: string::utf8(b"Hello Rooch!") };
+        account_storage::global_move_to(ctx, owner, hello);
+    }
+}
+```
+
+Define a `HelloMessage` type, which is a structure containing a `text` field.
+
+Then define an entry function `say_hello`, build a resource instance that stores `Hello Rooch!`, and move it to the account storage.
