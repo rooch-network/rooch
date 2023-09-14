@@ -1,0 +1,36 @@
+# 启动 Rooch 开发环境
+
+## 介绍
+
+Rooch 作为一个 Layer2，旨在提供多链友好的开发服务，可以将 Rooch 看作是专门为区块链提供容器服务的基础设施平台。
+
+这一小节将给大家介绍如何使用 Rooch CLI 来启动本地开发环境。
+
+当前版本，我们分别提供了 `rooch server start` 和 `rooch server clean` 命令来启动 Rooch 本地服务和清理服务器存储。
+
+因为 Rooch 正处于快速开发迭代的过程，在部署合约时，可能会遇到兼容性问题，此时可以通过 `clean` 命令来清理旧的数据。
+
+## 启动服务
+
+当我们编写完 Rooch Move 合约项目，我们需要启动 Rooch 开发环境来模拟链的行为：
+
+```shell
+$ rooch server start
+
+StoreConfig init store dir "/tmp/.tmpHkNH5Q/dev/roochdb/rooch_store" "/tmp/.tmpHkNH5Q/dev/roochdb/moveos_store"
+2023-09-14T08:21:33.234354Z  INFO moveos_common::utils: set max open fds 45056
+2023-09-14T08:21:34.013627Z  INFO rooch_rpc_server: acl=Const("*")
+2023-09-14T08:21:34.013899Z  INFO rooch_rpc_server: JSON-RPC HTTP Server start listening 0.0.0.0:50051
+2023-09-14T08:21:34.013910Z  INFO rooch_rpc_server: Available JSON-RPC methods : ["eth_blockNumber", "eth_sendTransaction", "eth_sendRawTransaction", "net_version", "rooch_listAnnotatedStates", "rooch_sendRawTransaction", "rooch_getAnnotatedStates", "rooch_executeRawTransaction", "eth_estimateGas", "rooch_executeViewFunction", "rooch_getBalances", "rooch_getEvents", "rooch_getStates", "eth_getBalance", "eth_gasPrice", "eth_getTransactionByHash", "eth_getTransactionCount", "rooch_getTransactionByIndex", "rooch_getEventsByEventHandle", "eth_getTransactionReceipt", "rooch_getTransactionByHash", "eth_getBlockByNumber", "eth_feeHistory", "eth_getBlockByHash", "rooch_listStates", "rooch_getTransactionInfosByTxOrder", "eth_chainId", "rooch_getTransactionInfosByTxHash", "wallet_sign", "wallet_accounts"]
+```
+
+## 解决数据兼容问题
+
+如果有遇到服务数据冲突的问题，首先执行清楚命令，再继续启动服务：
+
+```shell
+$ rooch server clean
+
+StoreConfig init store dir "/tmp/.tmpJmbojW/dev/roochdb/rooch_store" "/tmp/.tmpJmbojW/dev/roochdb/moveos_store"
+Rooch server storage successfully cleaned
+```
