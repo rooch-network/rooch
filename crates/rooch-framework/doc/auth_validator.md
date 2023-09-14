@@ -21,7 +21,7 @@ fun post_execute(ctx: &mut StorageContext)
 -  [Function `validator_module_name`](#0x3_auth_validator_validator_module_name)
 -  [Function `new_tx_validate_result`](#0x3_auth_validator_new_tx_validate_result)
 -  [Function `get_validate_result_from_tx_ctx`](#0x3_auth_validator_get_validate_result_from_tx_ctx)
--  [Function `get_validator_scheme_from_tx_ctx`](#0x3_auth_validator_get_validator_scheme_from_tx_ctx)
+-  [Function `get_validator_multichain_id_from_tx_ctx`](#0x3_auth_validator_get_validator_multichain_id_from_tx_ctx)
 -  [Function `get_session_key_from_tx_ctx_option`](#0x3_auth_validator_get_session_key_from_tx_ctx_option)
 -  [Function `is_validate_via_session_key`](#0x3_auth_validator_is_validate_via_session_key)
 -  [Function `get_session_key_from_tx_ctx`](#0x3_auth_validator_get_session_key_from_tx_ctx)
@@ -94,10 +94,10 @@ this result will be stored in the TxContext
 
 <dl>
 <dt>
-<code>scheme: u64</code>
+<code>multichain_id: u64</code>
 </dt>
 <dd>
- The auth validator's scheme that validate the transaction
+ The auth validator's multichain id that validate the transaction
 </dd>
 <dt>
 <code><a href="auth_validator.md#0x3_auth_validator">auth_validator</a>: <a href="_Option">option::Option</a>&lt;<a href="auth_validator.md#0x3_auth_validator_AuthValidator">auth_validator::AuthValidator</a>&gt;</code>
@@ -309,7 +309,7 @@ InvalidAuthenticator, include invalid signature
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_new_tx_validate_result">new_tx_validate_result</a>(scheme: u64, <a href="auth_validator.md#0x3_auth_validator">auth_validator</a>: <a href="_Option">option::Option</a>&lt;<a href="auth_validator.md#0x3_auth_validator_AuthValidator">auth_validator::AuthValidator</a>&gt;, <a href="session_key.md#0x3_session_key">session_key</a>: <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">auth_validator::TxValidateResult</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_new_tx_validate_result">new_tx_validate_result</a>(multichain_id: u64, <a href="auth_validator.md#0x3_auth_validator">auth_validator</a>: <a href="_Option">option::Option</a>&lt;<a href="auth_validator.md#0x3_auth_validator_AuthValidator">auth_validator::AuthValidator</a>&gt;, <a href="session_key.md#0x3_session_key">session_key</a>: <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">auth_validator::TxValidateResult</a>
 </code></pre>
 
 
@@ -319,12 +319,12 @@ InvalidAuthenticator, include invalid signature
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_new_tx_validate_result">new_tx_validate_result</a>(
-    scheme: u64,
+    multichain_id: u64,
     <a href="auth_validator.md#0x3_auth_validator">auth_validator</a>: Option&lt;<a href="auth_validator.md#0x3_auth_validator_AuthValidator">AuthValidator</a>&gt;,
     <a href="session_key.md#0x3_session_key">session_key</a>: Option&lt;<a href="">vector</a>&lt;u8&gt;&gt;
 ): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a> {
     <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a> {
-        scheme: scheme,
+        multichain_id: multichain_id,
         <a href="auth_validator.md#0x3_auth_validator">auth_validator</a>: <a href="auth_validator.md#0x3_auth_validator">auth_validator</a>,
         <a href="session_key.md#0x3_session_key">session_key</a>: <a href="session_key.md#0x3_session_key">session_key</a>,
     }
@@ -362,14 +362,14 @@ Get the TxValidateResult from the TxContext, Only can be called after the transa
 
 </details>
 
-<a name="0x3_auth_validator_get_validator_scheme_from_tx_ctx"></a>
+<a name="0x3_auth_validator_get_validator_multichain_id_from_tx_ctx"></a>
 
-## Function `get_validator_scheme_from_tx_ctx`
+## Function `get_validator_multichain_id_from_tx_ctx`
 
-Get the auth validator's scheme from the TxValidateResult in the TxContext
+Get the auth validator's multichain id from the TxValidateResult in the TxContext
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_validator_scheme_from_tx_ctx">get_validator_scheme_from_tx_ctx</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_validator_multichain_id_from_tx_ctx">get_validator_multichain_id_from_tx_ctx</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): u64
 </code></pre>
 
 
@@ -378,9 +378,9 @@ Get the auth validator's scheme from the TxValidateResult in the TxContext
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_validator_scheme_from_tx_ctx">get_validator_scheme_from_tx_ctx</a>(ctx: &StorageContext): u64 {
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_validator_multichain_id_from_tx_ctx">get_validator_multichain_id_from_tx_ctx</a>(ctx: &StorageContext): u64 {
     <b>let</b> validate_result = <a href="auth_validator.md#0x3_auth_validator_get_validate_result_from_tx_ctx">get_validate_result_from_tx_ctx</a>(ctx);
-    validate_result.scheme
+    validate_result.multichain_id
 }
 </code></pre>
 

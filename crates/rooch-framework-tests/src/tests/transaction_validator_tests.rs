@@ -12,10 +12,11 @@ use moveos_types::move_types::FunctionId;
 use moveos_types::{module_binding::ModuleBinding, transaction::MoveAction};
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
 use rooch_types::address::{EthereumAddress, MultiChainAddress, RoochAddress};
-use rooch_types::chain_id::{CustomChainID, RoochChainID};
+use rooch_types::chain_id::{BuiltinChainID, CustomChainID, RoochChainID, RoochMultiChainID};
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::framework::session_key::SessionKeyModule;
 use rooch_types::framework::timestamp::TimestampModule;
+use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::ethereum::EthereumTransactionData;
 use rooch_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, framework::empty::Empty};
 use rooch_types::{
@@ -38,7 +39,11 @@ fn test_validate_rooch() {
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore
-        .sign_transaction(&sender, tx_data, RoochChainID::DEV)
+        .sign_transaction(
+            &sender,
+            tx_data,
+            RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev)),
+        )
         .unwrap();
     let auth_info = tx.authenticator_info().unwrap();
     let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
@@ -68,11 +73,7 @@ fn test_validate_ethereum() {
         Bytes::try_from(bcs::to_bytes(&action).unwrap()).expect("Convert action to bytes failed.");
     let tx_data = EthereumTransactionData::new_for_test(sender, sequence_number, action_bytes);
     keystore
-        .sign_transaction(
-            &sender,
-            tx_data.clone(),
-            RoochChainID::from(CustomChainID::ethereum()),
-        )
+        .sign_transaction(&sender, tx_data.clone(), RoochMultiChainID::ETHEREUM)
         .unwrap();
     let auth_info = tx_data.authenticator_info().unwrap();
     let multichain_address = MultiChainAddress::from(sender);
@@ -114,7 +115,7 @@ fn test_session_key_rooch() {
     );
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore
-        .sign_transaction(&sender, tx_data, RoochChainID::DEV)
+        .sign_transaction(&sender, tx_data, RoochMultiCh)
         .unwrap();
     binding_test.execute(tx).unwrap();
 

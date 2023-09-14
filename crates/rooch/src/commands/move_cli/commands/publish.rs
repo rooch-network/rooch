@@ -10,7 +10,7 @@ use move_bytecode_utils::Modules;
 use move_cli::Move;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
-use rooch_types::chain_id::RoochChainID;
+use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::rooch::RoochTransaction;
 
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
@@ -45,7 +45,7 @@ pub struct Publish {
 
     /// Command line input of multichain ids
     #[clap(short = 'm', long = "multichain-id", default_value = "20230103")]
-    pub multichain_id: RoochChainID,
+    pub multichain_id: RoochMultiChainID,
 
     /// Whether publish modules by `MoveAction::ModuleBundle`?
     /// If not set, publish moduels through Move entry function

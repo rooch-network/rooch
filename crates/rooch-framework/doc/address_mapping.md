@@ -95,6 +95,15 @@
 ## Constants
 
 
+<a name="0x3_address_mapping_CHAIN_ID_ROOCH"></a>
+
+
+
+<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_CHAIN_ID_ROOCH">CHAIN_ID_ROOCH</a>: u64 = 20230103;
+</code></pre>
+
+
+
 <a name="0x3_address_mapping_MULTICHAIN_ID_BITCOIN"></a>
 
 
@@ -104,11 +113,11 @@
 
 
 
-<a name="0x3_address_mapping_MULTICHAIN_ID_ETHER"></a>
+<a name="0x3_address_mapping_MULTICHAIN_ID_ETHEREUM"></a>
 
 
 
-<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_MULTICHAIN_ID_ETHER">MULTICHAIN_ID_ETHER</a>: u64 = 60;
+<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_MULTICHAIN_ID_ETHEREUM">MULTICHAIN_ID_ETHEREUM</a>: u64 = 60;
 </code></pre>
 
 
@@ -118,15 +127,6 @@
 
 
 <pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_MULTICHAIN_ID_NOSTR">MULTICHAIN_ID_NOSTR</a>: u64 = 1237;
-</code></pre>
-
-
-
-<a name="0x3_address_mapping_MULTICHAIN_ID_ROOCH"></a>
-
-
-
-<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_MULTICHAIN_ID_ROOCH">MULTICHAIN_ID_ROOCH</a>: u64 = 20230103;
 </code></pre>
 
 
@@ -147,7 +147,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_is_rooch_address">is_rooch_address</a>(maddress: &<a href="address_mapping.md#0x3_address_mapping_MultiChainAddress">MultiChainAddress</a>) : bool{
-    maddress.multichain_id == <a href="address_mapping.md#0x3_address_mapping_MULTICHAIN_ID_ROOCH">MULTICHAIN_ID_ROOCH</a>
+    maddress.multichain_id == <a href="address_mapping.md#0x3_address_mapping_CHAIN_ID_ROOCH">CHAIN_ID_ROOCH</a>
 }
 </code></pre>
 

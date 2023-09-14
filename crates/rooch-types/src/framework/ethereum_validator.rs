@@ -1,10 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    addresses::ROOCH_FRAMEWORK_ADDRESS,
-    chain_id::{CustomChainID, RoochChainID},
-};
+use crate::{addresses::ROOCH_FRAMEWORK_ADDRESS, multichain_id::RoochMultiChainID};
 use anyhow::Result;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
@@ -19,8 +16,8 @@ use moveos_types::{
 pub struct EthereumValidator {}
 
 impl EthereumValidator {
-    pub fn multichain_id() -> RoochChainID {
-        RoochChainID::from(CustomChainID::ethereum())
+    pub fn multichain_id() -> RoochMultiChainID {
+        RoochMultiChainID::ETHEREUM
     }
 }
 

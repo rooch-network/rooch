@@ -6,7 +6,12 @@ use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
-use rooch_types::{account::AccountModule, chain_id::RoochChainID, error::RoochResult};
+use rooch_types::{
+    account::AccountModule,
+    chain_id::{BuiltinChainID, RoochChainID},
+    error::RoochResult,
+    multichain_id::RoochMultiChainID,
+};
 
 /// Create a new account on-chain
 ///
@@ -23,16 +28,17 @@ impl CreateCommand {
     pub async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
         let mut context = self.context_options.build().await?;
 
-        let (new_address, phrase, scheme) =
-            context
-                .config
-                .keystore
-                .generate_and_add_new_key(RoochChainID::DEV, None, None)?;
+        let (new_address, phrase, multichain_id) =
+            context.config.keystore.generate_and_add_new_key(
+                RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev)),
+                None,
+                None,
+            )?;
 
         println!("{}", AccountAddress::from(new_address).to_hex_literal());
         println!(
-            "Generated new keypair for address with scheme {:?} [{new_address}]",
-            scheme.to_string()
+            "Generated new keypair for address with multichain id {:?} [{new_address}]",
+            multichain_id.multichain_id().id().to_string()
         );
         println!("Secret Recovery Phrase : [{phrase}]");
 
@@ -43,7 +49,7 @@ impl CreateCommand {
         let action = AccountModule::create_account_action(address);
 
         let result = context
-            .sign_and_execute(new_address, action, scheme)
+            .sign_and_execute(new_address, action, multichain_id)
             .await?;
         context.assert_execute_success(result)
     }

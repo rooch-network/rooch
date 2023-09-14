@@ -33,9 +33,10 @@ use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
 use rooch_types::address::RoochAddress;
-use rooch_types::chain_id::RoochChainID;
+use rooch_types::chain_id::{BuiltinChainID, RoochChainID};
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::GenesisError;
+use rooch_types::multichain_id::RoochMultiChainID;
 use serde_json::json;
 use std::env;
 use std::fmt::Debug;
@@ -176,16 +177,22 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
 
     // Init sequencer
     //TODO load from config
-    let (_, kp, _, _) =
-        generate_new_key_pair::<RoochAddress, RoochKeyPair>(CoinID::Rooch, None, None)?;
-    let sequencer = SequencerActor::new(kp, rooch_store, is_genesis)?
+    let (_, kp, _, _) = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
+        RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev)),
+        None,
+        None,
+    )?;
+    let sequencer = SequencerActor::new(kp, rooch_store, is_genesis)
         .into_actor(Some("Sequencer"), &actor_system)
         .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
 
     // Init proposer
-    let (_, kp, _, _) =
-        generate_new_key_pair::<RoochAddress, RoochKeyPair>(RoochChainID::DEV, None, None)?;
+    let (_, kp, _, _) = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
+        RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev)),
+        None,
+        None,
+    )?;
     let proposer = ProposerActor::new(kp)
         .into_actor(Some("Proposer"), &actor_system)
         .await?;
@@ -210,8 +217,11 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
 
     if let Some(eth_rpc_url) = &opt.eth_rpc_url {
         //TODO load from config
-        let (_, kp, _, _) =
-            generate_new_key_pair::<RoochAddress, RoochKeyPair>(CoinID::Rooch, None, None)?;
+        let (_, kp, _, _) = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
+            RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev)),
+            None,
+            None,
+        )?;
         let relayer = RelayerActor::new(kp, eth_rpc_url, rpc_service.clone())
             .await?
             .into_actor(Some("Relayer"), &actor_system)

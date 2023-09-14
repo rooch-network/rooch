@@ -9,8 +9,8 @@ use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, TypeTagView};
 use rooch_types::{
     address::RoochAddress,
-    chain_id::RoochChainID,
     error::{RoochError, RoochResult},
+    multichain_id::RoochMultiChainID,
     transaction::rooch::RoochTransaction,
 };
 
@@ -56,7 +56,7 @@ pub struct RunFunction {
 
     /// Command line input of multichain ids
     #[clap(short = 'm', long = "multichain-id", default_value = "20230103")]
-    pub multichain_id: RoochChainID,
+    pub multichain_id: RoochMultiChainID,
 }
 
 #[async_trait]

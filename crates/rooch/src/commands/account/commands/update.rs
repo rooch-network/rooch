@@ -7,9 +7,9 @@ use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_types::{
     address::RoochAddress,
-    chain_id::RoochChainID,
     error::{RoochError, RoochResult},
     framework::native_validator::NativeValidatorModule,
+    multichain_id::RoochMultiChainID,
 };
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
@@ -27,7 +27,7 @@ pub struct UpdateCommand {
     pub context_options: WalletContextOptions,
     /// Command line input of multichain ids
     #[clap(short = 'm', long = "multichain-id")]
-    pub multichain_id: RoochChainID,
+    pub multichain_id: RoochMultiChainID,
 }
 
 #[async_trait]
@@ -36,53 +36,48 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
         println!("{:?}", self.mnemonic_phrase);
         let mut context = self.context_options.build().await?;
 
-        match self.multichain_id {
-            RoochChainID::Builtin(_) => {
-                let existing_address =
-                    RoochAddress::from_str(self.address.as_str()).map_err(|e| {
-                        RoochError::CommandArgumentError(format!(
-                            "Invalid Rooch address String: {}",
-                            e
-                        ))
-                    })?;
+        if self.multichain_id.is_ethereum() {
+            todo!()
+        } else {
+            let existing_address = RoochAddress::from_str(self.address.as_str()).map_err(|e| {
+                RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
+            })?;
 
-                let kp = context
-                    .config
-                    .keystore
-                    .update_address_with_key_pair_from_multichain_id(
-                        &existing_address,
-                        self.mnemonic_phrase,
-                        self.multichain_id.clone(),
-                        None,
-                    )
-                    .map_err(|e| RoochError::UpdateAccountError(e.to_string()))?;
+            let kp = context
+                .config
+                .keystore
+                .update_address_with_key_pair_from_multichain_id(
+                    &existing_address,
+                    self.mnemonic_phrase,
+                    self.multichain_id.clone(),
+                    None,
+                )
+                .map_err(|e| RoochError::UpdateAccountError(e.to_string()))?;
 
-                println!(
-                    "{}",
-                    AccountAddress::from(existing_address).to_hex_literal()
-                );
-                println!(
-                    "Generated a new keypair for an existing address {:?} on coin id {:?}",
-                    existing_address,
-                    self.multichain_id.chain_id().id()
-                );
+            println!(
+                "{}",
+                AccountAddress::from(existing_address).to_hex_literal()
+            );
+            println!(
+                "Generated a new keypair for an existing address {:?} on coin id {:?}",
+                existing_address,
+                self.multichain_id.multichain_id().id().to_string()
+            );
 
-                // Get public key
-                let public_key = kp.public();
+            // Get public key
+            let public_key = kp.public();
 
-                // Get public key reference
-                let public_key = public_key.as_ref().to_vec();
+            // Get public key reference
+            let public_key = public_key.as_ref().to_vec();
 
-                // Create MoveAction from native validator
-                let action = NativeValidatorModule::rotate_authentication_key_action(public_key);
+            // Create MoveAction from native validator
+            let action = NativeValidatorModule::rotate_authentication_key_action(public_key);
 
-                // Execute the Move call as a transaction
-                let result = context
-                    .sign_and_execute(existing_address, action, self.multichain_id)
-                    .await?;
-                context.assert_execute_success(result)
-            }
-            RoochChainID::Custom(_) => todo!(),
+            // Execute the Move call as a transaction
+            let result = context
+                .sign_and_execute(existing_address, action, self.multichain_id)
+                .await?;
+            context.assert_execute_success(result)
         }
     }
 }

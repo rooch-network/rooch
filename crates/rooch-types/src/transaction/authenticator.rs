@@ -7,7 +7,11 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{chain_id::RoochChainID, crypto::Signature};
+use crate::{
+    chain_id::{BuiltinChainID, RoochChainID},
+    crypto::Signature,
+    multichain_id::RoochMultiChainID,
+};
 use anyhow::Result;
 #[cfg(any(test, feature = "fuzzing"))]
 use fastcrypto::ed25519::Ed25519KeyPair;
@@ -24,7 +28,7 @@ use std::{fmt, str::FromStr};
 /// It is a part of `AccountAbstraction`
 
 pub trait BuiltinAuthenticator {
-    fn multichain_id(&self) -> RoochChainID;
+    fn multichain_id(&self) -> RoochMultiChainID;
     fn payload(&self) -> Vec<u8>;
 }
 
@@ -34,8 +38,8 @@ pub struct RoochAuthenticator {
 }
 
 impl BuiltinAuthenticator for RoochAuthenticator {
-    fn multichain_id(&self) -> RoochChainID {
-        RoochChainID::DEV
+    fn multichain_id(&self) -> RoochMultiChainID {
+        RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev))
     }
     fn payload(&self) -> Vec<u8> {
         self.signature.as_ref().to_vec()
@@ -69,7 +73,7 @@ where
     T: BuiltinAuthenticator,
 {
     fn from(value: T) -> Self {
-        let multichain_id = value.multichain_id().chain_id().id();
+        let multichain_id = value.multichain_id().multichain_id().id();
         let payload = value.payload();
         Authenticator {
             multichain_id,
@@ -91,7 +95,7 @@ pub struct Authenticator {
 }
 
 impl Authenticator {
-    /// Unique identifier for the signature scheme
+    /// Unique identifier for the signature of multichain id
     pub fn multichain_id(&self) -> u64 {
         self.multichain_id
     }

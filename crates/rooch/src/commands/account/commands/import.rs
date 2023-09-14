@@ -7,8 +7,9 @@ use std::fmt::Debug;
 use async_trait::async_trait;
 use rooch_key::keystore::AccountKeystore;
 use rooch_types::{
-    chain_id::RoochChainID,
+    chain_id::{BuiltinChainID, RoochChainID},
     error::{RoochError, RoochResult},
+    multichain_id::RoochMultiChainID,
 };
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
@@ -32,12 +33,19 @@ impl CommandAction<()> for ImportCommand {
         let address = context
             .config
             .keystore
-            .import_from_mnemonic(&self.mnemonic_phrase, RoochChainID::DEV, None)
+            .import_from_mnemonic(
+                &self.mnemonic_phrase,
+                RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev)),
+                None,
+            )
             .map_err(|e| RoochError::ImportAccountError(e.to_string()))?;
 
         println!(
             "Key imported for address on multichain id {:?}: [{address}]",
-            RoochChainID::DEV.chain_id().id()
+            RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev))
+                .multichain_id()
+                .id()
+                .to_string()
         );
 
         Ok(())

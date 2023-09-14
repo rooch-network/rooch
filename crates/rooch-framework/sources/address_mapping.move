@@ -10,7 +10,7 @@ module rooch_framework::address_mapping{
 
     friend rooch_framework::transaction_validator;
 
-    //The coin id standard is defined in [slip-0044](https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
+    //The multichain id standard is defined in [slip-0044](https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
     //Please keep consistent with rust Symbol
     const MULTICHAIN_ID_BITCOIN: u64 = 0;
     const MULTICHAIN_ID_ETHER: u64 = 60;

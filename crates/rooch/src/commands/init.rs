@@ -11,10 +11,11 @@ use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_KEYSTORE_FILENAM
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use rooch_rpc_client::client_config::{ClientConfig, Env};
 use rooch_types::address::RoochAddress;
-use rooch_types::chain_id::RoochChainID;
+use rooch_types::chain_id::{BuiltinChainID, RoochChainID};
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::RoochError;
 use rooch_types::error::RoochResult;
+use rooch_types::multichain_id::RoochMultiChainID;
 use std::fs;
 
 /// Tool for init with rooch
@@ -108,11 +109,14 @@ impl CommandAction<String> for Init {
                     Err(error) => return Err(RoochError::GenerateKeyError(error.to_string())),
                 };
 
-                let (new_address, phrase, scheme) =
-                    keystore.generate_and_add_new_key(RoochChainID::DEV, None, None)?;
+                let (new_address, phrase, multichain_id) = keystore.generate_and_add_new_key(
+                    RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev)),
+                    None,
+                    None,
+                )?;
                 println!(
-                    "Generated new keypair for address with scheme {:?} [{new_address}]",
-                    scheme.to_string()
+                    "Generated new keypair for address with multichain id {:?} [{new_address}]",
+                    multichain_id.multichain_id().id().to_string()
                 );
                 println!("Secret Recovery Phrase : [{phrase}]");
                 let alias = env.alias.clone();

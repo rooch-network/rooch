@@ -3,8 +3,6 @@
 
 use crate::framework::genesis::GenesisContext;
 use anyhow::{bail, format_err, Result};
-#[cfg(any(test, feature = "fuzzing"))]
-use proptest_derive::Arbitrary;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -15,10 +13,7 @@ pub const CHAIN_ID_DEV: u64 = 20230103;
 pub const CHAIN_ID_TEST: u64 = 20230102;
 pub const CHAIN_ID_MAIN: u64 = 20230101;
 
-#[derive(
-    Clone, Copy, Debug, Deserialize, Serialize, Hash, Eq, PartialEq, PartialOrd, Ord, JsonSchema,
-)]
-#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Hash, Eq, PartialEq, JsonSchema)]
 pub struct ChainID {
     id: u64,
 }
@@ -73,21 +68,7 @@ impl Into<u64> for ChainID {
     }
 }
 
-#[derive(
-    Debug,
-    Copy,
-    Clone,
-    Default,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    Serialize,
-    Deserialize,
-    JsonSchema,
-)]
-#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
+#[derive(Debug, Copy, Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[repr(u64)]
 pub enum BuiltinChainID {
     /// A ephemeral network just for developer test.
@@ -216,11 +197,8 @@ impl BuiltinChainID {
     }
 }
 
-#[derive(
-    Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Deserialize, Serialize, JsonSchema,
-)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
-#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub struct CustomChainID {
     chain_name: String,
     chain_id: ChainID,
@@ -272,11 +250,8 @@ impl FromStr for CustomChainID {
     }
 }
 
-#[derive(
-    Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, JsonSchema, Serialize, Deserialize,
-)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, JsonSchema, Serialize, Deserialize)]
 #[allow(clippy::upper_case_acronyms)]
-#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub enum RoochChainID {
     Builtin(BuiltinChainID),
     Custom(CustomChainID),
@@ -355,6 +330,13 @@ impl RoochChainID {
             }
         }
         Ok(Self::Custom(CustomChainID::new(chain_name, chain_id)))
+    }
+
+    pub fn chain_name(&self) -> String {
+        match self {
+            Self::Builtin(b) => b.chain_name(),
+            Self::Custom(c) => c.chain_name().to_owned(),
+        }
     }
 
     pub fn chain_id(&self) -> ChainID {
