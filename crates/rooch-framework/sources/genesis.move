@@ -28,7 +28,6 @@ module rooch_framework::genesis {
         let genesis_context_option = storage_context::get<GenesisContext>(ctx);
         assert!(option::is_some(&genesis_context_option), error::invalid_argument(ErrorGenesisInit));
         let genesis_context = option::extract(&mut genesis_context_option);
-        std::debug::print(&genesis_context);
         chain_id::genesis_init(ctx, genesis_account, genesis_context.chain_id);
         auth_validator_registry::genesis_init(ctx, genesis_account);
         builtin_validators::genesis_init(ctx, genesis_account);

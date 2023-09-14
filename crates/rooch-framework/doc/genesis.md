@@ -9,8 +9,7 @@
 -  [Constants](#@Constants_0)
 
 
-<pre><code><b>use</b> <a href="">0x1::debug</a>;
-<b>use</b> <a href="">0x1::error</a>;
+<pre><code><b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
 <b>use</b> <a href="account.md#0x3_account">0x3::account</a>;
