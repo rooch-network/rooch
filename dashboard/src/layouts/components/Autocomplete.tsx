@@ -408,7 +408,7 @@ const AutocompleteComponent = ({ hidden, settings }: Props) => {
     console.log(jp)
 
     // TODO: wait transaction detail page
-    // let result = await jp.getTransactionInfosByTxHash([`${searchValue}`])
+    // let result = await jp.getTransactionInfosByHash([`${searchValue}`])
 
     await new Promise<void>((resolve) => {
       setTimeout(() => {

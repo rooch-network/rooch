@@ -11,11 +11,12 @@ use move_core_types::language_storage::StructTag;
 use moveos_types::h256::H256;
 use rooch_rpc_api::api::{MAX_RESULT_LIMIT, MAX_RESULT_LIMIT_USIZE};
 use rooch_rpc_api::jsonrpc_types::account_view::BalanceInfoView;
+use rooch_rpc_api::jsonrpc_types::transaction_view::{TransactionReturn, TransactionReturnView};
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedEventView, AnnotatedStateView, EventFilterView,
     EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
     ListAnnotatedStatesPageView, ListBalanceInfoPageView, ListStatesPageView, StateView, StrView,
-    StructTagView, TransactionExecutionInfoView, TransactionInfoPageView, TransactionView,
+    StructTagView, TransactionReturnPageView, TransactionView,
 };
 use rooch_rpc_api::{api::rooch_api::RoochAPIServer, api::DEFAULT_RESULT_LIMIT};
 use rooch_rpc_api::{
@@ -229,76 +230,92 @@ impl RoochAPIServer for RoochServer {
         Ok(resp)
     }
 
-    async fn get_transaction_by_index(
+    async fn get_transactions_by_hash(
         &self,
-        start: u64,
-        limit: u64,
-    ) -> RpcResult<Vec<TransactionView>> {
+        tx_hashes: Vec<H256View>,
+    ) -> RpcResult<Vec<Option<TransactionView>>> {
+        let hashes: Vec<H256> = tx_hashes
+            .iter()
+            .map(|m| (*m).clone().into())
+            .collect::<Vec<_>>();
         let resp = self
             .rpc_service
-            .get_transaction_by_index(start, limit)
+            .get_transactions_by_hash(hashes)
             .await?
             .iter()
-            .map(|s| TransactionView::from(s.clone()))
+            .map(|tx| tx.clone().map(TransactionView::from))
             .collect();
 
         Ok(resp)
     }
 
-    async fn get_transaction_infos_by_tx_order(
+    async fn get_transactions_by_order(
         &self,
         cursor: Option<u128>,
         limit: Option<u64>,
-    ) -> RpcResult<TransactionInfoPageView> {
-        // NOTE: fetch one more object to check if there is next page
+    ) -> RpcResult<TransactionReturnPageView> {
         let limit_of = limit.unwrap_or(DEFAULT_RESULT_LIMIT);
 
-        let mut tx_seq_mapping = self
+        let mut tx_sequence_mapping = self
             .rpc_service
-            .get_tx_seq_mapping_by_tx_order(cursor, limit_of + 1)
+            .get_tx_sequence_mapping_by_order(cursor, limit_of + 1)
             .await?;
 
-        let has_next_page = (tx_seq_mapping.len() as u64) > limit_of;
-        tx_seq_mapping.truncate(limit_of as usize);
-        let next_cursor = tx_seq_mapping
+        let has_next_page = (tx_sequence_mapping.len() as u64) > limit_of;
+        tx_sequence_mapping.truncate(limit_of as usize);
+        let next_cursor = tx_sequence_mapping
             .last()
             .map_or(cursor, |m| Some(m.clone().tx_order));
 
-        let tx_hashes = tx_seq_mapping.iter().map(|m| m.tx_hash).collect::<Vec<_>>();
+        let tx_hashes = tx_sequence_mapping
+            .clone()
+            .iter()
+            .map(|m| m.tx_hash)
+            .collect::<Vec<_>>();
+        let tx_orders = tx_sequence_mapping
+            .iter()
+            .map(|m| m.tx_order)
+            .collect::<Vec<_>>();
+        assert_eq!(tx_hashes.len(), tx_orders.len());
 
-        let result = self
+        let transactions = self
             .rpc_service
-            .get_transaction_infos_by_tx_hash(tx_hashes)
-            .await?
-            .into_iter()
-            .map(|tx_info| tx_info.map(TransactionExecutionInfoView::from))
-            .collect();
+            .get_transactions_by_hash(tx_hashes.clone())
+            .await?;
 
-        Ok(TransactionInfoPageView {
-            data: result,
+        let sequence_infos = self
+            .rpc_service
+            .get_transaction_sequence_infos(tx_orders)
+            .await?;
+
+        let execution_infos = self
+            .rpc_service
+            .get_transaction_execution_infos_by_hash(tx_hashes.clone())
+            .await?;
+
+        assert!(
+            transactions.len() == sequence_infos.len()
+                && transactions.len() == execution_infos.len()
+        );
+        let mut transaction_returns: Vec<TransactionReturn> = vec![];
+        for (index, _tx_hash) in tx_hashes.iter().enumerate() {
+            let transaction_result = TransactionReturn {
+                transaction: transactions[index].clone().unwrap(),
+                sequence_info: sequence_infos[index].clone().unwrap(),
+                execution_info: execution_infos[index].clone().unwrap(),
+            };
+            transaction_returns.push(transaction_result)
+        }
+        let data = transaction_returns
+            .into_iter()
+            .map(TransactionReturnView::from)
+            .collect::<Vec<_>>();
+
+        Ok(TransactionReturnPageView {
+            data,
             next_cursor,
             has_next_page,
         })
-    }
-
-    async fn get_transaction_infos_by_tx_hash(
-        &self,
-        tx_hashes: Vec<H256View>,
-    ) -> RpcResult<Vec<Option<TransactionExecutionInfoView>>> {
-        let hashes: Vec<H256> = tx_hashes
-            .iter()
-            .map(|m| (*m).clone().into())
-            .collect::<Vec<_>>();
-
-        let result = self
-            .rpc_service
-            .get_transaction_infos_by_tx_hash(hashes)
-            .await?
-            .into_iter()
-            .map(|tx_info| tx_info.map(TransactionExecutionInfoView::from))
-            .collect();
-
-        Ok(result)
     }
 
     /// get account balances by AccountAddress

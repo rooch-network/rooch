@@ -17,24 +17,24 @@ derive_store!(
 );
 
 pub trait TransactionStore {
-    fn save_tx_exec_info(&self, tx_exec_info: TransactionExecutionInfo) -> Result<()>;
-    fn get_tx_exec_info(&self, tx_hash: H256) -> Result<Option<TransactionExecutionInfo>>;
-    fn multi_get_tx_exec_infos(
+    fn save_tx_execution_info(&self, tx_execution_info: TransactionExecutionInfo) -> Result<()>;
+    fn get_tx_execution_info(&self, tx_hash: H256) -> Result<Option<TransactionExecutionInfo>>;
+    fn multi_get_tx_execution_infos(
         &self,
         tx_hashes: Vec<H256>,
     ) -> Result<Vec<Option<TransactionExecutionInfo>>>;
 }
 
 impl TransactionStore for TransactionDBStore {
-    fn save_tx_exec_info(&self, tx_exec_info: TransactionExecutionInfo) -> Result<()> {
-        self.kv_put(tx_exec_info.tx_hash, tx_exec_info)
+    fn save_tx_execution_info(&self, tx_execution_info: TransactionExecutionInfo) -> Result<()> {
+        self.kv_put(tx_execution_info.tx_hash, tx_execution_info)
     }
 
-    fn get_tx_exec_info(&self, tx_hash: H256) -> Result<Option<TransactionExecutionInfo>> {
+    fn get_tx_execution_info(&self, tx_hash: H256) -> Result<Option<TransactionExecutionInfo>> {
         self.kv_get(tx_hash)
     }
 
-    fn multi_get_tx_exec_infos(
+    fn multi_get_tx_execution_infos(
         &self,
         tx_hashes: Vec<H256>,
     ) -> Result<Vec<Option<TransactionExecutionInfo>>> {

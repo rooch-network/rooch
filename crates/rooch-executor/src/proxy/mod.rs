@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{
-    GetTransactionInfosByTxHashMessage, GetTxSeqMappingByTxOrderMessage,
-    ListAnnotatedStatesMessage, ListStatesMessage,
+    GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage, ListStatesMessage,
 };
 use crate::actor::{
     executor::ExecutorActor,
@@ -28,7 +27,7 @@ use moveos_types::{
     state::{AnnotatedState, State},
 };
 use rooch_types::address::MultiChainAddress;
-use rooch_types::transaction::{AbstractTransaction, TransactionSequenceMapping};
+use rooch_types::transaction::AbstractTransaction;
 
 #[derive(Clone)]
 pub struct ExecutorProxy {
@@ -135,22 +134,12 @@ impl ExecutorProxy {
         self.actor.send(GetEventsMessage { filter }).await?
     }
 
-    pub async fn get_tx_seq_mapping_by_tx_order(
-        &self,
-        cursor: Option<u128>,
-        limit: u64,
-    ) -> Result<Vec<TransactionSequenceMapping>> {
-        self.actor
-            .send(GetTxSeqMappingByTxOrderMessage { cursor, limit })
-            .await?
-    }
-
-    pub async fn get_transaction_infos_by_tx_hash(
+    pub async fn get_transaction_execution_infos_by_hash(
         &self,
         tx_hashes: Vec<H256>,
     ) -> Result<Vec<Option<TransactionExecutionInfo>>> {
         self.actor
-            .send(GetTransactionInfosByTxHashMessage { tx_hashes })
+            .send(GetTxExecutionInfosByHashMessage { tx_hashes })
             .await?
     }
 }

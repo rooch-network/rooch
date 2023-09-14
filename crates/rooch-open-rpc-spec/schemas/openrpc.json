@@ -251,40 +251,7 @@
       }
     },
     {
-      "name": "rooch_getTransactionByIndex",
-      "params": [
-        {
-          "name": "start",
-          "required": true,
-          "schema": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          }
-        },
-        {
-          "name": "limit",
-          "required": true,
-          "schema": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          }
-        }
-      ],
-      "result": {
-        "name": "Vec<TransactionView>",
-        "required": true,
-        "schema": {
-          "type": "array",
-          "items": {
-            "$ref": "#/components/schemas/TransactionView"
-          }
-        }
-      }
-    },
-    {
-      "name": "rooch_getTransactionInfosByTxHash",
+      "name": "rooch_getTransactionsByHash",
       "params": [
         {
           "name": "tx_hashes",
@@ -298,14 +265,14 @@
         }
       ],
       "result": {
-        "name": "Vec<Option<TransactionExecutionInfoView>>",
+        "name": "Vec<Option<TransactionView>>",
         "required": true,
         "schema": {
           "type": "array",
           "items": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/TransactionExecutionInfoView"
+                "$ref": "#/components/schemas/TransactionView"
               },
               {
                 "type": "null"
@@ -316,7 +283,7 @@
       }
     },
     {
-      "name": "rooch_getTransactionInfosByTxOrder",
+      "name": "rooch_getTransactionsByOrder",
       "params": [
         {
           "name": "cursor",
@@ -336,10 +303,10 @@
         }
       ],
       "result": {
-        "name": "TransactionInfoPageView",
+        "name": "TransactionReturnPageView",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_Nullable_TransactionExecutionInfoView_and_uint128"
+          "$ref": "#/components/schemas/PageView_for_TransactionReturnView_and_uint128"
         }
       }
     },
@@ -1304,7 +1271,7 @@
           }
         }
       },
-      "PageView_for_Nullable_TransactionExecutionInfoView_and_uint128": {
+      "PageView_for_TransactionReturnView_and_uint128": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -1315,14 +1282,7 @@
           "data": {
             "type": "array",
             "items": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/TransactionExecutionInfoView"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "$ref": "#/components/schemas/TransactionReturnView"
             }
           },
           "has_next_page": {
@@ -1500,6 +1460,25 @@
           },
           "table_changeset": {
             "$ref": "#/components/schemas/StateChangeSetView"
+          }
+        }
+      },
+      "TransactionReturnView": {
+        "type": "object",
+        "required": [
+          "execution_info",
+          "sequence_info",
+          "transaction"
+        ],
+        "properties": {
+          "execution_info": {
+            "$ref": "#/components/schemas/TransactionExecutionInfoView"
+          },
+          "sequence_info": {
+            "$ref": "#/components/schemas/TransactionSequenceInfoView"
+          },
+          "transaction": {
+            "$ref": "#/components/schemas/TransactionView"
           }
         }
       },

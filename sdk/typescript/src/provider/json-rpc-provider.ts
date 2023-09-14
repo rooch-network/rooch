@@ -12,7 +12,7 @@ import {
   AnnotatedFunctionResultView,
   TransactionView,
   AnnotatedStateView,
-  TransactionExecutionInfoView,
+  // TransactionExecutionInfoView,
 } from '../types'
 import { functionIdToStirng, typeTagToString, encodeArg, toHexString } from '../utils'
 
@@ -111,15 +111,15 @@ export class JsonRpcProvider {
     return this.client.rooch_sendRawTransaction(playload)
   }
 
-  async getTransactionByIndex(start: number, limit: number): Promise<TransactionView[]> {
-    return await this.client.rooch_getTransactionByIndex(start, limit)
+  async getTransactionsByHash(tx_hashes: string[]): Promise<TransactionView | null[]> {
+    return await this.client.rooch_getTransactionsByHash(tx_hashes)
   }
 
-  async getTransactionInfosByTxHash(
-    txHashes: string[],
-  ): Promise<TransactionExecutionInfoView | null[]> {
-    return await this.client.rooch_getTransactionInfosByTxHash(txHashes)
-  }
+  // async getTransactionInfosByHash(
+  //   txHashes: string[],
+  // ): Promise<TransactionExecutionInfoView | null[]> {
+  //   return await this.client.rooch_getTransactionInfosByHash(txHashes)
+  // }
 
   // Get the annotated states by access_path The annotated states include the decoded move value of the state
   async getAnnotatedStates(accessPath: string): Promise<AnnotatedStateView | null[]> {
@@ -157,24 +157,24 @@ export class JsonRpcProvider {
   //   return this.rpcClient.rooch_getTransactionByHash(hash)
   // }
 
-  // async getTransactionByIndex(
+  // async getTransactionsByHash(
   //   start: number,
   //   limit: number,
   // ): Promise<TransactionView[]> {
-  //   return await this.rpcClient.rooch_getTransactionByIndex(start, limit)
+  //   return await this.rpcClient.rooch_getTransactions(start, limit)
   // }
 
-  // async getTransactionInfosByTxHash(
+  // async getTransactionInfosByHash(
   //   tx_hashes: string[],
   // ): Promise<TransactionExecutionInfoView | null[]> {
-  //   return await this.rpcClient.rooch_getTransactionInfosByTxHash(tx_hashes)
+  //   return await this.rpcClient.rooch_getTransactionInfosByHash(tx_hashes)
   // }
 
-  // async getTransactionInfosByTxOrder(
+  // async getTransactionInfosByOrder(
   //   cursor: number,
   //   limit: number,
   // ): Promise<PageView_for_Nullable_TransactionExecutionInfoView_and_uint128> {
-  //   return await this.rpcClient.rooch_getTransactionInfosByTxOrder(
+  //   return await this.rpcClient.rooch_getTransactionInfosByOrder(
   //     cursor,
   //     limit,
   //   )

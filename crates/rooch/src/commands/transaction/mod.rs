@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::CommandAction;
+use crate::commands::transaction::commands::get_tx_by_hash::GetByHashCommand;
 use async_trait::async_trait;
-use commands::{get_tx_by_hash::GetByHashCommand, get_tx_by_index::GetByIndexCommand};
 use rooch_types::error::RoochResult;
+
 pub mod commands;
 
 /// Tool for interacting with transaction
@@ -19,7 +20,6 @@ impl CommandAction<String> for Transaction {
     async fn execute(self) -> RoochResult<String> {
         match self.cmd {
             TransactionCommand::GetByHash(cmd) => cmd.execute_serialized().await,
-            TransactionCommand::GetByIndex(cmd) => cmd.execute_serialized().await,
         }
     }
 }
@@ -27,5 +27,4 @@ impl CommandAction<String> for Transaction {
 #[derive(clap::Subcommand)]
 pub enum TransactionCommand {
     GetByHash(GetByHashCommand),
-    GetByIndex(GetByIndexCommand),
 }

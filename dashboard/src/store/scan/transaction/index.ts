@@ -9,18 +9,20 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { JsonRpcProvider, TransactionView } from '@rooch/sdk'
 
 interface DataParams {
-  start: number
-  end: number
+  cursor: number
+  limit: number
 }
 
 // ** Fetch Transaction
 export const fetchData = createAsyncThunk('Transaction/fetchData', async (params: DataParams) => {
   const jp = new JsonRpcProvider()
-  let result = await jp.getTransactionByIndex(params.start, params.end)
+  console.log(jp)
 
-  console.log(result)
+  // let result = await jp.getTransactions(params.tx_hashes)
 
-  return result
+  // console.log(result)
+
+  return ''
 })
 
 export const TransactionSlice = createSlice({
@@ -34,7 +36,8 @@ export const TransactionSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(fetchData.fulfilled, (state, action) => {
-      state.allData = action.payload
+      // TODO need fixed after transaction RPC refactor
+      // state.allData = action.payload
     })
   },
 })

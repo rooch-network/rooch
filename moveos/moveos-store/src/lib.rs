@@ -220,20 +220,21 @@ impl EventStore for MoveOSStore {
 }
 
 impl TransactionStore for MoveOSStore {
-    fn save_tx_exec_info(&self, tx_exec_info: TransactionExecutionInfo) -> Result<()> {
-        self.get_transaction_store().save_tx_exec_info(tx_exec_info)
+    fn save_tx_execution_info(&self, tx_execution_info: TransactionExecutionInfo) -> Result<()> {
+        self.get_transaction_store()
+            .save_tx_execution_info(tx_execution_info)
     }
 
-    fn get_tx_exec_info(&self, tx_hash: H256) -> Result<Option<TransactionExecutionInfo>> {
-        self.get_transaction_store().get_tx_exec_info(tx_hash)
+    fn get_tx_execution_info(&self, tx_hash: H256) -> Result<Option<TransactionExecutionInfo>> {
+        self.get_transaction_store().get_tx_execution_info(tx_hash)
     }
 
-    fn multi_get_tx_exec_infos(
+    fn multi_get_tx_execution_infos(
         &self,
         tx_hashes: Vec<H256>,
     ) -> Result<Vec<Option<TransactionExecutionInfo>>> {
         self.get_transaction_store()
-            .multi_get_tx_exec_infos(tx_hashes)
+            .multi_get_tx_execution_infos(tx_hashes)
     }
 }
 

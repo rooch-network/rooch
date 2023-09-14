@@ -11,6 +11,7 @@ pub mod coin_type;
 pub mod crypto;
 pub mod error;
 pub mod framework;
+pub mod sequencer;
 pub mod transaction;
 
 pub use ethers::types::{H160, H256, H512};

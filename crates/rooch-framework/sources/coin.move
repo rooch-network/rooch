@@ -50,6 +50,9 @@ module rooch_framework::coin {
     /// Account hasn't accept `CoinType`
     const ErrorAccountNotAcceptCoin: u64 = 8;
 
+    /// Global CoinInfos should exist
+    const ErrorCoinInfosNotFound: u64 = 9;
+
 
     //
     // Constants
@@ -242,6 +245,7 @@ module rooch_framework::coin {
     /// Return coin info handle
     public fun coin_info_handle(ctx: &StorageContext): ObjectID {
         // coin info ensured via the Genesis transaction, so it should always exist
+        assert!(account_storage::global_exists<CoinInfos>(ctx, @rooch_framework), error::invalid_argument(ErrorCoinInfosNotFound));
         let coin_infos = account_storage::global_borrow<CoinInfos>(ctx, @rooch_framework);
         *type_table::handle(&coin_infos.coin_infos)
     }

@@ -1,16 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    actor::sequencer::SequencerActor,
-    messages::{TransactionByHashMessage, TransactionByIndexMessage, TransactionSequenceMessage},
+use crate::messages::{
+    GetTransactionByHashMessage, GetTransactionsByHashMessage, GetTxSequenceInfosMessage,
+    GetTxSequenceMappingByOrderMessage,
 };
+use crate::{actor::sequencer::SequencerActor, messages::TransactionSequenceMessage};
 use anyhow::Result;
 use coerce::actor::ActorRef;
-use rooch_types::{
-    transaction::{TransactionSequenceInfo, TypedTransaction},
-    H256,
-};
+use rooch_types::transaction::{TransactionSequenceMapping, TypedTransaction};
+use rooch_types::{transaction::TransactionSequenceInfo, H256};
 
 #[derive(Clone)]
 pub struct SequencerProxy {
@@ -30,16 +29,36 @@ impl SequencerProxy {
     }
 
     pub async fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<TypedTransaction>> {
-        self.actor.send(TransactionByHashMessage { hash }).await?
+        self.actor
+            .send(GetTransactionByHashMessage { hash })
+            .await?
     }
 
-    pub async fn get_transaction_by_index(
+    pub async fn get_transactions_by_hash(
         &self,
-        start: u64,
-        limit: u64,
-    ) -> Result<Vec<TypedTransaction>> {
+        tx_hashes: Vec<H256>,
+    ) -> Result<Vec<Option<TypedTransaction>>> {
         self.actor
-            .send(TransactionByIndexMessage { start, limit })
+            .send(GetTransactionsByHashMessage { tx_hashes })
+            .await?
+    }
+
+    pub async fn get_transaction_sequence_mapping_by_order(
+        &self,
+        cursor: Option<u128>,
+        limit: u64,
+    ) -> Result<Vec<TransactionSequenceMapping>> {
+        self.actor
+            .send(GetTxSequenceMappingByOrderMessage { cursor, limit })
+            .await?
+    }
+
+    pub async fn get_transaction_sequence_infos(
+        &self,
+        orders: Vec<u128>,
+    ) -> Result<Vec<Option<TransactionSequenceInfo>>> {
+        self.actor
+            .send(GetTxSequenceInfosMessage { orders })
             .await?
     }
 }

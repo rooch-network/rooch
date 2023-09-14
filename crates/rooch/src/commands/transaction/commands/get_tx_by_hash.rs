@@ -22,7 +22,7 @@ impl CommandAction<Option<TransactionView>> for GetByHashCommand {
     async fn execute(self) -> RoochResult<Option<TransactionView>> {
         let client = self.context_options.build().await?.get_client().await?;
 
-        let resp = client.get_transaction_by_hash(self.hash).await?;
+        let resp = client.get_transactions_by_hash(self.hash).await?;
 
         Ok(resp)
     }

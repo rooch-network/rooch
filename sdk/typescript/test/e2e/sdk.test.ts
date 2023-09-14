@@ -68,10 +68,10 @@ describe('SDK', () => {
     })
   })
 
-  describe('#getTransactionByIndex', () => {
+  describe('#getTransactions', () => {
     it('get transaction by index should be ok', async () => {
       const provider = new JsonRpcProvider()
-      const result = provider.getTransactionByIndex(0, 10)
+      const result = provider.getTransactionsByHash([])
       expect(result).toBeDefined()
     })
   })
