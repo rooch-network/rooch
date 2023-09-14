@@ -1,19 +1,18 @@
-# 启动 Rooch 服务
+# 启动 Rooch 开发环境
 
 ## 介绍
 
 Rooch 作为一个 Layer2，旨在提供多链友好的开发服务，可以将 Rooch 看作是专门为区块链提供容器服务的基础设施平台。
 
-这一小节将给大家介绍如何使用 Rooch CLI 来启动本地服务。
+这一小节将给大家介绍如何使用 Rooch CLI 来启动本地开发环境。
 
 当前版本，我们分别提供了 `rooch server start` 和 `rooch server clean` 命令来启动 Rooch 本地服务和清理服务器存储。
 
-因为 Rooch 正处于快速开发迭代的过程，在部署合约时，会遇到兼容性问题，此时可以通过 `clean` 命令来清理旧的数据。
-
+因为 Rooch 正处于快速开发迭代的过程，在部署合约时，可能会遇到兼容性问题，此时可以通过 `clean` 命令来清理旧的数据。
 
 ## 启动服务
 
-当我们编写完 Rooch Move 合约项目，我们需要启动 Rooch 容器服务来模拟链的行为：
+当我们编写完 Rooch Move 合约项目，我们需要启动 Rooch 开发环境来模拟链的行为：
 
 ```shell
 $ rooch server start
