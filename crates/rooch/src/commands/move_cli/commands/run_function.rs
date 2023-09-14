@@ -55,7 +55,7 @@ pub struct RunFunction {
     tx_options: TransactionOptions,
 
     /// Command line input of multichain ids
-    #[clap(short = 'm', long = "multichain-id", default_value = "20230103")]
+    #[clap(short = 'i', long = "multichain-id", default_value = "rooch")]
     pub multichain_id: RoochMultiChainID,
 }
 

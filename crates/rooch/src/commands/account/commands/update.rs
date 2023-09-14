@@ -26,7 +26,7 @@ pub struct UpdateCommand {
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
     /// Command line input of multichain ids
-    #[clap(short = 'm', long = "multichain-id")]
+    #[clap(short = 'i', long = "multichain-id")]
     pub multichain_id: RoochMultiChainID,
 }
 
