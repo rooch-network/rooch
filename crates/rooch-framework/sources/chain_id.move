@@ -5,6 +5,10 @@ module rooch_framework::chain_id {
 
     friend rooch_framework::genesis;
 
+    const CHAIN_ID_DEV: u64 = 20230103;
+    const CHAIN_ID_TEST: u64 = 20230102;
+    const CHAIN_ID_MAIN: u64 = 20230101;
+
     /// The ChainID in the global storage
     struct ChainID has key,store,copy,drop {
         id: u64
@@ -20,5 +24,17 @@ module rooch_framework::chain_id {
     public fun chain_id(ctx: &StorageContext) : u64 {
         let chain_id = account_storage::global_borrow<ChainID>(ctx, @rooch_framework);
         chain_id.id
+    }
+
+    public fun is_dev(ctx: &StorageContext) : bool {
+        chain_id(ctx) == CHAIN_ID_DEV
+    }
+
+    public fun is_test(ctx: &StorageContext) : bool {
+        chain_id(ctx) == CHAIN_ID_TEST
+    }
+
+    public fun is_main(ctx: &StorageContext) : bool {
+        chain_id(ctx) == CHAIN_ID_MAIN
     }
 }

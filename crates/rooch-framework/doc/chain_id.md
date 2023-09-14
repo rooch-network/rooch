@@ -6,8 +6,12 @@
 
 
 -  [Resource `ChainID`](#0x3_chain_id_ChainID)
+-  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x3_chain_id_genesis_init)
 -  [Function `chain_id`](#0x3_chain_id_chain_id)
+-  [Function `is_dev`](#0x3_chain_id_is_dev)
+-  [Function `is_test`](#0x3_chain_id_is_test)
+-  [Function `is_main`](#0x3_chain_id_is_main)
 
 
 <pre><code><b>use</b> <a href="">0x2::account_storage</a>;
@@ -43,6 +47,38 @@ The ChainID in the global storage
 
 
 </details>
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x3_chain_id_CHAIN_ID_DEV"></a>
+
+
+
+<pre><code><b>const</b> <a href="chain_id.md#0x3_chain_id_CHAIN_ID_DEV">CHAIN_ID_DEV</a>: u64 = 20230103;
+</code></pre>
+
+
+
+<a name="0x3_chain_id_CHAIN_ID_MAIN"></a>
+
+
+
+<pre><code><b>const</b> <a href="chain_id.md#0x3_chain_id_CHAIN_ID_MAIN">CHAIN_ID_MAIN</a>: u64 = 20230101;
+</code></pre>
+
+
+
+<a name="0x3_chain_id_CHAIN_ID_TEST"></a>
+
+
+
+<pre><code><b>const</b> <a href="chain_id.md#0x3_chain_id_CHAIN_ID_TEST">CHAIN_ID_TEST</a>: u64 = 20230102;
+</code></pre>
+
+
 
 <a name="0x3_chain_id_genesis_init"></a>
 
@@ -89,6 +125,78 @@ The ChainID in the global storage
 <pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id">chain_id</a>(ctx: &StorageContext) : u64 {
     <b>let</b> <a href="chain_id.md#0x3_chain_id">chain_id</a> = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="chain_id.md#0x3_chain_id_ChainID">ChainID</a>&gt;(ctx, @rooch_framework);
     <a href="chain_id.md#0x3_chain_id">chain_id</a>.id
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_chain_id_is_dev"></a>
+
+## Function `is_dev`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_dev">is_dev</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_dev">is_dev</a>(ctx: &StorageContext) : bool {
+    <a href="chain_id.md#0x3_chain_id">chain_id</a>(ctx) == <a href="chain_id.md#0x3_chain_id_CHAIN_ID_DEV">CHAIN_ID_DEV</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_chain_id_is_test"></a>
+
+## Function `is_test`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_test">is_test</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_test">is_test</a>(ctx: &StorageContext) : bool {
+    <a href="chain_id.md#0x3_chain_id">chain_id</a>(ctx) == <a href="chain_id.md#0x3_chain_id_CHAIN_ID_TEST">CHAIN_ID_TEST</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_chain_id_is_main"></a>
+
+## Function `is_main`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_main">is_main</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_main">is_main</a>(ctx: &StorageContext) : bool {
+    <a href="chain_id.md#0x3_chain_id">chain_id</a>(ctx) == <a href="chain_id.md#0x3_chain_id_CHAIN_ID_MAIN">CHAIN_ID_MAIN</a>
 }
 </code></pre>
 

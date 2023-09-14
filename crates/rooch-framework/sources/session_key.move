@@ -8,7 +8,8 @@ module rooch_framework::session_key {
     use moveos_std::table::{Self, Table};
     use moveos_std::tx_meta::{Self, FunctionCallMeta};
     use rooch_framework::auth_validator;
-    use rooch_framework::native_validator::{Self as validator};
+    use rooch_framework::native_validator;
+    use rooch_framework::timestamp;
 
     friend rooch_framework::transaction_validator;
 
@@ -25,7 +26,7 @@ module rooch_framework::session_key {
 
     /// The session's scope
     struct SessionScope has store,copy,drop {
-        //TODO should we allow the scope module address is `*`?
+        /// The scope module address, the address can not support `*`
         module_address: address,
         /// The scope module name, `*` means all modules in the module address
         module_name: std::ascii::String,
@@ -34,13 +35,17 @@ module rooch_framework::session_key {
     }
 
     struct SessionKey has store,copy,drop {
+        /// The session key's authentication key, it also is the session key's id
         authentication_key: vector<u8>,
+        /// The session key's scopes
         scopes: vector<SessionScope>,
-        /// The session key's expiration time period, in seconds, 0 means never expired
-        expiration_time: u64,
-        /// The session key's last active time
+        /// The session key's create time, current timestamp in seconds
+        create_time: u64,
+        /// The session key's last active time, in seconds
         last_active_time: u64,
         /// The session key's max inactive time period, in seconds
+        /// If the session key is not active in this time period, it will be expired
+        /// If the max_inactive_interval is 0, the session key will never be expired
         max_inactive_interval: u64,
     }
 
@@ -56,9 +61,21 @@ module rooch_framework::session_key {
         }
     }
 
-    fun is_expired(_ctx: &StorageContext, _session_key: &SessionKey) : bool {
-        //TODO check the session key is expired or not after the timestamp is supported
+    fun is_expired(ctx: &StorageContext, session_key: &SessionKey) : bool {
+        let now_seconds = timestamp::now_seconds(ctx);
+        if (session_key.max_inactive_interval > 0 && session_key.last_active_time + session_key.max_inactive_interval < now_seconds){
+            return true
+        };
         return false
+    }
+
+    public fun is_expired_session_key(ctx: &StorageContext, account_address: address, authentication_key: vector<u8>) : bool {
+        let session_key_option = get_session_key(ctx, account_address, authentication_key);
+        if (option::is_none(&session_key_option)){
+            return false
+        };
+        let session_key = option::extract(&mut session_key_option);
+        is_expired(ctx, &session_key)
     }
 
     public fun exists_session_key(ctx: &StorageContext, account_address: address, authentication_key: vector<u8>) : bool {
@@ -78,18 +95,17 @@ module rooch_framework::session_key {
         }
     }
 
-    public fun create_session_key(ctx: &mut StorageContext, sender: &signer, authentication_key: vector<u8>, scopes: vector<SessionScope>, expiration_time: u64, max_inactive_interval: u64) {
+    public fun create_session_key(ctx: &mut StorageContext, sender: &signer, authentication_key: vector<u8>, scopes: vector<SessionScope>, max_inactive_interval: u64) {
         //Can not create new session key by the other session key
         assert!(!auth_validator::is_validate_via_session_key(ctx), error::permission_denied(ErrorSessionKeyCreatePermissionDenied));
         let sender_addr = signer::address_of(sender);
         assert!(!exists_session_key(ctx, sender_addr, authentication_key), error::already_exists(ErrorSessionKeyAlreadyExists));
-
+        let now_seconds = timestamp::now_seconds(ctx);
         let session_key = SessionKey {
             authentication_key: authentication_key,
             scopes: scopes,
-            expiration_time: expiration_time,
-            //TODO set the last active time to now
-            last_active_time: 0,
+            create_time: now_seconds,
+            last_active_time: now_seconds,
             max_inactive_interval: max_inactive_interval,
         };
         if (!account_storage::global_exists<SessionKeys>(ctx, sender_addr)){
@@ -101,12 +117,12 @@ module rooch_framework::session_key {
         table::add(&mut session_keys.keys, authentication_key, session_key);
     }
 
-    public entry fun create_session_key_entry(ctx: &mut StorageContext, sender: &signer, authentication_key: vector<u8>, scope_module_address: address, scope_module_name: std::ascii::String, scope_function_name: std::ascii::String,expiration_time: u64, max_inactive_interval: u64) {
+    public entry fun create_session_key_entry(ctx: &mut StorageContext, sender: &signer, authentication_key: vector<u8>, scope_module_address: address, scope_module_name: std::ascii::String, scope_function_name: std::ascii::String, max_inactive_interval: u64) {
         create_session_key(ctx, sender, authentication_key, vector::singleton(SessionScope{
             module_address: scope_module_address,
             module_name: scope_module_name,
             function_name: scope_function_name,
-        }), expiration_time, max_inactive_interval);
+        }), max_inactive_interval);
     }
 
     /// Validate the current tx via the session key
@@ -118,11 +134,11 @@ module rooch_framework::session_key {
             return option::none()
         };
         // We only support native validator for SessionKey now
-        if(scheme != validator::scheme()){
+        if(scheme != native_validator::scheme()){
             return option::none()
         };
 
-        let auth_key = validator::get_authentication_key_from_authenticator_payload(&authenticator_payload);
+        let auth_key = native_validator::get_authentication_key_from_authenticator_payload(&authenticator_payload);
         
         let session_key_option = get_session_key(ctx, sender_addr, auth_key);
         if (option::is_none(&session_key_option)){
@@ -133,7 +149,7 @@ module rooch_framework::session_key {
         
         assert!(in_session_scope(ctx, &session_key), error::permission_denied(ErrorFunctionCallBeyondSessionScope));
 
-        validator::validate_signature(&authenticator_payload, &storage_context::tx_hash(ctx));
+        native_validator::validate_signature(&authenticator_payload, &storage_context::tx_hash(ctx));
         option::some(auth_key)
     }
 
@@ -179,12 +195,29 @@ module rooch_framework::session_key {
 
     public(friend) fun active_session_key(ctx: &mut StorageContext, authentication_key: vector<u8>) {
         let sender_addr = storage_context::sender(ctx);
+        let now_seconds = timestamp::now_seconds(ctx);
         assert!(account_storage::global_exists<SessionKeys>(ctx, sender_addr), error::not_found(ErrorSessionKeyIsInvalid));
         let session_keys = account_storage::global_borrow_mut<SessionKeys>(ctx, sender_addr);
         assert!(table::contains(&session_keys.keys, authentication_key), error::not_found(ErrorSessionKeyIsInvalid));
         let session_key = table::borrow_mut(&mut session_keys.keys, authentication_key);
-        //TODO set the last active time to now when the timestamp is supported
-        session_key.last_active_time = session_key.last_active_time + 1;
+        session_key.last_active_time = now_seconds;
+    }
+
+    #[test_only]
+    public fun active_session_key_for_test(ctx: &mut StorageContext, authentication_key: vector<u8>) {
+        active_session_key(ctx, authentication_key);
+    }
+
+    public fun remove_session_key(ctx: &mut StorageContext, sender: &signer, authentication_key: vector<u8>) {
+        let sender_addr = signer::address_of(sender);
+        assert!(account_storage::global_exists<SessionKeys>(ctx, sender_addr), error::not_found(ErrorSessionKeyIsInvalid));
+        let session_keys = account_storage::global_borrow_mut<SessionKeys>(ctx, sender_addr);
+        assert!(table::contains(&session_keys.keys, authentication_key), error::not_found(ErrorSessionKeyIsInvalid));
+        table::remove(&mut session_keys.keys, authentication_key);
+    }
+
+    public entry fun remove_session_key_entry(ctx: &mut StorageContext, sender: &signer, authentication_key: vector<u8>) {
+        remove_session_key(ctx, sender, authentication_key);
     }
 
     #[test]
@@ -223,7 +256,6 @@ module rooch_framework::session_key {
 
         let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::ascii::string(b"test1"), std::ascii::string(b"test"));
         assert!(!check_scope_match(&scope, &function_call_meta), 1004);
-
-        
     }
+
 }
