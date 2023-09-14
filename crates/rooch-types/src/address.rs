@@ -65,7 +65,9 @@ impl MultiChainAddress {
     }
 
     pub fn is_rooch_address(&self) -> bool {
-        self.multichain_id.is_builtin()
+        self.multichain_id.multichain_id().id() == BuiltinChainID::Dev.chain_id().id()
+            || self.multichain_id.multichain_id().id() == BuiltinChainID::Test.chain_id().id()
+            || self.multichain_id.multichain_id().id() == BuiltinChainID::Main.chain_id().id()
     }
 
     pub fn from_bech32(bech32: &str) -> Result<Self> {
@@ -317,7 +319,7 @@ impl RoochSupportedAddress for EthereumAddress {
 
 impl From<EthereumAddress> for MultiChainAddress {
     fn from(address: EthereumAddress) -> Self {
-        Self::new(RoochMultiChainID::ETHEREUM, address.0.as_bytes().to_vec())
+        Self::new(RoochMultiChainID::ETHER, address.0.as_bytes().to_vec())
             .expect("EthereumAddress to MultiChainAddress should success")
     }
 }
@@ -326,7 +328,7 @@ impl TryFrom<MultiChainAddress> for EthereumAddress {
     type Error = anyhow::Error;
 
     fn try_from(value: MultiChainAddress) -> Result<Self, Self::Error> {
-        if value.multichain_id != RoochMultiChainID::ETHEREUM {
+        if value.multichain_id != RoochMultiChainID::ETHER {
             return Err(anyhow::anyhow!(
                 "multichain_id type {} is invalid",
                 value.multichain_id

@@ -6,9 +6,10 @@ use ethers::prelude::*;
 use moveos_types::transaction::MoveAction;
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
 use rooch_types::address::RoochAddress;
-use rooch_types::coin_type::CoinID;
+use rooch_types::chain_id::{BuiltinChainID, RoochChainID};
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::framework::ethereum_light_client::BlockHeader;
+use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::rooch::RoochTransactionData;
 
 #[test]
@@ -57,7 +58,11 @@ fn test_submit_block() {
     let action = MoveAction::Function(rooch_types::framework::ethereum_light_client::EthereumLightClientModule::create_submit_new_block_call(&block_header));
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore
-        .sign_transaction(&sender, tx_data, CoinID::Rooch)
+        .sign_transaction(
+            &sender,
+            tx_data,
+            RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev)),
+        )
         .unwrap();
     binding_test.execute(tx).unwrap();
 

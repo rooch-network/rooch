@@ -9,7 +9,8 @@
 -  [Function `validate`](#0x3_transaction_validator_validate)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
+<pre><code><b>use</b> <a href="">0x1::debug</a>;
+<b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
 <b>use</b> <a href="">0x2::tx_result</a>;
@@ -81,7 +82,7 @@ Transaction exceeded its allocated max gas
 
 <a name="0x3_transaction_validator_ErrorValidateNotInstalledAuthValidator"></a>
 
-The authenticator's multichain id is not installed to the sender's account
+The authenticator's scheme is not installed to the sender's account
 
 
 <pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_ErrorValidateNotInstalledAuthValidator">ErrorValidateNotInstalledAuthValidator</a>: u64 = 1010;
@@ -136,7 +137,7 @@ This function is for Rooch to validate the transaction sender's authenticator.
 If the authenticator is invaid, abort this function.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_validate">validate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, <a href="chain_id.md#0x3_chain_id">chain_id</a>: u64, multichain_id: u64, authenticator_payload: <a href="">vector</a>&lt;u8&gt;): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">auth_validator::TxValidateResult</a>
+<pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_validate">validate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, <a href="chain_id.md#0x3_chain_id">chain_id</a>: u64, scheme: u64, authenticator_payload: <a href="">vector</a>&lt;u8&gt;): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">auth_validator::TxValidateResult</a>
 </code></pre>
 
 
@@ -148,9 +149,11 @@ If the authenticator is invaid, abort this function.
 <pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_validate">validate</a>(
     ctx: &StorageContext,
     <a href="chain_id.md#0x3_chain_id">chain_id</a>: u64,
-    multichain_id: u64,
+    scheme: u64,
     authenticator_payload: <a href="">vector</a>&lt;u8&gt;
 ): TxValidateResult {
+    std::debug::print(&<a href="chain_id.md#0x3_chain_id">chain_id</a>);
+    std::debug::print(&scheme);
 
     // === validate the chain id ===
     <b>assert</b>!(
@@ -197,22 +200,23 @@ If the authenticator is invaid, abort this function.
     // === validate the authenticator ===
 
     // <b>if</b> the authenticator authenticator_payload is session key, validate the session key
-    // otherwise <b>return</b> the authentication validator via the multichain_id
-    <b>let</b> session_key_option = <a href="session_key.md#0x3_session_key_validate">session_key::validate</a>(ctx, multichain_id, authenticator_payload);
+    // otherwise <b>return</b> the authentication validator via the scheme
+    <b>let</b> session_key_option = <a href="session_key.md#0x3_session_key_validate">session_key::validate</a>(ctx, scheme, authenticator_payload);
+    std::debug::print(&session_key_option);
     <b>if</b> (<a href="_is_some">option::is_some</a>(&session_key_option)) {
-        <a href="auth_validator.md#0x3_auth_validator_new_tx_validate_result">auth_validator::new_tx_validate_result</a>(multichain_id, <a href="_none">option::none</a>(), session_key_option)
+        <a href="auth_validator.md#0x3_auth_validator_new_tx_validate_result">auth_validator::new_tx_validate_result</a>(scheme, <a href="_none">option::none</a>(), session_key_option)
     }<b>else</b> {
         <b>let</b> sender = <a href="_sender">storage_context::sender</a>(ctx);
-        <b>let</b> <a href="auth_validator.md#0x3_auth_validator">auth_validator</a> = <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator">auth_validator_registry::borrow_validator</a>(ctx, multichain_id);
+        <b>let</b> <a href="auth_validator.md#0x3_auth_validator">auth_validator</a> = <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator">auth_validator_registry::borrow_validator</a>(ctx, scheme);
         <b>let</b> validator_id = <a href="auth_validator.md#0x3_auth_validator_validator_id">auth_validator::validator_id</a>(<a href="auth_validator.md#0x3_auth_validator">auth_validator</a>);
-        // builtin multichain id do not need <b>to</b> install
-        <b>if</b> (!rooch_framework::builtin_validators::is_builtin_multichain_id(multichain_id)) {
+        // builtin scheme do not need <b>to</b> install
+        <b>if</b> (!rooch_framework::builtin_validators::is_builtin_scheme(scheme)) {
             <b>assert</b>!(
                 <a href="account_authentication.md#0x3_account_authentication_is_auth_validator_installed">account_authentication::is_auth_validator_installed</a>(ctx, sender, validator_id),
                 <a href="_invalid_state">error::invalid_state</a>(<a href="transaction_validator.md#0x3_transaction_validator_ErrorValidateNotInstalledAuthValidator">ErrorValidateNotInstalledAuthValidator</a>)
             );
         };
-        <a href="auth_validator.md#0x3_auth_validator_new_tx_validate_result">auth_validator::new_tx_validate_result</a>(multichain_id, <a href="_some">option::some</a>(*<a href="auth_validator.md#0x3_auth_validator">auth_validator</a>), <a href="_none">option::none</a>())
+        <a href="auth_validator.md#0x3_auth_validator_new_tx_validate_result">auth_validator::new_tx_validate_result</a>(scheme, <a href="_some">option::some</a>(*<a href="auth_validator.md#0x3_auth_validator">auth_validator</a>), <a href="_none">option::none</a>())
     }
 }
 </code></pre>

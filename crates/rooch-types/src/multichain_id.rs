@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, format_err, Result};
+#[cfg(any(test, feature = "fuzzing"))]
+use proptest_derive::Arbitrary;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -11,12 +13,13 @@ use std::str::FromStr;
 use crate::chain_id::{ChainID, RoochChainID};
 
 pub const BITCOIN: u64 = 0;
-pub const ETHEREUM: u64 = 60;
+pub const ETHER: u64 = 60;
 pub const NOSTR: u64 = 1237;
 
 #[derive(
     Clone, Copy, Debug, Deserialize, Serialize, Hash, Eq, PartialEq, PartialOrd, Ord, JsonSchema,
 )]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub struct MultiChainID {
     id: u64,
 }
@@ -31,7 +34,7 @@ impl MultiChainID {
     }
 
     pub fn is_ethereum(self) -> bool {
-        self.id == ETHEREUM
+        self.id == ETHER
     }
 
     pub fn is_bitcoin(self) -> bool {
@@ -82,9 +85,10 @@ impl Into<u64> for MultiChainID {
     Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,
 )]
 #[repr(u64)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub enum BuiltinMultiChainID {
     Bitcoin = BITCOIN,
-    Ether = ETHEREUM,
+    Ether = ETHER,
     Nostr = NOSTR,
 }
 
@@ -110,7 +114,7 @@ impl TryFrom<u64> for BuiltinMultiChainID {
     fn try_from(value: u64) -> Result<Self, Self::Error> {
         match value {
             BITCOIN => Ok(BuiltinMultiChainID::Bitcoin),
-            ETHEREUM => Ok(BuiltinMultiChainID::Ether),
+            ETHER => Ok(BuiltinMultiChainID::Ether),
             NOSTR => Ok(BuiltinMultiChainID::Nostr),
             _ => Err(anyhow::anyhow!("multichain id {} is invalid", value)),
         }
@@ -135,7 +139,7 @@ impl TryFrom<MultiChainID> for BuiltinMultiChainID {
     fn try_from(multichain_id: MultiChainID) -> Result<Self, Self::Error> {
         Ok(match multichain_id.id() {
             BITCOIN => Self::Bitcoin,
-            ETHEREUM => Self::Ether,
+            ETHER => Self::Ether,
             NOSTR => Self::Nostr,
             id => bail!("{} is not a builtin multichain id", id),
         })
@@ -176,6 +180,7 @@ impl BuiltinMultiChainID {
     Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize, JsonSchema,
 )]
 #[allow(clippy::upper_case_acronyms)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub struct CustomMultiChainID {
     multichain_name: String,
     multichain_id: MultiChainID,
@@ -225,6 +230,7 @@ impl FromStr for CustomMultiChainID {
     Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, JsonSchema, Serialize, Deserialize,
 )]
 #[allow(clippy::upper_case_acronyms)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub enum RoochMultiChainID {
     Builtin(BuiltinMultiChainID),
     Custom(CustomMultiChainID),
@@ -258,7 +264,7 @@ impl TryFrom<MultiChainID> for RoochMultiChainID {
     fn try_from(multichain_id: MultiChainID) -> Result<Self, Self::Error> {
         Ok(match multichain_id.id() {
             BITCOIN => RoochMultiChainID::BITCOIN,
-            ETHEREUM => RoochMultiChainID::ETHEREUM,
+            ETHER => RoochMultiChainID::ETHER,
             NOSTR => RoochMultiChainID::NOSTR,
             id => RoochMultiChainID::Custom(CustomMultiChainID::from_str(id.to_string().as_str())?),
         })
@@ -278,7 +284,7 @@ impl FromStr for RoochMultiChainID {
 
 impl RoochMultiChainID {
     pub const BITCOIN: RoochMultiChainID = RoochMultiChainID::Builtin(BuiltinMultiChainID::Bitcoin);
-    pub const ETHEREUM: RoochMultiChainID = RoochMultiChainID::Builtin(BuiltinMultiChainID::Ether);
+    pub const ETHER: RoochMultiChainID = RoochMultiChainID::Builtin(BuiltinMultiChainID::Ether);
     pub const NOSTR: RoochMultiChainID = RoochMultiChainID::Builtin(BuiltinMultiChainID::Nostr);
 
     pub fn new_builtin(multichain_id: BuiltinMultiChainID) -> Self {

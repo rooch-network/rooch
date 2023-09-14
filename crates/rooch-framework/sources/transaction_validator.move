@@ -44,6 +44,8 @@ module rooch_framework::transaction_validator {
         scheme: u64,
         authenticator_payload: vector<u8>
     ): TxValidateResult {
+        std::debug::print(&chain_id);
+        std::debug::print(&scheme);
 
         // === validate the chain id ===
         assert!(
@@ -92,6 +94,7 @@ module rooch_framework::transaction_validator {
         // if the authenticator authenticator_payload is session key, validate the session key
         // otherwise return the authentication validator via the scheme
         let session_key_option = session_key::validate(ctx, scheme, authenticator_payload);
+        std::debug::print(&session_key_option);
         if (option::is_some(&session_key_option)) {
             auth_validator::new_tx_validate_result(scheme, option::none(), session_key_option)
         }else {

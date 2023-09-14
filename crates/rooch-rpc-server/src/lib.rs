@@ -182,7 +182,7 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
         None,
         None,
     )?;
-    let sequencer = SequencerActor::new(kp, rooch_store, is_genesis)
+    let sequencer = SequencerActor::new(kp, rooch_store, is_genesis)?
         .into_actor(Some("Sequencer"), &actor_system)
         .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());

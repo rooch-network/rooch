@@ -17,7 +17,7 @@ pub struct EthereumValidator {}
 
 impl EthereumValidator {
     pub fn multichain_id() -> RoochMultiChainID {
-        RoochMultiChainID::ETHEREUM
+        RoochMultiChainID::ETHER
     }
 }
 

@@ -972,7 +972,7 @@ impl
         let (_, kp, _multichain_id, _phrase) = generate_new_key_pair::<
             EthereumAddress,
             Secp256k1RecoverableKeyPair,
-        >(RoochMultiChainID::ETHEREUM, None, None)?;
+        >(RoochMultiChainID::ETHER, None, None)?;
         let authentication_key_bytes = address.0.as_bytes().to_vec();
         let authentication_key = AuthenticationKey::new(authentication_key_bytes);
         let inner_map = self
@@ -1619,7 +1619,7 @@ impl InMemKeystore<EthereumAddress, Secp256k1RecoverableKeyPair> {
         let mut rng = StdRng::from_seed([0; 32]);
         let keys = (0..initial_key_number)
             .map(|_| get_ethereum_key_pair_from_rng(&mut rng))
-            .map(|(ad, k)| (ad, BTreeMap::from_iter(vec![(RoochMultiChainID::ETHEREUM, k)])))
+            .map(|(ad, k)| (ad, BTreeMap::from_iter(vec![(RoochMultiChainID::ETHER, k)])))
             .collect::<BTreeMap<EthereumAddress, BTreeMap<RoochMultiChainID, Secp256k1RecoverableKeyPair>>>();
 
         Self {

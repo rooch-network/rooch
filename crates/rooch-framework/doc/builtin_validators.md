@@ -7,7 +7,7 @@
 
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x3_builtin_validators_genesis_init)
--  [Function `is_builtin_multichain_id`](#0x3_builtin_validators_is_builtin_multichain_id)
+-  [Function `is_builtin_scheme`](#0x3_builtin_validators_is_builtin_scheme)
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
@@ -49,13 +49,13 @@
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="builtin_validators.md#0x3_builtin_validators_genesis_init">genesis_init</a>(ctx: &<b>mut</b> StorageContext, _genesis_account: &<a href="">signer</a>){
-    // CHAIN_ID_ROOCH: u64 = 20230103;
+    // SCHEME_NATIVE: u64 = 0;
     <b>let</b> id = <a href="auth_validator_registry.md#0x3_auth_validator_registry_register_internal">auth_validator_registry::register_internal</a>&lt;<a href="native_validator.md#0x3_native_validator_NativeValidator">native_validator::NativeValidator</a>&gt;(ctx);
-    <b>assert</b>!(id == <a href="native_validator.md#0x3_native_validator_chain_id">native_validator::chain_id</a>(), std::error::internal(<a href="builtin_validators.md#0x3_builtin_validators_ErrorGenesisInit">ErrorGenesisInit</a>));
+    <b>assert</b>!(id == <a href="native_validator.md#0x3_native_validator_scheme">native_validator::scheme</a>(), std::error::internal(<a href="builtin_validators.md#0x3_builtin_validators_ErrorGenesisInit">ErrorGenesisInit</a>));
 
-    // MULTICHAIN_ID_ETHEREUM: u64 = 60;
+    // SCHEME_ETHEREUM: u64 = 1;
     <b>let</b> id = <a href="auth_validator_registry.md#0x3_auth_validator_registry_register_internal">auth_validator_registry::register_internal</a>&lt;<a href="ethereum_validator.md#0x3_ethereum_validator_EthereumValidator">ethereum_validator::EthereumValidator</a>&gt;(ctx);
-    <b>assert</b>!(id == <a href="ethereum_validator.md#0x3_ethereum_validator_multichain_id">ethereum_validator::multichain_id</a>(), std::error::internal(<a href="builtin_validators.md#0x3_builtin_validators_ErrorGenesisInit">ErrorGenesisInit</a>));
+    <b>assert</b>!(id == <a href="ethereum_validator.md#0x3_ethereum_validator_scheme">ethereum_validator::scheme</a>(), std::error::internal(<a href="builtin_validators.md#0x3_builtin_validators_ErrorGenesisInit">ErrorGenesisInit</a>));
 }
 </code></pre>
 
@@ -63,13 +63,13 @@
 
 </details>
 
-<a name="0x3_builtin_validators_is_builtin_multichain_id"></a>
+<a name="0x3_builtin_validators_is_builtin_scheme"></a>
 
-## Function `is_builtin_multichain_id`
+## Function `is_builtin_scheme`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="builtin_validators.md#0x3_builtin_validators_is_builtin_multichain_id">is_builtin_multichain_id</a>(multichain_id: u64): bool
+<pre><code><b>public</b> <b>fun</b> <a href="builtin_validators.md#0x3_builtin_validators_is_builtin_scheme">is_builtin_scheme</a>(scheme: u64): bool
 </code></pre>
 
 
@@ -78,9 +78,9 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="builtin_validators.md#0x3_builtin_validators_is_builtin_multichain_id">is_builtin_multichain_id</a>(multichain_id: u64): bool {
-    multichain_id == <a href="native_validator.md#0x3_native_validator_chain_id">native_validator::chain_id</a>()
-    || multichain_id == <a href="ethereum_validator.md#0x3_ethereum_validator_multichain_id">ethereum_validator::multichain_id</a>()
+<pre><code><b>public</b> <b>fun</b> <a href="builtin_validators.md#0x3_builtin_validators_is_builtin_scheme">is_builtin_scheme</a>(scheme: u64): bool {
+    scheme == <a href="native_validator.md#0x3_native_validator_scheme">native_validator::scheme</a>()
+    || scheme == <a href="ethereum_validator.md#0x3_ethereum_validator_scheme">ethereum_validator::scheme</a>()
 }
 </code></pre>
 

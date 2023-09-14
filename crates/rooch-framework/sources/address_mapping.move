@@ -101,7 +101,7 @@ module rooch_framework::address_mapping{
         let ctx = storage_context::new_test_context(sender_addr);
         account_storage::create_account_storage(&mut ctx, @rooch_framework);
         init(&mut ctx);
-        let multi_chain_address =  MultiChainAddress{
+        let multi_chain_address = MultiChainAddress{
             multichain_id: MULTICHAIN_ID_BITCOIN,
             raw_address: x"1234567890abcdef",
         };

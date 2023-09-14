@@ -539,15 +539,15 @@
       "AuthenticatorView": {
         "type": "object",
         "required": [
-          "multichain_id",
-          "payload"
+          "payload",
+          "scheme"
         ],
         "properties": {
-          "multichain_id": {
-            "$ref": "#/components/schemas/u64"
-          },
           "payload": {
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          },
+          "scheme": {
+            "$ref": "#/components/schemas/u64"
           }
         }
       },

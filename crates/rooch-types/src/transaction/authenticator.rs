@@ -7,11 +7,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    chain_id::{BuiltinChainID, RoochChainID},
-    crypto::Signature,
-    multichain_id::RoochMultiChainID,
-};
+use crate::crypto::{BuiltinScheme, Signature};
 use anyhow::Result;
 #[cfg(any(test, feature = "fuzzing"))]
 use fastcrypto::ed25519::Ed25519KeyPair;
@@ -28,7 +24,7 @@ use std::{fmt, str::FromStr};
 /// It is a part of `AccountAbstraction`
 
 pub trait BuiltinAuthenticator {
-    fn multichain_id(&self) -> RoochMultiChainID;
+    fn scheme(&self) -> u64;
     fn payload(&self) -> Vec<u8>;
 }
 
@@ -38,8 +34,8 @@ pub struct RoochAuthenticator {
 }
 
 impl BuiltinAuthenticator for RoochAuthenticator {
-    fn multichain_id(&self) -> RoochMultiChainID {
-        RoochMultiChainID::as_multichain(&RoochChainID::Builtin(BuiltinChainID::Dev))
+    fn scheme(&self) -> u64 {
+        BuiltinScheme::Ed25519.flag().into()
     }
     fn payload(&self) -> Vec<u8> {
         self.signature.as_ref().to_vec()
@@ -73,12 +69,9 @@ where
     T: BuiltinAuthenticator,
 {
     fn from(value: T) -> Self {
-        let multichain_id = value.multichain_id().multichain_id().id();
+        let scheme = value.scheme();
         let payload = value.payload();
-        Authenticator {
-            multichain_id,
-            payload,
-        }
+        Authenticator { scheme, payload }
     }
 }
 
@@ -90,14 +83,14 @@ impl From<Signature> for Authenticator {
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct Authenticator {
-    pub multichain_id: u64,
+    pub scheme: u64,
     pub payload: Vec<u8>,
 }
 
 impl Authenticator {
-    /// Unique identifier for the signature of multichain id
-    pub fn multichain_id(&self) -> u64 {
-        self.multichain_id
+    /// Unique identifier for the signature of scheme
+    pub fn scheme(&self) -> u64 {
+        self.scheme
     }
 
     /// Create a single-signature rooch authenticator
@@ -106,11 +99,8 @@ impl Authenticator {
     }
 
     /// Create a custom authenticator
-    pub fn new(multichain_id: u64, payload: Vec<u8>) -> Self {
-        Self {
-            multichain_id,
-            payload,
-        }
+    pub fn new(scheme: u64, payload: Vec<u8>) -> Self {
+        Self { scheme, payload }
     }
 }
 
@@ -128,8 +118,8 @@ impl fmt::Display for Authenticator {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Authenticator[multichain id: {:?}, payload: {}]",
-            self.multichain_id(),
+            "Authenticator[scheme: {:?}, payload: {}]",
+            self.scheme(),
             hex::encode(&self.payload),
         )
     }
