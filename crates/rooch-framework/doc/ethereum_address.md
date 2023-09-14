@@ -25,7 +25,7 @@
 
 
 
-<pre><code><b>struct</b> <a href="ethereum_address.md#0x3_ethereum_address_ETHAddress">ETHAddress</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="ethereum_address.md#0x3_ethereum_address_ETHAddress">ETHAddress</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 

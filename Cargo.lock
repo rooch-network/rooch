@@ -7253,6 +7253,7 @@ dependencies = [
  "rooch-types",
  "serde 1.0.188",
  "serde_bytes",
+ "serde_json",
  "sha3 0.9.1",
  "smallvec 1.11.0",
  "tracing",
@@ -7501,6 +7502,44 @@ dependencies = [
 ]
 
 [[package]]
+name = "rooch-relayer"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bcs",
+ "chrono",
+ "clap 3.2.25",
+ "coerce",
+ "derive_builder",
+ "ethers",
+ "fastcrypto",
+ "futures",
+ "jsonrpsee",
+ "move-core-types",
+ "move-resource-viewer",
+ "moveos",
+ "moveos-store",
+ "moveos-types",
+ "parking_lot 0.12.1",
+ "rooch-key",
+ "rooch-rpc-api",
+ "rooch-rpc-client",
+ "rooch-store",
+ "rooch-types",
+ "schemars",
+ "serde 1.0.188",
+ "serde_json",
+ "serde_with",
+ "serde_yaml 0.9.25",
+ "thiserror",
+ "tokio",
+ "tonic",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "rooch-rpc-api"
 version = "0.1.0"
 dependencies = [
@@ -7597,6 +7636,7 @@ dependencies = [
  "rooch-executor",
  "rooch-key",
  "rooch-proposer",
+ "rooch-relayer",
  "rooch-rpc-api",
  "rooch-sequencer",
  "rooch-store",

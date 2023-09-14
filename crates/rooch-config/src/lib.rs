@@ -56,7 +56,6 @@ pub static R_OPT_NET_HELP: &str = r#"Chain Network
     Use rooch_generator command to generate a genesis config."#;
 
 #[derive(Clone, Debug, Parser, Default, Serialize, Deserialize)]
-#[clap(name = "rooch", about = "Rooch")]
 pub struct RoochOpt {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long = "data-dir", short = 'd', parse(from_os_str))]
@@ -66,18 +65,23 @@ pub struct RoochOpt {
     /// If dev chainid, start the service with a temporary data store.
     /// All data will be deleted when the service is stopped.
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
     pub chain_id: Option<RoochChainID>,
 
-    // #[serde(skip_serializing_if = "Option::is_none")]
-    // #[clap(long = "genesis-config")]
-    // /// Init chain by a custom genesis config. if want to reuse builtin network config, just pass a builtin network name.
-    // /// This option only work for node init start.
-    // pub genesis_config: Option<String>,
-    pub store: Option<StoreConfig>,
+    #[clap(flatten)]
+    pub store: StoreConfig,
 
     /// Optional custom port, which the rooch server should listen on.
+    /// The port on which the server should listen defaults to `50051`
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long, short = 'p')]
     pub port: Option<u16>,
+
+    /// The Ethereum RPC URL to connect to for relay L1 block and transaction to L2.
+    /// If not set, the relayer service will not start.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long)]
+    pub eth_rpc_url: Option<String>,
 }
 
 impl std::fmt::Display for RoochOpt {
@@ -95,8 +99,9 @@ impl RoochOpt {
         RoochOpt {
             base_data_dir: None,
             chain_id: Some(RoochChainID::DEV),
-            store: None,
+            store: StoreConfig::default(),
             port: None,
+            eth_rpc_url: None,
         }
     }
 }

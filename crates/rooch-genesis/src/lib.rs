@@ -16,7 +16,6 @@ use once_cell::sync::Lazy;
 use rooch_framework::natives::gas_parameter::gas_member::InitialGasSchedule;
 use rooch_types::chain_id::RoochChainID;
 use rooch_types::error::GenesisError;
-use rooch_types::framework::genesis;
 use rooch_types::framework::genesis::GenesisContext;
 use rooch_types::transaction::rooch::RoochTransaction;
 use serde::{Deserialize, Serialize};
@@ -29,7 +28,7 @@ use std::{
 pub static ROOCH_DEV_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
     // genesis for integration test, we need to build the stdlib every time for `private_generic` check
     // see moveos/moveos-verifier/src/metadata.rs#L27-L30
-    RoochGenesis::build_with_option(RoochChainID::DEV.chain_id().id(), BuildOption::Fresh)
+    RoochGenesis::build_with_option(RoochChainID::DEV.genesis_ctx(), BuildOption::Fresh)
         .expect("build rooch genesis failed")
 });
 
@@ -57,11 +56,11 @@ pub enum BuildOption {
 }
 
 impl RoochGenesis {
-    pub fn build(chain_id: u64) -> Result<Self> {
-        Self::build_with_option(chain_id, BuildOption::Release)
+    pub fn build(genesis_ctx: GenesisContext) -> Result<Self> {
+        Self::build_with_option(genesis_ctx, BuildOption::Release)
     }
 
-    pub fn build_with_option(chain_id: u64, option: BuildOption) -> Result<Self> {
+    pub fn build_with_option(genesis_ctx: GenesisContext, option: BuildOption) -> Result<Self> {
         let config = MoveOSConfig {
             vm_config: VMConfig::default(),
         };
@@ -71,7 +70,7 @@ impl RoochGenesis {
         };
 
         let gas_params = rooch_framework::natives::GasParameters::zeros();
-        let genesis_package = GenesisPackage::build(chain_id, option)?;
+        let genesis_package = GenesisPackage::build(genesis_ctx, option)?;
 
         Ok(RoochGenesis {
             config,
@@ -147,7 +146,7 @@ impl RoochGenesis {
 static GENESIS_STDLIB_BYTES: &[u8] = include_bytes!("../generated/stdlib");
 
 impl GenesisPackage {
-    fn build(chain_id: u64, build_option: BuildOption) -> Result<Self> {
+    fn build(genesis_ctx: GenesisContext, build_option: BuildOption) -> Result<Self> {
         let stdlib = match build_option {
             BuildOption::Fresh => Self::build_stdlib()?,
             BuildOption::Release => Self::load_stdlib()?,
@@ -160,7 +159,7 @@ impl GenesisPackage {
             .map(|(genesis_account, bundle)| {
                 RoochTransaction::new_genesis_tx(
                     genesis_account.into(),
-                    chain_id,
+                    genesis_ctx.chain_id,
                     MoveAction::ModuleBundle(bundle),
                 )
             })
@@ -177,7 +176,6 @@ impl GenesisPackage {
             vec![],
             vec![],
         )?;
-        let genesis_ctx = genesis::GenesisContext::new(chain_id);
         let genesis_result = moveos.init_genesis(genesis_txs.clone(), genesis_ctx.clone())?;
         let state_root = genesis_result
             .last()
@@ -266,7 +264,7 @@ mod tests {
     #[test]
     fn test_genesis_init() {
         let genesis = super::RoochGenesis::build_with_option(
-            RoochChainID::DEV.chain_id().id(),
+            RoochChainID::DEV.genesis_ctx(),
             crate::BuildOption::Fresh,
         )
         .expect("build rooch framework failed");

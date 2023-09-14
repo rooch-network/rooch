@@ -1,15 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::framework::genesis::GenesisContext;
 use anyhow::{bail, format_err, Result};
-use std::fmt;
-use std::fmt::{Display, Formatter};
-use std::str::FromStr;
-
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::fmt;
+use std::fmt::{Display, Formatter};
+use std::str::FromStr;
 
 pub const CHAIN_ID_DEV: u64 = 20230103;
 pub const CHAIN_ID_TEST: u64 = 20230102;
@@ -179,6 +179,27 @@ impl BuiltinChainID {
             BuiltinChainID::Main,
         ]
     }
+
+    pub fn genesis_ctx(&self) -> GenesisContext {
+        let chain_id = self.chain_id().id;
+        match self {
+            BuiltinChainID::Dev => {
+                //Dev timestamp from 0, developer can manually set the timestamp
+                let timestamp = 0;
+                GenesisContext::new(chain_id, timestamp)
+            }
+            BuiltinChainID::Test => {
+                //Test network start from Ethereum block height 9685149, timestamp: 1694571540
+                let timestamp = std::time::Duration::from_secs(1694571540).as_micros() as u64;
+                GenesisContext::new(chain_id, timestamp)
+            }
+            BuiltinChainID::Main => {
+                //TODO config main network genesis timestamp
+                let timestamp = 0;
+                GenesisContext::new(chain_id, timestamp)
+            }
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
@@ -208,6 +229,12 @@ impl CustomChainID {
 
     pub fn chain_name(&self) -> &str {
         self.chain_name.as_str()
+    }
+
+    pub fn genesis_ctx(&self) -> GenesisContext {
+        //TODO support custom chain genesis timestamp
+        let timestamp = 0;
+        GenesisContext::new(self.chain_id.id, timestamp)
     }
 }
 
@@ -295,6 +322,13 @@ impl RoochChainID {
         match self {
             Self::Builtin(b) => b.chain_id(),
             Self::Custom(c) => c.chain_id(),
+        }
+    }
+
+    pub fn genesis_ctx(&self) -> GenesisContext {
+        match self {
+            Self::Builtin(b) => b.genesis_ctx(),
+            Self::Custom(c) => c.genesis_ctx(),
         }
     }
 

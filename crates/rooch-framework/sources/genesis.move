@@ -3,7 +3,6 @@ module rooch_framework::genesis {
     use std::error;
     use std::option;
     use moveos_std::storage_context::{Self, StorageContext};
-    //use moveos_std::signe;
     use rooch_framework::account;
     use rooch_framework::auth_validator_registry;
     use rooch_framework::builtin_validators;
@@ -11,12 +10,16 @@ module rooch_framework::genesis {
     use rooch_framework::coin;
     use rooch_framework::gas_coin;
     use rooch_framework::transaction_fee;
+    use rooch_framework::timestamp;
+    use rooch_framework::ethereum_light_client;
 
     const ErrorGenesisInit: u64 = 1;
 
     /// GenesisContext is a genesis init parameters in the TxContext.
     struct GenesisContext has copy,store,drop{
         chain_id: u64,
+        /// genesis timestamp in microseconds
+        timestamp: u64,
     }
 
     fun init(ctx: &mut StorageContext){
@@ -31,6 +34,8 @@ module rooch_framework::genesis {
         coin::genesis_init(ctx, genesis_account);
         gas_coin::genesis_init(ctx, genesis_account);
         transaction_fee::genesis_init(ctx, genesis_account);
+        timestamp::genesis_init(ctx, genesis_account, genesis_context.timestamp);
+        ethereum_light_client::genesis_init(ctx, genesis_account);
     }
 
 
@@ -38,7 +43,7 @@ module rooch_framework::genesis {
     /// init the genesis context for test, and return the StorageContext with @rooch_framework genesis account
     public fun init_for_test(): StorageContext{
         let ctx = moveos_std::storage_context::new_test_context(@rooch_framework);
-        storage_context::add(&mut ctx, GenesisContext{chain_id: 20230103});
+        storage_context::add(&mut ctx, GenesisContext{chain_id: 20230103, timestamp: 0});
         init(&mut ctx);
         ctx
     }

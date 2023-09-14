@@ -126,6 +126,17 @@
       }
     },
     {
+      "name": "rooch_getChainID",
+      "params": [],
+      "result": {
+        "name": "StrView<u64>",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/u64"
+        }
+      }
+    },
+    {
       "name": "rooch_getEvents",
       "description": "Get the events by event filter",
       "params": [

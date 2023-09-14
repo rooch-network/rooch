@@ -4,7 +4,7 @@
 use super::{
     authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo, TransactionType,
 };
-use crate::crypto::{Ed25519RoochSignature, Signature};
+use crate::crypto::{Ed25519RoochSignature, RoochKeyPair, Signature};
 use crate::H256;
 use crate::{address::RoochAddress, chain_id::RoochChainID};
 use anyhow::Result;
@@ -64,6 +64,13 @@ impl RoochTransactionData {
 
     pub fn hash(&self) -> H256 {
         moveos_types::h256::sha3_256_of(self.encode().as_slice())
+    }
+
+    pub fn sign(self, kp: &RoochKeyPair) -> RoochTransaction {
+        let signature = Signature::new_hashed(self.hash().as_bytes(), kp);
+        //TODO implement Signature into Authenticator
+        let authenticator = Authenticator::rooch(signature);
+        RoochTransaction::new(self, authenticator)
     }
 }
 

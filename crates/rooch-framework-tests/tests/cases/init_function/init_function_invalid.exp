@@ -1,0 +1,121 @@
+processed 13 tasks
+
+task 1 'publish'. lines 3-9:
+Error: error: module init function should not have a primitive type other than a signer
+  ┌─ /tmp/tempfile:5:5
+  │  
+5 │ ╭     fun init( _: u8 ){
+6 │ │     }
+  │ ╰─────^
+
+
+
+task 2 'publish'. lines 11-17:
+Error: error: module init function should not have a primitive type other than a signer
+   ┌─ /tmp/tempfile:13:5
+   │  
+13 │ ╭     fun init( _: u16 ){
+14 │ │     }
+   │ ╰─────^
+
+
+
+task 3 'publish'. lines 19-25:
+Error: error: module init function should not have a primitive type other than a signer
+   ┌─ /tmp/tempfile:21:5
+   │  
+21 │ ╭     fun init( _: u32 ){
+22 │ │     }
+   │ ╰─────^
+
+
+
+task 4 'publish'. lines 27-33:
+Error: error: module init function should not have a primitive type other than a signer
+   ┌─ /tmp/tempfile:29:5
+   │  
+29 │ ╭     fun init( _: u64 ){
+30 │ │     }
+   │ ╰─────^
+
+
+
+task 5 'publish'. lines 35-41:
+Error: error: module init function should not have a primitive type other than a signer
+   ┌─ /tmp/tempfile:37:5
+   │  
+37 │ ╭     fun init( _: u128 ){
+38 │ │     }
+   │ ╰─────^
+
+
+
+task 6 'publish'. lines 43-49:
+Error: error: module init function should not have a primitive type other than a signer
+   ┌─ /tmp/tempfile:45:5
+   │  
+45 │ ╭     fun init( _: u256 ){
+46 │ │     }
+   │ ╰─────^
+
+
+
+task 7 'publish'. lines 52-62:
+Error: error: module init function only should have two parameter types with signer or storageContext
+   ┌─ /tmp/tempfile:57:5
+   │  
+57 │ ╭     fun init( _foo: Foo ){
+58 │ │     }
+   │ ╰─────^
+
+
+
+task 8 'publish'. lines 64-71:
+Error: error: module init function only should have two parameter types with signer or storageContext
+   ┌─ /tmp/tempfile:67:5
+   │  
+67 │ ╭     fun init( _: object_id::ObjectID ){
+68 │ │     }
+   │ ╰─────^
+
+
+
+task 9 'publish'. lines 73-80:
+Error: error: module init function only should have two parameter types with signer or storageContext
+   ┌─ /tmp/tempfile:76:5
+   │  
+76 │ ╭     fun init( _: string::String ){
+77 │ │     }
+   │ ╰─────^
+
+
+
+task 10 'publish'. lines 82-89:
+Error: error: module init function only should have two parameter types with signer or storageContext
+   ┌─ /tmp/tempfile:85:5
+   │  
+85 │ ╭     fun init( _: string::String ){
+86 │ │     }
+   │ ╰─────^
+
+
+
+task 11 'publish'. lines 91-98:
+Error: error: module init function only should have two parameter types with signer or storageContext
+   ┌─ /tmp/tempfile:94:5
+   │  
+94 │ ╭     fun init( _: ascii::String ){
+95 │ │     }
+   │ ╰─────^
+
+
+
+task 12 'publish'. lines 100-107:
+Error: error: module init function should not have a reference primitive type other than a signer
+    ┌─ /tmp/tempfile:103:5
+    │  
+103 │ ╭     fun init( _ : & storage_context::StorageContext){
+104 │ │     }
+    │ ╰─────^
+
+

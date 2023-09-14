@@ -11,7 +11,7 @@ module rooch_framework::ethereum_address {
     const ErrorMalformedPublicKey: u64 = 0;
     const ErrorDecompressPublicKey: u64 = 1;
 
-    struct ETHAddress has store, drop {
+    struct ETHAddress has store,copy,drop {
         bytes: vector<u8>,
     }
 

@@ -15,6 +15,9 @@ use rooch_open_rpc_macros::open_rpc;
 #[open_rpc(namespace = "rooch")]
 #[rpc(server, client, namespace = "rooch")]
 pub trait RoochAPI {
+    #[method(name = "getChainID")]
+    async fn get_chain_id(&self) -> RpcResult<StrView<u64>>;
+
     /// Send the signed transaction in bcs hex format
     /// This method does not block waiting for the transaction to be executed.
     #[method(name = "sendRawTransaction")]

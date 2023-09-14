@@ -11,7 +11,6 @@ use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::{system::ActorSystem, IntoActor};
 use hyper::header::HeaderValue;
 use hyper::Method;
-use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
 use moveos_store::{MoveOSDB, MoveOSStore};
@@ -27,6 +26,8 @@ use rooch_key::key_derive::generate_new_key_pair;
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
 use rooch_proposer::proxy::ProposerProxy;
+use rooch_relayer::actor::messages::RelayTick;
+use rooch_relayer::actor::relayer::RelayerActor;
 use rooch_rpc_api::api::RoochRpcModule;
 use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
@@ -50,21 +51,18 @@ pub mod service;
 /// This exit code means is that the server failed to start and required human intervention.
 static R_EXIT_CODE_NEED_HELP: i32 = 120;
 
-pub fn http_client(url: impl AsRef<str>) -> Result<HttpClient> {
-    let client = HttpClientBuilder::default().build(url)?;
-    Ok(client)
-}
-
 pub struct ServerHandle {
     handle: jsonrpsee::server::ServerHandle,
-    timer: Timer,
+    timers: Vec<Timer>,
     _store_config: StoreConfig,
 }
 
 impl ServerHandle {
     fn stop(self) -> Result<()> {
         self.handle.stop()?;
-        self.timer.stop();
+        for timer in self.timers {
+            timer.stop();
+        }
         Ok(())
     }
 }
@@ -154,7 +152,7 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
     let config = opt.port.map_or(ServerConfig::default(), |port| {
         ServerConfig::new_with_port(port)
     });
-    let chain_id = opt.chain_id.clone().unwrap_or_default().chain_id();
+    let chain_id_opt = opt.chain_id.clone().unwrap_or_default();
 
     let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
     let actor_system = ActorSystem::global_system();
@@ -167,9 +165,13 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
 
     // Init executor
     let is_genesis = moveos_store.statedb.is_genesis();
-    let executor = ExecutorActor::new(chain_id.id(), moveos_store, rooch_store.clone())?
-        .into_actor(Some("Executor"), &actor_system)
-        .await?;
+    let executor = ExecutorActor::new(
+        chain_id_opt.genesis_ctx(),
+        moveos_store,
+        rooch_store.clone(),
+    )?
+    .into_actor(Some("Executor"), &actor_system)
+    .await?;
     let executor_proxy = ExecutorProxy::new(executor.into());
 
     // Init sequencer
@@ -190,15 +192,38 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
     let proposer_proxy = ProposerProxy::new(proposer.clone().into());
     //TODO load from config
     let block_propose_duration_in_seconds: u64 = 5;
-    //TODO stop timer
-    let timer = Timer::start(
+    let mut timers = vec![];
+    let proposer_timer = Timer::start(
         proposer,
         Duration::from_secs(block_propose_duration_in_seconds),
         ProposeBlock {},
     );
+    timers.push(proposer_timer);
 
-    let rpc_service = RpcService::new(executor_proxy, sequencer_proxy, proposer_proxy);
+    let rpc_service = RpcService::new(
+        chain_id_opt.chain_id().id(),
+        executor_proxy,
+        sequencer_proxy,
+        proposer_proxy,
+    );
     let aggregate_service = AggregateService::new(rpc_service.clone());
+
+    if let Some(eth_rpc_url) = &opt.eth_rpc_url {
+        //TODO load from config
+        let (_, kp, _, _) =
+            generate_new_key_pair::<RoochAddress, RoochKeyPair>(CoinID::Rooch, None, None)?;
+        let relayer = RelayerActor::new(kp, eth_rpc_url, rpc_service.clone())
+            .await?
+            .into_actor(Some("Relayer"), &actor_system)
+            .await?;
+        let relay_tick_in_seconds: u64 = 5;
+        let relayer_timer = Timer::start(
+            relayer,
+            Duration::from_secs(relay_tick_in_seconds),
+            RelayTick {},
+        );
+        timers.push(relayer_timer);
+    }
 
     let acl = match env::var("ACCESS_CONTROL_ALLOW_ORIGIN") {
         Ok(value) => {
@@ -235,7 +260,8 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
     ))?;
     rpc_module_builder.register_module(WalletServer::new(rpc_service.clone()))?;
 
-    rpc_module_builder.register_module(EthServer::new(chain_id, rpc_service.clone()))?;
+    rpc_module_builder
+        .register_module(EthServer::new(chain_id_opt.chain_id(), rpc_service.clone()))?;
 
     // let rpc_api = build_rpc_api(rpc_api);
     let methods_names = rpc_module_builder.module.method_names().collect::<Vec<_>>();
@@ -246,7 +272,7 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
 
     Ok(ServerHandle {
         handle,
-        timer,
+        timers,
         _store_config: store_config,
     })
 }

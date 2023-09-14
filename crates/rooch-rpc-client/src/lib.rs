@@ -96,6 +96,10 @@ pub struct Client {
 // TODO: call args are uniformly defined in jsonrpc types?
 // example execute_view_function get_events_by_event_handle
 impl Client {
+    pub async fn get_chain_id(&self) -> Result<u64> {
+        Ok(self.rpc.http.get_chain_id().await?.0)
+    }
+
     pub async fn execute_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView> {
         let tx_payload = bcs::to_bytes(&tx)?;
         self.rpc
