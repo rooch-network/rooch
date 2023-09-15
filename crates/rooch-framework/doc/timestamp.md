@@ -18,11 +18,13 @@ It interacts with the other modules in the following ways:
 -  [Function `now_microseconds`](#0x3_timestamp_now_microseconds)
 -  [Function `now_seconds`](#0x3_timestamp_now_seconds)
 -  [Function `seconds_to_microseconds`](#0x3_timestamp_seconds_to_microseconds)
+-  [Function `fast_forward_seconds_for_dev`](#0x3_timestamp_fast_forward_seconds_for_dev)
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x2::account_storage</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
+<b>use</b> <a href="chain_id.md#0x3_chain_id">0x3::chain_id</a>;
 </code></pre>
 
 
@@ -232,6 +234,32 @@ Gets the current time in seconds.
 
 <pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x3_timestamp_seconds_to_microseconds">seconds_to_microseconds</a>(seconds: u64): u64 {
     seconds * <a href="timestamp.md#0x3_timestamp_MICRO_CONVERSION_FACTOR">MICRO_CONVERSION_FACTOR</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_timestamp_fast_forward_seconds_for_dev"></a>
+
+## Function `fast_forward_seconds_for_dev`
+
+Fast forwards the clock by the given number of seconds, but only if the chain is in dev mode.
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="timestamp.md#0x3_timestamp_fast_forward_seconds_for_dev">fast_forward_seconds_for_dev</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, timestamp_seconds: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="timestamp.md#0x3_timestamp_fast_forward_seconds_for_dev">fast_forward_seconds_for_dev</a>(ctx: &<b>mut</b> StorageContext, timestamp_seconds: u64) {
+    <b>assert</b>!(rooch_framework::chain_id::is_dev(ctx), <a href="_invalid_argument">error::invalid_argument</a>(<a href="timestamp.md#0x3_timestamp_ErrorInvalidTimestamp">ErrorInvalidTimestamp</a>));
+    <a href="timestamp.md#0x3_timestamp_fast_forward_seconds">fast_forward_seconds</a>(ctx, timestamp_seconds);
 }
 </code></pre>
 

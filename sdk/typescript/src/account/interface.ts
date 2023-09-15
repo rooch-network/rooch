@@ -27,13 +27,11 @@ export interface IAccount {
    * Create session account with scope
    *
    * @param scope string the scope of created account
-   * @param expirationTime  number The expiration time of created account
    * @param maxInactiveInterval  number The max inactive interval
    * @param opts CallOption
    */
   createSessionAccount(
     scope: string,
-    expirationTime: number,
     maxInactiveInterval: number,
     opts?: CallOption,
   ): Promise<IAccount>

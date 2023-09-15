@@ -15,6 +15,7 @@ use rooch_types::address::{EthereumAddress, MultiChainAddress, RoochAddress};
 use rooch_types::coin_type::CoinID;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::framework::session_key::SessionKeyModule;
+use rooch_types::framework::timestamp::TimestampModule;
 use rooch_types::transaction::ethereum::EthereumTransactionData;
 use rooch_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, framework::empty::Empty};
 use rooch_types::{
@@ -101,12 +102,10 @@ fn test_session_key_rooch() {
         Empty::MODULE_NAME.as_str(),
         Empty::EMPTY_FUNCTION_NAME.as_str(),
     );
-    let expiration_time = 100;
     let max_inactive_interval = 100;
     let action = rooch_types::framework::session_key::SessionKeyModule::create_session_key_action(
         session_auth_key.as_ref().to_vec(),
         session_scope.clone(),
-        expiration_time,
         max_inactive_interval,
     );
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
@@ -124,7 +123,6 @@ fn test_session_key_rooch() {
     let session_key = session_key_option.unwrap();
     assert_eq!(&session_key.authentication_key, session_auth_key.as_ref());
     assert_eq!(session_key.scopes, vec![session_scope]);
-    assert_eq!(session_key.expiration_time, expiration_time);
     assert_eq!(session_key.max_inactive_interval, max_inactive_interval);
 
     // send transaction via session key
@@ -170,8 +168,46 @@ fn test_session_key_rooch() {
                 _ => panic!("expect move abort in module"),
             }
             let (_category, reason) = moveos_types::move_std::error::explain(*code);
-            // EFunctionCallBeyondSessionScope = 5
-            assert_eq!(reason, 5, "expect EFunctionCallBeyondSessionScope");
+            // ErrorFunctionCallBeyondSessionScope = 5
+            assert_eq!(reason, 5, "expect ErrorFunctionCallBeyondSessionScope");
+        }
+        _ => {
+            panic!("Expect move abort")
+        }
+    }
+
+    // test session key expired
+    let update_time_action =
+        TimestampModule::create_fast_forward_seconds_for_dev_action(max_inactive_interval + 1);
+    // because previous transaction is failed, so the sequence number is not increased.
+    let tx_data =
+        RoochTransactionData::new_for_test(sender, sequence_number + 2, update_time_action);
+    let tx = keystore
+        .sign_transaction(&sender, tx_data, CoinID::Rooch)
+        .unwrap();
+    binding_test.execute(tx).unwrap();
+
+    let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
+    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number + 3, action);
+    let tx = keystore
+        .sign_transaction_via_session_key(&sender, tx_data, &session_auth_key)
+        .unwrap();
+    let error = binding_test.execute_as_result(tx).unwrap_err();
+    match error.downcast_ref() {
+        Some(VMStatus::MoveAbort(l, code)) => {
+            match l {
+                AbortLocation::Module(module_id) => {
+                    assert_eq!(
+                        module_id,
+                        &SessionKeyModule::module_id(),
+                        "expect session key module"
+                    );
+                }
+                _ => panic!("expect move abort in module"),
+            }
+            let (_category, reason) = moveos_types::move_std::error::explain(*code);
+            // ErrorSessionIsExpired = 4
+            assert_eq!(reason, 4, "expect ErrorSessionIsExpired");
         }
         _ => {
             panic!("Expect move abort")

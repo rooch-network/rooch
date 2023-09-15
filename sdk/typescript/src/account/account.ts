@@ -100,7 +100,6 @@ export class Account implements IAccount {
 
   async createSessionAccount(
     scope: string,
-    expirationTime: number,
     maxInactiveInterval: number,
     opts?: CallOption,
   ): Promise<IAccount> {
@@ -108,7 +107,6 @@ export class Account implements IAccount {
     await this.registerSessionKey(
       kp.getPublicKey().toRoochAddress(),
       scope,
-      expirationTime,
       maxInactiveInterval,
       opts,
     )
@@ -119,7 +117,6 @@ export class Account implements IAccount {
   async registerSessionKey(
     authKey: AccountAddress,
     scope: string,
-    expirationTime: number,
     maxInactiveInterval: number,
     opts?: CallOption,
   ): Promise<void> {
@@ -151,10 +148,6 @@ export class Account implements IAccount {
         {
           type: 'Ascii',
           value: scopeFunctionName,
-        },
-        {
-          type: 'U64',
-          value: BigInt(expirationTime),
         },
         {
           type: 'U64',

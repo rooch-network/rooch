@@ -10,12 +10,15 @@
 -  [Resource `SessionKeys`](#0x3_session_key_SessionKeys)
 -  [Constants](#@Constants_0)
 -  [Function `new_session_scope`](#0x3_session_key_new_session_scope)
+-  [Function `is_expired_session_key`](#0x3_session_key_is_expired_session_key)
 -  [Function `exists_session_key`](#0x3_session_key_exists_session_key)
 -  [Function `get_session_key`](#0x3_session_key_get_session_key)
 -  [Function `create_session_key`](#0x3_session_key_create_session_key)
 -  [Function `create_session_key_entry`](#0x3_session_key_create_session_key_entry)
 -  [Function `validate`](#0x3_session_key_validate)
 -  [Function `active_session_key`](#0x3_session_key_active_session_key)
+-  [Function `remove_session_key`](#0x3_session_key_remove_session_key)
+-  [Function `remove_session_key_entry`](#0x3_session_key_remove_session_key_entry)
 
 
 <pre><code><b>use</b> <a href="">0x1::ascii</a>;
@@ -30,6 +33,7 @@
 <b>use</b> <a href="">0x2::tx_meta</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 <b>use</b> <a href="native_validator.md#0x3_native_validator">0x3::native_validator</a>;
+<b>use</b> <a href="timestamp.md#0x3_timestamp">0x3::timestamp</a>;
 </code></pre>
 
 
@@ -55,7 +59,7 @@ The session's scope
 <code>module_address: <b>address</b></code>
 </dt>
 <dd>
-
+ The scope module address, the address can not support <code>*</code>
 </dd>
 <dt>
 <code>module_name: <a href="_String">ascii::String</a></code>
@@ -94,31 +98,33 @@ The session's scope
 <code>authentication_key: <a href="">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
-
+ The session key's authentication key, it also is the session key's id
 </dd>
 <dt>
 <code>scopes: <a href="">vector</a>&lt;<a href="session_key.md#0x3_session_key_SessionScope">session_key::SessionScope</a>&gt;</code>
 </dt>
 <dd>
-
+ The session key's scopes
 </dd>
 <dt>
-<code>expiration_time: u64</code>
+<code>create_time: u64</code>
 </dt>
 <dd>
- The session key's expiration time period, in seconds, 0 means never expired
+ The session key's create time, current timestamp in seconds
 </dd>
 <dt>
 <code>last_active_time: u64</code>
 </dt>
 <dd>
- The session key's last active time
+ The session key's last active time, in seconds
 </dd>
 <dt>
 <code>max_inactive_interval: u64</code>
 </dt>
 <dd>
  The session key's max inactive time period, in seconds
+ If the session key is not active in this time period, it will be expired
+ If the max_inactive_interval is 0, the session key will never be expired
 </dd>
 </dl>
 
@@ -235,6 +241,35 @@ The session key is invalid
 
 </details>
 
+<a name="0x3_session_key_is_expired_session_key"></a>
+
+## Function `is_expired_session_key`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_is_expired_session_key">is_expired_session_key</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, account_address: <b>address</b>, authentication_key: <a href="">vector</a>&lt;u8&gt;): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_is_expired_session_key">is_expired_session_key</a>(ctx: &StorageContext, account_address: <b>address</b>, authentication_key: <a href="">vector</a>&lt;u8&gt;) : bool {
+    <b>let</b> session_key_option = <a href="session_key.md#0x3_session_key_get_session_key">get_session_key</a>(ctx, account_address, authentication_key);
+    <b>if</b> (<a href="_is_none">option::is_none</a>(&session_key_option)){
+        <b>return</b> <b>false</b>
+    };
+    <b>let</b> <a href="session_key.md#0x3_session_key">session_key</a> = <a href="_extract">option::extract</a>(&<b>mut</b> session_key_option);
+    <a href="session_key.md#0x3_session_key_is_expired">is_expired</a>(ctx, &<a href="session_key.md#0x3_session_key">session_key</a>)
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x3_session_key_exists_session_key"></a>
 
 ## Function `exists_session_key`
@@ -298,7 +333,7 @@ Get the session key of the account_address by the authentication key
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key">create_session_key</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scopes: <a href="">vector</a>&lt;<a href="session_key.md#0x3_session_key_SessionScope">session_key::SessionScope</a>&gt;, expiration_time: u64, max_inactive_interval: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key">create_session_key</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scopes: <a href="">vector</a>&lt;<a href="session_key.md#0x3_session_key_SessionScope">session_key::SessionScope</a>&gt;, max_inactive_interval: u64)
 </code></pre>
 
 
@@ -307,18 +342,17 @@ Get the session key of the account_address by the authentication key
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key">create_session_key</a>(ctx: &<b>mut</b> StorageContext, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scopes: <a href="">vector</a>&lt;<a href="session_key.md#0x3_session_key_SessionScope">SessionScope</a>&gt;, expiration_time: u64, max_inactive_interval: u64) {
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key">create_session_key</a>(ctx: &<b>mut</b> StorageContext, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scopes: <a href="">vector</a>&lt;<a href="session_key.md#0x3_session_key_SessionScope">SessionScope</a>&gt;, max_inactive_interval: u64) {
     //Can not create new session key by the other session key
     <b>assert</b>!(!<a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">auth_validator::is_validate_via_session_key</a>(ctx), <a href="_permission_denied">error::permission_denied</a>(<a href="session_key.md#0x3_session_key_ErrorSessionKeyCreatePermissionDenied">ErrorSessionKeyCreatePermissionDenied</a>));
     <b>let</b> sender_addr = <a href="_address_of">signer::address_of</a>(sender);
     <b>assert</b>!(!<a href="session_key.md#0x3_session_key_exists_session_key">exists_session_key</a>(ctx, sender_addr, authentication_key), <a href="_already_exists">error::already_exists</a>(<a href="session_key.md#0x3_session_key_ErrorSessionKeyAlreadyExists">ErrorSessionKeyAlreadyExists</a>));
-
+    <b>let</b> now_seconds = <a href="timestamp.md#0x3_timestamp_now_seconds">timestamp::now_seconds</a>(ctx);
     <b>let</b> <a href="session_key.md#0x3_session_key">session_key</a> = <a href="session_key.md#0x3_session_key_SessionKey">SessionKey</a> {
         authentication_key: authentication_key,
         scopes: scopes,
-        expiration_time: expiration_time,
-        //TODO set the last active time <b>to</b> now
-        last_active_time: 0,
+        create_time: now_seconds,
+        last_active_time: now_seconds,
         max_inactive_interval: max_inactive_interval,
     };
     <b>if</b> (!<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender_addr)){
@@ -341,7 +375,7 @@ Get the session key of the account_address by the authentication key
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key_entry">create_session_key_entry</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scope_module_address: <b>address</b>, scope_module_name: <a href="_String">ascii::String</a>, scope_function_name: <a href="_String">ascii::String</a>, expiration_time: u64, max_inactive_interval: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key_entry">create_session_key_entry</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scope_module_address: <b>address</b>, scope_module_name: <a href="_String">ascii::String</a>, scope_function_name: <a href="_String">ascii::String</a>, max_inactive_interval: u64)
 </code></pre>
 
 
@@ -350,12 +384,12 @@ Get the session key of the account_address by the authentication key
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key_entry">create_session_key_entry</a>(ctx: &<b>mut</b> StorageContext, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scope_module_address: <b>address</b>, scope_module_name: std::ascii::String, scope_function_name: std::ascii::String,expiration_time: u64, max_inactive_interval: u64) {
+<pre><code><b>public</b> entry <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key_entry">create_session_key_entry</a>(ctx: &<b>mut</b> StorageContext, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scope_module_address: <b>address</b>, scope_module_name: std::ascii::String, scope_function_name: std::ascii::String, max_inactive_interval: u64) {
     <a href="session_key.md#0x3_session_key_create_session_key">create_session_key</a>(ctx, sender, authentication_key, <a href="_singleton">vector::singleton</a>(<a href="session_key.md#0x3_session_key_SessionScope">SessionScope</a>{
         module_address: scope_module_address,
         module_name: scope_module_name,
         function_name: scope_function_name,
-    }), expiration_time, max_inactive_interval);
+    }), max_inactive_interval);
 }
 </code></pre>
 
@@ -387,11 +421,11 @@ If the session key is expired or invalid, abort the tx, otherwise return option:
         <b>return</b> <a href="_none">option::none</a>()
     };
     // We only support <b>native</b> validator for <a href="session_key.md#0x3_session_key_SessionKey">SessionKey</a> now
-    <b>if</b>(scheme != validator::scheme()){
+    <b>if</b>(scheme != <a href="native_validator.md#0x3_native_validator_scheme">native_validator::scheme</a>()){
         <b>return</b> <a href="_none">option::none</a>()
     };
 
-    <b>let</b> auth_key = validator::get_authentication_key_from_authenticator_payload(&authenticator_payload);
+    <b>let</b> auth_key = <a href="native_validator.md#0x3_native_validator_get_authentication_key_from_authenticator_payload">native_validator::get_authentication_key_from_authenticator_payload</a>(&authenticator_payload);
 
     <b>let</b> session_key_option = <a href="session_key.md#0x3_session_key_get_session_key">get_session_key</a>(ctx, sender_addr, auth_key);
     <b>if</b> (<a href="_is_none">option::is_none</a>(&session_key_option)){
@@ -402,7 +436,7 @@ If the session key is expired or invalid, abort the tx, otherwise return option:
 
     <b>assert</b>!(<a href="session_key.md#0x3_session_key_in_session_scope">in_session_scope</a>(ctx, &<a href="session_key.md#0x3_session_key">session_key</a>), <a href="_permission_denied">error::permission_denied</a>(<a href="session_key.md#0x3_session_key_ErrorFunctionCallBeyondSessionScope">ErrorFunctionCallBeyondSessionScope</a>));
 
-    validator::validate_signature(&authenticator_payload, &<a href="_tx_hash">storage_context::tx_hash</a>(ctx));
+    <a href="native_validator.md#0x3_native_validator_validate_signature">native_validator::validate_signature</a>(&authenticator_payload, &<a href="_tx_hash">storage_context::tx_hash</a>(ctx));
     <a href="_some">option::some</a>(auth_key)
 }
 </code></pre>
@@ -428,12 +462,64 @@ If the session key is expired or invalid, abort the tx, otherwise return option:
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="session_key.md#0x3_session_key_active_session_key">active_session_key</a>(ctx: &<b>mut</b> StorageContext, authentication_key: <a href="">vector</a>&lt;u8&gt;) {
     <b>let</b> sender_addr = <a href="_sender">storage_context::sender</a>(ctx);
+    <b>let</b> now_seconds = <a href="timestamp.md#0x3_timestamp_now_seconds">timestamp::now_seconds</a>(ctx);
     <b>assert</b>!(<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender_addr), <a href="_not_found">error::not_found</a>(<a href="session_key.md#0x3_session_key_ErrorSessionKeyIsInvalid">ErrorSessionKeyIsInvalid</a>));
     <b>let</b> session_keys = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender_addr);
     <b>assert</b>!(<a href="_contains">table::contains</a>(&session_keys.keys, authentication_key), <a href="_not_found">error::not_found</a>(<a href="session_key.md#0x3_session_key_ErrorSessionKeyIsInvalid">ErrorSessionKeyIsInvalid</a>));
     <b>let</b> <a href="session_key.md#0x3_session_key">session_key</a> = <a href="_borrow_mut">table::borrow_mut</a>(&<b>mut</b> session_keys.keys, authentication_key);
-    //TODO set the last active time <b>to</b> now when the <a href="timestamp.md#0x3_timestamp">timestamp</a> is supported
-    <a href="session_key.md#0x3_session_key">session_key</a>.last_active_time = <a href="session_key.md#0x3_session_key">session_key</a>.last_active_time + 1;
+    <a href="session_key.md#0x3_session_key">session_key</a>.last_active_time = now_seconds;
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_session_key_remove_session_key"></a>
+
+## Function `remove_session_key`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_remove_session_key">remove_session_key</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_remove_session_key">remove_session_key</a>(ctx: &<b>mut</b> StorageContext, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;) {
+    <b>let</b> sender_addr = <a href="_address_of">signer::address_of</a>(sender);
+    <b>assert</b>!(<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender_addr), <a href="_not_found">error::not_found</a>(<a href="session_key.md#0x3_session_key_ErrorSessionKeyIsInvalid">ErrorSessionKeyIsInvalid</a>));
+    <b>let</b> session_keys = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender_addr);
+    <b>assert</b>!(<a href="_contains">table::contains</a>(&session_keys.keys, authentication_key), <a href="_not_found">error::not_found</a>(<a href="session_key.md#0x3_session_key_ErrorSessionKeyIsInvalid">ErrorSessionKeyIsInvalid</a>));
+    <a href="_remove">table::remove</a>(&<b>mut</b> session_keys.keys, authentication_key);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_session_key_remove_session_key_entry"></a>
+
+## Function `remove_session_key_entry`
+
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="session_key.md#0x3_session_key_remove_session_key_entry">remove_session_key_entry</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="session_key.md#0x3_session_key_remove_session_key_entry">remove_session_key_entry</a>(ctx: &<b>mut</b> StorageContext, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;) {
+    <a href="session_key.md#0x3_session_key_remove_session_key">remove_session_key</a>(ctx, sender, authentication_key);
 }
 </code></pre>
 

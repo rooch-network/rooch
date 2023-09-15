@@ -66,20 +66,28 @@ module rooch_framework::timestamp {
 
     #[test_only]
     public fun update_global_time_for_test(ctx: &mut StorageContext, timestamp_microsecs: u64){
-        let global_timer = account_storage::global_borrow_mut<CurrentTimeMicroseconds>(ctx, @rooch_framework);
-        let now = global_timer.microseconds;
-        assert!(now < timestamp_microsecs, error::invalid_argument(ErrorInvalidTimestamp));
-        global_timer.microseconds = timestamp_microsecs;
+        update_global_time(ctx, timestamp_microsecs);
     }
 
     #[test_only]
     public fun update_global_time_for_test_secs(ctx: &mut StorageContext, timestamp_seconds: u64) {
-        update_global_time_for_test(ctx, timestamp_seconds * MICRO_CONVERSION_FACTOR);
+        update_global_time(ctx, timestamp_seconds * MICRO_CONVERSION_FACTOR);
     }
 
     #[test_only]
-    public fun fast_forward_seconds(ctx: &mut StorageContext, timestamp_seconds: u64) {
-        let now_seconds = now_seconds(ctx);
-        update_global_time_for_test_secs(ctx, now_seconds + timestamp_seconds);
+    public fun fast_forward_seconds_for_test(ctx: &mut StorageContext, timestamp_seconds: u64) {
+        fast_forward_seconds(ctx, timestamp_seconds)
+    }
+
+    fun fast_forward_seconds(ctx: &mut StorageContext, timestamp_seconds: u64) {
+        let now_microseconds = now_microseconds(ctx);
+        update_global_time(ctx, now_microseconds + (timestamp_seconds * MICRO_CONVERSION_FACTOR));
+    }
+
+    /// Fast forwards the clock by the given number of seconds, but only if the chain is in dev mode.
+    //TODO find a better way to do this, maybe some module that is only available in dev chain?
+    public entry fun fast_forward_seconds_for_dev(ctx: &mut StorageContext, timestamp_seconds: u64) {
+        assert!(rooch_framework::chain_id::is_dev(ctx), error::invalid_argument(ErrorInvalidTimestamp));
+        fast_forward_seconds(ctx, timestamp_seconds);
     }
 }

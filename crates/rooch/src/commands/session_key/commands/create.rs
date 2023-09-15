@@ -21,11 +21,8 @@ pub struct CreateCommand {
     #[clap(long)]
     pub scope: SessionScope,
 
-    /// The expiration time of the session key, in seconds.
-    #[clap(long, default_value = "3600")]
-    pub expiration_time: u64,
-
     /// The max inactive interval of the session key, in seconds.
+    /// If the max_inactive_interval is 0, the session key will never expire.
     #[clap(long, default_value = "3600")]
     pub max_inactive_interval: u64,
 
@@ -57,7 +54,6 @@ impl CreateCommand {
             rooch_types::framework::session_key::SessionKeyModule::create_session_key_action(
                 session_auth_key.as_ref().to_vec(),
                 session_scope.clone(),
-                self.expiration_time,
                 self.max_inactive_interval,
             );
 

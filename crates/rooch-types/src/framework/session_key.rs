@@ -95,7 +95,7 @@ pub struct SessionKey {
     pub authentication_key: Vec<u8>,
     #[serde_as(as = "Vec<Readable<DisplayFromStr, _>>")]
     pub scopes: Vec<SessionScope>,
-    pub expiration_time: u64,
+    pub create_time: u64,
     pub last_active_time: u64,
     pub max_inactive_interval: u64,
 }
@@ -166,7 +166,6 @@ impl<'a> SessionKeyModule<'a> {
     pub fn create_session_key_action(
         authentication_key: Vec<u8>,
         scope: SessionScope,
-        expiration_time: u64,
         max_inactive_interval: u64,
     ) -> MoveAction {
         Self::create_move_action(
@@ -177,7 +176,6 @@ impl<'a> SessionKeyModule<'a> {
                 scope.module_address.to_move_value(),
                 scope.module_name.to_move_value(),
                 scope.function_name.to_move_value(),
-                MoveValue::U64(expiration_time),
                 MoveValue::U64(max_inactive_interval),
             ],
         )
