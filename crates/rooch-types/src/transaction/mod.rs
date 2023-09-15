@@ -173,16 +173,16 @@ impl TransactionSequenceInfo {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub struct TransactionSequenceMapping {
+pub struct TransactionSequenceInfoMapping {
     /// The tx order
     pub tx_order: u128,
     /// The tx hash.
     pub tx_hash: H256,
 }
 
-impl TransactionSequenceMapping {
-    pub fn new(tx_order: u128, tx_hash: H256) -> TransactionSequenceMapping {
-        TransactionSequenceMapping { tx_order, tx_hash }
+impl TransactionSequenceInfoMapping {
+    pub fn new(tx_order: u128, tx_hash: H256) -> TransactionSequenceInfoMapping {
+        TransactionSequenceInfoMapping { tx_order, tx_hash }
     }
 }
 

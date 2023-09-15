@@ -8,7 +8,7 @@ use crate::messages::{
 use crate::{actor::sequencer::SequencerActor, messages::TransactionSequenceMessage};
 use anyhow::Result;
 use coerce::actor::ActorRef;
-use rooch_types::transaction::{TransactionSequenceMapping, TypedTransaction};
+use rooch_types::transaction::{TransactionSequenceInfoMapping, TypedTransaction};
 use rooch_types::{transaction::TransactionSequenceInfo, H256};
 
 #[derive(Clone)]
@@ -47,7 +47,7 @@ impl SequencerProxy {
         &self,
         cursor: Option<u128>,
         limit: u64,
-    ) -> Result<Vec<TransactionSequenceMapping>> {
+    ) -> Result<Vec<TransactionSequenceInfoMapping>> {
         self.actor
             .send(GetTxSequenceMappingByOrderMessage { cursor, limit })
             .await?

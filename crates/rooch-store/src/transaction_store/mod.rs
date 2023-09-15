@@ -4,12 +4,13 @@
 use anyhow::Result;
 use raw_store::CodecKVStore;
 use rooch_types::transaction::{
-    AbstractTransaction, TransactionSequenceInfo, TransactionSequenceMapping, TypedTransaction,
+    AbstractTransaction, TransactionSequenceInfo, TransactionSequenceInfoMapping, TypedTransaction,
 };
 use rooch_types::H256;
 
 use crate::{
-    SEQ_TRANSACTION_PREFIX_NAME, TX_SEQ_MAPPING_PREFIX_NAME, TYPED_TRANSACTION_PREFIX_NAME,
+    TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME, TX_SEQUENCE_INFO_PREFIX_NAME,
+    TYPED_TRANSACTION_PREFIX_NAME,
 };
 use raw_store::{derive_store, StoreInstance};
 
@@ -24,14 +25,14 @@ derive_store!(
     TxSequenceInfoStore,
     u128,
     TransactionSequenceInfo,
-    SEQ_TRANSACTION_PREFIX_NAME
+    TX_SEQUENCE_INFO_PREFIX_NAME
 );
 
 derive_store!(
-    TxSequenceMappingStore,
+    TxSequenceInfoMappingStore,
     u128,
     H256,
-    TX_SEQ_MAPPING_PREFIX_NAME
+    TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME
 );
 
 pub trait TransactionStore {
@@ -49,18 +50,18 @@ pub trait TransactionStore {
         limit: u64,
     ) -> Result<Vec<TransactionSequenceInfo>>;
     fn save_tx_sequence_info_mapping(&self, tx_order: u128, tx_hash: H256) -> Result<()>;
-    fn get_tx_sequence_mapping_by_order(
+    fn get_tx_sequence_info_mapping_by_order(
         &self,
         cursor: Option<u128>,
         limit: u64,
-    ) -> Result<Vec<TransactionSequenceMapping>>;
+    ) -> Result<Vec<TransactionSequenceInfoMapping>>;
 }
 
 #[derive(Clone)]
 pub struct TransactionDBStore {
     tx_store: TypedTransactionStore,
     tx_sequence_info_store: TxSequenceInfoStore,
-    tx_sequence_mapping_store: TxSequenceMappingStore,
+    tx_sequence_info_mapping_store: TxSequenceInfoMappingStore,
 }
 
 impl TransactionDBStore {
@@ -68,7 +69,7 @@ impl TransactionDBStore {
         TransactionDBStore {
             tx_store: TypedTransactionStore::new(instance.clone()),
             tx_sequence_info_store: TxSequenceInfoStore::new(instance.clone()),
-            tx_sequence_mapping_store: TxSequenceMappingStore::new(instance),
+            tx_sequence_info_mapping_store: TxSequenceInfoMappingStore::new(instance),
         }
     }
 
@@ -123,18 +124,19 @@ impl TransactionDBStore {
     }
 
     pub fn save_tx_sequence_info_mapping(&self, tx_order: u128, tx_hash: H256) -> Result<()> {
-        self.tx_sequence_mapping_store.kv_put(tx_order, tx_hash)
+        self.tx_sequence_info_mapping_store
+            .kv_put(tx_order, tx_hash)
     }
 
     pub fn get_tx_sequence_mapping_by_order(
         &self,
         cursor: Option<u128>,
         limit: u64,
-    ) -> Result<Vec<TransactionSequenceMapping>> {
+    ) -> Result<Vec<TransactionSequenceInfoMapping>> {
         //  will not cross the boundary even if the size exceeds the storage capacity,
         let start = cursor.unwrap_or(0);
         let end = start + (limit as u128);
-        let mut iter = self.tx_sequence_mapping_store.iter()?;
+        let mut iter = self.tx_sequence_info_mapping_store.iter()?;
         iter.seek(bcs::to_bytes(&start)?).map_err(|e| {
             anyhow::anyhow!(
                 "Rooch TransactionStore get_tx_sequence_mapping_by_order seek: {:?}",
@@ -142,16 +144,16 @@ impl TransactionDBStore {
             )
         })?;
 
-        let data: Vec<TransactionSequenceMapping> = iter
+        let data: Vec<TransactionSequenceInfoMapping> = iter
             .filter_map(|item| {
                 let (tx_order, tx_hash) =
                     item.unwrap_or_else(|_| panic!("Get item from store shoule hava a value."));
                 if Option::is_some(&cursor) {
                     if tx_order > start && tx_order <= end {
-                        return Some(TransactionSequenceMapping::new(tx_order, tx_hash));
+                        return Some(TransactionSequenceInfoMapping::new(tx_order, tx_hash));
                     }
                 } else if tx_order >= start && tx_order < end {
-                    return Some(TransactionSequenceMapping::new(tx_order, tx_hash));
+                    return Some(TransactionSequenceInfoMapping::new(tx_order, tx_hash));
                 }
                 None
             })

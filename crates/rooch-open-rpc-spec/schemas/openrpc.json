@@ -137,36 +137,6 @@
       }
     },
     {
-      "name": "rooch_getEvents",
-      "description": "Get the events by event filter",
-      "params": [
-        {
-          "name": "filter",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/EventFilterView"
-          }
-        }
-      ],
-      "result": {
-        "name": "Vec<Option<AnnotatedEventView>>",
-        "required": true,
-        "schema": {
-          "type": "array",
-          "items": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AnnotatedEventView"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
       "name": "rooch_getEventsByEventHandle",
       "description": "Get the events by event handle id",
       "params": [
@@ -303,10 +273,10 @@
         }
       ],
       "result": {
-        "name": "TransactionReturnPageView",
+        "name": "TransactionResultPageView",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_TransactionReturnView_and_uint128"
+          "$ref": "#/components/schemas/PageView_for_TransactionResultView_and_uint128"
         }
       }
     },
@@ -605,177 +575,6 @@
             "type": "string"
           }
         }
-      },
-      "EventFilterView": {
-        "oneOf": [
-          {
-            "description": "Query by sender address.",
-            "type": "object",
-            "required": [
-              "Sender"
-            ],
-            "properties": {
-              "Sender": {
-                "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "description": "Return events emitted by the given transaction.",
-            "type": "object",
-            "required": [
-              "Transaction"
-            ],
-            "properties": {
-              "Transaction": {
-                "$ref": "#/components/schemas/H256View"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "description": "Return events with the given move event struct name",
-            "type": "object",
-            "required": [
-              "MoveEventType"
-            ],
-            "properties": {
-              "MoveEventType": {
-                "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "MoveEventField"
-            ],
-            "properties": {
-              "MoveEventField": {
-                "type": "object",
-                "required": [
-                  "path",
-                  "value"
-                ],
-                "properties": {
-                  "path": {
-                    "type": "string"
-                  },
-                  "value": true
-                }
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "description": "Return events emitted in [start_time, end_time) interval",
-            "type": "object",
-            "required": [
-              "TimeRange"
-            ],
-            "properties": {
-              "TimeRange": {
-                "type": "object",
-                "required": [
-                  "end_time",
-                  "start_time"
-                ],
-                "properties": {
-                  "end_time": {
-                    "description": "right endpoint of time interval, milliseconds since epoch, exclusive",
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
-                  },
-                  "start_time": {
-                    "description": "left endpoint of time interval, milliseconds since epoch, inclusive",
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
-                  }
-                }
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "description": "Return events emitted in [from_block, to_block) interval",
-            "type": "object",
-            "required": [
-              "All"
-            ],
-            "properties": {
-              "All": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/EventFilterView"
-                }
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "Any"
-            ],
-            "properties": {
-              "Any": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/EventFilterView"
-                }
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "And"
-            ],
-            "properties": {
-              "And": {
-                "type": "array",
-                "items": [
-                  {
-                    "$ref": "#/components/schemas/EventFilterView"
-                  },
-                  {
-                    "$ref": "#/components/schemas/EventFilterView"
-                  }
-                ],
-                "maxItems": 2,
-                "minItems": 2
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "Or"
-            ],
-            "properties": {
-              "Or": {
-                "type": "array",
-                "items": [
-                  {
-                    "$ref": "#/components/schemas/EventFilterView"
-                  },
-                  {
-                    "$ref": "#/components/schemas/EventFilterView"
-                  }
-                ],
-                "maxItems": 2,
-                "minItems": 2
-              }
-            },
-            "additionalProperties": false
-          }
-        ]
       },
       "EventID": {
         "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. the Unique ID is a combination of event handle id and event seq number. the ID is local to this particular fullnode and will be different from other fullnode.",
@@ -1271,7 +1070,7 @@
           }
         }
       },
-      "PageView_for_TransactionReturnView_and_uint128": {
+      "PageView_for_TransactionResultView_and_uint128": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -1282,7 +1081,7 @@
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/TransactionReturnView"
+              "$ref": "#/components/schemas/TransactionResultView"
             }
           },
           "has_next_page": {
@@ -1463,7 +1262,7 @@
           }
         }
       },
-      "TransactionReturnView": {
+      "TransactionResultView": {
         "type": "object",
         "required": [
           "execution_info",

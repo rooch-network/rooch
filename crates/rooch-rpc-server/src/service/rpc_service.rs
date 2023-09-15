@@ -18,7 +18,7 @@ use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::account::Account;
 use rooch_types::address::{MultiChainAddress, RoochAddress};
 use rooch_types::transaction::rooch::RoochTransaction;
-use rooch_types::transaction::{TransactionSequenceInfo, TransactionSequenceMapping};
+use rooch_types::transaction::{TransactionSequenceInfo, TransactionSequenceInfoMapping};
 use rooch_types::{transaction::TypedTransaction, H256};
 
 /// RpcService is the implementation of the RPC service.
@@ -181,7 +181,7 @@ impl RpcService {
         &self,
         cursor: Option<u128>,
         limit: u64,
-    ) -> Result<Vec<TransactionSequenceMapping>> {
+    ) -> Result<Vec<TransactionSequenceInfoMapping>> {
         let resp = self
             .sequencer
             .get_transaction_sequence_mapping_by_order(cursor, limit)

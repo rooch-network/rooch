@@ -23,23 +23,23 @@ pub trait MetaStore {
 
 #[derive(Clone)]
 pub struct MetaDBStore {
-    sequencr_order_store: SequencerOrderStore,
+    sequencer_order_store: SequencerOrderStore,
 }
 
 impl MetaDBStore {
     pub fn new(instance: StoreInstance) -> Self {
         MetaDBStore {
-            sequencr_order_store: SequencerOrderStore::new(instance),
+            sequencer_order_store: SequencerOrderStore::new(instance),
         }
     }
 
     pub fn get_sequencer_order(&self) -> Result<Option<SequencerOrder>> {
-        self.sequencr_order_store
+        self.sequencer_order_store
             .kv_get(SEQUENCER_ORDER_KEY.to_string())
     }
 
     pub fn save_sequencer_order(&self, sequencer_order: SequencerOrder) -> Result<()> {
-        self.sequencr_order_store
+        self.sequencer_order_store
             .put_sync(SEQUENCER_ORDER_KEY.to_string(), sequencer_order)
     }
 }
