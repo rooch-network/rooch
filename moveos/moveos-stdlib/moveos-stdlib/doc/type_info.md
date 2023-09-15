@@ -15,6 +15,7 @@ https://github.com/starcoinorg/starcoin-framework/blob/952c51116e0ef5a97c119205d
 -  [Function `type_of`](#0x2_type_info_type_of)
 -  [Function `type_name`](#0x2_type_info_type_name)
 -  [Function `size_of_val`](#0x2_type_info_size_of_val)
+-  [Module Specification](#@Module_Specification_1)
 
 
 <pre><code><b>use</b> <a href="">0x1::ascii</a>;
@@ -228,3 +229,7 @@ analysis of vector size dynamism.
 
 
 </details>
+
+<a name="@Module_Specification_1"></a>
+
+## Module Specification
