@@ -71,6 +71,7 @@ impl AggregateService {
         }
 
         let coin_store_handle = coin_module.coin_store_handle(account_addr)?;
+        // Handle error due to `coin_store_handle` executed in another tokio Runtime
         let coin_store_handle = match coin_store_handle {
             Some(v) => v,
             None => anyhow::bail!("Coin store handle does not exist"),
@@ -90,7 +91,11 @@ impl AggregateService {
                 .get_annotated_states(AccessPath::table(coin_store_handle, keys))
                 .await?;
 
-            let state = states.pop().flatten().expect("State expected return value");
+            let state = states.pop().flatten();
+            let state = match state {
+                Some(v) => v,
+                None => anyhow::bail!("CoinStore state expected return value"),
+            };
             let annotated_coin_store =
                 AnnotatedCoinStore::new_from_annotated_move_value(state.move_value)?;
 
