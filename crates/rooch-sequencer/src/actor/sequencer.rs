@@ -13,7 +13,7 @@ use rooch_store::meta_store::MetaStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
 use rooch_types::sequencer::SequencerOrder;
-use rooch_types::transaction::TransactionSequenceMapping;
+use rooch_types::transaction::TransactionSequenceInfoMapping;
 use rooch_types::{
     crypto::{RoochKeyPair, Signature},
     transaction::AbstractTransaction,
@@ -118,7 +118,7 @@ impl Handler<GetTxSequenceMappingByOrderMessage> for SequencerActor {
         &mut self,
         msg: GetTxSequenceMappingByOrderMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Vec<TransactionSequenceMapping>> {
+    ) -> Result<Vec<TransactionSequenceInfoMapping>> {
         let GetTxSequenceMappingByOrderMessage { cursor, limit } = msg;
         self.rooch_store
             .get_transaction_store()

@@ -3,7 +3,7 @@
 
 use anyhow::Result;
 use coerce::actor::message::Message;
-use rooch_types::transaction::TransactionSequenceMapping;
+use rooch_types::transaction::TransactionSequenceInfoMapping;
 use rooch_types::{
     transaction::{TransactionSequenceInfo, TypedTransaction},
     H256,
@@ -47,7 +47,7 @@ pub struct GetTxSequenceMappingByOrderMessage {
 }
 
 impl Message for GetTxSequenceMappingByOrderMessage {
-    type Result = Result<Vec<TransactionSequenceMapping>>;
+    type Result = Result<Vec<TransactionSequenceInfoMapping>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]

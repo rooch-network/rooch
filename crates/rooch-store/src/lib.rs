@@ -11,7 +11,7 @@ use raw_store::rocks::RocksDB;
 use raw_store::{ColumnFamilyName, StoreInstance};
 use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::{
-    TransactionSequenceInfo, TransactionSequenceMapping, TypedTransaction,
+    TransactionSequenceInfo, TransactionSequenceInfoMapping, TypedTransaction,
 };
 use rooch_types::H256;
 use std::fmt::{Debug, Display, Formatter};
@@ -21,8 +21,8 @@ pub mod transaction_store;
 
 // pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
 pub const TYPED_TRANSACTION_PREFIX_NAME: ColumnFamilyName = "typed_transaction";
-pub const SEQ_TRANSACTION_PREFIX_NAME: ColumnFamilyName = "seq_transaction";
-pub const TX_SEQ_MAPPING_PREFIX_NAME: ColumnFamilyName = "tx_sequence_mapping";
+pub const TX_SEQUENCE_INFO_PREFIX_NAME: ColumnFamilyName = "tx_sequence_info";
+pub const TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME: ColumnFamilyName = "tx_sequence_info_mapping";
 
 pub const META_SEQUENCER_ORDER_PREFIX_NAME: ColumnFamilyName = "meta_sequencer_order";
 
@@ -31,8 +31,8 @@ pub const META_SEQUENCER_ORDER_PREFIX_NAME: ColumnFamilyName = "meta_sequencer_o
 static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     vec![
         TYPED_TRANSACTION_PREFIX_NAME,
-        SEQ_TRANSACTION_PREFIX_NAME,
-        TX_SEQ_MAPPING_PREFIX_NAME,
+        TX_SEQUENCE_INFO_PREFIX_NAME,
+        TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME,
         META_SEQUENCER_ORDER_PREFIX_NAME,
     ]
 });
@@ -126,11 +126,11 @@ impl TransactionStore for RoochStore {
             .save_tx_sequence_info_mapping(tx_order, tx_hash)
     }
 
-    fn get_tx_sequence_mapping_by_order(
+    fn get_tx_sequence_info_mapping_by_order(
         &self,
         cursor: Option<u128>,
         limit: u64,
-    ) -> Result<Vec<TransactionSequenceMapping>> {
+    ) -> Result<Vec<TransactionSequenceInfoMapping>> {
         self.transaction_store
             .get_tx_sequence_mapping_by_order(cursor, limit)
     }

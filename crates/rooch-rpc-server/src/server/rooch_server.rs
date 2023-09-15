@@ -11,12 +11,12 @@ use move_core_types::language_storage::StructTag;
 use moveos_types::h256::H256;
 use rooch_rpc_api::api::{MAX_RESULT_LIMIT, MAX_RESULT_LIMIT_USIZE};
 use rooch_rpc_api::jsonrpc_types::account_view::BalanceInfoView;
-use rooch_rpc_api::jsonrpc_types::transaction_view::{TransactionReturn, TransactionReturnView};
+use rooch_rpc_api::jsonrpc_types::transaction_view::{TransactionResult, TransactionResultView};
 use rooch_rpc_api::jsonrpc_types::{
-    AccessPathView, AccountAddressView, AnnotatedEventView, AnnotatedStateView, EventFilterView,
-    EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
-    ListAnnotatedStatesPageView, ListBalanceInfoPageView, ListStatesPageView, StateView, StrView,
-    StructTagView, TransactionReturnPageView, TransactionView,
+    AccessPathView, AccountAddressView, AnnotatedEventView, AnnotatedStateView, EventPageView,
+    ExecuteTransactionResponseView, FunctionCallView, H256View, ListAnnotatedStatesPageView,
+    ListBalanceInfoPageView, ListStatesPageView, StateView, StrView, StructTagView,
+    TransactionResultPageView, TransactionView,
 };
 use rooch_rpc_api::{api::rooch_api::RoochAPIServer, api::DEFAULT_RESULT_LIMIT};
 use rooch_rpc_api::{
@@ -208,18 +208,18 @@ impl RoochAPIServer for RoochServer {
         })
     }
 
-    async fn get_events(
-        &self,
-        filter: EventFilterView,
-    ) -> RpcResult<Vec<Option<AnnotatedEventView>>> {
-        Ok(self
-            .rpc_service
-            .get_events(filter.into())
-            .await?
-            .into_iter()
-            .map(|event| event.map(AnnotatedEventView::from))
-            .collect())
-    }
+    // async fn get_events(
+    //     &self,
+    //     filter: EventFilterView,
+    // ) -> RpcResult<Vec<Option<AnnotatedEventView>>> {
+    //     Ok(self
+    //         .rpc_service
+    //         .get_events(filter.into())
+    //         .await?
+    //         .into_iter()
+    //         .map(|event| event.map(AnnotatedEventView::from))
+    //         .collect())
+    // }
 
     async fn get_transaction_by_hash(&self, hash: H256View) -> RpcResult<Option<TransactionView>> {
         let resp = self
@@ -253,7 +253,7 @@ impl RoochAPIServer for RoochServer {
         &self,
         cursor: Option<u128>,
         limit: Option<u64>,
-    ) -> RpcResult<TransactionReturnPageView> {
+    ) -> RpcResult<TransactionResultPageView> {
         let limit_of = limit.unwrap_or(DEFAULT_RESULT_LIMIT);
 
         let mut tx_sequence_mapping = self
@@ -297,21 +297,27 @@ impl RoochAPIServer for RoochServer {
             transactions.len() == sequence_infos.len()
                 && transactions.len() == execution_infos.len()
         );
-        let mut transaction_returns: Vec<TransactionReturn> = vec![];
+        let mut transaction_results: Vec<TransactionResult> = vec![];
         for (index, _tx_hash) in tx_hashes.iter().enumerate() {
-            let transaction_result = TransactionReturn {
-                transaction: transactions[index].clone().unwrap(),
-                sequence_info: sequence_infos[index].clone().unwrap(),
-                execution_info: execution_infos[index].clone().unwrap(),
+            let transaction_result = TransactionResult {
+                transaction: transactions[index]
+                    .clone()
+                    .expect("Transaction should have value when construct TransactionResult"),
+                sequence_info: sequence_infos[index].clone().expect(
+                    "TransactionSequenceInfo should have value when construct TransactionResult",
+                ),
+                execution_info: execution_infos[index].clone().expect(
+                    "TransactionExecutionInfo should have value when construct TransactionResult",
+                ),
             };
-            transaction_returns.push(transaction_result)
+            transaction_results.push(transaction_result)
         }
-        let data = transaction_returns
+        let data = transaction_results
             .into_iter()
-            .map(TransactionReturnView::from)
+            .map(TransactionResultView::from)
             .collect::<Vec<_>>();
 
-        Ok(TransactionReturnPageView {
+        Ok(TransactionResultPageView {
             data,
             next_cursor,
             has_next_page,

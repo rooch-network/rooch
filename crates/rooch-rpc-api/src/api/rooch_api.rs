@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::{
-    AccessPathView, AccountAddressView, AnnotatedEventView, AnnotatedFunctionResultView,
-    AnnotatedStateView, EventFilterView, EventPageView, ExecuteTransactionResponseView,
-    FunctionCallView, H256View, ListAnnotatedStatesPageView, ListBalanceInfoPageView,
-    ListStatesPageView, StateView, StrView, StructTagView, TransactionReturnPageView,
-    TransactionView,
+    AccessPathView, AccountAddressView, AnnotatedFunctionResultView, AnnotatedStateView,
+    EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
+    ListAnnotatedStatesPageView, ListBalanceInfoPageView, ListStatesPageView, StateView, StrView,
+    StructTagView, TransactionResultPageView, TransactionView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -79,12 +78,13 @@ pub trait RoochAPI {
         limit: Option<u64>,
     ) -> RpcResult<EventPageView>;
 
-    /// Get the events by event filter
-    #[method(name = "getEvents")]
-    async fn get_events(
-        &self,
-        filter: EventFilterView,
-    ) -> RpcResult<Vec<Option<AnnotatedEventView>>>;
+    // The current scenario of querying events can be satisfied by getEventsByEventHandle. GetEvents by EventFilter will be enabled after Indexer is supported.
+    // /// Get the events by event filter
+    // #[method(name = "getEvents")]
+    // async fn get_events(
+    //     &self,
+    //     filter: EventFilterView,
+    // ) -> RpcResult<Vec<Option<AnnotatedEventView>>>;
 
     #[method(name = "getTransactionByHash")]
     async fn get_transaction_by_hash(&self, hash: H256View) -> RpcResult<Option<TransactionView>>;
@@ -100,7 +100,7 @@ pub trait RoochAPI {
         &self,
         cursor: Option<u128>,
         limit: Option<u64>,
-    ) -> RpcResult<TransactionReturnPageView>;
+    ) -> RpcResult<TransactionResultPageView>;
 
     /// get account balances by AccountAddress
     #[method(name = "getBalances")]
