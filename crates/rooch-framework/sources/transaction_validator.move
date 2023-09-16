@@ -31,7 +31,7 @@ module rooch_framework::transaction_validator {
     const ErrorValidateBadChainId: u64 = 1006;
     const ErrorValidateSequenceNumberTooBig: u64 = 1007;
 
-    /// The authenticator's scheme is not installed to the sender's account
+    /// The authenticator's auth validator id is not installed to the sender's account
     const ErrorValidateNotInstalledAuthValidator: u64 = 1010;
 
 
@@ -41,11 +41,9 @@ module rooch_framework::transaction_validator {
     public fun validate(
         ctx: &StorageContext,
         chain_id: u64,
-        scheme: u64,
+        auth_validator_id: u64,
         authenticator_payload: vector<u8>
     ): TxValidateResult {
-        std::debug::print(&chain_id);
-        std::debug::print(&scheme);
 
         // === validate the chain id ===
         assert!(
@@ -92,23 +90,22 @@ module rooch_framework::transaction_validator {
         // === validate the authenticator ===
 
         // if the authenticator authenticator_payload is session key, validate the session key
-        // otherwise return the authentication validator via the scheme
-        let session_key_option = session_key::validate(ctx, scheme, authenticator_payload);
-        std::debug::print(&session_key_option);
+        // otherwise return the authentication validator via the auth validator id
+        let session_key_option = session_key::validate(ctx, auth_validator_id, authenticator_payload);
         if (option::is_some(&session_key_option)) {
-            auth_validator::new_tx_validate_result(scheme, option::none(), session_key_option)
+            auth_validator::new_tx_validate_result(auth_validator_id, option::none(), session_key_option)
         }else {
             let sender = storage_context::sender(ctx);
-            let auth_validator = auth_validator_registry::borrow_validator(ctx, scheme);
+            let auth_validator = auth_validator_registry::borrow_validator(ctx, auth_validator_id);
             let validator_id = auth_validator::validator_id(auth_validator);
-            // builtin scheme do not need to install
-            if (!rooch_framework::builtin_validators::is_builtin_scheme(scheme)) {
+            // builtin auth validator id do not need to install
+            if (!rooch_framework::builtin_validators::is_builtin_auth_validator(auth_validator_id)) {
                 assert!(
                     account_authentication::is_auth_validator_installed(ctx, sender, validator_id),
                     error::invalid_state(ErrorValidateNotInstalledAuthValidator)
                 );
             };
-            auth_validator::new_tx_validate_result(scheme, option::some(*auth_validator), option::none())
+            auth_validator::new_tx_validate_result(auth_validator_id, option::some(*auth_validator), option::none())
         }
     }
 

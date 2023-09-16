@@ -1,7 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::key_derive::{generate_new_key_pair, CoinOperations};
+use crate::{
+    key_derive::{generate_new_key_pair, CoinOperations},
+    keypair::KeyPairType,
+};
 use anyhow::anyhow;
 use bip32::DerivationPath;
 use bip39::{Language, Mnemonic, Seed};
@@ -21,7 +24,6 @@ use rooch_types::{
         get_ethereum_key_pair_from_rng, get_rooch_key_pair_from_rng, PublicKey, RoochKeyPair,
         Signature,
     },
-    multichain_id::RoochMultiChainID,
     transaction::{
         authenticator,
         ethereum::EthereumTransactionData,
@@ -49,53 +51,53 @@ pub enum Keystore<K: Ord, V> {
 pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData>: Send + Sync {
     type Transaction;
 
-    fn add_key_pair_by_multichain_id(
+    fn add_key_pair_by_key_pair_type(
         &mut self,
-        keypair: KeyPair,
-        multichain_id: RoochMultiChainID,
+        key_pair: KeyPair,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error>;
     fn get_address_public_keys(&self) -> Vec<(Addr, PubKey)>;
-    fn get_public_key_by_multichain_id(
+    fn get_public_key_by_key_pair_type(
         &self,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<PubKey, anyhow::Error>;
     fn get_key_pairs(&self, address: &Addr) -> Result<Vec<&KeyPair>, anyhow::Error>;
-    fn get_key_pair_by_multichain_id(
+    fn get_key_pair_by_key_pair_type(
         &self,
         address: &Addr,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<&KeyPair, signature::Error>;
-    fn update_key_pair_by_multichain_id(
+    fn update_key_pair_by_key_pair_type(
         &mut self,
         address: &Addr,
-        keypair: KeyPair,
-        multichain_id: RoochMultiChainID,
+        key_pair: KeyPair,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error>;
-    fn nullify_key_pair_by_multichain_id(
+    fn nullify_key_pair_by_key_pair_type(
         &mut self,
         address: &Addr,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error>;
 
     fn sign_hashed(
         &self,
         address: &Addr,
         msg: &[u8],
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Sig, signature::Error>;
 
     fn sign_transaction(
         &self,
         address: &Addr,
         msg: TransactionData,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Self::Transaction, signature::Error>;
 
     fn sign_secure<T>(
         &self,
         address: &Addr,
         msg: &T,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Sig, signature::Error>
     where
         T: Serialize;
@@ -109,70 +111,70 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData>: Se
 
     fn generate_and_add_new_key(
         &mut self,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
         derivation_path: Option<DerivationPath>,
         word_length: Option<String>,
-    ) -> Result<(Addr, String, RoochMultiChainID), anyhow::Error>
+    ) -> Result<(Addr, String, KeyPairType), anyhow::Error>
     where
-        RoochMultiChainID: CoinOperations<Addr, KeyPair>,
+        KeyPairType: CoinOperations<Addr, KeyPair>,
     {
-        let (address, kp, multichain_id, phrase) =
-            generate_new_key_pair::<Addr, KeyPair>(multichain_id, derivation_path, word_length)?;
-        self.add_key_pair_by_multichain_id(kp, multichain_id)?;
-        Ok((address, phrase, multichain_id))
+        let (address, kp, key_pair_type, phrase) =
+            generate_new_key_pair::<Addr, KeyPair>(key_pair_type, derivation_path, word_length)?;
+        self.add_key_pair_by_key_pair_type(kp, key_pair_type)?;
+        Ok((address, phrase, key_pair_type))
     }
 
     fn import_from_mnemonic(
         &mut self,
         phrase: &str,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
         derivation_path: Option<DerivationPath>,
     ) -> Result<Addr, anyhow::Error>
     where
-        RoochMultiChainID: CoinOperations<Addr, KeyPair>,
+        KeyPairType: CoinOperations<Addr, KeyPair>,
     {
         let mnemonic = Mnemonic::from_phrase(phrase, Language::English)?;
         let seed = Seed::new(&mnemonic, "");
 
         let (address, kp) =
-            multichain_id.derive_key_pair_from_path(seed.as_bytes(), derivation_path)?;
+            key_pair_type.derive_key_pair_from_path(seed.as_bytes(), derivation_path)?;
         {
-            self.add_key_pair_by_multichain_id(kp, multichain_id)?;
+            self.add_key_pair_by_key_pair_type(kp, key_pair_type)?;
             Ok(address)
         }
     }
 
-    fn update_address_with_key_pair_from_multichain_id(
+    fn update_address_with_key_pair_from_key_pair_type(
         &mut self,
         address: &Addr,
         phrase: String,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
         derivation_path: Option<DerivationPath>,
     ) -> Result<KeyPair, anyhow::Error>
     where
-        RoochMultiChainID: CoinOperations<Addr, KeyPair>,
+        KeyPairType: CoinOperations<Addr, KeyPair>,
     {
         let mnemonic = Mnemonic::from_phrase(&phrase, Language::English)?;
         let seed = Seed::new(&mnemonic, "");
         let derivation_path_clone = derivation_path.clone();
 
         // Consider adding Clone capabilities
-        let (_, kp) = multichain_id.derive_key_pair_from_path(seed.as_bytes(), derivation_path)?;
+        let (_, kp) = key_pair_type.derive_key_pair_from_path(seed.as_bytes(), derivation_path)?;
         {
-            self.update_key_pair_by_multichain_id(address, kp, multichain_id)?;
+            self.update_key_pair_by_key_pair_type(address, kp, key_pair_type)?;
         };
 
         let (_, kp) =
-            multichain_id.derive_key_pair_from_path(seed.as_bytes(), derivation_path_clone)?;
+            key_pair_type.derive_key_pair_from_path(seed.as_bytes(), derivation_path_clone)?;
         Ok(kp)
     }
 
-    fn nullify_address_with_key_pair_from_multichain_id(
+    fn nullify_address_with_key_pair_from_key_pair_type(
         &mut self,
         address: &Addr,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
-        self.nullify_key_pair_by_multichain_id(address, multichain_id)?;
+        self.nullify_key_pair_by_key_pair_type(address, key_pair_type)?;
         Ok(())
     }
 
@@ -208,18 +210,18 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         }
     }
 
-    fn add_key_pair_by_multichain_id(
+    fn add_key_pair_by_key_pair_type(
         &mut self,
-        keypair: RoochKeyPair,
-        multichain_id: RoochMultiChainID,
+        key_pair: RoochKeyPair,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
         // Implement this method to add a key pair to the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.add_key_pair_by_multichain_id(keypair, multichain_id)
+                file_keystore.add_key_pair_by_key_pair_type(key_pair, key_pair_type)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.add_key_pair_by_multichain_id(keypair, multichain_id)
+                inmem_keystore.add_key_pair_by_key_pair_type(key_pair, key_pair_type)
             }
         }
     }
@@ -232,17 +234,17 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         }
     }
 
-    fn get_public_key_by_multichain_id(
+    fn get_public_key_by_key_pair_type(
         &self,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<PublicKey, anyhow::Error> {
         // Implement this method to get the public key by coin ID from the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.get_public_key_by_multichain_id(multichain_id)
+                file_keystore.get_public_key_by_key_pair_type(key_pair_type)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.get_public_key_by_multichain_id(multichain_id)
+                inmem_keystore.get_public_key_by_key_pair_type(key_pair_type)
             }
         }
     }
@@ -255,51 +257,51 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         }
     }
 
-    fn get_key_pair_by_multichain_id(
+    fn get_key_pair_by_key_pair_type(
         &self,
         address: &RoochAddress,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<&RoochKeyPair, signature::Error> {
         // Implement this method to get the key pair by coin ID from the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.get_key_pair_by_multichain_id(address, multichain_id)
+                file_keystore.get_key_pair_by_key_pair_type(address, key_pair_type)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.get_key_pair_by_multichain_id(address, multichain_id)
+                inmem_keystore.get_key_pair_by_key_pair_type(address, key_pair_type)
             }
         }
     }
 
-    fn update_key_pair_by_multichain_id(
+    fn update_key_pair_by_key_pair_type(
         &mut self,
         address: &RoochAddress,
-        keypair: RoochKeyPair,
-        multichain_id: RoochMultiChainID,
+        key_pair: RoochKeyPair,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
         // Implement this method to update the key pair by coin ID for the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.update_key_pair_by_multichain_id(address, keypair, multichain_id)
+                file_keystore.update_key_pair_by_key_pair_type(address, key_pair, key_pair_type)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.update_key_pair_by_multichain_id(address, keypair, multichain_id)
+                inmem_keystore.update_key_pair_by_key_pair_type(address, key_pair, key_pair_type)
             }
         }
     }
 
-    fn nullify_key_pair_by_multichain_id(
+    fn nullify_key_pair_by_key_pair_type(
         &mut self,
         address: &RoochAddress,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
         // Implement this method to nullify the key pair by coin ID for the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.nullify_key_pair_by_multichain_id(address, multichain_id)
+                file_keystore.nullify_key_pair_by_key_pair_type(address, key_pair_type)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.nullify_key_pair_by_multichain_id(address, multichain_id)
+                inmem_keystore.nullify_key_pair_by_key_pair_type(address, key_pair_type)
             }
         }
     }
@@ -308,13 +310,13 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         &self,
         address: &RoochAddress,
         msg: &[u8],
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Signature, signature::Error> {
         // Implement this method to sign a hashed message for the appropriate variant (File or InMem)
         match self {
-            Keystore::File(file_keystore) => file_keystore.sign_hashed(address, msg, multichain_id),
+            Keystore::File(file_keystore) => file_keystore.sign_hashed(address, msg, key_pair_type),
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.sign_hashed(address, msg, multichain_id)
+                inmem_keystore.sign_hashed(address, msg, key_pair_type)
             }
         }
     }
@@ -323,15 +325,15 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         &self,
         address: &RoochAddress,
         msg: RoochTransactionData,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<RoochTransaction, signature::Error> {
         // Implement this method to sign a transaction for the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.sign_transaction(address, msg, multichain_id)
+                file_keystore.sign_transaction(address, msg, key_pair_type)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.sign_transaction(address, msg, multichain_id)
+                inmem_keystore.sign_transaction(address, msg, key_pair_type)
             }
         }
     }
@@ -340,16 +342,16 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         &self,
         address: &RoochAddress,
         msg: &T,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Signature, signature::Error>
     where
         T: Serialize,
     {
         // Implement this method to sign a secure message for the appropriate variant (File or InMem)
         match self {
-            Keystore::File(file_keystore) => file_keystore.sign_secure(address, msg, multichain_id),
+            Keystore::File(file_keystore) => file_keystore.sign_secure(address, msg, key_pair_type),
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.sign_secure(address, msg, multichain_id)
+                inmem_keystore.sign_secure(address, msg, key_pair_type)
             }
         }
     }
@@ -393,18 +395,18 @@ impl
         }
     }
 
-    fn add_key_pair_by_multichain_id(
+    fn add_key_pair_by_key_pair_type(
         &mut self,
-        keypair: Secp256k1RecoverableKeyPair,
-        multichain_id: RoochMultiChainID,
+        key_pair: Secp256k1RecoverableKeyPair,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
         // Implement this method to add a key pair to the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.add_key_pair_by_multichain_id(keypair, multichain_id)
+                file_keystore.add_key_pair_by_key_pair_type(key_pair, key_pair_type)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.add_key_pair_by_multichain_id(keypair, multichain_id)
+                inmem_keystore.add_key_pair_by_key_pair_type(key_pair, key_pair_type)
             }
         }
     }
@@ -417,17 +419,17 @@ impl
         }
     }
 
-    fn get_public_key_by_multichain_id(
+    fn get_public_key_by_key_pair_type(
         &self,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Secp256k1RecoverablePublicKey, anyhow::Error> {
         // Implement this method to get the public key by coin ID from the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.get_public_key_by_multichain_id(multichain_id)
+                file_keystore.get_public_key_by_key_pair_type(key_pair_type)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.get_public_key_by_multichain_id(multichain_id)
+                inmem_keystore.get_public_key_by_key_pair_type(key_pair_type)
             }
         }
     }
@@ -443,51 +445,51 @@ impl
         }
     }
 
-    fn get_key_pair_by_multichain_id(
+    fn get_key_pair_by_key_pair_type(
         &self,
         address: &EthereumAddress,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<&Secp256k1RecoverableKeyPair, signature::Error> {
         // Implement this method to get a key pair by coin ID from the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.get_key_pair_by_multichain_id(address, multichain_id)
+                file_keystore.get_key_pair_by_key_pair_type(address, key_pair_type)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.get_key_pair_by_multichain_id(address, multichain_id)
+                inmem_keystore.get_key_pair_by_key_pair_type(address, key_pair_type)
             }
         }
     }
 
-    fn update_key_pair_by_multichain_id(
+    fn update_key_pair_by_key_pair_type(
         &mut self,
         address: &EthereumAddress,
-        keypair: Secp256k1RecoverableKeyPair,
-        multichain_id: RoochMultiChainID,
+        key_pair: Secp256k1RecoverableKeyPair,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
         // Implement this method to update a key pair by coin ID in the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.update_key_pair_by_multichain_id(address, keypair, multichain_id)
+                file_keystore.update_key_pair_by_key_pair_type(address, key_pair, key_pair_type)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.update_key_pair_by_multichain_id(address, keypair, multichain_id)
+                inmem_keystore.update_key_pair_by_key_pair_type(address, key_pair, key_pair_type)
             }
         }
     }
 
-    fn nullify_key_pair_by_multichain_id(
+    fn nullify_key_pair_by_key_pair_type(
         &mut self,
         address: &EthereumAddress,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
         // Implement this method to nullify a key pair by coin ID in the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.nullify_key_pair_by_multichain_id(address, multichain_id)
+                file_keystore.nullify_key_pair_by_key_pair_type(address, key_pair_type)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.nullify_key_pair_by_multichain_id(address, multichain_id)
+                inmem_keystore.nullify_key_pair_by_key_pair_type(address, key_pair_type)
             }
         }
     }
@@ -496,13 +498,13 @@ impl
         &self,
         address: &EthereumAddress,
         msg: &[u8],
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Secp256k1RecoverableSignature, signature::Error> {
         // Implement this method to sign a hashed message with the key pair for the given address and coin ID
         match self {
-            Keystore::File(file_keystore) => file_keystore.sign_hashed(address, msg, multichain_id),
+            Keystore::File(file_keystore) => file_keystore.sign_hashed(address, msg, key_pair_type),
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.sign_hashed(address, msg, multichain_id)
+                inmem_keystore.sign_hashed(address, msg, key_pair_type)
             }
         }
     }
@@ -511,15 +513,15 @@ impl
         &self,
         address: &EthereumAddress,
         msg: EthereumTransactionData,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<(EthereumTransactionData, Secp256k1RecoverableSignature), signature::Error> {
         // Implement this method to sign a transaction with the key pair for the given address and coin ID
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.sign_transaction(address, msg, multichain_id)
+                file_keystore.sign_transaction(address, msg, key_pair_type)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.sign_transaction(address, msg, multichain_id)
+                inmem_keystore.sign_transaction(address, msg, key_pair_type)
             }
         }
     }
@@ -528,16 +530,16 @@ impl
         &self,
         address: &EthereumAddress,
         msg: &T,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Secp256k1RecoverableSignature, signature::Error>
     where
         T: Serialize,
     {
         // Implement this method to sign a serializable message with the key pair for the given address and coin ID
         match self {
-            Keystore::File(file_keystore) => file_keystore.sign_secure(address, msg, multichain_id),
+            Keystore::File(file_keystore) => file_keystore.sign_secure(address, msg, key_pair_type),
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.sign_secure(address, msg, multichain_id)
+                inmem_keystore.sign_secure(address, msg, key_pair_type)
             }
         }
     }
@@ -596,7 +598,7 @@ pub(crate) struct BaseKeyStore<K, V>
 where
     K: Ord,
 {
-    keys: BTreeMap<K, BTreeMap<RoochMultiChainID, V>>,
+    keys: BTreeMap<K, BTreeMap<KeyPairType, V>>,
     /// RoochAddress -> BTreeMap<AuthenticationKey, RoochKeyPair>
     /// EthereumAddress -> BTreeMap<AuthenticationKey, Secp256k1RecoverableKeyPair>
     #[serde_as(as = "BTreeMap<DisplayFromStr, BTreeMap<DisplayFromStr, _>>")]
@@ -608,7 +610,7 @@ where
     K: Serialize + Deserialize<'static> + Ord,
     V: Serialize + Deserialize<'static>,
 {
-    pub fn new(keys: BTreeMap<K, BTreeMap<RoochMultiChainID, V>>) -> Self {
+    pub fn new(keys: BTreeMap<K, BTreeMap<KeyPairType, V>>) -> Self {
         Self {
             keys,
             session_keys: BTreeMap::new(),
@@ -621,18 +623,18 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
 {
     type Transaction = RoochTransaction;
 
-    fn get_key_pair_by_multichain_id(
+    fn get_key_pair_by_key_pair_type(
         &self,
         address: &RoochAddress,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<&RoochKeyPair, signature::Error> {
         if let Some(inner_map) = self.keys.get(address) {
-            if let Some(keypair) = inner_map.get(&multichain_id) {
+            if let Some(keypair) = inner_map.get(&key_pair_type) {
                 Ok(keypair)
             } else {
                 Err(signature::Error::from_source(format!(
-                    "RoochMultiChainID not found for address: [{:?}]",
-                    multichain_id
+                    "KeyPairType not found for address: [{:?}]",
+                    key_pair_type
                 )))
             }
         } else {
@@ -647,11 +649,11 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         &self,
         address: &RoochAddress,
         msg: &[u8],
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Signature, signature::Error> {
         Ok(Signature::new_hashed(
             msg,
-            self.get_key_pair_by_multichain_id(address, multichain_id)?,
+            self.get_key_pair_by_key_pair_type(address, key_pair_type)?,
         ))
     }
 
@@ -659,14 +661,14 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         &self,
         address: &RoochAddress,
         msg: &T,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Signature, signature::Error>
     where
         T: Serialize,
     {
         Ok(Signature::new_secure(
             msg,
-            self.get_key_pair_by_multichain_id(address, multichain_id)?,
+            self.get_key_pair_by_key_pair_type(address, key_pair_type)?,
         ))
     }
 
@@ -674,10 +676,10 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         &self,
         address: &RoochAddress,
         msg: RoochTransactionData,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<RoochTransaction, signature::Error> {
         let kp = self
-            .get_key_pair_by_multichain_id(address, multichain_id)
+            .get_key_pair_by_key_pair_type(address, key_pair_type)
             .ok()
             .ok_or_else(|| {
                 signature::Error::from_source(format!("Cannot find key for address: [{address}]"))
@@ -690,31 +692,31 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         Ok(RoochTransaction::new(msg, auth))
     }
 
-    fn add_key_pair_by_multichain_id(
+    fn add_key_pair_by_key_pair_type(
         &mut self,
-        keypair: RoochKeyPair,
-        multichain_id: RoochMultiChainID,
+        key_pair: RoochKeyPair,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
-        let address: RoochAddress = (&keypair.public()).into();
+        let address: RoochAddress = (&key_pair.public()).into();
         self.keys
             .entry(address)
             .or_insert_with(BTreeMap::new)
-            .insert(multichain_id, keypair);
+            .insert(key_pair_type, key_pair);
         Ok(())
     }
 
-    fn get_public_key_by_multichain_id(
+    fn get_public_key_by_key_pair_type(
         &self,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<PublicKey, anyhow::Error> {
         for inner_map in self.keys.values() {
-            if let Some(keypair) = inner_map.get(&multichain_id) {
+            if let Some(keypair) = inner_map.get(&key_pair_type) {
                 return Ok(keypair.public());
             }
         }
         Err(anyhow!(
             "Cannot find key for coin id: [{:?}]",
-            multichain_id
+            key_pair_type
         ))
     }
 
@@ -740,30 +742,30 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         }
     }
 
-    fn update_key_pair_by_multichain_id(
+    fn update_key_pair_by_key_pair_type(
         &mut self,
         address: &RoochAddress,
-        keypair: RoochKeyPair,
-        multichain_id: RoochMultiChainID,
+        key_pair: RoochKeyPair,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
         // First, get the inner map associated with the address
         let inner_map = self.keys.entry(*address).or_insert_with(BTreeMap::new);
 
         // Insert or update the keypair for the specified coin in the inner map
-        inner_map.insert(multichain_id, keypair);
+        inner_map.insert(key_pair_type, key_pair);
         Ok(())
     }
 
-    fn nullify_key_pair_by_multichain_id(
+    fn nullify_key_pair_by_key_pair_type(
         &mut self,
         address: &RoochAddress,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
         // First, get the inner map associated with the address
         let inner_map = self.keys.entry(*address).or_insert_with(BTreeMap::new);
 
         // Remove or nullify the keypair for the specified coin in the inner map
-        inner_map.remove(&multichain_id);
+        inner_map.remove(&key_pair_type);
         Ok(())
     }
 
@@ -772,11 +774,11 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         address: &RoochAddress,
     ) -> Result<AuthenticationKey, anyhow::Error> {
         //TODO define derivation_path for session key
-        let (_address, kp, _multichain_id, _phrase) = generate_new_key_pair::<
+        let (_address, kp, _key_pair_type, _phrase) = generate_new_key_pair::<
             RoochAddress,
             RoochKeyPair,
         >(
-            RoochMultiChainID::Rooch, None, None
+            KeyPairType::RoochKeyPairType, None, None
         )?;
         let authentication_key = kp.public().authentication_key();
         let inner_map = self
@@ -826,18 +828,18 @@ impl
 {
     type Transaction = (EthereumTransactionData, Secp256k1RecoverableSignature);
 
-    fn get_key_pair_by_multichain_id(
+    fn get_key_pair_by_key_pair_type(
         &self,
         address: &EthereumAddress,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<&Secp256k1RecoverableKeyPair, signature::Error> {
         if let Some(inner_map) = self.keys.get(address) {
-            if let Some(keypair) = inner_map.get(&multichain_id) {
+            if let Some(keypair) = inner_map.get(&key_pair_type) {
                 Ok(keypair)
             } else {
                 Err(signature::Error::from_source(format!(
-                    "RoochMultiChainID not found for address: [{:?}]",
-                    multichain_id
+                    "KeyPairType not found for address: [{:?}]",
+                    key_pair_type
                 )))
             }
         } else {
@@ -852,9 +854,9 @@ impl
         &self,
         address: &EthereumAddress,
         msg: &[u8],
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Secp256k1RecoverableSignature, signature::Error> {
-        let key_pair = self.get_key_pair_by_multichain_id(address, multichain_id)?;
+        let key_pair = self.get_key_pair_by_key_pair_type(address, key_pair_type)?;
         Ok(key_pair.sign_recoverable_with_hash::<Keccak256>(msg))
     }
 
@@ -862,12 +864,12 @@ impl
         &self,
         address: &EthereumAddress,
         msg: &T,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Secp256k1RecoverableSignature, signature::Error>
     where
         T: Serialize,
     {
-        let key_pair = self.get_key_pair_by_multichain_id(address, multichain_id)?;
+        let key_pair = self.get_key_pair_by_key_pair_type(address, key_pair_type)?;
         // Serialize the message into a byte slice
         let message_bytes = serde_json::to_vec(msg).unwrap();
         Ok(key_pair.sign_recoverable(message_bytes.as_slice()))
@@ -877,37 +879,37 @@ impl
         &self,
         _address: &EthereumAddress,
         msg: EthereumTransactionData,
-        _multichain_id: RoochMultiChainID,
+        _key_pair_type: KeyPairType,
     ) -> Result<(EthereumTransactionData, Secp256k1RecoverableSignature), signature::Error> {
         let signature = EthereumTransactionData::into_signature(&msg).unwrap();
         Ok((msg, signature))
     }
 
-    fn add_key_pair_by_multichain_id(
+    fn add_key_pair_by_key_pair_type(
         &mut self,
-        keypair: Secp256k1RecoverableKeyPair,
-        multichain_id: RoochMultiChainID,
+        key_pair: Secp256k1RecoverableKeyPair,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
-        let address = EthereumAddress::from(keypair.public.clone());
+        let address = EthereumAddress::from(key_pair.public.clone());
         self.keys
             .entry(address)
             .or_insert_with(BTreeMap::new)
-            .insert(multichain_id, keypair);
+            .insert(key_pair_type, key_pair);
         Ok(())
     }
 
-    fn get_public_key_by_multichain_id(
+    fn get_public_key_by_key_pair_type(
         &self,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Secp256k1RecoverablePublicKey, anyhow::Error> {
         for inner_map in self.keys.values() {
-            if let Some(keypair) = inner_map.get(&multichain_id) {
+            if let Some(keypair) = inner_map.get(&key_pair_type) {
                 return Ok(keypair.public.clone());
             }
         }
         Err(anyhow!(
             "Cannot find key for coin id: [{:?}]",
-            multichain_id
+            key_pair_type
         ))
     }
 
@@ -936,30 +938,30 @@ impl
         }
     }
 
-    fn update_key_pair_by_multichain_id(
+    fn update_key_pair_by_key_pair_type(
         &mut self,
         address: &EthereumAddress,
-        keypair: Secp256k1RecoverableKeyPair,
-        multichain_id: RoochMultiChainID,
+        key_pair: Secp256k1RecoverableKeyPair,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
         // First, get the inner map associated with the address
         let inner_map = self.keys.entry(*address).or_insert_with(BTreeMap::new);
 
         // Insert or update the keypair for the specified coin in the inner map
-        inner_map.insert(multichain_id, keypair);
+        inner_map.insert(key_pair_type, key_pair);
         Ok(())
     }
 
-    fn nullify_key_pair_by_multichain_id(
+    fn nullify_key_pair_by_key_pair_type(
         &mut self,
         address: &EthereumAddress,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
         // First, get the inner map associated with the address
         let inner_map = self.keys.entry(*address).or_insert_with(BTreeMap::new);
 
         // Remove or nullify the keypair for the specified coin in the inner map
-        inner_map.remove(&multichain_id);
+        inner_map.remove(&key_pair_type);
         Ok(())
     }
 
@@ -968,10 +970,12 @@ impl
         address: &EthereumAddress,
     ) -> Result<AuthenticationKey, anyhow::Error> {
         //TODO define derivation_path for session key
-        let (_, kp, _multichain_id, _phrase) = generate_new_key_pair::<
+        let (_, kp, _key_pair_type, _phrase) = generate_new_key_pair::<
             EthereumAddress,
             Secp256k1RecoverableKeyPair,
-        >(RoochMultiChainID::Ether, None, None)?;
+        >(
+            KeyPairType::EthereumKeyPairType, None, None
+        )?;
         let authentication_key_bytes = address.0.as_bytes().to_vec();
         let authentication_key = AuthenticationKey::new(authentication_key_bytes);
         let inner_map = self
@@ -1020,52 +1024,52 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
 {
     type Transaction = RoochTransaction;
 
-    fn get_key_pair_by_multichain_id(
+    fn get_key_pair_by_key_pair_type(
         &self,
         address: &RoochAddress,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<&RoochKeyPair, signature::Error> {
         self.keystore
-            .get_key_pair_by_multichain_id(address, multichain_id)
+            .get_key_pair_by_key_pair_type(address, key_pair_type)
     }
 
     fn sign_hashed(
         &self,
         address: &RoochAddress,
         msg: &[u8],
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Signature, signature::Error> {
-        self.keystore.sign_hashed(address, msg, multichain_id)
+        self.keystore.sign_hashed(address, msg, key_pair_type)
     }
 
     fn sign_secure<T>(
         &self,
         address: &RoochAddress,
         msg: &T,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Signature, signature::Error>
     where
         T: Serialize,
     {
-        self.keystore.sign_secure(address, msg, multichain_id)
+        self.keystore.sign_secure(address, msg, key_pair_type)
     }
 
     fn sign_transaction(
         &self,
         address: &RoochAddress,
         msg: RoochTransactionData,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<RoochTransaction, signature::Error> {
-        self.keystore.sign_transaction(address, msg, multichain_id)
+        self.keystore.sign_transaction(address, msg, key_pair_type)
     }
 
-    fn add_key_pair_by_multichain_id(
+    fn add_key_pair_by_key_pair_type(
         &mut self,
-        keypair: RoochKeyPair,
-        multichain_id: RoochMultiChainID,
+        key_pair: RoochKeyPair,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .add_key_pair_by_multichain_id(keypair, multichain_id)?;
+            .add_key_pair_by_key_pair_type(key_pair, key_pair_type)?;
         //TODO should check test env at here?
         if std::env::var_os("TEST_ENV").is_none() {
             self.save()?;
@@ -1073,11 +1077,11 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         Ok(())
     }
 
-    fn get_public_key_by_multichain_id(
+    fn get_public_key_by_key_pair_type(
         &self,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<PublicKey, anyhow::Error> {
-        self.keystore.get_public_key_by_multichain_id(multichain_id)
+        self.keystore.get_public_key_by_key_pair_type(key_pair_type)
     }
 
     fn get_address_public_keys(&self) -> Vec<(RoochAddress, PublicKey)> {
@@ -1088,14 +1092,14 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         self.keystore.get_key_pairs(address)
     }
 
-    fn update_key_pair_by_multichain_id(
+    fn update_key_pair_by_key_pair_type(
         &mut self,
         address: &RoochAddress,
-        keypair: RoochKeyPair,
-        multichain_id: RoochMultiChainID,
+        key_pair: RoochKeyPair,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .update_key_pair_by_multichain_id(address, keypair, multichain_id)?;
+            .update_key_pair_by_key_pair_type(address, key_pair, key_pair_type)?;
         //TODO should check test env at here?
         if std::env::var_os("TEST_ENV").is_none() {
             self.save()?;
@@ -1103,13 +1107,13 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         Ok(())
     }
 
-    fn nullify_key_pair_by_multichain_id(
+    fn nullify_key_pair_by_key_pair_type(
         &mut self,
         address: &RoochAddress,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .nullify_key_pair_by_multichain_id(address, multichain_id)?;
+            .nullify_key_pair_by_key_pair_type(address, key_pair_type)?;
         //TODO should check test env at here?
         if std::env::var_os("TEST_ENV").is_none() {
             self.save()?;
@@ -1148,52 +1152,52 @@ impl
 {
     type Transaction = (EthereumTransactionData, Secp256k1RecoverableSignature);
 
-    fn get_key_pair_by_multichain_id(
+    fn get_key_pair_by_key_pair_type(
         &self,
         address: &EthereumAddress,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<&Secp256k1RecoverableKeyPair, signature::Error> {
         self.keystore
-            .get_key_pair_by_multichain_id(address, multichain_id)
+            .get_key_pair_by_key_pair_type(address, key_pair_type)
     }
 
     fn sign_hashed(
         &self,
         address: &EthereumAddress,
         msg: &[u8],
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Secp256k1RecoverableSignature, signature::Error> {
-        self.keystore.sign_hashed(address, msg, multichain_id)
+        self.keystore.sign_hashed(address, msg, key_pair_type)
     }
 
     fn sign_secure<T>(
         &self,
         address: &EthereumAddress,
         msg: &T,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Secp256k1RecoverableSignature, signature::Error>
     where
         T: Serialize,
     {
-        self.keystore.sign_secure(address, msg, multichain_id)
+        self.keystore.sign_secure(address, msg, key_pair_type)
     }
 
     fn sign_transaction(
         &self,
         address: &EthereumAddress,
         msg: EthereumTransactionData,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<(EthereumTransactionData, Secp256k1RecoverableSignature), signature::Error> {
-        self.keystore.sign_transaction(address, msg, multichain_id)
+        self.keystore.sign_transaction(address, msg, key_pair_type)
     }
 
-    fn add_key_pair_by_multichain_id(
+    fn add_key_pair_by_key_pair_type(
         &mut self,
-        keypair: Secp256k1RecoverableKeyPair,
-        multichain_id: RoochMultiChainID,
+        key_pair: Secp256k1RecoverableKeyPair,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .add_key_pair_by_multichain_id(keypair, multichain_id)?;
+            .add_key_pair_by_key_pair_type(key_pair, key_pair_type)?;
         //TODO should check test env at here?
         if std::env::var_os("TEST_ENV").is_none() {
             self.save()?;
@@ -1201,11 +1205,11 @@ impl
         Ok(())
     }
 
-    fn get_public_key_by_multichain_id(
+    fn get_public_key_by_key_pair_type(
         &self,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Secp256k1RecoverablePublicKey, anyhow::Error> {
-        self.keystore.get_public_key_by_multichain_id(multichain_id)
+        self.keystore.get_public_key_by_key_pair_type(key_pair_type)
     }
 
     fn get_address_public_keys(&self) -> Vec<(EthereumAddress, Secp256k1RecoverablePublicKey)> {
@@ -1219,14 +1223,14 @@ impl
         self.keystore.get_key_pairs(address)
     }
 
-    fn update_key_pair_by_multichain_id(
+    fn update_key_pair_by_key_pair_type(
         &mut self,
         address: &EthereumAddress,
-        keypair: Secp256k1RecoverableKeyPair,
-        multichain_id: RoochMultiChainID,
+        key_pair: Secp256k1RecoverableKeyPair,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .update_key_pair_by_multichain_id(address, keypair, multichain_id)?;
+            .update_key_pair_by_key_pair_type(address, key_pair, key_pair_type)?;
         //TODO should check test env at here?
         if std::env::var_os("TEST_ENV").is_none() {
             self.save()?;
@@ -1234,13 +1238,13 @@ impl
         Ok(())
     }
 
-    fn nullify_key_pair_by_multichain_id(
+    fn nullify_key_pair_by_key_pair_type(
         &mut self,
         address: &EthereumAddress,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .nullify_key_pair_by_multichain_id(address, multichain_id)?;
+            .nullify_key_pair_by_key_pair_type(address, key_pair_type)?;
         //TODO should check test env at here?
         if std::env::var_os("TEST_ENV").is_none() {
             self.save()?;
@@ -1380,37 +1384,37 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         &self,
         address: &RoochAddress,
         msg: &T,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Signature, signature::Error>
     where
         T: Serialize,
     {
-        self.keystore.sign_secure(address, msg, multichain_id)
+        self.keystore.sign_secure(address, msg, key_pair_type)
     }
 
     fn sign_transaction(
         &self,
         address: &RoochAddress,
         msg: RoochTransactionData,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<RoochTransaction, signature::Error> {
-        self.keystore.sign_transaction(address, msg, multichain_id)
+        self.keystore.sign_transaction(address, msg, key_pair_type)
     }
 
-    fn add_key_pair_by_multichain_id(
+    fn add_key_pair_by_key_pair_type(
         &mut self,
-        keypair: RoochKeyPair,
-        multichain_id: RoochMultiChainID,
+        key_pair: RoochKeyPair,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .add_key_pair_by_multichain_id(keypair, multichain_id)
+            .add_key_pair_by_key_pair_type(key_pair, key_pair_type)
     }
 
-    fn get_public_key_by_multichain_id(
+    fn get_public_key_by_key_pair_type(
         &self,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<PublicKey, anyhow::Error> {
-        self.keystore.get_public_key_by_multichain_id(multichain_id)
+        self.keystore.get_public_key_by_key_pair_type(key_pair_type)
     }
 
     fn get_address_public_keys(&self) -> Vec<(RoochAddress, PublicKey)> {
@@ -1421,41 +1425,41 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         self.keystore.get_key_pairs(address)
     }
 
-    fn update_key_pair_by_multichain_id(
+    fn update_key_pair_by_key_pair_type(
         &mut self,
         address: &RoochAddress,
-        keypair: RoochKeyPair,
-        multichain_id: RoochMultiChainID,
+        key_pair: RoochKeyPair,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .update_key_pair_by_multichain_id(address, keypair, multichain_id)
+            .update_key_pair_by_key_pair_type(address, key_pair, key_pair_type)
     }
 
-    fn nullify_key_pair_by_multichain_id(
+    fn nullify_key_pair_by_key_pair_type(
         &mut self,
         address: &RoochAddress,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .nullify_key_pair_by_multichain_id(address, multichain_id)
+            .nullify_key_pair_by_key_pair_type(address, key_pair_type)
     }
 
-    fn get_key_pair_by_multichain_id(
+    fn get_key_pair_by_key_pair_type(
         &self,
         address: &RoochAddress,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<&RoochKeyPair, signature::Error> {
         self.keystore
-            .get_key_pair_by_multichain_id(address, multichain_id)
+            .get_key_pair_by_key_pair_type(address, key_pair_type)
     }
 
     fn sign_hashed(
         &self,
         address: &RoochAddress,
         msg: &[u8],
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Signature, signature::Error> {
-        self.keystore.sign_hashed(address, msg, multichain_id)
+        self.keystore.sign_hashed(address, msg, key_pair_type)
     }
 
     fn generate_session_key(
@@ -1491,37 +1495,37 @@ impl
         &self,
         address: &EthereumAddress,
         msg: &T,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Secp256k1RecoverableSignature, signature::Error>
     where
         T: Serialize,
     {
-        self.keystore.sign_secure(address, msg, multichain_id)
+        self.keystore.sign_secure(address, msg, key_pair_type)
     }
 
     fn sign_transaction(
         &self,
         address: &EthereumAddress,
         msg: EthereumTransactionData,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<(EthereumTransactionData, Secp256k1RecoverableSignature), signature::Error> {
-        self.keystore.sign_transaction(address, msg, multichain_id)
+        self.keystore.sign_transaction(address, msg, key_pair_type)
     }
 
-    fn add_key_pair_by_multichain_id(
+    fn add_key_pair_by_key_pair_type(
         &mut self,
-        keypair: Secp256k1RecoverableKeyPair,
-        multichain_id: RoochMultiChainID,
+        key_pair: Secp256k1RecoverableKeyPair,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .add_key_pair_by_multichain_id(keypair, multichain_id)
+            .add_key_pair_by_key_pair_type(key_pair, key_pair_type)
     }
 
-    fn get_public_key_by_multichain_id(
+    fn get_public_key_by_key_pair_type(
         &self,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Secp256k1RecoverablePublicKey, anyhow::Error> {
-        self.keystore.get_public_key_by_multichain_id(multichain_id)
+        self.keystore.get_public_key_by_key_pair_type(key_pair_type)
     }
 
     fn get_address_public_keys(&self) -> Vec<(EthereumAddress, Secp256k1RecoverablePublicKey)> {
@@ -1535,41 +1539,41 @@ impl
         self.keystore.get_key_pairs(address)
     }
 
-    fn update_key_pair_by_multichain_id(
+    fn update_key_pair_by_key_pair_type(
         &mut self,
         address: &EthereumAddress,
-        keypair: Secp256k1RecoverableKeyPair,
-        multichain_id: RoochMultiChainID,
+        key_pair: Secp256k1RecoverableKeyPair,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .update_key_pair_by_multichain_id(address, keypair, multichain_id)
+            .update_key_pair_by_key_pair_type(address, key_pair, key_pair_type)
     }
 
-    fn nullify_key_pair_by_multichain_id(
+    fn nullify_key_pair_by_key_pair_type(
         &mut self,
         address: &EthereumAddress,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .nullify_key_pair_by_multichain_id(address, multichain_id)
+            .nullify_key_pair_by_key_pair_type(address, key_pair_type)
     }
 
-    fn get_key_pair_by_multichain_id(
+    fn get_key_pair_by_key_pair_type(
         &self,
         address: &EthereumAddress,
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<&Secp256k1RecoverableKeyPair, signature::Error> {
         self.keystore
-            .get_key_pair_by_multichain_id(address, multichain_id)
+            .get_key_pair_by_key_pair_type(address, key_pair_type)
     }
 
     fn sign_hashed(
         &self,
         address: &EthereumAddress,
         msg: &[u8],
-        multichain_id: RoochMultiChainID,
+        key_pair_type: KeyPairType,
     ) -> Result<Secp256k1RecoverableSignature, signature::Error> {
-        self.keystore.sign_hashed(address, msg, multichain_id)
+        self.keystore.sign_hashed(address, msg, key_pair_type)
     }
 
     fn generate_session_key(
@@ -1598,10 +1602,13 @@ impl InMemKeystore<RoochAddress, RoochKeyPair> {
             .map(|(ad, k)| {
                 (
                     ad,
-                    BTreeMap::from_iter(vec![(RoochMultiChainID::Rooch, RoochKeyPair::Ed25519(k))]),
+                    BTreeMap::from_iter(vec![(
+                        KeyPairType::RoochKeyPairType,
+                        RoochKeyPair::Ed25519(k),
+                    )]),
                 )
             })
-            .collect::<BTreeMap<RoochAddress, BTreeMap<RoochMultiChainID, RoochKeyPair>>>();
+            .collect::<BTreeMap<RoochAddress, BTreeMap<KeyPairType, RoochKeyPair>>>();
 
         Self {
             keystore: BaseKeyStore::new(keys),
@@ -1613,8 +1620,8 @@ impl InMemKeystore<EthereumAddress, Secp256k1RecoverableKeyPair> {
         let mut rng = StdRng::from_seed([0; 32]);
         let keys = (0..initial_key_number)
             .map(|_| get_ethereum_key_pair_from_rng(&mut rng))
-            .map(|(ad, k)| (ad, BTreeMap::from_iter(vec![(RoochMultiChainID::Ether, k)])))
-            .collect::<BTreeMap<EthereumAddress, BTreeMap<RoochMultiChainID, Secp256k1RecoverableKeyPair>>>();
+            .map(|(ad, k)| (ad, BTreeMap::from_iter(vec![(KeyPairType::EthereumKeyPairType, k)])))
+            .collect::<BTreeMap<EthereumAddress, BTreeMap<KeyPairType, Secp256k1RecoverableKeyPair>>>();
 
         Self {
             keystore: BaseKeyStore::new(keys),

@@ -2,7 +2,7 @@ module rooch_framework::ecdsa_k1_recoverable {
     use std::vector;
 
     /// constant codes
-    const ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH: u64 = 1;
+    const ECDSA_K1_RECOVERABLE_TO_ETHEREUM_VALIDATOR_ID_LENGTH: u64 = 1;
     const ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH: u64 = 33;
     const ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH: u64 = 65;
     const ECDSA_K1_RECOVERABLE_SIG_LENGTH: u64 = 65;
@@ -21,8 +21,8 @@ module rooch_framework::ecdsa_k1_recoverable {
     const ErrorInvalidPubKey: u64 = 2;
 
     /// built-in functions
-    public fun scheme_length(): u64 {
-        ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH
+    public fun auth_validator_id_length(): u64 {
+        ECDSA_K1_RECOVERABLE_TO_ETHEREUM_VALIDATOR_ID_LENGTH
     }
 
     public fun public_key_length(): u64 {
@@ -47,8 +47,8 @@ module rooch_framework::ecdsa_k1_recoverable {
 
     public fun get_public_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
         let public_key = vector::empty<u8>();
-        let i = scheme_length() + signature_length();
-        let public_key_position = scheme_length() + signature_length() + public_key_length();
+        let i = auth_validator_id_length() + signature_length();
+        let public_key_position = auth_validator_id_length() + signature_length() + public_key_length();
         while (i < public_key_position) {
             let value = vector::borrow(authenticator_payload, i);
             vector::push_back(&mut public_key, *value);
@@ -59,7 +59,7 @@ module rooch_framework::ecdsa_k1_recoverable {
 
     public fun get_signature_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
         let sign = vector::empty<u8>();
-        let i = 0; // TODO: do we need scheme_length here?
+        let i = 0;
         let signature_position = signature_length();
         while (i < signature_position) {
             let value = vector::borrow(authenticator_payload, i);

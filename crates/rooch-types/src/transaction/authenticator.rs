@@ -7,7 +7,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::crypto::{BuiltinScheme, Signature};
+use crate::crypto::{BuiltinAuthValidator, Signature};
 use anyhow::Result;
 #[cfg(any(test, feature = "fuzzing"))]
 use fastcrypto::ed25519::Ed25519KeyPair;
@@ -24,7 +24,7 @@ use std::{fmt, str::FromStr};
 /// It is a part of `AccountAbstraction`
 
 pub trait BuiltinAuthenticator {
-    fn scheme(&self) -> u64;
+    fn auth_validator_id(&self) -> u64;
     fn payload(&self) -> Vec<u8>;
 }
 
@@ -34,8 +34,8 @@ pub struct RoochAuthenticator {
 }
 
 impl BuiltinAuthenticator for RoochAuthenticator {
-    fn scheme(&self) -> u64 {
-        BuiltinScheme::Ed25519.flag().into()
+    fn auth_validator_id(&self) -> u64 {
+        BuiltinAuthValidator::Ed25519.flag().into()
     }
     fn payload(&self) -> Vec<u8> {
         self.signature.as_ref().to_vec()
@@ -69,9 +69,12 @@ where
     T: BuiltinAuthenticator,
 {
     fn from(value: T) -> Self {
-        let scheme = value.scheme();
+        let auth_validator_id = value.auth_validator_id();
         let payload = value.payload();
-        Authenticator { scheme, payload }
+        Authenticator {
+            auth_validator_id,
+            payload,
+        }
     }
 }
 
@@ -83,14 +86,14 @@ impl From<Signature> for Authenticator {
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct Authenticator {
-    pub scheme: u64,
+    pub auth_validator_id: u64,
     pub payload: Vec<u8>,
 }
 
 impl Authenticator {
     /// Unique identifier for the signature of scheme
-    pub fn scheme(&self) -> u64 {
-        self.scheme
+    pub fn auth_validator_id(&self) -> u64 {
+        self.auth_validator_id
     }
 
     /// Create a single-signature rooch authenticator
@@ -99,8 +102,11 @@ impl Authenticator {
     }
 
     /// Create a custom authenticator
-    pub fn new(scheme: u64, payload: Vec<u8>) -> Self {
-        Self { scheme, payload }
+    pub fn new(auth_validator_id: u64, payload: Vec<u8>) -> Self {
+        Self {
+            auth_validator_id,
+            payload,
+        }
     }
 }
 
@@ -118,8 +124,8 @@ impl fmt::Display for Authenticator {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Authenticator[scheme: {:?}, payload: {}]",
-            self.scheme(),
+            "Authenticator[auth validator id: {:?}, payload: {}]",
+            self.auth_validator_id(),
             hex::encode(&self.payload),
         )
     }

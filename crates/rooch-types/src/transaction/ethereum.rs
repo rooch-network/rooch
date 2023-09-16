@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo};
-use crate::{address::EthereumAddress, error::RoochError, multichain_id::RoochMultiChainID};
+use crate::{address::EthereumAddress, error::RoochError};
 use anyhow::Result;
 use ethers::{
     types::{Bytes, OtherFields, Transaction, U256, U64},
@@ -48,9 +48,8 @@ impl EthereumTransactionData {
             access_list: None,
             max_priority_fee_per_gas: None,
             max_fee_per_gas: None,
-            chain_id: Some(U256::from(
-                RoochMultiChainID::Rooch.multichain_id().id(), // TODO use Ethereum multichain id and build a multichain genesis init
-            )),
+            // TODO create ethereum chain id in genesis init to pass through transaction validator tests
+            chain_id: Some(U256::from(20230103)), // fixed chain id from Ethereum main network
             other: OtherFields::default(),
         };
 
@@ -155,10 +154,7 @@ impl AbstractTransaction for EthereumTransactionData {
 
     fn authenticator_info(&self) -> Result<AuthenticatorInfo> {
         let chain_id = self.0.chain_id.ok_or(RoochError::InvalidChainID)?.as_u64();
-        let authenticator = Authenticator::new(
-            1, // TODO pass 1 as a scheme method
-            self.into_signature()?.as_bytes().to_vec(),
-        );
+        let authenticator = Authenticator::new(1, self.into_signature()?.as_bytes().to_vec());
         Ok(AuthenticatorInfo::new(chain_id, authenticator))
     }
 }

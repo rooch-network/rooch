@@ -68,7 +68,7 @@ impl AuthValidator {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TxValidateResult {
-    pub scheme: u64,
+    pub auth_validator_id: u64,
     pub auth_validator: MoveOption<AuthValidator>,
     pub session_key: MoveOption<Vec<u8>>,
 }

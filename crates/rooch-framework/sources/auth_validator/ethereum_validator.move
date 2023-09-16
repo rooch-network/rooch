@@ -1,4 +1,4 @@
-/// This module implements Ethereum validator with the ECDSA recoverable signature over Secp256k1 crypto scheme.
+/// This module implements Ethereum validator with the ECDSA recoverable signature over Secp256k1.
 module rooch_framework::ethereum_validator {
 
     use std::error;
@@ -11,16 +11,16 @@ module rooch_framework::ethereum_validator {
     use rooch_framework::auth_validator;
     use rooch_framework::ethereum_address::{Self, ETHAddress};
 
-    /// there defines scheme for each blockchain
-    const SCHEME_ETHEREUM: u64 = 1;
+    /// there defines auth validator id for each blockchain
+    const ETHEREUM_AUTH_VALIDATOR_ID: u64 = 1;
 
     /// error code
     const ErrorInvalidPublicKeyLength: u64 = 0;
 
     struct EthereumValidator has store, drop {}
 
-    public fun scheme(): u64 {
-        SCHEME_ETHEREUM
+    public fun auth_validator_id(): u64 {
+        ETHEREUM_AUTH_VALIDATOR_ID
     }
 
     public entry fun rotate_authentication_key_entry(

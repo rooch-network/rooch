@@ -5,12 +5,11 @@ use crate::cli_types::{ArgWithType, CommandAction, TransactionOptions, WalletCon
 use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
-use rooch_key::keystore::AccountKeystore;
+use rooch_key::{keypair::KeyPairType, keystore::AccountKeystore};
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, TypeTagView};
 use rooch_types::{
     address::RoochAddress,
     error::{RoochError, RoochResult},
-    multichain_id::RoochMultiChainID,
     transaction::rooch::RoochTransaction,
 };
 
@@ -53,10 +52,6 @@ pub struct RunFunction {
 
     #[clap(flatten)]
     tx_options: TransactionOptions,
-
-    /// Command line input of multichain ids
-    #[clap(short = 'i', long = "multichain-id", default_value = "rooch")]
-    pub multichain_id: RoochMultiChainID,
 }
 
 #[async_trait]
@@ -103,7 +98,7 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
             }
             (None, None) => {
                 context
-                    .sign_and_execute(sender, action, self.multichain_id)
+                    .sign_and_execute(sender, action, KeyPairType::RoochKeyPairType)
                     .await
             }
         }

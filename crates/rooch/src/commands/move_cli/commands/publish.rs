@@ -9,8 +9,8 @@ use move_bytecode_utils::dependency_graph::DependencyGraph;
 use move_bytecode_utils::Modules;
 use move_cli::Move;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
+use rooch_key::keypair::KeyPairType;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
-use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::rooch::RoochTransaction;
 
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
@@ -42,10 +42,6 @@ pub struct Publish {
     /// Note: This will fail if there are duplicates in the Move.toml file remove those first.
     #[clap(long, parse(try_from_str = crate::utils::parse_map), default_value = "")]
     pub(crate) named_addresses: BTreeMap<String, String>,
-
-    /// Command line input of multichain ids
-    #[clap(short = 'i', long = "multichain-id", default_value = "rooch")]
-    pub multichain_id: RoochMultiChainID,
 
     /// Whether publish modules by `MoveAction::ModuleBundle`?
     /// If not set, publish moduels through Move entry function
@@ -148,14 +144,14 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                 }
                 None => {
                     context
-                        .sign_and_execute(sender, action, self.multichain_id)
+                        .sign_and_execute(sender, action, KeyPairType::RoochKeyPairType)
                         .await?
                 }
             }
         } else {
             let action = MoveAction::ModuleBundle(bundles);
             context
-                .sign_and_execute(sender, action, self.multichain_id)
+                .sign_and_execute(sender, action, KeyPairType::RoochKeyPairType)
                 .await?
         };
         context.assert_execute_success(tx_result)

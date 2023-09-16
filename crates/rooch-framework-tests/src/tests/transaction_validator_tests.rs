@@ -10,6 +10,7 @@ use move_core_types::value::MoveValue;
 use move_core_types::vm_status::{AbortLocation, VMStatus};
 use moveos_types::move_types::FunctionId;
 use moveos_types::{module_binding::ModuleBinding, transaction::MoveAction};
+use rooch_key::keypair::KeyPairType;
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
 use rooch_types::address::{EthereumAddress, MultiChainAddress, RoochAddress};
 use rooch_types::crypto::RoochKeyPair;
@@ -38,7 +39,7 @@ fn test_validate_rooch() {
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore
-        .sign_transaction(&sender, tx_data, RoochMultiChainID::Rooch)
+        .sign_transaction(&sender, tx_data, KeyPairType::RoochKeyPairType)
         .unwrap();
     let auth_info = tx.authenticator_info().unwrap();
     let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
@@ -68,7 +69,7 @@ fn test_validate_ethereum() {
         Bytes::try_from(bcs::to_bytes(&action).unwrap()).expect("Convert action to bytes failed.");
     let tx_data = EthereumTransactionData::new_for_test(sender, sequence_number, action_bytes);
     let (_, _sig) = keystore
-        .sign_transaction(&sender, tx_data.clone(), RoochMultiChainID::Ether)
+        .sign_transaction(&sender, tx_data.clone(), KeyPairType::EthereumKeyPairType)
         .unwrap();
     let auth_info = tx_data.authenticator_info().unwrap();
     let multichain_address = MultiChainAddress::from(sender);
@@ -110,7 +111,7 @@ fn test_session_key_rooch() {
     );
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore
-        .sign_transaction(&sender, tx_data, RoochMultiChainID::Rooch)
+        .sign_transaction(&sender, tx_data, KeyPairType::RoochKeyPairType)
         .unwrap();
     binding_test.execute(tx).unwrap();
 

@@ -8,6 +8,7 @@ use clap::Parser;
 use regex::Regex;
 use rooch_config::config::Config;
 use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_KEYSTORE_FILENAME};
+use rooch_key::keypair::KeyPairType;
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use rooch_rpc_client::client_config::{ClientConfig, Env};
 use rooch_types::address::RoochAddress;
@@ -15,7 +16,6 @@ use rooch_types::chain_id::RoochChainID;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::RoochError;
 use rooch_types::error::RoochResult;
-use rooch_types::multichain_id::RoochMultiChainID;
 use std::fs;
 
 /// Tool for init with rooch
@@ -52,7 +52,7 @@ impl CommandAction<String> for Init {
                 }),
                 None => {
                     println!(
-                        "Creating config file [{:?}] with server and rooch native validator scheme.",
+                        "Creating config file [{:?}] with server and rooch native validator.",
                         client_config_path
                     );
                     let url = if self.server_url.is_none() {
@@ -109,11 +109,11 @@ impl CommandAction<String> for Init {
                     Err(error) => return Err(RoochError::GenerateKeyError(error.to_string())),
                 };
 
-                let (new_address, phrase, multichain_id) =
-                    keystore.generate_and_add_new_key(RoochMultiChainID::Rooch, None, None)?;
+                let (new_address, phrase, key_pair_type) =
+                    keystore.generate_and_add_new_key(KeyPairType::RoochKeyPairType, None, None)?;
                 println!(
-                    "Generated new keypair for address with multichain id {:?} [{new_address}]",
-                    multichain_id.multichain_id().id().to_string()
+                    "Generated new keypair for address with type {:?} [{new_address}]",
+                    key_pair_type.type_of()
                 );
                 println!("Secret Recovery Phrase : [{phrase}]");
                 let alias = env.alias.clone();

@@ -4,9 +4,9 @@
 use crate::cli_types::WalletContextOptions;
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
-use rooch_key::keystore::AccountKeystore;
+use rooch_key::{keypair::KeyPairType, keystore::AccountKeystore};
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
-use rooch_types::{account::AccountModule, error::RoochResult, multichain_id::RoochMultiChainID};
+use rooch_types::{account::AccountModule, error::RoochResult};
 
 /// Create a new account on-chain
 ///
@@ -26,12 +26,12 @@ impl CreateCommand {
         let (new_address, phrase, multichain_id) = context
             .config
             .keystore
-            .generate_and_add_new_key(RoochMultiChainID::Rooch, None, None)?;
+            .generate_and_add_new_key(KeyPairType::RoochKeyPairType, None, None)?;
 
         println!("{}", AccountAddress::from(new_address).to_hex_literal());
         println!(
             "Generated new keypair for address with multichain id {:?} [{new_address}]",
-            multichain_id.multichain_id().id().to_string()
+            KeyPairType::RoochKeyPairType.type_of()
         );
         println!("Secret Recovery Phrase : [{phrase}]");
 

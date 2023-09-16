@@ -3,12 +3,12 @@
 
 # Module `0x3::ethereum_validator`
 
-This module implements Ethereum validator with the ECDSA recoverable signature over Secp256k1 crypto scheme.
+This module implements Ethereum validator with the ECDSA recoverable signature over Secp256k1.
 
 
 -  [Struct `EthereumValidator`](#0x3_ethereum_validator_EthereumValidator)
 -  [Constants](#@Constants_0)
--  [Function `scheme`](#0x3_ethereum_validator_scheme)
+-  [Function `auth_validator_id`](#0x3_ethereum_validator_auth_validator_id)
 -  [Function `rotate_authentication_key_entry`](#0x3_ethereum_validator_rotate_authentication_key_entry)
 -  [Function `remove_authentication_key_entry`](#0x3_ethereum_validator_remove_authentication_key_entry)
 -  [Function `get_authentication_key_from_authenticator_payload`](#0x3_ethereum_validator_get_authentication_key_from_authenticator_payload)
@@ -76,23 +76,23 @@ error code
 
 
 
-<a name="0x3_ethereum_validator_SCHEME_ETHEREUM"></a>
+<a name="0x3_ethereum_validator_ETHEREUM_AUTH_VALIDATOR_ID"></a>
 
-there defines scheme for each blockchain
+there defines auth validator id for each blockchain
 
 
-<pre><code><b>const</b> <a href="ethereum_validator.md#0x3_ethereum_validator_SCHEME_ETHEREUM">SCHEME_ETHEREUM</a>: u64 = 1;
+<pre><code><b>const</b> <a href="ethereum_validator.md#0x3_ethereum_validator_ETHEREUM_AUTH_VALIDATOR_ID">ETHEREUM_AUTH_VALIDATOR_ID</a>: u64 = 1;
 </code></pre>
 
 
 
-<a name="0x3_ethereum_validator_scheme"></a>
+<a name="0x3_ethereum_validator_auth_validator_id"></a>
 
-## Function `scheme`
+## Function `auth_validator_id`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_scheme">scheme</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_auth_validator_id">auth_validator_id</a>(): u64
 </code></pre>
 
 
@@ -101,8 +101,8 @@ there defines scheme for each blockchain
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_scheme">scheme</a>(): u64 {
-    <a href="ethereum_validator.md#0x3_ethereum_validator_SCHEME_ETHEREUM">SCHEME_ETHEREUM</a>
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_auth_validator_id">auth_validator_id</a>(): u64 {
+    <a href="ethereum_validator.md#0x3_ethereum_validator_ETHEREUM_AUTH_VALIDATOR_ID">ETHEREUM_AUTH_VALIDATOR_ID</a>
 }
 </code></pre>
 

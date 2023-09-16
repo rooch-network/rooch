@@ -406,7 +406,7 @@ If the authentication key is not a session key, return option::none
 If the session key is expired or invalid, abort the tx, otherwise return option::some(authentication key)
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="session_key.md#0x3_session_key_validate">validate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, scheme: u64, authenticator_payload: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="session_key.md#0x3_session_key_validate">validate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, auth_validator_id: u64, authenticator_payload: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
 </code></pre>
 
 
@@ -415,7 +415,7 @@ If the session key is expired or invalid, abort the tx, otherwise return option:
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="session_key.md#0x3_session_key_validate">validate</a>(ctx: &StorageContext, scheme: u64, authenticator_payload: <a href="">vector</a>&lt;u8&gt;) : Option&lt;<a href="">vector</a>&lt;u8&gt;&gt; {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="session_key.md#0x3_session_key_validate">validate</a>(ctx: &StorageContext, auth_validator_id: u64, authenticator_payload: <a href="">vector</a>&lt;u8&gt;) : Option&lt;<a href="">vector</a>&lt;u8&gt;&gt; {
     <b>let</b> sender_addr = <a href="_sender">storage_context::sender</a>(ctx);
     <b>if</b> (!<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender_addr)){
         <b>return</b> <a href="_none">option::none</a>()

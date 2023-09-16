@@ -16,7 +16,7 @@ use moveos_types::{
 pub struct EthereumValidator {}
 
 impl EthereumValidator {
-    pub fn multichain_id() -> RoochMultiChainID {
+    pub fn auth_validator_id() -> RoochMultiChainID {
         RoochMultiChainID::Ether
     }
 }

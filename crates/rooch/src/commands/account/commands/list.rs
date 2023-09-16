@@ -23,11 +23,11 @@ impl CommandAction<()> for ListCommand {
 
         println!(
             "{0: ^66} | {1: ^48} | {2: ^16} | {3: ^12}",
-            "Rooch Address (Ed25519)", "Public Key (Base64)", "Scheme", "Active Address"
+            "Rooch Address (Ed25519)", "Public Key (Base64)", "Auth Validator ID", "Active Address"
         );
         println!("{}", ["-"; 153].join(""));
         for (address, public_key) in context.config.keystore.get_address_public_keys() {
-            let scheme = public_key.scheme().to_string();
+            let auth_validator_id = public_key.auth_validator().flag().to_string();
             let mut active = "";
             if active_address == Some(address) {
                 active = "True";
@@ -37,7 +37,7 @@ impl CommandAction<()> for ListCommand {
                 "{0: ^66} | {1: ^48} | {2: ^16} | {3: ^12}",
                 address,
                 public_key.encode_base64(),
-                scheme,
+                auth_validator_id,
                 active
             );
         }

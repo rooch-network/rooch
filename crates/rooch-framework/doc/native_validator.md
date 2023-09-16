@@ -3,12 +3,12 @@
 
 # Module `0x3::native_validator`
 
-This module implements the native validator scheme.
+This module implements the native validator.
 
 
 -  [Struct `NativeValidator`](#0x3_native_validator_NativeValidator)
 -  [Constants](#@Constants_0)
--  [Function `scheme`](#0x3_native_validator_scheme)
+-  [Function `auth_validator_id`](#0x3_native_validator_auth_validator_id)
 -  [Function `rotate_authentication_key_entry`](#0x3_native_validator_rotate_authentication_key_entry)
 -  [Function `remove_authentication_key_entry`](#0x3_native_validator_remove_authentication_key_entry)
 -  [Function `get_authentication_key_from_authenticator_payload`](#0x3_native_validator_get_authentication_key_from_authenticator_payload)
@@ -76,23 +76,23 @@ error code
 
 
 
-<a name="0x3_native_validator_SCHEME_NATIVE"></a>
+<a name="0x3_native_validator_NATIVE_VALIDATOR_ID"></a>
 
-there defines scheme for each blockchain
+there defines auth validator id for each blockchain
 
 
-<pre><code><b>const</b> <a href="native_validator.md#0x3_native_validator_SCHEME_NATIVE">SCHEME_NATIVE</a>: u64 = 0;
+<pre><code><b>const</b> <a href="native_validator.md#0x3_native_validator_NATIVE_VALIDATOR_ID">NATIVE_VALIDATOR_ID</a>: u64 = 0;
 </code></pre>
 
 
 
-<a name="0x3_native_validator_scheme"></a>
+<a name="0x3_native_validator_auth_validator_id"></a>
 
-## Function `scheme`
+## Function `auth_validator_id`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_scheme">scheme</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_auth_validator_id">auth_validator_id</a>(): u64
 </code></pre>
 
 
@@ -101,8 +101,8 @@ there defines scheme for each blockchain
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_scheme">scheme</a>(): u64 {
-    <a href="native_validator.md#0x3_native_validator_SCHEME_NATIVE">SCHEME_NATIVE</a>
+<pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_auth_validator_id">auth_validator_id</a>(): u64 {
+    <a href="native_validator.md#0x3_native_validator_NATIVE_VALIDATOR_ID">NATIVE_VALIDATOR_ID</a>
 }
 </code></pre>
 
@@ -239,7 +239,7 @@ Get the authentication key of the given public key.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_public_key_to_authentication_key">public_key_to_authentication_key</a>(public_key: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
-    <b>let</b> bytes = <a href="_singleton">vector::singleton</a>((<a href="native_validator.md#0x3_native_validator_scheme">scheme</a>() <b>as</b> u8));
+    <b>let</b> bytes = <a href="_singleton">vector::singleton</a>((<a href="native_validator.md#0x3_native_validator_auth_validator_id">auth_validator_id</a>() <b>as</b> u8));
     <a href="_append">vector::append</a>(&<b>mut</b> bytes, public_key);
     hash::blake2b256(&bytes)
 }

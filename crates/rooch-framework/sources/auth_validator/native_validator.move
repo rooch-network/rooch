@@ -1,4 +1,4 @@
-/// This module implements the native validator scheme.
+/// This module implements the native validator.
 module rooch_framework::native_validator {
 
     use std::error;
@@ -11,16 +11,16 @@ module rooch_framework::native_validator {
     use rooch_framework::ed25519;
     use rooch_framework::auth_validator;
 
-    /// there defines scheme for each blockchain
-    const SCHEME_NATIVE: u64 = 0;
+    /// there defines auth validator id for each blockchain
+    const NATIVE_VALIDATOR_ID: u64 = 0;
 
     /// error code
     const ErrorInvalidPublicKeyLength: u64 = 0;
 
     struct NativeValidator has store, drop {}
 
-    public fun scheme(): u64 {
-        SCHEME_NATIVE
+    public fun auth_validator_id(): u64 {
+        NATIVE_VALIDATOR_ID
     }
 
     public entry fun rotate_authentication_key_entry(
@@ -61,7 +61,7 @@ module rooch_framework::native_validator {
 
     /// Get the authentication key of the given public key.
     public fun public_key_to_authentication_key(public_key: vector<u8>): vector<u8> {
-        let bytes = vector::singleton((scheme() as u8));
+        let bytes = vector::singleton((auth_validator_id() as u8));
         vector::append(&mut bytes, public_key);
         hash::blake2b256(&bytes)
     }

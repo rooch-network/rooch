@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 225146d5c56f73d0c7caa99833b140f348bd6ed9c7079afb707b5fccef62c7f6 # shrinks to authenticator = RoochAuthenticator { signature: Ed25519RoochSignature(Ed25519RoochSignature([0, 13, 214, 181, 238, 125, 199, 44, 69, 26, 117, 187, 139, 168, 197, 121, 148, 245, 109, 226, 247, 15, 28, 183, 237, 209, 125, 97, 236, 218, 212, 207, 207, 146, 124, 242, 142, 240, 103, 40, 194, 8, 5, 78, 185, 108, 37, 28, 65, 151, 46, 185, 78, 196, 220, 169, 44, 129, 2, 54, 84, 4, 203, 136, 6, 238, 26, 164, 154, 68, 89, 223, 232, 19, 163, 207, 110, 184, 130, 4, 18, 48, 199, 178, 85, 132, 105, 222, 129, 248, 124, 155, 242, 59, 241, 10, 3])) }

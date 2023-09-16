@@ -16,7 +16,7 @@ use moveos_types::{
 pub struct NativeValidator {}
 
 impl NativeValidator {
-    pub fn multichain_id() -> RoochMultiChainID {
+    pub fn auth_validator_id() -> RoochMultiChainID {
         RoochMultiChainID::Rooch
     }
 }

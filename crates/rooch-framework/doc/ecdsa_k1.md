@@ -6,7 +6,7 @@
 
 
 -  [Constants](#@Constants_0)
--  [Function `scheme_length`](#0x3_ecdsa_k1_scheme_length)
+-  [Function `auth_validator_id_length`](#0x3_ecdsa_k1_auth_validator_id_length)
 -  [Function `public_key_length`](#0x3_ecdsa_k1_public_key_length)
 -  [Function `signature_length`](#0x3_ecdsa_k1_signature_length)
 -  [Function `keccak256`](#0x3_ecdsa_k1_keccak256)
@@ -44,12 +44,12 @@
 
 
 
-<a name="0x3_ecdsa_k1_ECDSA_K1_TO_SCHEME_BITCOIN_LENGTH"></a>
+<a name="0x3_ecdsa_k1_ECDSA_K1_TO_BITCOIN_VALIDATOR_ID_LENGTH"></a>
 
 constant codes
 
 
-<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_ECDSA_K1_TO_SCHEME_BITCOIN_LENGTH">ECDSA_K1_TO_SCHEME_BITCOIN_LENGTH</a>: u64 = 1;
+<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_ECDSA_K1_TO_BITCOIN_VALIDATOR_ID_LENGTH">ECDSA_K1_TO_BITCOIN_VALIDATOR_ID_LENGTH</a>: u64 = 1;
 </code></pre>
 
 
@@ -102,14 +102,14 @@ Hash function name that are valid for ecrecover and verify.
 
 
 
-<a name="0x3_ecdsa_k1_scheme_length"></a>
+<a name="0x3_ecdsa_k1_auth_validator_id_length"></a>
 
-## Function `scheme_length`
+## Function `auth_validator_id_length`
 
 built-in functions
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_scheme_length">scheme_length</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_auth_validator_id_length">auth_validator_id_length</a>(): u64
 </code></pre>
 
 
@@ -118,8 +118,8 @@ built-in functions
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_scheme_length">scheme_length</a>(): u64 {
-    <a href="ecdsa_k1.md#0x3_ecdsa_k1_ECDSA_K1_TO_SCHEME_BITCOIN_LENGTH">ECDSA_K1_TO_SCHEME_BITCOIN_LENGTH</a>
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_auth_validator_id_length">auth_validator_id_length</a>(): u64 {
+    <a href="ecdsa_k1.md#0x3_ecdsa_k1_ECDSA_K1_TO_BITCOIN_VALIDATOR_ID_LENGTH">ECDSA_K1_TO_BITCOIN_VALIDATOR_ID_LENGTH</a>
 }
 </code></pre>
 
@@ -264,8 +264,8 @@ built-in functions
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_get_public_key_from_authenticator_payload">get_public_key_from_authenticator_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
     <b>let</b> public_key = <a href="_empty">vector::empty</a>&lt;u8&gt;();
-    <b>let</b> i = <a href="ecdsa_k1.md#0x3_ecdsa_k1_scheme_length">scheme_length</a>() + <a href="ecdsa_k1.md#0x3_ecdsa_k1_signature_length">signature_length</a>();
-    <b>let</b> public_key_position = <a href="ecdsa_k1.md#0x3_ecdsa_k1_scheme_length">scheme_length</a>() + <a href="ecdsa_k1.md#0x3_ecdsa_k1_signature_length">signature_length</a>() + <a href="ecdsa_k1.md#0x3_ecdsa_k1_public_key_length">public_key_length</a>();
+    <b>let</b> i = <a href="ecdsa_k1.md#0x3_ecdsa_k1_auth_validator_id_length">auth_validator_id_length</a>() + <a href="ecdsa_k1.md#0x3_ecdsa_k1_signature_length">signature_length</a>();
+    <b>let</b> public_key_position = <a href="ecdsa_k1.md#0x3_ecdsa_k1_auth_validator_id_length">auth_validator_id_length</a>() + <a href="ecdsa_k1.md#0x3_ecdsa_k1_signature_length">signature_length</a>() + <a href="ecdsa_k1.md#0x3_ecdsa_k1_public_key_length">public_key_length</a>();
     <b>while</b> (i &lt; public_key_position) {
         <b>let</b> value = <a href="_borrow">vector::borrow</a>(authenticator_payload, i);
         <a href="_push_back">vector::push_back</a>(&<b>mut</b> public_key, *value);
@@ -296,7 +296,7 @@ built-in functions
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_get_signature_from_authenticator_payload">get_signature_from_authenticator_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
     <b>let</b> sign = <a href="_empty">vector::empty</a>&lt;u8&gt;();
-    <b>let</b> i = <a href="ecdsa_k1.md#0x3_ecdsa_k1_scheme_length">scheme_length</a>();
+    <b>let</b> i = <a href="ecdsa_k1.md#0x3_ecdsa_k1_auth_validator_id_length">auth_validator_id_length</a>();
     <b>let</b> signature_position = <a href="ecdsa_k1.md#0x3_ecdsa_k1_signature_length">signature_length</a>() + 1;
     <b>while</b> (i &lt; signature_position) {
         <b>let</b> value = <a href="_borrow">vector::borrow</a>(authenticator_payload, i);

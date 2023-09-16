@@ -128,7 +128,7 @@ module rooch_framework::session_key {
     /// Validate the current tx via the session key
     /// If the authentication key is not a session key, return option::none
     /// If the session key is expired or invalid, abort the tx, otherwise return option::some(authentication key)
-    public(friend) fun validate(ctx: &StorageContext, scheme: u64, authenticator_payload: vector<u8>) : Option<vector<u8>> {
+    public(friend) fun validate(ctx: &StorageContext, auth_validator_id: u64, authenticator_payload: vector<u8>) : Option<vector<u8>> {
         let sender_addr = storage_context::sender(ctx);
         if (!account_storage::global_exists<SessionKeys>(ctx, sender_addr)){
             return option::none()
