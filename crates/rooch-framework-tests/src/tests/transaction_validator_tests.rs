@@ -16,7 +16,6 @@ use rooch_types::address::{EthereumAddress, MultiChainAddress, RoochAddress};
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::framework::session_key::SessionKeyModule;
 use rooch_types::framework::timestamp::TimestampModule;
-use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::ethereum::EthereumTransactionData;
 use rooch_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, framework::empty::Empty};
 use rooch_types::{
@@ -184,7 +183,7 @@ fn test_session_key_rooch() {
     let tx_data =
         RoochTransactionData::new_for_test(sender, sequence_number + 2, update_time_action);
     let tx = keystore
-        .sign_transaction(&sender, tx_data, CoinID::Rooch)
+        .sign_transaction(&sender, tx_data, KeyPairType::RoochKeyPairType)
         .unwrap();
     binding_test.execute(tx).unwrap();
 

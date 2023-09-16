@@ -421,7 +421,7 @@ If the session key is expired or invalid, abort the tx, otherwise return option:
         <b>return</b> <a href="_none">option::none</a>()
     };
     // We only support <b>native</b> validator for <a href="session_key.md#0x3_session_key_SessionKey">SessionKey</a> now
-    <b>if</b>(scheme != <a href="native_validator.md#0x3_native_validator_scheme">native_validator::scheme</a>()){
+    <b>if</b>(auth_validator_id != <a href="native_validator.md#0x3_native_validator_auth_validator_id">native_validator::auth_validator_id</a>()){
         <b>return</b> <a href="_none">option::none</a>()
     };
 

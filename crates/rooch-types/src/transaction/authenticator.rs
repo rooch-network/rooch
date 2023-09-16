@@ -91,7 +91,7 @@ pub struct Authenticator {
 }
 
 impl Authenticator {
-    /// Unique identifier for the signature of scheme
+    /// Unique identifier for the signature of auth validator id
     pub fn auth_validator_id(&self) -> u64 {
         self.auth_validator_id
     }

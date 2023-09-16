@@ -134,7 +134,7 @@ module rooch_framework::session_key {
             return option::none()
         };
         // We only support native validator for SessionKey now
-        if(scheme != native_validator::scheme()){
+        if(auth_validator_id != native_validator::auth_validator_id()){
             return option::none()
         };
 
