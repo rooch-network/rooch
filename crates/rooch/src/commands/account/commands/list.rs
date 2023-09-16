@@ -27,7 +27,7 @@ impl CommandAction<()> for ListCommand {
         );
         println!("{}", ["-"; 153].join(""));
         for (address, public_key) in context.config.keystore.get_address_public_keys() {
-            let auth_validator_id = public_key.auth_validator().flag().to_string();
+            let auth_validator_id = public_key.auth_validator().flag();
             let mut active = "";
             if active_address == Some(address) {
                 active = "True";
@@ -37,7 +37,7 @@ impl CommandAction<()> for ListCommand {
                 "{0: ^66} | {1: ^48} | {2: ^16} | {3: ^12}",
                 address,
                 public_key.encode_base64(),
-                auth_validator_id,
+                auth_validator_id.to_string(),
                 active
             );
         }
