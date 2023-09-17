@@ -88,7 +88,7 @@ fn test_validate_ethereum() {
 
 #[test]
 fn test_session_key_rooch() {
-    tracing_subscriber::fmt::init();
+    // tracing_subscriber::fmt::init();
     let mut binding_test = binding_test::RustBindingTest::new().unwrap();
 
     let mut keystore = InMemKeystore::<RoochAddress, RoochKeyPair>::new_insecure_for_tests(1);

@@ -38,6 +38,7 @@ move-vm-test-utils = { workspace = true }
 move-vm-types = { workspace = true }
 move-resource-viewer = { workspace = true }
 move-transactional-test-runner = { workspace = true }
+move-package = { workspace = true }
 
 moveos-store = { workspace = true }
 moveos-stdlib = { workspace = true }

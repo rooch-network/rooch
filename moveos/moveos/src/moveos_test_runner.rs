@@ -364,7 +364,7 @@ pub trait MoveOSTestAdapter<'a>: Sized {
         module: CompiledModule,
         named_addr_opt: Option<Identifier>,
         gas_budget: Option<u64>,
-        extra: Self::ExtraPublishArgs,
+        extra: Option<Self::ExtraPublishArgs>,
     ) -> Result<(Option<String>, CompiledModule)>;
     fn execute_script(
         &mut self,
@@ -475,6 +475,7 @@ pub trait MoveOSTestAdapter<'a>: Sized {
                             &state.source_files().cloned().collect::<Vec<_>>(),
                             data_path.to_owned(),
                         )?;
+
                         let (named_addr_opt, module) = match unit {
                             AnnotatedCompiledUnit::Module(annot_module) => {
                                 let (named_addr_opt, _id) = annot_module.module_id();
@@ -500,7 +501,7 @@ pub trait MoveOSTestAdapter<'a>: Sized {
                     module,
                     named_addr_opt.map(|s| Identifier::new(s.as_str()).unwrap()),
                     gas_budget,
-                    extra_args,
+                    Some(extra_args),
                 )?;
                 match syntax {
                     SyntaxChoice::Source => self.compiled_state().add_with_source_file(

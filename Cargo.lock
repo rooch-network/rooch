@@ -7350,6 +7350,7 @@ dependencies = [
  "move-command-line-common",
  "move-compiler",
  "move-core-types",
+ "move-package",
  "move-resource-viewer",
  "move-stdlib",
  "move-transactional-test-runner",
