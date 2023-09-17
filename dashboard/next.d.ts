@@ -3,7 +3,7 @@
 
 import type { ReactElement, ReactNode } from 'react'
 import type { NextComponentType, NextPageContext } from 'next/dist/shared/lib/utils'
-import SDKProvider from '@metamask/sdk'
+import MetaMaskSDK from '@metamask/sdk'
 
 declare module 'next' {
   export declare type NextPage<P = object, IP = P> = NextComponentType<NextPageContext, IP, P> & {
@@ -17,7 +17,7 @@ declare module 'next' {
 
 declare global {
   interface Window {
-    sdkProvider: SDKProvider
-    ethereum?: SDKProvider
+    sdkProvider: MetaMaskSDK
+    ethereum?: MetaMaskSDK
   }
 }
