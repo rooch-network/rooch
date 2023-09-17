@@ -33,6 +33,7 @@ import UserLayout from 'src/layouts/UserLayout'
 import ThemeComponent from 'src/@core/theme/ThemeComponent'
 import AuthGuard from 'src/@core/components/auth/AuthGuard'
 import GuestGuard from 'src/@core/components/auth/GuestGuard'
+import SessionGuard from 'src/@core/components/session/SessionGuard'
 
 // ** Spinner Import
 import Spinner from 'src/@core/components/spinner'
@@ -133,7 +134,7 @@ const App = (props: ExtendedAppProps) => {
                   return (
                     <ThemeComponent settings={settings}>
                       <Guard authGuard={authGuard} guestGuard={guestGuard}>
-                        {getLayout(<Component {...pageProps} />)}
+                        <SessionGuard>{getLayout(<Component {...pageProps} />)}</SessionGuard>
                       </Guard>
                       <ReactHotToast>
                         <Toaster
