@@ -195,13 +195,14 @@ const AuthProvider = ({ children }: Props) => {
     metamask.disconnect()
   }
 
-  const defaultAccount = (): AccountDataType => {
-    return {
-      address: 'aa',
-      kp: null,
-      activate: true,
-      type: AccountType.ROOCH,
+  const defaultAccount = (): AccountDataType | null => {
+    const accounts = getAccounts()
+
+    if (accounts && accounts.size > 0) {
+      return accounts.values().next().value
     }
+
+    return null
   }
 
   const getAccounts = (): Map<string, AccountDataType> | null => {
