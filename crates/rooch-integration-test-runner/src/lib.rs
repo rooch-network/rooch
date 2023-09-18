@@ -2,17 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::Parser;
+use clap::__macro_refs::once_cell::sync::Lazy;
 use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::term::termcolor::Buffer;
+use move_command_line_common::files::{extension_equals, find_filenames, MOVE_EXTENSION};
+use move_command_line_common::parser::NumberFormat;
 use move_command_line_common::{
     address::{NumericalAddress, ParsedAddress},
     files::verify_and_create_named_address_mapping,
     values::ParsableValue,
 };
-use move_compiler::compiled_unit::CompiledUnitEnum;
+use move_compiler::shared::PackagePaths;
 use move_compiler::FullyCompiledProgram;
-use move_core_types::effects::{ChangeSet, Op};
-use move_core_types::language_storage::TypeTag;
+use move_package::BuildConfig;
 use move_transactional_test_runner::{
     tasks::{InitCommand, SyntaxChoice},
     vm_test_harness::view_resource_in_move_storage,
@@ -21,11 +23,9 @@ use move_vm_runtime::session::SerializedReturnValues;
 use moveos::moveos::MoveOS;
 use moveos::moveos_test_runner::{CompiledState, MoveOSTestAdapter, TaskInput};
 use moveos_store::MoveOSStore;
-use moveos_types::move_module::MoveModule;
 use moveos_types::move_types::FunctionId;
-use moveos_types::object::{NamedTableID, ObjectID};
-use moveos_types::state::{MoveStructType, State, StateChangeSet};
-use moveos_types::state_resolver::{module_name_to_key, AnnotatedStateReader};
+use moveos_types::object::ObjectID;
+use moveos_types::state_resolver::AnnotatedStateReader;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction, TransactionOutput};
 use moveos_verifier::build::build_model;
 use moveos_verifier::metadata::run_extended_checks;
@@ -122,6 +122,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
                 .unwrap();
         }
 
+        /*
         // Apply new modules and add precompiled address mapping
         let mut table_change_set = StateChangeSet::default();
         // let mut mutated_accounts = BTreeSet::new();
@@ -172,13 +173,15 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             .state()
             .apply_change_set(change_set, table_change_set)
             .unwrap();
+         */
 
-        let mut adapter = Self {
+        let adapter = Self {
             compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps, None),
             default_syntax,
             moveos,
         };
 
+        /*
         //Auto generate interface to Framework modules
         let stdlib_modules = genesis.modules().unwrap();
 
@@ -191,6 +194,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
                 .compiled_state
                 .add_and_generate_interface_file(module.clone());
         }
+         */
         (adapter, None)
     }
 
@@ -199,7 +203,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         module: move_binary_format::CompiledModule,
         _named_addr_opt: Option<move_core_types::identifier::Identifier>,
         _gas_budget: Option<u64>,
-        _extra: Self::ExtraPublishArgs,
+        _extra: Option<Self::ExtraPublishArgs>,
     ) -> anyhow::Result<(Option<String>, move_binary_format::CompiledModule)> {
         let mut module_bytes = vec![];
         module.serialize(&mut module_bytes)?;
@@ -331,8 +335,11 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
     }
 }
 
+static PRECOMPILED_STDLIB: Lazy<FullyCompiledProgram> =
+    Lazy::new(|| all_pre_compiled_libs().unwrap());
+
 pub fn run_test(path: &Path) -> Result<(), Box<dyn std::error::Error + 'static>> {
-    run_test_impl(path, None)
+    run_test_impl(path, Some(&PRECOMPILED_STDLIB))
 }
 
 pub fn run_test_impl<'a>(
@@ -406,4 +413,134 @@ pub fn run_integration_test_with_extended_check(
 fn tx_output_to_str(output: TransactionOutput) -> String {
     //TODO introduce output view, and print json output
     output.status.to_string()
+}
+
+pub fn resolve_package_named_addresses(root_path: PathBuf) -> BTreeMap<String, NumericalAddress> {
+    let build_config = BuildConfig::default();
+
+    let resolution_graph = build_config
+        .resolution_graph_for_package(&root_path, &mut Vec::new())
+        .expect("resolve package dep failed");
+
+    let mut additional_named_address = BTreeMap::new();
+    let _: Vec<_> = resolution_graph
+        .extract_named_address_mapping()
+        .map(|(name, addr)| {
+            (additional_named_address.insert(
+                name.to_string(),
+                NumericalAddress::new(addr.into_bytes(), NumberFormat::Hex),
+            ),)
+        })
+        .collect();
+
+    additional_named_address
+}
+
+pub fn move_std_info() -> (Vec<String>, BTreeMap<String, NumericalAddress>) {
+    let move_std_path = PathBuf::from("../../moveos/moveos-stdlib/move-stdlib/");
+    let named_addresses = resolve_package_named_addresses(move_std_path.clone());
+
+    let binding = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join(move_std_path.join("sources"))
+        .canonicalize()
+        .unwrap();
+    let move_std_path = binding.as_path();
+    let files = find_filenames(&[move_std_path], |p| extension_equals(p, MOVE_EXTENSION)).unwrap();
+    (files, named_addresses)
+}
+
+pub fn moveos_std_info() -> (Vec<String>, BTreeMap<String, NumericalAddress>) {
+    let moveos_std_path = PathBuf::from("../../moveos/moveos-stdlib/moveos-stdlib/");
+    let named_addresses = resolve_package_named_addresses(moveos_std_path.clone());
+
+    let binding = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join(moveos_std_path.join("sources"))
+        .canonicalize()
+        .unwrap();
+    let moveos_std_path = binding.as_path();
+    let files =
+        find_filenames(&[moveos_std_path], |p| extension_equals(p, MOVE_EXTENSION)).unwrap();
+    (files, named_addresses)
+}
+
+pub fn rooch_framework_named_addresses_info() -> BTreeMap<String, NumericalAddress> {
+    let mut address_mapping = moveos_stdlib::moveos_stdlib_named_addresses();
+    address_mapping.extend(
+        ROOCH_NAMED_ADDRESS_MAPPING
+            .iter()
+            .map(|(name, addr)| (name.to_string(), NumericalAddress::parse_str(addr).unwrap())),
+    );
+    address_mapping
+}
+
+pub fn rooch_framework_info() -> (Vec<String>, BTreeMap<String, NumericalAddress>) {
+    let rooch_framework_path = PathBuf::from("../rooch-framework/");
+    let mut named_addresses = resolve_package_named_addresses(rooch_framework_path.clone());
+    named_addresses.extend(rooch_framework_named_addresses_info());
+
+    let binding = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join(rooch_framework_path.join("sources"))
+        .canonicalize()
+        .unwrap();
+    let rooch_framework_path = binding.as_path();
+    let files = find_filenames(&[rooch_framework_path], |p| {
+        extension_equals(p, MOVE_EXTENSION)
+    })
+    .unwrap();
+    (files, named_addresses)
+}
+
+pub const ROOCH_FRAMEWORK_ADDRESS_NAME: &str = "rooch_framework";
+pub const ROOCH_FRAMEWORK_ADDRESS_LITERAL: &str = "0x3";
+
+pub static ROOCH_NAMED_ADDRESS_MAPPING: [(&str, &str); 1] = [(
+    ROOCH_FRAMEWORK_ADDRESS_NAME,
+    ROOCH_FRAMEWORK_ADDRESS_LITERAL,
+)];
+
+pub fn all_pre_compiled_libs() -> Option<FullyCompiledProgram> {
+    let (move_std_files, mut move_std_named_addresses) = move_std_info();
+    move_std_named_addresses.extend(move_stdlib::move_stdlib_named_addresses());
+    let stdlib_package = PackagePaths {
+        name: None,
+        paths: move_std_files,
+        named_address_map: move_std_named_addresses,
+    };
+
+    let (moveos_std_files, mut moveos_std_named_addresses) = moveos_std_info();
+    moveos_std_named_addresses.extend(moveos_stdlib::moveos_stdlib_named_addresses());
+    let moveos_stdlib_package = PackagePaths {
+        name: None,
+        paths: moveos_std_files,
+        named_address_map: moveos_std_named_addresses,
+    };
+
+    let (rooch_framework_files, addresses) = rooch_framework_info();
+
+    let mut rooch_framework_named_addresses = rooch_framework_named_addresses_info();
+    rooch_framework_named_addresses.extend(addresses);
+
+    let rooch_framework_package = PackagePaths {
+        name: None,
+        paths: rooch_framework_files,
+        named_address_map: rooch_framework_named_addresses,
+    };
+
+    let program_res = move_compiler::construct_pre_compiled_lib(
+        vec![
+            stdlib_package,
+            moveos_stdlib_package,
+            rooch_framework_package,
+        ],
+        None,
+        move_compiler::Flags::empty(),
+    )
+    .unwrap();
+    match program_res {
+        Ok(compiled_program) => Some(compiled_program),
+        Err((files, errors)) => {
+            eprintln!("!!!Standard library failed to compile!!!");
+            move_compiler::diagnostics::report_diagnostics(&files, errors);
+        }
+    }
 }

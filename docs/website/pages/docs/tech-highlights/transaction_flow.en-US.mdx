@@ -42,6 +42,33 @@ From the functional perspective of internal components, the transaction executio
 2. The entire process includes multiple components such as `Executor`,`Sequencer`,`Proposer`, but these components may not be on the same node, and they may communicate remotely through P2P network. This part will also be updated in future versions.
 3. The above process is described based on the current design and some logic has not yet been fully implemented, and it will continue to be updated in the future.
 
+## Transaction Inclusion
+
+There are three methods of transaction inclusion in Rooch, each escalating in transparency and compulsion:
+
+1. Direct Request to the Sequencer
+2. Submission through L1's (any settlement chain) transaction queue
+3. Submission via L1's (arbitration chain) transaction queue
+
+### Direct Request to the Sequencer
+
+Users can directly request the Sequencer to include transactions. The Sequencer will add the transaction to the Accumulator and immediately return the global order of the transaction. This inclusion is public and arbitral, but the Sequencer may ignore user requests, thereby enabling transaction censorship attacks. When users are concerned about transaction censorship, they can submit via the third method.
+
+### Submission through L1's Transaction Queue
+
+Users can submit transactions to L1's transaction queue, awaiting the Sequencer's retrieval. This inclusion is public but not arbitral in all circumstances. Such transactions typically manifest as messages sent from L1 to L2, such as deposit transactions. For non-arbitration chain, when users are concerned about transaction censorship, they can submit via the third method.
+
+### Submission via L1's (Arbitration Chain) Transaction Queue
+
+Submission via L1's (arbitration chain) transaction queue, awaits the Sequencer's acquisition, and can be forcibly included in arbitration via L1's arbitration contract. The arbitration mechanism is as follows:
+
+1. The user submits the transaction to the transaction queue contract of L1's arbitration chain.
+2. The Sequencer commits to retrieving the transaction within a certain time (t) after entering the transaction queue contract.
+3. If the Sequencer fails to retrieve the transaction within time t, any user can initiate arbitration via the arbitration contract, demanding that the Sequencer provide a proof of transaction inclusion in a certain tx list accumulator.
+4. This accumulator proof can be verified on the arbitration chain. If the verification fails or the Sequencer fails to provide proof within the stipulated time (t2), the Sequencer will be penalized.
+
+Due to the presence of the above arbitration mechanism, cheating is sure to be caught, making it imperative for the Sequencer to provide reliable service.
+
 ## FAQ
 
 ### How is the execution order of transactions determined?
