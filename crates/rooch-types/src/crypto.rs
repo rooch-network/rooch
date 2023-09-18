@@ -5,9 +5,8 @@ use crate::{
     address::{EthereumAddress, RoochAddress},
     authentication_key::AuthenticationKey,
     error::{RoochError, RoochResult},
-    framework::native_validator::NativeValidatorModule,
+    framework::auth_validator::BuiltinAuthValidator,
 };
-use clap::ArgEnum;
 use derive_more::{AsMut, AsRef, From};
 pub use enum_dispatch::enum_dispatch;
 use eyre::eyre;
@@ -27,86 +26,15 @@ use fastcrypto::{
     },
     secp256k1::recoverable::Secp256k1RecoverablePublicKey,
 };
-use moveos_types::{h256::H256, serde::Readable, transaction::MoveAction};
+use moveos_types::{h256::H256, serde::Readable};
 use rand::{rngs::StdRng, SeedableRng};
 use schemars::JsonSchema;
 use serde::ser::Serializer;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_with::{serde_as, Bytes};
 use std::{hash::Hash, str::FromStr};
-use strum_macros::{Display, EnumString};
 
 pub type DefaultHash = Blake2b256;
-
-/// A `Authenticator` is an an abstraction of a account authenticator.
-/// It is a part of `AccountAbstraction`
-
-/// The Authenticator auth validator which builtin Rooch
-#[derive(
-    Copy,
-    Clone,
-    Debug,
-    EnumString,
-    PartialEq,
-    Eq,
-    ArgEnum,
-    Display,
-    Ord,
-    PartialOrd,
-    Serialize,
-    Deserialize,
-)]
-#[strum(serialize_all = "lowercase")]
-pub enum BuiltinAuthValidator {
-    Ed25519,
-}
-
-impl BuiltinAuthValidator {
-    const ED25519_FLAG: u8 = 0x00;
-
-    pub fn flag(&self) -> u8 {
-        match self {
-            BuiltinAuthValidator::Ed25519 => Self::ED25519_FLAG,
-        }
-    }
-
-    pub fn from_flag(flag: &str) -> Result<BuiltinAuthValidator, RoochError> {
-        let byte_int = flag
-            .parse::<u8>()
-            .map_err(|_| RoochError::KeyConversionError("Invalid key auth validator".to_owned()))?;
-        Self::from_flag_byte(byte_int)
-    }
-
-    pub fn from_flag_byte(byte_int: u8) -> Result<BuiltinAuthValidator, RoochError> {
-        match byte_int {
-            Self::ED25519_FLAG => Ok(BuiltinAuthValidator::Ed25519),
-            _ => Err(RoochError::KeyConversionError(
-                "Invalid key auth validator".to_owned(),
-            )),
-        }
-    }
-
-    pub fn create_rotate_authentication_key_action(
-        &self,
-        public_key: Vec<u8>,
-    ) -> Result<MoveAction, RoochError> {
-        let action = match self {
-            BuiltinAuthValidator::Ed25519 => {
-                NativeValidatorModule::rotate_authentication_key_action(public_key)
-            }
-        };
-        Ok(action)
-    }
-
-    pub fn create_remove_authentication_key_action(&self) -> Result<MoveAction, RoochError> {
-        let action = match self {
-            BuiltinAuthValidator::Ed25519 => {
-                NativeValidatorModule::remove_authentication_key_action()
-            }
-        };
-        Ok(action)
-    }
-}
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, From, PartialEq, Eq)]
@@ -163,13 +91,10 @@ impl EncodeDecodeBase64 for RoochKeyPair {
         match BuiltinAuthValidator::from_flag_byte(
             *bytes.first().ok_or_else(|| eyre!("Invalid length"))?,
         ) {
-            Ok(x) => match x {
-                BuiltinAuthValidator::Ed25519 => {
-                    Ok(RoochKeyPair::Ed25519(Ed25519KeyPair::from_bytes(
-                        bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
-                    )?))
-                }
-            },
+            // Process Rooch key pair by default
+            Ok(_x) => Ok(RoochKeyPair::Ed25519(Ed25519KeyPair::from_bytes(
+                bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
+            )?)),
             _ => Err(eyre!("Invalid bytes")),
         }
     }
@@ -222,7 +147,7 @@ impl EncodeDecodeBase64 for PublicKey {
         let bytes = Base64::decode(value).map_err(|e| eyre!("{}", e.to_string()))?;
         match bytes.first() {
             Some(x) => {
-                if x == &BuiltinAuthValidator::Ed25519.flag() {
+                if x == &BuiltinAuthValidator::Rooch.flag() {
                     let pk: Ed25519PublicKey = Ed25519PublicKey::from_bytes(
                         bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
                     )?;
@@ -265,14 +190,13 @@ impl PublicKey {
         }
     }
     pub fn try_from_bytes(
-        auth_validator: BuiltinAuthValidator,
+        _auth_validator: BuiltinAuthValidator,
         key_bytes: &[u8],
     ) -> Result<PublicKey, eyre::Report> {
-        match auth_validator {
-            BuiltinAuthValidator::Ed25519 => Ok(PublicKey::Ed25519(
-                (&Ed25519PublicKey::from_bytes(key_bytes)?).into(),
-            )),
-        }
+        // Process Rooch public key by default
+        Ok(PublicKey::Ed25519(
+            (&Ed25519PublicKey::from_bytes(key_bytes)?).into(),
+        ))
     }
     pub fn auth_validator(&self) -> BuiltinAuthValidator {
         match self {
@@ -294,7 +218,7 @@ pub trait RoochPublicKey: VerifyingKey {
 }
 
 impl RoochPublicKey for Ed25519PublicKey {
-    const SIGNATURE_SCHEME: BuiltinAuthValidator = BuiltinAuthValidator::Ed25519;
+    const SIGNATURE_SCHEME: BuiltinAuthValidator = BuiltinAuthValidator::Rooch;
 }
 
 impl<T: RoochPublicKey> From<&T> for RoochAddress {
@@ -444,29 +368,25 @@ impl Signature {
     /// This is useful for the MultiSig to combine partial signature into a MultiSig public key.
     pub fn to_compressed(&self) -> Result<CompressedSignature, RoochError> {
         let bytes = self.signature_bytes();
-        match self.auth_validator() {
-            BuiltinAuthValidator::Ed25519 => Ok(CompressedSignature::Ed25519(
-                (&Ed25519Signature::from_bytes(bytes).map_err(|_| {
-                    RoochError::InvalidSignature {
-                        error: "Cannot parse sig".to_owned(),
-                    }
-                })?)
-                    .into(),
-            )),
-        }
+        // Process Rooch signature by default
+        Ok(CompressedSignature::Ed25519(
+            (&Ed25519Signature::from_bytes(bytes).map_err(|_| RoochError::InvalidSignature {
+                error: "Cannot parse sig".to_owned(),
+            })?)
+                .into(),
+        ))
     }
 
     /// Parse [struct PublicKey] from trait RoochSignature `flag || sig || pk`.
     /// This is useful for the MultiSig to construct the bitmap in [struct MultiPublicKey].
     pub fn to_public_key(&self) -> Result<PublicKey, RoochError> {
         let bytes = self.public_key_bytes();
-        match self.auth_validator() {
-            BuiltinAuthValidator::Ed25519 => Ok(PublicKey::Ed25519(
-                (&Ed25519PublicKey::from_bytes(bytes)
-                    .map_err(|_| RoochError::KeyConversionError("Cannot parse pk".to_owned()))?)
-                    .into(),
-            )),
-        }
+        // Process Rooch signature by default
+        Ok(PublicKey::Ed25519(
+            (&Ed25519PublicKey::from_bytes(bytes)
+                .map_err(|_| RoochError::KeyConversionError("Cannot parse pk".to_owned()))?)
+                .into(),
+        ))
     }
 }
 
@@ -626,6 +546,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::address::RoochAddress;
+    use ethers::core::k256::ecdsa::signature::Keypair;
     use ethers::utils::keccak256;
     use fastcrypto::{
         ed25519::{Ed25519KeyPair, Ed25519PrivateKey},

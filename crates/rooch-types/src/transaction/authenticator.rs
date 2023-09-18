@@ -7,7 +7,6 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::crypto::{BuiltinAuthValidator, Signature};
 use anyhow::Result;
 #[cfg(any(test, feature = "fuzzing"))]
 use fastcrypto::ed25519::Ed25519KeyPair;
@@ -19,6 +18,8 @@ use proptest::{collection::vec, prelude::*};
 use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
+
+use crate::{crypto::Signature, framework::auth_validator::BuiltinAuthValidator};
 
 /// A `Authenticator` is an an abstraction of a account authenticator.
 /// It is a part of `AccountAbstraction`
@@ -35,7 +36,7 @@ pub struct RoochAuthenticator {
 
 impl BuiltinAuthenticator for RoochAuthenticator {
     fn auth_validator_id(&self) -> u64 {
-        BuiltinAuthValidator::Ed25519.flag().into()
+        BuiltinAuthValidator::Rooch.flag().into()
     }
     fn payload(&self) -> Vec<u8> {
         self.signature.as_ref().to_vec()

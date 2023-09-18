@@ -1,46 +1,15 @@
 module rooch_framework::ed25519 {
-    use std::vector;
-
     /// constant codes
-    const ED25519_TO_NATIVE_VALIDATOR_ID_LENGTH: u64 = 1;
     const ED25519_PUBKEY_LENGTH: u64 = 32;
     const ED25519_SIG_LENGTH: u64 = 64;
 
     /// built-in functions
-    public fun auth_validator_id_length(): u64 {
-        ED25519_TO_NATIVE_VALIDATOR_ID_LENGTH
-    }
-
     public fun public_key_length(): u64 {
         ED25519_PUBKEY_LENGTH
     }
 
     public fun signature_length(): u64 {
         ED25519_SIG_LENGTH
-    }
-
-    public fun get_public_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
-        let public_key = vector::empty<u8>();
-        let i = auth_validator_id_length() + signature_length();
-        let public_key_position = auth_validator_id_length() + signature_length() + public_key_length();
-        while (i < public_key_position) {
-            let value = vector::borrow(authenticator_payload, i);
-            vector::push_back(&mut public_key, *value);
-            i = i + 1;
-        };
-        public_key
-    }
-
-    public fun get_signature_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
-        let sign = vector::empty<u8>();
-        let i = auth_validator_id_length();
-        let signature_position = signature_length() + 1;
-        while (i < signature_position) {
-            let value = vector::borrow(authenticator_payload, i);
-            vector::push_back(&mut sign, *value);
-            i = i + 1;
-        };
-        sign
     }
 
     /// @param signature: 32-byte signature that is a point on the Ed25519 elliptic curve.

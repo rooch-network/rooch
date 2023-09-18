@@ -15,7 +15,7 @@ module rooch_framework::address_mapping{
     const MULTICHAIN_ID_BITCOIN: u64 = 0;
     const MULTICHAIN_ID_ETHER: u64 = 60;
     const MULTICHAIN_ID_NOSTR: u64 = 1237;
-    const MULTICHAIN_ID_ROOCH: u64 = 20230103;
+    const MULTICHAIN_ID_ROOCH: u64 = 20230101; // placeholder for MULTICHAIN_ID_ROOCH pending for actual id from slip-0044
 
     struct MultiChainAddress has copy, store, drop {
         multichain_id: u64,

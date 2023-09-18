@@ -105,6 +105,7 @@ impl WalletContext {
         Ok(tx_data)
     }
 
+    // TODO: remove key_pair_type: KeyPairType to construct specfic sign implementation based on keys from key store for Rooch and Ethereum transactions
     pub async fn sign(
         &self,
         sender: RoochAddress,

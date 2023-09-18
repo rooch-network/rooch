@@ -16,7 +16,7 @@ pub const BITCOIN: u64 = 0;
 pub const ETHER: u64 = 60;
 pub const SUI: u64 = 784;
 pub const NOSTR: u64 = 1237;
-pub const ROOCH: u64 = 20230103; // Dev
+pub const ROOCH: u64 = 20230101; // place holder for slip-0044 needs to replace later
 
 #[derive(
     Clone, Copy, Debug, Deserialize, Serialize, Hash, Eq, PartialEq, PartialOrd, Ord, JsonSchema,

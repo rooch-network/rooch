@@ -48,9 +48,33 @@ module rooch_framework::ethereum_validator {
         account_authentication::remove_authentication_key<EthereumValidator>(ctx, signer::address_of(account));
     }
 
+    public fun get_public_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
+        let public_key = vector::empty<u8>();
+        let i = ecdsa_k1_recoverable::signature_length();
+        let public_key_position = ecdsa_k1_recoverable::signature_length() + ecdsa_k1_recoverable::public_key_length();
+        while (i < public_key_position) {
+            let value = vector::borrow(authenticator_payload, i);
+            vector::push_back(&mut public_key, *value);
+            i = i + 1;
+        };
+        public_key
+    }
+
+    public fun get_signature_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
+        let sign = vector::empty<u8>();
+        let i = 0;
+        let signature_position = ecdsa_k1_recoverable::signature_length();
+        while (i < signature_position) {
+            let value = vector::borrow(authenticator_payload, i);
+            vector::push_back(&mut sign, *value);
+            i = i + 1;
+        };
+        sign
+    }
+
     /// Get the authentication key of the given authenticator from authenticator_payload.
     public fun get_authentication_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
-        let public_key = ecdsa_k1_recoverable::get_public_key_from_authenticator_payload(authenticator_payload);
+        let public_key = get_public_key_from_authenticator_payload(authenticator_payload);
         let addr = public_key_to_address(public_key);
         ethereum_address::into_bytes(addr)
     }
@@ -84,7 +108,7 @@ module rooch_framework::ethereum_validator {
     public fun validate_signature(authenticator_payload: &vector<u8>, tx_hash: &vector<u8>) {
         assert!(
             ecdsa_k1_recoverable::verify(
-                &ecdsa_k1_recoverable::get_signature_from_authenticator_payload(authenticator_payload),
+                &get_signature_from_authenticator_payload(authenticator_payload),
                 tx_hash,
                 ecdsa_k1_recoverable::keccak256()
             ),

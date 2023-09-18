@@ -48,9 +48,35 @@ module rooch_framework::native_validator {
         account_authentication::remove_authentication_key<NativeValidator>(ctx, signer::address_of(account));
     }
 
+    public fun get_public_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
+        let public_key = vector::empty<u8>();
+        // TODO remove auth validator id from payload here to 0
+        let i = 1 + ed25519::signature_length();
+        let public_key_position = 1 + ed25519::signature_length() + ed25519::public_key_length();
+        while (i < public_key_position) {
+            let value = vector::borrow(authenticator_payload, i);
+            vector::push_back(&mut public_key, *value);
+            i = i + 1;
+        };
+        public_key
+    }
+
+    public fun get_signature_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
+        let sign = vector::empty<u8>();
+        // TODO remove auth validator id from payload here to 0
+        let i = 1;
+        let signature_position = ed25519::signature_length() + 1;
+        while (i < signature_position) {
+            let value = vector::borrow(authenticator_payload, i);
+            vector::push_back(&mut sign, *value);
+            i = i + 1;
+        };
+        sign
+    }
+
     /// Get the authentication key of the given authenticator from authenticator_payload.
     public fun get_authentication_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
-        let public_key = ed25519::get_public_key_from_authenticator_payload(authenticator_payload);
+        let public_key = get_public_key_from_authenticator_payload(authenticator_payload);
         let addr = public_key_to_address(public_key);
         moveos_std::bcs::to_bytes(&addr)
     }
@@ -84,8 +110,8 @@ module rooch_framework::native_validator {
     public fun validate_signature(authenticator_payload: &vector<u8>, tx_hash: &vector<u8>) {
         assert!(
             ed25519::verify(
-                &ed25519::get_signature_from_authenticator_payload(authenticator_payload),
-                &ed25519::get_public_key_from_authenticator_payload(authenticator_payload),
+                &get_signature_from_authenticator_payload(authenticator_payload),
+                &get_public_key_from_authenticator_payload(authenticator_payload),
                 tx_hash
             ),
             auth_validator::error_invalid_authenticator()

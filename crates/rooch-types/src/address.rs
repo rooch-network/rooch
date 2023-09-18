@@ -3,7 +3,6 @@
 
 use crate::{
     addresses::ROOCH_FRAMEWORK_ADDRESS,
-    chain_id::BuiltinChainID,
     multichain_id::{MultiChainID, RoochMultiChainID},
 };
 use anyhow::Result;
@@ -65,9 +64,7 @@ impl MultiChainAddress {
     }
 
     pub fn is_rooch_address(&self) -> bool {
-        self.multichain_id.multichain_id().id() == BuiltinChainID::Dev.chain_id().id()
-            || self.multichain_id.multichain_id().id() == BuiltinChainID::Test.chain_id().id()
-            || self.multichain_id.multichain_id().id() == BuiltinChainID::Main.chain_id().id()
+        self.multichain_id.is_rooch()
     }
 
     pub fn from_bech32(bech32: &str) -> Result<Self> {

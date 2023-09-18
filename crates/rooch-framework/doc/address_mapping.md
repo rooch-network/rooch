@@ -126,7 +126,7 @@
 
 
 
-<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_MULTICHAIN_ID_ROOCH">MULTICHAIN_ID_ROOCH</a>: u64 = 20230103;
+<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_MULTICHAIN_ID_ROOCH">MULTICHAIN_ID_ROOCH</a>: u64 = 20230101;
 </code></pre>
 
 

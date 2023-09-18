@@ -6,14 +6,10 @@
 
 
 -  [Constants](#@Constants_0)
--  [Function `auth_validator_id_length`](#0x3_ecdsa_k1_recoverable_auth_validator_id_length)
 -  [Function `public_key_length`](#0x3_ecdsa_k1_recoverable_public_key_length)
 -  [Function `uncompressed_public_key_length`](#0x3_ecdsa_k1_recoverable_uncompressed_public_key_length)
 -  [Function `signature_length`](#0x3_ecdsa_k1_recoverable_signature_length)
 -  [Function `keccak256`](#0x3_ecdsa_k1_recoverable_keccak256)
--  [Function `sha256`](#0x3_ecdsa_k1_recoverable_sha256)
--  [Function `get_public_key_from_authenticator_payload`](#0x3_ecdsa_k1_recoverable_get_public_key_from_authenticator_payload)
--  [Function `get_signature_from_authenticator_payload`](#0x3_ecdsa_k1_recoverable_get_signature_from_authenticator_payload)
 -  [Function `ecrecover`](#0x3_ecdsa_k1_recoverable_ecrecover)
 -  [Function `decompress_pubkey`](#0x3_ecdsa_k1_recoverable_decompress_pubkey)
 -  [Function `verify`](#0x3_ecdsa_k1_recoverable_verify)
@@ -49,27 +45,9 @@ Error if the signature is invalid.
 
 
 
-<a name="0x3_ecdsa_k1_recoverable_KECCAK256"></a>
-
-Hash function name that are valid for ecrecover and verify.
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_KECCAK256">KECCAK256</a>: u8 = 0;
-</code></pre>
-
-
-
-<a name="0x3_ecdsa_k1_recoverable_SHA256"></a>
-
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_SHA256">SHA256</a>: u8 = 1;
-</code></pre>
-
-
-
 <a name="0x3_ecdsa_k1_recoverable_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH"></a>
 
+constant codes
 
 
 <pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH">ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH</a>: u64 = 33;
@@ -82,16 +60,6 @@ Hash function name that are valid for ecrecover and verify.
 
 
 <pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ECDSA_K1_RECOVERABLE_SIG_LENGTH">ECDSA_K1_RECOVERABLE_SIG_LENGTH</a>: u64 = 65;
-</code></pre>
-
-
-
-<a name="0x3_ecdsa_k1_recoverable_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_VALIDATOR_ID_LENGTH"></a>
-
-constant codes
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_VALIDATOR_ID_LENGTH">ECDSA_K1_RECOVERABLE_TO_ETHEREUM_VALIDATOR_ID_LENGTH</a>: u64 = 1;
 </code></pre>
 
 
@@ -115,35 +83,21 @@ Error if the public key cannot be recovered from the signature.
 
 
 
-<a name="0x3_ecdsa_k1_recoverable_auth_validator_id_length"></a>
+<a name="0x3_ecdsa_k1_recoverable_KECCAK256"></a>
 
-## Function `auth_validator_id_length`
-
-built-in functions
+Hash function name that are valid for ecrecover and verify.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_auth_validator_id_length">auth_validator_id_length</a>(): u64
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_KECCAK256">KECCAK256</a>: u8 = 0;
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_auth_validator_id_length">auth_validator_id_length</a>(): u64 {
-    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ECDSA_K1_RECOVERABLE_TO_ETHEREUM_VALIDATOR_ID_LENGTH">ECDSA_K1_RECOVERABLE_TO_ETHEREUM_VALIDATOR_ID_LENGTH</a>
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_ecdsa_k1_recoverable_public_key_length"></a>
 
 ## Function `public_key_length`
 
+built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_public_key_length">public_key_length</a>(): u64
@@ -229,94 +183,6 @@ built-in functions
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_keccak256">keccak256</a>(): u8 {
     <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_KECCAK256">KECCAK256</a>
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_ecdsa_k1_recoverable_sha256"></a>
-
-## Function `sha256`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_sha256">sha256</a>(): u8
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_sha256">sha256</a>(): u8 {
-    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_SHA256">SHA256</a>
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_ecdsa_k1_recoverable_get_public_key_from_authenticator_payload"></a>
-
-## Function `get_public_key_from_authenticator_payload`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_get_public_key_from_authenticator_payload">get_public_key_from_authenticator_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_get_public_key_from_authenticator_payload">get_public_key_from_authenticator_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
-    <b>let</b> public_key = <a href="_empty">vector::empty</a>&lt;u8&gt;();
-    <b>let</b> i = <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_auth_validator_id_length">auth_validator_id_length</a>() + <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_signature_length">signature_length</a>();
-    <b>let</b> public_key_position = <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_auth_validator_id_length">auth_validator_id_length</a>() + <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_signature_length">signature_length</a>() + <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_public_key_length">public_key_length</a>();
-    <b>while</b> (i &lt; public_key_position) {
-        <b>let</b> value = <a href="_borrow">vector::borrow</a>(authenticator_payload, i);
-        <a href="_push_back">vector::push_back</a>(&<b>mut</b> public_key, *value);
-        i = i + 1;
-    };
-    public_key
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_ecdsa_k1_recoverable_get_signature_from_authenticator_payload"></a>
-
-## Function `get_signature_from_authenticator_payload`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_get_signature_from_authenticator_payload">get_signature_from_authenticator_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_get_signature_from_authenticator_payload">get_signature_from_authenticator_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
-    <b>let</b> sign = <a href="_empty">vector::empty</a>&lt;u8&gt;();
-    <b>let</b> i = 0;
-    <b>let</b> signature_position = <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_signature_length">signature_length</a>();
-    <b>while</b> (i &lt; signature_position) {
-        <b>let</b> value = <a href="_borrow">vector::borrow</a>(authenticator_payload, i);
-        <a href="_push_back">vector::push_back</a>(&<b>mut</b> sign, *value);
-        i = i + 1;
-    };
-    sign
 }
 </code></pre>
 

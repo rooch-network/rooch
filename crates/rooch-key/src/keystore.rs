@@ -11,10 +11,9 @@ use bip39::{Language, Mnemonic, Seed};
 use enum_dispatch::enum_dispatch;
 use fastcrypto::{
     hash::Keccak256,
-    secp256k1::recoverable::{
-        Secp256k1RecoverableKeyPair, Secp256k1RecoverablePublicKey, Secp256k1RecoverableSignature,
-    },
-    traits::RecoverableSigner,
+    // TODO replace Secp256k1RecoverableKeyPair and Secp256k1RecoverablePublicKey with native ethereum key pair and pub key
+    secp256k1::recoverable::{Secp256k1RecoverableKeyPair, Secp256k1RecoverablePublicKey},
+    traits::{RecoverableSigner, ToFromBytes},
 };
 use rand::{rngs::StdRng, SeedableRng};
 use rooch_types::{
@@ -373,18 +372,18 @@ impl
         EthereumAddress,
         Secp256k1RecoverablePublicKey,
         Secp256k1RecoverableKeyPair,
-        Secp256k1RecoverableSignature,
+        ethers::types::Signature,
         EthereumTransactionData,
     > for Keystore<EthereumAddress, Secp256k1RecoverableKeyPair>
 {
-    type Transaction = (EthereumTransactionData, Secp256k1RecoverableSignature);
+    type Transaction = (EthereumTransactionData, ethers::types::Signature);
 
     fn sign_transaction_via_session_key(
         &self,
         address: &EthereumAddress,
         msg: EthereumTransactionData,
         authentication_key: &AuthenticationKey,
-    ) -> Result<(EthereumTransactionData, Secp256k1RecoverableSignature), signature::Error> {
+    ) -> Result<(EthereumTransactionData, ethers::types::Signature), signature::Error> {
         match self {
             Keystore::File(file_keystore) => {
                 file_keystore.sign_transaction_via_session_key(address, msg, authentication_key)
@@ -499,7 +498,7 @@ impl
         address: &EthereumAddress,
         msg: &[u8],
         key_pair_type: KeyPairType,
-    ) -> Result<Secp256k1RecoverableSignature, signature::Error> {
+    ) -> Result<ethers::types::Signature, signature::Error> {
         // Implement this method to sign a hashed message with the key pair for the given address and coin ID
         match self {
             Keystore::File(file_keystore) => file_keystore.sign_hashed(address, msg, key_pair_type),
@@ -514,7 +513,7 @@ impl
         address: &EthereumAddress,
         msg: EthereumTransactionData,
         key_pair_type: KeyPairType,
-    ) -> Result<(EthereumTransactionData, Secp256k1RecoverableSignature), signature::Error> {
+    ) -> Result<(EthereumTransactionData, ethers::types::Signature), signature::Error> {
         // Implement this method to sign a transaction with the key pair for the given address and coin ID
         match self {
             Keystore::File(file_keystore) => {
@@ -531,7 +530,7 @@ impl
         address: &EthereumAddress,
         msg: &T,
         key_pair_type: KeyPairType,
-    ) -> Result<Secp256k1RecoverableSignature, signature::Error>
+    ) -> Result<ethers::types::Signature, signature::Error>
     where
         T: Serialize,
     {
@@ -822,11 +821,11 @@ impl
         EthereumAddress,
         Secp256k1RecoverablePublicKey,
         Secp256k1RecoverableKeyPair,
-        Secp256k1RecoverableSignature,
+        ethers::types::Signature,
         EthereumTransactionData,
     > for BaseKeyStore<EthereumAddress, Secp256k1RecoverableKeyPair>
 {
-    type Transaction = (EthereumTransactionData, Secp256k1RecoverableSignature);
+    type Transaction = (EthereumTransactionData, ethers::types::Signature);
 
     fn get_key_pair_by_key_pair_type(
         &self,
@@ -855,9 +854,11 @@ impl
         address: &EthereumAddress,
         msg: &[u8],
         key_pair_type: KeyPairType,
-    ) -> Result<Secp256k1RecoverableSignature, signature::Error> {
+    ) -> Result<ethers::types::Signature, signature::Error> {
         let key_pair = self.get_key_pair_by_key_pair_type(address, key_pair_type)?;
-        Ok(key_pair.sign_recoverable_with_hash::<Keccak256>(msg))
+        let signature = key_pair.sign_recoverable_with_hash::<Keccak256>(msg);
+        let ethereum_signature = ethers::types::Signature::try_from(signature.as_bytes()).unwrap();
+        Ok(ethereum_signature)
     }
 
     fn sign_secure<T>(
@@ -865,14 +866,16 @@ impl
         address: &EthereumAddress,
         msg: &T,
         key_pair_type: KeyPairType,
-    ) -> Result<Secp256k1RecoverableSignature, signature::Error>
+    ) -> Result<ethers::types::Signature, signature::Error>
     where
         T: Serialize,
     {
         let key_pair = self.get_key_pair_by_key_pair_type(address, key_pair_type)?;
         // Serialize the message into a byte slice
         let message_bytes = serde_json::to_vec(msg).unwrap();
-        Ok(key_pair.sign_recoverable(message_bytes.as_slice()))
+        let signature = key_pair.sign_recoverable(message_bytes.as_slice());
+        let ethereum_signature = ethers::types::Signature::try_from(signature.as_bytes()).unwrap();
+        Ok(ethereum_signature)
     }
 
     fn sign_transaction(
@@ -880,7 +883,7 @@ impl
         _address: &EthereumAddress,
         msg: EthereumTransactionData,
         _key_pair_type: KeyPairType,
-    ) -> Result<(EthereumTransactionData, Secp256k1RecoverableSignature), signature::Error> {
+    ) -> Result<(EthereumTransactionData, ethers::types::Signature), signature::Error> {
         let signature = EthereumTransactionData::into_signature(&msg).unwrap();
         Ok((msg, signature))
     }
@@ -991,7 +994,7 @@ impl
         address: &EthereumAddress,
         msg: EthereumTransactionData,
         authentication_key: &AuthenticationKey,
-    ) -> Result<(EthereumTransactionData, Secp256k1RecoverableSignature), signature::Error> {
+    ) -> Result<(EthereumTransactionData, ethers::types::Signature), signature::Error> {
         let kp = self
             .session_keys
             .get(address)
@@ -1008,8 +1011,8 @@ impl
             })?;
 
         let signature = kp.sign_recoverable_with_hash::<Keccak256>(msg.0.hash().as_bytes());
-
-        Ok((msg, signature))
+        let ethereum_signature = ethers::types::Signature::try_from(signature.as_bytes()).unwrap();
+        Ok((msg, ethereum_signature))
     }
 }
 
@@ -1146,11 +1149,11 @@ impl
         EthereumAddress,
         Secp256k1RecoverablePublicKey,
         Secp256k1RecoverableKeyPair,
-        Secp256k1RecoverableSignature,
+        ethers::types::Signature,
         EthereumTransactionData,
     > for FileBasedKeystore<EthereumAddress, Secp256k1RecoverableKeyPair>
 {
-    type Transaction = (EthereumTransactionData, Secp256k1RecoverableSignature);
+    type Transaction = (EthereumTransactionData, ethers::types::Signature);
 
     fn get_key_pair_by_key_pair_type(
         &self,
@@ -1166,7 +1169,7 @@ impl
         address: &EthereumAddress,
         msg: &[u8],
         key_pair_type: KeyPairType,
-    ) -> Result<Secp256k1RecoverableSignature, signature::Error> {
+    ) -> Result<ethers::types::Signature, signature::Error> {
         self.keystore.sign_hashed(address, msg, key_pair_type)
     }
 
@@ -1175,7 +1178,7 @@ impl
         address: &EthereumAddress,
         msg: &T,
         key_pair_type: KeyPairType,
-    ) -> Result<Secp256k1RecoverableSignature, signature::Error>
+    ) -> Result<ethers::types::Signature, signature::Error>
     where
         T: Serialize,
     {
@@ -1187,7 +1190,7 @@ impl
         address: &EthereumAddress,
         msg: EthereumTransactionData,
         key_pair_type: KeyPairType,
-    ) -> Result<(EthereumTransactionData, Secp256k1RecoverableSignature), signature::Error> {
+    ) -> Result<(EthereumTransactionData, ethers::types::Signature), signature::Error> {
         self.keystore.sign_transaction(address, msg, key_pair_type)
     }
 
@@ -1266,7 +1269,7 @@ impl
         address: &EthereumAddress,
         msg: EthereumTransactionData,
         authentication_key: &AuthenticationKey,
-    ) -> Result<(EthereumTransactionData, Secp256k1RecoverableSignature), signature::Error> {
+    ) -> Result<(EthereumTransactionData, ethers::types::Signature), signature::Error> {
         self.keystore
             .sign_transaction_via_session_key(address, msg, authentication_key)
     }
@@ -1485,18 +1488,18 @@ impl
         EthereumAddress,
         Secp256k1RecoverablePublicKey,
         Secp256k1RecoverableKeyPair,
-        Secp256k1RecoverableSignature,
+        ethers::types::Signature,
         EthereumTransactionData,
     > for InMemKeystore<EthereumAddress, Secp256k1RecoverableKeyPair>
 {
-    type Transaction = (EthereumTransactionData, Secp256k1RecoverableSignature);
+    type Transaction = (EthereumTransactionData, ethers::types::Signature);
 
     fn sign_secure<T>(
         &self,
         address: &EthereumAddress,
         msg: &T,
         key_pair_type: KeyPairType,
-    ) -> Result<Secp256k1RecoverableSignature, signature::Error>
+    ) -> Result<ethers::types::Signature, signature::Error>
     where
         T: Serialize,
     {
@@ -1508,7 +1511,7 @@ impl
         address: &EthereumAddress,
         msg: EthereumTransactionData,
         key_pair_type: KeyPairType,
-    ) -> Result<(EthereumTransactionData, Secp256k1RecoverableSignature), signature::Error> {
+    ) -> Result<(EthereumTransactionData, ethers::types::Signature), signature::Error> {
         self.keystore.sign_transaction(address, msg, key_pair_type)
     }
 
@@ -1572,7 +1575,7 @@ impl
         address: &EthereumAddress,
         msg: &[u8],
         key_pair_type: KeyPairType,
-    ) -> Result<Secp256k1RecoverableSignature, signature::Error> {
+    ) -> Result<ethers::types::Signature, signature::Error> {
         self.keystore.sign_hashed(address, msg, key_pair_type)
     }
 
@@ -1588,7 +1591,7 @@ impl
         address: &EthereumAddress,
         msg: EthereumTransactionData,
         authentication_key: &AuthenticationKey,
-    ) -> Result<(EthereumTransactionData, Secp256k1RecoverableSignature), signature::Error> {
+    ) -> Result<(EthereumTransactionData, ethers::types::Signature), signature::Error> {
         self.keystore
             .sign_transaction_via_session_key(address, msg, authentication_key)
     }

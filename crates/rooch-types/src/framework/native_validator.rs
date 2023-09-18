@@ -1,7 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{addresses::ROOCH_FRAMEWORK_ADDRESS, crypto::BuiltinAuthValidator};
+use super::auth_validator::BuiltinAuthValidator;
+use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use anyhow::Result;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
@@ -17,7 +18,7 @@ pub struct NativeValidator {}
 
 impl NativeValidator {
     pub fn auth_validator_id() -> u64 {
-        BuiltinAuthValidator::Ed25519.flag().into()
+        BuiltinAuthValidator::Rooch.flag().into()
     }
 }
 

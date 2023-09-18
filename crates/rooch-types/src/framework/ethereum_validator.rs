@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::auth_validator::BuiltinAuthValidator;
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use anyhow::Result;
 use move_core_types::{
@@ -16,9 +17,8 @@ use moveos_types::{
 pub struct EthereumValidator {}
 
 impl EthereumValidator {
-    // TODO: consider use variable
     pub fn auth_validator_id() -> u64 {
-        1
+        BuiltinAuthValidator::Ethereum.flag().into()
     }
 }
 
