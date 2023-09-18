@@ -143,7 +143,7 @@ export class Account implements IAccount {
       )
 
     await this.runFunction(
-      '0x3::session_key::create_session_key_entry',
+      '0x3::session_key::create_session_key_with_multi_scope_entry',
       [],
       [
         {
