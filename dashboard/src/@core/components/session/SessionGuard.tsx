@@ -89,7 +89,7 @@ const SessionGuard = (props: SessionGuardProps) => {
   const { sessionAccount, requestAuthorize } = useSessionAccount()
 
   const handleAuth = (scope: Array<string>, maxInactiveInterval: number) => {
-    requestAuthorize(scope[0])
+    requestAuthorize(scope, maxInactiveInterval)
   }
 
   const hanleLogout = () => {
