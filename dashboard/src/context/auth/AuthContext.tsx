@@ -66,7 +66,19 @@ const AuthProvider = ({ children }: Props) => {
       const secretKey = window.localStorage.getItem(authConfig.secretKey)
 
       if (secretKey) {
-        const sk = bcsTypes.fromB64(secretKey)
+        console.log(secretKey)
+        console.log(secretKey.length)
+      }
+
+      if (secretKey) {
+        console.log(secretKey)
+        let sk = bcsTypes.fromB64(secretKey)
+
+        // The rooch cli generated key contains schema, remove it
+        if (sk.length != 32) {
+          sk = sk.slice(1)
+        }
+
         const kp = Ed25519Keypair.fromSecretKey(sk)
 
         setAccountWrapper({
@@ -88,14 +100,6 @@ const AuthProvider = ({ children }: Props) => {
     const redirectURL = returnUrl && returnUrl !== '/' ? returnUrl : '/'
 
     router.replace(redirectURL as string)
-  }
-
-  const tmpLogin = () => {
-    setAccounts(new Map())
-
-    window.localStorage.setItem(authConfig.secretKey, '000')
-
-    loginSuccess()
   }
 
   const setAccountWrapper = (account: AccountDataType) => {
@@ -130,7 +134,6 @@ const AuthProvider = ({ children }: Props) => {
           break
       }
     }
-
     if (result.some((value) => value.enable)) {
       return result
     }
@@ -154,9 +157,27 @@ const AuthProvider = ({ children }: Props) => {
   }
 
   const loginBySecretKey = (params: AddAccountBySecretKeyParams) => {
-    // TODO: use rooch sdk
-    console.log(params)
-    tmpLogin()
+
+    try {
+      const sk = bcsTypes.fromB64(params.key)
+      const kp = Ed25519Keypair.fromSecretKey(sk.slice(1))
+
+      setAccountWrapper({
+        address: kp.toRoochAddress(),
+        kp: kp,
+        activate: true,
+        type: AccountType.ROOCH,
+      })
+
+      if (params.rememberMe) {
+        window.localStorage.setItem(authConfig.secretKey, params.key)
+      }
+    }catch (e) {
+      console.log(e)
+      return
+    }
+
+    loginSuccess()
   }
 
   const loginByNewAccount = () => {
