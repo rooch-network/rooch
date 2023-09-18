@@ -98,7 +98,7 @@ impl RocksDB {
             rocksdb_opts.create_missing_column_families(true);
             Self::open_inner(&rocksdb_opts, path, column_families.clone())?
         };
-        check_open_fds_limit::<RawStoreError>(rocksdb_config.max_open_files as u64 + RES_FDS)?;
+        check_open_fds_limit(rocksdb_config.max_open_files as u64 + RES_FDS)?;
         Ok(RocksDB {
             db,
             cfs: column_families,
