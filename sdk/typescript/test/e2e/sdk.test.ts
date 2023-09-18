@@ -104,7 +104,7 @@ describe('SDK', () => {
       const kp2 = Ed25519Keypair.generate()
       await account.registerSessionKey(
         kp2.getPublicKey().toRoochAddress(),
-        '0x3::empty::empty',
+        ['0x3::empty::empty'],
         100,
       )
       const auth = new PrivateKeyAuth(kp2)
@@ -149,7 +149,7 @@ describe('SDK', () => {
       expect(account).toBeDefined()
 
       // create session account
-      const sessionAccount = await account.createSessionAccount('0x3::empty::empty', 100)
+      const sessionAccount = await account.createSessionAccount(['0x3::empty::empty'], 100)
       expect(sessionAccount).toBeDefined()
 
       // run function with sessoin key
@@ -173,7 +173,7 @@ describe('SDK', () => {
       expect(account).toBeDefined()
 
       // create session account
-      const sessionAccount = await account.createSessionAccount('0x3::account::*', 3600, 100)
+      const sessionAccount = await account.createSessionAccount(['0x3::account::*'], 100)
       expect(sessionAccount).toBeDefined()
 
       expect(async () => {

@@ -136,8 +136,8 @@ module rooch_framework::session_key {
         scope_function_names: vector<std::ascii::String>, 
         max_inactive_interval: u64) {
         assert!(
-            vector::length<address>(scope_module_addresses) == vector::length<std::ascii::String>(scope_module_names) &&
-            vector::length<std::ascii::String>(scope_module_names) == vector::length<std::ascii::String>(scope_function_names),
+            vector::length<address>(&scope_module_addresses) == vector::length<std::ascii::String>(&scope_module_names) &&
+            vector::length<std::ascii::String>(&scope_module_names) == vector::length<std::ascii::String>(&scope_function_names),
             error::invalid_argument(ErrorSessionScopePartLengthNotMatch)
         );
         
@@ -149,10 +149,10 @@ module rooch_framework::session_key {
             let scope_module_name = vector::borrow(&scope_module_names, idx);
             let scope_function_name = vector::borrow(&scope_function_names, idx);
 
-            vector::push_back(&scopes, SessionScope{
-                module_address: scope_module_address,
-                module_name: scope_module_name,
-                function_name: scope_function_name,
+            vector::push_back(&mut scopes, SessionScope{
+                module_address: *scope_module_address,
+                module_name: *scope_module_name,
+                function_name: *scope_function_name,
             });
             
             idx = idx + 1;
