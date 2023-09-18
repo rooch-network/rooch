@@ -31,7 +31,7 @@ export interface IAccount {
    * @param opts CallOption
    */
   createSessionAccount(
-    scope: string,
+    scope: Array<string>,
     maxInactiveInterval: number,
     opts?: CallOption,
   ): Promise<IAccount>
