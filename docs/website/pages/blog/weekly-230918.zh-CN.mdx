@@ -1,0 +1,49 @@
+---
+title: Rooch 周报 2023-09-18
+description: "增加时间戳实现，重构与 Ethereum 交互的代码，修复一些问题，补充文档"
+author: geometryolife
+category: Rooch Weekly
+date: 2023/09/18
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch 的开发进展
+
+### 新特性
+
+- **Add init verification (#797)** (2023-09-13) @WGB5445
+- **[Relayer] Implement Relayer, support relayer Ethereum block to rooch and update RoochFramework timestamp (#790)** (2023-09-13) @jolestar
+- **[Framework] Implement session key expired logic based on timestamp (#805)** (2023-09-15) @jolestar
+
+### 重大重构
+
+- **Refactor account balance for support balance API and add some test case (#774)** (2023-09-12) @Bai Chuan
+- **Txcontext respawn (#783)** (2023-09-13) @0xPause
+- **[gh-785] refactor to keep original Ethereum signatures, clean validators to keep rooch and ethereum validator (#787)** (2023-09-12) @feliciss
+- **Refactor transaction API to support transactions query and  save sequencer last_order to store (#796)** (2023-09-14) @Bai Chuan
+- **unify and rename for RPC and store (#817)** (2023-09-15) @Bai Chuan
+- **Use FullyCompiledProgram instead of temporary files. (#821)** (2023-09-17) @stevenlaw123
+
+### 改进和修复
+
+- **fix(website): update the edit button of website document (#777)** (2023-09-11) @Joe Chen
+- **docs(private_generics): add english version and rename zh version suffix (#778)** (2023-09-11) @Joe Chen
+- **add weekly 2023-09-11 (#780)** (2023-09-11) @Joe Chen
+- **fix dashboard issues (#782)** (2023-09-13) @sven Tan
+- **[Test] Update Coin In Test (#789)** (2023-09-12) @WGB5445
+- **Fix publish error (#798)** (2023-09-13) @0xPause
+- **docs: add guide of creating rooch move contract (#799)** (2023-09-14) @Joe Chen
+- **docs: add the guide to describe how to start server (#801)** (2023-09-14) @Joe Chen
+- **fixed cargo build failed on Windows due to raw store (#818)** (2023-09-15) @Bai Chuan
+- **docs: add address space introduction (#820)** (2023-09-15) @Joe Chen
+- **docs(data flow): add force inclusion, L1toL2 messaging (#731)** (2023-09-17) @Triplex
+
+### Rooch 社区开发会议
+
+- 讨论 v0.2 里程碑的一些必要的 PR
+- 讨论 Rooch 关联多链的链 ID
+- 讨论 L1 到 L2 的交易类型设计，参见 [#779](https://github.com/rooch-network/rooch/issues/779)
+- [会议录屏](https://drive.google.com/file/d/18ugAZz6G1Ij_fubul65ydL6dcTKeairn/view?usp=sharing)
