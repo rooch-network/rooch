@@ -11,6 +11,7 @@ module rooch_framework::account{
    use rooch_framework::coin::{Self};
 
    friend rooch_framework::transaction_validator;
+   friend rooch_framework::coin_entry;
    friend rooch_framework::genesis;
 
    /// Resource representing an account.

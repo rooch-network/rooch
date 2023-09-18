@@ -55,7 +55,6 @@ This module provides the foundation for typesafe Coins.
 -  [Function `accept_coin_entry`](#0x3_coin_accept_coin_entry)
 -  [Function `enable_auto_accept_coin_entry`](#0x3_coin_enable_auto_accept_coin_entry)
 -  [Function `disable_auto_accept_coin_entry`](#0x3_coin_disable_auto_accept_coin_entry)
--  [Function `transfer_entry`](#0x3_coin_transfer_entry)
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
@@ -1648,37 +1647,6 @@ The script function is reenterable.
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_disable_auto_accept_coin_entry">disable_auto_accept_coin_entry</a>(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
     <a href="coin.md#0x3_coin_set_auto_accept_coin">set_auto_accept_coin</a>(ctx, <a href="account.md#0x3_account">account</a>, <b>false</b>);
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_coin_transfer_entry"></a>
-
-## Function `transfer_entry`
-
-Transfer <code>amount</code> of coins <code>CoinType</code> from <code>from</code> to <code><b>to</b></code>.
-This public entry function requires the <code>CoinType</code> to have <code>key</code> and <code>store</code> abilities.
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_transfer_entry">transfer_entry</a>&lt;CoinType: store, key&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, amount: u256)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin.md#0x3_coin_transfer_entry">transfer_entry</a>&lt;CoinType: key + store&gt;(
-    ctx: &<b>mut</b> StorageContext,
-    from: &<a href="">signer</a>,
-    <b>to</b>: <b>address</b>,
-    amount: u256,
-) {
-    <a href="coin.md#0x3_coin_transfer">transfer</a>&lt;CoinType&gt;(ctx, from, <b>to</b>, amount)
 }
 </code></pre>
 
