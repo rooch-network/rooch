@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+import { hexlify } from '@ethersproject/bytes';
 import { useState } from 'react'
 import { useAuth } from 'src/hooks/useAuth'
 import { useMetamask } from 'src/hooks/useMetamask'
@@ -73,7 +74,7 @@ export default function useSessionAccount() {
         gas: '0x76c0', // 30400
         gasPrice: '0x9184e72a000', // 10000000000000
         value: '0x4e72a', // 2441406250
-        data: moveCallData,
+        data: hexlify(moveCallData),
       },
     ]
 
@@ -88,23 +89,29 @@ export default function useSessionAccount() {
     account: AccountDataType,
     scope: Array<string>,
     maxInactiveInterval: number,
-  ): Promise<IAccount> => {
+  ): Promise<IAccount | null> => {
     const provider = new JsonRpcProvider()
 
     const pk = Ed25519Keypair.generate()
     const roochAddress = pk.toRoochAddress()
 
-    await registerSessionKey(
-      metaMask.provider,
-      account.address,
-      roochAddress,
-      scope[0],
-      maxInactiveInterval,
-    )
+    try {
+      await registerSessionKey(
+        metaMask.provider,
+        account.address,
+        roochAddress,
+        scope[0],
+        maxInactiveInterval,
+      )
 
-    const authorizer = new PrivateKeyAuth(pk)
+      const authorizer = new PrivateKeyAuth(pk)
 
-    return new Account(provider, roochAddress, authorizer)
+      return new Account(provider, roochAddress, authorizer)
+    } catch (err: any) {
+      console.log(`registerSessionKey error:`, err)
+
+      return null
+    }
   }
 
   const requestAuthorize = async (scope: Array<string>, maxInactiveInterval: number) => {
@@ -137,7 +144,10 @@ export default function useSessionAccount() {
           scope,
           maxInactiveInterval,
         )
-        setSessionAccount(sessionAccount)
+
+        if (sessionAccount) {
+          setSessionAccount(sessionAccount)
+        }
       }
     }
 

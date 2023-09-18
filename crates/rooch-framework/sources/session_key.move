@@ -23,6 +23,8 @@ module rooch_framework::session_key {
     const ErrorSessionIsExpired: u64 = 4;
     /// The function call is beyond the session's scope
     const ErrorFunctionCallBeyondSessionScope: u64 = 5;
+    /// The lengths of the parts of the session's scope do not match.
+    const ErrorSessionScopePartLengthNotMatch: u64 = 6;
 
     /// The session's scope
     struct SessionScope has store,copy,drop {
@@ -123,6 +125,40 @@ module rooch_framework::session_key {
             module_name: scope_module_name,
             function_name: scope_function_name,
         }), max_inactive_interval);
+    }
+
+    public entry fun create_session_key_with_multi_scope_entry(
+        ctx: &mut StorageContext, 
+        sender: &signer, 
+        authentication_key: vector<u8>, 
+        scope_module_addresses: vector<address>, 
+        scope_module_names: vector<std::ascii::String>, 
+        scope_function_names: vector<std::ascii::String>, 
+        max_inactive_interval: u64) {
+        assert!(
+            vector::length<address>(scope_module_addresses) == vector::length<std::ascii::String>(scope_module_names) &&
+            vector::length<std::ascii::String>(scope_module_names) == vector::length<std::ascii::String>(scope_function_names),
+            error::invalid_argument(ErrorSessionScopePartLengthNotMatch)
+        );
+        
+        let idx = 0;
+        let scopes = vector::empty<SessionScope>();
+
+        while(idx < vector::length(&scope_module_addresses)){
+            let scope_module_address = vector::borrow(&scope_module_addresses, idx);
+            let scope_module_name = vector::borrow(&scope_module_names, idx);
+            let scope_function_name = vector::borrow(&scope_function_names, idx);
+
+            vector::push_back(&scopes, SessionScope{
+                module_address: scope_module_address,
+                module_name: scope_module_name,
+                function_name: scope_function_name,
+            });
+            
+            idx = idx + 1;
+        };
+
+        create_session_key(ctx, sender, authentication_key, scopes, max_inactive_interval);
     }
 
     /// Validate the current tx via the session key

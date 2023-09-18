@@ -146,7 +146,7 @@ const MetamaskProvider = ({ children }: Props) => {
     loading,
     chainId,
     hasProvider,
-    provider: window.ethereum,
+    provider: hasProvider && window.ethereum,
     accounts,
     isConnect: hasProvider && Boolean(window.ethereum?.isConnected()),
     addChina,
