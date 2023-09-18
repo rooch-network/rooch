@@ -4,10 +4,9 @@
 use crate::cli_types::{TransactionOptions, WalletContextOptions};
 use clap::Parser;
 use moveos_types::module_binding::MoveFunctionCaller;
-use rooch_key::keystore::AccountKeystore;
+use rooch_key::{keypair::KeyPairType, keystore::AccountKeystore};
 use rooch_types::{
     address::RoochAddress,
-    coin_type::CoinID,
     error::{RoochError, RoochResult},
     framework::session_key::{SessionKey, SessionKeyModule, SessionScope},
 };
@@ -60,7 +59,7 @@ impl CreateCommand {
         println!("Generated new session key {session_auth_key} for address [{sender}]",);
 
         let result = context
-            .sign_and_execute(sender, action, CoinID::Rooch)
+            .sign_and_execute(sender, action, KeyPairType::RoochKeyPairType)
             .await?;
         context.assert_execute_success(result)?;
         let client = context.get_client().await?;

@@ -3,17 +3,13 @@
 
 use super::{authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo};
 use crate::{
-    address::EthereumAddress, chain_id::RoochChainID, coin_type::CoinID, error::RoochError,
+    address::EthereumAddress, chain_id::RoochChainID, error::RoochError,
+    framework::auth_validator::BuiltinAuthValidator,
 };
 use anyhow::Result;
 use ethers::{
-    types::{Bytes, OtherFields, Transaction, U256, U64},
+    types::{Bytes, OtherFields, Signature, Transaction, U256, U64},
     utils::rlp::{Decodable, Rlp},
-};
-use fastcrypto::{
-    hash::Keccak256,
-    secp256k1::recoverable::Secp256k1RecoverableSignature,
-    traits::{RecoverableSignature, ToFromBytes},
 };
 use move_core_types::account_address::AccountAddress;
 use moveos_types::{
@@ -50,7 +46,7 @@ impl EthereumTransactionData {
             access_list: None,
             max_priority_fee_per_gas: None,
             max_fee_per_gas: None,
-            chain_id: Some(U256::from(RoochChainID::DEV.chain_id().id())),
+            chain_id: Some(U256::from(RoochChainID::DEV.chain_id().id())), // build ethereum chain id from rooch chain id as parsed from MetaMask rooch chain id
             other: OtherFields::default(),
         };
 
@@ -64,57 +60,29 @@ impl EthereumTransactionData {
             .map_err(|e| anyhow::anyhow!("decode calldata to action failed: {}", e))
     }
 
-    // Calculate the "recovery byte": The recovery ID (v) contains information about the network and the signature type.
-    fn normalize_recovery_id(v: u64) -> u8 {
-        match v {
-            0 => 0,
-            1 => 1,
-            27 => 0,
-            28 => 1,
-            v if v >= 35 => ((v - 1) % 2) as _,
-            _ => 4,
-        }
-    }
-
-    pub fn into_signature(&self) -> Result<Secp256k1RecoverableSignature, RoochError> {
+    pub fn into_signature(&self) -> Result<Signature, RoochError> {
+        // Extract signature from original transaction
         let r = self.0.r;
         let s = self.0.s;
         let v = self.0.v.as_u64();
 
-        let recovery_id = Self::normalize_recovery_id(v);
-
-        // Convert `U256` values `r` and `s` to arrays of `u8`
-        let mut r_bytes = [0u8; 32];
-        r.to_big_endian(&mut r_bytes);
-        let mut s_bytes = [0u8; 32];
-        s.to_big_endian(&mut s_bytes);
-
-        // Create a new array to store the 65-byte "rsv" signature
-        let mut rsv_signature = [0u8; 65];
-        rsv_signature[..32].copy_from_slice(&r_bytes);
-        rsv_signature[32..64].copy_from_slice(&s_bytes);
-        rsv_signature[64] = recovery_id;
-
-        // Create the recoverable signature from the rsv signature
-        let recoverable_signature: Secp256k1RecoverableSignature =
-            <Secp256k1RecoverableSignature as ToFromBytes>::from_bytes(&rsv_signature)
-                .expect("Invalid signature");
-
-        Ok(recoverable_signature)
+        // Keep original Ethereum signature
+        Ok(Signature { r, s, v })
     }
 
     pub fn into_address(&self) -> Result<EthereumAddress, RoochError> {
         // Prepare the signed message (RLP encoding of the transaction)
         let message = self.tx_hash().to_fixed_bytes();
-        let recoverable_signature = self.into_signature()?;
-        // Recover with Keccak256 hash to a public key
-        let public_key = recoverable_signature
-            .recover_with_hash::<Keccak256>(&message)
-            .expect("Failed to recover public key");
+        // Get the signature
+        let ethereum_signature = self.into_signature()?;
+        // Recover the h160 address using default recover method
+        let h160_address = ethereum_signature
+            .recover(message)
+            .expect("Recover to an Ethereum address should succeed");
         // Get the address
-        let address = EthereumAddress::from(public_key);
+        let ethereum_address = EthereumAddress(h160_address);
 
-        Ok(address)
+        Ok(ethereum_address)
     }
 }
 
@@ -156,8 +124,8 @@ impl AbstractTransaction for EthereumTransactionData {
     fn authenticator_info(&self) -> Result<AuthenticatorInfo> {
         let chain_id = self.0.chain_id.ok_or(RoochError::InvalidChainID)?.as_u64();
         let authenticator = Authenticator::new(
-            CoinID::Ether as u64,
-            self.into_signature()?.as_bytes().to_vec(),
+            BuiltinAuthValidator::Ethereum.flag().into(),
+            self.into_signature()?.to_vec(),
         );
         Ok(AuthenticatorInfo::new(chain_id, authenticator))
     }

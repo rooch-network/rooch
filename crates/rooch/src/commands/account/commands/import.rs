@@ -5,11 +5,8 @@ use clap::Parser;
 use std::fmt::Debug;
 
 use async_trait::async_trait;
-use rooch_key::keystore::AccountKeystore;
-use rooch_types::{
-    coin_type::CoinID,
-    error::{RoochError, RoochResult},
-};
+use rooch_key::{keypair::KeyPairType, keystore::AccountKeystore};
+use rooch_types::error::{RoochError, RoochResult};
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
 
@@ -32,12 +29,12 @@ impl CommandAction<()> for ImportCommand {
         let address = context
             .config
             .keystore
-            .import_from_mnemonic(&self.mnemonic_phrase, CoinID::Rooch, None)
+            .import_from_mnemonic(&self.mnemonic_phrase, KeyPairType::RoochKeyPairType, None)
             .map_err(|e| RoochError::ImportAccountError(e.to_string()))?;
 
         println!(
-            "Key imported for address on scheme {:?}: [{address}]",
-            CoinID::Rooch.to_owned()
+            "Key imported for address on type {:?}: [{address}]",
+            KeyPairType::RoochKeyPairType.type_of()
         );
 
         Ok(())

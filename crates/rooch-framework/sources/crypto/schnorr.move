@@ -1,13 +1,9 @@
 module rooch_framework::schnorr {
-    use std::vector;
-
     /// constant codes
-    const SCHNORR_TO_SCHEME_NOSTR_LENGTH: u64 = 1;
     const SCHNORR_PUBKEY_LENGTH: u64 = 32;
     const SCHNORR_SIG_LENGTH: u64 = 64;
 
     /// Hash function name that are valid for verify.
-    const KECCAK256: u8 = 0;
     const SHA256: u8 = 1;
 
     /// Error if the signature is invalid.
@@ -17,10 +13,6 @@ module rooch_framework::schnorr {
     const ErrorInvalidPubKey: u64 = 1;
 
     /// built-in functions
-    public fun scheme_length(): u64 {
-        SCHNORR_TO_SCHEME_NOSTR_LENGTH
-    }
-
     public fun public_key_length(): u64 {
         SCHNORR_PUBKEY_LENGTH
     }
@@ -31,30 +23,6 @@ module rooch_framework::schnorr {
 
     public fun sha256(): u8 {
         SHA256
-    }
-
-    public fun get_public_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
-        let public_key = vector::empty<u8>();
-        let i = scheme_length() + signature_length();
-        let public_key_position = scheme_length() + signature_length() + public_key_length();
-        while (i < public_key_position) {
-            let value = vector::borrow(authenticator_payload, i);
-            vector::push_back(&mut public_key, *value);
-            i = i + 1;
-        };
-        public_key
-    }
-
-    public fun get_signature_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
-        let sign = vector::empty<u8>();
-        let i = scheme_length();
-        let signature_position = signature_length() + 1;
-        while (i < signature_position) {
-            let value = vector::borrow(authenticator_payload, i);
-            vector::push_back(&mut sign, *value);
-            i = i + 1;
-        };
-        sign
     }
 
     /// @param signature: A 64-bytes signature that is signed using Schnorr over Secpk256k1 key pairs.

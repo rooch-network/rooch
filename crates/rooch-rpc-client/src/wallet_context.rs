@@ -9,10 +9,10 @@ use moveos_types::gas_config::GasConfig;
 use moveos_types::transaction::MoveAction;
 use rooch_config::config::{Config, PersistedConfig};
 use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG};
+use rooch_key::keypair::KeyPairType;
 use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView};
 use rooch_types::address::RoochAddress;
-use rooch_types::coin_type::CoinID;
 use rooch_types::crypto::{RoochKeyPair, Signature};
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::{
@@ -105,23 +105,24 @@ impl WalletContext {
         Ok(tx_data)
     }
 
+    // TODO: remove key_pair_type: KeyPairType to construct specfic sign implementation based on keys from key store for Rooch and Ethereum transactions
     pub async fn sign(
         &self,
         sender: RoochAddress,
         action: MoveAction,
-        coin_id: CoinID,
+        key_pair_type: KeyPairType,
     ) -> RoochResult<RoochTransaction> {
         let kp = self
             .config
             .keystore
-            .get_key_pair_by_coin_id(&sender, coin_id)
+            .get_key_pair_by_key_pair_type(&sender, key_pair_type)
             .ok()
             .ok_or_else(|| {
                 RoochError::SignMessageError(format!("Cannot find key for address: [{sender}]"))
             })?;
 
-        match coin_id {
-            CoinID::Rooch => {
+        match key_pair_type {
+            KeyPairType::RoochKeyPairType => {
                 let tx_data = self.build_rooch_tx_data(sender, action).await?;
                 let signature = Signature::new_hashed(tx_data.hash().as_bytes(), kp);
                 Ok(RoochTransaction::new(
@@ -129,9 +130,9 @@ impl WalletContext {
                     Authenticator::rooch(signature),
                 ))
             }
-            CoinID::Ether => todo!(),
-            CoinID::Bitcoin => todo!(),
-            CoinID::Nostr => todo!(),
+            KeyPairType::EthereumKeyPairType => {
+                todo!()
+            }
         }
     }
 
@@ -150,9 +151,9 @@ impl WalletContext {
         &self,
         sender: RoochAddress,
         action: MoveAction,
-        coin_id: CoinID,
+        key_pair_type: KeyPairType,
     ) -> RoochResult<ExecuteTransactionResponseView> {
-        let tx = self.sign(sender, action, coin_id).await?;
+        let tx = self.sign(sender, action, key_pair_type).await?;
         self.execute(tx).await
     }
 

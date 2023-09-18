@@ -539,11 +539,11 @@
       "AuthenticatorView": {
         "type": "object",
         "required": [
-          "coin_id",
+          "auth_validator_id",
           "payload"
         ],
         "properties": {
-          "coin_id": {
+          "auth_validator_id": {
             "$ref": "#/components/schemas/u64"
           },
           "payload": {

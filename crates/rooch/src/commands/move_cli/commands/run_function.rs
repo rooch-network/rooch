@@ -5,11 +5,10 @@ use crate::cli_types::{ArgWithType, CommandAction, TransactionOptions, WalletCon
 use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
-use rooch_key::keystore::AccountKeystore;
+use rooch_key::{keypair::KeyPairType, keystore::AccountKeystore};
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, TypeTagView};
 use rooch_types::{
     address::RoochAddress,
-    coin_type::CoinID,
     error::{RoochError, RoochResult},
     transaction::rooch::RoochTransaction,
 };
@@ -53,10 +52,6 @@ pub struct RunFunction {
 
     #[clap(flatten)]
     tx_options: TransactionOptions,
-
-    /// Command line input of coin ids
-    #[clap(short = 'c', long = "coin-id", default_value = "rooch", arg_enum)]
-    pub coin_id: CoinID,
 }
 
 #[async_trait]
@@ -101,7 +96,11 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                     .map_err(|e| RoochError::SignMessageError(e.to_string()))?;
                 context.execute(tx).await
             }
-            (None, None) => context.sign_and_execute(sender, action, self.coin_id).await,
+            (None, None) => {
+                context
+                    .sign_and_execute(sender, action, KeyPairType::RoochKeyPairType)
+                    .await
+            }
         }
     }
 }

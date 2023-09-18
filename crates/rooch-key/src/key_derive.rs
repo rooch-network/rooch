@@ -11,21 +11,17 @@ use fastcrypto::secp256k1::recoverable::{
 use fastcrypto::traits::KeyPair;
 use fastcrypto::{ed25519::Ed25519PrivateKey, traits::ToFromBytes};
 use rooch_types::address::{EthereumAddress, RoochAddress};
-use rooch_types::coin_type::CoinID;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::RoochError;
+use rooch_types::multichain_id::RoochMultiChainID;
 use slip10_ed25519::derive_ed25519_private_key;
 use std::string::String;
 
-// CoinID type
-pub const DERIVATION_PATH_COIN_TYPE_BTC: u64 = 0;
-pub const DERIVATION_PATH_COIN_TYPE_ETH: u64 = 60;
-pub const DERIVATION_PATH_COIN_TYPE_SUI: u64 = 784;
-pub const DERIVATION_PATH_COIN_TYPE_LBTC: u64 = 998;
-pub const DERIVATION_PATH_COIN_TYPE_NOSTR: u64 = 1237;
+use crate::keypair::KeyPairType;
+
 // Purpose
 /// Ed25519 follows SLIP-0010 using hardened path: m/44'/784'/0'/0'/{index}'
-/// Note that the purpose node is used to distinguish signature schemes.
+/// Note that the purpose node is used to distinguish signature auth validator ids.
 pub const DERVIATION_PATH_PURPOSE_ED25519: u32 = 44;
 /// BIP39 is used to generate mnemonic seed words and derive a binary seed from them.
 /// BIP32 is used to derive the path m/44'/1237'/<account>'/0/0 (according to the Nostr entry on SLIP44).
@@ -43,13 +39,13 @@ pub trait CoinOperations<Addr, KeyPair> {
     ) -> Result<(Addr, KeyPair), RoochError>;
 }
 
-impl CoinOperations<RoochAddress, RoochKeyPair> for CoinID {
+impl CoinOperations<RoochAddress, RoochKeyPair> for KeyPairType {
     fn derive_key_pair_from_path(
         &self,
         seed: &[u8],
         derivation_path: Option<DerivationPath>,
     ) -> Result<(RoochAddress, RoochKeyPair), RoochError> {
-        let path = validate_path(self, derivation_path)?; // Pass the CoinID itself
+        let path = validate_path(self, derivation_path)?;
         let indexes = path.into_iter().map(|i| i.into()).collect::<Vec<_>>();
         let derived = derive_ed25519_private_key(seed, &indexes);
         let sk = Ed25519PrivateKey::from_bytes(&derived)
@@ -60,13 +56,13 @@ impl CoinOperations<RoochAddress, RoochKeyPair> for CoinID {
     }
 }
 
-impl CoinOperations<EthereumAddress, Secp256k1RecoverableKeyPair> for CoinID {
+impl CoinOperations<EthereumAddress, Secp256k1RecoverableKeyPair> for KeyPairType {
     fn derive_key_pair_from_path(
         &self,
         seed: &[u8],
         derivation_path: Option<DerivationPath>,
     ) -> Result<(EthereumAddress, Secp256k1RecoverableKeyPair), RoochError> {
-        let path = validate_path(self, derivation_path)?; // Pass the CoinID itself
+        let path = validate_path(self, derivation_path)?;
         let child_xprv = XPrv::derive_from_path(seed, &path)
             .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
         let kp = Secp256k1RecoverableKeyPair::from(
@@ -81,12 +77,13 @@ impl CoinOperations<EthereumAddress, Secp256k1RecoverableKeyPair> for CoinID {
 }
 
 pub fn validate_path(
-    coin_id: &CoinID,
+    key_pair_type: &KeyPairType,
     path: Option<DerivationPath>,
 ) -> Result<DerivationPath, RoochError> {
-    // The derivation path must be hardened at all levels with purpose = 44, coin_type = 784
-    match coin_id {
-        CoinID::Rooch => {
+    match key_pair_type {
+        KeyPairType::RoochKeyPairType => {
+            const DERIVATION_PATH_COIN_TYPE_SUI: u32 = RoochMultiChainID::Sui as u32;
+            // Rooch key pair type
             match path {
                 Some(p) => {
                     // The derivation path must be hardened at all levels with purpose = 44, coin_type = 784
@@ -94,11 +91,7 @@ pub fn validate_path(
                         if Some(purpose)
                             == ChildNumber::new(DERVIATION_PATH_PURPOSE_ED25519, true).ok()
                             && Some(coin_type)
-                                == ChildNumber::new(
-                                    DERIVATION_PATH_COIN_TYPE_SUI.try_into().unwrap(),
-                                    true,
-                                )
-                                .ok()
+                                == ChildNumber::new(DERIVATION_PATH_COIN_TYPE_SUI, true).ok()
                             && account.is_hardened()
                             && change.is_hardened()
                             && address.is_hardened()
@@ -112,25 +105,23 @@ pub fn validate_path(
                     }
                 }
                 None => Ok(format!(
-                    "m/{DERVIATION_PATH_PURPOSE_ED25519}'/{DERIVATION_PATH_COIN_TYPE_SUI}'/0'/0'/0'"
-                )
+                "m/{DERVIATION_PATH_PURPOSE_ED25519}'/{DERIVATION_PATH_COIN_TYPE_SUI}'/0'/0'/0'"
+            )
                 .parse()
                 .map_err(|_| RoochError::SignatureKeyGenError("Cannot parse path".to_owned()))?),
             }
         }
-        CoinID::Ether => {
+        KeyPairType::EthereumKeyPairType => {
+            const DERIVATION_PATH_COIN_TYPE_SUI: u32 = RoochMultiChainID::Sui as u32;
+            // Ethereum key pair type
             match path {
                 Some(p) => {
-                    // The derivation path must be hardened at all levels with purpose = 44, coin_type = 784
+                    // The derivation path must be hardened at all levels with purpose = 54, coin_type = 784
                     if let &[purpose, coin_type, account, change, address] = p.as_ref() {
                         if Some(purpose)
                             == ChildNumber::new(DERVIATION_PATH_PURPOSE_ECDSA, true).ok()
                             && Some(coin_type)
-                                == ChildNumber::new(
-                                    DERIVATION_PATH_COIN_TYPE_SUI.try_into().unwrap(),
-                                    true,
-                                )
-                                .ok()
+                                == ChildNumber::new(DERIVATION_PATH_COIN_TYPE_SUI, true).ok()
                             && account.is_hardened()
                             && change.is_hardened()
                             && address.is_hardened()
@@ -150,26 +141,29 @@ pub fn validate_path(
                 .map_err(|_| RoochError::SignatureKeyGenError("Cannot parse path".to_owned()))?),
             }
         }
-        CoinID::Bitcoin => todo!(),
-        CoinID::Nostr => todo!(),
     }
 }
 
 pub fn generate_new_key_pair<Addr, KeyPair>(
-    coin_id: CoinID,
+    key_pair_type: KeyPairType,
     derivation_path: Option<DerivationPath>,
     word_length: Option<String>,
-) -> Result<(Addr, KeyPair, CoinID, String), anyhow::Error>
+) -> Result<(Addr, KeyPair, KeyPairType, String), anyhow::Error>
 where
-    CoinID: CoinOperations<Addr, KeyPair>,
+    KeyPairType: CoinOperations<Addr, KeyPair>,
 {
     let mnemonic = Mnemonic::new(parse_word_length(word_length)?, Language::English);
     let seed = Seed::new(&mnemonic, "");
 
     let (address, key_pair) =
-        coin_id.derive_key_pair_from_path(seed.as_bytes(), derivation_path)?;
+        key_pair_type.derive_key_pair_from_path(seed.as_bytes(), derivation_path)?;
 
-    Ok((address, key_pair, coin_id, mnemonic.phrase().to_string()))
+    Ok((
+        address,
+        key_pair,
+        key_pair_type,
+        mnemonic.phrase().to_string(),
+    ))
 }
 
 fn parse_word_length(s: Option<String>) -> Result<MnemonicType, anyhow::Error> {

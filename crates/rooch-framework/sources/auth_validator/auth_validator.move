@@ -61,19 +61,19 @@ module rooch_framework::auth_validator {
     /// The Transaction Validate Result
     /// this result will be stored in the TxContext
     struct TxValidateResult has copy, store, drop {
-        /// The auth validator's scheme that validate the transaction
-        scheme: u64,
+        /// The auth validator's auth validator id that validate the transaction
+        auth_validator_id: u64,
         auth_validator: Option<AuthValidator>,
         session_key: Option<vector<u8>>,
     }
 
     public(friend) fun new_tx_validate_result(
-        scheme: u64,
+        auth_validator_id: u64,
         auth_validator: Option<AuthValidator>,
         session_key: Option<vector<u8>>
     ): TxValidateResult {
         TxValidateResult {
-            scheme: scheme,
+            auth_validator_id: auth_validator_id,
             auth_validator: auth_validator,
             session_key: session_key,
         }
@@ -86,10 +86,10 @@ module rooch_framework::auth_validator {
         option::extract(&mut validate_result_opt)
     }
 
-    /// Get the auth validator's scheme from the TxValidateResult in the TxContext
-    public fun get_validator_scheme_from_tx_ctx(ctx: &StorageContext): u64 {
+    /// Get the auth validator's auth validator id from the TxValidateResult in the TxContext
+    public fun get_validator_id_from_tx_ctx(ctx: &StorageContext): u64 {
         let validate_result = get_validate_result_from_tx_ctx(ctx);
-        validate_result.scheme
+        validate_result.auth_validator_id
     }
 
     /// Get the session key from the TxValidateResult in the TxContext

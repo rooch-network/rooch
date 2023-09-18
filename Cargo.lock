@@ -7378,6 +7378,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bip32",
+ "clap 3.2.25",
  "derive_more",
  "enum_dispatch",
  "ethers",

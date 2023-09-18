@@ -1,15 +1,11 @@
 module rooch_framework::ecdsa_k1_recoverable {
-    use std::vector;
-
     /// constant codes
-    const ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH: u64 = 1;
     const ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH: u64 = 33;
     const ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH: u64 = 65;
     const ECDSA_K1_RECOVERABLE_SIG_LENGTH: u64 = 65;
 
     /// Hash function name that are valid for ecrecover and verify.
     const KECCAK256: u8 = 0;
-    const SHA256: u8 = 1;
 
     /// Error if the public key cannot be recovered from the signature.
     const ErrorFailToRecoverPubKey: u64 = 0;
@@ -21,10 +17,6 @@ module rooch_framework::ecdsa_k1_recoverable {
     const ErrorInvalidPubKey: u64 = 2;
 
     /// built-in functions
-    public fun scheme_length(): u64 {
-        ECDSA_K1_RECOVERABLE_TO_SCHEME_ETHEREUM_LENGTH
-    }
-
     public fun public_key_length(): u64 {
         ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH
     }
@@ -39,34 +31,6 @@ module rooch_framework::ecdsa_k1_recoverable {
 
     public fun keccak256(): u8 {
         KECCAK256
-    }
-
-    public fun sha256(): u8 {
-        SHA256
-    }
-
-    public fun get_public_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
-        let public_key = vector::empty<u8>();
-        let i = scheme_length() + signature_length();
-        let public_key_position = scheme_length() + signature_length() + public_key_length();
-        while (i < public_key_position) {
-            let value = vector::borrow(authenticator_payload, i);
-            vector::push_back(&mut public_key, *value);
-            i = i + 1;
-        };
-        public_key
-    }
-
-    public fun get_signature_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
-        let sign = vector::empty<u8>();
-        let i = 0; // TODO: do we need scheme_length here?
-        let signature_position = signature_length();
-        while (i < signature_position) {
-            let value = vector::borrow(authenticator_payload, i);
-            vector::push_back(&mut sign, *value);
-            i = i + 1;
-        };
-        sign
     }
 
     /// @param signature: A 65-bytes signature in form (r, s, v) that is signed using
@@ -107,12 +71,6 @@ module rooch_framework::ecdsa_k1_recoverable {
         let pubkey_bytes = x"02337cca2171fdbfcfd657fa59881f46269f1e590b5ffab6023686c7ad2ecc2c1c";
         let pubkey = ecrecover(&sig, &msg, KECCAK256);
         assert!(pubkey == pubkey_bytes, 0);
-
-        // recover with sha256 hash
-        let sig = x"e5847245b38548547f613aaea3421ad47f5b95a222366fb9f9b8c57568feb19c7077fc31e7d83e00acc1347d08c3e1ad50a4eeb6ab044f25c861ddc7be5b8f9f01";
-        let pubkey_bytes = x"02337cca2171fdbfcfd657fa59881f46269f1e590b5ffab6023686c7ad2ecc2c1c";
-        let pubkey = ecrecover(&sig, &msg, SHA256);
-        assert!(pubkey == pubkey_bytes, 0);
     }
 
     #[test]
@@ -120,7 +78,7 @@ module rooch_framework::ecdsa_k1_recoverable {
     fun test_ecrecover_pubkey_fail_to_recover() {
         let msg = x"00";
         let sig = x"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
-        ecrecover(&sig, &msg, SHA256);
+        ecrecover(&sig, &msg, KECCAK256);
     }
 
     #[test]
@@ -129,7 +87,7 @@ module rooch_framework::ecdsa_k1_recoverable {
         let msg = b"Hello, world!";
         // incorrect length sig
         let sig = x"7e4237ebfbc36613e166bfc5f6229360a9c1949242da97ca04867e4de57b2df30c8340bcb320328cf46d71bda51fcb519e3ce53b348eec62de852e350edbd886";
-        ecrecover(&sig, &msg, SHA256);
+        ecrecover(&sig, &msg, KECCAK256);
     }
 
     #[test]

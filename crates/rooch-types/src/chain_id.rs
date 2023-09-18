@@ -3,8 +3,6 @@
 
 use crate::framework::genesis::GenesisContext;
 use anyhow::{bail, format_err, Result};
-#[cfg(any(test, feature = "fuzzing"))]
-use proptest_derive::Arbitrary;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -15,9 +13,7 @@ pub const CHAIN_ID_DEV: u64 = 20230103;
 pub const CHAIN_ID_TEST: u64 = 20230102;
 pub const CHAIN_ID_MAIN: u64 = 20230101;
 
-#[derive(
-    Clone, Copy, Debug, Deserialize, Serialize, Hash, Eq, PartialEq, PartialOrd, Ord, JsonSchema,
-)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Hash, Eq, PartialEq, JsonSchema)]
 pub struct ChainID {
     id: u64,
 }
@@ -73,7 +69,6 @@ impl Into<u64> for ChainID {
 }
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
-#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 #[repr(u64)]
 pub enum BuiltinChainID {
     /// A ephemeral network just for developer test.
@@ -89,9 +84,9 @@ pub enum BuiltinChainID {
 impl Display for BuiltinChainID {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            BuiltinChainID::Dev => write!(f, "Dev"),
-            BuiltinChainID::Test => write!(f, "Test"),
-            BuiltinChainID::Main => write!(f, "Main"),
+            BuiltinChainID::Dev => write!(f, "dev"),
+            BuiltinChainID::Test => write!(f, "test"),
+            BuiltinChainID::Main => write!(f, "main"),
         }
     }
 }
@@ -202,7 +197,7 @@ impl BuiltinChainID {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct CustomChainID {
     chain_name: String,
@@ -255,7 +250,7 @@ impl FromStr for CustomChainID {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, JsonSchema, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, JsonSchema, Serialize, Deserialize)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum RoochChainID {
     Builtin(BuiltinChainID),
@@ -275,6 +270,25 @@ impl Display for RoochChainID {
 impl From<BuiltinChainID> for RoochChainID {
     fn from(chain_id: BuiltinChainID) -> Self {
         RoochChainID::Builtin(chain_id)
+    }
+}
+
+impl From<CustomChainID> for RoochChainID {
+    fn from(chain_id: CustomChainID) -> Self {
+        RoochChainID::Custom(chain_id)
+    }
+}
+
+impl TryFrom<ChainID> for RoochChainID {
+    type Error = anyhow::Error;
+
+    fn try_from(chain_id: ChainID) -> Result<Self, Self::Error> {
+        Ok(match chain_id.id() {
+            CHAIN_ID_DEV => RoochChainID::DEV,
+            CHAIN_ID_TEST => RoochChainID::TEST,
+            CHAIN_ID_MAIN => RoochChainID::MAIN,
+            id => RoochChainID::Custom(CustomChainID::from_str(id.to_string().as_str())?),
+        })
     }
 }
 
@@ -318,6 +332,13 @@ impl RoochChainID {
         Ok(Self::Custom(CustomChainID::new(chain_name, chain_id)))
     }
 
+    pub fn chain_name(&self) -> String {
+        match self {
+            Self::Builtin(b) => b.chain_name(),
+            Self::Custom(c) => c.chain_name().to_owned(),
+        }
+    }
+
     pub fn chain_id(&self) -> ChainID {
         match self {
             Self::Builtin(b) => b.chain_id(),
@@ -337,6 +358,10 @@ impl RoochChainID {
             bail!("Only support test or dev chain_id.")
         }
         Ok(())
+    }
+
+    pub fn is_builtin(&self) -> bool {
+        self.is_test() || self.is_dev() || self.is_main()
     }
 
     pub fn is_test_or_dev(&self) -> bool {
