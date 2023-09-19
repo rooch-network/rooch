@@ -1,11 +1,11 @@
 
-<a name="0x3_coin_entry"></a>
+<a name="0x3_transfer"></a>
 
-# Module `0x3::coin_entry`
+# Module `0x3::transfer`
 
 
 
--  [Function `transfer_entry`](#0x3_coin_entry_transfer_entry)
+-  [Function `transfer_coin`](#0x3_transfer_transfer_coin)
 
 
 <pre><code><b>use</b> <a href="">0x2::storage_context</a>;
@@ -15,15 +15,15 @@
 
 
 
-<a name="0x3_coin_entry_transfer_entry"></a>
+<a name="0x3_transfer_transfer_coin"></a>
 
-## Function `transfer_entry`
+## Function `transfer_coin`
 
 Transfer <code>amount</code> of coins <code>CoinType</code> from <code>from</code> to <code><b>to</b></code>.
 This public entry function requires the <code>CoinType</code> to have <code>key</code> and <code>store</code> abilities.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_transfer_entry">transfer_entry</a>&lt;CoinType: store, key&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, amount: u256)
+<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin">transfer_coin</a>&lt;CoinType: store, key&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, amount: u256)
 </code></pre>
 
 
@@ -32,7 +32,7 @@ This public entry function requires the <code>CoinType</code> to have <code>key<
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin_entry.md#0x3_coin_entry_transfer_entry">transfer_entry</a>&lt;CoinType: key + store&gt;(
+<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin">transfer_coin</a>&lt;CoinType: key + store&gt;(
     ctx: &<b>mut</b> StorageContext,
     from: &<a href="">signer</a>,
     <b>to</b>: <b>address</b>,

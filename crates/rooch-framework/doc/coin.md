@@ -1082,7 +1082,7 @@ Transfer <code>amount</code> of coins <code>CoinType</code> from <code>from</cod
 Any account and module can call this function to transfer coins, the <code>CoinType</code> must have <code>key</code> and <code>store</code> abilities.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_transfer">transfer</a>&lt;CoinType: store, key&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, amount: u256)
+<pre><code><b>public</b> <b>fun</b> <a href="transfer.md#0x3_transfer">transfer</a>&lt;CoinType: store, key&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, amount: u256)
 </code></pre>
 
 
@@ -1091,7 +1091,7 @@ Any account and module can call this function to transfer coins, the <code>CoinT
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_transfer">transfer</a>&lt;CoinType: key + store&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="transfer.md#0x3_transfer">transfer</a>&lt;CoinType: key + store&gt;(
     ctx: &<b>mut</b> StorageContext,
     from: &<a href="">signer</a>,
     <b>to</b>: <b>address</b>,

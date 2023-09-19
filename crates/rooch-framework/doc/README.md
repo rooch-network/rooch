@@ -21,7 +21,6 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::builtin_validators`](builtin_validators.md#0x3_builtin_validators)
 -  [`0x3::chain_id`](chain_id.md#0x3_chain_id)
 -  [`0x3::coin`](coin.md#0x3_coin)
--  [`0x3::coin_entry`](coin_entry.md#0x3_coin_entry)
 -  [`0x3::core_addresses`](core_addresses.md#0x3_core_addresses)
 -  [`0x3::decoding`](decoding.md#0x3_decoding)
 -  [`0x3::ecdsa_k1`](ecdsa_k1.md#0x3_ecdsa_k1)
@@ -41,6 +40,7 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::timestamp`](timestamp.md#0x3_timestamp)
 -  [`0x3::transaction_fee`](transaction_fee.md#0x3_transaction_fee)
 -  [`0x3::transaction_validator`](transaction_validator.md#0x3_transaction_validator)
+-  [`0x3::transfer`](transfer.md#0x3_transfer)
 
 
 
