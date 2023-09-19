@@ -254,6 +254,8 @@ impl EthAPIServer for EthServer {
             .resolve_address(MultiChainAddress::from(EthereumAddress(address)))
             .await?;
 
+        info!("transaction_count source address: {:?}, rooch address: {:?}", address, account_address);
+
         Ok(self
             .rpc_service
             .get_states(AccessPath::resource(account_address, Account::struct_tag()))
@@ -262,7 +264,7 @@ impl EthAPIServer for EthServer {
             .flatten()
             .map(|state_view| state_view.as_move_state::<Account>())
             .transpose()?
-            .map_or(0.into(), |account| account.sequence_number.into()))
+            .map_or(0.into(), |account| (account.sequence_number - 1).into()))
     }
 
     async fn send_raw_transaction(&self, bytes: Bytes) -> RpcResult<H256> {
@@ -274,7 +276,7 @@ impl EthAPIServer for EthServer {
             "send_raw_transaction decode_calldata_to_action: {:?}",
             action
         );
-        info!("send_raw_transaction nonce: {:?}", eth_tx.0.nonce);
+        info!("send_raw_transaction from: {:?}, nonce: {:?}", eth_tx.0.from, eth_tx.0.nonce);
 
         let tx = TypedTransaction::Ethereum(eth_tx);
         let hash = tx.tx_hash();
