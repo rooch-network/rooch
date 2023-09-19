@@ -60,83 +60,79 @@ impl AggregateService {
             .map(|item| {
                 item.map(|(_key, state)| {
                     AnnotatedCoinInfo::new_from_annotated_move_value(state.move_value)
-                        .expect("AnnotatedCoinInfo expected return value")
                 })
+                .transpose()
             })
             .collect::<Vec<_>>();
-        for coin_info in coin_info_data.into_iter().flatten() {
+
+        for coin_info_opt in coin_info_data.into_iter().flatten() {
+            if coin_info_opt.is_none() {
+                return Err(anyhow::anyhow!("CoinInfo should have value"));
+            };
+            let coin_info = coin_info_opt.unwrap();
+
             let coin_type = get_first_ty_as_struct_tag(coin_info.get_type())
-                .expect("Coin type expected get_first_ty_as_struct_tag succ");
+                .map_err(|e| anyhow::anyhow!("Coin type convert error :{}", e))?;
+
             coin_info_table.insert(coin_type, coin_info.value);
         }
 
-        let coin_store_handle = coin_module.coin_store_handle(account_addr)?;
-        // Handle error due to `coin_store_handle` executed in another tokio Runtime
-        let coin_store_handle = match coin_store_handle {
-            Some(v) => v,
-            None => anyhow::bail!("Coin store handle does not exist"),
-        };
-
         let mut result = vec![];
-        if let Some(coin_type) = coin_type {
-            let coin_store_type = format!(
-                "{}::coin::CoinStore<0x{}>",
-                ROOCH_FRAMEWORK_ADDRESS_LITERAL,
-                coin_type.to_canonical_string()
-            );
-            let key = resource_tag_to_key(&StructTag::from_str(coin_store_type.as_str())?);
-            let keys = vec![key];
-            let mut states = self
-                .rpc_service
-                .get_annotated_states(AccessPath::table(coin_store_handle, keys))
-                .await?;
 
-            let state = states.pop().flatten();
-            let state = match state {
-                Some(v) => v,
-                None => anyhow::bail!("CoinStore state expected return value"),
+        let coin_store_handle_opt = coin_module.coin_store_handle(account_addr)?;
+        if let Some(coin_store_handle) = coin_store_handle_opt {
+            if let Some(coin_type) = coin_type {
+                let coin_store_type = format!(
+                    "{}::coin::CoinStore<0x{}>",
+                    ROOCH_FRAMEWORK_ADDRESS_LITERAL,
+                    coin_type.to_canonical_string()
+                );
+                let key = resource_tag_to_key(&StructTag::from_str(coin_store_type.as_str())?);
+                let keys = vec![key];
+                let mut states = self
+                    .rpc_service
+                    .get_annotated_states(AccessPath::table(coin_store_handle, keys))
+                    .await?;
+
+                let state_opt = states.pop().flatten();
+                let state = state_opt
+                    .ok_or_else(|| anyhow::anyhow!("CoinStore state should have value"))?;
+                let annotated_coin_store =
+                    AnnotatedCoinStore::new_from_annotated_move_value(state.move_value)?;
+
+                let balance_info =
+                    BalanceInfo::new_with_default(coin_type, annotated_coin_store.get_coin_value());
+                result.push(Some((None, balance_info)))
+            } else {
+                //TODO If the coin store list exceeds MAX_RESULT_LIMIT_USIZE, consider supporting traverse or pagination
+                let states = self
+                    .rpc_service
+                    .list_annotated_states(
+                        AccessPath::table_without_keys(coin_store_handle),
+                        cursor,
+                        limit,
+                    )
+                    .await?;
+
+                for (key, state) in states.into_iter().flatten() {
+                    let coin_store =
+                        AnnotatedCoinStore::new_from_annotated_move_value(state.move_value)
+                            .map_err(|e| anyhow::anyhow!("CoinStore convert error :{}", e))?;
+
+                    let coin_type = get_first_ty_as_struct_tag(coin_store.get_coin_type())
+                        .map_err(|e| anyhow::anyhow!("Coin type convert should succ :{}", e))?;
+                    let balance_info =
+                        BalanceInfo::new_with_default(coin_type, coin_store.get_coin_value());
+                    let v = (Some(key), balance_info);
+                    result.push(Some(v))
+                }
             };
-            let annotated_coin_store =
-                AnnotatedCoinStore::new_from_annotated_move_value(state.move_value)?;
-
-            let balance_info =
-                BalanceInfo::new_with_default(coin_type, annotated_coin_store.get_coin_value());
-            result.push(Some((None, balance_info)))
-        } else {
-            //TODO If the coin store list exceeds MAX_RESULT_LIMIT_USIZE, consider supporting traverse or pagination
-            let states = self
-                .rpc_service
-                .list_annotated_states(
-                    AccessPath::table_without_keys(coin_store_handle),
-                    cursor,
-                    limit,
-                )
-                .await?;
-
-            let mut data = states
-                .into_iter()
-                .map(|item| {
-                    item.map(|(key, state)| {
-                        let coin_store =
-                            AnnotatedCoinStore::new_from_annotated_move_value(state.move_value)
-                                .expect("AnnotatedCoinStore expected return value");
-
-                        let coin_type = get_first_ty_as_struct_tag(coin_store.get_coin_type())
-                            .expect("Coin type expected get_first_ty_as_struct_tag succ");
-                        let balance_info =
-                            BalanceInfo::new_with_default(coin_type, coin_store.get_coin_value());
-                        (Some(key), balance_info)
-                    })
-                })
-                .collect::<Vec<_>>();
-
-            result.append(&mut data);
-        };
+        }
 
         for (_key, balance_info) in result.iter_mut().flatten() {
             let coin_info = coin_info_table
                 .get(&balance_info.coin_type)
-                .expect("Get coin info by coin type expected return value");
+                .ok_or_else(|| anyhow::anyhow!("Get coin info by coin type should succ"))?;
             balance_info.symbol = coin_info.symbol.clone();
             balance_info.decimals = coin_info.decimals;
         }
