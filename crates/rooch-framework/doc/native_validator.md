@@ -3,14 +3,16 @@
 
 # Module `0x3::native_validator`
 
-This module implements the native validator scheme.
+This module implements the native validator.
 
 
 -  [Struct `NativeValidator`](#0x3_native_validator_NativeValidator)
 -  [Constants](#@Constants_0)
--  [Function `scheme`](#0x3_native_validator_scheme)
+-  [Function `auth_validator_id`](#0x3_native_validator_auth_validator_id)
 -  [Function `rotate_authentication_key_entry`](#0x3_native_validator_rotate_authentication_key_entry)
 -  [Function `remove_authentication_key_entry`](#0x3_native_validator_remove_authentication_key_entry)
+-  [Function `get_public_key_from_authenticator_payload`](#0x3_native_validator_get_public_key_from_authenticator_payload)
+-  [Function `get_signature_from_authenticator_payload`](#0x3_native_validator_get_signature_from_authenticator_payload)
 -  [Function `get_authentication_key_from_authenticator_payload`](#0x3_native_validator_get_authentication_key_from_authenticator_payload)
 -  [Function `public_key_to_address`](#0x3_native_validator_public_key_to_address)
 -  [Function `public_key_to_authentication_key`](#0x3_native_validator_public_key_to_authentication_key)
@@ -76,23 +78,23 @@ error code
 
 
 
-<a name="0x3_native_validator_SCHEME_NATIVE"></a>
+<a name="0x3_native_validator_NATIVE_VALIDATOR_ID"></a>
 
-there defines scheme for each blockchain
+there defines auth validator id for each blockchain
 
 
-<pre><code><b>const</b> <a href="native_validator.md#0x3_native_validator_SCHEME_NATIVE">SCHEME_NATIVE</a>: u64 = 0;
+<pre><code><b>const</b> <a href="native_validator.md#0x3_native_validator_NATIVE_VALIDATOR_ID">NATIVE_VALIDATOR_ID</a>: u64 = 0;
 </code></pre>
 
 
 
-<a name="0x3_native_validator_scheme"></a>
+<a name="0x3_native_validator_auth_validator_id"></a>
 
-## Function `scheme`
+## Function `auth_validator_id`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_scheme">scheme</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_auth_validator_id">auth_validator_id</a>(): u64
 </code></pre>
 
 
@@ -101,8 +103,8 @@ there defines scheme for each blockchain
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_scheme">scheme</a>(): u64 {
-    <a href="native_validator.md#0x3_native_validator_SCHEME_NATIVE">SCHEME_NATIVE</a>
+<pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_auth_validator_id">auth_validator_id</a>(): u64 {
+    <a href="native_validator.md#0x3_native_validator_NATIVE_VALIDATOR_ID">NATIVE_VALIDATOR_ID</a>
 }
 </code></pre>
 
@@ -171,6 +173,72 @@ there defines scheme for each blockchain
 
 </details>
 
+<a name="0x3_native_validator_get_public_key_from_authenticator_payload"></a>
+
+## Function `get_public_key_from_authenticator_payload`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_get_public_key_from_authenticator_payload">get_public_key_from_authenticator_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_get_public_key_from_authenticator_payload">get_public_key_from_authenticator_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
+    <b>let</b> public_key = <a href="_empty">vector::empty</a>&lt;u8&gt;();
+    // TODO remove auth validator id from payload here <b>to</b> 0
+    <b>let</b> i = 1 + <a href="ed25519.md#0x3_ed25519_signature_length">ed25519::signature_length</a>();
+    <b>let</b> public_key_position = 1 + <a href="ed25519.md#0x3_ed25519_signature_length">ed25519::signature_length</a>() + <a href="ed25519.md#0x3_ed25519_public_key_length">ed25519::public_key_length</a>();
+    <b>while</b> (i &lt; public_key_position) {
+        <b>let</b> value = <a href="_borrow">vector::borrow</a>(authenticator_payload, i);
+        <a href="_push_back">vector::push_back</a>(&<b>mut</b> public_key, *value);
+        i = i + 1;
+    };
+    public_key
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_native_validator_get_signature_from_authenticator_payload"></a>
+
+## Function `get_signature_from_authenticator_payload`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_get_signature_from_authenticator_payload">get_signature_from_authenticator_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_get_signature_from_authenticator_payload">get_signature_from_authenticator_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
+    <b>let</b> sign = <a href="_empty">vector::empty</a>&lt;u8&gt;();
+    // TODO remove auth validator id from payload here <b>to</b> 0
+    <b>let</b> i = 1;
+    <b>let</b> signature_position = <a href="ed25519.md#0x3_ed25519_signature_length">ed25519::signature_length</a>() + 1;
+    <b>while</b> (i &lt; signature_position) {
+        <b>let</b> value = <a href="_borrow">vector::borrow</a>(authenticator_payload, i);
+        <a href="_push_back">vector::push_back</a>(&<b>mut</b> sign, *value);
+        i = i + 1;
+    };
+    sign
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x3_native_validator_get_authentication_key_from_authenticator_payload"></a>
 
 ## Function `get_authentication_key_from_authenticator_payload`
@@ -188,7 +256,7 @@ Get the authentication key of the given authenticator from authenticator_payload
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_get_authentication_key_from_authenticator_payload">get_authentication_key_from_authenticator_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
-    <b>let</b> public_key = <a href="ed25519.md#0x3_ed25519_get_public_key_from_authenticator_payload">ed25519::get_public_key_from_authenticator_payload</a>(authenticator_payload);
+    <b>let</b> public_key = <a href="native_validator.md#0x3_native_validator_get_public_key_from_authenticator_payload">get_public_key_from_authenticator_payload</a>(authenticator_payload);
     <b>let</b> addr = <a href="native_validator.md#0x3_native_validator_public_key_to_address">public_key_to_address</a>(public_key);
     moveos_std::bcs::to_bytes(&addr)
 }
@@ -239,7 +307,7 @@ Get the authentication key of the given public key.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_public_key_to_authentication_key">public_key_to_authentication_key</a>(public_key: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
-    <b>let</b> bytes = <a href="_singleton">vector::singleton</a>((<a href="native_validator.md#0x3_native_validator_scheme">scheme</a>() <b>as</b> u8));
+    <b>let</b> bytes = <a href="_singleton">vector::singleton</a>((<a href="native_validator.md#0x3_native_validator_auth_validator_id">auth_validator_id</a>() <b>as</b> u8));
     <a href="_append">vector::append</a>(&<b>mut</b> bytes, public_key);
     hash::blake2b256(&bytes)
 }
@@ -322,8 +390,8 @@ Only validate the authenticator's signature.
 <pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_validate_signature">validate_signature</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;, tx_hash: &<a href="">vector</a>&lt;u8&gt;) {
     <b>assert</b>!(
         <a href="ed25519.md#0x3_ed25519_verify">ed25519::verify</a>(
-            &<a href="ed25519.md#0x3_ed25519_get_signature_from_authenticator_payload">ed25519::get_signature_from_authenticator_payload</a>(authenticator_payload),
-            &<a href="ed25519.md#0x3_ed25519_get_public_key_from_authenticator_payload">ed25519::get_public_key_from_authenticator_payload</a>(authenticator_payload),
+            &<a href="native_validator.md#0x3_native_validator_get_signature_from_authenticator_payload">get_signature_from_authenticator_payload</a>(authenticator_payload),
+            &<a href="native_validator.md#0x3_native_validator_get_public_key_from_authenticator_payload">get_public_key_from_authenticator_payload</a>(authenticator_payload),
             tx_hash
         ),
         <a href="auth_validator.md#0x3_auth_validator_error_invalid_authenticator">auth_validator::error_invalid_authenticator</a>()

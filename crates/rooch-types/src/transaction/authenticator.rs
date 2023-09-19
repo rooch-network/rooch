@@ -7,7 +7,6 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{coin_type::CoinID, crypto::Signature};
 use anyhow::Result;
 #[cfg(any(test, feature = "fuzzing"))]
 use fastcrypto::ed25519::Ed25519KeyPair;
@@ -20,11 +19,13 @@ use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
 
+use crate::{crypto::Signature, framework::auth_validator::BuiltinAuthValidator};
+
 /// A `Authenticator` is an an abstraction of a account authenticator.
 /// It is a part of `AccountAbstraction`
 
 pub trait BuiltinAuthenticator {
-    fn coin_id(&self) -> CoinID;
+    fn auth_validator_id(&self) -> u64;
     fn payload(&self) -> Vec<u8>;
 }
 
@@ -34,8 +35,8 @@ pub struct RoochAuthenticator {
 }
 
 impl BuiltinAuthenticator for RoochAuthenticator {
-    fn coin_id(&self) -> CoinID {
-        CoinID::Rooch
+    fn auth_validator_id(&self) -> u64 {
+        BuiltinAuthValidator::Rooch.flag().into()
     }
     fn payload(&self) -> Vec<u8> {
         self.signature.as_ref().to_vec()
@@ -69,9 +70,12 @@ where
     T: BuiltinAuthenticator,
 {
     fn from(value: T) -> Self {
-        let coin_id = value.coin_id() as u64;
+        let auth_validator_id = value.auth_validator_id();
         let payload = value.payload();
-        Authenticator { coin_id, payload }
+        Authenticator {
+            auth_validator_id,
+            payload,
+        }
     }
 }
 
@@ -83,14 +87,14 @@ impl From<Signature> for Authenticator {
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct Authenticator {
-    pub coin_id: u64,
+    pub auth_validator_id: u64,
     pub payload: Vec<u8>,
 }
 
 impl Authenticator {
-    /// Unique identifier for the signature scheme
-    pub fn coin_id(&self) -> u64 {
-        self.coin_id
+    /// Unique identifier for the signature of auth validator id
+    pub fn auth_validator_id(&self) -> u64 {
+        self.auth_validator_id
     }
 
     /// Create a single-signature rooch authenticator
@@ -99,8 +103,11 @@ impl Authenticator {
     }
 
     /// Create a custom authenticator
-    pub fn new(coin_id: u64, payload: Vec<u8>) -> Self {
-        Self { coin_id, payload }
+    pub fn new(auth_validator_id: u64, payload: Vec<u8>) -> Self {
+        Self {
+            auth_validator_id,
+            payload,
+        }
     }
 }
 
@@ -118,8 +125,8 @@ impl fmt::Display for Authenticator {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Authenticator[coin id: {:?}, payload: {}]",
-            self.coin_id(),
+            "Authenticator[auth validator id: {:?}, payload: {}]",
+            self.auth_validator_id(),
             hex::encode(&self.payload),
         )
     }

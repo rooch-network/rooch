@@ -11,6 +11,7 @@ pub mod coin_type;
 pub mod crypto;
 pub mod error;
 pub mod framework;
+pub mod multichain_id;
 pub mod sequencer;
 pub mod transaction;
 
