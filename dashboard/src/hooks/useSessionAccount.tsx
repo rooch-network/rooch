@@ -24,24 +24,53 @@ export default function useSessionAccount() {
   const [loading, setLoading] = useState(false)
   const [sessionAccount, setSessionAccount] = useState<IAccount | undefined>(undefined)
 
+  const waitTxConfirmed = async (ethereum: any, txHash: string) => {
+    let receipt
+    while (!receipt) {
+      await new Promise((resolve) => setTimeout(resolve, 5000)) // wait for 5 seconds before checking again
+
+      receipt = await ethereum.request({
+        method: 'eth_getTransactionReceipt',
+        params: [txHash],
+      })
+    }
+
+    return receipt
+  }
+
   const registerSessionKey = async (
     ethereum: any,
     account: string,
     authKey: string,
-    scope: string,
+    scopes: Array<string>,
     maxInactiveInterval: number,
   ) => {
-    const parts = scope.split('::')
-    if (parts.length !== 3) {
-      throw new Error('invalid scope')
-    }
+    const [scopeModuleAddresss, scopeModuleNames, scopeFunctionNames] = scopes
+      .map((scope: string) => {
+        const parts = scope.split('::')
+        if (parts.length !== 3) {
+          throw new Error('invalid scope')
+        }
 
-    const scopeModuleAddress = parts[0]
-    const scopeModuleName = parts[1]
-    const scopeFunctionName = parts[2]
+        const scopeModuleAddress = parts[0]
+        const scopeModuleName = parts[1]
+        const scopeFunctionName = parts[2]
+
+        return [scopeModuleAddress, scopeModuleName, scopeFunctionName]
+      })
+      .reduce(
+        (acc: Array<Array<string>>, val: Array<string>) => {
+          acc[0].push(val[0])
+          acc[1].push(val[1])
+          acc[2].push(val[2])
+
+          return acc
+        },
+        [[], [], []],
+      )
 
     const moveCallData = encodeMoveCallData(
-      '0x3::session_key::create_session_key_entry',
+      '0x3::session_key::create_session_key_with_multi_scope_entry',
       [],
       [
         {
@@ -49,16 +78,16 @@ export default function useSessionAccount() {
           value: addressToSeqNumber(authKey),
         },
         {
-          type: 'Address',
-          value: scopeModuleAddress,
+          type: { Vector: 'Address' },
+          value: scopeModuleAddresss,
         },
         {
-          type: 'Ascii',
-          value: scopeModuleName,
+          type: { Vector: 'Ascii' },
+          value: scopeModuleNames,
         },
         {
-          type: 'Ascii',
-          value: scopeFunctionName,
+          type: { Vector: 'Ascii' },
+          value: scopeFunctionNames,
         },
         {
           type: 'U64',
@@ -82,7 +111,9 @@ export default function useSessionAccount() {
       method: 'eth_sendTransaction',
       params,
     })
-    console.log(`tx:`, tx)
+
+    const result = await waitTxConfirmed(ethereum, tx)
+    console.log(`result:`, result)
   }
 
   const requestWalletCreateSessionKey = async (
@@ -100,7 +131,7 @@ export default function useSessionAccount() {
         metaMask.provider,
         account.address,
         roochAddress,
-        scope[0],
+        scope,
         maxInactiveInterval,
       )
 
@@ -117,41 +148,43 @@ export default function useSessionAccount() {
   const requestAuthorize = async (scope: Array<string>, maxInactiveInterval: number) => {
     setLoading(true)
 
-    const defaultAccount = auth.defaultAccount()
-    if (!defaultAccount) {
-      setSessionAccount(undefined)
+    try {
+      const defaultAccount = auth.defaultAccount()
+      if (!defaultAccount) {
+        setSessionAccount(undefined)
 
-      return
-    }
+        return
+      }
 
-    if (defaultAccount != null) {
-      if (defaultAccount.kp != null) {
-        const provider = new JsonRpcProvider()
+      if (defaultAccount != null) {
+        if (defaultAccount.kp != null) {
+          const provider = new JsonRpcProvider()
 
-        const roochAddress = defaultAccount.address
-        const authorizer = new PrivateKeyAuth(defaultAccount.kp)
+          const roochAddress = defaultAccount.address
+          const authorizer = new PrivateKeyAuth(defaultAccount.kp)
 
-        const account = new Account(provider, roochAddress, authorizer)
-        const sessionAccount = await account.createSessionAccount(
-          scope[0],
-          60 * 20,
-          maxInactiveInterval,
-        )
-        setSessionAccount(sessionAccount)
-      } else if (defaultAccount.type === 'ETH') {
-        const sessionAccount = await requestWalletCreateSessionKey(
-          defaultAccount,
-          scope,
-          maxInactiveInterval,
-        )
-
-        if (sessionAccount) {
+          const account = new Account(provider, roochAddress, authorizer)
+          const sessionAccount = await account.createSessionAccount(
+            scope[0],
+            60 * 20,
+            maxInactiveInterval,
+          )
           setSessionAccount(sessionAccount)
+        } else if (defaultAccount.type === 'ETH') {
+          const sessionAccount = await requestWalletCreateSessionKey(
+            defaultAccount,
+            scope,
+            maxInactiveInterval,
+          )
+
+          if (sessionAccount) {
+            setSessionAccount(sessionAccount)
+          }
         }
       }
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   return { loading, sessionAccount, requestAuthorize }

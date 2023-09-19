@@ -96,7 +96,11 @@ const Guard = ({ children, authGuard, guestGuard }: GuardProps) => {
   } else if (!guestGuard && !authGuard) {
     return <>{children}</>
   } else {
-    return <AuthGuard fallback={<Spinner />}>{children}</AuthGuard>
+    return (
+      <AuthGuard fallback={<Spinner />}>
+        <SessionGuard>{children}</SessionGuard>
+      </AuthGuard>
+    )
   }
 }
 
@@ -134,7 +138,7 @@ const App = (props: ExtendedAppProps) => {
                   return (
                     <ThemeComponent settings={settings}>
                       <Guard authGuard={authGuard} guestGuard={guestGuard}>
-                        <SessionGuard>{getLayout(<Component {...pageProps} />)}</SessionGuard>
+                        {getLayout(<Component {...pageProps} />)}
                       </Guard>
                       <ReactHotToast>
                         <Toaster
