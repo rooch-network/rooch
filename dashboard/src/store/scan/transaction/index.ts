@@ -12,7 +12,7 @@ import { JsonRpcProvider, TransactionResultPageView } from '@rooch/sdk'
 
 interface DataParams {
   dispatch: Dispatch<AnyAction>
-  cursor: number,
+  cursor: number
   limit: number
 }
 

@@ -18,7 +18,7 @@ import {
 import { functionIdToStirng, typeTagToString, encodeArg, toHexString } from '../utils'
 
 import { ROOCH_DEV_CHIAN_ID } from '../constants'
-import {TransactionResultPageView} from "../generated/client/types.ts";
+import { TransactionResultPageView } from '../generated/client/types.ts'
 
 /**
  * Configuration options for the JsonRpcProvider. If the value of a field is not provided,
@@ -128,10 +128,7 @@ export class JsonRpcProvider {
     return await this.client.rooch_getAnnotatedStates(accessPath)
   }
 
-  async getTransactionsByOrder(
-      cursor: number,
-      limit: number
-  ): Promise<TransactionResultPageView> {
+  async getTransactionsByOrder(cursor: number, limit: number): Promise<TransactionResultPageView> {
     return this.client.rooch_getTransactionsByOrder(cursor, limit)
   }
 

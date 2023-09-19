@@ -8,7 +8,7 @@ import { createAsyncThunk, Dispatch, AnyAction } from '@reduxjs/toolkit'
 import { CreateGenericSlice, GenericState } from '../../generic'
 
 // ** sdk import
-import { AnnotatedStateView, JsonRpcProvider,  } from '@rooch/sdk'
+import { AnnotatedStateView, JsonRpcProvider } from '@rooch/sdk'
 
 interface DataParams {
   dispatch: Dispatch<AnyAction>

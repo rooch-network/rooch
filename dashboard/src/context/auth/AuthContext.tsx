@@ -63,8 +63,7 @@ const AuthProvider = ({ children }: Props) => {
     const initAuth = async (): Promise<void> => {
       setLoading(true)
 
-      // const secretKey = window.localStorage.getItem(authConfig.secretKey)
-      const secretKey = 'AB5MpmpZ+ecOk/Nl1WLzor3b8TulNNWUfS3k2eTLgffN'
+      const secretKey = window.localStorage.getItem(authConfig.secretKey)
 
       if (secretKey) {
         let sk = bcsTypes.fromB64(secretKey)
