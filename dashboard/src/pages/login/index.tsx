@@ -16,7 +16,7 @@ import Typography from '@mui/material/Typography'
 import IconButton from '@mui/material/IconButton'
 import CardContent from '@mui/material/CardContent'
 import FormControl from '@mui/material/FormControl'
-import {styled, useTheme} from '@mui/material/styles'
+import { styled, useTheme } from '@mui/material/styles'
 import MenuItem from '@mui/material/MenuItem'
 import Select, { SelectChangeEvent } from '@mui/material/Select'
 import FormControlLabel from '@mui/material/FormControlLabel'
@@ -42,7 +42,7 @@ import { useAuth } from 'src/hooks/useAuth'
 // ** Demo Imports
 import AuthIllustrationWrapper from 'src/views/pages/auth/AuthIllustrationWrapper'
 import { WalletType } from 'src/context/auth/types'
-import Checkbox from "@mui/material/Checkbox";
+import Checkbox from '@mui/material/Checkbox'
 
 const schema = yup.object().shape({
   secretKey: yup.string().min(44).required(),
@@ -66,7 +66,7 @@ enum InputType {
 const LinkStyled = styled(Link)(({ theme }) => ({
   fontSize: '0.875rem',
   textDecoration: 'none',
-  color: theme.palette.primary.main
+  color: theme.palette.primary.main,
 }))
 
 const LoginPage = () => {
@@ -79,6 +79,7 @@ const LoginPage = () => {
 
   const {
     control,
+
     // setError,
     handleSubmit,
     formState: { errors },
@@ -90,7 +91,7 @@ const LoginPage = () => {
 
   // ** State
   const [inputType, setInputType] = useState<InputType>(
-      auth.supportWallets.length > 0 ? InputType.Connect : InputType.Import,
+    auth.supportWallets.length > 0 ? InputType.Connect : InputType.Import,
   )
   const [selectWallet, setSelectWallet] = useState<WalletType | null>(
     auth.supportWallets.length > 0 ? auth.supportWallets[0].name : null,
@@ -102,8 +103,6 @@ const LoginPage = () => {
   }
 
   const onSubmit = (data?: FormData) => {
-
-
     switch (inputType) {
       case InputType.Connect:
         auth.loginByWallet(selectWallet!)
@@ -151,28 +150,27 @@ const LoginPage = () => {
                 <>
                   <FormControl fullWidth sx={{ mb: 4 }}>
                     <Controller
-                        name="secretKey"
-                        control={control}
-                        rules={{ required: true }}
-                        render={({ field: { value, onChange, onBlur } }) => (
-                            <TextField
-                                autoFocus
-                                label="Secret Key"
-                                value={value}
-                                onBlur={onBlur}
-                                onChange={onChange}
-                                error={Boolean(errors.secretKey)}
-                                placeholder=""
-                            />
-                        )}
+                      name="secretKey"
+                      control={control}
+                      rules={{ required: true }}
+                      render={({ field: { value, onChange, onBlur } }) => (
+                        <TextField
+                          autoFocus
+                          label="Secret Key"
+                          value={value}
+                          onBlur={onBlur}
+                          onChange={onChange}
+                          error={Boolean(errors.secretKey)}
+                          placeholder=""
+                        />
+                      )}
                     />
                     {errors.secretKey && (
-                        <FormHelperText sx={{ color: 'error.main' }}>
-                          {errors.secretKey.message}
-                        </FormHelperText>
+                      <FormHelperText sx={{ color: 'error.main' }}>
+                        {errors.secretKey.message}
+                      </FormHelperText>
                     )}
                   </FormControl>
-
                 </>
               ) : (
                 <>
@@ -195,35 +193,65 @@ const LoginPage = () => {
                   </FormControl>
                 </>
               )}
-                {
-                  auth.supportWallets.length > 0 ? (
-                  <>
-                    <Box
-                        sx={{ mb: 4, display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}
-                    >
-                      <FormControlLabel
-                          label= {inputType == InputType.Import ? 'Remember Me' : ''}
-                          sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.875rem', color: 'text.secondary' } }}
-                          control={inputType == InputType.Import ? <Checkbox checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} />: <></>}
-                      />
-                      <LinkStyled href='/' onClick = {(event) => {
+              {auth.supportWallets.length > 0 ? (
+                <>
+                  <Box
+                    sx={{
+                      mb: 4,
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <FormControlLabel
+                      label={inputType === InputType.Import ? 'Remember Me' : ''}
+                      sx={{
+                        '& .MuiFormControlLabel-label': {
+                          fontSize: '0.875rem',
+                          color: 'text.secondary',
+                        },
+                      }}
+                      control={
+                        inputType === InputType.Import ? (
+                          <Checkbox
+                            checked={rememberMe}
+                            onChange={(e) => setRememberMe(e.target.checked)}
+                          />
+                        ) : (
+                          <></>
+                        )
+                      }
+                    />
+                    <LinkStyled
+                      href="/"
+                      onClick={(event) => {
                         event.preventDefault()
                         if (inputType === InputType.Connect) {
                           setInputType(InputType.Import)
                         } else {
                           setInputType(InputType.Connect)
                         }
-                      }}> {inputType === InputType.Import ? 'Connect wallet' : 'Import secret key'}
-                      </LinkStyled>
-                    </Box>
-                  </>
-                  ) : null
-                }
-              <Button fullWidth size="large" type="submit" variant="contained" sx={{ mb: 4 }} onClick={() => {
-                if (inputType === InputType.Connect) {
-                  onSubmit()
-                }
-              }}>
+                      }}
+                    >
+                      {' '}
+                      {inputType === InputType.Import ? 'Connect wallet' : 'Import secret key'}
+                    </LinkStyled>
+                  </Box>
+                </>
+              ) : null}
+              <Button
+                fullWidth
+                size="large"
+                type="submit"
+                variant="contained"
+                sx={{ mb: 4 }}
+                onClick={() => {
+                  if (inputType === InputType.Connect) {
+                    onSubmit()
+                  }
+                }}
+              >
                 {inputType}
               </Button>
               <Box
@@ -238,10 +266,15 @@ const LoginPage = () => {
                   New on our platform?
                 </Typography>
                 <Typography>
-                  <LinkStyled href='/' onClick = {(event) => {
-                    event.preventDefault()
-                    createAccount()
-                  }}>Create an account</LinkStyled>
+                  <LinkStyled
+                    href="/"
+                    onClick={(event) => {
+                      event.preventDefault()
+                      createAccount()
+                    }}
+                  >
+                    Create an account
+                  </LinkStyled>
                 </Typography>
               </Box>
               <Divider sx={{ my: `${theme.spacing(6)} !important` }}>or</Divider>
