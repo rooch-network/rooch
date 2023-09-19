@@ -9,9 +9,9 @@ import {
 } from '@reduxjs/toolkit'
 
 export interface GenericState<T> {
-  data: T
+  result: T
   error?: string | null
-  status?: 'loading' | 'finished' | 'error'
+  status?: 'idle' | 'loading' | 'finished' | 'error'
 }
 
 // TODO: experimental
@@ -27,7 +27,7 @@ export const CreateGenericSlice = <T, Reducers extends SliceCaseReducers<Generic
   // extraReducers: ((builder: ActionReducerMapBuilder<NoInfer<GenericState<T>>>) => void)
 }) => {
   if (initialState.status === undefined) {
-    initialState.status = 'loading'
+    initialState.status = 'idle'
   }
 
   return createSlice({
@@ -52,7 +52,7 @@ export const CreateGenericSlice = <T, Reducers extends SliceCaseReducers<Generic
        * This is a general problem when working with immer's Draft type and generics.
        */
       success(state: GenericState<T>, action: PayloadAction<T>) {
-        state.data = action.payload
+        state.result = action.payload
         state.status = 'finished'
       },
       ...reducers,

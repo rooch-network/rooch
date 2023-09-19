@@ -2,44 +2,44 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // ** Redux Imports
-// import { Dispatch } from 'redux'
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { createAsyncThunk, Dispatch, AnyAction } from '@reduxjs/toolkit'
+
+// ** Store Generic Imports
+import { CreateGenericSlice, GenericState } from '../../generic'
 
 // ** sdk import
-import { JsonRpcProvider, TransactionView } from '@rooch/sdk'
+import { JsonRpcProvider, TransactionResultPageView } from '@rooch/sdk'
 
 interface DataParams {
-  cursor: number
+  dispatch: Dispatch<AnyAction>
+  cursor: number,
   limit: number
 }
 
 // ** Fetch Transaction
-export const fetchData = createAsyncThunk('Transaction/fetchData', async (params: DataParams) => {
+export const fetchData = createAsyncThunk('state/fetchData', async (params: DataParams) => {
+  params.dispatch(start())
+
   const jp = new JsonRpcProvider()
-  console.log(jp)
 
-  // let result = await jp.getTransactions(params.tx_hashes)
+  try {
+    let result = await jp.getTransactionsByOrder(params.cursor, params.limit)
+    params.dispatch(success(result))
 
-  // console.log(result)
-
-  return ''
+    return result
+  } catch (e: any) {
+    params.dispatch(error(e.toString()))
+  }
 })
 
-export const TransactionSlice = createSlice({
-  name: 'Transaction',
+export const TransactionSlice = CreateGenericSlice({
+  name: 'state',
   initialState: {
-    data: [] as TransactionView[],
-    total: 1,
-    params: {},
-    allData: [] as TransactionView[],
-  },
+    result: {},
+  } as GenericState<TransactionResultPageView>,
   reducers: {},
-  extraReducers: (builder) => {
-    builder.addCase(fetchData.fulfilled, (state, action) => {
-      // TODO need fixed after transaction RPC refactor
-      // state.allData = action.payload
-    })
-  },
 })
 
 export default TransactionSlice.reducer
+
+const { start, error, success } = TransactionSlice.actions

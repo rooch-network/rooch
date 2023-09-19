@@ -63,10 +63,16 @@ const AuthProvider = ({ children }: Props) => {
     const initAuth = async (): Promise<void> => {
       setLoading(true)
 
-      const secretKey = window.localStorage.getItem(authConfig.secretKey)
+      // const secretKey = window.localStorage.getItem(authConfig.secretKey)
+      const secretKey = 'AB5MpmpZ+ecOk/Nl1WLzor3b8TulNNWUfS3k2eTLgffN'
 
       if (secretKey) {
-        const sk = bcsTypes.fromB64(secretKey)
+        let sk = bcsTypes.fromB64(secretKey)
+
+        if (sk.length > 32) {
+          sk = sk.slice(1)
+        }
+
         const kp = Ed25519Keypair.fromSecretKey(sk)
 
         setAccountWrapper({

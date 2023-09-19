@@ -136,6 +136,10 @@ impl Client {
     }
 
     pub async fn get_transactions_by_hash(&self, hash: H256) -> Result<Option<TransactionView>> {
+        let s = self.rpc.http.get_transactions_by_order(Some(0), Some(10)).await;
+
+        println!("{:?}", s);
+
         Ok(self.rpc.http.get_transaction_by_hash(hash.into()).await?)
     }
 
