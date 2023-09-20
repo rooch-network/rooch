@@ -32,9 +32,9 @@ export const fetchData = createAsyncThunk('state/fetchData', async (params: Data
 })
 
 export const StateSlice = CreateGenericSlice({
-  name: 'Transaction',
+  name: 'state',
   initialState: {
-    data: [],
+    result: [],
   } as GenericState<AnnotatedStateView | null[]>,
   reducers: {},
 })

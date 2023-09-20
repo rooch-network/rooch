@@ -69,7 +69,7 @@ const AuthProvider = ({ children }: Props) => {
         let sk = bcsTypes.fromB64(secretKey)
 
         // The rooch cli generated key contains schema, remove it
-        if (sk.length !== 32) {
+        if (sk.length > 32) {
           sk = sk.slice(1)
         }
 

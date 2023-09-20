@@ -7,7 +7,6 @@ import { useState, SyntheticEvent, Fragment } from 'react'
 // ** MUI Imports
 import Box from '@mui/material/Box'
 import Menu from '@mui/material/Menu'
-import Divider from '@mui/material/Divider'
 import MenuItem from '@mui/material/MenuItem'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
@@ -56,20 +55,18 @@ const SwitchChainDropdown = (props: Props) => {
         transformOrigin={{ vertical: 'top', horizontal: direction === 'ltr' ? 'right' : 'left' }}
       >
         {chainIDData.map((v, i) => (
-          <>
-            <MenuItem
-              onClick={() => setChainId(v)}
-              sx={{
-                color: v === chainID ? 'text.primary' : 'text.secondary',
-                '& svg': { mr: 2, fontSize: '1.25rem', color: 'text.secondary' },
-                display: 'flex',
-                justifyContent: 'center',
-              }}
-            >
-              {v.toUpperCase()}
-            </MenuItem>
-            {i < chainIDData.length - 1 ? <Divider /> : null}
-          </>
+          <MenuItem
+            key={v}
+            onClick={() => setChainId(v)}
+            sx={{
+              color: v === chainID ? 'text.primary' : 'text.secondary',
+              '& svg': { mr: 2, fontSize: '1.25rem', color: 'text.secondary' },
+              display: 'flex',
+              justifyContent: 'center',
+            }}
+          >
+            {v.toUpperCase()}
+          </MenuItem>
         ))}
       </Menu>
     </Fragment>

@@ -47,6 +47,7 @@ Feature: Rooch CLI integration tests
       #Then cmd: "state --access-path /table/{{$.move[-1][0].move_value.value.table.value.handle}}/key1"
       #Then assert: "{{$.move[-1][0].move_value}} == "value1""
 
+
       Then stop the server
 
     @serial

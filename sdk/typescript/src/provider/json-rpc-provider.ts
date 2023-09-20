@@ -1,5 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+
 import fetch from 'isomorphic-fetch'
 import { HTTPTransport, RequestManager } from '@open-rpc/client-js'
 import { JsonRpcClient } from '../generated/client'
@@ -17,6 +18,7 @@ import {
 import { functionIdToStirng, typeTagToString, encodeArg, toHexString } from '../utils'
 
 import { ROOCH_DEV_CHIAN_ID } from '../constants'
+import { TransactionResultPageView } from '../generated/client/types.ts'
 
 /**
  * Configuration options for the JsonRpcProvider. If the value of a field is not provided,
@@ -126,14 +128,11 @@ export class JsonRpcProvider {
     return await this.client.rooch_getAnnotatedStates(accessPath)
   }
 
-  // TODO: wait bcs
+  async getTransactionsByOrder(cursor: number, limit: number): Promise<TransactionResultPageView> {
+    return this.client.rooch_getTransactionsByOrder(cursor, limit)
+  }
 
-  // // Get the events by event filter
-  // async getEvents(
-  //   filter: EventFilterView,
-  // ): Promise<AnnotatedEventView | null[]> {
-  //   return await this.client.rooch_getEvents(filter)
-  // }
+  // TODO: wait bcs
 
   // // Get the events by event handle id
   // async getEventsByEventHandle(
