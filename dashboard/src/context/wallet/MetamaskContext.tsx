@@ -135,8 +135,8 @@ const MetamaskProvider = ({ children }: Props) => {
       })
   }
 
-  const disconnect = () => {
-    if (window.ethereum!.isConnected()) {
+  const disconnect = async () => {
+    if (window.ethereum?.isConnected()) {
       console.log(window.ethereum)
     }
   }
