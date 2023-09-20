@@ -279,6 +279,8 @@ impl EthAPIServer for EthServer {
         info!("send_raw_transaction from: {:?}, nonce: {:?}", eth_tx.0.from, eth_tx.0.nonce);
 
         let tx = TypedTransaction::Ethereum(eth_tx);
+        info!("send_raw_transaction authenticator_info: {:?}", tx.authenticator_info().unwrap());
+
         let hash = tx.tx_hash();
         let _output = self.rpc_service.execute_tx(tx).await?;
         Ok(hash)

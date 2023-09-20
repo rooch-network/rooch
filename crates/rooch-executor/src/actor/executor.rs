@@ -46,6 +46,7 @@ use rooch_types::framework::{system_post_execute_functions, system_pre_execute_f
 use rooch_types::transaction::AbstractTransaction;
 use rooch_types::transaction::AuthenticatorInfo;
 use rooch_types::H256;
+use tracing::info;
 
 pub struct ExecutorActor {
     genesis: RoochGenesis,
@@ -167,10 +168,14 @@ impl ExecutorActor {
         ctx: &TxContext,
         authenticator: AuthenticatorInfo,
     ) -> Result<ValidateAuthenticatorResult> {
+        info!("validate_authenticator authenticator: {:?}", authenticator.clone());
+
         let tx_validator = self.moveos.as_module_binding::<TransactionValidator>();
         let tx_validate_function_result = tx_validator
             .validate(ctx, authenticator.clone())?
             .into_result();
+        info!("validate_authenticator tx_validate_function_result: {:?}", tx_validate_function_result.clone().unwrap());
+
         let vm_result = match tx_validate_function_result {
             Ok(tx_validate_result) => {
                 let auth_validator_option = tx_validate_result.auth_validator();
