@@ -70,7 +70,7 @@ Sequencer's commitment on timeliness:
 
 1. Sequencer promises that the corresponding L2 tx will be generated and executed within a certain time (t1) after the L1ToL2 event is generated.
 2. Sequencer promises that the maximum delay between the L1 block information on L2 and the current time on L1 is t2. `t2 <= t1/2`, to ensure that the contract on Rooch must have the ability to validate events on L1 that have timed out by t1.
-3. Sequencer commits to a maximum interval of t3 between L2 output commitment submissions. t3 << t2 to ensure that the result of L1 block message update tx on L2 is available for arbitration, and also means that the result can be verified and challenged by the verifier to ensure that the block message is correct. the L1 contract checks the interval between each output commitment submission. The L1 contract checks the interval between each output commitment submission.
+3. Sequencer commits to a maximum interval of t3 between L2 output commitment submissions. `t3 << t2` to ensure that the result of L1 block message update tx on L2 is available for arbitration, and also means that the result can be verified and challenged by the verifier to ensure that the block message is correct. the L1 contract checks the interval between each output commitment submission. The L1 contract checks the interval between each output commitment submission.
 
 #### Arbitration Process
 

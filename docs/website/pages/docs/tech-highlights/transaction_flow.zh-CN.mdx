@@ -69,7 +69,7 @@ Sequencer 关于时效的承诺：
 
 1. Sequencer 承诺 L1ToL2 事件产生后将在一定时间内（t1）生成相应的 L2 tx 并完成执行。
 2. Sequencer 承诺 L2 上的 L1 区块信息与 L1 当前时间的最大延迟为 t2。 `t2 <= t1/2`，以确保 Rooch 上的合约肯定有能力验证已经超时 t1 的 L1 的事件。
-3. Sequencer 承诺 L2 output commitment 提交的最大间隔为 t3。 t3 << t2，以确保 L2 上的 L1 区块信息更新 tx 的执行结果可用于仲裁，同时也意味着该结果可被 verifier 验证和挑战以确保区块信息的正确性。L1 合约会检查每次 output commitment 提交的间隔。
+3. Sequencer 承诺 L2 output commitment 提交的最大间隔为 t3。 `t3 << t2`，以确保 L2 上的 L1 区块信息更新 tx 的执行结果可用于仲裁，同时也意味着该结果可被 verifier 验证和挑战以确保区块信息的正确性。L1 合约会检查每次 output commitment 提交的间隔。
 
 #### 仲裁流程
 
