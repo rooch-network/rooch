@@ -6,6 +6,7 @@ export type HashValue = string
 export type Bool = boolean
 export type U8 = number
 export type U16 = number
+export type U32 = number
 export type U64 = bigint
 export type U128 = bigint
 export type U256 = bigint
@@ -39,8 +40,22 @@ export type TypeTag =
   | 'String'
   | { Vector: TypeTag }
   | { Struct: StructTag }
+  | 'U16'
+  | 'U32'
+  | 'U256'
 
-export type ArgType = Bool | U8 | U64 | U128 | string | AccountAddress | ArgType[]
+export type ArgType =
+  | Bool
+  | U8
+  | U16
+  | U32
+  | U64
+  | U128
+  | U256
+  | string
+  | AccountAddress
+  | ArgType[]
+
 export type Arg = {
   type: TypeTag
   value: ArgType
