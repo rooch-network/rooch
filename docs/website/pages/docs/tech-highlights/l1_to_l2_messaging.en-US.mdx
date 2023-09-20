@@ -50,7 +50,7 @@ Gas Fee is divided into two parts:
 2. L2 contract calling overhead (realized by L1 combustion)
 
 L1 contract call overhead accounts for most of the overall overhead, while L2 contract overhead is relatively small and has a certain free amount (for most of the asset transfer scenarios, the L2 free amount is more than enough).
-Anything above the free credit will be burned on L1 at a certain percentage: <img alt="Rooch
+Anything above the free credit will be burned on L1 at a certain percentage:
 
 <img alt="Rooch L1ToL2 Gas Fee" height="450" src="/docs/l1tol2_gas_fee.jpeg" width="500"/>
 
@@ -59,7 +59,7 @@ and does not need to be concerned with the complexity of gas pricing.
 
 Burning will be implemented as a `while loop` in L1, with the following pseudo-code:
 
-    ``
+    ```
     i = 0
     while (i < burn_amount) {
         i++
