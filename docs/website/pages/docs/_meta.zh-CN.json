@@ -2,9 +2,11 @@
   "introduction": "简介",
   "rooch": "Rooch",
   "rooch-network": "Rooch 网络",
-  "getting-started": "Rooch 新手入门",
   "tech-highlights": "技术亮点",
-  "developer": "开发者",
+  "getting-started": "Rooch 新手入门",
+  "user-guides": "用户指南",
+  "developer-guides": "开发者指南",
+  "example-guides": "示例指南",
   "reference": "引用",
   "miscellaneous": "其他"
 }
