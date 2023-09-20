@@ -4,7 +4,7 @@
 export default {
   secretKey: 'secret_key',
   roochChain: {
-    chainId: '0x2711',
+    chainId: '0x134afd7',
     chainName: 'Rooch',
     iconUrls: [
       'https://github.com/rooch-network/rooch/blob/main/docs/website/public/logo/rooch_black_text.png',
