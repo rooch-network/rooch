@@ -193,6 +193,18 @@ impl EthAPIServer for EthServer {
             .pop()
             .flatten();
 
+        dbg!(&result);
+
+        let res = self
+            .rpc_service
+            .list_states(
+                AccessPath::resource(account_address, Coin::struct_tag()),
+                None,
+                1000,
+            )
+            .await;
+        dbg!(&res);
+
         let res = self
             .rpc_service
             .list_states(
@@ -201,16 +213,9 @@ impl EthAPIServer for EthServer {
                 1000,
             )
             .await;
+        dbg!(&res);
 
-        Ok(self
-            .rpc_service
-            .get_states(AccessPath::resource(account_address, Account::struct_tag()))
-            .await?
-            .pop()
-            .flatten()
-            .map(|state_view| state_view.as_move_state::<Account>())
-            .transpose()?
-            .map_or(0.into(), |account| account.sequence_number.into()))
+        Ok(U256::from_str(&"10000000000000000000").unwrap())
     }
 
     async fn estimate_gas(
@@ -300,8 +305,12 @@ impl EthAPIServer for EthServer {
     async fn send_raw_transaction(&self, bytes: Bytes) -> RpcResult<H256> {
         info!("send_raw_transaction: {:?}", bytes);
         let eth_tx = EthereumTransaction::decode(&bytes)?;
+        dbg!(&eth_tx);
         info!("send_raw_transaction input: {:?}", eth_tx.0.input);
-        let action = eth_tx.decode_calldata_to_action()?;
+        let action = eth_tx.decode_calldata_to_action();
+        dbg!(&action);
+        let action = action?;
+
         info!(
             "send_raw_transaction decode_calldata_to_action: {:?}",
             action
@@ -310,7 +319,8 @@ impl EthAPIServer for EthServer {
 
         let tx = TypedTransaction::Ethereum(eth_tx);
         let hash = tx.tx_hash();
-        let _output = self.rpc_service.execute_tx(tx).await?;
+        let output = self.rpc_service.execute_tx(tx).await?;
+        dbg!(&output);
         Ok(hash)
     }
 
@@ -497,9 +507,15 @@ impl RoochRpcModule for EthServer {
 mod tests {
     use move_core_types::vm_status::KeptVMStatus;
     use moveos_store::MoveOSStore;
-    use moveos_types::transaction::TransactionExecutionInfo;
+    use moveos_types::transaction::{MoveAction, TransactionExecutionInfo};
     use raw_store::CodecKVStore;
-    use rooch_types::H256;
+    use rooch_key::keystore::{AccountKeystore, InMemKeystore};
+    use rooch_types::{
+        crypto::BuiltinScheme,
+        framework::empty::Empty,
+        transaction::{rooch::RoochTransactionData, AbstractTransaction},
+        H256,
+    };
 
     #[tokio::test]
     async fn test_get_eth_balance() {
@@ -512,6 +528,7 @@ mod tests {
             rand::random(),
             KeptVMStatus::Executed,
         );
+
         let id = transaction_info1.tx_hash;
         store
             .get_transaction_store()

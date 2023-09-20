@@ -14,7 +14,7 @@ use fastcrypto::{
     secp256k1::recoverable::Secp256k1RecoverableSignature,
     traits::{RecoverableSignature, ToFromBytes},
 };
-use move_core_types::account_address::AccountAddress;
+use move_core_types::{account_address::AccountAddress, identifier::Identifier, u256::U256};
 use moveos_types::{
     h256::H256,
     transaction::{MoveAction, MoveOSTransaction},
@@ -26,11 +26,51 @@ use serde::{Deserialize, Serialize};
 pub struct EthereumTransaction(pub ethers::core::types::Transaction);
 
 impl EthereumTransaction {
-    //This function is just a demo, we should define the Ethereum calldata's MoveAction standard
+    // This function is just a demo, we should define the Ethereum calldata's MoveAction standard
     pub fn decode_calldata_to_action(&self) -> Result<MoveAction> {
-        //Maybe we should use RLP to encode the MoveAction
-        bcs::from_bytes(&self.0.input)
-            .map_err(|e| anyhow::anyhow!("decode calldata to action failed: {}", e))
+        if self.0.input.is_empty() {
+            //let account_address = self.rpc_service.resolve_address(self.sender()).await?;
+
+            let test = TxContext::random_for_testing_only();
+            let serialized = test.to_bytes();
+
+            // Handle the transfer gas coin function call only in ethereum
+            let payload = MoveAction::new_function_call(
+                moveos_types::move_types::FunctionId::new(
+                    move_core_types::language_storage::ModuleId::new(
+                        AccountAddress::from_hex_literal("0x3").unwrap(),
+                        Identifier::new("coin").unwrap(),
+                    ),
+                    Identifier::new("transfer").unwrap(),
+                ),
+                vec![move_core_types::language_storage::TypeTag::Struct(
+                    Box::new(move_core_types::language_storage::StructTag {
+                        address: AccountAddress::from_hex_literal("0x3").unwrap(),
+                        module: Identifier::new("gas_coin").unwrap(),
+                        name: Identifier::new("GasCoin").unwrap(),
+                        type_params: vec![],
+                    }),
+                )],
+                vec![
+                    serialized,
+                    move_core_types::value::MoveValue::Signer(AccountAddress::random())
+                        .simple_serialize()
+                        .unwrap(),
+                    move_core_types::value::MoveValue::Address(AccountAddress::random())
+                        .simple_serialize()
+                        .unwrap(),
+                    move_core_types::value::MoveValue::U256(U256::max_value())
+                        .simple_serialize()
+                        .unwrap(),
+                ],
+            );
+
+            Ok(payload)
+        } else {
+            // Maybe we should use RLP to encode the MoveAction
+            bcs::from_bytes(&self.0.input)
+                .map_err(|e| anyhow::anyhow!("decode calldata to action failed: {}", e))
+        }
     }
 
     // Calculate the "recovery byte": The recovery ID (v) contains information about the network and the signature type.

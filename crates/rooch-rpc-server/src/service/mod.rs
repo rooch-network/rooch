@@ -51,10 +51,22 @@ impl RpcService {
 
     pub async fn execute_tx(&self, tx: TypedTransaction) -> Result<ExecuteTransactionResponse> {
         //First, validate the transactin
-        let moveos_tx = self.executor.validate_transaction(tx.clone()).await?;
-        let sequence_info = self.sequencer.sequence_transaction(tx.clone()).await?;
+        let moveos_tx = self
+            .executor
+            .validate_transaction(tx.clone())
+            .await
+            .unwrap();
+	
+        let sequence_info = self
+            .sequencer
+            .sequence_transaction(tx.clone())
+            .await
+            .unwrap();
         // Then execute
-        let (output, execution_info) = self.executor.execute_transaction(moveos_tx).await?;
+        let (output, execution_info) = self.executor.execute_transaction(moveos_tx).await.unwrap();
+
+        dbg!(&output);
+        dbg!(&execution_info);
         self.proposer
             .propose_transaction(tx, execution_info.clone(), sequence_info.clone())
             .await?;

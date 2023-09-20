@@ -120,7 +120,6 @@ impl ExecutorActor {
         let mut moveos_tx = tx.construct_moveos_transaction(resolved_sender)?;
 
         let vm_result = self.validate_authenticator(&moveos_tx.ctx, authenticator)?;
-
         match vm_result {
             Ok((tx_validate_result, pre_execute_functions, post_execute_functions)) => {
                 // Add the original multichain address to the context
@@ -136,6 +135,7 @@ impl ExecutorActor {
 
                 moveos_tx.append_pre_execute_functions(pre_execute_functions);
                 moveos_tx.append_post_execute_functions(post_execute_functions);
+
                 Ok(self.moveos.verify(moveos_tx)?)
             }
             Err(e) => {
