@@ -121,32 +121,6 @@ const UserDropdown = (props: Props) => {
             '& svg': { mr: 2, fontSize: '1.25rem', color: 'text.secondary' },
           }}
         >
-          <Icon icon="bxs-user-x" />
-          Create Account
-        </MenuItem>
-        <Divider />
-        <MenuItem
-          onClick={handleLogout}
-          sx={{
-            py: 2,
-            px: 4,
-            color: 'text.secondary',
-            '& svg': { mr: 2, fontSize: '1.25rem', color: 'text.secondary' },
-          }}
-        >
-          <Icon icon="bxs-user-account" />
-          Connect Wallet
-        </MenuItem>
-        <Divider />
-        <MenuItem
-          onClick={handleLogout}
-          sx={{
-            py: 2,
-            px: 4,
-            color: 'text.secondary',
-            '& svg': { mr: 2, fontSize: '1.25rem', color: 'text.secondary' },
-          }}
-        >
           <Icon icon="bx:power-off" />
           Clean Loacl Account
         </MenuItem>
