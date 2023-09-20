@@ -124,7 +124,7 @@ export default function useSessionAccount() {
     const provider = new JsonRpcProvider()
 
     const pk = Ed25519Keypair.generate()
-    const roochAddress = pk.toRoochAddress()
+    const roochAddress = pk.getPublicKey().toRoochAddress()
 
     try {
       await registerSessionKey(
