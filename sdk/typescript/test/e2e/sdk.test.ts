@@ -77,7 +77,7 @@ describe('SDK', () => {
     })
   })
   */
- 
+
   describe('#getAnnotatedStates', () => {
     it('get annotated states should be ok', async () => {
       const provider = new JsonRpcProvider()
