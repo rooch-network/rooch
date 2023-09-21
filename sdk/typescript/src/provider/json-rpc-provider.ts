@@ -10,13 +10,14 @@ import {
   TypeTag,
   Arg,
   Bytes,
+  TransactionView,
   AnnotatedFunctionResultView,
   AnnotatedStateView,
+  TransactionResultPageView,
 } from '../types'
 import { functionIdToStirng, typeTagToString, encodeArg, toHexString } from '../utils'
 
 import { ROOCH_DEV_CHIAN_ID } from '../constants'
-//import { TransactionResultPageView } from '../generated/client/types'
 
 /**
  * Configuration options for the JsonRpcProvider. If the value of a field is not provided,
@@ -111,9 +112,9 @@ export class JsonRpcProvider {
     return this.client.rooch_sendRawTransaction(playload)
   }
 
-  //async getTransactionsByHash(tx_hashes: string[]): Promise<TransactionView | null[]> {
-  //  return await this.client.rooch_getTransactionsByHash(tx_hashes)
-  //}
+  async getTransactionsByHash(tx_hashes: string[]): Promise<TransactionView | null[]> {
+    return await this.client.rooch_getTransactionsByHash(tx_hashes)
+  }
 
   // async getTransactionInfosByHash(
   //   txHashes: string[],
@@ -126,9 +127,9 @@ export class JsonRpcProvider {
     return await this.client.rooch_getAnnotatedStates(accessPath)
   }
 
-  //async getTransactionsByOrder(cursor: number, limit: number): Promise<rpcTypes.TransactionResultPageView> {
-  //  return this.client.rooch_getTransactionsByOrder(cursor, limit)
-  // }
+  async getTransactionsByOrder(cursor: number, limit: number): Promise<TransactionResultPageView> {
+    return this.client.rooch_getTransactionsByOrder(cursor, limit)
+  }
 
   // TODO: wait bcs
 
