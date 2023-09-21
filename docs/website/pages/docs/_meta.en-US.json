@@ -2,9 +2,11 @@
   "introduction": "Introduction",
   "rooch": "Rooch",
   "rooch-network": "Rooch Network",
-  "getting-started": "Getting started with Rooch",
   "tech-highlights": "Tech Highlights",
-  "developer": "Developer",
+  "getting-started": "Getting started with Rooch",
+  "user-guides": "User guides",
+  "developer-guides": "Developer guides",
+  "example-guides": "Example-guides",
   "reference": "Reference",
   "miscellaneous": "Miscellaneous"
 }
