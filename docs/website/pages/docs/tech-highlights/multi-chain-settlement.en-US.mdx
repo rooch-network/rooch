@@ -1,39 +1,50 @@
 # Multi-chain Settlement
 
-Multi-chain Settlement is one of the most crucial functions of the Rooch Network. This chapter provides a brief introduction to the protocol and the challenges to be addressed.
+Multi-chain settlement is one of the most important features of Rooch Network. How to realize multi-chain communication while maintaining the L2 security assumption (only one honest verifier node is needed) is its core problem, in this article we will briefly introduce the workflow and principles.
 
 ## How it works
 
 import Image from "next/image";
 
 <Image
-  src="/docs/multi-chain-settlement.jpg"
-  alt="Rooch Architecture"
-  width={600}
-  height={600}
-  className="mx-auto my-4"
+    src="/docs/rooch-multi-chain-settlement-withdrawal-flow.jpeg"
+    alt="Rooch Multi-chain Settlement Withdrawal Flow"
+    width={700}
+    height={390}
+    className="mx-auto my-4"
 />
 
-The responsibility of the settlement layer is to perform state migration and asset settlement between Layer1 and the execution layer.
+Let's illustrate how multi-chain settlement works by taking the most complex and well-attended withdrawal transaction as an example.
 
-We use Ethereum as an example to explain how the settlement layer works.
+For any L1 (settlement chain/arbitration chain), the withdrawal process is the same for the user:
 
-Rooch deploys the settlement smart contract(`State Commitment Chain` & `Bridge`) on Ethereum, which maintains an off-chain state tree, with only the root of the state tree recorded on the chain, through which users migrate state between Layer1 and Rooch.
+1. Initialization transaction (step 1 in the figure): the user initiates a withdrawal request at L2.
+2. Proof transaction (step 4 in the figure): the user submits a proof of withdrawal at L1, and the withdrawal transaction is verified by the state commitment submitted by L2 to L1.
+3. Finalize the transaction (step 5 in the figure): the user submits a finalizing of the withdrawal transaction at L1, and L1 releases the assets after verifying and confirming the end of the challenge period.
 
-1. When a user migrates state from Layer1 to Rooch, the state appears in the state tree of Rooch after the transactions in Layer1 are finalized.
-2. When a user migrates state from Rooch to Layer1, the state is first locked and waits for the Layer2 (Challenge period to pass or **zkProver** provides valid proof) before being moved out of the state tree for settlement.
-3. When the `State Commitment Chain` receives a notification from the arbitration contract that fraud has occurred, it rolls back the root of the off-chain state tree to before the fraud occurred, discarding any state tree changes made during that period.
+These three steps are all initiated by the user, which maximizes flexibility and makes the prerequisites for L2 to work correctly very clear:
 
-Now, if we wish to extend the settlement layer to multiple chains, the biggest challenge we face is how to confirm the status of Rooch on non-arbitration chains.
+1. state commitment is guaranteed to be validated on L1
+2. only one honest verification node is needed to confirm the L2 state on the arbitration chain.
 
-Our solution packages the withdrawal proofs on the settlement chain into Rooch transactions, thus inheriting the security of the second-layer network. This can be achieved by running the corresponding chain's client in the Rooch network and performing native block parsing.
+For non-arbitrated chains, conditions 1 and 2 are not directly satisfied, since arbitrated chains cannot acknowledge messages from other chains. To solve this problem, we need a decentralized relay service that relays messages from the non-arbitration chain (Condition 1) to L2, and then confirms L2's state commitment to the arbitration chain through L2's state commitment to the arbitration chain.
+At the same time, in order to verify condition 1, we also need to relay the block information of L1. For the non-arbitration chain, the prerequisites is as follows:
 
-After the challenge period has passed, we believe that assets can be securely released on the settlement chain.
+a. In L2, each L1 light node is realized by contract, and the block data can be relayed by any person. Only one honest relay node is needed to guarantee correctness (light_client in the diagram).
+b. State commitment is guaranteed to be validated on L1 by relay node and condition a (step 3, 4.1 4.2 in the figure)
+c. Only one honest verification node is needed to confirm the L2 state on the arbitration chain (step 5 in the figure).
 
+In short, we construct the L2 -> L1 -> L2 message validation mechanism so that any L1 is protected by the security of the arbitration chain.
 
 ## Features
 
-Here are why Rooch's Multi-Chain Settlement solution is more advanced.
+- More secure: Compared to cross-chain bridges that rely on a central organization, Rooch multi-chain settlement is as secure as Rollups.
+- More generic: Generic state migration enables secure movement of Token, NFT, digital contract, etc. (any message).
 
-- Multi-chain settlement is more secure. The security of the cross-layer bridge in a multi-chain settlement solution is protected by the arbitration layer (i.e. Ethereum), and the execution layer inherits the security of the arbitration layer.
-- More generic cross-layer solution. In Rooch's multi-chain settlement solution, cross-layer is achieved through a generic state migration pattern where states can be used to represent Token, NFT, digital contracts, and other future application states, without the need to design specialized protocols for new state types.
+## Further Reading
+
+For more information on how Rooch implements transaction inclusion in a multi-chain system, see → [Transaction Flow](/docs/tech-highlights/transaction_flow)
+
+For more information on how Rooch implements generic L1 to L2 messaging in a multichain system, see → [L1 to L2 Messaging](/docs/tech-highlights/l1_to_l2_messaging)
+
+For more information on how Rooch implements generic L2 to L1 messaging in multichain systems, see → [L2 to L1 Messaging](/docs/tech-highlights/l2_to_l1_messaging).
