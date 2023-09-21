@@ -44,30 +44,58 @@ From the functional perspective of internal components, the transaction executio
 
 ## Transaction Inclusion
 
-There are three methods of transaction inclusion in Rooch, each escalating in transparency and compulsion:
+There are two ways to implement transaction containment in Rooch:
 
-1. Direct Request to the Sequencer
-2. Submission through L1's (any settlement chain) transaction queue
-3. Submission via L1's (arbitration chain) transaction queue
+1. Direct request to Sequencer
+2. Submission via L1
 
-### Direct Request to the Sequencer
+*In Rooch, there is multi-chain settlement, so any one of the settlement chains can be used to include a transaction.
 
-Users can directly request the Sequencer to include transactions. The Sequencer will add the transaction to the Accumulator and immediately return the global order of the transaction. This inclusion is public and arbitral, but the Sequencer may ignore user requests, thereby enabling transaction censorship attacks. When users are concerned about transaction censorship, they can submit via the third method.
+### 1. Direct request to Sequencer
 
-### Submission through L1's Transaction Queue
+You can request Sequencer to include a transaction directly. Sequencer will add the transaction to the Accumulator and immediately return the global order of the transaction.
+This inclusion is arbitrable (via the arbitration chain), but Sequencer can implement a transaction censorship attack by not responding to the user's request. When the user realizes that the transaction cannot be included, the transaction can be submitted in the second way.
 
-Users can submit transactions to L1's transaction queue, awaiting the Sequencer's retrieval. This inclusion is public but not arbitral in all circumstances. Such transactions typically manifest as messages sent from L1 to L2, such as deposit transactions. For non-arbitration chain, when users are concerned about transaction censorship, they can submit via the third method.
+### 2. Submission via L1
 
-### Submission via L1's (Arbitration Chain) Transaction Queue
+A user can make an L2 call via L1 and wait for Sequencer to fetch it and execute it. This is the mechanism by which L1 sends messages to L2.
+This approach makes it impossible for Sequencer to covertly implement a review of the transaction, because anyone can easily find out about the contract call and related events on L1, and whether L2 contains the transaction.
+Therefore, if we reproduce this off-chain verification process on L2, we can reuse Optimistic Rollups' proof of fraud to penalize the evil Sequencer. This requires:
 
-Submission via L1's (arbitration chain) transaction queue, awaits the Sequencer's acquisition, and can be forcibly included in arbitration via L1's arbitration contract. The arbitration mechanism is as follows:
+1. an audit trail of L1 messages on L2:
+* We contractually implement light nodes for each L1 on Rooch that are equivalent to the Optimistic Rollups security assumption (that only one honest node relays block information) to provide audit trail credentials for fraud proofs.
+2. Arbitrable timeliness promise for light nodes. Breaking the cycle of "L2 light node verification is required to realize transaction inclusion, and L2 light node verification requires transaction inclusion (including relay message)".
 
-1. The user submits the transaction to the transaction queue contract of L1's arbitration chain.
-2. The Sequencer commits to retrieving the transaction within a certain time (t) after entering the transaction queue contract.
-3. If the Sequencer fails to retrieve the transaction within time t, any user can initiate arbitration via the arbitration contract, demanding that the Sequencer provide a proof of transaction inclusion in a certain tx list accumulator.
-4. This accumulator proof can be verified on the arbitration chain. If the verification fails or the Sequencer fails to provide proof within the stipulated time (t2), the Sequencer will be penalized.
+Sequencer's commitment on timeliness:
 
-Due to the presence of the above arbitration mechanism, cheating is sure to be caught, making it imperative for the Sequencer to provide reliable service.
+1. Sequencer promises that the corresponding L2 tx will be generated and executed within a certain time (t1) after the L1ToL2 event is generated.
+2. Sequencer promises that the maximum delay between the L1 block information on L2 and the current time on L1 is t2. `t2 <= t1/2`, to ensure that the contract on Rooch must have the ability to validate events on L1 that have timed out by t1.
+3. Sequencer commits to a maximum interval of t3 between L2 output commitment submissions. `t3 << t2` to ensure that the result of L1 block message update tx on L2 is available for arbitration, and also means that the result can be verified and challenged by the verifier to ensure that the block message is correct. the L1 contract checks the interval between each output commitment submission. The L1 contract checks the interval between each output commitment submission.
+
+#### Arbitration Process
+
+1. a user can initiate an L2 call via L1, generating an L1ToL2 event at t0.
+2. When any user in any settlement chain finds that Sequencer has not completed the transaction within t0+t1, any user can generate the existence proof of L1ToL2 event (including block header) under the chain and apply to the arbitration chain for arbitration of transaction inclusion.
+
+When the arbitration contract receives the arbitration request, it first verifies the existence proof provided by the user in the basic form:
+
+1. need to meet: the current time - block time > t1, otherwise the arbitration is terminated.
+2. verifies that the event exists in the block through merkle tree, otherwise the arbitration is terminated.
+
+After the above verification, Sequencer needs to provide the existence proof within t4 time, or it will be penalized:
+
+1. provide L1 latest block header information, and its corresponding L2 tx sequence proof. The Arbitration Chain can prevent Sequencer from providing false evidence by comparing the Output validation results submitted by L2 to the Arbitration Chain.
+(The Arbitration Chain first compares the content of the L1 Block Header with the L2 tx, and then verifies the Accumulation Tree Proof)
+2. If the block time of the latest block header does not satisfy t2, Sequencer is penalized and the challenge is terminated. The user may subsequently initiate inclusion arbitration for the same transaction every t1 on a continuous basis, and Sequencer's inaction will face progressively heavier penalties[^1].
+3. provide the block header of the height of the block in which the L1ToL2 event occurred, and proof of its corresponding L2 tx sequence (same as 1 for arbitration chain verification).
+4. If the block header provided in 3 does not match the user's evidence, the arbitration is terminated.
+5. At this point, both L2 and the user acknowledge that the L1ToL2 event has been generated, and the next step is to verify that L2 contains the event within the specified time.
+6. Provide the accumulator proof of the L2 tx contained in the event.
+7. The arbitration contract verifies the accumulator proof and whether it satisfies the t1 promise (the root of the sequence as part of the L2 output will carry the latest block header information of the arbitration chain recorded by L2 at the time of the submission, so it can determine the time), and penalizes the Sequencer if the verification fails.
+
+* t1: 24 hours
+* t2: 8 hours
+* t4: 2 hours
 
 ## FAQ
 
@@ -88,3 +116,7 @@ There is no transaction pool in Rooch, and the execution result of a transaction
 To summarize:
 
 In Rooch, applications and developers can assume that transactions are immediately determined, and their security depends on a set of counter-incentive mechanisms that have been widely used in blockchain. Of course, the network of counter-incentive mechanisms needs to be gradually constructed, with users and developers participating in it.
+
+[^1]: Eventually the Sequencer will be refused to update its status by the L1 contract. The purpose of this penalty mechanism is to prevent the Sequencer from being malicious, but it can also cause the Sequencer to be unable to provide service.
+This requires a Sequencer rotation mechanism, where malicious Sequencer nodes are forcibly replaced with new nodes.
+Sophisticated replacement of Sequencer nodes relies on the Rooch ecosystem to flourish, so this will be introduced in the next phase of Rooch.

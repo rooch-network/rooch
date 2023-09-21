@@ -24,13 +24,13 @@ import CardSnippet from 'src/@core/components/card-snippet'
 
 /* eslint-enable */
 
-const InvoiceList = () => {
+const StateList = () => {
   // ** State
   const [accessPath, setAccessPath] = useState<string>('/object/0x1')
 
   // ** Hooks
   const dispatch = useAppDispatch()
-  const { data, status, error } = useAppSelector((state) => state.state)
+  const { result, status, error } = useAppSelector((state) => state.state)
 
   const handleSearch = () => {
     dispatch(fetchData({ dispatch, accessPath }))
@@ -100,7 +100,7 @@ const InvoiceList = () => {
             fullHeight={true}
             codes={[
               {
-                code: JSON.stringify(data, null, 2),
+                code: JSON.stringify(result, null, 2),
                 lng: 'json',
               },
             ]}
@@ -111,4 +111,4 @@ const InvoiceList = () => {
   )
 }
 
-export default InvoiceList
+export default StateList

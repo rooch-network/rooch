@@ -16,7 +16,7 @@ import Typography from '@mui/material/Typography'
 import IconButton from '@mui/material/IconButton'
 import CardContent from '@mui/material/CardContent'
 import FormControl from '@mui/material/FormControl'
-import { useTheme } from '@mui/material/styles'
+import { styled, useTheme } from '@mui/material/styles'
 import MenuItem from '@mui/material/MenuItem'
 import Select, { SelectChangeEvent } from '@mui/material/Select'
 import FormControlLabel from '@mui/material/FormControlLabel'
@@ -42,13 +42,14 @@ import { useAuth } from 'src/hooks/useAuth'
 // ** Demo Imports
 import AuthIllustrationWrapper from 'src/views/pages/auth/AuthIllustrationWrapper'
 import { WalletType } from 'src/context/auth/types'
+import Checkbox from '@mui/material/Checkbox'
 
 const schema = yup.object().shape({
-  secretKey: yup.string().min(43).required(),
+  secretKey: yup.string().min(44).required(),
 })
 
 const defaultValues = {
-  secretKey: 'AM4KesRCz7SzQt+F9TK0IvznFGxjUWGgRNlJxbTLW0Ol',
+  secretKey: '',
 }
 
 interface FormData {
@@ -62,6 +63,12 @@ enum InputType {
   Oauth = 'Oauth',
 }
 
+const LinkStyled = styled(Link)(({ theme }) => ({
+  fontSize: '0.875rem',
+  textDecoration: 'none',
+  color: theme.palette.primary.main,
+}))
+
 const LoginPage = () => {
   // hooks
   const auth = useAuth()
@@ -73,37 +80,36 @@ const LoginPage = () => {
   const {
     control,
 
-    //    setError,
+    // setError,
     handleSubmit,
     formState: { errors },
   } = useForm({
     defaultValues,
-    mode: 'onBlur',
+    mode: 'onSubmit',
     resolver: yupResolver(schema),
   })
 
+  // ** State
   const [inputType, setInputType] = useState<InputType>(
     auth.supportWallets.length > 0 ? InputType.Connect : InputType.Import,
   )
-
-  // ** State
   const [selectWallet, setSelectWallet] = useState<WalletType | null>(
     auth.supportWallets.length > 0 ? auth.supportWallets[0].name : null,
   )
+  const [rememberMe, setRememberMe] = useState<boolean>(true)
 
   const handleStatusValue = (e: SelectChangeEvent) => {
     setSelectWallet(e.target.value as WalletType)
   }
 
-  const onSubmit = (data: FormData) => {
-    const { secretKey } = data
-
+  const onSubmit = (data?: FormData) => {
     switch (inputType) {
       case InputType.Connect:
         auth.loginByWallet(selectWallet!)
         break
       case InputType.Import:
-        auth.loginBySecretKey({ key: secretKey, rememberMe: false })
+        const { secretKey } = data!
+        auth.loginBySecretKey({ key: secretKey, rememberMe: rememberMe })
         break
       case InputType.Oauth:
         break
@@ -141,29 +147,31 @@ const LoginPage = () => {
             </Typography>
             <form noValidate autoComplete="off" onSubmit={handleSubmit(onSubmit)}>
               {inputType === InputType.Import ? (
-                <FormControl fullWidth sx={{ mb: 2 }}>
-                  <Controller
-                    name="secretKey"
-                    control={control}
-                    rules={{ required: true }}
-                    render={({ field: { value, onChange, onBlur } }) => (
-                      <TextField
-                        autoFocus
-                        label="Secret Key"
-                        value={value}
-                        onBlur={onBlur}
-                        onChange={onChange}
-                        error={Boolean(errors.secretKey)}
-                        placeholder=""
-                      />
+                <>
+                  <FormControl fullWidth sx={{ mb: 4 }}>
+                    <Controller
+                      name="secretKey"
+                      control={control}
+                      rules={{ required: true }}
+                      render={({ field: { value, onChange, onBlur } }) => (
+                        <TextField
+                          autoFocus
+                          label="Secret Key"
+                          value={value}
+                          onBlur={onBlur}
+                          onChange={onChange}
+                          error={Boolean(errors.secretKey)}
+                          placeholder=""
+                        />
+                      )}
+                    />
+                    {errors.secretKey && (
+                      <FormHelperText sx={{ color: 'error.main' }}>
+                        {errors.secretKey.message}
+                      </FormHelperText>
                     )}
-                  />
-                  {errors.secretKey && (
-                    <FormHelperText sx={{ color: 'error.main' }}>
-                      {errors.secretKey.message}
-                    </FormHelperText>
-                  )}
-                </FormControl>
+                  </FormControl>
+                </>
               ) : (
                 <>
                   <FormControl fullWidth>
@@ -177,7 +185,7 @@ const LoginPage = () => {
                       labelId="invoice-status-select"
                     >
                       {auth.supportWallets.map((value) => (
-                        <MenuItem key={value.name} value={value.name}>
+                        <MenuItem disabled={!value.enable} key={value.name} value={value.name}>
                           {value.name}
                         </MenuItem>
                       ))}
@@ -185,44 +193,65 @@ const LoginPage = () => {
                   </FormControl>
                 </>
               )}
-              <Box
-                sx={{
-                  mb: 4,
-                  display: 'flex',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <FormControlLabel
-                  label=""
-                  control={<></>}
-                  sx={{
-                    '& .MuiFormControlLabel-label': {
-                      fontSize: '0.875rem',
-                      color: 'text.secondary',
-                    },
-                  }}
-                />
-                {auth.supportWallets.length > 0 ? (
-                  <Button
-                    variant="text"
-                    size="small"
-                    onClick={() => {
-                      if (inputType === InputType.Connect) {
-                        setInputType(InputType.Import)
-                      } else {
-                        setInputType(InputType.Connect)
-                      }
+              {auth.supportWallets.length > 0 ? (
+                <>
+                  <Box
+                    sx={{
+                      mb: 4,
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      justifyContent: 'space-between',
                     }}
                   >
-                    {inputType === InputType.Import ? 'Select Account' : 'Import Account'}
-                  </Button>
-                ) : (
-                  <></>
-                )}
-              </Box>
-              <Button fullWidth size="large" type="submit" variant="contained" sx={{ mb: 4 }}>
+                    <FormControlLabel
+                      label={inputType === InputType.Import ? 'Remember Me' : ''}
+                      sx={{
+                        '& .MuiFormControlLabel-label': {
+                          fontSize: '0.875rem',
+                          color: 'text.secondary',
+                        },
+                      }}
+                      control={
+                        inputType === InputType.Import ? (
+                          <Checkbox
+                            checked={rememberMe}
+                            onChange={(e) => setRememberMe(e.target.checked)}
+                          />
+                        ) : (
+                          <></>
+                        )
+                      }
+                    />
+                    <LinkStyled
+                      href="/"
+                      onClick={(event) => {
+                        event.preventDefault()
+                        if (inputType === InputType.Connect) {
+                          setInputType(InputType.Import)
+                        } else {
+                          setInputType(InputType.Connect)
+                        }
+                      }}
+                    >
+                      {' '}
+                      {inputType === InputType.Import ? 'Connect wallet' : 'Import secret key'}
+                    </LinkStyled>
+                  </Box>
+                </>
+              ) : null}
+              <Button
+                fullWidth
+                size="large"
+                type="submit"
+                variant="contained"
+                sx={{ mb: 4 }}
+                onClick={() => {
+                  if (inputType === InputType.Connect) {
+                    onSubmit()
+                  }
+                }}
+              >
                 {inputType}
               </Button>
               <Box
@@ -237,9 +266,15 @@ const LoginPage = () => {
                   New on our platform?
                 </Typography>
                 <Typography>
-                  <Button size="small" variant="text" onClick={createAccount}>
+                  <LinkStyled
+                    href="/"
+                    onClick={(event) => {
+                      event.preventDefault()
+                      createAccount()
+                    }}
+                  >
                     Create an account
-                  </Button>
+                  </LinkStyled>
                 </Typography>
               </Box>
               <Divider sx={{ my: `${theme.spacing(6)} !important` }}>or</Divider>

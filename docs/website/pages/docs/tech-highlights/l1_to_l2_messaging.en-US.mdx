@@ -1,0 +1,72 @@
+## L1 to L2 Messaging
+
+## Overview
+
+L1 to L2 messaging is implemented by L1 triggered L2 transactions. (Asset transfers are based on this mechanism)
+
+Rooch has the ability of multi-chain asset settlement, for each L1, its L1 to L2 process is the same (note: the contract name and its parameters are slightly different on L1 due to different smart contract languages), it is the light node on Rooch that verifies the event from L1 and then executes the L2 transaction:
+
+<img alt="L1 to L2 Messaging" height="400" src="/docs/l1tol2.jpeg" width="800"/>
+
+## L1
+
+L1 needs to generate events for L2 calls that contain all the information needed for the L2 call and the process that took place on L1, which will be parsed by the `rooch_node` and relayed to L2.
+
+1. The user initiates the L1 to L2 request by calling the `call_remote` function in `l1_stub` with the following parameters.
+    1. `action`: the encoded Rooch MoveAction 2.
+    2. `min_gas_amount`: the minimum amount of gas allowed on L2, i.e. an estimate of the value of the call `action`.
+    Considering the processing overhead that L2 requires before calling `action`, the actual overhead will definitely exceed this value. See [Gas Fees](#gas-fees) for details.
+
+    `l1_stub` provides a more user-friendly interface, where the caller only needs to be concerned with the L2 call information and not with message encapsulation and delivery.
+
+2. `l1_stub` will call the `send_l1_to_l2` function of `rooch_transport` to accomplish event logging and gas burning on L1 with the following parameters:
+    1. `msg_sequence
+    2. `msg_sender
+    3. `action` 4.
+    4. `min_gas_amount` 3.
+
+3. `send_l1_to_l2` Emits the `L1ToL2Event` event upon completion of the check, which includes:
+    1. `msg_sequence`
+    2. `msg_sender
+    3. `action`
+    4. `min_gas_amount`
+    5. `from`: the originator of `send_l1_to_l2`. In this case it is `l1_stub`.
+    6. `gas_amount`: Base gas overhead on L2 based on `min_gas_amount` and estimated from `action` size. It is also the main basis for the amount of gas burned on L1.
+    7. `L1ToL2Event_version`: event version number
+
+## L2
+
+1. `rooch_node` listens to the `L1ToL2Event` event, parses its parameters, generates a proof of inclusion of the L1 event (that it happened on L1), and finally encapsulates it in an L2 tx. 2.
+2. pass the L2 tx to executor to validate the L1 event containment proof, executor will use the light node contract corresponding to L1 to validate the event containment proof. 3. after successful validation, execute `L1ToL2Event` event.
+3. execute `action` after successful verification.
+
+<img alt="L1 to L2 Messaging L2 Process" height="413" src="/docs/l1tol2_l2_process.jpeg" width="700"/>
+
+## Gas Fees
+
+Gas Fee is divided into two parts:
+
+1. L1 contract calling overhead
+2. L2 contract calling overhead (realized by L1 combustion)
+
+L1 contract call overhead accounts for most of the overall overhead, while L2 contract overhead is relatively small and has a certain free amount (for most of the asset transfer scenarios, the L2 free amount is more than enough).
+Anything above the free credit will be burned on L1 at a certain percentage:
+
+<img alt="Rooch L1ToL2 Gas Fee" height="450" src="/docs/l1tol2_gas_fee.jpeg" width="500"/>
+
+It's like a Gas Variable speed device, for different chains we just replace the L1 gear (adjust the L2:L1 gas ratio) to automate the combustion on the L1. This way, no matter which L1, the user only needs to be concerned about the overhead of the objective function on L2.
+and does not need to be concerned with the complexity of gas pricing.
+
+Burning will be implemented as a `while loop` in L1, with the following pseudo-code:
+
+    ```
+    i = 0
+    while (i < burn_amount) {
+        i++
+    }
+    ```
+
+## Security
+
+Rooch's L1 to L2 messaging mechanism guarantees that contract calls on L1 are correctly relayed to L2, and that the contract on L2 is responsible for checking the caller on L1 itself.
+This requires that the relevant `sender` information be encapsulated as a parameter to the `action` in `l1_stub.call_remote`.
