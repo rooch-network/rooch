@@ -10,11 +10,8 @@ import {
   TypeTag,
   Arg,
   Bytes,
-  rpcTypes,
-  // AnnotatedFunctionResultView,
-  // TransactionView,
-  // AnnotatedStateView,
-  // TransactionExecutionInfoView,
+  AnnotatedFunctionResultView,
+  AnnotatedStateView,
 } from '../types'
 import { functionIdToStirng, typeTagToString, encodeArg, toHexString } from '../utils'
 
@@ -97,7 +94,7 @@ export class JsonRpcProvider {
     funcId: FunctionId,
     tyArgs?: TypeTag[],
     args?: Arg[],
-  ): Promise<rpcTypes.AnnotatedFunctionResultView> {
+  ): Promise<AnnotatedFunctionResultView> {
     const tyStrArgs = tyArgs?.map((v) => typeTagToString(v))
     const bcsArgs = args?.map((arg) => toHexString(encodeArg(arg))) as any
 
@@ -125,7 +122,7 @@ export class JsonRpcProvider {
   // }
 
   // Get the annotated states by access_path The annotated states include the decoded move value of the state
-  async getAnnotatedStates(accessPath: string): Promise<rpcTypes.AnnotatedStateView | null[]> {
+  async getAnnotatedStates(accessPath: string): Promise<AnnotatedStateView | null[]> {
     return await this.client.rooch_getAnnotatedStates(accessPath)
   }
 

@@ -3,6 +3,5 @@
 export * from './hex'
 export * from './rooch'
 export * from './bytes'
-
-export * as rpcTypes from './rpc'
+export * from './rpc'
 export * as bcsTypes from './bcs'
