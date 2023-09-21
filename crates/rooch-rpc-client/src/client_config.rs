@@ -15,6 +15,7 @@ use serde_with::serde_as;
 use std::fmt::{Display, Formatter, Write};
 
 pub const DEFAULT_EXPIRATION_SECS: u64 = 30;
+pub const ROOCH_TEST_NET_URL: &str = "https://seed-testnet.rooch.network/";
 
 #[serde_as]
 #[derive(Serialize, Deserialize)]
@@ -88,6 +89,15 @@ impl Env {
         }
 
         builder.build(&self.rpc).await
+    }
+
+    pub fn test_net() -> Self {
+        Self {
+            chain_id: RoochChainID::TEST.chain_id().id(),
+            alias: "test".to_string(),
+            rpc: ROOCH_TEST_NET_URL.into(),
+            ws: None,
+        }
     }
 }
 
