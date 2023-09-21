@@ -35,6 +35,10 @@ export class Account implements IAccount {
     this.authorizer = authorizer
   }
 
+  public getAddress(): string {
+    return this.address
+  }
+
   public async runFunction(
     funcId: FunctionId,
     tyArgs: TypeTag[],
