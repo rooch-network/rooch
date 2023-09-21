@@ -43,13 +43,21 @@ impl CommandAction<String> for Init {
         // Prompt user for connect to devnet fullnode if config does not exist.
         if !client_config_path.exists() {
             let env = match std::env::var_os("ROOCH_CONFIG_WITH_RPC_URL") {
-                Some(v) => Some(Env {
-                    //TODO get chain id from env
-                    chain_id: RoochChainID::DEV.chain_id().id(),
-                    alias: "custom".to_string(),
-                    rpc: v.into_string().unwrap(),
-                    ws: None,
-                }),
+                Some(v) => {
+                    let chain_url: Vec<String> = v
+                        .into_string()
+                        .unwrap()
+                        .split(',')
+                        .map(|s| s.to_owned())
+                        .collect();
+                    Some(Env {
+                        chain_id: chain_url[0].parse().unwrap(),
+                        alias: "custom".to_string(),
+                        rpc: chain_url[1].to_owned(),
+                        ws: None,
+                    })
+                }
+
                 None => {
                     println!(
                         "Creating config file [{:?}] with server and rooch native validator.",
@@ -119,7 +127,7 @@ impl CommandAction<String> for Init {
                 let alias = env.alias.clone();
                 ClientConfig {
                     keystore,
-                    envs: vec![env],
+                    envs: vec![env, Env::testnet()],
                     active_address: Some(new_address),
                     active_env: Some(alias),
                 }
