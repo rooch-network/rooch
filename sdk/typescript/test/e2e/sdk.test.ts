@@ -205,7 +205,10 @@ describe('SDK', () => {
       expect(account).toBeDefined()
 
       // create session account
-      const sessionAccount = await account.createSessionAccount(['0x3::empty::empty', '0x1::*::*'], 100)
+      const sessionAccount = await account.createSessionAccount(
+        ['0x3::empty::empty', '0x1::*::*'],
+        100,
+      )
       expect(sessionAccount).toBeDefined()
 
       // run function with sessoin key
