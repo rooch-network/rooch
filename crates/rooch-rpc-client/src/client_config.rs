@@ -91,7 +91,7 @@ impl Env {
         builder.build(&self.rpc).await
     }
 
-    pub fn test_net() -> Self {
+    pub fn testnet() -> Self {
         Self {
             chain_id: RoochChainID::TEST.chain_id().id(),
             alias: "test".to_string(),
