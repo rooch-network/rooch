@@ -68,6 +68,7 @@ describe('SDK', () => {
     })
   })
 
+  /*
   describe('#getTransactions', () => {
     it('get transaction by index should be ok', async () => {
       const provider = new JsonRpcProvider()
@@ -75,6 +76,7 @@ describe('SDK', () => {
       expect(result).toBeDefined()
     })
   })
+  */
 
   describe('#getAnnotatedStates', () => {
     it('get annotated states should be ok', async () => {

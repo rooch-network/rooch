@@ -4,7 +4,15 @@ import { fromHexString } from './hex'
 import { ROOCH_ADDRESS_LENGTH } from '../constants'
 import { AccountAddress, FunctionId, TypeTag, StructTag, Arg } from '../types'
 import * as rooch_types from '../types/bcs'
-import { bytes as Bytes, Seq, Tuple, ListTuple, uint8, BcsSerializer } from '../types/bcs'
+import {
+  bytes as Bytes,
+  Seq,
+  Tuple,
+  ListTuple,
+  uint8,
+  BcsSerializer,
+  serializeU256,
+} from '../types/bcs'
 import { parseFunctionId, normalizeRoochAddress } from './encode'
 
 export function encodeFunctionCall(
@@ -36,11 +44,20 @@ export function typeTagToSCS(ty: TypeTag): rooch_types.TypeTag {
   if (ty === 'U8') {
     return new rooch_types.TypeTagVariantu8()
   }
-  if (ty === 'U128') {
-    return new rooch_types.TypeTagVariantu128()
+  if (ty === 'U16') {
+    return new rooch_types.TypeTagVariantu16()
+  }
+  if (ty === 'U32') {
+    return new rooch_types.TypeTagVariantu32()
   }
   if (ty === 'U64') {
     return new rooch_types.TypeTagVariantu64()
+  }
+  if (ty === 'U128') {
+    return new rooch_types.TypeTagVariantu128()
+  }
+  if (ty === 'U256') {
+    return new rooch_types.TypeTagVariantu256()
   }
   if (ty === 'Address') {
     return new rooch_types.TypeTagVariantaddress()
@@ -168,8 +185,16 @@ function serializeValue(value: any, type: TypeTag, se: BcsSerializer) {
     se.serializeBool(value)
   } else if (type === 'U8') {
     se.serializeU8(value)
+  } else if (type === 'U16') {
+    se.serializeU16(value)
+  } else if (type === 'U32') {
+    se.serializeU32(value)
   } else if (type === 'U64') {
     se.serializeU64(value)
+  } else if (type === 'U128') {
+    se.serializeU128(value)
+  } else if (type === 'U256') {
+    serializeU256(se, value)
   } else if (type === 'Address') {
     const list = addressToListTuple(normalizeRoochAddress(value as string))
     const accountAddress = new rooch_types.AccountAddress(list)
