@@ -4,7 +4,15 @@ import { fromHexString } from './hex'
 import { ROOCH_ADDRESS_LENGTH } from '../constants'
 import { AccountAddress, FunctionId, TypeTag, StructTag, Arg } from '../types'
 import * as rooch_types from '../types/bcs'
-import { bytes as Bytes, Seq, Tuple, ListTuple, uint8, BcsSerializer } from '../types/bcs'
+import {
+  bytes as Bytes,
+  Seq,
+  Tuple,
+  ListTuple,
+  uint8,
+  BcsSerializer,
+  serializeU256,
+} from '../types/bcs'
 import { parseFunctionId, normalizeRoochAddress } from './encode'
 
 export function encodeFunctionCall(
@@ -186,7 +194,7 @@ function serializeValue(value: any, type: TypeTag, se: BcsSerializer) {
   } else if (type === 'U128') {
     se.serializeU128(value)
   } else if (type === 'U256') {
-    se.serializeU256(value)
+    serializeU256(se, value)
   } else if (type === 'Address') {
     const list = addressToListTuple(normalizeRoochAddress(value as string))
     const accountAddress = new rooch_types.AccountAddress(list)
