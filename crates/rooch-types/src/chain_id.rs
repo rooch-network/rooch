@@ -9,6 +9,7 @@ use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
+pub const CHAIN_ID_LOCAL: u64 = 20230104;
 pub const CHAIN_ID_DEV: u64 = 20230103;
 pub const CHAIN_ID_TEST: u64 = 20230102;
 pub const CHAIN_ID_MAIN: u64 = 20230101;
@@ -25,6 +26,10 @@ impl ChainID {
 
     pub fn id(self) -> u64 {
         self.id
+    }
+
+    pub fn is_local(self) -> bool {
+        self.id == CHAIN_ID_LOCAL
     }
 
     pub fn is_dev(self) -> bool {
@@ -71,8 +76,11 @@ impl Into<u64> for ChainID {
 #[derive(Debug, Copy, Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[repr(u64)]
 pub enum BuiltinChainID {
-    /// A ephemeral network just for developer test.
+    /// A temp network just for developer test.
+    /// The data is stored in the temporary directory and will be cleared after restarting.
     #[default]
+    Local = CHAIN_ID_LOCAL,
+    /// A ephemeral network just for developer test.
     Dev = CHAIN_ID_DEV,
     /// Rooch test network.
     /// The data on the chain will be cleaned up periodically.
@@ -84,6 +92,7 @@ pub enum BuiltinChainID {
 impl Display for BuiltinChainID {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
+            BuiltinChainID::Local => write!(f, "local"),
             BuiltinChainID::Dev => write!(f, "dev"),
             BuiltinChainID::Test => write!(f, "test"),
             BuiltinChainID::Main => write!(f, "main"),
@@ -102,6 +111,7 @@ impl TryFrom<u64> for BuiltinChainID {
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
         match value {
+            CHAIN_ID_LOCAL => Ok(BuiltinChainID::Local),
             CHAIN_ID_DEV => Ok(BuiltinChainID::Dev),
             CHAIN_ID_TEST => Ok(BuiltinChainID::Test),
             CHAIN_ID_MAIN => Ok(BuiltinChainID::Main),
@@ -115,6 +125,7 @@ impl FromStr for BuiltinChainID {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            "local" => Ok(BuiltinChainID::Local),
             "dev" => Ok(BuiltinChainID::Dev),
             "test" => Ok(BuiltinChainID::Test),
             "main" => Ok(BuiltinChainID::Main),
@@ -127,6 +138,7 @@ impl TryFrom<ChainID> for BuiltinChainID {
     type Error = anyhow::Error;
     fn try_from(id: ChainID) -> Result<Self, Self::Error> {
         Ok(match id.id() {
+            CHAIN_ID_LOCAL => Self::Local,
             CHAIN_ID_DEV => Self::Dev,
             CHAIN_ID_TEST => Self::Test,
             CHAIN_ID_MAIN => Self::Main,
@@ -142,6 +154,10 @@ impl BuiltinChainID {
 
     pub fn chain_id(self) -> ChainID {
         ChainID::new(self.into())
+    }
+
+    pub fn is_local(self) -> bool {
+        matches!(self, BuiltinChainID::Local)
     }
 
     pub fn is_dev(self) -> bool {
@@ -160,7 +176,10 @@ impl BuiltinChainID {
     }
 
     pub fn is_test_or_dev(self) -> bool {
-        matches!(self, BuiltinChainID::Test | BuiltinChainID::Dev)
+        matches!(
+            self,
+            BuiltinChainID::Test | BuiltinChainID::Dev | BuiltinChainID::Local
+        )
     }
 
     pub fn is_main(self) -> bool {
@@ -169,6 +188,7 @@ impl BuiltinChainID {
 
     pub fn chain_ids() -> Vec<BuiltinChainID> {
         vec![
+            BuiltinChainID::Local,
             BuiltinChainID::Dev,
             BuiltinChainID::Test,
             BuiltinChainID::Main,
@@ -178,6 +198,11 @@ impl BuiltinChainID {
     pub fn genesis_ctx(&self) -> GenesisContext {
         let chain_id = self.chain_id().id;
         match self {
+            BuiltinChainID::Local => {
+                //Local timestamp from 0, developer can manually set the timestamp
+                let timestamp = 0;
+                GenesisContext::new(chain_id, timestamp)
+            }
             BuiltinChainID::Dev => {
                 //Dev timestamp from 0, developer can manually set the timestamp
                 let timestamp = 0;
@@ -284,6 +309,7 @@ impl TryFrom<ChainID> for RoochChainID {
 
     fn try_from(chain_id: ChainID) -> Result<Self, Self::Error> {
         Ok(match chain_id.id() {
+            CHAIN_ID_LOCAL => RoochChainID::LOCAL,
             CHAIN_ID_DEV => RoochChainID::DEV,
             CHAIN_ID_TEST => RoochChainID::TEST,
             CHAIN_ID_MAIN => RoochChainID::MAIN,
@@ -304,6 +330,7 @@ impl FromStr for RoochChainID {
 }
 
 impl RoochChainID {
+    pub const LOCAL: RoochChainID = RoochChainID::Builtin(BuiltinChainID::Local);
     pub const DEV: RoochChainID = RoochChainID::Builtin(BuiltinChainID::Dev);
     pub const TEST: RoochChainID = RoochChainID::Builtin(BuiltinChainID::Test);
     pub const MAIN: RoochChainID = RoochChainID::Builtin(BuiltinChainID::Main);
@@ -366,6 +393,10 @@ impl RoochChainID {
 
     pub fn is_test_or_dev(&self) -> bool {
         self.is_test() || self.is_dev()
+    }
+
+    pub fn is_local(&self) -> bool {
+        matches!(self, Self::Builtin(BuiltinChainID::Local))
     }
 
     pub fn is_dev(&self) -> bool {
