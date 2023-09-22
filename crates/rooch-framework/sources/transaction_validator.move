@@ -1,4 +1,5 @@
 module rooch_framework::transaction_validator {
+    use std::debug;
     use std::error;
     use std::option;
     use moveos_std::storage_context::{Self, StorageContext};
@@ -46,6 +47,9 @@ module rooch_framework::transaction_validator {
     ): TxValidateResult {
 
         // === validate the chain id ===
+        debug::print(&110120);
+        debug::print(&chain_id);
+        debug::print(&chain_id::chain_id(ctx));
         assert!(
             chain_id == chain_id::chain_id(ctx),
             error::invalid_argument(ErrorValidateBadChainId)

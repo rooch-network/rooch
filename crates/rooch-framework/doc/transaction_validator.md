@@ -9,7 +9,8 @@
 -  [Function `validate`](#0x3_transaction_validator_validate)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
+<pre><code><b>use</b> <a href="">0x1::debug</a>;
+<b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
 <b>use</b> <a href="">0x2::tx_result</a>;
@@ -153,6 +154,9 @@ If the authenticator is invaid, abort this function.
 ): TxValidateResult {
 
     // === validate the chain id ===
+    <a href="_print">debug::print</a>(&110120);
+    <a href="_print">debug::print</a>(&<a href="chain_id.md#0x3_chain_id">chain_id</a>);
+    <a href="_print">debug::print</a>(&<a href="chain_id.md#0x3_chain_id_chain_id">chain_id::chain_id</a>(ctx));
     <b>assert</b>!(
         <a href="chain_id.md#0x3_chain_id">chain_id</a> == <a href="chain_id.md#0x3_chain_id_chain_id">chain_id::chain_id</a>(ctx),
         <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_ErrorValidateBadChainId">ErrorValidateBadChainId</a>)
