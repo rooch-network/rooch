@@ -392,7 +392,7 @@ impl RoochChainID {
     }
 
     pub fn is_test_or_dev(&self) -> bool {
-        self.is_test() || self.is_dev()
+        self.is_test() || self.is_dev() || self.is_local()
     }
 
     pub fn is_local(&self) -> bool {

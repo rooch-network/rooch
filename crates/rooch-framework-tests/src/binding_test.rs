@@ -18,7 +18,7 @@ impl RustBindingTest {
         let moveos_store = MoveOSStore::mock_moveos_store()?;
         let rooch_store = RoochStore::mock_rooch_store()?;
         let executor =
-            ExecutorActor::new(RoochChainID::DEV.genesis_ctx(), moveos_store, rooch_store)?;
+            ExecutorActor::new(RoochChainID::LOCAL.genesis_ctx(), moveos_store, rooch_store)?;
         Ok(Self { executor })
     }
 

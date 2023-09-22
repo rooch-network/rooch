@@ -52,7 +52,7 @@ impl RoochTransactionData {
         Self {
             sender,
             sequence_number,
-            chain_id: RoochChainID::DEV.chain_id().id(),
+            chain_id: RoochChainID::LOCAL.chain_id().id(),
             max_gas_amount: GasConfig::DEFAULT_MAX_GAS_AMOUNT,
             action,
         }

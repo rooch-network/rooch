@@ -98,7 +98,7 @@ impl RoochOpt {
     pub fn new_with_temp_store() -> Self {
         RoochOpt {
             base_data_dir: None,
-            chain_id: Some(RoochChainID::DEV),
+            chain_id: Some(RoochChainID::LOCAL),
             store: StoreConfig::default(),
             port: None,
             eth_rpc_url: None,
