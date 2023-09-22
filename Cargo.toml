@@ -36,7 +36,8 @@ members = [
     "crates/rooch-open-rpc-spec",
     "crates/rooch-open-rpc-spec-builder",
     "crates/rooch-open-rpc-macros",
-    "crates/rooch-store"
+    "crates/rooch-store",
+    "crates/rooch-account",
 ]
 
 default-members = [
@@ -97,6 +98,7 @@ rooch-open-rpc-spec = { path = "crates/rooch-open-rpc-spec" }
 rooch-open-rpc-spec-builder = { path = "crates/rooch-open-rpc-spec-builder" }
 rooch-open-rpc-macros = { path = "crates/rooch-open-rpc-macros" }
 rooch-store = { path = "crates/rooch-store" }
+rooch-account = { path = "crates/rooch-account" }
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.

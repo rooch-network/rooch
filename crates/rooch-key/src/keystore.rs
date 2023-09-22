@@ -117,6 +117,7 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData>: Se
     where
         KeyPairType: CoinOperations<Addr, KeyPair>,
     {
+        println!("Debug keystore generate_and_add_new_key");
         let (address, kp, key_pair_type, phrase) =
             generate_new_key_pair::<Addr, KeyPair>(key_pair_type, derivation_path, word_length)?;
         self.add_key_pair_by_key_pair_type(kp, key_pair_type)?;
@@ -217,9 +218,11 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         // Implement this method to add a key pair to the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
+                println!("Debug keystore File");
                 file_keystore.add_key_pair_by_key_pair_type(key_pair, key_pair_type)
             }
             Keystore::InMem(inmem_keystore) => {
+                println!("Debug keystore inMem");
                 inmem_keystore.add_key_pair_by_key_pair_type(key_pair, key_pair_type)
             }
         }
@@ -1073,8 +1076,10 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
     ) -> Result<(), anyhow::Error> {
         self.keystore
             .add_key_pair_by_key_pair_type(key_pair, key_pair_type)?;
+        println!("Debug keystore add_key_pair_by_key_pair_type {:?}", self.keystore);
         //TODO should check test env at here?
         if std::env::var_os("TEST_ENV").is_none() {
+            println!("Debug keystore save {:?}", self.keystore);
             self.save()?;
         }
         Ok(())
@@ -1310,6 +1315,7 @@ impl FileBasedKeystore<RoochAddress, RoochKeyPair> {
         if let Some(path) = &self.path {
             //TODO crypto the keystore
             let store = serde_json::to_string_pretty(&self.keystore)?;
+            println!("Debug keystore save store {:?}", store);
             fs::write(path, store)?;
         }
         Ok(())

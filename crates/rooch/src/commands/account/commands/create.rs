@@ -15,8 +15,12 @@ use rooch_types::{account::AccountModule, error::RoochResult};
 /// any coins will have to transferred afterwards.
 #[derive(Debug, Parser)]
 pub struct CreateCommand {
+    #[clap(short = 'p')]
+    password: String,
+
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
+
 }
 
 impl CreateCommand {

@@ -7110,6 +7110,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "rooch-account"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap 3.2.25",
+ "coerce",
+ "dirs 4.0.0",
+ "dirs-next",
+ "jsonrpsee",
+ "moveos-config",
+ "once_cell",
+ "proptest",
+ "proptest-derive",
+ "rooch-config",
+ "rooch-key",
+ "rooch-types",
+ "schemars",
+ "serde 1.0.188",
+ "serde_json",
+ "serde_with",
+ "serde_yaml 0.9.25",
+ "thiserror",
+ "tonic",
+]
+
+[[package]]
 name = "rooch-config"
 version = "0.1.0"
 dependencies = [
