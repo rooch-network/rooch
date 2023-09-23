@@ -35,21 +35,20 @@ impl SequencerActor {
         rooch_store: RoochStore,
         is_genesis: bool,
     ) -> Result<Self> {
-        let last_order = rooch_store
+        let last_order_opt = rooch_store
             .get_meta_store()
             .get_sequencer_order()?
             .map(|order| order.last_order);
-        let last_order = if is_genesis {
-            last_order.unwrap_or(0u128)
+        if is_genesis || last_order_opt.is_some() {
+            let last_order = last_order_opt.unwrap_or(0u128);
+            Ok(Self {
+                last_order,
+                sequencer_key,
+                rooch_store,
+            })
         } else {
-            last_order.expect("Invalid sequencer order")
-        };
-
-        Ok(Self {
-            last_order,
-            sequencer_key,
-            rooch_store,
-        })
+            Err(anyhow::anyhow!("Invalid sequencer order"))
+        }
     }
 }
 

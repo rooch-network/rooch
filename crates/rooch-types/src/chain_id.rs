@@ -168,14 +168,14 @@ impl BuiltinChainID {
         matches!(self, BuiltinChainID::Test)
     }
 
-    pub fn assert_test_or_dev(self) -> Result<()> {
-        if !self.is_test_or_dev() {
-            bail!("Only support test or dev network.")
+    pub fn assert_test_or_dev_or_local(self) -> Result<()> {
+        if !self.is_test_or_dev_or_local() {
+            bail!("Only support test or dev or local network.")
         }
         Ok(())
     }
 
-    pub fn is_test_or_dev(self) -> bool {
+    pub fn is_test_or_dev_or_local(self) -> bool {
         matches!(
             self,
             BuiltinChainID::Test | BuiltinChainID::Dev | BuiltinChainID::Local
@@ -380,9 +380,9 @@ impl RoochChainID {
         }
     }
 
-    pub fn assert_test_or_dev(&self) -> Result<()> {
-        if !self.is_test_or_dev() {
-            bail!("Only support test or dev chain_id.")
+    pub fn assert_test_or_dev_or_local(&self) -> Result<()> {
+        if !self.is_test_or_dev_or_local() {
+            bail!("Only support test or dev or local chain_id.")
         }
         Ok(())
     }
@@ -391,7 +391,7 @@ impl RoochChainID {
         self.is_test() || self.is_dev() || self.is_main()
     }
 
-    pub fn is_test_or_dev(&self) -> bool {
+    pub fn is_test_or_dev_or_local(&self) -> bool {
         self.is_test() || self.is_dev() || self.is_local()
     }
 
