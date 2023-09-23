@@ -19,6 +19,11 @@ use std::string::String;
 
 use crate::keypair::KeyPairType;
 
+use chacha20poly1305::{
+    aead::{Aead, KeyInit},
+    XChaCha20Poly1305,
+};
+
 // Purpose
 /// Ed25519 follows SLIP-0010 using hardened path: m/44'/784'/0'/0'/{index}'
 /// Note that the purpose node is used to distinguish signature auth validator ids.
@@ -50,7 +55,16 @@ impl CoinOperations<RoochAddress, RoochKeyPair> for KeyPairType {
         let derived = derive_ed25519_private_key(seed, &indexes);
         let sk = Ed25519PrivateKey::from_bytes(&derived)
             .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
-        let kp: Ed25519KeyPair = sk.into();
+        let mut nounce = [0u8; 24];
+        nounce.copy_from_slice(&seed[..24]);
+        let mut encryption_key = [0u8; 32];
+        encryption_key.copy_from_slice(&seed[24..56]);
+        let encrypted_sk = encrypt_private_key(sk.as_bytes(), &nounce, &encryption_key)
+            .expect("Encryption failed");
+        let kp: Ed25519KeyPair = Ed25519KeyPair::from(
+            Ed25519PrivateKey::from_bytes(&encrypted_sk)
+                .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
+        );
         let address: RoochAddress = kp.public().into();
         Ok((address, kp.into())) // Cast to KeyPair
     }
@@ -65,11 +79,19 @@ impl CoinOperations<EthereumAddress, Secp256k1RecoverableKeyPair> for KeyPairTyp
         let path = validate_path(self, derivation_path)?;
         let child_xprv = XPrv::derive_from_path(seed, &path)
             .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
+        let mut nounce = [0u8; 24];
+        nounce.copy_from_slice(&seed[..24]);
+        let mut encryption_key = [0u8; 32];
+        encryption_key.copy_from_slice(&seed[24..56]);
+        let encrypted_sk = encrypt_private_key(
+            child_xprv.private_key().to_bytes().as_slice(),
+            &nounce,
+            &encryption_key,
+        )
+        .expect("Encryption failed");
         let kp = Secp256k1RecoverableKeyPair::from(
-            Secp256k1RecoverablePrivateKey::from_bytes(
-                child_xprv.private_key().to_bytes().as_slice(),
-            )
-            .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
+            Secp256k1RecoverablePrivateKey::from_bytes(&encrypted_sk)
+                .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
         );
         let address: EthereumAddress = EthereumAddress::from(kp.public.clone());
         Ok((address, kp)) // Cast to KeyPair
@@ -148,12 +170,14 @@ pub fn generate_new_key_pair<Addr, KeyPair>(
     key_pair_type: KeyPairType,
     derivation_path: Option<DerivationPath>,
     word_length: Option<String>,
+    password: Option<String>,
 ) -> Result<(Addr, KeyPair, KeyPairType, String), anyhow::Error>
 where
     KeyPairType: CoinOperations<Addr, KeyPair>,
 {
     let mnemonic = Mnemonic::new(parse_word_length(word_length)?, Language::English);
-    let seed = Seed::new(&mnemonic, "");
+    let password_str = password.as_deref().unwrap_or("");
+    let seed = Seed::new(&mnemonic, password_str);
 
     let (address, key_pair) =
         key_pair_type.derive_key_pair_from_path(seed.as_bytes(), derivation_path)?;
@@ -164,6 +188,23 @@ where
         key_pair_type,
         mnemonic.phrase().to_string(),
     ))
+}
+
+// Encrypt the private key using XChaCha20Poly1305
+fn encrypt_private_key(
+    private_key: &[u8],
+    nonce: &[u8; 24],
+    encryption_key: &[u8; 32],
+) -> Result<Vec<u8>, anyhow::Error> {
+    // Create a XChaCha20Poly1305 cipher with the key
+    let cipher = XChaCha20Poly1305::new_from_slice(encryption_key)?;
+    // Encrypt the private key data with a tag
+    let ciphertext_with_tag = cipher
+        .encrypt(nonce.into(), private_key.as_ref())
+        .expect("Encryption failed");
+    // Extract only the encrypted data (remove the tag)
+    let ciphertext = &ciphertext_with_tag[..ciphertext_with_tag.len() - 16]; // 16 bytes for the tag
+    Ok(ciphertext.to_vec())
 }
 
 fn parse_word_length(s: Option<String>) -> Result<MnemonicType, anyhow::Error> {

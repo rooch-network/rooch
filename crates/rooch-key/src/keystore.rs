@@ -113,12 +113,17 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData>: Se
         key_pair_type: KeyPairType,
         derivation_path: Option<DerivationPath>,
         word_length: Option<String>,
+        password: Option<String>,
     ) -> Result<(Addr, String, KeyPairType), anyhow::Error>
     where
         KeyPairType: CoinOperations<Addr, KeyPair>,
     {
-        let (address, kp, key_pair_type, phrase) =
-            generate_new_key_pair::<Addr, KeyPair>(key_pair_type, derivation_path, word_length)?;
+        let (address, kp, key_pair_type, phrase) = generate_new_key_pair::<Addr, KeyPair>(
+            key_pair_type,
+            derivation_path,
+            word_length,
+            password,
+        )?;
         self.add_key_pair_by_key_pair_type(kp, key_pair_type)?;
         Ok((address, phrase, key_pair_type))
     }
@@ -773,12 +778,13 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         address: &RoochAddress,
     ) -> Result<AuthenticationKey, anyhow::Error> {
         //TODO define derivation_path for session key
-        let (_address, kp, _key_pair_type, _phrase) = generate_new_key_pair::<
-            RoochAddress,
-            RoochKeyPair,
-        >(
-            KeyPairType::RoochKeyPairType, None, None
-        )?;
+        let (_address, kp, _key_pair_type, _phrase) =
+            generate_new_key_pair::<RoochAddress, RoochKeyPair>(
+                KeyPairType::RoochKeyPairType,
+                None,
+                None,
+                None,
+            )?;
         let authentication_key = kp.public().authentication_key();
         let inner_map = self
             .session_keys
@@ -973,12 +979,13 @@ impl
         address: &EthereumAddress,
     ) -> Result<AuthenticationKey, anyhow::Error> {
         //TODO define derivation_path for session key
-        let (_, kp, _key_pair_type, _phrase) = generate_new_key_pair::<
-            EthereumAddress,
-            Secp256k1RecoverableKeyPair,
-        >(
-            KeyPairType::EthereumKeyPairType, None, None
-        )?;
+        let (_, kp, _key_pair_type, _phrase) =
+            generate_new_key_pair::<EthereumAddress, Secp256k1RecoverableKeyPair>(
+                KeyPairType::EthereumKeyPairType,
+                None,
+                None,
+                None,
+            )?;
         let authentication_key_bytes = address.0.as_bytes().to_vec();
         let authentication_key = AuthenticationKey::new(authentication_key_bytes);
         let inner_map = self

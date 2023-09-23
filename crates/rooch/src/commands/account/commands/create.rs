@@ -23,10 +23,10 @@ impl CreateCommand {
     pub async fn execute(self) -> RoochResult<String> {
         let mut context = self.context_options.build().await?;
 
-        let (new_address, phrase, multichain_id) =
-            context
-                .keystore
-                .generate_and_add_new_key(KeyPairType::RoochKeyPairType, None, None)?;
+        let (new_address, phrase, multichain_id) = context
+            .config
+            .keystore
+            .generate_and_add_new_key(KeyPairType::RoochKeyPairType, None, None, None)?;
 
         let address = AccountAddress::from(new_address).to_hex_literal();
         println!(

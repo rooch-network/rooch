@@ -26,6 +26,9 @@ pub struct Init {
     /// Command line input of custom server URL
     #[clap(short = 's', long = "server-url")]
     pub server_url: Option<String>,
+    /// Command line input of the optional password to encrypt key store
+    #[clap(short = 'p', long = "password")]
+    pub password: Option<String>,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
 }
@@ -135,8 +138,24 @@ impl CommandAction<()> for Init {
             };
 
             if let Some(env) = env {
-                let (new_address, phrase, key_pair_type) =
-                    keystore.generate_and_add_new_key(KeyPairType::RoochKeyPairType, None, None)?;
+                let keystore_path = client_config_path
+                    .parent()
+                    .unwrap_or(&rooch_config_dir()?)
+                    .join(ROOCH_KEYSTORE_FILENAME);
+
+                let keystore_result =
+                    FileBasedKeystore::<RoochAddress, RoochKeyPair>::new(&keystore_path);
+                let mut keystore = match keystore_result {
+                    Ok(file_keystore) => Keystore::File(file_keystore),
+                    Err(error) => return Err(RoochError::GenerateKeyError(error.to_string())),
+                };
+
+                let (new_address, phrase, key_pair_type) = keystore.generate_and_add_new_key(
+                    KeyPairType::RoochKeyPairType,
+                    None,
+                    None,
+                    self.password.clone(),
+                )?;
                 println!(
                     "Generated new keypair for address with type {:?} [{new_address}]",
                     key_pair_type.type_of()

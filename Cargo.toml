@@ -205,6 +205,7 @@ bs58 = "0.5.0"
 dirs-next = "2.0.0"
 anstream = { version = "0.3" }
 bigdecimal = { version = "0.3.0", features = ["serde"] }
+chacha20poly1305 = "0.10.1"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES

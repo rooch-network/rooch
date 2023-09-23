@@ -187,6 +187,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
                 KeyPairType::RoochKeyPairType,
                 None,
                 None,
+                None,
             )?;
             server_opt.sequencer_keypair = Some(key_keypair.copy());
             server_opt.proposer_keypair = Some(key_keypair.copy());
