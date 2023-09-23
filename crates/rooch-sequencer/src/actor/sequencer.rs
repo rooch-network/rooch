@@ -22,6 +22,7 @@ use rooch_types::{
     transaction::{TransactionSequenceInfo, TypedTransaction},
     H256,
 };
+use tracing::info;
 
 pub struct SequencerActor {
     last_order: u128,
@@ -33,22 +34,19 @@ impl SequencerActor {
     pub fn new(
         sequencer_key: RoochKeyPair,
         rooch_store: RoochStore,
-        is_genesis: bool,
+        _is_genesis: bool,
     ) -> Result<Self> {
         let last_order_opt = rooch_store
             .get_meta_store()
             .get_sequencer_order()?
             .map(|order| order.last_order);
-        if is_genesis || last_order_opt.is_some() {
-            let last_order = last_order_opt.unwrap_or(0u128);
-            Ok(Self {
-                last_order,
-                sequencer_key,
-                rooch_store,
-            })
-        } else {
-            Err(anyhow::anyhow!("Invalid sequencer order"))
-        }
+        let last_order = last_order_opt.unwrap_or(0u128);
+        info!("Load latest sequencer order {:?}", last_order);
+        Ok(Self {
+            last_order,
+            sequencer_key,
+            rooch_store,
+        })
     }
 }
 
