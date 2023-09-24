@@ -27,8 +27,10 @@ These three steps are all initiated by the user, which maximizes flexibility and
 1. state commitment is guaranteed to be validated on L1
 2. only one honest verification node is needed to confirm the L2 state on the arbitration chain.
 
-For non-arbitrated chains, conditions 1 and 2 are not directly satisfied, since arbitrated chains cannot acknowledge messages from other chains. To solve this problem, we need a decentralized relay service that relays messages from the non-arbitration chain (Condition 1) to L2, and then confirms L2's state commitment to the arbitration chain through L2's state commitment to the arbitration chain.
-At the same time, in order to verify condition 1, we also need to relay the block information of L1. For the non-arbitration chain, the prerequisites is as follows:
+In Rooch terminology, a settlement chain refers to a chain that establishes message communication with Rooch but does not provide arbitration services, and an arbitration chain refers to a chain that provides arbitration services on top of the functions of a settlement chain.
+
+For settlement chains, conditions 1 and 2 are not directly satisfied, since arbitrated chains cannot acknowledge messages from other chains. To solve this problem, we need a decentralized relay service that relays messages from the settlement chain (Condition 1) to L2, and then confirms L2's state commitment to the arbitration chain through L2's state commitment to the arbitration chain.
+At the same time, in order to verify condition 1, we also need to relay the block information of L1. For the settlement chain, the prerequisites is as follows:
 
 a. In L2, each L1 light node is realized by contract, and the block data can be relayed by any person. Only one honest relay node is needed to guarantee correctness (light_client in the diagram).
 b. State commitment is guaranteed to be validated on L1 by relay node and condition a (step 3, 4.1 4.2 in the figure)
