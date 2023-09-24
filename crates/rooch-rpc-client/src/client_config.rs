@@ -15,7 +15,7 @@ use serde_with::serde_as;
 use std::fmt::{Display, Formatter, Write};
 
 pub const DEFAULT_EXPIRATION_SECS: u64 = 30;
-pub const ROOCH_TEST_NET_URL: &str = "https://seed-testnet.rooch.network/";
+pub const ROOCH_TEST_NET_URL: &str = "https://dev-seed.rooch.network/";
 
 #[serde_as]
 #[derive(Serialize, Deserialize)]
