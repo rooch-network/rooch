@@ -5,8 +5,14 @@
 import { useState, useEffect } from 'react'
 
 import { useAuth } from 'src/hooks/useAuth'
-import { DataGrid, GridColDef, GridValueGetterParams, GridRenderCellParams } from '@mui/x-data-grid'
+
+import Grid from '@mui/material/Grid'
+import Card from '@mui/material/Card'
+import CardHeader from '@mui/material/CardHeader'
+import CardContent from '@mui/material/CardContent'
 import Button from '@mui/material/Button'
+import Snackbar from '@mui/material/Snackbar'
+import { DataGrid, GridColDef, GridValueGetterParams, GridRenderCellParams } from '@mui/x-data-grid'
 
 // ** Store & Actions Imports
 import { fetchData } from 'src/store/session'
@@ -67,11 +73,12 @@ export default function SessionKeyList() {
   const auth = useAuth()
 
   // ** State
+  const [retryCount, setRetryCount] = useState<number>(0)
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 })
 
   // ** Hooks
   const dispatch = useAppDispatch()
-  const { result, status } = useAppSelector((state) => state.session)
+  const { result, status, error } = useAppSelector((state) => state.session)
 
   // const clipboard = useClipboard()
 
@@ -82,7 +89,7 @@ export default function SessionKeyList() {
     }
 
     // Ignore part of request
-    if ((!result.has_next_page && status === 'finished') || status === 'loading') {
+    if (status === 'finished' || status === 'error' || status === 'loading') {
       return
     }
 
@@ -94,19 +101,40 @@ export default function SessionKeyList() {
         dispatch,
       }),
     )
-  }, [dispatch, paginationModel, result, status])
+  }, [dispatch, auth, paginationModel, result, status, retryCount])
 
   return (
-    <div style={{ height: 400, width: '100%' }}>
-      <DataGrid
-        rows={status === 'finished' ? result : []}
-        loading={status === ('loading' as 'loading')}
-        columns={columns}
-        checkboxSelection
-        pageSizeOptions={[10, 25, 50]}
-        paginationModel={paginationModel}
-        onPaginationModelChange={setPaginationModel}
-      />
-    </div>
+    <Grid item xs={12}>
+      <Card>
+        <CardHeader title="Session Keys" />
+        <CardContent>
+          <DataGrid
+            rows={status === 'finished' ? result : []}
+            loading={status === ('loading' as 'loading')}
+            columns={columns}
+            checkboxSelection
+            pageSizeOptions={[10, 25, 50]}
+            paginationModel={paginationModel}
+            onPaginationModelChange={setPaginationModel}
+            autoHeight
+          />
+          <Snackbar
+            open={!!error}
+            autoHideDuration={6000}
+            message={error}
+            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            action={
+              <Button
+                color="secondary"
+                size="small"
+                onClick={() => setRetryCount((val) => val + 1)}
+              >
+                Retry
+              </Button>
+            }
+          />
+        </CardContent>
+      </Card>
+    </Grid>
   )
 }
