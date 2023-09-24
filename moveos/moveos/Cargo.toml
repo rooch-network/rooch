@@ -29,6 +29,7 @@ itertools = { workspace = true }
 regex = { workspace = true }
 parking_lot = { workspace = true }
 serde_json = { workspace = true }
+backtrace = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }

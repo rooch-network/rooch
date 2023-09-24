@@ -5066,6 +5066,7 @@ name = "moveos"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "backtrace",
  "bcs",
  "clap 3.2.25",
  "codespan",
