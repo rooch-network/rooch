@@ -14,9 +14,11 @@ use std::rc::Rc;
 pub fn build_file_to_module_env(
     pre_compiled_deps: Option<&FullyCompiledProgram>,
     named_address_mapping: BTreeMap<String, NumericalAddress>,
-    deps: &[String],
-    path: String,
+    deps: Vec<String>,
+    path: Vec<String>,
     options: ModelBuilderOptions,
+    targets_sources: Vec<String>,
+    deps_sources: Vec<String>,
 ) -> anyhow::Result<GlobalEnv> {
     let mut env = GlobalEnv::new();
     env.set_extension(options);
@@ -40,10 +42,10 @@ pub fn build_file_to_module_env(
 
     // Step 1: parse the program to get comments and a separation of targets and dependencies.
     let (files, comments_and_compiler_res) =
-        move_compiler::Compiler::from_files(vec![path], deps.to_vec(), named_address_mapping)
+        move_compiler::Compiler::from_files(path, deps, named_address_mapping)
             .set_pre_compiled_lib_opt(pre_compiled_deps)
             .set_flags(move_compiler::Flags::empty().set_sources_shadow_deps(true))
-            .run::<PASS_PARSER>()?;
+            .run_with_sources::<PASS_PARSER>(targets_sources, deps_sources)?;
 
     let (comment_map, compiler) = match comments_and_compiler_res {
         Err(diags) => {

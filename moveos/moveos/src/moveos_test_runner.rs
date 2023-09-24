@@ -35,13 +35,12 @@ use rayon::iter::Either;
 use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::term::termcolor::Buffer;
 use move_model::options::ModelBuilderOptions;
-
 use regex::Regex;
+use std::ffi::CString;
 use std::string::ToString;
 use std::{
     collections::{BTreeMap, BTreeSet, VecDeque},
     fmt::{Debug, Write as FmtWrite},
-    io::Write,
     path::Path,
 };
 use tempfile::NamedTempFile;
@@ -50,7 +49,7 @@ const FIXED_TEMP_PATH: &str = "/tmp/tempfile";
 
 pub struct ProcessedModule {
     module: CompiledModule,
-    source_file: Option<(String, NamedTempFile)>,
+    source_file: Option<(String, String)>,
 }
 
 pub struct CompiledState<'a> {
@@ -144,6 +143,12 @@ impl<'a> CompiledState<'a> {
         self.modules.values().map(|pmod| &pmod.module)
     }
 
+    pub fn source_files_contents(&self) -> impl Iterator<Item = &String> {
+        self.modules
+            .iter()
+            .filter_map(|(_, pmod)| Some(&pmod.source_file.as_ref()?.1))
+    }
+
     pub fn source_files(&self) -> impl Iterator<Item = &String> {
         self.modules
             .iter()
@@ -154,7 +159,7 @@ impl<'a> CompiledState<'a> {
         &mut self,
         named_addr_opt: Option<Symbol>,
         module: CompiledModule,
-        source_file: (String, NamedTempFile),
+        source_file: (String, String),
     ) {
         let id = module.self_id();
         self.check_not_precompiled(&id);
@@ -180,12 +185,14 @@ impl<'a> CompiledState<'a> {
             &module,
         )
         .unwrap();
+        /*
         interface_file
             .reopen()
             .unwrap()
             .write_all(interface_text.as_bytes())
             .unwrap();
-        let source_file = Some((path, interface_file));
+         */
+        let source_file = Some((path, interface_text));
         let processed = ProcessedModule {
             module,
             source_file,
@@ -244,17 +251,26 @@ fn filter_temp_path(input: String) -> String {
 fn compile_source_unit(
     pre_compiled_deps: Option<&FullyCompiledProgram>,
     named_address_mapping: BTreeMap<String, NumericalAddress>,
-    deps: &[String],
-    path: String,
+    deps_sources: &[String],
+    target: String,
 ) -> Result<(AnnotatedCompiledUnit, Option<String>)> {
+    let target_sources = vec![target];
+    let mut deps_pseudo = vec![];
+    for _ in deps_sources {
+        deps_pseudo.push(FIXED_TEMP_PATH.to_string());
+    }
+    let target_pseudo = vec![FIXED_TEMP_PATH.to_string()];
+
     use crate::moveos_test_model_builder::build_file_to_module_env;
     use moveos_verifier::metadata::run_extended_checks;
     let global_env = build_file_to_module_env(
         pre_compiled_deps,
         named_address_mapping.clone(),
-        deps,
-        path.clone(),
+        deps_pseudo.clone(),
+        target_pseudo.clone(),
         ModelBuilderOptions::default(),
+        target_sources.clone(),
+        deps_sources.to_vec(),
     )
     .unwrap();
 
@@ -285,10 +301,11 @@ fn compile_source_unit(
 
     use move_compiler::PASS_COMPILATION;
     let (mut files, comments_and_compiler_res) =
-        move_compiler::Compiler::from_files(vec![path], deps.to_vec(), named_address_mapping)
+        move_compiler::Compiler::from_files(target_pseudo, deps_pseudo, named_address_mapping)
             .set_pre_compiled_lib_opt(pre_compiled_deps)
             .set_flags(move_compiler::Flags::empty().set_sources_shadow_deps(true))
-            .run::<PASS_COMPILATION>()?;
+            .run_with_sources::<PASS_COMPILATION>(target_sources, deps_sources.to_vec())
+            .unwrap();
     let units_or_diags = comments_and_compiler_res
         .map(|(_comments, move_compiler)| move_compiler.into_compiled_units());
 
@@ -326,22 +343,21 @@ fn compile_source_unit(
     }
 }
 
-fn compile_ir_module<'a>(
+fn compile_ir_module_with_source<'a>(
     deps: impl Iterator<Item = &'a CompiledModule>,
-    file_name: &str,
+    file_content: String,
 ) -> Result<CompiledModule> {
     use move_ir_compiler::Compiler as IRCompiler;
-    let code = std::fs::read_to_string(file_name).unwrap();
-    IRCompiler::new(deps.collect()).into_compiled_module(&code)
+    IRCompiler::new(deps.collect()).into_compiled_module(&file_content)
 }
 
-fn compile_ir_script<'a>(
+fn compile_ir_script_with_source<'a>(
     deps: impl Iterator<Item = &'a CompiledModule>,
-    file_name: &str,
+    file_content: String,
 ) -> Result<CompiledScript> {
     use move_ir_compiler::Compiler as IRCompiler;
-    let code = std::fs::read_to_string(file_name).unwrap();
-    let (script, _) = IRCompiler::new(deps.collect()).into_compiled_script_and_source_map(&code)?;
+    let (script, _) =
+        IRCompiler::new(deps.collect()).into_compiled_script_and_source_map(&file_content)?;
     Ok(script)
 }
 
@@ -436,14 +452,18 @@ pub trait MoveOSTestAdapter<'a>: Sized {
                         start_line, command_lines_stop
                     ),
                 };
-                let data_path = data.path().to_str().unwrap();
+                let data_content = unsafe {
+                    CString::from_vec_unchecked(data)
+                        .to_string_lossy()
+                        .to_string()
+                };
                 let compiled = match input {
-                    PrintBytecodeInputChoice::Script => {
-                        Either::Left(compile_ir_script(state.dep_modules(), data_path)?)
-                    }
-                    PrintBytecodeInputChoice::Module => {
-                        Either::Right(compile_ir_module(state.dep_modules(), data_path)?)
-                    }
+                    PrintBytecodeInputChoice::Script => Either::Left(
+                        compile_ir_script_with_source(state.dep_modules(), data_content)?,
+                    ),
+                    PrintBytecodeInputChoice::Module => Either::Right(
+                        compile_ir_module_with_source(state.dep_modules(), data_content)?,
+                    ),
                 };
                 let source_mapping = SourceMapping::new_from_view(
                     match &compiled {
@@ -465,15 +485,19 @@ pub trait MoveOSTestAdapter<'a>: Sized {
                         start_line, command_lines_stop
                     ),
                 };
-                let data_path = data.path().to_str().unwrap();
+                let data_content = unsafe {
+                    CString::from_vec_unchecked(data)
+                        .to_string_lossy()
+                        .to_string()
+                };
                 let state = self.compiled_state();
                 let (named_addr_opt, module, warnings_opt) = match syntax {
                     SyntaxChoice::Source => {
                         let (unit, warnings_opt) = compile_source_unit(
                             state.pre_compiled_deps,
                             state.named_address_mapping.clone(),
-                            &state.source_files().cloned().collect::<Vec<_>>(),
-                            data_path.to_owned(),
+                            &state.source_files_contents().cloned().collect::<Vec<_>>(),
+                            data_content.clone(),
                         )?;
 
                         let (named_addr_opt, module) = match unit {
@@ -493,7 +517,10 @@ pub trait MoveOSTestAdapter<'a>: Sized {
                         (named_addr_opt, module, warnings_opt)
                     }
                     SyntaxChoice::IR => {
-                        let module = compile_ir_module(state.dep_modules(), data_path)?;
+                        let module = compile_ir_module_with_source(
+                            state.dep_modules(),
+                            data_content.clone(),
+                        )?;
                         (None, module, None)
                     }
                 };
@@ -507,7 +534,7 @@ pub trait MoveOSTestAdapter<'a>: Sized {
                     SyntaxChoice::Source => self.compiled_state().add_with_source_file(
                         named_addr_opt,
                         module,
-                        (data_path.to_owned(), data),
+                        (FIXED_TEMP_PATH.to_string(), data_content),
                     ),
                     SyntaxChoice::IR => {
                         self.compiled_state()
@@ -535,15 +562,19 @@ pub trait MoveOSTestAdapter<'a>: Sized {
                         start_line, command_lines_stop
                     ),
                 };
-                let data_path = data.path().to_str().unwrap();
+                let data_content = unsafe {
+                    CString::from_vec_unchecked(data)
+                        .to_string_lossy()
+                        .to_string()
+                };
                 let state = self.compiled_state();
                 let (script, warning_opt) = match syntax {
                     SyntaxChoice::Source => {
                         let (unit, warning_opt) = compile_source_unit(
                             state.pre_compiled_deps,
                             state.named_address_mapping.clone(),
-                            &state.source_files().cloned().collect::<Vec<_>>(),
-                            data_path.to_owned(),
+                            &state.source_files_contents().cloned().collect::<Vec<_>>(),
+                            data_content,
                         )?;
                         match unit {
                             AnnotatedCompiledUnit::Script(annot_script) => (annot_script.named_script.script, warning_opt),
@@ -553,7 +584,10 @@ pub trait MoveOSTestAdapter<'a>: Sized {
                             ),
                         }
                     }
-                    SyntaxChoice::IR => (compile_ir_script(state.dep_modules(), data_path)?, None),
+                    SyntaxChoice::IR => (
+                        compile_ir_script_with_source(state.dep_modules(), data_content)?,
+                        None,
+                    ),
                 };
                 let args = self.compiled_state().resolve_args(args)?;
                 let type_args = self.compiled_state().resolve_type_args(type_args)?;
@@ -817,7 +851,7 @@ pub struct TaskInput<Command> {
     pub start_line: usize,
     pub command_lines_stop: usize,
     pub stop_line: usize,
-    pub data: Option<NamedTempFile>,
+    pub data: Option<Vec<u8>>,
 }
 
 impl<T> TaskInput<T> {
@@ -966,10 +1000,10 @@ pub fn taskify<Command: Debug + Parser>(filename: &Path) -> Result<Vec<TaskInput
         let data = if file_text_vec.iter().all(|s| re_whitespace.is_match(s)) {
             None
         } else {
-            let data = NamedTempFile::new()?;
-            data.reopen()?
-                .write_all(file_text_vec.join("\n").as_bytes())?;
-            Some(data)
+            // let data = NamedTempFile::new()?;
+            // data.reopen()?
+            //    .write_all(file_text_vec.join("\n").as_bytes())?;
+            Some(file_text_vec.join("\n").as_bytes().to_vec())
         };
 
         tasks.push(TaskInput {
