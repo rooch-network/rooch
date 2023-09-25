@@ -93,7 +93,7 @@ impl CommandAction<String> for Init {
                         let chain_id = chain_id
                             .trim()
                             .parse::<u64>()
-                            .unwrap_or(RoochChainID::DEV.chain_id().id());
+                            .unwrap_or(RoochChainID::LOCAL.chain_id().id());
                         Env {
                             chain_id,
                             alias,
