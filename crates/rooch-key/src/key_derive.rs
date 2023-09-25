@@ -21,7 +21,7 @@ use crate::keypair::KeyPairType;
 
 use chacha20poly1305::{
     aead::{Aead, KeyInit},
-    XChaCha20Poly1305,
+    ChaCha20Poly1305,
 };
 
 // Purpose
@@ -55,12 +55,7 @@ impl CoinOperations<RoochAddress, RoochKeyPair> for KeyPairType {
         let derived = derive_ed25519_private_key(seed, &indexes);
         let sk = Ed25519PrivateKey::from_bytes(&derived)
             .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
-        let mut nounce = [0u8; 24];
-        nounce.copy_from_slice(&seed[..24]);
-        let mut encryption_key = [0u8; 32];
-        encryption_key.copy_from_slice(&seed[24..56]);
-        let encrypted_sk = encrypt_private_key(sk.as_bytes(), &nounce, &encryption_key)
-            .expect("Encryption failed");
+        let encrypted_sk = encrypt_private_key(sk.as_bytes(), seed).expect("Encryption failed");
         let kp: Ed25519KeyPair = Ed25519KeyPair::from(
             Ed25519PrivateKey::from_bytes(&encrypted_sk)
                 .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
@@ -79,16 +74,9 @@ impl CoinOperations<EthereumAddress, Secp256k1RecoverableKeyPair> for KeyPairTyp
         let path = validate_path(self, derivation_path)?;
         let child_xprv = XPrv::derive_from_path(seed, &path)
             .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
-        let mut nounce = [0u8; 24];
-        nounce.copy_from_slice(&seed[..24]);
-        let mut encryption_key = [0u8; 32];
-        encryption_key.copy_from_slice(&seed[24..56]);
-        let encrypted_sk = encrypt_private_key(
-            child_xprv.private_key().to_bytes().as_slice(),
-            &nounce,
-            &encryption_key,
-        )
-        .expect("Encryption failed");
+        let encrypted_sk =
+            encrypt_private_key(child_xprv.private_key().to_bytes().as_slice(), seed)
+                .expect("Encryption failed");
         let kp = Secp256k1RecoverableKeyPair::from(
             Secp256k1RecoverablePrivateKey::from_bytes(&encrypted_sk)
                 .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
@@ -190,17 +178,18 @@ where
     ))
 }
 
-// Encrypt the private key using XChaCha20Poly1305
-fn encrypt_private_key(
-    private_key: &[u8],
-    nonce: &[u8; 24],
-    encryption_key: &[u8; 32],
-) -> Result<Vec<u8>, anyhow::Error> {
-    // Create a XChaCha20Poly1305 cipher with the key
-    let cipher = XChaCha20Poly1305::new_from_slice(encryption_key)?;
+// Encrypt the private key using ChaCha20Poly1305
+fn encrypt_private_key(private_key: &[u8], seed: &[u8]) -> Result<Vec<u8>, anyhow::Error> {
+    // Calculate nonce and encryption key from seed
+    let mut nonce = [0u8; 12];
+    nonce.copy_from_slice(&seed[..12]);
+    let mut encryption_key = [0u8; 32];
+    encryption_key.copy_from_slice(&seed[12..44]);
+    // Create a ChaCha20Poly1305 cipher with the key
+    let cipher = ChaCha20Poly1305::new_from_slice(&encryption_key)?;
     // Encrypt the private key data with a tag
     let ciphertext_with_tag = cipher
-        .encrypt(nonce.into(), private_key.as_ref())
+        .encrypt(&nonce.into(), private_key.as_ref())
         .expect("Encryption failed");
     // Extract only the encrypted data (remove the tag)
     let ciphertext = &ciphertext_with_tag[..ciphertext_with_tag.len() - 16]; // 16 bytes for the tag
