@@ -68,46 +68,6 @@ describe('SDK', () => {
     })
   })
 
-  /*
-  describe('#getTransactions', () => {
-    it('get transaction by index should be ok', async () => {
-      /*
-      const provider = new JsonRpcProvider()
-
-      const kp = Ed25519Keypair.deriveKeypair(
-        'nose aspect organ harbor move prepare raven manage lamp consider oil front',
-      )
-      const roochAddress = kp.getPublicKey().toRoochAddress()
-      const authorizer = new PrivateKeyAuth(kp)
-
-      console.log('roochAddress:', roochAddress)
-
-      const account = new Account(provider, roochAddress, authorizer)
-      expect(account).toBeDefined()
-
-      const tx = await account.runFunction(
-        '0x3::account::create_account_entry',
-        [],
-        [
-          {
-            type: 'Address',
-            value: roochAddress,
-          },
-        ],
-        {
-          maxGasAmount: 1000000,
-        },
-      )
-
-      expect(tx).toBeDefined()
-
-      const result = provider.getTransactionsByHash([tx])
-      expect(result).toBeDefined()
-      */
-    })
-  })
-  */
-
   describe('#getAnnotatedStates', () => {
     it('get annotated states should be ok', async () => {
       const provider = new JsonRpcProvider()
