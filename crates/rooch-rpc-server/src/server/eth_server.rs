@@ -256,7 +256,7 @@ impl EthAPIServer for EthServer {
 
         info!("transaction_count source address: {:?}, rooch address: {:?}", address, account_address);
 
-        Ok(self
+        let seq_number = self
             .rpc_service
             .get_states(AccessPath::resource(account_address, Account::struct_tag()))
             .await?
@@ -264,7 +264,11 @@ impl EthAPIServer for EthServer {
             .flatten()
             .map(|state_view| state_view.as_move_state::<Account>())
             .transpose()?
-            .map_or(0.into(), |account| (account.sequence_number - 1).into()))
+            .map_or(0.into(), |account| account.sequence_number.into());
+
+        info!("transaction_count seq_number: {:?}", seq_number);
+
+        Ok(seq_number)
     }
 
     async fn send_raw_transaction(&self, bytes: Bytes) -> RpcResult<H256> {

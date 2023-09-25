@@ -27,7 +27,7 @@ const defaultProvider: MetamaskValueType = {
   disconnect: () => null,
 }
 
-const MetamaskContext = createContext(defaultProvider)
+const MetamaskContext = createContext<MetamaskValueType>(defaultProvider)
 
 const MetamaskProvider = ({ children }: Props) => {
   const [hasProvider, setHasProvider] = useState<boolean>(defaultProvider.hasProvider)
@@ -153,7 +153,7 @@ const MetamaskProvider = ({ children }: Props) => {
     switchChina,
     connect,
     disconnect,
-  }
+  } as MetamaskValueType
 
   return <MetamaskContext.Provider value={values}>{children}</MetamaskContext.Provider>
 }

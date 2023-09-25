@@ -40,6 +40,7 @@ import Spinner from 'src/@core/components/spinner'
 
 // ** Contexts
 import { AuthProvider } from 'src/context/auth/AuthContext'
+import { SessionProvider } from 'src/context/session/SessionContext'
 import { SettingsConsumer, SettingsProvider } from 'src/@core/context/settingsContext'
 
 // ** Styled Components
@@ -132,25 +133,27 @@ const App = (props: ExtendedAppProps) => {
 
         <MetamaskProvider>
           <AuthProvider>
-            <SettingsProvider {...(setConfig ? { pageSettings: setConfig() } : {})}>
-              <SettingsConsumer>
-                {({ settings }) => {
-                  return (
-                    <ThemeComponent settings={settings}>
-                      <Guard authGuard={authGuard} guestGuard={guestGuard}>
-                        {getLayout(<Component {...pageProps} />)}
-                      </Guard>
-                      <ReactHotToast>
-                        <Toaster
-                          position={settings.toastPosition}
-                          toastOptions={{ className: 'react-hot-toast' }}
-                        />
-                      </ReactHotToast>
-                    </ThemeComponent>
-                  )
-                }}
-              </SettingsConsumer>
-            </SettingsProvider>
+            <SessionProvider>
+              <SettingsProvider {...(setConfig ? { pageSettings: setConfig() } : {})}>
+                <SettingsConsumer>
+                  {({ settings }) => {
+                    return (
+                      <ThemeComponent settings={settings}>
+                        <Guard authGuard={authGuard} guestGuard={guestGuard}>
+                          {getLayout(<Component {...pageProps} />)}
+                        </Guard>
+                        <ReactHotToast>
+                          <Toaster
+                            position={settings.toastPosition}
+                            toastOptions={{ className: 'react-hot-toast' }}
+                          />
+                        </ReactHotToast>
+                      </ThemeComponent>
+                    )
+                  }}
+                </SettingsConsumer>
+              </SettingsProvider>
+            </SessionProvider>
           </AuthProvider>
         </MetamaskProvider>
       </CacheProvider>

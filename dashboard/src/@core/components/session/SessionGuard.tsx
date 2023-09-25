@@ -16,7 +16,7 @@ import {
 import { useRouter } from 'next/router'
 
 // ** Hooks Import
-import useSessionAccount from 'src/hooks/useSessionAccount'
+import { useSession } from 'src/hooks/useSessionAccount'
 
 interface Props {
   open: boolean
@@ -86,10 +86,10 @@ interface SessionGuardProps {
 const SessionGuard = (props: SessionGuardProps) => {
   const { children } = props
   const router = useRouter()
-  const { sessionAccount, requestAuthorize } = useSessionAccount()
+  const { account, requestAuthorize } = useSession()
 
   const handleAuth = (scope: Array<string>, maxInactiveInterval: number) => {
-    requestAuthorize(scope, maxInactiveInterval)
+    requestAuthorize && requestAuthorize(scope, maxInactiveInterval)
   }
 
   const hanleLogout = () => {
@@ -104,7 +104,7 @@ const SessionGuard = (props: SessionGuardProps) => {
   }
 
   const isSessionInvalid = () => {
-    return sessionAccount === undefined
+    return account === undefined
   }
 
   return (
