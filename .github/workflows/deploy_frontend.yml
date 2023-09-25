@@ -23,5 +23,5 @@ jobs:
       run: |
         echo "$PRIVATE_KEY" > private_key.pem
         chmod 600 private_key.pem
-        scp -i private_key.pem -r ./ $USER@$HOST:/root/rooch/
-        ssh -i private_key.pem $USER@$HOST "cd /root/rooch/dashboard && pnpm sdk gen && pnpm sdk build && npm install && pnpm dashboard export && pm2 restart dashboard || pm2 start npm --name dashboard -- start"
+        scp -o StrictHostKeyChecking=no -i private_key.pem -r ./ $USER@$HOST:/root/rooch/
+        ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST "cd /root/rooch/dashboard && pnpm sdk gen && pnpm sdk build && npm install && pnpm dashboard export && pm2 restart dashboard || pm2 start npm --name dashboard -- start"
