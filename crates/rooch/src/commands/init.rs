@@ -93,7 +93,7 @@ impl CommandAction<String> for Init {
                         let chain_id = chain_id
                             .trim()
                             .parse::<u64>()
-                            .unwrap_or(RoochChainID::LOCAL.chain_id().id());
+                            .unwrap_or(RoochChainID::DEV.chain_id().id());
                         Env {
                             chain_id,
                             alias,
@@ -127,7 +127,7 @@ impl CommandAction<String> for Init {
                 let alias = env.alias.clone();
                 ClientConfig {
                     keystore,
-                    envs: vec![env, Env::new_devnet_env(), Env::new_testnet_env()],
+                    envs: vec![env, Env::testnet()],
                     active_address: Some(new_address),
                     active_env: Some(alias),
                 }

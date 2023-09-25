@@ -4,6 +4,7 @@
 use crate::gas::table::{initial_cost_schedule, MoveOSGasMeter};
 use crate::vm::moveos_vm::{MoveOSSession, MoveOSVM};
 use anyhow::{bail, ensure, Result};
+use backtrace::Backtrace;
 use move_binary_format::errors::VMError;
 use move_binary_format::errors::{vm_status_of_result, Location, PartialVMError, VMResult};
 use move_core_types::vm_status::{KeptVMStatus, VMStatus};
@@ -339,18 +340,15 @@ impl MoveOS {
 
         // execute main tx
         let execute_result = session.execute_move_action(action);
-        let vm_status = vm_status_of_result(execute_result);
+        let vm_status = vm_status_of_result(execute_result.clone());
 
         // If the user action or post_execute failed, we need respawn the session,
         // and execute system_pre_execute, system_post_execute and user pre_execute, user post_execute.
         let status = match vm_status.clone().keep_or_discard() {
             Ok(status) => {
                 if status != KeptVMStatus::Executed {
-                    return Err((
-                        // The VMError will not be used.
-                        PartialVMError::new(StatusCode::UNKNOWN_STATUS).finish(Location::Undefined),
-                        true,
-                    ));
+                    debug_assert!(execute_result.is_err());
+                    return Err((execute_result.unwrap_err(), true));
                 }
                 session
                     .execute_function_call(post_execute_functions, true)
@@ -359,8 +357,8 @@ impl MoveOS {
             }
             Err(discard_status) => {
                 //This should not happen, if it happens, it means that the VM or verifer has a bug
-                // bail!("Discard status: {:?}", discard_status);
-                panic!("Discard status: {:?}", discard_status);
+                let backtrace = Backtrace::new();
+                panic!("Discard status: {:?}\n{:?}", discard_status, backtrace);
             }
         };
         Ok(status)
@@ -387,8 +385,8 @@ impl MoveOS {
             Ok(kept_status) => kept_status,
             Err(discard_status) => {
                 //This should not happen, if it happens, it means that the VM or verifer has a bug
-                // bail!("Discard status: {:?}", discard_status);
-                panic!("Discard status: {:?}", discard_status);
+                let backtrace = Backtrace::new();
+                panic!("Discard status: {:?}\n{:?}", discard_status, backtrace);
             }
         };
         // update txn result to TxContext
