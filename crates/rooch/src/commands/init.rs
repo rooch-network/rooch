@@ -127,7 +127,7 @@ impl CommandAction<String> for Init {
                 let alias = env.alias.clone();
                 ClientConfig {
                     keystore,
-                    envs: vec![env, Env::testnet()],
+                    envs: vec![env, Env::new_dev_env(), Env::new_test_env()],
                     active_address: Some(new_address),
                     active_env: Some(alias),
                 }
