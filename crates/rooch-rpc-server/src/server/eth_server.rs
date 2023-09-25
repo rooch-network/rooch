@@ -283,12 +283,6 @@ impl EthAPIServer for EthServer {
             "send_raw_transaction decode_calldata_to_action: {:?}",
             action
         );
-<<<<<<< HEAD
-        info!("send_raw_transaction from: {:?}, nonce: {:?}", eth_tx.0.from, eth_tx.0.nonce);
-
-        let tx = TypedTransaction::Ethereum(eth_tx);
-        info!("send_raw_transaction authenticator_info: {:?}", tx.authenticator_info().unwrap());
-=======
         info!(
             "send_raw_transaction from: {:?}, nonce: {:?}",
             eth_tx.0.from, eth_tx.0.nonce
@@ -299,7 +293,6 @@ impl EthAPIServer for EthServer {
             "send_raw_transaction authenticator_info: {:?}",
             tx.authenticator_info().unwrap()
         );
->>>>>>> 0df3125f500b2c17b3c1cb4f29fa02656e6776d1
 
         let hash = tx.tx_hash();
         let _output = self.rpc_service.execute_tx(tx).await?;
