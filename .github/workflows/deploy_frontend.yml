@@ -3,8 +3,8 @@ name: Deploy Frontend
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    paths:
+      - 'dashboard/**'
 
 
 jobs:
@@ -12,8 +12,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
 
     - name: Deploy to GCP VM
       env:
@@ -23,5 +21,4 @@ jobs:
       run: |
         echo "$PRIVATE_KEY" > private_key.pem
         chmod 600 private_key.pem
-        scp -o StrictHostKeyChecking=no -i private_key.pem -r ./ $USER@$HOST:/root/rooch/
-        ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST "cd /root/rooch/dashboard && pnpm sdk gen && pnpm sdk build && npm install && pnpm dashboard export && pm2 restart dashboard || pm2 start npm --name dashboard -- start"
+        ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST "cd /root/rooch && git pull origin main && pnpm install && pnpm sdk gen && pnpm sdk build && pnpm dashboard export && pm2 restart dashboard || pm2 start npm --name dashboard -- start"
