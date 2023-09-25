@@ -14,6 +14,7 @@ import {
   AnnotatedFunctionResultView,
   AnnotatedStateView,
   TransactionResultPageView,
+  ListAnnotatedStateResultPageView,
 } from '../types'
 import { functionIdToStirng, typeTagToString, encodeArg, toHexString } from '../utils'
 
@@ -190,6 +191,14 @@ export class JsonRpcProvider {
   //     limit,
   //   )
   // }
+
+  async listAnnotatedStates(
+    access_path: string,
+    cursor: Uint8Array,
+    limit: number,
+  ): Promise<ListAnnotatedStateResultPageView> {
+    return await this.client.rooch_listAnnotatedStates(access_path, cursor, limit)
+  }
 
   // // List the states by access_path
   // async listStates(

@@ -186,6 +186,7 @@ export class Account implements IAccount {
       console.log(stateView[0].state.value)
 
       const accessPath = `/table/${tableId}`
+      console.log(accessPath)
       const table = await this.provider.getAnnotatedStates(accessPath)
       console.log(table)
     }
