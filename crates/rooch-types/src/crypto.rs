@@ -546,6 +546,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::address::RoochAddress;
+    use ethers::core::k256::ecdsa::signature::Keypair;
     use ethers::utils::keccak256;
     use fastcrypto::{
         ed25519::{Ed25519KeyPair, Ed25519PrivateKey},
