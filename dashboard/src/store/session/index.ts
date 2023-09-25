@@ -36,7 +36,7 @@ export const fetchData = createAsyncThunk('state/fetchData', async (params: Data
   const jp = new JsonRpcProvider()
 
   try {
-    const accessPath = `/resource/${params.account_address}/SessionKeys`
+    const accessPath = `/resource/${params.account_address}/0x3::session_key::SessionKeys`
     let result = await jp.getAnnotatedStates(accessPath)
     params.dispatch(success(convertStatesToSessionKeys(result)))
 

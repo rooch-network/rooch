@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from 'src/hooks/useAuth'
 
 import Grid from '@mui/material/Grid'
+import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
 import CardContent from '@mui/material/CardContent'
@@ -73,7 +74,6 @@ export default function SessionKeyList() {
   const auth = useAuth()
 
   // ** State
-  const [retryCount, setRetryCount] = useState<number>(0)
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 })
 
   // ** Hooks
@@ -101,13 +101,39 @@ export default function SessionKeyList() {
         dispatch,
       }),
     )
-  }, [dispatch, auth, paginationModel, result, status, retryCount])
+  }, [dispatch, auth, paginationModel, result, status])
+
+  const handleRefresh = () => {
+    const defaultAccount = auth.defaultAccount()
+    if (!defaultAccount) {
+      return
+    }
+
+    dispatch(
+      fetchData({
+        cursor: paginationModel.page * paginationModel.pageSize,
+        limit: paginationModel.pageSize,
+        account_address: defaultAccount.address,
+        dispatch,
+      }),
+    )
+  }
 
   return (
     <Grid item xs={12}>
       <Card>
         <CardHeader title="Session Keys" />
         <CardContent>
+          <Box sx={{ textAlign: 'right', marginBottom: '10px' }}>
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              onClick={() => handleRefresh()}
+            >
+              Refresh
+            </Button>
+          </Box>
           <DataGrid
             rows={status === 'finished' ? result : []}
             loading={status === ('loading' as 'loading')}
@@ -124,11 +150,7 @@ export default function SessionKeyList() {
             message={error}
             anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
             action={
-              <Button
-                color="secondary"
-                size="small"
-                onClick={() => setRetryCount((val) => val + 1)}
-              >
+              <Button color="secondary" size="small" onClick={() => handleRefresh()}>
                 Retry
               </Button>
             }
