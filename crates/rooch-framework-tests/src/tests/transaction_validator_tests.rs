@@ -178,7 +178,7 @@ fn test_session_key_rooch() {
 
     // test session key expired
     let update_time_action =
-        TimestampModule::create_fast_forward_seconds_for_dev_action(max_inactive_interval + 1);
+        TimestampModule::create_fast_forward_seconds_for_local_action(max_inactive_interval + 1);
     // because previous transaction is failed, so the sequence number is not increased.
     let tx_data =
         RoochTransactionData::new_for_test(sender, sequence_number + 2, update_time_action);

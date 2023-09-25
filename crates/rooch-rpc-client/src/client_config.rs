@@ -15,7 +15,8 @@ use serde_with::serde_as;
 use std::fmt::{Display, Formatter, Write};
 
 pub const DEFAULT_EXPIRATION_SECS: u64 = 30;
-pub const ROOCH_TEST_NET_URL: &str = "https://dev-seed.rooch.network/";
+pub const ROOCH_DEV_NET_URL: &str = "https://dev-seed.rooch.network/";
+pub const ROOCH_TEST_NET_URL: &str = "https://test-seed.rooch.network/";
 
 #[serde_as]
 #[derive(Serialize, Deserialize)]
@@ -91,10 +92,19 @@ impl Env {
         builder.build(&self.rpc).await
     }
 
-    pub fn testnet() -> Self {
+    pub fn new_dev_env() -> Self {
+        Self {
+            chain_id: RoochChainID::DEV.chain_id().id(),
+            alias: RoochChainID::DEV.chain_name().to_lowercase(),
+            rpc: ROOCH_DEV_NET_URL.into(),
+            ws: None,
+        }
+    }
+
+    pub fn new_test_env() -> Self {
         Self {
             chain_id: RoochChainID::TEST.chain_id().id(),
-            alias: "test".to_string(),
+            alias: RoochChainID::TEST.chain_name().to_lowercase(),
             rpc: ROOCH_TEST_NET_URL.into(),
             ws: None,
         }
@@ -104,8 +114,8 @@ impl Env {
 impl Default for Env {
     fn default() -> Self {
         Env {
-            chain_id: RoochChainID::DEV.chain_id().id(),
-            alias: "default".to_string(),
+            chain_id: RoochChainID::LOCAL.chain_id().id(),
+            alias: RoochChainID::LOCAL.chain_name().to_lowercase(),
             rpc: ServerConfig::default().url(false),
             ws: None,
         }

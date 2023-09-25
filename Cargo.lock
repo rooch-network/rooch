@@ -7673,6 +7673,7 @@ dependencies = [
  "fastcrypto",
  "futures",
  "jsonrpsee",
+ "log",
  "move-core-types",
  "move-resource-viewer",
  "moveos",

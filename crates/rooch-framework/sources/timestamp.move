@@ -84,10 +84,10 @@ module rooch_framework::timestamp {
         update_global_time(ctx, now_microseconds + (timestamp_seconds * MICRO_CONVERSION_FACTOR));
     }
 
-    /// Fast forwards the clock by the given number of seconds, but only if the chain is in dev mode.
-    //TODO find a better way to do this, maybe some module that is only available in dev chain?
-    public entry fun fast_forward_seconds_for_dev(ctx: &mut StorageContext, timestamp_seconds: u64) {
-        assert!(rooch_framework::chain_id::is_dev(ctx), error::invalid_argument(ErrorInvalidTimestamp));
+    /// Fast forwards the clock by the given number of seconds, but only if the chain is in local mode.
+    //TODO find a better way to do this, maybe some module that is only available in local chain?
+    public entry fun fast_forward_seconds_for_local(ctx: &mut StorageContext, timestamp_seconds: u64) {
+        assert!(rooch_framework::chain_id::is_local(ctx), error::invalid_argument(ErrorInvalidTimestamp));
         fast_forward_seconds(ctx, timestamp_seconds);
     }
 }
