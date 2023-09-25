@@ -204,8 +204,8 @@ impl BuiltinChainID {
                 GenesisContext::new(chain_id, timestamp)
             }
             BuiltinChainID::Dev => {
-                //Dev timestamp from 0, developer can manually set the timestamp
-                let timestamp = 0;
+                //Dev network start from Ethereum block height 9685149, timestamp: 1694571540
+                let timestamp = std::time::Duration::from_secs(1694571540).as_micros() as u64;
                 GenesisContext::new(chain_id, timestamp)
             }
             BuiltinChainID::Test => {
