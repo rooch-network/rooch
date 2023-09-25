@@ -115,7 +115,7 @@ impl Default for Env {
     fn default() -> Self {
         Env {
             chain_id: RoochChainID::LOCAL.chain_id().id(),
-            alias: "default".to_string(),
+            alias: RoochChainID::LOCAL.chain_name().to_lowercase(),
             rpc: ServerConfig::default().url(false),
             ws: None,
         }
