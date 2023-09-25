@@ -55,9 +55,10 @@ impl CoinOperations<RoochAddress, RoochKeyPair> for KeyPairType {
         let derived = derive_ed25519_private_key(seed, &indexes);
         let sk = Ed25519PrivateKey::from_bytes(&derived)
             .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
-        let encrypted_sk = encrypt_private_key(sk.as_bytes(), seed).expect("Encryption failed");
+        let (_, encrypted_ciphertext_pk) 
+            = encrypt_private_key(sk.as_bytes(), seed).expect("Encryption failed");
         let kp: Ed25519KeyPair = Ed25519KeyPair::from(
-            Ed25519PrivateKey::from_bytes(&encrypted_sk)
+            Ed25519PrivateKey::from_bytes(&encrypted_ciphertext_pk)
                 .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
         );
         let address: RoochAddress = kp.public().into();
@@ -74,11 +75,11 @@ impl CoinOperations<EthereumAddress, Secp256k1RecoverableKeyPair> for KeyPairTyp
         let path = validate_path(self, derivation_path)?;
         let child_xprv = XPrv::derive_from_path(seed, &path)
             .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
-        let encrypted_sk =
+        let (_, encrypted_ciphertext_pk) =
             encrypt_private_key(child_xprv.private_key().to_bytes().as_slice(), seed)
                 .expect("Encryption failed");
         let kp = Secp256k1RecoverableKeyPair::from(
-            Secp256k1RecoverablePrivateKey::from_bytes(&encrypted_sk)
+            Secp256k1RecoverablePrivateKey::from_bytes(&encrypted_ciphertext_pk)
                 .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
         );
         let address: EthereumAddress = EthereumAddress::from(kp.public.clone());
@@ -179,7 +180,7 @@ where
 }
 
 // Encrypt the private key using ChaCha20Poly1305
-fn encrypt_private_key(private_key: &[u8], seed: &[u8]) -> Result<Vec<u8>, anyhow::Error> {
+pub fn encrypt_private_key(private_key: &[u8], seed: &[u8]) -> Result<(Vec<u8>, Vec<u8>), anyhow::Error> {
     // Calculate nonce and encryption key from seed
     let mut nonce = [0u8; 12];
     nonce.copy_from_slice(&seed[..12]);
@@ -187,13 +188,36 @@ fn encrypt_private_key(private_key: &[u8], seed: &[u8]) -> Result<Vec<u8>, anyho
     encryption_key.copy_from_slice(&seed[12..44]);
     // Create a ChaCha20Poly1305 cipher with the key
     let cipher = ChaCha20Poly1305::new_from_slice(&encryption_key)?;
-    // Encrypt the private key data with a tag
-    let ciphertext_with_tag = cipher
-        .encrypt(&nonce.into(), private_key.as_ref())
-        .expect("Encryption failed");
-    // Extract only the encrypted data (remove the tag)
-    let ciphertext = &ciphertext_with_tag[..ciphertext_with_tag.len() - 16]; // 16 bytes for the tag
-    Ok(ciphertext.to_vec())
+    // Encrypt the private key data to a ciphertext with a tag
+    let ciphertext_with_tag = match cipher.encrypt(&nonce.into(), private_key.as_ref()) {
+        Ok(ciphertext) => ciphertext,
+        Err(_) => return Err(anyhow::Error::msg("Encryption failed")),
+    };
+
+    // Extract the ciphertext without the tag
+    let ciphertext = ciphertext_with_tag[..ciphertext_with_tag.len() - 16].to_vec();
+    
+    Ok((ciphertext_with_tag, ciphertext))
+}
+
+// Decrypt the private key using ChaCha20Poly1305
+pub fn decrypt_private_key(ciphertext_with_tag: &[u8], seed: &[u8]) -> Result<Vec<u8>, anyhow::Error> {
+    // Calculate nonce and encryption key from seed
+    let mut nonce = [0u8; 12];
+    nonce.copy_from_slice(&seed[..12]);
+    let mut encryption_key = [0u8; 32];
+    encryption_key.copy_from_slice(&seed[12..44]);
+
+    // Create a ChaCha20Poly1305 cipher with the key
+    let cipher = ChaCha20Poly1305::new_from_slice(&encryption_key)?;
+
+    // Decrypt the ciphertext to a private key
+    let private_key = match cipher.decrypt(&nonce.into(), ciphertext_with_tag) {
+        Ok(pk) => pk,
+        Err(_) => return Err(anyhow::Error::msg("Decryption failed")),
+    };
+
+    Ok(private_key.to_vec())
 }
 
 fn parse_word_length(s: Option<String>) -> Result<MnemonicType, anyhow::Error> {
