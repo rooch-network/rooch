@@ -1,10 +1,11 @@
-name: Deploy Frontend
+name: Deploy Seed
 
 on:
   workflow_dispatch:
   push:
-    paths:
-      - 'dashboard/**'
+    tags:
+      - '*'
+
 
 
 jobs:
@@ -21,4 +22,4 @@ jobs:
       run: |
         echo "$PRIVATE_KEY" > private_key.pem
         chmod 600 private_key.pem
-        ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST "cd /root/rooch && git pull origin main && pnpm install && pnpm sdk gen && pnpm sdk build && pnpm dashboard export && cd /root/rooch/dashboard && pm2 restart dashboard || pm2 start npm --name dashboard -- start"
+        ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST "cd /root/rooch && git pull origin main && cargo build --release && sudo systemctl restart rooch"
