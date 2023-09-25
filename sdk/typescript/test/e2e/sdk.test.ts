@@ -16,11 +16,11 @@ describe('SDK', () => {
 
   beforeAll(async () => {
     server = new RoochServer()
-    await server.start()
+    //await server.start()
   })
 
   afterAll(async () => {
-    await server.stop()
+    //await server.stop()
   })
 
   describe('#viewFunction', () => {
@@ -239,6 +239,30 @@ describe('SDK', () => {
           maxGasAmount: 100000000,
         })
       }).rejects.toThrow()
+    })
+
+    it('Query session keys should be ok', async () => {
+      const provider = new JsonRpcProvider()
+
+      const kp = Ed25519Keypair.generate()
+      const roochAddress = kp.getPublicKey().toRoochAddress()
+      const authorizer = new PrivateKeyAuth(kp)
+
+      console.log('roochAddress:', roochAddress)
+
+      const account = new Account(provider, roochAddress, authorizer)
+      expect(account).toBeDefined()
+
+      // create session account
+      const sessionAccount = await account.createSessionAccount(
+        ['0x3::empty::empty', '0x1::*::*'],
+        100,
+      )
+      expect(sessionAccount).toBeDefined()
+
+      // query session Keys
+      const sessionKeys = await account.querySessionKeys()
+      expect(sessionKeys).toBeDefined()
     })
   })
 })

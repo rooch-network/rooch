@@ -7,6 +7,14 @@ export interface CallOption {
   maxGasAmount?: number
 }
 
+export interface ISessionKey {
+  authentication_key: string
+  scopes: Array<string>
+  create_time: number
+  last_active_time: number
+  max_inactive_interval: number
+}
+
 export interface IAccount {
   /**
    * Get account address
@@ -55,4 +63,10 @@ export interface IAccount {
     maxInactiveInterval: number,
     opts?: CallOption,
   ): Promise<void>
+
+  /**
+   * Query account's sessionKey
+   *
+   */
+  querySessionKeys(): Promise<ISessionKey[]>
 }

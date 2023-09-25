@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { DEFAULT_MAX_GAS_AMOUNT } from '../constants'
-import { IAccount, CallOption } from './interface'
+import { IAccount, CallOption, ISessionKey } from './interface'
 import { IProvider } from '../provider'
 import { IAuthorizer, IAuthorization, PrivateKeyAuth } from '../auth'
-import { AccountAddress, FunctionId, TypeTag, Arg } from '../types'
+import { AccountAddress, FunctionId, TypeTag, Arg, AnnotatedStateView } from '../types'
 import { BcsSerializer } from '../types/bcs'
 import {
   RoochTransaction,
@@ -175,5 +175,21 @@ export class Account implements IAccount {
         maxGasAmount: 100000000,
       },
     )
+  }
+
+  async querySessionKeys(): Promise<ISessionKey[]> {
+    const accessPath = `/resource/${this.address}/0x3::session_key::SessionKeys`
+    const state = await this.provider.getAnnotatedStates(accessPath)
+    if (state) {
+      const stateView = state as any
+      const tableId = stateView[0].state.value
+      console.log(stateView[0].state.value)
+
+      const accessPath = `/table/${tableId}`
+      const table = await this.provider.getAnnotatedStates(accessPath)
+      console.log(table)
+    }
+
+    return []
   }
 }
