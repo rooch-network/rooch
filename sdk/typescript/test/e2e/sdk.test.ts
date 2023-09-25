@@ -68,16 +68,6 @@ describe('SDK', () => {
     })
   })
 
-  /*
-  describe('#getTransactions', () => {
-    it('get transaction by index should be ok', async () => {
-      const provider = new JsonRpcProvider()
-      const result = provider.getTransactionsByHash([])
-      expect(result).toBeDefined()
-    })
-  })
-  */
-
   describe('#getAnnotatedStates', () => {
     it('get annotated states should be ok', async () => {
       const provider = new JsonRpcProvider()
@@ -106,7 +96,7 @@ describe('SDK', () => {
       const kp2 = Ed25519Keypair.generate()
       await account.registerSessionKey(
         kp2.getPublicKey().toRoochAddress(),
-        '0x3::empty::empty',
+        ['0x3::empty::empty'],
         100,
       )
       const auth = new PrivateKeyAuth(kp2)
@@ -151,7 +141,34 @@ describe('SDK', () => {
       expect(account).toBeDefined()
 
       // create session account
-      const sessionAccount = await account.createSessionAccount('0x3::empty::empty', 100)
+      const sessionAccount = await account.createSessionAccount(['0x3::empty::empty'], 100)
+      expect(sessionAccount).toBeDefined()
+
+      // run function with sessoin key
+      const tx = await sessionAccount.runFunction('0x3::empty::empty', [], [], {
+        maxGasAmount: 100000000,
+      })
+
+      expect(tx).toBeDefined()
+    })
+
+    it('Create session account with multi scopes should be ok', async () => {
+      const provider = new JsonRpcProvider()
+
+      const kp = Ed25519Keypair.generate()
+      const roochAddress = kp.getPublicKey().toRoochAddress()
+      const authorizer = new PrivateKeyAuth(kp)
+
+      console.log('roochAddress:', roochAddress)
+
+      const account = new Account(provider, roochAddress, authorizer)
+      expect(account).toBeDefined()
+
+      // create session account
+      const sessionAccount = await account.createSessionAccount(
+        ['0x3::empty::empty', '0x1::*::*'],
+        100,
+      )
       expect(sessionAccount).toBeDefined()
 
       // run function with sessoin key
@@ -175,7 +192,7 @@ describe('SDK', () => {
       expect(account).toBeDefined()
 
       // create session account
-      const sessionAccount = await account.createSessionAccount('0x3::account::*', 3600, 100)
+      const sessionAccount = await account.createSessionAccount(['0x3::account::*'], 100)
       expect(sessionAccount).toBeDefined()
 
       expect(async () => {

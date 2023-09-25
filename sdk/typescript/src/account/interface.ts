@@ -1,13 +1,18 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { FunctionId, TypeTag, Arg } from '../types'
+import { AccountAddress, FunctionId, TypeTag, Arg } from '../types'
 
 export interface CallOption {
   maxGasAmount?: number
 }
 
 export interface IAccount {
+  /**
+   * Get account address
+   */
+  getAddress(): string
+
   /**
    * Run move function by current account
    *
@@ -31,8 +36,23 @@ export interface IAccount {
    * @param opts CallOption
    */
   createSessionAccount(
-    scope: string,
+    scope: Array<string>,
     maxInactiveInterval: number,
     opts?: CallOption,
   ): Promise<IAccount>
+
+  /**
+   * Create session key
+   *
+   * @param authKey
+   * @param scopes
+   * @param maxInactiveInterval
+   * @param opts
+   */
+  registerSessionKey(
+    authKey: AccountAddress,
+    scopes: Array<string>,
+    maxInactiveInterval: number,
+    opts?: CallOption,
+  ): Promise<void>
 }

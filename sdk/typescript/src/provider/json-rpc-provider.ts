@@ -5,20 +5,20 @@ import fetch from 'isomorphic-fetch'
 import { HTTPTransport, RequestManager } from '@open-rpc/client-js'
 import { JsonRpcClient } from '../generated/client'
 import { Connection, LocalNetConnection } from './connection'
-import { bytes } from '../types/bcs'
 import {
   FunctionId,
   TypeTag,
   Arg,
-  AnnotatedFunctionResultView,
+  Bytes,
   TransactionView,
+  AnnotatedFunctionResultView,
   AnnotatedStateView,
-  // TransactionExecutionInfoView,
+  TransactionResultPageView,
 } from '../types'
 import { functionIdToStirng, typeTagToString, encodeArg, toHexString } from '../utils'
 
 import { ROOCH_LOCAL_CHIAN_ID } from '../constants'
-import { TransactionResultPageView } from '../generated/client/types.ts'
+//import { TransactionResultPageView } from '../generated/client/types.ts'
 
 /**
  * Configuration options for the JsonRpcProvider. If the value of a field is not provided,
@@ -109,7 +109,7 @@ export class JsonRpcProvider {
 
   // Send the signed transaction in bcs hex format
   // This method does not block waiting for the transaction to be executed.
-  async sendRawTransaction(playload: bytes): Promise<string> {
+  async sendRawTransaction(playload: Bytes): Promise<string> {
     return this.client.rooch_sendRawTransaction(playload)
   }
 
