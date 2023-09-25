@@ -1,0 +1,27 @@
+name: Deploy Frontend
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Deploy to GCP VM
+      env:
+        PRIVATE_KEY: ${{ secrets.GCP_SSH_PRIVATE_KEY }}
+        HOST: ${{ secrets.GCP_VM_HOST }}
+        USER: ${{ secrets.GCP_VM_USER }}
+      run: |
+        echo "$PRIVATE_KEY" > private_key.pem
+        chmod 600 private_key.pem
+        scp -i private_key.pem -r ./ $USER@$HOST:/root/rooch/
+        ssh -i private_key.pem $USER@$HOST "cd /root/rooch/dashboard && pnpm sdk gen && pnpm sdk build && npm install && pnpm dashboard export && pm2 restart dashboard || pm2 start npm --name dashboard -- start"

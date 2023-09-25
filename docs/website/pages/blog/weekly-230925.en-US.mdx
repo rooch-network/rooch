@@ -1,0 +1,46 @@
+---
+title: Rooch Weekly 2023-09-25
+description: "Added automatic account creation logic for transferring funds to new accounts, added SDK support for numerical values, refactoring multi-chain IDs, supplemented the document TOC and content, and fixed minor issues"
+author: geometryolife
+category: Rooch Weekly
+date: 2023/09/25
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch's Development Progress
+
+### New features
+
+- **Auto create account for coin transfer to new address via entry function (#823)** (2023-09-20) @Rahman
+- **Feature owen sdk support u16、u32 and u256 (#845)** (2023-09-22) @Owen Wu
+
+### Major refactoring
+
+- **[gh-791] move coin_id to multichain_id. (#794)** (2023-09-18) @feliciss
+
+### Improvements and fixes
+
+- **add weekly 2023-09-18 (#824)** (2023-09-18) @Joe Chen
+- **[Fix Windows Build] Add Error Type In check_open_fds_limit To Fix windows build error (#828)** (2023-09-19) @WGB5445
+- **handle expect and unwrap for RPC to ensure no panic (#830)** (2023-09-19) @Bai Chuan
+- **fix dashboard login & account manager (#833)** (2023-09-20) @sven Tan
+- **docs(miscellaneous): add the contributing guide (#832)** (2023-09-20) @Joe Chen
+- **[doc] Add more diagram for multi-chain settlement (#836)** (2023-09-20) @jolestar
+- **fix/transaction (#834)** (2023-09-20) @sven Tan
+- **docs: add the dashbaord intro document (#837)** (2023-09-21) @Joe Chen
+- **docs(data flow): refine tx & l1tol2 messaging & add l2tol1 messaging (#843)** (2023-09-21) @popcnt
+- **env add test net (#846)** (2023-09-21) @sven Tan
+- **docs(multi-chain): update multi-chain-settlement with content from the latest cross-layer communications article (#848)** (2023-09-21) @popcnt
+- **add rooch documents TOC (#831)** (2023-09-21) @Joe Chen
+- **deploy frontend workflow (#847)** (2023-09-21) @yourmoonlight
+- **fix VM status and print stack trace (#858)** (2023-09-24) @0xPause
+- **[gh-851] fix testnet url link. (#852)** (2023-09-24) @feliciss
+- **docs(multi-chain): clear distinction between settlement and arbitration chains (#859)** (2023-09-24) @popcnt
+
+### Rooch Community Dev Meeting
+
+- Discuss the names of different network nodes = local/dev/test/main
+- To share the preliminary logic of designing gas payment, see [#839](https://github.com/rooch-network/rooch/issues/839)

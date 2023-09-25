@@ -25,10 +25,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub static ROOCH_DEV_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
+pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
     // genesis for integration test, we need to build the stdlib every time for `private_generic` check
     // see moveos/moveos-verifier/src/metadata.rs#L27-L30
-    RoochGenesis::build_with_option(RoochChainID::DEV.genesis_ctx(), BuildOption::Fresh)
+    RoochGenesis::build_with_option(RoochChainID::LOCAL.genesis_ctx(), BuildOption::Fresh)
         .expect("build rooch genesis failed")
 });
 
@@ -264,7 +264,7 @@ mod tests {
     #[test]
     fn test_genesis_init() {
         let genesis = super::RoochGenesis::build_with_option(
-            RoochChainID::DEV.genesis_ctx(),
+            RoochChainID::LOCAL.genesis_ctx(),
             crate::BuildOption::Fresh,
         )
         .expect("build rooch framework failed");

@@ -20,7 +20,7 @@ The core difference between the arbitration/settlement chain in L2 to L1 messagi
 1. The user initiates the L2 to L1 request by calling the `call_remote` function in `l2_stub` with the following parameters.
     1. `action`: coded information about the contract call on L1
 
-2. `l1_stub` will call the `send_l2_to_l1` function in `rooch_transport` to complete the logging of events on L2, with the following parameters:
+2. `l2_stub` will call the `send_l2_to_l1` function in `rooch_transport` to complete the logging of events on L2, with the following parameters:
     1. `msg_sequence
     2. `msg_sender
     3. `action`
@@ -66,6 +66,6 @@ For the arbitration chain, we already have a complete fraud proof mechanism, and
 In order for the settlement chain to be equivalent to the arbitration chain, we need to construct consistent causality, which for the settlement chain implies the following preconditions:
 
 1. the same media completion result record: the proposer needs to record the L2 output in the settlement chain
+![Multi-chain Proposer](/docs/rooch-multi-chain-settlement-l2-to-l1.svg)
 2. the same observer to verify the result record: through the L1 light node on the L2 to complete the L1 result record in the L2 confirmation, to realize the verifier's observation.
-
-Translated with www.DeepL.com/Translator (free version)
+![Multi-chain State Verification](/docs/rooch-multi-chain-settlement-l2-to-l1-flow.svg)

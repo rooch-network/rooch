@@ -62,7 +62,7 @@ pub struct RoochOpt {
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
     pub base_data_dir: Option<PathBuf>,
 
-    /// If dev chainid, start the service with a temporary data store.
+    /// If local chainid, start the service with a temporary data store.
     /// All data will be deleted when the service is stopped.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
@@ -98,7 +98,7 @@ impl RoochOpt {
     pub fn new_with_temp_store() -> Self {
         RoochOpt {
             base_data_dir: None,
-            chain_id: Some(RoochChainID::DEV),
+            chain_id: Some(RoochChainID::LOCAL),
             store: StoreConfig::default(),
             port: None,
             eth_rpc_url: None,
@@ -119,14 +119,14 @@ impl BaseConfig {
         let base_data_dir = match opt.base_data_dir.clone() {
             Some(base_data_dir) if base_data_dir.to_str() == Some("TMP") => temp_dir(),
             Some(base_data_dir) => DataDirPath::PathBuf(base_data_dir),
-            // only dev mode use temp store dir
-            None if chain_id.is_dev() => temp_dir(),
+            // only local network use temp store dir
+            None if chain_id.is_local() => temp_dir(),
             None => DataDirPath::PathBuf(R_DEFAULT_BASE_DATA_DIR.to_path_buf()),
         };
 
         let data_dir = base_data_dir.as_ref().join(chain_id.dir_name());
         if !data_dir.exists() {
-            create_dir_all(data_dir.as_path())?;
+            create_dir_all(data_dir.as_path())?
         }
 
         Ok(Self {

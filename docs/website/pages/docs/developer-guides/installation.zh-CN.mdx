@@ -1,0 +1,90 @@
+# 安装
+
+## 编译安装
+
+### Ubuntu
+
+#### 安装依赖
+
+```shell
+sudo apt install git curl gcc lld pkg-config libssl-dev libclang-dev g++
+```
+
+#### 安装 Rust
+
+```shell
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+#### 克隆源码
+
+```shell
+git clone https://github.com/rooch-network/rooch.git
+```
+
+#### 编译并安装 Rooch
+
+```shell
+cd rooch && cargo build && cp target/debug/rooch ~/.cargo/bin/
+```
+
+### Windows
+
+#### 安装依赖
+
+要在Windows上编译Rooch，您需要安装以下依赖项：
+1. [Build Tools for Visual Studio 2022](https://visualstudio.microsoft.com/downloads/)
+2. [LLVM](https://github.com/llvm/llvm-project/releases/tag/llvmorg-17.0.1)
+3. [Git](https://git-scm.com/downloads)
+
+请确保安装这些依赖项并设置必要的环境变量。
+
+#### 安装 Rust
+下载安装 Windows Rust 工具链 
+1. [https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe](https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe)
+
+#### 克隆源码
+
+```shell
+git clone https://github.com/rooch-network/rooch.git
+```
+
+#### 编译并安装 Rooch
+
+```shell
+cd rooch
+```
+
+```shell
+cargo build
+```
+
+```shell
+cp target/debug/rooch.exe ~/.cargo/bin/
+```
+
+### macOS
+
+TODO
+
+## 二进制安装
+
+### Linux
+
+#### 下载
+
+```shell
+wget https://github.com/rooch-network/rooch/releases/download/v0.1/rooch-ubuntu-latest.zip
+```
+
+#### 解压
+
+```shell
+unzip rooch-ubuntu-latest.zip
+```
+
+#### 安装
+
+```shell
+sudo cp rooch /usr/local/bin
+```

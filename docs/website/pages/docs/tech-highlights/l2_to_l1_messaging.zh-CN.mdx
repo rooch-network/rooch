@@ -20,7 +20,7 @@ Rooch 具备多链资产结算的能力，对于不同角色的 L1 (仲裁链/�
 1. 用户通过调用 `l2_stub` 中的 `call_remote` 函数发起 L2 to L1 请求，所需参数包括:
     1. `action`: 编码后的 L1 上的合约调用信息
 
-2. `l1_stub` 将调用 `rooch_transport` 的 `send_l2_to_l1` 函数完成 L2 上的事件记录，参数包括：
+2. `l2_stub` 将调用 `rooch_transport` 的 `send_l2_to_l1` 函数完成 L2 上的事件记录，参数包括：
    1. `msg_sequence`
    2. `msg_sender`
    3. `action`
@@ -66,5 +66,7 @@ Rooch 具备多链资产结算的能力，对于不同角色的 L1 (仲裁链/�
 为让结算链与仲裁链等效，我们需要构建一致的因果关系，对于结算链，则意味着如下前置条件：
 
 1. 相同媒介完成结果记录：proposer 需要在结算链上记录 L2 output
+![Multi-chain Proposer](/docs/rooch-multi-chain-settlement-l2-to-l1.svg)
 2. 相同的观察者验证结果记录：通过 L2 上的 L1 轻节点完成 L1 结果记录在 L2 的确认，实现 verifier 的观察。
+![Multi-chain State Verification](/docs/rooch-multi-chain-settlement-l2-to-l1-flow.svg)
 

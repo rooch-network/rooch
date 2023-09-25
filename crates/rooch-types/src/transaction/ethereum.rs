@@ -46,7 +46,7 @@ impl EthereumTransactionData {
             access_list: None,
             max_priority_fee_per_gas: None,
             max_fee_per_gas: None,
-            chain_id: Some(U256::from(RoochChainID::DEV.chain_id().id())), // build ethereum chain id from rooch chain id as parsed from MetaMask rooch chain id
+            chain_id: Some(U256::from(RoochChainID::LOCAL.chain_id().id())), // build ethereum chain id from rooch chain id as parsed from MetaMask rooch chain id
             other: OtherFields::default(),
         };
 

@@ -11,18 +11,18 @@ pub struct SwitchCommand {
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
     #[clap(long)]
-    env: String,
+    alias: String,
 }
 
 impl SwitchCommand {
     pub async fn execute(self) -> RoochResult<()> {
         let mut context = self.context_options.build().await?;
-        let env = Some(self.env.clone());
+        let env = Some(self.alias.clone());
 
         if context.config.get_env(&env).is_none() {
             return Err(RoochError::SwitchEnvError(format!(
                 "The environment config for `{}` does not exist",
-                self.env
+                self.alias
             )));
         }
 
@@ -31,7 +31,7 @@ impl SwitchCommand {
 
         println!(
             "The active environment was successfully switched to `{}`",
-            self.env
+            self.alias
         );
 
         Ok(())
