@@ -17,7 +17,7 @@ import {
 } from '../types'
 import { functionIdToStirng, typeTagToString, encodeArg, toHexString } from '../utils'
 
-import { ROOCH_DEV_CHIAN_ID } from '../constants'
+import { ROOCH_LOCAL_CHIAN_ID } from '../constants'
 import { TransactionResultPageView } from '../generated/client/types.ts'
 
 /**
@@ -37,7 +37,7 @@ export type RpcProviderOptions = {
 }
 
 const DEFAULT_OPTIONS: RpcProviderOptions = {
-  chainID: ROOCH_DEV_CHIAN_ID,
+  chainID: ROOCH_LOCAL_CHIAN_ID,
   versionCacheTimeoutInSeconds: 600,
 }
 

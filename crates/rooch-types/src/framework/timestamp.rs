@@ -43,8 +43,8 @@ pub struct TimestampModule<'a> {
 impl<'a> TimestampModule<'a> {
     pub const NOW_MICROSECONDS_FUNCTION_NAME: &'static IdentStr = ident_str!("now_microseconds");
     pub const NOW_SECONDS_FUNCTION_NAME: &'static IdentStr = ident_str!("now_seconds");
-    pub const FAST_FORWARD_SECONDS_FOR_DEV_FUNCTION_NAME: &'static IdentStr =
-        ident_str!("fast_forward_seconds_for_dev");
+    pub const FAST_FORWARD_SECONDS_FOR_LOCAL_FUNCTION_NAME: &'static IdentStr =
+        ident_str!("fast_forward_seconds_for_local");
 
     pub fn now_microseconds(&self) -> Result<u64> {
         let call = FunctionCall::new(
@@ -82,9 +82,9 @@ impl<'a> TimestampModule<'a> {
         Ok(session_key)
     }
 
-    pub fn create_fast_forward_seconds_for_dev_action(seconds: u64) -> MoveAction {
+    pub fn create_fast_forward_seconds_for_local_action(seconds: u64) -> MoveAction {
         MoveAction::Function(FunctionCall::new(
-            Self::function_id(Self::FAST_FORWARD_SECONDS_FOR_DEV_FUNCTION_NAME),
+            Self::function_id(Self::FAST_FORWARD_SECONDS_FOR_LOCAL_FUNCTION_NAME),
             vec![],
             vec![MoveValue::U64(seconds).simple_serialize().unwrap()],
         ))

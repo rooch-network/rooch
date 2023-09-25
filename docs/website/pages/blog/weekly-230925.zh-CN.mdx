@@ -1,0 +1,46 @@
+---
+title: Rooch 周报 2023-09-25
+description: "增加向新账户转帐自动创建账户逻辑，增加 SDK 对数值的支持，重构多链 ID，对文档架构和内容补充，修复小问题"
+author: geometryolife
+category: Rooch Weekly
+date: 2023/09/25
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch 的开发进展
+
+### 新特性
+
+- **Auto create account for coin transfer to new address via entry function (#823)** (2023-09-20) @Rahman
+- **Feature owen sdk support u16、u32 and u256 (#845)** (2023-09-22) @Owen Wu
+
+### 重大重构
+
+- **[gh-791] move coin_id to multichain_id. (#794)** (2023-09-18) @feliciss
+
+### 改进和修复
+
+- **add weekly 2023-09-18 (#824)** (2023-09-18) @Joe Chen
+- **[Fix Windows Build] Add Error Type In check_open_fds_limit To Fix windows build error (#828)** (2023-09-19) @WGB5445
+- **handle expect and unwrap for RPC to ensure no panic (#830)** (2023-09-19) @Bai Chuan
+- **fix dashboard login & account manager (#833)** (2023-09-20) @sven Tan
+- **docs(miscellaneous): add the contributing guide (#832)** (2023-09-20) @Joe Chen
+- **[doc] Add more diagram for multi-chain settlement (#836)** (2023-09-20) @jolestar
+- **fix/transaction (#834)** (2023-09-20) @sven Tan
+- **docs: add the dashbaord intro document (#837)** (2023-09-21) @Joe Chen
+- **docs(data flow): refine tx & l1tol2 messaging & add l2tol1 messaging (#843)** (2023-09-21) @popcnt
+- **env add test net (#846)** (2023-09-21) @sven Tan
+- **docs(multi-chain): update multi-chain-settlement with content from the latest cross-layer communications article (#848)** (2023-09-21) @popcnt
+- **add rooch documents TOC (#831)** (2023-09-21) @Joe Chen
+- **deploy frontend workflow (#847)** (2023-09-21) @yourmoonlight
+- **fix VM status and print stack trace (#858)** (2023-09-24) @0xPause
+- **[gh-851] fix testnet url link. (#852)** (2023-09-24) @feliciss
+- **docs(multi-chain): clear distinction between settlement and arbitration chains (#859)** (2023-09-24) @popcnt
+
+### Rooch 社区开发会议
+
+- 讨论不同网络节点的名称 => local/dev/test/main
+- 分享设计 gas 代付的初步逻辑，参见 [#839](https://github.com/rooch-network/rooch/issues/839)
