@@ -39,6 +39,12 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 
+
+pub const PRIVATE_KEY_ENCRYPTED_FLAG_KEY: &str = "encrypted";
+pub const PRIVATE_KEY_NOT_ENCRYPTED_FLAG: u8 = 0x00;
+pub const PRIVATE_KEY_ENCRYPTED_FLAG: u8 = 0x01;
+
+
 #[derive(Serialize, Deserialize)]
 #[enum_dispatch(AccountKeystore)]
 pub enum Keystore<K: Ord, V> {
@@ -703,7 +709,8 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         self.keys
             .entry(address)
             .or_insert_with(BTreeMap::new)
-            .insert(key_pair_type, key_pair);
+            .insert(key_pair_type, key_pair)
+            .insert();
         Ok(())
     }
 
