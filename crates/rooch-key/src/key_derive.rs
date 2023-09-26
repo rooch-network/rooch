@@ -1,15 +1,19 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use argon2::password_hash::SaltString;
+use argon2::{Argon2, PasswordHasher, PasswordHash, PasswordVerifier};
 use bip32::XPrv;
 use bip32::{ChildNumber, DerivationPath};
 use bip39::{Language, Mnemonic, MnemonicType, Seed};
+use chacha20poly1305::AeadCore;
 use fastcrypto::ed25519::Ed25519KeyPair;
 use fastcrypto::secp256k1::recoverable::{
     Secp256k1RecoverableKeyPair, Secp256k1RecoverablePrivateKey,
 };
 use fastcrypto::traits::KeyPair;
 use fastcrypto::{ed25519::Ed25519PrivateKey, traits::ToFromBytes};
+use rand::rngs::OsRng;
 use rooch_types::address::{EthereumAddress, RoochAddress};
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::RoochError;
@@ -41,6 +45,7 @@ pub trait CoinOperations<Addr, KeyPair> {
         &self,
         seed: &[u8],
         derivation_path: Option<DerivationPath>,
+        password: String,
     ) -> Result<(Addr, KeyPair), RoochError>;
 }
 
@@ -49,16 +54,18 @@ impl CoinOperations<RoochAddress, RoochKeyPair> for KeyPairType {
         &self,
         seed: &[u8],
         derivation_path: Option<DerivationPath>,
+        password: String,
     ) -> Result<(RoochAddress, RoochKeyPair), RoochError> {
         let path = validate_path(self, derivation_path)?;
         let indexes = path.into_iter().map(|i| i.into()).collect::<Vec<_>>();
         let derived = derive_ed25519_private_key(seed, &indexes);
         let sk = Ed25519PrivateKey::from_bytes(&derived)
             .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
-        let (encrypted_ciphertext_pk, tag) =
-            encrypt_private_key(sk.as_bytes(), seed).expect("Encryption failed");
+        let (_, ciphertext, _) =
+            encrypt_private_key(sk.as_bytes(), password).expect("Encryption failed for private key");
+        let hashed_password = encrypt_password(sk.as_bytes(), password).expect("Encryption failed for password");
         let kp: Ed25519KeyPair = Ed25519KeyPair::from(
-            Ed25519PrivateKey::from_bytes(&encrypted_ciphertext_pk)
+            Ed25519PrivateKey::from_bytes(&ciphertext)
                 .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
         );
         let address: RoochAddress = kp.public().into();
@@ -71,15 +78,16 @@ impl CoinOperations<EthereumAddress, Secp256k1RecoverableKeyPair> for KeyPairTyp
         &self,
         seed: &[u8],
         derivation_path: Option<DerivationPath>,
+        password: String,
     ) -> Result<(EthereumAddress, Secp256k1RecoverableKeyPair), RoochError> {
         let path = validate_path(self, derivation_path)?;
         let child_xprv = XPrv::derive_from_path(seed, &path)
             .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
-        let (encrypted_ciphertext_pk, tag) =
-            encrypt_private_key(child_xprv.private_key().to_bytes().as_slice(), seed)
+        let (_, ciphertext, _) =
+            encrypt_private_key(child_xprv.private_key().to_bytes().as_slice(), password)
                 .expect("Encryption failed");
         let kp = Secp256k1RecoverableKeyPair::from(
-            Secp256k1RecoverablePrivateKey::from_bytes(&encrypted_ciphertext_pk)
+            Secp256k1RecoverablePrivateKey::from_bytes(&ciphertext)
                 .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
         );
         let address: EthereumAddress = EthereumAddress::from(kp.public.clone());
@@ -159,17 +167,16 @@ pub fn generate_new_key_pair<Addr, KeyPair>(
     key_pair_type: KeyPairType,
     derivation_path: Option<DerivationPath>,
     word_length: Option<String>,
-    password: Option<String>,
+    password: String,
 ) -> Result<(Addr, KeyPair, KeyPairType, String), anyhow::Error>
 where
     KeyPairType: CoinOperations<Addr, KeyPair>,
 {
     let mnemonic = Mnemonic::new(parse_word_length(word_length)?, Language::English);
-    let password_str = password.as_deref().unwrap_or("");
-    let seed = Seed::new(&mnemonic, password_str);
+    let seed = Seed::new(&mnemonic, "");
 
     let (address, key_pair) =
-        key_pair_type.derive_key_pair_from_path(seed.as_bytes(), derivation_path)?;
+        key_pair_type.derive_key_pair_from_path(seed.as_bytes(), derivation_path, password)?;
 
     Ok((
         address,
@@ -179,22 +186,38 @@ where
     ))
 }
 
+// Encrypt the password using Argon2
+pub fn encrypt_password(private_key: &[u8], password: String) -> Result<String, argon2::password_hash::Error> {
+    // Encrypt private key into a salt
+    let salt = SaltString::encode_b64(private_key)?;
+    // Argon2 with default params (Argon2id v19)
+    let argon2 = Argon2::default();
+    // Hash password to PHC string ($argon2id$v=19$...)
+    let password_hash = argon2
+        .hash_password(password.as_bytes(), &salt)?
+        .to_string();
+    Ok(password_hash)
+}
+
+// Verify the password against Argon2
+pub fn verify_password(password: String, password_hash: String) -> Result<bool, argon2::password_hash::Error> {
+    let parsed_hash = PasswordHash::new(&password_hash)?;
+    Ok(Argon2::default().verify_password(password.as_bytes(), &parsed_hash).is_ok())
+}
+
 // Encrypt the private key using ChaCha20Poly1305
 pub fn encrypt_private_key(
     private_key: &[u8],
-    seed: &[u8],
-) -> Result<(Vec<u8>, Vec<u8>), anyhow::Error> {
-    // Calculate nonce and encryption key from seed
-    let mut nonce = [0u8; 12];
-    nonce.copy_from_slice(&seed[..12]);
-    let mut encryption_key = [0u8; 32];
-    encryption_key.copy_from_slice(&seed[12..44]);
+    password: String,
+) -> Result<(Vec<u8>, Vec<u8>, Vec<u8>), anyhow::Error> {
+    // 96-bits; unique per message
+    let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
 
-    // Create a ChaCha20Poly1305 cipher with the key
-    let cipher = ChaCha20Poly1305::new_from_slice(&encryption_key)?;
+    // Create a ChaCha20Poly1305 cipher with the password
+    let cipher = ChaCha20Poly1305::new_from_slice(&password.as_bytes())?;
 
     // Encrypt the private key data to a ciphertext with a tag
-    let ciphertext_with_tag = match cipher.encrypt(&nonce.into(), private_key.as_ref()) {
+    let ciphertext_with_tag = match cipher.encrypt(&nonce, private_key.as_ref()) {
         Ok(ciphertext) => ciphertext,
         Err(_) => return Err(anyhow::Error::msg("Encryption failed")),
     };
@@ -211,23 +234,18 @@ pub fn encrypt_private_key(
         tag
     };
 
-    Ok((ciphertext, tag))
+    Ok((nonce.to_vec(), ciphertext, tag))
 }
 
 // Decrypt the private key using ChaCha20Poly1305
 pub fn decrypt_private_key(
+    nonce: [u8; 12],
     ciphertext: &[u8],
     tag: [u8; 16],
-    seed: &[u8],
+    password: String,
 ) -> Result<Vec<u8>, anyhow::Error> {
-    // Calculate nonce and encryption key from seed
-    let mut nonce = [0u8; 12];
-    nonce.copy_from_slice(&seed[..12]);
-    let mut encryption_key = [0u8; 32];
-    encryption_key.copy_from_slice(&seed[12..44]);
-
-    // Create a ChaCha20Poly1305 cipher with the key
-    let cipher = ChaCha20Poly1305::new_from_slice(&encryption_key)?;
+    // Create a ChaCha20Poly1305 cipher with the password
+    let cipher = ChaCha20Poly1305::new_from_slice(&password.as_bytes())?;
 
     // Concatenate the tag and the ciphertext to reconstruct ciphertext_with_tag
     let mut ciphertext_with_tag = Vec::with_capacity(tag.len() + ciphertext.len());

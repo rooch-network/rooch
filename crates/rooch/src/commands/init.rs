@@ -3,6 +3,10 @@
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use crate::utils::read_line;
+use argon2::{
+    password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
+    Argon2,
+};
 use async_trait::async_trait;
 use clap::Parser;
 use regex::Regex;
@@ -26,9 +30,6 @@ pub struct Init {
     /// Command line input of custom server URL
     #[clap(short = 's', long = "server-url")]
     pub server_url: Option<String>,
-    /// Command line input of the optional password for the mnemonic phrase
-    #[clap(short = 'p', long = "password")]
-    pub password: Option<String>,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
 }
@@ -150,12 +151,11 @@ impl CommandAction<()> for Init {
                     Err(error) => return Err(RoochError::GenerateKeyError(error.to_string())),
                 };
 
-                let (new_address, phrase, key_pair_type) = keystore.generate_and_add_new_key(
-                    KeyPairType::RoochKeyPairType,
-                    None,
-                    None,
-                    self.password.clone(),
-                )?;
+                let password = rpassword::prompt_password("Enter a password to encrypt the keys in rooch keystore. Empty password leaves an unencrypted key: ").unwrap();
+                println!("Your password is {}", password);
+
+                let (new_address, phrase, key_pair_type) =
+                    keystore.generate_and_add_new_key(KeyPairType::RoochKeyPairType, None, None)?;
                 println!(
                     "Generated new keypair for address with type {:?} [{new_address}]",
                     key_pair_type.type_of()
@@ -166,6 +166,7 @@ impl CommandAction<()> for Init {
                 ClientConfig {
                     keystore_path,
                     envs: vec![env, dev_env],
+                    password: Some(password_hash),
                     active_address: Some(new_address),
                     // make dev env as default env
                     active_env: Some(active_env_alias),
