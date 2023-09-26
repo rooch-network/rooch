@@ -49,7 +49,7 @@ pub enum BuiltinAuthValidator {
 
 impl BuiltinAuthValidator {
     const ROOCH_FLAG: u8 = 0x00;
-    const ETHEREUM_FLAG: u8 = 0x00;
+    const ETHEREUM_FLAG: u8 = 0x01;
 
     pub fn flag(&self) -> u8 {
         match self {

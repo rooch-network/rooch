@@ -71,6 +71,9 @@ importers:
       '@emotion/styled':
         specifier: 11.10.6
         version: 11.10.6(@emotion/react@11.10.6)(@types/react@18.0.28)(react@18.2.0)
+      '@ethersproject/bytes':
+        specifier: ^5.7.0
+        version: 5.7.0
       '@hookform/resolvers':
         specifier: 2.9.11
         version: 2.9.11(react-hook-form@7.43.5)
@@ -2485,6 +2488,16 @@ packages:
       '@ethereumjs/rlp': 4.0.1
       ethereum-cryptography: 2.1.2
       micro-ftch: 0.3.1
+    dev: false
+
+  /@ethersproject/bytes@5.7.0:
+    resolution: {integrity: sha512-nsbxwgFXWh9NyYWo+U8atvmMsSdKJprTcICAkvbBffT75qDocbuggBU0SJiVK2MuTrp0q+xvLkTnGMPK1+uA9A==}
+    dependencies:
+      '@ethersproject/logger': 5.7.0
+    dev: false
+
+  /@ethersproject/logger@5.7.0:
+    resolution: {integrity: sha512-0odtFdXu/XHtjQXJYA3u9G0G8btm0ND5Cu8M7i5vhEcE8/HmF4Lbdqanwyv4uQTr2tx6b7fQRmgLrsnpQlmnig==}
     dev: false
 
   /@floating-ui/core@1.4.1:
@@ -9850,7 +9863,7 @@ packages:
       '@babel/register': 7.22.5(@babel/core@7.22.11)
       babel-core: 7.0.0-bridge.0(@babel/core@7.22.11)
       chalk: 4.1.2
-      flow-parser: 0.185.2
+      flow-parser: 0.206.0
       graceful-fs: 4.2.11
       micromatch: 3.1.10
       neo-async: 2.6.2

@@ -18,6 +18,7 @@ const defaultProvider: MetamaskValueType = {
   loading: true,
   chainId: null,
   hasProvider: false,
+  provider: undefined,
   accounts: [],
   isConnect: false,
   switchChina: async () => Promise.resolve(),
@@ -26,7 +27,7 @@ const defaultProvider: MetamaskValueType = {
   disconnect: () => null,
 }
 
-const MetamaskContext = createContext(defaultProvider)
+const MetamaskContext = createContext<MetamaskValueType>(defaultProvider)
 
 const MetamaskProvider = ({ children }: Props) => {
   const [hasProvider, setHasProvider] = useState<boolean>(defaultProvider.hasProvider)
@@ -145,13 +146,14 @@ const MetamaskProvider = ({ children }: Props) => {
     loading,
     chainId,
     hasProvider,
+    provider: hasProvider && window.ethereum,
     accounts,
     isConnect: hasProvider && Boolean(window.ethereum?.isConnected()),
     addChina,
     switchChina,
     connect,
     disconnect,
-  }
+  } as MetamaskValueType
 
   return <MetamaskContext.Provider value={values}>{children}</MetamaskContext.Provider>
 }

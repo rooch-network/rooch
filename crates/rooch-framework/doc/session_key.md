@@ -15,6 +15,7 @@
 -  [Function `get_session_key`](#0x3_session_key_get_session_key)
 -  [Function `create_session_key`](#0x3_session_key_create_session_key)
 -  [Function `create_session_key_entry`](#0x3_session_key_create_session_key_entry)
+-  [Function `create_session_key_with_multi_scope_entry`](#0x3_session_key_create_session_key_with_multi_scope_entry)
 -  [Function `validate`](#0x3_session_key_validate)
 -  [Function `active_session_key`](#0x3_session_key_active_session_key)
 -  [Function `remove_session_key`](#0x3_session_key_remove_session_key)
@@ -213,6 +214,16 @@ The session key is invalid
 
 
 
+<a name="0x3_session_key_ErrorSessionScopePartLengthNotMatch"></a>
+
+The lengths of the parts of the session's scope do not match.
+
+
+<pre><code><b>const</b> <a href="session_key.md#0x3_session_key_ErrorSessionScopePartLengthNotMatch">ErrorSessionScopePartLengthNotMatch</a>: u64 = 6;
+</code></pre>
+
+
+
 <a name="0x3_session_key_new_session_scope"></a>
 
 ## Function `new_session_scope`
@@ -390,6 +401,60 @@ Get the session key of the account_address by the authentication key
         module_name: scope_module_name,
         function_name: scope_function_name,
     }), max_inactive_interval);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_session_key_create_session_key_with_multi_scope_entry"></a>
+
+## Function `create_session_key_with_multi_scope_entry`
+
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key_with_multi_scope_entry">create_session_key_with_multi_scope_entry</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scope_module_addresses: <a href="">vector</a>&lt;<b>address</b>&gt;, scope_module_names: <a href="">vector</a>&lt;<a href="_String">ascii::String</a>&gt;, scope_function_names: <a href="">vector</a>&lt;<a href="_String">ascii::String</a>&gt;, max_inactive_interval: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key_with_multi_scope_entry">create_session_key_with_multi_scope_entry</a>(
+    ctx: &<b>mut</b> StorageContext,
+    sender: &<a href="">signer</a>,
+    authentication_key: <a href="">vector</a>&lt;u8&gt;,
+    scope_module_addresses: <a href="">vector</a>&lt;<b>address</b>&gt;,
+    scope_module_names: <a href="">vector</a>&lt;std::ascii::String&gt;,
+    scope_function_names: <a href="">vector</a>&lt;std::ascii::String&gt;,
+    max_inactive_interval: u64) {
+    <b>assert</b>!(
+        <a href="_length">vector::length</a>&lt;<b>address</b>&gt;(&scope_module_addresses) == <a href="_length">vector::length</a>&lt;std::ascii::String&gt;(&scope_module_names) &&
+        <a href="_length">vector::length</a>&lt;std::ascii::String&gt;(&scope_module_names) == <a href="_length">vector::length</a>&lt;std::ascii::String&gt;(&scope_function_names),
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="session_key.md#0x3_session_key_ErrorSessionScopePartLengthNotMatch">ErrorSessionScopePartLengthNotMatch</a>)
+    );
+
+    <b>let</b> idx = 0;
+    <b>let</b> scopes = <a href="_empty">vector::empty</a>&lt;<a href="session_key.md#0x3_session_key_SessionScope">SessionScope</a>&gt;();
+
+    <b>while</b>(idx &lt; <a href="_length">vector::length</a>(&scope_module_addresses)){
+        <b>let</b> scope_module_address = <a href="_borrow">vector::borrow</a>(&scope_module_addresses, idx);
+        <b>let</b> scope_module_name = <a href="_borrow">vector::borrow</a>(&scope_module_names, idx);
+        <b>let</b> scope_function_name = <a href="_borrow">vector::borrow</a>(&scope_function_names, idx);
+
+        <a href="_push_back">vector::push_back</a>(&<b>mut</b> scopes, <a href="session_key.md#0x3_session_key_SessionScope">SessionScope</a>{
+            module_address: *scope_module_address,
+            module_name: *scope_module_name,
+            function_name: *scope_function_name,
+        });
+
+        idx = idx + 1;
+    };
+
+    <a href="session_key.md#0x3_session_key_create_session_key">create_session_key</a>(ctx, sender, authentication_key, scopes, max_inactive_interval);
 }
 </code></pre>
 

@@ -35,6 +35,10 @@ export class Account implements IAccount {
     this.authorizer = authorizer
   }
 
+  public getAddress(): string {
+    return this.address
+  }
+
   public async runFunction(
     funcId: FunctionId,
     tyArgs: TypeTag[],
@@ -99,7 +103,7 @@ export class Account implements IAccount {
   }
 
   async createSessionAccount(
-    scope: string,
+    scope: Array<string>,
     maxInactiveInterval: number,
     opts?: CallOption,
   ): Promise<IAccount> {
@@ -116,21 +120,34 @@ export class Account implements IAccount {
 
   async registerSessionKey(
     authKey: AccountAddress,
-    scope: string,
+    scopes: Array<string>,
     maxInactiveInterval: number,
     opts?: CallOption,
   ): Promise<void> {
-    const parts = scope.split('::')
-    if (parts.length !== 3) {
-      throw new Error('invalid scope')
-    }
+    const [scopeModuleAddresss, scopeModuleNames, scopeFunctionNames] = scopes
+      .map((scope: string) => {
+        const parts = scope.split('::')
+        if (parts.length !== 3) {
+          throw new Error('invalid scope')
+        }
 
-    const scopeModuleAddress = parts[0]
-    const scopeModuleName = parts[1]
-    const scopeFunctionName = parts[2]
+        const scopeModuleAddress = parts[0]
+        const scopeModuleName = parts[1]
+        const scopeFunctionName = parts[2]
+        return [scopeModuleAddress, scopeModuleName, scopeFunctionName]
+      })
+      .reduce(
+        (acc: Array<Array<string>>, val: Array<string>) => {
+          acc[0].push(val[0])
+          acc[1].push(val[1])
+          acc[2].push(val[2])
+          return acc
+        },
+        [[], [], []],
+      )
 
     await this.runFunction(
-      '0x3::session_key::create_session_key_entry',
+      '0x3::session_key::create_session_key_with_multi_scope_entry',
       [],
       [
         {
@@ -138,16 +155,16 @@ export class Account implements IAccount {
           value: addressToSeqNumber(authKey),
         },
         {
-          type: 'Address',
-          value: scopeModuleAddress,
+          type: { Vector: 'Address' },
+          value: scopeModuleAddresss,
         },
         {
-          type: 'Ascii',
-          value: scopeModuleName,
+          type: { Vector: 'Ascii' },
+          value: scopeModuleNames,
         },
         {
-          type: 'Ascii',
-          value: scopeFunctionName,
+          type: { Vector: 'Ascii' },
+          value: scopeFunctionNames,
         },
         {
           type: 'U64',
