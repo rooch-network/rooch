@@ -38,7 +38,7 @@ impl CommandAction<()> for StartCommand {
         let rooch_chain_id = self.opt.chain_id.unwrap_or_default();
         let chain_name = rooch_chain_id.chain_name().to_lowercase();
         // When chain_id is not equals to env alias
-        let switch_env = if active_env.alias.to_owned() != chain_name {
+        let switch_env = if active_env.alias != chain_name {
             if RoochChainID::LOCAL == rooch_chain_id {
                 Some(RoochChainID::LOCAL.chain_name().to_lowercase())
             } else if RoochChainID::DEV == rooch_chain_id {
