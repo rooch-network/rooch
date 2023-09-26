@@ -129,7 +129,7 @@ rustc-hex = "1.0"
 rust-embed = "6.8.1"
 rocket = { version = "0.5.0-rc.2", default-features = false }
 itertools = "0.10.5"
-jsonrpsee = { version = "0.20.1", features = ["full"] }
+jsonrpsee = { version = "0.16.3", features = ["full"] }
 jpst = "0.1.1"
 lazy_static = "1.4.0"
 linked-hash-map = "0.5.6"

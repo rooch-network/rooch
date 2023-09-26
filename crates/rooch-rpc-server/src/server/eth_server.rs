@@ -237,9 +237,9 @@ impl EthAPIServer for EthServer {
                 })
             }
             None => {
-                return JsonRpcError::Custom(String::from(
+                return Err(JsonRpcError::Custom(String::from(
                     "newest_block not a number",
-                )).into()
+                )))
             }
         }
     }

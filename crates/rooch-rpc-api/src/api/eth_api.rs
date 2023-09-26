@@ -82,8 +82,7 @@ pub trait EthAPI {
         // because it requires a signer to be available.
         // Please use the `eth_sendRawTransaction` method instead.
         //TODO find a suitable error code
-        // Err(jsonrpsee::core::Error::Custom("eth_sendTransaction is not supported by this server. Please use eth_sendRawTransaction instead.".to_owned()))
-        jsonrpsee::core::Error::Custom("eth_sendTransaction is not supported by this server. Please use eth_sendRawTransaction instead.".to_owned()).into()
+        Err(jsonrpsee::core::Error::Custom("eth_sendTransaction is not supported by this server. Please use eth_sendRawTransaction instead.".to_owned()))
     }
 
     /// Sends signed transaction, returning its hash.
