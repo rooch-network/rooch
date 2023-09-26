@@ -7113,7 +7113,6 @@ name = "rooch"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "argon2",
  "async-trait",
  "bcs",
  "bcs-ext",

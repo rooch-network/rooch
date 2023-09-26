@@ -3,12 +3,9 @@
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use crate::utils::read_line;
-use argon2::{
-    password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
-    Argon2,
-};
 use async_trait::async_trait;
 use clap::Parser;
+use hex::ToHex;
 use regex::Regex;
 use rooch_config::config::Config;
 use rooch_config::server_config::ServerConfig;
@@ -154,8 +151,13 @@ impl CommandAction<()> for Init {
                 let password = rpassword::prompt_password("Enter a password to encrypt the keys in rooch keystore. Empty password leaves an unencrypted key: ").unwrap();
                 println!("Your password is {}", password);
 
-                let (new_address, phrase, key_pair_type) =
-                    keystore.generate_and_add_new_key(KeyPairType::RoochKeyPairType, None, None)?;
+                let (new_address, phrase, key_pair_type, hashed_password, nonce, ciphertext, tag) =
+                    keystore.generate_and_add_new_key(
+                        KeyPairType::RoochKeyPairType,
+                        None,
+                        None,
+                        Some(password),
+                    )?;
                 println!(
                     "Generated new keypair for address with type {:?} [{new_address}]",
                     key_pair_type.type_of()
@@ -166,7 +168,10 @@ impl CommandAction<()> for Init {
                 ClientConfig {
                     keystore_path,
                     envs: vec![env, dev_env],
-                    password: Some(password_hash),
+                    password: Some(hashed_password),
+                    nonce: Some(nonce.encode_hex()),
+                    ciphertext: Some(ciphertext.encode_hex()),
+                    tag: Some(tag.encode_hex()),
                     active_address: Some(new_address),
                     // make dev env as default env
                     active_env: Some(active_env_alias),

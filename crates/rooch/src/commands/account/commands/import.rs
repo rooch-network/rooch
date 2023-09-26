@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::Parser;
+use hex::ToHex;
 use std::fmt::Debug;
 
 use async_trait::async_trait;
@@ -26,10 +27,24 @@ impl CommandAction<()> for ImportCommand {
 
         let mut context = self.context_options.build().await?;
 
-        let address = context
+        let password = rpassword::prompt_password("Enter a password to encrypt the keys in rooch keystore. Empty password leaves an unencrypted key: ").unwrap();
+        println!("Your password is {}", password);
+
+        let (address, password_hash, nonce, ciphertext, tag) = context
             .keystore
-            .import_from_mnemonic(&self.mnemonic_phrase, KeyPairType::RoochKeyPairType, None)
+            .import_from_mnemonic(
+                &self.mnemonic_phrase,
+                KeyPairType::RoochKeyPairType,
+                None,
+                Some(password),
+            )
             .map_err(|e| RoochError::ImportAccountError(e.to_string()))?;
+
+        context.config.password = Some(password_hash);
+        context.config.nonce = Some(nonce.encode_hex());
+        context.config.ciphertext = Some(ciphertext.encode_hex());
+        context.config.tag = Some(tag.encode_hex());
+        context.config.save()?;
 
         println!(
             "Key imported for address on type {:?}: [{address}]",

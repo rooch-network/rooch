@@ -10,9 +10,12 @@ use bip32::DerivationPath;
 use bip39::{Language, Mnemonic, Seed};
 use enum_dispatch::enum_dispatch;
 use fastcrypto::{
+    ed25519::Ed25519PrivateKey,
     hash::Keccak256,
     // TODO replace Secp256k1RecoverableKeyPair and Secp256k1RecoverablePublicKey with native ethereum key pair and pub key
-    secp256k1::recoverable::{Secp256k1RecoverableKeyPair, Secp256k1RecoverablePublicKey},
+    secp256k1::recoverable::{
+        Secp256k1RecoverableKeyPair, Secp256k1RecoverablePrivateKey, Secp256k1RecoverablePublicKey,
+    },
     traits::{RecoverableSigner, ToFromBytes},
 };
 use rand::{rngs::StdRng, SeedableRng};
@@ -47,7 +50,9 @@ pub enum Keystore<K: Ord, V> {
 }
 
 #[enum_dispatch]
-pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData>: Send + Sync {
+pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData, PrivKey>:
+    Send + Sync
+{
     type Transaction;
 
     fn add_key_pair_by_key_pair_type(
@@ -113,15 +118,28 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData>: Se
         key_pair_type: KeyPairType,
         derivation_path: Option<DerivationPath>,
         word_length: Option<String>,
-        password: String,
-    ) -> Result<(Addr, String, KeyPairType), anyhow::Error>
+        password: Option<String>,
+    ) -> Result<(Addr, String, KeyPairType, String, Vec<u8>, Vec<u8>, Vec<u8>), anyhow::Error>
     where
-        KeyPairType: CoinOperations<Addr, KeyPair>,
+        KeyPairType: CoinOperations<Addr, KeyPair, PrivKey>,
     {
-        let (address, kp, key_pair_type, phrase) =
-            generate_new_key_pair::<Addr, KeyPair>(key_pair_type, derivation_path, word_length, password)?;
+        let (address, kp, key_pair_type, hashed_password, nonce, ciphertext, tag, phrase) =
+            generate_new_key_pair::<Addr, KeyPair, PrivKey>(
+                key_pair_type,
+                derivation_path,
+                word_length,
+                password,
+            )?;
         self.add_key_pair_by_key_pair_type(kp, key_pair_type)?;
-        Ok((address, phrase, key_pair_type))
+        Ok((
+            address,
+            phrase,
+            key_pair_type,
+            hashed_password,
+            nonce,
+            ciphertext,
+            tag,
+        ))
     }
 
     fn import_from_mnemonic(
@@ -129,44 +147,72 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData>: Se
         phrase: &str,
         key_pair_type: KeyPairType,
         derivation_path: Option<DerivationPath>,
-    ) -> Result<Addr, anyhow::Error>
+        password: Option<String>,
+    ) -> Result<(Addr, String, Vec<u8>, Vec<u8>, Vec<u8>), anyhow::Error>
     where
-        KeyPairType: CoinOperations<Addr, KeyPair>,
+        KeyPairType: CoinOperations<Addr, KeyPair, PrivKey>,
     {
         let mnemonic = Mnemonic::from_phrase(phrase, Language::English)?;
         let seed = Seed::new(&mnemonic, "");
 
-        let (address, kp) =
-            key_pair_type.derive_key_pair_from_path(seed.as_bytes(), derivation_path)?;
-        {
-            self.add_key_pair_by_key_pair_type(kp, key_pair_type)?;
-            Ok(address)
-        }
+        let sk =
+            key_pair_type.derive_private_key_from_path(seed.as_bytes(), derivation_path.clone())?;
+
+        let (nonce, ciphertext, tag) = key_pair_type
+            .encrypt_private_key(sk, password.clone())
+            .expect("Encryption failed for private key");
+
+        let sk_clone =
+            key_pair_type.derive_private_key_from_path(seed.as_bytes(), derivation_path)?;
+
+        let hashed_password = key_pair_type
+            .encrypt_password(sk_clone, password)
+            .expect("Encryption failed for password");
+
+        let (address, key_pair) =
+            key_pair_type.derive_key_pair_from_ciphertext(ciphertext.clone())?;
+
+        self.add_key_pair_by_key_pair_type(key_pair, key_pair_type)?;
+        Ok((address, hashed_password, nonce, ciphertext, tag))
     }
 
     fn update_address_with_key_pair_from_key_pair_type(
         &mut self,
-        address: &Addr,
+        _address: &Addr,
         phrase: String,
         key_pair_type: KeyPairType,
         derivation_path: Option<DerivationPath>,
-    ) -> Result<KeyPair, anyhow::Error>
+        password: Option<String>,
+    ) -> Result<(KeyPair, String, Vec<u8>, Vec<u8>, Vec<u8>), anyhow::Error>
     where
-        KeyPairType: CoinOperations<Addr, KeyPair>,
+        KeyPairType: CoinOperations<Addr, KeyPair, PrivKey>,
     {
         let mnemonic = Mnemonic::from_phrase(&phrase, Language::English)?;
         let seed = Seed::new(&mnemonic, "");
-        let derivation_path_clone = derivation_path.clone();
 
-        // Consider adding Clone capabilities
-        let (_, kp) = key_pair_type.derive_key_pair_from_path(seed.as_bytes(), derivation_path)?;
-        {
-            self.update_key_pair_by_key_pair_type(address, kp, key_pair_type)?;
-        };
+        let sk =
+            key_pair_type.derive_private_key_from_path(seed.as_bytes(), derivation_path.clone())?;
 
-        let (_, kp) =
-            key_pair_type.derive_key_pair_from_path(seed.as_bytes(), derivation_path_clone)?;
-        Ok(kp)
+        let (nonce, ciphertext, tag) = key_pair_type
+            .encrypt_private_key(sk, password.clone())
+            .expect("Encryption failed for private key");
+
+        let sk_clone =
+            key_pair_type.derive_private_key_from_path(seed.as_bytes(), derivation_path)?;
+
+        let hashed_password = key_pair_type
+            .encrypt_password(sk_clone, password)
+            .expect("Encryption failed for password");
+
+        let (address, key_pair) =
+            key_pair_type.derive_key_pair_from_ciphertext(ciphertext.clone())?;
+
+        self.update_key_pair_by_key_pair_type(&address, key_pair, key_pair_type)?;
+
+        let (_, key_pair_clone) =
+            key_pair_type.derive_key_pair_from_ciphertext(ciphertext.clone())?;
+
+        Ok((key_pair_clone, hashed_password, nonce, ciphertext, tag))
     }
 
     fn nullify_address_with_key_pair_from_key_pair_type(
@@ -188,8 +234,15 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData>: Se
     ) -> Result<Self::Transaction, signature::Error>;
 }
 
-impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTransactionData>
-    for Keystore<RoochAddress, RoochKeyPair>
+impl
+    AccountKeystore<
+        RoochAddress,
+        PublicKey,
+        RoochKeyPair,
+        Signature,
+        RoochTransactionData,
+        Ed25519PrivateKey,
+    > for Keystore<RoochAddress, RoochKeyPair>
 {
     type Transaction = RoochTransaction;
 
@@ -375,6 +428,7 @@ impl
         Secp256k1RecoverableKeyPair,
         ethers::types::Signature,
         EthereumTransactionData,
+        Secp256k1RecoverablePrivateKey,
     > for Keystore<EthereumAddress, Secp256k1RecoverableKeyPair>
 {
     type Transaction = (EthereumTransactionData, ethers::types::Signature);
@@ -618,8 +672,15 @@ where
     }
 }
 
-impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTransactionData>
-    for BaseKeyStore<RoochAddress, RoochKeyPair>
+impl
+    AccountKeystore<
+        RoochAddress,
+        PublicKey,
+        RoochKeyPair,
+        Signature,
+        RoochTransactionData,
+        Ed25519PrivateKey,
+    > for BaseKeyStore<RoochAddress, RoochKeyPair>
 {
     type Transaction = RoochTransaction;
 
@@ -774,12 +835,13 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         address: &RoochAddress,
     ) -> Result<AuthenticationKey, anyhow::Error> {
         //TODO define derivation_path for session key
-        let (_address, kp, _key_pair_type, _phrase) = generate_new_key_pair::<
-            RoochAddress,
-            RoochKeyPair,
-        >(
-            KeyPairType::RoochKeyPairType, None, None
-        )?;
+        let (_address, kp, _key_pair_type, _, _, _, _, _phrase) =
+            generate_new_key_pair::<RoochAddress, RoochKeyPair, Ed25519PrivateKey>(
+                KeyPairType::RoochKeyPairType,
+                None,
+                None,
+                None,
+            )?;
         let authentication_key = kp.public().authentication_key();
         let inner_map = self
             .session_keys
@@ -824,6 +886,7 @@ impl
         Secp256k1RecoverableKeyPair,
         ethers::types::Signature,
         EthereumTransactionData,
+        Secp256k1RecoverablePrivateKey,
     > for BaseKeyStore<EthereumAddress, Secp256k1RecoverableKeyPair>
 {
     type Transaction = (EthereumTransactionData, ethers::types::Signature);
@@ -974,12 +1037,12 @@ impl
         address: &EthereumAddress,
     ) -> Result<AuthenticationKey, anyhow::Error> {
         //TODO define derivation_path for session key
-        let (_, kp, _key_pair_type, _phrase) = generate_new_key_pair::<
-            EthereumAddress,
-            Secp256k1RecoverableKeyPair,
-        >(
-            KeyPairType::EthereumKeyPairType, None, None
-        )?;
+        let (_, kp, _key_pair_type, _, _, _, _, _phrase) =
+            generate_new_key_pair::<
+                EthereumAddress,
+                Secp256k1RecoverableKeyPair,
+                Secp256k1RecoverablePrivateKey,
+            >(KeyPairType::EthereumKeyPairType, None, None, None)?;
         let authentication_key_bytes = address.0.as_bytes().to_vec();
         let authentication_key = AuthenticationKey::new(authentication_key_bytes);
         let inner_map = self
@@ -1023,8 +1086,15 @@ pub struct FileBasedKeystore<K: Ord, V> {
     path: Option<PathBuf>,
 }
 
-impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTransactionData>
-    for FileBasedKeystore<RoochAddress, RoochKeyPair>
+impl
+    AccountKeystore<
+        RoochAddress,
+        PublicKey,
+        RoochKeyPair,
+        Signature,
+        RoochTransactionData,
+        Ed25519PrivateKey,
+    > for FileBasedKeystore<RoochAddress, RoochKeyPair>
 {
     type Transaction = RoochTransaction;
 
@@ -1152,6 +1222,7 @@ impl
         Secp256k1RecoverableKeyPair,
         ethers::types::Signature,
         EthereumTransactionData,
+        Secp256k1RecoverablePrivateKey,
     > for FileBasedKeystore<EthereumAddress, Secp256k1RecoverableKeyPair>
 {
     type Transaction = (EthereumTransactionData, ethers::types::Signature);
@@ -1404,8 +1475,15 @@ pub struct InMemKeystore<K: Ord, V> {
     keystore: BaseKeyStore<K, V>,
 }
 
-impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTransactionData>
-    for InMemKeystore<RoochAddress, RoochKeyPair>
+impl
+    AccountKeystore<
+        RoochAddress,
+        PublicKey,
+        RoochKeyPair,
+        Signature,
+        RoochTransactionData,
+        Ed25519PrivateKey,
+    > for InMemKeystore<RoochAddress, RoochKeyPair>
 {
     type Transaction = RoochTransaction;
 
@@ -1516,6 +1594,7 @@ impl
         Secp256k1RecoverableKeyPair,
         ethers::types::Signature,
         EthereumTransactionData,
+        Secp256k1RecoverablePrivateKey,
     > for InMemKeystore<EthereumAddress, Secp256k1RecoverableKeyPair>
 {
     type Transaction = (EthereumTransactionData, ethers::types::Signature);

@@ -3,6 +3,7 @@
 
 use crate::cli_types::WalletContextOptions;
 use clap::Parser;
+use hex::ToHex;
 use move_core_types::account_address::AccountAddress;
 use rooch_key::{keypair::KeyPairType, keystore::AccountKeystore};
 use rooch_types::error::RoochResult;
@@ -23,10 +24,19 @@ impl CreateCommand {
     pub async fn execute(self) -> RoochResult<String> {
         let mut context = self.context_options.build().await?;
 
-        let (new_address, phrase, multichain_id) = context
+        let password = rpassword::prompt_password("Enter a password to encrypt the keys in rooch keystore. Empty password leaves an unencrypted key: ").unwrap();
+        println!("Your password is {}", password);
+
+        let (new_address, phrase, multichain_id, password_hash, nonce, ciphertext, tag) = context
             .config
             .keystore
-            .generate_and_add_new_key(KeyPairType::RoochKeyPairType, None, None)?;
+            .generate_and_add_new_key(KeyPairType::RoochKeyPairType, None, None, Some(password))?;
+
+        context.config.password = Some(password_hash);
+        context.config.nonce = Some(nonce.encode_hex());
+        context.config.ciphertext = Some(ciphertext.encode_hex());
+        context.config.tag = Some(tag.encode_hex());
+        context.config.save()?;
 
         let address = AccountAddress::from(new_address).to_hex_literal();
         println!(

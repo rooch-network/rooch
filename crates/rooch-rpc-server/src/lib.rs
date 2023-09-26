@@ -9,6 +9,7 @@ use crate::service::rpc_service::RpcService;
 use anyhow::{Error, Result};
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::{system::ActorSystem, IntoActor};
+use fastcrypto::ed25519::Ed25519PrivateKey;
 use hyper::header::HeaderValue;
 use hyper::Method;
 use jsonrpsee::server::ServerBuilder;
