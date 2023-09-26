@@ -26,7 +26,7 @@ pub struct Init {
     /// Command line input of custom server URL
     #[clap(short = 's', long = "server-url")]
     pub server_url: Option<String>,
-    /// Command line input of the optional password to encrypt key store
+    /// Command line input of the optional password for the mnemonic phrase
     #[clap(short = 'p', long = "password")]
     pub password: Option<String>,
     #[clap(flatten)]
