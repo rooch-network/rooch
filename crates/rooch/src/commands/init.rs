@@ -116,12 +116,14 @@ impl CommandAction<String> for Init {
                     key_pair_type.type_of()
                 );
                 println!("Secret Recovery Phrase : [{phrase}]");
-                let alias = env.alias.clone();
+                let dev_env = Env::new_dev_env();
+                let active_env_alias = dev_env.alias.clone();
                 ClientConfig {
                     keystore,
-                    envs: vec![env, Env::new_dev_env()],
+                    envs: vec![env, dev_env],
                     active_address: Some(new_address),
-                    active_env: Some(alias),
+                    // make dev env as default env
+                    active_env: Some(active_env_alias),
                 }
                 .persisted(client_config_path.as_path())
                 .save()?;
