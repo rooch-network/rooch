@@ -13,8 +13,6 @@ pub struct AddCommand {
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
     #[clap(long)]
-    pub chain_id: u64,
-    #[clap(long)]
     pub alias: String,
     #[clap(long, value_hint = ValueHint::Url)]
     pub rpc: String,
@@ -26,14 +24,12 @@ impl AddCommand {
     pub async fn execute(self) -> RoochResult<()> {
         let mut context = self.context_options.build().await?;
         let AddCommand {
-            chain_id,
             alias,
             rpc,
             ws,
             ..
         } = self;
         let env = Env {
-            chain_id,
             ws,
             rpc,
             alias: alias.clone(),

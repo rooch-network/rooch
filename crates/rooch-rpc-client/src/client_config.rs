@@ -55,11 +55,14 @@ impl ClientConfig<RoochAddress, RoochKeyPair> {
     }
 
     pub fn add_env(&mut self, env: Env) {
-        if !self
+        let find_env = self
             .envs
-            .iter()
-            .any(|other_env| other_env.alias == env.alias)
-        {
+            .iter_mut()
+            .find(|other_env| other_env.alias == env.alias);
+        if let Some(update_env) = find_env {
+            update_env.rpc = env.rpc;
+            update_env.ws = env.ws;
+        } else {
             self.envs.push(env)
         }
     }
@@ -67,7 +70,6 @@ impl ClientConfig<RoochAddress, RoochKeyPair> {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Env {
-    pub chain_id: u64,
     pub alias: String,
     pub rpc: String,
     pub ws: Option<String>,
@@ -94,7 +96,6 @@ impl Env {
 
     pub fn new_dev_env() -> Self {
         Self {
-            chain_id: RoochChainID::DEV.chain_id().id(),
             alias: RoochChainID::DEV.chain_name().to_lowercase(),
             rpc: ROOCH_DEV_NET_URL.into(),
             ws: None,
@@ -103,7 +104,6 @@ impl Env {
 
     pub fn new_test_env() -> Self {
         Self {
-            chain_id: RoochChainID::TEST.chain_id().id(),
             alias: RoochChainID::TEST.chain_name().to_lowercase(),
             rpc: ROOCH_TEST_NET_URL.into(),
             ws: None,
@@ -114,7 +114,6 @@ impl Env {
 impl Default for Env {
     fn default() -> Self {
         Env {
-            chain_id: RoochChainID::LOCAL.chain_id().id(),
             alias: RoochChainID::LOCAL.chain_name().to_lowercase(),
             rpc: ServerConfig::default().url(false),
             ws: None,
@@ -125,11 +124,7 @@ impl Default for Env {
 impl Display for Env {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut writer = String::new();
-        writeln!(
-            writer,
-            "Active environment : {}, ChainID: {}",
-            self.alias, self.chain_id
-        )?;
+        writeln!(writer, "Active environment : {}", self.alias)?;
         write!(writer, "RPC URL: {}", self.rpc)?;
         if let Some(ws) = &self.ws {
             writeln!(writer)?;
