@@ -155,7 +155,7 @@ fn split_string_with_quotes(s: &str) -> Result<Vec<String>> {
                 if in_escape {
                     current.push(c);
                     in_escape = false;
-                }else{
+                } else {
                     // Skip the quote
                     in_quotes = !in_quotes;
                 }
