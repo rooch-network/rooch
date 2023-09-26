@@ -143,3 +143,11 @@ Feature: Rooch CLI integration tests
       Then cmd: "move run --function 0x3::coin::transfer_entry --type-args {default}::fixed_supply_coin::FSC --args address:0x3  --args 1u256 --sender-account {default}"
     
       Then stop the server
+
+  @serial
+    Scenario: rpc test
+      Given a server for rpc
+      Then cmd: "rpc request --method eth_getBalance --params \"0x1111111111111111111111111111111111111111\"" 
+      Then assert: "{{$.rpc[-1]}} == 0x0"
+
+      Then stop the server

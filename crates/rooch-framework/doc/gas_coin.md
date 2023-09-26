@@ -29,7 +29,7 @@ This module defines Rooch Gas Coin.
 
 
 
-<pre><code><b>struct</b> <a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a> <b>has</b> store, key
 </code></pre>
 
 

@@ -8,7 +8,9 @@ module rooch_framework::gas_coin {
     friend rooch_framework::genesis;
     friend rooch_framework::transaction_validator;
 
-    struct GasCoin has key {}
+    //TODO should we allow user to transfer gas coin?
+    //If not, we can remove `store` ability from GasCoin.
+    struct GasCoin has key, store {}
 
     public fun balance(ctx: &StorageContext, addr: address): u256 {
         coin::balance<GasCoin>(ctx, addr)
