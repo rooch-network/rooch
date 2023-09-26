@@ -88,7 +88,7 @@ impl WalletContext {
         action: MoveAction,
     ) -> RoochResult<RoochTransactionData> {
         let client = self.get_client().await?;
-        let chain_id = self.config.get_active_env()?.chain_id;
+        let chain_id = client.get_chain_id().await?;
         let sequence_number = client
             .get_sequence_number(sender)
             .await

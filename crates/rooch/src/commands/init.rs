@@ -12,7 +12,6 @@ use rooch_key::keypair::KeyPairType;
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use rooch_rpc_client::client_config::{ClientConfig, Env};
 use rooch_types::address::RoochAddress;
-use rooch_types::chain_id::RoochChainID;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::RoochError;
 use rooch_types::error::RoochResult;
@@ -51,7 +50,6 @@ impl CommandAction<String> for Init {
                         .map(|s| s.to_owned())
                         .collect();
                     Some(Env {
-                        chain_id: chain_url[0].parse().unwrap(),
                         alias: "custom".to_string(),
                         rpc: chain_url[1].to_owned(),
                         ws: None,
@@ -89,13 +87,7 @@ impl CommandAction<String> for Init {
                             alias
                         };
                         print!("Environment ChainID for [{url}] : ");
-                        let chain_id = read_line()?;
-                        let chain_id = chain_id
-                            .trim()
-                            .parse::<u64>()
-                            .unwrap_or(RoochChainID::LOCAL.chain_id().id());
                         Env {
-                            chain_id,
                             alias,
                             rpc: url,
                             ws: None,
