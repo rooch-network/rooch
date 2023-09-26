@@ -100,7 +100,7 @@ async fn assert_output(world: &mut World, args: String) {
     assert!(world.tpl_ctx.is_some(), "tpl_ctx is none");
     let args = eval_command_args(world.tpl_ctx.as_ref().unwrap(), args);
     let parameters = split_string_with_quotes(&args).expect("Invalid commands");
-
+    info!("parameters: {:?}", parameters);
     for chunk in parameters.chunks(3) {
         let first = chunk.get(0).cloned();
         let op = chunk.get(1).cloned();
@@ -130,10 +130,10 @@ async fn assert_output(world: &mut World, args: String) {
 }
 
 fn eval_command_args(ctx: &TemplateContext, args: String) -> String {
-    // info!("args: {}", args);
-    let args = args.replace("\\\"", "\"");
+    //info!("args: {}", args);
+    //let args = args.replace("\\\"", "\"");
     let eval_args = jpst::format_str!(&args, ctx);
-    // info!("eval args:{}", eval_args);
+    //info!("eval args:{}", eval_args);
     eval_args
 }
 
@@ -144,12 +144,21 @@ fn split_string_with_quotes(s: &str) -> Result<Vec<String>> {
     let mut chars = s.chars().peekable();
     let mut current = String::new();
     let mut in_quotes = false;
+    let mut in_escape = false;
 
     while let Some(c) = chars.next() {
         match c {
+            '\\' => {
+                in_escape = true;
+            }
             '"' => {
-                in_quotes = !in_quotes;
-                // Skip the quote
+                if in_escape {
+                    current.push(c);
+                    in_escape = false;
+                }else{
+                    // Skip the quote
+                    in_quotes = !in_quotes;
+                }
             }
             ' ' if !in_quotes => {
                 if !current.is_empty() {

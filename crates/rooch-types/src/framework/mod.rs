@@ -15,6 +15,7 @@ pub mod empty;
 pub mod ethereum_address;
 pub mod ethereum_light_client;
 pub mod ethereum_validator;
+pub mod gas_coin;
 pub mod genesis;
 pub mod native_validator;
 pub mod session_key;

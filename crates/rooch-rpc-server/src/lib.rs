@@ -269,8 +269,11 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
     ))?;
     rpc_module_builder.register_module(WalletServer::new(rpc_service.clone()))?;
 
-    rpc_module_builder
-        .register_module(EthServer::new(chain_id_opt.chain_id(), rpc_service.clone()))?;
+    rpc_module_builder.register_module(EthServer::new(
+        chain_id_opt.chain_id(),
+        rpc_service.clone(),
+        aggregate_service.clone(),
+    ))?;
 
     // let rpc_api = build_rpc_api(rpc_api);
     let methods_names = rpc_module_builder.module.method_names().collect::<Vec<_>>();

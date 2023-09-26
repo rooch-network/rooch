@@ -127,6 +127,9 @@ impl AggregateService {
                     result.push(Some(v))
                 }
             };
+        } else {
+            // If the account do not exist, return None
+            result.push(None)
         }
 
         for (_key, balance_info) in result.iter_mut().flatten() {
