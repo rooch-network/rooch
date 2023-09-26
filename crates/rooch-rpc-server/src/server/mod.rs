@@ -3,4 +3,3 @@
 
 pub mod eth_server;
 pub mod rooch_server;
-pub mod wallet_server;

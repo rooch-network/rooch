@@ -3,7 +3,6 @@
 
 use crate::server::eth_server::EthServer;
 use crate::server::rooch_server::RoochServer;
-use crate::server::wallet_server::WalletServer;
 use crate::service::aggregate_service::AggregateService;
 use crate::service::rpc_service::RpcService;
 use anyhow::Result;
@@ -267,8 +266,6 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
         rpc_service.clone(),
         aggregate_service.clone(),
     ))?;
-    rpc_module_builder.register_module(WalletServer::new(rpc_service.clone()))?;
-
     rpc_module_builder
         .register_module(EthServer::new(chain_id_opt.chain_id(), rpc_service.clone()))?;
 
