@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
+use jsonrpsee::{
+    core::client::ClientT,
+    http_client::{HttpClient, HttpClientBuilder},
+};
 use moveos_types::{
     access_path::AccessPath,
     function_return_value::FunctionResult,
@@ -205,6 +208,14 @@ impl Client {
             .http
             .get_balances(account_addr, coin_type, cursor, limit)
             .await?)
+    }
+
+    pub async fn request(
+        &self,
+        method: &str,
+        params: Vec<serde_json::Value>,
+    ) -> Result<serde_json::Value> {
+        Ok(self.rpc.http.request(method, params).await?)
     }
 }
 
