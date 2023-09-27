@@ -5,6 +5,7 @@ use crate::server::eth_server::EthServer;
 use crate::server::rooch_server::RoochServer;
 use crate::server::wallet_server::WalletServer;
 use crate::service::aggregate_service::AggregateService;
+use crate::service::rpc_logger::RpcLogger;
 use crate::service::rpc_service::RpcService;
 use anyhow::Result;
 use coerce::actor::scheduler::timer::Timer;
@@ -43,6 +44,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 use tower_http::cors::{AllowOrigin, CorsLayer};
+use tower_http::trace::TraceLayer;
 use tracing::info;
 
 pub mod server;
@@ -253,11 +255,13 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
         .allow_origin(acl)
         .allow_headers([hyper::header::CONTENT_TYPE]);
 
-    // TODO: tracing
-    let middleware = tower::ServiceBuilder::new().layer(cors);
+    let middleware = tower::ServiceBuilder::new()
+        .layer(TraceLayer::new_for_http())
+        .layer(cors);
 
     // Build server
     let server = ServerBuilder::default()
+        .set_logger(RpcLogger)
         .set_middleware(middleware)
         .build(&addr)
         .await?;
