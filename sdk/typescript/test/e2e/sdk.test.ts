@@ -68,14 +68,14 @@ describe('SDK', () => {
     })
   })
 
-  // describe('#getAnnotatedStates', () => {
-  //   it('get annotated states should be ok', async () => {
-  //     const provider = new JsonRpcProvider()
-  //     const result = provider.getAnnotatedStates('/object/0x1')
-  //     console.log(result)
-  //     expect(result).toBeDefined()
-  //   })
-  // })
+  describe('#getAnnotatedStates', () => {
+    it('get annotated states should be ok', async () => {
+      const provider = new JsonRpcProvider()
+      const result = provider.getAnnotatedStates('/object/0x1')
+      console.log(result)
+      expect(result).toBeDefined()
+    })
+  })
 
   describe('#sessionKey', () => {
     it('Create session account by registerSessionKey should be ok', async () => {
