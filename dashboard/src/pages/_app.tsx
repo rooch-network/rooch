@@ -62,7 +62,8 @@ import 'src/iconify-bundle/icons-bundle-react'
 
 // ** Global css styles
 import '../../styles/globals.css'
-import { MetamaskProvider } from '../context/wallet/MetamaskContext'
+import { ETHProvider } from 'src/context/wallet/index'
+import { RoochProvider } from 'src/context/rooch/index'
 
 // ** Extend App Props with Emotion
 type ExtendedAppProps = AppProps & {
@@ -99,7 +100,8 @@ const Guard = ({ children, authGuard, guestGuard }: GuardProps) => {
   } else {
     return (
       <AuthGuard fallback={<Spinner />}>
-        <SessionGuard>{children}</SessionGuard>
+        {children}
+        {/*<SessionGuard>{children}</SessionGuard>*/}
       </AuthGuard>
     )
   }
@@ -131,31 +133,33 @@ const App = (props: ExtendedAppProps) => {
           <meta name="viewport" content="initial-scale=1, width=device-width" />
         </Head>
 
-        <MetamaskProvider>
-          <AuthProvider>
-            <SessionProvider>
-              <SettingsProvider {...(setConfig ? { pageSettings: setConfig() } : {})}>
-                <SettingsConsumer>
-                  {({ settings }) => {
-                    return (
-                      <ThemeComponent settings={settings}>
-                        <Guard authGuard={authGuard} guestGuard={guestGuard}>
-                          {getLayout(<Component {...pageProps} />)}
-                        </Guard>
-                        <ReactHotToast>
-                          <Toaster
-                            position={settings.toastPosition}
-                            toastOptions={{ className: 'react-hot-toast' }}
-                          />
-                        </ReactHotToast>
-                      </ThemeComponent>
-                    )
-                  }}
-                </SettingsConsumer>
-              </SettingsProvider>
-            </SessionProvider>
-          </AuthProvider>
-        </MetamaskProvider>
+        <ETHProvider>
+          <RoochProvider>
+            <AuthProvider>
+              <SessionProvider>
+                <SettingsProvider {...(setConfig ? { pageSettings: setConfig() } : {})}>
+                  <SettingsConsumer>
+                    {({ settings }) => {
+                      return (
+                        <ThemeComponent settings={settings}>
+                          <Guard authGuard={authGuard} guestGuard={guestGuard}>
+                            {getLayout(<Component {...pageProps} />)}
+                          </Guard>
+                          <ReactHotToast>
+                            <Toaster
+                              position={settings.toastPosition}
+                              toastOptions={{ className: 'react-hot-toast' }}
+                            />
+                          </ReactHotToast>
+                        </ThemeComponent>
+                      )
+                    }}
+                  </SettingsConsumer>
+                </SettingsProvider>
+              </SessionProvider>
+            </AuthProvider>
+          </RoochProvider>
+        </ETHProvider>
       </CacheProvider>
     </Provider>
   )

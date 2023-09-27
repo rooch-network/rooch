@@ -14,19 +14,26 @@ import Button from '@mui/material/Button'
 // ** Type Imports
 import { Settings } from 'src/@core/context/settingsContext'
 
+// ** Hooks
+
+import { useRooch } from 'src/hooks/useRooch'
+import { Chain } from '@rooch/sdk'
+import { ca } from 'date-fns/locale'
+
 interface Props {
   settings: Settings
 }
-
-const chainIDData = ['dev', 'test']
 
 const SwitchChainDropdown = (props: Props) => {
   // ** Props
   const { settings } = props
 
+  // ** Hooks
+  const rooch = useRooch()
+
   // ** States
   const [anchorEl, setAnchorEl] = useState<Element | null>(null)
-  const [chainID, setChainId] = useState<string>('dev')
+  const [chain, setChain] = useState<Chain>(rooch.getActiveChina())
 
   // ** Vars
   const { direction } = settings
@@ -39,11 +46,17 @@ const SwitchChainDropdown = (props: Props) => {
     setAnchorEl(null)
   }
 
+  const handleSwitchChain = async (chain: Chain) => {
+    await rooch.switchChina(chain)
+    setChain(chain)
+    window.location.reload()
+  }
+
   return (
     <Fragment>
       <Button variant="text" size="small" onClick={handleDropdownOpen}>
         <Box sx={{ mr: 0, display: 'flex', flexDirection: 'column', textAlign: 'center' }}>
-          <Typography sx={{ fontWeight: 500 }}>{chainID}</Typography>
+          <Typography sx={{ fontWeight: 500 }}>{chain.name}</Typography>
         </Box>
       </Button>
       <Menu
@@ -54,18 +67,18 @@ const SwitchChainDropdown = (props: Props) => {
         anchorOrigin={{ vertical: 'bottom', horizontal: direction === 'ltr' ? 'right' : 'left' }}
         transformOrigin={{ vertical: 'top', horizontal: direction === 'ltr' ? 'right' : 'left' }}
       >
-        {chainIDData.map((v, i) => (
+        {rooch.getAllChina().map((v, i) => (
           <MenuItem
-            key={v}
-            onClick={() => setChainId(v)}
+            key={v.id}
+            onClick={() => handleSwitchChain(v)}
             sx={{
-              color: v === chainID ? 'text.primary' : 'text.secondary',
+              color: v === chain ? 'text.primary' : 'text.secondary',
               '& svg': { mr: 2, fontSize: '1.25rem', color: 'text.secondary' },
               display: 'flex',
               justifyContent: 'center',
             }}
           >
-            {v.toUpperCase()}
+            {v.name.toUpperCase()}
           </MenuItem>
         ))}
       </Menu>

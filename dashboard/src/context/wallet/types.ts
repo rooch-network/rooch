@@ -3,28 +3,17 @@
 
 import MetaMaskSDK from '@metamask/sdk'
 
-export type AddChinaParameterType = {
-  chainId: string
-  blockExplorerUrls?: string[]
-  chainName?: string
-  iconUrls?: string[]
-  nativeCurrency?: {
-    name: string
-    symbol: string
-    decimals: number
-  }
-  rpcUrls?: string[]
-}
+import { ChainInfo } from '@rooch/sdk'
 
-export type MetamaskValueType = {
+export type ETHValueType = {
   loading: boolean
   hasProvider: boolean
   provider: MetaMaskSDK | undefined
-  chainId: string | null
+  chain: ChainInfo
   accounts: string[]
   isConnect: boolean
-  connect: () => Promise<void>
+  connect: (china?: ChainInfo) => Promise<void>
   disconnect: () => void
-  switchChina: (chainId: string) => Promise<void>
-  addChina: (params: AddChinaParameterType) => Promise<void>
+  switchChina: (chain: ChainInfo) => Promise<void>
+  addChina: (params: ChainInfo) => Promise<void>
 }

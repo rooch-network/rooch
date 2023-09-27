@@ -4,7 +4,7 @@
 import { hexlify } from '@ethersproject/bytes'
 import { useState } from 'react'
 import { useAuth } from 'src/hooks/useAuth'
-import { useMetamask } from 'src/hooks/useMetamask'
+import { useETH } from 'src/hooks/useETH'
 import { AccountDataType } from 'src/context/auth/types'
 
 // ** Rooch SDK
@@ -39,7 +39,7 @@ const makeSessionAccountStoreKey = (address: string) => {
 
 const SessionProvider = ({ children }: Props) => {
   const auth = useAuth()
-  const metaMask = useMetamask()
+  const metaMask = useETH()
   const [loading, setLoading] = useState(false)
 
   const [sessionAccount, setSessionAccount] = useState<IAccount | undefined>(() => {
@@ -158,13 +158,17 @@ const SessionProvider = ({ children }: Props) => {
       },
     ]
 
-    const tx = await ethereum.request({
+    console.log(ethereum)
+    console.log(window.ethereum)
+    console.log(params)
+
+    const tx = await window.ethereum?.request({
       method: 'eth_sendTransaction',
       params,
     })
 
-    const result = await waitTxConfirmed(ethereum, tx)
-    console.log(`result:`, result)
+    // const result = await waitTxConfirmed(ethereum, tx)
+    // console.log(`result:`, result)
   }
 
   const requestWalletCreateSessionKey = async (
@@ -225,6 +229,8 @@ const SessionProvider = ({ children }: Props) => {
 
   const requestAuthorize = async (scope: Array<string>, maxInactiveInterval: number) => {
     setLoading(true)
+
+    console.log('hshdhhsd')
 
     try {
       const defaultAccount = auth.defaultAccount()

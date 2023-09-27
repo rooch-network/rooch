@@ -12,6 +12,7 @@ import { AnnotatedStateView, JsonRpcProvider } from '@rooch/sdk'
 
 interface DataParams {
   dispatch: Dispatch<AnyAction>
+  provider: JsonRpcProvider
   accessPath: string
 }
 
@@ -19,10 +20,9 @@ interface DataParams {
 export const fetchData = createAsyncThunk('state/fetchData', async (params: DataParams) => {
   params.dispatch(start())
 
-  const jp = new JsonRpcProvider()
-
   try {
-    let result = await jp.getAnnotatedStates(params.accessPath)
+    console.log(params.provider)
+    let result = await params.provider.getAnnotatedStates(params.accessPath)
     params.dispatch(success(result))
 
     return result

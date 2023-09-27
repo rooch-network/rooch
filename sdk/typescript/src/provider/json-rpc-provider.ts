@@ -4,7 +4,8 @@
 import fetch from 'isomorphic-fetch'
 import { HTTPTransport, RequestManager } from '@open-rpc/client-js'
 import { JsonRpcClient } from '../generated/client'
-import { Connection, LocalNetConnection } from './connection'
+import { Chain, ChainInfo, DevChain } from '../constants/chain.ts'
+import { bytes } from '../types/bcs'
 import {
   FunctionId,
   TypeTag,
@@ -17,16 +18,11 @@ import {
 } from '../types'
 import { functionIdToStirng, typeTagToString, encodeArg, toHexString } from '../utils'
 
-import { ROOCH_LOCAL_CHIAN_ID } from '../constants'
-//import { TransactionResultPageView } from '../generated/client/types.ts'
-
 /**
  * Configuration options for the JsonRpcProvider. If the value of a field is not provided,
  * value in `DEFAULT_OPTIONS` for that field will be used
  */
 export type RpcProviderOptions = {
-  chainID: number
-
   /**
    * Cache timeout in seconds for the RPC API Version
    */
@@ -37,31 +33,27 @@ export type RpcProviderOptions = {
 }
 
 const DEFAULT_OPTIONS: RpcProviderOptions = {
-  chainID: ROOCH_LOCAL_CHIAN_ID,
   versionCacheTimeoutInSeconds: 600,
 }
 
 export class JsonRpcProvider {
-  public connection: Connection
+  public chain: Chain
 
-  readonly client: JsonRpcClient
+  private client: JsonRpcClient
 
   private rpcApiVersion: string | undefined
 
   private cacheExpiry: number | undefined
 
-  constructor(
-    connection: Connection = LocalNetConnection,
-    public options: RpcProviderOptions = DEFAULT_OPTIONS,
-  ) {
-    this.connection = connection
+  constructor(chain: Chain = DevChain, public options: RpcProviderOptions = DEFAULT_OPTIONS) {
+    this.chain = chain
 
     const opts = { ...DEFAULT_OPTIONS, ...options }
     this.options = opts
 
     this.client = new JsonRpcClient(
       new RequestManager([
-        new HTTPTransport(connection.url, {
+        new HTTPTransport(chain.url, {
           headers: {
             'Content-Type': 'application/json',
           },
@@ -71,8 +63,27 @@ export class JsonRpcProvider {
     )
   }
 
+  switchChain(chain: Chain) {
+    // this.client.close()
+    this.chain = chain
+    this.client = new JsonRpcClient(
+      new RequestManager([
+        new HTTPTransport(chain.url, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          fetcher: this.options.fetcher,
+        }),
+      ]),
+    )
+  }
+
+  ChainInfo(): ChainInfo {
+    return this.chain.info
+  }
+
   getChainId(): number {
-    return this.options.chainID
+    return this.chain.id
   }
 
   async getRpcApiVersion(): Promise<string | undefined> {

@@ -23,7 +23,7 @@ import {
 import { ErrCallbackType } from 'src/context/types'
 
 // ** Hooks
-import { useMetamask } from 'src/hooks/useMetamask'
+import { useETH } from 'src/hooks/useETH'
 
 // ** Rooch SDK
 import { bcsTypes, Ed25519Keypair } from '@rooch/sdk'
@@ -48,12 +48,14 @@ type Props = {
 }
 
 const AuthProvider = ({ children }: Props) => {
-  const metamask = useMetamask()
+  // ** Hooks
+  const metamask = useETH()
 
   // ** States
   const [accounts, setAccounts] = useState<Map<string, AccountDataType> | null>(
     defaultProvider.accounts,
   )
+
   const [loading, setLoading] = useState<boolean>(defaultProvider.loading)
 
   // ** Hooks
@@ -141,7 +143,7 @@ const AuthProvider = ({ children }: Props) => {
         metamask
           .connect()
           .then(loginSuccess)
-          .catch((e) => {
+          .catch((e: any) => {
             if (errorCallback) {
               errorCallback(e)
             }

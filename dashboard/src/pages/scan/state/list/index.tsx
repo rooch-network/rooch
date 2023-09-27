@@ -21,10 +21,12 @@ import { useAppDispatch, useAppSelector } from 'src/store'
 // ** SDK Imports
 import Icon from 'src/@core/components/icon'
 import CardSnippet from 'src/@core/components/card-snippet'
+import { useRooch } from '../../../../hooks/useRooch'
 
 /* eslint-enable */
-
 const StateList = () => {
+  const rooch = useRooch()
+
   // ** State
   const [accessPath, setAccessPath] = useState<string>('/object/0x1')
 
@@ -33,7 +35,7 @@ const StateList = () => {
   const { result, status, error } = useAppSelector((state) => state.state)
 
   const handleSearch = () => {
-    dispatch(fetchData({ dispatch, accessPath }))
+    dispatch(fetchData({ provider: rooch.provider!, dispatch, accessPath }))
   }
 
   useEffect(() => {
@@ -45,10 +47,11 @@ const StateList = () => {
   const handleKeyUp = useCallback(
     (event: KeyboardEvent) => {
       if (event.keyCode === 13) {
-        dispatch(fetchData({ dispatch, accessPath }))
+        console.log(rooch)
+        dispatch(fetchData({ provider: rooch.provider!, dispatch, accessPath }))
       }
     },
-    [dispatch, accessPath],
+    [dispatch, accessPath, rooch],
   )
 
   useEffect(() => {
