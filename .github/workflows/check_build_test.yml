@@ -27,31 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: rooch-network/rooch/.github/actions/rust-setup@main
-      - name: Use Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '18.x'
-      - name: Cache Node.js modules
-        uses: actions/cache@v2
-        with:
-          path: ~/.pnpm-store
-          key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.OS }}-pnpm-
-            ## Build and test app start
-      - name: Install pnpm dependencies
-        run: npm install pnpm -g && pnpm install
-      - name: Gen SDK dependencie Code
-        run: pnpm sdk gen
-      - name: Lint
-        run: pnpm lint
-      - name: Build SDK
-        run: pnpm sdk build
-      - name: Test SDK
-        run: pnpm sdk test
-      ## Build and test sdk end
-      #  with:
-      #    fetch-depth: 0
+
       - name: Check code format
         run: cargo fmt -- --check
       - name: Lint rust sources
@@ -75,6 +51,32 @@ jobs:
         run: cargo run --bin rooch move test -p crates/rooch-framework/
       - name: Build and test example projects
         run: ./scripts/pr.sh -e
+
+      ### Build and test sdk start
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18.x'
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.OS }}-pnpm-
+            ## Build and test app start
+      - name: Install pnpm dependencies
+        run: npm install pnpm -g && pnpm install
+      - name: Gen SDK dependencie Code
+        run: pnpm sdk gen
+      - name: Lint
+        run: pnpm lint
+      - name: Build SDK
+        run: pnpm sdk build
+      - name: Test SDK
+        run: pnpm sdk test
+      ## Build and test sdk end
+
       - uses: CatChen/check-git-status-action@v1
         with:
           fail-if-not-clean: true # optional
