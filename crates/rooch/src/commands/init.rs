@@ -151,28 +151,28 @@ impl CommandAction<()> for Init {
                 let password = rpassword::prompt_password("Enter a password to encrypt the keys in rooch keystore. Empty password leaves an unencrypted key: ").unwrap();
                 println!("Your password is {}", password);
 
-                let (new_address, phrase, key_pair_type, hashed_password, nonce, ciphertext, tag) =
-                    keystore.generate_and_add_new_key(
-                        KeyPairType::RoochKeyPairType,
-                        None,
-                        None,
-                        Some(password),
-                    )?;
+                let result = keystore.generate_and_add_new_key(
+                    KeyPairType::RoochKeyPairType,
+                    None,
+                    None,
+                    Some(password),
+                )?;
                 println!(
-                    "Generated new keypair for address with type {:?} [{new_address}]",
-                    key_pair_type.type_of()
+                    "Generated new keypair for address with type {:?} [{}]",
+                    result.result.key_pair_type.type_of(),
+                    result.address
                 );
-                println!("Secret Recovery Phrase : [{phrase}]");
+                println!("Secret Recovery Phrase : [{}]", result.result.mnemonic);
                 let dev_env = Env::new_dev_env();
                 let active_env_alias = dev_env.alias.clone();
                 ClientConfig {
                     keystore_path,
                     envs: vec![env, dev_env],
-                    password: Some(hashed_password),
-                    nonce: Some(nonce.encode_hex()),
-                    ciphertext: Some(ciphertext.encode_hex()),
-                    tag: Some(tag.encode_hex()),
-                    active_address: Some(new_address),
+                    password: Some(result.result.encryption.hashed_password),
+                    nonce: Some(result.result.encryption.nonce.encode_hex()),
+                    ciphertext: Some(result.result.encryption.ciphertext.encode_hex()),
+                    tag: Some(result.result.encryption.tag.encode_hex()),
+                    active_address: Some(result.address),
                     // make dev env as default env
                     active_env: Some(active_env_alias),
                 }

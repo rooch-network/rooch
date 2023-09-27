@@ -40,6 +40,24 @@ pub const DERVIATION_PATH_PURPOSE_SCHNORR: u32 = 44;
 pub const DERVIATION_PATH_PURPOSE_ECDSA: u32 = 54;
 pub const DERVIATION_PATH_PURPOSE_SECP256R1: u32 = 74;
 
+type EncryptionKeyResult = Result<(Vec<u8>, Vec<u8>, Vec<u8>), RoochError>;
+pub struct EncryptionResult {
+    pub hashed_password: String,
+    pub nonce: Vec<u8>,
+    pub ciphertext: Vec<u8>,
+    pub tag: Vec<u8>,
+}
+pub struct GenerateNewKeyPairResult {
+    pub key_pair_type: KeyPairType,
+    pub encryption: EncryptionResult,
+    pub mnemonic: String,
+}
+pub struct GeneratedKeyPair<Addr, KeyPair> {
+    pub address: Addr,
+    pub key_pair: KeyPair,
+    pub result: GenerateNewKeyPairResult,
+}
+
 pub trait CoinOperations<Addr, KeyPair, PrivKey> {
     fn derive_private_key_from_path(
         &self,
@@ -62,7 +80,7 @@ pub trait CoinOperations<Addr, KeyPair, PrivKey> {
         &self,
         private_key: PrivKey,
         password: Option<String>,
-    ) -> Result<(Vec<u8>, Vec<u8>, Vec<u8>), RoochError>;
+    ) -> EncryptionKeyResult;
     fn encrypt_password(
         &self,
         private_key: PrivKey,
@@ -116,9 +134,9 @@ impl CoinOperations<RoochAddress, RoochKeyPair, Ed25519PrivateKey> for KeyPairTy
             let address: RoochAddress = kp.public().into();
             Ok((address, kp.into())) // Cast to KeyPair
         } else {
-            return Err(RoochError::InvalidPasswordError(
+            Err(RoochError::InvalidPasswordError(
                 "Password is invalid".to_owned(),
-            ));
+            ))
         }
     }
 
@@ -135,7 +153,7 @@ impl CoinOperations<RoochAddress, RoochKeyPair, Ed25519PrivateKey> for KeyPairTy
         let mut output_key_material = [0u8; 32]; // Can be any desired size
         Argon2::default()
             .hash_password_into(
-                &password.unwrap_or("".to_owned()).as_bytes(),
+                password.unwrap_or("".to_owned()).as_bytes(),
                 &nonce,
                 &mut output_key_material,
             )
@@ -202,7 +220,7 @@ impl CoinOperations<EthereumAddress, Secp256k1RecoverableKeyPair, Secp256k1Recov
         let child_xprv = XPrv::derive_from_path(seed, &path)
             .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
         let sk = Secp256k1RecoverablePrivateKey::from_bytes(
-            &child_xprv.private_key().to_bytes().as_slice(),
+            child_xprv.private_key().to_bytes().as_slice(),
         )
         .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?;
         Ok(sk)
@@ -238,11 +256,11 @@ impl CoinOperations<EthereumAddress, Secp256k1RecoverableKeyPair, Secp256k1Recov
                     .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
             );
             let address: EthereumAddress = EthereumAddress::from(kp.public.clone());
-            Ok((address, kp.into())) // Cast to KeyPair
+            Ok((address, kp)) // Cast to KeyPair
         } else {
-            return Err(RoochError::InvalidPasswordError(
+            Err(RoochError::InvalidPasswordError(
                 "Password is invalid".to_owned(),
-            ));
+            ))
         }
     }
 
@@ -256,9 +274,8 @@ impl CoinOperations<EthereumAddress, Secp256k1RecoverableKeyPair, Secp256k1Recov
         let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
 
         // Create a ChaCha20Poly1305 cipher with the key material from password
-        let cipher =
-            ChaCha20Poly1305::new_from_slice(&password.unwrap_or("".to_owned()).as_bytes())
-                .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
+        let cipher = ChaCha20Poly1305::new_from_slice(password.unwrap_or("".to_owned()).as_bytes())
+            .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
 
         // Encrypt the private key data to a ciphertext with a tag
         let ciphertext_with_tag = match cipher.encrypt(&nonce, private_key.as_bytes()) {
@@ -378,19 +395,7 @@ pub fn generate_new_key_pair<Addr, KeyPair, PrivKey>(
     derivation_path: Option<DerivationPath>,
     word_length: Option<String>,
     password: Option<String>,
-) -> Result<
-    (
-        Addr,
-        KeyPair,
-        KeyPairType,
-        String,
-        Vec<u8>,
-        Vec<u8>,
-        Vec<u8>,
-        String,
-    ),
-    anyhow::Error,
->
+) -> Result<GeneratedKeyPair<Addr, KeyPair>, anyhow::Error>
 where
     KeyPairType: CoinOperations<Addr, KeyPair, PrivKey>,
 {
@@ -412,16 +417,24 @@ where
 
     let (address, key_pair) = key_pair_type.derive_key_pair_from_ciphertext(ciphertext.clone())?;
 
-    Ok((
-        address,
-        key_pair,
-        key_pair_type,
+    let encryption = EncryptionResult {
         hashed_password,
         nonce,
         ciphertext,
         tag,
-        mnemonic.phrase().to_string(),
-    ))
+    };
+
+    let result = GenerateNewKeyPairResult {
+        key_pair_type,
+        encryption,
+        mnemonic: mnemonic.phrase().to_string(),
+    };
+
+    Ok(GeneratedKeyPair {
+        address,
+        key_pair,
+        result,
+    })
 }
 
 // Verify the password against Argon2
@@ -446,7 +459,7 @@ pub fn decrypt_private_key(
     let mut output_key_material = [0u8; 32]; // Can be any desired size
     Argon2::default()
         .hash_password_into(
-            &password.unwrap_or("".to_owned()).as_bytes(),
+            password.unwrap_or("".to_owned()).as_bytes(),
             &nonce,
             &mut output_key_material,
         )
@@ -457,7 +470,7 @@ pub fn decrypt_private_key(
 
     // Concatenate the tag and the ciphertext to reconstruct ciphertext_with_tag
     let mut ciphertext_with_tag = Vec::with_capacity(tag.len() + ciphertext.len());
-    ciphertext_with_tag.extend_from_slice(&ciphertext);
+    ciphertext_with_tag.extend_from_slice(ciphertext);
     ciphertext_with_tag.extend_from_slice(&tag);
 
     // Decrypt the ciphertext_with_tag to a private key

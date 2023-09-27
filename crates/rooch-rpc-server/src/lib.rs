@@ -184,15 +184,15 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     {
         // only for integration test, generate test key pairs
         if chain_id_opt.is_test_or_dev_or_local() {
-            let (_, key_keypair, _, _) = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
+            let result = generate_new_key_pair::<RoochAddress, RoochKeyPair, Ed25519PrivateKey>(
                 KeyPairType::RoochKeyPairType,
                 None,
                 None,
                 None,
             )?;
-            server_opt.sequencer_keypair = Some(key_keypair.copy());
-            server_opt.proposer_keypair = Some(key_keypair.copy());
-            server_opt.relayer_keypair = Some(key_keypair.copy());
+            server_opt.sequencer_keypair = Some(result.key_pair.copy());
+            server_opt.proposer_keypair = Some(result.key_pair.copy());
+            server_opt.relayer_keypair = Some(result.key_pair.copy());
         } else {
             return Err(Error::from(
                 RoochError::InvalidSequencerOrProposerOrRelayerKeyPair,

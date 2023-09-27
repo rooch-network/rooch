@@ -40,15 +40,16 @@ impl CommandAction<()> for ImportCommand {
             )
             .map_err(|e| RoochError::ImportAccountError(e.to_string()))?;
 
-        context.config.password = Some(password_hash);
-        context.config.nonce = Some(nonce.encode_hex());
-        context.config.ciphertext = Some(ciphertext.encode_hex());
-        context.config.tag = Some(tag.encode_hex());
+        context.config.password = Some(result.encryption.hashed_password);
+        context.config.nonce = Some(result.encryption.nonce.encode_hex());
+        context.config.ciphertext = Some(result.encryption.ciphertext.encode_hex());
+        context.config.tag = Some(result.encryption.tag.encode_hex());
         context.config.save()?;
 
         println!(
-            "Key imported for address on type {:?}: [{address}]",
-            KeyPairType::RoochKeyPairType.type_of()
+            "Key imported for address on type {:?}: [{}]",
+            KeyPairType::RoochKeyPairType.type_of(),
+            result.address
         );
 
         Ok(())

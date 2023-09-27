@@ -27,15 +27,17 @@ impl CreateCommand {
         let password = rpassword::prompt_password("Enter a password to encrypt the keys in rooch keystore. Empty password leaves an unencrypted key: ").unwrap();
         println!("Your password is {}", password);
 
-        let (new_address, phrase, multichain_id, password_hash, nonce, ciphertext, tag) = context
-            .config
-            .keystore
-            .generate_and_add_new_key(KeyPairType::RoochKeyPairType, None, None, Some(password))?;
+        let result = context.keystore.generate_and_add_new_key(
+            KeyPairType::RoochKeyPairType,
+            None,
+            None,
+            Some(password),
+        )?;
 
-        context.config.password = Some(password_hash);
-        context.config.nonce = Some(nonce.encode_hex());
-        context.config.ciphertext = Some(ciphertext.encode_hex());
-        context.config.tag = Some(tag.encode_hex());
+        context.config.password = Some(result.result.encryption.hashed_password);
+        context.config.nonce = Some(result.result.encryption.nonce.encode_hex());
+        context.config.ciphertext = Some(result.result.encryption.ciphertext.encode_hex());
+        context.config.tag = Some(result.result.encryption.tag.encode_hex());
         context.config.save()?;
 
         let address = AccountAddress::from(new_address).to_hex_literal();
@@ -43,7 +45,7 @@ impl CreateCommand {
             "Generated new keypair for address with multichain id {:?} [{new_address}]",
             multichain_id
         );
-        println!("Secret Recovery Phrase : [{phrase}]");
+        println!("Secret Recovery Phrase : [{}]", result.result.mnemonic);
 
         Ok(address)
     }

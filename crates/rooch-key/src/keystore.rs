@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    key_derive::{generate_new_key_pair, CoinOperations},
+    key_derive::{generate_new_key_pair, CoinOperations, EncryptionResult, GeneratedKeyPair},
     keypair::KeyPairType,
 };
 use anyhow::anyhow;
@@ -41,6 +41,16 @@ use std::fs;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
+
+pub struct ImportedMnemonic<Addr> {
+    pub address: Addr,
+    pub encryption: EncryptionResult,
+}
+
+pub struct UpdatedAddress<KeyPair> {
+    pub key_pair: KeyPair,
+    pub encryption: EncryptionResult,
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 #[enum_dispatch(AccountKeystore)]
@@ -119,27 +129,23 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData, Pri
         derivation_path: Option<DerivationPath>,
         word_length: Option<String>,
         password: Option<String>,
-    ) -> Result<(Addr, String, KeyPairType, String, Vec<u8>, Vec<u8>, Vec<u8>), anyhow::Error>
+    ) -> Result<GeneratedKeyPair<Addr, KeyPair>, anyhow::Error>
     where
         KeyPairType: CoinOperations<Addr, KeyPair, PrivKey>,
     {
-        let (address, kp, key_pair_type, hashed_password, nonce, ciphertext, tag, phrase) =
-            generate_new_key_pair::<Addr, KeyPair, PrivKey>(
-                key_pair_type,
-                derivation_path,
-                word_length,
-                password,
-            )?;
-        self.add_key_pair_by_key_pair_type(kp, key_pair_type)?;
-        Ok((
-            address,
-            phrase,
+        let result = generate_new_key_pair::<Addr, KeyPair, PrivKey>(
             key_pair_type,
-            hashed_password,
-            nonce,
-            ciphertext,
-            tag,
-        ))
+            derivation_path,
+            word_length,
+            password,
+        )?;
+
+        let (_, key_pair) = key_pair_type
+            .derive_key_pair_from_ciphertext(result.result.encryption.ciphertext.clone())?;
+
+        self.add_key_pair_by_key_pair_type(key_pair, key_pair_type)?;
+
+        Ok(result)
     }
 
     fn import_from_mnemonic(
@@ -148,7 +154,7 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData, Pri
         key_pair_type: KeyPairType,
         derivation_path: Option<DerivationPath>,
         password: Option<String>,
-    ) -> Result<(Addr, String, Vec<u8>, Vec<u8>, Vec<u8>), anyhow::Error>
+    ) -> Result<ImportedMnemonic<Addr>, anyhow::Error>
     where
         KeyPairType: CoinOperations<Addr, KeyPair, PrivKey>,
     {
@@ -173,7 +179,20 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData, Pri
             key_pair_type.derive_key_pair_from_ciphertext(ciphertext.clone())?;
 
         self.add_key_pair_by_key_pair_type(key_pair, key_pair_type)?;
-        Ok((address, hashed_password, nonce, ciphertext, tag))
+
+        let encryption = EncryptionResult {
+            hashed_password,
+            nonce,
+            ciphertext,
+            tag,
+        };
+
+        let result = ImportedMnemonic {
+            address,
+            encryption,
+        };
+
+        Ok(result)
     }
 
     fn update_address_with_key_pair_from_key_pair_type(
@@ -183,7 +202,7 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData, Pri
         key_pair_type: KeyPairType,
         derivation_path: Option<DerivationPath>,
         password: Option<String>,
-    ) -> Result<(KeyPair, String, Vec<u8>, Vec<u8>, Vec<u8>), anyhow::Error>
+    ) -> Result<UpdatedAddress<KeyPair>, anyhow::Error>
     where
         KeyPairType: CoinOperations<Addr, KeyPair, PrivKey>,
     {
@@ -212,7 +231,19 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData, Pri
         let (_, key_pair_clone) =
             key_pair_type.derive_key_pair_from_ciphertext(ciphertext.clone())?;
 
-        Ok((key_pair_clone, hashed_password, nonce, ciphertext, tag))
+        let encryption = EncryptionResult {
+            hashed_password,
+            nonce,
+            ciphertext,
+            tag,
+        };
+
+        let result = UpdatedAddress {
+            key_pair: key_pair_clone,
+            encryption,
+        };
+
+        Ok(result)
     }
 
     fn nullify_address_with_key_pair_from_key_pair_type(
@@ -835,19 +866,18 @@ impl
         address: &RoochAddress,
     ) -> Result<AuthenticationKey, anyhow::Error> {
         //TODO define derivation_path for session key
-        let (_address, kp, _key_pair_type, _, _, _, _, _phrase) =
-            generate_new_key_pair::<RoochAddress, RoochKeyPair, Ed25519PrivateKey>(
-                KeyPairType::RoochKeyPairType,
-                None,
-                None,
-                None,
-            )?;
-        let authentication_key = kp.public().authentication_key();
+        let result = generate_new_key_pair::<RoochAddress, RoochKeyPair, Ed25519PrivateKey>(
+            KeyPairType::RoochKeyPairType,
+            None,
+            None,
+            None,
+        )?;
+        let authentication_key = result.key_pair.public().authentication_key();
         let inner_map = self
             .session_keys
             .entry(*address)
             .or_insert_with(BTreeMap::new);
-        inner_map.insert(authentication_key.clone(), kp);
+        inner_map.insert(authentication_key.clone(), result.key_pair);
         Ok(authentication_key)
     }
 
@@ -1037,19 +1067,18 @@ impl
         address: &EthereumAddress,
     ) -> Result<AuthenticationKey, anyhow::Error> {
         //TODO define derivation_path for session key
-        let (_, kp, _key_pair_type, _, _, _, _, _phrase) =
-            generate_new_key_pair::<
-                EthereumAddress,
-                Secp256k1RecoverableKeyPair,
-                Secp256k1RecoverablePrivateKey,
-            >(KeyPairType::EthereumKeyPairType, None, None, None)?;
+        let result = generate_new_key_pair::<
+            EthereumAddress,
+            Secp256k1RecoverableKeyPair,
+            Secp256k1RecoverablePrivateKey,
+        >(KeyPairType::EthereumKeyPairType, None, None, None)?;
         let authentication_key_bytes = address.0.as_bytes().to_vec();
         let authentication_key = AuthenticationKey::new(authentication_key_bytes);
         let inner_map = self
             .session_keys
             .entry(*address)
             .or_insert_with(BTreeMap::new);
-        inner_map.insert(authentication_key.clone(), kp);
+        inner_map.insert(authentication_key.clone(), result.key_pair);
         Ok(authentication_key)
     }
 
