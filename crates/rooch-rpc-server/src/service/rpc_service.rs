@@ -92,6 +92,13 @@ impl RpcService {
         self.executor.get_states(access_path).await
     }
 
+    pub async fn exists_account(&self, address: AccountAddress) -> Result<bool> {
+        let mut resp = self
+            .get_states(AccessPath::resource(address, Account::struct_tag()))
+            .await?;
+        Ok(resp.pop().flatten().is_some())
+    }
+
     pub async fn get_annotated_states(
         &self,
         access_path: AccessPath,
