@@ -194,7 +194,7 @@ export class JsonRpcProvider {
 
   async listAnnotatedStates(
     access_path: string,
-    cursor: Uint8Array,
+    cursor: Bytes | null,
     limit: number,
   ): Promise<ListAnnotatedStateResultPageView> {
     return await this.client.rooch_listAnnotatedStates(access_path, cursor, limit)

@@ -5,7 +5,15 @@ import { DEFAULT_MAX_GAS_AMOUNT } from '../constants'
 import { IAccount, CallOption, ISessionKey } from './interface'
 import { IProvider } from '../provider'
 import { IAuthorizer, IAuthorization, PrivateKeyAuth } from '../auth'
-import { AccountAddress, FunctionId, TypeTag, Arg, AnnotatedStateView } from '../types'
+import {
+  AccountAddres,
+  FunctionId,
+  TypeTag,
+  Arg,
+  ListAnnotatedStateResultPageView,
+  Bytes,
+  IPage,
+} from '../types'
 import { BcsSerializer } from '../types/bcs'
 import {
   RoochTransaction,
@@ -177,20 +185,55 @@ export class Account implements IAccount {
     )
   }
 
-  async querySessionKeys(): Promise<ISessionKey[]> {
+  async querySessionKeys(cursor: Bytes | null, limit: number): Promise<IPage<ISessionKey>> {
     const accessPath = `/resource/${this.address}/0x3::session_key::SessionKeys`
     const state = await this.provider.getAnnotatedStates(accessPath)
     if (state) {
       const stateView = state as any
       const tableId = stateView[0].state.value
-      console.log(stateView[0].state.value)
 
       const accessPath = `/table/${tableId}`
-      console.log(accessPath)
-      const table = await this.provider.getAnnotatedStates(accessPath)
-      console.log(table)
+      const pageView = await this.provider.listAnnotatedStates(accessPath, cursor, limit)
+
+      return {
+        data: this.convertToSessionKey(pageView),
+        nextCursor: pageView.next_cursor,
+        hasNextPage: pageView.has_next_page,
+      }
     }
 
-    return []
+    throw new Error('not found state')
+  }
+
+  private convertToSessionKey(data: ListAnnotatedStateResultPageView): Array<ISessionKey> {
+    const result = new Array<ISessionKey>()
+
+    for (const state of data.data as any) {
+      const moveValue = state?.move_value as any
+
+      if (moveValue) {
+        const val = moveValue.value
+
+        result.push({
+          authentication_key: val.authentication_key,
+          scopes: this.convertToScopes(val.scopes),
+          create_time: parseInt(val.create_time),
+          last_active_time: parseInt(val.last_active_time),
+          max_inactive_interval: parseInt(val.max_inactive_interval),
+        } as ISessionKey)
+      }
+    }
+
+    return result
+  }
+
+  private convertToScopes(data: Array<any>): Array<string> {
+    const result = new Array<string>()
+
+    for (const scope of data) {
+      result.push(`${scope.module_name}::${scope.module_address}::${scope.function_name}`)
+    }
+
+    return result
   }
 }

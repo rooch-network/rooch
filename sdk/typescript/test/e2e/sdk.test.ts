@@ -45,8 +45,6 @@ describe('SDK', () => {
       const roochAddress = kp.getPublicKey().toRoochAddress()
       const authorizer = new PrivateKeyAuth(kp)
 
-      console.log('roochAddress:', roochAddress)
-
       const account = new Account(provider, roochAddress, authorizer)
       expect(account).toBeDefined()
 
@@ -79,8 +77,6 @@ describe('SDK', () => {
       const roochAddress = kp.getPublicKey().toRoochAddress()
       const authorizer = new PrivateKeyAuth(kp)
 
-      console.log('roochAddress:', roochAddress)
-
       const account = new Account(provider, roochAddress, authorizer)
       expect(account).toBeDefined()
 
@@ -110,7 +106,6 @@ describe('SDK', () => {
     it('get annotated states should be ok', async () => {
       const provider = new JsonRpcProvider()
       const result = provider.getAnnotatedStates('/object/0x1')
-      console.log(result)
       expect(result).toBeDefined()
     })
   })
@@ -124,8 +119,6 @@ describe('SDK', () => {
       )
       const roochAddress = kp.getPublicKey().toRoochAddress()
       const authorizer = new PrivateKeyAuth(kp)
-
-      console.log('roochAddress:', roochAddress)
 
       const account = new Account(provider, roochAddress, authorizer)
       expect(account).toBeDefined()
@@ -156,7 +149,6 @@ describe('SDK', () => {
           },
         ],
       )
-      console.log('session:', JSON.stringify(session))
 
       // run function with sessoin key
       const tx = await sessionAccount.runFunction('0x3::empty::empty', [], [], {
@@ -172,8 +164,6 @@ describe('SDK', () => {
       const kp = Ed25519Keypair.generate()
       const roochAddress = kp.getPublicKey().toRoochAddress()
       const authorizer = new PrivateKeyAuth(kp)
-
-      console.log('roochAddress:', roochAddress)
 
       const account = new Account(provider, roochAddress, authorizer)
       expect(account).toBeDefined()
@@ -196,8 +186,6 @@ describe('SDK', () => {
       const kp = Ed25519Keypair.generate()
       const roochAddress = kp.getPublicKey().toRoochAddress()
       const authorizer = new PrivateKeyAuth(kp)
-
-      console.log('roochAddress:', roochAddress)
 
       const account = new Account(provider, roochAddress, authorizer)
       expect(account).toBeDefined()
@@ -224,8 +212,6 @@ describe('SDK', () => {
       const roochAddress = kp.getPublicKey().toRoochAddress()
       const authorizer = new PrivateKeyAuth(kp)
 
-      console.log('roochAddress:', roochAddress)
-
       const account = new Account(provider, roochAddress, authorizer)
       expect(account).toBeDefined()
 
@@ -248,8 +234,6 @@ describe('SDK', () => {
       const roochAddress = kp.getPublicKey().toRoochAddress()
       const authorizer = new PrivateKeyAuth(kp)
 
-      console.log('roochAddress:', roochAddress)
-
       const account = new Account(provider, roochAddress, authorizer)
       expect(account).toBeDefined()
 
@@ -261,8 +245,13 @@ describe('SDK', () => {
       expect(sessionAccount).toBeDefined()
 
       // query session Keys
-      const sessionKeys = await account.querySessionKeys()
-      expect(sessionKeys).toBeDefined()
+      const page = await account.querySessionKeys(null, 10)
+      expect(page).toBeDefined()
+      expect(page.hasNextPage).toBeFalsy()
+      expect(page.nextCursor).toBeDefined()
+      expect(page.data).toHaveLength(1)
+      expect(page.data[0].authentication_key).toBeDefined()
+      expect(page.data[0].max_inactive_interval).toBe(100)
     })
   })
 })

@@ -50,7 +50,7 @@ export class JsonRpcClient extends Client {
         <% method.params.map(param=>{  %> 
             <% const paramType = getType(param.schema, schemas, alias) %> 
             <% if (paramType == 'Uint8Array') { %>
-                const <%= param.name + "_hex"%> = `0x${Buffer.from(<%=param.name%>).toString('hex')}`
+                const <%= param.name + "_hex"%> = <%=param.name%> ? `0x${Buffer.from(<%=param.name%>).toString('hex')}` : null
             <% } %>
         <% }) %>
 

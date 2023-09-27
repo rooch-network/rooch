@@ -27,7 +27,7 @@ export interface IProvider {
 
   listAnnotatedStates(
     access_path: string,
-    cursor: Uint8Array,
+    cursor: Bytes | null,
     limit: number,
   ): Promise<ListAnnotatedStateResultPageView>
 }
