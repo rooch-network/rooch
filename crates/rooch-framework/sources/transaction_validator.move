@@ -121,7 +121,6 @@ module rooch_framework::transaction_validator {
             account::create_account(ctx, sender);
             // Auto get gas coin from faucet if not enough
             // TODO remove this after we provide the gas faucet
-            let max_gas_amount = storage_context::max_gas_amount(ctx);
             //100 RGC
             let init_gas = 100_000_000_000_000_000_000u256;
             gas_coin::faucet(ctx, sender, init_gas); 
