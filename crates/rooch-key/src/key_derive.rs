@@ -122,7 +122,7 @@ impl CoinOperations<RoochAddress, RoochKeyPair, Ed25519PrivateKey> for KeyPairTy
         }
     }
 
-    // Encrypt the private key using ChaCha20Poly1305
+    // Encrypt the private key using ChaCha20Poly1305 and Argon2
     fn encrypt_private_key(
         &self,
         private_key: Ed25519PrivateKey,
@@ -131,10 +131,19 @@ impl CoinOperations<RoochAddress, RoochKeyPair, Ed25519PrivateKey> for KeyPairTy
         // 96-bits; unique per message
         let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
 
-        // Create a ChaCha20Poly1305 cipher with the password
-        let cipher =
-            ChaCha20Poly1305::new_from_slice(&password.unwrap_or("".to_owned()).as_bytes())
-                .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
+        // Derive the key material using nonce and password
+        let mut output_key_material = [0u8; 32]; // Can be any desired size
+        Argon2::default()
+            .hash_password_into(
+                &password.unwrap_or("".to_owned()).as_bytes(),
+                &nonce,
+                &mut output_key_material,
+            )
+            .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
+
+        // Create a ChaCha20Poly1305 cipher with the key material from password
+        let cipher = ChaCha20Poly1305::new_from_slice(&output_key_material)
+            .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
 
         // Encrypt the private key data to a ciphertext with a tag
         let ciphertext_with_tag = match cipher.encrypt(&nonce, private_key.as_bytes()) {
@@ -246,7 +255,7 @@ impl CoinOperations<EthereumAddress, Secp256k1RecoverableKeyPair, Secp256k1Recov
         // 96-bits; unique per message
         let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
 
-        // Create a ChaCha20Poly1305 cipher with the password
+        // Create a ChaCha20Poly1305 cipher with the key material from password
         let cipher =
             ChaCha20Poly1305::new_from_slice(&password.unwrap_or("".to_owned()).as_bytes())
                 .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
@@ -426,15 +435,25 @@ pub fn verify_password(
         .is_ok())
 }
 
-// Decrypt the private key using ChaCha20Poly1305
+// Decrypt the private key using ChaCha20Poly1305 and Argon2
 pub fn decrypt_private_key(
     nonce: [u8; 12],
     ciphertext: &[u8],
     tag: [u8; 16],
     password: Option<String>,
 ) -> Result<Vec<u8>, anyhow::Error> {
-    // Create a ChaCha20Poly1305 cipher with the password
-    let cipher = ChaCha20Poly1305::new_from_slice(&password.unwrap_or("".to_owned()).as_bytes())?;
+    // Derive the key material using nonce and password
+    let mut output_key_material = [0u8; 32]; // Can be any desired size
+    Argon2::default()
+        .hash_password_into(
+            &password.unwrap_or("".to_owned()).as_bytes(),
+            &nonce,
+            &mut output_key_material,
+        )
+        .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
+
+    // Create a ChaCha20Poly1305 cipher with the key material from password
+    let cipher = ChaCha20Poly1305::new_from_slice(&output_key_material)?;
 
     // Concatenate the tag and the ciphertext to reconstruct ciphertext_with_tag
     let mut ciphertext_with_tag = Vec::with_capacity(tag.len() + ciphertext.len());
