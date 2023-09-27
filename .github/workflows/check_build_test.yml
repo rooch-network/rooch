@@ -42,6 +42,10 @@ jobs:
             ## Build and test app start
       - name: Install pnpm dependencies
         run: npm install pnpm -g && pnpm install
+      - name: Gen SDK dependencie Code
+        run: pnpm sdk gen
+      - name: Lint
+        run: pnpm lint
 
       - name: Check code format
         run: cargo fmt -- --check
@@ -68,10 +72,10 @@ jobs:
         run: ./scripts/pr.sh -e
 
       ### Build and test sdk start
-      - name: Gen SDK dependencie Code
-        run: pnpm sdk gen
-      - name: Lint
-        run: pnpm lint
+#      - name: Gen SDK dependencie Code
+#        run: pnpm sdk gen
+#      - name: Lint
+#        run: pnpm lint
       - name: Build SDK
         run: pnpm sdk build
       - name: Test SDK
