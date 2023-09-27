@@ -1,4 +1,12 @@
 {
   "installation": "Installation",
-  "rooch-cli": "Rooch CLI"
+  "cli": "CLI",
+  "faucet": "Faucet",
+  "address-space": "Address space",
+  "library": "Library",
+  "create-rooch-move-contract": "Create Rooch Move contract",
+  "start-server": "Start server",
+  "object": "Object",
+  "interactive-ethereum": "Interactive with Ethereum",
+  "rpc": "RPC"
 }

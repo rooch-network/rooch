@@ -1,4 +1,12 @@
 {
   "installation": "安装",
-  "rooch-cli": "Rooch CLI"
+  "cli": "CLI",
+  "faucet": "水龙头",
+  "address-space": "地址空间",
+  "library": "库",
+  "create-rooch-move-contract": "创建 Rooch Move 合约",
+  "start-server": "启动服务",
+  "object": "对象",
+  "interactive-ethereum": "与以太坊交互",
+  "rpc": "RPC"
 }
