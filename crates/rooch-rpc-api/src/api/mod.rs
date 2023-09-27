@@ -5,7 +5,6 @@ use jsonrpsee::RpcModule;
 
 pub mod eth_api;
 pub mod rooch_api;
-pub mod wallet_api;
 
 pub const DEFAULT_RESULT_LIMIT: u64 = 50;
 pub const DEFAULT_RESULT_LIMIT_USIZE: usize = DEFAULT_RESULT_LIMIT as usize;

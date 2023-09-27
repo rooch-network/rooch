@@ -12,7 +12,6 @@ use rooch_key::keypair::KeyPairType;
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use rooch_rpc_client::client_config::{ClientConfig, Env};
 use rooch_types::address::RoochAddress;
-use rooch_types::chain_id::RoochChainID;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::RoochError;
 use rooch_types::error::RoochResult;
@@ -51,7 +50,6 @@ impl CommandAction<String> for Init {
                         .map(|s| s.to_owned())
                         .collect();
                     Some(Env {
-                        chain_id: chain_url[0].parse().unwrap(),
                         alias: "custom".to_string(),
                         rpc: chain_url[1].to_owned(),
                         ws: None,
@@ -89,13 +87,7 @@ impl CommandAction<String> for Init {
                             alias
                         };
                         print!("Environment ChainID for [{url}] : ");
-                        let chain_id = read_line()?;
-                        let chain_id = chain_id
-                            .trim()
-                            .parse::<u64>()
-                            .unwrap_or(RoochChainID::LOCAL.chain_id().id());
                         Env {
-                            chain_id,
                             alias,
                             rpc: url,
                             ws: None,
@@ -124,12 +116,14 @@ impl CommandAction<String> for Init {
                     key_pair_type.type_of()
                 );
                 println!("Secret Recovery Phrase : [{phrase}]");
-                let alias = env.alias.clone();
+                let dev_env = Env::new_dev_env();
+                let active_env_alias = dev_env.alias.clone();
                 ClientConfig {
                     keystore,
-                    envs: vec![env, Env::new_dev_env(), Env::new_test_env()],
+                    envs: vec![env, dev_env],
                     active_address: Some(new_address),
-                    active_env: Some(alias),
+                    // make dev env as default env
+                    active_env: Some(active_env_alias),
                 }
                 .persisted(client_config_path.as_path())
                 .save()?;

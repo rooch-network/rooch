@@ -97,7 +97,7 @@ impl std::fmt::Display for RoochOpt {
 impl RoochOpt {
     pub fn new_with_temp_store() -> Self {
         RoochOpt {
-            base_data_dir: None,
+            base_data_dir: Some(PathBuf::from("TMP")),
             chain_id: Some(RoochChainID::LOCAL),
             store: StoreConfig::default(),
             port: None,
@@ -119,8 +119,6 @@ impl BaseConfig {
         let base_data_dir = match opt.base_data_dir.clone() {
             Some(base_data_dir) if base_data_dir.to_str() == Some("TMP") => temp_dir(),
             Some(base_data_dir) => DataDirPath::PathBuf(base_data_dir),
-            // only local network use temp store dir
-            None if chain_id.is_local() => temp_dir(),
             None => DataDirPath::PathBuf(R_DEFAULT_BASE_DATA_DIR.to_path_buf()),
         };
 
