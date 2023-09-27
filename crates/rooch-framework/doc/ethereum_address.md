@@ -8,6 +8,7 @@
 -  [Struct `ETHAddress`](#0x3_ethereum_address_ETHAddress)
 -  [Constants](#@Constants_0)
 -  [Function `new`](#0x3_ethereum_address_new)
+-  [Function `from_bytes`](#0x3_ethereum_address_from_bytes)
 -  [Function `as_bytes`](#0x3_ethereum_address_as_bytes)
 -  [Function `into_bytes`](#0x3_ethereum_address_into_bytes)
 
@@ -69,6 +70,15 @@
 
 
 
+<a name="0x3_ethereum_address_ErrorInvaidAddresBytes"></a>
+
+
+
+<pre><code><b>const</b> <a href="ethereum_address.md#0x3_ethereum_address_ErrorInvaidAddresBytes">ErrorInvaidAddresBytes</a>: u64 = 2;
+</code></pre>
+
+
+
 <a name="0x3_ethereum_address_ErrorMalformedPublicKey"></a>
 
 error code
@@ -126,6 +136,36 @@ error code
     // Return the 20 bytes <b>address</b> <b>as</b> the Ethereum <b>address</b>
     <a href="ethereum_address.md#0x3_ethereum_address_ETHAddress">ETHAddress</a> {
         bytes: address_bytes,
+    }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_ethereum_address_from_bytes"></a>
+
+## Function `from_bytes`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_address.md#0x3_ethereum_address_from_bytes">from_bytes</a>(bytes: <a href="">vector</a>&lt;u8&gt;): <a href="ethereum_address.md#0x3_ethereum_address_ETHAddress">ethereum_address::ETHAddress</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_address.md#0x3_ethereum_address_from_bytes">from_bytes</a>(bytes: <a href="">vector</a>&lt;u8&gt;): <a href="ethereum_address.md#0x3_ethereum_address_ETHAddress">ETHAddress</a> {
+    <b>assert</b>!(
+        <a href="_length">vector::length</a>(&bytes) == <a href="ethereum_address.md#0x3_ethereum_address_ETHEREUM_ADDR_LENGTH">ETHEREUM_ADDR_LENGTH</a>,
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="ethereum_address.md#0x3_ethereum_address_ErrorInvaidAddresBytes">ErrorInvaidAddresBytes</a>)
+    );
+    <a href="ethereum_address.md#0x3_ethereum_address_ETHAddress">ETHAddress</a> {
+        bytes: bytes,
     }
 }
 </code></pre>

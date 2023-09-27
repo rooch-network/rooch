@@ -3,10 +3,14 @@
 
 use super::{authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo};
 use crate::{
-    address::EthereumAddress, chain_id::RoochChainID, error::RoochError,
-    framework::auth_validator::BuiltinAuthValidator,
+    address::EthereumAddress,
+    chain_id::RoochChainID,
+    error::RoochError,
+    framework::{
+        auth_validator::BuiltinAuthValidator, gas_coin::GasCoin, transfer::TransferModule,
+    },
 };
-use anyhow::Result;
+use anyhow::{bail, Result};
 use ethers::{
     types::{Bytes, OtherFields, Signature, Transaction, U256, U64},
     utils::rlp::{Decodable, Rlp},
@@ -15,6 +19,7 @@ use move_core_types::account_address::AccountAddress;
 use moveos_types::{
     gas_config::GasConfig,
     h256::{self, H256},
+    state::MoveStructType,
     transaction::{MoveAction, MoveOSTransaction},
     tx_context::TxContext,
 };
@@ -55,9 +60,29 @@ impl EthereumTransactionData {
 
     //This function is just a demo, we should define the Ethereum calldata's MoveAction standard
     pub fn decode_calldata_to_action(&self) -> Result<MoveAction> {
-        //Maybe we should use RLP to encode the MoveAction
-        bcs::from_bytes(&self.0.input)
-            .map_err(|e| anyhow::anyhow!("decode calldata to action failed: {}", e))
+        if self.0.input.is_empty() {
+            match &self.0.to {
+                Some(to) => {
+                    let to = EthereumAddress(*to);
+                    Ok(
+                        TransferModule::create_transfer_coin_to_multichain_address_action(
+                            GasCoin::struct_tag(),
+                            to.into(),
+                            crate::framework::ethereum_light_client::eth_u256_to_move_u256(
+                                &self.0.value,
+                            ),
+                        ),
+                    )
+                }
+                None => {
+                    bail!("to address is empty, invalid transaction");
+                }
+            }
+        } else {
+            //Maybe we should use RLP to encode the MoveAction
+            bcs::from_bytes(&self.0.input)
+                .map_err(|e| anyhow::anyhow!("decode calldata to action failed: {}", e))
+        }
     }
 
     pub fn into_signature(&self) -> Result<Signature, RoochError> {
