@@ -72,10 +72,6 @@ jobs:
         run: ./scripts/pr.sh -e
 
       ### Build and test sdk start
-#      - name: Gen SDK dependencie Code
-#        run: pnpm sdk gen
-#      - name: Lint
-#        run: pnpm lint
       - name: Build SDK
         run: pnpm sdk build
       - name: Test SDK
