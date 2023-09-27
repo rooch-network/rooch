@@ -4,6 +4,6 @@ import { Bytes } from './bytes'
 
 export interface IPage<T> {
   data: Array<T>
-  nextCursor?: Bytes | null
+  nextCursor: Bytes | null
   hasNextPage: boolean
 }

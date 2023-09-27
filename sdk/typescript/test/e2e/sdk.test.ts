@@ -252,6 +252,10 @@ describe('SDK', () => {
       expect(page.data).toHaveLength(1)
       expect(page.data[0].authentication_key).toBeDefined()
       expect(page.data[0].max_inactive_interval).toBe(100)
+
+      // query next page
+      const nextPage = await account.querySessionKeys(page.nextCursor, 10)
+      expect(nextPage).toBeDefined()
     })
   })
 })
