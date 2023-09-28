@@ -11,6 +11,7 @@ module rooch_framework::genesis {
     use rooch_framework::gas_coin;
     use rooch_framework::transaction_fee;
     use rooch_framework::timestamp;
+    use rooch_framework::address_mapping;
     use rooch_framework::ethereum_light_client;
 
     const ErrorGenesisInit: u64 = 1;
@@ -24,7 +25,7 @@ module rooch_framework::genesis {
 
     fun init(ctx: &mut StorageContext){
         //TODO genesis account should be a resource account?
-        let genesis_account = &account::create_account(ctx, @rooch_framework);//&moveos_signer::module_signer<GenesisContext>();
+        let genesis_account = &account::create_account(ctx, @rooch_framework);
         let genesis_context_option = storage_context::get<GenesisContext>(ctx);
         assert!(option::is_some(&genesis_context_option), error::invalid_argument(ErrorGenesisInit));
         let genesis_context = option::extract(&mut genesis_context_option);
@@ -35,6 +36,7 @@ module rooch_framework::genesis {
         gas_coin::genesis_init(ctx, genesis_account);
         transaction_fee::genesis_init(ctx, genesis_account);
         timestamp::genesis_init(ctx, genesis_account, genesis_context.timestamp);
+        address_mapping::genesis_init(ctx, genesis_account);
         ethereum_light_client::genesis_init(ctx, genesis_account);
     }
 

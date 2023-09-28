@@ -22,6 +22,7 @@
 <b>use</b> <a href="chain_id.md#0x3_chain_id">0x3::chain_id</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 <b>use</b> <a href="gas_coin.md#0x3_gas_coin">0x3::gas_coin</a>;
+<b>use</b> <a href="multichain_address.md#0x3_multichain_address">0x3::multichain_address</a>;
 <b>use</b> <a href="session_key.md#0x3_session_key">0x3::session_key</a>;
 <b>use</b> <a href="transaction_fee.md#0x3_transaction_fee">0x3::transaction_fee</a>;
 </code></pre>

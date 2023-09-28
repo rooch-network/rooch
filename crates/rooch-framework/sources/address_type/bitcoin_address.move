@@ -80,6 +80,13 @@ module rooch_framework::bitcoin_address{
         bitcoin_address
     }
 
+    public fun from_bytes(bytes: vector<u8>): BTCAddress {
+        //TODO check the address bytes.
+        BTCAddress {
+            bytes: bytes,
+        }
+    }
+
     public fun as_bytes(addr: &BTCAddress): &vector<u8> {
         &addr.bytes
     }

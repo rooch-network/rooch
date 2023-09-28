@@ -4,7 +4,8 @@ module rooch_framework::transaction_validator {
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::tx_result;
     use rooch_framework::account;
-    use rooch_framework::address_mapping::{Self, MultiChainAddress};
+    use rooch_framework::multichain_address::MultiChainAddress;
+    use rooch_framework::address_mapping;
     use rooch_framework::account_authentication;
     use rooch_framework::auth_validator::{Self, TxValidateResult};
     use rooch_framework::auth_validator_registry;

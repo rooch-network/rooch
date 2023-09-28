@@ -34,6 +34,7 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::gas_coin`](gas_coin.md#0x3_gas_coin)
 -  [`0x3::genesis`](genesis.md#0x3_genesis)
 -  [`0x3::hash`](hash.md#0x3_hash)
+-  [`0x3::multichain_address`](multichain_address.md#0x3_multichain_address)
 -  [`0x3::native_validator`](native_validator.md#0x3_native_validator)
 -  [`0x3::schnorr`](schnorr.md#0x3_schnorr)
 -  [`0x3::session_key`](session_key.md#0x3_session_key)

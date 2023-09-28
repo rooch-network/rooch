@@ -10,6 +10,7 @@ module rooch_framework::ethereum_address {
     /// error code
     const ErrorMalformedPublicKey: u64 = 0;
     const ErrorDecompressPublicKey: u64 = 1;
+    const ErrorInvaidAddresBytes: u64 = 2;
 
     struct ETHAddress has store,copy,drop {
         bytes: vector<u8>,
@@ -47,6 +48,16 @@ module rooch_framework::ethereum_address {
         // Return the 20 bytes address as the Ethereum address
         ETHAddress {
             bytes: address_bytes,
+        }
+    }
+
+    public fun from_bytes(bytes: vector<u8>): ETHAddress {
+        assert!(
+            vector::length(&bytes) == ETHEREUM_ADDR_LENGTH,
+            error::invalid_argument(ErrorInvaidAddresBytes)
+        );
+        ETHAddress {
+            bytes: bytes,
         }
     }
 

@@ -9,6 +9,7 @@
 -  [Constants](#@Constants_0)
 -  [Function `new_legacy`](#0x3_bitcoin_address_new_legacy)
 -  [Function `new_bech32`](#0x3_bitcoin_address_new_bech32)
+-  [Function `from_bytes`](#0x3_bitcoin_address_from_bytes)
 -  [Function `as_bytes`](#0x3_bitcoin_address_as_bytes)
 -  [Function `into_bytes`](#0x3_bitcoin_address_into_bytes)
 -  [Function `create_p2pkh_address`](#0x3_bitcoin_address_create_p2pkh_address)
@@ -239,6 +240,33 @@ error code
     <b>let</b> <a href="bitcoin_address.md#0x3_bitcoin_address">bitcoin_address</a> = <a href="bitcoin_address.md#0x3_bitcoin_address_create_bech32_address">create_bech32_address</a>(pub_key, version);
 
     <a href="bitcoin_address.md#0x3_bitcoin_address">bitcoin_address</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_bitcoin_address_from_bytes"></a>
+
+## Function `from_bytes`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_from_bytes">from_bytes</a>(bytes: <a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_from_bytes">from_bytes</a>(bytes: <a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
+    //TODO check the <b>address</b> bytes.
+    <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
+        bytes: bytes,
+    }
 }
 </code></pre>
 
