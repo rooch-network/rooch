@@ -118,7 +118,9 @@ const CardSnippet = (props: CardSnippetProps) => {
               onChange={(e, newValue) => (newValue !== null ? setTabValue(newValue) : null)}
             >
               {codes.map((v, i) => (
-                <ToggleButton key={v.lng} value={i}>{v.lng}</ToggleButton>
+                <ToggleButton key={v.lng} value={i}>
+                  {v.lng}
+                </ToggleButton>
               ))}
             </ToggleButtonGroup>
           </Box>

@@ -57,6 +57,7 @@ const DefaultPalette = (mode: Palette['mode'], settings: Settings): Palette => {
       black: '#000',
       white: whiteColor,
     },
+
     primary: {
       light: '#8082FF',
       main: '#696CFF',
