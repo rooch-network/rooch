@@ -3,8 +3,8 @@
 
 use crate::cli_types::CommandAction;
 use crate::commands::transaction::commands::{
+    get_transactions_by_hash::GetTransactionsByHashesCommand,
     get_transactions_by_order::GetTransactionsByOrderCommand,
-    get_transactions_by_hash::GetTransactionsByHashesCommand
 };
 use async_trait::async_trait;
 use rooch_types::error::RoochResult;
