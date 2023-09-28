@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // ** React Imports
-import { useState, useEffect } from 'react'
+import { useState, useRef, useMemo, useEffect } from 'react'
 
 import { useAuth } from 'src/hooks/useAuth'
 
@@ -13,7 +13,13 @@ import CardHeader from '@mui/material/CardHeader'
 import CardContent from '@mui/material/CardContent'
 import Button from '@mui/material/Button'
 import Snackbar from '@mui/material/Snackbar'
-import { DataGrid, GridColDef, GridValueGetterParams, GridRenderCellParams } from '@mui/x-data-grid'
+import {
+  DataGrid,
+  GridColDef,
+  GridValueGetterParams,
+  GridRenderCellParams,
+  GridPaginationModel,
+} from '@mui/x-data-grid'
 
 // ** Store & Actions Imports
 import { fetchData } from 'src/store/session'
@@ -70,17 +76,30 @@ const handleRemove = (authentication_key: string) => {
   console.log(`Remove session key with authentication_key: ${authentication_key}`)
 }
 
+const PAGE_SIZE = 5
+
 export default function SessionKeyList() {
   const auth = useAuth()
 
+  const mapPageToNextCursor = useRef<{ [page: number]: Uint8Array | null }>({})
+
   // ** State
-  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 })
+  const [paginationModel, setPaginationModel] = useState({
+    page: 0,
+    pageSize: PAGE_SIZE,
+  })
+
+  const queryOptions = useMemo(
+    () => ({
+      cursor: mapPageToNextCursor.current[paginationModel.page - 1],
+      pageSize: paginationModel.pageSize,
+    }),
+    [paginationModel],
+  )
 
   // ** Hooks
   const dispatch = useAppDispatch()
   const { result, status, error } = useAppSelector((state) => state.session)
-
-  // const clipboard = useClipboard()
 
   useEffect(() => {
     const defaultAccount = auth.defaultAccount()
@@ -95,13 +114,27 @@ export default function SessionKeyList() {
 
     dispatch(
       fetchData({
-        cursor: paginationModel.page * paginationModel.pageSize,
-        limit: paginationModel.pageSize,
+        cursor: queryOptions.cursor,
+        limit: queryOptions.pageSize,
         account_address: defaultAccount.address,
         dispatch,
       }),
     )
-  }, [dispatch, auth, paginationModel, result, status])
+  }, [dispatch, auth, paginationModel, result, status, queryOptions])
+
+  useEffect(() => {
+    if (status !== 'loading' && result.nextCursor) {
+      // We add nextCursor when available
+      mapPageToNextCursor.current[paginationModel.page] = result.nextCursor
+    }
+  }, [paginationModel.page, status, result.nextCursor])
+
+  const handlePaginationModelChange = (newPaginationModel: GridPaginationModel) => {
+    // We have the cursor, we can allow the page transition.
+    if (newPaginationModel.page === 0 || mapPageToNextCursor.current[newPaginationModel.page - 1]) {
+      setPaginationModel(newPaginationModel)
+    }
+  }
 
   const handleRefresh = () => {
     const defaultAccount = auth.defaultAccount()
@@ -111,8 +144,8 @@ export default function SessionKeyList() {
 
     dispatch(
       fetchData({
-        cursor: paginationModel.page * paginationModel.pageSize,
-        limit: paginationModel.pageSize,
+        cursor: queryOptions.cursor,
+        limit: queryOptions.pageSize,
         account_address: defaultAccount.address,
         dispatch,
       }),
@@ -135,13 +168,13 @@ export default function SessionKeyList() {
             </Button>
           </Box>
           <DataGrid
-            rows={status === 'finished' ? result : []}
+            rows={status === 'finished' ? result.data : []}
             loading={status === ('loading' as 'loading')}
             columns={columns}
             checkboxSelection
             pageSizeOptions={[10, 25, 50]}
+            onPaginationModelChange={handlePaginationModelChange}
             paginationModel={paginationModel}
-            onPaginationModelChange={setPaginationModel}
             autoHeight
           />
           <Snackbar
