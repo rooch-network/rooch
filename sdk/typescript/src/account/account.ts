@@ -6,7 +6,7 @@ import { IAccount, CallOption, ISessionKey } from './interface'
 import { IProvider } from '../provider'
 import { IAuthorizer, IAuthorization, PrivateKeyAuth } from '../auth'
 import {
-  AccountAddres,
+  AccountAddress,
   FunctionId,
   TypeTag,
   Arg,
