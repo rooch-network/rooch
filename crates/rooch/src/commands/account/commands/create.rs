@@ -24,7 +24,7 @@ impl CreateCommand {
         let mut context = self.context_options.build().await?;
 
         let (new_address, phrase, multichain_id) = context
-            .config
+            .client_config
             .keystore
             .generate_and_add_new_key(KeyPairType::RoochKeyPairType, None, None)?;
 

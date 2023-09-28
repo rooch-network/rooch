@@ -7,7 +7,10 @@ use async_trait::async_trait;
 use clap::Parser;
 use regex::Regex;
 use rooch_config::config::Config;
-use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_KEYSTORE_FILENAME};
+use rooch_config::server_config::ServerConfig;
+use rooch_config::{
+    rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_KEYSTORE_FILENAME, ROOCH_SERVER_CONFIG,
+};
 use rooch_key::keypair::KeyPairType;
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use rooch_rpc_client::client_config::{ClientConfig, Env};
@@ -16,6 +19,7 @@ use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::RoochError;
 use rooch_types::error::RoochResult;
 use std::fs;
+use std::str::FromStr;
 
 /// Tool for init with rooch
 #[derive(Parser)]
@@ -23,22 +27,28 @@ pub struct Init {
     /// Command line input of custom server URL
     #[clap(short = 's', long = "server-url")]
     pub server_url: Option<String>,
+    /// The address of the Rooch account to be set as key address
+    #[clap(short = 'k', long = "key-address")]
+    key_address: Option<String>,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
 }
 
 #[async_trait]
 impl CommandAction<String> for Init {
-    async fn execute(self) -> RoochResult<String> {
-        let client_config_path = match self.context_options.config_dir {
+    async fn execute(self) -> RoochResult<()> {
+        let config_path = match self.context_options.config_dir {
             Some(v) => {
                 if !v.exists() {
                     fs::create_dir_all(v.clone())?
                 }
-                v.join(ROOCH_CLIENT_CONFIG)
+                v
             }
-            None => rooch_config_dir()?.join(ROOCH_CLIENT_CONFIG),
+            None => rooch_config_dir()?,
         };
+
+        // Rooch client config init
+        let client_config_path = config_path.join(ROOCH_CLIENT_CONFIG);
         // Prompt user for connect to devnet fullnode if config does not exist.
         if !client_config_path.exists() {
             let env = match std::env::var_os("ROOCH_CONFIG_WITH_RPC_URL") {
@@ -129,19 +139,64 @@ impl CommandAction<String> for Init {
                 .save()?;
             }
 
-            let message = format!(
-                "Rooch config file generated at {}",
+            println!(format!(
+                "Rooch client config file generated at {}",
                 client_config_path.display()
-            );
-
-            return Ok(message);
+            ));
+        } else {
+            println!(format!(
+                "Rooch client config file already exists at {}",
+                client_config_path.display()
+            ));
         }
 
-        let message = format!(
-            "Rooch config file already exists at {}",
-            client_config_path.display()
-        );
+        // Rooch server config init
+        let server_config_path = config_path.join(ROOCH_SERVER_CONFIG);
+        if !server_config_path.exists() {
+            let key_address = if self.key_address.is_none() {
+                // server config use the same key store file with client config
+                let keystore_path = client_config_path
+                    .parent()
+                    .unwrap_or(&rooch_config_dir()?)
+                    .join(ROOCH_KEYSTORE_FILENAME);
 
-        Ok(message)
+                let keystore_result =
+                    FileBasedKeystore::<RoochAddress, RoochKeyPair>::new(&keystore_path);
+                let mut keystore = match keystore_result {
+                    Ok(file_keystore) => Keystore::File(file_keystore),
+                    Err(error) => return Err(RoochError::GenerateKeyError(error.to_string())),
+                };
+
+                let (new_address, phrase, key_pair_type) =
+                    keystore.generate_and_add_new_key(KeyPairType::RoochKeyPairType, None, None)?;
+                println!(
+                    "Generated key keypair for address with type {:?} [{new_address}]",
+                    key_pair_type.type_of()
+                );
+                new_address
+            } else {
+                RoochAddress::from_str(self.key_address.unwrap().as_str()).map_err(|e| {
+                    RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
+                })?;
+            };
+
+            let mut server_config = ServerConfig::default();
+            server_config.key_address = Some(key_address);
+            server_config
+                .persisted(server_config_path.as_path())
+                .save()?;
+
+            println!(format!(
+                "Rooch server config file generated at {}",
+                server_config_path.display()
+            ));
+        } else {
+            println!(format!(
+                "Rooch server config file already exists at {}",
+                server_config_path.display()
+            ));
+        }
+
+        Ok(())
     }
 }

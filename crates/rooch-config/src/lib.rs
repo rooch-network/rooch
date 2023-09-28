@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use std::fs::create_dir_all;
 use std::sync::Arc;
 use std::{fmt::Debug, path::Path, path::PathBuf};
+use rooch_types::address::RoochAddress;
 
 pub const ROOCH_DIR: &str = ".rooch";
 pub const ROOCH_CONFIR_DIR: &str = "rooch_config";
@@ -82,6 +83,11 @@ pub struct RoochOpt {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long)]
     pub eth_rpc_url: Option<String>,
+
+    /// The address of the Rooch account to be use as key address
+    // #[clap(short = 'k', long = "key-address")]
+    // pub key_address: Option<String>,
+    pub key_address: Option<String>,
 }
 
 impl std::fmt::Display for RoochOpt {
@@ -102,6 +108,7 @@ impl RoochOpt {
             store: StoreConfig::default(),
             port: None,
             eth_rpc_url: None,
+            key_address: None,
         }
     }
 }

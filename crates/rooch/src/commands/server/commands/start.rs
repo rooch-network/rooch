@@ -4,6 +4,7 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
+use move_core_types::account_address::AccountAddress;
 use rooch_config::RoochOpt;
 use rooch_rpc_server::Service;
 use rooch_types::chain_id::RoochChainID;
@@ -25,7 +26,18 @@ pub struct StartCommand {
 
 #[async_trait]
 impl CommandAction<()> for StartCommand {
-    async fn execute(self) -> RoochResult<()> {
+    async fn execute(mut self) -> RoochResult<()> {
+
+        let mut context = self.context_options.build().await?;
+        //load key address from server config
+        if self.opt.key_address.is_none() {
+            let load_key_address = context.server_config.key_address.map(|key| AccountAddress::from(key).to_hex_literal());
+            if load_key_address.is_none() {
+                return Err(RoochError::KeyAddressDoesNotExistError());
+            }
+            self.opt.key_address = self.opt.key_address;
+        }
+
         let mut service = Service::new();
         service
             .start(&self.opt.clone())
@@ -33,8 +45,8 @@ impl CommandAction<()> for StartCommand {
             .map_err(RoochError::from)?;
 
         //Automatically switch env when use start server, if network is local or dev seed
-        let mut context = self.context_options.build().await?;
-        let active_env = context.config.get_active_env()?;
+        // let mut context = self.context_options.build().await?;
+        let active_env = context.client_config.get_active_env()?;
         let rooch_chain_id = self.opt.chain_id.unwrap_or_default();
         let chain_name = rooch_chain_id.chain_name().to_lowercase();
         // When chain_id is not equals to env alias
@@ -56,7 +68,7 @@ impl CommandAction<()> for StartCommand {
 
         if let Some(switch_env_alias) = switch_env.clone() {
             if context
-                .config
+                .client_config
                 .get_env(&Some(switch_env_alias.clone()))
                 .is_none()
             {
@@ -65,8 +77,8 @@ impl CommandAction<()> for StartCommand {
                     switch_env_alias
                 )));
             }
-            context.config.active_env = switch_env;
-            context.config.save()?;
+            context.client_config.active_env = switch_env;
+            context.client_config.save()?;
             println!(
                 "The active env was successfully switched to `{}`",
                 switch_env_alias

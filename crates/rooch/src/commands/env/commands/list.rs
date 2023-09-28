@@ -22,9 +22,9 @@ impl ListCommand {
         );
         println!("{}", ["-"; 153].join(""));
 
-        for env in context.config.envs.iter() {
+        for env in context.client_config.envs.iter() {
             let mut active = "";
-            if context.config.active_env == Some(env.alias.clone()) {
+            if context.client_config.active_env == Some(env.alias.clone()) {
                 active = "True"
             }
 

@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::config::Config;
 use rooch_types::address::RoochAddress;
 use serde::Deserialize;
 use serde::Serialize;
@@ -10,8 +11,10 @@ use std::fmt::{Display, Formatter, Result, Write};
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
-    pub proposer_address: Option<RoochAddress>,
-    pub sequencer_address: Option<RoochAddress>,
+    // pub proposer_address: Option<RoochAddress>,
+    // pub sequencer_address: Option<RoochAddress>,
+    // pub relayer_address: Option<RoochAddress>,
+    pub key_address: Option<RoochAddress>,
     pub block_propose_duration_in_seconds: u16,
 }
 
@@ -30,6 +33,8 @@ impl ServerConfig {
     }
 }
 
+impl Config for ServerConfig {}
+
 impl Display for ServerConfig {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let mut writer = String::new();
@@ -46,8 +51,9 @@ impl Default for ServerConfig {
         Self {
             host: "0.0.0.0".to_string(),
             port: 50051,
-            proposer_address: None,
-            sequencer_address: None,
+            // proposer_address: None,
+            // sequencer_address: None,
+            key_address: None,
             block_propose_duration_in_seconds: 5,
         }
     }
