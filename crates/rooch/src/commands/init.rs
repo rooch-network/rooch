@@ -27,9 +27,9 @@ pub struct Init {
     /// Command line input of custom server URL
     #[clap(short = 's', long = "server-url")]
     pub server_url: Option<String>,
-    /// Whether a password should be provided.
+    /// Whether a password should be provided
     #[clap(short = 'p', long = "password")]
-    password_required: bool,
+    password_required: Option<bool>,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
 }
@@ -151,12 +151,12 @@ impl CommandAction<()> for Init {
                     Err(error) => return Err(RoochError::GenerateKeyError(error.to_string())),
                 };
 
-                let password = if self.password_required {
-                    // Prompt for a password if required
-                    rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
-                } else {
+                let password = if self.password_required == Some(false) {
                     // Use an empty password if not required
                     String::new()
+                } else {
+                    // Prompt for a password if required
+                    rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
                 };
                 println!("Your password is {}", password);
 
