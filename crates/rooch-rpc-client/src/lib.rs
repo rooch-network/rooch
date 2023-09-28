@@ -21,13 +21,9 @@ use rooch_rpc_api::jsonrpc_types::{
 };
 use rooch_rpc_api::{
     api::rooch_api::RoochAPIClient,
-    jsonrpc_types::{
-        AnnotatedStateView, ExecuteTransactionResponseView, StateView, TransactionView,
-    },
+    jsonrpc_types::{AnnotatedStateView, ExecuteTransactionResponseView, StateView},
 };
-use rooch_types::{
-    account::Account, address::RoochAddress, transaction::rooch::RoochTransaction, H256,
-};
+use rooch_types::{account::Account, address::RoochAddress, transaction::rooch::RoochTransaction};
 use std::sync::Arc;
 use std::time::Duration;
 
