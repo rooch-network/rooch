@@ -23,6 +23,7 @@ import { TransactionResultView } from '@rooch/sdk'
 
 // ** Utils
 import { formatAddress } from 'src/@core/utils/format'
+import { useRooch } from '../../../../hooks/useRooch'
 
 // ** Hooks
 // import useClipboard from 'src/@core/hooks/useClipboard'
@@ -71,14 +72,6 @@ const defaultColumns: GridColDef[] = [
       <LinkStyled href="/">{row.transaction.action_type.toUpperCase()}</LinkStyled>
     ),
   },
-
-  // {
-  //   flex: 0.3,
-  //   field: 'age',
-  //   minWidth: 300,
-  //   headerName: 'Age',
-  //   renderCell: ({ row }: CellType) => <LinkStyled href="/">{row.transaction.}</LinkStyled>,
-  // },
   {
     flex: 0.2,
     minWidth: 125,
@@ -119,29 +112,33 @@ const defaultColumns: GridColDef[] = [
 ]
 
 const TransactionList = () => {
+  // Hook
+  const rooch = useRooch()
+  const dispatch = useAppDispatch()
+  const { result, status } = useAppSelector((state) => state.transaction)
+
   // ** State
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 })
 
-  // ** Hooks
-  const dispatch = useAppDispatch()
-  const { result, status } = useAppSelector((state) => state.transaction)
+  // const [data, setData] = useState<TransactionResultView[]>([])
 
   // const clipboard = useClipboard()
 
   useEffect(() => {
     // Ignore part of request
-    if ((!result.has_next_page && status === 'finished') || status === 'loading') {
-      return
-    }
-
+    // if ((!result.has_next_page && status === 'finished') || status === 'loading') {
+    //   return
+    // }
+    // TODO : fix
     dispatch(
       fetchData({
-        cursor: paginationModel.page * paginationModel.pageSize,
-        limit: paginationModel.pageSize,
+        cursor: 0,
+        limit: (paginationModel.page + 1) * paginationModel.pageSize,
         dispatch,
+        provider: rooch.provider!,
       }),
     )
-  }, [dispatch, paginationModel, result, status])
+  }, [dispatch, paginationModel, rooch])
 
   return (
     <Card>
@@ -149,6 +146,13 @@ const TransactionList = () => {
         autoHeight
         pagination
         disableColumnMenu={true}
+        rowCount={
+          status === 'finished'
+            ? result.has_next_page
+              ? result.data.length + 1
+              : result.data.length
+            : 0
+        }
         rows={
           status === 'finished'
             ? result.data.map((row) => ({ ...row, id: row.execution_info.tx_hash }))

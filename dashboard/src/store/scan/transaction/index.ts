@@ -12,6 +12,7 @@ import { JsonRpcProvider, TransactionResultPageView } from '@rooch/sdk'
 
 interface DataParams {
   dispatch: Dispatch<AnyAction>
+  provider: JsonRpcProvider
   cursor: number
   limit: number
 }
@@ -20,11 +21,11 @@ interface DataParams {
 export const fetchData = createAsyncThunk('state/fetchData', async (params: DataParams) => {
   params.dispatch(start())
 
-  const jp = new JsonRpcProvider()
-
   try {
-    let result = await jp.getTransactionsByOrder(params.cursor, params.limit)
+    let result = await params.provider.getTransactionsByOrder(params.cursor, params.limit)
     params.dispatch(success(result))
+
+    console.log(result)
 
     return result
   } catch (e: any) {

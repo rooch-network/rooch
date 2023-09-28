@@ -3,20 +3,26 @@
 
 // ** React Imports
 import { createContext, useEffect, useState, ReactNode } from 'react'
+
+// ** ETH
 import detectEthereumProvider from '@metamask/detect-provider'
 
-import { MetamaskValueType, AddChinaParameterType } from 'src/context/wallet/types'
+// ** Types
+import { ETHValueType } from 'src/context/wallet/types'
 
-// ** Config
-import config from 'src/configs/auth'
+// ** SDK
+import { ChainInfo, DevChain } from '@rooch/sdk'
+
+// ** Hooks
+import { useRooch } from 'src/hooks/useRooch'
 
 type Props = {
   children: ReactNode
 }
 
-const defaultProvider: MetamaskValueType = {
+const defaultProvider: ETHValueType = {
   loading: true,
-  chainId: null,
+  chainId: DevChain.info.chainId,
   hasProvider: false,
   provider: undefined,
   accounts: [],
@@ -27,19 +33,22 @@ const defaultProvider: MetamaskValueType = {
   disconnect: () => null,
 }
 
-const MetamaskContext = createContext<MetamaskValueType>(defaultProvider)
+const ETHContext = createContext(defaultProvider)
 
-const MetamaskProvider = ({ children }: Props) => {
+const ETHProvider = ({ children }: Props) => {
+  // Hooks
+  const rooch = useRooch()
+
+  // States
   const [hasProvider, setHasProvider] = useState<boolean>(defaultProvider.hasProvider)
   const [accounts, setAccounts] = useState<string[]>(defaultProvider.accounts)
-  const [chainId, setChainId] = useState<string | null>(defaultProvider.chainId)
+  const [chainId, setChainId] = useState<string>(defaultProvider.chainId)
   const [loading, setLoading] = useState<boolean>(defaultProvider.loading)
 
   useEffect(() => {
     setLoading(true)
 
     const refreshAccounts = (newAccounts: any) => {
-      console.log(newAccounts)
       if (newAccounts && newAccounts.length > 0) {
         updateWallet(newAccounts)
       } else {
@@ -49,6 +58,9 @@ const MetamaskProvider = ({ children }: Props) => {
 
     const refreshChina = (chainId: any) => {
       setChainId(chainId)
+
+      // TODO: handle switch to unknown chain ?
+      rooch.switchByChinaId(chainId)
     }
 
     const getProvider = async () => {
@@ -75,29 +87,22 @@ const MetamaskProvider = ({ children }: Props) => {
       window.ethereum?.removeListener('chainChanged', refreshChina)
       window.ethereum?.removeListener('accountsChanged', refreshAccounts)
     }
-  }, [])
+  }, [rooch])
 
   const updateWallet = (accounts: any) => {
     setAccounts(accounts)
   }
 
-  const connect = async () => {
-    if (chainId !== config.roochChain.chainId) {
+  const connect = async (targetChain?: ChainInfo) => {
+    let connectChain = targetChain ?? rooch.getActiveChina().info
+
+    if (chainId !== connectChain.chainId) {
       try {
-        await switchChina(config.roochChain.chainId)
+        await switchChina(connectChain)
       } catch (e: any) {
-        if (e.code === 4902) {
-          // Rooch chain not found
-          try {
-            await addChina({
-              ...config.roochChain,
-            })
-          } catch (e) {
-            return
-          }
-        } else {
-          return
-        }
+        console.log('connect error', e.toString())
+
+        return
       }
     }
 
@@ -110,26 +115,30 @@ const MetamaskProvider = ({ children }: Props) => {
       })
   }
 
-  const switchChina = async (chainId: string) => {
-    return window.ethereum
-      ?.request({
+  const switchChina = async (chain: ChainInfo) => {
+    try {
+      await window.ethereum?.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: chainId }],
+        params: [{ chainId: chain.chainId }],
       })
-      .then((value: any) => {
-        setChainId(chainId)
-        console.log('switch success ' + value)
-      })
-      .catch((e) => {
+    } catch (e: any) {
+      if (e.code === 4902) {
+        await addChina(chain)
+      } else {
+        // unknown error
         console.log(e)
-      })
+        throw e
+      }
+    }
+
+    setChainId(chain.chainId)
   }
 
-  const addChina = async (params: AddChinaParameterType) => {
+  const addChina = async (chain: ChainInfo) => {
     return window.ethereum
       ?.request({
         method: 'wallet_addEthereumChain',
-        params: params,
+        params: [chain],
       })
       .then((v) => {
         console.log(v)
@@ -146,16 +155,16 @@ const MetamaskProvider = ({ children }: Props) => {
     loading,
     chainId,
     hasProvider,
-    provider: hasProvider && window.ethereum,
+    provider: hasProvider ? window.ethereum : null,
     accounts,
-    isConnect: hasProvider && Boolean(window.ethereum?.isConnected()),
+    isConnect: hasProvider,
     addChina,
     switchChina,
     connect,
     disconnect,
-  } as MetamaskValueType
+  } as ETHValueType
 
-  return <MetamaskContext.Provider value={values}>{children}</MetamaskContext.Provider>
+  return <ETHContext.Provider value={values}>{children}</ETHContext.Provider>
 }
 
-export { MetamaskContext, MetamaskProvider }
+export { ETHContext, ETHProvider }

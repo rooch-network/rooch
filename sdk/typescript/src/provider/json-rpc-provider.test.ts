@@ -3,7 +3,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import fetchMock from 'fetch-mock'
-import { LocalNetConnection } from './connection'
+import { DevChain } from '../constants/chain'
 import { JsonRpcProvider } from './json-rpc-provider'
 
 describe('provider', () => {
@@ -36,8 +36,7 @@ describe('provider', () => {
         return mock
       })
 
-      const provider = new JsonRpcProvider(LocalNetConnection, {
-        chainID: 1,
+      const provider = new JsonRpcProvider(DevChain, {
         fetcher: mockFetch,
       })
       expect(provider).toBeDefined()
@@ -69,8 +68,7 @@ describe('provider', () => {
         return mock
       })
 
-      const provider = new JsonRpcProvider(LocalNetConnection, {
-        chainID: 1,
+      const provider = new JsonRpcProvider(DevChain, {
         fetcher: mockFetch,
       })
       expect(provider).toBeDefined()
@@ -108,8 +106,7 @@ describe('provider', () => {
           return mock
         })
 
-        const provider = new JsonRpcProvider(LocalNetConnection, {
-          chainID: 1,
+        const provider = new JsonRpcProvider(DevChain, {
           fetcher: mockFetch,
         })
         expect(provider).toBeDefined()

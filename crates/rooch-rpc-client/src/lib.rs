@@ -21,13 +21,9 @@ use rooch_rpc_api::jsonrpc_types::{
 };
 use rooch_rpc_api::{
     api::rooch_api::RoochAPIClient,
-    jsonrpc_types::{
-        AnnotatedStateView, ExecuteTransactionResponseView, StateView, TransactionView,
-    },
+    jsonrpc_types::{AnnotatedStateView, ExecuteTransactionResponseView, StateView},
 };
-use rooch_types::{
-    account::Account, address::RoochAddress, transaction::rooch::RoochTransaction, H256,
-};
+use rooch_types::{account::Account, address::RoochAddress, transaction::rooch::RoochTransaction};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -138,9 +134,9 @@ impl Client {
             .await?)
     }
 
-    pub async fn get_transactions_by_hash(&self, hash: H256) -> Result<Option<TransactionView>> {
-        Ok(self.rpc.http.get_transaction_by_hash(hash.into()).await?)
-    }
+    // pub async fn get_transactions_by_hash(&self, hash: H256) -> Result<Option<TransactionView>> {
+    //     Ok(self.rpc.http.get_transaction_by_hash(hash.into()).await?)
+    // }
 
     pub async fn get_sequence_number(&self, sender: RoochAddress) -> Result<u64> {
         Ok(self

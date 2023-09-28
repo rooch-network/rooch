@@ -22,8 +22,6 @@ Feature: Rooch CLI integration tests
       Then cmd: "session-key create --sender-account {default} --scope 0x3::empty::empty"
       Then cmd: "move run --function 0x3::empty::empty --sender-account {default} --session-key {{$.session-key[-1].authentication_key}}"
 
-      Then cmd: "transaction get-by-hash --hash {{$.account[0].execution_info.tx_hash}}"
-
       # event example
       Then cmd: "move publish -p ../../examples/event --sender-account {default} --named-addresses rooch_examples={default}"
       Then cmd: "move run --function {default}::event_test::emit_event --sender-account {default} --args 10u64"
