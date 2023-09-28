@@ -41,21 +41,21 @@ pub const DERVIATION_PATH_PURPOSE_ECDSA: u32 = 54;
 pub const DERVIATION_PATH_PURPOSE_SECP256R1: u32 = 74;
 
 type EncryptionKeyResult = Result<(Vec<u8>, Vec<u8>, Vec<u8>), RoochError>;
-pub struct EncryptionResult {
+pub struct Encryption {
     pub hashed_password: String,
     pub nonce: Vec<u8>,
     pub ciphertext: Vec<u8>,
     pub tag: Vec<u8>,
 }
-pub struct GenerateNewKeyPairResult {
+pub struct GenerateNewKeyPair {
     pub key_pair_type: KeyPairType,
-    pub encryption: EncryptionResult,
+    pub encryption: Encryption,
     pub mnemonic: String,
 }
 pub struct GeneratedKeyPair<Addr, KeyPair> {
     pub address: Addr,
     pub key_pair: KeyPair,
-    pub result: GenerateNewKeyPairResult,
+    pub result: GenerateNewKeyPair,
 }
 
 pub trait CoinOperations<Addr, KeyPair, PrivKey> {
@@ -70,12 +70,9 @@ pub trait CoinOperations<Addr, KeyPair, PrivKey> {
     ) -> Result<(Addr, KeyPair), RoochError>;
     fn retrieve_key_pair(
         &self,
-        nonce: [u8; 12],
-        ciphertext: &[u8],
-        tag: [u8; 16],
+        encryption: Encryption,
         password: Option<String>,
-        password_hash: String,
-    ) -> Result<(Addr, KeyPair), RoochError>;
+    ) -> Result<KeyPair, RoochError>;
     fn encrypt_private_key(
         &self,
         private_key: PrivKey,
@@ -116,23 +113,24 @@ impl CoinOperations<RoochAddress, RoochKeyPair, Ed25519PrivateKey> for KeyPairTy
 
     fn retrieve_key_pair(
         &self,
-        nonce: [u8; 12],
-        ciphertext: &[u8],
-        tag: [u8; 16],
+        encryption: Encryption,
         password: Option<String>,
-        password_hash: String,
-    ) -> Result<(RoochAddress, RoochKeyPair), RoochError> {
-        let is_verified = verify_password(password.clone(), password_hash)
-            .expect("Encryption failed for password");
+    ) -> Result<RoochKeyPair, RoochError> {
+        let is_verified = verify_password(password.clone(), encryption.hashed_password)
+            .expect("Verification failed for password");
         if is_verified {
-            let private_key = decrypt_private_key(nonce, ciphertext, tag, password)
-                .expect("Decryption failed for private key");
+            let private_key = decrypt_private_key(
+                &encryption.nonce,
+                &encryption.ciphertext,
+                &encryption.tag,
+                password,
+            )
+            .expect("Decryption failed for private key");
             let kp: Ed25519KeyPair = Ed25519KeyPair::from(
                 Ed25519PrivateKey::from_bytes(&private_key)
                     .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
             );
-            let address: RoochAddress = kp.public().into();
-            Ok((address, kp.into())) // Cast to KeyPair
+            Ok(kp.into())
         } else {
             Err(RoochError::InvalidPasswordError(
                 "Password is invalid".to_owned(),
@@ -240,23 +238,24 @@ impl CoinOperations<EthereumAddress, Secp256k1RecoverableKeyPair, Secp256k1Recov
 
     fn retrieve_key_pair(
         &self,
-        nonce: [u8; 12],
-        ciphertext: &[u8],
-        tag: [u8; 16],
+        encryption: Encryption,
         password: Option<String>,
-        password_hash: String,
-    ) -> Result<(EthereumAddress, Secp256k1RecoverableKeyPair), RoochError> {
-        let is_verified = verify_password(password.clone(), password_hash)
-            .expect("Encryption failed for password");
+    ) -> Result<Secp256k1RecoverableKeyPair, RoochError> {
+        let is_verified = verify_password(password.clone(), encryption.hashed_password)
+            .expect("Verification failed for password");
         if is_verified {
-            let private_key = decrypt_private_key(nonce, ciphertext, tag, password)
-                .expect("Decryption failed for private key");
+            let private_key = decrypt_private_key(
+                &encryption.nonce,
+                &encryption.ciphertext,
+                &encryption.tag,
+                password,
+            )
+            .expect("Decryption failed for private key");
             let kp: Secp256k1RecoverableKeyPair = Secp256k1RecoverableKeyPair::from(
                 Secp256k1RecoverablePrivateKey::from_bytes(&private_key)
                     .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
             );
-            let address: EthereumAddress = EthereumAddress::from(kp.public.clone());
-            Ok((address, kp)) // Cast to KeyPair
+            Ok(kp)
         } else {
             Err(RoochError::InvalidPasswordError(
                 "Password is invalid".to_owned(),
@@ -273,8 +272,18 @@ impl CoinOperations<EthereumAddress, Secp256k1RecoverableKeyPair, Secp256k1Recov
         // 96-bits; unique per message
         let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
 
+        // Derive the key material using nonce and password
+        let mut output_key_material = [0u8; 32]; // Can be any desired size
+        Argon2::default()
+            .hash_password_into(
+                password.unwrap_or("".to_owned()).as_bytes(),
+                &nonce,
+                &mut output_key_material,
+            )
+            .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
+
         // Create a ChaCha20Poly1305 cipher with the key material from password
-        let cipher = ChaCha20Poly1305::new_from_slice(password.unwrap_or("".to_owned()).as_bytes())
+        let cipher = ChaCha20Poly1305::new_from_slice(&output_key_material)
             .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
 
         // Encrypt the private key data to a ciphertext with a tag
@@ -417,14 +426,14 @@ where
 
     let (address, key_pair) = key_pair_type.derive_key_pair_from_ciphertext(ciphertext.clone())?;
 
-    let encryption = EncryptionResult {
+    let encryption = Encryption {
         hashed_password,
         nonce,
         ciphertext,
         tag,
     };
 
-    let result = GenerateNewKeyPairResult {
+    let result = GenerateNewKeyPair {
         key_pair_type,
         encryption,
         mnemonic: mnemonic.phrase().to_string(),
@@ -450,9 +459,9 @@ pub fn verify_password(
 
 // Decrypt the private key using ChaCha20Poly1305 and Argon2
 pub fn decrypt_private_key(
-    nonce: [u8; 12],
+    nonce: &[u8],
     ciphertext: &[u8],
-    tag: [u8; 16],
+    tag: &[u8],
     password: Option<String>,
 ) -> Result<Vec<u8>, anyhow::Error> {
     // Derive the key material using nonce and password
@@ -460,7 +469,7 @@ pub fn decrypt_private_key(
     Argon2::default()
         .hash_password_into(
             password.unwrap_or("".to_owned()).as_bytes(),
-            &nonce,
+            nonce,
             &mut output_key_material,
         )
         .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
@@ -471,10 +480,10 @@ pub fn decrypt_private_key(
     // Concatenate the tag and the ciphertext to reconstruct ciphertext_with_tag
     let mut ciphertext_with_tag = Vec::with_capacity(tag.len() + ciphertext.len());
     ciphertext_with_tag.extend_from_slice(ciphertext);
-    ciphertext_with_tag.extend_from_slice(&tag);
+    ciphertext_with_tag.extend_from_slice(tag);
 
     // Decrypt the ciphertext_with_tag to a private key
-    let private_key = match cipher.decrypt(&nonce.into(), &*ciphertext_with_tag) {
+    let private_key = match cipher.decrypt(nonce.into(), &*ciphertext_with_tag) {
         Ok(pk) => pk,
         Err(_) => return Err(anyhow::Error::msg("Decryption failed")),
     };

@@ -23,24 +23,36 @@ pub struct UpdateCommand {
     address: String,
     #[clap(short = 'm', long = "mnemonic-phrase")]
     mnemonic_phrase: String,
+    /// Whether a password should be provided.
+    #[clap(short = 'p', long = "password")]
+    password_required: bool,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
 }
-
 #[async_trait]
 impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
     async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
         println!("{:?}", self.mnemonic_phrase);
+
+        let password = if self.password_required {
+            // Prompt for a password if required
+            rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
+        } else {
+            // Use an empty password if not required
+            String::new()
+        };
+        println!("Your password is {}", password);
+
         let mut context = self.context_options.build().await?;
 
-        let existing_address = RoochAddress::from_str(self.address.as_str()).map_err(|e| {
+        let existing_address = RoochAddress::from_str(&self.address).map_err(|e| {
             RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
         })?;
 
         let password = rpassword::prompt_password("Enter a password to encrypt the keys in rooch keystore. Empty password leaves an unencrypted key: ").unwrap();
         println!("Your password is {}", password);
 
-        let (kp, password_hash, nonce, ciphertext, tag) = context
+        let result = context
             .keystore
             .update_address_with_key_pair_from_key_pair_type(
                 &existing_address,

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    key_derive::{generate_new_key_pair, CoinOperations, EncryptionResult, GeneratedKeyPair},
+    key_derive::{generate_new_key_pair, CoinOperations, Encryption, GeneratedKeyPair},
     keypair::KeyPairType,
 };
 use anyhow::anyhow;
@@ -44,12 +44,12 @@ use std::path::{Path, PathBuf};
 
 pub struct ImportedMnemonic<Addr> {
     pub address: Addr,
-    pub encryption: EncryptionResult,
+    pub encryption: Encryption,
 }
 
 pub struct UpdatedAddress<KeyPair> {
     pub key_pair: KeyPair,
-    pub encryption: EncryptionResult,
+    pub encryption: Encryption,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -180,7 +180,7 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData, Pri
 
         self.add_key_pair_by_key_pair_type(key_pair, key_pair_type)?;
 
-        let encryption = EncryptionResult {
+        let encryption = Encryption {
             hashed_password,
             nonce,
             ciphertext,
@@ -231,7 +231,7 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData, Pri
         let (_, key_pair_clone) =
             key_pair_type.derive_key_pair_from_ciphertext(ciphertext.clone())?;
 
-        let encryption = EncryptionResult {
+        let encryption = Encryption {
             hashed_password,
             nonce,
             ciphertext,
