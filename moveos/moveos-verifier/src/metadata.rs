@@ -13,7 +13,7 @@ use move_binary_format::file_format::{
 use move_binary_format::CompiledModule;
 use move_core_types::language_storage::ModuleId;
 use move_core_types::metadata::Metadata;
-use move_model::ast::Attribute;
+use move_model::ast::{Attribute, AttributeValue};
 use move_model::model::{FunctionEnv, GlobalEnv, Loc, ModuleEnv};
 use move_model::ty::PrimitiveType;
 use move_model::ty::Type;
@@ -29,13 +29,26 @@ use thiserror::Error;
 pub static mut GLOBAL_PRIVATE_GENERICS: Lazy<BTreeMap<String, Vec<usize>>> =
     Lazy::new(|| BTreeMap::new());
 
+pub static mut GLOBAL_GAS_FREE_RECORDER: Lazy<BTreeMap<String, Vec<usize>>> =
+    Lazy::new(|| BTreeMap::new());
+
 const PRIVATE_GENERICS_ATTRIBUTE: &str = "private_generics";
+
+const GAS_FREE_ATTRIBUTE: &str = "gas_free";
+const GAS_FREE_VALIDATE: &str = "gas_validate";
+const GAS_FREE_CHARGE_POST: &str = "gas_charge_post";
 
 /// Enumeration of potentially known attributes
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct KnownAttribute {
     kind: u8,
     args: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Default)]
+pub struct GasFreeFunction {
+    gas_validate: String,
+    gas_charge_post: String,
 }
 
 /// V1 of Aptos specific metadata attached to the metadata section of file_format.
@@ -49,6 +62,9 @@ pub struct RuntimeModuleMetadataV1 {
 
     /// The correspondence between private generics and their type parameters.
     pub private_generics_indices: BTreeMap<String, Vec<usize>>,
+
+    /// Save information for the gas free function.
+    pub gas_free_function_map: BTreeMap<String, GasFreeFunction>,
 }
 
 impl RuntimeModuleMetadataV1 {
@@ -105,6 +121,7 @@ impl<'a> ExtendedChecker<'a> {
                 self.check_entry_functions(module);
                 self.check_init_module(module);
                 self.check_global_storage_access(module);
+                self.check_gas_free_function(module);
             }
         }
     }
@@ -577,6 +594,286 @@ impl<'a> ExtendedChecker<'a> {
                 self.env.error(&fun.get_loc(), error_msg.as_str());
             }
         }
+    }
+}
+
+impl<'a> ExtendedChecker<'a> {
+    fn check_gas_free_function(&mut self, module: &ModuleEnv) {
+        for fenv in module.get_functions() {
+            if self.has_attribute(&fenv, GAS_FREE_ATTRIBUTE) {
+                let attributes = fenv.get_attributes();
+                let mut attribute_gas_validate_found = false;
+                let mut attribute_gas_charge_post_found = false;
+
+                let mut gas_free_function_map: BTreeMap<String, GasFreeFunction> = BTreeMap::new();
+
+                // verify and save functions with the attribute #[gas_free]
+                for attr in attributes {
+                    if let Attribute::Apply(_, _, attribute_list) = attr {
+                        for assign_attribute in attribute_list {
+                            if let Attribute::Assign(_, symbol, attribute_value) = assign_attribute
+                            {
+                                let attribute_key =
+                                    module.symbol_pool().string(*symbol).to_string();
+
+                                if attribute_key == GAS_FREE_VALIDATE {
+                                    if attribute_gas_validate_found {
+                                        self.env.error(
+                                            &fenv.get_loc(),
+                                            "duplicate attribute key 'gas_validate'",
+                                        )
+                                    } else {
+                                        attribute_gas_validate_found = true;
+                                    }
+                                }
+
+                                if attribute_key == GAS_FREE_CHARGE_POST {
+                                    if attribute_gas_charge_post_found {
+                                        self.env.error(
+                                            &fenv.get_loc(),
+                                            "duplicate attribute key 'gas_charge_post'",
+                                        )
+                                    } else {
+                                        attribute_gas_charge_post_found = true;
+                                    }
+                                }
+
+                                if let AttributeValue::Name(
+                                    _,
+                                    module_name_opt,
+                                    function_name_symbol,
+                                ) = attribute_value
+                                {
+                                    // if there is no module name specified by user
+                                    // compiler will use current module as the module name.
+                                    match module_name_opt {
+                                        None => {
+                                            let gas_function_name = module
+                                                .symbol_pool()
+                                                .string(*function_name_symbol)
+                                                .to_string();
+
+                                            if let Some(gas_function) =
+                                                get_module_env_function(module, &gas_function_name)
+                                            {
+                                                let current_module = module.get_full_name_str();
+                                                let full_function_name = format!(
+                                                    "{}::{}",
+                                                    current_module, gas_function_name
+                                                );
+
+                                                let current_module =
+                                                    fenv.module_env.get_full_name_str();
+                                                let current_function_name = format!(
+                                                    "{}::{}",
+                                                    current_module,
+                                                    module.symbol_pool().string(fenv.get_name())
+                                                );
+
+                                                let gas_free_function_info = gas_free_function_map
+                                                    .entry(current_function_name)
+                                                    .or_default();
+
+                                                if attribute_key == GAS_FREE_VALIDATE {
+                                                    let (is_ok, error_msg) =
+                                                        check_gas_validate_function(
+                                                            &gas_function,
+                                                            self.env,
+                                                        );
+                                                    if !is_ok {
+                                                        self.env.error(
+                                                            &fenv.get_loc(),
+                                                            error_msg.as_str(),
+                                                        );
+                                                    }
+                                                    gas_free_function_info.gas_validate =
+                                                        full_function_name.clone();
+                                                }
+
+                                                if attribute_key == GAS_FREE_CHARGE_POST {
+                                                    let (is_ok, error_msg) =
+                                                        check_gas_charge_post_function(
+                                                            &gas_function,
+                                                            self.env,
+                                                        );
+                                                    if !is_ok {
+                                                        self.env.error(
+                                                            &fenv.get_loc(),
+                                                            error_msg.as_str(),
+                                                        );
+                                                    }
+                                                    gas_free_function_info.gas_charge_post =
+                                                        full_function_name;
+                                                }
+                                            } else {
+                                                self.env.error(&fenv.get_loc(), format!("Gas function {:?} is not found in current module.", gas_function_name).as_str());
+                                            }
+                                        }
+
+                                        Some(module_name_ref) => {
+                                            let module_name_symbol = module_name_ref.name();
+                                            let module_addr =
+                                                module_name_opt.clone().unwrap().addr().to_string();
+                                            let module_name = module
+                                                .symbol_pool()
+                                                .string(module_name_symbol)
+                                                .to_string();
+                                            let function_name = module
+                                                .symbol_pool()
+                                                .string(*function_name_symbol)
+                                                .to_string();
+                                            let full_function_name = format!(
+                                                "{}::{}::{}",
+                                                module_addr, module_name, function_name
+                                            );
+
+                                            let current_module =
+                                                fenv.module_env.get_full_name_str();
+                                            let current_function_name = format!(
+                                                "{}::{}",
+                                                current_module,
+                                                module.symbol_pool().string(fenv.get_name())
+                                            );
+
+                                            let gas_free_function_info = gas_free_function_map
+                                                .entry(current_function_name)
+                                                .or_default();
+
+                                            if attribute_key == GAS_FREE_VALIDATE {
+                                                gas_free_function_info.gas_validate =
+                                                    full_function_name.clone();
+                                            }
+                                            if attribute_key == GAS_FREE_CHARGE_POST {
+                                                gas_free_function_info.gas_charge_post =
+                                                    full_function_name.clone();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                let module_metadata = self
+                    .output
+                    .entry(module.get_verified_module().self_id())
+                    .or_default();
+                module_metadata.gas_free_function_map = gas_free_function_map;
+            }
+        }
+    }
+}
+
+fn get_module_env_function<'a>(
+    module_env: &'a ModuleEnv<'a>,
+    fname: &String,
+) -> Option<FunctionEnv<'a>> {
+    for fenv in module_env.get_functions() {
+        let function_name = module_env.symbol_pool().string(fenv.get_name()).to_string();
+        if &function_name == fname {
+            return Some(fenv);
+        }
+    }
+    None
+}
+
+fn check_gas_validate_function(fenv: &FunctionEnv, global_env: &GlobalEnv) -> (bool, String) {
+    let params_types = fenv.get_parameter_types();
+    let return_types = fenv.get_return_types();
+    if params_types.is_empty() {
+        return (false, "parameter length is less than 1".to_string());
+    }
+    if return_types.is_empty() {
+        return (false, "return value length is less than 1".to_string());
+    }
+
+    let storage_ctx_type = params_types.get(0).unwrap();
+    let parameter_checking_result = match storage_ctx_type {
+        Type::Struct(module_id, struct_id, _) => {
+            let struct_name = global_env
+                .get_struct(module_id.qualified(*struct_id))
+                .get_full_name_str();
+            if struct_name != "0x2::storage_context::StorageContext" {
+                (
+                    false,
+                    format!(
+                        "Type {} cannot be used as the first parameter.",
+                        struct_name
+                    ),
+                )
+            } else {
+                (true, "".to_string())
+            }
+        }
+        _ => (
+            false,
+            "Only type 0x2::storage_context::StorageContext can be used as the first parameter."
+                .to_string(),
+        ),
+    };
+
+    if !parameter_checking_result.0 {
+        return parameter_checking_result;
+    }
+
+    let first_return_type = return_types.get(0).unwrap();
+    match first_return_type {
+        Type::Primitive(PrimitiveType::Bool) => (true, "".to_string()),
+        _ => (false, "Return type must be of type Bool.".to_string()),
+    }
+}
+
+fn check_gas_charge_post_function(fenv: &FunctionEnv, global_env: &GlobalEnv) -> (bool, String) {
+    let params_types = fenv.get_parameter_types();
+    let return_types = fenv.get_return_types();
+    if params_types.len() < 2 {
+        return (false, "Length of parameters is less than 2.".to_string());
+    }
+    if return_types.is_empty() {
+        return (false, "Length of return values is less than 1.".to_string());
+    }
+
+    let storage_ctx_type = params_types.get(0).unwrap();
+    match storage_ctx_type {
+        Type::Struct(module_id, struct_id, _) => {
+            let struct_name = global_env
+                .get_struct(module_id.qualified(*struct_id))
+                .get_full_name_str();
+            if struct_name != "0x2::storage_context::StorageContext" {
+                return (
+                    false,
+                    format!(
+                        "Type {} cannot be used as the first parameter.",
+                        struct_name
+                    ),
+                );
+            }
+        }
+        _ => return (
+            false,
+            "Only type 0x2::storage_context::StorageContext can be used as the first parameter."
+                .to_string(),
+        ),
+    }
+
+    let gas_used_type = params_types.get(1).unwrap();
+    let second_parameter_checking_result = match *gas_used_type {
+        Type::Primitive(PrimitiveType::U256) => (true, "".to_string()),
+        _ => (
+            false,
+            "The second parameter must be of type U256.".to_string(),
+        ),
+    };
+
+    if !second_parameter_checking_result.0 {
+        return second_parameter_checking_result;
+    }
+
+    let first_return_type = return_types.get(0).unwrap();
+    match first_return_type {
+        Type::Primitive(PrimitiveType::Bool) => (true, "".to_string()),
+        _ => (false, "Return type must be of type Bool.".to_string()),
     }
 }
 
