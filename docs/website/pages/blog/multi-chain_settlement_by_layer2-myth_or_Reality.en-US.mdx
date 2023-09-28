@@ -1,0 +1,105 @@
+---
+title: Multi-chain settlement by L2-Myth or Reality
+description: "Do we possess a robust theoretical foundation to implement Multi-chain settlements on L2?"
+author: popcnt
+category: Technology
+date: 2023/09/28
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+Layer 2 networks (L2) have proven in practice the ability to scale for a specific blockchain (L1). 
+Many wonder if it is possible to migrate this capability from one to multi.
+Who would resist that temptation? But why haven't we seen such a L2 that is like the world's factory, the world's trade center, and the world's creative center?
+Is it just a myth in our minds? Or is it just one step away from reality? Without jumping to conclusions,
+let's explore the essence of the problem and see how Rooch naturally grows out of that essence[^1].
+
+## Visibility is an essential problem
+
+*"She still looks the same after all these years." Said an anonymous person referring to the love of his life who ran off to a black hole.*
+
+Let's start with the causality of an Optimistic Rollup serving a single chain (*Directed edges in a graph indicate that the cause points to the effect, i.e., causality.*) Starting with.
+
+<img alt="Single-chain Causality" height="457" width="700" src="/blog/multi-chain-myth/single-chain.jpeg"/>
+
+The core of the L2 security assumption is that at least one honest Verifier verifies the state of the Proposer's commit on L1.
+In this diagram, we can clearly see how this traceability works.
+
+When we reuse the same logic in a Multi-chain, we will find a potential inconsistency time window, which we need to ensure is smaller than the fraud proof window:
+
+<img alt="Multi-chain Causality" height="400" width="700" src="/blog/multi-chain-myth/multi-chain.jpeg"/>
+
+Soon we'll find the event horizon, where the Verifier validation power can't keep up with Proposer's commits to Multi-chain, and the causality isn't visible anymore:
+
+<img alt="Event Horizon" height="497" width="700" src="/blog/multi-chain-myth/event-horizon.jpeg"/>
+
+Since there are no trust assumptions between Verifiers, the situation is even worse in the real world, since r Verifiers must independently validate the Proposer's commits on each chain.
+If we introduce trust assumptions (2/3 trust assumptions) then we can get a committee (such a committee we have seen in cross-chain bridges), which is clearly not what we want.
+
+So causality is gone, is there a solution to this problem?
+
+## Visible on L2
+
+Let's try to derive the solution path from the end point of the problem, i.e. the outcome. Given:
+
+1. Verifier verifies that single-chain state is out of event horizon
+2. Verifier verifies that Multi-chain state is in the field of event horizon
+3. the Verifier verifies that the safety assumption is satisfied if the capability is outside the horizon
+
+We obtain:
+
+a. Verifier verifying Multi-chain state in single chain satisfies the security assumption. 
+
+Regarding the messaging between L2 and L1, given:
+
+1. the messaging between L2 and L1 is bidirectional
+2. there is no messaging assumption between L1s
+
+We obtain:
+
+b. Any L1 can communicate with other L1s by means of L2.
+
+From a and b:
+
+1. Multi-chain state could be converted to L2 state by the mechanism of messaging between L1 and L2. 
+2. L2 state is converted to single chain state, verified by Verifier out of event horizon.
+
+<img alt="Visible Messaging" height="377" width="700" src="/blog/multi-chain-myth/visible-messaging.jpeg"/>
+
+### Force visibility
+
+In the above derivation, we have assumed that L1 and L2 messaging is bidirectional, which is a strong assumption as this relies on a complex forced visibility mechanism:
+
+1. L2 can verify L1 state: light nodes are implemented on L2 by contract, and the correct working of light nodes relies on at least one honest Relayer
+2. L2 provides a timeliness commitment to L1 state: the Relayer's relayed L1 state must catch up with the fraud proof window.
+
+Fortunately, the constraints are clear and do not violate the fundamental laws, so we can satisfy them.
+
+### Spiraling up
+
+We already know the basics of how to implement Multi-chain settlement on L2, 
+so I won't go into the details of the implementation due to space constraints. Using Rooch as an example, we can continue to expand on this in the following articles.
+
+For more information on how Rooch implements transaction inclusion in Multi-chain systems, see → [Transaction Flow](/docs/tech-highlights/transaction_flow)
+
+For more information on how Rooch implements generic L1 to L2 messaging in a Multi-chain system, see → [L1 to L2 Messaging](/docs/tech-highlights/l1_to_l2_messaging)
+
+For more information on how Rooch implements generic L2 to L1 messaging in a Multi-chain system, see → [L2 to L1 Messaging](/docs/tech-highlights/l2_to_l1_messaging)
+
+Like L1, L2 has a process of increasing decentralization from a cold start, which is faithfully recorded on L1.
+For any L1, L2 is just a logical concept, and it doesn't matter who the physical entity behind the Proposer is, 
+it just needs to verify the signature thresholds for member changes.
+As the ecosystem on L2 becomes richer and richer, the community members become heavier and heavier, 
+and member changes become more and more fluid, and the positive cycle, once started, spirals upward faster and faster.
+
+## Myth or reality
+
+Myth is just one step away from reality, why not cross it together? Join us, right now!
+
+* [Discord](https://discord.gg/rooch)
+* [Twitter](https://twitter.com/RoochNetwork)
+* [GitHub](https://github.com/rooch-network)
+
+[^1]: Essential Knowledge: Understand the basic concepts of Optimistic Rollup, and the basic components of L1 and L2.

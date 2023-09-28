@@ -11,7 +11,6 @@ use jsonrpsee::{
     RpcModule,
 };
 use moveos_types::{access_path::AccessPath, gas_config::GasConfig, state::MoveStructType};
-use rand::Rng;
 use rooch_rpc_api::api::{
     eth_api::{EthAPIServer, TransactionType},
     RoochRpcModule,
@@ -189,6 +188,10 @@ impl EthAPIServer for EthServer {
             .rpc_service
             .resolve_address(MultiChainAddress::from(EthereumAddress(eth_address)))
             .await?;
+        //Return some balance if the account not exists.
+        //Avoid MetaMask blocking the transaction submission.
+        //TODO find a better way to solve this problem.
+        let default_balance = GasCoin::scaling(100u64);
         let balance = self
             .aggregate_service
             .get_balances(account_address, Some(GasCoin::struct_tag()), None, 0)
@@ -198,17 +201,35 @@ impl EthAPIServer for EthServer {
             .map(|(_cursor, balance_info)| {
                 U256::from_little_endian(&balance_info.balance.to_le_bytes())
             })
-            .unwrap_or(U256::zero());
+            .unwrap_or(U256::from_little_endian(&default_balance.to_le_bytes()));
         Ok(balance)
     }
 
     async fn estimate_gas(
         &self,
-        _request: CallRequest,
+        request: CallRequest,
         _num: Option<BlockNumber>,
     ) -> RpcResult<U256> {
-        //TODO call dry run to estimate gas
-        Ok(U256::from(GasConfig::DEFAULT_MAX_GAS_AMOUNT))
+        let gas = match request.from {
+            Some(from) => {
+                let account_address = self
+                    .rpc_service
+                    .resolve_address(MultiChainAddress::from(EthereumAddress(from)))
+                    .await?;
+                let account_exists = self.rpc_service.exists_account(account_address).await?;
+                if account_exists {
+                    //TODO call dry run to estimate gas
+                    U256::from(GasConfig::DEFAULT_MAX_GAS_AMOUNT)
+                } else {
+                    //The contract will automatically call faucet to deposit gas coin when the account does not exist.
+                    //So, we return 0 gas to avoid MetaMask blocking the transaction submission.
+                    //TODO when we implement the contract pay gas, we should return the real gas amount that user should pay.
+                    U256::zero()
+                }
+            }
+            None => U256::from(GasConfig::DEFAULT_MAX_GAS_AMOUNT),
+        };
+        Ok(gas)
     }
 
     async fn fee_history(
@@ -217,31 +238,18 @@ impl EthAPIServer for EthServer {
         newest_block: BlockNumber,
         reward_percentiles: Option<Vec<f64>>,
     ) -> RpcResult<EthFeeHistory> {
-        let mut rng = rand::thread_rng();
+        let base_fee_per_gas: Vec<U256> = iter::repeat_with(U256::zero)
+            .take(block_count.as_usize())
+            .collect();
 
-        let base_fee_per_gas: Vec<U256> = iter::repeat_with(|| {
-            let random_value = rng.gen_range(1..100);
-            U256::from(random_value)
-        })
-        .take(block_count.as_usize())
-        .collect();
-
-        let gas_used_ratio: Vec<f64> = iter::repeat_with(|| rng.gen_range(0.0..1.0))
+        let gas_used_ratio: Vec<f64> = iter::repeat_with(|| 0.1)
             .take(block_count.as_usize())
             .collect();
 
         let reward = match reward_percentiles {
             Some(percentiles) => {
                 let rewards: Vec<Vec<U256>> = (0..block_count.as_usize())
-                    .map(|_| {
-                        percentiles
-                            .iter()
-                            .map(|_| {
-                                let random_value = rng.gen_range(1..100);
-                                U256::from(random_value)
-                            })
-                            .collect()
-                    })
+                    .map(|_| percentiles.iter().map(|_| U256::from(1)).collect())
                     .collect();
                 Some(rewards)
             }

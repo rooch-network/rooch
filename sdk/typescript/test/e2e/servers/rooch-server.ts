@@ -8,7 +8,17 @@ export class RoochServer {
   private ready: boolean = false
 
   async start() {
-    this.child = spawn('cargo', ['run', '--bin', 'rooch', 'server', 'start'])
+    this.child = spawn('cargo', [
+      'run',
+      '--bin',
+      'rooch',
+      'server',
+      'start',
+      '-n',
+      'local',
+      '-d',
+      'TMP',
+    ])
 
     if (this.child) {
       this.child.stdout?.on('data', (data) => {

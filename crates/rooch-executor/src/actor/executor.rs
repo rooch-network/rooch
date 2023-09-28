@@ -241,7 +241,7 @@ impl ExecutorActor {
             tx_hash,
             state_root,
             event_root,
-            0,
+            output.gas_used,
             output.status.clone(),
         );
         self.moveos

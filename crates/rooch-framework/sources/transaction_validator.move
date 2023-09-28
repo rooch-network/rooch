@@ -4,7 +4,8 @@ module rooch_framework::transaction_validator {
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::tx_result;
     use rooch_framework::account;
-    use rooch_framework::address_mapping::{Self, MultiChainAddress};
+    use rooch_framework::multichain_address::MultiChainAddress;
+    use rooch_framework::address_mapping;
     use rooch_framework::account_authentication;
     use rooch_framework::auth_validator::{Self, TxValidateResult};
     use rooch_framework::auth_validator_registry;
@@ -121,8 +122,8 @@ module rooch_framework::transaction_validator {
             account::create_account(ctx, sender);
             // Auto get gas coin from faucet if not enough
             // TODO remove this after we provide the gas faucet
-            let max_gas_amount = storage_context::max_gas_amount(ctx);
-            let init_gas = (max_gas_amount as u256) * 100u256;
+            //100 RGC
+            let init_gas = 100_000_000_000_000_000_000u256;
             gas_coin::faucet(ctx, sender, init_gas); 
         };
         //the transaction validator will put the multi chain address into the context

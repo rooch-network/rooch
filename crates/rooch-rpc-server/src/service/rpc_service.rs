@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{bail, Result};
+use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
@@ -92,6 +92,13 @@ impl RpcService {
         self.executor.get_states(access_path).await
     }
 
+    pub async fn exists_account(&self, address: AccountAddress) -> Result<bool> {
+        let mut resp = self
+            .get_states(AccessPath::resource(address, Account::struct_tag()))
+            .await?;
+        Ok(resp.pop().flatten().is_some())
+    }
+
     pub async fn get_annotated_states(
         &self,
         access_path: AccessPath,
@@ -117,19 +124,6 @@ impl RpcService {
         self.executor
             .list_annotated_states(access_path, cursor, limit)
             .await
-    }
-
-    /// Sign a message with the private key of the given address.
-    pub async fn sign(&self, _address: RoochAddress, _message: Vec<u8>) -> Result<Vec<u8>> {
-        bail!("Not implemented")
-        //TODO implement sign
-        //Call WalletActor to sign?
-        //How to unlock the wallet?
-        //Define the sign message format for rooch, and does it need to be compatible with Ethereum?
-    }
-
-    pub async fn accounts(&self) -> Result<Vec<RoochAddress>> {
-        bail!("Not implemented")
     }
 
     pub async fn get_events_by_event_handle(
