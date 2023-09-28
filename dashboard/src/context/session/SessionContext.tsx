@@ -158,17 +158,13 @@ const SessionProvider = ({ children }: Props) => {
       },
     ]
 
-    console.log(ethereum)
-    console.log(window.ethereum)
-    console.log(params)
-
-    const tx = await window.ethereum?.request({
+    const tx = ethereum.request({
       method: 'eth_sendTransaction',
       params,
     })
 
-    // const result = await waitTxConfirmed(ethereum, tx)
-    // console.log(`result:`, result)
+    const result = await waitTxConfirmed(ethereum, tx)
+    console.log(`result:`, result)
   }
 
   const requestWalletCreateSessionKey = async (

@@ -86,8 +86,9 @@ pub trait RoochAPI {
     //     filter: EventFilterView,
     // ) -> RpcResult<Vec<Option<AnnotatedEventView>>>;
 
-    #[method(name = "getTransactionByHash")]
-    async fn get_transaction_by_hash(&self, hash: H256View) -> RpcResult<Option<TransactionView>>;
+    // TODO:
+    // #[method(name = "getTransactionByHash")]
+    // async fn get_transaction_by_hash(&self, hash: H256View) -> RpcResult<Option<TransactionView>>;
 
     #[method(name = "getTransactionsByHash")]
     async fn get_transactions_by_hash(

@@ -138,9 +138,9 @@ impl Client {
             .await?)
     }
 
-    pub async fn get_transactions_by_hash(&self, hash: H256) -> Result<Option<TransactionView>> {
-        Ok(self.rpc.http.get_transaction_by_hash(hash.into()).await?)
-    }
+    // pub async fn get_transactions_by_hash(&self, hash: H256) -> Result<Option<TransactionView>> {
+    //     Ok(self.rpc.http.get_transaction_by_hash(hash.into()).await?)
+    // }
 
     pub async fn get_sequence_number(&self, sender: RoochAddress) -> Result<u64> {
         Ok(self

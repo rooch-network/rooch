@@ -13,13 +13,16 @@ import { ETHValueType } from 'src/context/wallet/types'
 // ** SDK
 import { ChainInfo, DevChain } from '@rooch/sdk'
 
+// ** Hooks
+import { useRooch } from 'src/hooks/useRooch'
+
 type Props = {
   children: ReactNode
 }
 
 const defaultProvider: ETHValueType = {
   loading: true,
-  chain: DevChain.info,
+  chainId: DevChain.info.chainId,
   hasProvider: false,
   provider: undefined,
   accounts: [],
@@ -33,16 +36,19 @@ const defaultProvider: ETHValueType = {
 const ETHContext = createContext(defaultProvider)
 
 const ETHProvider = ({ children }: Props) => {
+  // Hooks
+  const rooch = useRooch()
+
+  // States
   const [hasProvider, setHasProvider] = useState<boolean>(defaultProvider.hasProvider)
   const [accounts, setAccounts] = useState<string[]>(defaultProvider.accounts)
-  const [chain, setChainId] = useState<ChainInfo>(defaultProvider.chain)
+  const [chainId, setChainId] = useState<string>(defaultProvider.chainId)
   const [loading, setLoading] = useState<boolean>(defaultProvider.loading)
 
   useEffect(() => {
     setLoading(true)
 
     const refreshAccounts = (newAccounts: any) => {
-      console.log(newAccounts)
       if (newAccounts && newAccounts.length > 0) {
         updateWallet(newAccounts)
       } else {
@@ -52,14 +58,14 @@ const ETHProvider = ({ children }: Props) => {
 
     const refreshChina = (chainId: any) => {
       setChainId(chainId)
+
+      // TODO: handle switch to unknown chain ?
+      rooch.switchByChinaId(chainId)
     }
 
     const getProvider = async () => {
       const provider = await detectEthereumProvider({ silent: true })
       setHasProvider(Boolean(provider))
-      console.log('hash')
-      console.log(Boolean(provider))
-      console.log(hasProvider)
 
       if (provider) {
         const chainId = await window.ethereum?.request({ method: 'eth_chainId' })
@@ -81,19 +87,16 @@ const ETHProvider = ({ children }: Props) => {
       window.ethereum?.removeListener('chainChanged', refreshChina)
       window.ethereum?.removeListener('accountsChanged', refreshAccounts)
     }
-  }, [])
-
-  console.log('aaa')
-  console.log(hasProvider)
+  }, [rooch])
 
   const updateWallet = (accounts: any) => {
     setAccounts(accounts)
   }
 
   const connect = async (targetChain?: ChainInfo) => {
-    let connectChain = targetChain ?? chain
+    let connectChain = targetChain ?? rooch.getActiveChina().info
 
-    if (chain?.chainId !== connectChain.chainId) {
+    if (chainId !== connectChain.chainId) {
       try {
         await switchChina(connectChain)
       } catch (e: any) {
@@ -120,21 +123,15 @@ const ETHProvider = ({ children }: Props) => {
       })
     } catch (e: any) {
       if (e.code === 4902) {
-        // Rooch chain not found
-        // try {
         await addChina(chain)
-
-        // } catch (e: any) { // add china error
-        //   console.log('eth switch chain err ', e.toString())
-        //   return
-        // }
       } else {
         // unknown error
+        console.log(e)
         throw e
       }
     }
 
-    setChainId(chain)
+    setChainId(chain.chainId)
   }
 
   const addChina = async (chain: ChainInfo) => {
@@ -156,7 +153,7 @@ const ETHProvider = ({ children }: Props) => {
 
   const values = {
     loading,
-    chain,
+    chainId,
     hasProvider,
     provider: hasProvider ? window.ethereum : null,
     accounts,

@@ -31,20 +31,20 @@ interface ConnectionOptions {
 export class Chain {
   id: number
   name: string
-  #options: ConnectionOptions
+  options: ConnectionOptions
 
   constructor(id: number, name: string, options: ConnectionOptions) {
     this.id = id
     this.name = name
-    this.#options = options
+    this.options = options
   }
 
   get url() {
-    return this.#options.url
+    return this.options.url
   }
 
   get websocket() {
-    return this.#options.websocket || this.#options.url
+    return this.options.websocket || this.options.url
   }
 
   get info(): ChainInfo {
@@ -59,7 +59,7 @@ export class Chain {
         symbol: 'ROH',
         decimals: 18,
       },
-      rpcUrls: [this.#options.url],
+      rpcUrls: [this.options.url],
     }
   }
 }

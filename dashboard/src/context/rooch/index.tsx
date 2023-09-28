@@ -13,18 +13,15 @@ import { RoochProviderValueType } from 'src/context/rooch/types'
 // ** Config
 import authConfig from 'src/configs/auth'
 
-// ** Hooks
-import { useETH } from 'src/hooks/useETH'
-import { ETHContext } from '../wallet'
-import { ca } from 'date-fns/locale'
-
 type Props = {
   children: ReactNode
 }
 
 const defaultProvider: RoochProviderValueType = {
   provider: null,
+  loading: true,
   switchChina: async () => Promise.resolve(),
+  switchByChinaId: async () => Promise.resolve(),
   addChina: async () => Promise.resolve(),
   deleteChina: async () => Promise.resolve(),
   getAllChina: () => [],
@@ -34,18 +31,29 @@ const defaultProvider: RoochProviderValueType = {
 const RoochContext = createContext(defaultProvider)
 
 const RoochProvider = ({ children }: Props) => {
-  // ** Hooks
-  const eth = useETH()
-
   // ** States
   const [provider, setProvider] = useState<JsonRpcProvider | null>(defaultProvider.provider)
-  const [china, setChina] = useState<Chain>(DevChain)
+
+  const [loading, setLoading] = useState<boolean>(defaultProvider.loading)
 
   useEffect(() => {
     const init = async (): Promise<void> => {
       const activeChainID =
-        window.localStorage.getItem(authConfig.activeChain) ?? DevChain.id.toString()
-      const chains = getAllChina()
+        window.localStorage.getItem(authConfig.activeChain) ?? DevChain.info.chainId
+
+      let chainStr = window.localStorage.getItem(authConfig.chains)
+      let chains = AllChain
+
+      if (chainStr) {
+        chains = chains.concat(
+          JSON.parse(chainStr).map(
+            (v: any) =>
+              new Chain(v.id, v.name, {
+                ...v.options,
+              }),
+          ),
+        )
+      }
 
       let chain = chains.find((v) => v.info.chainId === activeChainID)
 
@@ -54,13 +62,11 @@ const RoochProvider = ({ children }: Props) => {
         chain = DevChain
       }
 
-      console.log('set provider')
-      console.log(chain)
-
+      console.log('设置 provider')
       setProvider(new JsonRpcProvider(chain))
     }
 
-    init()
+    init().finally(() => setLoading(false))
   }, [])
 
   const getCustomChains = () => {
@@ -68,21 +74,28 @@ const RoochProvider = ({ children }: Props) => {
     let chains: Chain[] = []
 
     if (chainStr) {
-      chains = JSON.parse(chainStr)
+      chains = JSON.parse(chainStr).map(
+        (v: any) =>
+          new Chain(v.id, v.name, {
+            ...v.options,
+          }),
+      )
     }
 
     return chains
   }
 
   const saveCustomChain = (chain: Chain) => {
-    if (AllChain.some((v) => v.id === chain.id)) {
-      return
-    }
+    // if (AllChain.some((v) => v.id === chain.id)) {
+    //   return
+    // }
 
     let chains = getCustomChains()
 
-    if (chains.some((v) => v.id === chain.id)) {
-      return // chain already existed
+    if (chains.some((v) => v.id === chain.id && v.url === chain.url)) {
+      console.info('chain already existed')
+
+      return
     }
 
     chains.push(chain)
@@ -96,6 +109,10 @@ const RoochProvider = ({ children }: Props) => {
     window.localStorage.setItem(authConfig.chains, JSON.stringify(chains))
   }
 
+  const getAllChina = () => {
+    return getCustomChains().concat(AllChain)
+  }
+
   const addChina = async (chain: Chain) => {
     try {
       await switchChina(chain)
@@ -107,12 +124,23 @@ const RoochProvider = ({ children }: Props) => {
   }
 
   const switchChina = async (chain: Chain) => {
-    if (eth.isConnect) {
-      await eth.switchChina(chain.info)
-    }
-
     provider?.switchChain(chain)
     window.localStorage.setItem(authConfig.activeChain, chain.info.chainId)
+  }
+
+  const switchByChinaId = async (chainId: string) => {
+    const chain = getAllChina().find((v) => v.info.chainId === chainId)
+
+    if (!chain || !provider) {
+      return
+    }
+
+    if (provider?.chain.info.chainId === chainId) {
+      return
+    }
+
+    await switchChina(chain)
+    window.location.reload()
   }
 
   const deleteChina = async (chain: Chain) => {
@@ -129,14 +157,12 @@ const RoochProvider = ({ children }: Props) => {
     return getAllChina().find((v) => activeChinaID === v.id) ?? DevChain
   }
 
-  const getAllChina = () => {
-    return getCustomChains().concat(AllChain)
-  }
-
   const values = {
     provider,
+    loading,
     addChina,
     switchChina,
+    switchByChinaId,
     deleteChina,
     getAllChina,
     getActiveChina,

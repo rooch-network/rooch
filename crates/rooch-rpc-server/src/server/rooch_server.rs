@@ -221,14 +221,14 @@ impl RoochAPIServer for RoochServer {
     //         .collect())
     // }
 
-    async fn get_transaction_by_hash(&self, hash: H256View) -> RpcResult<Option<TransactionView>> {
-        let resp = self
-            .rpc_service
-            .get_transaction_by_hash(hash.into())
-            .await?
-            .map(Into::into);
-        Ok(resp)
-    }
+    // async fn get_transaction_by_hash(&self, hash: H256View) -> RpcResult<Option<TransactionView>> {
+    //     let resp = self
+    //         .rpc_service
+    //         .get_transaction_by_hash(hash.into())
+    //         .await?
+    //         .map(Into::into);
+    //     Ok(resp)
+    // }
 
     async fn get_transactions_by_hash(
         &self,

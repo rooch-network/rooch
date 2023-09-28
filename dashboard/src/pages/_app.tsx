@@ -33,7 +33,8 @@ import UserLayout from 'src/layouts/UserLayout'
 import ThemeComponent from 'src/@core/theme/ThemeComponent'
 import AuthGuard from 'src/@core/components/auth/AuthGuard'
 import GuestGuard from 'src/@core/components/auth/GuestGuard'
-import SessionGuard from 'src/@core/components/session/SessionGuard'
+
+// import SessionGuard from 'src/@core/components/session/SessionGuard'
 
 // ** Spinner Import
 import Spinner from 'src/@core/components/spinner'
@@ -133,8 +134,8 @@ const App = (props: ExtendedAppProps) => {
           <meta name="viewport" content="initial-scale=1, width=device-width" />
         </Head>
 
-        <ETHProvider>
-          <RoochProvider>
+        <RoochProvider>
+          <ETHProvider>
             <AuthProvider>
               <SessionProvider>
                 <SettingsProvider {...(setConfig ? { pageSettings: setConfig() } : {})}>
@@ -158,8 +159,8 @@ const App = (props: ExtendedAppProps) => {
                 </SettingsProvider>
               </SessionProvider>
             </AuthProvider>
-          </RoochProvider>
-        </ETHProvider>
+          </ETHProvider>
+        </RoochProvider>
       </CacheProvider>
     </Provider>
   )

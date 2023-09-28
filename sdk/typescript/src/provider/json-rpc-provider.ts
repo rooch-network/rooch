@@ -5,7 +5,6 @@ import fetch from 'isomorphic-fetch'
 import { HTTPTransport, RequestManager } from '@open-rpc/client-js'
 import { JsonRpcClient } from '../generated/client'
 import { Chain, ChainInfo, DevChain } from '../constants/chain.ts'
-import { bytes } from '../types/bcs'
 import {
   FunctionId,
   TypeTag,
@@ -15,6 +14,9 @@ import {
   AnnotatedFunctionResultView,
   AnnotatedStateView,
   TransactionResultPageView,
+  AnnotatedEventResultPageView,
+  StateView,
+  StateResultPageView,
 } from '../types'
 import { functionIdToStirng, typeTagToString, encodeArg, toHexString } from '../utils'
 
@@ -143,53 +145,35 @@ export class JsonRpcProvider {
     return this.client.rooch_getTransactionsByOrder(cursor, limit)
   }
 
-  // TODO: wait bcs
+  // Get the events by event handle id
+  async getEventsByEventHandle(
+    event_handle_type: string,
+    cursor: number,
+    limit: number,
+  ): Promise<AnnotatedEventResultPageView> {
+    return await this.client.rooch_getEventsByEventHandle(event_handle_type, cursor, limit)
+  }
 
-  // // Get the events by event handle id
-  // async getEventsByEventHandle(
-  //   event_handle_type: string,
-  //   cursor: number,
-  //   limit: number,
-  // ): Promise<PageView_for_Nullable_AnnotatedEventView_and_uint64> {
-  //   return await this.rpcClient.rooch_getEventsByEventHandle(
-  //     event_handle_type,
-  //     cursor,
-  //     limit,
-  //   )
-  // }
+  // Get the states by access_path
+  async getStates(access_path: string): Promise<StateView | null[]> {
+    return await this.client.rooch_getStates(access_path)
+  }
 
-  // // Get the states by access_path
-  // async getStates(access_path: string): Promise<StateView | null[]> {
-  //   return await this.rpcClient.rooch_getStates(access_path)
-  // }
+  // List the states by access_path
+  async listStates(
+    access_path: string,
+    cursor: Uint8Array,
+    limit: number,
+  ): Promise<StateResultPageView> {
+    return await this.client.rooch_listStates(access_path, cursor, limit)
+  }
 
+  // TODO:
   // async getTransactionByHash(hash: string): Promise<TransactionView> {
-  //   return this.rpcClient.rooch_getTransactionByHash(hash)
+  //   return this.client.rooch_getTransactionByHash(hash)
   // }
 
-  // async getTransactionsByHash(
-  //   start: number,
-  //   limit: number,
-  // ): Promise<TransactionView[]> {
-  //   return await this.rpcClient.rooch_getTransactions(start, limit)
-  // }
-
-  // async getTransactionInfosByHash(
-  //   tx_hashes: string[],
-  // ): Promise<TransactionExecutionInfoView | null[]> {
-  //   return await this.rpcClient.rooch_getTransactionInfosByHash(tx_hashes)
-  // }
-
-  // async getTransactionInfosByOrder(
-  //   cursor: number,
-  //   limit: number,
-  // ): Promise<PageView_for_Nullable_TransactionExecutionInfoView_and_uint128> {
-  //   return await this.rpcClient.rooch_getTransactionInfosByOrder(
-  //     cursor,
-  //     limit,
-  //   )
-  // }
-
+  //
   // // List the annotated states by access_path The annotated states include the decoded move value of the state
   // async listAnnotatedStates(
   //   access_path: string,
@@ -201,14 +185,5 @@ export class JsonRpcProvider {
   //     cursor,
   //     limit,
   //   )
-  // }
-
-  // // List the states by access_path
-  // async listStates(
-  //   access_path: string,
-  //   cursor: Uint8Array,
-  //   limit: number,
-  // ): Promise<PageView_for_Nullable_StateView_and_alloc_vec_Vec_U8Array> {
-  //   return await this.rpcClient.rooch_listStates(access_path, cursor, limit)
   // }
 }

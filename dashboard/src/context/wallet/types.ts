@@ -9,7 +9,7 @@ export type ETHValueType = {
   loading: boolean
   hasProvider: boolean
   provider: MetaMaskSDK | undefined
-  chain: ChainInfo
+  chainId: string
   accounts: string[]
   isConnect: boolean
   connect: (china?: ChainInfo) => Promise<void>
