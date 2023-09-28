@@ -57,4 +57,4 @@ jobs:
         run: |
           echo "$PRIVATE_KEY" > private_key.pem
           chmod 600 private_key.pem
-          ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST "docker ps -a | grep rooch | awk '{print $1}' | xargs docker rm -f && docker run -d ${{ steps.docker_meta.outputs.tags }} server start -n dev --eth-rpc-url https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161"
+          ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST "docker ps -a | grep rooch | awk '{print $1}' | xargs -r docker rm -f && docker run -d -v /root:/root -p 50051:50051 ${{ steps.docker_meta.outputs.tags }} server start -n dev --eth-rpc-url https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161"
