@@ -1,9 +1,9 @@
-<div align="center">
+<div width="400" align="center">
   <br />
   <br />
   <a href="https://rooch.network"><img alt="Rooch" src="https://rooch.network/logo/rooch_black_combine.svg" width=384></a>
   <br />
-  <h3><a href="https://rooch.network">Rooch</a> is Modular DApp Container, with <a href="https://github.com/move-language/move)">Move.</a></h3>
+  <h3><a href="https://rooch.network">Rooch</a> is a Modular Fully on-chain Application Container, with <a href="https://github.com/move-language/move)">Move</a> language.</h3>
   <br />
 </div>
 
@@ -13,9 +13,8 @@
 
 ## Usage
 
-* **Multi-Chain Layer2**: Rooch(Execution) + Multi-Chain(Settlement) + Ethereum(Arbitration) + DA
-* **X-Chain Modular DApp**: Rooch(Execution) + X-Chain(Settlement + Arbitration) + DA
-* **Layer3 Modular DApp**: Rooch(Execution) + Rooch Layer2(Settlement + Arbitration) + DA
+* **RoochNetwork(Multi-Chain Modular Layer2)**: Rooch(Execution) + Multi-Chain(Settlement) + Ethereum(Arbitration) + DA
+* **X-Chain Rollup**: Rooch(Execution) + X-Chain(Settlement + Arbitration) + DA
 * **Sovereign Rollup**: Rooch + DA
 
 ## Getting Started
