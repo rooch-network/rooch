@@ -8,13 +8,28 @@ import { createAsyncThunk, Dispatch, AnyAction } from '@reduxjs/toolkit'
 import { CreateGenericSlice, GenericState } from '../generic'
 
 // ** sdk import
-import { IPage, ISessionKey, JsonRpcProvider, ListAnnotatedStateResultPageView } from '@rooch/sdk'
+import {
+  IAccount,
+  IPage,
+  ISessionKey,
+  JsonRpcProvider,
+  ListAnnotatedStateResultPageView,
+  addressToSeqNumber,
+} from '@rooch/sdk'
 
 interface DataParams {
   dispatch: Dispatch<AnyAction>
+  provider: JsonRpcProvider
   account_address: string
   cursor: Uint8Array | null
   limit: number
+}
+
+interface RemoveParams {
+  dispatch: Dispatch<AnyAction>
+  account: IAccount
+  auth_key: string
+  refresh: () => void
 }
 
 const convertToSessionKey = (data: ListAnnotatedStateResultPageView): Array<ISessionKey> => {
@@ -27,6 +42,7 @@ const convertToSessionKey = (data: ListAnnotatedStateResultPageView): Array<ISes
       const val = moveValue.value
 
       result.push({
+        id: val.authentication_key,
         authentication_key: val.authentication_key,
         scopes: convertToScopes(val.scopes),
         create_time: parseInt(val.create_time),
@@ -43,37 +59,73 @@ const convertToScopes = (data: Array<any>): Array<string> => {
   const result = new Array<string>()
 
   for (const scope of data) {
-    result.push(`${scope.module_name}::${scope.module_address}::${scope.function_name}`)
+    const val = scope.value
+    result.push(`${simplifyHex(val.module_address)}::${val.module_name}::${val.function_name}`)
   }
 
   return result
+}
+
+function simplifyHex(hex: string): string {
+  return '0x' + BigInt(hex).toString(16)
 }
 
 // ** Fetch Transaction
 export const fetchData = createAsyncThunk('state/fetchData', async (params: DataParams) => {
   params.dispatch(start())
 
-  const jp = new JsonRpcProvider()
   const { account_address, cursor, limit } = params
 
   try {
     const accessPath = `/resource/${account_address}/0x3::session_key::SessionKeys`
-    const state = await jp.getAnnotatedStates(accessPath)
-    if (state) {
-      const stateView = state as any
-      const tableId = stateView[0].state.value
+    const stateResult = await params.provider.getAnnotatedStates(accessPath)
+    if (stateResult) {
+      const stateView = stateResult as any
+      if (stateView && stateView.length > 0 && stateView[0]) {
+        const tableId = stateView[0].state.value
 
-      const accessPath = `/table/${tableId}`
-      const pageView = await jp.listAnnotatedStates(accessPath, cursor, limit)
+        const accessPath = `/table/${tableId}`
+        const pageView = await params.provider.listAnnotatedStates(accessPath, cursor, limit)
 
-      const result = {
-        data: convertToSessionKey(pageView),
-        nextCursor: pageView.next_cursor,
-        hasNextPage: pageView.has_next_page,
+        const result = {
+          data: convertToSessionKey(pageView),
+          nextCursor: pageView.next_cursor,
+          hasNextPage: pageView.has_next_page,
+        }
+
+        params.dispatch(success(result))
+      } else {
+        params.dispatch(success({ data: [], nextCursor: null, hasNextPage: false }))
       }
-
-      params.dispatch(success(result))
     }
+  } catch (e: any) {
+    params.dispatch(error(e.toString()))
+  }
+})
+
+export const removeRow = createAsyncThunk('state/removeRow', async (params: RemoveParams) => {
+  params.dispatch(start())
+
+  const { auth_key } = params
+
+  try {
+    const tx = await params.account.runFunction(
+      '0x3::session_key::remove_session_key_entry',
+      [],
+      [
+        {
+          type: { Vector: 'U8' },
+          value: addressToSeqNumber(auth_key),
+        },
+      ],
+      {
+        maxGasAmount: 1000000,
+      },
+    )
+
+    console.log('remove_session_key_entry tx:', tx)
+
+    params.refresh()
   } catch (e: any) {
     params.dispatch(error(e.toString()))
   }

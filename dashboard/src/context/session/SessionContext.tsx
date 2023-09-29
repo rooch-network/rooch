@@ -4,7 +4,6 @@
 import { hexlify } from '@ethersproject/bytes'
 import { useState } from 'react'
 import { useAuth } from 'src/hooks/useAuth'
-import { useETH } from 'src/hooks/useETH'
 import { AccountDataType } from 'src/context/auth/types'
 
 // ** Rooch SDK
@@ -39,7 +38,6 @@ const makeSessionAccountStoreKey = (address: string) => {
 
 const SessionProvider = ({ children }: Props) => {
   const auth = useAuth()
-  const metaMask = useETH()
   const [loading, setLoading] = useState(false)
 
   const [sessionAccount, setSessionAccount] = useState<IAccount | undefined>(() => {
@@ -79,12 +77,14 @@ const SessionProvider = ({ children }: Props) => {
   const waitTxConfirmed = async (ethereum: any, txHash: string) => {
     let receipt
     while (!receipt) {
-      await new Promise((resolve) => setTimeout(resolve, 5000)) // wait for 5 seconds before checking again
-
       receipt = await ethereum.request({
         method: 'eth_getTransactionReceipt',
         params: [txHash],
       })
+
+      if (!receipt) {
+        await new Promise((resolve) => setTimeout(resolve, 3000)) // wait for 5 seconds before checking again
+      }
     }
 
     return receipt
@@ -158,7 +158,7 @@ const SessionProvider = ({ children }: Props) => {
       },
     ]
 
-    const tx = ethereum.request({
+    const tx = await ethereum.request({
       method: 'eth_sendTransaction',
       params,
     })
@@ -179,7 +179,7 @@ const SessionProvider = ({ children }: Props) => {
 
     try {
       await registerSessionKey(
-        metaMask.provider,
+        window.ethereum,
         account.address,
         roochAddress,
         scope,

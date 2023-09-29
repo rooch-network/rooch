@@ -25,6 +25,7 @@ export type SupportWalletType = {
 }
 
 export type AccountDataType = {
+  roochAddress: string
   address: string
   kp: Ed25519Keypair | null
   activate: boolean

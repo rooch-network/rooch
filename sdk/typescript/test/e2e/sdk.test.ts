@@ -17,11 +17,11 @@ describe('SDK', () => {
 
   beforeAll(async () => {
     server = new RoochServer()
-    //await server.start()
+    await server.start()
   })
 
   afterAll(async () => {
-    //await server.stop()
+    await server.stop()
   })
 
   describe('#viewFunction', () => {

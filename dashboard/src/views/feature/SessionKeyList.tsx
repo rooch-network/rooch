@@ -5,6 +5,8 @@
 import { useState, useRef, useMemo, useEffect } from 'react'
 
 import { useAuth } from 'src/hooks/useAuth'
+import { useSession } from 'src/hooks/useSessionAccount'
+import { useRooch } from 'src/hooks/useRooch'
 
 import Grid from '@mui/material/Grid'
 import Box from '@mui/material/Box'
@@ -22,64 +24,79 @@ import {
 } from '@mui/x-data-grid'
 
 // ** Store & Actions Imports
-import { fetchData } from 'src/store/session'
+import { fetchData, removeRow } from 'src/store/session'
 import { useAppDispatch, useAppSelector } from 'src/store'
 
-const columns: GridColDef[] = [
-  { field: 'authentication_key', headerName: 'Authentication Key', width: 200 },
-  {
-    field: 'scopes',
-    headerName: 'Scopes',
-    width: 200,
-    valueGetter: (params: GridValueGetterParams) => (params.row.scopes as Array<string>).join(', '),
-  },
-  {
-    field: 'create_time',
-    headerName: 'Create Time',
-    width: 200,
-    valueGetter: (params: GridValueGetterParams) => {
-      return new Date(params.row.create_time).toLocaleString()
-    },
-  },
-  {
-    field: 'last_active_time',
-    headerName: 'Last Active Time',
-    width: 200,
-    valueGetter: (params: GridValueGetterParams) => {
-      return new Date(params.row.last_active_time).toLocaleString()
-    },
-  },
-  {
-    field: 'max_inactive_interval',
-    headerName: 'Max Inactive Interval',
-    width: 200,
-    type: 'number',
-  },
-  {
-    field: 'action',
-    headerName: 'Action',
-    width: 150,
-    renderCell: (params: GridRenderCellParams) => (
-      <Button
-        variant="contained"
-        color="secondary"
-        onClick={() => handleRemove(params.row.authentication_key)}
-      >
-        Remove
-      </Button>
-    ),
-  },
-]
+const formatDate = (timestamp: number) => {
+  if (timestamp === 0) {
+    return `--`
+  }
 
-const handleRemove = (authentication_key: string) => {
-  // Handle the remove action here
-  console.log(`Remove session key with authentication_key: ${authentication_key}`)
+  const date = new Date(timestamp)
+  const year = date.getFullYear()
+  const month = ('0' + (date.getMonth() + 1)).slice(-2)
+  const day = ('0' + date.getDate()).slice(-2)
+  const hours = ('0' + date.getHours()).slice(-2)
+  const minutes = ('0' + date.getMinutes()).slice(-2)
+  const seconds = ('0' + date.getSeconds()).slice(-2)
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
-const PAGE_SIZE = 5
+const PAGE_SIZE = 100
 
 export default function SessionKeyList() {
+  const columns: GridColDef[] = [
+    { field: 'authentication_key', headerName: 'Authentication Key', width: 200 },
+    {
+      field: 'scopes',
+      headerName: 'Scopes',
+      width: 200,
+      valueGetter: (params: GridValueGetterParams) => {
+        return (params.row.scopes as Array<string>).join(', ')
+      },
+    },
+    {
+      field: 'create_time',
+      headerName: 'Create Time',
+      width: 200,
+      valueGetter: (params: GridValueGetterParams) => {
+        return formatDate(params.row.create_time)
+      },
+    },
+    {
+      field: 'last_active_time',
+      headerName: 'Last Active Time',
+      width: 200,
+      valueGetter: (params: GridValueGetterParams) => {
+        return formatDate(params.row.last_active_time)
+      },
+    },
+    {
+      field: 'max_inactive_interval',
+      headerName: 'Max Inactive Interval',
+      width: 200,
+      type: 'number',
+    },
+    {
+      field: 'action',
+      headerName: 'Action',
+      width: 150,
+      renderCell: (params: GridRenderCellParams) => (
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={() => handleRemove(params.row.authentication_key)}
+        >
+          Remove
+        </Button>
+      ),
+    },
+  ]
+
   const auth = useAuth()
+  const session = useSession()
+  const rooch = useRooch()
 
   const mapPageToNextCursor = useRef<{ [page: number]: Uint8Array | null }>({})
 
@@ -114,13 +131,14 @@ export default function SessionKeyList() {
 
     dispatch(
       fetchData({
+        dispatch,
+        provider: rooch.provider!,
         cursor: queryOptions.cursor,
         limit: queryOptions.pageSize,
-        account_address: defaultAccount.address,
-        dispatch,
+        account_address: defaultAccount.roochAddress,
       }),
     )
-  }, [dispatch, auth, paginationModel, result, status, queryOptions])
+  }, [dispatch, auth, rooch.provider, paginationModel, result, status, queryOptions])
 
   useEffect(() => {
     if (status !== 'loading' && result.nextCursor) {
@@ -144,12 +162,31 @@ export default function SessionKeyList() {
 
     dispatch(
       fetchData({
+        dispatch,
+        provider: rooch.provider!,
         cursor: queryOptions.cursor,
         limit: queryOptions.pageSize,
-        account_address: defaultAccount.address,
-        dispatch,
+        account_address: defaultAccount.roochAddress,
       }),
     )
+  }
+
+  const handleRemove = (authentication_key: string) => {
+    const defaultAccount = auth.defaultAccount()
+    if (!defaultAccount) {
+      return false
+    }
+
+    dispatch(
+      removeRow({
+        dispatch,
+        account: session.account!,
+        auth_key: authentication_key,
+        refresh: handleRefresh,
+      }),
+    )
+
+    return false
   }
 
   return (
