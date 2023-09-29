@@ -14,7 +14,6 @@ import {
   ISessionKey,
   JsonRpcProvider,
   ListAnnotatedStateResultPageView,
-  addressToSeqNumber,
 } from '@rooch/sdk'
 
 interface DataParams {
@@ -100,6 +99,10 @@ export const fetchData = createAsyncThunk('state/fetchData', async (params: Data
     }
   } catch (e: any) {
     params.dispatch(error(e.toString()))
+
+    setTimeout(() => {
+      params.dispatch(error(null))
+    }, 5000)
   }
 })
 
@@ -109,25 +112,16 @@ export const removeRow = createAsyncThunk('state/removeRow', async (params: Remo
   const { auth_key } = params
 
   try {
-    const tx = await params.account.runFunction(
-      '0x3::session_key::remove_session_key_entry',
-      [],
-      [
-        {
-          type: { Vector: 'U8' },
-          value: addressToSeqNumber(auth_key),
-        },
-      ],
-      {
-        maxGasAmount: 1000000,
-      },
-    )
-
+    const tx = await params.account.removeSessionKey(auth_key)
     console.log('remove_session_key_entry tx:', tx)
 
     params.refresh()
   } catch (e: any) {
     params.dispatch(error(e.toString()))
+
+    setTimeout(() => {
+      params.dispatch(error(null))
+    }, 5000)
   }
 })
 

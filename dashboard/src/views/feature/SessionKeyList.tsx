@@ -208,7 +208,6 @@ export default function SessionKeyList() {
             rows={status === 'finished' ? result.data : []}
             loading={status === ('loading' as 'loading')}
             columns={columns}
-            checkboxSelection
             pageSizeOptions={[10, 25, 50]}
             onPaginationModelChange={handlePaginationModelChange}
             paginationModel={paginationModel}
@@ -216,14 +215,9 @@ export default function SessionKeyList() {
           />
           <Snackbar
             open={!!error}
-            autoHideDuration={6000}
+            autoHideDuration={5000}
             message={error}
             anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-            action={
-              <Button color="secondary" size="small" onClick={() => handleRefresh()}>
-                Retry
-              </Button>
-            }
           />
         </CardContent>
       </Card>

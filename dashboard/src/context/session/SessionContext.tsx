@@ -62,10 +62,9 @@ const SessionProvider = ({ children }: Props) => {
           }
 
           const pk = Ed25519Keypair.fromSecretKey(sk)
-          const roochAddress = pk.getPublicKey().toRoochAddress()
           const authorizer = new PrivateKeyAuth(pk)
 
-          return new Account(rooch.provider, roochAddress, authorizer)
+          return new Account(rooch.provider!, defaultAccount.roochAddress, authorizer)
         }
       } catch (error) {
         // If error also return initialValue
@@ -85,7 +84,7 @@ const SessionProvider = ({ children }: Props) => {
       })
 
       if (!receipt) {
-        await new Promise((resolve) => setTimeout(resolve, 3000)) // wait for 5 seconds before checking again
+        await new Promise((resolve) => setTimeout(resolve, 3000)) // wait for 3 seconds before checking again
       }
     }
 
@@ -190,7 +189,7 @@ const SessionProvider = ({ children }: Props) => {
       window.localStorage.setItem(key, pk.export().privateKey)
       const authorizer = new PrivateKeyAuth(pk)
 
-      return new Account(rooch.provider, account.roochAddress, authorizer)
+      return new Account(rooch.provider!, account.roochAddress, authorizer)
     } catch (err: any) {
       console.log(`registerSessionKey error:`, err)
 
@@ -213,7 +212,7 @@ const SessionProvider = ({ children }: Props) => {
       window.localStorage.setItem(key, pk.export().privateKey)
       const authorizer = new PrivateKeyAuth(pk)
 
-      return new Account(rooch.provider, roochAddress, authorizer)
+      return new Account(rooch.provider!, roochAddress, authorizer)
     } catch (err: any) {
       console.log(`registerSessionKey error:`, err)
 
@@ -223,8 +222,6 @@ const SessionProvider = ({ children }: Props) => {
 
   const requestAuthorize = async (scope: Array<string>, maxInactiveInterval: number) => {
     setLoading(true)
-
-    console.log('hshdhhsd')
 
     try {
       const defaultAccount = auth.defaultAccount()
@@ -238,7 +235,7 @@ const SessionProvider = ({ children }: Props) => {
         if (defaultAccount.kp != null) {
           const roochAddress = defaultAccount.address
           const authorizer = new PrivateKeyAuth(defaultAccount.kp)
-          const account = new Account(rooch.provider, roochAddress, authorizer)
+          const account = new Account(rooch.provider!, roochAddress, authorizer)
 
           const sessionAccount = await requestPrivateCreateSessionKey(
             account,
