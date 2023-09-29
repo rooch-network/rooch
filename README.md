@@ -1,4 +1,4 @@
-<div align="center">
+<div width="400" align="center">
   <br />
   <br />
   <a href="https://rooch.network"><img alt="Rooch" src="https://rooch.network/logo/rooch_black_combine.svg" width=384></a>
@@ -14,6 +14,7 @@
 ## Usage
 
 * **RoochNetwork(Multi-Chain Modular Layer2)**: Rooch(Execution) + Multi-Chain(Settlement) + Ethereum(Arbitration) + DA
+* **X-Chain Rollup**: Rooch(Execution) + X-Chain(Settlement + Arbitration) + DA
 * **Sovereign Rollup**: Rooch + DA
 
 ## Getting Started
