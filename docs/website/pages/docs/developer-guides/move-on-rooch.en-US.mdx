@@ -1,0 +1,83 @@
+# Move on Rooch
+
+Rooch's goal is to enable developers to quickly build and deploy Fully on-chain Applications. The most important thing for developing applications is to have an efficient development language. Rooch chose Move language as the development language. We believe that its following characteristics make it the most suitable smart contract language for building full-chain applications.
+
+- **Platform independence**: Move and its virtual machine are not coupled to a specific blockchain platform. In order to adapt to different application scenarios, different blockchain platforms can innovate based on Move.
+- **Security**: Move’s built-in security features and support for resource scarcity are more suitable for application scenarios like blockchain where assets and application logic are deeply bound.
+- **Scalability**: Move's dependency management mechanism allows the platform to provide powerful built-in libraries, and developers can also easily introduce third-party libraries, making it more suitable for building complex applications.
+
+## Rooch Move Features
+
+The features of the Move language can be found in the reference materials at the end of the article. Here we mainly introduce the new features that Rooch brings to Move.
+
+## Built-in standard library
+
+Rooch currently has three built-in standard libraries, namely `MoveStdlib`, `MoveosStdlib` and `RoochFramework`. For details, see the [built-in libraries](./library.en-US.mdx).
+
+## Private generics
+
+`#[private_generics(T)]` is a function annotation, which ensures that the function's generic parameter `T` can only be a type defined in the current module of the caller. The security model follows similar constraints to the Move storage instruction, but opens this capability to developers. This feature is the basic condition for the following features.
+
+### Storage abstraction
+
+The goal of storage abstraction is to allow developers to more flexibly define their own state storage structures in smart contracts without being limited to the standardized solutions provided by the platform. So Rooch implemented the original storage instruction of Move in the contract. The following is a comparison table:
+
+| Move store instructions                    | Functions in Rooch                                                               | Explanation                                                      |
+|--------------------------------------------|----------------------------------------------------------------------------------|------------------------------------------------------------------|
+| `move_to<T:key>(&signer,T)`                | `account_storage::global_move_to<T:key>(&mut StorageContext,&signer,T)`          | Store resources of type `T` in the user state space of `signer`. |
+| `move_from<T:key>(address):T`              | `account_storage::global_move_from<T:key>(&mut StorageContext,address): T`       | Take resources of type `T` out of user state space.              |
+| `borrow_global<T:key>(address):&T`         | `account_storage::global_borrow<T:key>(&StorageContext,address): &T`             | Read an immutable reference of type `T` from user space.         |
+| `borrow_global_mut<T:key>(address):&mut T` | `account_storage::global_borrow_mut<T:key>(&mut StorageContext,address): &mut T` | Read a mutable reference of type `T` from user space.            |
+| `exists<T:key>(address):bool`              | `account_storage::global_exists<T:key>(&StorageContext,address): bool`           | Determine whether there is a resource of type `T` in user space. |
+
+The above methods provided by `account_storage` are all constrained by the `private_generics(T)` annotation, ensuring that the security is consistent with the Move storage instruction.
+
+In addition to `account_storage` Rooch also provides the following storage modules:
+
+1. `object_storage`: Use `ObjectID` as key to store any type of data. For detailed information about Rooch Object, see [Rooch Object](./object.en-US.mdx).
+2. `type_table`: Use type as key to store any type of data.
+
+Regarding the design of storage abstraction, you can refer to [Storage Abstraction](../tech-highlights/storage_abstraction.en-US.mdx).
+
+### StorageContext 和 TxContext
+
+StorageContext contains two fields, one is `TxContext`, which contains information related to the current transaction, and the other is `ObjectStore`, which is a global `Object` storage.
+
+```move
+module moveos_std::storage_context{
+    struct StorageContext {
+        tx_context: TxContext,
+        object_storage: ObjectStorage,
+    }
+}
+```
+
+Developers need to define the `StorageContext` parameter in the `entry` function, and MoveVM will automatically fill in the parameter.
+
+```move
+module example::my_module{
+    public entry fun my_entry_fun(ctx: &mut StorageContext){
+        //function logic
+    }
+}
+```
+
+### Get the `signer` of the current module
+
+The function `moveos_std::signer::module_signer<T>():signer` can be used to obtain the `signer` of the current module, and call `account_storage::global_move_to` and other functions that require a `signer` as the account of the current module.
+
+`T` here is subject to `private_generics(T)`, ensuring the safety of the call.
+
+### Crypto algorithm support
+
+1. [ecdsa_k1](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/doc/ecdsa_k1.md): Verify ecdsa_k1 signature
+2. [ecdsa_k1_recoverable](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/doc/ecdsa_k1_recoverable.md): Supports recovering public keys from signatures and verifying signatures
+3. [ed25519](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/doc/ed25519.md): Verify ed25519 signature
+4. [schnorr](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/doc/schnorr.md): Verify schnorr signature
+5. [hash](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/doc/hash.md) function: `sha2_256`, `sha3_256`, `blake2b256`, `keccak256`, `ripemd160`
+
+### More references
+
+1. [MoveBook](https://move-language.github.io/move/): A basic tutorial on the Move language
+2. [Move on Aptos](https://aptos.dev/move/move-on-aptos/): Contains an introduction to the Move language and the features of Move on Aptos
+3. [Move on Sui](https://docs.sui.io/learn/why-move): Contains an introduction to the Move language and the features of Move on Sui
