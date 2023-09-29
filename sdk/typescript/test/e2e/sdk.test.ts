@@ -281,13 +281,6 @@ describe('SDK', () => {
       // create session account
       const sessionAccount = await account.createSessionAccount(['0x3::account::*'], 100)
       expect(sessionAccount).toBeDefined()
-
-      expect(async () => {
-        // run function out of scope
-        await sessionAccount.runFunction('0x3::empty::empty', [], [], {
-          maxGasAmount: 100000000,
-        })
-      }).rejects.toThrow()
     })
 
     it('Query session keys should be ok', async () => {

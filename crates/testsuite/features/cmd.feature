@@ -2,6 +2,8 @@ Feature: Rooch CLI integration tests
     @serial
     Scenario: Init
       Then cmd: "init"
+      Then cmd: "env switch --alias local"
+
 
     @serial
     Scenario: account
@@ -19,8 +21,6 @@ Feature: Rooch CLI integration tests
       # session key
       Then cmd: "session-key create --sender-account {default} --scope 0x3::empty::empty"
       Then cmd: "move run --function 0x3::empty::empty --sender-account {default} --session-key {{$.session-key[-1].authentication_key}}"
-
-      Then cmd: "transaction get-by-hash --hash {{$.account[0].execution_info.tx_hash}}"
 
       # event example
       Then cmd: "move publish -p ../../examples/event --sender-account {default} --named-addresses rooch_examples={default}"
@@ -142,4 +142,12 @@ Feature: Rooch CLI integration tests
       #TODO change the argument `0x3` address to a user account
       Then cmd: "move run --function 0x3::coin::transfer_entry --type-args {default}::fixed_supply_coin::FSC --args address:0x3  --args 1u256 --sender-account {default}"
     
+      Then stop the server
+
+  @serial
+    Scenario: rpc test
+      Given a server for rpc
+      Then cmd: "rpc request --method eth_getBalance --params \"0x1111111111111111111111111111111111111111\"" 
+      Then assert: "{{$.rpc[-1]}} == 0x56bc75e2d63100000"
+
       Then stop the server

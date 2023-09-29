@@ -15,11 +15,13 @@ pub mod empty;
 pub mod ethereum_address;
 pub mod ethereum_light_client;
 pub mod ethereum_validator;
+pub mod gas_coin;
 pub mod genesis;
 pub mod native_validator;
 pub mod session_key;
 pub mod timestamp;
 pub mod transaction_validator;
+pub mod transfer;
 
 /// MoveOS system pre_execute functions registry.
 /// The registry is used to filter out system pre_execute functions.

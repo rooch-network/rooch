@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
+use jsonrpsee::{
+    core::client::ClientT,
+    http_client::{HttpClient, HttpClientBuilder},
+};
 use moveos_types::{
     access_path::AccessPath,
     function_return_value::FunctionResult,
@@ -18,13 +21,9 @@ use rooch_rpc_api::jsonrpc_types::{
 };
 use rooch_rpc_api::{
     api::rooch_api::RoochAPIClient,
-    jsonrpc_types::{
-        AnnotatedStateView, ExecuteTransactionResponseView, StateView, TransactionView,
-    },
+    jsonrpc_types::{AnnotatedStateView, ExecuteTransactionResponseView, StateView},
 };
-use rooch_types::{
-    account::Account, address::RoochAddress, transaction::rooch::RoochTransaction, H256,
-};
+use rooch_types::{account::Account, address::RoochAddress, transaction::rooch::RoochTransaction};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -135,9 +134,9 @@ impl Client {
             .await?)
     }
 
-    pub async fn get_transactions_by_hash(&self, hash: H256) -> Result<Option<TransactionView>> {
-        Ok(self.rpc.http.get_transaction_by_hash(hash.into()).await?)
-    }
+    // pub async fn get_transactions_by_hash(&self, hash: H256) -> Result<Option<TransactionView>> {
+    //     Ok(self.rpc.http.get_transaction_by_hash(hash.into()).await?)
+    // }
 
     pub async fn get_sequence_number(&self, sender: RoochAddress) -> Result<u64> {
         Ok(self
@@ -205,6 +204,14 @@ impl Client {
             .http
             .get_balances(account_addr, coin_type, cursor, limit)
             .await?)
+    }
+
+    pub async fn request(
+        &self,
+        method: &str,
+        params: Vec<serde_json::Value>,
+    ) -> Result<serde_json::Value> {
+        Ok(self.rpc.http.request(method, params).await?)
     }
 }
 

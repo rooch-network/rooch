@@ -3,7 +3,6 @@
 
 use crate::service::rpc_service::RpcService;
 use anyhow::Result;
-use lazy_static::lazy_static;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
@@ -19,7 +18,7 @@ use rooch_types::addresses::ROOCH_FRAMEWORK_ADDRESS_LITERAL;
 use rooch_types::framework::coin::{AnnotatedCoinInfo, AnnotatedCoinStore, CoinModule};
 use std::collections::HashMap;
 use std::str::FromStr;
-use tokio::runtime::Runtime;
+use tokio::runtime::Handle;
 
 /// AggregateService is aggregate RPC service and MoveFunctionCaller.
 #[derive(Clone)]
@@ -127,6 +126,9 @@ impl AggregateService {
                     result.push(Some(v))
                 }
             };
+        } else {
+            // If the account do not exist, return None
+            result.push(None)
         }
 
         for (_key, balance_info) in result.iter_mut().flatten() {
@@ -141,27 +143,17 @@ impl AggregateService {
     }
 }
 
-lazy_static! {
-    static ref RUNTIME: Runtime = tokio::runtime::Builder::new_multi_thread()
-        .thread_name("rooch-aggregate-service")
-        .enable_all()
-        .build()
-        .unwrap();
-}
-
 impl MoveFunctionCaller for AggregateService {
-    // Use futures::executors::block_on to go from sync -> async
-    // Warning! Possible deadlocks can occur if we try to wait for a future without spawn
     fn call_function(
         &self,
         _ctx: &TxContext,
         function_call: FunctionCall,
     ) -> Result<FunctionResult> {
         let rpc_service = self.rpc_service.clone();
-        let function_result = futures::executor::block_on(
-            RUNTIME.spawn(async move { rpc_service.execute_view_function(function_call).await }),
-        )??;
-
+        let function_result = tokio::task::block_in_place(|| {
+            Handle::current()
+                .block_on(async move { rpc_service.execute_view_function(function_call).await })
+        })?;
         function_result.try_into()
     }
 }

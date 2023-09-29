@@ -8,7 +8,9 @@ module rooch_framework::gas_coin {
     friend rooch_framework::genesis;
     friend rooch_framework::transaction_validator;
 
-    struct GasCoin has key {}
+    //TODO should we allow user to transfer gas coin?
+    //If not, we can remove `store` ability from GasCoin.
+    struct GasCoin has key, store {}
 
     public fun balance(ctx: &StorageContext, addr: address): u256 {
         coin::balance<GasCoin>(ctx, addr)
@@ -45,7 +47,8 @@ module rooch_framework::gas_coin {
 
     /// TODO find a way to protect this function from DOS attack.
     public entry fun faucet_entry(ctx: &mut StorageContext, account: &signer) {
-        let amount = 1_0000_0000u256;
+        //100 RGC
+        let amount = 100_000_000_000_000_000_000u256;
         let addr = signer::address_of(account);
         faucet(ctx, addr, amount);
     }
@@ -56,7 +59,7 @@ module rooch_framework::gas_coin {
             ctx,
             string::utf8(b"Rooch Gas Coin"),
             string::utf8(b"RGC"),
-            9, // decimals
+            18, // decimals
         );
     }
 

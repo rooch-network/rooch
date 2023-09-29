@@ -73,14 +73,14 @@ impl<T> TryFrom<&Block<T>> for BlockHeader {
             transactions_root: value.transactions_root.as_bytes().to_vec(),
             receipts_root: value.receipts_root.as_bytes().to_vec(),
             logs_bloom: value.logs_bloom.map(|b| b.0.to_vec()).unwrap_or(vec![]),
-            difficulty: eth_u256_to_move_u256(value.difficulty),
+            difficulty: eth_u256_to_move_u256(&value.difficulty),
             number: value
                 .number
                 .ok_or_else(|| anyhow::format_err!("Unexpected pending block"))?
                 .as_u64(),
-            gas_limit: eth_u256_to_move_u256(value.gas_limit),
-            gas_used: eth_u256_to_move_u256(value.gas_used),
-            timestamp: eth_u256_to_move_u256(value.timestamp),
+            gas_limit: eth_u256_to_move_u256(&value.gas_limit),
+            gas_used: eth_u256_to_move_u256(&value.gas_used),
+            timestamp: eth_u256_to_move_u256(&value.timestamp),
             extra_data: value.extra_data.to_vec(),
         };
         Ok(block_header)
@@ -140,7 +140,7 @@ impl<'a> ModuleBinding<'a> for EthereumLightClientModule<'a> {
 }
 
 //TODO implement From<PrimitiveU256> for U256 in move side
-fn eth_u256_to_move_u256(value: ethers::types::U256) -> U256 {
+pub fn eth_u256_to_move_u256(value: &ethers::types::U256) -> U256 {
     let mut bytes = [0u8; U256_NUM_BYTES];
     value.to_little_endian(&mut bytes);
     U256::from_le_bytes(&bytes)

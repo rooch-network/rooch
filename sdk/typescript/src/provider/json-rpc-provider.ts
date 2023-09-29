@@ -4,7 +4,7 @@
 import fetch from 'isomorphic-fetch'
 import { HTTPTransport, RequestManager } from '@open-rpc/client-js'
 import { JsonRpcClient } from '../generated/client'
-import { Connection, LocalNetConnection } from './connection'
+import { Chain, ChainInfo, DevChain } from '../constants/chain'
 import {
   FunctionId,
   TypeTag,
@@ -14,19 +14,18 @@ import {
   AnnotatedFunctionResultView,
   AnnotatedStateView,
   TransactionResultPageView,
+  AnnotatedEventResultPageView,
   ListAnnotatedStateResultPageView,
+  StateView,
+  StateResultPageView,
 } from '../types'
 import { functionIdToStirng, typeTagToString, encodeArg, toHexString } from '../utils'
-
-import { ROOCH_LOCAL_CHIAN_ID } from '../constants'
 
 /**
  * Configuration options for the JsonRpcProvider. If the value of a field is not provided,
  * value in `DEFAULT_OPTIONS` for that field will be used
  */
 export type RpcProviderOptions = {
-  chainID: number
-
   /**
    * Cache timeout in seconds for the RPC API Version
    */
@@ -37,31 +36,27 @@ export type RpcProviderOptions = {
 }
 
 const DEFAULT_OPTIONS: RpcProviderOptions = {
-  chainID: ROOCH_LOCAL_CHIAN_ID,
   versionCacheTimeoutInSeconds: 600,
 }
 
 export class JsonRpcProvider {
-  public connection: Connection
+  public chain: Chain
 
-  readonly client: JsonRpcClient
+  private client: JsonRpcClient
 
   private rpcApiVersion: string | undefined
 
   private cacheExpiry: number | undefined
 
-  constructor(
-    connection: Connection = LocalNetConnection,
-    public options: RpcProviderOptions = DEFAULT_OPTIONS,
-  ) {
-    this.connection = connection
+  constructor(chain: Chain = DevChain, public options: RpcProviderOptions = DEFAULT_OPTIONS) {
+    this.chain = chain
 
     const opts = { ...DEFAULT_OPTIONS, ...options }
     this.options = opts
 
     this.client = new JsonRpcClient(
       new RequestManager([
-        new HTTPTransport(connection.url, {
+        new HTTPTransport(chain.url, {
           headers: {
             'Content-Type': 'application/json',
           },
@@ -71,8 +66,27 @@ export class JsonRpcProvider {
     )
   }
 
+  switchChain(chain: Chain) {
+    // this.client.close()
+    this.chain = chain
+    this.client = new JsonRpcClient(
+      new RequestManager([
+        new HTTPTransport(chain.url, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          fetcher: this.options.fetcher,
+        }),
+      ]),
+    )
+  }
+
+  ChainInfo(): ChainInfo {
+    return this.chain.info
+  }
+
   getChainId(): number {
-    return this.options.chainID
+    return this.chain.id
   }
 
   async getRpcApiVersion(): Promise<string | undefined> {
@@ -132,53 +146,35 @@ export class JsonRpcProvider {
     return this.client.rooch_getTransactionsByOrder(cursor, limit)
   }
 
-  // TODO: wait bcs
+  // Get the events by event handle id
+  async getEventsByEventHandle(
+    event_handle_type: string,
+    cursor: number,
+    limit: number,
+  ): Promise<AnnotatedEventResultPageView> {
+    return await this.client.rooch_getEventsByEventHandle(event_handle_type, cursor, limit)
+  }
 
-  // // Get the events by event handle id
-  // async getEventsByEventHandle(
-  //   event_handle_type: string,
-  //   cursor: number,
-  //   limit: number,
-  // ): Promise<PageView_for_Nullable_AnnotatedEventView_and_uint64> {
-  //   return await this.rpcClient.rooch_getEventsByEventHandle(
-  //     event_handle_type,
-  //     cursor,
-  //     limit,
-  //   )
-  // }
+  // Get the states by access_path
+  async getStates(access_path: string): Promise<StateView | null[]> {
+    return await this.client.rooch_getStates(access_path)
+  }
 
-  // // Get the states by access_path
-  // async getStates(access_path: string): Promise<StateView | null[]> {
-  //   return await this.rpcClient.rooch_getStates(access_path)
-  // }
+  // List the states by access_path
+  async listStates(
+    access_path: string,
+    cursor: Uint8Array,
+    limit: number,
+  ): Promise<StateResultPageView> {
+    return await this.client.rooch_listStates(access_path, cursor, limit)
+  }
 
+  // TODO:
   // async getTransactionByHash(hash: string): Promise<TransactionView> {
-  //   return this.rpcClient.rooch_getTransactionByHash(hash)
+  //   return this.client.rooch_getTransactionByHash(hash)
   // }
 
-  // async getTransactionsByHash(
-  //   start: number,
-  //   limit: number,
-  // ): Promise<TransactionView[]> {
-  //   return await this.rpcClient.rooch_getTransactions(start, limit)
-  // }
-
-  // async getTransactionInfosByHash(
-  //   tx_hashes: string[],
-  // ): Promise<TransactionExecutionInfoView | null[]> {
-  //   return await this.rpcClient.rooch_getTransactionInfosByHash(tx_hashes)
-  // }
-
-  // async getTransactionInfosByOrder(
-  //   cursor: number,
-  //   limit: number,
-  // ): Promise<PageView_for_Nullable_TransactionExecutionInfoView_and_uint128> {
-  //   return await this.rpcClient.rooch_getTransactionInfosByOrder(
-  //     cursor,
-  //     limit,
-  //   )
-  // }
-
+  //
   // // List the annotated states by access_path The annotated states include the decoded move value of the state
   // async listAnnotatedStates(
   //   access_path: string,

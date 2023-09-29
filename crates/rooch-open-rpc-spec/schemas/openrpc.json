@@ -203,24 +203,6 @@
       }
     },
     {
-      "name": "rooch_getTransactionByHash",
-      "params": [
-        {
-          "name": "hash",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/H256View"
-          }
-        }
-      ],
-      "result": {
-        "name": "TransactionView",
-        "schema": {
-          "$ref": "#/components/schemas/TransactionView"
-        }
-      }
-    },
-    {
       "name": "rooch_getTransactionsByHash",
       "params": [
         {

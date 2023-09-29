@@ -1,5 +1,5 @@
 {
-	"name": "@rooch/sdk",
+	"name": "@roochnetwork/sdk",
 	"author": "rooch.network",
 	"version": "0.0.1",
 	"description": "Rooch SDK",
@@ -92,5 +92,9 @@
 		"isomorphic-fetch": "^3.0.0",
 		"superstruct": "^1.0.3",
 		"tweetnacl": "^1.0.3"
+	},
+	"publishConfig": {
+		"access": "public",
+		"registry": "https://registry.npmjs.org/"
 	}
 }
