@@ -222,6 +222,69 @@ describe('SDK', () => {
       expect(tx).toBeDefined()
     })
 
+    it('Remove session key should be ok', async () => {
+      const provider = new JsonRpcProvider(LocalChain)
+
+      const kp = Ed25519Keypair.deriveKeypair(
+        'fiber tube acid imitate frost coffee choose crowd grass topple donkey submit',
+      )
+      const roochAddress = kp.getPublicKey().toRoochAddress()
+      const authorizer = new PrivateKeyAuth(kp)
+
+      const account = new Account(provider, roochAddress, authorizer)
+      expect(account).toBeDefined()
+
+      // create session account
+      const kp2 = Ed25519Keypair.generate()
+      await account.registerSessionKey(
+        kp2.getPublicKey().toRoochAddress(),
+        ['0x3::empty::empty'],
+        100,
+      )
+
+      // view session Keys
+      const sessionKey = kp2.getPublicKey().toRoochAddress()
+      const session = await provider.executeViewFunction(
+        '0x3::session_key::get_session_key',
+        [],
+        [
+          {
+            type: 'Address',
+            value: roochAddress,
+          },
+          {
+            type: { Vector: 'U8' },
+            value: addressToSeqNumber(sessionKey),
+          },
+        ],
+      )
+      expect(session).toBeDefined()
+      expect(session.return_values![0].value.value).not.toBe('0x00')
+
+      // run function with sessoin key
+      const tx = await account.removeSessionKey(sessionKey)
+      expect(tx).toBeDefined()
+
+      // view session Keys
+      const session2 = await provider.executeViewFunction(
+        '0x3::session_key::get_session_key',
+        [],
+        [
+          {
+            type: 'Address',
+            value: roochAddress,
+          },
+          {
+            type: { Vector: 'U8' },
+            value: addressToSeqNumber(sessionKey),
+          },
+        ],
+      )
+
+      expect(session2).toBeDefined()
+      expect(session2.return_values![0].value.value).toBe('0x00')
+    })
+
     it('Create session account by createSessionAccount should be ok', async () => {
       const provider = new JsonRpcProvider(LocalChain)
 

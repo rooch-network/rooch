@@ -185,6 +185,24 @@ export class Account implements IAccount {
     )
   }
 
+  async removeSessionKey(authKey: AccountAddress, opts?: CallOption): Promise<string> {
+    const tx = await this.runFunction(
+      '0x3::session_key::remove_session_key_entry',
+      [],
+      [
+        {
+          type: { Vector: 'U8' },
+          value: addressToSeqNumber(authKey),
+        },
+      ],
+      opts || {
+        maxGasAmount: 100000000,
+      },
+    )
+
+    return tx
+  }
+
   async querySessionKeys(cursor: Bytes | null, limit: number): Promise<IPage<ISessionKey>> {
     const accessPath = `/resource/${this.address}/0x3::session_key::SessionKeys`
     const state = await this.provider.getAnnotatedStates(accessPath)

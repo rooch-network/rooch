@@ -65,6 +65,16 @@ export interface IAccount {
   ): Promise<void>
 
   /**
+   * Remove session key
+   *
+   * @param authKey
+   * @param scopes
+   * @param maxInactiveInterval
+   * @param opts
+   */
+  removeSessionKey(authKey: AccountAddress, opts?: CallOption): Promise<string>
+
+  /**
    * Query account's sessionKey
    *
    * @param cursor The page cursor

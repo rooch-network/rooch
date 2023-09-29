@@ -5,7 +5,7 @@ import { describe, it, expect } from 'vitest'
 
 describe('SDK', () => {
   describe('#debug', () => {
-    it('view function with serializable arg should be ok', async () => {
+    it('Remove session key should be ok', async () => {
       expect(true).toBeTruthy()
     })
   })
