@@ -9,6 +9,7 @@ import {
   Account,
   addressToSeqNumber,
   bcsTypes,
+  LocalChain,
 } from '../../src'
 import { RoochServer } from './servers/rooch-server'
 
@@ -26,7 +27,7 @@ describe('SDK', () => {
 
   describe('#viewFunction', () => {
     it('view function should be ok', async () => {
-      const provider = new JsonRpcProvider()
+      const provider = new JsonRpcProvider(LocalChain)
       const result = await provider.executeViewFunction(
         '0x3::account::sequence_number_for_sender',
         [],
@@ -36,7 +37,7 @@ describe('SDK', () => {
     })
 
     it('view function with serializable arg should be ok', async () => {
-      const provider = new JsonRpcProvider()
+      const provider = new JsonRpcProvider(LocalChain)
 
       const multiChainIDEther = 60
       const ethAddress = '0xd33293B247A74f9d49c1F6253d909d51242562De'
@@ -70,7 +71,7 @@ describe('SDK', () => {
 
   describe('#runFunction', () => {
     it('call function with private key auth should be ok', async () => {
-      const provider = new JsonRpcProvider()
+      const provider = new JsonRpcProvider(LocalChain)
 
       const kp = Ed25519Keypair.deriveKeypair(
         'nose aspect organ harbor move prepare raven manage lamp consider oil front',
@@ -99,7 +100,7 @@ describe('SDK', () => {
     })
 
     it('call function with struct be ok', async () => {
-      const provider = new JsonRpcProvider()
+      const provider = new JsonRpcProvider(LocalChain)
 
       const kp = Ed25519Keypair.deriveKeypair(
         'nose aspect organ harbor move prepare raven manage lamp consider oil front',
@@ -166,7 +167,7 @@ describe('SDK', () => {
 
   describe('#getAnnotatedStates', () => {
     it('get annotated states should be ok', async () => {
-      const provider = new JsonRpcProvider()
+      const provider = new JsonRpcProvider(LocalChain)
       const result = provider.getAnnotatedStates('/object/0x1')
       expect(result).toBeDefined()
     })
@@ -174,7 +175,7 @@ describe('SDK', () => {
 
   describe('#sessionKey', () => {
     it('Create session account by registerSessionKey should be ok', async () => {
-      const provider = new JsonRpcProvider()
+      const provider = new JsonRpcProvider(LocalChain)
 
       const kp = Ed25519Keypair.deriveKeypair(
         'fiber tube acid imitate frost coffee choose crowd grass topple donkey submit',
@@ -222,7 +223,7 @@ describe('SDK', () => {
     })
 
     it('Create session account by createSessionAccount should be ok', async () => {
-      const provider = new JsonRpcProvider()
+      const provider = new JsonRpcProvider(LocalChain)
 
       const kp = Ed25519Keypair.generate()
       const roochAddress = kp.getPublicKey().toRoochAddress()
@@ -244,7 +245,7 @@ describe('SDK', () => {
     })
 
     it('Create session account with multi scopes should be ok', async () => {
-      const provider = new JsonRpcProvider()
+      const provider = new JsonRpcProvider(LocalChain)
 
       const kp = Ed25519Keypair.generate()
       const roochAddress = kp.getPublicKey().toRoochAddress()
@@ -269,7 +270,7 @@ describe('SDK', () => {
     })
 
     it('Session account runFunction out of score should fail', async () => {
-      const provider = new JsonRpcProvider()
+      const provider = new JsonRpcProvider(LocalChain)
 
       const kp = Ed25519Keypair.generate()
       const roochAddress = kp.getPublicKey().toRoochAddress()
@@ -284,7 +285,7 @@ describe('SDK', () => {
     })
 
     it('Query session keys should be ok', async () => {
-      const provider = new JsonRpcProvider()
+      const provider = new JsonRpcProvider(LocalChain)
 
       const kp = Ed25519Keypair.generate()
       const roochAddress = kp.getPublicKey().toRoochAddress()
