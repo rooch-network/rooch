@@ -4,8 +4,9 @@
 import { Serializer, Deserializer } from '../../generated/runtime/serde/mod'
 import { Seq, uint8 } from '../../generated/runtime/serde/mod'
 import { Helpers } from '../../generated/runtime/rooch_types/mod'
+import { Serializable } from './serializable'
 
-export class MoveString {
+export class MoveString implements Serializable {
   private bytes: Seq<uint8>
 
   constructor(bytes: Seq<uint8>) {

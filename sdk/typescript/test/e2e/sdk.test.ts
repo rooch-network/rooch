@@ -8,6 +8,7 @@ import {
   PrivateKeyAuth,
   Account,
   addressToSeqNumber,
+  bcsTypes,
 } from '../../src'
 import { RoochServer } from './servers/rooch-server'
 
@@ -33,10 +34,71 @@ describe('SDK', () => {
       )
       expect(result).toBeDefined()
     })
+
+    it('view function with serializable arg should be ok', async () => {
+      const provider = new JsonRpcProvider()
+
+      const multiChainIDEther = 60
+      const ethAddress = '0xd33293B247A74f9d49c1F6253d909d51242562De'
+      const ma = new bcsTypes.MultiChainAddress(
+        BigInt(multiChainIDEther),
+        addressToSeqNumber(ethAddress),
+      )
+
+      const result = await provider.executeViewFunction(
+        '0x3::address_mapping::resolve_or_generate',
+        [],
+        [
+          {
+            type: {
+              Struct: {
+                address: '0x3',
+                module: 'address_mapping',
+                name: 'MultiChainAddress',
+              },
+            },
+            value: ma,
+          },
+        ],
+      )
+
+      expect(result).toBeDefined()
+      expect(result.vm_status).toBe('Executed')
+      expect(result.return_values).toBeDefined()
+    })
   })
 
   describe('#runFunction', () => {
     it('call function with private key auth should be ok', async () => {
+      const provider = new JsonRpcProvider()
+
+      const kp = Ed25519Keypair.deriveKeypair(
+        'nose aspect organ harbor move prepare raven manage lamp consider oil front',
+      )
+      const roochAddress = kp.getPublicKey().toRoochAddress()
+      const authorizer = new PrivateKeyAuth(kp)
+
+      const account = new Account(provider, roochAddress, authorizer)
+      expect(account).toBeDefined()
+
+      const tx = await account.runFunction(
+        '0x3::account::create_account_entry',
+        [],
+        [
+          {
+            type: 'Address',
+            value: roochAddress,
+          },
+        ],
+        {
+          maxGasAmount: 1000000,
+        },
+      )
+
+      expect(tx).toBeDefined()
+    })
+
+    it('call function with struct be ok', async () => {
       const provider = new JsonRpcProvider()
 
       const kp = Ed25519Keypair.deriveKeypair(
@@ -149,6 +211,7 @@ describe('SDK', () => {
           },
         ],
       )
+      expect(session).toBeDefined()
 
       // run function with sessoin key
       const tx = await sessionAccount.runFunction('0x3::empty::empty', [], [], {

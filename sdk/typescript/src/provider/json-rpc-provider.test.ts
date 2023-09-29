@@ -131,30 +131,32 @@ describe('provider', () => {
           const mock = fetchMock.sandbox()
 
           const body = {
-            "jsonrpc": "2.0",
-            "result": {
-                "data": [
-                    {
-                        "state": {
-                            "value": "0x0e526f6f63682047617320436f696e03524743090000000000000000000000000000000000000000000000000000000000000000",
-                            "value_type": "0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>"
-                        },
-                        "move_value": {
-                            "abilities": 8,
-                            "type": "0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>",
-                            "value": {
-                                "decimals": 9,
-                                "name": "Rooch Gas Coin",
-                                "supply": "0",
-                                "symbol": "RGC"
-                            }
-                        }
-                    }
-                ],
-                "next_cursor": "0xa501303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a636f696e3a3a436f696e496e666f3c303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e3e",
-                "has_next_page": false
+            jsonrpc: '2.0',
+            result: {
+              data: [
+                {
+                  state: {
+                    value:
+                      '0x0e526f6f63682047617320436f696e03524743090000000000000000000000000000000000000000000000000000000000000000',
+                    value_type: '0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>',
+                  },
+                  move_value: {
+                    abilities: 8,
+                    type: '0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>',
+                    value: {
+                      decimals: 9,
+                      name: 'Rooch Gas Coin',
+                      supply: '0',
+                      symbol: 'RGC',
+                    },
+                  },
+                },
+              ],
+              next_cursor:
+                '0xa501303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a636f696e3a3a436f696e496e666f3c303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e3e',
+              has_next_page: false,
             },
-            "id": "0"
+            id: '0',
           }
 
           mock.post('*', JSON.stringify(body))
@@ -169,12 +171,15 @@ describe('provider', () => {
         expect(provider).toBeDefined()
 
         try {
-          const assetsPath = '/table/0x82af1915608fa5f3e5286e4372e289b5b3ef03d0126cdae9ca7f561a145359c8'
+          const assetsPath =
+            '/table/0x82af1915608fa5f3e5286e4372e289b5b3ef03d0126cdae9ca7f561a145359c8'
           const cursor = new Uint8Array([0])
           const result = await provider.listAnnotatedStates(assetsPath, cursor, 10)
 
           expect(result.data).toBeDefined()
-          expect(result.next_cursor).toBe('0xa501303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a636f696e3a3a436f696e496e666f3c303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e3e')
+          expect(result.next_cursor).toBe(
+            '0xa501303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a636f696e3a3a436f696e496e666f3c303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e3e',
+          )
           expect(result.has_next_page).toBeFalsy()
         } catch (err: any) {
           expect(err).to.be.an('error')

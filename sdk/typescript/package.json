@@ -19,6 +19,7 @@
 		"test": "pnpm test:unit && pnpm test:e2e",
 		"test:unit": "vitest run src",
 		"test:e2e": "vitest run e2e",
+		"test:e2e-debug": "vitest run e2e/debug.test.ts",
 		"prepublishOnly": "pnpm build",
 		"eslint:check": "eslint --max-warnings=0 .",
 		"eslint:fix": "pnpm eslint:check --fix",
