@@ -29,7 +29,6 @@ use rooch_rpc_api::{
 use rooch_types::{
     account::Account, address::RoochAddress, transaction::rooch::RoochTransaction, H256,
 };
-use rooch_types::{account::Account, address::RoochAddress, transaction::rooch::RoochTransaction};
 use std::sync::Arc;
 use std::time::Duration;
 

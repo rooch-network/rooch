@@ -1,10 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-// use crate::cli_types::{CommandAction, WalletContextOptions};
-// use async_trait::async_trait;
-// use rooch_rpc_api::jsonrpc_types::TransactionView;
-// use rooch_types::{error::RoochResult, H256};
+use crate::cli_types::{CommandAction, WalletContextOptions};
+use async_trait::async_trait;
+use rooch_rpc_api::jsonrpc_types::TransactionView;
+use rooch_types::{error::RoochResult, H256};
 
 /// Get transactions by hashes
 #[derive(Debug, clap::Parser)]
