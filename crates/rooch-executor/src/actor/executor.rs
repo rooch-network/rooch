@@ -46,7 +46,6 @@ use rooch_types::framework::{system_post_execute_functions, system_pre_execute_f
 use rooch_types::transaction::AbstractTransaction;
 use rooch_types::transaction::AuthenticatorInfo;
 use rooch_types::H256;
-use tracing::info;
 
 pub struct ExecutorActor {
     genesis: RoochGenesis,
