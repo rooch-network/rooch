@@ -109,7 +109,7 @@ const SessionGuard = (props: SessionGuardProps) => {
   }
 
   const isSessionInvalid = () => {
-    return account === undefined
+    return account === undefined || account === null
   }
 
   return (

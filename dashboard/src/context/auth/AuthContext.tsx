@@ -35,7 +35,7 @@ const defaultProvider: AuthValuesType = {
   setLoading: () => Boolean,
   accounts: null,
   supportWallets: [],
-  defaultAccount: () => null,
+  defaultAccount: null,
   logout: () => Promise.resolve(),
   loginByWallet: () => Promise.resolve(),
   loginByNewAccount: () => Promise.resolve(),
@@ -54,6 +54,14 @@ const AuthProvider = ({ children }: Props) => {
   const rooch = useRooch()
 
   // ** States
+  const [defaultAccount, setDefaultAccount] = useState<AccountDataType | null>(() => {
+    if (defaultProvider.accounts && defaultProvider.accounts.size > 0) {
+      return defaultProvider.accounts.values().next().value
+    }
+
+    return null
+  })
+
   const [accounts, setAccounts] = useState<Map<string, AccountDataType> | null>(
     defaultProvider.accounts,
   )
@@ -113,6 +121,12 @@ const AuthProvider = ({ children }: Props) => {
     })
 
     setAccounts(_accounts)
+
+    if (_accounts && _accounts.size > 0) {
+      setDefaultAccount(_accounts.values().next().value)
+    }
+
+    return null
   }
 
   /// ** Impl fun
@@ -258,16 +272,6 @@ const AuthProvider = ({ children }: Props) => {
     window.localStorage.removeItem(authConfig.secretKey)
     setAccounts(null)
     metamask.disconnect()
-  }
-
-  const defaultAccount = (): AccountDataType | null => {
-    const accounts = getAccounts()
-
-    if (accounts && accounts.size > 0) {
-      return accounts.values().next().value
-    }
-
-    return null
   }
 
   const getAccounts = (): Map<string, AccountDataType> | null => {

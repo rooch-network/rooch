@@ -57,12 +57,10 @@ export default function SessionKeyList() {
       },
     },
     {
-      field: 'create_time',
-      headerName: 'Create Time',
+      field: 'max_inactive_interval',
+      headerName: 'Max Inactive Interval',
       width: 200,
-      valueGetter: (params: GridValueGetterParams) => {
-        return formatDate(params.row.create_time)
-      },
+      type: 'number',
     },
     {
       field: 'last_active_time',
@@ -73,15 +71,18 @@ export default function SessionKeyList() {
       },
     },
     {
-      field: 'max_inactive_interval',
-      headerName: 'Max Inactive Interval',
+      field: 'create_time',
+      headerName: 'Create Time',
       width: 200,
-      type: 'number',
+      valueGetter: (params: GridValueGetterParams) => {
+        return formatDate(params.row.create_time)
+      },
     },
     {
       field: 'action',
       headerName: 'Action',
-      width: 150,
+      flex: 1,
+      align: 'right',
       renderCell: (params: GridRenderCellParams) => (
         <Button
           variant="contained"
@@ -119,7 +120,7 @@ export default function SessionKeyList() {
   const { result, status, error } = useAppSelector((state) => state.session)
 
   useEffect(() => {
-    const defaultAccount = auth.defaultAccount()
+    const defaultAccount = auth.defaultAccount
     if (!defaultAccount) {
       return
     }
@@ -155,7 +156,7 @@ export default function SessionKeyList() {
   }
 
   const handleRefresh = () => {
-    const defaultAccount = auth.defaultAccount()
+    const defaultAccount = auth.defaultAccount
     if (!defaultAccount) {
       return
     }
@@ -172,7 +173,7 @@ export default function SessionKeyList() {
   }
 
   const handleRemove = (authentication_key: string) => {
-    const defaultAccount = auth.defaultAccount()
+    const defaultAccount = auth.defaultAccount
     if (!defaultAccount) {
       return false
     }

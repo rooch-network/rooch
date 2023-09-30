@@ -5,7 +5,7 @@
 import { IAccount } from '@rooch/sdk'
 
 export interface Session {
-  account?: IAccount
+  account: IAccount | null
   loading: boolean
   requestAuthorize?: (scope: Array<string>, maxInactiveInterval: number) => Promise<void>
 }

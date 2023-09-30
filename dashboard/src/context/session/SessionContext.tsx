@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { hexlify } from '@ethersproject/bytes'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from 'src/hooks/useAuth'
 import { useRooch } from 'src/hooks/useRooch'
 
@@ -12,6 +12,7 @@ import { AccountDataType } from 'src/context/auth/types'
 import {
   bcsTypes,
   IAccount,
+  IProvider,
   Account,
   PrivateKeyAuth,
   Ed25519Keypair,
@@ -29,12 +30,38 @@ type Props = {
 
 const SessionContext = createContext<Session>({
   loading: false,
-  account: undefined,
+  account: null,
   requestAuthorize: undefined,
 })
 
 const makeSessionAccountStoreKey = (address: string) => {
   return `rooch::dashboard::account::${address}::current-session-key`
+}
+
+const loadSessionAccountFromSessionStorage = (provider: IProvider, roochAddress: string) => {
+  try {
+    // Get from local storage by key
+    const secretKey = window.sessionStorage.getItem(makeSessionAccountStoreKey(roochAddress))
+
+    if (secretKey) {
+      let sk = bcsTypes.fromB64(secretKey)
+
+      // The rooch cli generated key contains schema, remove it
+      if (sk.length > 32) {
+        sk = sk.slice(1)
+      }
+
+      const pk = Ed25519Keypair.fromSecretKey(sk)
+      const authorizer = new PrivateKeyAuth(pk)
+
+      return new Account(provider, roochAddress, authorizer)
+    }
+  } catch (error) {
+    // If error also return initialValue
+    console.log(error)
+  }
+
+  return null
 }
 
 const SessionProvider = ({ children }: Props) => {
@@ -43,37 +70,35 @@ const SessionProvider = ({ children }: Props) => {
 
   const [loading, setLoading] = useState(false)
 
-  const [sessionAccount, setSessionAccount] = useState<IAccount | undefined>(() => {
-    const defaultAccount = auth.defaultAccount()
+  const [sessionAccount, setSessionAccount] = useState<IAccount | null>(() => {
+    const defaultAccount = auth.defaultAccount
 
     if (defaultAccount) {
-      try {
-        // Get from local storage by key
-        const secretKey = window.localStorage.getItem(
-          makeSessionAccountStoreKey(defaultAccount.address),
-        )
+      const sessionAccount = loadSessionAccountFromSessionStorage(
+        rooch.provider!,
+        defaultAccount.roochAddress,
+      )
 
-        if (secretKey) {
-          let sk = bcsTypes.fromB64(secretKey)
-
-          // The rooch cli generated key contains schema, remove it
-          if (sk.length > 32) {
-            sk = sk.slice(1)
-          }
-
-          const pk = Ed25519Keypair.fromSecretKey(sk)
-          const authorizer = new PrivateKeyAuth(pk)
-
-          return new Account(rooch.provider!, defaultAccount.roochAddress, authorizer)
-        }
-      } catch (error) {
-        // If error also return initialValue
-        console.log(error)
-      }
+      return sessionAccount
     }
 
-    return undefined
+    return null
   })
+
+  useEffect(() => {
+    const defaultAccount = auth.defaultAccount
+
+    if (defaultAccount) {
+      const sessionAccount = loadSessionAccountFromSessionStorage(
+        rooch.provider!,
+        defaultAccount.roochAddress,
+      )
+
+      if (sessionAccount) {
+        setSessionAccount(sessionAccount)
+      }
+    }
+  }, [auth.defaultAccount, rooch.provider])
 
   const waitTxConfirmed = async (ethereum: any, txHash: string) => {
     let receipt
@@ -185,8 +210,8 @@ const SessionProvider = ({ children }: Props) => {
         maxInactiveInterval,
       )
 
-      const key = makeSessionAccountStoreKey(account.address)
-      window.localStorage.setItem(key, pk.export().privateKey)
+      const key = makeSessionAccountStoreKey(account.roochAddress)
+      window.sessionStorage.setItem(key, pk.export().privateKey)
       const authorizer = new PrivateKeyAuth(pk)
 
       return new Account(rooch.provider!, account.roochAddress, authorizer)
@@ -209,7 +234,7 @@ const SessionProvider = ({ children }: Props) => {
       await account.registerSessionKey(roochAddress, scope, maxInactiveInterval)
 
       const key = makeSessionAccountStoreKey(account.getAddress())
-      window.localStorage.setItem(key, pk.export().privateKey)
+      window.sessionStorage.setItem(key, pk.export().privateKey)
       const authorizer = new PrivateKeyAuth(pk)
 
       return new Account(rooch.provider!, roochAddress, authorizer)
@@ -224,9 +249,9 @@ const SessionProvider = ({ children }: Props) => {
     setLoading(true)
 
     try {
-      const defaultAccount = auth.defaultAccount()
+      const defaultAccount = auth.defaultAccount
       if (!defaultAccount) {
-        setSessionAccount(undefined)
+        setSessionAccount(null)
 
         return
       }
@@ -267,7 +292,7 @@ const SessionProvider = ({ children }: Props) => {
     loading,
     account: sessionAccount,
     requestAuthorize,
-  }
+  } as Session
 
   return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>
 }
