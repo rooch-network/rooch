@@ -18,6 +18,7 @@ use rooch_types::address::{EthereumAddress, RoochAddress};
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::RoochError;
 use rooch_types::multichain_id::RoochMultiChainID;
+use serde::{Serialize, Deserialize};
 use slip10_ed25519::derive_ed25519_private_key;
 use std::string::String;
 
@@ -41,7 +42,8 @@ pub const DERVIATION_PATH_PURPOSE_ECDSA: u32 = 54;
 pub const DERVIATION_PATH_PURPOSE_SECP256R1: u32 = 74;
 
 type EncryptionKeyResult = Result<(Vec<u8>, Vec<u8>, Vec<u8>), RoochError>;
-pub struct Encryption {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EncryptionData {
     pub hashed_password: String,
     pub nonce: Vec<u8>,
     pub ciphertext: Vec<u8>,
@@ -49,7 +51,7 @@ pub struct Encryption {
 }
 pub struct GenerateNewKeyPair {
     pub key_pair_type: KeyPairType,
-    pub encryption: Encryption,
+    pub encryption: EncryptionData,
     pub mnemonic: String,
 }
 pub struct GeneratedKeyPair<Addr, KeyPair> {
@@ -70,7 +72,7 @@ pub trait CoinOperations<Addr, KeyPair, PrivKey> {
     ) -> Result<(Addr, KeyPair), RoochError>;
     fn retrieve_key_pair(
         &self,
-        encryption: Encryption,
+        encryption: &EncryptionData,
         password: Option<String>,
     ) -> Result<KeyPair, RoochError>;
     fn encrypt_private_key(
@@ -78,7 +80,7 @@ pub trait CoinOperations<Addr, KeyPair, PrivKey> {
         private_key: PrivKey,
         password: Option<String>,
     ) -> EncryptionKeyResult;
-    fn encrypt_password(
+    fn hash_password(
         &self,
         private_key: PrivKey,
         password: Option<String>,
@@ -113,7 +115,7 @@ impl CoinOperations<RoochAddress, RoochKeyPair, Ed25519PrivateKey> for KeyPairTy
 
     fn retrieve_key_pair(
         &self,
-        encryption: Encryption,
+        encryption: &EncryptionData,
         password: Option<String>,
     ) -> Result<RoochKeyPair, RoochError> {
         let is_verified = verify_password(password.clone(), encryption.hashed_password)
@@ -186,13 +188,13 @@ impl CoinOperations<RoochAddress, RoochKeyPair, Ed25519PrivateKey> for KeyPairTy
         Ok((nonce.to_vec(), ciphertext, tag))
     }
 
-    // Encrypt the password using Argon2
-    fn encrypt_password(
+    // Hash the password using Argon2
+    fn hash_password(
         &self,
         private_key: Ed25519PrivateKey,
         password: Option<String>,
     ) -> Result<String, RoochError> {
-        // Encrypt private key into a salt
+        // Encode private key into a salt
         let salt = SaltString::encode_b64(private_key.as_bytes())
             .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
         // Argon2 with default params (Argon2id v19)
@@ -238,7 +240,7 @@ impl CoinOperations<EthereumAddress, Secp256k1RecoverableKeyPair, Secp256k1Recov
 
     fn retrieve_key_pair(
         &self,
-        encryption: Encryption,
+        encryption: &EncryptionData,
         password: Option<String>,
     ) -> Result<Secp256k1RecoverableKeyPair, RoochError> {
         let is_verified = verify_password(password.clone(), encryption.hashed_password)
@@ -311,13 +313,13 @@ impl CoinOperations<EthereumAddress, Secp256k1RecoverableKeyPair, Secp256k1Recov
         Ok((nonce.to_vec(), ciphertext, tag))
     }
 
-    // Encrypt the password using Argon2
-    fn encrypt_password(
+    // Hash the password using Argon2
+    fn hash_password(
         &self,
         private_key: Secp256k1RecoverablePrivateKey,
         password: Option<String>,
     ) -> Result<String, RoochError> {
-        // Encrypt private key into a salt
+        // Encode private key into a salt
         let salt = SaltString::encode_b64(private_key.as_bytes())
             .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
         // Argon2 with default params (Argon2id v19)
@@ -421,12 +423,12 @@ where
     let sk_clone = key_pair_type.derive_private_key_from_path(seed.as_bytes(), derivation_path)?;
 
     let hashed_password = key_pair_type
-        .encrypt_password(sk_clone, password)
+        .hash_password(sk_clone, password)
         .expect("Encryption failed for password");
 
     let (address, key_pair) = key_pair_type.derive_key_pair_from_ciphertext(ciphertext.clone())?;
 
-    let encryption = Encryption {
+    let encryption = EncryptionData {
         hashed_password,
         nonce,
         ciphertext,

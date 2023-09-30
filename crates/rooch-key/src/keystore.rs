@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    key_derive::{generate_new_key_pair, CoinOperations, Encryption, GeneratedKeyPair},
+    key_derive::{generate_new_key_pair, CoinOperations, GeneratedKeyPair},
     keypair::KeyPairType,
 };
 use anyhow::anyhow;
@@ -30,7 +30,7 @@ use rooch_types::{
         authenticator,
         ethereum::EthereumTransactionData,
         rooch::{RoochTransaction, RoochTransactionData},
-    },
+    }, error::RoochError,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -41,15 +41,16 @@ use std::fs;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
+use crate::key_derive::EncryptionData;
 
 pub struct ImportedMnemonic<Addr> {
     pub address: Addr,
-    pub encryption: Encryption,
+    pub encryption: EncryptionData,
 }
 
 pub struct UpdatedAddress<KeyPair> {
     pub key_pair: KeyPair,
-    pub encryption: Encryption,
+    pub encryption: EncryptionData,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -65,27 +66,30 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData, Pri
 {
     type Transaction;
 
-    fn add_key_pair_by_key_pair_type(
+    fn add_encryption_data_by_key_pair_type(
         &mut self,
-        key_pair: KeyPair,
         key_pair_type: KeyPairType,
+        encryption: EncryptionData,
+        password: Option<String>
     ) -> Result<(), anyhow::Error>;
-    fn get_address_public_keys(&self) -> Vec<(Addr, PubKey)>;
+    fn get_address_public_keys(&self, password: Option<String>) -> Vec<(Addr, PubKey)>;
     fn get_public_key_by_key_pair_type(
         &self,
         key_pair_type: KeyPairType,
+        password: Option<String>
     ) -> Result<PubKey, anyhow::Error>;
-    fn get_key_pairs(&self, address: &Addr) -> Result<Vec<&KeyPair>, anyhow::Error>;
-    fn get_key_pair_by_key_pair_type(
+    fn get_key_pairs(&self, address: &Addr, password: Option<String>) -> Result<Vec<KeyPair>, anyhow::Error>;
+    fn get_key_pair_by_type_password(
         &self,
         address: &Addr,
         key_pair_type: KeyPairType,
-    ) -> Result<&KeyPair, signature::Error>;
-    fn update_key_pair_by_key_pair_type(
+        password: Option<String>
+    ) -> Result<&KeyPair, RoochError>;
+    fn update_encryption_data_by_key_pair_type(
         &mut self,
         address: &Addr,
-        key_pair: KeyPair,
         key_pair_type: KeyPairType,
+        encryption: EncryptionData
     ) -> Result<(), anyhow::Error>;
     fn nullify_key_pair_by_key_pair_type(
         &mut self,
@@ -98,26 +102,29 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData, Pri
         address: &Addr,
         msg: &[u8],
         key_pair_type: KeyPairType,
-    ) -> Result<Sig, signature::Error>;
+        password: Option<String>
+    ) -> Result<Sig, RoochError>;
 
     fn sign_transaction(
         &self,
         address: &Addr,
         msg: TransactionData,
         key_pair_type: KeyPairType,
-    ) -> Result<Self::Transaction, signature::Error>;
+        password: Option<String>
+    ) -> Result<Self::Transaction, RoochError>;
 
     fn sign_secure<T>(
         &self,
         address: &Addr,
         msg: &T,
         key_pair_type: KeyPairType,
-    ) -> Result<Sig, signature::Error>
+        password: Option<String>
+    ) -> Result<Sig, RoochError>
     where
         T: Serialize;
 
-    fn addresses(&self) -> Vec<Addr> {
-        self.get_address_public_keys()
+    fn addresses(&self, password: Option<String>) -> Vec<Addr> {
+        self.get_address_public_keys(password)
             .iter()
             .map(|(address, _public_key)| *address)
             .collect()
@@ -140,10 +147,7 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData, Pri
             password,
         )?;
 
-        let (_, key_pair) = key_pair_type
-            .derive_key_pair_from_ciphertext(result.result.encryption.ciphertext.clone())?;
-
-        self.add_key_pair_by_key_pair_type(key_pair, key_pair_type)?;
+        self.add_encryption_data_by_key_pair_type(key_pair_type, result.result.encryption, password)?;
 
         Ok(result)
     }
@@ -172,15 +176,13 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData, Pri
             key_pair_type.derive_private_key_from_path(seed.as_bytes(), derivation_path)?;
 
         let hashed_password = key_pair_type
-            .encrypt_password(sk_clone, password)
+            .hash_password(sk_clone, password)
             .expect("Encryption failed for password");
 
         let (address, key_pair) =
             key_pair_type.derive_key_pair_from_ciphertext(ciphertext.clone())?;
 
-        self.add_key_pair_by_key_pair_type(key_pair, key_pair_type)?;
-
-        let encryption = Encryption {
+        let encryption = EncryptionData {
             hashed_password,
             nonce,
             ciphertext,
@@ -191,6 +193,8 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData, Pri
             address,
             encryption,
         };
+
+        self.add_encryption_data_by_key_pair_type(key_pair_type, encryption, password)?;
 
         Ok(result)
     }
@@ -220,18 +224,16 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData, Pri
             key_pair_type.derive_private_key_from_path(seed.as_bytes(), derivation_path)?;
 
         let hashed_password = key_pair_type
-            .encrypt_password(sk_clone, password)
+            .hash_password(sk_clone, password)
             .expect("Encryption failed for password");
 
         let (address, key_pair) =
             key_pair_type.derive_key_pair_from_ciphertext(ciphertext.clone())?;
 
-        self.update_key_pair_by_key_pair_type(&address, key_pair, key_pair_type)?;
-
         let (_, key_pair_clone) =
             key_pair_type.derive_key_pair_from_ciphertext(ciphertext.clone())?;
 
-        let encryption = Encryption {
+        let encryption = EncryptionData {
             hashed_password,
             nonce,
             ciphertext,
@@ -242,6 +244,8 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData, Pri
             key_pair: key_pair_clone,
             encryption,
         };
+
+        self.update_encryption_data_by_key_pair_type(&address, key_pair_type, encryption)?;
 
         Ok(result)
     }
@@ -294,82 +298,85 @@ impl
         }
     }
 
-    fn add_key_pair_by_key_pair_type(
+    fn add_encryption_data_by_key_pair_type(
         &mut self,
-        key_pair: RoochKeyPair,
         key_pair_type: KeyPairType,
+        encryption: EncryptionData,
+        password: Option<String>
     ) -> Result<(), anyhow::Error> {
         // Implement this method to add a key pair to the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.add_key_pair_by_key_pair_type(key_pair, key_pair_type)
+                file_keystore.add_encryption_data_by_key_pair_type(key_pair_type, encryption, password)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.add_key_pair_by_key_pair_type(key_pair, key_pair_type)
+                inmem_keystore.add_encryption_data_by_key_pair_type(key_pair_type, encryption, password)
             }
         }
     }
 
-    fn get_address_public_keys(&self) -> Vec<(RoochAddress, PublicKey)> {
+    fn get_address_public_keys(&self, password: Option<String>) -> Vec<(RoochAddress, PublicKey)> {
         // Implement this method to collect public keys from the appropriate variant (File or InMem)
         match self {
-            Keystore::File(file_keystore) => file_keystore.get_address_public_keys(),
-            Keystore::InMem(inmem_keystore) => inmem_keystore.get_address_public_keys(),
+            Keystore::File(file_keystore) => file_keystore.get_address_public_keys(password),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.get_address_public_keys(password),
         }
     }
 
     fn get_public_key_by_key_pair_type(
         &self,
         key_pair_type: KeyPairType,
+        password: Option<String>
     ) -> Result<PublicKey, anyhow::Error> {
         // Implement this method to get the public key by coin ID from the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.get_public_key_by_key_pair_type(key_pair_type)
+                file_keystore.get_public_key_by_key_pair_type(key_pair_type, password)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.get_public_key_by_key_pair_type(key_pair_type)
+                inmem_keystore.get_public_key_by_key_pair_type(key_pair_type, password)
             }
         }
     }
 
-    fn get_key_pairs(&self, address: &RoochAddress) -> Result<Vec<&RoochKeyPair>, anyhow::Error> {
+    fn get_key_pairs(&self, address: &RoochAddress, password: Option<String>) -> Result<Vec<RoochKeyPair>, anyhow::Error> {
         // Implement this method to get key pairs for the given address from the appropriate variant (File or InMem)
         match self {
-            Keystore::File(file_keystore) => file_keystore.get_key_pairs(address),
-            Keystore::InMem(inmem_keystore) => inmem_keystore.get_key_pairs(address),
+            Keystore::File(file_keystore) => file_keystore.get_key_pairs(address, password),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.get_key_pairs(address, password),
         }
     }
 
-    fn get_key_pair_by_key_pair_type(
+    fn get_key_pair_by_type_password(
         &self,
         address: &RoochAddress,
         key_pair_type: KeyPairType,
-    ) -> Result<&RoochKeyPair, signature::Error> {
+        password: Option<String>
+    ) -> Result<&RoochKeyPair, RoochError> {
         // Implement this method to get the key pair by coin ID from the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.get_key_pair_by_key_pair_type(address, key_pair_type)
+                file_keystore.get_key_pair_by_type_password(address, key_pair_type, password)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.get_key_pair_by_key_pair_type(address, key_pair_type)
+                inmem_keystore.get_key_pair_by_type_password(address, key_pair_type, password)
             }
         }
     }
 
-    fn update_key_pair_by_key_pair_type(
+    fn update_encryption_data_by_key_pair_type(
         &mut self,
         address: &RoochAddress,
-        key_pair: RoochKeyPair,
         key_pair_type: KeyPairType,
+        encryption: EncryptionData
     ) -> Result<(), anyhow::Error> {
         // Implement this method to update the key pair by coin ID for the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.update_key_pair_by_key_pair_type(address, key_pair, key_pair_type)
+                file_keystore.update_encryption_data_by_key_pair_type(address, key_pair_type, encryption)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.update_key_pair_by_key_pair_type(address, key_pair, key_pair_type)
+                inmem_keystore.update_encryption_data_by_key_pair_type(address, key_pair_type, encryption)
             }
         }
     }
@@ -395,12 +402,13 @@ impl
         address: &RoochAddress,
         msg: &[u8],
         key_pair_type: KeyPairType,
-    ) -> Result<Signature, signature::Error> {
+        password: Option<String>
+    ) -> Result<Signature, RoochError> {
         // Implement this method to sign a hashed message for the appropriate variant (File or InMem)
         match self {
-            Keystore::File(file_keystore) => file_keystore.sign_hashed(address, msg, key_pair_type),
+            Keystore::File(file_keystore) => file_keystore.sign_hashed(address, msg, key_pair_type, password),
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.sign_hashed(address, msg, key_pair_type)
+                inmem_keystore.sign_hashed(address, msg, key_pair_type, password)
             }
         }
     }
@@ -410,14 +418,15 @@ impl
         address: &RoochAddress,
         msg: RoochTransactionData,
         key_pair_type: KeyPairType,
-    ) -> Result<RoochTransaction, signature::Error> {
+        password: Option<String>,
+    ) -> Result<RoochTransaction, RoochError> {
         // Implement this method to sign a transaction for the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.sign_transaction(address, msg, key_pair_type)
+                file_keystore.sign_transaction(address, msg, key_pair_type, password)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.sign_transaction(address, msg, key_pair_type)
+                inmem_keystore.sign_transaction(address, msg, key_pair_type, password)
             }
         }
     }
@@ -427,15 +436,16 @@ impl
         address: &RoochAddress,
         msg: &T,
         key_pair_type: KeyPairType,
-    ) -> Result<Signature, signature::Error>
+        password: Option<String>
+    ) -> Result<Signature, RoochError>
     where
         T: Serialize,
     {
         // Implement this method to sign a secure message for the appropriate variant (File or InMem)
         match self {
-            Keystore::File(file_keystore) => file_keystore.sign_secure(address, msg, key_pair_type),
+            Keystore::File(file_keystore) => file_keystore.sign_secure(address, msg, key_pair_type, password),
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.sign_secure(address, msg, key_pair_type)
+                inmem_keystore.sign_secure(address, msg, key_pair_type, password)
             }
         }
     }
@@ -480,41 +490,43 @@ impl
         }
     }
 
-    fn add_key_pair_by_key_pair_type(
+    fn add_encryption_data_by_key_pair_type(
         &mut self,
-        key_pair: Secp256k1RecoverableKeyPair,
         key_pair_type: KeyPairType,
+        encryption: EncryptionData,
+        password: Option<String>
     ) -> Result<(), anyhow::Error> {
         // Implement this method to add a key pair to the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.add_key_pair_by_key_pair_type(key_pair, key_pair_type)
+                file_keystore.add_encryption_data_by_key_pair_type(key_pair_type, encryption, password)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.add_key_pair_by_key_pair_type(key_pair, key_pair_type)
+                inmem_keystore.add_encryption_data_by_key_pair_type(key_pair_type, encryption, password)
             }
         }
     }
 
-    fn get_address_public_keys(&self) -> Vec<(EthereumAddress, Secp256k1RecoverablePublicKey)> {
+    fn get_address_public_keys(&self, password: Option<String>) -> Vec<(EthereumAddress, Secp256k1RecoverablePublicKey)> {
         // Implement this method to collect public keys from the appropriate variant (File or InMem)
         match self {
-            Keystore::File(file_keystore) => file_keystore.get_address_public_keys(),
-            Keystore::InMem(inmem_keystore) => inmem_keystore.get_address_public_keys(),
+            Keystore::File(file_keystore) => file_keystore.get_address_public_keys(password),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.get_address_public_keys(password),
         }
     }
 
     fn get_public_key_by_key_pair_type(
         &self,
         key_pair_type: KeyPairType,
+        password: Option<String>
     ) -> Result<Secp256k1RecoverablePublicKey, anyhow::Error> {
         // Implement this method to get the public key by coin ID from the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.get_public_key_by_key_pair_type(key_pair_type)
+                file_keystore.get_public_key_by_key_pair_type(key_pair_type, password)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.get_public_key_by_key_pair_type(key_pair_type)
+                inmem_keystore.get_public_key_by_key_pair_type(key_pair_type, password)
             }
         }
     }
@@ -522,43 +534,45 @@ impl
     fn get_key_pairs(
         &self,
         address: &EthereumAddress,
-    ) -> Result<Vec<&Secp256k1RecoverableKeyPair>, anyhow::Error> {
+        password: Option<String>
+    ) -> Result<Vec<Secp256k1RecoverableKeyPair>, anyhow::Error> {
         // Implement this method to get key pairs for the given address from the appropriate variant (File or InMem)
         match self {
-            Keystore::File(file_keystore) => file_keystore.get_key_pairs(address),
-            Keystore::InMem(inmem_keystore) => inmem_keystore.get_key_pairs(address),
+            Keystore::File(file_keystore) => file_keystore.get_key_pairs(address, password),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.get_key_pairs(address, password),
         }
     }
 
-    fn get_key_pair_by_key_pair_type(
+    fn get_key_pair_by_type_password(
         &self,
         address: &EthereumAddress,
         key_pair_type: KeyPairType,
-    ) -> Result<&Secp256k1RecoverableKeyPair, signature::Error> {
+        password: Option<String>
+    ) -> Result<&Secp256k1RecoverableKeyPair, RoochError> {
         // Implement this method to get a key pair by coin ID from the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.get_key_pair_by_key_pair_type(address, key_pair_type)
+                file_keystore.get_key_pair_by_type_password(address, key_pair_type, password)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.get_key_pair_by_key_pair_type(address, key_pair_type)
+                inmem_keystore.get_key_pair_by_type_password(address, key_pair_type, password)
             }
         }
     }
 
-    fn update_key_pair_by_key_pair_type(
+    fn update_encryption_data_by_key_pair_type(
         &mut self,
         address: &EthereumAddress,
-        key_pair: Secp256k1RecoverableKeyPair,
         key_pair_type: KeyPairType,
+        encryption: EncryptionData
     ) -> Result<(), anyhow::Error> {
         // Implement this method to update a key pair by coin ID in the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.update_key_pair_by_key_pair_type(address, key_pair, key_pair_type)
+                file_keystore.update_encryption_data_by_key_pair_type(address, key_pair_type, encryption)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.update_key_pair_by_key_pair_type(address, key_pair, key_pair_type)
+                inmem_keystore.update_encryption_data_by_key_pair_type(address, key_pair_type, encryption)
             }
         }
     }
@@ -584,12 +598,13 @@ impl
         address: &EthereumAddress,
         msg: &[u8],
         key_pair_type: KeyPairType,
-    ) -> Result<ethers::types::Signature, signature::Error> {
+        password: Option<String>
+    ) -> Result<ethers::types::Signature, RoochError> {
         // Implement this method to sign a hashed message with the key pair for the given address and coin ID
         match self {
-            Keystore::File(file_keystore) => file_keystore.sign_hashed(address, msg, key_pair_type),
+            Keystore::File(file_keystore) => file_keystore.sign_hashed(address, msg, key_pair_type, password),
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.sign_hashed(address, msg, key_pair_type)
+                inmem_keystore.sign_hashed(address, msg, key_pair_type, password)
             }
         }
     }
@@ -599,14 +614,15 @@ impl
         address: &EthereumAddress,
         msg: EthereumTransactionData,
         key_pair_type: KeyPairType,
-    ) -> Result<(EthereumTransactionData, ethers::types::Signature), signature::Error> {
+        password: Option<String>
+    ) -> Result<(EthereumTransactionData, ethers::types::Signature), RoochError> {
         // Implement this method to sign a transaction with the key pair for the given address and coin ID
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.sign_transaction(address, msg, key_pair_type)
+                file_keystore.sign_transaction(address, msg, key_pair_type, password)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.sign_transaction(address, msg, key_pair_type)
+                inmem_keystore.sign_transaction(address, msg, key_pair_type, password)
             }
         }
     }
@@ -616,15 +632,16 @@ impl
         address: &EthereumAddress,
         msg: &T,
         key_pair_type: KeyPairType,
-    ) -> Result<ethers::types::Signature, signature::Error>
+        password: Option<String>
+    ) -> Result<ethers::types::Signature, RoochError>
     where
         T: Serialize,
     {
         // Implement this method to sign a serializable message with the key pair for the given address and coin ID
         match self {
-            Keystore::File(file_keystore) => file_keystore.sign_secure(address, msg, key_pair_type),
+            Keystore::File(file_keystore) => file_keystore.sign_secure(address, msg, key_pair_type, password),
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.sign_secure(address, msg, key_pair_type)
+                inmem_keystore.sign_secure(address, msg, key_pair_type, password)
             }
         }
     }
@@ -683,7 +700,7 @@ pub(crate) struct BaseKeyStore<K, V>
 where
     K: Ord,
 {
-    keys: BTreeMap<K, BTreeMap<KeyPairType, V>>,
+    keys: BTreeMap<K, BTreeMap<KeyPairType, EncryptionData>>,
     /// RoochAddress -> BTreeMap<AuthenticationKey, RoochKeyPair>
     /// EthereumAddress -> BTreeMap<AuthenticationKey, Secp256k1RecoverableKeyPair>
     #[serde_as(as = "BTreeMap<DisplayFromStr, BTreeMap<DisplayFromStr, _>>")]
@@ -695,7 +712,7 @@ where
     K: Serialize + Deserialize<'static> + Ord,
     V: Serialize + Deserialize<'static>,
 {
-    pub fn new(keys: BTreeMap<K, BTreeMap<KeyPairType, V>>) -> Self {
+    pub fn new(keys: BTreeMap<K, BTreeMap<KeyPairType, EncryptionData>>) -> Self {
         Self {
             keys,
             session_keys: BTreeMap::new(),
@@ -715,22 +732,25 @@ impl
 {
     type Transaction = RoochTransaction;
 
-    fn get_key_pair_by_key_pair_type(
+    fn get_key_pair_by_type_password(
         &self,
         address: &RoochAddress,
         key_pair_type: KeyPairType,
-    ) -> Result<&RoochKeyPair, signature::Error> {
+        password: Option<String>
+    ) -> Result<&RoochKeyPair, RoochError>
+    {
         if let Some(inner_map) = self.keys.get(address) {
-            if let Some(keypair) = inner_map.get(&key_pair_type) {
-                Ok(keypair)
+            if let Some(encryption) = inner_map.get(&key_pair_type) {
+                let keypair: RoochKeyPair = key_pair_type.retrieve_key_pair(encryption, password)?;
+                Ok(&keypair)
             } else {
-                Err(signature::Error::from_source(format!(
+                Err(RoochError::KeyConversionError(format!(
                     "KeyPairType not found for address: [{:?}]",
                     key_pair_type
                 )))
             }
         } else {
-            Err(signature::Error::from_source(format!(
+            Err(RoochError::SignMessageError(format!(
                 "Cannot find key for address: [{:?}]",
                 address
             )))
@@ -742,10 +762,11 @@ impl
         address: &RoochAddress,
         msg: &[u8],
         key_pair_type: KeyPairType,
-    ) -> Result<Signature, signature::Error> {
+        password: Option<String>,
+    ) -> Result<Signature, RoochError> {
         Ok(Signature::new_hashed(
             msg,
-            self.get_key_pair_by_key_pair_type(address, key_pair_type)?,
+            self.get_key_pair_by_type_password(address, key_pair_type, password)?,
         ))
     }
 
@@ -754,13 +775,14 @@ impl
         address: &RoochAddress,
         msg: &T,
         key_pair_type: KeyPairType,
-    ) -> Result<Signature, signature::Error>
+        password: Option<String>
+    ) -> Result<Signature, RoochError>
     where
         T: Serialize,
     {
         Ok(Signature::new_secure(
             msg,
-            self.get_key_pair_by_key_pair_type(address, key_pair_type)?,
+            self.get_key_pair_by_type_password(address, key_pair_type, password)?,
         ))
     }
 
@@ -769,12 +791,13 @@ impl
         address: &RoochAddress,
         msg: RoochTransactionData,
         key_pair_type: KeyPairType,
-    ) -> Result<RoochTransaction, signature::Error> {
+        password: Option<String>
+    ) -> Result<RoochTransaction, RoochError> {
         let kp = self
-            .get_key_pair_by_key_pair_type(address, key_pair_type)
+            .get_key_pair_by_type_password(address, key_pair_type, password)
             .ok()
             .ok_or_else(|| {
-                signature::Error::from_source(format!("Cannot find key for address: [{address}]"))
+                RoochError::SignMessageError(format!("Cannot find key for address: [{address}]"))
             })?;
 
         let signature = Signature::new_hashed(msg.hash().as_bytes(), kp);
@@ -784,25 +807,29 @@ impl
         Ok(RoochTransaction::new(msg, auth))
     }
 
-    fn add_key_pair_by_key_pair_type(
+    fn add_encryption_data_by_key_pair_type(
         &mut self,
-        key_pair: RoochKeyPair,
         key_pair_type: KeyPairType,
+        encryption: EncryptionData,
+        password: Option<String>,
     ) -> Result<(), anyhow::Error> {
+        let key_pair: RoochKeyPair = key_pair_type.retrieve_key_pair(&encryption, password)?;
         let address: RoochAddress = (&key_pair.public()).into();
         self.keys
             .entry(address)
             .or_insert_with(BTreeMap::new)
-            .insert(key_pair_type, key_pair);
+            .insert(key_pair_type, encryption);
         Ok(())
     }
 
     fn get_public_key_by_key_pair_type(
         &self,
         key_pair_type: KeyPairType,
+        password: Option<String>
     ) -> Result<PublicKey, anyhow::Error> {
         for inner_map in self.keys.values() {
-            if let Some(keypair) = inner_map.get(&key_pair_type) {
+            if let Some(encryption) = inner_map.get(&key_pair_type) {
+                let keypair: RoochKeyPair = key_pair_type.retrieve_key_pair(&encryption, password)?;
                 return Ok(keypair.public());
             }
         }
@@ -812,39 +839,52 @@ impl
         ))
     }
 
-    fn get_address_public_keys(&self) -> Vec<(RoochAddress, PublicKey)> {
+    fn get_address_public_keys(&self, password: Option<String>) -> Vec<(RoochAddress, PublicKey)> {
         let mut result = Vec::new();
         for (address, inner_map) in &self.keys {
-            for keypair in inner_map.values() {
-                let public_key = keypair.public();
-                result.push((*address, public_key));
+            for key_pair_type in inner_map.keys() {
+                for encryption in inner_map.values() {
+                    let keypair: RoochKeyPair = key_pair_type.retrieve_key_pair(&encryption, password).unwrap();
+                    let public_key = keypair.public();
+                    result.push((*address, public_key));
+                }
             }
         }
         result
     }
 
-    fn get_key_pairs(&self, address: &RoochAddress) -> Result<Vec<&RoochKeyPair>, anyhow::Error> {
+    fn get_key_pairs(
+        &self,
+        address: &RoochAddress,
+        password: Option<String>,
+    ) -> Result<Vec<RoochKeyPair>, anyhow::Error> {
         match self.keys.get(address) {
             Some(key_map) => {
                 // Collect references to RoochKeyPair objects from the inner map into a Vec.
-                let key_pairs: Vec<&RoochKeyPair> = key_map.values().collect();
+                let key_pairs: Vec<RoochKeyPair> = key_map
+                    .iter()
+                    .map(|(key_pair_type, encryption)| {
+                        key_pair_type.retrieve_key_pair(encryption, password)
+                    })
+                    .collect::<Result<_, _>>()?;
+    
                 Ok(key_pairs)
             }
             None => Err(anyhow!("Cannot find key for address: [{address}]")),
         }
     }
 
-    fn update_key_pair_by_key_pair_type(
+    fn update_encryption_data_by_key_pair_type(
         &mut self,
         address: &RoochAddress,
-        key_pair: RoochKeyPair,
         key_pair_type: KeyPairType,
+        encryption: EncryptionData
     ) -> Result<(), anyhow::Error> {
         // First, get the inner map associated with the address
         let inner_map = self.keys.entry(*address).or_insert_with(BTreeMap::new);
 
         // Insert or update the keypair for the specified coin in the inner map
-        inner_map.insert(key_pair_type, key_pair);
+        inner_map.insert(key_pair_type, encryption);
         Ok(())
     }
 
@@ -921,22 +961,24 @@ impl
 {
     type Transaction = (EthereumTransactionData, ethers::types::Signature);
 
-    fn get_key_pair_by_key_pair_type(
+    fn get_key_pair_by_type_password(
         &self,
         address: &EthereumAddress,
         key_pair_type: KeyPairType,
-    ) -> Result<&Secp256k1RecoverableKeyPair, signature::Error> {
+        password: Option<String>
+    ) -> Result<&Secp256k1RecoverableKeyPair, RoochError> {
         if let Some(inner_map) = self.keys.get(address) {
-            if let Some(keypair) = inner_map.get(&key_pair_type) {
-                Ok(keypair)
+            if let Some(encryption) = inner_map.get(&key_pair_type) {
+                let keypair: Secp256k1RecoverableKeyPair = key_pair_type.retrieve_key_pair(encryption, password)?;
+                Ok(&keypair)
             } else {
-                Err(signature::Error::from_source(format!(
+                Err(RoochError::KeyConversionError(format!(
                     "KeyPairType not found for address: [{:?}]",
                     key_pair_type
                 )))
             }
         } else {
-            Err(signature::Error::from_source(format!(
+            Err(RoochError::SignMessageError(format!(
                 "Cannot find key for address: [{:?}]",
                 address
             )))
@@ -948,8 +990,9 @@ impl
         address: &EthereumAddress,
         msg: &[u8],
         key_pair_type: KeyPairType,
-    ) -> Result<ethers::types::Signature, signature::Error> {
-        let key_pair = self.get_key_pair_by_key_pair_type(address, key_pair_type)?;
+        password: Option<String>
+    ) -> Result<ethers::types::Signature, RoochError> {
+        let key_pair = self.get_key_pair_by_type_password(address, key_pair_type, password)?;
         let signature = key_pair.sign_recoverable_with_hash::<Keccak256>(msg);
         let ethereum_signature = ethers::types::Signature::try_from(signature.as_bytes()).unwrap();
         Ok(ethereum_signature)
@@ -960,11 +1003,12 @@ impl
         address: &EthereumAddress,
         msg: &T,
         key_pair_type: KeyPairType,
-    ) -> Result<ethers::types::Signature, signature::Error>
+        password: Option<String>
+    ) -> Result<ethers::types::Signature, RoochError>
     where
         T: Serialize,
     {
-        let key_pair = self.get_key_pair_by_key_pair_type(address, key_pair_type)?;
+        let key_pair = self.get_key_pair_by_type_password(address, key_pair_type, password)?;
         // Serialize the message into a byte slice
         let message_bytes = serde_json::to_vec(msg).unwrap();
         let signature = key_pair.sign_recoverable(message_bytes.as_slice());
@@ -977,30 +1021,35 @@ impl
         _address: &EthereumAddress,
         msg: EthereumTransactionData,
         _key_pair_type: KeyPairType,
-    ) -> Result<(EthereumTransactionData, ethers::types::Signature), signature::Error> {
+        password: Option<String>
+    ) -> Result<(EthereumTransactionData, ethers::types::Signature), RoochError> {
         let signature = EthereumTransactionData::into_signature(&msg).unwrap();
         Ok((msg, signature))
     }
 
-    fn add_key_pair_by_key_pair_type(
+    fn add_encryption_data_by_key_pair_type(
         &mut self,
-        key_pair: Secp256k1RecoverableKeyPair,
         key_pair_type: KeyPairType,
+        encryption: EncryptionData,
+        password: Option<String>
     ) -> Result<(), anyhow::Error> {
+        let key_pair: Secp256k1RecoverableKeyPair = key_pair_type.retrieve_key_pair(&encryption, password)?;
         let address = EthereumAddress::from(key_pair.public.clone());
         self.keys
             .entry(address)
             .or_insert_with(BTreeMap::new)
-            .insert(key_pair_type, key_pair);
+            .insert(key_pair_type, encryption);
         Ok(())
     }
 
     fn get_public_key_by_key_pair_type(
         &self,
         key_pair_type: KeyPairType,
+        password: Option<String>
     ) -> Result<Secp256k1RecoverablePublicKey, anyhow::Error> {
         for inner_map in self.keys.values() {
-            if let Some(keypair) = inner_map.get(&key_pair_type) {
+            if let Some(encryption) = inner_map.get(&key_pair_type) {
+                let keypair: Secp256k1RecoverableKeyPair = key_pair_type.retrieve_key_pair(&encryption, password)?;
                 return Ok(keypair.public.clone());
             }
         }
@@ -1010,12 +1059,15 @@ impl
         ))
     }
 
-    fn get_address_public_keys(&self) -> Vec<(EthereumAddress, Secp256k1RecoverablePublicKey)> {
+    fn get_address_public_keys(&self, password: Option<String>) -> Vec<(EthereumAddress, Secp256k1RecoverablePublicKey)> {
         let mut result = Vec::new();
         for (address, inner_map) in &self.keys {
-            for keypair in inner_map.values() {
-                let public_key = keypair.public.clone();
-                result.push((*address, public_key));
+            for key_pair_type in inner_map.keys() {
+                for encryption in inner_map.values() {
+                    let keypair: Secp256k1RecoverableKeyPair = key_pair_type.retrieve_key_pair(&encryption, password).unwrap();
+                    let public_key = keypair.public.clone();
+                    result.push((*address, public_key));
+                }
             }
         }
         result
@@ -1024,28 +1076,35 @@ impl
     fn get_key_pairs(
         &self,
         address: &EthereumAddress,
-    ) -> Result<Vec<&Secp256k1RecoverableKeyPair>, anyhow::Error> {
+        password: Option<String>
+    ) -> Result<Vec<Secp256k1RecoverableKeyPair>, anyhow::Error> {
         match self.keys.get(address) {
             Some(key_map) => {
-                // Collect references to RoochKeyPair objects from the inner map into a Vec.
-                let key_pairs: Vec<&Secp256k1RecoverableKeyPair> = key_map.values().collect();
+                // Collect references to Secp256k1RecoverableKeyPair objects from the inner map into a Vec.
+                let key_pairs: Vec<Secp256k1RecoverableKeyPair> = key_map
+                    .iter()
+                    .map(|(key_pair_type, encryption)| {
+                        key_pair_type.retrieve_key_pair(encryption, password)
+                    })
+                    .collect::<Result<_, _>>()?;
+    
                 Ok(key_pairs)
             }
             None => Err(anyhow!("Cannot find key for address: [{address}]")),
         }
     }
 
-    fn update_key_pair_by_key_pair_type(
+    fn update_encryption_data_by_key_pair_type(
         &mut self,
         address: &EthereumAddress,
-        key_pair: Secp256k1RecoverableKeyPair,
         key_pair_type: KeyPairType,
+        encryption: EncryptionData
     ) -> Result<(), anyhow::Error> {
         // First, get the inner map associated with the address
         let inner_map = self.keys.entry(*address).or_insert_with(BTreeMap::new);
 
         // Insert or update the keypair for the specified coin in the inner map
-        inner_map.insert(key_pair_type, key_pair);
+        inner_map.insert(key_pair_type, encryption);
         Ok(())
     }
 
@@ -1127,13 +1186,14 @@ impl
 {
     type Transaction = RoochTransaction;
 
-    fn get_key_pair_by_key_pair_type(
+    fn get_key_pair_by_type_password(
         &self,
         address: &RoochAddress,
         key_pair_type: KeyPairType,
-    ) -> Result<&RoochKeyPair, signature::Error> {
+        password: Option<String>,
+    ) -> Result<&RoochKeyPair, RoochError> {
         self.keystore
-            .get_key_pair_by_key_pair_type(address, key_pair_type)
+            .get_key_pair_by_type_password(address, key_pair_type, password)
     }
 
     fn sign_hashed(
@@ -1141,8 +1201,9 @@ impl
         address: &RoochAddress,
         msg: &[u8],
         key_pair_type: KeyPairType,
-    ) -> Result<Signature, signature::Error> {
-        self.keystore.sign_hashed(address, msg, key_pair_type)
+        password: Option<String>,
+    ) -> Result<Signature, RoochError> {
+        self.keystore.sign_hashed(address, msg, key_pair_type, password)
     }
 
     fn sign_secure<T>(
@@ -1150,11 +1211,12 @@ impl
         address: &RoochAddress,
         msg: &T,
         key_pair_type: KeyPairType,
-    ) -> Result<Signature, signature::Error>
+        password: Option<String>
+    ) -> Result<Signature, RoochError>
     where
         T: Serialize,
     {
-        self.keystore.sign_secure(address, msg, key_pair_type)
+        self.keystore.sign_secure(address, msg, key_pair_type, password)
     }
 
     fn sign_transaction(
@@ -1162,17 +1224,19 @@ impl
         address: &RoochAddress,
         msg: RoochTransactionData,
         key_pair_type: KeyPairType,
-    ) -> Result<RoochTransaction, signature::Error> {
-        self.keystore.sign_transaction(address, msg, key_pair_type)
+        password: Option<String>
+    ) -> Result<RoochTransaction, RoochError> {
+        self.keystore.sign_transaction(address, msg, key_pair_type, password)
     }
 
-    fn add_key_pair_by_key_pair_type(
+    fn add_encryption_data_by_key_pair_type(
         &mut self,
-        key_pair: RoochKeyPair,
         key_pair_type: KeyPairType,
+        encryption: EncryptionData,
+        password: Option<String>
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .add_key_pair_by_key_pair_type(key_pair, key_pair_type)?;
+            .add_encryption_data_by_key_pair_type(key_pair_type, encryption, password)?;
         //TODO should check test env at here?
         if std::env::var_os("TEST_ENV").is_none() {
             self.save()?;
@@ -1183,26 +1247,27 @@ impl
     fn get_public_key_by_key_pair_type(
         &self,
         key_pair_type: KeyPairType,
+        password: Option<String>
     ) -> Result<PublicKey, anyhow::Error> {
-        self.keystore.get_public_key_by_key_pair_type(key_pair_type)
+        self.keystore.get_public_key_by_key_pair_type(key_pair_type, password)
     }
 
-    fn get_address_public_keys(&self) -> Vec<(RoochAddress, PublicKey)> {
-        self.keystore.get_address_public_keys()
+    fn get_address_public_keys(&self, password: Option<String>) -> Vec<(RoochAddress, PublicKey)> {
+        self.keystore.get_address_public_keys(password)
     }
 
-    fn get_key_pairs(&self, address: &RoochAddress) -> Result<Vec<&RoochKeyPair>, anyhow::Error> {
-        self.keystore.get_key_pairs(address)
+    fn get_key_pairs(&self, address: &RoochAddress, password: Option<String>) -> Result<Vec<RoochKeyPair>, anyhow::Error> {
+        self.keystore.get_key_pairs(address, password)
     }
 
-    fn update_key_pair_by_key_pair_type(
+    fn update_encryption_data_by_key_pair_type(
         &mut self,
         address: &RoochAddress,
-        key_pair: RoochKeyPair,
         key_pair_type: KeyPairType,
+        encryption: EncryptionData
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .update_key_pair_by_key_pair_type(address, key_pair, key_pair_type)?;
+            .update_encryption_data_by_key_pair_type(address, key_pair_type, encryption)?;
         //TODO should check test env at here?
         if std::env::var_os("TEST_ENV").is_none() {
             self.save()?;
@@ -1256,13 +1321,14 @@ impl
 {
     type Transaction = (EthereumTransactionData, ethers::types::Signature);
 
-    fn get_key_pair_by_key_pair_type(
+    fn get_key_pair_by_type_password(
         &self,
         address: &EthereumAddress,
         key_pair_type: KeyPairType,
-    ) -> Result<&Secp256k1RecoverableKeyPair, signature::Error> {
+        password: Option<String>
+    ) -> Result<&Secp256k1RecoverableKeyPair, RoochError> {
         self.keystore
-            .get_key_pair_by_key_pair_type(address, key_pair_type)
+            .get_key_pair_by_type_password(address, key_pair_type, password)
     }
 
     fn sign_hashed(
@@ -1270,8 +1336,9 @@ impl
         address: &EthereumAddress,
         msg: &[u8],
         key_pair_type: KeyPairType,
-    ) -> Result<ethers::types::Signature, signature::Error> {
-        self.keystore.sign_hashed(address, msg, key_pair_type)
+        password: Option<String>
+    ) -> Result<ethers::types::Signature, RoochError> {
+        self.keystore.sign_hashed(address, msg, key_pair_type, password)
     }
 
     fn sign_secure<T>(
@@ -1279,11 +1346,12 @@ impl
         address: &EthereumAddress,
         msg: &T,
         key_pair_type: KeyPairType,
-    ) -> Result<ethers::types::Signature, signature::Error>
+        password: Option<String>
+    ) -> Result<ethers::types::Signature, RoochError>
     where
         T: Serialize,
     {
-        self.keystore.sign_secure(address, msg, key_pair_type)
+        self.keystore.sign_secure(address, msg, key_pair_type, password)
     }
 
     fn sign_transaction(
@@ -1291,17 +1359,19 @@ impl
         address: &EthereumAddress,
         msg: EthereumTransactionData,
         key_pair_type: KeyPairType,
-    ) -> Result<(EthereumTransactionData, ethers::types::Signature), signature::Error> {
-        self.keystore.sign_transaction(address, msg, key_pair_type)
+        password: Option<String>
+    ) -> Result<(EthereumTransactionData, ethers::types::Signature), RoochError> {
+        self.keystore.sign_transaction(address, msg, key_pair_type, password)
     }
 
-    fn add_key_pair_by_key_pair_type(
+    fn add_encryption_data_by_key_pair_type(
         &mut self,
-        key_pair: Secp256k1RecoverableKeyPair,
         key_pair_type: KeyPairType,
+        encryption: EncryptionData,
+        password: Option<String>
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .add_key_pair_by_key_pair_type(key_pair, key_pair_type)?;
+            .add_encryption_data_by_key_pair_type(key_pair_type, encryption, password)?;
         //TODO should check test env at here?
         if std::env::var_os("TEST_ENV").is_none() {
             self.save()?;
@@ -1312,29 +1382,31 @@ impl
     fn get_public_key_by_key_pair_type(
         &self,
         key_pair_type: KeyPairType,
+        password: Option<String>
     ) -> Result<Secp256k1RecoverablePublicKey, anyhow::Error> {
-        self.keystore.get_public_key_by_key_pair_type(key_pair_type)
+        self.keystore.get_public_key_by_key_pair_type(key_pair_type, password)
     }
 
-    fn get_address_public_keys(&self) -> Vec<(EthereumAddress, Secp256k1RecoverablePublicKey)> {
-        self.keystore.get_address_public_keys()
+    fn get_address_public_keys(&self, password: Option<String>) -> Vec<(EthereumAddress, Secp256k1RecoverablePublicKey)> {
+        self.keystore.get_address_public_keys(password)
     }
 
     fn get_key_pairs(
         &self,
         address: &EthereumAddress,
-    ) -> Result<Vec<&Secp256k1RecoverableKeyPair>, anyhow::Error> {
-        self.keystore.get_key_pairs(address)
+        password: Option<String>
+    ) -> Result<Vec<Secp256k1RecoverableKeyPair>, anyhow::Error> {
+        self.keystore.get_key_pairs(address, password)
     }
 
-    fn update_key_pair_by_key_pair_type(
+    fn update_encryption_data_by_key_pair_type(
         &mut self,
         address: &EthereumAddress,
-        key_pair: Secp256k1RecoverableKeyPair,
         key_pair_type: KeyPairType,
+        encryption: EncryptionData
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .update_key_pair_by_key_pair_type(address, key_pair, key_pair_type)?;
+            .update_encryption_data_by_key_pair_type(address, key_pair_type, encryption)?;
         //TODO should check test env at here?
         if std::env::var_os("TEST_ENV").is_none() {
             self.save()?;
@@ -1441,13 +1513,27 @@ impl FileBasedKeystore<RoochAddress, RoochKeyPair> {
         Ok(())
     }
 
-    pub fn key_pairs(&self) -> Vec<&RoochKeyPair> {
-        self.keystore
-            .keys
-            .values()
-            .flat_map(|inner_map| inner_map.values())
-            .collect()
+    pub fn key_pairs(
+        &self,
+        address: &RoochAddress,
+        password: Option<String>,
+    ) -> Result<Vec<RoochKeyPair>, anyhow::Error> {
+        // Collect references to RoochKeyPair objects from all inner maps.
+        let key_pairs: Vec<RoochKeyPair> = self.keystore
+        .keys
+        .values() // Get inner maps
+        .flat_map(|key_map| {
+            // Iterate over key-value pairs (KeyPairType, EncryptionData)
+            key_map.iter().flat_map(|(key_pair_type, encryption)| {
+                // Transform EncryptionData into RoochKeyPair using your conversion function.
+                Some(key_pair_type.retrieve_key_pair(encryption, password))
+            })
+        })
+        .collect::<Result<_, _>>()?;
+
+        Ok(key_pairs)
     }
+    
 }
 
 impl FileBasedKeystore<EthereumAddress, Secp256k1RecoverableKeyPair> {
@@ -1490,12 +1576,25 @@ impl FileBasedKeystore<EthereumAddress, Secp256k1RecoverableKeyPair> {
         Ok(())
     }
 
-    pub fn key_pairs(&self) -> Vec<&Secp256k1RecoverableKeyPair> {
-        self.keystore
-            .keys
-            .values()
-            .flat_map(|inner_map| inner_map.values())
-            .collect()
+    pub fn key_pairs(
+        &self,
+        address: &RoochAddress,
+        password: Option<String>,
+    ) -> Result<Vec<Secp256k1RecoverableKeyPair>, anyhow::Error> {
+        // Collect references to Secp256k1RecoverableKeyPair objects from all inner maps.
+        let key_pairs: Vec<Secp256k1RecoverableKeyPair> = self.keystore
+        .keys
+        .values() // Get inner maps
+        .flat_map(|key_map| {
+            // Iterate over key-value pairs (KeyPairType, EncryptionData)
+            key_map.iter().flat_map(|(key_pair_type, encryption)| {
+                // Transform EncryptionData into Secp256k1RecoverableKeyPair using your conversion function.
+                Some(key_pair_type.retrieve_key_pair(encryption, password))
+            })
+        })
+        .collect::<Result<_, _>>()?;
+
+        Ok(key_pairs)
     }
 }
 
@@ -1521,11 +1620,12 @@ impl
         address: &RoochAddress,
         msg: &T,
         key_pair_type: KeyPairType,
-    ) -> Result<Signature, signature::Error>
+        password: Option<String>
+    ) -> Result<Signature, RoochError>
     where
         T: Serialize,
     {
-        self.keystore.sign_secure(address, msg, key_pair_type)
+        self.keystore.sign_secure(address, msg, key_pair_type, password)
     }
 
     fn sign_transaction(
@@ -1533,42 +1633,45 @@ impl
         address: &RoochAddress,
         msg: RoochTransactionData,
         key_pair_type: KeyPairType,
-    ) -> Result<RoochTransaction, signature::Error> {
-        self.keystore.sign_transaction(address, msg, key_pair_type)
+        password: Option<String>
+    ) -> Result<RoochTransaction, RoochError> {
+        self.keystore.sign_transaction(address, msg, key_pair_type, password)
     }
 
-    fn add_key_pair_by_key_pair_type(
+    fn add_encryption_data_by_key_pair_type(
         &mut self,
-        key_pair: RoochKeyPair,
         key_pair_type: KeyPairType,
+        encryption: EncryptionData,
+        password: Option<String>
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .add_key_pair_by_key_pair_type(key_pair, key_pair_type)
+            .add_encryption_data_by_key_pair_type(key_pair_type, encryption, password)
     }
 
     fn get_public_key_by_key_pair_type(
         &self,
         key_pair_type: KeyPairType,
+        password: Option<String>
     ) -> Result<PublicKey, anyhow::Error> {
-        self.keystore.get_public_key_by_key_pair_type(key_pair_type)
+        self.keystore.get_public_key_by_key_pair_type(key_pair_type, password)
     }
 
-    fn get_address_public_keys(&self) -> Vec<(RoochAddress, PublicKey)> {
-        self.keystore.get_address_public_keys()
+    fn get_address_public_keys(&self, password: Option<String>) -> Vec<(RoochAddress, PublicKey)> {
+        self.keystore.get_address_public_keys(password)
     }
 
-    fn get_key_pairs(&self, address: &RoochAddress) -> Result<Vec<&RoochKeyPair>, anyhow::Error> {
-        self.keystore.get_key_pairs(address)
+    fn get_key_pairs(&self, address: &RoochAddress, password: Option<String>) -> Result<Vec<RoochKeyPair>, anyhow::Error> {
+        self.keystore.get_key_pairs(address, password)
     }
 
-    fn update_key_pair_by_key_pair_type(
+    fn update_encryption_data_by_key_pair_type(
         &mut self,
         address: &RoochAddress,
-        key_pair: RoochKeyPair,
         key_pair_type: KeyPairType,
+        encryption: EncryptionData
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .update_key_pair_by_key_pair_type(address, key_pair, key_pair_type)
+            .update_encryption_data_by_key_pair_type(address, key_pair_type, encryption)
     }
 
     fn nullify_key_pair_by_key_pair_type(
@@ -1580,13 +1683,14 @@ impl
             .nullify_key_pair_by_key_pair_type(address, key_pair_type)
     }
 
-    fn get_key_pair_by_key_pair_type(
+    fn get_key_pair_by_type_password(
         &self,
         address: &RoochAddress,
         key_pair_type: KeyPairType,
-    ) -> Result<&RoochKeyPair, signature::Error> {
+        password: Option<String>
+    ) -> Result<&RoochKeyPair, RoochError> {
         self.keystore
-            .get_key_pair_by_key_pair_type(address, key_pair_type)
+            .get_key_pair_by_type_password(address, key_pair_type, password)
     }
 
     fn sign_hashed(
@@ -1594,8 +1698,9 @@ impl
         address: &RoochAddress,
         msg: &[u8],
         key_pair_type: KeyPairType,
-    ) -> Result<Signature, signature::Error> {
-        self.keystore.sign_hashed(address, msg, key_pair_type)
+        password: Option<String>
+    ) -> Result<Signature, RoochError> {
+        self.keystore.sign_hashed(address, msg, key_pair_type, password)
     }
 
     fn generate_session_key(
@@ -1633,11 +1738,12 @@ impl
         address: &EthereumAddress,
         msg: &T,
         key_pair_type: KeyPairType,
-    ) -> Result<ethers::types::Signature, signature::Error>
+        password: Option<String>
+    ) -> Result<ethers::types::Signature, RoochError>
     where
         T: Serialize,
     {
-        self.keystore.sign_secure(address, msg, key_pair_type)
+        self.keystore.sign_secure(address, msg, key_pair_type, password)
     }
 
     fn sign_transaction(
@@ -1645,45 +1751,49 @@ impl
         address: &EthereumAddress,
         msg: EthereumTransactionData,
         key_pair_type: KeyPairType,
-    ) -> Result<(EthereumTransactionData, ethers::types::Signature), signature::Error> {
-        self.keystore.sign_transaction(address, msg, key_pair_type)
+        password: Option<String>
+    ) -> Result<(EthereumTransactionData, ethers::types::Signature), RoochError> {
+        self.keystore.sign_transaction(address, msg, key_pair_type, password)
     }
 
-    fn add_key_pair_by_key_pair_type(
+    fn add_encryption_data_by_key_pair_type(
         &mut self,
-        key_pair: Secp256k1RecoverableKeyPair,
         key_pair_type: KeyPairType,
+        encryption: EncryptionData,
+        password: Option<String>
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .add_key_pair_by_key_pair_type(key_pair, key_pair_type)
+            .add_encryption_data_by_key_pair_type(key_pair_type, encryption, password)
     }
 
     fn get_public_key_by_key_pair_type(
         &self,
         key_pair_type: KeyPairType,
+        password: Option<String>
     ) -> Result<Secp256k1RecoverablePublicKey, anyhow::Error> {
-        self.keystore.get_public_key_by_key_pair_type(key_pair_type)
+        self.keystore.get_public_key_by_key_pair_type(key_pair_type, password)
     }
 
-    fn get_address_public_keys(&self) -> Vec<(EthereumAddress, Secp256k1RecoverablePublicKey)> {
-        self.keystore.get_address_public_keys()
+    fn get_address_public_keys(&self, password: Option<String>) -> Vec<(EthereumAddress, Secp256k1RecoverablePublicKey)> {
+        self.keystore.get_address_public_keys(password)
     }
 
     fn get_key_pairs(
         &self,
         address: &EthereumAddress,
-    ) -> Result<Vec<&Secp256k1RecoverableKeyPair>, anyhow::Error> {
-        self.keystore.get_key_pairs(address)
+        password: Option<String>
+    ) -> Result<Vec<Secp256k1RecoverableKeyPair>, anyhow::Error> {
+        self.keystore.get_key_pairs(address, password)
     }
 
-    fn update_key_pair_by_key_pair_type(
+    fn update_encryption_data_by_key_pair_type(
         &mut self,
         address: &EthereumAddress,
-        key_pair: Secp256k1RecoverableKeyPair,
         key_pair_type: KeyPairType,
+        encryption: EncryptionData
     ) -> Result<(), anyhow::Error> {
         self.keystore
-            .update_key_pair_by_key_pair_type(address, key_pair, key_pair_type)
+            .update_encryption_data_by_key_pair_type(address, key_pair_type, encryption)
     }
 
     fn nullify_key_pair_by_key_pair_type(
@@ -1695,13 +1805,14 @@ impl
             .nullify_key_pair_by_key_pair_type(address, key_pair_type)
     }
 
-    fn get_key_pair_by_key_pair_type(
+    fn get_key_pair_by_type_password(
         &self,
         address: &EthereumAddress,
         key_pair_type: KeyPairType,
-    ) -> Result<&Secp256k1RecoverableKeyPair, signature::Error> {
+        password: Option<String>
+    ) -> Result<&Secp256k1RecoverableKeyPair, RoochError> {
         self.keystore
-            .get_key_pair_by_key_pair_type(address, key_pair_type)
+            .get_key_pair_by_type_password(address, key_pair_type, password)
     }
 
     fn sign_hashed(
@@ -1709,8 +1820,9 @@ impl
         address: &EthereumAddress,
         msg: &[u8],
         key_pair_type: KeyPairType,
-    ) -> Result<ethers::types::Signature, signature::Error> {
-        self.keystore.sign_hashed(address, msg, key_pair_type)
+        password: Option<String>
+    ) -> Result<ethers::types::Signature, RoochError> {
+        self.keystore.sign_hashed(address, msg, key_pair_type, password)
     }
 
     fn generate_session_key(
@@ -1736,16 +1848,16 @@ impl InMemKeystore<RoochAddress, RoochKeyPair> {
         let mut rng = StdRng::from_seed([0; 32]);
         let keys = (0..initial_key_number)
             .map(|_| get_rooch_key_pair_from_rng(&mut rng))
-            .map(|(ad, k)| {
+            .map(|(ad, data)| {
                 (
                     ad,
                     BTreeMap::from_iter(vec![(
                         KeyPairType::RoochKeyPairType,
-                        RoochKeyPair::Ed25519(k),
+                        RoochKeyPair::Ed25519(data),
                     )]),
                 )
             })
-            .collect::<BTreeMap<RoochAddress, BTreeMap<KeyPairType, RoochKeyPair>>>();
+            .collect::<BTreeMap<RoochAddress, BTreeMap<KeyPairType, EncryptionData>>>();
 
         Self {
             keystore: BaseKeyStore::new(keys),
@@ -1757,8 +1869,8 @@ impl InMemKeystore<EthereumAddress, Secp256k1RecoverableKeyPair> {
         let mut rng = StdRng::from_seed([0; 32]);
         let keys = (0..initial_key_number)
             .map(|_| get_ethereum_key_pair_from_rng(&mut rng))
-            .map(|(ad, k)| (ad, BTreeMap::from_iter(vec![(KeyPairType::EthereumKeyPairType, k)])))
-            .collect::<BTreeMap<EthereumAddress, BTreeMap<KeyPairType, Secp256k1RecoverableKeyPair>>>();
+            .map(|(ad, data)| (ad, BTreeMap::from_iter(vec![(KeyPairType::EthereumKeyPairType, data)])))
+            .collect::<BTreeMap<EthereumAddress, BTreeMap<KeyPairType, EncryptionData>>>();
 
         Self {
             keystore: BaseKeyStore::new(keys),
