@@ -1,5 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+
+import { Serializable } from './bcs/serializable'
+
 export type Identifier = string
 export type AccountAddress = string
 export type HashValue = string
@@ -54,6 +57,7 @@ export type ArgType =
   | U256
   | string
   | AccountAddress
+  | Serializable
   | ArgType[]
 
 export type Arg = {

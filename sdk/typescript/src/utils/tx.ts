@@ -10,8 +10,9 @@ import {
   Tuple,
   ListTuple,
   uint8,
+  U256,
   BcsSerializer,
-  serializeU256,
+  Serializable,
 } from '../types/bcs'
 import { parseFunctionId, normalizeRoochAddress } from './encode'
 
@@ -165,11 +166,6 @@ export function addressToSeqNumber(ethAddress: string): Seq<number> {
   // Remove '0x' prefix
   const cleanedEthAddress = ethAddress.startsWith('0x') ? ethAddress.slice(2) : ethAddress
 
-  // Check if the address is valid
-  if (cleanedEthAddress.length !== ROOCH_ADDRESS_LENGTH) {
-    throw new Error('Invalid Ethereum address')
-  }
-
   // Convert to list of tuples
   const seqNumber: Seq<number> = []
   for (let i = 0; i < cleanedEthAddress.length; i += 2) {
@@ -194,7 +190,8 @@ function serializeValue(value: any, type: TypeTag, se: BcsSerializer) {
   } else if (type === 'U128') {
     se.serializeU128(value)
   } else if (type === 'U256') {
-    serializeU256(se, value)
+    const u256 = new U256(value)
+    u256.serialize(se)
   } else if (type === 'Address') {
     const list = addressToListTuple(normalizeRoochAddress(value as string))
     const accountAddress = new rooch_types.AccountAddress(list)
@@ -214,6 +211,9 @@ function serializeValue(value: any, type: TypeTag, se: BcsSerializer) {
     for (let item of vectorValues) {
       serializeValue(item, (type as { Vector: TypeTag }).Vector, se)
     }
+  } else if ((type as { Struct: StructTag }).Struct) {
+    const serializable = value as Serializable
+    serializable.serialize(se)
   }
 }
 

@@ -1,0 +1,227 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+// ** React Imports
+import { useState, useRef, useMemo, useEffect } from 'react'
+
+import { useAuth } from 'src/hooks/useAuth'
+import { useSession } from 'src/hooks/useSessionAccount'
+import { useRooch } from 'src/hooks/useRooch'
+
+import Grid from '@mui/material/Grid'
+import Box from '@mui/material/Box'
+import Card from '@mui/material/Card'
+import CardHeader from '@mui/material/CardHeader'
+import CardContent from '@mui/material/CardContent'
+import Button from '@mui/material/Button'
+import Snackbar from '@mui/material/Snackbar'
+import {
+  DataGrid,
+  GridColDef,
+  GridValueGetterParams,
+  GridRenderCellParams,
+  GridPaginationModel,
+} from '@mui/x-data-grid'
+
+// ** Store & Actions Imports
+import { fetchData, removeRow } from 'src/store/session'
+import { useAppDispatch, useAppSelector } from 'src/store'
+
+const formatDate = (timestamp: number) => {
+  if (timestamp === 0) {
+    return `--`
+  }
+
+  const date = new Date(timestamp)
+  const year = date.getFullYear()
+  const month = ('0' + (date.getMonth() + 1)).slice(-2)
+  const day = ('0' + date.getDate()).slice(-2)
+  const hours = ('0' + date.getHours()).slice(-2)
+  const minutes = ('0' + date.getMinutes()).slice(-2)
+  const seconds = ('0' + date.getSeconds()).slice(-2)
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
+
+const PAGE_SIZE = 100
+
+export default function SessionKeyList() {
+  const columns: GridColDef[] = [
+    { field: 'authentication_key', headerName: 'Authentication Key', width: 200 },
+    {
+      field: 'scopes',
+      headerName: 'Scopes',
+      width: 200,
+      valueGetter: (params: GridValueGetterParams) => {
+        return (params.row.scopes as Array<string>).join(', ')
+      },
+    },
+    {
+      field: 'max_inactive_interval',
+      headerName: 'Max Inactive Interval',
+      width: 200,
+      type: 'number',
+    },
+    {
+      field: 'last_active_time',
+      headerName: 'Last Active Time',
+      width: 200,
+      valueGetter: (params: GridValueGetterParams) => {
+        return formatDate(params.row.last_active_time)
+      },
+    },
+    {
+      field: 'create_time',
+      headerName: 'Create Time',
+      width: 200,
+      valueGetter: (params: GridValueGetterParams) => {
+        return formatDate(params.row.create_time)
+      },
+    },
+    {
+      field: 'action',
+      headerName: 'Action',
+      flex: 1,
+      align: 'right',
+      renderCell: (params: GridRenderCellParams) => (
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={() => handleRemove(params.row.authentication_key)}
+        >
+          Remove
+        </Button>
+      ),
+    },
+  ]
+
+  const auth = useAuth()
+  const session = useSession()
+  const rooch = useRooch()
+
+  const mapPageToNextCursor = useRef<{ [page: number]: Uint8Array | null }>({})
+
+  // ** State
+  const [paginationModel, setPaginationModel] = useState({
+    page: 0,
+    pageSize: PAGE_SIZE,
+  })
+
+  const queryOptions = useMemo(
+    () => ({
+      cursor: mapPageToNextCursor.current[paginationModel.page - 1],
+      pageSize: paginationModel.pageSize,
+    }),
+    [paginationModel],
+  )
+
+  // ** Hooks
+  const dispatch = useAppDispatch()
+  const { result, status, error } = useAppSelector((state) => state.session)
+
+  useEffect(() => {
+    const defaultAccount = auth.defaultAccount
+    if (!defaultAccount) {
+      return
+    }
+
+    // Ignore part of request
+    if (status === 'finished' || status === 'error' || status === 'loading') {
+      return
+    }
+
+    dispatch(
+      fetchData({
+        dispatch,
+        provider: rooch.provider!,
+        cursor: queryOptions.cursor,
+        limit: queryOptions.pageSize,
+        account_address: defaultAccount.roochAddress,
+      }),
+    )
+  }, [dispatch, auth, rooch.provider, paginationModel, result, status, queryOptions])
+
+  useEffect(() => {
+    if (status !== 'loading' && result.nextCursor) {
+      // We add nextCursor when available
+      mapPageToNextCursor.current[paginationModel.page] = result.nextCursor
+    }
+  }, [paginationModel.page, status, result.nextCursor])
+
+  const handlePaginationModelChange = (newPaginationModel: GridPaginationModel) => {
+    // We have the cursor, we can allow the page transition.
+    if (newPaginationModel.page === 0 || mapPageToNextCursor.current[newPaginationModel.page - 1]) {
+      setPaginationModel(newPaginationModel)
+    }
+  }
+
+  const handleRefresh = () => {
+    const defaultAccount = auth.defaultAccount
+    if (!defaultAccount) {
+      return
+    }
+
+    dispatch(
+      fetchData({
+        dispatch,
+        provider: rooch.provider!,
+        cursor: queryOptions.cursor,
+        limit: queryOptions.pageSize,
+        account_address: defaultAccount.roochAddress,
+      }),
+    )
+  }
+
+  const handleRemove = (authentication_key: string) => {
+    const defaultAccount = auth.defaultAccount
+    if (!defaultAccount) {
+      return false
+    }
+
+    dispatch(
+      removeRow({
+        dispatch,
+        account: session.account!,
+        auth_key: authentication_key,
+        refresh: handleRefresh,
+      }),
+    )
+
+    return false
+  }
+
+  return (
+    <Grid item xs={12}>
+      <Card>
+        <CardHeader title="Session Keys" />
+        <CardContent>
+          <Box sx={{ textAlign: 'right', marginBottom: '10px' }}>
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              onClick={() => handleRefresh()}
+            >
+              Refresh
+            </Button>
+          </Box>
+          <DataGrid
+            rows={status === 'finished' ? result.data : []}
+            loading={status === ('loading' as 'loading')}
+            columns={columns}
+            pageSizeOptions={[10, 25, 50]}
+            onPaginationModelChange={handlePaginationModelChange}
+            paginationModel={paginationModel}
+            autoHeight
+          />
+          <Snackbar
+            open={!!error}
+            autoHideDuration={5000}
+            message={error}
+            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          />
+        </CardContent>
+      </Card>
+    </Grid>
+  )
+}

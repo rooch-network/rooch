@@ -25,6 +25,7 @@ export type SupportWalletType = {
 }
 
 export type AccountDataType = {
+  roochAddress: string
   address: string
   kp: Ed25519Keypair | null
   activate: boolean
@@ -37,7 +38,7 @@ export type AuthValuesType = {
   setLoading: (value: boolean) => void
   supportWallets: SupportWalletType[]
   accounts: Map<string, AccountDataType> | null
-  defaultAccount: () => AccountDataType | null
+  defaultAccount: AccountDataType | null
   loginByWallet: (walletType: WalletType, errorCallback?: ErrCallbackType) => void
   loginByNewAccount: (errorCallback?: ErrCallbackType) => void
   loginBySecretKey: (params: AddAccountBySecretKeyParams, errorCallback?: ErrCallbackType) => void

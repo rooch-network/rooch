@@ -4,7 +4,7 @@
 import fetch from 'isomorphic-fetch'
 import { HTTPTransport, RequestManager } from '@open-rpc/client-js'
 import { JsonRpcClient } from '../generated/client'
-import { Chain, ChainInfo, DevChain } from '../constants/chain.ts'
+import { Chain, ChainInfo, DevChain } from '../constants/chain'
 import {
   FunctionId,
   TypeTag,
@@ -15,6 +15,7 @@ import {
   AnnotatedStateView,
   TransactionResultPageView,
   AnnotatedEventResultPageView,
+  ListAnnotatedStateResultPageView,
   StateView,
   StateResultPageView,
 } from '../types'
@@ -185,5 +186,22 @@ export class JsonRpcProvider {
   //     cursor,
   //     limit,
   //   )
+  // }
+
+  async listAnnotatedStates(
+    access_path: string,
+    cursor: Bytes | null,
+    limit: number,
+  ): Promise<ListAnnotatedStateResultPageView> {
+    return await this.client.rooch_listAnnotatedStates(access_path, cursor as any, limit)
+  }
+
+  // // List the states by access_path
+  // async listStates(
+  //   access_path: string,
+  //   cursor: Uint8Array,
+  //   limit: number,
+  // ): Promise<PageView_for_Nullable_StateView_and_alloc_vec_Vec_U8Array> {
+  //   return await this.rpcClient.rooch_listStates(access_path, cursor, limit)
   // }
 }

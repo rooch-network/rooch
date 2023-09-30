@@ -1,10 +1,18 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { AccountAddress, FunctionId, TypeTag, Arg } from '../types'
+import { AccountAddress, FunctionId, TypeTag, Arg, Bytes, IPage } from '../types'
 
 export interface CallOption {
   maxGasAmount?: number
+}
+
+export interface ISessionKey {
+  authentication_key: string
+  scopes: Array<string>
+  create_time: number
+  last_active_time: number
+  max_inactive_interval: number
 }
 
 export interface IAccount {
@@ -55,4 +63,22 @@ export interface IAccount {
     maxInactiveInterval: number,
     opts?: CallOption,
   ): Promise<void>
+
+  /**
+   * Remove session key
+   *
+   * @param authKey
+   * @param scopes
+   * @param maxInactiveInterval
+   * @param opts
+   */
+  removeSessionKey(authKey: AccountAddress, opts?: CallOption): Promise<string>
+
+  /**
+   * Query account's sessionKey
+   *
+   * @param cursor The page cursor
+   * @param limit The page limit
+   */
+  querySessionKeys(cursor: Bytes | null, limit: number): Promise<IPage<ISessionKey>>
 }

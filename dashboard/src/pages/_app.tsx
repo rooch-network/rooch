@@ -34,7 +34,7 @@ import ThemeComponent from 'src/@core/theme/ThemeComponent'
 import AuthGuard from 'src/@core/components/auth/AuthGuard'
 import GuestGuard from 'src/@core/components/auth/GuestGuard'
 
-// import SessionGuard from 'src/@core/components/session/SessionGuard'
+import SessionGuard from 'src/@core/components/session/SessionGuard'
 
 // ** Spinner Import
 import Spinner from 'src/@core/components/spinner'
@@ -101,8 +101,7 @@ const Guard = ({ children, authGuard, guestGuard }: GuardProps) => {
   } else {
     return (
       <AuthGuard fallback={<Spinner />}>
-        {children}
-        {/*<SessionGuard>{children}</SessionGuard>*/}
+        <SessionGuard>{children}</SessionGuard>
       </AuthGuard>
     )
   }

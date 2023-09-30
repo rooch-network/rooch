@@ -16,6 +16,7 @@ import {
 import { useRouter } from 'next/router'
 
 // ** Hooks Import
+import { useAuth } from 'src/hooks/useAuth'
 import { useSession } from 'src/hooks/useSessionAccount'
 
 interface Props {
@@ -85,6 +86,8 @@ interface SessionGuardProps {
 
 const SessionGuard = (props: SessionGuardProps) => {
   const { children } = props
+
+  const auth = useAuth()
   const router = useRouter()
   const { account, requestAuthorize } = useSession()
 
@@ -93,6 +96,8 @@ const SessionGuard = (props: SessionGuardProps) => {
   }
 
   const hanleLogout = () => {
+    auth.logout()
+
     if (router.asPath !== '/') {
       router.replace({
         pathname: '/login',
@@ -104,7 +109,7 @@ const SessionGuard = (props: SessionGuardProps) => {
   }
 
   const isSessionInvalid = () => {
-    return account === undefined
+    return account === undefined || account === null
   }
 
   return (

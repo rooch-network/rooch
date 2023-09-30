@@ -27,7 +27,7 @@ import { useETH } from 'src/hooks/useETH'
 import { useRooch } from '../../hooks/useRooch'
 
 // ** Rooch SDK
-import { bcsTypes, Ed25519Keypair } from '@rooch/sdk'
+import { bcsTypes, Ed25519Keypair, addressToSeqNumber } from '@rooch/sdk'
 
 // ** Defaults
 const defaultProvider: AuthValuesType = {
@@ -35,7 +35,7 @@ const defaultProvider: AuthValuesType = {
   setLoading: () => Boolean,
   accounts: null,
   supportWallets: [],
-  defaultAccount: () => null,
+  defaultAccount: null,
   logout: () => Promise.resolve(),
   loginByWallet: () => Promise.resolve(),
   loginByNewAccount: () => Promise.resolve(),
@@ -54,6 +54,14 @@ const AuthProvider = ({ children }: Props) => {
   const rooch = useRooch()
 
   // ** States
+  const [defaultAccount, setDefaultAccount] = useState<AccountDataType | null>(() => {
+    if (defaultProvider.accounts && defaultProvider.accounts.size > 0) {
+      return defaultProvider.accounts.values().next().value
+    }
+
+    return null
+  })
+
   const [accounts, setAccounts] = useState<Map<string, AccountDataType> | null>(
     defaultProvider.accounts,
   )
@@ -78,9 +86,11 @@ const AuthProvider = ({ children }: Props) => {
         }
 
         const kp = Ed25519Keypair.fromSecretKey(sk)
+        const roochAddress = kp.toRoochAddress()
 
         setAccountWrapper({
-          address: kp.toRoochAddress(),
+          address: roochAddress,
+          roochAddress: roochAddress,
           kp: kp,
           activate: true,
           type: AccountType.ROOCH,
@@ -111,6 +121,12 @@ const AuthProvider = ({ children }: Props) => {
     })
 
     setAccounts(_accounts)
+
+    if (_accounts && _accounts.size > 0) {
+      setDefaultAccount(_accounts.values().next().value)
+    }
+
+    return null
   }
 
   /// ** Impl fun
@@ -139,12 +155,65 @@ const AuthProvider = ({ children }: Props) => {
     return []
   }
 
+  const resoleRoochAddress = async (ethAddress: string): Promise<string> => {
+    const multiChainIDEther = 60
+
+    const ma = new bcsTypes.MultiChainAddress(
+      BigInt(multiChainIDEther),
+      addressToSeqNumber(ethAddress),
+    )
+
+    const result = await rooch?.provider?.executeViewFunction(
+      '0x3::address_mapping::resolve_or_generate',
+      [],
+      [
+        {
+          type: {
+            Struct: {
+              address: '0x3',
+              module: 'address_mapping',
+              name: 'MultiChainAddress',
+            },
+          },
+          value: ma,
+        },
+      ],
+    )
+
+    console.log('resoleRoochAddress result:', result)
+
+    if (result && result.vm_status === 'Executed' && result.return_values) {
+      return result.return_values[0].move_value as string
+    }
+
+    throw new Error('resolve rooch address fail')
+  }
+
+  const updateETHAccount = async () => {
+    if (metamask.accounts.length > 0) {
+      const ethAddress = metamask.accounts[0]
+      const roochAddress = await resoleRoochAddress(ethAddress)
+
+      setAccountWrapper({
+        address: ethAddress,
+        roochAddress: roochAddress,
+        activate: true,
+        kp: null,
+        type: AccountType.ETH,
+      })
+    }
+  }
+
   const loginByWallet = (walletType: WalletType, errorCallback?: ErrCallbackType) => {
     switch (walletType) {
       case WalletType.Metamask:
         metamask
           .connect()
-          .then(loginSuccess)
+          .then(() => {
+            updateETHAccount().then(() => {
+              loginSuccess && loginSuccess()
+            })
+          })
           .catch((e: any) => {
             if (errorCallback) {
               errorCallback(e)
@@ -157,10 +226,13 @@ const AuthProvider = ({ children }: Props) => {
   const loginBySecretKey = (params: AddAccountBySecretKeyParams) => {
     try {
       const sk = bcsTypes.fromB64(params.key)
-      const kp = Ed25519Keypair.fromSecretKey(sk.slice(1))
+
+      const kp = Ed25519Keypair.fromSecretKey(sk)
+      const roochAddress = kp.toRoochAddress()
 
       setAccountWrapper({
-        address: kp.toRoochAddress(),
+        address: roochAddress,
+        roochAddress: roochAddress,
         kp: kp,
         activate: true,
         type: AccountType.ROOCH,
@@ -183,8 +255,11 @@ const AuthProvider = ({ children }: Props) => {
 
     window.localStorage.setItem(authConfig.secretKey, kp.export().privateKey)
 
+    const roochAddress = kp.toRoochAddress()
+
     setAccountWrapper({
-      address: kp.toRoochAddress(),
+      address: roochAddress,
+      roochAddress: roochAddress,
       kp: kp,
       activate: true,
       type: AccountType.ROOCH,
@@ -199,30 +274,8 @@ const AuthProvider = ({ children }: Props) => {
     metamask.disconnect()
   }
 
-  const defaultAccount = (): AccountDataType | null => {
-    const accounts = getAccounts()
-
-    if (accounts && accounts.size > 0) {
-      return accounts.values().next().value
-    }
-
-    return null
-  }
-
   const getAccounts = (): Map<string, AccountDataType> | null => {
     const allAccounts = accounts ?? new Map<string, AccountDataType>()
-
-    // TODO: abstract wallet
-    if (metamask.accounts.length > 0) {
-      metamask.accounts.forEach((v) => {
-        allAccounts.set(v, {
-          address: v,
-          activate: true,
-          kp: null,
-          type: AccountType.ETH,
-        })
-      })
-    }
 
     return allAccounts.size > 0 ? allAccounts : null
   }
