@@ -1,7 +1,7 @@
 Feature: Rooch CLI integration tests
     @serial
     Scenario: Init
-      Then cmd: "init -p false"
+      Then cmd: "init --password false"
       Then cmd: "env switch --alias local"
 
 
@@ -10,11 +10,11 @@ Feature: Rooch CLI integration tests
       Given a server for account
 
       Then cmd: "object --id {default}"
-      Then cmd: "account create -p false"
+      Then cmd: "account create --password false"
       Then cmd: "account list"
-      Then cmd: "account import --mnemonic-phrase "fiber tube acid imitate frost coffee choose crowd grass topple donkey submit" -p false"
-      Then cmd: "account update --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --mnemonic-phrase "spike air embody solid upper grow mule slender shrimp suggest pride young" -p false"
-      #Then cmd: "account update --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --mnemonic-phrase "spike air embody solid upper grow mule slender shrimp suggest pride young" -p false"
+      Then cmd: "account import --mnemonic-phrase "fiber tube acid imitate frost coffee choose crowd grass topple donkey submit" --password false"
+      Then cmd: "account update --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --mnemonic-phrase "spike air embody solid upper grow mule slender shrimp suggest pride young" --password false"
+      #Then cmd: "account update --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --mnemonic-phrase "spike air embody solid upper grow mule slender shrimp suggest pride young" --password false"
       Then cmd: "account nullify --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce"
       #Then cmd: "account nullify --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce"
 
@@ -140,7 +140,7 @@ Feature: Rooch CLI integration tests
  @serial
     Scenario: coins example
       Given a server for coins
-      Then cmd: "account create"
+      Then cmd: "account create --password false"
       Then cmd: "move publish -p ../../examples/coins --sender-account {default} --named-addresses coins={default}"
       Then cmd: "move run --function {default}::fixed_supply_coin::faucet --sender-account {default}"
       #TODO change the argument `0x3` address to a user account
