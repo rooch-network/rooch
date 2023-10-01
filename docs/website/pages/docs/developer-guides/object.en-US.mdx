@@ -1,13 +1,60 @@
-# Rooch object
-
-1. Rooch object introduction.
-2. The difference between the Sui object.
-3. How to use the Rooch object.
+# Rooch Object
 
 import { Callout, FileTree } from 'nextra/components'
 
-<Callout>
-  TODO:
+In Rooch, the `Object` follows a box-like pattern. It acts as a container with a globally unique ID, enclosing a type `T` as an Object.
 
-  This document is being improved!
+```move
+module moveos_std::object{
+    struct Object<T: key>{
+        id: ObjectID,
+        owner: address,
+        value: T,
+    }
+}
+```
+
+The `Object` provides the following functions to manipulate an `Object`:
+
+| Object Functions                                        | Description                                                                                |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `object::new<T: key>(&mut TxContext,address,T): Object<T>` | Encapsulates `T` into an `Object` box, generates an `ObjectID` using `TxContext`, and returns `Object<T>` |
+| `object::borrow<T>(&Object<T>): &T`                        | Borrows an immutable reference to `T` from the `Object`                                 |
+| `object::borrow_mut<T>(&mut Object<T>): &mut T`            | Borrows a mutable reference to `T` from the `Object`                                     |
+| `object::transfer<T>(&mut Object<T>,address)`              | Transfers ownership of the `Object` to the specified `address`                           |
+| `object::unpack<T>(Object<T>): (ObjectID, address, T)`     | Unpacks the `Object<T>`                                                                 |
+
+These functions are restricted using `#[private_generics<T>]`, ensuring that only the module where `T` is defined can access these methods.
+
+Rooch Object is also an example of the [Hot Potato](https://examples.sui.io/patterns/hot-potato.html) pattern in Move. Object does not have any abilities, so it cannot be `drop`, `copy`, or `store`. It can only be handled by functions provided by `ObjectStorage`.
+
+`ObjectStorage` can be viewed as a special `Table` that uses `ObjectID` as the key and `Object<T>` as the value. It provides the following functions:
+
+| ObjectStorage Functions                                                       | Description                                          |
+| -----------------------------------------------------------------------------| ---------------------------------------------------- |
+| `object_storage::borrow<T: key>(&ObjectStorage,ObjectID): &Object<T>`         | Borrows a reference to `Object<T>` using `ObjectID`   |
+| `object_storage::borrow_mut<T: key>(&mut ObjectStorage,ObjectID): &mut Object<T>` | Borrows a mutable reference to `Object<T>` using `ObjectID` |
+| `object_storage::add<T: key>(&mut ObjectStorage,Object<T>)`                   | Adds `Object<T>` to `ObjectStorage`                   |
+| `object_storage::remove<T: key>(&mut ObjectStorage,ObjectID): Object<T>`      | Removes `Object<T>` associated with `ObjectID`, returns `Object<T>` |
+
+These functions are also restricted using `#[private_generics<T>]`, ensuring that only the module where `T` is defined can access these methods.
+
+### Comparison of Rooch Object, Sui Object, and Aptos Object
+
+1. Sui Object is a special `struct` that requires the `key` ability and the first field must be `UID`.
+2. Aptos Object is a special type of account where the `address` serves as the `ObjectID`.
+
+<Callout>
+TODO: This part of the document needs improvement.
 </Callout>
+
+### References
+
+1. [Rooch Object API document](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/object.md)
+2. [Rooch Object Source code](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/object.move)
+3. [Rooch ObjectStorage API document](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/object_storage.md)
+4. [Rooch ObjectStorage Source code](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/object_storage.move)
+5. [Sui Object](https://docs.sui.io/learn/objects)
+6. [Aptos Object](https://aptos.dev/standards/aptos-object/)
+7. [StorageAbstraction](../tech-highlights/storage_abstraction.en-US.md)
+8. [Hot Potato](https://examples.sui.io/patterns/hot-potato.html)

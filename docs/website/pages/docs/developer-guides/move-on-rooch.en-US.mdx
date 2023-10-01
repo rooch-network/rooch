@@ -16,7 +16,7 @@ Rooch currently has three built-in standard libraries, namely `MoveStdlib`, `Mov
 
 ## Private generics
 
-`#[private_generics(T)]` is a function annotation, which ensures that the function's generic parameter `T` can only be a type defined in the current module of the caller. The security model follows similar constraints to the Move storage instruction, but opens this capability to developers. This feature is the basic condition for the following features.
+`#[private_generics(T)]` is a function annotation that ensures that the function with this annotation can only be called within the module where `T` is defined. This annotation provides a similar constraint to Move's storage instructions, but it opens up this capability to developers. This feature is the basic condition for the following features.
 
 ### Storage abstraction
 
