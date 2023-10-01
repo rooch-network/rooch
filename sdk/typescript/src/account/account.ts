@@ -276,8 +276,6 @@ export class Account implements IAccount {
       ],
     )
 
-    console.log('isSessionKeyExpired result:', result)
-
     if (result && result.vm_status !== 'Executed') {
       throw new Error('view 0x3::session_key::is_expired_session_key fail')
     }

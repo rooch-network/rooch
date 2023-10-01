@@ -3,8 +3,15 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { IProvider } from './interface'
-import { FilteredProvider, ITransactionFilter, ITransactionFilterChain } from './filtered-provider'
-import { FunctionId, TypeTag, Arg, AnnotatedFunctionResultView, AnnotatedStateView, ListAnnotatedStateResultPageView } from '../types'
+import { FilteredProvider, ITransactionFilter } from './filtered-provider'
+import {
+  FunctionId,
+  TypeTag,
+  Arg,
+  AnnotatedFunctionResultView,
+  AnnotatedStateView,
+  ListAnnotatedStateResultPageView,
+} from '../types'
 
 const mockFilter: ITransactionFilter = {
   init: vi.fn(),
@@ -21,15 +28,23 @@ const mockProvider: IProvider = {
   getChainId: function (): number {
     throw new Error('Function not implemented.')
   },
-  executeViewFunction: function (funcId: FunctionId, tyArgs?: TypeTag[] | undefined, args?: Arg[] | undefined): Promise<AnnotatedFunctionResultView> {
+  executeViewFunction: function (
+    funcId: FunctionId,
+    tyArgs?: TypeTag[] | undefined,
+    args?: Arg[] | undefined,
+  ): Promise<AnnotatedFunctionResultView> {
     throw new Error('Function not implemented.')
   },
   getAnnotatedStates: function (accessPath: string): Promise<AnnotatedStateView | null[]> {
     throw new Error('Function not implemented.')
   },
-  listAnnotatedStates: function (access_path: string, cursor: Uint8Array | null, limit: number): Promise<ListAnnotatedStateResultPageView> {
+  listAnnotatedStates: function (
+    access_path: string,
+    cursor: Uint8Array | null,
+    limit: number,
+  ): Promise<ListAnnotatedStateResultPageView> {
     throw new Error('Function not implemented.')
-  }
+  },
 }
 
 const errorHandlingFilter: ITransactionFilter = {
@@ -62,12 +77,12 @@ describe('FilteredProvider', () => {
 
   it('should handle error correctly when sendRawTransaction throws error', async () => {
     mockProvider.sendRawTransaction = vi.fn(() => Promise.reject(new Error('mock error')))
-  
+
     const errorHandlingProvider = new FilteredProvider(mockProvider, [errorHandlingFilter])
-  
+
     const playload = new Uint8Array()
     const result = await errorHandlingProvider.sendRawTransaction(playload)
-  
+
     expect(mockProvider.sendRawTransaction).toHaveBeenCalledWith(playload)
     expect(result).toBe('errorHandledTransactionId')
   })
