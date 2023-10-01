@@ -20,6 +20,7 @@ import {
   StateResultPageView,
 } from '../types'
 import { functionIdToStirng, typeTagToString, encodeArg, toHexString } from '../utils'
+import { IProvider } from './interface'
 
 /**
  * Configuration options for the JsonRpcProvider. If the value of a field is not provided,
@@ -39,7 +40,7 @@ const DEFAULT_OPTIONS: RpcProviderOptions = {
   versionCacheTimeoutInSeconds: 600,
 }
 
-export class JsonRpcProvider {
+export class JsonRpcProvider implements IProvider {
   public chain: Chain
 
   private client: JsonRpcClient

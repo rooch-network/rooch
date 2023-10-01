@@ -74,8 +74,9 @@ module rooch_framework::session_key {
     public fun is_expired_session_key(ctx: &StorageContext, account_address: address, authentication_key: vector<u8>) : bool {
         let session_key_option = get_session_key(ctx, account_address, authentication_key);
         if (option::is_none(&session_key_option)){
-            return false
+            return true
         };
+
         let session_key = option::extract(&mut session_key_option);
         is_expired(ctx, &session_key)
     }
