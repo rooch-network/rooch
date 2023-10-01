@@ -222,6 +222,40 @@ describe('SDK', () => {
       expect(tx).toBeDefined()
     })
 
+    it('Check session key whether expired should be ok', async () => {
+      const provider = new JsonRpcProvider(LocalChain)
+
+      const kp = Ed25519Keypair.deriveKeypair(
+        'fiber tube acid imitate frost coffee choose crowd grass topple donkey submit',
+      )
+      const roochAddress = kp.getPublicKey().toRoochAddress()
+      const authorizer = new PrivateKeyAuth(kp)
+
+      const account = new Account(provider, roochAddress, authorizer)
+      expect(account).toBeDefined()
+
+      // create session account
+      const kp2 = Ed25519Keypair.generate()
+      await account.registerSessionKey(
+        kp2.getPublicKey().toRoochAddress(),
+        ['0x3::empty::empty'],
+        100,
+      )
+      const auth = new PrivateKeyAuth(kp2)
+      const sessionAccount = new Account(provider, roochAddress, auth)
+
+      // check session key expired
+      const expired = await account.isSessionKeyExpired(kp2.getPublicKey().toRoochAddress())
+      expect(expired).toBeFalsy()
+
+      // run function with sessoin key
+      const tx = await sessionAccount.runFunction('0x3::empty::empty', [], [], {
+        maxGasAmount: 100000000,
+      })
+
+      expect(tx).toBeDefined()
+    })
+
     it('Remove session key should be ok', async () => {
       const provider = new JsonRpcProvider(LocalChain)
 

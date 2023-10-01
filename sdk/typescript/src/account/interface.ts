@@ -81,4 +81,11 @@ export interface IAccount {
    * @param limit The page limit
    */
   querySessionKeys(cursor: Bytes | null, limit: number): Promise<IPage<ISessionKey>>
+
+  /**
+   * Check session key whether expired
+   *
+   * @param authKey the auth key
+   */
+  isSessionKeyExpired(authKey: AccountAddress): Promise<boolean>
 }
