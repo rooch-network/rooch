@@ -8,11 +8,9 @@ The Object is a box style Object
 The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/sources/object.move#L75):
 1. The Object is a struct in Move
 2. The Object is a use case for the Hot Potato pattern in Move. Objects do not have any ability, so they cannot be drop, copy, or store, and can only be handled by ObjectStorage API after creation.
-More details about the Object can be found in [Storage Abstraction](https://github.com/rooch-network/rooch/blob/main/docs/design/storage_abstraction.md)
 
 
 -  [Struct `Object`](#0x2_object_Object)
--  [Constants](#@Constants_0)
 -  [Function `new`](#0x2_object_new)
 -  [Function `new_with_id`](#0x2_object_new_with_id)
 -  [Function `borrow`](#0x2_object_borrow)
@@ -70,21 +68,6 @@ The object can not be copied, droped, only can be consumed by ObjectStorage API.
 
 
 </details>
-
-<a name="@Constants_0"></a>
-
-## Constants
-
-
-<a name="0x2_object_ErrorInvalidAccess"></a>
-
-Invalid access of object, the object is not owned by the signer or the object is not shared or immutable
-
-
-<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorInvalidAccess">ErrorInvalidAccess</a>: u64 = 0;
-</code></pre>
-
-
 
 <a name="0x2_object_new"></a>
 
@@ -266,6 +249,7 @@ Transfer object to recipient
 
 ## Function `unpack`
 
+Unpack the object, return the id, owner, and value
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_unpack">unpack</a>&lt;T&gt;(obj: <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): (<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, <b>address</b>, T)

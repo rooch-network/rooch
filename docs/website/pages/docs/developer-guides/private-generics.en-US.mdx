@@ -1,0 +1,33 @@
+# Private Generics
+
+The `#[private_generics(T)]` function annotation ensures that functions annotated with it can only be called from within the module where `T` is defined. This annotation provides similar constraints to Move's storage instructions, but it grants this capability to developers.
+
+This annotation is particularly useful for developing foundational contract libraries. It ensures that functions with this annotation cannot be called arbitrarily by users and can only be called through higher-level contract functions.
+
+Let's take `AccountStorage` as an example. We want to store a user's resources within their storage space, but at the same time, we want to restrict a contract to only operate on the resource types it defines and prevent it from operating on resource types defined by other contracts. This is where the `#[private_generics(T)]` annotation comes into play.
+
+```move
+module moveos_std::account_storage{
+    #[private_generics(T)]
+    public fun global_borrow<T: key>(ctx: &StorageContext, account: address): &T;
+}
+```
+
+In the above example, we define a `global_borrow` function with a private generic `T` which can only be used within the module where `T` is defined. Other modules cannot use this function.
+
+### How it works
+
+`#[private_generics(T)]` is implemented based on Move's verifier, which checks the validity of function calls at compile-time. If an incorrect call is detected, it will result in an error. Additionally, the validity of function calls is checked during contract deployment.
+
+<Callout>
+TODO: This part of the document needs improvement.
+</Callout>
+
+### References
+
+1. The `#[private_generics(T)]` annotation is used in the following modules, which can serve as references:
+   - [moveos_std::account_storage](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/account_storage.move)
+   - [moveos_std::object_storage](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/object_storage.move)
+   - [moveos_std::signer](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/signer.move)
+   - [rooch_framework::coin](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/coin.move)
+2. [Understanding Private Generics Functions in one article](../blog/read-private-generics-in-one-article.md)

@@ -3,7 +3,6 @@
 /// The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/sources/object.move#L75):
 /// 1. The Object is a struct in Move
 /// 2. The Object is a use case for the Hot Potato pattern in Move. Objects do not have any ability, so they cannot be drop, copy, or store, and can only be handled by ObjectStorage API after creation.
-/// More details about the Object can be found in [Storage Abstraction](https://github.com/rooch-network/rooch/blob/main/docs/design/storage_abstraction.md)
 module moveos_std::object {
     use moveos_std::tx_context::{Self, TxContext};
     use std::debug;
@@ -11,18 +10,14 @@ module moveos_std::object {
 
     friend moveos_std::account_storage;
     friend moveos_std::event;
-
-    /// Invalid access of object, the object is not owned by the signer or the object is not shared or immutable
-    const ErrorInvalidAccess: u64 = 0;
    
     /// Box style object
     /// The object can not be copied, droped, only can be consumed by ObjectStorage API.
     struct Object<T> {
+        // The object id
         id: ObjectID,
+        // The owner of the object
         owner: address,
-        //TODO define shared and immutable
-        //shared: bool,
-        //immutable: bool,
         // The value must be the last field
         value: T,
     }
@@ -43,7 +38,7 @@ module moveos_std::object {
     }
 
     #[private_generics(T)]
-    //TODO should this require private generic?
+    // Borrow the object value
     public fun borrow<T>(self: &Object<T>): &T {
         &self.value
     }
@@ -69,6 +64,7 @@ module moveos_std::object {
     }
 
     #[private_generics(T)]
+    /// Unpack the object, return the id, owner, and value
     public fun unpack<T>(obj: Object<T>): (ObjectID, address, T) {
         let Object{id, owner, value} = obj;
         (id, owner, value)
