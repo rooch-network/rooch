@@ -1,5 +1,7 @@
 # Private Generics
 
+import { Callout, FileTree } from 'nextra/components'
+
 The `#[private_generics(T)]` function annotation ensures that functions annotated with it can only be called from within the module where `T` is defined. This annotation provides similar constraints to Move's storage instructions, but it grants this capability to developers.
 
 This annotation is particularly useful for developing foundational contract libraries. It ensures that functions with this annotation cannot be called arbitrarily by users and can only be called through higher-level contract functions.

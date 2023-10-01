@@ -1,5 +1,7 @@
 # Rooch Object
 
+import { Callout, FileTree } from 'nextra/components'
+
 In Rooch, the `Object` follows a box-like pattern. It acts as a container with a globally unique ID, enclosing a type `T` as an Object.
 
 ```move
@@ -24,7 +26,7 @@ The `Object` provides the following functions to manipulate an `Object`:
 
 These functions are restricted using `#[private_generics<T>]`, ensuring that only the module where `T` is defined can access these methods.
 
-Rooch Object is also an example of the [Hot Potato](https://examples.sui.io/patterns/hot-potato.html) pattern in Move. Object does not have any abilities, so it cannot be dropped, copied, or stored. It can only be handled by functions provided by `ObjectStorage`.
+Rooch Object is also an example of the [Hot Potato](https://examples.sui.io/patterns/hot-potato.html) pattern in Move. Object does not have any abilities, so it cannot be `drop`, `copy`, or `store`. It can only be handled by functions provided by `ObjectStorage`.
 
 `ObjectStorage` can be viewed as a special `Table` that uses `ObjectID` as the key and `Object<T>` as the value. It provides the following functions:
 
