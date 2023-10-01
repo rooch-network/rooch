@@ -22,6 +22,10 @@ Feature: Rooch CLI integration tests
       Then cmd: "session-key create --sender-account {default} --scope 0x3::empty::empty"
       Then cmd: "move run --function 0x3::empty::empty --sender-account {default} --session-key {{$.session-key[-1].authentication_key}}"
 
+      # transaction
+      Then cmd: "transaction get-transactions-by-order --cursor 0 --limit 1"
+      Then cmd: "transaction get-transactions-by-hashes --hashes {{$.transaction[-1].data[0].execution_info.tx_hash}}"
+
       # event example
       Then cmd: "move publish -p ../../examples/event --sender-account {default} --named-addresses rooch_examples={default}"
       Then cmd: "move run --function {default}::event_test::emit_event --sender-account {default} --args 10u64"
@@ -141,13 +145,13 @@ Feature: Rooch CLI integration tests
       Then cmd: "move run --function {default}::fixed_supply_coin::faucet --sender-account {default}"
       #TODO change the argument `0x3` address to a user account
       Then cmd: "move run --function 0x3::coin::transfer_entry --type-args {default}::fixed_supply_coin::FSC --args address:0x3  --args 1u256 --sender-account {default}"
-    
+
       Then stop the server
 
   @serial
     Scenario: rpc test
       Given a server for rpc
-      Then cmd: "rpc request --method eth_getBalance --params \"0x1111111111111111111111111111111111111111\"" 
+      Then cmd: "rpc request --method eth_getBalance --params \"0x1111111111111111111111111111111111111111\""
       Then assert: "{{$.rpc[-1]}} == 0x56bc75e2d63100000"
 
       Then stop the server
