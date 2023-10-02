@@ -7,7 +7,7 @@ use cucumber::{given, then, World as _};
 use jpst::TemplateContext;
 use move_core_types::account_address::AccountAddress;
 use rooch::RoochCli;
-use rooch_config::{rooch_config_dir, RoochOpt};
+use rooch_config::{rooch_config_dir, RoochOpt, ServerOpt};
 use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_rpc_server::Service;
 use serde_json::Value;
@@ -23,7 +23,8 @@ struct World {
 async fn start_server(w: &mut World, _scenario: String) {
     let mut service = Service::new();
     let opt = RoochOpt::new_with_temp_store();
-    service.start(&opt).await.unwrap();
+    let server_opt = ServerOpt::new();
+    service.start(&opt, server_opt).await.unwrap();
 
     w.service = Some(service);
 }

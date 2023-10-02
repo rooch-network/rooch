@@ -39,7 +39,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[enum_dispatch(AccountKeystore)]
 pub enum Keystore<K: Ord, V> {
     File(FileBasedKeystore<K, V>),
@@ -1016,7 +1016,7 @@ impl
     }
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize, Debug)]
 pub struct FileBasedKeystore<K: Ord, V> {
     keystore: BaseKeyStore<K, V>,
     path: Option<PathBuf>,

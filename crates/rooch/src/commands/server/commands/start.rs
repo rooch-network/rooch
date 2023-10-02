@@ -44,31 +44,14 @@ impl CommandAction<()> for StartCommand {
             })?
         };
 
-        println!("Debug key_address {:?}", key_address);
-
-        let aa = "0xa9c2f2b534b403e1f58e787f8a2e6ac3a0aad63fa62a1199f44803cf362aa847";
-        let aa_address = RoochAddress::from_str(aa)?;
-        let aa_key_keypair = context
-            .client_config
-            .keystore
-            .get_key_pair_by_key_pair_type(&aa_address, KeyPairType::RoochKeyPairType)
-            .map_err(|e| RoochError::KeyAddressKeyPairDoesNotExistError(e.to_string()))?;
-        println!("Debug aa_key_keypair {:?}", aa_key_keypair);
-
         let key_keypair = context
             .client_config
             .keystore
             .get_key_pair_by_key_pair_type(&key_address, KeyPairType::RoochKeyPairType)
             .map_err(|e| RoochError::KeyAddressKeyPairDoesNotExistError(e.to_string()))?;
-        // .ok()
-        // .ok_or_else(|| RoochError::KeyAddressKeyPairDoesNotExistError)?;
-        println!("Debug key_keypair {:?}", key_keypair);
 
-        let mut key_keypairs = vec![];
         // Add sequencer, proposer and relayer keypair
-        key_keypairs.push(key_keypair.copy());
-        key_keypairs.push(key_keypair.copy());
-        key_keypairs.push(key_keypair.copy());
+        let key_keypairs = vec![key_keypair.copy(), key_keypair.copy(), key_keypair.copy()];
 
         let mut server_opt = ServerOpt::new();
         server_opt.key_keypairs = key_keypairs;

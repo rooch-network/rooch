@@ -87,8 +87,6 @@ pub struct RoochOpt {
     /// The address of the Rooch account to be use as key address
     #[clap(short = 'k', long = "key-address")]
     pub key_address: Option<String>,
-    // /// Sequencer, proposer and relayer keypair
-    // pub key_keypairs: Vec<RoochKeyPair>,
 }
 
 impl std::fmt::Display for RoochOpt {
@@ -110,7 +108,6 @@ impl RoochOpt {
             port: None,
             eth_rpc_url: None,
             key_address: None,
-            // key_keypairs: vec![],
         }
     }
 }

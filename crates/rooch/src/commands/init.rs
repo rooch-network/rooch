@@ -47,8 +47,58 @@ impl CommandAction<()> for Init {
             None => rooch_config_dir()?,
         };
 
-        // Rooch client config init
         let client_config_path = config_path.join(ROOCH_CLIENT_CONFIG);
+
+        let keystore_path = client_config_path
+            .parent()
+            .unwrap_or(&rooch_config_dir()?)
+            .join(ROOCH_KEYSTORE_FILENAME);
+
+        let keystore_result = FileBasedKeystore::<RoochAddress, RoochKeyPair>::new(&keystore_path);
+        let mut keystore = match keystore_result {
+            Ok(file_keystore) => Keystore::File(file_keystore),
+            Err(error) => return Err(RoochError::GenerateKeyError(error.to_string())),
+        };
+
+        // Rooch server config init
+        let server_config_path = config_path.join(ROOCH_SERVER_CONFIG);
+        if !server_config_path.exists() {
+            let key_address = if self.key_address.is_none() {
+                let (new_address, phrase, key_pair_type) =
+                    keystore.generate_and_add_new_key(KeyPairType::RoochKeyPairType, None, None)?;
+                println!(
+                    "Generated key keypair for address with type {:?} [{new_address}]",
+                    key_pair_type.type_of()
+                );
+                println!("Secret Recovery Phrase : [{phrase}]");
+                new_address
+            } else {
+                RoochAddress::from_str(self.key_address.unwrap().as_str()).map_err(|e| {
+                    RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
+                })?
+            };
+
+            let server_config = ServerConfig {
+                key_address: Some(key_address),
+                ..Default::default()
+            };
+
+            server_config
+                .persisted(server_config_path.as_path())
+                .save()?;
+
+            println!(
+                "Rooch server config file generated at {}",
+                server_config_path.display()
+            );
+        } else {
+            println!(
+                "Rooch server config file already exists at {}",
+                server_config_path.display()
+            );
+        }
+
+        // Rooch client config init
         // Prompt user for connect to devnet fullnode if config does not exist.
         if !client_config_path.exists() {
             let env = match std::env::var_os("ROOCH_CONFIG_WITH_RPC_URL") {
@@ -107,18 +157,6 @@ impl CommandAction<()> for Init {
             };
 
             if let Some(env) = env {
-                let keystore_path = client_config_path
-                    .parent()
-                    .unwrap_or(&rooch_config_dir()?)
-                    .join(ROOCH_KEYSTORE_FILENAME);
-
-                let keystore_result =
-                    FileBasedKeystore::<RoochAddress, RoochKeyPair>::new(&keystore_path);
-                let mut keystore = match keystore_result {
-                    Ok(file_keystore) => Keystore::File(file_keystore),
-                    Err(error) => return Err(RoochError::GenerateKeyError(error.to_string())),
-                };
-
                 let (new_address, phrase, key_pair_type) =
                     keystore.generate_and_add_new_key(KeyPairType::RoochKeyPairType, None, None)?;
                 println!(
@@ -147,54 +185,6 @@ impl CommandAction<()> for Init {
             println!(
                 "Rooch client config file already exists at {}",
                 client_config_path.display()
-            );
-        }
-
-        // Rooch server config init
-        let server_config_path = config_path.join(ROOCH_SERVER_CONFIG);
-        if !server_config_path.exists() {
-            let key_address = if self.key_address.is_none() {
-                // server config use the same key store file with client config
-                let keystore_path = client_config_path
-                    .parent()
-                    .unwrap_or(&rooch_config_dir()?)
-                    .join(ROOCH_KEYSTORE_FILENAME);
-
-                let keystore_result =
-                    FileBasedKeystore::<RoochAddress, RoochKeyPair>::new(&keystore_path);
-                let mut keystore = match keystore_result {
-                    Ok(file_keystore) => Keystore::File(file_keystore),
-                    Err(error) => return Err(RoochError::GenerateKeyError(error.to_string())),
-                };
-
-                let (new_address, phrase, key_pair_type) =
-                    keystore.generate_and_add_new_key(KeyPairType::RoochKeyPairType, None, None)?;
-                println!(
-                    "Generated key keypair for address with type {:?} [{new_address}]",
-                    key_pair_type.type_of()
-                );
-                println!("Secret Recovery Phrase : [{phrase}]");
-                new_address
-            } else {
-                RoochAddress::from_str(self.key_address.unwrap().as_str()).map_err(|e| {
-                    RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
-                })?
-            };
-
-            let mut server_config = ServerConfig::default();
-            server_config.key_address = Some(key_address);
-            server_config
-                .persisted(server_config_path.as_path())
-                .save()?;
-
-            println!(
-                "Rooch server config file generated at {}",
-                server_config_path.display()
-            );
-        } else {
-            println!(
-                "Rooch server config file already exists at {}",
-                server_config_path.display()
             );
         }
 

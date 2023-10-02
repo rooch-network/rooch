@@ -22,6 +22,8 @@ use rooch_config::store_config::StoreConfig;
 use rooch_config::{BaseConfig, RoochOpt, ServerOpt};
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
+use rooch_key::key_derive::generate_new_key_pair;
+use rooch_key::keypair::KeyPairType;
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
 use rooch_proposer::proxy::ProposerProxy;
@@ -31,6 +33,8 @@ use rooch_rpc_api::api::RoochRpcModule;
 use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
+use rooch_types::address::RoochAddress;
+use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{GenesisError, RoochError};
 use serde_json::json;
 use std::env;
@@ -41,9 +45,6 @@ use std::time::Duration;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::info;
-// use rooch_key::key_derive::generate_new_key_pair;
-// use rooch_key::keypair::KeyPairType;
-// use rooch_types::address::RoochAddress;
 
 pub mod server;
 pub mod service;
@@ -175,18 +176,26 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     .await?;
     let executor_proxy = ExecutorProxy::new(executor.into());
 
-    // Init sequencer
-    //TODO load from config
-    // let (_, kp, _, _) = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
-    //     KeyPairType::RoochKeyPairType,
-    //     None,
-    //     None,
-    // )?;
-    // if opt.key_keypair.is_none() {
-    //     return Err(Error::from(RoochError::KeyAddressKeyPairDoesNotExistError));
-    //     // return Err(RoochError::KeyAddressKeyPairDoesNotExistError);
-    // }
+    // Check for key pairs
+    if server_opt.key_keypairs.is_empty() {
+        // only for test, generate test key pairs
+        if chain_id_opt.is_test_or_dev_or_local() {
+            let (_, key_keypair, _, _) = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
+                KeyPairType::RoochKeyPairType,
+                None,
+                None,
+            )?;
+            server_opt.key_keypairs =
+                vec![key_keypair.copy(), key_keypair.copy(), key_keypair.copy()];
+        } else {
+            return Err(Error::from(RoochError::KeyAddressKeyPairDoesNotExistError(
+                "".to_string(),
+            )));
+        }
+    }
     assert_eq!(server_opt.key_keypairs.len(), 3);
+
+    // Init sequencer
     let sequencer_keypair = server_opt.key_keypairs.pop();
     if sequencer_keypair.is_none() {
         return Err(Error::from(RoochError::KeyAddressKeyPairDoesNotExistError(
@@ -199,11 +208,6 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
 
     // Init proposer
-    // let (_, kp, _, _) = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
-    //     KeyPairType::RoochKeyPairType,
-    //     None,
-    //     None,
-    // )?;
     let proposer_keypair = server_opt.key_keypairs.pop();
     if proposer_keypair.is_none() {
         return Err(Error::from(RoochError::KeyAddressKeyPairDoesNotExistError(
@@ -234,12 +238,6 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     let aggregate_service = AggregateService::new(rpc_service.clone());
 
     if let Some(eth_rpc_url) = &opt.eth_rpc_url {
-        //TODO load from config
-        // let (_, kp, _, _) = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
-        //     KeyPairType::RoochKeyPairType,
-        //     None,
-        //     None,
-        // )?;
         let relayer_keypair = server_opt.key_keypairs.pop();
         if relayer_keypair.is_none() {
             return Err(Error::from(RoochError::KeyAddressKeyPairDoesNotExistError(
