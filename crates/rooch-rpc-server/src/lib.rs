@@ -177,45 +177,37 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     let executor_proxy = ExecutorProxy::new(executor.into());
 
     // Check for key pairs
-    if server_opt.key_keypairs.is_empty() {
-        // only for test, generate test key pairs
+    if server_opt.sequencer_keypair.is_none()
+        || server_opt.proposer_keypair.is_none()
+        || server_opt.relayer_keypair.is_none()
+    {
+        // only for integration test, generate test key pairs
         if chain_id_opt.is_test_or_dev_or_local() {
             let (_, key_keypair, _, _) = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
                 KeyPairType::RoochKeyPairType,
                 None,
                 None,
             )?;
-            server_opt.key_keypairs =
-                vec![key_keypair.copy(), key_keypair.copy(), key_keypair.copy()];
+            server_opt.sequencer_keypair = Some(key_keypair.copy());
+            server_opt.proposer_keypair = Some(key_keypair.copy());
+            server_opt.relayer_keypair = Some(key_keypair.copy());
         } else {
             return Err(Error::from(RoochError::KeyAddressKeyPairDoesNotExistError(
                 "".to_string(),
             )));
         }
     }
-    assert_eq!(server_opt.key_keypairs.len(), 3);
 
     // Init sequencer
-    let sequencer_keypair = server_opt.key_keypairs.pop();
-    if sequencer_keypair.is_none() {
-        return Err(Error::from(RoochError::KeyAddressKeyPairDoesNotExistError(
-            "".to_string(),
-        )));
-    }
-    let sequencer = SequencerActor::new(sequencer_keypair.unwrap(), rooch_store, is_genesis)?
+    let sequencer_keypair = server_opt.sequencer_keypair.unwrap();
+    let sequencer = SequencerActor::new(sequencer_keypair, rooch_store, is_genesis)?
         .into_actor(Some("Sequencer"), &actor_system)
         .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
 
     // Init proposer
-    let proposer_keypair = server_opt.key_keypairs.pop();
-    if proposer_keypair.is_none() {
-        return Err(Error::from(RoochError::KeyAddressKeyPairDoesNotExistError(
-            "".to_string(),
-        )));
-    }
-
-    let proposer = ProposerActor::new(proposer_keypair.unwrap())
+    let proposer_keypair = server_opt.proposer_keypair.unwrap();
+    let proposer = ProposerActor::new(proposer_keypair)
         .into_actor(Some("Proposer"), &actor_system)
         .await?;
     let proposer_proxy = ProposerProxy::new(proposer.clone().into());
@@ -238,13 +230,8 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     let aggregate_service = AggregateService::new(rpc_service.clone());
 
     if let Some(eth_rpc_url) = &opt.eth_rpc_url {
-        let relayer_keypair = server_opt.key_keypairs.pop();
-        if relayer_keypair.is_none() {
-            return Err(Error::from(RoochError::KeyAddressKeyPairDoesNotExistError(
-                "".to_string(),
-            )));
-        }
-        let relayer = RelayerActor::new(relayer_keypair.unwrap(), eth_rpc_url, rpc_service.clone())
+        let relayer_keypair = server_opt.relayer_keypair.unwrap();
+        let relayer = RelayerActor::new(relayer_keypair, eth_rpc_url, rpc_service.clone())
             .await?
             .into_actor(Some("Relayer"), &actor_system)
             .await?;

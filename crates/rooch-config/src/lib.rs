@@ -161,7 +161,9 @@ pub trait ConfigModule: Sized {
 #[derive(Debug, Parser, Default, Serialize, Deserialize)]
 pub struct ServerOpt {
     /// Sequencer, proposer and relayer keypair
-    pub key_keypairs: Vec<RoochKeyPair>,
+    pub sequencer_keypair: Option<RoochKeyPair>,
+    pub proposer_keypair: Option<RoochKeyPair>,
+    pub relayer_keypair: Option<RoochKeyPair>,
 }
 
 impl std::fmt::Display for ServerOpt {
@@ -177,7 +179,9 @@ impl std::fmt::Display for ServerOpt {
 impl ServerOpt {
     pub fn new() -> Self {
         ServerOpt {
-            key_keypairs: vec![],
+            sequencer_keypair: None,
+            proposer_keypair: None,
+            relayer_keypair: None,
         }
     }
 }

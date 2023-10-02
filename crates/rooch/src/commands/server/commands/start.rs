@@ -50,11 +50,11 @@ impl CommandAction<()> for StartCommand {
             .get_key_pair_by_key_pair_type(&key_address, KeyPairType::RoochKeyPairType)
             .map_err(|e| RoochError::KeyAddressKeyPairDoesNotExistError(e.to_string()))?;
 
-        // Add sequencer, proposer and relayer keypair
-        let key_keypairs = vec![key_keypair.copy(), key_keypair.copy(), key_keypair.copy()];
-
+        // Construct sequencer, proposer and relayer keypair
         let mut server_opt = ServerOpt::new();
-        server_opt.key_keypairs = key_keypairs;
+        server_opt.sequencer_keypair = Some(key_keypair.copy());
+        server_opt.proposer_keypair = Some(key_keypair.copy());
+        server_opt.relayer_keypair = Some(key_keypair.copy());
 
         let mut service = Service::new();
         service
