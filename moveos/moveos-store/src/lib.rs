@@ -303,4 +303,8 @@ impl StateResolver for MoveOSStore {
     ) -> std::result::Result<Vec<Option<(Vec<u8>, State)>>, Error> {
         self.statedb.resolve_list_state(handle, cursor, limit)
     }
+
+    fn resolve_size(&self, handle: &ObjectID) -> Result<u64, anyhow::Error> {
+        self.statedb.resolve_size(handle)
+    }
 }

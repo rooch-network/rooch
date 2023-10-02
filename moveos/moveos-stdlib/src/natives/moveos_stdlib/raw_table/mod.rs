@@ -178,6 +178,7 @@ pub struct Table {
     handle: ObjectID,
     key_layout: MoveTypeLayout,
     content: BTreeMap<Vec<u8>, TableRuntimeValue>,
+    size_increment: i64,
 }
 
 // =========================================================================================
@@ -210,6 +211,7 @@ impl TableData {
                     handle,
                     key_layout,
                     content: Default::default(),
+                    size_increment: 0,
                 };
                 if log::log_enabled!(log::Level::Trace) {
                     let key_type = type_to_type_tag(context, key_ty)?;
@@ -232,6 +234,7 @@ impl TableData {
                     handle,
                     key_layout,
                     content: Default::default(),
+                    size_increment: 0,
                 };
                 e.insert(table)
             }
@@ -354,13 +357,15 @@ impl Table {
         ObjectID,
         MoveTypeLayout,
         BTreeMap<Vec<u8>, TableRuntimeValue>,
+        i64,
     ) {
         let Table {
             handle,
             key_layout,
             content,
+            size_increment,
         } = self;
-        (handle, key_layout, content)
+        (handle, key_layout, content, size_increment)
     }
 
     pub fn key_layout(&self) -> &MoveTypeLayout {
@@ -470,7 +475,10 @@ fn native_add_box(
     let value_layout = type_to_type_layout(context, &ty_args[1])?;
     let value_type = type_to_type_tag(context, &ty_args[1])?;
     match tv.move_to(val, value_layout, value_type) {
-        Ok(_) => Ok(NativeResult::ok(cost, smallvec![])),
+        Ok(_) => {
+            table.size_increment += 1;
+            Ok(NativeResult::ok(cost, smallvec![]))
+        }
         Err(_) => Ok(NativeResult::err(
             cost,
             moveos_types::move_std::error::already_exists(E_ALREADY_EXISTS),
@@ -629,7 +637,10 @@ fn native_remove_box(
     cost += common_gas_params.calculate_load_cost(loaded);
     let value_type = type_to_type_tag(context, &ty_args[1])?;
     match tv.move_from(value_type) {
-        Ok(val) => Ok(NativeResult::ok(cost, smallvec![val])),
+        Ok(val) => {
+            table.size_increment -= 1;
+            Ok(NativeResult::ok(cost, smallvec![val]))
+        }
         Err(_) => Ok(NativeResult::err(
             cost,
             moveos_types::move_std::error::not_found(E_NOT_FOUND),
@@ -665,9 +676,21 @@ fn native_destroy_empty_box(
     let mut table_data = table_context.table_data.write();
 
     let handle = get_table_handle(pop_arg!(args, StructRef))?;
-    if table_data.tables.contains_key(&handle)
-        && !table_data.tables.get(&handle).unwrap().content.is_empty()
-    {
+
+    let remote_table_size = table_context
+        .resolver
+        .resolve_size(&handle)
+        .map_err(|err| {
+            partial_extension_error(format!("remote table resolver failure: {}", err))
+        })?;
+    let size_increment = if table_data.exist_table(&handle) {
+        table_data.borrow_table(&handle).unwrap().size_increment
+    } else {
+        0i64
+    };
+    let updated_table_size = (remote_table_size as i64) + size_increment;
+    debug_assert!(updated_table_size >= 0);
+    if updated_table_size > 0 {
         return Ok(NativeResult::err(
             gas_params.base,
             moveos_types::move_std::error::invalid_state(E_NOT_EMPTY),

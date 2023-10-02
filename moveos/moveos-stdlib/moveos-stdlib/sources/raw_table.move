@@ -21,6 +21,8 @@ module moveos_std::raw_table {
     struct TableInfo has key {
         // Table SMT root
         state_root: address,
+        // Table size, number of items
+        size: u64,
     }
     
     /// Add a new entry to the table. Aborts if an entry for this

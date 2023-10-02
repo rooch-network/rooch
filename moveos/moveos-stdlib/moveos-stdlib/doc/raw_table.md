@@ -51,6 +51,12 @@ This type table if for design internal global storage, so all functions are frie
 <dd>
 
 </dd>
+<dt>
+<code>size: u64</code>
+</dt>
+<dd>
+
+</dd>
 </dl>
 
 
