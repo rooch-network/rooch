@@ -21,6 +21,23 @@ export interface ITransactionFilter {
   destroy(): void
 }
 
+export type FilterFunc = (request: any, chain: ITransactionFilterChain) => Promise<any>
+
+export class FuncFilter implements ITransactionFilter {
+  private func: FilterFunc
+
+  public constructor(func: FilterFunc) {
+    this.func = func
+  }
+
+  init() {}
+  destroy(): void {}
+
+  async doFilter(request: any, chain: ITransactionFilterChain): Promise<any> {
+    return await this.func(request, chain)
+  }
+}
+
 export class FilteredProvider implements IProvider {
   private target: IProvider
   private filters: Array<ITransactionFilter>

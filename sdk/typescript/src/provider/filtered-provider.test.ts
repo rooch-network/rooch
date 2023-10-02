@@ -3,7 +3,13 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { IProvider } from './interface'
-import { FilteredProvider, ITransactionFilter } from './filtered-provider'
+import {
+  FilteredProvider,
+  ITransactionFilter,
+  ITransactionFilterChain,
+  FuncFilter,
+  FilterFunc,
+} from './filtered-provider'
 import {
   FunctionId,
   TypeTag,
@@ -47,16 +53,12 @@ const mockProvider: IProvider = {
   },
 }
 
-const errorHandlingFilter: ITransactionFilter = {
-  init: vi.fn(),
-  doFilter: async (request, chain) => {
-    try {
-      return await chain.doFilter(request)
-    } catch (error) {
-      return 'errorHandledTransactionId'
-    }
-  },
-  destroy: vi.fn(),
+const errorHandlingFilter: FilterFunc = async (request: any, chain: ITransactionFilterChain) => {
+  try {
+    return await chain.doFilter(request)
+  } catch (error) {
+    return 'errorHandledTransactionId'
+  }
 }
 
 describe('FilteredProvider', () => {
@@ -78,7 +80,9 @@ describe('FilteredProvider', () => {
   it('should handle error correctly when sendRawTransaction throws error', async () => {
     mockProvider.sendRawTransaction = vi.fn(() => Promise.reject(new Error('mock error')))
 
-    const errorHandlingProvider = new FilteredProvider(mockProvider, [errorHandlingFilter])
+    const errorHandlingProvider = new FilteredProvider(mockProvider, [
+      new FuncFilter(errorHandlingFilter),
+    ])
 
     const playload = new Uint8Array()
     const result = await errorHandlingProvider.sendRawTransaction(playload)
