@@ -72,7 +72,7 @@ export default function SessionKeyList() {
       headerName: 'Last Active Time',
       width: 200,
       valueGetter: (params: GridValueGetterParams) => {
-        return formatDate(params.row.last_active_time)
+        return formatDate(params.row.last_active_time * 1000)
       },
     },
     {
@@ -80,7 +80,7 @@ export default function SessionKeyList() {
       headerName: 'Create Time',
       width: 200,
       valueGetter: (params: GridValueGetterParams) => {
-        return formatDate(params.row.create_time)
+        return formatDate(params.row.create_time * 1000)
       },
     },
     {
