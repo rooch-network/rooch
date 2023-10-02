@@ -254,4 +254,32 @@ export class Account implements IAccount {
 
     return result
   }
+
+  /**
+   * Check session key whether expired
+   *
+   * @param authKey the auth key
+   */
+  async isSessionKeyExpired(authKey: AccountAddress): Promise<boolean> {
+    const result = await this.provider.executeViewFunction(
+      '0x3::session_key::is_expired_session_key',
+      [],
+      [
+        {
+          type: 'Address',
+          value: this.address,
+        },
+        {
+          type: { Vector: 'U8' },
+          value: addressToSeqNumber(authKey),
+        },
+      ],
+    )
+
+    if (result && result.vm_status !== 'Executed') {
+      throw new Error('view 0x3::session_key::is_expired_session_key fail')
+    }
+
+    return result.return_values![0].move_value as boolean
+  }
 }

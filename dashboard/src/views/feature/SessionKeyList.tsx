@@ -15,6 +15,11 @@ import CardHeader from '@mui/material/CardHeader'
 import CardContent from '@mui/material/CardContent'
 import Button from '@mui/material/Button'
 import Snackbar from '@mui/material/Snackbar'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogContentText from '@mui/material/DialogContentText'
+import DialogTitle from '@mui/material/DialogTitle'
 import {
   DataGrid,
   GridColDef,
@@ -83,11 +88,12 @@ export default function SessionKeyList() {
       headerName: 'Action',
       flex: 1,
       align: 'right',
+      headerAlign: 'right',
       renderCell: (params: GridRenderCellParams) => (
         <Button
           variant="contained"
           color="secondary"
-          onClick={() => handleRemove(params.row.authentication_key)}
+          onClick={() => showConfirmDeleteDialog(params.row.authentication_key)}
         >
           Remove
         </Button>
@@ -172,7 +178,16 @@ export default function SessionKeyList() {
     )
   }
 
-  const handleRemove = (authentication_key: string) => {
+  const handleConfirmRemove = (authentication_key: string | undefined) => {
+    setConfirmDeleteDialog({
+      open: false,
+      authKey: undefined,
+    })
+
+    if (!authentication_key) {
+      return false
+    }
+
     const defaultAccount = auth.defaultAccount
     if (!defaultAccount) {
       return false
@@ -188,6 +203,28 @@ export default function SessionKeyList() {
     )
 
     return false
+  }
+
+  const [confirmDeleteDialog, setConfirmDeleteDialog] = useState<{
+    open: boolean
+    authKey: string | undefined
+  }>({
+    open: false,
+    authKey: undefined,
+  })
+
+  const showConfirmDeleteDialog = (authKey: string) => {
+    setConfirmDeleteDialog({
+      open: true,
+      authKey: authKey,
+    })
+  }
+
+  const handleConfirmDeleteDialogClose = () => {
+    setConfirmDeleteDialog({
+      open: false,
+      authKey: undefined,
+    })
   }
 
   return (
@@ -220,6 +257,32 @@ export default function SessionKeyList() {
             message={error}
             anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
           />
+          <Dialog
+            open={confirmDeleteDialog.open}
+            onClose={handleConfirmDeleteDialogClose}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+          >
+            <DialogTitle id="alert-dialog-title">{'Confirm Deletion'}</DialogTitle>
+            <DialogContent>
+              <DialogContentText id="alert-dialog-description">
+                Are you sure you want to delete this Session Key? Once deleted, the user will be
+                logged out and this action cannot be undone.
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleConfirmDeleteDialogClose} color="primary">
+                Cancel
+              </Button>
+              <Button
+                onClick={() => handleConfirmRemove(confirmDeleteDialog.authKey)}
+                color="primary"
+                autoFocus
+              >
+                Confirm
+              </Button>
+            </DialogActions>
+          </Dialog>
         </CardContent>
       </Card>
     </Grid>

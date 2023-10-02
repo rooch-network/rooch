@@ -270,8 +270,9 @@ The lengths of the parts of the session's scope do not match.
 <pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_is_expired_session_key">is_expired_session_key</a>(ctx: &StorageContext, account_address: <b>address</b>, authentication_key: <a href="">vector</a>&lt;u8&gt;) : bool {
     <b>let</b> session_key_option = <a href="session_key.md#0x3_session_key_get_session_key">get_session_key</a>(ctx, account_address, authentication_key);
     <b>if</b> (<a href="_is_none">option::is_none</a>(&session_key_option)){
-        <b>return</b> <b>false</b>
+        <b>return</b> <b>true</b>
     };
+
     <b>let</b> <a href="session_key.md#0x3_session_key">session_key</a> = <a href="_extract">option::extract</a>(&<b>mut</b> session_key_option);
     <a href="session_key.md#0x3_session_key_is_expired">is_expired</a>(ctx, &<a href="session_key.md#0x3_session_key">session_key</a>)
 }
