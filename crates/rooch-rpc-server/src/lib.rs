@@ -6,7 +6,7 @@ use crate::server::rooch_server::RoochServer;
 use crate::service::aggregate_service::AggregateService;
 use crate::service::rpc_logger::RpcLogger;
 use crate::service::rpc_service::RpcService;
-use anyhow::Result;
+use anyhow::{Error, Result};
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::{system::ActorSystem, IntoActor};
 use hyper::header::HeaderValue;
@@ -19,11 +19,9 @@ use raw_store::rocks::RocksDB;
 use raw_store::StoreInstance;
 use rooch_config::server_config::ServerConfig;
 use rooch_config::store_config::StoreConfig;
-use rooch_config::{BaseConfig, RoochOpt};
+use rooch_config::{BaseConfig, RoochOpt, ServerOpt};
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
-use rooch_key::key_derive::generate_new_key_pair;
-use rooch_key::keypair::KeyPairType;
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
 use rooch_proposer::proxy::ProposerProxy;
@@ -33,9 +31,7 @@ use rooch_rpc_api::api::RoochRpcModule;
 use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
-use rooch_types::address::RoochAddress;
-use rooch_types::crypto::RoochKeyPair;
-use rooch_types::error::GenesisError;
+use rooch_types::error::{GenesisError, RoochError};
 use serde_json::json;
 use std::env;
 use std::fmt::Debug;
@@ -45,6 +41,9 @@ use std::time::Duration;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::info;
+// use rooch_key::key_derive::generate_new_key_pair;
+// use rooch_key::keypair::KeyPairType;
+// use rooch_types::address::RoochAddress;
 
 pub mod server;
 pub mod service;
@@ -86,8 +85,9 @@ impl Service {
         Self { handle: None }
     }
 
-    pub async fn start(&mut self, opt: &RoochOpt) -> Result<()> {
-        self.handle = Some(start_server(opt).await?);
+    // pub async fn start(&mut self, opt: &RoochOpt, key_keypair: Option<RoochKeyPair>) -> Result<()> {
+    pub async fn start(&mut self, opt: &RoochOpt, server_opt: ServerOpt) -> Result<()> {
+        self.handle = Some(start_server(opt, server_opt).await?);
         Ok(())
     }
 
@@ -122,8 +122,8 @@ impl RpcModuleBuilder {
 }
 
 // Start json-rpc server
-pub async fn start_server(opt: &RoochOpt) -> Result<ServerHandle> {
-    match run_start_server(opt).await {
+pub async fn start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<ServerHandle> {
+    match run_start_server(opt, server_opt).await {
         Ok(server_handle) => Ok(server_handle),
         Err(e) => match e.downcast::<GenesisError>() {
             Ok(e) => {
@@ -145,7 +145,7 @@ pub async fn start_server(opt: &RoochOpt) -> Result<ServerHandle> {
 }
 
 // run json-rpc server
-pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
+pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Result<ServerHandle> {
     // We may call `start_server` multiple times in testing scenarios
     // tracing_subscriber can only be inited once.
     let _ = tracing_subscriber::fmt::try_init();
@@ -177,23 +177,41 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
 
     // Init sequencer
     //TODO load from config
-    let (_, kp, _, _) = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
-        KeyPairType::RoochKeyPairType,
-        None,
-        None,
-    )?;
-    let sequencer = SequencerActor::new(kp, rooch_store, is_genesis)?
+    // let (_, kp, _, _) = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
+    //     KeyPairType::RoochKeyPairType,
+    //     None,
+    //     None,
+    // )?;
+    // if opt.key_keypair.is_none() {
+    //     return Err(Error::from(RoochError::KeyAddressKeyPairDoesNotExistError));
+    //     // return Err(RoochError::KeyAddressKeyPairDoesNotExistError);
+    // }
+    assert_eq!(server_opt.key_keypairs.len(), 3);
+    let sequencer_keypair = server_opt.key_keypairs.pop();
+    if sequencer_keypair.is_none() {
+        return Err(Error::from(RoochError::KeyAddressKeyPairDoesNotExistError(
+            "".to_string(),
+        )));
+    }
+    let sequencer = SequencerActor::new(sequencer_keypair.unwrap(), rooch_store, is_genesis)?
         .into_actor(Some("Sequencer"), &actor_system)
         .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
 
     // Init proposer
-    let (_, kp, _, _) = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
-        KeyPairType::RoochKeyPairType,
-        None,
-        None,
-    )?;
-    let proposer = ProposerActor::new(kp)
+    // let (_, kp, _, _) = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
+    //     KeyPairType::RoochKeyPairType,
+    //     None,
+    //     None,
+    // )?;
+    let proposer_keypair = server_opt.key_keypairs.pop();
+    if proposer_keypair.is_none() {
+        return Err(Error::from(RoochError::KeyAddressKeyPairDoesNotExistError(
+            "".to_string(),
+        )));
+    }
+
+    let proposer = ProposerActor::new(proposer_keypair.unwrap())
         .into_actor(Some("Proposer"), &actor_system)
         .await?;
     let proposer_proxy = ProposerProxy::new(proposer.clone().into());
@@ -217,12 +235,18 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
 
     if let Some(eth_rpc_url) = &opt.eth_rpc_url {
         //TODO load from config
-        let (_, kp, _, _) = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
-            KeyPairType::RoochKeyPairType,
-            None,
-            None,
-        )?;
-        let relayer = RelayerActor::new(kp, eth_rpc_url, rpc_service.clone())
+        // let (_, kp, _, _) = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
+        //     KeyPairType::RoochKeyPairType,
+        //     None,
+        //     None,
+        // )?;
+        let relayer_keypair = server_opt.key_keypairs.pop();
+        if relayer_keypair.is_none() {
+            return Err(Error::from(RoochError::KeyAddressKeyPairDoesNotExistError(
+                "".to_string(),
+            )));
+        }
+        let relayer = RelayerActor::new(relayer_keypair.unwrap(), eth_rpc_url, rpc_service.clone())
             .await?
             .into_actor(Some("Relayer"), &actor_system)
             .await?;

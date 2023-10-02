@@ -11,11 +11,11 @@ use clap::Parser;
 use moveos_config::{temp_dir, DataDirPath};
 use once_cell::sync::Lazy;
 use rooch_types::chain_id::RoochChainID;
+use rooch_types::crypto::RoochKeyPair;
 use serde::{Deserialize, Serialize};
 use std::fs::create_dir_all;
 use std::sync::Arc;
 use std::{fmt::Debug, path::Path, path::PathBuf};
-use rooch_types::address::RoochAddress;
 
 pub const ROOCH_DIR: &str = ".rooch";
 pub const ROOCH_CONFIR_DIR: &str = "rooch_config";
@@ -85,9 +85,10 @@ pub struct RoochOpt {
     pub eth_rpc_url: Option<String>,
 
     /// The address of the Rooch account to be use as key address
-    // #[clap(short = 'k', long = "key-address")]
-    // pub key_address: Option<String>,
+    #[clap(short = 'k', long = "key-address")]
     pub key_address: Option<String>,
+    // /// Sequencer, proposer and relayer keypair
+    // pub key_keypairs: Vec<RoochKeyPair>,
 }
 
 impl std::fmt::Display for RoochOpt {
@@ -109,6 +110,7 @@ impl RoochOpt {
             port: None,
             eth_rpc_url: None,
             key_address: None,
+            // key_keypairs: vec![],
         }
     }
 }
@@ -156,5 +158,29 @@ pub trait ConfigModule: Sized {
     /// Init the skip field or overwrite config by global command line option.
     fn merge_with_opt(&mut self, _opt: &RoochOpt, _base: Arc<BaseConfig>) -> Result<()> {
         Ok(())
+    }
+}
+
+#[derive(Debug, Parser, Default, Serialize, Deserialize)]
+pub struct ServerOpt {
+    /// Sequencer, proposer and relayer keypair
+    pub key_keypairs: Vec<RoochKeyPair>,
+}
+
+impl std::fmt::Display for ServerOpt {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self).map_err(|_e| std::fmt::Error)?
+        )
+    }
+}
+
+impl ServerOpt {
+    pub fn new() -> Self {
+        ServerOpt {
+            key_keypairs: vec![],
+        }
     }
 }

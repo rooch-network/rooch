@@ -104,8 +104,11 @@ pub enum RoochError {
     #[error("Use of disabled feature: {:?}", error)]
     UnsupportedFeatureError { error: String },
 
-    #[error("Rooch key address does not exist error:")]
-    KeyAddressDoesNotExistError(),
+    #[error("Rooch key address does not exist error")]
+    KeyAddressDoesNotExistError,
+
+    #[error("Rooch key address key pair does not exist error: {0}")]
+    KeyAddressKeyPairDoesNotExistError(String),
 }
 
 impl From<anyhow::Error> for RoochError {

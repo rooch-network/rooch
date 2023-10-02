@@ -35,7 +35,7 @@ pub struct Init {
 }
 
 #[async_trait]
-impl CommandAction<String> for Init {
+impl CommandAction<()> for Init {
     async fn execute(self) -> RoochResult<()> {
         let config_path = match self.context_options.config_dir {
             Some(v) => {
@@ -139,15 +139,15 @@ impl CommandAction<String> for Init {
                 .save()?;
             }
 
-            println!(format!(
+            println!(
                 "Rooch client config file generated at {}",
                 client_config_path.display()
-            ));
+            );
         } else {
-            println!(format!(
+            println!(
                 "Rooch client config file already exists at {}",
                 client_config_path.display()
-            ));
+            );
         }
 
         // Rooch server config init
@@ -173,11 +173,12 @@ impl CommandAction<String> for Init {
                     "Generated key keypair for address with type {:?} [{new_address}]",
                     key_pair_type.type_of()
                 );
+                println!("Secret Recovery Phrase : [{phrase}]");
                 new_address
             } else {
                 RoochAddress::from_str(self.key_address.unwrap().as_str()).map_err(|e| {
                     RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
-                })?;
+                })?
             };
 
             let mut server_config = ServerConfig::default();
@@ -186,15 +187,15 @@ impl CommandAction<String> for Init {
                 .persisted(server_config_path.as_path())
                 .save()?;
 
-            println!(format!(
+            println!(
                 "Rooch server config file generated at {}",
                 server_config_path.display()
-            ));
+            );
         } else {
-            println!(format!(
+            println!(
                 "Rooch server config file already exists at {}",
                 server_config_path.display()
-            ));
+            );
         }
 
         Ok(())

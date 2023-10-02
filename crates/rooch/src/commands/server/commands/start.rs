@@ -4,11 +4,14 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use move_core_types::account_address::AccountAddress;
-use rooch_config::RoochOpt;
+use rooch_config::{RoochOpt, ServerOpt};
+use rooch_key::keypair::KeyPairType;
+use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_server::Service;
+use rooch_types::address::RoochAddress;
 use rooch_types::chain_id::RoochChainID;
 use rooch_types::error::{RoochError, RoochResult};
+use std::str::FromStr;
 use tokio::signal::ctrl_c;
 #[cfg(unix)]
 use tokio::signal::unix::{signal, SignalKind};
@@ -27,20 +30,52 @@ pub struct StartCommand {
 #[async_trait]
 impl CommandAction<()> for StartCommand {
     async fn execute(mut self) -> RoochResult<()> {
-
         let mut context = self.context_options.build().await?;
         //load key address from server config
-        if self.opt.key_address.is_none() {
-            let load_key_address = context.server_config.key_address.map(|key| AccountAddress::from(key).to_hex_literal());
-            if load_key_address.is_none() {
-                return Err(RoochError::KeyAddressDoesNotExistError());
+        let key_address = if self.opt.key_address.is_none() {
+            let load_key_address_opt = context.server_config.key_address;
+            if load_key_address_opt.is_none() {
+                return Err(RoochError::KeyAddressDoesNotExistError);
             }
-            self.opt.key_address = self.opt.key_address;
-        }
+            load_key_address_opt.unwrap()
+        } else {
+            RoochAddress::from_str(self.opt.key_address.clone().unwrap().as_str()).map_err(|e| {
+                RoochError::CommandArgumentError(format!("Invalid Rooch key address String: {}", e))
+            })?
+        };
+
+        println!("Debug key_address {:?}", key_address);
+
+        let aa = "0xa9c2f2b534b403e1f58e787f8a2e6ac3a0aad63fa62a1199f44803cf362aa847";
+        let aa_address = RoochAddress::from_str(aa)?;
+        let aa_key_keypair = context
+            .client_config
+            .keystore
+            .get_key_pair_by_key_pair_type(&aa_address, KeyPairType::RoochKeyPairType)
+            .map_err(|e| RoochError::KeyAddressKeyPairDoesNotExistError(e.to_string()))?;
+        println!("Debug aa_key_keypair {:?}", aa_key_keypair);
+
+        let key_keypair = context
+            .client_config
+            .keystore
+            .get_key_pair_by_key_pair_type(&key_address, KeyPairType::RoochKeyPairType)
+            .map_err(|e| RoochError::KeyAddressKeyPairDoesNotExistError(e.to_string()))?;
+        // .ok()
+        // .ok_or_else(|| RoochError::KeyAddressKeyPairDoesNotExistError)?;
+        println!("Debug key_keypair {:?}", key_keypair);
+
+        let mut key_keypairs = vec![];
+        // Add sequencer, proposer and relayer keypair
+        key_keypairs.push(key_keypair.copy());
+        key_keypairs.push(key_keypair.copy());
+        key_keypairs.push(key_keypair.copy());
+
+        let mut server_opt = ServerOpt::new();
+        server_opt.key_keypairs = key_keypairs;
 
         let mut service = Service::new();
         service
-            .start(&self.opt.clone())
+            .start(&self.opt.clone(), server_opt)
             .await
             .map_err(RoochError::from)?;
 
