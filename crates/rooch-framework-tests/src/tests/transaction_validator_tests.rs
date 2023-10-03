@@ -10,12 +10,13 @@ use move_core_types::value::MoveValue;
 use move_core_types::vm_status::{AbortLocation, VMStatus};
 use moveos_types::move_types::FunctionId;
 use moveos_types::{module_binding::ModuleBinding, transaction::MoveAction};
-use rooch_key::keypair::KeyPairType;
+use rooch_key::keypair_type::KeyPairType;
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
 use rooch_types::address::{EthereumAddress, MultiChainAddress, RoochAddress};
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::framework::session_key::SessionKeyModule;
 use rooch_types::framework::timestamp::TimestampModule;
+use rooch_types::keypair_type::KeyPairType;
 use rooch_types::transaction::ethereum::EthereumTransactionData;
 use rooch_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, framework::empty::Empty};
 use rooch_types::{

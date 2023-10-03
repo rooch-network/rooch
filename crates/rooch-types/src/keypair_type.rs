@@ -5,10 +5,11 @@ use anyhow::Result;
 use clap::ArgEnum;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
-use rooch_types::error::RoochError;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumString;
+
+use crate::error::RoochError;
 
 #[derive(
     Clone,

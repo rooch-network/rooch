@@ -17,12 +17,11 @@ use rand::rngs::OsRng;
 use rooch_types::address::{EthereumAddress, RoochAddress};
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::RoochError;
+use rooch_types::key_struct::{EncryptionData, GenerateNewKeyPair, GeneratedKeyPair};
+use rooch_types::keypair_type::KeyPairType;
 use rooch_types::multichain_id::RoochMultiChainID;
-use serde::{Serialize, Deserialize};
 use slip10_ed25519::derive_ed25519_private_key;
 use std::string::String;
-
-use crate::keypair::KeyPairType;
 
 use chacha20poly1305::{
     aead::{Aead, KeyInit},
@@ -42,23 +41,6 @@ pub const DERVIATION_PATH_PURPOSE_ECDSA: u32 = 54;
 pub const DERVIATION_PATH_PURPOSE_SECP256R1: u32 = 74;
 
 type EncryptionKeyResult = Result<(Vec<u8>, Vec<u8>, Vec<u8>), RoochError>;
-#[derive(Debug, Serialize, Deserialize)]
-pub struct EncryptionData {
-    pub hashed_password: String,
-    pub nonce: Vec<u8>,
-    pub ciphertext: Vec<u8>,
-    pub tag: Vec<u8>,
-}
-pub struct GenerateNewKeyPair {
-    pub key_pair_type: KeyPairType,
-    pub encryption: EncryptionData,
-    pub mnemonic: String,
-}
-pub struct GeneratedKeyPair<Addr, KeyPair> {
-    pub address: Addr,
-    pub key_pair: KeyPair,
-    pub result: GenerateNewKeyPair,
-}
 
 pub trait CoinOperations<Addr, KeyPair, PrivKey> {
     fn derive_private_key_from_path(
@@ -118,7 +100,7 @@ impl CoinOperations<RoochAddress, RoochKeyPair, Ed25519PrivateKey> for KeyPairTy
         encryption: &EncryptionData,
         password: Option<String>,
     ) -> Result<RoochKeyPair, RoochError> {
-        let is_verified = verify_password(password.clone(), encryption.hashed_password)
+        let is_verified = verify_password(password.clone(), encryption.hashed_password.clone())
             .expect("Verification failed for password");
         if is_verified {
             let private_key = decrypt_private_key(
@@ -177,6 +159,12 @@ impl CoinOperations<RoochAddress, RoochKeyPair, Ed25519PrivateKey> for KeyPairTy
         let ciphertext = ciphertext_with_tag[..ciphertext_with_tag.len() - 16].to_vec();
 
         // Extract the tag (last 16 bytes)
+        // The tag is useless here for deriving the key pair in function derive_key_pair_from_ciphertext
+        // Because from_bytes needs exactly 32 bytes input to convert to the private keys
+        // Poly1305 is a one-time authenticator designed by D. J. Bernstein.
+        // Poly1305 takes a 32-byte one-time key and a message and produces a
+        // 16-byte tag. This tag is used to authenticate the message.
+        // https://www.rfc-editor.org/rfc/rfc7539
         let tag = {
             let start = ciphertext_with_tag.len() - 16;
             let end = ciphertext_with_tag.len();
@@ -243,7 +231,7 @@ impl CoinOperations<EthereumAddress, Secp256k1RecoverableKeyPair, Secp256k1Recov
         encryption: &EncryptionData,
         password: Option<String>,
     ) -> Result<Secp256k1RecoverableKeyPair, RoochError> {
-        let is_verified = verify_password(password.clone(), encryption.hashed_password)
+        let is_verified = verify_password(password.clone(), encryption.hashed_password.clone())
             .expect("Verification failed for password");
         if is_verified {
             let private_key = decrypt_private_key(
@@ -302,6 +290,12 @@ impl CoinOperations<EthereumAddress, Secp256k1RecoverableKeyPair, Secp256k1Recov
         let ciphertext = ciphertext_with_tag[..ciphertext_with_tag.len() - 16].to_vec();
 
         // Extract the tag (last 16 bytes)
+        // The tag is useless here for deriving the key pair in function derive_key_pair_from_ciphertext
+        // Because from_bytes needs exactly 32 bytes input to convert to the private keys
+        // Poly1305 is a one-time authenticator designed by D. J. Bernstein.
+        // Poly1305 takes a 32-byte one-time key and a message and produces a
+        // 16-byte tag. This tag is used to authenticate the message.
+        // https://www.rfc-editor.org/rfc/rfc7539
         let tag = {
             let start = ciphertext_with_tag.len() - 16;
             let end = ciphertext_with_tag.len();
@@ -505,4 +499,27 @@ fn parse_word_length(s: Option<String>) -> Result<MnemonicType, anyhow::Error> {
             _ => anyhow::bail!("Invalid word length"),
         },
     }
+}
+
+/// Get a rooch keypair from a random encryption data
+pub fn get_rooch_key_pair_from_red() -> (RoochAddress, EncryptionData) {
+    let random_encryption_data = EncryptionData::new_random();
+    let key_pair_type = KeyPairType::RoochKeyPairType;
+    let kp: RoochKeyPair = key_pair_type
+        .retrieve_key_pair(&random_encryption_data, Some("".to_owned()))
+        .unwrap();
+
+    ((&kp.public()).into(), random_encryption_data)
+}
+
+/// Get an ethereum keypair from a random encryption data
+pub fn get_ethereum_key_pair_from_red() -> (EthereumAddress, EncryptionData) {
+    let random_encryption_data = EncryptionData::new_random();
+    let key_pair_type = KeyPairType::EthereumKeyPairType;
+    let kp: Secp256k1RecoverableKeyPair = key_pair_type
+        .retrieve_key_pair(&random_encryption_data, Some("".to_owned()))
+        .unwrap();
+
+    let address = EthereumAddress::from(kp.public().clone());
+    (address, random_encryption_data)
 }

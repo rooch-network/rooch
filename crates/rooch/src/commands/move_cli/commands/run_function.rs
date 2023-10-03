@@ -5,11 +5,12 @@ use crate::cli_types::{ArgWithType, CommandAction, TransactionOptions, WalletCon
 use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
-use rooch_key::{keypair::KeyPairType, keystore::AccountKeystore};
+use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, TypeTagView};
 use rooch_types::{
     address::RoochAddress,
     error::{RoochError, RoochResult},
+    keypair_type::KeyPairType,
     transaction::rooch::RoochTransaction,
 };
 
@@ -52,6 +53,10 @@ pub struct RunFunction {
 
     #[clap(flatten)]
     tx_options: TransactionOptions,
+
+    /// Whether a password should be provided
+    #[clap(short = 'p', long = "password")]
+    password_required: Option<bool>,
 }
 
 #[async_trait]
@@ -68,6 +73,15 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                 "--sender-account required".to_owned(),
             ));
         }
+
+        let password = if self.password_required == Some(false) {
+            // Use an empty password if not required
+            String::new()
+        } else {
+            // Prompt for a password if required
+            rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
+        };
+        println!("Your password is {}", password);
 
         let context = self.context.build().await?;
         let sender: RoochAddress = context
@@ -97,7 +111,12 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
             }
             (None, None) => {
                 context
-                    .sign_and_execute(sender, action, KeyPairType::RoochKeyPairType)
+                    .sign_and_execute(
+                        sender,
+                        action,
+                        KeyPairType::RoochKeyPairType,
+                        Some(password),
+                    )
                     .await
             }
         }

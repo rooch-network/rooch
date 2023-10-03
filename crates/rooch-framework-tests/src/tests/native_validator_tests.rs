@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use moveos_types::transaction::MoveAction;
-use rooch_key::keypair::KeyPairType;
+use rooch_key::keypair_type::KeyPairType;
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
 use rooch_types::address::RoochAddress;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::framework::empty::Empty;
+use rooch_types::keypair_type::KeyPairType;
 use rooch_types::transaction::{rooch::RoochTransactionData, AbstractTransaction};
 
 use crate::binding_test;

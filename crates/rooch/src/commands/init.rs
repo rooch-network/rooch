@@ -19,6 +19,7 @@ use rooch_types::address::RoochAddress;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::RoochError;
 use rooch_types::error::RoochResult;
+use rooch_types::keypair_type::KeyPairType;
 use std::fs;
 
 /// Tool for init with rooch
@@ -177,10 +178,6 @@ impl CommandAction<()> for Init {
                 ClientConfig {
                     keystore_path,
                     envs: vec![env, dev_env],
-                    password: Some(result.result.encryption.hashed_password),
-                    nonce: Some(result.result.encryption.nonce.encode_hex()),
-                    ciphertext: Some(result.result.encryption.ciphertext.encode_hex()),
-                    tag: Some(result.result.encryption.tag.encode_hex()),
                     active_address: Some(result.address),
                     // make dev env as default env
                     active_env: Some(active_env_alias),

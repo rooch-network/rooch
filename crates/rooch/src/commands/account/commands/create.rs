@@ -40,7 +40,7 @@ impl CreateCommand {
             KeyPairType::RoochKeyPairType,
             None,
             None,
-            Some(password),
+            Some(password.clone()),
         )?;
 
         context.config.password = Some(result.result.encryption.hashed_password);

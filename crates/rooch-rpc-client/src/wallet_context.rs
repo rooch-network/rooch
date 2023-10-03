@@ -10,12 +10,12 @@ use moveos_types::transaction::MoveAction;
 use rooch_config::config::{Config, PersistedConfig};
 use rooch_config::server_config::ServerConfig;
 use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_SERVER_CONFIG};
-use rooch_key::keypair::KeyPairType;
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView};
 use rooch_types::address::RoochAddress;
 use rooch_types::crypto::{RoochKeyPair, Signature};
 use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::keypair_type::KeyPairType;
 use rooch_types::transaction::{
     authenticator::Authenticator,
     rooch::{RoochTransaction, RoochTransactionData},
@@ -132,10 +132,11 @@ impl WalletContext<RoochAddress, RoochKeyPair> {
         sender: RoochAddress,
         action: MoveAction,
         key_pair_type: KeyPairType,
+        password: Option<String>,
     ) -> RoochResult<RoochTransaction> {
         let kp = self
             .keystore
-            .get_key_pair_by_key_pair_type(&sender, key_pair_type)
+            .get_key_pair_by_type_password(&sender, key_pair_type, password)
             .ok()
             .ok_or_else(|| {
                 RoochError::SignMessageError(format!("Cannot find key for address: [{sender}]"))
@@ -144,7 +145,7 @@ impl WalletContext<RoochAddress, RoochKeyPair> {
         match key_pair_type {
             KeyPairType::RoochKeyPairType => {
                 let tx_data = self.build_rooch_tx_data(sender, action).await?;
-                let signature = Signature::new_hashed(tx_data.hash().as_bytes(), kp);
+                let signature = Signature::new_hashed(tx_data.hash().as_bytes(), &kp);
                 Ok(RoochTransaction::new(
                     tx_data,
                     Authenticator::rooch(signature),
@@ -172,8 +173,9 @@ impl WalletContext<RoochAddress, RoochKeyPair> {
         sender: RoochAddress,
         action: MoveAction,
         key_pair_type: KeyPairType,
+        password: Option<String>,
     ) -> RoochResult<ExecuteTransactionResponseView> {
-        let tx = self.sign(sender, action, key_pair_type).await?;
+        let tx = self.sign(sender, action, key_pair_type, password).await?;
         self.execute(tx).await
     }
 

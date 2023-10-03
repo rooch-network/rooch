@@ -6,8 +6,11 @@ use hex::ToHex;
 use std::fmt::Debug;
 
 use async_trait::async_trait;
-use rooch_key::{keypair::KeyPairType, keystore::AccountKeystore};
-use rooch_types::error::{RoochError, RoochResult};
+use rooch_key::keystore::AccountKeystore;
+use rooch_types::{
+    error::{RoochError, RoochResult},
+    keypair_type::KeyPairType,
+};
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
 

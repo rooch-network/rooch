@@ -4,12 +4,13 @@
 use clap::Parser;
 use hex::ToHex;
 use move_core_types::account_address::AccountAddress;
-use rooch_key::{keypair::KeyPairType, keystore::AccountKeystore};
+use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_types::{
     address::RoochAddress,
     error::{RoochError, RoochResult},
     framework::native_validator::NativeValidatorModule,
+    keypair_type::KeyPairType,
 };
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
@@ -59,7 +60,7 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                 self.mnemonic_phrase,
                 KeyPairType::RoochKeyPairType,
                 None,
-                Some(password),
+                Some(password.clone()),
             )
             .map_err(|e| RoochError::UpdateAccountError(e.to_string()))?;
 
@@ -90,7 +91,12 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
 
         // Execute the Move call as a transaction
         let result = context
-            .sign_and_execute(existing_address, action, KeyPairType::RoochKeyPairType)
+            .sign_and_execute(
+                existing_address,
+                action,
+                KeyPairType::RoochKeyPairType,
+                Some(password),
+            )
             .await?;
         context.assert_execute_success(result)
     }

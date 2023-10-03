@@ -4,10 +4,11 @@
 use ethers::types::{Bytes, U256};
 use fastcrypto::secp256k1::recoverable::Secp256k1RecoverableKeyPair;
 use moveos_types::transaction::MoveAction;
-use rooch_key::keypair::KeyPairType;
+use rooch_key::keypair_type::KeyPairType;
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
 use rooch_types::address::{EthereumAddress, MultiChainAddress};
 use rooch_types::framework::empty::Empty;
+use rooch_types::keypair_type::KeyPairType;
 use rooch_types::transaction::ethereum::EthereumTransactionData;
 use rooch_types::transaction::AbstractTransaction;
 
