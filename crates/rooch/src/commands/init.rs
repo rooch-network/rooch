@@ -19,7 +19,6 @@ use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::RoochError;
 use rooch_types::error::RoochResult;
 use std::fs;
-use std::str::FromStr;
 
 /// Tool for init with rooch
 #[derive(Parser)]
@@ -27,9 +26,6 @@ pub struct Init {
     /// Command line input of custom server URL
     #[clap(short = 's', long = "server-url")]
     pub server_url: Option<String>,
-    /// The address of the Rooch account to be set as key address
-    #[clap(short = 'k', long = "key-address")]
-    key_address: Option<String>,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
 }
@@ -63,25 +59,7 @@ impl CommandAction<()> for Init {
         // Rooch server config init
         let server_config_path = config_path.join(ROOCH_SERVER_CONFIG);
         if !server_config_path.exists() {
-            let key_address = if self.key_address.is_none() {
-                let (new_address, phrase, key_pair_type) =
-                    keystore.generate_and_add_new_key(KeyPairType::RoochKeyPairType, None, None)?;
-                println!(
-                    "Generated key keypair for address with type {:?} [{new_address}]",
-                    key_pair_type.type_of()
-                );
-                println!("Secret Recovery Phrase : [{phrase}]");
-                new_address
-            } else {
-                RoochAddress::from_str(self.key_address.unwrap().as_str()).map_err(|e| {
-                    RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
-                })?
-            };
-
-            let server_config = ServerConfig {
-                key_address: Some(key_address),
-                ..Default::default()
-            };
+            let server_config = ServerConfig::default();
 
             server_config
                 .persisted(server_config_path.as_path())

@@ -84,9 +84,15 @@ pub struct RoochOpt {
     #[clap(long)]
     pub eth_rpc_url: Option<String>,
 
-    /// The address of the Rooch account to be use as key address
-    #[clap(short = 'k', long = "key-address")]
-    pub key_address: Option<String>,
+    /// The address of the sequencer account
+    #[clap(long)]
+    pub sequencer_account: Option<String>,
+    /// The address of the proposer account
+    #[clap(long)]
+    pub proposer_account: Option<String>,
+    /// The address of the relayer account
+    #[clap(long)]
+    pub relayer_account: Option<String>,
 }
 
 impl std::fmt::Display for RoochOpt {
@@ -107,7 +113,9 @@ impl RoochOpt {
             store: StoreConfig::default(),
             port: None,
             eth_rpc_url: None,
-            key_address: None,
+            sequencer_account: None,
+            proposer_account: None,
+            relayer_account: None,
         }
     }
 }

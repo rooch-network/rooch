@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::config::Config;
-use rooch_types::address::RoochAddress;
 use serde::Deserialize;
 use serde::Serialize;
 use std::fmt::{Display, Formatter, Result, Write};
@@ -11,7 +10,6 @@ use std::fmt::{Display, Formatter, Result, Write};
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
-    pub key_address: Option<RoochAddress>,
     pub block_propose_duration_in_seconds: u16,
 }
 
@@ -48,7 +46,6 @@ impl Default for ServerConfig {
         Self {
             host: "0.0.0.0".to_string(),
             port: 50051,
-            key_address: None,
             block_propose_duration_in_seconds: 5,
         }
     }

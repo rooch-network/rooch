@@ -31,30 +31,78 @@ pub struct StartCommand {
 impl CommandAction<()> for StartCommand {
     async fn execute(mut self) -> RoochResult<()> {
         let mut context = self.context_options.build().await?;
-        //load key address from server config
-        let key_address = if self.opt.key_address.is_none() {
-            let load_key_address_opt = context.server_config.key_address;
-            if load_key_address_opt.is_none() {
-                return Err(RoochError::KeyAddressDoesNotExistError);
+        //Parse key pair from Rooch opt
+        let sequencer_account = if self.opt.sequencer_account.is_none() {
+            let active_address_opt = context.client_config.active_address;
+            if active_address_opt.is_none() {
+                return Err(RoochError::ActiveAddressDoesNotExistError);
             }
-            load_key_address_opt.unwrap()
+            active_address_opt.unwrap()
         } else {
-            RoochAddress::from_str(self.opt.key_address.clone().unwrap().as_str()).map_err(|e| {
-                RoochError::CommandArgumentError(format!("Invalid Rooch key address String: {}", e))
-            })?
+            RoochAddress::from_str(self.opt.sequencer_account.clone().unwrap().as_str()).map_err(
+                |e| {
+                    RoochError::CommandArgumentError(format!(
+                        "Invalid sequencer account address: {}",
+                        e
+                    ))
+                },
+            )?
         };
-
-        let key_keypair = context
+        let sequencer_keypair = context
             .client_config
             .keystore
-            .get_key_pair_by_key_pair_type(&key_address, KeyPairType::RoochKeyPairType)
-            .map_err(|e| RoochError::KeyAddressKeyPairDoesNotExistError(e.to_string()))?;
+            .get_key_pair_by_key_pair_type(&sequencer_account, KeyPairType::RoochKeyPairType)
+            .map_err(|e| RoochError::SequencerKeyPairDoesNotExistError(e.to_string()))?;
+
+        let proposer_account = if self.opt.proposer_account.is_none() {
+            let active_address_opt = context.client_config.active_address;
+            if active_address_opt.is_none() {
+                return Err(RoochError::ActiveAddressDoesNotExistError);
+            }
+            active_address_opt.unwrap()
+        } else {
+            RoochAddress::from_str(self.opt.proposer_account.clone().unwrap().as_str()).map_err(
+                |e| {
+                    RoochError::CommandArgumentError(format!(
+                        "Invalid proposer account address: {}",
+                        e
+                    ))
+                },
+            )?
+        };
+        let proposer_keypair = context
+            .client_config
+            .keystore
+            .get_key_pair_by_key_pair_type(&proposer_account, KeyPairType::RoochKeyPairType)
+            .map_err(|e| RoochError::ProposerKeyPairDoesNotExistError(e.to_string()))?;
+
+        let relayer_account = if self.opt.relayer_account.is_none() {
+            let active_address_opt = context.client_config.active_address;
+            if active_address_opt.is_none() {
+                return Err(RoochError::ActiveAddressDoesNotExistError);
+            }
+            active_address_opt.unwrap()
+        } else {
+            RoochAddress::from_str(self.opt.relayer_account.clone().unwrap().as_str()).map_err(
+                |e| {
+                    RoochError::CommandArgumentError(format!(
+                        "Invalid relayer account address: {}",
+                        e
+                    ))
+                },
+            )?
+        };
+        let relayer_keypair = context
+            .client_config
+            .keystore
+            .get_key_pair_by_key_pair_type(&relayer_account, KeyPairType::RoochKeyPairType)
+            .map_err(|e| RoochError::RelayerKeyPairDoesNotExistError(e.to_string()))?;
 
         // Construct sequencer, proposer and relayer keypair
         let mut server_opt = ServerOpt::new();
-        server_opt.sequencer_keypair = Some(key_keypair.copy());
-        server_opt.proposer_keypair = Some(key_keypair.copy());
-        server_opt.relayer_keypair = Some(key_keypair.copy());
+        server_opt.sequencer_keypair = Some(sequencer_keypair.copy());
+        server_opt.proposer_keypair = Some(proposer_keypair.copy());
+        server_opt.relayer_keypair = Some(relayer_keypair.copy());
 
         let mut service = Service::new();
         service

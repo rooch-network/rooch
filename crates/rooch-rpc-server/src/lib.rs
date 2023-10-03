@@ -192,14 +192,16 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
             server_opt.proposer_keypair = Some(key_keypair.copy());
             server_opt.relayer_keypair = Some(key_keypair.copy());
         } else {
-            return Err(Error::from(RoochError::KeyAddressKeyPairDoesNotExistError(
-                "".to_string(),
-            )));
+            return Err(Error::from(
+                RoochError::InvalidSequencerOrProposerOrRelayerKeyPair,
+            ));
         }
     }
 
     // Init sequencer
     let sequencer_keypair = server_opt.sequencer_keypair.unwrap();
+    let sequencer_account: RoochAddress = (&sequencer_keypair.public()).into();
+    info!("RPC Server sequencer address: {:?}", sequencer_account);
     let sequencer = SequencerActor::new(sequencer_keypair, rooch_store, is_genesis)?
         .into_actor(Some("Sequencer"), &actor_system)
         .await?;
@@ -207,6 +209,8 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
 
     // Init proposer
     let proposer_keypair = server_opt.proposer_keypair.unwrap();
+    let proposer_account: RoochAddress = (&proposer_keypair.public()).into();
+    info!("RPC Server proposer address: {:?}", proposer_account);
     let proposer = ProposerActor::new(proposer_keypair)
         .into_actor(Some("Proposer"), &actor_system)
         .await?;
@@ -231,6 +235,8 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
 
     if let Some(eth_rpc_url) = &opt.eth_rpc_url {
         let relayer_keypair = server_opt.relayer_keypair.unwrap();
+        let relayer_account: RoochAddress = (&relayer_keypair.public()).into();
+        info!("RPC Server relayer address: {:?}", relayer_account);
         let relayer = RelayerActor::new(relayer_keypair, eth_rpc_url, rpc_service.clone())
             .await?
             .into_actor(Some("Relayer"), &actor_system)
