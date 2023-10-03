@@ -14,6 +14,8 @@ import {
   ISessionKey,
   JsonRpcProvider,
   ListAnnotatedStateResultPageView,
+  parseRoochErrorSubStatus,
+  getErrorCategoryName,
 } from '@rooch/sdk'
 
 interface DataParams {
@@ -98,7 +100,19 @@ export const fetchData = createAsyncThunk('state/fetchData', async (params: Data
       }
     }
   } catch (e: any) {
-    params.dispatch(error(e.toString()))
+    const subStatus = parseRoochErrorSubStatus(e.message)
+    if (subStatus) {
+      params.dispatch(
+        error(
+          'list session keys fail, error category: ' +
+            getErrorCategoryName(subStatus.category) +
+            ', reason: ' +
+            subStatus.reason,
+        ),
+      )
+    } else {
+      params.dispatch(error(`list session keys fail, reason: ${e.message}`))
+    }
 
     setTimeout(() => {
       params.dispatch(error(null))
@@ -117,7 +131,19 @@ export const removeRow = createAsyncThunk('state/removeRow', async (params: Remo
 
     params.refresh()
   } catch (e: any) {
-    params.dispatch(error(e.toString()))
+    const subStatus = parseRoochErrorSubStatus(e.message)
+    if (subStatus) {
+      params.dispatch(
+        error(
+          'remove session key fail, error category: ' +
+            getErrorCategoryName(subStatus.category) +
+            ', reason: ' +
+            subStatus.reason,
+        ),
+      )
+    } else {
+      params.dispatch(error(`remove session key fail, reason: ${e.message}`))
+    }
 
     setTimeout(() => {
       params.dispatch(error(null))

@@ -14,6 +14,7 @@ import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
 import CardContent from '@mui/material/CardContent'
 import Button from '@mui/material/Button'
+import Alert from '@mui/material/Alert'
 import Snackbar from '@mui/material/Snackbar'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
@@ -253,10 +254,11 @@ export default function SessionKeyList() {
           />
           <Snackbar
             open={!!error}
-            autoHideDuration={5000}
-            message={error}
+            autoHideDuration={6000}
             anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-          />
+          >
+            <Alert severity="error">{error}</Alert>
+          </Snackbar>
           <Dialog
             open={confirmDeleteDialog.open}
             onClose={handleConfirmDeleteDialogClose}
