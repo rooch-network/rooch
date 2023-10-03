@@ -81,7 +81,6 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
             // Prompt for a password if required
             rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
         };
-        println!("Your password is {}", password);
 
         let context = self.context.build().await?;
         let sender: RoochAddress = context

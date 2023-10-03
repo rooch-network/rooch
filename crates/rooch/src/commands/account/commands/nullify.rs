@@ -43,7 +43,6 @@ impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
             // Prompt for a password if required
             rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
         };
-        println!("Your password is {}", password);
 
         let existing_address = RoochAddress::from_str(self.address.as_str()).map_err(|e| {
             RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))

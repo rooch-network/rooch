@@ -77,7 +77,6 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
             // Prompt for a password if required
             rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
         };
-        println!("Your password is {}", password);
 
         let package_path = self.move_args.package_path;
         let config = self.move_args.build_config;

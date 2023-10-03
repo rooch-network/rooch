@@ -42,7 +42,6 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
             // Prompt for a password if required
             rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
         };
-        println!("Your password is {}", password);
 
         let mut context = self.context_options.build().await?;
 

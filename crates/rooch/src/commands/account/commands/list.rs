@@ -31,7 +31,6 @@ impl CommandAction<()> for ListCommand {
             // Prompt for a password if required
             rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
         };
-        println!("Your password is {}", password);
 
         println!(
             "{0: ^66} | {1: ^48} | {2: ^16} | {3: ^12}",
