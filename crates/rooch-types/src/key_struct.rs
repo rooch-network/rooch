@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 use crate::keypair_type::KeyPairType;
@@ -25,11 +24,19 @@ pub struct GeneratedKeyPair<Addr, KeyPair> {
 }
 
 impl EncryptionData {
-    pub fn new_random() -> EncryptionData {
-        let hashed_password = generate_random_string(32);
-        let nonce = generate_random_bytes(12);
-        let ciphertext = generate_random_bytes(32);
-        let tag = generate_random_bytes(16);
+    pub fn new_for_test() -> EncryptionData {
+        // hashed password from "" string
+        let hashed_password = "$argon2id$v=19$m=19456,t=2,p=1$zc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc0$RysE6tj+Zu0lLhtKJIedVHrKn9FspulS3vLj/UPaVvQ".to_owned();
+        let nonce = [202, 31, 86, 27, 113, 29, 104, 237, 218, 110, 152, 145].to_vec();
+        let ciphertext = [
+            86, 255, 133, 44, 42, 219, 86, 153, 245, 192, 200, 93, 172, 157, 89, 211, 13, 158, 128,
+            21, 131, 19, 74, 203, 194, 159, 3, 164, 136, 125, 69, 221,
+        ]
+        .to_vec();
+        let tag = [
+            139, 112, 155, 74, 182, 134, 97, 95, 41, 119, 202, 17, 146, 40, 11, 75,
+        ]
+        .to_vec();
 
         EncryptionData {
             hashed_password,
@@ -38,18 +45,4 @@ impl EncryptionData {
             tag,
         }
     }
-}
-
-fn generate_random_string(length: usize) -> String {
-    let mut rng = rand::thread_rng();
-    let random_string: String = (0..length)
-        .map(|_| rng.gen_range(b'a'..=b'z') as char)
-        .collect();
-    random_string
-}
-
-fn generate_random_bytes(length: usize) -> Vec<u8> {
-    let mut rng = rand::thread_rng();
-    let random_bytes: Vec<u8> = (0..length).map(|_| rng.gen()).collect();
-    random_bytes
 }

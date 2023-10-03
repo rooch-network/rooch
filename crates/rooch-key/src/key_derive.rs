@@ -503,7 +503,7 @@ fn parse_word_length(s: Option<String>) -> Result<MnemonicType, anyhow::Error> {
 
 /// Get a rooch keypair from a random encryption data
 pub fn get_rooch_key_pair_from_red() -> (RoochAddress, EncryptionData) {
-    let random_encryption_data = EncryptionData::new_random();
+    let random_encryption_data = EncryptionData::new_for_test();
     let key_pair_type = KeyPairType::RoochKeyPairType;
     let kp: RoochKeyPair = key_pair_type
         .retrieve_key_pair(&random_encryption_data, Some("".to_owned()))
@@ -514,12 +514,13 @@ pub fn get_rooch_key_pair_from_red() -> (RoochAddress, EncryptionData) {
 
 /// Get an ethereum keypair from a random encryption data
 pub fn get_ethereum_key_pair_from_red() -> (EthereumAddress, EncryptionData) {
-    let random_encryption_data = EncryptionData::new_random();
+    let random_encryption_data = EncryptionData::new_for_test();
     let key_pair_type = KeyPairType::EthereumKeyPairType;
+
     let kp: Secp256k1RecoverableKeyPair = key_pair_type
         .retrieve_key_pair(&random_encryption_data, Some("".to_owned()))
         .unwrap();
-
     let address = EthereumAddress::from(kp.public().clone());
+
     (address, random_encryption_data)
 }

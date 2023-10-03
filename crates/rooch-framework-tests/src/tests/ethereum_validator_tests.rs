@@ -4,7 +4,6 @@
 use ethers::types::{Bytes, U256};
 use fastcrypto::secp256k1::recoverable::Secp256k1RecoverableKeyPair;
 use moveos_types::transaction::MoveAction;
-use rooch_key::keypair_type::KeyPairType;
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
 use rooch_types::address::{EthereumAddress, MultiChainAddress};
 use rooch_types::framework::empty::Empty;
@@ -25,14 +24,19 @@ fn test_validate() {
 
     let keystore =
         InMemKeystore::<EthereumAddress, Secp256k1RecoverableKeyPair>::new_insecure_for_tests(1);
-    let sender = keystore.addresses()[0];
+    let sender = keystore.addresses(Some("".to_owned()))[0];
     let sequence_number = U256::zero();
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
     let action_bytes =
         Bytes::try_from(bcs::to_bytes(&action).unwrap()).expect("Convert action to bytes failed.");
     let tx_data = EthereumTransactionData::new_for_test(sender, sequence_number, action_bytes);
     keystore
-        .sign_transaction(&sender, tx_data.clone(), KeyPairType::EthereumKeyPairType)
+        .sign_transaction(
+            &sender,
+            tx_data.clone(),
+            KeyPairType::EthereumKeyPairType,
+            Some("".to_owned()),
+        )
         .unwrap();
     let auth_info = tx_data.authenticator_info().unwrap();
     let multichain_address = MultiChainAddress::from(sender);
