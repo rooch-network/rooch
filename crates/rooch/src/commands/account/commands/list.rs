@@ -12,7 +12,7 @@ use std::fmt::Debug;
 #[derive(Debug, Parser)]
 pub struct ListCommand {
     /// Whether a password should be provided
-    #[clap(short = 'p', long = "password")]
+    #[clap(long = "password")]
     password_required: Option<bool>,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,

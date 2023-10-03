@@ -25,7 +25,7 @@ pub struct UpdateCommand {
     #[clap(short = 'm', long = "mnemonic-phrase")]
     mnemonic_phrase: String,
     /// Whether a password should be provided
-    #[clap(short = 'p', long = "password")]
+    #[clap(long = "password")]
     password_required: Option<bool>,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,

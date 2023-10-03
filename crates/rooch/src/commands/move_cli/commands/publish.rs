@@ -50,7 +50,7 @@ pub struct Publish {
     pub by_move_action: bool,
 
     /// Whether a password should be provided
-    #[clap(short = 'p', long = "password")]
+    #[clap(long = "password")]
     password_required: Option<bool>,
 }
 

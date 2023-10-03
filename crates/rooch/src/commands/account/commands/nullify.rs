@@ -25,7 +25,7 @@ pub struct NullifyCommand {
     #[clap(short = 'a', long = "address")]
     address: String,
     /// Whether a password should be provided
-    #[clap(short = 'p', long = "password")]
+    #[clap(long = "password")]
     password_required: Option<bool>,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,

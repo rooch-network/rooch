@@ -55,7 +55,7 @@ pub struct RunFunction {
     tx_options: TransactionOptions,
 
     /// Whether a password should be provided
-    #[clap(short = 'p', long = "password")]
+    #[clap(long = "password")]
     password_required: Option<bool>,
 }
 

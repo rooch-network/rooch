@@ -27,7 +27,7 @@ pub struct CreateCommand {
     pub max_inactive_interval: u64,
 
     /// Whether a password should be provided
-    #[clap(short = 'p', long = "password")]
+    #[clap(long = "password")]
     password_required: Option<bool>,
 
     #[clap(flatten)]
