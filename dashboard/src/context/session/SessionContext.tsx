@@ -267,7 +267,7 @@ const SessionProvider = ({ children }: Props) => {
         maxInactiveInterval,
       )
 
-      const key = makeSessionAccountStoreKey(provider, account.roochAddress)
+      const key = makeSessionAccountStoreKey(provider.getChainId(), account.roochAddress)
       window.sessionStorage.setItem(key, pk.export().privateKey)
       const authorizer = new PrivateKeyAuth(pk)
 
@@ -301,7 +301,7 @@ const SessionProvider = ({ children }: Props) => {
     try {
       await account.registerSessionKey(roochAddress, scope, maxInactiveInterval)
 
-      const key = makeSessionAccountStoreKey(provider, account.getAddress())
+      const key = makeSessionAccountStoreKey(provider.getChainId(), account.getAddress())
       window.sessionStorage.setItem(key, pk.export().privateKey)
       const authorizer = new PrivateKeyAuth(pk)
 
