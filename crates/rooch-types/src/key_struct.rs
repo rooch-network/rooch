@@ -24,8 +24,8 @@ pub struct GeneratedKeyPair<Addr, KeyPair> {
 }
 
 impl EncryptionData {
+    // The data is for test only, please do not use the data for applications.
     pub fn new_for_test() -> EncryptionData {
-        // hashed password from "" string
         let hashed_password = "$argon2id$v=19$m=19456,t=2,p=1$zc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc0$RysE6tj+Zu0lLhtKJIedVHrKn9FspulS3vLj/UPaVvQ".to_owned();
         let nonce = [202, 31, 86, 27, 113, 29, 104, 237, 218, 110, 152, 145].to_vec();
         let ciphertext = [
