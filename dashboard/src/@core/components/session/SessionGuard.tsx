@@ -10,6 +10,8 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Snackbar,
+  Alert,
 } from '@mui/material'
 
 // ** Next Import
@@ -89,13 +91,14 @@ const SessionGuard = (props: SessionGuardProps) => {
 
   const auth = useAuth()
   const router = useRouter()
-  const { account, requestAuthorize } = useSession()
+  const { account, requestAuthorize, close, errorMsg } = useSession()
 
   const handleAuth = (scope: Array<string>, maxInactiveInterval: number) => {
     requestAuthorize && requestAuthorize(scope, maxInactiveInterval)
   }
 
   const hanleLogout = () => {
+    close && close()
     auth.logout()
 
     if (router.asPath !== '/') {
@@ -120,6 +123,13 @@ const SessionGuard = (props: SessionGuardProps) => {
           onReqAuthorize={handleAuth}
           onLogout={hanleLogout}
         ></AuthDialog>
+        <Snackbar
+          open={errorMsg !== null}
+          autoHideDuration={6000}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert severity="error">{errorMsg}</Alert>
+        </Snackbar>
       </div>
       <div>{children}</div>
     </div>

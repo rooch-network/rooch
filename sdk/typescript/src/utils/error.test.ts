@@ -2,7 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { describe, it, expect } from 'vitest'
-import { parseRoochErrorCode, parseRoochErrorSubStatus, ErrorCategory } from './error'
+import {
+  parseRoochErrorCode,
+  parseRoochErrorSubStatus,
+  ErrorCategory,
+  getErrorCategoryName,
+} from './error'
 
 describe('err', () => {
   describe('parseRoochErrorCode', () => {
@@ -39,6 +44,24 @@ describe('err', () => {
     it('should return null if input is not a string', () => {
       const errorMessage = null
       expect(parseRoochErrorSubStatus(errorMessage)).toBeNull()
+    })
+  })
+
+  describe('getErrorCategoryName', () => {
+    it('should return the correct string representation of the enum', () => {
+      expect(getErrorCategoryName(ErrorCategory.INVALID_ARGUMENT)).toBe('INVALID_ARGUMENT')
+      expect(getErrorCategoryName(ErrorCategory.OUT_OF_RANGE)).toBe('OUT_OF_RANGE')
+      expect(getErrorCategoryName(ErrorCategory.INVALID_STATE)).toBe('INVALID_STATE')
+      expect(getErrorCategoryName(ErrorCategory.UNAUTHENTICATED)).toBe('UNAUTHENTICATED')
+      expect(getErrorCategoryName(ErrorCategory.PERMISSION_DENIED)).toBe('PERMISSION_DENIED')
+      expect(getErrorCategoryName(ErrorCategory.NOT_FOUND)).toBe('NOT_FOUND')
+      expect(getErrorCategoryName(ErrorCategory.ABORTED)).toBe('ABORTED')
+      expect(getErrorCategoryName(ErrorCategory.ALREADY_EXISTS)).toBe('ALREADY_EXISTS')
+      expect(getErrorCategoryName(ErrorCategory.RESOURCE_EXHAUSTED)).toBe('RESOURCE_EXHAUSTED')
+      expect(getErrorCategoryName(ErrorCategory.CANCELLED)).toBe('CANCELLED')
+      expect(getErrorCategoryName(ErrorCategory.INTERNAL)).toBe('INTERNAL')
+      expect(getErrorCategoryName(ErrorCategory.NOT_IMPLEMENTED)).toBe('NOT_IMPLEMENTED')
+      expect(getErrorCategoryName(ErrorCategory.UNAVAILABLE)).toBe('UNAVAILABLE')
     })
   })
 })

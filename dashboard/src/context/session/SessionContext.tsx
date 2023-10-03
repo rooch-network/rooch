@@ -24,6 +24,7 @@ import {
   addressToSeqNumber,
   parseRoochErrorSubStatus,
   ErrorCategory,
+  getErrorCategoryName,
 } from '@rooch/sdk'
 
 // ** React Imports
@@ -37,17 +38,21 @@ type Props = {
 const SessionContext = createContext<Session>({
   loading: false,
   account: null,
+  errorMsg: null,
   requestAuthorize: undefined,
+  close: () => {},
 })
 
-const makeSessionAccountStoreKey = (address: string) => {
-  return `rooch::dashboard::account::${address}::current-session-key`
+const makeSessionAccountStoreKey = (chainId: number, address: string) => {
+  return `rooch::${chainId}::dashboard::account::${address}::current-session-key`
 }
 
 const loadSessionAccountFromSessionStorage = (provider: IProvider, roochAddress: string) => {
   try {
     // Get from local storage by key
-    const secretKey = window.sessionStorage.getItem(makeSessionAccountStoreKey(roochAddress))
+    const secretKey = window.sessionStorage.getItem(
+      makeSessionAccountStoreKey(provider.getChainId(), roochAddress),
+    )
 
     if (secretKey) {
       let sk = bcsTypes.fromB64(secretKey)
@@ -70,9 +75,12 @@ const loadSessionAccountFromSessionStorage = (provider: IProvider, roochAddress:
   return null
 }
 
-const clearSessionAccountInSessionStorage = (roochAddress: string) => {
+const clearSessionAccountInSessionStorage = (provider: IProvider, roochAddress: string) => {
   try {
-    window.sessionStorage.setItem(makeSessionAccountStoreKey(roochAddress), '')
+    window.sessionStorage.setItem(
+      makeSessionAccountStoreKey(provider.getChainId(), roochAddress),
+      '',
+    )
   } catch (error) {
     // If error also return initialValue
     console.log(error)
@@ -85,7 +93,8 @@ const SessionProvider = ({ children }: Props) => {
   const auth = useAuth()
   const rooch = useRooch()
 
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState<boolean>(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const filterdProvider = useMemo(() => {
     const sessionKeyInvalidFilterFunc: FilterFunc = async (
@@ -106,7 +115,7 @@ const SessionProvider = ({ children }: Props) => {
 
           const defaultAccount = auth.defaultAccount
           if (defaultAccount) {
-            clearSessionAccountInSessionStorage(defaultAccount.roochAddress)
+            clearSessionAccountInSessionStorage(rooch.provider!, defaultAccount.roochAddress)
           }
         }
 
@@ -258,7 +267,7 @@ const SessionProvider = ({ children }: Props) => {
         maxInactiveInterval,
       )
 
-      const key = makeSessionAccountStoreKey(account.roochAddress)
+      const key = makeSessionAccountStoreKey(provider, account.roochAddress)
       window.sessionStorage.setItem(key, pk.export().privateKey)
       const authorizer = new PrivateKeyAuth(pk)
 
@@ -266,7 +275,17 @@ const SessionProvider = ({ children }: Props) => {
     } catch (err: any) {
       console.log(`registerSessionKey error:`, err)
 
-      return null
+      const subStatus = parseRoochErrorSubStatus(err.message)
+      if (subStatus) {
+        throw new Error(
+          'create session key fail, error category: ' +
+            getErrorCategoryName(subStatus.category) +
+            ', reason: ' +
+            subStatus.reason,
+        )
+      }
+
+      throw new Error('create session key error, reason:' + err.message)
     }
   }
 
@@ -282,7 +301,7 @@ const SessionProvider = ({ children }: Props) => {
     try {
       await account.registerSessionKey(roochAddress, scope, maxInactiveInterval)
 
-      const key = makeSessionAccountStoreKey(account.getAddress())
+      const key = makeSessionAccountStoreKey(provider, account.getAddress())
       window.sessionStorage.setItem(key, pk.export().privateKey)
       const authorizer = new PrivateKeyAuth(pk)
 
@@ -290,7 +309,17 @@ const SessionProvider = ({ children }: Props) => {
     } catch (err: any) {
       console.log(`registerSessionKey error:`, err)
 
-      return null
+      const subStatus = parseRoochErrorSubStatus(err.message)
+      if (subStatus) {
+        throw new Error(
+          'create session key fail, error category: ' +
+            getErrorCategoryName(subStatus.category) +
+            ', reason: ' +
+            subStatus.reason,
+        )
+      }
+
+      throw new Error('create session key error, reason:' + err.message)
     }
   }
 
@@ -334,15 +363,29 @@ const SessionProvider = ({ children }: Props) => {
           }
         }
       }
+    } catch (e: any) {
+      setErrorMsg(e.message)
+      setTimeout(() => {
+        setErrorMsg(null)
+      }, 5000)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const closeSession = () => {
+    const defaultAccount = auth.defaultAccount
+    if (defaultAccount) {
+      clearSessionAccountInSessionStorage(rooch.provider!, defaultAccount.roochAddress)
     }
   }
 
   const session = {
     loading,
     account: sessionAccount,
+    errorMsg,
     requestAuthorize,
+    close: closeSession,
   } as Session
 
   return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>

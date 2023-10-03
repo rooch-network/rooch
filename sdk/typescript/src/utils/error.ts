@@ -45,3 +45,8 @@ export function parseRoochErrorSubStatus(errorMessage: string | null): SubStatus
     reason: errorCode & 0xffff,
   }
 }
+
+// Get the string representation of an enumeration
+export function getErrorCategoryName(code: ErrorCategory): string {
+  return ErrorCategory[code]
+}
