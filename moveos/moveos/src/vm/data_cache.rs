@@ -270,7 +270,7 @@ pub fn into_change_set(table_data: Arc<RwLock<TableData>>) -> PartialVMResult<St
     let (new_tables, removed_tables, tables) = data.into_inner();
     let mut changes = BTreeMap::new();
     for (handle, table) in tables {
-        let (_, _, content) = table.into_inner();
+        let (_, _, content, size_increment) = table.into_inner();
         let mut entries = BTreeMap::new();
         for (key, table_value) in content {
             let (value_layout, value_type, op) = match table_value.into_effect() {
@@ -304,7 +304,15 @@ pub fn into_change_set(table_data: Arc<RwLock<TableData>>) -> PartialVMResult<St
             }
         }
         if !entries.is_empty() {
-            changes.insert(handle, TableChange { entries });
+            changes.insert(
+                handle,
+                TableChange {
+                    entries,
+                    size_increment,
+                },
+            );
+        } else {
+            debug_assert!(size_increment == 0);
         }
     }
     Ok(StateChangeSet {

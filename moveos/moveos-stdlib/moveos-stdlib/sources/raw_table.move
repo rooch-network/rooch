@@ -21,6 +21,8 @@ module moveos_std::raw_table {
     struct TableInfo has key {
         // Table SMT root
         state_root: address,
+        // Table size, number of items
+        size: u64,
     }
     
     /// Add a new entry to the table. Aborts if an entry for this
@@ -84,15 +86,25 @@ module moveos_std::raw_table {
         contains_box<K>(table_handle, key)
     }
 
-    #[test_only]
+    /// Returns the size of the table, the number of key-value pairs
+    public(friend) fun length(table_handle: &ObjectID): u64 {
+        box_length(table_handle)
+    }
+
+    /// Returns true iff the table is empty (if `length` returns `0`)
+    public(friend) fun is_empty(table_handle: &ObjectID): bool {
+        length(table_handle) == 0
+    }
+
     /// Testing only: allows to drop a table even if it is not empty.
     public(friend) fun drop_unchecked(table_handle: &ObjectID) {
         drop_unchecked_box(table_handle)
     }
     
-    /// Destroy a table. The table must be empty to succeed.
+    /// Destroy a table. Aborts if the table is not empty
     public(friend) fun destroy_empty(table_handle: &ObjectID) {
-        destroy_empty_box(table_handle)
+        assert!(is_empty(table_handle), ErrorNotEmpty);
+        drop_unchecked_box(table_handle)
     }
 
     // ======================================================================================================
@@ -118,7 +130,7 @@ module moveos_std::raw_table {
 
     native fun remove_box<K: copy + drop, V, B>(table_handle: &ObjectID, key: K): Box<V>;
 
-    native fun destroy_empty_box(table_handle: &ObjectID);
-
     native fun drop_unchecked_box(table_handle: &ObjectID);
+
+    native fun box_length(table_handle: &ObjectID): u64;
 }

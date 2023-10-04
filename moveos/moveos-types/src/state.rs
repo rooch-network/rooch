@@ -425,6 +425,8 @@ impl StateChangeSet {
 pub struct TableChange {
     //TODO should we keep the key's type here?
     pub entries: BTreeMap<Vec<u8>, Op<State>>,
+    /// The size increment of the table, may be negtive which means more deleting than inserting.
+    pub size_increment: i64,
 }
 
 /// StateSet is represent state dump result. Not include events and other stores

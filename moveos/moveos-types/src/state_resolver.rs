@@ -34,6 +34,9 @@ pub trait StateResolver {
         cursor: Option<Vec<u8>>,
         limit: usize,
     ) -> Result<Vec<Option<ListState>>, anyhow::Error>;
+
+    /// Resolve the table size if the handle is a table.
+    fn resolve_size(&self, handle: &ObjectID) -> Result<u64, anyhow::Error>;
 }
 
 /// A proxy type for proxy the StateResolver to MoveResolver
@@ -102,6 +105,10 @@ where
         limit: usize,
     ) -> Result<Vec<Option<ListState>>, anyhow::Error> {
         self.0.resolve_list_state(handle, cursor, limit)
+    }
+
+    fn resolve_size(&self, handle: &ObjectID) -> Result<u64, anyhow::Error> {
+        self.0.resolve_size(handle)
     }
 }
 

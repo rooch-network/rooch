@@ -256,10 +256,15 @@ impl StateDBStore {
             if table_handle == storage_context::GLOBAL_OBJECT_STORAGE_HANDLE {
                 self.global_table
                     .put_changes(table_change.entries.into_iter())?;
+                // TODO: do we need to update the size of global table?
             } else {
                 let (mut object, table) = self.get_as_table_or_create(table_handle)?;
                 let new_state_root = table.put_changes(table_change.entries.into_iter())?;
                 object.value.state_root = AccountAddress::new(new_state_root.into());
+                let curr_table_size: i64 = object.value.size as i64;
+                let updated_table_size = curr_table_size + table_change.size_increment;
+                debug_assert!(updated_table_size >= 0);
+                object.value.size = updated_table_size as u64;
                 changed_objects.put(table_handle.to_bytes(), object.into());
             }
         }
@@ -303,6 +308,14 @@ impl StateDBStore {
             self.global_table.list(cursor, limit)
         } else {
             self.list_with_key(*handle, cursor, limit)
+        }
+    }
+
+    pub fn resolve_size(&self, handle: &ObjectID) -> Result<u64, Error> {
+        match self.get_as_table(*handle)? {
+            Some((table_info, _)) => Ok(table_info.value.size),
+            // TODO: table not exist, should we return 0 or error?
+            None => Ok(0u64),
         }
     }
 
@@ -382,5 +395,9 @@ impl StateResolver for StateDBStore {
         limit: usize,
     ) -> std::result::Result<Vec<Option<ListState>>, Error> {
         self.resolve_list_state(handle, cursor, limit)
+    }
+
+    fn resolve_size(&self, handle: &ObjectID) -> Result<u64, anyhow::Error> {
+        self.resolve_size(handle)
     }
 }

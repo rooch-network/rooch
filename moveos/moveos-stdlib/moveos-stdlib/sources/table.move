@@ -92,6 +92,22 @@ module moveos_std::table {
         raw_table::destroy_empty(&handle)
     }
 
+    /// Returns the size of the table, the number of key-value pairs
+    public fun length<K: copy + drop, V>(table: &Table<K, V>): u64 {
+        raw_table::length(&table.handle)
+    }
+
+    /// Returns true iff the table is empty (if `length` returns `0`)
+    public fun is_empty<K: copy + drop, V>(table: &Table<K, V>): bool {
+        raw_table::length(&table.handle) == 0
+    }
+
+    /// Drop a possibly non-empty table.
+    /// Usable only if the value type `V` has the `drop` ability
+    public fun drop<K: copy + drop , V: drop>(table: Table<K, V>) {
+        let Table { handle } = table;
+        raw_table::drop_unchecked(&handle)
+    }
 
     #[test_only]
     struct TableHolder<phantom K: copy + drop, phantom V: drop> has key {
@@ -214,15 +230,15 @@ module moveos_std::table {
 
         let t2 = new_with_id<u8, u32>(copy t2_id);
         assert!(contains(&t2, t2_key), 2);
-        drop_unchecked(t2);
+        let Table { handle: _ } = t2;
 
         let borrowed_mut_t2 = borrow_mut(&mut t1, t1_key);
         remove(borrowed_mut_t2, t2_key);
 
-        let t2 = new_with_id<u8, u32>(t2_id);
-        assert!(!contains(&t2, t2_key), 2);
-        drop_unchecked(t2);
-
+        let t3 = new_with_id<u8, u32>(t2_id);
+        assert!(!contains(&t3, t2_key), 2);
+        
+        drop_unchecked(t3); // No need to drop t2 as t2 shares same handle with t3
         drop_unchecked(t1);
     }
 

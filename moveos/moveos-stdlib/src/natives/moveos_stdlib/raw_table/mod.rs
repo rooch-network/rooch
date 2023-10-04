@@ -47,7 +47,7 @@ pub struct NativeTableContext<'a> {
 /// Ensure the error codes in this file is consistent with the error code in raw_table.move
 const E_ALREADY_EXISTS: u64 = 1;
 const E_NOT_FOUND: u64 = 2;
-const E_NOT_EMPTY: u64 = 3;
+const E_DUPLICATE_OPERATION: u64 = 3;
 
 // ===========================================================================================
 // Private Data Structures and Constants
@@ -178,6 +178,7 @@ pub struct Table {
     handle: ObjectID,
     key_layout: MoveTypeLayout,
     content: BTreeMap<Vec<u8>, TableRuntimeValue>,
+    size_increment: i64,
 }
 
 // =========================================================================================
@@ -210,6 +211,7 @@ impl TableData {
                     handle,
                     key_layout,
                     content: Default::default(),
+                    size_increment: 0,
                 };
                 if log::log_enabled!(log::Level::Trace) {
                     let key_type = type_to_type_tag(context, key_ty)?;
@@ -232,6 +234,7 @@ impl TableData {
                     handle,
                     key_layout,
                     content: Default::default(),
+                    size_increment: 0,
                 };
                 e.insert(table)
             }
@@ -354,13 +357,15 @@ impl Table {
         ObjectID,
         MoveTypeLayout,
         BTreeMap<Vec<u8>, TableRuntimeValue>,
+        i64,
     ) {
         let Table {
             handle,
             key_layout,
             content,
+            size_increment,
         } = self;
-        (handle, key_layout, content)
+        (handle, key_layout, content, size_increment)
     }
 
     pub fn key_layout(&self) -> &MoveTypeLayout {
@@ -401,13 +406,13 @@ pub fn table_natives(table_addr: AccountAddress, gas_params: GasParameters) -> N
         ),
         (
             "raw_table",
-            "destroy_empty_box",
-            make_native_destroy_empty_box(gas_params.destroy_empty_box),
+            "drop_unchecked_box",
+            make_native_drop_unchecked_box(gas_params.drop_unchecked_box),
         ),
         (
             "raw_table",
-            "drop_unchecked_box",
-            make_native_drop_unchecked_box(gas_params.drop_unchecked_box),
+            "box_length",
+            make_native_box_length(gas_params.box_length),
         ),
     ];
 
@@ -470,7 +475,10 @@ fn native_add_box(
     let value_layout = type_to_type_layout(context, &ty_args[1])?;
     let value_type = type_to_type_tag(context, &ty_args[1])?;
     match tv.move_to(val, value_layout, value_type) {
-        Ok(_) => Ok(NativeResult::ok(cost, smallvec![])),
+        Ok(_) => {
+            table.size_increment += 1;
+            Ok(NativeResult::ok(cost, smallvec![]))
+        }
         Err(_) => Ok(NativeResult::err(
             cost,
             moveos_types::move_std::error::already_exists(E_ALREADY_EXISTS),
@@ -629,7 +637,10 @@ fn native_remove_box(
     cost += common_gas_params.calculate_load_cost(loaded);
     let value_type = type_to_type_tag(context, &ty_args[1])?;
     match tv.move_from(value_type) {
-        Ok(val) => Ok(NativeResult::ok(cost, smallvec![val])),
+        Ok(val) => {
+            table.size_increment -= 1;
+            Ok(NativeResult::ok(cost, smallvec![val]))
+        }
         Err(_) => Ok(NativeResult::err(
             cost,
             moveos_types::move_std::error::not_found(E_NOT_FOUND),
@@ -649,12 +660,12 @@ pub fn make_native_remove_box(
 }
 
 #[derive(Debug, Clone)]
-pub struct DestroyEmptyBoxGasParameters {
+pub struct BoxLengthGasParameters {
     pub base: InternalGas,
 }
 
-fn native_destroy_empty_box(
-    gas_params: &DestroyEmptyBoxGasParameters,
+fn native_box_length(
+    gas_params: &BoxLengthGasParameters,
     context: &mut NativeContext,
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -662,26 +673,34 @@ fn native_destroy_empty_box(
     assert_eq!(args.len(), 1);
 
     let table_context = context.extensions().get::<NativeTableContext>();
-    let mut table_data = table_context.table_data.write();
+    let table_data = table_context.table_data.write();
 
     let handle = get_table_handle(pop_arg!(args, StructRef))?;
-    if table_data.tables.contains_key(&handle)
-        && !table_data.tables.get(&handle).unwrap().content.is_empty()
-    {
-        return Ok(NativeResult::err(
-            gas_params.base,
-            moveos_types::move_std::error::invalid_state(E_NOT_EMPTY),
-        ));
-    }
-    assert!(table_data.removed_tables.insert(handle));
 
-    Ok(NativeResult::ok(gas_params.base, smallvec![]))
+    let remote_table_size = table_context
+        .resolver
+        .resolve_size(&handle)
+        .map_err(|err| {
+            partial_extension_error(format!("remote table resolver failure: {}", err))
+        })?;
+    let size_increment = if table_data.exist_table(&handle) {
+        table_data.borrow_table(&handle).unwrap().size_increment
+    } else {
+        0i64
+    };
+    let updated_table_size = (remote_table_size as i64) + size_increment;
+    debug_assert!(updated_table_size >= 0);
+
+    let length = Value::u64(updated_table_size as u64);
+    let cost = gas_params.base;
+
+    Ok(NativeResult::ok(cost, smallvec![length]))
 }
 
-pub fn make_native_destroy_empty_box(gas_params: DestroyEmptyBoxGasParameters) -> NativeFunction {
+pub fn make_native_box_length(gas_params: BoxLengthGasParameters) -> NativeFunction {
     Arc::new(
         move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_destroy_empty_box(&gas_params, context, ty_args, args)
+            native_box_length(&gas_params, context, ty_args, args)
         },
     )
 }
@@ -693,13 +712,25 @@ pub struct DropUncheckedBoxGasParameters {
 
 fn native_drop_unchecked_box(
     gas_params: &DropUncheckedBoxGasParameters,
-    _context: &mut NativeContext,
+    context: &mut NativeContext,
     _ty_args: Vec<Type>,
-    args: VecDeque<Value>,
+    mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     assert_eq!(args.len(), 1);
-    //TODO remove the droped table from the table_data
-    Ok(NativeResult::ok(gas_params.base, smallvec![]))
+
+    let table_context = context.extensions().get::<NativeTableContext>();
+    let mut table_data = table_context.table_data.write();
+
+    let handle = get_table_handle(pop_arg!(args, StructRef))?;
+
+    if table_data.removed_tables.insert(handle) {
+        Ok(NativeResult::ok(gas_params.base, smallvec![]))
+    } else {
+        Ok(NativeResult::err(
+            gas_params.base,
+            moveos_types::move_std::error::not_found(E_DUPLICATE_OPERATION),
+        ))
+    }
 }
 
 pub fn make_native_drop_unchecked_box(gas_params: DropUncheckedBoxGasParameters) -> NativeFunction {
@@ -717,8 +748,8 @@ pub struct GasParameters {
     pub borrow_box: BorrowBoxGasParameters,
     pub contains_box: ContainsBoxGasParameters,
     pub remove_box: RemoveGasParameters,
-    pub destroy_empty_box: DestroyEmptyBoxGasParameters,
     pub drop_unchecked_box: DropUncheckedBoxGasParameters,
+    pub box_length: BoxLengthGasParameters,
 }
 
 impl GasParameters {
@@ -745,8 +776,8 @@ impl GasParameters {
                 base: 0.into(),
                 per_byte_serialized: 0.into(),
             },
-            destroy_empty_box: DestroyEmptyBoxGasParameters { base: 0.into() },
             drop_unchecked_box: DropUncheckedBoxGasParameters { base: 0.into() },
+            box_length: BoxLengthGasParameters { base: 0.into() },
         }
     }
 }

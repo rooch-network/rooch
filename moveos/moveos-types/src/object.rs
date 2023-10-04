@@ -248,11 +248,15 @@ pub struct TableInfo {
     //TODO use u256?
     pub state_root: AccountAddress,
     //TODO keep Table Key TypeTag at here
+    pub size: u64,
 }
 
 impl TableInfo {
     pub fn new(state_root: AccountAddress) -> Self {
-        TableInfo { state_root }
+        TableInfo {
+            state_root,
+            size: 0u64,
+        }
     }
 }
 

@@ -296,6 +296,10 @@ impl StateResolver for RemoteStore {
     ) -> anyhow::Result<Vec<Option<ListState>>, anyhow::Error> {
         todo!()
     }
+
+    fn resolve_size(&self, _handle: &ObjectID) -> anyhow::Result<u64, anyhow::Error> {
+        todo!()
+    }
 }
 
 fn combine_signers_and_args(
