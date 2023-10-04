@@ -47,7 +47,6 @@ pub struct NativeTableContext<'a> {
 /// Ensure the error codes in this file is consistent with the error code in raw_table.move
 const E_ALREADY_EXISTS: u64 = 1;
 const E_NOT_FOUND: u64 = 2;
-const E_NOT_EMPTY: u64 = 3;
 
 // ===========================================================================================
 // Private Data Structures and Constants
@@ -378,7 +377,7 @@ impl Table {
 
 /// Returns all natives for tables.
 pub fn table_natives(table_addr: AccountAddress, gas_params: GasParameters) -> NativeFunctionTable {
-    let natives: [(&str, &str, NativeFunction); 7] = [
+    let natives: [(&str, &str, NativeFunction); 8] = [
         (
             "raw_table",
             "add_box",
@@ -406,13 +405,18 @@ pub fn table_natives(table_addr: AccountAddress, gas_params: GasParameters) -> N
         ),
         (
             "raw_table",
-            "destroy_empty_box",
-            make_native_destroy_empty_box(gas_params.destroy_empty_box),
+            "destroy_empty_box_unchecked",
+            make_native_destroy_empty_box_unchecked(gas_params.destroy_empty_box_unchecked),
         ),
         (
             "raw_table",
             "drop_unchecked_box",
             make_native_drop_unchecked_box(gas_params.drop_unchecked_box),
+        ),
+        (
+            "raw_table",
+            "box_length",
+            make_native_box_length(gas_params.box_length),
         ),
     ];
 
@@ -664,7 +668,7 @@ pub struct DestroyEmptyBoxGasParameters {
     pub base: InternalGas,
 }
 
-fn native_destroy_empty_box(
+fn native_destroy_empty_box_unchecked(
     gas_params: &DestroyEmptyBoxGasParameters,
     context: &mut NativeContext,
     _ty_args: Vec<Type>,
@@ -674,6 +678,39 @@ fn native_destroy_empty_box(
 
     let table_context = context.extensions().get::<NativeTableContext>();
     let mut table_data = table_context.table_data.write();
+
+    let handle = get_table_handle(pop_arg!(args, StructRef))?;
+
+    assert!(table_data.removed_tables.insert(handle));
+
+    Ok(NativeResult::ok(gas_params.base, smallvec![]))
+}
+
+pub fn make_native_destroy_empty_box_unchecked(
+    gas_params: DestroyEmptyBoxGasParameters,
+) -> NativeFunction {
+    Arc::new(
+        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
+            native_destroy_empty_box_unchecked(&gas_params, context, ty_args, args)
+        },
+    )
+}
+
+#[derive(Debug, Clone)]
+pub struct BoxLengthGasParameters {
+    pub base: InternalGas,
+}
+
+fn native_box_length(
+    gas_params: &BoxLengthGasParameters,
+    context: &mut NativeContext,
+    _ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    assert_eq!(args.len(), 1);
+
+    let table_context = context.extensions().get::<NativeTableContext>();
+    let table_data = table_context.table_data.write();
 
     let handle = get_table_handle(pop_arg!(args, StructRef))?;
 
@@ -690,21 +727,17 @@ fn native_destroy_empty_box(
     };
     let updated_table_size = (remote_table_size as i64) + size_increment;
     debug_assert!(updated_table_size >= 0);
-    if updated_table_size > 0 {
-        return Ok(NativeResult::err(
-            gas_params.base,
-            moveos_types::move_std::error::invalid_state(E_NOT_EMPTY),
-        ));
-    }
-    assert!(table_data.removed_tables.insert(handle));
 
-    Ok(NativeResult::ok(gas_params.base, smallvec![]))
+    let length = Value::u64(updated_table_size as u64);
+    let cost = gas_params.base;
+
+    Ok(NativeResult::ok(cost, smallvec![length]))
 }
 
-pub fn make_native_destroy_empty_box(gas_params: DestroyEmptyBoxGasParameters) -> NativeFunction {
+pub fn make_native_box_length(gas_params: BoxLengthGasParameters) -> NativeFunction {
     Arc::new(
         move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_destroy_empty_box(&gas_params, context, ty_args, args)
+            native_box_length(&gas_params, context, ty_args, args)
         },
     )
 }
@@ -740,8 +773,9 @@ pub struct GasParameters {
     pub borrow_box: BorrowBoxGasParameters,
     pub contains_box: ContainsBoxGasParameters,
     pub remove_box: RemoveGasParameters,
-    pub destroy_empty_box: DestroyEmptyBoxGasParameters,
+    pub destroy_empty_box_unchecked: DestroyEmptyBoxGasParameters,
     pub drop_unchecked_box: DropUncheckedBoxGasParameters,
+    pub box_length: BoxLengthGasParameters,
 }
 
 impl GasParameters {
@@ -768,8 +802,9 @@ impl GasParameters {
                 base: 0.into(),
                 per_byte_serialized: 0.into(),
             },
-            destroy_empty_box: DestroyEmptyBoxGasParameters { base: 0.into() },
+            destroy_empty_box_unchecked: DestroyEmptyBoxGasParameters { base: 0.into() },
             drop_unchecked_box: DropUncheckedBoxGasParameters { base: 0.into() },
+            box_length: BoxLengthGasParameters { base: 0.into() },
         }
     }
 }

@@ -92,6 +92,22 @@ module moveos_std::table {
         raw_table::destroy_empty(&handle)
     }
 
+    /// Returns the size of the table, the number of key-value pairs
+    public fun length<K: copy + drop, V>(table: &Table<K, V>): u64 {
+        raw_table::length(&table.handle)
+    }
+
+    /// Returns true iff the table is empty (if `length` returns `0`)
+    public fun is_empty<K: copy + drop, V>(table: &Table<K, V>): bool {
+        raw_table::length(&table.handle) == 0
+    }
+
+    /// Drop a possibly non-empty table.
+    /// Usable only if the value type `V` has the `drop` ability
+    public fun drop<K: copy + drop , V: drop>(table: Table<K, V>) {
+        let Table { handle } = table;
+        raw_table::drop_unchecked(&handle)
+    }
 
     #[test_only]
     struct TableHolder<phantom K: copy + drop, phantom V: drop> has key {

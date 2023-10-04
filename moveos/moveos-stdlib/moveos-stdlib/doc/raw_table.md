@@ -19,6 +19,9 @@ This type table if for design internal global storage, so all functions are frie
 -  [Function `upsert`](#0x2_raw_table_upsert)
 -  [Function `remove`](#0x2_raw_table_remove)
 -  [Function `contains`](#0x2_raw_table_contains)
+-  [Function `length`](#0x2_raw_table_length)
+-  [Function `is_empty`](#0x2_raw_table_is_empty)
+-  [Function `drop_unchecked`](#0x2_raw_table_drop_unchecked)
 -  [Function `destroy_empty`](#0x2_raw_table_destroy_empty)
 -  [Function `new_table_handle`](#0x2_raw_table_new_table_handle)
 
@@ -347,11 +350,86 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 
 </details>
 
+<a name="0x2_raw_table_length"></a>
+
+## Function `length`
+
+Returns the size of the table, the number of key-value pairs
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="raw_table.md#0x2_raw_table_length">length</a>(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="raw_table.md#0x2_raw_table_length">length</a>(table_handle: &ObjectID): u64 {
+    <a href="raw_table.md#0x2_raw_table_box_length">box_length</a>(table_handle)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_raw_table_is_empty"></a>
+
+## Function `is_empty`
+
+Returns true iff the table is empty (if <code>length</code> returns <code>0</code>)
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="raw_table.md#0x2_raw_table_is_empty">is_empty</a>(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="raw_table.md#0x2_raw_table_is_empty">is_empty</a>(table_handle: &ObjectID): bool {
+    <a href="raw_table.md#0x2_raw_table_length">length</a>(table_handle) == 0
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_raw_table_drop_unchecked"></a>
+
+## Function `drop_unchecked`
+
+Testing only: allows to drop a table even if it is not empty.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_drop_unchecked">drop_unchecked</a>(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_drop_unchecked">drop_unchecked</a>(table_handle: &ObjectID) {
+    <a href="raw_table.md#0x2_raw_table_destroy_empty_box_unchecked">destroy_empty_box_unchecked</a>(table_handle)
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x2_raw_table_destroy_empty"></a>
 
 ## Function `destroy_empty`
 
-Destroy a table. The table must be empty to succeed.
+Destroy a table. Aborts if the table is not empty
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_destroy_empty">destroy_empty</a>(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>)
@@ -364,7 +442,8 @@ Destroy a table. The table must be empty to succeed.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_destroy_empty">destroy_empty</a>(table_handle: &ObjectID) {
-    <a href="raw_table.md#0x2_raw_table_destroy_empty_box">destroy_empty_box</a>(table_handle)
+    <b>assert</b>!(<a href="raw_table.md#0x2_raw_table_is_empty">is_empty</a>(table_handle), <a href="raw_table.md#0x2_raw_table_ErrorNotEmpty">ErrorNotEmpty</a>);
+    <a href="raw_table.md#0x2_raw_table_destroy_empty_box_unchecked">destroy_empty_box_unchecked</a>(table_handle)
 }
 </code></pre>
 

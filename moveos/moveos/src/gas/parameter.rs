@@ -496,6 +496,7 @@ static G_NATIVE_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
         "table.contains_box.per_byte_serialized",
         "table.destroy_empty_box.base",
         "table.drop_unchecked_box.base",
+        "table.box_length.base",
         "move_stdlib.string.check_utf8.per_byte",
         "move_stdlib.string.sub_string.per_byte",
         "move_stdlib.string.is_char_boundary.base",
