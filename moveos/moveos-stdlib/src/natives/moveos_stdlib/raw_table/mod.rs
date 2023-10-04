@@ -47,6 +47,7 @@ pub struct NativeTableContext<'a> {
 /// Ensure the error codes in this file is consistent with the error code in raw_table.move
 const E_ALREADY_EXISTS: u64 = 1;
 const E_NOT_FOUND: u64 = 2;
+const E_DUPLICATE_OPERATION: u64 = 3;
 
 // ===========================================================================================
 // Private Data Structures and Constants
@@ -722,9 +723,14 @@ fn native_drop_unchecked_box(
 
     let handle = get_table_handle(pop_arg!(args, StructRef))?;
 
-    assert!(table_data.removed_tables.insert(handle));
-
-    Ok(NativeResult::ok(gas_params.base, smallvec![]))
+    if table_data.removed_tables.insert(handle) {
+        Ok(NativeResult::ok(gas_params.base, smallvec![]))
+    } else {
+        Ok(NativeResult::err(
+            gas_params.base,
+            moveos_types::move_std::error::not_found(E_DUPLICATE_OPERATION),
+        ))
+    }
 }
 
 pub fn make_native_drop_unchecked_box(gas_params: DropUncheckedBoxGasParameters) -> NativeFunction {

@@ -87,12 +87,12 @@ module moveos_std::raw_table {
     }
 
     /// Returns the size of the table, the number of key-value pairs
-    public fun length(table_handle: &ObjectID): u64 {
+    public(friend) fun length(table_handle: &ObjectID): u64 {
         box_length(table_handle)
     }
 
     /// Returns true iff the table is empty (if `length` returns `0`)
-    public fun is_empty(table_handle: &ObjectID): bool {
+    public(friend) fun is_empty(table_handle: &ObjectID): bool {
         length(table_handle) == 0
     }
 

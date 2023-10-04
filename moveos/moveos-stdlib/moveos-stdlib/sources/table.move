@@ -230,15 +230,15 @@ module moveos_std::table {
 
         let t2 = new_with_id<u8, u32>(copy t2_id);
         assert!(contains(&t2, t2_key), 2);
-        drop_unchecked(t2);
+        let Table { handle: _ } = t2;
 
         let borrowed_mut_t2 = borrow_mut(&mut t1, t1_key);
         remove(borrowed_mut_t2, t2_key);
 
-        let t2 = new_with_id<u8, u32>(t2_id);
-        assert!(!contains(&t2, t2_key), 2);
-        drop_unchecked(t2);
-
+        let t3 = new_with_id<u8, u32>(t2_id);
+        assert!(!contains(&t3, t2_key), 2);
+        
+        drop_unchecked(t3); // No need to drop t2 as t2 shares same handle with t3
         drop_unchecked(t1);
     }
 

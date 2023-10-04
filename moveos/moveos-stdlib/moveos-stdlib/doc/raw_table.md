@@ -357,7 +357,7 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 Returns the size of the table, the number of key-value pairs
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="raw_table.md#0x2_raw_table_length">length</a>(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): u64
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_length">length</a>(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): u64
 </code></pre>
 
 
@@ -366,7 +366,7 @@ Returns the size of the table, the number of key-value pairs
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="raw_table.md#0x2_raw_table_length">length</a>(table_handle: &ObjectID): u64 {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_length">length</a>(table_handle: &ObjectID): u64 {
     <a href="raw_table.md#0x2_raw_table_box_length">box_length</a>(table_handle)
 }
 </code></pre>
@@ -382,7 +382,7 @@ Returns the size of the table, the number of key-value pairs
 Returns true iff the table is empty (if <code>length</code> returns <code>0</code>)
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="raw_table.md#0x2_raw_table_is_empty">is_empty</a>(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): bool
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_is_empty">is_empty</a>(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): bool
 </code></pre>
 
 
@@ -391,7 +391,7 @@ Returns true iff the table is empty (if <code>length</code> returns <code>0</cod
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="raw_table.md#0x2_raw_table_is_empty">is_empty</a>(table_handle: &ObjectID): bool {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_is_empty">is_empty</a>(table_handle: &ObjectID): bool {
     <a href="raw_table.md#0x2_raw_table_length">length</a>(table_handle) == 0
 }
 </code></pre>
