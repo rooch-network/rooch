@@ -280,7 +280,7 @@ impl ResourceResolver for RemoteStore {
 }
 
 impl StateResolver for RemoteStore {
-    fn resolve_state(
+    fn resolve_table_item(
         &self,
         _handle: &ObjectID,
         _key: &[u8],
@@ -288,16 +288,12 @@ impl StateResolver for RemoteStore {
         Ok(None)
     }
 
-    fn resolve_list_state(
+    fn list_table_items(
         &self,
         _handle: &ObjectID,
         _cursor: Option<Vec<u8>>,
         _limit: usize,
     ) -> anyhow::Result<Vec<Option<ListState>>, anyhow::Error> {
-        todo!()
-    }
-
-    fn resolve_size(&self, _handle: &ObjectID) -> anyhow::Result<u64, anyhow::Error> {
         todo!()
     }
 }

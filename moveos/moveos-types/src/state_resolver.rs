@@ -27,16 +27,23 @@ pub type ListAnnotatedState = (Vec<u8>, AnnotatedState);
 /// otherwise it will get the data from the table state tree.
 /// The key can be an ObjectID or an arbitrary key of a table.
 pub trait StateResolver {
-    fn resolve_state(&self, handle: &ObjectID, key: &[u8]) -> Result<Option<State>, anyhow::Error>;
-    fn resolve_list_state(
+    fn resolve_table_item(
+        &self,
+        handle: &ObjectID,
+        key: &[u8],
+    ) -> Result<Option<State>, anyhow::Error>;
+
+    fn list_table_items(
         &self,
         handle: &ObjectID,
         cursor: Option<Vec<u8>>,
         limit: usize,
     ) -> Result<Vec<Option<ListState>>, anyhow::Error>;
 
-    /// Resolve the table size if the handle is a table.
-    fn resolve_size(&self, handle: &ObjectID) -> Result<u64, anyhow::Error>;
+    // get object data from global state tree.
+    fn resolve_object_state(&self, object: &ObjectID) -> Result<Option<State>, anyhow::Error> {
+        self.resolve_table_item(&GLOBAL_OBJECT_STORAGE_HANDLE, &object.to_bytes())
+    }
 }
 
 /// A proxy type for proxy the StateResolver to MoveResolver
@@ -58,7 +65,7 @@ where
 
         let key = resource_tag_to_key(tag);
         self.0
-            .resolve_state(&resource_table_id, &key)?
+            .resolve_table_item(&resource_table_id, &key)?
             .map(|s| {
                 ensure!(
                     s.match_struct_type(tag),
@@ -84,7 +91,7 @@ where
         //We wrap the modules byte codes to `MoveModule` type when store the module.
         //So we need unwrap the MoveModule type.
         self.0
-            .resolve_state(&module_table_id, &key)?
+            .resolve_table_item(&module_table_id, &key)?
             .map(|s| Ok(s.as_move_state::<MoveModule>()?.byte_codes))
             .transpose()
     }
@@ -94,21 +101,21 @@ impl<R> StateResolver for MoveOSResolverProxy<R>
 where
     R: StateResolver,
 {
-    fn resolve_state(&self, handle: &ObjectID, key: &[u8]) -> Result<Option<State>, anyhow::Error> {
-        self.0.resolve_state(handle, key)
+    fn resolve_table_item(
+        &self,
+        handle: &ObjectID,
+        key: &[u8],
+    ) -> Result<Option<State>, anyhow::Error> {
+        self.0.resolve_table_item(handle, key)
     }
 
-    fn resolve_list_state(
+    fn list_table_items(
         &self,
         handle: &ObjectID,
         cursor: Option<Vec<u8>>,
         limit: usize,
     ) -> Result<Vec<Option<ListState>>, anyhow::Error> {
-        self.0.resolve_list_state(handle, cursor, limit)
-    }
-
-    fn resolve_size(&self, handle: &ObjectID) -> Result<u64, anyhow::Error> {
-        self.0.resolve_size(handle)
+        self.0.list_table_items(handle, cursor, limit)
     }
 }
 
@@ -133,7 +140,7 @@ pub trait StateReader: StateResolver {
         let (handle, keys) = path.into_table_query();
         let keys = keys.ok_or_else(|| anyhow::anyhow!("AccessPath invalid path"))?;
         keys.into_iter()
-            .map(|key| self.resolve_state(&handle, &key))
+            .map(|key| self.resolve_table_item(&handle, &key))
             .collect()
     }
 
@@ -145,7 +152,7 @@ pub trait StateReader: StateResolver {
         limit: usize,
     ) -> Result<Vec<Option<ListState>>> {
         let (handle, _keys) = path.into_table_query();
-        self.resolve_list_state(&handle, cursor, limit)
+        self.list_table_items(&handle, cursor, limit)
     }
 }
 

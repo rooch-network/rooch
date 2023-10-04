@@ -26,7 +26,11 @@ use move_vm_types::{
     pop_arg,
     values::{GlobalValue, Struct, StructRef, Value},
 };
-use moveos_types::{object::ObjectID, state::TableTypeInfo, state_resolver::StateResolver};
+use moveos_types::{
+    object::{ObjectID, TableInfo},
+    state::TableTypeInfo,
+    state_resolver::StateResolver,
+};
 use parking_lot::RwLock;
 use smallvec::smallvec;
 use std::{
@@ -280,7 +284,7 @@ impl Table {
             Entry::Vacant(entry) => {
                 let (tv, loaded) = match table_context
                     .resolver
-                    .resolve_state(&self.handle, entry.key())
+                    .resolve_table_item(&self.handle, entry.key())
                     .map_err(|err| {
                         partial_extension_error(format!("remote table resolver failure: {}", err))
                     })? {
@@ -313,30 +317,26 @@ impl Table {
     ) -> PartialVMResult<(&mut TableRuntimeValue, Option<Option<NumBytes>>)> {
         Ok(match self.content.entry(key) {
             Entry::Vacant(entry) => {
-                let (tv, loaded) =
-                    match resolver
-                        .resolve_state(&self.handle, entry.key())
-                        .map_err(|err| {
-                            partial_extension_error(format!(
-                                "remote table resolver failure: {}",
-                                err
-                            ))
-                        })? {
-                        Some(value_box) => {
-                            let value_layout = f(&value_box.value_type)?;
+                let (tv, loaded) = match resolver
+                    .resolve_table_item(&self.handle, entry.key())
+                    .map_err(|err| {
+                        partial_extension_error(format!("remote table resolver failure: {}", err))
+                    })? {
+                    Some(value_box) => {
+                        let value_layout = f(&value_box.value_type)?;
 
-                            let val = deserialize_and_box(&value_layout, &value_box.value)?;
-                            (
-                                TableRuntimeValue::new(
-                                    value_layout,
-                                    value_box.value_type,
-                                    GlobalValue::cached(val)?,
-                                ),
-                                Some(NumBytes::new(value_box.value.len() as u64)),
-                            )
-                        }
-                        None => (TableRuntimeValue::none(), None),
-                    };
+                        let val = deserialize_and_box(&value_layout, &value_box.value)?;
+                        (
+                            TableRuntimeValue::new(
+                                value_layout,
+                                value_box.value_type,
+                                GlobalValue::cached(val)?,
+                            ),
+                            Some(NumBytes::new(value_box.value.len() as u64)),
+                        )
+                    }
+                    None => (TableRuntimeValue::none(), None),
+                };
                 (entry.insert(tv), Some(loaded))
             }
             Entry::Occupied(entry) => (entry.into_mut(), None),
@@ -679,10 +679,13 @@ fn native_box_length(
 
     let remote_table_size = table_context
         .resolver
-        .resolve_size(&handle)
-        .map_err(|err| {
-            partial_extension_error(format!("remote table resolver failure: {}", err))
-        })?;
+        .resolve_object_state(&handle)
+        .map_err(|err| partial_extension_error(format!("remote table resolver failure: {}", err)))?
+        .map(|state| state.as_object::<TableInfo>())
+        .transpose()
+        .map_err(|err| partial_extension_error(format!("remote table resolver failure: {}", err)))?
+        .map_or_else(|| 0u64, |obj| obj.value.size);
+
     let size_increment = if table_data.exist_table(&handle) {
         table_data.borrow_table(&handle).unwrap().size_increment
     } else {
