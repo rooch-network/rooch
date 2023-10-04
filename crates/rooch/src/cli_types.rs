@@ -15,6 +15,8 @@ use std::fmt::{Display, Formatter};
 use std::ops::Deref;
 use std::path::PathBuf;
 
+use rooch_types::address::RoochAddress;
+use rooch_types::crypto::RoochKeyPair;
 use std::str::FromStr;
 
 #[async_trait]
@@ -99,7 +101,7 @@ pub struct WalletContextOptions {
 }
 
 impl WalletContextOptions {
-    pub async fn build(&self) -> RoochResult<WalletContext> {
+    pub async fn build(&self) -> RoochResult<WalletContext<RoochAddress, RoochKeyPair>> {
         WalletContext::new(self.config_dir.clone())
             .await
             .map_err(RoochError::from)

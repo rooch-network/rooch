@@ -11,7 +11,7 @@ use rooch_config::config::{Config, PersistedConfig};
 use rooch_config::server_config::ServerConfig;
 use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_SERVER_CONFIG};
 use rooch_key::keypair::KeyPairType;
-use rooch_key::keystore::AccountKeystore;
+use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView};
 use rooch_types::address::RoochAddress;
 use rooch_types::crypto::{RoochKeyPair, Signature};
@@ -27,18 +27,19 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
 
-pub struct WalletContext {
+pub struct WalletContext<K: Ord, V> {
     client: Arc<RwLock<Option<Client>>>,
-    pub client_config: PersistedConfig<ClientConfig<RoochAddress, RoochKeyPair>>,
+    pub client_config: PersistedConfig<ClientConfig>,
     pub server_config: PersistedConfig<ServerConfig>,
+    pub keystore: Keystore<K, V>,
 }
 
-impl WalletContext {
+impl WalletContext<RoochAddress, RoochKeyPair> {
     pub async fn new(config_path: Option<PathBuf>) -> Result<Self, anyhow::Error> {
         let config_dir = config_path.unwrap_or(rooch_config_dir()?);
         let client_config_path = config_dir.join(ROOCH_CLIENT_CONFIG);
         let server_config_path = config_dir.join(ROOCH_SERVER_CONFIG);
-        let client_config: ClientConfig<RoochAddress, RoochKeyPair> = PersistedConfig::read(&client_config_path).map_err(|err| {
+        let client_config: ClientConfig = PersistedConfig::read(&client_config_path).map_err(|err| {
             anyhow!(
                 "Cannot open wallet config file at {:?}. Err: {err}, Use `rooch init` to configuration",
                 client_config_path
@@ -53,10 +54,19 @@ impl WalletContext {
 
         let client_config = client_config.persisted(&client_config_path);
         let server_config = server_config.persisted(&server_config_path);
+
+        let keystore_result =
+            FileBasedKeystore::<RoochAddress, RoochKeyPair>::load(&client_config.keystore_path);
+        let keystore = match keystore_result {
+            Ok(file_keystore) => Keystore::File(file_keystore),
+            Err(error) => return Err(error),
+        };
+
         Ok(Self {
             client: Default::default(),
             client_config,
             server_config,
+            keystore,
         })
     }
 
@@ -124,7 +134,6 @@ impl WalletContext {
         key_pair_type: KeyPairType,
     ) -> RoochResult<RoochTransaction> {
         let kp = self
-            .client_config
             .keystore
             .get_key_pair_by_key_pair_type(&sender, key_pair_type)
             .ok()

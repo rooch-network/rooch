@@ -26,7 +26,8 @@ impl CommandAction<()> for ListCommand {
             "Rooch Address (Ed25519)", "Public Key (Base64)", "Auth Validator ID", "Active Address"
         );
         println!("{}", ["-"; 153].join(""));
-        for (address, public_key) in context.client_config.keystore.get_address_public_keys() {
+
+        for (address, public_key) in context.keystore.get_address_public_keys() {
             let auth_validator_id = public_key.auth_validator().flag();
             let mut active = "";
             if active_address == Some(address) {

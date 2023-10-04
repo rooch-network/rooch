@@ -49,6 +49,8 @@ impl CommandAction<()> for Init {
             .parent()
             .unwrap_or(&rooch_config_dir()?)
             .join(ROOCH_KEYSTORE_FILENAME);
+        println!("Debug client_config_path: {:?}", client_config_path);
+        println!("Debug keystore_path: {:?}", keystore_path);
 
         let keystore_result = FileBasedKeystore::<RoochAddress, RoochKeyPair>::new(&keystore_path);
         let mut keystore = match keystore_result {
@@ -145,7 +147,7 @@ impl CommandAction<()> for Init {
                 let dev_env = Env::new_dev_env();
                 let active_env_alias = dev_env.alias.clone();
                 ClientConfig {
-                    keystore,
+                    keystore_path,
                     envs: vec![env, dev_env],
                     active_address: Some(new_address),
                     // make dev env as default env

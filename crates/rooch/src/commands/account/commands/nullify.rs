@@ -52,7 +52,6 @@ impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
 
         // Remove keypair by coin id from Rooch key store after successfully executing transaction
         context
-            .client_config
             .keystore
             .nullify_address_with_key_pair_from_key_pair_type(
                 &existing_address,

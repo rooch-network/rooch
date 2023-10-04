@@ -5,32 +5,31 @@ use crate::{Client, ClientBuilder};
 use anyhow::anyhow;
 use rooch_config::config::Config;
 use rooch_config::server_config::ServerConfig;
-use rooch_key::keystore::Keystore;
 use rooch_types::address::RoochAddress;
 use rooch_types::chain_id::RoochChainID;
-use rooch_types::crypto::RoochKeyPair;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_with::serde_as;
 use std::fmt::{Display, Formatter, Write};
+use std::path::PathBuf;
 
 pub const DEFAULT_EXPIRATION_SECS: u64 = 30;
 pub const ROOCH_DEV_NET_URL: &str = "https://dev-seed.rooch.network:443/";
 pub const ROOCH_TEST_NET_URL: &str = "https://test-seed.rooch.network:443/";
 
 #[serde_as]
-#[derive(Serialize, Deserialize)]
-pub struct ClientConfig<K: Ord, V> {
-    pub keystore: Keystore<K, V>,
-    pub active_address: Option<K>,
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ClientConfig {
+    pub keystore_path: PathBuf,
+    pub active_address: Option<RoochAddress>,
     pub envs: Vec<Env>,
     pub active_env: Option<String>,
 }
 
-impl ClientConfig<RoochAddress, RoochKeyPair> {
-    pub fn new(keystore: Keystore<RoochAddress, RoochKeyPair>) -> Self {
+impl ClientConfig {
+    pub fn new(keystore_path: PathBuf) -> Self {
         ClientConfig {
-            keystore,
+            keystore_path,
             active_address: None,
             envs: vec![],
             active_env: None,
@@ -134,19 +133,18 @@ impl Display for Env {
     }
 }
 
-impl Config for ClientConfig<RoochAddress, RoochKeyPair> {}
+impl Config for ClientConfig {}
 
-impl Display for ClientConfig<RoochAddress, RoochKeyPair> {
+impl Display for ClientConfig {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut writer = String::new();
 
-        writeln!(writer, "Managed addresses : {}", self.keystore)?;
+        writeln!(writer, "Keystore path : {:?}", self.keystore_path)?;
         write!(writer, "Active address: ")?;
         match self.active_address {
             Some(r) => writeln!(writer, "{}", r)?,
             None => writeln!(writer, "None")?,
         };
-        writeln!(writer, "{}", self.keystore)?;
         write!(writer, "server: ")?;
 
         if let Ok(env) = self.get_active_env() {
