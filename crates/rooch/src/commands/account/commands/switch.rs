@@ -42,7 +42,7 @@ impl CommandAction<()> for SwitchCommand {
 
         if !context
             .keystore
-            .addresses(Some(password))
+            .addresses(Some(password))?
             .contains(&rooch_address)
         {
             return Err(RoochError::SwitchAccountError(format!(

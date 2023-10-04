@@ -65,7 +65,10 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData>: Se
         encryption: EncryptionData,
         password: Option<String>,
     ) -> Result<(), anyhow::Error>;
-    fn get_address_public_keys(&self, password: Option<String>) -> Vec<(Addr, PubKey)>;
+    fn get_address_public_keys(
+        &self,
+        password: Option<String>,
+    ) -> Result<Vec<(Addr, PubKey)>, RoochError>;
     fn get_public_key_by_key_pair_type(
         &self,
         key_pair_type: KeyPairType,
@@ -120,11 +123,12 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData>: Se
     where
         T: Serialize;
 
-    fn addresses(&self, password: Option<String>) -> Vec<Addr> {
-        self.get_address_public_keys(password)
+    fn addresses(&self, password: Option<String>) -> Result<Vec<Addr>, anyhow::Error> {
+        Ok(self
+            .get_address_public_keys(password)?
             .iter()
             .map(|(address, _public_key)| *address)
-            .collect()
+            .collect())
     }
 
     fn generate_and_add_new_key(
@@ -309,7 +313,10 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         }
     }
 
-    fn get_address_public_keys(&self, password: Option<String>) -> Vec<(RoochAddress, PublicKey)> {
+    fn get_address_public_keys(
+        &self,
+        password: Option<String>,
+    ) -> Result<Vec<(RoochAddress, PublicKey)>, RoochError> {
         // Implement this method to collect public keys from the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => file_keystore.get_address_public_keys(password),
@@ -516,7 +523,7 @@ impl
     fn get_address_public_keys(
         &self,
         password: Option<String>,
-    ) -> Vec<(EthereumAddress, Secp256k1RecoverablePublicKey)> {
+    ) -> Result<Vec<(EthereumAddress, Secp256k1RecoverablePublicKey)>, RoochError> {
         // Implement this method to collect public keys from the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => file_keystore.get_address_public_keys(password),
@@ -847,20 +854,23 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
         ))
     }
 
-    fn get_address_public_keys(&self, password: Option<String>) -> Vec<(RoochAddress, PublicKey)> {
+    fn get_address_public_keys(
+        &self,
+        password: Option<String>,
+    ) -> Result<Vec<(RoochAddress, PublicKey)>, RoochError> {
         let mut result = Vec::new();
         for (address, inner_map) in &self.keys {
             for key_pair_type in inner_map.keys() {
                 for encryption in inner_map.values() {
                     let keypair: RoochKeyPair = key_pair_type
                         .retrieve_key_pair(encryption, password.clone())
-                        .unwrap();
+                        .map_err(|e| e)?;
                     let public_key = keypair.public();
                     result.push((*address, public_key));
                 }
             }
         }
-        result
+        Ok(result)
     }
 
     fn get_key_pairs(
@@ -1074,20 +1084,20 @@ impl
     fn get_address_public_keys(
         &self,
         password: Option<String>,
-    ) -> Vec<(EthereumAddress, Secp256k1RecoverablePublicKey)> {
+    ) -> Result<Vec<(EthereumAddress, Secp256k1RecoverablePublicKey)>, RoochError> {
         let mut result = Vec::new();
         for (address, inner_map) in &self.keys {
             for key_pair_type in inner_map.keys() {
                 for encryption in inner_map.values() {
                     let keypair: Secp256k1RecoverableKeyPair = key_pair_type
                         .retrieve_key_pair(encryption, password.clone())
-                        .unwrap();
+                        .map_err(|e| e)?;
                     let public_key = keypair.public.clone();
                     result.push((*address, public_key));
                 }
             }
         }
-        result
+        Ok(result)
     }
 
     fn get_key_pairs(
@@ -1267,7 +1277,10 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
             .get_public_key_by_key_pair_type(key_pair_type, password)
     }
 
-    fn get_address_public_keys(&self, password: Option<String>) -> Vec<(RoochAddress, PublicKey)> {
+    fn get_address_public_keys(
+        &self,
+        password: Option<String>,
+    ) -> Result<Vec<(RoochAddress, PublicKey)>, RoochError> {
         self.keystore.get_address_public_keys(password)
     }
 
@@ -1415,7 +1428,7 @@ impl
     fn get_address_public_keys(
         &self,
         password: Option<String>,
-    ) -> Vec<(EthereumAddress, Secp256k1RecoverablePublicKey)> {
+    ) -> Result<Vec<(EthereumAddress, Secp256k1RecoverablePublicKey)>, RoochError> {
         self.keystore.get_address_public_keys(password)
     }
 
@@ -1684,7 +1697,10 @@ impl AccountKeystore<RoochAddress, PublicKey, RoochKeyPair, Signature, RoochTran
             .get_public_key_by_key_pair_type(key_pair_type, password)
     }
 
-    fn get_address_public_keys(&self, password: Option<String>) -> Vec<(RoochAddress, PublicKey)> {
+    fn get_address_public_keys(
+        &self,
+        password: Option<String>,
+    ) -> Result<Vec<(RoochAddress, PublicKey)>, RoochError> {
         self.keystore.get_address_public_keys(password)
     }
 
@@ -1812,7 +1828,7 @@ impl
     fn get_address_public_keys(
         &self,
         password: Option<String>,
-    ) -> Vec<(EthereumAddress, Secp256k1RecoverablePublicKey)> {
+    ) -> Result<Vec<(EthereumAddress, Secp256k1RecoverablePublicKey)>, RoochError> {
         self.keystore.get_address_public_keys(password)
     }
 

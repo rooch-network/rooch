@@ -38,7 +38,7 @@ impl CommandAction<()> for ListCommand {
         );
         println!("{}", ["-"; 153].join(""));
 
-        for (address, public_key) in context.keystore.get_address_public_keys(Some(password)) {
+        for (address, public_key) in context.keystore.get_address_public_keys(Some(password))? {
             let auth_validator_id = public_key.auth_validator().flag();
             let mut active = "";
             if active_address == Some(address) {
