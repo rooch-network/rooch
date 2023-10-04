@@ -417,7 +417,7 @@ Testing only: allows to drop a table even if it is not empty.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_drop_unchecked">drop_unchecked</a>(table_handle: &ObjectID) {
-    <a href="raw_table.md#0x2_raw_table_destroy_empty_box_unchecked">destroy_empty_box_unchecked</a>(table_handle)
+    <a href="raw_table.md#0x2_raw_table_drop_unchecked_box">drop_unchecked_box</a>(table_handle)
 }
 </code></pre>
 
@@ -443,7 +443,7 @@ Destroy a table. Aborts if the table is not empty
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_destroy_empty">destroy_empty</a>(table_handle: &ObjectID) {
     <b>assert</b>!(<a href="raw_table.md#0x2_raw_table_is_empty">is_empty</a>(table_handle), <a href="raw_table.md#0x2_raw_table_ErrorNotEmpty">ErrorNotEmpty</a>);
-    <a href="raw_table.md#0x2_raw_table_destroy_empty_box_unchecked">destroy_empty_box_unchecked</a>(table_handle)
+    <a href="raw_table.md#0x2_raw_table_drop_unchecked_box">drop_unchecked_box</a>(table_handle)
 }
 </code></pre>
 

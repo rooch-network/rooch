@@ -377,7 +377,7 @@ impl Table {
 
 /// Returns all natives for tables.
 pub fn table_natives(table_addr: AccountAddress, gas_params: GasParameters) -> NativeFunctionTable {
-    let natives: [(&str, &str, NativeFunction); 8] = [
+    let natives: [(&str, &str, NativeFunction); 7] = [
         (
             "raw_table",
             "add_box",
@@ -402,11 +402,6 @@ pub fn table_natives(table_addr: AccountAddress, gas_params: GasParameters) -> N
             "raw_table",
             "contains_box",
             make_native_contains_box(gas_params.common, gas_params.contains_box),
-        ),
-        (
-            "raw_table",
-            "destroy_empty_box_unchecked",
-            make_native_destroy_empty_box_unchecked(gas_params.destroy_empty_box_unchecked),
         ),
         (
             "raw_table",
@@ -664,39 +659,6 @@ pub fn make_native_remove_box(
 }
 
 #[derive(Debug, Clone)]
-pub struct DestroyEmptyBoxGasParameters {
-    pub base: InternalGas,
-}
-
-fn native_destroy_empty_box_unchecked(
-    gas_params: &DestroyEmptyBoxGasParameters,
-    context: &mut NativeContext,
-    _ty_args: Vec<Type>,
-    mut args: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    assert_eq!(args.len(), 1);
-
-    let table_context = context.extensions().get::<NativeTableContext>();
-    let mut table_data = table_context.table_data.write();
-
-    let handle = get_table_handle(pop_arg!(args, StructRef))?;
-
-    assert!(table_data.removed_tables.insert(handle));
-
-    Ok(NativeResult::ok(gas_params.base, smallvec![]))
-}
-
-pub fn make_native_destroy_empty_box_unchecked(
-    gas_params: DestroyEmptyBoxGasParameters,
-) -> NativeFunction {
-    Arc::new(
-        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_destroy_empty_box_unchecked(&gas_params, context, ty_args, args)
-        },
-    )
-}
-
-#[derive(Debug, Clone)]
 pub struct BoxLengthGasParameters {
     pub base: InternalGas,
 }
@@ -749,12 +711,19 @@ pub struct DropUncheckedBoxGasParameters {
 
 fn native_drop_unchecked_box(
     gas_params: &DropUncheckedBoxGasParameters,
-    _context: &mut NativeContext,
+    context: &mut NativeContext,
     _ty_args: Vec<Type>,
-    args: VecDeque<Value>,
+    mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     assert_eq!(args.len(), 1);
-    //TODO remove the droped table from the table_data
+
+    let table_context = context.extensions().get::<NativeTableContext>();
+    let mut table_data = table_context.table_data.write();
+
+    let handle = get_table_handle(pop_arg!(args, StructRef))?;
+
+    assert!(table_data.removed_tables.insert(handle));
+
     Ok(NativeResult::ok(gas_params.base, smallvec![]))
 }
 
@@ -773,7 +742,6 @@ pub struct GasParameters {
     pub borrow_box: BorrowBoxGasParameters,
     pub contains_box: ContainsBoxGasParameters,
     pub remove_box: RemoveGasParameters,
-    pub destroy_empty_box_unchecked: DestroyEmptyBoxGasParameters,
     pub drop_unchecked_box: DropUncheckedBoxGasParameters,
     pub box_length: BoxLengthGasParameters,
 }
@@ -802,7 +770,6 @@ impl GasParameters {
                 base: 0.into(),
                 per_byte_serialized: 0.into(),
             },
-            destroy_empty_box_unchecked: DestroyEmptyBoxGasParameters { base: 0.into() },
             drop_unchecked_box: DropUncheckedBoxGasParameters { base: 0.into() },
             box_length: BoxLengthGasParameters { base: 0.into() },
         }
