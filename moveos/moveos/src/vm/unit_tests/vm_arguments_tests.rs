@@ -297,7 +297,7 @@ impl StateResolver for RemoteStore {
         todo!()
     }
 
-    fn resolve_size(&self, handle: &ObjectID) -> anyhow::Result<u64, anyhow::Error> {
+    fn resolve_size(&self, _handle: &ObjectID) -> anyhow::Result<u64, anyhow::Error> {
         todo!()
     }
 }
