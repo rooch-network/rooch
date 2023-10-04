@@ -5,14 +5,12 @@ use crate::cli_types::{CommandAction, WalletContextOptions};
 use crate::utils::read_line;
 use async_trait::async_trait;
 use clap::Parser;
-use hex::ToHex;
 use regex::Regex;
 use rooch_config::config::Config;
 use rooch_config::server_config::ServerConfig;
 use rooch_config::{
     rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_KEYSTORE_FILENAME, ROOCH_SERVER_CONFIG,
 };
-use rooch_key::keypair::KeyPairType;
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use rooch_rpc_client::client_config::{ClientConfig, Env};
 use rooch_types::address::RoochAddress;
@@ -48,6 +46,7 @@ impl CommandAction<()> for Init {
             None => rooch_config_dir()?,
         };
 
+        // Rooch client config init
         let client_config_path = config_path.join(ROOCH_CLIENT_CONFIG);
 
         let keystore_path = client_config_path
@@ -81,7 +80,6 @@ impl CommandAction<()> for Init {
             );
         }
 
-        // Rooch client config init
         // Prompt user for connect to devnet fullnode if config does not exist.
         if !client_config_path.exists() {
             let env = match std::env::var_os("ROOCH_CONFIG_WITH_RPC_URL") {
@@ -140,18 +138,6 @@ impl CommandAction<()> for Init {
             };
 
             if let Some(env) = env {
-                let keystore_path = client_config_path
-                    .parent()
-                    .unwrap_or(&rooch_config_dir()?)
-                    .join(ROOCH_KEYSTORE_FILENAME);
-
-                let keystore_result =
-                    FileBasedKeystore::<RoochAddress, RoochKeyPair>::new(&keystore_path);
-                let mut keystore = match keystore_result {
-                    Ok(file_keystore) => Keystore::File(file_keystore),
-                    Err(error) => return Err(RoochError::GenerateKeyError(error.to_string())),
-                };
-
                 let password = if self.password_required == Some(false) {
                     // Use an empty password if not required
                     String::new()

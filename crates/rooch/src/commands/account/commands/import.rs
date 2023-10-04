@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::Parser;
-use hex::ToHex;
 use std::fmt::Debug;
 
 use async_trait::async_trait;
@@ -42,7 +41,7 @@ impl CommandAction<()> for ImportCommand {
         };
         println!("Your password is {}", password);
 
-        let (address, password_hash, nonce, ciphertext, tag) = context
+        let result = context
             .keystore
             .import_from_mnemonic(
                 &self.mnemonic_phrase,
@@ -51,12 +50,6 @@ impl CommandAction<()> for ImportCommand {
                 Some(password),
             )
             .map_err(|e| RoochError::ImportAccountError(e.to_string()))?;
-
-        context.config.password = Some(result.encryption.hashed_password);
-        context.config.nonce = Some(result.encryption.nonce.encode_hex());
-        context.config.ciphertext = Some(result.encryption.ciphertext.encode_hex());
-        context.config.tag = Some(result.encryption.tag.encode_hex());
-        context.config.save()?;
 
         println!(
             "Key imported for address on type {:?}: [{}]",

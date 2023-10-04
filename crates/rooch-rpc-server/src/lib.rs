@@ -9,7 +9,6 @@ use crate::service::rpc_service::RpcService;
 use anyhow::{Error, Result};
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::{system::ActorSystem, IntoActor};
-use fastcrypto::ed25519::Ed25519PrivateKey;
 use hyper::header::HeaderValue;
 use hyper::Method;
 use jsonrpsee::server::ServerBuilder;
@@ -36,6 +35,7 @@ use rooch_store::RoochStore;
 use rooch_types::address::RoochAddress;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{GenesisError, RoochError};
+use rooch_types::keypair_type::KeyPairType;
 use serde_json::json;
 use std::env;
 use std::fmt::Debug;
@@ -183,7 +183,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     {
         // only for integration test, generate test key pairs
         if chain_id_opt.is_test_or_dev_or_local() {
-            let result = generate_new_key_pair::<RoochAddress, RoochKeyPair, Ed25519PrivateKey>(
+            let result = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
                 KeyPairType::RoochKeyPairType,
                 None,
                 None,

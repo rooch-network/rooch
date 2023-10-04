@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::Parser;
-use hex::ToHex;
 use move_core_types::account_address::AccountAddress;
 use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
@@ -49,9 +48,6 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
             RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
         })?;
 
-        let password = rpassword::prompt_password("Enter a password to encrypt the keys in rooch keystore. Empty password leaves an unencrypted key: ").unwrap();
-        println!("Your password is {}", password);
-
         let result = context
             .keystore
             .update_address_with_key_pair_from_key_pair_type(
@@ -62,12 +58,6 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                 Some(password.clone()),
             )
             .map_err(|e| RoochError::UpdateAccountError(e.to_string()))?;
-
-        context.config.password = Some(result.encryption.hashed_password);
-        context.config.nonce = Some(result.encryption.nonce.encode_hex());
-        context.config.ciphertext = Some(result.encryption.ciphertext.encode_hex());
-        context.config.tag = Some(result.encryption.tag.encode_hex());
-        context.config.save()?;
 
         println!(
             "{}",

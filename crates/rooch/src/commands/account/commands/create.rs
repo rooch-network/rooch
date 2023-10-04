@@ -3,10 +3,9 @@
 
 use crate::cli_types::WalletContextOptions;
 use clap::Parser;
-use hex::ToHex;
 use move_core_types::account_address::AccountAddress;
-use rooch_key::{keypair::KeyPairType, keystore::AccountKeystore};
-use rooch_types::error::RoochResult;
+use rooch_key::keystore::AccountKeystore;
+use rooch_types::{error::RoochResult, keypair_type::KeyPairType};
 
 /// Create a new account off-chain.
 /// If an account not exist on-chain, contract will auto create the account on-chain.
@@ -40,19 +39,13 @@ impl CreateCommand {
             KeyPairType::RoochKeyPairType,
             None,
             None,
-            Some(password.clone()),
+            Some(password),
         )?;
 
-        context.config.password = Some(result.result.encryption.hashed_password);
-        context.config.nonce = Some(result.result.encryption.nonce.encode_hex());
-        context.config.ciphertext = Some(result.result.encryption.ciphertext.encode_hex());
-        context.config.tag = Some(result.result.encryption.tag.encode_hex());
-        context.config.save()?;
-
-        let address = AccountAddress::from(new_address).to_hex_literal();
+        let address = AccountAddress::from(result.address).to_hex_literal();
         println!(
-            "Generated new keypair for address with multichain id {:?} [{new_address}]",
-            multichain_id
+            "Generated new keypair for address with key pair type {:?} [{}]",
+            result.result.key_pair_type, result.address
         );
         println!("Secret Recovery Phrase : [{}]", result.result.mnemonic);
 
