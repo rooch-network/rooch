@@ -3,6 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+		"node": ">=18.0.0"
+	},
+	"packageManager": "pnpm@8.6.6",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -11,9 +15,8 @@
   },
   "dependencies": {
     "@ethersproject/bytes": "^5.7.0",
-    "@ethersproject/keccak256": "^5.7.0",
-    "@ethersproject/strings": "^5.7.0",
     "@metamask/sdk": "^0.3.0",
+    "@rooch/sdk": "workspace:*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
