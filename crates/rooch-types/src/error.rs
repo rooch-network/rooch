@@ -103,6 +103,21 @@ pub enum RoochError {
 
     #[error("Use of disabled feature: {:?}", error)]
     UnsupportedFeatureError { error: String },
+
+    #[error("Active address does not exist error")]
+    ActiveAddressDoesNotExistError,
+
+    #[error("Sequencer key pair does not exist error: {0}")]
+    SequencerKeyPairDoesNotExistError(String),
+
+    #[error("Proposer key pair does not exist error: {0}")]
+    ProposerKeyPairDoesNotExistError(String),
+
+    #[error("Relayer key pair does not exist error: {0}")]
+    RelayerKeyPairDoesNotExistError(String),
+
+    #[error("Invalid sequencer or proposer or relayer key pair")]
+    InvalidSequencerOrProposerOrRelayerKeyPair,
 }
 
 impl From<anyhow::Error> for RoochError {

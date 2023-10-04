@@ -52,6 +52,12 @@ impl RoochKeyPair {
     pub fn authentication_key(&self) -> AuthenticationKey {
         self.public().authentication_key()
     }
+
+    pub fn copy(&self) -> Self {
+        match self {
+            RoochKeyPair::Ed25519(kp) => RoochKeyPair::Ed25519(kp.copy()),
+        }
+    }
 }
 
 impl Signer<Signature> for RoochKeyPair {

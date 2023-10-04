@@ -42,7 +42,7 @@ impl New {
         // build wallet context options
         let context = self.wallet_context_options.build().await?;
         // get active account address value
-        match context.config.active_address {
+        match context.client_config.active_address {
             Some(address) => Ok(AccountAddress::from(address).to_hex_literal()),
             None => Err(RoochError::ConfigLoadError(
                 ROOCH_CLIENT_CONFIG.to_string(),

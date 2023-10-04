@@ -27,7 +27,7 @@ impl CommandAction<()> for ImportCommand {
         let mut context = self.context_options.build().await?;
 
         let address = context
-            .config
+            .client_config
             .keystore
             .import_from_mnemonic(&self.mnemonic_phrase, KeyPairType::RoochKeyPairType, None)
             .map_err(|e| RoochError::ImportAccountError(e.to_string()))?;

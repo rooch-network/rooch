@@ -7,7 +7,10 @@ use async_trait::async_trait;
 use clap::Parser;
 use regex::Regex;
 use rooch_config::config::Config;
-use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_KEYSTORE_FILENAME};
+use rooch_config::server_config::ServerConfig;
+use rooch_config::{
+    rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_KEYSTORE_FILENAME, ROOCH_SERVER_CONFIG,
+};
 use rooch_key::keypair::KeyPairType;
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use rooch_rpc_client::client_config::{ClientConfig, Env};
@@ -28,17 +31,52 @@ pub struct Init {
 }
 
 #[async_trait]
-impl CommandAction<String> for Init {
-    async fn execute(self) -> RoochResult<String> {
-        let client_config_path = match self.context_options.config_dir {
+impl CommandAction<()> for Init {
+    async fn execute(self) -> RoochResult<()> {
+        let config_path = match self.context_options.config_dir {
             Some(v) => {
                 if !v.exists() {
                     fs::create_dir_all(v.clone())?
                 }
-                v.join(ROOCH_CLIENT_CONFIG)
+                v
             }
-            None => rooch_config_dir()?.join(ROOCH_CLIENT_CONFIG),
+            None => rooch_config_dir()?,
         };
+
+        let client_config_path = config_path.join(ROOCH_CLIENT_CONFIG);
+
+        let keystore_path = client_config_path
+            .parent()
+            .unwrap_or(&rooch_config_dir()?)
+            .join(ROOCH_KEYSTORE_FILENAME);
+
+        let keystore_result = FileBasedKeystore::<RoochAddress, RoochKeyPair>::new(&keystore_path);
+        let mut keystore = match keystore_result {
+            Ok(file_keystore) => Keystore::File(file_keystore),
+            Err(error) => return Err(RoochError::GenerateKeyError(error.to_string())),
+        };
+
+        // Rooch server config init
+        let server_config_path = config_path.join(ROOCH_SERVER_CONFIG);
+        if !server_config_path.exists() {
+            let server_config = ServerConfig::default();
+
+            server_config
+                .persisted(server_config_path.as_path())
+                .save()?;
+
+            println!(
+                "Rooch server config file generated at {}",
+                server_config_path.display()
+            );
+        } else {
+            println!(
+                "Rooch server config file already exists at {}",
+                server_config_path.display()
+            );
+        }
+
+        // Rooch client config init
         // Prompt user for connect to devnet fullnode if config does not exist.
         if !client_config_path.exists() {
             let env = match std::env::var_os("ROOCH_CONFIG_WITH_RPC_URL") {
@@ -97,18 +135,6 @@ impl CommandAction<String> for Init {
             };
 
             if let Some(env) = env {
-                let keystore_path = client_config_path
-                    .parent()
-                    .unwrap_or(&rooch_config_dir()?)
-                    .join(ROOCH_KEYSTORE_FILENAME);
-
-                let keystore_result =
-                    FileBasedKeystore::<RoochAddress, RoochKeyPair>::new(&keystore_path);
-                let mut keystore = match keystore_result {
-                    Ok(file_keystore) => Keystore::File(file_keystore),
-                    Err(error) => return Err(RoochError::GenerateKeyError(error.to_string())),
-                };
-
                 let (new_address, phrase, key_pair_type) =
                     keystore.generate_and_add_new_key(KeyPairType::RoochKeyPairType, None, None)?;
                 println!(
@@ -129,19 +155,17 @@ impl CommandAction<String> for Init {
                 .save()?;
             }
 
-            let message = format!(
-                "Rooch config file generated at {}",
+            println!(
+                "Rooch client config file generated at {}",
                 client_config_path.display()
             );
-
-            return Ok(message);
+        } else {
+            println!(
+                "Rooch client config file already exists at {}",
+                client_config_path.display()
+            );
         }
 
-        let message = format!(
-            "Rooch config file already exists at {}",
-            client_config_path.display()
-        );
-
-        Ok(message)
+        Ok(())
     }
 }

@@ -90,7 +90,7 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
             (_, Some(session_key)) => {
                 let tx_data = context.build_rooch_tx_data(sender, action).await?;
                 let tx = context
-                    .config
+                    .client_config
                     .keystore
                     .sign_transaction_via_session_key(&sender, tx_data, &session_key)
                     .map_err(|e| RoochError::SignMessageError(e.to_string()))?;

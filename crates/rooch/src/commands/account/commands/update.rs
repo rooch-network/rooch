@@ -37,7 +37,7 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
         })?;
 
         let kp = context
-            .config
+            .client_config
             .keystore
             .update_address_with_key_pair_from_key_pair_type(
                 &existing_address,

@@ -8,7 +8,8 @@ use move_core_types::account_address::AccountAddress;
 use moveos_types::gas_config::GasConfig;
 use moveos_types::transaction::MoveAction;
 use rooch_config::config::{Config, PersistedConfig};
-use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG};
+use rooch_config::server_config::ServerConfig;
+use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_SERVER_CONFIG};
 use rooch_key::keypair::KeyPairType;
 use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView};
@@ -28,24 +29,34 @@ use tokio::sync::RwLock;
 
 pub struct WalletContext {
     client: Arc<RwLock<Option<Client>>>,
-    pub config: PersistedConfig<ClientConfig<RoochAddress, RoochKeyPair>>,
+    pub client_config: PersistedConfig<ClientConfig<RoochAddress, RoochKeyPair>>,
+    pub server_config: PersistedConfig<ServerConfig>,
 }
 
 impl WalletContext {
     pub async fn new(config_path: Option<PathBuf>) -> Result<Self, anyhow::Error> {
         let config_dir = config_path.unwrap_or(rooch_config_dir()?);
-        let config_path = config_dir.join(ROOCH_CLIENT_CONFIG);
-        let config: ClientConfig<RoochAddress, RoochKeyPair> = PersistedConfig::read(&config_path).map_err(|err| {
+        let client_config_path = config_dir.join(ROOCH_CLIENT_CONFIG);
+        let server_config_path = config_dir.join(ROOCH_SERVER_CONFIG);
+        let client_config: ClientConfig<RoochAddress, RoochKeyPair> = PersistedConfig::read(&client_config_path).map_err(|err| {
             anyhow!(
                 "Cannot open wallet config file at {:?}. Err: {err}, Use `rooch init` to configuration",
-                config_path
+                client_config_path
+            )
+        })?;
+        let server_config: ServerConfig = PersistedConfig::read(&server_config_path).map_err(|err| {
+            anyhow!(
+                "Cannot open server config file at {:?}. Err: {err}, Use `rooch init` to configuration",
+                server_config_path
             )
         })?;
 
-        let config = config.persisted(&config_path);
+        let client_config = client_config.persisted(&client_config_path);
+        let server_config = server_config.persisted(&server_config_path);
         Ok(Self {
             client: Default::default(),
-            config,
+            client_config,
+            server_config,
         })
     }
 
@@ -73,7 +84,7 @@ impl WalletContext {
         } else {
             drop(read);
             let client = self
-                .config
+                .client_config
                 .get_active_env()?
                 .create_rpc_client(Duration::from_secs(DEFAULT_EXPIRATION_SECS), None)
                 .await?;
@@ -113,7 +124,7 @@ impl WalletContext {
         key_pair_type: KeyPairType,
     ) -> RoochResult<RoochTransaction> {
         let kp = self
-            .config
+            .client_config
             .keystore
             .get_key_pair_by_key_pair_type(&sender, key_pair_type)
             .ok()
@@ -166,7 +177,7 @@ impl WalletContext {
             Ok(account_address)
         } else {
             let address = match account.as_str() {
-                "default" => AccountAddress::from(self.config.active_address.unwrap()),
+                "default" => AccountAddress::from(self.client_config.active_address.unwrap()),
                 _ => Err(RoochError::CommandArgumentError(
                     "Use rooch init configuration".to_owned(),
                 ))?,

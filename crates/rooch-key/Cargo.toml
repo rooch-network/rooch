@@ -18,7 +18,7 @@ bip32 = { workspace = true }
 enum_dispatch = {workspace = true }
 derive_more = { workspace = true }
 eyre = { workspace = true }
-fastcrypto = { workspace = true }
+fastcrypto = { workspace = true, features = ["copy_key"] }
 rand = { workspace = true }
 serde = { workspace = true }
 serde_with = { workspace = true }

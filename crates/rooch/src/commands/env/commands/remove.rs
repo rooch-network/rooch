@@ -17,7 +17,7 @@ pub struct RemoveCommand {
 impl RemoveCommand {
     pub async fn execute(self) -> RoochResult<()> {
         let mut context = self.context_options.build().await?;
-        if let Some(active_env) = &context.config.active_env {
+        if let Some(active_env) = &context.client_config.active_env {
             if active_env == &self.env {
                 return Err(RoochError::RemoveEnvError(
                     "Cannot remove the currently active environment. Please switch to another environment and try again".to_owned()
@@ -25,8 +25,11 @@ impl RemoveCommand {
             }
         }
 
-        context.config.envs.retain(|env| env.alias != self.env);
-        context.config.save()?;
+        context
+            .client_config
+            .envs
+            .retain(|env| env.alias != self.env);
+        context.client_config.save()?;
 
         println!("Environment `{}` was successfully removed", self.env);
 
