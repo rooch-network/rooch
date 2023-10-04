@@ -311,14 +311,6 @@ impl StateDBStore {
         }
     }
 
-    pub fn resolve_size(&self, handle: &ObjectID) -> Result<u64, Error> {
-        match self.get_as_table(*handle)? {
-            Some((table_info, _)) => Ok(table_info.value.size),
-            // TODO: table not exist, should we return 0 or error?
-            None => Ok(0u64),
-        }
-    }
-
     // rebuild statedb via StateSet from dump
     pub fn apply(&self, state_set: StateSet) -> Result<H256> {
         let mut state_root = H256::zero();
@@ -380,7 +372,7 @@ impl StateDBStore {
 }
 
 impl StateResolver for StateDBStore {
-    fn resolve_state(
+    fn resolve_table_item(
         &self,
         handle: &ObjectID,
         key: &[u8],
@@ -388,16 +380,12 @@ impl StateResolver for StateDBStore {
         self.resolve_state(handle, key)
     }
 
-    fn resolve_list_state(
+    fn list_table_items(
         &self,
         handle: &ObjectID,
         cursor: Option<Vec<u8>>,
         limit: usize,
     ) -> std::result::Result<Vec<Option<ListState>>, Error> {
         self.resolve_list_state(handle, cursor, limit)
-    }
-
-    fn resolve_size(&self, handle: &ObjectID) -> Result<u64, anyhow::Error> {
-        self.resolve_size(handle)
     }
 }
