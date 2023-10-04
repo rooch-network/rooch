@@ -145,7 +145,7 @@ impl CommandAction<()> for Init {
                 let dev_env = Env::new_dev_env();
                 let active_env_alias = dev_env.alias.clone();
                 ClientConfig {
-                    keystore,
+                    keystore_path,
                     envs: vec![env, dev_env],
                     active_address: Some(new_address),
                     // make dev env as default env

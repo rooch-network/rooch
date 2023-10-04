@@ -49,7 +49,6 @@ impl CommandAction<()> for StartCommand {
             )?
         };
         let sequencer_keypair = context
-            .client_config
             .keystore
             .get_key_pair_by_key_pair_type(&sequencer_account, KeyPairType::RoochKeyPairType)
             .map_err(|e| RoochError::SequencerKeyPairDoesNotExistError(e.to_string()))?;
@@ -71,7 +70,6 @@ impl CommandAction<()> for StartCommand {
             )?
         };
         let proposer_keypair = context
-            .client_config
             .keystore
             .get_key_pair_by_key_pair_type(&proposer_account, KeyPairType::RoochKeyPairType)
             .map_err(|e| RoochError::ProposerKeyPairDoesNotExistError(e.to_string()))?;
@@ -93,7 +91,6 @@ impl CommandAction<()> for StartCommand {
             )?
         };
         let relayer_keypair = context
-            .client_config
             .keystore
             .get_key_pair_by_key_pair_type(&relayer_account, KeyPairType::RoochKeyPairType)
             .map_err(|e| RoochError::RelayerKeyPairDoesNotExistError(e.to_string()))?;

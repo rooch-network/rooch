@@ -29,12 +29,7 @@ impl CommandAction<()> for SwitchCommand {
             RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
         })?;
 
-        if !context
-            .client_config
-            .keystore
-            .addresses()
-            .contains(&rooch_address)
-        {
+        if !context.keystore.addresses().contains(&rooch_address) {
             return Err(RoochError::SwitchAccountError(format!(
                 "Address `{}` does not in the Rooch keystore",
                 self.address

@@ -1302,6 +1302,31 @@ impl FileBasedKeystore<RoochAddress, RoochKeyPair> {
         })
     }
 
+    pub fn load(path: &PathBuf) -> Result<Self, anyhow::Error> {
+        if path.exists() {
+            let reader = BufReader::new(File::open(path).map_err(|e| {
+                anyhow!(
+                    "Can't open FileBasedKeystore from Rooch path {:?}: {}",
+                    path,
+                    e
+                )
+            })?);
+            let keystore = serde_json::from_reader(reader).map_err(|e| {
+                anyhow!(
+                    "Can't deserialize FileBasedKeystore from Rooch path {:?}: {}",
+                    path,
+                    e
+                )
+            })?;
+            Ok(Self {
+                keystore,
+                path: Some(path.to_path_buf()),
+            })
+        } else {
+            Err(anyhow!("Key store path {:?} does not exist", path))
+        }
+    }
+
     pub fn set_path(&mut self, path: &Path) {
         self.path = Some(path.to_path_buf());
     }
