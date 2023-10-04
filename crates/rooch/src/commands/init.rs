@@ -49,8 +49,6 @@ impl CommandAction<()> for Init {
             .parent()
             .unwrap_or(&rooch_config_dir()?)
             .join(ROOCH_KEYSTORE_FILENAME);
-        println!("Debug client_config_path: {:?}", client_config_path);
-        println!("Debug keystore_path: {:?}", keystore_path);
 
         let keystore_result = FileBasedKeystore::<RoochAddress, RoochKeyPair>::new(&keystore_path);
         let mut keystore = match keystore_result {
