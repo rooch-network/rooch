@@ -176,13 +176,12 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     .await?;
     let executor_proxy = ExecutorProxy::new(executor.into());
 
-    let password = if opt.password_required == Some(false) {
-        // Use an empty password if not required
-        String::new()
-    } else {
-        // Prompt for a password if required
-        rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
-    };
+    // Use an empty password by default
+    let password = String::new();
+
+    // TODO design a password mechanism
+    // // Prompt for a password if required
+    // rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
 
     // Check for key pairs
     if server_opt.sequencer_keypair.is_none()

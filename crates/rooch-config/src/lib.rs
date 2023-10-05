@@ -93,10 +93,6 @@ pub struct RoochOpt {
     /// The address of the relayer account
     #[clap(long)]
     pub relayer_account: Option<String>,
-
-    /// Whether a password should be provided
-    #[clap(long = "password")]
-    pub password_required: Option<bool>,
 }
 
 impl std::fmt::Display for RoochOpt {
@@ -120,7 +116,6 @@ impl RoochOpt {
             sequencer_account: None,
             proposer_account: None,
             relayer_account: None,
-            password_required: Some(true),
         }
     }
 }

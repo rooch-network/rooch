@@ -15,9 +15,6 @@ use rooch_types::{error::RoochResult, keypair_type::KeyPairType};
 /// any coins will have to transferred afterwards.
 #[derive(Debug, Parser)]
 pub struct CreateCommand {
-    /// Whether a password should be provided
-    #[clap(long = "password")]
-    password_required: Option<bool>,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
 }
@@ -26,14 +23,12 @@ impl CreateCommand {
     pub async fn execute(self) -> RoochResult<String> {
         let mut context = self.context_options.build().await?;
 
-        let password = if self.password_required == Some(false) {
-            // Use an empty password if not required
-            String::new()
-        } else {
-            // Prompt for a password if required
-            rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
-        };
-        println!("Your password is {}", password);
+        // Use an empty password by default
+        let password = String::new();
+
+        // TODO design a password mechanism
+        // // Prompt for a password if required
+        // rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
 
         let result = context.keystore.generate_and_add_new_key(
             KeyPairType::RoochKeyPairType,

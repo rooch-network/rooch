@@ -48,10 +48,6 @@ pub struct Publish {
     /// `moveos_std::account_storage::publish_modules_entry`
     #[clap(long, parse(from_flag))]
     pub by_move_action: bool,
-
-    /// Whether a password should be provided
-    #[clap(long = "password")]
-    password_required: Option<bool>,
 }
 
 impl Publish {
@@ -70,13 +66,12 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
     async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
         let context = self.context_options.build().await?;
 
-        let password = if self.password_required == Some(false) {
-            // Use an empty password if not required
-            String::new()
-        } else {
-            // Prompt for a password if required
-            rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
-        };
+        // Use an empty password by default
+        let password = String::new();
+
+        // TODO design a password mechanism
+        // // Prompt for a password if required
+        // rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
 
         let package_path = self.move_args.package_path;
         let config = self.move_args.build_config;

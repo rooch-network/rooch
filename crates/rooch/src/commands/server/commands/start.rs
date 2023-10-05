@@ -25,10 +25,6 @@ pub struct StartCommand {
 
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
-
-    /// Whether a password should be provided
-    #[clap(long = "password")]
-    password_required: Option<bool>,
 }
 
 #[async_trait]
@@ -36,13 +32,12 @@ impl CommandAction<()> for StartCommand {
     async fn execute(mut self) -> RoochResult<()> {
         let mut context = self.context_options.build().await?;
 
-        let password = if self.password_required == Some(false) {
-            // Use an empty password if not required
-            String::new()
-        } else {
-            // Prompt for a password if required
-            rpassword::prompt_password("Enter a password to decrypt the keys in the rooch keystore. Press return to have a default password: ").unwrap()
-        };
+        // Use an empty password by default
+        let password = String::new();
+
+        // TODO design a password mechanism
+        // // Prompt for a password if required
+        // rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
 
         //Parse key pair from Rooch opt
         let sequencer_account = if self.opt.sequencer_account.is_none() {
