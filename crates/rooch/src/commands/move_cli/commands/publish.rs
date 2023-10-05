@@ -9,8 +9,8 @@ use move_bytecode_utils::dependency_graph::DependencyGraph;
 use move_bytecode_utils::Modules;
 use move_cli::Move;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
-use rooch_key::keypair::KeyPairType;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
+use rooch_types::keypair_type::KeyPairType;
 use rooch_types::transaction::rooch::RoochTransaction;
 
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
@@ -65,6 +65,13 @@ impl Publish {
 impl CommandAction<ExecuteTransactionResponseView> for Publish {
     async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
         let context = self.context_options.build().await?;
+
+        // Use an empty password by default
+        let password = String::new();
+
+        // TODO design a password mechanism
+        // // Prompt for a password if required
+        // rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
 
         let package_path = self.move_args.package_path;
         let config = self.move_args.build_config;
@@ -144,14 +151,24 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                 }
                 None => {
                     context
-                        .sign_and_execute(sender, action, KeyPairType::RoochKeyPairType)
+                        .sign_and_execute(
+                            sender,
+                            action,
+                            KeyPairType::RoochKeyPairType,
+                            Some(password),
+                        )
                         .await?
                 }
             }
         } else {
             let action = MoveAction::ModuleBundle(bundles);
             context
-                .sign_and_execute(sender, action, KeyPairType::RoochKeyPairType)
+                .sign_and_execute(
+                    sender,
+                    action,
+                    KeyPairType::RoochKeyPairType,
+                    Some(password),
+                )
                 .await?
         };
         context.assert_execute_success(tx_result)

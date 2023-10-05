@@ -97,6 +97,8 @@ pub enum RoochError {
     IncorrectSigner { error: String },
     #[error("Invalid chain ID")]
     InvalidChainID,
+    #[error("Invalid password error: {0}")]
+    InvalidPasswordError(String),
 
     #[error("Clean server error: {0}")]
     CleanServerError(String),

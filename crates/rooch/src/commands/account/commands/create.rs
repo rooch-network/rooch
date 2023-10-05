@@ -4,8 +4,8 @@
 use crate::cli_types::WalletContextOptions;
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
-use rooch_key::{keypair::KeyPairType, keystore::AccountKeystore};
-use rooch_types::error::RoochResult;
+use rooch_key::keystore::AccountKeystore;
+use rooch_types::{error::RoochResult, keypair_type::KeyPairType};
 
 /// Create a new account off-chain.
 /// If an account not exist on-chain, contract will auto create the account on-chain.
@@ -23,17 +23,26 @@ impl CreateCommand {
     pub async fn execute(self) -> RoochResult<String> {
         let mut context = self.context_options.build().await?;
 
-        let (new_address, phrase, multichain_id) =
-            context
-                .keystore
-                .generate_and_add_new_key(KeyPairType::RoochKeyPairType, None, None)?;
+        // Use an empty password by default
+        let password = String::new();
 
-        let address = AccountAddress::from(new_address).to_hex_literal();
+        // TODO design a password mechanism
+        // // Prompt for a password if required
+        // rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
+
+        let result = context.keystore.generate_and_add_new_key(
+            KeyPairType::RoochKeyPairType,
+            None,
+            None,
+            Some(password),
+        )?;
+
+        let address = AccountAddress::from(result.address).to_hex_literal();
         println!(
-            "Generated new keypair for address with multichain id {:?} [{new_address}]",
-            multichain_id
+            "Generated new keypair for address with key pair type {:?} [{}]",
+            result.result.key_pair_type, result.address
         );
-        println!("Secret Recovery Phrase : [{phrase}]");
+        println!("Secret Recovery Phrase : [{}]", result.result.mnemonic);
 
         Ok(address)
     }

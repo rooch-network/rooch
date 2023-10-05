@@ -11,13 +11,12 @@ use rooch_config::server_config::ServerConfig;
 use rooch_config::{
     rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_KEYSTORE_FILENAME, ROOCH_SERVER_CONFIG,
 };
-use rooch_key::keypair::KeyPairType;
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use rooch_rpc_client::client_config::{ClientConfig, Env};
 use rooch_types::address::RoochAddress;
-use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::RoochError;
 use rooch_types::error::RoochResult;
+use rooch_types::keypair_type::KeyPairType;
 use std::fs;
 
 /// Tool for init with rooch
@@ -43,6 +42,7 @@ impl CommandAction<()> for Init {
             None => rooch_config_dir()?,
         };
 
+        // Rooch client config init
         let client_config_path = config_path.join(ROOCH_CLIENT_CONFIG);
 
         let keystore_path = client_config_path
@@ -50,7 +50,7 @@ impl CommandAction<()> for Init {
             .unwrap_or(&rooch_config_dir()?)
             .join(ROOCH_KEYSTORE_FILENAME);
 
-        let keystore_result = FileBasedKeystore::<RoochAddress, RoochKeyPair>::new(&keystore_path);
+        let keystore_result = FileBasedKeystore::<RoochAddress>::new(&keystore_path);
         let mut keystore = match keystore_result {
             Ok(file_keystore) => Keystore::File(file_keystore),
             Err(error) => return Err(RoochError::GenerateKeyError(error.to_string())),
@@ -76,7 +76,6 @@ impl CommandAction<()> for Init {
             );
         }
 
-        // Rooch client config init
         // Prompt user for connect to devnet fullnode if config does not exist.
         if !client_config_path.exists() {
             let env = match std::env::var_os("ROOCH_CONFIG_WITH_RPC_URL") {
@@ -135,19 +134,31 @@ impl CommandAction<()> for Init {
             };
 
             if let Some(env) = env {
-                let (new_address, phrase, key_pair_type) =
-                    keystore.generate_and_add_new_key(KeyPairType::RoochKeyPairType, None, None)?;
+                // Use an empty password by default
+                let password = String::new();
+
+                // TODO design a password mechanism
+                // // Prompt for a password if required
+                // rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
+
+                let result = keystore.generate_and_add_new_key(
+                    KeyPairType::RoochKeyPairType,
+                    None,
+                    None,
+                    Some(password),
+                )?;
                 println!(
-                    "Generated new keypair for address with type {:?} [{new_address}]",
-                    key_pair_type.type_of()
+                    "Generated new keypair for address with type {:?} [{}]",
+                    result.result.key_pair_type.type_of(),
+                    result.address
                 );
-                println!("Secret Recovery Phrase : [{phrase}]");
+                println!("Secret Recovery Phrase : [{}]", result.result.mnemonic);
                 let dev_env = Env::new_dev_env();
                 let active_env_alias = dev_env.alias.clone();
                 ClientConfig {
                     keystore_path,
                     envs: vec![env, dev_env],
-                    active_address: Some(new_address),
+                    active_address: Some(result.address),
                     // make dev env as default env
                     active_env: Some(active_env_alias),
                 }

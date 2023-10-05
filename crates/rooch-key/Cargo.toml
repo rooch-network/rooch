@@ -36,6 +36,8 @@ proptest = {optional = true, workspace = true }
 proptest-derive = {optional = true, workspace = true }
 ethers = { workspace = true }
 clap = { workspace = true }
+chacha20poly1305 = { workspace = true }
+argon2 = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

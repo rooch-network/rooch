@@ -5,12 +5,12 @@ use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
 use rooch_config::{RoochOpt, ServerOpt};
-use rooch_key::keypair::KeyPairType;
 use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_server::Service;
 use rooch_types::address::RoochAddress;
 use rooch_types::chain_id::RoochChainID;
 use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::keypair_type::KeyPairType;
 use std::str::FromStr;
 use tokio::signal::ctrl_c;
 #[cfg(unix)]
@@ -31,6 +31,14 @@ pub struct StartCommand {
 impl CommandAction<()> for StartCommand {
     async fn execute(mut self) -> RoochResult<()> {
         let mut context = self.context_options.build().await?;
+
+        // Use an empty password by default
+        let password = String::new();
+
+        // TODO design a password mechanism
+        // // Prompt for a password if required
+        // rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
+
         //Parse key pair from Rooch opt
         let sequencer_account = if self.opt.sequencer_account.is_none() {
             let active_address_opt = context.client_config.active_address;
@@ -50,7 +58,11 @@ impl CommandAction<()> for StartCommand {
         };
         let sequencer_keypair = context
             .keystore
-            .get_key_pair_by_key_pair_type(&sequencer_account, KeyPairType::RoochKeyPairType)
+            .get_key_pair_by_type_password(
+                &sequencer_account,
+                KeyPairType::RoochKeyPairType,
+                Some(password.clone()),
+            )
             .map_err(|e| RoochError::SequencerKeyPairDoesNotExistError(e.to_string()))?;
 
         let proposer_account = if self.opt.proposer_account.is_none() {
@@ -71,7 +83,11 @@ impl CommandAction<()> for StartCommand {
         };
         let proposer_keypair = context
             .keystore
-            .get_key_pair_by_key_pair_type(&proposer_account, KeyPairType::RoochKeyPairType)
+            .get_key_pair_by_type_password(
+                &proposer_account,
+                KeyPairType::RoochKeyPairType,
+                Some(password.clone()),
+            )
             .map_err(|e| RoochError::ProposerKeyPairDoesNotExistError(e.to_string()))?;
 
         let relayer_account = if self.opt.relayer_account.is_none() {
@@ -92,7 +108,11 @@ impl CommandAction<()> for StartCommand {
         };
         let relayer_keypair = context
             .keystore
-            .get_key_pair_by_key_pair_type(&relayer_account, KeyPairType::RoochKeyPairType)
+            .get_key_pair_by_type_password(
+                &relayer_account,
+                KeyPairType::RoochKeyPairType,
+                Some(password),
+            )
             .map_err(|e| RoochError::RelayerKeyPairDoesNotExistError(e.to_string()))?;
 
         // Construct sequencer, proposer and relayer keypair

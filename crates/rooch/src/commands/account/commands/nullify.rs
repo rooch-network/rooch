@@ -3,7 +3,7 @@
 
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
-use rooch_key::{keypair::KeyPairType, keystore::AccountKeystore};
+use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use std::fmt::Debug;
 
@@ -12,6 +12,7 @@ use rooch_types::{
     address::RoochAddress,
     error::{RoochError, RoochResult},
     framework::native_validator::NativeValidatorModule,
+    keypair_type::KeyPairType,
 };
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
@@ -32,6 +33,13 @@ impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
     async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
         let mut context = self.context_options.build().await?;
 
+        // Use an empty password by default
+        let password = String::new();
+
+        // TODO design a password mechanism
+        // // Prompt for a password if required
+        // rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
+
         let existing_address = RoochAddress::from_str(self.address.as_str()).map_err(|e| {
             RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
         })?;
@@ -46,7 +54,12 @@ impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
 
         // Execute the Move call as a transaction
         let mut result = context
-            .sign_and_execute(existing_address, action, KeyPairType::RoochKeyPairType)
+            .sign_and_execute(
+                existing_address,
+                action,
+                KeyPairType::RoochKeyPairType,
+                Some(password),
+            )
             .await?;
         result = context.assert_execute_success(result)?;
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    address::{EthereumAddress, RoochAddress},
+    address::RoochAddress,
     authentication_key::AuthenticationKey,
     error::{RoochError, RoochResult},
     framework::auth_validator::BuiltinAuthValidator,
@@ -10,6 +10,10 @@ use crate::{
 use derive_more::{AsMut, AsRef, From};
 pub use enum_dispatch::enum_dispatch;
 use eyre::eyre;
+use fastcrypto::ed25519::{
+    Ed25519KeyPair, Ed25519PublicKey, Ed25519PublicKeyAsBytes, Ed25519Signature,
+    Ed25519SignatureAsBytes,
+};
 use fastcrypto::encoding::{Base64, Encoding};
 use fastcrypto::error::FastCryptoError;
 use fastcrypto::hash::{Blake2b256, HashFunction};
@@ -19,15 +23,7 @@ pub use fastcrypto::traits::{
     AggregateAuthenticator, Authenticator, EncodeDecodeBase64, RecoverableSignature,
     RecoverableSigner, SigningKey, ToFromBytes, VerifyingKey,
 };
-use fastcrypto::{
-    ed25519::{
-        Ed25519KeyPair, Ed25519PublicKey, Ed25519PublicKeyAsBytes, Ed25519Signature,
-        Ed25519SignatureAsBytes,
-    },
-    secp256k1::recoverable::Secp256k1RecoverablePublicKey,
-};
 use moveos_types::{h256::H256, serde::Readable};
-use rand::{rngs::StdRng, SeedableRng};
 use schemars::JsonSchema;
 use serde::ser::Serializer;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -526,27 +522,6 @@ impl RoochSignatureInner for Ed25519RoochSignature {
     type PubKey = Ed25519PublicKey;
     type KeyPair = Ed25519KeyPair;
     const LENGTH: usize = Ed25519PublicKey::LENGTH + Ed25519Signature::LENGTH + 1;
-}
-
-/// Generate a rooch keypair from the specified RNG (useful for testing with seedable rngs).
-pub fn get_rooch_key_pair_from_rng<KP: KeypairTraits, R>(csprng: &mut R) -> (RoochAddress, KP)
-where
-    R: rand::CryptoRng + rand::RngCore,
-    <KP as KeypairTraits>::PubKey: RoochPublicKey,
-{
-    let kp = KP::generate(&mut StdRng::from_rng(csprng).unwrap());
-    (kp.public().into(), kp)
-}
-
-/// Generate a ethereum keypair from the specified RNG (useful for testing with seedable rngs).
-pub fn get_ethereum_key_pair_from_rng<KP: KeypairTraits, R>(csprng: &mut R) -> (EthereumAddress, KP)
-where
-    R: rand::CryptoRng + rand::RngCore,
-    KP: KeypairTraits<PubKey = Secp256k1RecoverablePublicKey>,
-{
-    let kp = KP::generate(&mut StdRng::from_rng(csprng).unwrap());
-    let address = EthereumAddress::from(kp.public().clone());
-    (address, kp)
 }
 
 #[cfg(test)]
