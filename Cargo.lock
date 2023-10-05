@@ -7706,6 +7706,7 @@ dependencies = [
  "rooch-sequencer",
  "rooch-store",
  "rooch-types",
+ "rpassword",
  "rustc-hex 1.0.0",
  "schemars",
  "serde 1.0.188",

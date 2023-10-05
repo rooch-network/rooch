@@ -19,9 +19,6 @@ pub struct SwitchCommand {
     /// The address of the Rooch account to be set as active
     #[clap(short = 'a', long = "address")]
     address: String,
-    /// Whether a password should be provided
-    #[clap(long = "password")]
-    password_required: Option<bool>,
 }
 
 #[async_trait]
@@ -32,19 +29,7 @@ impl CommandAction<()> for SwitchCommand {
             RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
         })?;
 
-        let password = if self.password_required == Some(false) {
-            // Use an empty password if not required
-            String::new()
-        } else {
-            // Prompt for a password if required
-            rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
-        };
-
-        if !context
-            .keystore
-            .addresses(Some(password))?
-            .contains(&rooch_address)
-        {
+        if !context.keystore.addresses().contains(&rooch_address) {
             return Err(RoochError::SwitchAccountError(format!(
                 "Address `{}` does not in the Rooch keystore",
                 self.address

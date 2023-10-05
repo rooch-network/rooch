@@ -6,7 +6,6 @@ use ethers::prelude::*;
 use moveos_types::transaction::MoveAction;
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
 use rooch_types::address::RoochAddress;
-use rooch_types::crypto::RoochKeyPair;
 use rooch_types::framework::ethereum_light_client::BlockHeader;
 use rooch_types::keypair_type::KeyPairType;
 use rooch_types::transaction::rooch::RoochTransactionData;
@@ -16,8 +15,8 @@ fn test_submit_block() {
     tracing_subscriber::fmt::init();
     let mut binding_test = binding_test::RustBindingTest::new().unwrap();
 
-    let keystore = InMemKeystore::<RoochAddress, RoochKeyPair>::new_insecure_for_tests(1);
-    let sender = keystore.addresses(Some("".to_owned()))[0];
+    let keystore = InMemKeystore::<RoochAddress>::new_insecure_for_tests(1);
+    let sender = keystore.addresses()[0];
     let sequence_number = 0;
 
     let json = serde_json::json!(

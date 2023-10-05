@@ -22,7 +22,7 @@ use rooch_config::store_config::StoreConfig;
 use rooch_config::{BaseConfig, RoochOpt, ServerOpt};
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
-use rooch_key::key_derive::generate_new_key_pair;
+use rooch_key::key_derive::{generate_new_key_pair, KeyStoreOperator};
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
 use rooch_proposer::proxy::ProposerProxy;
@@ -176,6 +176,14 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     .await?;
     let executor_proxy = ExecutorProxy::new(executor.into());
 
+    let password = if opt.password_required == Some(false) {
+        // Use an empty password if not required
+        String::new()
+    } else {
+        // Prompt for a password if required
+        rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
+    };
+
     // Check for key pairs
     if server_opt.sequencer_keypair.is_none()
         || server_opt.proposer_keypair.is_none()
@@ -187,11 +195,13 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
                 KeyPairType::RoochKeyPairType,
                 None,
                 None,
-                None,
+                Some(password.clone()),
             )?;
-            server_opt.sequencer_keypair = Some(result.key_pair.copy());
-            server_opt.proposer_keypair = Some(result.key_pair.copy());
-            server_opt.relayer_keypair = Some(result.key_pair.copy());
+            let kp: RoochKeyPair = KeyPairType::RoochKeyPairType
+                .retrieve_key_pair(&result.result.encryption, Some(password))?;
+            server_opt.sequencer_keypair = Some(kp.copy());
+            server_opt.proposer_keypair = Some(kp.copy());
+            server_opt.relayer_keypair = Some(kp.copy());
         } else {
             return Err(Error::from(
                 RoochError::InvalidSequencerOrProposerOrRelayerKeyPair,

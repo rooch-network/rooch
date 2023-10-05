@@ -150,10 +150,7 @@ pub trait KeyStoreOperator<Addr, KeyPair> {
         seed: &[u8],
         derivation_path: Option<DerivationPath>,
     ) -> Result<Vec<u8>, RoochError>;
-    fn derive_key_pair_from_ciphertext(
-        &self,
-        ciphertext: Vec<u8>,
-    ) -> Result<(Addr, KeyPair), RoochError>;
+    fn derive_address_from_private_key(&self, private_key: Vec<u8>) -> Result<Addr, RoochError>;
     fn retrieve_key_pair(
         &self,
         encryption: &EncryptionData,
@@ -175,16 +172,16 @@ impl KeyStoreOperator<RoochAddress, RoochKeyPair> for KeyPairType {
         Ok(sk.as_bytes().to_vec())
     }
 
-    fn derive_key_pair_from_ciphertext(
+    fn derive_address_from_private_key(
         &self,
-        ciphertext: Vec<u8>,
-    ) -> Result<(RoochAddress, RoochKeyPair), RoochError> {
+        private_key: Vec<u8>,
+    ) -> Result<RoochAddress, RoochError> {
         let kp: Ed25519KeyPair = Ed25519KeyPair::from(
-            Ed25519PrivateKey::from_bytes(&ciphertext)
+            Ed25519PrivateKey::from_bytes(&private_key)
                 .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
         );
         let address: RoochAddress = kp.public().into();
-        Ok((address, kp.into()))
+        Ok(address)
     }
 
     fn retrieve_key_pair(
@@ -231,16 +228,16 @@ impl KeyStoreOperator<EthereumAddress, Secp256k1RecoverableKeyPair> for KeyPairT
         Ok(sk.as_bytes().to_vec())
     }
 
-    fn derive_key_pair_from_ciphertext(
+    fn derive_address_from_private_key(
         &self,
-        ciphertext: Vec<u8>,
-    ) -> Result<(EthereumAddress, Secp256k1RecoverableKeyPair), RoochError> {
+        private_key: Vec<u8>,
+    ) -> Result<EthereumAddress, RoochError> {
         let kp = Secp256k1RecoverableKeyPair::from(
-            Secp256k1RecoverablePrivateKey::from_bytes(&ciphertext)
+            Secp256k1RecoverablePrivateKey::from_bytes(&private_key)
                 .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
         );
-        let address: EthereumAddress = EthereumAddress::from(kp.public.clone());
-        Ok((address, kp))
+        let address: EthereumAddress = EthereumAddress::from(kp.public);
+        Ok(address)
     }
 
     fn retrieve_key_pair(
@@ -313,25 +310,22 @@ pub fn generate_new_key_pair<Addr, KeyPair>(
     derivation_path: Option<DerivationPath>,
     word_length: Option<String>,
     password: Option<String>,
-) -> Result<GeneratedKeyPair<Addr, KeyPair>, anyhow::Error>
+) -> Result<GeneratedKeyPair<Addr>, anyhow::Error>
 where
     KeyPairType: KeyStoreOperator<Addr, KeyPair>,
 {
     let mnemonic = Mnemonic::new(parse_word_length(word_length)?, Language::English);
     let seed = Seed::new(&mnemonic, "");
 
-    let sk =
-        key_pair_type.derive_private_key_from_path(seed.as_bytes(), derivation_path.clone())?;
+    let sk = key_pair_type.derive_private_key_from_path(seed.as_bytes(), derivation_path)?;
 
     let (nonce, ciphertext, tag) = key_pair_type
-        .encrypt_private_key(sk, password.clone())
+        .encrypt_private_key(sk.clone(), password.clone())
         .expect("Encryption failed for private key");
 
-    let sk_clone = key_pair_type.derive_private_key_from_path(seed.as_bytes(), derivation_path)?;
+    let hashed_password = KeyPairType::hash_password(sk.clone(), password)?;
 
-    let hashed_password = KeyPairType::hash_password(sk_clone, password)?;
-
-    let (address, key_pair) = key_pair_type.derive_key_pair_from_ciphertext(ciphertext.clone())?;
+    let address = key_pair_type.derive_address_from_private_key(sk)?;
 
     let encryption = EncryptionData {
         hashed_password,
@@ -346,11 +340,7 @@ where
         mnemonic: mnemonic.phrase().to_string(),
     };
 
-    Ok(GeneratedKeyPair {
-        address,
-        key_pair,
-        result,
-    })
+    Ok(GeneratedKeyPair { address, result })
 }
 
 fn parse_word_length(s: Option<String>) -> Result<MnemonicType, anyhow::Error> {

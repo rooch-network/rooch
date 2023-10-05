@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use ethers::types::{Bytes, U256};
-use fastcrypto::secp256k1::recoverable::Secp256k1RecoverableKeyPair;
 use moveos_types::transaction::MoveAction;
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
 use rooch_types::address::{EthereumAddress, MultiChainAddress};
@@ -22,9 +21,8 @@ fn test_validate() {
     let address_mapping =
         binding_test.as_module_bundle::<rooch_types::framework::address_mapping::AddressMapping>();
 
-    let keystore =
-        InMemKeystore::<EthereumAddress, Secp256k1RecoverableKeyPair>::new_insecure_for_tests(1);
-    let sender = keystore.addresses(Some("".to_owned()))[0];
+    let keystore = InMemKeystore::<EthereumAddress>::new_insecure_for_tests(1);
+    let sender = keystore.addresses()[0];
     let sequence_number = U256::zero();
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
     let action_bytes =

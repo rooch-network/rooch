@@ -17,9 +17,8 @@ pub struct GenerateNewKeyPair {
     pub encryption: EncryptionData,
     pub mnemonic: String,
 }
-pub struct GeneratedKeyPair<Addr, KeyPair> {
+pub struct GeneratedKeyPair<Addr> {
     pub address: Addr,
-    pub key_pair: KeyPair,
     pub result: GenerateNewKeyPair,
 }
 

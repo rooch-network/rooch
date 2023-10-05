@@ -14,7 +14,6 @@ use rooch_config::{
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use rooch_rpc_client::client_config::{ClientConfig, Env};
 use rooch_types::address::RoochAddress;
-use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::RoochError;
 use rooch_types::error::RoochResult;
 use rooch_types::keypair_type::KeyPairType;
@@ -54,7 +53,7 @@ impl CommandAction<()> for Init {
             .unwrap_or(&rooch_config_dir()?)
             .join(ROOCH_KEYSTORE_FILENAME);
 
-        let keystore_result = FileBasedKeystore::<RoochAddress, RoochKeyPair>::new(&keystore_path);
+        let keystore_result = FileBasedKeystore::<RoochAddress>::new(&keystore_path);
         let mut keystore = match keystore_result {
             Ok(file_keystore) => Keystore::File(file_keystore),
             Err(error) => return Err(RoochError::GenerateKeyError(error.to_string())),

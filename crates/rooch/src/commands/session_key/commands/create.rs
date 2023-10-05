@@ -59,7 +59,9 @@ impl CreateCommand {
             .parse_account_arg(self.tx_options.sender_account.unwrap())?
             .into();
 
-        let session_auth_key = context.keystore.generate_session_key(&sender)?;
+        let session_auth_key = context
+            .keystore
+            .generate_session_key(&sender, Some(password.clone()))?;
 
         let session_scope = self.scope;
 

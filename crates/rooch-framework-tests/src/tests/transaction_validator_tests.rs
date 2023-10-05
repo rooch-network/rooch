@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use ethers::types::{Bytes, U256};
-use fastcrypto::secp256k1::recoverable::Secp256k1RecoverableKeyPair;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::language_storage::ModuleId;
@@ -12,7 +11,6 @@ use moveos_types::move_types::FunctionId;
 use moveos_types::{module_binding::ModuleBinding, transaction::MoveAction};
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
 use rooch_types::address::{EthereumAddress, MultiChainAddress, RoochAddress};
-use rooch_types::crypto::RoochKeyPair;
 use rooch_types::framework::session_key::SessionKeyModule;
 use rooch_types::framework::timestamp::TimestampModule;
 use rooch_types::keypair_type::KeyPairType;
@@ -32,8 +30,8 @@ fn test_validate_rooch() {
         .as_module_bundle::<rooch_types::framework::transaction_validator::TransactionValidator>(
     );
 
-    let keystore = InMemKeystore::<RoochAddress, RoochKeyPair>::new_insecure_for_tests(1);
-    let sender = keystore.addresses(Some("".to_owned()))[0];
+    let keystore = InMemKeystore::<RoochAddress>::new_insecure_for_tests(1);
+    let sender = keystore.addresses()[0];
     let sequence_number = 0;
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
@@ -64,9 +62,8 @@ fn test_validate_ethereum() {
     let address_mapping =
         binding_test.as_module_bundle::<rooch_types::framework::address_mapping::AddressMapping>();
 
-    let keystore =
-        InMemKeystore::<EthereumAddress, Secp256k1RecoverableKeyPair>::new_insecure_for_tests(1);
-    let sender = keystore.addresses(Some("".to_owned()))[0];
+    let keystore = InMemKeystore::<EthereumAddress>::new_insecure_for_tests(1);
+    let sender = keystore.addresses()[0];
     let sequence_number = U256::zero();
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
     let action_bytes =
@@ -101,11 +98,11 @@ fn test_session_key_rooch() {
     // tracing_subscriber::fmt::init();
     let mut binding_test = binding_test::RustBindingTest::new().unwrap();
 
-    let mut keystore = InMemKeystore::<RoochAddress, RoochKeyPair>::new_insecure_for_tests(1);
-    let sender = keystore.addresses(Some("".to_owned()))[0];
+    let mut keystore = InMemKeystore::<RoochAddress>::new_insecure_for_tests(1);
+    let sender = keystore.addresses()[0];
     let sequence_number = 0;
 
-    let session_auth_key = keystore.generate_session_key(&sender).unwrap();
+    let session_auth_key = keystore.generate_session_key(&sender, None).unwrap();
 
     let session_scope = SessionScope::new(
         ROOCH_FRAMEWORK_ADDRESS,
@@ -145,7 +142,7 @@ fn test_session_key_rooch() {
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number + 1, action);
     let tx = keystore
-        .sign_transaction_via_session_key(&sender, tx_data, &session_auth_key)
+        .sign_transaction_via_session_key(&sender, tx_data, &session_auth_key, None)
         .unwrap();
 
     binding_test.execute(tx).unwrap();
@@ -164,7 +161,7 @@ fn test_session_key_rooch() {
     );
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number + 2, action);
     let tx = keystore
-        .sign_transaction_via_session_key(&sender, tx_data, &session_auth_key)
+        .sign_transaction_via_session_key(&sender, tx_data, &session_auth_key, None)
         .unwrap();
 
     // the session key is not in the scope of account module, so the transaction should be rejected when validate.
@@ -210,7 +207,7 @@ fn test_session_key_rooch() {
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number + 3, action);
     let tx = keystore
-        .sign_transaction_via_session_key(&sender, tx_data, &session_auth_key)
+        .sign_transaction_via_session_key(&sender, tx_data, &session_auth_key, None)
         .unwrap();
     let error = binding_test.execute_as_result(tx).unwrap_err();
     match error.downcast_ref() {
