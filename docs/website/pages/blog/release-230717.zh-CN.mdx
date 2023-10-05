@@ -55,7 +55,7 @@ Rooch 在 Move 基础上实现了存储抽象，同时提供了 `ObjectStorage` 
 
 同时，为了保证状态存储的安全性，让 `AccountStorage` 和 `ObjectStorage` 的方法遵循和 Move 全局状态指令一样类型安全规则，Rooch 引入了 `#[private_generics(T)]` 注解（annotation）。这个注解可以加在方法上，表示该方法的泛型参数 `T` 必须定义在调用方的当前合约中，遵循 Move 全局存储指令一样的约束。
 
-关于状态存储的详细设计请参看：[存储抽象](/docs/tech-highlights/storage_abstraction)。
+关于状态存储的详细设计请参看：[存储抽象](/docs/dive-into-rooch/storage-abstraction)。
 
 ### Rooch 的 JSON RPC
 
@@ -69,7 +69,7 @@ Rooch 当前支持的接口请参看：[Rooch JSON RPC](/docs/reference/rpc)。
 
 ### Sequencer 以及 Proposer 原型实现 
 
-Sequencer 以及 Proposer 这个版本中只包含了一个原型实现，主要表达了 Rooch 中的交易的执行流程，以及即时确认的特性。关于 Rooch 中的交易执行流程请参看：[交易执行流](/docs/tech-highlights/transaction_flow)。
+Sequencer 以及 Proposer 这个版本中只包含了一个原型实现，主要表达了 Rooch 中的交易的执行流程，以及即时确认的特性。关于 Rooch 中的交易执行流程请参看：[交易执行流](../docs/dive-into-rooch/transaction-flow.zh-CN.mdx)。
 
 ### 示例
 
