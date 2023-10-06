@@ -8,7 +8,6 @@ module test::m {
     use moveos_std::object;
     use moveos_std::object_id::ObjectID;
     use moveos_std::account_storage;
-    use moveos_std::object_storage;
     use std::debug;
 
     struct S has store, key { v: u8 }
@@ -23,14 +22,12 @@ module test::m {
         assert!(x"7852c5dcbd87e82102dba0db36d44b5a9fb0006b3e828c0b5f0832f70a8ff6ee" == tx_hash, 1000);
         let obj = object::new(tx_ctx, sender , S { v: 1});
         debug::print(&obj);
-        let object_storage = storage_context::object_storage_mut(ctx);
-        object_storage::add(object_storage, obj);
+        storage_context::add_object(ctx, obj);
     }
 
     public entry fun move_s_to_global(ctx: &mut StorageContext, sender: signer, object_id: ObjectID) {
-        let object_storage = storage_context::object_storage_mut(ctx);
         debug::print(&object_id);
-        let obj = object_storage::remove<S>(object_storage, object_id);
+        let obj = storage_context::remove_object(ctx, object_id);
         debug::print(&obj);
         let (_id, _owner, value) = object::unpack(obj);
         account_storage::global_move_to(ctx, &sender, value);
@@ -41,13 +38,11 @@ module test::m {
         let sender = tx_context::sender(tx_ctx);
         let obj = object::new(tx_ctx, sender, Cup<T> { v: 2 });
         debug::print(&obj);
-        let object_storage = storage_context::object_storage_mut(ctx);
-        object_storage::add(object_storage, obj);
+        storage_context::add_object(ctx, obj);
     }
 
     public entry fun move_cup_to_global<T:store>(ctx: &mut StorageContext, sender: signer, object_id: ObjectID) {
-        let object_storage = storage_context::object_storage_mut(ctx);
-        let obj = object_storage::remove<Cup<S>>(object_storage, object_id);
+        let obj = storage_context::remove_object(ctx, object_id);
         debug::print(&obj);
         let (_id,_owner,value) = object::unpack(obj);
         account_storage::global_move_to(ctx, &sender, value);

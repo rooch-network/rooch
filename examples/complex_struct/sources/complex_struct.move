@@ -5,7 +5,6 @@ module rooch_examples::complex_struct {
    use moveos_std::account_storage;
    use moveos_std::object_id::{ObjectID};
    use moveos_std::object;
-   use moveos_std::object_storage;
    use moveos_std::bcs;
    use std::vector;
    use std::signer;
@@ -117,8 +116,7 @@ module rooch_examples::complex_struct {
          object::new(tx_ctx, addr, s)
       };
       let complex_object_id = object::id(&complex_object);
-      let object_storage = storage_context::object_storage_mut(ctx);
-      object_storage::add(object_storage, complex_object);
+      storage_context::add_object(ctx, complex_object);
 
       let s2 = new_complex_struct(complex_object_id);
       account_storage::global_move_to(ctx, &sender, s2);

@@ -4,7 +4,6 @@ module rooch_examples::something {
     use moveos_std::event;
     use moveos_std::object::{Self, Object};
     use moveos_std::object_id::ObjectID;
-    use moveos_std::object_storage;
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::table::{Self, Table};
     use moveos_std::tx_context;
@@ -124,15 +123,13 @@ module rooch_examples::something {
     }
 
     public(friend) fun add_something(storage_ctx: &mut StorageContext, obj: Object<SomethingProperties>) {
-        let obj_store = storage_context::object_storage_mut(storage_ctx);
-        object_storage::add(obj_store, obj);
+        storage_context::add_object(storage_ctx, obj);
     }
 
     public(friend) fun remove_something(
         storage_ctx: &mut StorageContext,
         obj_id: ObjectID
     ): Object<SomethingProperties> {
-        let obj_store = storage_context::object_storage_mut(storage_ctx);
-        object_storage::remove<SomethingProperties>(obj_store, obj_id)
+        storage_context::remove_object<SomethingProperties>(storage_ctx, obj_id)
     }
 }

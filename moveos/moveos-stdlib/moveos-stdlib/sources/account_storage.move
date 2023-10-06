@@ -11,7 +11,6 @@ module moveos_std::account_storage {
     use moveos_std::table::{Self, Table};
     use moveos_std::object;
     use moveos_std::object_id::{Self, ObjectID};
-    use moveos_std::object_storage::{Self, ObjectStorage};
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::tx_context;
     use moveos_std::move_module::{Self, MoveModule};
@@ -51,17 +50,15 @@ module moveos_std::account_storage {
             resources: type_table::new_with_id(named_table_id(account, NamedTableResource)),
             modules: table::new_with_id(named_table_id(account, NamedTableModule)),
         };
-        let object_storage = storage_context::object_storage_mut(ctx);
-        assert!(!object_storage::contains(object_storage, object_id), ErrorAccountAlreadyExists);
+        assert!(!storage_context::contains_object(ctx, object_id), ErrorAccountAlreadyExists);
         let object = object::new_with_id(object_id, account, account_storage);
-        object_storage::add(object_storage, object);
+        storage_context::add_object(ctx, object);
     }
 
     /// check if account storage eixst
     public fun exist_account_storage(ctx: &StorageContext, account: address): bool {
         let object_id = object_id::address_to_object_id(account);
-        let object_storage = storage_context::object_storage(ctx);
-        object_storage::contains(object_storage, object_id)
+        storage_context::contains_object(ctx, object_id)
     }
 
     public fun ensure_account_storage(ctx: &mut StorageContext, account: address) {
@@ -72,15 +69,15 @@ module moveos_std::account_storage {
 
     //TODO the resource and module table's id is determined by the account address, so we can use the account address to get the table id
     //And don't need to borrow the account storage from the object storage, but if we create the table every time, how to drop the table?
-    fun borrow_account_storage(object_storage: &ObjectStorage, account: address): &AccountStorage{
+    fun borrow_account_storage(ctx: &StorageContext, account: address): &AccountStorage{
         let object_id = object_id::address_to_object_id(account);
-        let object = object_storage::borrow<AccountStorage>(object_storage, object_id);
+        let object = storage_context::borrow_object<AccountStorage>(ctx, object_id);
         object::borrow(object)
     }
 
-    fun borrow_account_storage_mut(object_storage: &mut ObjectStorage, account: address): &mut AccountStorage{
+    fun borrow_account_storage_mut(ctx: &mut StorageContext, account: address): &mut AccountStorage{
         let object_id = object_id::address_to_object_id(account);
-        let object = object_storage::borrow_mut<AccountStorage>(object_storage, object_id);
+        let object = storage_context::borrow_object_mut<AccountStorage>(ctx, object_id);
         object::borrow_mut(object)
     }
 
@@ -121,8 +118,7 @@ module moveos_std::account_storage {
     /// Borrow a resource from the account's storage
     /// This function equates to `borrow_global<T>(address)` instruction in Move
     public fun global_borrow<T: key>(ctx: &StorageContext, account: address): &T {
-        let object_storage = storage_context::object_storage(ctx);
-        let account_storage = borrow_account_storage(object_storage, account);
+        let account_storage = borrow_account_storage(ctx, account);
         borrow_resource_from_account_storage<T>(account_storage)
     }
 
@@ -130,8 +126,7 @@ module moveos_std::account_storage {
     /// Borrow a mut resource from the account's storage
     /// This function equates to `borrow_global_mut<T>(address)` instruction in Move
     public fun global_borrow_mut<T: key>(ctx: &mut StorageContext, account: address): &mut T {
-        let object_storage = storage_context::object_storage_mut(ctx);
-        let account_storage = borrow_account_storage_mut(object_storage, account);
+        let account_storage = borrow_account_storage_mut(ctx, account);
         borrow_mut_resource_from_account_storage<T>(account_storage)
     }
 
@@ -142,7 +137,7 @@ module moveos_std::account_storage {
         let account_address = signer::address_of(account);
         //Auto create the account storage when move resource to the account
         ensure_account_storage(ctx, account_address);
-        let account_storage = borrow_account_storage_mut(storage_context::object_storage_mut(ctx), account_address);
+        let account_storage = borrow_account_storage_mut(ctx, account_address);
         add_resource_to_account_storage(account_storage, resource);
     }
 
@@ -150,7 +145,7 @@ module moveos_std::account_storage {
     /// Move a resource from the account's storage
     /// This function equates to `move_from<T>(address)` instruction in Move
     public fun global_move_from<T: key>(ctx: &mut StorageContext, account: address): T {
-        let account_storage = borrow_account_storage_mut(storage_context::object_storage_mut(ctx), account);
+        let account_storage = borrow_account_storage_mut(ctx, account);
         remove_resource_from_account_storage<T>(account_storage)
     }
 
@@ -159,7 +154,7 @@ module moveos_std::account_storage {
     /// This function equates to `exists<T>(address)` instruction in Move
     public fun global_exists<T: key>(ctx: &StorageContext, account: address) : bool {
         if (exist_account_storage(ctx, account)) {
-            let account_storage = borrow_account_storage(storage_context::object_storage(ctx), account);
+            let account_storage = borrow_account_storage(ctx, account);
             exists_resource_at_account_storage<T>(account_storage)
         }else{
             false
@@ -170,14 +165,14 @@ module moveos_std::account_storage {
 
     /// Check if the account has a module with the given name
     public fun exists_module(ctx: &StorageContext, account: address, name: String): bool {
-        let account_storage = borrow_account_storage(storage_context::object_storage(ctx), account);
+        let account_storage = borrow_account_storage(ctx, account);
         exists_module_at_account_storage(account_storage, name) 
     }
 
     /// Publish modules to the account's storage
     public fun publish_modules(ctx: &mut StorageContext, account: &signer, modules: vector<MoveModule>) {
         let account_address = signer::address_of(account);
-        let account_storage = borrow_account_storage_mut(storage_context::object_storage_mut(ctx), account_address);
+        let account_storage = borrow_account_storage_mut(ctx, account_address);
         let i = 0;
         let len = vector::length(&modules);
         let (module_names, module_names_with_init_fn) = move_module::verify_modules(&modules, account_address);

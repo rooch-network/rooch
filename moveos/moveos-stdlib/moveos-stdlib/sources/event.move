@@ -5,7 +5,6 @@ module moveos_std::event {
     use moveos_std::bcs;
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::tx_context::{Self};
-    use moveos_std::object_storage::{Self, ObjectStorage};
     use moveos_std::object_id::{Self, ObjectID};
     use moveos_std::object;
     #[test_only]
@@ -30,29 +29,29 @@ module moveos_std::event {
         object_id::address_to_object_id(event_handle_address)
     }
 
-    fun exists_event_handle<T>(object_storage: &ObjectStorage): bool {
+    fun exists_event_handle<T>(ctx: &StorageContext): bool {
         let event_handle_id = derive_event_handle_id<T>();
-        object_storage::contains(object_storage, event_handle_id)
+        storage_context::contains_object(ctx, event_handle_id)
     }
 
     /// Borrow a mut event handle from the object storage
-    fun borrow_event_handle<T>(object_storage: &ObjectStorage): &EventHandle {
+    fun borrow_event_handle<T>(ctx: &StorageContext): &EventHandle {
         let event_handle_id = derive_event_handle_id<T>();
-        let object = object_storage::borrow<EventHandle>(object_storage, event_handle_id);
+        let object = storage_context::borrow_object<EventHandle>(ctx, event_handle_id);
         object::borrow(object)
     }
 
     /// Borrow a mut event handle from the object storage
-    fun borrow_event_handle_mut<T>(object_storage: &mut ObjectStorage): &mut EventHandle {
+    fun borrow_event_handle_mut<T>(ctx: &mut StorageContext): &mut EventHandle {
         let event_handle_id = derive_event_handle_id<T>();
-        let object = object_storage::borrow_mut<EventHandle>(object_storage, event_handle_id);
+        let object = storage_context::borrow_object_mut<EventHandle>(ctx, event_handle_id);
         object::borrow_mut(object)
     }
 
     /// Get event handle owner
-    fun get_event_handle_owner<T>(object_storage: &ObjectStorage): address {
+    fun get_event_handle_owner<T>(ctx: &StorageContext): address {
         let event_handle_id = derive_event_handle_id<T>();
-        let object = object_storage::borrow<EventHandle>(object_storage, event_handle_id);
+        let object = storage_context::borrow_object<EventHandle>(ctx, event_handle_id);
         object::owner(object)
     }
 
@@ -62,12 +61,10 @@ module moveos_std::event {
         let event_handle_id = derive_event_handle_id<T>();
         let sender = @0x0;
         let event_seq = 0;
-        if (exists_event_handle<T>(storage_context::object_storage(ctx))) {
-            let event_handle = borrow_event_handle<T>(
-                storage_context::object_storage(ctx)
-            );
+        if (exists_event_handle<T>(ctx)) {
+            let event_handle = borrow_event_handle<T>(ctx);
             event_seq = event_handle.counter;
-            sender = get_event_handle_owner<T>(storage_context::object_storage(ctx));
+            sender = get_event_handle_owner<T>(ctx);
         };
         (event_handle_id, sender, event_seq)
     }
@@ -81,11 +78,11 @@ module moveos_std::event {
             counter: 0,
         };
         let object = object::new_with_id<EventHandle>(event_handle_id, account_addr, event_handle);
-        object_storage::add(storage_context::object_storage_mut(ctx), object)
+        storage_context::add_object(ctx, object)
     }
 
     public fun ensure_event_handle<T>(ctx: &mut StorageContext) {
-        if (!exists_event_handle<T>(storage_context::object_storage(ctx))) {
+        if (!exists_event_handle<T>(ctx)) {
             new_event_handle<T>(ctx);
         }
     }
@@ -101,9 +98,7 @@ module moveos_std::event {
     public fun emit<T>(ctx: &mut StorageContext, event: T) {
         ensure_event_handle<T>(ctx);
         let event_handle_id = derive_event_handle_id<T>();
-        let event_handle_ref = borrow_event_handle_mut<T>(
-            storage_context::object_storage_mut(ctx)
-        );
+        let event_handle_ref = borrow_event_handle_mut<T>(ctx);
         native_emit<T>(&event_handle_id, event_handle_ref.counter, event);
         event_handle_ref.counter = event_handle_ref.counter + 1;
     }

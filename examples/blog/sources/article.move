@@ -7,7 +7,6 @@ module rooch_examples::article {
     use moveos_std::event;
     use moveos_std::object::{Self, Object};
     use moveos_std::object_id::ObjectID;
-    use moveos_std::object_storage;
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::table::{Self, Table};
     use moveos_std::tx_context;
@@ -361,8 +360,7 @@ module rooch_examples::article {
     }
 
     public(friend) fun remove_article(storage_ctx: &mut StorageContext, obj_id: ObjectID): Object<Article> {
-        let obj_store = storage_context::object_storage_mut(storage_ctx);
-        object_storage::remove<Article>(obj_store, obj_id)
+        storage_context::remove_object<Article>(storage_ctx, obj_id)
     }
 
     public(friend) fun add_article(storage_ctx: &mut StorageContext, article_obj: Object<Article>) {
@@ -373,8 +371,7 @@ module rooch_examples::article {
     fun private_add_article(storage_ctx: &mut StorageContext, article_obj: Object<Article>) {
         assert!(std::string::length(&object::borrow(&article_obj).title) <= 200, ErrorDataTooLong);
         assert!(std::string::length(&object::borrow(&article_obj).body) <= 2000, ErrorDataTooLong);
-        let obj_store = storage_context::object_storage_mut(storage_ctx);
-        object_storage::add(obj_store, article_obj);
+        storage_context::add_object<Article>(storage_ctx, article_obj);
     }
 
     public fun get_article(storage_ctx: &mut StorageContext, obj_id: ObjectID): Object<Article> {

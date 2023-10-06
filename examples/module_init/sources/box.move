@@ -2,7 +2,6 @@ module rooch_examples::box {
     use std::string::{String};
     use moveos_std::object::{Self, Object};
     use moveos_std::object_id::ObjectID;
-    use moveos_std::object_storage;
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::tx_context;
 
@@ -63,15 +62,13 @@ module rooch_examples::box {
     }
 
     public(friend) fun add_box(storage_ctx: &mut StorageContext, obj: Object<Box>) {
-        let obj_store = storage_context::object_storage_mut(storage_ctx);
-        object_storage::add(obj_store, obj);
+        storage_context::add_object(storage_ctx, obj);
     }
 
     public(friend) fun remove_box(
         storage_ctx: &mut StorageContext,
         obj_id: ObjectID
     ): Object<Box> {
-        let obj_store = storage_context::object_storage_mut(storage_ctx);
-        object_storage::remove<Box>(obj_store, obj_id)
+        storage_context::remove_object<Box>(storage_ctx, obj_id)
     }
 }
