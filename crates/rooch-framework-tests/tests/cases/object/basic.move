@@ -26,22 +26,22 @@ module test::m {
 
     public entry fun move_s_to_global(ctx: &mut StorageContext, sender: signer, object_id: ObjectID) {
         debug::print(&object_id);
-        let obj = storage_context::remove_object(ctx, object_id);
+        let obj = storage_context::remove_object<S>(ctx, object_id);
         debug::print(&obj);
         let (_id, _owner, value) = object::unpack(obj);
         account_storage::global_move_to(ctx, &sender, value);
     }
 
     public entry fun mint_cup<T: store>(ctx: &mut StorageContext) {
+        let sender = storage_context::sender(ctx);
         let tx_ctx = storage_context::tx_context_mut(ctx);
-        let sender = tx_context::sender(tx_ctx);
         let obj = object::new(tx_ctx, sender, Cup<T> { v: 2 });
         debug::print(&obj);
         storage_context::add_object(ctx, obj);
     }
 
     public entry fun move_cup_to_global<T:store>(ctx: &mut StorageContext, sender: signer, object_id: ObjectID) {
-        let obj = storage_context::remove_object(ctx, object_id);
+        let obj = storage_context::remove_object<Cup<S>>(ctx, object_id);
         debug::print(&obj);
         let (_id,_owner,value) = object::unpack(obj);
         account_storage::global_move_to(ctx, &sender, value);
