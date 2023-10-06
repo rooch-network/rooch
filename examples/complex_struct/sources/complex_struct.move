@@ -1,7 +1,6 @@
 module rooch_examples::complex_struct {
 
    use moveos_std::storage_context::{Self, StorageContext};
-   use moveos_std::tx_context;
    use moveos_std::account_storage;
    use moveos_std::object_id::{ObjectID};
    use moveos_std::object;
@@ -106,10 +105,7 @@ module rooch_examples::complex_struct {
    fun init(ctx: &mut StorageContext, sender: signer) {
       
       let addr = signer::address_of(&sender);
-      let object_id = {
-         let tx_ctx = storage_context::tx_context_mut(ctx);
-         tx_context::fresh_object_id(tx_ctx) 
-      };
+      let object_id = storage_context::fresh_object_id(ctx);
       let s = new_complex_struct(object_id);
       let complex_object = {
          let tx_ctx = storage_context::tx_context_mut(ctx);

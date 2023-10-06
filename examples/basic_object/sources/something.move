@@ -6,7 +6,6 @@ module rooch_examples::something {
     use moveos_std::object_id::ObjectID;
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::table::{Self, Table};
-    use moveos_std::tx_context;
 
     friend rooch_examples::something_aggregate;
     friend rooch_examples::something_do_logic;
@@ -62,8 +61,8 @@ module rooch_examples::something {
         j: u128,
     ): Object<SomethingProperties> {
         let value = new_something_properties(storage_ctx, i, j);
+        let owner = storage_context::sender(storage_ctx);
         let tx_ctx = storage_context::tx_context_mut(storage_ctx);
-        let owner = tx_context::sender(tx_ctx);
         let obj = object::new(
             tx_ctx,
             owner,

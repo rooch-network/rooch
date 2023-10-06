@@ -19,6 +19,7 @@ module moveos_std::tx_context {
     friend moveos_std::raw_table;
     friend moveos_std::account_storage;
     friend moveos_std::event;
+    friend moveos_std::storage_context;
 
     const ErrorInvalidContext: u64 = 1;
 
@@ -43,29 +44,29 @@ module moveos_std::tx_context {
 
     /// Return the address of the user that signed the current
     /// transaction
-    public fun sender(self: &TxContext): address {
+    public(friend) fun sender(self: &TxContext): address {
         self.sender
     }
 
     /// Return the sequence number of the current transaction
-    public fun sequence_number(self: &TxContext): u64 {
+    public(friend) fun sequence_number(self: &TxContext): u64 {
         self.sequence_number
     }
 
     /// Return the max gas to be used
-    public fun max_gas_amount(self: &TxContext): u64 {
+    public(friend) fun max_gas_amount(self: &TxContext): u64 {
         self.max_gas_amount
     } 
 
     /// Generate a new unique address,
-    public fun fresh_address(ctx: &mut TxContext): address {
+    public(friend) fun fresh_address(ctx: &mut TxContext): address {
         let addr = derive_id(ctx.tx_hash, ctx.ids_created);
         ctx.ids_created = ctx.ids_created + 1;
         addr
     }
 
     /// Generate a new unique object ID
-    public fun fresh_object_id(ctx: &mut TxContext): ObjectID {
+    public(friend) fun fresh_object_id(ctx: &mut TxContext): ObjectID {
         object_id::address_to_object_id(fresh_address(ctx))
     }
 
@@ -78,7 +79,7 @@ module moveos_std::tx_context {
     }
 
     /// Return the hash of the current transaction
-    public fun tx_hash(self: &TxContext): vector<u8> {
+    public(friend) fun tx_hash(self: &TxContext): vector<u8> {
         self.tx_hash
     }
 
@@ -89,14 +90,14 @@ module moveos_std::tx_context {
     }
 
     /// Add a value to the context map
-    public fun add<T: drop + store + copy>(self: &mut TxContext, value: T) {
+    public(friend) fun add<T: drop + store + copy>(self: &mut TxContext, value: T) {
         let any = copyable_any::pack(value);
         let type_name = *copyable_any::type_name(&any);
         simple_map::add(&mut self.map, type_name, any)
     }
 
     /// Get a value from the context map
-    public fun get<T: drop + store + copy>(self: &TxContext): Option<T> {
+    public(friend) fun get<T: drop + store + copy>(self: &TxContext): Option<T> {
         let type_name = type_info::type_name<T>();
         if (simple_map::contains_key(&self.map, &type_name)) {
             let any = simple_map::borrow(&self.map, &type_name);
@@ -107,7 +108,7 @@ module moveos_std::tx_context {
     }
 
     /// Check if the key is in the context map
-    public fun contains<T: drop + store + copy>(self: &TxContext): bool {
+    public(friend) fun contains<T: drop + store + copy>(self: &TxContext): bool {
         let type_name = type_info::type_name<T>();
         simple_map::contains_key(&self.map, &type_name)
     }
@@ -115,14 +116,14 @@ module moveos_std::tx_context {
     /// Get the transaction meta data
     /// The TxMeta is writed by the VM before the transaction execution.
     /// The meta data is only available when executing or validating a transaction, otherwise abort(eg. readonly function call).
-    public fun tx_meta(self: &TxContext): TxMeta {
+    public(friend) fun tx_meta(self: &TxContext): TxMeta {
         let meta = get<TxMeta>(self);
         assert!(option::is_some(&meta), error::invalid_state(ErrorInvalidContext));
         option::extract(&mut meta)
     }
 
     /// The result is only available in the `post_execute` function.
-    public fun tx_result(self: &TxContext): TxResult {
+    public(friend) fun tx_result(self: &TxContext): TxResult {
         let result = get<TxResult>(self);
         assert!(option::is_some(&result), error::invalid_state(ErrorInvalidContext));
         option::extract(&mut result)

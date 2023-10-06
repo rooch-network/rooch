@@ -3,7 +3,6 @@ module rooch_examples::box {
     use moveos_std::object::{Self, Object};
     use moveos_std::object_id::ObjectID;
     use moveos_std::storage_context::{Self, StorageContext};
-    use moveos_std::tx_context;
 
     friend rooch_examples::box_fun;
     friend rooch_examples::box_friend;
@@ -41,8 +40,8 @@ module rooch_examples::box {
         name: String,
         count: u128,
     ): Object<Box> {
+        let owner = storage_context::sender(storage_ctx);
         let tx_ctx = storage_context::tx_context_mut(storage_ctx);
-        let owner = tx_context::sender(tx_ctx);
         let obj = object::new(
             tx_ctx,
             owner,
