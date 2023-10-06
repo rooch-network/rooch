@@ -18,7 +18,6 @@
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
 <b>use</b> <a href="">0x2::table</a>;
-<b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="ethereum_address.md#0x3_ethereum_address">0x3::ethereum_address</a>;
 <b>use</b> <a href="timestamp.md#0x3_timestamp">0x3::timestamp</a>;
 </code></pre>
@@ -187,9 +186,8 @@
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_genesis_init">genesis_init</a>(ctx: &<b>mut</b> StorageContext, genesis_account: &<a href="">signer</a>){
-    <b>let</b> tx_ctx = <a href="_tx_context_mut">storage_context::tx_context_mut</a>(ctx);
     <b>let</b> block_store = <a href="ethereum_light_client.md#0x3_ethereum_light_client_BlockStore">BlockStore</a>{
-        blocks: <a href="_new">table::new</a>(tx_ctx),
+        blocks: <a href="_new">table::new</a>(ctx),
     };
     <a href="_global_move_to">account_storage::global_move_to</a>(ctx, genesis_account, block_store);
 }

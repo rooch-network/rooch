@@ -2,7 +2,7 @@ module rooch_framework::ethereum_light_client{
 
     use std::error;
     use moveos_std::bcs;
-    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::storage_context::StorageContext;
     use moveos_std::account_storage;
     use moveos_std::table::{Self, Table};
     use rooch_framework::ethereum_address::ETHAddress;
@@ -48,9 +48,8 @@ module rooch_framework::ethereum_light_client{
     }
 
     public(friend) fun genesis_init(ctx: &mut StorageContext, genesis_account: &signer){
-        let tx_ctx = storage_context::tx_context_mut(ctx);
         let block_store = BlockStore{
-            blocks: table::new(tx_ctx),
+            blocks: table::new(ctx),
         };
         account_storage::global_move_to(ctx, genesis_account, block_store);
     }

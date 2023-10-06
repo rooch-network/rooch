@@ -4,7 +4,6 @@
 module test::m {
     use std::string::String;
     use moveos_std::table::{Self, Table};
-    use moveos_std::tx_context;
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::object;
     use moveos_std::object_id::{ObjectID};
@@ -15,9 +14,8 @@ module test::m {
     }
 
     public fun make_kv_store(ctx: &mut StorageContext): KVStore{
-        let tx_ctx = storage_context::tx_context_mut(ctx);
         KVStore{
-            table: table::new(tx_ctx),
+            table: table::new(ctx),
         }
     }
 
@@ -39,7 +37,7 @@ module test::m {
 
     public fun save_to_object_storage(ctx: &mut StorageContext, kv: KVStore) : ObjectID {
         let tx_ctx = storage_context::tx_context_mut(ctx);
-        let sender = tx_context::sender(tx_ctx);
+        let sender = storage_context::sender(ctx);
         let object = object::new(tx_ctx, sender, kv);
         let object_id = object::id(&object);
         storage_context::add_object(ctx, object);

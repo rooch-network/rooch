@@ -4,7 +4,6 @@
 module moveos_std::event {
     use moveos_std::bcs;
     use moveos_std::storage_context::{Self, StorageContext};
-    use moveos_std::tx_context::{Self};
     use moveos_std::object_id::{Self, ObjectID};
     use moveos_std::object;
     #[test_only]
@@ -72,7 +71,7 @@ module moveos_std::event {
     /// Use EventHandle to generate a unique event handle
     /// user doesn't need to call this method directly
     fun new_event_handle<T>(ctx: &mut StorageContext) {
-        let account_addr = tx_context::sender(storage_context::tx_context(ctx));
+        let account_addr = storage_context::sender(ctx);
         let event_handle_id = derive_event_handle_id<T>();
         let event_handle = EventHandle {
             counter: 0,

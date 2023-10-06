@@ -112,7 +112,7 @@ module rooch_framework::session_key {
             max_inactive_interval: max_inactive_interval,
         };
         if (!account_storage::global_exists<SessionKeys>(ctx, sender_addr)){
-            let keys = table::new<vector<u8>, SessionKey>(storage_context::tx_context_mut(ctx));
+            let keys = table::new<vector<u8>, SessionKey>(ctx);
             account_storage::global_move_to<SessionKeys>(ctx, sender, SessionKeys{keys});
         };
 

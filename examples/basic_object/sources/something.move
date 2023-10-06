@@ -82,12 +82,11 @@ module rooch_examples::something {
         i: u32,
         j: u128,
     ): SomethingProperties {
-        let tx_ctx = storage_context::tx_context_mut(storage_ctx);
         let ps = SomethingProperties {
             i,
             j,
-            fooTable: table::new(tx_ctx),
-            barTable: table::new(tx_ctx),
+            fooTable: table::new(storage_ctx),
+            barTable: table::new(storage_ctx),
         };
         add_bar_table_item(storage_ctx, &mut ps.barTable, 0, 0);
         add_bar_table_item(storage_ctx, &mut ps.barTable, 1, 1);

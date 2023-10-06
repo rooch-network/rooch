@@ -30,6 +30,7 @@ struct itself, while the operations are implemented as native functions. No trav
 
 <pre><code><b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="raw_table.md#0x2_raw_table">0x2::raw_table</a>;
+<b>use</b> <a href="storage_context.md#0x2_storage_context">0x2::storage_context</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 </code></pre>
 
@@ -70,7 +71,7 @@ Type of tables
 Create a new Table.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_new">new</a>&lt;K: <b>copy</b>, drop, V: store&gt;(ctx: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_new">new</a>&lt;K: <b>copy</b>, drop, V: store&gt;(ctx: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;
 </code></pre>
 
 
@@ -79,9 +80,10 @@ Create a new Table.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_new">new</a>&lt;K: <b>copy</b> + drop, V: store&gt;(ctx: &<b>mut</b> TxContext): <a href="table.md#0x2_table_Table">Table</a>&lt;K, V&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_new">new</a>&lt;K: <b>copy</b> + drop, V: store&gt;(ctx: &<b>mut</b> StorageContext): <a href="table.md#0x2_table_Table">Table</a>&lt;K, V&gt; {
+    <b>let</b> tx_ctx = <a href="storage_context.md#0x2_storage_context_tx_context_mut">storage_context::tx_context_mut</a>(ctx);
     <a href="table.md#0x2_table_Table">Table</a> {
-        handle: <a href="raw_table.md#0x2_raw_table_new_table_handle">raw_table::new_table_handle</a>(ctx),
+        handle: <a href="raw_table.md#0x2_raw_table_new_table_handle">raw_table::new_table_handle</a>(tx_ctx),
     }
 }
 </code></pre>

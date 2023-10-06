@@ -7,7 +7,7 @@ module rooch_framework::account_authentication{
    use std::signer;
    use std::vector;
    use moveos_std::account_storage;
-   use moveos_std::storage_context::{Self, StorageContext};
+   use moveos_std::storage_context::StorageContext;
    use moveos_std::type_table::{Self, TypeTable};
    use rooch_framework::auth_validator_registry;
    use rooch_framework::auth_validator;
@@ -47,7 +47,7 @@ module rooch_framework::account_authentication{
 
    public(friend) fun init_authentication_keys(ctx: &mut StorageContext, account: &signer) {
       let authentication_keys = AuthenticationKeys {
-         authentication_keys: type_table::new(storage_context::tx_context_mut(ctx)),
+         authentication_keys: type_table::new(ctx),
       };
       account_storage::global_move_to<AuthenticationKeys>(ctx, account, authentication_keys);
    }

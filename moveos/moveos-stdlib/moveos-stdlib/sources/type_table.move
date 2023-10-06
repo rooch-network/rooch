@@ -4,7 +4,7 @@ module moveos_std::type_table {
 
     use std::ascii::{String};
     use moveos_std::raw_table;
-    use moveos_std::tx_context::TxContext;
+    use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::object_id::ObjectID;
 
     friend moveos_std::account_storage;
@@ -14,9 +14,10 @@ module moveos_std::type_table {
     }
 
     /// Create a new Table.
-    public fun new(ctx: &mut TxContext): TypeTable {
+    public fun new(ctx: &mut StorageContext): TypeTable {
+        let tx_ctx = storage_context::tx_context_mut(ctx);
         TypeTable {
-            handle: raw_table::new_table_handle(ctx),
+            handle: raw_table::new_table_handle(tx_ctx),
         }
     }
 
@@ -91,8 +92,8 @@ module moveos_std::type_table {
     #[test(account = @0x1)]
     fun test_all(account: signer) {
         let sender = std::signer::address_of(&account);
-        let tx_context = moveos_std::tx_context::new_test_context(sender);
-        let table = new(&mut tx_context);
+        let ctx = moveos_std::storage_context::new_test_context(sender);
+        let table = new(&mut ctx);
 
         let t = TestType {
             val: 1,
@@ -110,14 +111,15 @@ module moveos_std::type_table {
         assert!(!contains<TestType>(&table), 5);
 
         drop_unchecked(table);
+        moveos_std::storage_context::drop_test_context(ctx);
     }
 
     #[test(account = @0x1)]
     #[expected_failure]
     fun test_add_key_exist_failure(account: signer) {
         let sender = std::signer::address_of(&account);
-        let tx_context = moveos_std::tx_context::new_test_context(sender);
-        let table = new(&mut tx_context);
+        let ctx = moveos_std::storage_context::new_test_context(sender);
+        let table = new(&mut ctx);
 
         let t = TestType {
             val: 1,
@@ -132,53 +134,58 @@ module moveos_std::type_table {
         add<TestType>(&mut table, t);
 
         drop_unchecked(table);
+        moveos_std::storage_context::drop_test_context(ctx);
     }
 
     #[test(account = @0x1)]
     #[expected_failure]
     fun test_borrow_key_not_exist_failure(account: signer) {
-        let sender = std::signer::address_of(&account);
-        let tx_context = moveos_std::tx_context::new_test_context(sender);
-        let table = new(&mut tx_context);
+        let sender = std::signer::address_of(&account);        
+        let ctx = moveos_std::storage_context::new_test_context(sender);
+        let table = new(&mut ctx);
         let _ = borrow<TestType>(&table).val;
 
         drop_unchecked(table);
+        moveos_std::storage_context::drop_test_context(ctx);
     }
 
     #[test(account = @0x1)]
     #[expected_failure]
     fun test_borrow_mut_key_not_exist_failure(account: signer) {
         let sender = std::signer::address_of(&account);
-        let tx_context = moveos_std::tx_context::new_test_context(sender);
-        let table = new(&mut tx_context);
+        let ctx = moveos_std::storage_context::new_test_context(sender);
+        let table = new(&mut ctx);
         let t = borrow_mut<TestType>(&mut table);
         t.val = 1;
 
         drop_unchecked(table);
+        moveos_std::storage_context::drop_test_context(ctx);
     }
 
     #[test(account = @0x1)]
     #[expected_failure]
     fun test_remove_key_not_exist_failure(account: signer) {
         let sender = std::signer::address_of(&account);
-        let tx_context = moveos_std::tx_context::new_test_context(sender);
-        let table = new(&mut tx_context);
+        let ctx = moveos_std::storage_context::new_test_context(sender);
+        let table = new(&mut ctx);
         let TestType { val: _} = remove<TestType>(&mut table);
 
         drop_unchecked(table);
+        moveos_std::storage_context::drop_test_context(ctx);
     }
 
     #[test(account = @0x1)]
     #[expected_failure]
     fun test_destroy_non_empty_failure(account: signer) {
         let sender = std::signer::address_of(&account);
-        let tx_context = moveos_std::tx_context::new_test_context(sender);
-        let table = new(&mut tx_context);
+        let ctx = moveos_std::storage_context::new_test_context(sender);
+        let table = new(&mut ctx);
         let t = TestType {
             val: 1,
         };
         add<TestType>(&mut table, t);
 
         destroy_empty(table);
+        moveos_std::storage_context::drop_test_context(ctx);
     }
 }

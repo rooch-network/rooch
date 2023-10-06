@@ -8,7 +8,7 @@ module moveos_std::object_storage {
     #[test_only]
     use moveos_std::test_helper;
     #[test_only]
-    use moveos_std::tx_context::{TxContext};
+    use moveos_std::tx_context::TxContext;
 
     friend moveos_std::account_storage;
     friend moveos_std::storage_context;

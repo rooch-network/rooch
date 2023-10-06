@@ -7,11 +7,10 @@ module rooch_framework::coin {
     use moveos_std::object_id::ObjectID;
     use moveos_std::table;
     use moveos_std::table::Table;
-    use moveos_std::type_table::{TypeTable};
-    use moveos_std::storage_context;
+    use moveos_std::type_table::TypeTable;
     use moveos_std::type_table;
     use moveos_std::account_storage;
-    use moveos_std::storage_context::{StorageContext};
+    use moveos_std::storage_context::StorageContext;
     use moveos_std::event;
     use moveos_std::type_info::{Self, TypeInfo, type_of};
     use moveos_std::signer;
@@ -156,21 +155,22 @@ module rooch_framework::coin {
     }
 
     public(friend) fun genesis_init(ctx: &mut StorageContext, genesis_account: &signer) {
-        let tx_ctx = storage_context::tx_context_mut(ctx);
-        account_storage::global_move_to(ctx, genesis_account, CoinInfos{
-            coin_infos: type_table::new(tx_ctx),
-        });
-        let tx_ctx = storage_context::tx_context_mut(ctx);
-        account_storage::global_move_to(ctx, genesis_account, AutoAcceptCoins{
-            auto_accept_coins: table::new<address, bool>(tx_ctx),
-        });
+        let coin_infos = CoinInfos {
+            coin_infos: type_table::new(ctx),
+        };
+        account_storage::global_move_to(ctx, genesis_account, coin_infos);
+
+        let auto_accepted_coins = AutoAcceptCoins {
+            auto_accept_coins: table::new<address, bool>(ctx),
+        };
+        account_storage::global_move_to(ctx, genesis_account, auto_accepted_coins);
     }
 
     public(friend) fun init_account_coin_store(ctx: &mut StorageContext, account: &signer){
-        let tx_ctx = storage_context::tx_context_mut(ctx);
-        account_storage::global_move_to(ctx, account, CoinStores{
-            coin_stores: type_table::new(tx_ctx),
-        });
+        let coin_stores = CoinStores {
+            coin_stores: type_table::new(ctx),
+        };
+        account_storage::global_move_to(ctx, account, coin_stores);
     }
 
     //

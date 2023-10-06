@@ -3,7 +3,6 @@
 //# publish
 
 module test::m {
-    use moveos_std::tx_context;
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::object;
     use moveos_std::object_id::ObjectID;
@@ -15,8 +14,8 @@ module test::m {
 
     public entry fun mint_s(ctx: &mut StorageContext) {
         let tx_ctx = storage_context::tx_context_mut(ctx);
-        let sender = tx_context::sender(tx_ctx);
-        let tx_hash = tx_context::tx_hash(tx_ctx);
+        let sender = storage_context::sender(ctx);
+        let tx_hash = storage_context::tx_hash(ctx);
         debug::print(&tx_hash);
         // if the tx hash change, need to figure out why.
         assert!(x"7852c5dcbd87e82102dba0db36d44b5a9fb0006b3e828c0b5f0832f70a8ff6ee" == tx_hash, 1000);

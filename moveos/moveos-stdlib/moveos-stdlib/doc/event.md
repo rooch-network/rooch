@@ -20,7 +20,6 @@ events emitted to a handle and emit events to the event store.
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="storage_context.md#0x2_storage_context">0x2::storage_context</a>;
-<b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 <b>use</b> <a href="type_info.md#0x2_type_info">0x2::type_info</a>;
 </code></pre>
 
