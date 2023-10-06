@@ -1,7 +1,7 @@
 module rooch_framework::transaction_fee {
 
     use moveos_std::account_storage;
-    use moveos_std::storage_context::StorageContext;
+    use moveos_std::context::Context;
     use rooch_framework::coin::{Self, Coin};
     use rooch_framework::gas_coin::{GasCoin};
 
@@ -12,23 +12,23 @@ module rooch_framework::transaction_fee {
         fee: Coin<GasCoin>,
     }
 
-    public(friend) fun genesis_init(ctx: &mut StorageContext, genesis_account: &signer)  {
+    public(friend) fun genesis_init(ctx: &mut Context, genesis_account: &signer)  {
         account_storage::global_move_to(ctx, genesis_account, TransactionFeePool{
             fee: coin::zero<GasCoin>(),
         })
     }
 
     /// Returns the gas factor of gas.
-    public fun get_gas_factor(_ctx: &StorageContext): u64 {
+    public fun get_gas_factor(_ctx: &Context): u64 {
         //TODO we should provide a algorithm to cordanate the gas factor based on the network throughput
         return 1
     }
 
-    public fun calculate_gas(ctx: &StorageContext, gas_amount: u64): u256{
+    public fun calculate_gas(ctx: &Context, gas_amount: u64): u256{
         (gas_amount as u256) * (get_gas_factor(ctx) as u256)
     }
 
-    public(friend) fun deposit_fee(ctx: &mut StorageContext, gas_coin: Coin<GasCoin>) {
+    public(friend) fun deposit_fee(ctx: &mut Context, gas_coin: Coin<GasCoin>) {
         let pool = account_storage::global_borrow_mut<TransactionFeePool>(ctx, @rooch_framework);
         coin::merge(&mut pool.fee, gas_coin);
     }

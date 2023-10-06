@@ -1,7 +1,7 @@
 module rooch_examples::box_fun {
     use std::string::{Self, String};
     use moveos_std::object_id::ObjectID;
-    use moveos_std::storage_context::{StorageContext};
+    use moveos_std::context::{Context};
     use rooch_examples::box;
     use rooch_examples::box_friend;
     use std::debug;
@@ -12,12 +12,12 @@ module rooch_examples::box_fun {
     }
 
     // for test
-    fun init(_ctx: &mut StorageContext) {
+    fun init(_ctx: &mut Context) {
         debug::print<String>(&string::utf8(b"module box_fun init finish"));
     }
 
     public entry fun create_box(
-        stoage_ctx: &mut StorageContext,
+        stoage_ctx: &mut Context,
         // name: String,
         count: u128,
     ) {
@@ -27,7 +27,7 @@ module rooch_examples::box_fun {
     }
 
     public entry fun remove_box_and_update(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         object_id: ObjectID,
     ) {
         let obj = box::remove_box(storage_ctx, object_id);

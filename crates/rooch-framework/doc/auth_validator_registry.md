@@ -18,7 +18,7 @@
 <pre><code><b>use</b> <a href="">0x1::ascii</a>;
 <b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x2::account_storage</a>;
-<b>use</b> <a href="">0x2::storage_context</a>;
+<b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x2::type_table</a>;
@@ -123,7 +123,7 @@ How many validators are registered
 Init function called by genesis.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, sender: &<a href="">signer</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, sender: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -132,7 +132,7 @@ Init function called by genesis.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_genesis_init">genesis_init</a>(ctx: &<b>mut</b> StorageContext, sender: &<a href="">signer</a>){
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_genesis_init">genesis_init</a>(ctx: &<b>mut</b> Context, sender: &<a href="">signer</a>){
     <b>let</b> registry = <a href="auth_validator_registry.md#0x3_auth_validator_registry_ValidatorRegistry">ValidatorRegistry</a> {
         validator_num: 0,
         validators: <a href="_new">table::new</a>(ctx),
@@ -152,7 +152,7 @@ Init function called by genesis.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_register">register</a>&lt;ValidatorType: store&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_register">register</a>&lt;ValidatorType: store&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>): u64
 </code></pre>
 
 
@@ -161,7 +161,7 @@ Init function called by genesis.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_register">register</a>&lt;ValidatorType: store&gt;(ctx: &<b>mut</b> StorageContext) : u64{
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_register">register</a>&lt;ValidatorType: store&gt;(ctx: &<b>mut</b> Context) : u64{
     <a href="auth_validator_registry.md#0x3_auth_validator_registry_register_internal">register_internal</a>&lt;ValidatorType&gt;(ctx)
 }
 </code></pre>
@@ -176,7 +176,7 @@ Init function called by genesis.
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_register_internal">register_internal</a>&lt;ValidatorType: store&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>): u64
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_register_internal">register_internal</a>&lt;ValidatorType: store&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>): u64
 </code></pre>
 
 
@@ -185,7 +185,7 @@ Init function called by genesis.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_register_internal">register_internal</a>&lt;ValidatorType: store&gt;(ctx: &<b>mut</b> StorageContext) : u64{
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_register_internal">register_internal</a>&lt;ValidatorType: store&gt;(ctx: &<b>mut</b> Context) : u64{
     <b>let</b> <a href="">type_info</a> = <a href="_type_of">type_info::type_of</a>&lt;ValidatorType&gt;();
     <b>let</b> module_address = <a href="_account_address">type_info::account_address</a>(&<a href="">type_info</a>);
     //TODO consider change <a href="_module_name">type_info::module_name</a> <b>to</b> <a href="_String">ascii::String</a>.
@@ -223,7 +223,7 @@ Init function called by genesis.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator">borrow_validator</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, id: u64): &<a href="auth_validator.md#0x3_auth_validator_AuthValidator">auth_validator::AuthValidator</a>
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator">borrow_validator</a>(ctx: &<a href="_Context">context::Context</a>, id: u64): &<a href="auth_validator.md#0x3_auth_validator_AuthValidator">auth_validator::AuthValidator</a>
 </code></pre>
 
 
@@ -232,7 +232,7 @@ Init function called by genesis.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator">borrow_validator</a>(ctx: &StorageContext, id: u64): &AuthValidator {
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator">borrow_validator</a>(ctx: &Context, id: u64): &AuthValidator {
     <b>let</b> registry = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="auth_validator_registry.md#0x3_auth_validator_registry_ValidatorRegistry">ValidatorRegistry</a>&gt;(ctx, @rooch_framework);
     <a href="_borrow">table::borrow</a>(&registry.validators, id)
 }
@@ -248,7 +248,7 @@ Init function called by genesis.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator_by_type">borrow_validator_by_type</a>&lt;ValidatorType: store&gt;(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): &<a href="auth_validator.md#0x3_auth_validator_AuthValidator">auth_validator::AuthValidator</a>
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator_by_type">borrow_validator_by_type</a>&lt;ValidatorType: store&gt;(ctx: &<a href="_Context">context::Context</a>): &<a href="auth_validator.md#0x3_auth_validator_AuthValidator">auth_validator::AuthValidator</a>
 </code></pre>
 
 
@@ -257,7 +257,7 @@ Init function called by genesis.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator_by_type">borrow_validator_by_type</a>&lt;ValidatorType: store&gt;(ctx: &StorageContext): &AuthValidator {
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator_by_type">borrow_validator_by_type</a>&lt;ValidatorType: store&gt;(ctx: &Context): &AuthValidator {
     <b>let</b> registry = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="auth_validator_registry.md#0x3_auth_validator_registry_ValidatorRegistry">ValidatorRegistry</a>&gt;(ctx, @rooch_framework);
     <b>assert</b>!(<a href="_contains">type_table::contains</a>&lt;<a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidatorWithType">AuthValidatorWithType</a>&lt;ValidatorType&gt;&gt;(&registry.validators_with_type), <a href="_not_found">error::not_found</a>(<a href="auth_validator_registry.md#0x3_auth_validator_registry_ErrorValidatorUnregistered">ErrorValidatorUnregistered</a>));
     <b>let</b> validator_with_type = <a href="_borrow">type_table::borrow</a>&lt;<a href="auth_validator_registry.md#0x3_auth_validator_registry_AuthValidatorWithType">AuthValidatorWithType</a>&lt;ValidatorType&gt;&gt;(&registry.validators_with_type);

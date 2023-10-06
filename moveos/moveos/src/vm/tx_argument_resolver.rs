@@ -9,7 +9,7 @@ use move_vm_types::{
     data_store::{DataStore, TransactionCache},
     loaded_data::runtime_types::{StructType, Type},
 };
-use moveos_types::{state::MoveStructType, storage_context::StorageContext};
+use moveos_types::{context::Context, state::MoveStructType};
 use std::sync::Arc;
 
 /// Transaction Argument Resolver will implemented by the Move Extension
@@ -25,7 +25,7 @@ pub trait TxArgumentResolver {
         S: DataStore + TransactionCache;
 }
 
-impl TxArgumentResolver for StorageContext {
+impl TxArgumentResolver for Context {
     fn resolve_argument<S>(
         &self,
         session: &Session<S>,
@@ -91,7 +91,7 @@ where
 }
 
 pub fn is_storage_context(t: &StructType) -> bool {
-    t.module.address() == &StorageContext::ADDRESS
-        && t.module.name() == StorageContext::module_identifier().as_ident_str()
-        && t.name == StorageContext::struct_identifier()
+    t.module.address() == &Context::ADDRESS
+        && t.module.name() == Context::module_identifier().as_ident_str()
+        && t.name == Context::struct_identifier()
 }

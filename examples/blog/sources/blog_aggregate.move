@@ -5,7 +5,7 @@
 
 module rooch_examples::blog_aggregate {
     use moveos_std::object_id::ObjectID;
-    use moveos_std::storage_context::StorageContext;
+    use moveos_std::context::Context;
     use rooch_examples::blog;
     use rooch_examples::blog_add_article_logic;
     use rooch_examples::blog_create_logic;
@@ -18,7 +18,7 @@ module rooch_examples::blog_aggregate {
     friend rooch_examples::article_delete_logic;
 
     public(friend) fun add_article(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         article_id: ObjectID,
     ) {
         let blog = blog::borrow_blog(storage_ctx);
@@ -36,7 +36,7 @@ module rooch_examples::blog_aggregate {
     }
 
     public(friend) fun remove_article(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         article_id: ObjectID,
     ) {
         let blog = blog::borrow_blog(storage_ctx);
@@ -54,7 +54,7 @@ module rooch_examples::blog_aggregate {
     }
 
     public entry fun create(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         account: &signer,
         name: String,
         articles: vector<ObjectID>,
@@ -75,7 +75,7 @@ module rooch_examples::blog_aggregate {
     }
 
     public entry fun update(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         account: &signer,
         name: String,
         articles: vector<ObjectID>,
@@ -99,7 +99,7 @@ module rooch_examples::blog_aggregate {
     }
 
     public entry fun delete(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         account: &signer,
     ) {
         let blog = blog::remove_blog(storage_ctx);

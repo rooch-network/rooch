@@ -2,7 +2,7 @@ module rooch_examples::box {
     use std::string::{String};
     use moveos_std::object::{Self, Object};
     use moveos_std::object_id::ObjectID;
-    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::context::{Self, Context};
 
     friend rooch_examples::box_fun;
     friend rooch_examples::box_friend;
@@ -36,12 +36,12 @@ module rooch_examples::box {
     }
 
     public(friend) fun create_box(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         name: String,
         count: u128,
     ): Object<Box> {
-        let owner = storage_context::sender(storage_ctx);
-        let tx_ctx = storage_context::tx_context_mut(storage_ctx);
+        let owner = context::sender(storage_ctx);
+        let tx_ctx = context::tx_context_mut(storage_ctx);
         let obj = object::new(
             tx_ctx,
             owner,
@@ -60,14 +60,14 @@ module rooch_examples::box {
         }
     }
 
-    public(friend) fun add_box(storage_ctx: &mut StorageContext, obj: Object<Box>) {
-        storage_context::add_object(storage_ctx, obj);
+    public(friend) fun add_box(storage_ctx: &mut Context, obj: Object<Box>) {
+        context::add_object(storage_ctx, obj);
     }
 
     public(friend) fun remove_box(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         obj_id: ObjectID
     ): Object<Box> {
-        storage_context::remove_object<Box>(storage_ctx, obj_id)
+        context::remove_object<Box>(storage_ctx, obj_id)
     }
 }

@@ -1,6 +1,6 @@
 module rooch_examples::article_add_comment_logic {
     use moveos_std::object::Object;
-    use moveos_std::storage_context::StorageContext;
+    use moveos_std::context::Context;
     use rooch_examples::article;
     use rooch_examples::comment;
     use rooch_examples::comment_added;
@@ -9,7 +9,7 @@ module rooch_examples::article_add_comment_logic {
     friend rooch_examples::article_aggregate;
 
     public(friend) fun verify(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         account: &signer,
         commenter: String,
         body: String,
@@ -28,7 +28,7 @@ module rooch_examples::article_add_comment_logic {
     }
 
     public(friend) fun mutate(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         _account: &signer,
         comment_added: &article::CommentAdded,
         article_obj: Object<article::Article>,

@@ -4,7 +4,7 @@
 module creator::test {
     use std::string;
     use std::ascii;
-    use moveos_std::storage_context;
+    use moveos_std::context;
     use moveos_std::object_id;
 
     entry public fun test_entry_function_valid_struct_string( _str: string::String ){
@@ -15,7 +15,7 @@ module creator::test {
 
     }
 
-    entry public fun test_entry_function_valid_struct_storage_context( _sctx: &mut storage_context::StorageContext ){
+    entry public fun test_entry_function_valid_struct_storage_context( _sctx: &mut context::Context ){
         
     }
 

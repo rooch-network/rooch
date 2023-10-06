@@ -20,37 +20,37 @@ use serde::{Deserialize, Serialize};
 pub const GLOBAL_OBJECT_STORAGE_HANDLE: ObjectID = state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-pub struct ObjectStorage {
+pub struct StorageContext {
     pub handle: ObjectID,
 }
 
-impl MoveStructType for ObjectStorage {
+impl MoveStructType for StorageContext {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = ident_str!("object_storage");
-    const STRUCT_NAME: &'static IdentStr = ident_str!("ObjectStorage");
+    const MODULE_NAME: &'static IdentStr = ident_str!("storage_context");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("StorageContext");
 }
 
-impl MoveStructState for ObjectStorage {
+impl MoveStructState for StorageContext {
     fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![MoveTypeLayout::Struct(ObjectID::struct_layout())])
     }
 }
 
-pub const STORAGE_CONTEXT_MODULE_NAME: &IdentStr = ident_str!("storage_context");
-pub const STORAGE_CONTEXT_STRUCT_NAME: &IdentStr = ident_str!("StorageContext");
+pub const STORAGE_CONTEXT_MODULE_NAME: &IdentStr = ident_str!("context");
+pub const STORAGE_CONTEXT_STRUCT_NAME: &IdentStr = ident_str!("Context");
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-pub struct StorageContext {
+pub struct Context {
     pub tx_context: TxContext,
-    pub object_storage: ObjectStorage,
+    pub storage_context: StorageContext,
 }
 
-impl StorageContext {
+impl Context {
     /// New global storage context
     pub fn new(tx_context: TxContext) -> Self {
         Self {
             tx_context,
-            object_storage: ObjectStorage {
+            storage_context: StorageContext {
                 handle: GLOBAL_OBJECT_STORAGE_HANDLE,
             },
         }
@@ -65,17 +65,17 @@ impl StorageContext {
     }
 }
 
-impl MoveStructType for StorageContext {
+impl MoveStructType for Context {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
     const MODULE_NAME: &'static IdentStr = STORAGE_CONTEXT_MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = STORAGE_CONTEXT_STRUCT_NAME;
 }
 
-impl MoveStructState for StorageContext {
+impl MoveStructState for Context {
     fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![
             MoveTypeLayout::Struct(TxContext::struct_layout()),
-            MoveTypeLayout::Struct(ObjectStorage::struct_layout()),
+            MoveTypeLayout::Struct(StorageContext::struct_layout()),
         ])
     }
 }

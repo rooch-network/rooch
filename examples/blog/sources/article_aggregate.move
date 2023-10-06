@@ -5,7 +5,7 @@
 
 module rooch_examples::article_aggregate {
     use moveos_std::object_id::ObjectID;
-    use moveos_std::storage_context::StorageContext;
+    use moveos_std::context::Context;
     use rooch_examples::article;
     use rooch_examples::article_add_comment_logic;
     use rooch_examples::article_create_logic;
@@ -16,7 +16,7 @@ module rooch_examples::article_aggregate {
     use std::string::String;
 
     public entry fun update_comment(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         account: &signer,
         id: ObjectID,
         comment_seq_id: u64,
@@ -45,7 +45,7 @@ module rooch_examples::article_aggregate {
     }
 
     public entry fun remove_comment(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         account: &signer,
         id: ObjectID,
         comment_seq_id: u64,
@@ -68,7 +68,7 @@ module rooch_examples::article_aggregate {
     }
 
     public entry fun add_comment(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         account: &signer,
         id: ObjectID,
         commenter: String,
@@ -93,7 +93,7 @@ module rooch_examples::article_aggregate {
     }
 
     public entry fun create(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         account: &signer,
         title: String,
         body: String,
@@ -115,7 +115,7 @@ module rooch_examples::article_aggregate {
     }
 
     public entry fun update(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         account: &signer,
         id: ObjectID,
         title: String,
@@ -140,7 +140,7 @@ module rooch_examples::article_aggregate {
     }
 
     public entry fun delete(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         account: &signer,
         id: ObjectID,
     ) {

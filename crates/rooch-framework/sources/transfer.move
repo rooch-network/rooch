@@ -1,6 +1,6 @@
 module rooch_framework::transfer {
     use rooch_framework::account;
-    use moveos_std::storage_context::StorageContext;
+    use moveos_std::context::Context;
     use rooch_framework::coin;
     use rooch_framework::multichain_address;
     use rooch_framework::address_mapping;
@@ -8,7 +8,7 @@ module rooch_framework::transfer {
     /// Transfer `amount` of coins `CoinType` from `from` to `to`.
     /// This public entry function requires the `CoinType` to have `key` and `store` abilities.
     public entry fun transfer_coin<CoinType: key + store>(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         from: &signer,
         to: address,
         amount: u256,
@@ -24,7 +24,7 @@ module rooch_framework::transfer {
     /// The MultiChainAddress is represented by `multichain_id` and `raw_address`.
     /// This public entry function requires the `CoinType` to have `key` and `store` abilities.
     public entry fun transfer_coin_to_multichain_address<CoinType: key + store>(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         from: &signer,
         multichain_id: u64,
         raw_address: vector<u8>,

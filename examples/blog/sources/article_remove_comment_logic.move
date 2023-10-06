@@ -1,6 +1,6 @@
 module rooch_examples::article_remove_comment_logic {
     use moveos_std::object::Object;
-    use moveos_std::storage_context::StorageContext;
+    use moveos_std::context::Context;
     use rooch_examples::article;
     use rooch_examples::comment;
     use rooch_examples::comment_removed;
@@ -10,7 +10,7 @@ module rooch_examples::article_remove_comment_logic {
     const ErrorNotOwnerAccount: u64 = 113;
 
     public(friend) fun verify(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         account: &signer,
         comment_seq_id: u64,
         article_obj: &Object<article::Article>,
@@ -25,7 +25,7 @@ module rooch_examples::article_remove_comment_logic {
     }
 
     public(friend) fun mutate(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         _account: &signer,
         comment_removed: &article::CommentRemoved,
         article_obj: Object<article::Article>,

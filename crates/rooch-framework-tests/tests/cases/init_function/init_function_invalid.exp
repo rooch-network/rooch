@@ -114,7 +114,7 @@ task 12 'publish'. lines 100-107:
 Error: error: module init function should not have a reference primitive type other than a signer
     ┌─ /tmp/tempfile:103:5
     │  
-103 │ ╭     fun init( _ : & storage_context::StorageContext){
+103 │ ╭     fun init( _ : & context::Context){
 104 │ │     }
     │ ╰─────^
 

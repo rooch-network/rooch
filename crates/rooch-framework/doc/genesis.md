@@ -11,7 +11,7 @@
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x1::option</a>;
-<b>use</b> <a href="">0x2::storage_context</a>;
+<b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="account.md#0x3_account">0x3::account</a>;
 <b>use</b> <a href="address_mapping.md#0x3_address_mapping">0x3::address_mapping</a>;
 <b>use</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry">0x3::auth_validator_registry</a>;

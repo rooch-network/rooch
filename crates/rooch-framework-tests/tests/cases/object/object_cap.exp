@@ -7,8 +7,8 @@ task 2 'run'. lines 22-37:
 Error: error: resource type "TestObject" in function "0x2::object::new" not defined in current module or not allowed
    ┌─ /tmp/tempfile:30:19
    │
-30 │         let obj = object::new<TestObject>(storage_context::tx_context_mut(ctx), sender_addr, object);
-   │                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+30 │         let obj = object::new<TestObject>(context::tx_context_mut(ctx), sender_addr, object);
+   │                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error: resource type "TestObject" in function "0x2::object::borrow" not defined in current module or not allowed
    ┌─ /tmp/tempfile:31:30

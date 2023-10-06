@@ -1,7 +1,7 @@
 module rooch_framework::transaction_validator {
     use std::error;
     use std::option;
-    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::context::{Self, Context};
     use moveos_std::tx_result;
     use rooch_framework::account;
     use rooch_framework::multichain_address::MultiChainAddress;
@@ -40,7 +40,7 @@ module rooch_framework::transaction_validator {
     /// This function is for Rooch to validate the transaction sender's authenticator.
     /// If the authenticator is invaid, abort this function.
     public fun validate(
-        ctx: &StorageContext,
+        ctx: &Context,
         chain_id: u64,
         auth_validator_id: u64,
         authenticator_payload: vector<u8>
@@ -53,7 +53,7 @@ module rooch_framework::transaction_validator {
         );
 
         // === validate the sequence number ===
-        let tx_sequence_number = storage_context::sequence_number(ctx);
+        let tx_sequence_number = context::sequence_number(ctx);
         assert!(
             (tx_sequence_number as u128) < MAX_U64,
             error::out_of_range(ErrorValidateSequenceNumberTooBig)
@@ -72,10 +72,10 @@ module rooch_framework::transaction_validator {
             error::invalid_argument(ErrorValidateSequenceNumberTooNew)
         );
 
-        let sender = storage_context::sender(ctx);
+        let sender = context::sender(ctx);
 
         // === validate gas ===
-        let max_gas_amount = storage_context::max_gas_amount(ctx);
+        let max_gas_amount = context::max_gas_amount(ctx);
         let gas = transaction_fee::calculate_gas(ctx, max_gas_amount);
 
         // We skip the gas check for the new account, for avoid break the current testcase
@@ -96,7 +96,7 @@ module rooch_framework::transaction_validator {
         if (option::is_some(&session_key_option)) {
             auth_validator::new_tx_validate_result(auth_validator_id, option::none(), session_key_option)
         }else {
-            let sender = storage_context::sender(ctx);
+            let sender = context::sender(ctx);
             let auth_validator = auth_validator_registry::borrow_validator(ctx, auth_validator_id);
             let validator_id = auth_validator::validator_id(auth_validator);
             // builtin auth validator id do not need to install
@@ -114,9 +114,9 @@ module rooch_framework::transaction_validator {
     /// Execute before the transaction is executed, automatically called by the MoveOS VM.
     /// This function is for Rooch to auto create account and address maping.
     fun pre_execute(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
     ) {
-        let sender = storage_context::sender(ctx);
+        let sender = context::sender(ctx);
         //Auto create account if not exist
         if (!account::exists_at(ctx, sender)) {
             account::create_account(ctx, sender);
@@ -127,7 +127,7 @@ module rooch_framework::transaction_validator {
             gas_coin::faucet(ctx, sender, init_gas); 
         };
         //the transaction validator will put the multi chain address into the context
-        let multichain_address = storage_context::get<MultiChainAddress>(ctx);
+        let multichain_address = context::get<MultiChainAddress>(ctx);
         if (option::is_some(&multichain_address)) {
             let multichain_address = option::extract(&mut multichain_address);
             //Auto create address mapping if not exist
@@ -141,9 +141,9 @@ module rooch_framework::transaction_validator {
     /// Execute after the transaction is executed, automatically called by the MoveOS VM.
     /// This function is for Rooch to update the sender's sequence number and pay the gas fee.
     fun post_execute(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
     ) {
-        let sender = storage_context::sender(ctx);
+        let sender = context::sender(ctx);
 
         // Active the session key
 
@@ -156,7 +156,7 @@ module rooch_framework::transaction_validator {
         // Increment sequence number
         account::increment_sequence_number(ctx);
         
-        let tx_result = storage_context::tx_result(ctx);
+        let tx_result = context::tx_result(ctx);
         let gas_used = tx_result::gas_used(&tx_result);
         let gas = transaction_fee::calculate_gas(ctx, gas_used);
         let gas_coin = gas_coin::deduct_gas(ctx, sender, gas);

@@ -7,7 +7,7 @@ module rooch_framework::timestamp {
    
     use std::error;
     use moveos_std::account_storage;
-    use moveos_std::storage_context::StorageContext;
+    use moveos_std::context::Context;
 
     friend rooch_framework::genesis;
     friend rooch_framework::ethereum_light_client;
@@ -23,13 +23,13 @@ module rooch_framework::timestamp {
     /// An invalid timestamp was provided
     const ErrorInvalidTimestamp: u64 = 1;
 
-    public(friend) fun genesis_init(ctx: &mut StorageContext, genesis_account: &signer, initial_time_microseconds: u64) {
+    public(friend) fun genesis_init(ctx: &mut Context, genesis_account: &signer, initial_time_microseconds: u64) {
         let current_time = CurrentTimeMicroseconds { microseconds: initial_time_microseconds };
         account_storage::global_move_to(ctx, genesis_account, current_time);
     }
 
     /// Updates the wall clock time, if the new time is smaller than the current time, aborts.
-    public(friend) fun update_global_time(ctx: &mut StorageContext,timestamp: u64) {
+    public(friend) fun update_global_time(ctx: &mut Context,timestamp: u64) {
         let global_timer = account_storage::global_borrow_mut<CurrentTimeMicroseconds>(ctx, @rooch_framework);
         let now = global_timer.microseconds;
         assert!(now < timestamp, error::invalid_argument(ErrorInvalidTimestamp));
@@ -37,7 +37,7 @@ module rooch_framework::timestamp {
     }
 
     /// Tries to update the wall clock time, if the new time is smaller than the current time, ignores the update, and returns false.
-    public(friend) fun try_update_global_time(ctx: &mut StorageContext, timestamp: u64) : bool {
+    public(friend) fun try_update_global_time(ctx: &mut Context, timestamp: u64) : bool {
         let global_timer = account_storage::global_borrow_mut<CurrentTimeMicroseconds>(ctx, @rooch_framework);
         let now = global_timer.microseconds;
         if(now < timestamp) {
@@ -50,13 +50,13 @@ module rooch_framework::timestamp {
 
     #[view]
     /// Gets the current time in microseconds.
-    public fun now_microseconds(ctx: &StorageContext): u64 {
+    public fun now_microseconds(ctx: &Context): u64 {
         account_storage::global_borrow<CurrentTimeMicroseconds>(ctx, @rooch_framework).microseconds
     }
 
     #[view]
     /// Gets the current time in seconds.
-    public fun now_seconds(ctx: &StorageContext): u64 {
+    public fun now_seconds(ctx: &Context): u64 {
         now_microseconds(ctx) / MICRO_CONVERSION_FACTOR
     }
 
@@ -65,28 +65,28 @@ module rooch_framework::timestamp {
     }
 
     #[test_only]
-    public fun update_global_time_for_test(ctx: &mut StorageContext, timestamp_microsecs: u64){
+    public fun update_global_time_for_test(ctx: &mut Context, timestamp_microsecs: u64){
         update_global_time(ctx, timestamp_microsecs);
     }
 
     #[test_only]
-    public fun update_global_time_for_test_secs(ctx: &mut StorageContext, timestamp_seconds: u64) {
+    public fun update_global_time_for_test_secs(ctx: &mut Context, timestamp_seconds: u64) {
         update_global_time(ctx, timestamp_seconds * MICRO_CONVERSION_FACTOR);
     }
 
     #[test_only]
-    public fun fast_forward_seconds_for_test(ctx: &mut StorageContext, timestamp_seconds: u64) {
+    public fun fast_forward_seconds_for_test(ctx: &mut Context, timestamp_seconds: u64) {
         fast_forward_seconds(ctx, timestamp_seconds)
     }
 
-    fun fast_forward_seconds(ctx: &mut StorageContext, timestamp_seconds: u64) {
+    fun fast_forward_seconds(ctx: &mut Context, timestamp_seconds: u64) {
         let now_microseconds = now_microseconds(ctx);
         update_global_time(ctx, now_microseconds + (timestamp_seconds * MICRO_CONVERSION_FACTOR));
     }
 
     /// Fast forwards the clock by the given number of seconds, but only if the chain is in local mode.
     //TODO find a better way to do this, maybe some module that is only available in local chain?
-    public entry fun fast_forward_seconds_for_local(ctx: &mut StorageContext, timestamp_seconds: u64) {
+    public entry fun fast_forward_seconds_for_local(ctx: &mut Context, timestamp_seconds: u64) {
         assert!(rooch_framework::chain_id::is_local(ctx), error::invalid_argument(ErrorInvalidTimestamp));
         fast_forward_seconds(ctx, timestamp_seconds);
     }

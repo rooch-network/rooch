@@ -18,7 +18,7 @@ use move_model::model::{FunctionEnv, GlobalEnv, Loc, ModuleEnv};
 use move_model::ty::PrimitiveType;
 use move_model::ty::Type;
 use moveos_types::state::MoveStructType;
-use moveos_types::storage_context::StorageContext;
+use moveos_types::context::Context;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -466,7 +466,7 @@ pub fn is_allowed_input_struct(name: String) -> bool {
         "0x1::string::String"
             | "0x1::ascii::String"
             | "0x2::object_id::ObjectID"
-            | "0x2::storage_context::StorageContext"
+            | "0x2::context::Context"
     )
 }
 
@@ -596,7 +596,7 @@ impl<'a> ExtendedChecker<'a> {
 }
 
 pub fn check_storage_context_struct_tag(struct_full_name: String) -> bool {
-    struct_full_name == StorageContext::struct_tag().to_canonical_string()
+    struct_full_name == Context::struct_tag().to_canonical_string()
 }
 
 pub fn is_defined_or_allowed_in_current_module(

@@ -38,6 +38,7 @@ use moveos_stdlib::natives::moveos_stdlib::{
     raw_table::{NativeTableContext, TableData},
 };
 use moveos_types::{
+    context::Context,
     event::{Event, EventID},
     function_return_value::FunctionReturnValue,
     move_any::CopyableAny,
@@ -47,7 +48,6 @@ use moveos_types::{
     moveos_std::module_upgrade_flag::ModuleUpgradeFlag,
     object::ObjectID,
     state_resolver::MoveOSResolver,
-    storage_context::StorageContext,
     transaction::{FunctionCall, MoveAction, TransactionOutput, VerifiedMoveAction},
     tx_context::TxContext,
 };
@@ -109,7 +109,7 @@ pub struct MoveOSSession<'r, 'l, S, G> {
     vm: &'l MoveVM,
     remote: &'r S,
     session: Session<'r, 'l, MoveosDataCache<'r, 'l, S>>,
-    ctx: StorageContext,
+    ctx: Context,
     table_data: Arc<RwLock<TableData>>,
     gas_meter: G,
     read_only: bool,
@@ -127,7 +127,7 @@ where
         gas_meter: G,
         read_only: bool,
     ) -> Self {
-        let ctx = StorageContext::new(ctx);
+        let ctx = Context::new(ctx);
         let table_data = Arc::new(RwLock::new(TableData::default()));
         Self {
             vm,
@@ -146,7 +146,7 @@ where
         //The TxContext::spawn function will reset the ids_created and kv map.
         //But we need some TxContext value in the pre_execute and post_execute function, such as the TxValidateResult.
         //We need to find a solution.
-        let ctx = StorageContext::new(self.ctx.tx_context.spawn(env));
+        let ctx = Context::new(self.ctx.tx_context.spawn(env));
         let table_data = Arc::new(RwLock::new(TableData::default()));
         Self {
             session: Self::new_inner_session(self.vm, self.remote, table_data.clone()),
@@ -339,10 +339,10 @@ where
         }
     }
 
-    // Because the StorageContext can be mut argument, if the function change the StorageContext,
-    // we need to update the StorageContext via return values, and pass the updated StorageContext to the next function.
+    // Because the Context can be mut argument, if the function change the Context,
+    // we need to update the Context via return values, and pass the updated Context to the next function.
     fn update_storage_context_via_return_values(&mut self, return_values: &SerializedReturnValues) {
-        //The only mutable reference output is &mut StorageContext
+        //The only mutable reference output is &mut Context
         debug_assert!(
             return_values.mutable_reference_outputs.len() <= 1,
             "The function should not return more than one mutable reference"
@@ -350,8 +350,8 @@ where
 
         if let Some((_index, value, _layout)) = return_values.mutable_reference_outputs.get(0) {
             //TODO check the type with local index
-            let returned_storage_context = StorageContext::from_bytes(value.as_slice())
-                .expect("The return mutable reference should be a StorageContext");
+            let returned_storage_context = Context::from_bytes(value.as_slice())
+                .expect("The return mutable reference should be a Context");
             if log::log_enabled!(log::Level::Debug) {
                 log::debug!(
                     "The returned storage context is {:?}",
@@ -588,7 +588,7 @@ where
         self.session.borrow()
     }
 
-    pub(crate) fn storage_context_mut(&mut self) -> &mut StorageContext {
+    pub(crate) fn storage_context_mut(&mut self) -> &mut Context {
         &mut self.ctx
     }
 }

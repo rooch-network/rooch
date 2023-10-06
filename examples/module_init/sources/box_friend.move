@@ -3,13 +3,13 @@ module rooch_examples::box_friend {
     use rooch_examples::box;
     use moveos_std::object::Object;
     use rooch_examples::box::Box;
-    use moveos_std::storage_context::StorageContext;
+    use moveos_std::context::Context;
     use std::debug;
 
     friend rooch_examples::box_fun;
 
     // for test
-    fun init(_ctx: &mut StorageContext) {
+    fun init(_ctx: &mut Context) {
         debug::print<String>(&string::utf8(b"module box_friend init finish"));
     }
 
