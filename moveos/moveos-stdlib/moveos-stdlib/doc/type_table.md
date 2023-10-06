@@ -22,6 +22,7 @@ TypeTable is a table use struct Type as Key, struct as Value
 <b>use</b> <a href="">0x1::type_name</a>;
 <b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="raw_table.md#0x2_raw_table">0x2::raw_table</a>;
+<b>use</b> <a href="storage_context.md#0x2_storage_context">0x2::storage_context</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 </code></pre>
 
@@ -61,7 +62,7 @@ TypeTable is a table use struct Type as Key, struct as Value
 Create a new Table.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_new">new</a>(ctx: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>
+<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_new">new</a>(ctx: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>
 </code></pre>
 
 
@@ -70,9 +71,10 @@ Create a new Table.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_new">new</a>(ctx: &<b>mut</b> TxContext): <a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_new">new</a>(ctx: &<b>mut</b> StorageContext): <a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a> {
+    <b>let</b> tx_ctx = <a href="storage_context.md#0x2_storage_context_tx_context_mut">storage_context::tx_context_mut</a>(ctx);
     <a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a> {
-        handle: <a href="raw_table.md#0x2_raw_table_new_table_handle">raw_table::new_table_handle</a>(ctx),
+        handle: <a href="raw_table.md#0x2_raw_table_new_table_handle">raw_table::new_table_handle</a>(tx_ctx),
     }
 }
 </code></pre>

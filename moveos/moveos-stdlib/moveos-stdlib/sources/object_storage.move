@@ -2,12 +2,13 @@
 /// It is used to store the objects
 
 module moveos_std::object_storage {
-    use moveos_std::tx_context::{TxContext};
     use moveos_std::raw_table;
     use moveos_std::object::{Self, Object};
     use moveos_std::object_id::{Self, ObjectID};
     #[test_only]
     use moveos_std::test_helper;
+    #[test_only]
+    use moveos_std::tx_context::TxContext;
 
     friend moveos_std::account_storage;
     friend moveos_std::storage_context;
@@ -16,12 +17,6 @@ module moveos_std::object_storage {
 
     struct ObjectStorage has store {
         handle: ObjectID,
-    }
-
-    public fun new(ctx: &mut TxContext): ObjectStorage {
-        ObjectStorage {
-            handle: raw_table::new_table_handle(ctx),
-        }
     }
 
     /// Create a new ObjectStorage with a given handle.
@@ -36,44 +31,51 @@ module moveos_std::object_storage {
         object_id::address_to_object_id(GlobalObjectStorageHandle)
     }
 
-    #[private_generics(T)]
     /// Borrow Object from object store with object_id
-    public fun borrow<T: key>(self: &ObjectStorage, object_id: ObjectID): &Object<T> {
+    public(friend) fun borrow<T: key>(self: &ObjectStorage, object_id: ObjectID): &Object<T> {
         raw_table::borrow<ObjectID, Object<T>>(&self.handle, object_id)
     }
 
-    #[private_generics(T)]
     /// Borrow mut Object from object store with object_id
-    public fun borrow_mut<T: key>(self: &mut ObjectStorage, object_id: ObjectID): &mut Object<T> {
+    public(friend) fun borrow_mut<T: key>(self: &mut ObjectStorage, object_id: ObjectID): &mut Object<T> {
         raw_table::borrow_mut<ObjectID, Object<T>>(&self.handle, object_id)
     }
 
-    #[private_generics(T)]
     /// Remove object from object store
-    public fun remove<T: key>(self: &mut ObjectStorage, object_id: ObjectID): Object<T> {
+    public(friend) fun remove<T: key>(self: &mut ObjectStorage, object_id: ObjectID): Object<T> {
         raw_table::remove<ObjectID, Object<T>>(&self.handle, object_id)
     }
 
-    #[private_generics(T)]
     /// Add object to object store
-    public fun add<T: key>(self: &mut ObjectStorage, obj: Object<T>) {
+    public(friend) fun add<T: key>(self: &mut ObjectStorage, obj: Object<T>) {
         raw_table::add<ObjectID, Object<T>>(&self.handle, object::id(&obj), obj);
     }
 
-    public fun contains(self: &ObjectStorage, object_id: ObjectID): bool {
+    public(friend) fun contains(self: &ObjectStorage, object_id: ObjectID): bool {
         raw_table::contains<ObjectID>(&self.handle, object_id)
     }
 
-    /// Destroy a ObjectStroage. The ObjectStorage must be empty to succeed.
-    public fun destroy_empty(self: ObjectStorage) {
-        let ObjectStorage { handle } = self;
-        raw_table::destroy_empty(&handle)
-    }
 
     #[test_only]
     /// Testing only: allow to drop oject storage
     public fun drop_object_storage(self: ObjectStorage) {
         test_helper::destroy<ObjectStorage>(self);
+    }
+
+    #[test_only]
+    /// There is only one instance: the global object storage.
+    /// This `new` function is only used for testing
+    public fun new(ctx: &mut TxContext): ObjectStorage {
+        ObjectStorage {
+            handle: raw_table::new_table_handle(ctx),
+        }
+    }
+
+    #[test_only]    
+    /// Destroy a ObjectStroage. The ObjectStorage must be empty to succeed.
+    public fun destroy_empty(self: ObjectStorage) {
+        let ObjectStorage { handle } = self;
+        raw_table::destroy_empty(&handle)
     }
 
     #[test_only]

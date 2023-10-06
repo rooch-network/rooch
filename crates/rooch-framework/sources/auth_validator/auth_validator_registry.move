@@ -5,9 +5,12 @@ module rooch_framework::auth_validator_registry{
     use moveos_std::table::{Self, Table};
     use moveos_std::type_table::{Self, TypeTable};
     use moveos_std::account_storage;
-    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::storage_context::StorageContext;
     use rooch_framework::auth_validator::{Self, AuthValidator};
 
+    #[test_only]
+    use moveos_std::storage_context;
+    
     friend rooch_framework::genesis;
     friend rooch_framework::builtin_validators;
 
@@ -29,8 +32,8 @@ module rooch_framework::auth_validator_registry{
     public(friend) fun genesis_init(ctx: &mut StorageContext, sender: &signer){
         let registry = ValidatorRegistry {
             validator_num: 0,
-            validators: table::new(storage_context::tx_context_mut(ctx)),
-            validators_with_type: type_table::new(storage_context::tx_context_mut(ctx)),
+            validators: table::new(ctx),
+            validators_with_type: type_table::new(ctx),
         };
         account_storage::global_move_to(ctx, sender, registry);
     }

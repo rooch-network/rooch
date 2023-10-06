@@ -4,10 +4,8 @@ module rooch_examples::something {
     use moveos_std::event;
     use moveos_std::object::{Self, Object};
     use moveos_std::object_id::ObjectID;
-    use moveos_std::object_storage;
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::table::{Self, Table};
-    use moveos_std::tx_context;
 
     friend rooch_examples::something_aggregate;
     friend rooch_examples::something_do_logic;
@@ -63,8 +61,8 @@ module rooch_examples::something {
         j: u128,
     ): Object<SomethingProperties> {
         let value = new_something_properties(storage_ctx, i, j);
+        let owner = storage_context::sender(storage_ctx);
         let tx_ctx = storage_context::tx_context_mut(storage_ctx);
-        let owner = tx_context::sender(tx_ctx);
         let obj = object::new(
             tx_ctx,
             owner,
@@ -83,12 +81,11 @@ module rooch_examples::something {
         i: u32,
         j: u128,
     ): SomethingProperties {
-        let tx_ctx = storage_context::tx_context_mut(storage_ctx);
         let ps = SomethingProperties {
             i,
             j,
-            fooTable: table::new(tx_ctx),
-            barTable: table::new(tx_ctx),
+            fooTable: table::new(storage_ctx),
+            barTable: table::new(storage_ctx),
         };
         add_bar_table_item(storage_ctx, &mut ps.barTable, 0, 0);
         add_bar_table_item(storage_ctx, &mut ps.barTable, 1, 1);
@@ -124,15 +121,13 @@ module rooch_examples::something {
     }
 
     public(friend) fun add_something(storage_ctx: &mut StorageContext, obj: Object<SomethingProperties>) {
-        let obj_store = storage_context::object_storage_mut(storage_ctx);
-        object_storage::add(obj_store, obj);
+        storage_context::add_object(storage_ctx, obj);
     }
 
     public(friend) fun remove_something(
         storage_ctx: &mut StorageContext,
         obj_id: ObjectID
     ): Object<SomethingProperties> {
-        let obj_store = storage_context::object_storage_mut(storage_ctx);
-        object_storage::remove<SomethingProperties>(obj_store, obj_id)
+        storage_context::remove_object<SomethingProperties>(storage_ctx, obj_id)
     }
 }

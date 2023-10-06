@@ -20,7 +20,6 @@
 <b>use</b> <a href="">0x2::account_storage</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
 <b>use</b> <a href="">0x2::table</a>;
-<b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x2::type_table</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
@@ -136,8 +135,8 @@ Init function called by genesis.
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_genesis_init">genesis_init</a>(ctx: &<b>mut</b> StorageContext, sender: &<a href="">signer</a>){
     <b>let</b> registry = <a href="auth_validator_registry.md#0x3_auth_validator_registry_ValidatorRegistry">ValidatorRegistry</a> {
         validator_num: 0,
-        validators: <a href="_new">table::new</a>(<a href="_tx_context_mut">storage_context::tx_context_mut</a>(ctx)),
-        validators_with_type: <a href="_new">type_table::new</a>(<a href="_tx_context_mut">storage_context::tx_context_mut</a>(ctx)),
+        validators: <a href="_new">table::new</a>(ctx),
+        validators_with_type: <a href="_new">type_table::new</a>(ctx),
     };
     <a href="_global_move_to">account_storage::global_move_to</a>(ctx, sender, registry);
 }

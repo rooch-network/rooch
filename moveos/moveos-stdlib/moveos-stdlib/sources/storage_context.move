@@ -5,14 +5,13 @@
 module moveos_std::storage_context {
 
     use std::option::Option;
-    use moveos_std::object_storage::{ObjectStorage};
+    use moveos_std::object_storage::{Self, ObjectStorage};
     use moveos_std::tx_context::{Self, TxContext};
-    use moveos_std::object_id::{ObjectID};
+    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::Object;
     use moveos_std::tx_meta::{TxMeta};
     use moveos_std::tx_result::{TxResult};
 
-    #[test_only]
-    use moveos_std::object_storage::{Self};
     #[test_only]
     use moveos_std::test_helper;
 
@@ -37,17 +36,7 @@ module moveos_std::storage_context {
         &mut self.tx_context
     }
 
-    /// Get an immutable reference to the object storage from the storage context
-    public fun object_storage(self: &StorageContext): &ObjectStorage {
-        &self.object_storage
-    }
-
-    /// Get a mutable reference to the object storage from the storage context
-    public fun object_storage_mut(self: &mut StorageContext): &mut ObjectStorage {
-        &mut self.object_storage
-    }
-
-    /// Wrap functions for TxContext
+    // Wrap functions for TxContext
 
     /// Return the address of the user that signed the current transaction
     public fun sender(self: &StorageContext): address {
@@ -95,6 +84,37 @@ module moveos_std::storage_context {
 
     public fun tx_result(self: &StorageContext): TxResult {
         tx_context::tx_result(&self.tx_context)
+    }
+
+
+    // Wrap functions for ObjectStorage 
+
+    #[private_generics(T)]
+    /// Borrow Object from object store with object_id
+    public fun borrow_object<T: key>(self: &StorageContext, object_id: ObjectID): &Object<T> {
+        object_storage::borrow<T>(&self.object_storage, object_id)
+    }
+
+    #[private_generics(T)]
+    /// Borrow mut Object from object store with object_id
+    public fun borrow_object_mut<T: key>(self: &mut StorageContext, object_id: ObjectID): &mut Object<T> {
+        object_storage::borrow_mut<T>(&mut self.object_storage, object_id)
+    }
+
+    #[private_generics(T)]
+    /// Remove object from object store
+    public fun remove_object<T: key>(self: &mut StorageContext, object_id: ObjectID): Object<T> {
+        object_storage::remove<T>(&mut self.object_storage, object_id)
+    }
+
+    #[private_generics(T)]
+    /// Add object to object store
+    public fun add_object<T: key>(self: &mut StorageContext, obj: Object<T>) {
+        object_storage::add<T>(&mut self.object_storage, obj)
+    }
+
+    public fun contains_object(self: &StorageContext, object_id: ObjectID): bool {
+        object_storage::contains(&self.object_storage, object_id)
     }
 
     #[test_only]

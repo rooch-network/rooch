@@ -66,7 +66,6 @@ This module provides the foundation for typesafe Coins.
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
 <b>use</b> <a href="">0x2::table</a>;
-<b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x2::type_table</a>;
 </code></pre>
@@ -606,14 +605,15 @@ Coin amount cannot be zero
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x3_coin_genesis_init">genesis_init</a>(ctx: &<b>mut</b> StorageContext, genesis_account: &<a href="">signer</a>) {
-    <b>let</b> tx_ctx = <a href="_tx_context_mut">storage_context::tx_context_mut</a>(ctx);
-    <a href="_global_move_to">account_storage::global_move_to</a>(ctx, genesis_account, <a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a>{
-        coin_infos: <a href="_new">type_table::new</a>(tx_ctx),
-    });
-    <b>let</b> tx_ctx = <a href="_tx_context_mut">storage_context::tx_context_mut</a>(ctx);
-    <a href="_global_move_to">account_storage::global_move_to</a>(ctx, genesis_account, <a href="coin.md#0x3_coin_AutoAcceptCoins">AutoAcceptCoins</a>{
-        auto_accept_coins: <a href="_new">table::new</a>&lt;<b>address</b>, bool&gt;(tx_ctx),
-    });
+    <b>let</b> coin_infos = <a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a> {
+        coin_infos: <a href="_new">type_table::new</a>(ctx),
+    };
+    <a href="_global_move_to">account_storage::global_move_to</a>(ctx, genesis_account, coin_infos);
+
+    <b>let</b> auto_accepted_coins = <a href="coin.md#0x3_coin_AutoAcceptCoins">AutoAcceptCoins</a> {
+        auto_accept_coins: <a href="_new">table::new</a>&lt;<b>address</b>, bool&gt;(ctx),
+    };
+    <a href="_global_move_to">account_storage::global_move_to</a>(ctx, genesis_account, auto_accepted_coins);
 }
 </code></pre>
 
@@ -637,10 +637,10 @@ Coin amount cannot be zero
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x3_coin_init_account_coin_store">init_account_coin_store</a>(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>){
-    <b>let</b> tx_ctx = <a href="_tx_context_mut">storage_context::tx_context_mut</a>(ctx);
-    <a href="_global_move_to">account_storage::global_move_to</a>(ctx, <a href="account.md#0x3_account">account</a>, <a href="coin.md#0x3_coin_CoinStores">CoinStores</a>{
-        coin_stores: <a href="_new">type_table::new</a>(tx_ctx),
-    });
+    <b>let</b> coin_stores = <a href="coin.md#0x3_coin_CoinStores">CoinStores</a> {
+        coin_stores: <a href="_new">type_table::new</a>(ctx),
+    };
+    <a href="_global_move_to">account_storage::global_move_to</a>(ctx, <a href="account.md#0x3_account">account</a>, coin_stores);
 }
 </code></pre>
 

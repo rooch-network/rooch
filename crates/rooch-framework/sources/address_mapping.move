@@ -2,7 +2,7 @@ module rooch_framework::address_mapping{
     
     use std::option::{Self, Option};
     use std::signer;
-    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::storage_context::StorageContext;
     use moveos_std::table::{Self, Table};
     use moveos_std::account_storage;
     use rooch_framework::hash::{blake2b256};
@@ -17,8 +17,7 @@ module rooch_framework::address_mapping{
     }
 
     public(friend) fun genesis_init(ctx: &mut StorageContext, genesis_account: &signer) {
-        let tx_ctx = storage_context::tx_context_mut(ctx);
-        let mapping = table::new<MultiChainAddress, address>(tx_ctx);
+        let mapping = table::new<MultiChainAddress, address>(ctx);
         account_storage::global_move_to(ctx, genesis_account, AddressMapping{
             mapping,
         });

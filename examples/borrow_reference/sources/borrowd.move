@@ -1,7 +1,6 @@
 module rooch_examples::borrowd {
     use moveos_std::account_storage;
     use moveos_std::storage_context::{Self, StorageContext};
-    use moveos_std::tx_context;
 
     struct BorrowCapability has key, copy, store {}
 
@@ -23,7 +22,7 @@ module rooch_examples::borrowd {
         ctx: &StorageContext,
         _borrow_cap: &BorrowCapability,
     ) {
-        let addr = tx_context::sender(storage_context::tx_context(ctx));
+        let addr = storage_context::sender(ctx);
         account_storage::global_exists<BorrowCapability>(ctx, addr);
     }
 

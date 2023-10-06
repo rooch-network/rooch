@@ -26,7 +26,6 @@ Migrate their from the account module for simplyfying the account module.
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::account_storage</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
-<b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="">0x2::type_table</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 <b>use</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry">0x3::auth_validator_registry</a>;
@@ -201,7 +200,7 @@ max authentication key length
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_init_authentication_keys">init_authentication_keys</a>(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
    <b>let</b> authentication_keys = <a href="account_authentication.md#0x3_account_authentication_AuthenticationKeys">AuthenticationKeys</a> {
-      authentication_keys: <a href="_new">type_table::new</a>(<a href="_tx_context_mut">storage_context::tx_context_mut</a>(ctx)),
+      authentication_keys: <a href="_new">type_table::new</a>(ctx),
    };
    <a href="_global_move_to">account_storage::global_move_to</a>&lt;<a href="account_authentication.md#0x3_account_authentication_AuthenticationKeys">AuthenticationKeys</a>&gt;(ctx, <a href="account.md#0x3_account">account</a>, authentication_keys);
 }

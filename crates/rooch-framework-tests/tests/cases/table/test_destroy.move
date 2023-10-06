@@ -4,10 +4,8 @@
 module test::m {
     use std::string::String;
     use moveos_std::table::{Self, Table};
-    use moveos_std::tx_context;
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::object;
-    use moveos_std::object_storage;
     use moveos_std::object_id::{ObjectID};
     use moveos_std::account_storage;
 
@@ -16,9 +14,8 @@ module test::m {
     }
 
     public fun make_kv_store(ctx: &mut StorageContext): KVStore{
-        let tx_ctx = storage_context::tx_context_mut(ctx);
         KVStore{
-            table: table::new(tx_ctx),
+            table: table::new(ctx),
         }
     }
 
@@ -38,19 +35,17 @@ module test::m {
         table::borrow(&store.table, key)
     }
 
-    public fun save_to_object_storage(ctx: &mut StorageContext, kv: KVStore) : ObjectID {
+    public fun save_to_object_storage(ctx: &mut StorageContext, kv: KVStore) : ObjectID {        
+        let sender = storage_context::sender(ctx);
         let tx_ctx = storage_context::tx_context_mut(ctx);
-        let sender = tx_context::sender(tx_ctx);
         let object = object::new(tx_ctx, sender, kv);
         let object_id = object::id(&object);
-        let object_storage = storage_context::object_storage_mut(ctx);
-        object_storage::add(object_storage, object);
+        storage_context::add_object(ctx, object);
         object_id
     }
 
     public fun borrow_from_object_storage(ctx: &mut StorageContext, object_id: ObjectID): &KVStore {
-        let object_storage = storage_context::object_storage(ctx);
-        let object = object_storage::borrow(object_storage, object_id);
+        let object = storage_context::borrow_object(ctx, object_id);
         object::borrow<KVStore>(object)
     }
 

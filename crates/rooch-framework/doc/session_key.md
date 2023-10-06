@@ -30,7 +30,6 @@
 <b>use</b> <a href="">0x2::account_storage</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
 <b>use</b> <a href="">0x2::table</a>;
-<b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="">0x2::tx_meta</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 <b>use</b> <a href="native_validator.md#0x3_native_validator">0x3::native_validator</a>;
@@ -368,7 +367,7 @@ Get the session key of the account_address by the authentication key
         max_inactive_interval: max_inactive_interval,
     };
     <b>if</b> (!<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender_addr)){
-        <b>let</b> keys = <a href="_new">table::new</a>&lt;<a href="">vector</a>&lt;u8&gt;, <a href="session_key.md#0x3_session_key_SessionKey">SessionKey</a>&gt;(<a href="_tx_context_mut">storage_context::tx_context_mut</a>(ctx));
+        <b>let</b> keys = <a href="_new">table::new</a>&lt;<a href="">vector</a>&lt;u8&gt;, <a href="session_key.md#0x3_session_key_SessionKey">SessionKey</a>&gt;(ctx);
         <a href="_global_move_to">account_storage::global_move_to</a>&lt;<a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>&gt;(ctx, sender, <a href="session_key.md#0x3_session_key_SessionKeys">SessionKeys</a>{keys});
     };
 

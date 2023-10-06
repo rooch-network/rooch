@@ -1,32 +1,32 @@
 processed 10 tasks
 
-task 1 'publish'. lines 3-57:
+task 1 'publish'. lines 3-51:
 status EXECUTED
 
-task 2 'run'. lines 59-59:
+task 2 'run'. lines 53-53:
 status EXECUTED
 
-task 3 'view_object'. lines 61-63:
+task 3 'view_object'. lines 55-57:
 Object { id: ObjectID(ae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647), owner: 0000000000000000000000000000000000000000000000000000000000000043, value: AnnotatedMoveStruct { abilities: [Store, Key, ], type_: StructTag { address: 0000000000000000000000000000000000000000000000000000000000000042, module: Identifier("m"), name: Identifier("S"), type_params: [] }, value: [(Identifier("v"), U8(1))] } }
 
-task 4 'run'. lines 65-65:
+task 4 'run'. lines 59-59:
 status EXECUTED
 
-task 5 'view_object'. lines 67-70:
+task 5 'view_object'. lines 61-64:
 Object { id: ObjectID(0bbaf311ae6768a532b1f9dee65b1758a7bb1114fd57df8fa94cb2d1cb5f6896), owner: 0000000000000000000000000000000000000000000000000000000000000043, value: AnnotatedMoveStruct { abilities: [Store, Key, ], type_: StructTag { address: 0000000000000000000000000000000000000000000000000000000000000042, module: Identifier("m"), name: Identifier("Cup"), type_params: [Struct(StructTag { address: 0000000000000000000000000000000000000000000000000000000000000042, module: Identifier("m"), name: Identifier("S"), type_params: [] })] }, value: [(Identifier("v"), U8(2))] } }
 
-task 6 'run'. lines 72-72:
+task 6 'run'. lines 66-66:
 status EXECUTED
 
-task 7 'view'. lines 74-76:
+task 7 'view'. lines 68-70:
 store key 0x42::m::S {
     v: 1u8
 }
 
-task 8 'run'. lines 78-78:
+task 8 'run'. lines 72-72:
 status EXECUTED
 
-task 9 'view'. lines 80-80:
+task 9 'view'. lines 74-74:
 store key 0x42::m::Cup<0x42::m::S> {
     v: 2u8
 }

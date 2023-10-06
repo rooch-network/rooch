@@ -20,7 +20,6 @@
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::storage_context</a>;
 <b>use</b> <a href="">0x2::table</a>;
-<b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="hash.md#0x3_hash">0x3::hash</a>;
 <b>use</b> <a href="multichain_address.md#0x3_multichain_address">0x3::multichain_address</a>;
 </code></pre>
@@ -70,8 +69,7 @@
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_genesis_init">genesis_init</a>(ctx: &<b>mut</b> StorageContext, genesis_account: &<a href="">signer</a>) {
-    <b>let</b> tx_ctx = <a href="_tx_context_mut">storage_context::tx_context_mut</a>(ctx);
-    <b>let</b> mapping = <a href="_new">table::new</a>&lt;MultiChainAddress, <b>address</b>&gt;(tx_ctx);
+    <b>let</b> mapping = <a href="_new">table::new</a>&lt;MultiChainAddress, <b>address</b>&gt;(ctx);
     <a href="_global_move_to">account_storage::global_move_to</a>(ctx, genesis_account, <a href="address_mapping.md#0x3_address_mapping_AddressMapping">AddressMapping</a>{
         mapping,
     });

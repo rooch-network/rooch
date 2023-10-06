@@ -1,6 +1,6 @@
 module rooch_examples::kv_store {
 
-   use moveos_std::storage_context::{Self, StorageContext};
+   use moveos_std::storage_context::StorageContext;
    use moveos_std::account_storage;
    use moveos_std::table::{Self, Table};
    use std::string::{String};
@@ -35,9 +35,8 @@ module rooch_examples::kv_store {
 
    //init when module publish
    fun init(ctx: &mut StorageContext, sender: signer) {
-      let tx_ctx = storage_context::tx_context_mut(ctx);
       let kv = KVStore{
-         table: table::new(tx_ctx),
+         table: table::new(ctx),
       };
       account_storage::global_move_to(ctx, &sender, kv);
    }

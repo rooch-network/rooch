@@ -292,7 +292,11 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         );
         let verified_tx = self.moveos.verify(tx)?;
         let (_state_root, output) = self.moveos.execute_and_apply(verified_tx)?;
-        debug_assert!(output.status == move_core_types::vm_status::KeptVMStatus::Executed);
+        debug_assert!(
+            output.status == move_core_types::vm_status::KeptVMStatus::Executed,
+            "{:?}",
+            output
+        );
         //TODO return values
         let value = SerializedReturnValues {
             mutable_reference_outputs: vec![],

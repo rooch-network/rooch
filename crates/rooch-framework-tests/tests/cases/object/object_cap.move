@@ -22,12 +22,11 @@ module test::m {
 //# run --signers A
 script {
     use moveos_std::storage_context::{Self, StorageContext};
-    use moveos_std::tx_context;
     use moveos_std::object;
     use test::m::{Self, TestObject};
 
     fun main(ctx: &mut StorageContext) {
-        let sender_addr = tx_context::sender(storage_context::tx_context(ctx));
+        let sender_addr = storage_context::sender(ctx);
         let object = m::new_test_object(12);
         let obj = object::new<TestObject>(storage_context::tx_context_mut(ctx), sender_addr, object);
 
