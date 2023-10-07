@@ -8,12 +8,9 @@ module moveos_std::context {
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::tx_context::{Self, TxContext};
     use moveos_std::object_id::ObjectID;
-    use moveos_std::object::Object;
+    use moveos_std::object::{Self, Object};
     use moveos_std::tx_meta::{TxMeta};
     use moveos_std::tx_result::{TxResult};
-
-    #[test_only]
-    use moveos_std::test_helper;
 
     /// Information about the global context include TxContext and StorageContext
     /// We can not put the StorageContext to TxContext, because object module depends on tx_context module,
@@ -117,6 +114,21 @@ module moveos_std::context {
         storage_context::contains(&self.storage_context, object_id)
     }
 
+    // Wrap functions for Object
+
+    #[private_generics(T)]
+    /// Create a new Object, the owner is the `sender`
+    public fun new_object<T: key>(self: &mut Context, value: T): Object<T> {
+        let owner = sender(self);
+        object::new<T>(&mut self.tx_context, owner, value)
+    }
+
+    #[private_generics(T)]
+    /// Create a new Object with owner
+    public fun new_object_with_owner<T: key>(self: &mut Context, owner: address, value: T): Object<T> {
+        object::new(&mut self.tx_context, owner, value)
+    }
+
     #[test_only]
     /// Create a Context for unit test
     public fun new_test_context(sender: address): Context {
@@ -142,6 +154,6 @@ module moveos_std::context {
     #[test_only]
     /// Testing only: allow to drop Context
     public fun drop_test_context(self: Context) {
-        test_helper::destroy<Context>(self);
+        moveos_std::test_helper::destroy<Context>(self);
     }
 }

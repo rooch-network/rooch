@@ -51,24 +51,25 @@ module rooch_examples::something {
         value: V,
     }
 
-    struct BarTableItemAdded has key {
+    struct BarTableItemAdded {
         item: KeyValuePair<u8, u128>
     }
 
+    struct FooTableItemAdded {
+        item: KeyValuePair<String, String>
+    }
+
     public(friend) fun create_something(
-        storage_ctx: &mut Context,
+        ctx: &mut Context,
         i: u32,
         j: u128,
     ): Object<SomethingProperties> {
-        let value = new_something_properties(storage_ctx, i, j);
-        let owner = context::sender(storage_ctx);
-        let tx_ctx = context::tx_context_mut(storage_ctx);
-        let obj = object::new(
-            tx_ctx,
-            owner,
+        let value = new_something_properties(ctx, i, j);
+        let obj = context::new_object(
+            ctx,
             value,
         );
-        event::emit(storage_ctx, SomethingCreated {
+        event::emit(ctx, SomethingCreated {
             obj_id: object::id(&obj),
             i,
             j,
@@ -77,29 +78,29 @@ module rooch_examples::something {
     }
 
     fun new_something_properties(
-        storage_ctx: &mut Context,
+        ctx: &mut Context,
         i: u32,
         j: u128,
     ): SomethingProperties {
         let ps = SomethingProperties {
             i,
             j,
-            fooTable: table::new(storage_ctx),
-            barTable: table::new(storage_ctx),
+            fooTable: table::new(ctx),
+            barTable: table::new(ctx),
         };
-        add_bar_table_item(storage_ctx, &mut ps.barTable, 0, 0);
-        add_bar_table_item(storage_ctx, &mut ps.barTable, 1, 1);
-        add_bar_table_item(storage_ctx, &mut ps.barTable, 2, 2);
+        add_bar_table_item(ctx, &mut ps.barTable, 0, 0);
+        add_bar_table_item(ctx, &mut ps.barTable, 1, 1);
+        add_bar_table_item(ctx, &mut ps.barTable, 2, 2);
         ps
     }
 
-    fun add_bar_table_item(storage_ctx: &mut Context,
+    fun add_bar_table_item(ctx: &mut Context,
                            table: &mut Table<u8, u128>,
                            key: u8,
                            val: u128
     ) {
         table::add(table, key, val);
-        event::emit(storage_ctx, BarTableItemAdded {
+        event::emit(ctx, BarTableItemAdded {
             item: KeyValuePair {
                 key,
                 value: val,
@@ -108,26 +109,28 @@ module rooch_examples::something {
     }
 
     public(friend) fun add_foo_table_item(
-        storage_ctx: &mut Context,
+        ctx: &mut Context,
         obj: &mut Object<SomethingProperties>,
         key: String,
         val: String
     ) {
         table::add(&mut object::borrow_mut(obj).fooTable, key, val);
-        // event::emit(storage_ctx, FooTableItemAdded {
-        //     key
-        // });
-        let _ = storage_ctx;
+        event::emit(ctx, FooTableItemAdded {
+            item: KeyValuePair {
+                key,
+                value: val,
+            }
+        });
     }
 
-    public(friend) fun add_something(storage_ctx: &mut Context, obj: Object<SomethingProperties>) {
-        context::add_object(storage_ctx, obj);
+    public(friend) fun add_something(ctx: &mut Context, obj: Object<SomethingProperties>) {
+        context::add_object(ctx, obj);
     }
 
     public(friend) fun remove_something(
-        storage_ctx: &mut Context,
+        ctx: &mut Context,
         obj_id: ObjectID
     ): Object<SomethingProperties> {
-        context::remove_object<SomethingProperties>(storage_ctx, obj_id)
+        context::remove_object<SomethingProperties>(ctx, obj_id)
     }
 }

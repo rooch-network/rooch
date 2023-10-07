@@ -31,9 +31,7 @@ module test::m {
     }
 
     public fun save_to_object_storage(ctx: &mut Context, kv: KVStore) : ObjectID {
-        let sender = context::sender(ctx);        
-        let tx_ctx = context::tx_context_mut(ctx);
-        let object = object::new(tx_ctx, sender, kv);
+        let object = context::new_object(ctx, kv);
         let object_id = object::id(&object);
         context::add_object(ctx, object);
         object_id

@@ -13,13 +13,11 @@ module test::m {
     struct Cup<phantom T: store> has store, key { v: u8 }
 
     public entry fun mint_s(ctx: &mut Context) {
-        let sender = context::sender(ctx);
-        let tx_hash = context::tx_hash(ctx);        
-        let tx_ctx = context::tx_context_mut(ctx);
+        let tx_hash = context::tx_hash(ctx);
         debug::print(&tx_hash);
         // if the tx hash change, need to figure out why.
         assert!(x"7852c5dcbd87e82102dba0db36d44b5a9fb0006b3e828c0b5f0832f70a8ff6ee" == tx_hash, 1000);
-        let obj = object::new(tx_ctx, sender , S { v: 1});
+        let obj = context::new_object(ctx, S { v: 1});
         debug::print(&obj);
         context::add_object(ctx, obj);
     }
@@ -33,9 +31,7 @@ module test::m {
     }
 
     public entry fun mint_cup<T: store>(ctx: &mut Context) {
-        let sender = context::sender(ctx);
-        let tx_ctx = context::tx_context_mut(ctx);
-        let obj = object::new(tx_ctx, sender, Cup<T> { v: 2 });
+        let obj = context::new_object(ctx, Cup<T> { v: 2 });
         debug::print(&obj);
         context::add_object(ctx, obj);
     }

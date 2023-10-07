@@ -26,6 +26,8 @@ and let developers can customize the storage
 -  [Function `remove_object`](#0x2_context_remove_object)
 -  [Function `add_object`](#0x2_context_add_object)
 -  [Function `contains_object`](#0x2_context_contains_object)
+-  [Function `new_object`](#0x2_context_new_object)
+-  [Function `new_object_with_owner`](#0x2_context_new_object_with_owner)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -492,6 +494,57 @@ Add object to object store
 
 <pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_contains_object">contains_object</a>(self: &<a href="context.md#0x2_context_Context">Context</a>, <a href="object_id.md#0x2_object_id">object_id</a>: ObjectID): bool {
     <a href="storage_context.md#0x2_storage_context_contains">storage_context::contains</a>(&self.<a href="storage_context.md#0x2_storage_context">storage_context</a>, <a href="object_id.md#0x2_object_id">object_id</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_context_new_object"></a>
+
+## Function `new_object`
+
+Create a new Object, the owner is the <code>sender</code>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_object">new_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_object">new_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, value: T): Object&lt;T&gt; {
+    <b>let</b> owner = <a href="context.md#0x2_context_sender">sender</a>(self);
+    <a href="object.md#0x2_object_new">object::new</a>&lt;T&gt;(&<b>mut</b> self.<a href="tx_context.md#0x2_tx_context">tx_context</a>, owner, value)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_context_new_object_with_owner"></a>
+
+## Function `new_object_with_owner`
+
+Create a new Object with owner
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_object_with_owner">new_object_with_owner</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_object_with_owner">new_object_with_owner</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, owner: <b>address</b>, value: T): Object&lt;T&gt; {
+    <a href="object.md#0x2_object_new">object::new</a>(&<b>mut</b> self.<a href="tx_context.md#0x2_tx_context">tx_context</a>, owner, value)
 }
 </code></pre>
 

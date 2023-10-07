@@ -42,16 +42,15 @@ module simple_blog::article {
         assert!(std::string::length(&title) <= 200, error::invalid_argument(ErrorDataTooLong));
         assert!(std::string::length(&body) <= 2000, error::invalid_argument(ErrorDataTooLong));
 
-        let tx_ctx = context::tx_context_mut(ctx);
         let article = Article {
             version: 0,
             title,
             body,
         };
-        let owner_address = signer::address_of(owner);
-        let article_obj = object::new(
-            tx_ctx,
-            owner_address,
+        let owner_addr = signer::address_of(owner);
+        let article_obj = context::new_object_with_owner(
+            ctx,
+            owner_addr,
             article,
         );
         let id = object::id(&article_obj);

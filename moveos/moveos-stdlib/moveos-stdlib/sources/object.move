@@ -5,10 +5,11 @@
 /// 2. The Object is a use case for the Hot Potato pattern in Move. Objects do not have any ability, so they cannot be drop, copy, or store, and can only be handled by StorageContext API after creation.
 module moveos_std::object {
     use moveos_std::tx_context::{Self, TxContext};
-    use std::debug;
     use moveos_std::object_id::ObjectID;
 
+    friend moveos_std::context;
     friend moveos_std::account_storage;
+    friend moveos_std::storage_context;
     friend moveos_std::event;
    
     /// Box style object
@@ -22,14 +23,10 @@ module moveos_std::object {
         value: T,
     }
 
-    #[private_generics(T)]
     /// Create a new object, the object is owned by `owner`
-    /// The private generic is indicate the T should be defined in the same module as the caller. This is ensured by the verifier.
-    public fun new<T: key>(ctx: &mut TxContext, owner: address, value: T): Object<T> {
+    public(friend) fun new<T: key>(ctx: &mut TxContext, owner: address, value: T): Object<T> {
         let id = tx_context::fresh_object_id(ctx);
         let obj = Object<T>{id, value, owner};
-        //TODO after add event, then remove the debug info
-        debug::print(&obj);
         obj
     }
 
