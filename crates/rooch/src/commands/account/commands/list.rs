@@ -53,4 +53,3 @@ impl CommandAction<()> for ListCommand {
         Ok(())
     }
 }
-
