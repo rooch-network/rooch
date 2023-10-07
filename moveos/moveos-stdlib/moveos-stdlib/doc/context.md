@@ -86,7 +86,7 @@ The Context can not be <code>drop</code> or <code>store</code>, so developers ne
 Get an immutable reference to the transaction context from the storage context
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context">tx_context</a>(self: &<a href="context.md#0x2_context_Context">context::Context</a>): &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context">tx_context</a>(self: &<a href="context.md#0x2_context_Context">context::Context</a>): &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>
 </code></pre>
 
 
@@ -95,7 +95,7 @@ Get an immutable reference to the transaction context from the storage context
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context">tx_context</a>(self: &<a href="context.md#0x2_context_Context">Context</a>): &TxContext {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context">tx_context</a>(self: &<a href="context.md#0x2_context_Context">Context</a>): &TxContext {
     &self.<a href="tx_context.md#0x2_tx_context">tx_context</a>
 }
 </code></pre>
@@ -111,7 +111,7 @@ Get an immutable reference to the transaction context from the storage context
 Get a mutable reference to the transaction context from the storage context
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_tx_context_mut">tx_context_mut</a>(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>): &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="context.md#0x2_context_tx_context_mut">tx_context_mut</a>(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>): &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>
 </code></pre>
 
 
@@ -120,7 +120,7 @@ Get a mutable reference to the transaction context from the storage context
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_tx_context_mut">tx_context_mut</a>(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>): &<b>mut</b> TxContext {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="context.md#0x2_context_tx_context_mut">tx_context_mut</a>(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>): &<b>mut</b> TxContext {
     &<b>mut</b> self.<a href="tx_context.md#0x2_tx_context">tx_context</a>
 }
 </code></pre>
