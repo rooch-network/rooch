@@ -275,7 +275,7 @@ Such a function is defined in the MoveOS standard library:
 #[private_generics(T)]
 /// Move a resource to the account's storage
 /// This function equates to `move_to<T>(&signer, resource)` instruction in Move
-public fun global_move_to<T: key>(ctx: &mut StorageContext, account: &signer, resource: T){
+public fun global_move_to<T: key>(ctx: &mut Context, account: &signer, resource: T){
     let account_address = signer::address_of(account);
     //Auto create the account storage when move resource to the account
     ensure_account_storage(ctx, account_address);
@@ -291,7 +291,7 @@ First, the address of calling the current function is obtained and stored in `ac
 For a private generic function like this, the module that calls it must define the type of private generic constraint. Let's take a look at an example used in Rooch Framework:
 
 ```move
-public(friend) fun init_authentication_keys(ctx: &mut StorageContext, account: &signer) {
+public(friend) fun init_authentication_keys(ctx: &mut Context, account: &signer) {
   let authentication_keys = AuthenticationKeys {
      authentication_keys: type_table::new(storage_context::tx_context_mut(ctx)),
   };

@@ -628,56 +628,56 @@ Run the dddappp tool again.
 Open the generated file `blog_add_article_logic.move` and fill in the business logic code:
 
 ```
-    public(friend) fun verify(
-        _storage_ctx: &mut StorageContext, _account: &signer,
-        article_id: ObjectID, blog: &blog::Blog,
-    ): blog::ArticleAddedToBlog {
-        blog::new_article_added_to_blog(
-            blog, article_id,
-        )
-    }
+public(friend) fun verify(
+    _ctx: &mut Context, _account: &signer,
+    article_id: ObjectID, blog: &blog::Blog,
+): blog::ArticleAddedToBlog {
+    blog::new_article_added_to_blog(
+        blog, article_id,
+    )
+}
 
-    public(friend) fun mutate(
-        _storage_ctx: &mut StorageContext, _account: &signer,
-        article_added_to_blog: &blog::ArticleAddedToBlog,
-        blog: blog::Blog,
-    ): blog::Blog {
-        let article_id = article_added_to_blog::article_id(article_added_to_blog);
-        let articles = blog::articles(&blog);
-        if (!vector::contains(&articles, &article_id)) {
-            vector::push_back(&mut articles, article_id);
-            blog::set_articles(&mut blog, articles);
-        };
-        blog
-    }
+public(friend) fun mutate(
+    _ctx: &mut Context, _account: &signer,
+    article_added_to_blog: &blog::ArticleAddedToBlog,
+    blog: blog::Blog,
+): blog::Blog {
+    let article_id = article_added_to_blog::article_id(article_added_to_blog);
+    let articles = blog::articles(&blog);
+    if (!vector::contains(&articles, &article_id)) {
+        vector::push_back(&mut articles, article_id);
+        blog::set_articles(&mut blog, articles);
+    };
+    blog
+}
 ```
 
 Open the generated file `blog_remove_article_logic.move` and fill in the business logic code:
 
 ```
-    public(friend) fun verify(
-        _storage_ctx: &mut StorageContext, _account: &signer,
-        article_id: ObjectID, blog: &blog::Blog,
-    ): blog::ArticleRemovedFromBlog {
-        blog::new_article_removed_from_blog(
-            blog, article_id,
-        )
-    }
+public(friend) fun verify(
+    _ctx: &mut Context, _account: &signer,
+    article_id: ObjectID, blog: &blog::Blog,
+): blog::ArticleRemovedFromBlog {
+    blog::new_article_removed_from_blog(
+        blog, article_id,
+    )
+}
 
-    public(friend) fun mutate(
-        _storage_ctx: &mut StorageContext, _account: &signer,
-        article_removed_from_blog: &blog::ArticleRemovedFromBlog,
-        blog: blog::Blog,
-    ): blog::Blog {
-        let article_id = article_removed_from_blog::article_id(article_removed_from_blog);
-        let articles = blog::articles(&blog);
-        let (found, idx) = vector::index_of(&articles, &article_id);
-        if (found) {
-            vector::remove(&mut articles, idx);
-            blog::set_articles(&mut blog, articles);
-        };
-        blog
-    }
+public(friend) fun mutate(
+    _ctx: &mut Context, _account: &signer,
+    article_removed_from_blog: &blog::ArticleRemovedFromBlog,
+    blog: blog::Blog,
+): blog::Blog {
+    let article_id = article_removed_from_blog::article_id(article_removed_from_blog);
+    let articles = blog::articles(&blog);
+    let (found, idx) = vector::index_of(&articles, &article_id);
+    if (found) {
+        vector::remove(&mut articles, idx);
+        blog::set_articles(&mut blog, articles);
+    };
+    blog
+}
 ```
 
 ### Modify the Logic of Creating Articles
@@ -691,11 +691,11 @@ Open the file `article_create_logic.move`, find the `mutate` function, and modif
         let title = article_created::title(article_created);
         let body = article_created::body(article_created);
         let article_obj = article::create_article(
-            storage_ctx,
+            ctx,
             title,
             body,
         );
-        blog_aggregate::add_article(storage_ctx, _account, article::id(&article_obj));
+        blog_aggregate::add_article(ctx, _account, article::id(&article_obj));
         article_obj
     }
 ```
@@ -709,7 +709,7 @@ Open the file `article_delete_logic.move`, find the `mutate` function, and modif
         //...
     ): Object<article::Article> {
         let _ = article_deleted;
-        blog_aggregate::remove_article(storage_ctx, _account, article::id(&article_obj));
+        blog_aggregate::remove_article(ctx, _account, article::id(&article_obj));
         article_obj
     }
 ```
@@ -724,7 +724,7 @@ Open the file `article_update_logic.move`, find the `verify` function and modify
     public(friend) fun verify(
         //...
     ): article::ArticleUpdated {
-        let _ = storage_ctx;
+        let _ = ctx;
         assert!(signer::address_of(account) == object::owner(article_obj), ENOT_OWNER_ACCOUNT);
         article::new_article_updated(
             article_obj,
@@ -744,7 +744,7 @@ Open the file `article_update_comment_logic.move`, find the `verify` function an
     public(friend) fun verify(
         //...
     ): article::CommentUpdated {
-        let _ = storage_ctx;
+        let _ = ctx;
         let comment = article::borrow_comment(article_obj, comment_seq_id);
         assert!(std::signer::address_of(account) == comment::owner(comment), ENOT_OWNER_ACCOUNT);
         article::new_comment_updated(
@@ -761,7 +761,7 @@ Open the file `article_remove_comment_logic.move`, find the `verify` function an
     public(friend) fun verify(
         //...
     ): article::CommentRemoved {
-        let _ = storage_ctx;
+        let _ = ctx;
         let comment = article::borrow_comment(article_obj, comment_seq_id);
         assert!(std::signer::address_of(account) == comment::owner(comment), 111);
         article::new_comment_removed(
@@ -941,13 +941,13 @@ Open the regenerated `article_add_comment_logic.move` file, find the `verify` fu
 Open the file `article_create_logic.move` and find the following line of code:
 
 ```
-        blog_aggregate::add_article(storage_ctx, _account, article::id(&article_obj));
+        blog_aggregate::add_article(ctx, _account, article::id(&article_obj));
 ```
 
 Modify it to:
 
 ```
-        blog_aggregate::add_article(storage_ctx, article::id(&article_obj));
+        blog_aggregate::add_article(ctx, article::id(&article_obj));
 ```
 
 ### Modify the Logic of Deleting Articles
@@ -955,13 +955,13 @@ Modify it to:
 Open the file `article_delete_logic.move` and find the following line of code:
 
 ```
-        blog_aggregate::remove_article(storage_ctx, _account, article::id(&article_obj));
+        blog_aggregate::remove_article(ctx, _account, article::id(&article_obj));
 ```
 
 Modify it to:
 
 ```
-        blog_aggregate::remove_article(storage_ctx, article::id(&article_obj));
+        blog_aggregate::remove_article(ctx, article::id(&article_obj));
 ```
 
 ### Test the Re-improved Application
