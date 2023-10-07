@@ -6,7 +6,6 @@ module rooch_examples::complex_struct {
    use moveos_std::object;
    use moveos_std::bcs;
    use std::vector;
-   use std::signer;
 
    struct SimpleStruct has store, copy, drop {
       value: u64,
@@ -104,12 +103,10 @@ module rooch_examples::complex_struct {
    //init when module publish
    fun init(ctx: &mut Context, sender: signer) {
       
-      let addr = signer::address_of(&sender);
       let object_id = context::fresh_object_id(ctx);
       let s = new_complex_struct(object_id);
       let complex_object = {
-         let tx_ctx = context::tx_context_mut(ctx);
-         object::new(tx_ctx, addr, s)
+         context::new_object(ctx, s)
       };
       let complex_object_id = object::id(&complex_object);
       context::add_object(ctx, complex_object);

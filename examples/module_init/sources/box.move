@@ -36,15 +36,12 @@ module rooch_examples::box {
     }
 
     public(friend) fun create_box(
-        storage_ctx: &mut Context,
+        ctx: &mut Context,
         name: String,
         count: u128,
     ): Object<Box> {
-        let owner = context::sender(storage_ctx);
-        let tx_ctx = context::tx_context_mut(storage_ctx);
-        let obj = object::new(
-            tx_ctx,
-            owner,
+        let obj = context::new_object(
+            ctx,
             new_box(name, count),
         );
         obj
@@ -60,14 +57,14 @@ module rooch_examples::box {
         }
     }
 
-    public(friend) fun add_box(storage_ctx: &mut Context, obj: Object<Box>) {
-        context::add_object(storage_ctx, obj);
+    public(friend) fun add_box(ctx: &mut Context, obj: Object<Box>) {
+        context::add_object(ctx, obj);
     }
 
     public(friend) fun remove_box(
-        storage_ctx: &mut Context,
+        ctx: &mut Context,
         obj_id: ObjectID
     ): Object<Box> {
-        context::remove_object<Box>(storage_ctx, obj_id)
+        context::remove_object<Box>(ctx, obj_id)
     }
 }

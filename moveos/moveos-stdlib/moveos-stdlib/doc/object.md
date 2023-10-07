@@ -21,8 +21,7 @@ The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/5
 -  [Function `unpack`](#0x2_object_unpack)
 
 
-<pre><code><b>use</b> <a href="">0x1::debug</a>;
-<b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
+<pre><code><b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 </code></pre>
 
@@ -74,10 +73,9 @@ The object can not be copied, droped, only can be consumed by StorageContext API
 ## Function `new`
 
 Create a new object, the object is owned by <code>owner</code>
-The private generic is indicate the T should be defined in the same module as the caller. This is ensured by the verifier.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(ctx: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(ctx: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
 
@@ -86,11 +84,9 @@ The private generic is indicate the T should be defined in the same module as th
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(ctx: &<b>mut</b> TxContext, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt; {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(ctx: &<b>mut</b> TxContext, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt; {
     <b>let</b> id = <a href="tx_context.md#0x2_tx_context_fresh_object_id">tx_context::fresh_object_id</a>(ctx);
     <b>let</b> obj = <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;{id, value, owner};
-    //TODO after add <a href="event.md#0x2_event">event</a>, then remove the <a href="">debug</a> info
-    <a href="_print">debug::print</a>(&obj);
     obj
 }
 </code></pre>
