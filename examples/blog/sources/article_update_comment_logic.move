@@ -11,7 +11,7 @@ module rooch_examples::article_update_comment_logic {
     const ErrorNotOwnerAccount: u64 = 113;
 
     public(friend) fun verify(
-        storage_ctx: &mut Context,
+        ctx: &mut Context,
         account: &signer,
         comment_seq_id: u64,
         commenter: String,
@@ -19,7 +19,7 @@ module rooch_examples::article_update_comment_logic {
         owner: address,
         article_obj: &Object<article::Article>,
     ): article::CommentUpdated {
-        let _ = storage_ctx;
+        let _ = ctx;
         let comment = article::borrow_comment(article_obj, comment_seq_id);
         assert!(std::signer::address_of(account) == comment::owner(comment), ErrorNotOwnerAccount);
         article::new_comment_updated(
@@ -32,7 +32,7 @@ module rooch_examples::article_update_comment_logic {
     }
 
     public(friend) fun mutate(
-        storage_ctx: &mut Context,
+        ctx: &mut Context,
         _account: &signer,
         comment_updated: &article::CommentUpdated,
         article_obj: Object<article::Article>,
@@ -42,7 +42,7 @@ module rooch_examples::article_update_comment_logic {
         let body = comment_updated::body(comment_updated);
         let owner = comment_updated::owner(comment_updated);
         let id = article::id(&article_obj);
-        let _ = storage_ctx;
+        let _ = ctx;
         let _ = id;
         let comment = article::borrow_mut_comment(&mut article_obj, comment_seq_id);
         comment::set_commenter(comment, commenter);

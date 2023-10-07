@@ -16,22 +16,22 @@ module rooch_examples::something_aggregate {
     }
 
     public entry fun add_foo_table_item(
-        storage_ctx: &mut Context,
+        ctx: &mut Context,
         object_id: ObjectID,
         key: String,
         val: String,
     ) {
-        let obj = something::remove_something(storage_ctx, object_id);
-        let update_obj = something_do_logic::add_foo_table_item(storage_ctx, obj, key, val);
-        something::add_something(storage_ctx, update_obj);
+        let obj = something::remove_something(ctx, object_id);
+        let update_obj = something_do_logic::add_foo_table_item(ctx, obj, key, val);
+        something::add_something(ctx, update_obj);
     }
 
     public entry fun remove_do_something_add(
-        storage_ctx: &mut Context,
+        ctx: &mut Context,
         object_id: ObjectID,
     ) {
-        let obj = something::remove_something(storage_ctx, object_id);
+        let obj = something::remove_something(ctx, object_id);
         let update_obj = something_do_logic::do_something(obj);
-        something::add_something(storage_ctx, update_obj);
+        something::add_something(ctx, update_obj);
     }
 }
