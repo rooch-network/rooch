@@ -1,12 +1,18 @@
 {
   "installation": "安装",
   "cli": "CLI",
-  "faucet": "水龙头",
+  "faucet": {
+    "title": "水龙头",
+    "display": "hidden"
+  },
   "address-space": "地址空间",
   "library": "库",
   "create-rooch-move-contract": "创建 Rooch Move 合约",
   "start-server": "启动服务",
   "object": "对象",
-  "interactive-ethereum": "与以太坊交互",
+  "interactive-ethereum": {
+    "title": "与以太坊交互",
+    "display": "hidden"
+  },
   "rpc": "RPC"
 }
