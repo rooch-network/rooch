@@ -7,7 +7,7 @@ module rooch_examples::blog_remove_article_logic {
     friend rooch_examples::blog_aggregate;
 
     public(friend) fun verify(
-        //storage_ctx: &mut StorageContext,
+        //storage_ctx: &mut Context,
         article_id: ObjectID,
         blog: &blog::Blog,
     ): blog::ArticleRemovedFromBlog {
@@ -19,7 +19,7 @@ module rooch_examples::blog_remove_article_logic {
     }
 
     public(friend) fun mutate(
-        //storage_ctx: &mut StorageContext,
+        //storage_ctx: &mut Context,
         article_removed_from_blog: &blog::ArticleRemovedFromBlog,
         blog: &mut blog::Blog,
     ) {

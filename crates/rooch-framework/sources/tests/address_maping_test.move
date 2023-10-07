@@ -19,7 +19,7 @@ module rooch_framework::address_mapping_test{
         address_mapping::bind(&mut genesis_ctx, &sender, multi_chain_address);
         let addr = option::extract(&mut address_mapping::resolve(&genesis_ctx, multi_chain_address));
         assert!(addr == sender_addr, 1000);
-        moveos_std::storage_context::drop_test_context(genesis_ctx);
+        moveos_std::context::drop_test_context(genesis_ctx);
     }
    
 }

@@ -12,13 +12,13 @@ use moveos_types::move_types::is_table;
 use moveos_types::state::StateSet;
 use moveos_types::state_resolver::ListState;
 use moveos_types::{
+    context,
+    object::{AccountStorage, Object, ObjectID, RawObject, TableInfo},
+};
+use moveos_types::{
     h256::H256,
     move_module::MoveModule,
     state::{MoveStructState, State},
-};
-use moveos_types::{
-    object::{AccountStorage, Object, ObjectID, RawObject, TableInfo},
-    storage_context,
 };
 use moveos_types::{
     state::StateChangeSet,
@@ -253,7 +253,7 @@ impl StateDBStore {
 
         for (table_handle, table_change) in state_change_set.changes {
             // handle global object
-            if table_handle == storage_context::GLOBAL_OBJECT_STORAGE_HANDLE {
+            if table_handle == context::GLOBAL_OBJECT_STORAGE_HANDLE {
                 self.global_table
                     .put_changes(table_change.entries.into_iter())?;
                 // TODO: do we need to update the size of global table?
@@ -362,10 +362,9 @@ impl StateDBStore {
 
             golbal_update_set.put(key, state);
         }
-        state_set.state_sets.insert(
-            storage_context::GLOBAL_OBJECT_STORAGE_HANDLE,
-            golbal_update_set,
-        );
+        state_set
+            .state_sets
+            .insert(context::GLOBAL_OBJECT_STORAGE_HANDLE, golbal_update_set);
 
         Ok(state_set)
     }

@@ -4,7 +4,7 @@
 module test::m {
     use std::string::String;
     use moveos_std::table::{Self, Table};
-    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::context::{Self, Context};
     use moveos_std::object;
     use moveos_std::object_id::{ObjectID};
     use moveos_std::account_storage;
@@ -13,7 +13,7 @@ module test::m {
         table: Table<String,vector<u8>>,
     }
 
-    public fun make_kv_store(ctx: &mut StorageContext): KVStore{
+    public fun make_kv_store(ctx: &mut Context): KVStore{
         KVStore{
             table: table::new(ctx),
         }
@@ -35,33 +35,33 @@ module test::m {
         table::borrow(&store.table, key)
     }
 
-    public fun save_to_object_storage(ctx: &mut StorageContext, kv: KVStore) : ObjectID {        
-        let sender = storage_context::sender(ctx);
-        let tx_ctx = storage_context::tx_context_mut(ctx);
+    public fun save_to_object_storage(ctx: &mut Context, kv: KVStore) : ObjectID {        
+        let sender = context::sender(ctx);
+        let tx_ctx = context::tx_context_mut(ctx);
         let object = object::new(tx_ctx, sender, kv);
         let object_id = object::id(&object);
-        storage_context::add_object(ctx, object);
+        context::add_object(ctx, object);
         object_id
     }
 
-    public fun borrow_from_object_storage(ctx: &mut StorageContext, object_id: ObjectID): &KVStore {
-        let object = storage_context::borrow_object(ctx, object_id);
+    public fun borrow_from_object_storage(ctx: &mut Context, object_id: ObjectID): &KVStore {
+        let object = context::borrow_object(ctx, object_id);
         object::borrow<KVStore>(object)
     }
 
-    public fun save_to_account_storage(ctx: &mut StorageContext, account: &signer, store: KVStore){
+    public fun save_to_account_storage(ctx: &mut Context, account: &signer, store: KVStore){
         account_storage::global_move_to(ctx, account, store);
     }
 
-    public fun borrow_from_account_storage(ctx: &StorageContext, account: address) : &KVStore{
+    public fun borrow_from_account_storage(ctx: &Context, account: address) : &KVStore{
         account_storage::global_borrow(ctx, account)
     }
 
-    public fun borrow_mut_from_account_storage(ctx: &mut StorageContext, account: address) : &mut KVStore{
+    public fun borrow_mut_from_account_storage(ctx: &mut Context, account: address) : &mut KVStore{
         account_storage::global_borrow_mut(ctx, account)
     }
 
-    public fun move_from_account_storage(ctx: &mut StorageContext, account: address) : KVStore{
+    public fun move_from_account_storage(ctx: &mut Context, account: address) : KVStore{
         account_storage::global_move_from(ctx, account)
     }
 
@@ -82,10 +82,10 @@ module test::m {
 //# run --signers test
 script {
     use std::string;
-    use moveos_std::storage_context::{StorageContext};
+    use moveos_std::context::{Context};
     use test::m;
 
-    fun main(ctx: &mut StorageContext, sender: signer) {
+    fun main(ctx: &mut Context, sender: signer) {
         let kv = m::make_kv_store(ctx);
         m::add(&mut kv, string::utf8(b"test"), b"value");
         assert!(m::length(&kv) == 1, 1000); // check length is correct when data in table cache
@@ -97,11 +97,11 @@ script {
 //# run --signers test
 script {
     use std::string;
-    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::context::{Self, Context};
     use test::m;
 
-    fun main(ctx: &mut StorageContext) {
-        let sender = storage_context::sender(ctx);
+    fun main(ctx: &mut Context) {
+        let sender = context::sender(ctx);
         let kv = m::borrow_from_account_storage(ctx, sender);
         assert!(m::contains(kv, string::utf8(b"test")), 1001);
         let v = m::borrow(kv, string::utf8(b"test"));
@@ -113,11 +113,11 @@ script {
 //# run --signers test
 script {
     use std::string;
-    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::context::{Self, Context};
     use test::m;
 
-    fun main(ctx: &mut StorageContext) {
-        let sender = storage_context::sender(ctx);
+    fun main(ctx: &mut Context) {
+        let sender = context::sender(ctx);
         let kv = m::borrow_mut_from_account_storage(ctx, sender);
         m::add(kv, string::utf8(b"test1"), b"value1");
         assert!(m::length(kv) == 2, 1003); 
@@ -128,11 +128,11 @@ script {
 // destroy none empty table, should failed.
 //# run --signers test
 script {
-    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::context::{Self, Context};
     use test::m;
 
-    fun main(ctx: &mut StorageContext) {
-        let sender = storage_context::sender(ctx);
+    fun main(ctx: &mut Context) {
+        let sender = context::sender(ctx);
         let kv = m::move_from_account_storage(ctx, sender);
         m::destroy(kv);
     }
@@ -142,11 +142,11 @@ script {
 //# run --signers test
 script {
     use std::string;
-    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::context::{Self, Context};
     use test::m;    
 
-    fun main(ctx: &mut StorageContext) {
-        let sender = storage_context::sender(ctx);
+    fun main(ctx: &mut Context) {
+        let sender = context::sender(ctx);
         let kv = m::move_from_account_storage(ctx, sender);
         let v = m::remove(&mut kv, string::utf8(b"test"));
         assert!(v == b"value", 1004);

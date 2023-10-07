@@ -4,11 +4,11 @@ task 1 'publish'. lines 3-8:
 status EXECUTED
 
 task 2 'publish'. lines 10-41:
-Error: error: resource type "KeyStruct" in function "0x2::storage_context::remove_object" not defined in current module or not allowed
+Error: error: resource type "KeyStruct" in function "0x2::context::remove_object" not defined in current module or not allowed
    ┌─ /tmp/tempfile:32:19
    │
-32 │         let obj = storage_context::remove_object<KeyStruct>(ctx, object_id);
-   │                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+32 │         let obj = context::remove_object<KeyStruct>(ctx, object_id);
+   │                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error: resource type "KeyStruct" in function "0x2::object::unpack" not defined in current module or not allowed
    ┌─ /tmp/tempfile:34:34

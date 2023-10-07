@@ -7,7 +7,7 @@ module rooch_examples::blog {
     use moveos_std::account_storage;
     use moveos_std::event;
     use moveos_std::object_id::ObjectID;
-    use moveos_std::storage_context::StorageContext;
+    use moveos_std::context::Context;
     use std::error;
     use std::signer;
     use std::string::String;
@@ -161,23 +161,23 @@ module rooch_examples::blog {
     }
 
 
-    public(friend) fun update_version_and_add(storage_ctx: &mut StorageContext, account: &signer, blog: Blog) {
+    public(friend) fun update_version_and_add(storage_ctx: &mut Context, account: &signer, blog: Blog) {
         assert!(signer::address_of(account) == @rooch_examples, error::invalid_argument(ErrorNotGenesisAccount));
         blog.version = blog.version + 1;
         private_add_blog(storage_ctx, account, blog);
     }
 
-    public(friend) fun remove_blog(storage_ctx: &mut StorageContext): Blog {
+    public(friend) fun remove_blog(storage_ctx: &mut Context): Blog {
         account_storage::global_move_from<Blog>(storage_ctx, @rooch_examples)
     }
 
-    public(friend) fun add_blog(storage_ctx: &mut StorageContext, account: &signer, blog: Blog) {
+    public(friend) fun add_blog(storage_ctx: &mut Context, account: &signer, blog: Blog) {
         assert!(signer::address_of(account) == @rooch_examples, error::invalid_argument(ErrorNotGenesisAccount));
         assert!(blog.version == 0, ErrorInappropriateVersion);
         private_add_blog(storage_ctx, account, blog);
     }
 
-    fun private_add_blog(storage_ctx: &mut StorageContext, account: &signer, blog: Blog) {
+    fun private_add_blog(storage_ctx: &mut Context, account: &signer, blog: Blog) {
         assert!(std::string::length(&blog.name) <= 200, ErrorDataTooLong);
         account_storage::global_move_to(storage_ctx, account, blog);
     }
@@ -190,11 +190,11 @@ module rooch_examples::blog {
         } = blog;
     }
 
-    public(friend) fun borrow_mut_blog(storage_ctx: &mut StorageContext): &mut Blog {
+    public(friend) fun borrow_mut_blog(storage_ctx: &mut Context): &mut Blog {
         account_storage::global_borrow_mut<Blog>(storage_ctx, @rooch_examples)
     }
 
-    public fun borrow_blog(storage_ctx: &mut StorageContext): &Blog {
+    public fun borrow_blog(storage_ctx: &mut Context): &Blog {
         account_storage::global_borrow<Blog>(storage_ctx, @rooch_examples)
     }
 
@@ -202,23 +202,23 @@ module rooch_examples::blog {
         blog.version = blog.version + 1;
     }
 
-    public(friend) fun emit_article_added_to_blog(storage_ctx: &mut StorageContext, article_added_to_blog: ArticleAddedToBlog) {
+    public(friend) fun emit_article_added_to_blog(storage_ctx: &mut Context, article_added_to_blog: ArticleAddedToBlog) {
         event::emit(storage_ctx, article_added_to_blog);
     }
 
-    public(friend) fun emit_article_removed_from_blog(storage_ctx: &mut StorageContext, article_removed_from_blog: ArticleRemovedFromBlog) {
+    public(friend) fun emit_article_removed_from_blog(storage_ctx: &mut Context, article_removed_from_blog: ArticleRemovedFromBlog) {
         event::emit(storage_ctx, article_removed_from_blog);
     }
 
-    public(friend) fun emit_blog_created(storage_ctx: &mut StorageContext, blog_created: BlogCreated) {
+    public(friend) fun emit_blog_created(storage_ctx: &mut Context, blog_created: BlogCreated) {
         event::emit(storage_ctx, blog_created);
     }
 
-    public(friend) fun emit_blog_updated(storage_ctx: &mut StorageContext, blog_updated: BlogUpdated) {
+    public(friend) fun emit_blog_updated(storage_ctx: &mut Context, blog_updated: BlogUpdated) {
         event::emit(storage_ctx, blog_updated);
     }
 
-    public(friend) fun emit_blog_deleted(storage_ctx: &mut StorageContext, blog_deleted: BlogDeleted) {
+    public(friend) fun emit_blog_deleted(storage_ctx: &mut Context, blog_deleted: BlogDeleted) {
         event::emit(storage_ctx, blog_deleted);
     }
 

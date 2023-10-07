@@ -3,38 +3,24 @@
 
 # Module `0x2::storage_context`
 
-StorageContext is part of the StorageAbstraction
-It is used to provide a context for the storage operations, make the storage abstraction,
-and let developers can customize the storage
+AccountStorage is part of the StorageAbstraction
+It is used to store the objects
 
 
 -  [Struct `StorageContext`](#0x2_storage_context_StorageContext)
--  [Function `tx_context`](#0x2_storage_context_tx_context)
--  [Function `tx_context_mut`](#0x2_storage_context_tx_context_mut)
--  [Function `sender`](#0x2_storage_context_sender)
--  [Function `sequence_number`](#0x2_storage_context_sequence_number)
--  [Function `max_gas_amount`](#0x2_storage_context_max_gas_amount)
--  [Function `fresh_address`](#0x2_storage_context_fresh_address)
--  [Function `fresh_object_id`](#0x2_storage_context_fresh_object_id)
--  [Function `tx_hash`](#0x2_storage_context_tx_hash)
+-  [Constants](#@Constants_0)
+-  [Function `new_with_id`](#0x2_storage_context_new_with_id)
+-  [Function `global_object_storage_handle`](#0x2_storage_context_global_object_storage_handle)
+-  [Function `borrow`](#0x2_storage_context_borrow)
+-  [Function `borrow_mut`](#0x2_storage_context_borrow_mut)
+-  [Function `remove`](#0x2_storage_context_remove)
 -  [Function `add`](#0x2_storage_context_add)
--  [Function `get`](#0x2_storage_context_get)
--  [Function `tx_meta`](#0x2_storage_context_tx_meta)
--  [Function `tx_result`](#0x2_storage_context_tx_result)
--  [Function `borrow_object`](#0x2_storage_context_borrow_object)
--  [Function `borrow_object_mut`](#0x2_storage_context_borrow_object_mut)
--  [Function `remove_object`](#0x2_storage_context_remove_object)
--  [Function `add_object`](#0x2_storage_context_add_object)
--  [Function `contains_object`](#0x2_storage_context_contains_object)
+-  [Function `contains`](#0x2_storage_context_contains)
 
 
-<pre><code><b>use</b> <a href="">0x1::option</a>;
-<b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
+<pre><code><b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
-<b>use</b> <a href="object_storage.md#0x2_object_storage">0x2::object_storage</a>;
-<b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
-<b>use</b> <a href="tx_meta.md#0x2_tx_meta">0x2::tx_meta</a>;
-<b>use</b> <a href="tx_result.md#0x2_tx_result">0x2::tx_result</a>;
+<b>use</b> <a href="raw_table.md#0x2_raw_table">0x2::raw_table</a>;
 </code></pre>
 
 
@@ -43,14 +29,9 @@ and let developers can customize the storage
 
 ## Struct `StorageContext`
 
-Information about the global storage context
-We can not put the StorageContext to TxContext, because object module depends on tx_context module,
-and storage_context module depends on object module.
-We put TxContext to StorageContext, for convenience of developers.
-The StorageContext can not be <code>drop</code> or <code>store</code>, so developers need to pass the <code>&<a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a></code> or <code>&<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a></code> to the <code>entry</code> function.
 
 
-<pre><code><b>struct</b> <a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>
+<pre><code><b>struct</b> <a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a> <b>has</b> store
 </code></pre>
 
 
@@ -61,30 +42,38 @@ The StorageContext can not be <code>drop</code> or <code>store</code>, so develo
 
 <dl>
 <dt>
-<code><a href="tx_context.md#0x2_tx_context">tx_context</a>: <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a></code>
+<code>handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a></code>
 </dt>
 <dd>
 
-</dd>
-<dt>
-<code><a href="object_storage.md#0x2_object_storage">object_storage</a>: <a href="object_storage.md#0x2_object_storage_ObjectStorage">object_storage::ObjectStorage</a></code>
-</dt>
-<dd>
- The Global Object Storage
 </dd>
 </dl>
 
 
 </details>
 
-<a name="0x2_storage_context_tx_context"></a>
+<a name="@Constants_0"></a>
 
-## Function `tx_context`
-
-Get an immutable reference to the transaction context from the storage context
+## Constants
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context">tx_context</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>
+<a name="0x2_storage_context_GlobalObjectStorageHandle"></a>
+
+
+
+<pre><code><b>const</b> <a href="storage_context.md#0x2_storage_context_GlobalObjectStorageHandle">GlobalObjectStorageHandle</a>: <b>address</b> = 0;
+</code></pre>
+
+
+
+<a name="0x2_storage_context_new_with_id"></a>
+
+## Function `new_with_id`
+
+Create a new StorageContext with a given handle.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_new_with_id">new_with_id</a>(handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>
 </code></pre>
 
 
@@ -93,8 +82,10 @@ Get an immutable reference to the transaction context from the storage context
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context">tx_context</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>): &TxContext {
-    &self.<a href="tx_context.md#0x2_tx_context">tx_context</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_new_with_id">new_with_id</a>(handle: ObjectID): <a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a> {
+    <a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a> {
+        handle,
+    }
 }
 </code></pre>
 
@@ -102,14 +93,14 @@ Get an immutable reference to the transaction context from the storage context
 
 </details>
 
-<a name="0x2_storage_context_tx_context_mut"></a>
+<a name="0x2_storage_context_global_object_storage_handle"></a>
 
-## Function `tx_context_mut`
+## Function `global_object_storage_handle`
 
-Get a mutable reference to the transaction context from the storage context
+The global object storage's table handle should be 0x0
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_tx_context_mut">tx_context_mut</a>(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_global_object_storage_handle">global_object_storage_handle</a>(): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
 </code></pre>
 
 
@@ -118,8 +109,8 @@ Get a mutable reference to the transaction context from the storage context
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_tx_context_mut">tx_context_mut</a>(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>): &<b>mut</b> TxContext {
-    &<b>mut</b> self.<a href="tx_context.md#0x2_tx_context">tx_context</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_global_object_storage_handle">global_object_storage_handle</a>(): ObjectID {
+    <a href="object_id.md#0x2_object_id_address_to_object_id">object_id::address_to_object_id</a>(<a href="storage_context.md#0x2_storage_context_GlobalObjectStorageHandle">GlobalObjectStorageHandle</a>)
 }
 </code></pre>
 
@@ -127,14 +118,14 @@ Get a mutable reference to the transaction context from the storage context
 
 </details>
 
-<a name="0x2_storage_context_sender"></a>
+<a name="0x2_storage_context_borrow"></a>
 
-## Function `sender`
+## Function `borrow`
 
-Return the address of the user that signed the current transaction
+Borrow Object from object store with object_id
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_sender">sender</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): <b>address</b>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_borrow">borrow</a>&lt;T: key&gt;(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
 
@@ -143,8 +134,8 @@ Return the address of the user that signed the current transaction
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_sender">sender</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>): <b>address</b> {
-    <a href="tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_borrow">borrow</a>&lt;T: key&gt;(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>, <a href="object_id.md#0x2_object_id">object_id</a>: ObjectID): &Object&lt;T&gt; {
+    <a href="raw_table.md#0x2_raw_table_borrow">raw_table::borrow</a>&lt;ObjectID, Object&lt;T&gt;&gt;(&self.handle, <a href="object_id.md#0x2_object_id">object_id</a>)
 }
 </code></pre>
 
@@ -152,14 +143,14 @@ Return the address of the user that signed the current transaction
 
 </details>
 
-<a name="0x2_storage_context_sequence_number"></a>
+<a name="0x2_storage_context_borrow_mut"></a>
 
-## Function `sequence_number`
+## Function `borrow_mut`
 
-Return the sequence number of the current transaction
+Borrow mut Object from object store with object_id
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_sequence_number">sequence_number</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): u64
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_borrow_mut">borrow_mut</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
 
@@ -168,8 +159,8 @@ Return the sequence number of the current transaction
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_sequence_number">sequence_number</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>): u64 {
-    <a href="tx_context.md#0x2_tx_context_sequence_number">tx_context::sequence_number</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_borrow_mut">borrow_mut</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>, <a href="object_id.md#0x2_object_id">object_id</a>: ObjectID): &<b>mut</b> Object&lt;T&gt; {
+    <a href="raw_table.md#0x2_raw_table_borrow_mut">raw_table::borrow_mut</a>&lt;ObjectID, Object&lt;T&gt;&gt;(&self.handle, <a href="object_id.md#0x2_object_id">object_id</a>)
 }
 </code></pre>
 
@@ -177,14 +168,14 @@ Return the sequence number of the current transaction
 
 </details>
 
-<a name="0x2_storage_context_max_gas_amount"></a>
+<a name="0x2_storage_context_remove"></a>
 
-## Function `max_gas_amount`
+## Function `remove`
 
-Return the maximum gas amount that can be used by the current transaction
+Remove object from object store
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_max_gas_amount">max_gas_amount</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): u64
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_remove">remove</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
 
@@ -193,83 +184,8 @@ Return the maximum gas amount that can be used by the current transaction
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_max_gas_amount">max_gas_amount</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>): u64 {
-    <a href="tx_context.md#0x2_tx_context_max_gas_amount">tx_context::max_gas_amount</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_storage_context_fresh_address"></a>
-
-## Function `fresh_address`
-
-Generate a new unique address
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_fresh_address">fresh_address</a>(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): <b>address</b>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_fresh_address">fresh_address</a>(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>): <b>address</b> {
-    <a href="tx_context.md#0x2_tx_context_fresh_address">tx_context::fresh_address</a>(&<b>mut</b> self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_storage_context_fresh_object_id"></a>
-
-## Function `fresh_object_id`
-
-Generate a new unique object ID
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_fresh_object_id">fresh_object_id</a>(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_fresh_object_id">fresh_object_id</a>(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>): ObjectID {
-    <a href="tx_context.md#0x2_tx_context_fresh_object_id">tx_context::fresh_object_id</a>(&<b>mut</b> self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_storage_context_tx_hash"></a>
-
-## Function `tx_hash`
-
-Return the hash of the current transaction
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_tx_hash">tx_hash</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): <a href="">vector</a>&lt;u8&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_tx_hash">tx_hash</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>): <a href="">vector</a>&lt;u8&gt; {
-    <a href="tx_context.md#0x2_tx_context_tx_hash">tx_context::tx_hash</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_remove">remove</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>, <a href="object_id.md#0x2_object_id">object_id</a>: ObjectID): Object&lt;T&gt; {
+    <a href="raw_table.md#0x2_raw_table_remove">raw_table::remove</a>&lt;ObjectID, Object&lt;T&gt;&gt;(&self.handle, <a href="object_id.md#0x2_object_id">object_id</a>)
 }
 </code></pre>
 
@@ -281,183 +197,10 @@ Return the hash of the current transaction
 
 ## Function `add`
 
-Add a value to the context map
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_add">add</a>&lt;T: <b>copy</b>, drop, store&gt;(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, value: T)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_add">add</a>&lt;T: drop + store + <b>copy</b>&gt;(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>, value: T) {
-    <a href="tx_context.md#0x2_tx_context_add">tx_context::add</a>(&<b>mut</b> self.<a href="tx_context.md#0x2_tx_context">tx_context</a>, value);
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_storage_context_get"></a>
-
-## Function `get`
-
-Get a value from the context map
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_get">get</a>&lt;T: <b>copy</b>, drop, store&gt;(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): <a href="_Option">option::Option</a>&lt;T&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_get">get</a>&lt;T: drop + store + <b>copy</b>&gt;(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>): Option&lt;T&gt; {
-    <a href="tx_context.md#0x2_tx_context_get">tx_context::get</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_storage_context_tx_meta"></a>
-
-## Function `tx_meta`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta">tx_meta</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): <a href="tx_meta.md#0x2_tx_meta_TxMeta">tx_meta::TxMeta</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta">tx_meta</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>): TxMeta {
-    <a href="tx_context.md#0x2_tx_context_tx_meta">tx_context::tx_meta</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_storage_context_tx_result"></a>
-
-## Function `tx_result`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="tx_result.md#0x2_tx_result">tx_result</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>): <a href="tx_result.md#0x2_tx_result_TxResult">tx_result::TxResult</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="tx_result.md#0x2_tx_result">tx_result</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>): TxResult {
-    <a href="tx_context.md#0x2_tx_context_tx_result">tx_context::tx_result</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_storage_context_borrow_object"></a>
-
-## Function `borrow_object`
-
-Borrow Object from object store with object_id
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_borrow_object">borrow_object</a>&lt;T: key&gt;(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_borrow_object">borrow_object</a>&lt;T: key&gt;(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>, <a href="object_id.md#0x2_object_id">object_id</a>: ObjectID): &Object&lt;T&gt; {
-    <a href="object_storage.md#0x2_object_storage_borrow">object_storage::borrow</a>&lt;T&gt;(&self.<a href="object_storage.md#0x2_object_storage">object_storage</a>, <a href="object_id.md#0x2_object_id">object_id</a>)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_storage_context_borrow_object_mut"></a>
-
-## Function `borrow_object_mut`
-
-Borrow mut Object from object store with object_id
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_borrow_object_mut">borrow_object_mut</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_borrow_object_mut">borrow_object_mut</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>, <a href="object_id.md#0x2_object_id">object_id</a>: ObjectID): &<b>mut</b> Object&lt;T&gt; {
-    <a href="object_storage.md#0x2_object_storage_borrow_mut">object_storage::borrow_mut</a>&lt;T&gt;(&<b>mut</b> self.<a href="object_storage.md#0x2_object_storage">object_storage</a>, <a href="object_id.md#0x2_object_id">object_id</a>)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_storage_context_remove_object"></a>
-
-## Function `remove_object`
-
-Remove object from object store
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_remove_object">remove_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_remove_object">remove_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>, <a href="object_id.md#0x2_object_id">object_id</a>: ObjectID): Object&lt;T&gt; {
-    <a href="object_storage.md#0x2_object_storage_remove">object_storage::remove</a>&lt;T&gt;(&<b>mut</b> self.<a href="object_storage.md#0x2_object_storage">object_storage</a>, <a href="object_id.md#0x2_object_id">object_id</a>)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_storage_context_add_object"></a>
-
-## Function `add_object`
-
 Add object to object store
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_add_object">add_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, obj: <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_add">add</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, obj: <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;)
 </code></pre>
 
 
@@ -466,8 +209,8 @@ Add object to object store
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_add_object">add_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>, obj: Object&lt;T&gt;) {
-    <a href="object_storage.md#0x2_object_storage_add">object_storage::add</a>&lt;T&gt;(&<b>mut</b> self.<a href="object_storage.md#0x2_object_storage">object_storage</a>, obj)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_add">add</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>, obj: Object&lt;T&gt;) {
+    <a href="raw_table.md#0x2_raw_table_add">raw_table::add</a>&lt;ObjectID, Object&lt;T&gt;&gt;(&self.handle, <a href="object.md#0x2_object_id">object::id</a>(&obj), obj);
 }
 </code></pre>
 
@@ -475,13 +218,13 @@ Add object to object store
 
 </details>
 
-<a name="0x2_storage_context_contains_object"></a>
+<a name="0x2_storage_context_contains"></a>
 
-## Function `contains_object`
+## Function `contains`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_contains_object">contains_object</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): bool
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_contains">contains</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): bool
 </code></pre>
 
 
@@ -490,8 +233,8 @@ Add object to object store
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="storage_context.md#0x2_storage_context_contains_object">contains_object</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>, <a href="object_id.md#0x2_object_id">object_id</a>: ObjectID): bool {
-    <a href="object_storage.md#0x2_object_storage_contains">object_storage::contains</a>(&self.<a href="object_storage.md#0x2_object_storage">object_storage</a>, <a href="object_id.md#0x2_object_id">object_id</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_contains">contains</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a>, <a href="object_id.md#0x2_object_id">object_id</a>: ObjectID): bool {
+    <a href="raw_table.md#0x2_raw_table_contains">raw_table::contains</a>&lt;ObjectID&gt;(&self.handle, <a href="object_id.md#0x2_object_id">object_id</a>)
 }
 </code></pre>
 

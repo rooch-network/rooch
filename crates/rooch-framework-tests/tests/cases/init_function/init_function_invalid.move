@@ -99,9 +99,9 @@ module creator::test {
 
 //# publish
 module creator::test {
-    use moveos_std::storage_context;
+    use moveos_std::context;
 
-    fun init( _ : & storage_context::StorageContext){
+    fun init( _ : & context::Context){
         
     }
 }

@@ -5,9 +5,9 @@
 
 This module contains the error code for auth_validator module
 The auth_validator implementation should contain the following functions
-public fun validate(ctx: &StorageContext, authenticator_payload: vector<u8>)
-fun pre_execute(ctx: &mut StorageContext)
-fun post_execute(ctx: &mut StorageContext)
+public fun validate(ctx: &Context, authenticator_payload: vector<u8>)
+fun pre_execute(ctx: &mut Context)
+fun post_execute(ctx: &mut Context)
 
 
 -  [Struct `AuthValidator`](#0x3_auth_validator_AuthValidator)
@@ -30,7 +30,7 @@ fun post_execute(ctx: &mut StorageContext)
 <pre><code><b>use</b> <a href="">0x1::ascii</a>;
 <b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x1::option</a>;
-<b>use</b> <a href="">0x2::storage_context</a>;
+<b>use</b> <a href="">0x2::context</a>;
 </code></pre>
 
 
@@ -342,7 +342,7 @@ InvalidAuthenticator, include invalid signature
 Get the TxValidateResult from the TxContext, Only can be called after the transaction is validated
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_validate_result_from_tx_ctx">get_validate_result_from_tx_ctx</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">auth_validator::TxValidateResult</a>
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_validate_result_from_tx_ctx">get_validate_result_from_tx_ctx</a>(ctx: &<a href="_Context">context::Context</a>): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">auth_validator::TxValidateResult</a>
 </code></pre>
 
 
@@ -351,8 +351,8 @@ Get the TxValidateResult from the TxContext, Only can be called after the transa
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_validate_result_from_tx_ctx">get_validate_result_from_tx_ctx</a>(ctx: &StorageContext): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a> {
-    <b>let</b> validate_result_opt = <a href="_get">storage_context::get</a>&lt;<a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a>&gt;(ctx);
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_validate_result_from_tx_ctx">get_validate_result_from_tx_ctx</a>(ctx: &Context): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a> {
+    <b>let</b> validate_result_opt = <a href="_get">context::get</a>&lt;<a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a>&gt;(ctx);
     <b>assert</b>!(<a href="_is_some">option::is_some</a>(&validate_result_opt), <a href="_invalid_state">error::invalid_state</a>(<a href="auth_validator.md#0x3_auth_validator_ErrorMustExecuteAfterValidate">ErrorMustExecuteAfterValidate</a>));
     <a href="_extract">option::extract</a>(&<b>mut</b> validate_result_opt)
 }
@@ -369,7 +369,7 @@ Get the TxValidateResult from the TxContext, Only can be called after the transa
 Get the auth validator's auth validator id from the TxValidateResult in the TxContext
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_validator_id_from_tx_ctx">get_validator_id_from_tx_ctx</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_validator_id_from_tx_ctx">get_validator_id_from_tx_ctx</a>(ctx: &<a href="_Context">context::Context</a>): u64
 </code></pre>
 
 
@@ -378,7 +378,7 @@ Get the auth validator's auth validator id from the TxValidateResult in the TxCo
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_validator_id_from_tx_ctx">get_validator_id_from_tx_ctx</a>(ctx: &StorageContext): u64 {
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_validator_id_from_tx_ctx">get_validator_id_from_tx_ctx</a>(ctx: &Context): u64 {
     <b>let</b> validate_result = <a href="auth_validator.md#0x3_auth_validator_get_validate_result_from_tx_ctx">get_validate_result_from_tx_ctx</a>(ctx);
     validate_result.auth_validator_id
 }
@@ -396,7 +396,7 @@ Get the session key from the TxValidateResult in the TxContext
 If the TxValidateResult is None or SessionKey is None, return None
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx_option">get_session_key_from_tx_ctx_option</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx_option">get_session_key_from_tx_ctx_option</a>(ctx: &<a href="_Context">context::Context</a>): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
 </code></pre>
 
 
@@ -405,8 +405,8 @@ If the TxValidateResult is None or SessionKey is None, return None
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx_option">get_session_key_from_tx_ctx_option</a>(ctx: &StorageContext): Option&lt;<a href="">vector</a>&lt;u8&gt;&gt; {
-    <b>let</b> validate_result_opt = <a href="_get">storage_context::get</a>&lt;<a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a>&gt;(ctx);
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx_option">get_session_key_from_tx_ctx_option</a>(ctx: &Context): Option&lt;<a href="">vector</a>&lt;u8&gt;&gt; {
+    <b>let</b> validate_result_opt = <a href="_get">context::get</a>&lt;<a href="auth_validator.md#0x3_auth_validator_TxValidateResult">TxValidateResult</a>&gt;(ctx);
     <b>if</b> (<a href="_is_some">option::is_some</a>(&validate_result_opt)) {
         <b>let</b> validate_result = <a href="_extract">option::extract</a>(&<b>mut</b> validate_result_opt);
         validate_result.<a href="session_key.md#0x3_session_key">session_key</a>
@@ -427,7 +427,7 @@ If the TxValidateResult is None or SessionKey is None, return None
 The current tx is validate via the session key or not
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">is_validate_via_session_key</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">is_validate_via_session_key</a>(ctx: &<a href="_Context">context::Context</a>): bool
 </code></pre>
 
 
@@ -436,7 +436,7 @@ The current tx is validate via the session key or not
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">is_validate_via_session_key</a>(ctx: &StorageContext): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">is_validate_via_session_key</a>(ctx: &Context): bool {
     <a href="_is_some">option::is_some</a>(&<a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx_option">get_session_key_from_tx_ctx_option</a>(ctx))
 }
 </code></pre>
@@ -453,7 +453,7 @@ Get the session key from the TxValidateResult in the TxContext
 Only can be called after the transaction is validated
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx">get_session_key_from_tx_ctx</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx">get_session_key_from_tx_ctx</a>(ctx: &<a href="_Context">context::Context</a>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -462,7 +462,7 @@ Only can be called after the transaction is validated
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx">get_session_key_from_tx_ctx</a>(ctx: &StorageContext): <a href="">vector</a>&lt;u8&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx">get_session_key_from_tx_ctx</a>(ctx: &Context): <a href="">vector</a>&lt;u8&gt; {
     <b>assert</b>!(<a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">is_validate_via_session_key</a>(ctx), <a href="_invalid_state">error::invalid_state</a>(<a href="auth_validator.md#0x3_auth_validator_ErrorMustExecuteAfterValidate">ErrorMustExecuteAfterValidate</a>));
     <a href="_extract">option::extract</a>(&<b>mut</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_tx_ctx_option">get_session_key_from_tx_ctx_option</a>(ctx))
 }

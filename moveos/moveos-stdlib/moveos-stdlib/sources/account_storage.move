@@ -11,7 +11,7 @@ module moveos_std::account_storage {
     use moveos_std::table::{Self, Table};
     use moveos_std::object;
     use moveos_std::object_id::{Self, ObjectID};
-    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::context::{Self, Context};
     use moveos_std::tx_context;
     use moveos_std::move_module::{Self, MoveModule};
 
@@ -44,24 +44,24 @@ module moveos_std::account_storage {
     }
 
     /// Create a new account storage space
-    public fun create_account_storage(ctx: &mut StorageContext, account: address) {
+    public fun create_account_storage(ctx: &mut Context, account: address) {
         let object_id = object_id::address_to_object_id(account);
         let account_storage = AccountStorage {
             resources: type_table::new_with_id(named_table_id(account, NamedTableResource)),
             modules: table::new_with_id(named_table_id(account, NamedTableModule)),
         };
-        assert!(!storage_context::contains_object(ctx, object_id), ErrorAccountAlreadyExists);
+        assert!(!context::contains_object(ctx, object_id), ErrorAccountAlreadyExists);
         let object = object::new_with_id(object_id, account, account_storage);
-        storage_context::add_object(ctx, object);
+        context::add_object(ctx, object);
     }
 
     /// check if account storage eixst
-    public fun exist_account_storage(ctx: &StorageContext, account: address): bool {
+    public fun exist_account_storage(ctx: &Context, account: address): bool {
         let object_id = object_id::address_to_object_id(account);
-        storage_context::contains_object(ctx, object_id)
+        context::contains_object(ctx, object_id)
     }
 
-    public fun ensure_account_storage(ctx: &mut StorageContext, account: address) {
+    public fun ensure_account_storage(ctx: &mut Context, account: address) {
         if (!exist_account_storage(ctx, account)) {
             create_account_storage(ctx, account);
         }
@@ -69,15 +69,15 @@ module moveos_std::account_storage {
 
     //TODO the resource and module table's id is determined by the account address, so we can use the account address to get the table id
     //And don't need to borrow the account storage from the object storage, but if we create the table every time, how to drop the table?
-    fun borrow_account_storage(ctx: &StorageContext, account: address): &AccountStorage{
+    fun borrow_account_storage(ctx: &Context, account: address): &AccountStorage{
         let object_id = object_id::address_to_object_id(account);
-        let object = storage_context::borrow_object<AccountStorage>(ctx, object_id);
+        let object = context::borrow_object<AccountStorage>(ctx, object_id);
         object::borrow(object)
     }
 
-    fun borrow_account_storage_mut(ctx: &mut StorageContext, account: address): &mut AccountStorage{
+    fun borrow_account_storage_mut(ctx: &mut Context, account: address): &mut AccountStorage{
         let object_id = object_id::address_to_object_id(account);
-        let object = storage_context::borrow_object_mut<AccountStorage>(ctx, object_id);
+        let object = context::borrow_object_mut<AccountStorage>(ctx, object_id);
         object::borrow_mut(object)
     }
 
@@ -117,7 +117,7 @@ module moveos_std::account_storage {
     #[private_generics(T)]
     /// Borrow a resource from the account's storage
     /// This function equates to `borrow_global<T>(address)` instruction in Move
-    public fun global_borrow<T: key>(ctx: &StorageContext, account: address): &T {
+    public fun global_borrow<T: key>(ctx: &Context, account: address): &T {
         let account_storage = borrow_account_storage(ctx, account);
         borrow_resource_from_account_storage<T>(account_storage)
     }
@@ -125,7 +125,7 @@ module moveos_std::account_storage {
     #[private_generics(T)]
     /// Borrow a mut resource from the account's storage
     /// This function equates to `borrow_global_mut<T>(address)` instruction in Move
-    public fun global_borrow_mut<T: key>(ctx: &mut StorageContext, account: address): &mut T {
+    public fun global_borrow_mut<T: key>(ctx: &mut Context, account: address): &mut T {
         let account_storage = borrow_account_storage_mut(ctx, account);
         borrow_mut_resource_from_account_storage<T>(account_storage)
     }
@@ -133,7 +133,7 @@ module moveos_std::account_storage {
     #[private_generics(T)]
     /// Move a resource to the account's storage
     /// This function equates to `move_to<T>(&signer, resource)` instruction in Move
-    public fun global_move_to<T: key>(ctx: &mut StorageContext, account: &signer, resource: T){
+    public fun global_move_to<T: key>(ctx: &mut Context, account: &signer, resource: T){
         let account_address = signer::address_of(account);
         //Auto create the account storage when move resource to the account
         ensure_account_storage(ctx, account_address);
@@ -144,7 +144,7 @@ module moveos_std::account_storage {
     #[private_generics(T)]
     /// Move a resource from the account's storage
     /// This function equates to `move_from<T>(address)` instruction in Move
-    public fun global_move_from<T: key>(ctx: &mut StorageContext, account: address): T {
+    public fun global_move_from<T: key>(ctx: &mut Context, account: address): T {
         let account_storage = borrow_account_storage_mut(ctx, account);
         remove_resource_from_account_storage<T>(account_storage)
     }
@@ -152,7 +152,7 @@ module moveos_std::account_storage {
     #[private_generics(T)]
     /// Check if the account has a resource of the given type
     /// This function equates to `exists<T>(address)` instruction in Move
-    public fun global_exists<T: key>(ctx: &StorageContext, account: address) : bool {
+    public fun global_exists<T: key>(ctx: &Context, account: address) : bool {
         if (exist_account_storage(ctx, account)) {
             let account_storage = borrow_account_storage(ctx, account);
             exists_resource_at_account_storage<T>(account_storage)
@@ -164,13 +164,13 @@ module moveos_std::account_storage {
     // ==== Module functions ====
 
     /// Check if the account has a module with the given name
-    public fun exists_module(ctx: &StorageContext, account: address, name: String): bool {
+    public fun exists_module(ctx: &Context, account: address, name: String): bool {
         let account_storage = borrow_account_storage(ctx, account);
         exists_module_at_account_storage(account_storage, name) 
     }
 
     /// Publish modules to the account's storage
-    public fun publish_modules(ctx: &mut StorageContext, account: &signer, modules: vector<MoveModule>) {
+    public fun publish_modules(ctx: &mut Context, account: &signer, modules: vector<MoveModule>) {
         let account_address = signer::address_of(account);
         let account_storage = borrow_account_storage_mut(ctx, account_address);
         let i = 0;
@@ -199,7 +199,7 @@ module moveos_std::account_storage {
         
         // Store ModuleUpgradeFlag in tx_context which will be fetched in VM in Rust, 
         // and then announce to the VM that the code loading cache should be considered outdated. 
-        let tx_ctx = storage_context::tx_context_mut(ctx); 
+        let tx_ctx = context::tx_context_mut(ctx); 
         if (!tx_context::contains<ModuleUpgradeFlag>(tx_ctx)) {
             tx_context::add(tx_ctx, ModuleUpgradeFlag { is_upgrade: upgrade_flag });
         }
@@ -207,7 +207,7 @@ module moveos_std::account_storage {
     
     /// Entry function to publish modules
     /// The order of modules must be sorted by dependency order.
-    public entry fun publish_modules_entry(ctx: &mut StorageContext, account: &signer, modules: vector<vector<u8>>) {
+    public entry fun publish_modules_entry(ctx: &mut Context, account: &signer, modules: vector<vector<u8>>) {
         let n_modules = vector::length(&modules);
         let i = 0;
         let module_vec = vector::empty<MoveModule>();
@@ -237,31 +237,31 @@ module moveos_std::account_storage {
     #[test(sender=@0x42)]
     fun test_account_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
-        let ctx = storage_context::new_test_context(sender_addr);
+        let ctx = context::new_test_context(sender_addr);
         create_account_storage(&mut ctx, sender_addr);
         global_move_to(&mut ctx, &sender, Test{
             addr: sender_addr,
             version: 1,
         });
-        storage_context::drop_test_context(ctx);
+        context::drop_test_context(ctx);
     }
 
     #[test(sender=@0x42)]
     fun test_move_to_account_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
-        let ctx = storage_context::new_test_context(sender_addr);
+        let ctx = context::new_test_context(sender_addr);
         create_account_storage(&mut ctx, sender_addr);
         global_move_to(&mut ctx, &sender, Test{
             addr: sender_addr,
             version: 1,
         });
-        storage_context::drop_test_context(ctx);
+        context::drop_test_context(ctx);
     }
 
     #[test(sender=@0x42)]
     fun test_move_from_account_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
-        let ctx = storage_context::new_test_context(sender_addr);
+        let ctx = context::new_test_context(sender_addr);
         create_account_storage(&mut ctx, sender_addr);
         global_move_to(&mut ctx, &sender, Test{
             addr: sender_addr,
@@ -273,24 +273,24 @@ module moveos_std::account_storage {
         } = global_move_from<Test>(&mut ctx, sender_addr);
         assert!(addr == sender_addr, 0x10);
         assert!(version == 1, 0x11);
-        storage_context::drop_test_context(ctx);
+        context::drop_test_context(ctx);
     }
 
     #[test(sender=@0x42)]
     #[expected_failure(abort_code = 0x0, location = Self)]
     fun test_failure_repeatedly_create_account_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
-        let ctx = storage_context::new_test_context(sender_addr);
+        let ctx = context::new_test_context(sender_addr);
         create_account_storage(&mut ctx, sender_addr);
         create_account_storage(&mut ctx, sender_addr);
-        storage_context::drop_test_context(ctx);
+        context::drop_test_context(ctx);
     }
 
     #[test(sender=@0x42)]
     #[expected_failure(abort_code = 0x1, location = Self)]
     fun test_failure_repeatedly_move_to_account_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
-        let ctx = storage_context::new_test_context(sender_addr);
+        let ctx = context::new_test_context(sender_addr);
         create_account_storage(&mut ctx, sender_addr);
         global_move_to(&mut ctx, &sender, Test{
             addr: sender_addr,
@@ -300,14 +300,14 @@ module moveos_std::account_storage {
             addr: sender_addr,
             version: 1,
         });
-        storage_context::drop_test_context(ctx);
+        context::drop_test_context(ctx);
     }
 
     #[test(sender=@0x42)]
     #[expected_failure(abort_code = 0x2, location = Self)]
     fun test_failure_repeatedly_move_from_account_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
-        let ctx = storage_context::new_test_context(sender_addr);
+        let ctx = context::new_test_context(sender_addr);
         create_account_storage(&mut ctx, sender_addr);
         global_move_to(&mut ctx, &sender, Test{
             addr: sender_addr,
@@ -321,13 +321,13 @@ module moveos_std::account_storage {
             addr: _,
             version: _
         } = global_move_from<Test>(&mut ctx, sender_addr);
-        storage_context::drop_test_context(ctx);
+        context::drop_test_context(ctx);
     }
 
     #[test(sender=@0x42)]
     fun test_global_borrow_account_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
-        let ctx = storage_context::new_test_context(sender_addr);
+        let ctx = context::new_test_context(sender_addr);
         create_account_storage(&mut ctx, sender_addr);
         global_move_to(&mut ctx, &sender, Test{
             addr: sender_addr,
@@ -337,13 +337,13 @@ module moveos_std::account_storage {
         let ref_test = global_borrow<Test>(& ctx, sender_addr);
         assert!( ref_test.version == 1, 1);
         assert!( ref_test.addr == sender_addr, 2);
-        storage_context::drop_test_context(ctx);
+        context::drop_test_context(ctx);
     }
 
     #[test(sender=@0x42)]
     fun test_global_borrow_mut_account_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
-        let ctx = storage_context::new_test_context(sender_addr);
+        let ctx = context::new_test_context(sender_addr);
         create_account_storage(&mut ctx, sender_addr);
         global_move_to(&mut ctx, &sender, Test{
             addr: sender_addr,
@@ -356,50 +356,50 @@ module moveos_std::account_storage {
 
         ref_test.version = 2;
         assert!( ref_test.version == 2, 3);
-        storage_context::drop_test_context(ctx);
+        context::drop_test_context(ctx);
     }
 
     #[test(sender=@0x42)]
     #[expected_failure(abort_code = 393218, location = moveos_std::raw_table)]
     fun test_failure_global_borrow_account_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
-        let ctx = storage_context::new_test_context(sender_addr);
+        let ctx = context::new_test_context(sender_addr);
         create_account_storage(&mut ctx, sender_addr);
         global_borrow<Test>(&mut ctx, sender_addr);
-        storage_context::drop_test_context(ctx);
+        context::drop_test_context(ctx);
     }
 
     #[test(sender=@0x42)]
     #[expected_failure(abort_code = 393218, location = moveos_std::raw_table)]
     fun test_failure_global_borrow_mut_account_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
-        let ctx = storage_context::new_test_context(sender_addr);
+        let ctx = context::new_test_context(sender_addr);
         create_account_storage(&mut ctx, sender_addr);
         global_borrow_mut<Test>(&mut ctx, sender_addr);
-        storage_context::drop_test_context(ctx);
+        context::drop_test_context(ctx);
     }
 
     #[test(sender=@0x42)]
     fun test_exist_account_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
-        let ctx = storage_context::new_test_context(sender_addr);
+        let ctx = context::new_test_context(sender_addr);
         assert!(exist_account_storage(&ctx , sender_addr) == false, 1);
-        storage_context::drop_test_context(ctx);
+        context::drop_test_context(ctx);
     }
 
     #[test(sender=@0x42)]
     fun test_ensure_account_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
-        let ctx = storage_context::new_test_context(sender_addr);
+        let ctx = context::new_test_context(sender_addr);
         ensure_account_storage(&mut ctx , sender_addr);
         assert!(exist_account_storage(&ctx , sender_addr), 1);
-        storage_context::drop_test_context(ctx);
+        context::drop_test_context(ctx);
     }
 
     #[test(sender=@0x42)]
     fun test_ensure_move_from_and_exists(sender: signer){
         let sender_addr = signer::address_of(&sender);
-        let ctx = storage_context::new_test_context(sender_addr);
+        let ctx = context::new_test_context(sender_addr);
         let test_exists = global_exists<Test>(&ctx, sender_addr);
         assert!(!test_exists, 1);
         global_move_to(&mut ctx, &sender, Test{
@@ -415,6 +415,6 @@ module moveos_std::account_storage {
             addr: _,
             version: _
         } = test;
-        storage_context::drop_test_context(ctx);
+        context::drop_test_context(ctx);
     }
 }

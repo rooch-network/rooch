@@ -2,7 +2,7 @@ module rooch_framework::ethereum_light_client{
 
     use std::error;
     use moveos_std::bcs;
-    use moveos_std::storage_context::StorageContext;
+    use moveos_std::context::Context;
     use moveos_std::account_storage;
     use moveos_std::table::{Self, Table};
     use rooch_framework::ethereum_address::ETHAddress;
@@ -47,14 +47,14 @@ module rooch_framework::ethereum_light_client{
         blocks: Table<u64, BlockHeader>,
     }
 
-    public(friend) fun genesis_init(ctx: &mut StorageContext, genesis_account: &signer){
+    public(friend) fun genesis_init(ctx: &mut Context, genesis_account: &signer){
         let block_store = BlockStore{
             blocks: table::new(ctx),
         };
         account_storage::global_move_to(ctx, genesis_account, block_store);
     }
 
-    fun process_block(ctx: &mut StorageContext, block_header_bytes: vector<u8>){
+    fun process_block(ctx: &mut Context, block_header_bytes: vector<u8>){
         //TODO find a way to deserialize the block header, do not use bcs::from_bytes
         let block_header = bcs::from_bytes<BlockHeader>(block_header_bytes);
         //TODO validate the block hash
@@ -72,13 +72,13 @@ module rooch_framework::ethereum_light_client{
     }
 
     /// The relay server submit a new Ethereum block to the light client.
-    public entry fun submit_new_block(ctx: &mut StorageContext, block_header_bytes: vector<u8>){
+    public entry fun submit_new_block(ctx: &mut Context, block_header_bytes: vector<u8>){
         process_block(ctx, block_header_bytes);
     }
 
     #[view]
     /// Get block via block_number
-    public fun get_block(ctx: &StorageContext, block_number: u64): &BlockHeader{
+    public fun get_block(ctx: &Context, block_number: u64): &BlockHeader{
         let block_store = account_storage::global_borrow<BlockStore>(ctx, @rooch_framework);
         assert!(table::contains(&block_store.blocks, block_number), error::invalid_argument(ErrorBlockNotFound));
         table::borrow(&block_store.blocks, block_number)

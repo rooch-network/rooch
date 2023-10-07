@@ -6,7 +6,7 @@ module simple_blog::article {
     use moveos_std::event;
     use moveos_std::object::{Self, Object};
     use moveos_std::object_id::ObjectID;
-    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::context::{Self, Context};
 
     const ErrorDataTooLong: u64 = 1;
     const ErrorNotOwnerAccount: u64 = 2;
@@ -34,7 +34,7 @@ module simple_blog::article {
 
     /// Create article
     public fun create_article(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         owner: &signer,
         title: String,
         body: String,
@@ -42,7 +42,7 @@ module simple_blog::article {
         assert!(std::string::length(&title) <= 200, error::invalid_argument(ErrorDataTooLong));
         assert!(std::string::length(&body) <= 2000, error::invalid_argument(ErrorDataTooLong));
 
-        let tx_ctx = storage_context::tx_context_mut(ctx);
+        let tx_ctx = context::tx_context_mut(ctx);
         let article = Article {
             version: 0,
             title,
@@ -55,7 +55,7 @@ module simple_blog::article {
             article,
         );
         let id = object::id(&article_obj);
-        storage_context::add_object(ctx, article_obj);
+        context::add_object(ctx, article_obj);
 
         let article_created_event = ArticleCreatedEvent {
             id,
@@ -66,7 +66,7 @@ module simple_blog::article {
 
     /// Update article
     public fun update_article(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         owner: &signer,
         id: ObjectID,
         new_title: String,
@@ -75,7 +75,7 @@ module simple_blog::article {
         assert!(std::string::length(&new_title) <= 200, error::invalid_argument(ErrorDataTooLong));
         assert!(std::string::length(&new_body) <= 2000, error::invalid_argument(ErrorDataTooLong));
 
-        let article_obj = storage_context::borrow_object_mut<Article>(ctx, id);
+        let article_obj = context::borrow_object_mut<Article>(ctx, id);
         let owner_address = signer::address_of(owner);
         
         // only article owner can update the article 
@@ -95,11 +95,11 @@ module simple_blog::article {
 
     /// Delete article
     public fun delete_article(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         owner: &signer,
         id: ObjectID,
     ) {
-        let article_obj = storage_context::remove_object<Article>(ctx, id);
+        let article_obj = context::remove_object<Article>(ctx, id);
         let owner_address = signer::address_of(owner);
         
         // only article owner can delete the article 
@@ -125,8 +125,8 @@ module simple_blog::article {
     /// Read function of article
 
     /// get article object by id
-    public fun get_article(ctx: &StorageContext, article_id: ObjectID): &Object<Article> {
-        storage_context::borrow_object<Article>(ctx, article_id)
+    public fun get_article(ctx: &Context, article_id: ObjectID): &Object<Article> {
+        context::borrow_object<Article>(ctx, article_id)
     }
 
     /// get article id

@@ -3,7 +3,7 @@
 /// events emitted to a handle and emit events to the event store.
 module moveos_std::event {
     use moveos_std::bcs;
-    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::context::{Self, Context};
     use moveos_std::object_id::{Self, ObjectID};
     use moveos_std::object;
     #[test_only]
@@ -28,35 +28,35 @@ module moveos_std::event {
         object_id::address_to_object_id(event_handle_address)
     }
 
-    fun exists_event_handle<T>(ctx: &StorageContext): bool {
+    fun exists_event_handle<T>(ctx: &Context): bool {
         let event_handle_id = derive_event_handle_id<T>();
-        storage_context::contains_object(ctx, event_handle_id)
+        context::contains_object(ctx, event_handle_id)
     }
 
     /// Borrow a mut event handle from the object storage
-    fun borrow_event_handle<T>(ctx: &StorageContext): &EventHandle {
+    fun borrow_event_handle<T>(ctx: &Context): &EventHandle {
         let event_handle_id = derive_event_handle_id<T>();
-        let object = storage_context::borrow_object<EventHandle>(ctx, event_handle_id);
+        let object = context::borrow_object<EventHandle>(ctx, event_handle_id);
         object::borrow(object)
     }
 
     /// Borrow a mut event handle from the object storage
-    fun borrow_event_handle_mut<T>(ctx: &mut StorageContext): &mut EventHandle {
+    fun borrow_event_handle_mut<T>(ctx: &mut Context): &mut EventHandle {
         let event_handle_id = derive_event_handle_id<T>();
-        let object = storage_context::borrow_object_mut<EventHandle>(ctx, event_handle_id);
+        let object = context::borrow_object_mut<EventHandle>(ctx, event_handle_id);
         object::borrow_mut(object)
     }
 
     /// Get event handle owner
-    fun get_event_handle_owner<T>(ctx: &StorageContext): address {
+    fun get_event_handle_owner<T>(ctx: &Context): address {
         let event_handle_id = derive_event_handle_id<T>();
-        let object = storage_context::borrow_object<EventHandle>(ctx, event_handle_id);
+        let object = context::borrow_object<EventHandle>(ctx, event_handle_id);
         object::owner(object)
     }
 
     /// use query this method to get event handle Metadata
     /// is event_handle_id doesn't exist, sender will default 0x0
-    public fun get_event_handle<T>(ctx: &StorageContext): (ObjectID, address, u64) {
+    public fun get_event_handle<T>(ctx: &Context): (ObjectID, address, u64) {
         let event_handle_id = derive_event_handle_id<T>();
         let sender = @0x0;
         let event_seq = 0;
@@ -70,17 +70,17 @@ module moveos_std::event {
 
     /// Use EventHandle to generate a unique event handle
     /// user doesn't need to call this method directly
-    fun new_event_handle<T>(ctx: &mut StorageContext) {
-        let account_addr = storage_context::sender(ctx);
+    fun new_event_handle<T>(ctx: &mut Context) {
+        let account_addr = context::sender(ctx);
         let event_handle_id = derive_event_handle_id<T>();
         let event_handle = EventHandle {
             counter: 0,
         };
         let object = object::new_with_id<EventHandle>(event_handle_id, account_addr, event_handle);
-        storage_context::add_object(ctx, object)
+        context::add_object(ctx, object)
     }
 
-    public fun ensure_event_handle<T>(ctx: &mut StorageContext) {
+    public fun ensure_event_handle<T>(ctx: &mut Context) {
         if (!exists_event_handle<T>(ctx)) {
             new_event_handle<T>(ctx);
         }
@@ -94,7 +94,7 @@ module moveos_std::event {
     ///
     /// The type T is the main way to index the event, and can contain
     /// phantom parameters, eg emit(MyEvent<phantom T>).
-    public fun emit<T>(ctx: &mut StorageContext, event: T) {
+    public fun emit<T>(ctx: &mut Context, event: T) {
         ensure_event_handle<T>(ctx);
         let event_handle_id = derive_event_handle_id<T>();
         let event_handle_ref = borrow_event_handle_mut<T>(ctx);
@@ -114,7 +114,7 @@ module moveos_std::event {
     #[test(sender = @0x1)]
     fun test_event(sender: signer) {
         let sender_addr = signer::address_of(&sender);
-        let ctx = storage_context::new_test_context(sender_addr);
+        let ctx = context::new_test_context(sender_addr);
 
         emit<WithdrawEvent>(&mut ctx, WithdrawEvent {
             addr: signer::address_of(&sender),
@@ -130,7 +130,7 @@ module moveos_std::event {
         debug::print(&event_sender_addr);
         debug::print(&event_seq);
 
-        storage_context::drop_test_context(ctx);
+        context::drop_test_context(ctx);
     }
 
     #[test]

@@ -16,7 +16,7 @@
 <pre><code><b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x2::account_storage</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
-<b>use</b> <a href="">0x2::storage_context</a>;
+<b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="ethereum_address.md#0x3_ethereum_address">0x3::ethereum_address</a>;
 <b>use</b> <a href="timestamp.md#0x3_timestamp">0x3::timestamp</a>;
@@ -176,7 +176,7 @@
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, genesis_account: &<a href="">signer</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, genesis_account: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -185,7 +185,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_genesis_init">genesis_init</a>(ctx: &<b>mut</b> StorageContext, genesis_account: &<a href="">signer</a>){
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_genesis_init">genesis_init</a>(ctx: &<b>mut</b> Context, genesis_account: &<a href="">signer</a>){
     <b>let</b> block_store = <a href="ethereum_light_client.md#0x3_ethereum_light_client_BlockStore">BlockStore</a>{
         blocks: <a href="_new">table::new</a>(ctx),
     };
@@ -204,7 +204,7 @@
 The relay server submit a new Ethereum block to the light client.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_submit_new_block">submit_new_block</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, block_header_bytes: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_submit_new_block">submit_new_block</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, block_header_bytes: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -213,7 +213,7 @@ The relay server submit a new Ethereum block to the light client.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_submit_new_block">submit_new_block</a>(ctx: &<b>mut</b> StorageContext, block_header_bytes: <a href="">vector</a>&lt;u8&gt;){
+<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_submit_new_block">submit_new_block</a>(ctx: &<b>mut</b> Context, block_header_bytes: <a href="">vector</a>&lt;u8&gt;){
     <a href="ethereum_light_client.md#0x3_ethereum_light_client_process_block">process_block</a>(ctx, block_header_bytes);
 }
 </code></pre>
@@ -229,7 +229,7 @@ The relay server submit a new Ethereum block to the light client.
 Get block via block_number
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_get_block">get_block</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, block_number: u64): &<a href="ethereum_light_client.md#0x3_ethereum_light_client_BlockHeader">ethereum_light_client::BlockHeader</a>
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_get_block">get_block</a>(ctx: &<a href="_Context">context::Context</a>, block_number: u64): &<a href="ethereum_light_client.md#0x3_ethereum_light_client_BlockHeader">ethereum_light_client::BlockHeader</a>
 </code></pre>
 
 
@@ -238,7 +238,7 @@ Get block via block_number
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_get_block">get_block</a>(ctx: &StorageContext, block_number: u64): &<a href="ethereum_light_client.md#0x3_ethereum_light_client_BlockHeader">BlockHeader</a>{
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_get_block">get_block</a>(ctx: &Context, block_number: u64): &<a href="ethereum_light_client.md#0x3_ethereum_light_client_BlockHeader">BlockHeader</a>{
     <b>let</b> block_store = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="ethereum_light_client.md#0x3_ethereum_light_client_BlockStore">BlockStore</a>&gt;(ctx, @rooch_framework);
     <b>assert</b>!(<a href="_contains">table::contains</a>(&block_store.blocks, block_number), <a href="_invalid_argument">error::invalid_argument</a>(<a href="ethereum_light_client.md#0x3_ethereum_light_client_ErrorBlockNotFound">ErrorBlockNotFound</a>));
     <a href="_borrow">table::borrow</a>(&block_store.blocks, block_number)

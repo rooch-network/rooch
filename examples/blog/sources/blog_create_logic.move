@@ -1,6 +1,6 @@
 module rooch_examples::blog_create_logic {
     use moveos_std::object_id::ObjectID;
-    use moveos_std::storage_context::StorageContext;
+    use moveos_std::context::Context;
     use rooch_examples::blog;
     use rooch_examples::blog_created;
     use std::string::String;
@@ -8,7 +8,7 @@ module rooch_examples::blog_create_logic {
     friend rooch_examples::blog_aggregate;
 
     public(friend) fun verify(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         account: &signer,
         name: String,
         articles: vector<ObjectID>,
@@ -22,7 +22,7 @@ module rooch_examples::blog_create_logic {
     }
 
     public(friend) fun mutate(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         _account: &signer,
         blog_created: &blog::BlogCreated,
     ): blog::Blog {

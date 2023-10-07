@@ -8,7 +8,7 @@ module rooch_examples::blog_add_article_logic {
     friend rooch_examples::blog_aggregate;
 
     public(friend) fun verify(
-        //storage_ctx: &mut StorageContext,
+        //storage_ctx: &mut Context,
         article_id: ObjectID,
         blog: &blog::Blog,
     ): blog::ArticleAddedToBlog {
@@ -20,7 +20,7 @@ module rooch_examples::blog_add_article_logic {
     }
 
     public(friend) fun mutate(
-        //storage_ctx: &mut StorageContext,
+        //storage_ctx: &mut Context,
         article_added_to_blog: &blog::ArticleAddedToBlog,
         blog: &mut blog::Blog,
     ) {

@@ -4,7 +4,7 @@ module rooch_examples::something {
     use moveos_std::event;
     use moveos_std::object::{Self, Object};
     use moveos_std::object_id::ObjectID;
-    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
 
     friend rooch_examples::something_aggregate;
@@ -56,13 +56,13 @@ module rooch_examples::something {
     }
 
     public(friend) fun create_something(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         i: u32,
         j: u128,
     ): Object<SomethingProperties> {
         let value = new_something_properties(storage_ctx, i, j);
-        let owner = storage_context::sender(storage_ctx);
-        let tx_ctx = storage_context::tx_context_mut(storage_ctx);
+        let owner = context::sender(storage_ctx);
+        let tx_ctx = context::tx_context_mut(storage_ctx);
         let obj = object::new(
             tx_ctx,
             owner,
@@ -77,7 +77,7 @@ module rooch_examples::something {
     }
 
     fun new_something_properties(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         i: u32,
         j: u128,
     ): SomethingProperties {
@@ -93,7 +93,7 @@ module rooch_examples::something {
         ps
     }
 
-    fun add_bar_table_item(storage_ctx: &mut StorageContext,
+    fun add_bar_table_item(storage_ctx: &mut Context,
                            table: &mut Table<u8, u128>,
                            key: u8,
                            val: u128
@@ -108,7 +108,7 @@ module rooch_examples::something {
     }
 
     public(friend) fun add_foo_table_item(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         obj: &mut Object<SomethingProperties>,
         key: String,
         val: String
@@ -120,14 +120,14 @@ module rooch_examples::something {
         let _ = storage_ctx;
     }
 
-    public(friend) fun add_something(storage_ctx: &mut StorageContext, obj: Object<SomethingProperties>) {
-        storage_context::add_object(storage_ctx, obj);
+    public(friend) fun add_something(storage_ctx: &mut Context, obj: Object<SomethingProperties>) {
+        context::add_object(storage_ctx, obj);
     }
 
     public(friend) fun remove_something(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         obj_id: ObjectID
     ): Object<SomethingProperties> {
-        storage_context::remove_object<SomethingProperties>(storage_ctx, obj_id)
+        context::remove_object<SomethingProperties>(storage_ctx, obj_id)
     }
 }

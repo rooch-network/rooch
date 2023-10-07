@@ -5,12 +5,12 @@ use crate::MoveOSStore;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::{AccountChangeSet, ChangeSet, Op};
+use moveos_types::context;
 use moveos_types::h256::H256;
 use moveos_types::move_string::MoveString;
 use moveos_types::move_types::random_type_tag;
 use moveos_types::object::{NamedTableID, ObjectID};
 use moveos_types::state::{MoveState, State, StateChangeSet, TableChange, TableTypeInfo};
-use moveos_types::storage_context;
 use rand::{thread_rng, Rng};
 use smt::NodeStore;
 use std::str::FromStr;
@@ -110,10 +110,9 @@ fn random_state_change_set() -> StateChangeSet {
     }
 
     // generate global table
-    state_change_set.changes.insert(
-        storage_context::GLOBAL_OBJECT_STORAGE_HANDLE,
-        random_table_change(),
-    );
+    state_change_set
+        .changes
+        .insert(context::GLOBAL_OBJECT_STORAGE_HANDLE, random_table_change());
 
     state_change_set
 }

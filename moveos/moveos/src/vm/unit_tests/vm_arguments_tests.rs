@@ -593,7 +593,7 @@ type TestCases = Vec<(
 )>;
 
 fn general_cases() -> TestCases {
-    // In Moveos, the `StorageContext` will auto resolve singers,
+    // In Moveos, the `Context` will auto resolve singers,
     // so we don't need to pass a signer argument.
     vec![
         // too few signers (0)

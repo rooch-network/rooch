@@ -2,7 +2,7 @@ module rooch_examples::something_do_logic {
     use std::string::String;
 
     use moveos_std::object::Object;
-    use moveos_std::storage_context::StorageContext;
+    use moveos_std::context::Context;
     use rooch_examples::something::{Self, SomethingProperties};
 
     friend rooch_examples::something_aggregate;
@@ -16,7 +16,7 @@ module rooch_examples::something_do_logic {
     }
 
     public(friend) fun add_foo_table_item(
-        storage_ctx: &mut StorageContext,
+        storage_ctx: &mut Context,
         obj: Object<SomethingProperties>,
         key: String,
         val: String

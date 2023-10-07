@@ -9,7 +9,7 @@
 -  [Function `transfer_coin_to_multichain_address`](#0x3_transfer_transfer_coin_to_multichain_address)
 
 
-<pre><code><b>use</b> <a href="">0x2::storage_context</a>;
+<pre><code><b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="account.md#0x3_account">0x3::account</a>;
 <b>use</b> <a href="address_mapping.md#0x3_address_mapping">0x3::address_mapping</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
@@ -26,7 +26,7 @@ Transfer <code>amount</code> of coins <code>CoinType</code> from <code>from</cod
 This public entry function requires the <code>CoinType</code> to have <code>key</code> and <code>store</code> abilities.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin">transfer_coin</a>&lt;CoinType: store, key&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, amount: u256)
+<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin">transfer_coin</a>&lt;CoinType: store, key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, amount: u256)
 </code></pre>
 
 
@@ -36,7 +36,7 @@ This public entry function requires the <code>CoinType</code> to have <code>key<
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin">transfer_coin</a>&lt;CoinType: key + store&gt;(
-    ctx: &<b>mut</b> StorageContext,
+    ctx: &<b>mut</b> Context,
     from: &<a href="">signer</a>,
     <b>to</b>: <b>address</b>,
     amount: u256,
@@ -62,7 +62,7 @@ The MultiChainAddress is represented by <code>multichain_id</code> and <code>raw
 This public entry function requires the <code>CoinType</code> to have <code>key</code> and <code>store</code> abilities.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin_to_multichain_address">transfer_coin_to_multichain_address</a>&lt;CoinType: store, key&gt;(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, from: &<a href="">signer</a>, multichain_id: u64, raw_address: <a href="">vector</a>&lt;u8&gt;, amount: u256)
+<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin_to_multichain_address">transfer_coin_to_multichain_address</a>&lt;CoinType: store, key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, from: &<a href="">signer</a>, multichain_id: u64, raw_address: <a href="">vector</a>&lt;u8&gt;, amount: u256)
 </code></pre>
 
 
@@ -72,7 +72,7 @@ This public entry function requires the <code>CoinType</code> to have <code>key<
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin_to_multichain_address">transfer_coin_to_multichain_address</a>&lt;CoinType: key + store&gt;(
-    ctx: &<b>mut</b> StorageContext,
+    ctx: &<b>mut</b> Context,
     from: &<a href="">signer</a>,
     multichain_id: u64,
     raw_address: <a href="">vector</a>&lt;u8&gt;,
