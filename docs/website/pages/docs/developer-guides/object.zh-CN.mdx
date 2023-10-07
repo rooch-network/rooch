@@ -19,7 +19,7 @@ module moveos_std::object{
 |Object 函数                                               |说明|
 |---------------------------------------------------------|------------------------------------------------------------------------|
 |`context::new_object<T: key>(self: &mut Context, value: T): Object<T` | 将 `T` 封装到 `Object` 箱子中，返回 `Object<T>`|
-|`context::new_object_with_owner<T: key>(self: &mut Context, owner: address, value: T): Object<T> | 将 `T` 封装到 `Object` 箱子中，指定 `Object` 的所有者，返回 `Object<T>`|
+|`context::new_object_with_owner<T: key>(self: &mut Context, owner: address, value: T): Object<T>` | 将 `T` 封装到 `Object` 箱子中，指定 `Object` 的所有者，返回 `Object<T>`|
 |`object::borrow<T>(&Object<T>): &T`                        | 通过 `Object` 借用 `T` 的只读引用|
 |`object::borrow_mut<T>(&mut Object<T>): &mut T`            | 通过 `Object` 借用 `T` 的可变引用|
 |`object::transfer<T>(&mut Object<T>,address)`              | 通过 `Object` 将 `Object` 所有权转移给 `address`|
@@ -37,8 +37,9 @@ Rooch Object 也是 Move 中的 [Hot Potato](https://examples.sui.io/patterns/ho
 |`context::borrow_object_mut<T: key>(self: &mut Context, object_id: ObjectID): &mut Object<T>`  | 通过 `ObjectID` 借用可变 `Object<T>` 引用|
 |`context::add_object<T: key>(self: &mut Context, obj: Object<T>)`                       | 添加 `Object<T>` 到全局储存中    |
 |`context::remove_object<T: key>(self: &mut Context, object_id: ObjectID): Object<T>`           | 通过 `ObjectID` 删除 `Object<T>`，并返回 `Object<T>`|
+|`contains_object(self: &Context, object_id: ObjectID): bool` | `ObjectID` 是否存在于全局储存中 |
 
-以上函数都通过 `#[private_generics<T>]` 限定，保证只有 `T` 所在的模块才能调用以上方法。
+以上函数除了 `contains_object` 都通过 `#[private_generics<T>]` 限定，保证只有 `T` 所在的模块才能调用以上方法。
 
 ### Rooch Object, Sui Object, Aptos Object 的比较
 

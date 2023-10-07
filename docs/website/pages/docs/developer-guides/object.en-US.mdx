@@ -19,7 +19,7 @@ The `Object` provides the following functions to manipulate an `Object`:
 | Object Functions                                        | Description                                                                                |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | `context::new_object<T: key>(self: &mut Context, value: T): Object<T` | Encapsulates `T` into an `Object` box，and returns `Object<T>`|
-| `context::new_object_with_owner<T: key>(self: &mut Context, owner: address, value: T): Object<T> | Encapsulates `T` into an `Object` box with given owner，and returns `Object<T>`|
+| `context::new_object_with_owner<T: key>(self: &mut Context, owner: address, value: T): Object<T>` | Encapsulates `T` into an `Object` box with given owner，and returns `Object<T>`|
 | `object::borrow<T>(&Object<T>): &T`                        | Borrows an immutable reference to `T` from the `Object`                                 |
 | `object::borrow_mut<T>(&mut Object<T>): &mut T`            | Borrows a mutable reference to `T` from the `Object`                                     |
 | `object::transfer<T>(&mut Object<T>,address)`              | Transfers ownership of the `Object` to the specified `address`                           |
@@ -37,8 +37,9 @@ Rooch Object is also an example of the [Hot Potato](https://examples.sui.io/patt
 |`context::borrow_object_mut<T: key>(self: &mut Context, object_id: ObjectID): &mut Object<T>`  | Borrows a mutable reference to `Object<T>` using `ObjectID` |
 |`context::add_object<T: key>(self: &mut Context, obj: Object<T>)`                       | Adds `Object<T>` to global storage   |
 |`context::remove_object<T: key>(self: &mut Context, object_id: ObjectID): Object<T>`           | Removes `Object<T>` associated with `ObjectID`, returns `Object<T>` |
+|`contains_object(self: &Context, object_id: ObjectID): bool` | If `ObjectID` exists in global storage |
 
-These functions are also restricted using `#[private_generics<T>]`, ensuring that only the module where `T` is defined can access these methods.
+These functions except `contains_object` are also restricted using `#[private_generics<T>]`, ensuring that only the module where `T` is defined can access these methods.
 
 ### Comparison of Rooch Object, Sui Object, and Aptos Object
 
