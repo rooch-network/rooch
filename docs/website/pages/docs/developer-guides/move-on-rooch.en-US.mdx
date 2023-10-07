@@ -34,12 +34,12 @@ The above methods provided by `account_storage` are all constrained by the `priv
 
 In addition to `account_storage` Rooch also provides the following storage modules:
 
-1. `object_storage`: Use `ObjectID` as key to store any type of data. For detailed information about Rooch Object, see [Rooch Object](./object.en-US.mdx).
+1. `storage_context`: Use `ObjectID` as key to store any type of data. For detailed information about Rooch Object, see [Rooch Object](./object.en-US.mdx).
 2. `type_table`: Use type as key to store any type of data.
 
 Regarding the design of storage abstraction, you can refer to [Storage Abstraction](../dive-into-rooch/storage-abstraction.en-US.mdx).
 
-### Context 和 TxContext
+### Context
 
 Context contains two fields, one is `TxContext`, which contains information related to the current transaction, and the other is `StorageContext`, which is a global `Object` storage.
 

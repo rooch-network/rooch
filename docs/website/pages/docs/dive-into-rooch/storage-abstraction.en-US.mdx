@@ -68,7 +68,7 @@ After analyzing the above solutions, we find that the storage model of a contrac
 1. `RawTable` provides the lowest-level Key Value storage interface, where all contract state changes are ultimately uniformly changed as the Key Value change set of `RawTable`.
 2. `Table<K,V>` is implemented based on `RawTable`, constraining the types of Key and Value.
 3. `TypeTable` is implemented based on `RawTable`, using the type of Value as the Key for the storage structure.
-4. `ObjectStorage` is implemented based on `RawTable`, providing storage capabilities for Objects.
+4. `StorageContext` is implemented based on `RawTable`, providing storage capabilities for Objects.
 5. `ResourceTable` and `ModuleTable` are implemented based on `TypeTable` and `Table` respectively, encapsulating them into `AccountStorage`, providing storage interfaces for Move's user space storage to replace Move's global storage instructions. At the same time, `AccountStorage` also provides an interface for operating Modules in the contract, which is convenient for defining the upgrade logic of the contract in the future.
 6. Developers can encapsulate their own application-specific storage interfaces based on the above storage structures.
 
@@ -139,7 +139,7 @@ module moveos_std::raw_table{
 
 TableHandle is the ObjectID of the TableObject. The upper-level data structure of RawTable can directly operate on any type of K, V, like a raw-level KV storage interface. Each RowTable corresponds to a SMT in the StateDB. The ObjectID of the global ObjectStore is a special ObjectID with all bytes set to `0`.
 
-Currently, all methods in RawTable are `friend` methods, and developers cannot directly operate on them. They need to operate through the upper-level data structures that encapsulate RawTable, such as `Table<K,V>`, `TypeTable`, and `ObjectStorage`.
+Currently, all methods in RawTable are `friend` methods, and developers cannot directly operate on them. They need to operate through the upper-level data structures that encapsulate RawTable, such as `Table<K,V>`, `TypeTable`, and `StorageContext`.
 
 ### Rooch Object
 
@@ -155,34 +155,55 @@ module moveos_std::object{
 }
 ```
 
-Rooch Objects are also a use case for the [Hot Potato](https://examples.sui.io/patterns/hot-potato.html) pattern in Move. Objects do not have any `ability`, so they cannot be `drop`, `copy`, or `store`, and can only be handled by ObjectStorage API after creation.
+Rooch Objects are also a use case for the [Hot Potato](https://examples.sui.io/patterns/hot-potato.html) pattern in Move. Objects do not have any `ability`, so they cannot be `drop`, `copy`, or `store`, and can only be handled by StorageContext API after creation.
 
-The advantage of this design is that no additional requirements need to be placed on the definition of Move's Struct, nor is additional support of Native methods required, since the concept of Object can be defined directly in Move. ObjectStorage is a storage space outside of a user's storage space, with a unique global ID as the key, to address situations in which global storage is needed.
+The advantage of this design is that no additional requirements need to be placed on the definition of Move's Struct, nor is additional support of Native methods required, since the concept of Object can be defined directly in Move. StorageContext is a storage space outside of a user's storage space, with a unique global ID as the key, to address situations in which global storage is needed.
 
-### ObjectStorage
+### StorageContext
 
-ObjectStorage provides interfaces related to global storage of Objects. It is implemented based on RawTable and is defined as follows:
+StorageContext provides bottom interfaces related to global storage of Objects. It is implemented based on RawTable and is defined as follows:
 
 ```move
-module moveos_std::object_storage{
+module moveos_std::storage_context{
+    /// Borrow Object from object store with object_id
+    public(friend) fun borrow<T: key>(self: &StorageContext, object_id: ObjectID): &Object<T>;
+
+    /// Borrow mut Object from object store with object_id
+    public(friend) fun borrow_mut<T: key>(self: &mut StorageContext, object_id: ObjectID): &mut Object<T>;
+
+    /// Remove object from object store
+    public(friend) fun remove<T: key>(self: &mut StorageContext, object_id: ObjectID): Object<T>;
+
+    /// Add object to object store
+    public(friend) fun add<T: key>(self: &mut StorageContext, obj: Object<T>);
+
+    public(friend) fun contains(self: &StorageContext, object_id: ObjectID): bool;
+}
+```
+
+### Context
+
+`Context` provides interfaces for developers to handle objects based on `StorageContext`. It is defined as follows:
+
+```move
+module moveos_std::context{
     #[private_generics(T)]
     /// Borrow Object from object store with object_id
-    public fun borrow<T: key>(this: &ObjectStorage, object_id: ObjectID): &Object<T>;
+    public fun borrow_object<T: key>(self: &Context, object_id: ObjectID): &Object<T>;
 
     #[private_generics(T)]
     /// Borrow mut Object from object store with object_id
-    public fun borrow_mut<T: key>(this: &mut ObjectStorage, object_id: ObjectID): &mut Object<T>;
+    public fun borrow_object_mut<T: key>(self: &mut Context, object_id: ObjectID): &mut Object<T>;
 
     #[private_generics(T)]
     /// Remove object from object store
-    public fun remove<T: key>(this: &mut ObjectStorage, object_id: ObjectID): Object<T>;
+    public fun remove_object<T: key>(self: &mut Context, object_id: ObjectID): Object<T>;
 
     #[private_generics(T)]
     /// Add object to object store
-    public fun add<T: key>(this: &mut ObjectStorage, obj: Object<T>);
+    public fun add_object<T: key>(self: &mut Context, obj: Object<T>);
 
-    #[private_generics(T)]
-    public fun contains<T: key>(this: &ObjectStorage, object_id: ObjectID): bool;
+    public fun contains_object(self: &Context, object_id: ObjectID): bool;
 }
 ```
 

@@ -18,7 +18,8 @@ The `Object` provides the following functions to manipulate an `Object`:
 
 | Object Functions                                        | Description                                                                                |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `object::new<T: key>(&mut TxContext,address,T): Object<T>` | Encapsulates `T` into an `Object` box, generates an `ObjectID` using `TxContext`, and returns `Object<T>` |
+| `context::new_object<T: key>(self: &mut Context, value: T): Object<T` | Encapsulates `T` into an `Object` box，and returns `Object<T>`|
+| `context::new_object_with_owner<T: key>(self: &mut Context, owner: address, value: T): Object<T> | Encapsulates `T` into an `Object` box with given owner，and returns `Object<T>`|
 | `object::borrow<T>(&Object<T>): &T`                        | Borrows an immutable reference to `T` from the `Object`                                 |
 | `object::borrow_mut<T>(&mut Object<T>): &mut T`            | Borrows a mutable reference to `T` from the `Object`                                     |
 | `object::transfer<T>(&mut Object<T>,address)`              | Transfers ownership of the `Object` to the specified `address`                           |
@@ -26,16 +27,16 @@ The `Object` provides the following functions to manipulate an `Object`:
 
 These functions are restricted using `#[private_generics<T>]`, ensuring that only the module where `T` is defined can access these methods.
 
-Rooch Object is also an example of the [Hot Potato](https://examples.sui.io/patterns/hot-potato.html) pattern in Move. Object does not have any abilities, so it cannot be `drop`, `copy`, or `store`. It can only be handled by functions provided by `ObjectStorage`.
+Rooch Object is also an example of the [Hot Potato](https://examples.sui.io/patterns/hot-potato.html) pattern in Move. Object does not have any abilities, so it cannot be `drop`, `copy`, or `store`. It can only be handled by functions provided by `StorageContext`.
 
-`ObjectStorage` can be viewed as a special `Table` that uses `ObjectID` as the key and `Object<T>` as the value. It provides the following functions:
+`Context` provides the following functions to handle `Object`s:
 
-| ObjectStorage Functions                                                       | Description                                          |
-| -----------------------------------------------------------------------------| ---------------------------------------------------- |
-| `object_storage::borrow<T: key>(&ObjectStorage,ObjectID): &Object<T>`         | Borrows a reference to `Object<T>` using `ObjectID`   |
-| `object_storage::borrow_mut<T: key>(&mut ObjectStorage,ObjectID): &mut Object<T>` | Borrows a mutable reference to `Object<T>` using `ObjectID` |
-| `object_storage::add<T: key>(&mut ObjectStorage,Object<T>)`                   | Adds `Object<T>` to `ObjectStorage`                   |
-| `object_storage::remove<T: key>(&mut ObjectStorage,ObjectID): Object<T>`      | Removes `Object<T>` associated with `ObjectID`, returns `Object<T>` |
+|Context Functions                                                                |Description |
+|---------------------------------------------------------------------------------|----------------------------------|
+|`context::borrow_object<T: key>(self: &Context, object_id: ObjectID): &Object<T>`              | Borrows a reference to `Object<T>` using `ObjectID`   |
+|`context::borrow_object_mut<T: key>(self: &mut Context, object_id: ObjectID): &mut Object<T>`  | Borrows a mutable reference to `Object<T>` using `ObjectID` |
+|`context::add_object<T: key>(self: &mut Context, obj: Object<T>)`                       | Adds `Object<T>` to global storage   |
+|`context::remove_object<T: key>(self: &mut Context, object_id: ObjectID): Object<T>`           | Removes `Object<T>` associated with `ObjectID`, returns `Object<T>` |
 
 These functions are also restricted using `#[private_generics<T>]`, ensuring that only the module where `T` is defined can access these methods.
 
@@ -52,9 +53,9 @@ TODO: This part of the document needs improvement.
 
 1. [Rooch Object API document](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/object.md)
 2. [Rooch Object Source code](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/object.move)
-3. [Rooch ObjectStorage API document](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/object_storage.md)
-4. [Rooch ObjectStorage Source code](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/object_storage.move)
+3. [Rooch Context API document](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/context.md)
+4. [Rooch Context Source code](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/context.move)
 5. [Sui Object](https://docs.sui.io/learn/objects)
 6. [Aptos Object](https://aptos.dev/standards/aptos-object/)
-7. [StorageAbstraction](../dive-into-rooch/storage-abstraction.en-US.md)
-8. [Hot Potato](https://examples.sui.io/patterns/hot-potato.html)
+7. [StorageAbstraction](../dive-into-rooch/storage-abstraction.zh-CN.md)
+7. [Hot Potato](https://examples.sui.io/patterns/hot-potato.html)
