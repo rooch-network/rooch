@@ -12,6 +12,10 @@ module moveos_std::context {
     use moveos_std::tx_meta::{TxMeta};
     use moveos_std::tx_result::{TxResult};
 
+    friend moveos_std::table;
+    friend moveos_std::type_table;
+    friend moveos_std::account_storage;
+
     /// Information about the global context include TxContext and StorageContext
     /// We can not put the StorageContext to TxContext, because object module depends on tx_context module,
     /// and storage_context module depends on object module.
@@ -24,12 +28,12 @@ module moveos_std::context {
     }
 
     /// Get an immutable reference to the transaction context from the storage context
-    public fun tx_context(self: &Context): &TxContext {
+    public(friend) fun tx_context(self: &Context): &TxContext {
         &self.tx_context
     }
 
     /// Get a mutable reference to the transaction context from the storage context
-    public fun tx_context_mut(self: &mut Context): &mut TxContext {
+    public(friend) fun tx_context_mut(self: &mut Context): &mut TxContext {
         &mut self.tx_context
     }
 
