@@ -18,9 +18,9 @@ module simple_blog::blog {
 
     /// This init function is called when the module is published
     /// The owner is the address of the account that publishes the module
-    fun init(storage_ctx: &mut Context, owner: &signer) {
+    fun init(ctx: &mut Context, owner: &signer) {
         // auto create blog for module publisher 
-        create_blog(storage_ctx, owner);
+        create_blog(ctx, owner);
     }
 
     public fun create_blog(ctx: &mut Context, owner: &signer) {

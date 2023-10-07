@@ -8,12 +8,12 @@ module rooch_examples::blog_create_logic {
     friend rooch_examples::blog_aggregate;
 
     public(friend) fun verify(
-        storage_ctx: &mut Context,
+        ctx: &mut Context,
         account: &signer,
         name: String,
         articles: vector<ObjectID>,
     ): blog::BlogCreated {
-        let _ = storage_ctx;
+        let _ = ctx;
         let _ = account;
         blog::new_blog_created(
             name,
@@ -22,13 +22,13 @@ module rooch_examples::blog_create_logic {
     }
 
     public(friend) fun mutate(
-        storage_ctx: &mut Context,
+        ctx: &mut Context,
         _account: &signer,
         blog_created: &blog::BlogCreated,
     ): blog::Blog {
         let name = blog_created::name(blog_created);
         let articles = blog_created::articles(blog_created);
-        let _ = storage_ctx;
+        let _ = ctx;
         blog::new_blog(
             name,
             articles,

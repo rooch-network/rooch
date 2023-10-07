@@ -7,8 +7,8 @@ module rooch_examples::rooch_blog_demo_init {
     use moveos_std::context::Context;
     use rooch_examples::article;
 
-    public entry fun initialize(storage_ctx: &mut Context, account: &signer) {
-        article::initialize(storage_ctx, account);
+    public entry fun initialize(ctx: &mut Context, account: &signer) {
+        article::initialize(ctx, account);
     }
 
 }

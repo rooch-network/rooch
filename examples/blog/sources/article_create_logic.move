@@ -9,12 +9,12 @@ module rooch_examples::article_create_logic {
     friend rooch_examples::article_aggregate;
 
     public(friend) fun verify(
-        storage_ctx: &mut Context,
+        ctx: &mut Context,
         account: &signer,
         title: String,
         body: String,
     ): article::ArticleCreated {
-        let _ = storage_ctx;
+        let _ = ctx;
         let _ = account;
         article::new_article_created(
             title,
@@ -23,19 +23,19 @@ module rooch_examples::article_create_logic {
     }
 
     public(friend) fun mutate(
-        storage_ctx: &mut Context,
+        ctx: &mut Context,
         _account: &signer,
         article_created: &article::ArticleCreated,
     ): Object<article::Article> {
         let title = article_created::title(article_created);
         let body = article_created::body(article_created);
         let article_obj = article::create_article(
-            storage_ctx,
+            ctx,
             title,
             body,
         );
         // ///////////////////////////
-        blog_aggregate::add_article(storage_ctx, article::id(&article_obj));
+        blog_aggregate::add_article(ctx, article::id(&article_obj));
         // ///////////////////////////
         article_obj
     }

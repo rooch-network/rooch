@@ -27,11 +27,11 @@ module rooch_examples::box_fun {
     }
 
     public entry fun remove_box_and_update(
-        storage_ctx: &mut Context,
+        ctx: &mut Context,
         object_id: ObjectID,
     ) {
-        let obj = box::remove_box(storage_ctx, object_id);
+        let obj = box::remove_box(ctx, object_id);
         let update_obj = box_friend::change_box(obj);
-        box::add_box(storage_ctx, update_obj);
+        box::add_box(ctx, update_obj);
     }
 }
