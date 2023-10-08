@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// Type of large-scale storage tables.
 /// source: https://github.com/move-language/move/blob/1b6b7513dcc1a5c866f178ca5c1e74beb2ce181e/language/extensions/move-table-extension/sources/Table.move#L1
 ///
@@ -80,14 +83,7 @@ module moveos_std::table {
         raw_table::contains<K>(&table.handle, key)
     }
 
-    #[test_only]
-    /// Testing only: allows to drop a table even if it is not empty.
-    public fun drop_unchecked<K: copy + drop, V>(table: Table<K, V>) {
-        let Table { handle } = table;
-        raw_table::drop_unchecked(&handle)
-    }
-
-    /// Destroy a table. The table must be empty to succeed.
+    /// Destroy a table. Aborts if the table is not empty.
     public fun destroy_empty<K: copy + drop, V>(table: Table<K, V>) {
         let Table { handle } = table;
         raw_table::destroy_empty(&handle)
@@ -105,10 +101,19 @@ module moveos_std::table {
 
     /// Drop a possibly non-empty table.
     /// Usable only if the value type `V` has the `drop` ability
-    public fun drop<K: copy + drop , V: drop>(table: Table<K, V>) {
+    public fun drop<K: copy + drop, V: drop>(table: Table<K, V>) {
         let Table { handle } = table;
         raw_table::drop_unchecked(&handle)
     }
+
+
+    #[test_only]
+    /// Testing only: allows to drop a table even if it is not empty.
+    public fun drop_unchecked<K: copy + drop, V>(table: Table<K, V>) {
+        let Table { handle } = table;
+        raw_table::drop_unchecked(&handle)
+    }
+
 
     #[test_only]
     struct TableHolder<phantom K: copy + drop, phantom V: drop> has key {

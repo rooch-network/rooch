@@ -1,6 +1,9 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// Raw Key Value table. This is the basic of storage abstraction.
 /// This type table doesn't care about the key and value types. We leave the data type checking to the Native implementation.
-/// This type table if for design internal global storage, so all functions are friend.
+/// This type table is for internal global storage, so all functions are friend.
 
 module moveos_std::raw_table {
     use moveos_std::tx_context::{Self, TxContext};
@@ -29,7 +32,7 @@ module moveos_std::raw_table {
     /// key already exists. The entry itself is not stored in the
     /// table, and cannot be discovered from it.
     public(friend) fun add<K: copy + drop, V>(table_handle: &ObjectID, key: K, val: V) {
-        add_box<K, V, Box<V>>(table_handle, key, Box {val} )
+        add_box<K, V, Box<V>>(table_handle, key, Box {val} );
     }
 
     /// Acquire an immutable reference to the value which `key` maps to.
@@ -41,10 +44,10 @@ module moveos_std::raw_table {
     /// Acquire an immutable reference to the value which `key` maps to.
     /// Returns specified default value if there is no entry for `key`.
     public(friend) fun borrow_with_default<K: copy + drop, V>(table_handle: &ObjectID, key: K, default: &V): &V {
-        if (!contains<K>(table_handle, copy key)) {
+        if (!contains<K>(table_handle, key)) {
             default
         } else {
-            borrow(table_handle, copy key)
+            borrow(table_handle, key)
         }
     }
 
@@ -58,7 +61,7 @@ module moveos_std::raw_table {
     /// Insert the pair (`key`, `default`) first if there is no entry for `key`.
     public(friend) fun borrow_mut_with_default<K: copy + drop, V: drop>(table_handle: &ObjectID, key: K, default: V): &mut V {
         if (!contains<K>(table_handle, copy key)) {
-            add(table_handle, copy key, default)
+            add(table_handle, key, default)
         };
         borrow_mut(table_handle, key)
     }
@@ -67,7 +70,7 @@ module moveos_std::raw_table {
     /// update the value of the entry for `key` to `value` otherwise
     public(friend) fun upsert<K: copy + drop, V: drop>(table_handle: &ObjectID, key: K, value: V) {
         if (!contains<K>(table_handle, copy key)) {
-            add(table_handle, copy key, value)
+            add(table_handle, key, value)
         } else {
             let ref = borrow_mut(table_handle, key);
             *ref = value;
@@ -91,12 +94,12 @@ module moveos_std::raw_table {
         box_length(table_handle)
     }
 
-    /// Returns true iff the table is empty (if `length` returns `0`)
+    /// Returns true if the table is empty (if `length` returns `0`)
     public(friend) fun is_empty(table_handle: &ObjectID): bool {
         length(table_handle) == 0
     }
 
-    /// Testing only: allows to drop a table even if it is not empty.
+    /// Drop a table even if it is not empty.
     public(friend) fun drop_unchecked(table_handle: &ObjectID) {
         drop_unchecked_box(table_handle)
     }

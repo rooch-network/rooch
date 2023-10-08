@@ -1,17 +1,22 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// `EventHandle`s with unique event handle id (GUID). It contains a counter for the number
 /// of `EventHandle`s it generates. An `EventHandle` is used to count the number of
 /// events emitted to a handle and emit events to the event store.
 module moveos_std::event {
+    
+    use std::hash;
     use moveos_std::bcs;
     use moveos_std::context::{Self, Context};
     use moveos_std::object_id::{Self, ObjectID};
     use moveos_std::object;
+    use moveos_std::type_info;
+
     #[test_only]
     use std::debug;
     #[test_only]
     use std::signer;
-    use std::hash;
-    use moveos_std::type_info;
 
     /// A handle for an event such that:
     /// 1. Other modules can emit events to this handle.
@@ -33,7 +38,7 @@ module moveos_std::event {
         context::contains_object(ctx, event_handle_id)
     }
 
-    /// Borrow a mut event handle from the object storage
+    /// Borrow a event handle from the object storage
     fun borrow_event_handle<T>(ctx: &Context): &EventHandle {
         let event_handle_id = derive_event_handle_id<T>();
         let object = context::borrow_object<EventHandle>(ctx, event_handle_id);
@@ -54,8 +59,8 @@ module moveos_std::event {
         object::owner(object)
     }
 
-    /// use query this method to get event handle Metadata
-    /// is event_handle_id doesn't exist, sender will default 0x0
+    /// Method to get event handle Metadata
+    /// If event_handle_id doesn't exist, sender will be default address 0x0
     public fun get_event_handle<T>(ctx: &Context): (ObjectID, address, u64) {
         let event_handle_id = derive_event_handle_id<T>();
         let sender = @0x0;
@@ -93,7 +98,7 @@ module moveos_std::event {
     /// activity in a way that suits a specific application the most.
     ///
     /// The type T is the main way to index the event, and can contain
-    /// phantom parameters, eg emit(MyEvent<phantom T>).
+    /// phantom parameters, eg. emit(MyEvent<phantom T>).
     public fun emit<T>(ctx: &mut Context, event: T) {
         ensure_event_handle<T>(ctx);
         let event_handle_id = derive_event_handle_id<T>();

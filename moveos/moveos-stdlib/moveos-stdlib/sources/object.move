@@ -1,8 +1,11 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// Move Object
 /// The Object is a box style Object
 /// The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/sources/object.move#L75):
 /// 1. The Object is a struct in Move
-/// 2. The Object is a use case for the Hot Potato pattern in Move. Objects do not have any ability, so they cannot be drop, copy, or store, and can only be handled by StorageContext API after creation.
+/// 2. The Object is a use case of the Hot Potato pattern in Move. Objects do not have any ability, so they cannot be drop, copy, or store, and can only be handled by StorageContext API after creation.
 module moveos_std::object {
     use moveos_std::tx_context::{Self, TxContext};
     use moveos_std::object_id::ObjectID;
@@ -13,7 +16,7 @@ module moveos_std::object {
     friend moveos_std::event;
    
     /// Box style object
-    /// The object can not be copied, droped, only can be consumed by StorageContext API.
+    /// The object can not be copied, droped and stored. It only can be consumed by StorageContext API.
     struct Object<T> {
         // The object id
         id: ObjectID,
@@ -26,8 +29,7 @@ module moveos_std::object {
     /// Create a new object, the object is owned by `owner`
     public(friend) fun new<T: key>(ctx: &mut TxContext, owner: address, value: T): Object<T> {
         let id = tx_context::fresh_object_id(ctx);
-        let obj = Object<T>{id, value, owner};
-        obj
+        Object<T>{id, value, owner}
     }
 
     public(friend) fun new_with_id<T: key>(id: ObjectID, owner: address, value: T): Object<T> {
@@ -41,7 +43,7 @@ module moveos_std::object {
     }
 
     #[private_generics(T)]
-    /// Borrow the object mutable value
+    /// Borrow the mutable object value
     public fun borrow_mut<T>(self: &mut Object<T>): &mut T {
         &mut self.value
     }

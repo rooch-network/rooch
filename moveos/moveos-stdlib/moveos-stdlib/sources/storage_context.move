@@ -1,5 +1,8 @@
-/// AccountStorage is part of the StorageAbstraction
-/// It is used to store the objects
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+/// StorageContext is part of the StorageAbstraction
+/// It is used to store objects
 
 module moveos_std::storage_context {
     use moveos_std::raw_table;
@@ -51,11 +54,10 @@ module moveos_std::storage_context {
         raw_table::add<ObjectID, Object<T>>(&self.handle, object::id(&obj), obj);
     }
 
-    /// Determine whether the object exixts
+    /// Returns true if the object exixts
     public(friend) fun contains(self: &StorageContext, object_id: ObjectID): bool {
         raw_table::contains<ObjectID>(&self.handle, object_id)
     }
-
 
     #[test_only]
     /// Testing only: allow to drop oject storage

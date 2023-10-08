@@ -1,8 +1,10 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module moveos_std::tx_meta {
 
     use std::option::Option;
     
-
     const MoveActionScriptType: u8 = 0;
     public fun move_action_script_type(): u8 { MoveActionScriptType }
     const MoveActionFunctionType: u8 = 1;

@@ -1,7 +1,9 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// Context is part of the StorageAbstraction
 /// It is used to provide a context for the storage operations, make the storage abstraction, 
 /// and let developers can customize the storage
-
 module moveos_std::context {
 
     use std::option::Option;
