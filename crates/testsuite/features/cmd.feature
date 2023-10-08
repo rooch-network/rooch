@@ -22,7 +22,7 @@ Feature: Rooch CLI integration tests
 
       # transaction
       Then cmd: "transaction get-transactions-by-order --cursor 0 --limit 1"
-      Then cmd: "transaction get-transactions-by-hashes --hashes {{$.transaction[-1].data[0].execution_info.tx_hash}}"
+      Then cmd: "transaction get-transactions-by-hash --hashes {{$.transaction[-1].data[0].execution_info.tx_hash}}"
 
       # event example
       Then cmd: "move publish -p ../../examples/event --sender-account {default} --named-addresses rooch_examples={default}"

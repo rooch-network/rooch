@@ -3,7 +3,7 @@
 
 use crate::cli_types::CommandAction;
 use crate::commands::transaction::commands::{
-    get_transactions_by_hash::GetTransactionsByHashesCommand,
+    get_transactions_by_hash::GetTransactionsByHashCommand,
     get_transactions_by_order::GetTransactionsByOrderCommand,
 };
 use async_trait::async_trait;
@@ -31,5 +31,5 @@ impl CommandAction<String> for Transaction {
 #[derive(clap::Subcommand)]
 pub enum TransactionCommand {
     GetTransactionsByOrder(GetTransactionsByOrderCommand),
-    GetTransactionsByHashes(GetTransactionsByHashesCommand),
+    GetTransactionsByHashes(GetTransactionsByHashCommand),
 }

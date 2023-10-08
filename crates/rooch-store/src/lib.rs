@@ -36,6 +36,7 @@ static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         TX_SEQUENCE_INFO_PREFIX_NAME,
         TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME,
         META_SEQUENCER_ORDER_PREFIX_NAME,
+        TX_SEQUENCE_INFO_REVERSE_MAPPING_PREFIX_NAME,
     ]
 });
 
@@ -130,11 +131,10 @@ impl TransactionStore for RoochStore {
 
     fn get_tx_sequence_info_mapping_by_order(
         &self,
-        cursor: Option<u128>,
-        limit: u64,
+        tx_orders: Vec<u128>,
     ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>> {
         self.transaction_store
-            .get_tx_sequence_info_mapping_by_order(cursor, limit)
+            .get_tx_sequence_info_mapping_by_order(tx_orders)
     }
 
     fn save_tx_sequence_info_reverse_mapping(&self, tx_hash: H256, tx_order: u128) -> Result<()> {

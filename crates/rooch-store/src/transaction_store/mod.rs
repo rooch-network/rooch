@@ -59,8 +59,7 @@ pub trait TransactionStore {
     fn save_tx_sequence_info_mapping(&self, tx_order: u128, tx_hash: H256) -> Result<()>;
     fn get_tx_sequence_info_mapping_by_order(
         &self,
-        cursor: Option<u128>,
-        limit: u64,
+        tx_orders: Vec<u128>,
     ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>>;
 
     fn save_tx_sequence_info_reverse_mapping(&self, tx_hash: H256, tx_order: u128) -> Result<()>;
@@ -118,10 +117,8 @@ impl TransactionDBStore {
         // Since tx order is strictly incremental, traversing the SMT Tree can be optimized into a multi get query to improve query performance.
         let tx_orders: Vec<_> = if cursor.is_some() {
             ((start + 1)..=end).collect()
-            // ((start + 1)..=end).map(u128::from).collect()
         } else {
             (start..end).collect()
-            // (start..end).map(u128::from).collect()
         };
         self.tx_sequence_info_store.multiple_get(tx_orders)
     }
@@ -133,20 +130,8 @@ impl TransactionDBStore {
 
     pub fn get_tx_sequence_info_mapping_by_order(
         &self,
-        cursor: Option<u128>,
-        limit: u64,
+        tx_orders: Vec<u128>,
     ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>> {
-        let start = cursor.unwrap_or(0);
-        let end = start + (limit as u128);
-
-        // Since tx order is strictly incremental, traversing the SMT Tree can be optimized into a multi get query to improve query performance.
-        let tx_orders: Vec<_> = if cursor.is_some() {
-            ((start + 1)..=end).collect()
-            // ((start + 1)..=end).map(u128::from).collect()
-        } else {
-            (start..end).collect()
-            // (start..end).map(u128::from).collect()
-        };
         let mappings = self
             .tx_sequence_info_mapping_store
             .multiple_get(tx_orders.clone())?;
@@ -203,20 +188,5 @@ impl TransactionDBStore {
                 None => Ok(None),
             })
             .collect()
-
-        // let mut result: Vec<Option<TransactionSequenceInfoMapping>> = vec![];
-        // for (index, tx_hash) in tx_hashes.iter().enumerate() {
-        //     let tx_order = mappings[index].ok_or(anyhow::anyhow!("Invalid transaction sequence info mapping"))?;
-        //     let tx_sequence_info_mapping = TransactionSequenceInfoMapping {
-        //         // pub tx_order: u128,
-        //         // /// The tx hash.
-        //         // pub tx_hash: H256,
-        //         tx_order,
-        //         *tx_hash,
-        //     };
-        //     result.push(tx_sequence_info_mapping);
-        // }
-
-        // Ok(result)
     }
 }

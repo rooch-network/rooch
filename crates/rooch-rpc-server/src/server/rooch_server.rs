@@ -11,12 +11,12 @@ use move_core_types::language_storage::StructTag;
 use moveos_types::h256::H256;
 use rooch_rpc_api::api::{MAX_RESULT_LIMIT, MAX_RESULT_LIMIT_USIZE};
 use rooch_rpc_api::jsonrpc_types::account_view::BalanceInfoView;
-use rooch_rpc_api::jsonrpc_types::transaction_view::{TransactionResult, TransactionResultView};
+use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionResultView;
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedEventView, AnnotatedStateView, EventPageView,
     ExecuteTransactionResponseView, FunctionCallView, H256View, ListAnnotatedStatesPageView,
     ListBalanceInfoPageView, ListStatesPageView, StateView, StrView, StructTagView,
-    TransactionResultPageView, TransactionView,
+    TransactionResultPageView,
 };
 use rooch_rpc_api::{api::rooch_api::RoochAPIServer, api::DEFAULT_RESULT_LIMIT};
 use rooch_rpc_api::{
@@ -208,45 +208,39 @@ impl RoochAPIServer for RoochServer {
         })
     }
 
-    // async fn get_events(
-    //     &self,
-    //     filter: EventFilterView,
-    // ) -> RpcResult<Vec<Option<AnnotatedEventView>>> {
-    //     Ok(self
-    //         .rpc_service
-    //         .get_events(filter.into())
-    //         .await?
-    //         .into_iter()
-    //         .map(|event| event.map(AnnotatedEventView::from))
-    //         .collect())
-    // }
-
-    // async fn get_transaction_by_hash(&self, hash: H256View) -> RpcResult<Option<TransactionView>> {
-    //     let resp = self
-    //         .rpc_service
-    //         .get_transaction_by_hash(hash.into())
-    //         .await?
-    //         .map(Into::into);
-    //     Ok(resp)
-    // }
-
     async fn get_transactions_by_hash(
         &self,
         tx_hashes: Vec<H256View>,
-    ) -> RpcResult<Vec<Option<TransactionView>>> {
-        let hashes: Vec<H256> = tx_hashes
+    ) -> RpcResult<Vec<Option<TransactionResultView>>> {
+        let tx_hashes: Vec<H256> = tx_hashes
             .iter()
             .map(|m| (*m).clone().into())
             .collect::<Vec<_>>();
-        let resp = self
-            .rpc_service
-            .get_transactions_by_hash(hashes)
-            .await?
-            .iter()
-            .map(|tx| tx.clone().map(TransactionView::from))
-            .collect();
 
-        Ok(resp)
+        let tx_sequence_info_mapping = self
+            .rpc_service
+            .get_tx_sequence_info_mapping_by_hash(tx_hashes.clone())
+            .await?;
+
+        let mut tx_orders = vec![];
+        for item in tx_sequence_info_mapping {
+            if item.is_none() {
+                return Err(JsonRpcError::Custom(String::from(
+                    "Invalid tx hash or tx order",
+                )));
+            }
+            tx_orders.push(item.unwrap().tx_order);
+        }
+
+        let data = self
+            .aggregate_service
+            .get_transaction_results_by_hash_and_order(tx_hashes, tx_orders)
+            .await?
+            .into_iter()
+            .map(|item| Some(TransactionResultView::from(item)))
+            .collect::<Vec<_>>();
+
+        Ok(data)
     }
 
     async fn get_transactions_by_order(
@@ -254,69 +248,50 @@ impl RoochAPIServer for RoochServer {
         cursor: Option<u128>,
         limit: Option<u64>,
     ) -> RpcResult<TransactionResultPageView> {
-        let limit_of = limit.unwrap_or(DEFAULT_RESULT_LIMIT);
+        let last_sequencer_order = self
+            .rpc_service
+            .get_sequencer_order()
+            .await?
+            .map_or(0, |v| v.last_order);
 
+        let limit_of = limit.unwrap_or(DEFAULT_RESULT_LIMIT);
+        let start = cursor.unwrap_or(0);
+        let end = min(start + ((limit_of + 1) as u128), last_sequencer_order + 1);
+
+        let mut tx_orders: Vec<_> = if cursor.is_some() {
+            ((start + 1)..=end).collect()
+        } else {
+            (start..end).collect()
+        };
+
+        // Since tx order is strictly incremental, traversing the SMT Tree can be optimized into a multi get query to improve query performance.
         let mut tx_sequence_info_mapping = self
             .rpc_service
-            .get_tx_sequence_info_mapping_by_order(cursor, limit_of + 1)
+            .get_tx_sequence_info_mapping_by_order(tx_orders.clone())
             .await?;
 
         let has_next_page = (tx_sequence_info_mapping.len() as u64) > limit_of;
         tx_sequence_info_mapping.truncate(limit_of as usize);
+        tx_orders.truncate(limit_of as usize);
         let next_cursor = tx_sequence_info_mapping
             .last()
             .map_or(cursor, |m| m.clone().map(|v| v.tx_order));
 
         let mut tx_hashes = vec![];
-        let mut tx_orders = vec![];
         for item in tx_sequence_info_mapping {
             if item.is_none() {
                 return Err(JsonRpcError::Custom(String::from(
-                    "Invalid transaction sequence info mapping",
+                    "Invalid tx hash or tx order",
                 )));
             }
-            let tx_sequence_info_mapping = item.unwrap();
-            tx_hashes.push(tx_sequence_info_mapping.tx_hash);
-            tx_orders.push(tx_sequence_info_mapping.tx_order);
+            tx_hashes.push(item.unwrap().tx_hash);
         }
-
         assert_eq!(tx_hashes.len(), tx_orders.len());
 
-        let transactions = self
-            .rpc_service
-            .get_transactions_by_hash(tx_hashes.clone())
-            .await?;
-
-        let sequence_infos = self
-            .rpc_service
-            .get_transaction_sequence_infos(tx_orders)
-            .await?;
-
-        let execution_infos = self
-            .rpc_service
-            .get_transaction_execution_infos_by_hash(tx_hashes.clone())
-            .await?;
-
-        assert!(
-            transactions.len() == sequence_infos.len()
-                && transactions.len() == execution_infos.len()
-        );
-        let mut transaction_results: Vec<TransactionResult> = vec![];
-        for (index, _tx_hash) in tx_hashes.iter().enumerate() {
-            let transaction_result = TransactionResult {
-                transaction: transactions[index].clone().ok_or(anyhow::anyhow!(
-                    "Transaction should have value when construct TransactionResult"
-                ))?,
-                sequence_info: sequence_infos[index].clone().ok_or(anyhow::anyhow!(
-                    "TransactionSequenceInfo should have value when construct TransactionResult"
-                ))?,
-                execution_info: execution_infos[index].clone().ok_or(anyhow::anyhow!(
-                    "TransactionExecutionInfo should have value when construct TransactionResult"
-                ))?,
-            };
-            transaction_results.push(transaction_result)
-        }
-        let data = transaction_results
+        let data = self
+            .aggregate_service
+            .get_transaction_results_by_hash_and_order(tx_hashes, tx_orders)
+            .await?
             .into_iter()
             .map(TransactionResultView::from)
             .collect::<Vec<_>>();

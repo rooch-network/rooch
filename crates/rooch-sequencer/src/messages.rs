@@ -3,6 +3,7 @@
 
 use anyhow::Result;
 use coerce::actor::message::Message;
+use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::TransactionSequenceInfoMapping;
 use rooch_types::{
     transaction::{TransactionSequenceInfo, TypedTransaction},
@@ -42,11 +43,19 @@ impl Message for GetTransactionsByHashMessage {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetTxSequenceInfoMappingByOrderMessage {
-    pub cursor: Option<u128>,
-    pub limit: u64,
+    pub tx_orders: Vec<u128>,
 }
 
 impl Message for GetTxSequenceInfoMappingByOrderMessage {
+    type Result = Result<Vec<Option<TransactionSequenceInfoMapping>>>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetTxSequenceInfoMappingByHashMessage {
+    pub tx_hashes: Vec<H256>,
+}
+
+impl Message for GetTxSequenceInfoMappingByHashMessage {
     type Result = Result<Vec<Option<TransactionSequenceInfoMapping>>>;
 }
 
@@ -57,4 +66,11 @@ pub struct GetTxSequenceInfosMessage {
 
 impl Message for GetTxSequenceInfosMessage {
     type Result = Result<Vec<Option<TransactionSequenceInfo>>>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetSequencerOrderMessage {}
+
+impl Message for GetSequencerOrderMessage {
+    type Result = Result<Option<SequencerOrder>>;
 }

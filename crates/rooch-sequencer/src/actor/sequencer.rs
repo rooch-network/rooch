@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::messages::{
-    GetTransactionByHashMessage, GetTransactionsByHashMessage,
-    GetTxSequenceInfoMappingByOrderMessage, GetTxSequenceInfosMessage, TransactionSequenceMessage,
+    GetSequencerOrderMessage, GetTransactionByHashMessage, GetTransactionsByHashMessage,
+    GetTxSequenceInfoMappingByHashMessage, GetTxSequenceInfoMappingByOrderMessage,
+    GetTxSequenceInfosMessage, TransactionSequenceMessage,
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -60,7 +61,19 @@ impl Handler<TransactionSequenceMessage> for SequencerActor {
         _ctx: &mut ActorContext,
     ) -> Result<TransactionSequenceInfo> {
         let tx = msg.tx;
-        let tx_order = self.last_order + 1;
+        let tx_order = if self.last_order == 0 {
+            let last_order_opt = self
+                .rooch_store
+                .get_meta_store()
+                .get_sequencer_order()?
+                .map(|order| order.last_order);
+            match last_order_opt {
+                Some(last_order) => last_order + 1,
+                None => 0,
+            }
+        } else {
+            self.last_order + 1
+        };
         let hash = tx.tx_hash();
         let mut witness_data = hash.as_ref().to_vec();
         witness_data.extend(tx_order.to_le_bytes().iter());
@@ -118,10 +131,24 @@ impl Handler<GetTxSequenceInfoMappingByOrderMessage> for SequencerActor {
         msg: GetTxSequenceInfoMappingByOrderMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>> {
-        let GetTxSequenceInfoMappingByOrderMessage { cursor, limit } = msg;
+        let GetTxSequenceInfoMappingByOrderMessage { tx_orders } = msg;
         self.rooch_store
             .get_transaction_store()
-            .get_tx_sequence_info_mapping_by_order(cursor, limit)
+            .get_tx_sequence_info_mapping_by_order(tx_orders)
+    }
+}
+
+#[async_trait]
+impl Handler<GetTxSequenceInfoMappingByHashMessage> for SequencerActor {
+    async fn handle(
+        &mut self,
+        msg: GetTxSequenceInfoMappingByHashMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>> {
+        let GetTxSequenceInfoMappingByHashMessage { tx_hashes } = msg;
+        self.rooch_store
+            .get_transaction_store()
+            .multi_get_tx_sequence_info_mapping_by_hash(tx_hashes)
     }
 }
 
@@ -136,5 +163,17 @@ impl Handler<GetTxSequenceInfosMessage> for SequencerActor {
         self.rooch_store
             .get_transaction_store()
             .get_tx_sequence_infos(orders)
+    }
+}
+
+#[async_trait]
+impl Handler<GetSequencerOrderMessage> for SequencerActor {
+    async fn handle(
+        &mut self,
+        msg: GetSequencerOrderMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Option<SequencerOrder>> {
+        let GetSequencerOrderMessage {} = msg;
+        self.rooch_store.get_meta_store().get_sequencer_order()
     }
 }

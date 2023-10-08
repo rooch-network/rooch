@@ -217,14 +217,14 @@
         }
       ],
       "result": {
-        "name": "Vec<Option<TransactionView>>",
+        "name": "Vec<Option<TransactionResultView>>",
         "required": true,
         "schema": {
           "type": "array",
           "items": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/TransactionView"
+                "$ref": "#/components/schemas/TransactionResultView"
               },
               {
                 "type": "null"
