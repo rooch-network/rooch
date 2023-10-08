@@ -8,7 +8,7 @@ module rooch_framework::coin_test{
     use rooch_framework::coin;
     use rooch_framework::coin::{register_extend,
         supply, name, symbol, decimals, balance, value, mint_extend, burn_extend, freeze_coin_store_extend, unfreeze_coin_store_extend,
-        is_coin_store_frozen, zero, destroy_zero, is_registered, deposit, extract, transfer, withdraw, withdraw_extend,
+        is_account_coin_store_frozen, zero, destroy_zero, is_registered, deposit, extract, transfer, withdraw, withdraw_extend,
         is_account_accept_coin, do_accept_coin, set_auto_accept_coin
     };
 
@@ -222,22 +222,22 @@ module rooch_framework::coin_test{
     }
 
     #[test(account = @rooch_framework)]
-    public fun test_is_coin_store_frozen(account: signer) {
+    public fun test_is_account_coin_store_frozen(account: signer) {
         let ctx = rooch_framework::genesis::init_for_test();
         let addr = signer::address_of(&account);
         // An non do_accept_coined account is has a frozen coin store by default
-        assert!(!is_coin_store_frozen<FakeCoin>(&ctx, addr), 1);
+        assert!(!is_account_coin_store_frozen<FakeCoin>(&ctx, addr), 1);
 
         register_fake_coin(&mut ctx, 9);
 
-        assert!(!is_coin_store_frozen<FakeCoin>(&ctx, addr), 1);
+        assert!(!is_account_coin_store_frozen<FakeCoin>(&ctx, addr), 1);
         // freeze account
         freeze_coin_store_extend<FakeCoin>(&mut ctx, addr);
-        assert!(is_coin_store_frozen<FakeCoin>(&ctx, addr), 1);
+        assert!(is_account_coin_store_frozen<FakeCoin>(&ctx, addr), 1);
 
         // unfreeze account
         unfreeze_coin_store_extend<FakeCoin>(&mut ctx, addr);
-        assert!(!is_coin_store_frozen<FakeCoin>(&ctx, addr), 1);
+        assert!(!is_account_coin_store_frozen<FakeCoin>(&ctx, addr), 1);
 
         moveos_std::context::drop_test_context(ctx);
     }

@@ -19,6 +19,7 @@ Feature: Rooch CLI integration tests
       # session key
       Then cmd: "session-key create --sender-account {default} --scope 0x3::empty::empty"
       Then cmd: "move run --function 0x3::empty::empty --sender-account {default} --session-key {{$.session-key[-1].authentication_key}}"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # transaction
       Then cmd: "transaction get-transactions-by-order --cursor 0 --limit 1"
@@ -26,12 +27,16 @@ Feature: Rooch CLI integration tests
 
       # event example
       Then cmd: "move publish -p ../../examples/event --sender-account {default} --named-addresses rooch_examples={default}"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function {default}::event_test::emit_event --sender-account {default} --args 10u64"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "event get-events-by-event-handle --event_handle_type {default}::event_test::WithdrawEvent --cursor 0 --limit 1"
 
       # account balance
       Then cmd: "move publish -p ../../examples/coins --sender-account {default} --named-addresses coins={default}"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function {default}::fixed_supply_coin::faucet --sender-account {default}"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "account balance"
       Then cmd: "account balance --coin-type {default}::fixed_supply_coin::FSC"
 

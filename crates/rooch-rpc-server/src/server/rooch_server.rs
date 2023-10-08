@@ -7,7 +7,6 @@ use jsonrpsee::{
     core::{async_trait, Error as JsonRpcError, RpcResult},
     RpcModule,
 };
-use move_core_types::language_storage::StructTag;
 use moveos_types::h256::H256;
 use rooch_rpc_api::api::{MAX_RESULT_LIMIT, MAX_RESULT_LIMIT_USIZE};
 use rooch_rpc_api::jsonrpc_types::account_view::BalanceInfoView;
@@ -303,11 +302,22 @@ impl RoochAPIServer for RoochServer {
         })
     }
 
+    async fn get_balance(
+        &self,
+        account_addr: AccountAddressView,
+        coin_type: StructTagView,
+    ) -> RpcResult<BalanceInfoView> {
+        Ok(self
+            .aggregate_service
+            .get_balance(account_addr.into(), coin_type.into())
+            .await
+            .map(Into::into)?)
+    }
+
     /// get account balances by AccountAddress
     async fn get_balances(
         &self,
         account_addr: AccountAddressView,
-        coin_type: Option<StructTagView>,
         cursor: Option<StrView<Vec<u8>>>,
         limit: Option<usize>,
     ) -> RpcResult<ListBalanceInfoPageView> {
@@ -316,14 +326,13 @@ impl RoochAPIServer for RoochServer {
             MAX_RESULT_LIMIT_USIZE,
         );
         let cursor_of = cursor.clone().map(|v| v.0);
-        let coin_type: Option<StructTag> = coin_type.map(|type_| type_.into());
 
         let mut data = self
             .aggregate_service
-            .get_balances(account_addr.into(), coin_type, cursor_of, limit_of + 1)
+            .get_balances(account_addr.into(), cursor_of, limit_of + 1)
             .await?
             .into_iter()
-            .map(|item| item.map(|(key, balance_info)| (key, BalanceInfoView::from(balance_info))))
+            .map(|(key, balance_info)| (key, BalanceInfoView::from(balance_info)))
             .collect::<Vec<_>>();
 
         let has_next_page = data.len() > limit_of;
@@ -332,16 +341,13 @@ impl RoochAPIServer for RoochServer {
         let next_cursor = data
             .last()
             .cloned()
-            .flatten()
             .map_or(cursor, |(key, _balance_info)| key.map(StrView));
 
-        let result = data
-            .into_iter()
-            .map(|item| item.map(|(_key, balance_info)| balance_info))
-            .collect();
-
         Ok(ListBalanceInfoPageView {
-            data: result,
+            data: data
+                .into_iter()
+                .map(|(_, balance_info)| balance_info)
+                .collect(),
             next_cursor,
             has_next_page,
         })

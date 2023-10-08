@@ -4,12 +4,14 @@ module coins::fixed_supply_coin {
     use moveos_std::signer;
     use moveos_std::account_storage;
     use moveos_std::context::Context;
-    use rooch_framework::coin::{Self, Coin};
+    use moveos_std::object_ref::{Self, ObjectRef};
+    use rooch_framework::coin::{Self, CoinStore};
+    
 
     struct FSC has key, store {}
 
     struct Treasury has key {
-        coin: Coin<FSC>
+        coin_store: ObjectRef<CoinStore>
     }
 
     const TOTAL_SUPPLY: u256 = 210_000_000_000u256;
@@ -25,7 +27,9 @@ module coins::fixed_supply_coin {
         let coins_signer = signer::module_signer<FSC>();
         // Mint the total supply of coins, and store it to the treasury
         let coin = coin::mint_extend<FSC>(ctx, TOTAL_SUPPLY);
-        account_storage::global_move_to(ctx, &coins_signer, Treasury { coin });
+        let coin_store_ref = coin::create_coin_store<FSC>(ctx);
+        coin::deposit_to_store(object_ref::borrow_mut(&mut coin_store_ref), coin);
+        account_storage::global_move_to(ctx, &coins_signer, Treasury { coin_store: coin_store_ref });
     }
 
     /// Provide a faucet to give out coins to users
@@ -33,7 +37,7 @@ module coins::fixed_supply_coin {
     public entry fun faucet(ctx: &mut Context, account: &signer) {
         let account_addr = signer::address_of(account);
         let treasury = account_storage::global_borrow_mut<Treasury>(ctx, @coins);
-        let coin = coin::extract(&mut treasury.coin, 10000);
+        let coin = coin::extract_from_store<FSC>(object_ref::borrow_mut(&mut treasury.coin_store), 10000);
         coin::deposit(ctx, account_addr, coin);
     }
 }

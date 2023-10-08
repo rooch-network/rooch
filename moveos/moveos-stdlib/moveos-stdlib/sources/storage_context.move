@@ -15,7 +15,8 @@ module moveos_std::storage_context {
 
     friend moveos_std::account_storage;
     friend moveos_std::context;
-
+    
+    //TODO redesign the global object storage handle
     const GlobalObjectStorageHandle: address = @0x0;
 
     struct StorageContext has store {

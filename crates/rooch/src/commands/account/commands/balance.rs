@@ -44,28 +44,31 @@ impl CommandAction<()> for BalanceCommand {
 
         let client = context.get_client().await?;
 
-        let data = client
-            .get_balances(
-                address_addr,
-                self.coin_type,
-                None,
-                Some(MAX_RESULT_LIMIT_USIZE),
-            )
-            .await?;
+        let balances = match self.coin_type {
+            Some(coin_type) => {
+                vec![client.get_balance(address_addr, coin_type).await?]
+            }
+            None => {
+                client
+                    .get_balances(address_addr, None, Some(MAX_RESULT_LIMIT_USIZE))
+                    .await?
+                    .data
+            }
+        };
 
         println!(
-            "{0: ^102} | {1: ^16} | {2: ^32} | {3: ^6}",
-            "Coin Type", "Symbol", "Balance", "Decimals"
+            "{0: ^102} | {1: ^16} | {2: ^6} |  {3: ^32} ",
+            "Coin Type", "Symbol", "Decimals", "Balance"
         );
         println!("{}", ["-"; 68].join(""));
 
-        for balance_info in data.data.into_iter().flatten() {
+        for balance_info in balances {
             println!(
-                "{0: ^102} | {1: ^16} | {2: ^32} | {3: ^6}",
-                balance_info.coin_type,
-                balance_info.symbol,
+                "{0: ^102} | {1: ^16} | {2: ^6} | {3: ^32} ",
+                balance_info.coin_info.coin_type,
+                balance_info.coin_info.symbol,
+                balance_info.coin_info.decimals,
                 balance_info.balance,
-                balance_info.decimals
             );
         }
 

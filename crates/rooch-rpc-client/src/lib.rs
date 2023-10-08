@@ -15,7 +15,9 @@ use moveos_types::{
     tx_context::TxContext,
 };
 use rooch_rpc_api::api::rooch_api::RoochAPIClient;
-use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionResultView;
+use rooch_rpc_api::jsonrpc_types::{
+    account_view::BalanceInfoView, transaction_view::TransactionResultView,
+};
 use rooch_rpc_api::jsonrpc_types::TransactionResultPageView;
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedFunctionResultView, EventPageView,
@@ -226,17 +228,24 @@ impl Client {
             .await?)
     }
 
+    pub async fn get_balance(
+        &self,
+        account_addr: AccountAddressView,
+        coin_type: StructTagView,
+    ) -> Result<BalanceInfoView> {
+        Ok(self.rpc.http.get_balance(account_addr, coin_type).await?)
+    }
+
     pub async fn get_balances(
         &self,
         account_addr: AccountAddressView,
-        coin_type: Option<StructTagView>,
         cursor: Option<StrView<Vec<u8>>>,
         limit: Option<usize>,
     ) -> Result<ListBalanceInfoPageView> {
         Ok(self
             .rpc
             .http
-            .get_balances(account_addr, coin_type, cursor, limit)
+            .get_balances(account_addr, cursor, limit)
             .await?)
     }
 

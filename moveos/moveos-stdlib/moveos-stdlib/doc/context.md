@@ -24,6 +24,7 @@ and let developers customize the storage
 -  [Function `borrow_object`](#0x2_context_borrow_object)
 -  [Function `borrow_object_mut`](#0x2_context_borrow_object_mut)
 -  [Function `remove_object`](#0x2_context_remove_object)
+-  [Function `remove_object_with_ref`](#0x2_context_remove_object_with_ref)
 -  [Function `add_object`](#0x2_context_add_object)
 -  [Function `contains_object`](#0x2_context_contains_object)
 -  [Function `new_object`](#0x2_context_new_object)
@@ -33,6 +34,7 @@ and let developers customize the storage
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
+<b>use</b> <a href="object_ref.md#0x2_object_ref">0x2::object_ref</a>;
 <b>use</b> <a href="storage_context.md#0x2_storage_context">0x2::storage_context</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 <b>use</b> <a href="tx_meta.md#0x2_tx_meta">0x2::tx_meta</a>;
@@ -444,6 +446,31 @@ Remove object from object store
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_remove_object">remove_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, <a href="object_id.md#0x2_object_id">object_id</a>: ObjectID): Object&lt;T&gt; {
+    <a href="storage_context.md#0x2_storage_context_remove">storage_context::remove</a>&lt;T&gt;(&<b>mut</b> self.<a href="storage_context.md#0x2_storage_context">storage_context</a>, <a href="object_id.md#0x2_object_id">object_id</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_context_remove_object_with_ref"></a>
+
+## Function `remove_object_with_ref`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_remove_object_with_ref">remove_object_with_ref</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, <a href="object_ref.md#0x2_object_ref">object_ref</a>: <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_remove_object_with_ref">remove_object_with_ref</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, <a href="object_ref.md#0x2_object_ref">object_ref</a>: ObjectRef&lt;T&gt;): Object&lt;T&gt; {
+    <b>let</b> <a href="object_id.md#0x2_object_id">object_id</a> = <a href="object_ref.md#0x2_object_ref_into_id">object_ref::into_id</a>(<a href="object_ref.md#0x2_object_ref">object_ref</a>);
     <a href="storage_context.md#0x2_storage_context_remove">storage_context::remove</a>&lt;T&gt;(&<b>mut</b> self.<a href="storage_context.md#0x2_storage_context">storage_context</a>, <a href="object_id.md#0x2_object_id">object_id</a>)
 }
 </code></pre>

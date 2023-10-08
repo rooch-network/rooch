@@ -216,21 +216,24 @@ impl EthAPIServer for EthServer {
             .rpc_service
             .resolve_address(MultiChainAddress::from(EthereumAddress(address.into())))
             .await?;
-        //Return some balance if the account not exists.
+        //Return some balance if the account not exists or zero.
         //Avoid MetaMask blocking the transaction submission.
         //TODO find a better way to solve this problem.
         let default_balance = GasCoin::scaling(100u64);
         let balance = self
             .aggregate_service
-            .get_balances(account_address, Some(GasCoin::struct_tag()), None, 0)
-            .await?
-            .pop()
-            .ok_or_else(|| JsonRpcError::Custom("Balance result must not empty".to_owned()))?
-            .map(|(_cursor, balance_info)| {
-                StrView(U256::from_le_bytes(&balance_info.balance.to_le_bytes()))
-            })
-            .unwrap_or(StrView(U256::from_le_bytes(&default_balance.to_le_bytes())));
-        Ok(balance)
+            .get_balance(account_address, GasCoin::struct_tag())
+            .await
+            .map(|balance_info| {
+                let balance = if balance_info.balance == move_core_types::u256::U256::zero() {
+                    default_balance
+                } else {
+                    balance_info.balance
+                };
+
+                U256::from_little_endian(&balance.to_le_bytes())
+            })?;
+        Ok(StrView(balance))
     }
 
     async fn estimate_gas(

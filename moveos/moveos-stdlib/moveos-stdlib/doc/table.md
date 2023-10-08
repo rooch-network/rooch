@@ -26,6 +26,7 @@ struct itself, while the operations are implemented as native functions. No trav
 -  [Function `length`](#0x2_table_length)
 -  [Function `is_empty`](#0x2_table_is_empty)
 -  [Function `drop`](#0x2_table_drop)
+-  [Function `handle`](#0x2_table_handle)
 
 
 <pre><code><b>use</b> <a href="context.md#0x2_context">0x2::context</a>;
@@ -423,6 +424,31 @@ Usable only if the value type <code>V</code> has the <code>drop</code> ability
 <pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_drop">drop</a>&lt;K: <b>copy</b> + drop, V: drop&gt;(<a href="table.md#0x2_table">table</a>: <a href="table.md#0x2_table_Table">Table</a>&lt;K, V&gt;) {
     <b>let</b> <a href="table.md#0x2_table_Table">Table</a> { handle } = <a href="table.md#0x2_table">table</a>;
     <a href="raw_table.md#0x2_raw_table_drop_unchecked">raw_table::drop_unchecked</a>(&handle)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_table_handle"></a>
+
+## Function `handle`
+
+Returns table handle of <code><a href="table.md#0x2_table">table</a></code>.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_handle">handle</a>&lt;K: <b>copy</b>, drop, V&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;): &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_handle">handle</a>&lt;K: <b>copy</b> + drop, V&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">Table</a>&lt;K, V&gt;): &ObjectID {
+    &<a href="table.md#0x2_table">table</a>.handle
 }
 </code></pre>
 

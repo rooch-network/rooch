@@ -27,6 +27,7 @@ module rooch_framework::gas_coin_test{
         account::create_account_for_test(&mut genesis_ctx, user);
         let init_gas = 9999u256;
         gas_coin::faucet_for_test(&mut genesis_ctx, user, init_gas); 
+        std::debug::print(&gas_coin::balance(&genesis_ctx, user));
         assert!(gas_coin::balance(&genesis_ctx, user) == init_gas, 1000);
         moveos_std::context::drop_test_context(genesis_ctx);
     }

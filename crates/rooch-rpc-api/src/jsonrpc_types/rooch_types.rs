@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::AccountAddressView;
 use crate::jsonrpc_types::account_view::BalanceInfoView;
 use crate::jsonrpc_types::transaction_view::TransactionResultView;
 use crate::jsonrpc_types::{
@@ -10,22 +11,17 @@ use crate::jsonrpc_types::{
 };
 use move_core_types::u256::U256;
 use moveos_types::event::AnnotatedMoveOSEvent;
-use rooch_types::framework::coin::{
-    AnnotatedCoin, AnnotatedCoinInfo, AnnotatedCoinStore, Coin, CoinInfo, CompoundCoinStore,
-};
+use rooch_types::framework::coin::CoinInfo;
 use rooch_types::transaction::{AbstractTransaction, TransactionType, TypedTransaction};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
 use std::string::String;
-
-use super::AccountAddressView;
 
 pub type EventPageView = PageView<Option<AnnotatedEventView>, u64>;
 pub type TransactionResultPageView = PageView<TransactionResultView, u128>;
 pub type ListStatesPageView = PageView<Option<StateView>, StrView<Vec<u8>>>;
 pub type ListAnnotatedStatesPageView = PageView<Option<AnnotatedStateView>, StrView<Vec<u8>>>;
-pub type ListBalanceInfoPageView = PageView<Option<BalanceInfoView>, StrView<Vec<u8>>>;
+pub type ListBalanceInfoPageView = PageView<BalanceInfoView, StrView<Vec<u8>>>;
 
 /// `next_cursor` points to the last item in the page;
 /// Reading with `next_cursor` will start from the next item after `next_cursor` if
@@ -124,119 +120,26 @@ impl From<AnnotatedMoveOSEvent> for AnnotatedEventView {
 //     }
 // }
 
-#[serde_as]
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct CoinView {
-    value: StrView<U256>,
-}
-
-impl CoinView {
-    pub fn new(value: StrView<U256>) -> Self {
-        CoinView { value }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct AnnotatedCoinView {
-    #[serde(rename = "type")]
-    type_: StructTagView,
-    value: CoinView,
-}
-
-impl AnnotatedCoinView {
-    pub fn new(type_: StructTagView, value: CoinView) -> Self {
-        AnnotatedCoinView { type_, value }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct CompoundCoinStoreView {
-    coin: AnnotatedCoinView,
-    frozen: bool,
-}
-
-impl CompoundCoinStoreView {
-    pub fn new(coin: AnnotatedCoinView, frozen: bool) -> Self {
-        CompoundCoinStoreView { coin, frozen }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct AnnotatedCoinStoreView {
-    #[serde(rename = "type")]
-    type_: StructTagView,
-    value: CompoundCoinStoreView,
-}
-
-impl From<AnnotatedCoinStore> for AnnotatedCoinStoreView {
-    fn from(coin_store: AnnotatedCoinStore) -> Self {
-        let coin = CoinView {
-            value: StrView(coin_store.value.coin.value.value),
-        };
-        let annotated_coin = AnnotatedCoinView {
-            type_: coin_store.value.coin.type_.into(),
-            value: coin,
-        };
-        let compose_coin_store = CompoundCoinStoreView {
-            coin: annotated_coin,
-            frozen: coin_store.value.frozen,
-        };
-        AnnotatedCoinStoreView {
-            type_: coin_store.type_.into(),
-            value: compose_coin_store,
-        }
-    }
-}
-
-impl From<AnnotatedCoinStoreView> for AnnotatedCoinStore {
-    fn from(coin_store: AnnotatedCoinStoreView) -> Self {
-        let coin = Coin::new(coin_store.value.coin.value.value.0);
-        let annotated_coin = AnnotatedCoin::new(coin_store.value.coin.type_.into(), coin);
-        let compose_coin_store = CompoundCoinStore::new(annotated_coin, coin_store.value.frozen);
-
-        AnnotatedCoinStore::new(coin_store.type_.into(), compose_coin_store)
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct CoinInfoView {
-    name: String,
-    symbol: String,
-    decimals: u8,
-    supply: StrView<U256>,
+    pub coin_type: StructTagView,
+    pub name: String,
+    pub symbol: String,
+    pub decimals: u8,
+    pub supply: StrView<U256>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct AnnotatedCoinInfoView {
-    #[serde(rename = "type")]
-    type_: StructTagView,
-    value: CoinInfoView,
-}
-
-impl From<AnnotatedCoinInfo> for AnnotatedCoinInfoView {
-    fn from(annotated_coin_info: AnnotatedCoinInfo) -> Self {
-        let coin_info = CoinInfoView {
-            name: annotated_coin_info.value.name,
-            symbol: annotated_coin_info.value.symbol,
-            decimals: annotated_coin_info.value.decimals,
-            supply: StrView(annotated_coin_info.value.supply),
-        };
-        AnnotatedCoinInfoView {
-            type_: annotated_coin_info.type_.into(),
-            value: coin_info,
+impl From<CoinInfo> for CoinInfoView {
+    fn from(coin_info: CoinInfo) -> Self {
+        Self {
+            //We convert the coin_type to Coin Type tag here
+            //Because the coin_type string is the `to_canonical_string` of the StructTag
+            //It's not the same as the StructTagView string
+            coin_type: coin_info.coin_type_tag().into(),
+            name: coin_info.name(),
+            symbol: coin_info.symbol(),
+            decimals: coin_info.decimals(),
+            supply: StrView(coin_info.supply()),
         }
-    }
-}
-
-impl From<AnnotatedCoinInfoView> for AnnotatedCoinInfo {
-    fn from(annotated_coin_info: AnnotatedCoinInfoView) -> Self {
-        let coin_info = CoinInfo::new(
-            annotated_coin_info.value.name,
-            annotated_coin_info.value.symbol,
-            annotated_coin_info.value.decimals,
-            annotated_coin_info.value.supply.0,
-        );
-
-        AnnotatedCoinInfo::new(annotated_coin_info.type_.into(), coin_info)
     }
 }

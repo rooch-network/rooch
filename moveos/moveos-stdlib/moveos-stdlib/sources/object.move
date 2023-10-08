@@ -7,6 +7,7 @@
 /// 1. The Object is a struct in Move
 /// 2. The Object is a use case of the Hot Potato pattern in Move. Objects do not have any ability, so they cannot be drop, copy, or store, and can only be handled by StorageContext API after creation.
 module moveos_std::object {
+    
     use moveos_std::tx_context::{Self, TxContext};
     use moveos_std::object_id::ObjectID;
 
@@ -14,6 +15,7 @@ module moveos_std::object {
     friend moveos_std::account_storage;
     friend moveos_std::storage_context;
     friend moveos_std::event;
+    friend moveos_std::object_ref;
    
     /// Box style object
     /// The object can not be copied, droped and stored. It only can be consumed by StorageContext API.
@@ -22,6 +24,7 @@ module moveos_std::object {
         id: ObjectID,
         // The owner of the object
         owner: address,
+        // The value of the object
         // The value must be the last field
         value: T,
     }
@@ -42,9 +45,17 @@ module moveos_std::object {
         &self.value
     }
 
+    public(friend) fun internal_borrow<T>(self: &Object<T>): &T {
+        &self.value
+    }
+
     #[private_generics(T)]
     /// Borrow the mutable object value
     public fun borrow_mut<T>(self: &mut Object<T>): &mut T {
+        &mut self.value
+    }
+
+    public(friend) fun internal_borrow_mut<T>(self: &mut Object<T>): &mut T {
         &mut self.value
     }
 
@@ -64,8 +75,8 @@ module moveos_std::object {
 
     #[private_generics(T)]
     /// Unpack the object, return the id, owner, and value
-    public fun unpack<T>(obj: Object<T>): (ObjectID, address, T) {
-        let Object{id, owner, value} = obj;
+    public fun unpack<T>(self: Object<T>): (ObjectID, address, T) {
+        let Object{id, owner, value} = self;
         (id, owner, value)
     }
 
