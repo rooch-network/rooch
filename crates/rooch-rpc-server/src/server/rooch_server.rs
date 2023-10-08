@@ -300,15 +300,22 @@ impl RoochAPIServer for RoochServer {
         let mut transaction_results: Vec<TransactionResult> = vec![];
         for (index, _tx_hash) in tx_hashes.iter().enumerate() {
             let transaction_result = TransactionResult {
-                transaction: transactions[index]
-                    .clone()
-                    .expect("Transaction should have value when construct TransactionResult"),
-                sequence_info: sequence_infos[index].clone().expect(
-                    "TransactionSequenceInfo should have value when construct TransactionResult",
-                ),
-                execution_info: execution_infos[index].clone().expect(
-                    "TransactionExecutionInfo should have value when construct TransactionResult",
-                ),
+                transaction: transactions[index].clone().ok_or(anyhow::anyhow!(
+                    "Transaction should have value when construct TransactionResult"
+                ))?,
+                // .expect("Transaction should have value when construct TransactionResult"),
+                sequence_info: sequence_infos[index].clone().ok_or(anyhow::anyhow!(
+                    "TransactionSequenceInfo should have value when construct TransactionResult"
+                ))?,
+                //     expect(
+                //     "TransactionSequenceInfo should have value when construct TransactionResult",
+                // ),
+                execution_info: execution_infos[index].clone().ok_or(anyhow::anyhow!(
+                    "TransactionExecutionInfo should have value when construct TransactionResult"
+                ))?,
+                //     .expect(
+                //     "TransactionExecutionInfo should have value when construct TransactionResult",
+                // ),
             };
             transaction_results.push(transaction_result)
         }

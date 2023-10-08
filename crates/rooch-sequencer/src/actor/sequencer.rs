@@ -71,6 +71,8 @@ impl Handler<TransactionSequenceMessage> for SequencerActor {
         self.rooch_store.save_transaction(tx)?;
         self.rooch_store
             .save_tx_sequence_info_mapping(tx_order, hash)?;
+        self.rooch_store
+            .save_tx_sequence_info_reverse_mapping(hash, tx_order)?;
 
         self.rooch_store
             .save_sequencer_order(SequencerOrder::new(self.last_order))?;
