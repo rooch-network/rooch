@@ -11,7 +11,7 @@ Let's take `AccountStorage` as an example. We want to store a user's resources w
 ```move
 module moveos_std::account_storage{
     #[private_generics(T)]
-    public fun global_borrow<T: key>(ctx: &StorageContext, account: address): &T;
+    public fun global_borrow<T: key>(ctx: &Context, account: address): &T;
 }
 ```
 
@@ -29,7 +29,7 @@ TODO: This part of the document needs improvement.
 
 1. The `#[private_generics(T)]` annotation is used in the following modules, which can serve as references:
    - [moveos_std::account_storage](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/account_storage.move)
-   - [moveos_std::object_storage](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/object_storage.move)
+   - [moveos_std::storage_context](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/storage_context.move)
    - [moveos_std::signer](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/signer.move)
    - [rooch_framework::coin](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/coin.move)
 2. [Understanding Private Generics Functions in one article](../blog/read-private-generics-in-one-article.md)

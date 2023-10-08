@@ -23,7 +23,7 @@ MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "m
 RoochFramework = { git = "https://github.com/rooch-network/rooch.git", subdir = "crates/rooch-framework", rev = "main" }
 
 [addresses]
-hello_rooch = "0xf5ecfc49f55e283119104978b60995b0ec84a5bd760a0305b24b9a4175deff7b"
+hello_rooch = "0xf5ecfc49f55e283119104978b60995bcontext0ec84a5bd760a0305b24b9a4175deff7b"
 std = "0x1"
 moveos_std = "0x2"
 rooch_framework = "0x3"
@@ -37,13 +37,13 @@ rooch_framework = "0x3"
 module hello_rooch::hello_rooch {
     use std::string;
     use moveos_std::account_storage;
-    use moveos_std::storage_context::StorageContext;
+    use moveos_std::context::Context;
 
     struct HelloMessage has key {
         text: string::String
     }
 
-    entry fun say_hello(ctx: &mut StorageContext, owner: &signer) {
+    entry fun say_hello(ctx: &mut Context, owner: &signer) {
         let hello = HelloMessage { text: string::utf8(b"Hello Rooch!") };
         account_storage::global_move_to(ctx, owner, hello);
     }

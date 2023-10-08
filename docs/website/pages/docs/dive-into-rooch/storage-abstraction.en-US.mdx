@@ -68,7 +68,7 @@ After analyzing the above solutions, we find that the storage model of a contrac
 1. `RawTable` provides the lowest-level Key Value storage interface, where all contract state changes are ultimately uniformly changed as the Key Value change set of `RawTable`.
 2. `Table<K,V>` is implemented based on `RawTable`, constraining the types of Key and Value.
 3. `TypeTable` is implemented based on `RawTable`, using the type of Value as the Key for the storage structure.
-4. `ObjectStorage` is implemented based on `RawTable`, providing storage capabilities for Objects.
+4. `StorageContext` is implemented based on `RawTable`, providing storage capabilities for Objects.
 5. `ResourceTable` and `ModuleTable` are implemented based on `TypeTable` and `Table` respectively, encapsulating them into `AccountStorage`, providing storage interfaces for Move's user space storage to replace Move's global storage instructions. At the same time, `AccountStorage` also provides an interface for operating Modules in the contract, which is convenient for defining the upgrade logic of the contract in the future.
 6. Developers can encapsulate their own application-specific storage interfaces based on the above storage structures.
 
@@ -94,24 +94,24 @@ The first layer of the state tree in Rooch is an SMT with ObjectID as the key an
 In Rooch, each Table in Move corresponds to an SMT, and the Table Object mainly stores the root of the SMT. When loading data from a Table, the root of the SMT is first obtained through the Table Object ID, and the SMT is then initialized to obtain the value through the key. Tables can also be fields in Struct, with the serialized Table ID (TableHandle) stored in the Struct. In this way, Rooch's state tree is a hierarchy of nested SMTs.
 
 
-### StorageContext
+### Context
 
-The StorageContext contains two fields: `TxContext`, which contains information related to the current transaction, and `ObjectStore`, which corresponds to the first layer of the state tree.
+The Context contains two fields: `TxContext`, which contains information related to the current transaction, and `StorageContext`, which corresponds to the first layer of the state tree.
 
 ```move
-module moveos_std::storage_context{
-    struct StorageContext {
+module moveos_std::context{
+    struct Context {
         tx_context: TxContext,
-        object_storage: ObjectStorage,
+        storage_context: StorageContext,
     }
 }
 ```
 
-Developers can define the StorageContext parameter in the `entry` method, and the MoveVM will automatically fill in the parameter.
+Developers can define the Context parameter in the `entry` method, and the MoveVM will automatically fill in the parameter.
 
 ```move
 module example::my_module{
-    public entry fun my_entry_fun(ctx: &mut StorageContext){
+    public entry fun my_entry_fun(ctx: &mut Context){
         //function logic
     }
 }
@@ -139,7 +139,7 @@ module moveos_std::raw_table{
 
 TableHandle is the ObjectID of the TableObject. The upper-level data structure of RawTable can directly operate on any type of K, V, like a raw-level KV storage interface. Each RowTable corresponds to a SMT in the StateDB. The ObjectID of the global ObjectStore is a special ObjectID with all bytes set to `0`.
 
-Currently, all methods in RawTable are `friend` methods, and developers cannot directly operate on them. They need to operate through the upper-level data structures that encapsulate RawTable, such as `Table<K,V>`, `TypeTable`, and `ObjectStorage`.
+Currently, all methods in RawTable are `friend` methods, and developers cannot directly operate on them. They need to operate through the upper-level data structures that encapsulate RawTable, such as `Table<K,V>`, `TypeTable`, and `StorageContext`.
 
 ### Rooch Object
 
@@ -155,34 +155,55 @@ module moveos_std::object{
 }
 ```
 
-Rooch Objects are also a use case for the [Hot Potato](https://examples.sui.io/patterns/hot-potato.html) pattern in Move. Objects do not have any `ability`, so they cannot be `drop`, `copy`, or `store`, and can only be handled by ObjectStorage API after creation.
+Rooch Objects are also a use case for the [Hot Potato](https://examples.sui.io/patterns/hot-potato.html) pattern in Move. Objects do not have any `ability`, so they cannot be `drop`, `copy`, or `store`, and can only be handled by StorageContext API after creation.
 
-The advantage of this design is that no additional requirements need to be placed on the definition of Move's Struct, nor is additional support of Native methods required, since the concept of Object can be defined directly in Move. ObjectStorage is a storage space outside of a user's storage space, with a unique global ID as the key, to address situations in which global storage is needed.
+The advantage of this design is that no additional requirements need to be placed on the definition of Move's Struct, nor is additional support of Native methods required, since the concept of Object can be defined directly in Move. StorageContext is a storage space outside of a user's storage space, with a unique global ID as the key, to address situations in which global storage is needed.
 
-### ObjectStorage
+### StorageContext
 
-ObjectStorage provides interfaces related to global storage of Objects. It is implemented based on RawTable and is defined as follows:
+StorageContext provides bottom interfaces related to global storage of Objects. It is implemented based on RawTable and is defined as follows:
 
 ```move
-module moveos_std::object_storage{
+module moveos_std::storage_context{
+    /// Borrow Object from object store with object_id
+    public(friend) fun borrow<T: key>(self: &StorageContext, object_id: ObjectID): &Object<T>;
+
+    /// Borrow mut Object from object store with object_id
+    public(friend) fun borrow_mut<T: key>(self: &mut StorageContext, object_id: ObjectID): &mut Object<T>;
+
+    /// Remove object from object store
+    public(friend) fun remove<T: key>(self: &mut StorageContext, object_id: ObjectID): Object<T>;
+
+    /// Add object to object store
+    public(friend) fun add<T: key>(self: &mut StorageContext, obj: Object<T>);
+
+    public(friend) fun contains(self: &StorageContext, object_id: ObjectID): bool;
+}
+```
+
+### Context
+
+`Context` provides interfaces for developers to handle objects based on `StorageContext`. It is defined as follows:
+
+```move
+module moveos_std::context{
     #[private_generics(T)]
     /// Borrow Object from object store with object_id
-    public fun borrow<T: key>(this: &ObjectStorage, object_id: ObjectID): &Object<T>;
+    public fun borrow_object<T: key>(self: &Context, object_id: ObjectID): &Object<T>;
 
     #[private_generics(T)]
     /// Borrow mut Object from object store with object_id
-    public fun borrow_mut<T: key>(this: &mut ObjectStorage, object_id: ObjectID): &mut Object<T>;
+    public fun borrow_object_mut<T: key>(self: &mut Context, object_id: ObjectID): &mut Object<T>;
 
     #[private_generics(T)]
     /// Remove object from object store
-    public fun remove<T: key>(this: &mut ObjectStorage, object_id: ObjectID): Object<T>;
+    public fun remove_object<T: key>(self: &mut Context, object_id: ObjectID): Object<T>;
 
     #[private_generics(T)]
     /// Add object to object store
-    public fun add<T: key>(this: &mut ObjectStorage, obj: Object<T>);
+    public fun add_object<T: key>(self: &mut Context, obj: Object<T>);
 
-    #[private_generics(T)]
-    public fun contains<T: key>(this: &ObjectStorage, object_id: ObjectID): bool;
+    public fun contains_object(self: &Context, object_id: ObjectID): bool;
 }
 ```
 
@@ -226,39 +247,39 @@ module moveos_std::account_storage{
     #[private_generics(T)]
     /// Borrow a resource from the account's storage
     /// This function equates to `borrow_global<T>(address)` instruction in Move
-    public fun global_borrow<T: key>(ctx: &StorageContext, account: address): &T;
+    public fun global_borrow<T: key>(ctx: &Context, account: address): &T;
 
     #[private_generics(T)]
     /// Borrow a mut resource from the account's storage
     /// This function equates to `borrow_global_mut<T>(address)` instruction in Move
-    public fun global_borrow_mut<T: key>(ctx: &mut StorageContext, account: address): &mut T;
+    public fun global_borrow_mut<T: key>(ctx: &mut Context, account: address): &mut T;
 
     #[private_generics(T)]
     /// Move a resource to the account's storage
     /// This function equates to `move_to<T>(&signer, resource)` instruction in Move
-    public fun global_move_to<T: key>(ctx: &mut StorageContext, account: &signer, resource: T);
+    public fun global_move_to<T: key>(ctx: &mut Context, account: &signer, resource: T);
 
     #[private_generics(T)]
     /// Move a resource from the account's storage
     /// This function equates to `move_from<T>(address)` instruction in Move
-    public fun global_move_from<T: key>(ctx: &mut StorageContext, account: address): T;
+    public fun global_move_from<T: key>(ctx: &mut Context, account: address): T;
 
     #[private_generics(T)]
     /// Check if the account has a resource of the given type
     /// This function equates to `exists<T>(address)` instruction in Move
-    public fun global_exists<T: key>(ctx: &StorageContext, account: address) : bool;
+    public fun global_exists<T: key>(ctx: &Context, account: address) : bool;
 
     /// Check if the account has a module with the given name
-    public fun exists_module(ctx: &StorageContext, account: address, name: String): bool;
+    public fun exists_module(ctx: &Context, account: address, name: String): bool;
 
     /// Publish modules to the account's storage
-    public fun publish_modules(ctx: &mut StorageContext, account: &signer, modules: vector<MoveModule>);
+    public fun publish_modules(ctx: &mut Context, account: &signer, modules: vector<MoveModule>);
 }
 ```
 
 The above methods can replace the global storage instructions in Move, so that all storage-related operations in Move are ultimately unified to Operations on Tables. 
 
-At the same time,this approach also solves a reference problem in Move whereby developers cannot return a reference borrowed through the `borrow_global<T>` instruction in their methods, since this reference is created out of thin air and cannot be returned as a method return value. However, if the reference is borrowed through `StorageContext`, then that goal can be achieved, and the lifetime of the reference is bound to the lifetime of `StorageContext`. 
+At the same time,this approach also solves a reference problem in Move whereby developers cannot return a reference borrowed through the `borrow_global<T>` instruction in their methods, since this reference is created out of thin air and cannot be returned as a method return value. However, if the reference is borrowed through `Context`, then that goal can be achieved, and the lifetime of the reference is bound to the lifetime of `Context`. 
 
 In addition, AccountStorage also provides module-related methods, making it easy to deploy Move contracts in Move and allowing developers to use contracts to define contract deployment rules, such as upgrading the contract through DAO governance.
 

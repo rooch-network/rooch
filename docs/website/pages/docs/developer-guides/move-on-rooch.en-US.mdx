@@ -24,39 +24,39 @@ The goal of storage abstraction is to allow developers to more flexibly define t
 
 | Move store instructions                    | Functions in Rooch                                                               | Explanation                                                      |
 |--------------------------------------------|----------------------------------------------------------------------------------|------------------------------------------------------------------|
-| `move_to<T:key>(&signer,T)`                | `account_storage::global_move_to<T:key>(&mut StorageContext,&signer,T)`          | Store resources of type `T` in the user state space of `signer`. |
-| `move_from<T:key>(address):T`              | `account_storage::global_move_from<T:key>(&mut StorageContext,address): T`       | Take resources of type `T` out of user state space.              |
-| `borrow_global<T:key>(address):&T`         | `account_storage::global_borrow<T:key>(&StorageContext,address): &T`             | Read an immutable reference of type `T` from user space.         |
-| `borrow_global_mut<T:key>(address):&mut T` | `account_storage::global_borrow_mut<T:key>(&mut StorageContext,address): &mut T` | Read a mutable reference of type `T` from user space.            |
-| `exists<T:key>(address):bool`              | `account_storage::global_exists<T:key>(&StorageContext,address): bool`           | Determine whether there is a resource of type `T` in user space. |
+| `move_to<T:key>(&signer,T)`                | `account_storage::global_move_to<T:key>(&mut Context,&signer,T)`          | Store resources of type `T` in the user state space of `signer`. |
+| `move_from<T:key>(address):T`              | `account_storage::global_move_from<T:key>(&mut Context,address): T`       | Take resources of type `T` out of user state space.              |
+| `borrow_global<T:key>(address):&T`         | `account_storage::global_borrow<T:key>(&Context,address): &T`             | Read an immutable reference of type `T` from user space.         |
+| `borrow_global_mut<T:key>(address):&mut T` | `account_storage::global_borrow_mut<T:key>(&mut Context,address): &mut T` | Read a mutable reference of type `T` from user space.            |
+| `exists<T:key>(address):bool`              | `account_storage::global_exists<T:key>(&Context,address): bool`           | Determine whether there is a resource of type `T` in user space. |
 
 The above methods provided by `account_storage` are all constrained by the `private_generics(T)` annotation, ensuring that the security is consistent with the Move storage instruction.
 
 In addition to `account_storage` Rooch also provides the following storage modules:
 
-1. `object_storage`: Use `ObjectID` as key to store any type of data. For detailed information about Rooch Object, see [Rooch Object](./object.en-US.mdx).
+1. `storage_context`: Use `ObjectID` as key to store any type of data. For detailed information about Rooch Object, see [Rooch Object](./object.en-US.mdx).
 2. `type_table`: Use type as key to store any type of data.
 
 Regarding the design of storage abstraction, you can refer to [Storage Abstraction](../dive-into-rooch/storage-abstraction.en-US.mdx).
 
-### StorageContext 和 TxContext
+### Context
 
-StorageContext contains two fields, one is `TxContext`, which contains information related to the current transaction, and the other is `ObjectStore`, which is a global `Object` storage.
+Context contains two fields, one is `TxContext`, which contains information related to the current transaction, and the other is `StorageContext`, which is a global `Object` storage.
 
 ```move
-module moveos_std::storage_context{
-    struct StorageContext {
+module moveos_std::context{
+    struct Context {
         tx_context: TxContext,
-        object_storage: ObjectStorage,
+        storage_context: StorageContext,
     }
 }
 ```
 
-Developers need to define the `StorageContext` parameter in the `entry` function, and MoveVM will automatically fill in the parameter.
+Developers need to define the `Context` parameter in the `entry` function, and MoveVM will automatically fill in the parameter.
 
 ```move
 module example::my_module{
-    public entry fun my_entry_fun(ctx: &mut StorageContext){
+    public entry fun my_entry_fun(ctx: &mut Context){
         //function logic
     }
 }

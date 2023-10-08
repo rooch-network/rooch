@@ -18,7 +18,8 @@ module moveos_std::object{
 
 |Object 函数                                               |说明|
 |---------------------------------------------------------|------------------------------------------------------------------------|
-|`object::new<T: key>(&mut TxContext,address,T): Object<T>` | 将 `T` 封装到 `Object` 箱子中，通过 `TxContext` 生成 `ObjectID`，返回 `Object<T>`|
+|`context::new_object<T: key>(self: &mut Context, value: T): Object<T` | 将 `T` 封装到 `Object` 箱子中，返回 `Object<T>`|
+|`context::new_object_with_owner<T: key>(self: &mut Context, owner: address, value: T): Object<T>` | 将 `T` 封装到 `Object` 箱子中，指定 `Object` 的所有者，返回 `Object<T>`|
 |`object::borrow<T>(&Object<T>): &T`                        | 通过 `Object` 借用 `T` 的只读引用|
 |`object::borrow_mut<T>(&mut Object<T>): &mut T`            | 通过 `Object` 借用 `T` 的可变引用|
 |`object::transfer<T>(&mut Object<T>,address)`              | 通过 `Object` 将 `Object` 所有权转移给 `address`|
@@ -26,18 +27,19 @@ module moveos_std::object{
 
 以上函数都通过 `#[private_generics<T>]` 限定，保证只有 `T` 所在的模块才能调用以上方法。
 
-Rooch Object 也是 Move 中的 [Hot Potato](https://examples.sui.io/patterns/hot-potato.html) 模式的一个使用案例。Object 不具有任何 `ability`，所以它不可以被 `drop`，`copy`，`store`，创建之后只能被 `ObjectStorage` 提供的函数处理。
+Rooch Object 也是 Move 中的 [Hot Potato](https://examples.sui.io/patterns/hot-potato.html) 模式的一个使用案例。Object 不具有任何 `ability`，所以它不可以被 `drop`，`copy`，`store`，创建之后只能被 `Context` 提供的函数处理。
 
-`ObjectStorage` 可以理解为一种特殊的 `Table`，以 `ObjectID` 为 Key, 以 `Object<T>` 为 Value，提供了以下函数：
+`Context` 提供了以下操作 `Object` 的接口函数：
 
-|ObjectStorage 函数                                                                |说明|
+|Context 函数                                                                |说明|
 |---------------------------------------------------------------------------------|----------------------------------|
-|`object_storage::borrow<T: key>(&ObjectStorage,ObjectID) :&Object<T>`              | 通过 `ObjectID` 借用 `Object<T>` 引用   |
-|`object_storage::borrow_mut<T: key>(&mut ObjectStorage,ObjectID) :&mut Object<T>`  | 通过 `ObjectID` 借用可变 `Object<T>` 引用|
-|`object_storage::add<T: key>(&mut ObjectStorage,Object<T>)`                       | 添加 `Object<T>` 到 `ObjectStorage`    |
-|`object_storage::remove<T: key>(&mut ObjectStorage,ObjectID): Object<T>`           | 通过 `ObjectID` 删除 `Object<T>`，并返回 `Object<T>`|
+|`context::borrow_object<T: key>(self: &Context, object_id: ObjectID): &Object<T>`              | 通过 `ObjectID` 借用 `Object<T>` 引用   |
+|`context::borrow_object_mut<T: key>(self: &mut Context, object_id: ObjectID): &mut Object<T>`  | 通过 `ObjectID` 借用可变 `Object<T>` 引用|
+|`context::add_object<T: key>(self: &mut Context, obj: Object<T>)`                       | 添加 `Object<T>` 到全局储存中    |
+|`context::remove_object<T: key>(self: &mut Context, object_id: ObjectID): Object<T>`           | 通过 `ObjectID` 删除 `Object<T>`，并返回 `Object<T>`|
+|`contains_object(self: &Context, object_id: ObjectID): bool` | `ObjectID` 是否存在于全局储存中 |
 
-以上函数都通过 `#[private_generics<T>]` 限定，保证只有 `T` 所在的模块才能调用以上方法。
+以上函数除了 `contains_object` 都通过 `#[private_generics<T>]` 限定，保证只有 `T` 所在的模块才能调用以上方法。
 
 ### Rooch Object, Sui Object, Aptos Object 的比较
 
@@ -52,8 +54,8 @@ TODO: This part of this document needs to be improved
 
 1. [Rooch Object API document](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/object.md)
 2. [Rooch Object Source code](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/object.move)
-3. [Rooch ObjectStorage API document](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/object_storage.md)
-4. [Rooch ObjectStorage Source code](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/object_storage.move)
+3. [Rooch Context API document](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/context.md)
+4. [Rooch Context Source code](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/context.move)
 5. [Sui Object](https://docs.sui.io/learn/objects)
 6. [Aptos Object](https://aptos.dev/standards/aptos-object/)
 7. [StorageAbstraction](../dive-into-rooch/storage-abstraction.zh-CN.md)

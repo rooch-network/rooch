@@ -24,39 +24,39 @@ Rooch 当前内置了三个标准库，分别是 `MoveStdlib`、`MoveosStdlib` �
 
 | Move 存储指令                              | Rooch 中的函数                                                                   | 说明                                                |
 |--------------------------------------------|----------------------------------------------------------------------------------|-----------------------------------------------------|
-| `move_to<T:key>(&signer,T)`                | `account_storage::global_move_to<T:key>(&mut StorageContext,&signer,T)`          | 将 `T` 类型的资源存储在 `signer` 的用户状态空间内。 |
-| `move_from<T:key>(address):T`              | `account_storage::global_move_from<T:key>(&mut StorageContext,address): T`       | 将 `T` 类型的资源从用户状态空间中取出来。           |
-| `borrow_global<T:key>(address):&T`         | `account_storage::global_borrow<T:key>(&StorageContext,address): &T`             | 从用户空间中读取 `T` 类型的的不可变引用。           |
-| `borrow_global_mut<T:key>(address):&mut T` | `account_storage::global_borrow_mut<T:key>(&mut StorageContext,address): &mut T` | 从用户空间中读取 `T` 类型的的可变引用。             |
-| `exists<T:key>(address):bool`              | `account_storage::global_exists<T:key>(&StorageContext,address): bool`           | 判断用户空间中是否存在 `T` 类型的资源。             |
+| `move_to<T:key>(&signer,T)`                | `account_storage::global_move_to<T:key>(&mut Context,&signer,T)`          | 将 `T` 类型的资源存储在 `signer` 的用户状态空间内。 |
+| `move_from<T:key>(address):T`              | `account_storage::global_move_from<T:key>(&mut Context,address): T`       | 将 `T` 类型的资源从用户状态空间中取出来。           |
+| `borrow_global<T:key>(address):&T`         | `account_storage::global_borrow<T:key>(&Context,address): &T`             | 从用户空间中读取 `T` 类型的的不可变引用。           |
+| `borrow_global_mut<T:key>(address):&mut T` | `account_storage::global_borrow_mut<T:key>(&mut Context,address): &mut T` | 从用户空间中读取 `T` 类型的的可变引用。             |
+| `exists<T:key>(address):bool`              | `account_storage::global_exists<T:key>(&Context,address): bool`           | 判断用户空间中是否存在 `T` 类型的资源。             |
 
 `account_storage` 提供的以上方法，都有 `private_generics(T)` 注解的约束，保证安全性上和 Move 存储指令一致。
 
 除了 `account_storage` Rooch 还提供以下存储模块：
 
-1. `object_storage`：以 `ObjectID` 为 key，存储任意类型的数据。关于 Rooch Object 的详细信息参看 [Rooch Object](./object.zh-CN.mdx)。
+1. `storage_context`：以 `ObjectID` 为 key，存储任意类型的数据。关于 Rooch Object 的详细信息参看 [Rooch Object](./object.zh-CN.mdx)。
 2. `type_table`：以类型为 key，存储任意类型的数据。
 
 关于存储抽象的设计，可以参考[存储抽象](../dive-into-rooch/storage-abstraction.zh-CN.mdx)。
 
-### StorageContext 和 TxContext
+### Context
 
-StorageContext 包含两个字段，一个是 `TxContext` 包含当前交易相关的信息，另外一个是 `ObjectStore`，是一个全局的 `Object` 存储。
+Context 包含两个字段，一个是 `TxContext` 包含当前交易相关的信息，另外一个是 `StorageContext`，是一个全局的 `Object` 存储。
 
 ```move
-module moveos_std::storage_context{
-    struct StorageContext {
+module moveos_std::context{
+    struct Context {
         tx_context: TxContext,
-        object_storage: ObjectStorage,
+        storage_context: StorageContext,
     }
 }
 ```
 
-开发者需要在 `entry` 函数中定义 `StorageContext` 参数，MoveVM 会自动填充该参数。
+开发者需要在 `entry` 函数中定义 `Context` 参数，MoveVM 会自动填充该参数。
 
 ```move
 module example::my_module{
-    public entry fun my_entry_fun(ctx: &mut StorageContext){
+    public entry fun my_entry_fun(ctx: &mut Context){
         //function logic
     }
 }
