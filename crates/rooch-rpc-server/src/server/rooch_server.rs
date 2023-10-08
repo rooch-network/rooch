@@ -4,7 +4,7 @@
 use crate::service::aggregate_service::AggregateService;
 use crate::service::rpc_service::RpcService;
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
+    core::{async_trait, Error as JsonRpcError, RpcResult},
     RpcModule,
 };
 use move_core_types::language_storage::StructTag;
@@ -256,26 +256,30 @@ impl RoochAPIServer for RoochServer {
     ) -> RpcResult<TransactionResultPageView> {
         let limit_of = limit.unwrap_or(DEFAULT_RESULT_LIMIT);
 
-        let mut tx_sequence_mapping = self
+        let mut tx_sequence_info_mapping = self
             .rpc_service
-            .get_tx_sequence_mapping_by_order(cursor, limit_of + 1)
+            .get_tx_sequence_info_mapping_by_order(cursor, limit_of + 1)
             .await?;
 
-        let has_next_page = (tx_sequence_mapping.len() as u64) > limit_of;
-        tx_sequence_mapping.truncate(limit_of as usize);
-        let next_cursor = tx_sequence_mapping
+        let has_next_page = (tx_sequence_info_mapping.len() as u64) > limit_of;
+        tx_sequence_info_mapping.truncate(limit_of as usize);
+        let next_cursor = tx_sequence_info_mapping
             .last()
-            .map_or(cursor, |m| Some(m.clone().tx_order));
+            .map_or(cursor, |m| m.clone().map(|v| v.tx_order));
 
-        let tx_hashes = tx_sequence_mapping
-            .clone()
-            .iter()
-            .map(|m| m.tx_hash)
-            .collect::<Vec<_>>();
-        let tx_orders = tx_sequence_mapping
-            .iter()
-            .map(|m| m.tx_order)
-            .collect::<Vec<_>>();
+        let mut tx_hashes = vec![];
+        let mut tx_orders = vec![];
+        for item in tx_sequence_info_mapping {
+            if item.is_none() {
+                return Err(JsonRpcError::Custom(String::from(
+                    "Invalid transaction sequence info mapping",
+                )));
+            }
+            let tx_sequence_info_mapping = item.unwrap();
+            tx_hashes.push(tx_sequence_info_mapping.tx_hash);
+            tx_orders.push(tx_sequence_info_mapping.tx_order);
+        }
+
         assert_eq!(tx_hashes.len(), tx_orders.len());
 
         let transactions = self
@@ -303,19 +307,12 @@ impl RoochAPIServer for RoochServer {
                 transaction: transactions[index].clone().ok_or(anyhow::anyhow!(
                     "Transaction should have value when construct TransactionResult"
                 ))?,
-                // .expect("Transaction should have value when construct TransactionResult"),
                 sequence_info: sequence_infos[index].clone().ok_or(anyhow::anyhow!(
                     "TransactionSequenceInfo should have value when construct TransactionResult"
                 ))?,
-                //     expect(
-                //     "TransactionSequenceInfo should have value when construct TransactionResult",
-                // ),
                 execution_info: execution_infos[index].clone().ok_or(anyhow::anyhow!(
                     "TransactionExecutionInfo should have value when construct TransactionResult"
                 ))?,
-                //     .expect(
-                //     "TransactionExecutionInfo should have value when construct TransactionResult",
-                // ),
             };
             transaction_results.push(transaction_result)
         }

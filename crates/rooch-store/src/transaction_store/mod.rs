@@ -55,13 +55,13 @@ pub trait TransactionStore {
         &self,
         cursor: Option<u128>,
         limit: u64,
-    ) -> Result<Vec<TransactionSequenceInfo>>;
+    ) -> Result<Vec<Option<TransactionSequenceInfo>>>;
     fn save_tx_sequence_info_mapping(&self, tx_order: u128, tx_hash: H256) -> Result<()>;
     fn get_tx_sequence_info_mapping_by_order(
         &self,
         cursor: Option<u128>,
         limit: u64,
-    ) -> Result<Vec<TransactionSequenceInfoMapping>>;
+    ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>>;
 
     fn save_tx_sequence_info_reverse_mapping(&self, tx_hash: H256, tx_order: u128) -> Result<()>;
     fn multi_get_tx_sequence_info_mapping_by_hash(
@@ -111,33 +111,19 @@ impl TransactionDBStore {
         &self,
         cursor: Option<u128>,
         limit: u64,
-    ) -> Result<Vec<TransactionSequenceInfo>> {
-        //  will not cross the boundary even if the size exceeds the storage capacity,
+    ) -> Result<Vec<Option<TransactionSequenceInfo>>> {
         let start = cursor.unwrap_or(0);
         let end = start + (limit as u128);
-        let mut iter = self.tx_sequence_info_store.iter()?;
-        iter.seek(bcs::to_bytes(&start)?).map_err(|e| {
-            anyhow::anyhow!(
-                "Rooch TransactionStore get_tx_sequence_infos_by_order seek: {:?}",
-                e
-            )
-        })?;
 
-        let data: Vec<TransactionSequenceInfo> = iter
-            .filter_map(|item| {
-                let (tx_order, seq_info) =
-                    item.unwrap_or_else(|_| panic!("Get item from store shoule hava a value."));
-                if Option::is_some(&cursor) {
-                    if tx_order > start && tx_order <= end {
-                        return Some(seq_info);
-                    }
-                } else if tx_order >= start && tx_order < end {
-                    return Some(seq_info);
-                }
-                None
-            })
-            .collect::<Vec<_>>();
-        Ok(data)
+        // Since tx order is strictly incremental, traversing the SMT Tree can be optimized into a multi get query to improve query performance.
+        let tx_orders: Vec<_> = if cursor.is_some() {
+            ((start + 1)..=end).collect()
+            // ((start + 1)..=end).map(u128::from).collect()
+        } else {
+            (start..end).collect()
+            // (start..end).map(u128::from).collect()
+        };
+        self.tx_sequence_info_store.multiple_get(tx_orders)
     }
 
     pub fn save_tx_sequence_info_mapping(&self, tx_order: u128, tx_hash: H256) -> Result<()> {
@@ -145,37 +131,39 @@ impl TransactionDBStore {
             .kv_put(tx_order, tx_hash)
     }
 
-    pub fn get_tx_sequence_mapping_by_order(
+    pub fn get_tx_sequence_info_mapping_by_order(
         &self,
         cursor: Option<u128>,
         limit: u64,
-    ) -> Result<Vec<TransactionSequenceInfoMapping>> {
-        //  will not cross the boundary even if the size exceeds the storage capacity,
+    ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>> {
         let start = cursor.unwrap_or(0);
         let end = start + (limit as u128);
-        let mut iter = self.tx_sequence_info_mapping_store.iter()?;
-        iter.seek(bcs::to_bytes(&start)?).map_err(|e| {
-            anyhow::anyhow!(
-                "Rooch TransactionStore get_tx_sequence_mapping_by_order seek: {:?}",
-                e
-            )
-        })?;
 
-        let data: Vec<TransactionSequenceInfoMapping> = iter
-            .filter_map(|item| {
-                let (tx_order, tx_hash) =
-                    item.unwrap_or_else(|_| panic!("Get item from store shoule hava a value."));
-                if Option::is_some(&cursor) {
-                    if tx_order > start && tx_order <= end {
-                        return Some(TransactionSequenceInfoMapping::new(tx_order, tx_hash));
-                    }
-                } else if tx_order >= start && tx_order < end {
-                    return Some(TransactionSequenceInfoMapping::new(tx_order, tx_hash));
+        // Since tx order is strictly incremental, traversing the SMT Tree can be optimized into a multi get query to improve query performance.
+        let tx_orders: Vec<_> = if cursor.is_some() {
+            ((start + 1)..=end).collect()
+            // ((start + 1)..=end).map(u128::from).collect()
+        } else {
+            (start..end).collect()
+            // (start..end).map(u128::from).collect()
+        };
+        let mappings = self
+            .tx_sequence_info_mapping_store
+            .multiple_get(tx_orders.clone())?;
+
+        mappings
+            .into_iter()
+            .enumerate()
+            .map(|(index, value)| match value {
+                Some(tx_hash) => {
+                    let tx_order = tx_orders[index];
+                    let tx_sequence_info_mapping =
+                        TransactionSequenceInfoMapping { tx_order, tx_hash };
+                    Ok(Some(tx_sequence_info_mapping))
                 }
-                None
+                None => Ok(None),
             })
-            .collect::<Vec<_>>();
-        Ok(data)
+            .collect()
     }
 
     pub fn get_tx_sequence_infos(

@@ -41,13 +41,13 @@ impl Message for GetTransactionsByHashMessage {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct GetTxSequenceMappingByOrderMessage {
+pub struct GetTxSequenceInfoMappingByOrderMessage {
     pub cursor: Option<u128>,
     pub limit: u64,
 }
 
-impl Message for GetTxSequenceMappingByOrderMessage {
-    type Result = Result<Vec<TransactionSequenceInfoMapping>>;
+impl Message for GetTxSequenceInfoMappingByOrderMessage {
+    type Result = Result<Vec<Option<TransactionSequenceInfoMapping>>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]

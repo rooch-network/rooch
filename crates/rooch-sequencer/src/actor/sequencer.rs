@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::messages::{
-    GetTransactionByHashMessage, GetTransactionsByHashMessage, GetTxSequenceInfosMessage,
-    GetTxSequenceMappingByOrderMessage, TransactionSequenceMessage,
+    GetTransactionByHashMessage, GetTransactionsByHashMessage,
+    GetTxSequenceInfoMappingByOrderMessage, GetTxSequenceInfosMessage, TransactionSequenceMessage,
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -112,16 +112,16 @@ impl Handler<GetTransactionsByHashMessage> for SequencerActor {
 }
 
 #[async_trait]
-impl Handler<GetTxSequenceMappingByOrderMessage> for SequencerActor {
+impl Handler<GetTxSequenceInfoMappingByOrderMessage> for SequencerActor {
     async fn handle(
         &mut self,
-        msg: GetTxSequenceMappingByOrderMessage,
+        msg: GetTxSequenceInfoMappingByOrderMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Vec<TransactionSequenceInfoMapping>> {
-        let GetTxSequenceMappingByOrderMessage { cursor, limit } = msg;
+    ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>> {
+        let GetTxSequenceInfoMappingByOrderMessage { cursor, limit } = msg;
         self.rooch_store
             .get_transaction_store()
-            .get_tx_sequence_mapping_by_order(cursor, limit)
+            .get_tx_sequence_info_mapping_by_order(cursor, limit)
     }
 }
 

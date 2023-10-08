@@ -171,14 +171,14 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn get_tx_sequence_mapping_by_order(
+    pub async fn get_tx_sequence_info_mapping_by_order(
         &self,
         cursor: Option<u128>,
         limit: u64,
-    ) -> Result<Vec<TransactionSequenceInfoMapping>> {
+    ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>> {
         let resp = self
             .sequencer
-            .get_transaction_sequence_mapping_by_order(cursor, limit)
+            .get_transaction_sequence_info_mapping_by_order(cursor, limit)
             .await?;
         Ok(resp)
     }
