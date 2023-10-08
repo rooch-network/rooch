@@ -19,38 +19,39 @@ module moveos_std::storage_context {
         handle: ObjectID,
     }
 
-    /// Create a new StorageContext with a given handle.
+    /// Create a new StorageContext with a given ObjectID.
     public(friend) fun new_with_id(handle: ObjectID): StorageContext {
         StorageContext {
             handle,
         }
     }
 
-    /// The global object storage's table handle should be 0x0
+    /// The global object storage's table handle should be `0x0`
     public(friend) fun global_object_storage_handle(): ObjectID {
         object_id::address_to_object_id(GlobalObjectStorageHandle)
     }
 
-    /// Borrow Object from object store with object_id
+    /// Borrow object from storage context with object_id
     public(friend) fun borrow<T: key>(self: &StorageContext, object_id: ObjectID): &Object<T> {
         raw_table::borrow<ObjectID, Object<T>>(&self.handle, object_id)
     }
 
-    /// Borrow mut Object from object store with object_id
+    /// Borrow mut object from storage context with object_id
     public(friend) fun borrow_mut<T: key>(self: &mut StorageContext, object_id: ObjectID): &mut Object<T> {
         raw_table::borrow_mut<ObjectID, Object<T>>(&self.handle, object_id)
     }
 
-    /// Remove object from object store
+    /// Remove object from storage context
     public(friend) fun remove<T: key>(self: &mut StorageContext, object_id: ObjectID): Object<T> {
         raw_table::remove<ObjectID, Object<T>>(&self.handle, object_id)
     }
 
-    /// Add object to object store
+    /// Add object to storage context
     public(friend) fun add<T: key>(self: &mut StorageContext, obj: Object<T>) {
         raw_table::add<ObjectID, Object<T>>(&self.handle, object::id(&obj), obj);
     }
 
+    /// Determine whether the object exixts
     public(friend) fun contains(self: &StorageContext, object_id: ObjectID): bool {
         raw_table::contains<ObjectID>(&self.handle, object_id)
     }

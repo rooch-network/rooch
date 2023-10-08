@@ -70,7 +70,7 @@ It is used to store the objects
 
 ## Function `new_with_id`
 
-Create a new StorageContext with a given handle.
+Create a new StorageContext with a given ObjectID.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_new_with_id">new_with_id</a>(handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>
@@ -97,7 +97,7 @@ Create a new StorageContext with a given handle.
 
 ## Function `global_object_storage_handle`
 
-The global object storage's table handle should be 0x0
+The global object storage's table handle should be <code>0x0</code>
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_global_object_storage_handle">global_object_storage_handle</a>(): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
@@ -122,7 +122,7 @@ The global object storage's table handle should be 0x0
 
 ## Function `borrow`
 
-Borrow Object from object store with object_id
+Borrow object from storage context with object_id
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_borrow">borrow</a>&lt;T: key&gt;(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
@@ -147,7 +147,7 @@ Borrow Object from object store with object_id
 
 ## Function `borrow_mut`
 
-Borrow mut Object from object store with object_id
+Borrow mut object from storage context with object_id
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_borrow_mut">borrow_mut</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
@@ -172,7 +172,7 @@ Borrow mut Object from object store with object_id
 
 ## Function `remove`
 
-Remove object from object store
+Remove object from storage context
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_remove">remove</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
@@ -197,7 +197,7 @@ Remove object from object store
 
 ## Function `add`
 
-Add object to object store
+Add object to storage context
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_add">add</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, obj: <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;)
@@ -222,6 +222,7 @@ Add object to object store
 
 ## Function `contains`
 
+Determine whether the object exixts
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_contains">contains</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): bool
