@@ -128,7 +128,7 @@ entry of <code>V</code> type already exists.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_add">add</a>&lt;V: key&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a>, val: V) {
-    <a href="raw_table.md#0x2_raw_table_add">raw_table::add</a>&lt;String, V&gt;(&<a href="table.md#0x2_table">table</a>.handle, <a href="type_table.md#0x2_type_table_key">key</a>&lt;V&gt;(), val)
+    <a href="raw_table.md#0x2_raw_table_add">raw_table::add</a>&lt;String, V&gt;(&<a href="table.md#0x2_table">table</a>.handle, <a href="type_table.md#0x2_type_table_key">key</a>&lt;V&gt;(), val);
 }
 </code></pre>
 

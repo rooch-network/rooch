@@ -3,8 +3,6 @@
 
 # Module `0x2::type_info`
 
-Source from https://github.com/aptos-labs/aptos-core/blob/c76c6b0fc3a1b8e21b6ba2f77151ca20ea31ca32/aptos-move/framework/aptos-stdlib/sources/type_info.move#L1
-https://github.com/starcoinorg/starcoin-framework/blob/952c51116e0ef5a97c119205d6f7e038acdd8682/sources/Token.move#L508
 
 
 -  [Struct `TypeInfo`](#0x2_type_info_TypeInfo)
