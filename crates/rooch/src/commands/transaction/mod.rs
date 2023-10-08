@@ -23,7 +23,7 @@ impl CommandAction<String> for Transaction {
     async fn execute(self) -> RoochResult<String> {
         match self.cmd {
             TransactionCommand::GetTransactionsByOrder(cmd) => cmd.execute_serialized().await,
-            TransactionCommand::GetTransactionsByHashes(cmd) => cmd.execute_serialized().await,
+            TransactionCommand::GetTransactionsByHash(cmd) => cmd.execute_serialized().await,
         }
     }
 }
@@ -31,5 +31,5 @@ impl CommandAction<String> for Transaction {
 #[derive(clap::Subcommand)]
 pub enum TransactionCommand {
     GetTransactionsByOrder(GetTransactionsByOrderCommand),
-    GetTransactionsByHashes(GetTransactionsByHashCommand),
+    GetTransactionsByHash(GetTransactionsByHashCommand),
 }

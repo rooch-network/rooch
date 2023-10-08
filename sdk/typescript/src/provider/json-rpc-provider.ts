@@ -10,14 +10,15 @@ import {
   TypeTag,
   Arg,
   Bytes,
-  TransactionView,
+  // TransactionView,
   AnnotatedFunctionResultView,
   AnnotatedStateView,
   TransactionResultPageView,
   AnnotatedEventResultPageView,
   ListAnnotatedStateResultPageView,
   StateView,
-  StateResultPageView, TransactionResultView,
+  StateResultPageView,
+  TransactionResultView,
 } from '../types'
 import { functionIdToStirng, typeTagToString, encodeArg, toHexString } from '../utils'
 import { IProvider } from './interface'
