@@ -1,19 +1,22 @@
-module rooch_framework::bitcoin_address{
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+module rooch_framework::bitcoin_address {
     use std::error;
     use std::vector;
     use rooch_framework::encoding;
     use rooch_framework::ecdsa_k1;
 
-    // P2PKH addresses are 34 characters
+    /// P2PKH addresses are 34 characters
     const P2PKH_ADDR_LENGTH: u64 = 34;
-    // P2SH addresses are 34 characters
+    /// P2SH addresses are 34 characters
     const P2SH_ADDR_LENGTH: u64 = 34;
-    // Bech32 addresses including P2WPKH and P2WSH are 42 characters
+    /// Bech32 addresses including P2WPKH and P2WSH are 42 characters
     const BECH32_ADDR_LENGTH: u64 = 42;
-    // P2TR addresses with Bech32m encoding are 62 characters
+    /// P2TR addresses with Bech32m encoding are 62 characters
     const P2TR_ADDR_LENGTH: u64 = 62;
 
-    /// error code
+    // error code
     const ErrorInvalidDecimalPrefix: u64 = 0;
     const ErrorInvalidScriptVersion: u64 = 1;
     const ErrorInvalidCompressedPublicKeyLength: u64 = 2;

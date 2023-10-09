@@ -14,7 +14,7 @@ module rooch_framework::ethereum_validator {
     /// there defines auth validator id for each blockchain
     const ETHEREUM_AUTH_VALIDATOR_ID: u64 = 1;
 
-    /// error code
+    // error code
     const ErrorInvalidPublicKeyLength: u64 = 0;
 
     struct EthereumValidator has store, drop {}

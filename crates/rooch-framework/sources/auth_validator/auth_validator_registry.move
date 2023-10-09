@@ -1,4 +1,4 @@
-module rooch_framework::auth_validator_registry{
+module rooch_framework::auth_validator_registry {
 
     use std::error;
     use moveos_std::type_info;
@@ -22,7 +22,7 @@ module rooch_framework::auth_validator_registry{
     }
 
     struct ValidatorRegistry has key {
-        ///How many validators are registered
+        /// Number of registered validators
         validator_num: u64,
         validators: Table<u64, AuthValidator>,
         validators_with_type: TypeTable,
@@ -72,6 +72,7 @@ module rooch_framework::auth_validator_registry{
 
     public fun borrow_validator(ctx: &Context, id: u64): &AuthValidator {
         let registry = account_storage::global_borrow<ValidatorRegistry>(ctx, @rooch_framework);
+        assert!(table::contains(&registry.validators, id), error::not_found(ErrorValidatorUnregistered));
         table::borrow(&registry.validators, id)
     }
 

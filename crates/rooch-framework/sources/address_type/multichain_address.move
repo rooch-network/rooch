@@ -1,4 +1,4 @@
-module rooch_framework::multichain_address{
+module rooch_framework::multichain_address {
     
     use std::error;
     use rooch_framework::ethereum_address::{Self, ETHAddress};

@@ -1,4 +1,4 @@
-module rooch_framework::account{
+module rooch_framework::account {
    use std::error;
    use std::hash;
    use std::vector;
@@ -19,10 +19,10 @@ module rooch_framework::account{
       sequence_number: u64,
    }
 
-   // ResourceAccount can only be stored under address, not in other structs.
+   /// ResourceAccount can only be stored under address, not in other structs.
    struct ResourceAccount has key {}
-   // SignerCapability can only be stored in other structs, not under address.
-   // So that the capability is always controlled by contracts, not by some EOA.
+   /// SignerCapability can only be stored in other structs, not under address.
+   /// So that the capability is always controlled by contracts, not by some EOA.
    struct SignerCapability has store { addr: address }
 
    const MAX_U64: u128 = 18446744073709551615;
