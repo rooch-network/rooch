@@ -1,0 +1,24 @@
+name: Deploy Examples To Rooch Network
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'examples/**'
+
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Deploy
+      env:
+        PRIVATE_KEY: ${{ secrets.GCP_SSH_PRIVATE_KEY }}
+        HOST: ${{ secrets.GCP_VM_HOST }}
+        USER: ${{ secrets.GCP_VM_USER }}
+      run: |
+        echo "$PRIVATE_KEY" > private_key.pem
+        chmod 600 private_key.pem
+        ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST "cd /root/rooch && git pull origin main && bash scripts/deploy_examples.sh"
