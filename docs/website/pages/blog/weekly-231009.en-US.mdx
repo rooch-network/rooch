@@ -1,6 +1,6 @@
 ---
 title: Rooch Weekly 2023-10-09
-description: ""
+description: "Cleaned up and refactored the code, including a major refactoring of object storage, new documentation for a deeper understanding of Rooch, and upgraded and improved Dashboard functionality"
 author: geometryolife
 category: Rooch Weekly
 date: 2023/10/09
@@ -14,12 +14,58 @@ import PostHeader from "/components/blog/postHeader";
 
 ### New features
 
+- **Feature owen dashboard support session key (#841)** (2023-09-25) @Owen Wu
+- **[rpc] Implement `eth_getBalance` (#867)** (2023-09-26) @jolestar
+- **[Framework] Support transfer coin to multichain address (#881)** (2023-09-28) @jolestar
+- **Feature owen dashboard show session keys (#861)** (2023-09-30) @Owen Wu
+- **Rooch/cli/transaction (#888)** (2023-10-01) @sven Tan
+- **Feature owen dashboard session key invalid check (#897)** (2023-10-02) @Owen Wu
+- **feat: opt session key error tips (#905)** (2023-10-03) @Owen Wu
+- **[gh-755] encrypt w/ ChaCha20Poly1305 and password algorithm Argon2id (#856)** (2023-10-05) @feliciss
+- **Support reverse search tx order by tx hash and refactor tx RPC to improve query performance (#927)** (2023-10-08) @Bai Chuan
 
 ### Major refactoring
 
+- **Remove all temporary files from the integration tests. (#860)** (2023-09-25) @stevenlaw123
+- **Add and make local network as default chainid (#853)** (2023-09-25) @Bai Chuan
+- **Make env match network when server start And default local network use fixed directory (#870)** (2023-09-27) @Bai Chuan
+- **Refactor the keypair management of sequencer, proposer, and relayer (#903)** (2023-10-04) @Bai Chuan
+- **refactor wallet context and fixup account cli (#910)** (2023-10-04) @Bai Chuan
+- **refactor StateResolver (#913)** (2023-10-04) @0xPause
+- **Refactor ObjectStorage and StorageContext (#916)** (2023-10-06) @0xPause
+- **refactor StorageContext to Context (#918)** (2023-10-07) @0xPause
+- **[MoveosStd] wrap object::new with context::new_object (#923)** (2023-10-07) @jolestar
+- **rename storage_ctx (#925)** (2023-10-08) @0xPause
+- **Update docs as StorageContext and ObjectStorage refactored (#924)** (2023-10-08) @0xPause
 
 ### Improvements and fixes
 
+- **add weekly 2023-09-25 (#864)** (2023-09-25) @Joe Chen
+- **add installation windows doc (#863)** (2023-09-25) @WGB5445
+- **Auto deploy seed and dashboard (#862)** (2023-09-26) @yourmoonlight
+- **docs: change reference contents to developer-guides (#865)** (2023-09-26) @Joe Chen
+- **docs: add how to add the Rooch network guide (#868)** (2023-09-26) @Joe Chen
+- **docs: add TOC i18n and update its order (#871)** (2023-09-27) @Joe Chen
+- **[Fix] Fix block_on bug and add RpcLogger (#875)** (2023-09-27) @jolestar
+- **[ETH&GasCoin] Fix some MetaMask compatibility issue (#877)** (2023-09-27) @jolestar
+- **fixing gas_used field in tx (#880)** (2023-09-28) @stevenlaw123
+- **docs(blog): add multi-chain settlement by layer2: myth or reality (#882)** (2023-09-27) @popcnt
+- **docs(blog): fix multi-chain settlement by layer2 img path issue (#883)** (2023-09-27) @popcnt
+- **docs(blog): fix multi-chain settlement by layer2 img path issue (#884)** (2023-09-27) @popcnt
+- **Rooch fix sdk&dashboard (#885)** (2023-09-28) @sven Tan
+- **fix deploy docker (#889)** (2023-09-29) @yourmoonlight
+- **[documents] Move on Rooch (#873)** (2023-09-29) @jolestar
+- **fix docker deploy (#890)** (2023-09-29) @yourmoonlight
+- **Update readme (#891)** (2023-09-29) @jolestar
+- **fix deploy docker by using the Docker image version (#895)** (2023-09-29) @yourmoonlight
+- **[documents] Add documents for Object and private generics (#898)** (2023-10-01) @jolestar
+- **feat: fixbug for session key list create_time not show correct (#902)** (2023-10-02) @Owen Wu
+- **Optimize moveos_stdlib::table  (#908)** (2023-10-04) @0xPause
+- **feat: update counter web example use @rooch/sdk (#907)** (2023-10-04) @Owen Wu
+- **[Documents] introduce dive-into-rooch (#914)** (2023-10-07) @jolestar
+- **fix: update doc coments of storage_context module (#926)** (2023-10-08) @Joe Chen
 
 ### Rooch Community Dev Meeting
 
+- Discuss what needs to be improved for the release of Rooch v0.2
+- Discuss what needs to be done for Rooch v0.3
