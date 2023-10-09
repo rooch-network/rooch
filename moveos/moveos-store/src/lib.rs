@@ -287,20 +287,20 @@ impl<'a, T: 'a + NodeStore> IntoSuper<dyn NodeStore + 'a> for T {
 impl Store for MoveOSStore {}
 
 impl StateResolver for MoveOSStore {
-    fn resolve_state(
+    fn resolve_table_item(
         &self,
         handle: &ObjectID,
         key: &[u8],
     ) -> std::result::Result<Option<State>, Error> {
-        self.statedb.resolve_state(handle, key)
+        self.statedb.resolve_table_item(handle, key)
     }
 
-    fn resolve_list_state(
+    fn list_table_items(
         &self,
         handle: &ObjectID,
         cursor: Option<Vec<u8>>,
         limit: usize,
     ) -> std::result::Result<Vec<Option<(Vec<u8>, State)>>, Error> {
-        self.statedb.resolve_list_state(handle, cursor, limit)
+        self.statedb.list_table_items(handle, cursor, limit)
     }
 }

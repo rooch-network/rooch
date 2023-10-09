@@ -29,15 +29,15 @@ impl CommandAction<()> for SwitchCommand {
             RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
         })?;
 
-        if !context.config.keystore.addresses().contains(&rooch_address) {
+        if !context.keystore.addresses().contains(&rooch_address) {
             return Err(RoochError::SwitchAccountError(format!(
                 "Address `{}` does not in the Rooch keystore",
                 self.address
             )));
         }
 
-        context.config.active_address = Some(rooch_address);
-        context.config.save()?;
+        context.client_config.active_address = Some(rooch_address);
+        context.client_config.save()?;
 
         println!(
             "The active account was successfully switched to `{}`",

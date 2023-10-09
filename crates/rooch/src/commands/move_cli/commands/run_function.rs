@@ -5,11 +5,12 @@ use crate::cli_types::{ArgWithType, CommandAction, TransactionOptions, WalletCon
 use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
-use rooch_key::{keypair::KeyPairType, keystore::AccountKeystore};
+use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, TypeTagView};
 use rooch_types::{
     address::RoochAddress,
     error::{RoochError, RoochResult},
+    keypair_type::KeyPairType,
     transaction::rooch::RoochTransaction,
 };
 
@@ -69,6 +70,13 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
             ));
         }
 
+        // Use an empty password by default
+        let password = String::new();
+
+        // TODO design a password mechanism
+        // // Prompt for a password if required
+        // rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
+
         let context = self.context.build().await?;
         let sender: RoochAddress = context
             .parse_account_arg(self.tx_options.sender_account.unwrap())?
@@ -90,15 +98,24 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
             (_, Some(session_key)) => {
                 let tx_data = context.build_rooch_tx_data(sender, action).await?;
                 let tx = context
-                    .config
                     .keystore
-                    .sign_transaction_via_session_key(&sender, tx_data, &session_key)
+                    .sign_transaction_via_session_key(
+                        &sender,
+                        tx_data,
+                        &session_key,
+                        Some(password.clone()),
+                    )
                     .map_err(|e| RoochError::SignMessageError(e.to_string()))?;
                 context.execute(tx).await
             }
             (None, None) => {
                 context
-                    .sign_and_execute(sender, action, KeyPairType::RoochKeyPairType)
+                    .sign_and_execute(
+                        sender,
+                        action,
+                        KeyPairType::RoochKeyPairType,
+                        Some(password),
+                    )
                     .await
             }
         }

@@ -43,7 +43,7 @@
 
 Information about the transaction currently being executed.
 This cannot be constructed by a transaction--it is a privileged object created by
-the VM and passed in to the entrypoint of the transaction as <code>&<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a></code>.
+the VM, stored in a <code>Context</code> and passed in to the entrypoint of the transaction as <code>&<b>mut</b> Context</code>.
 
 
 <pre><code><b>struct</b> <a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a> <b>has</b> drop
@@ -116,11 +116,10 @@ the VM and passed in to the entrypoint of the transaction as <code>&<b>mut</b> <
 
 ## Function `sender`
 
-Return the address of the user that signed the current
-transaction
+Return the address of the user that signed the current transaction
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_sender">sender</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <b>address</b>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_sender">sender</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <b>address</b>
 </code></pre>
 
 
@@ -129,7 +128,7 @@ transaction
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_sender">sender</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): <b>address</b> {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_sender">sender</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): <b>address</b> {
     self.sender
 }
 </code></pre>
@@ -145,7 +144,7 @@ transaction
 Return the sequence number of the current transaction
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_sequence_number">sequence_number</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): u64
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_sequence_number">sequence_number</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): u64
 </code></pre>
 
 
@@ -154,7 +153,7 @@ Return the sequence number of the current transaction
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_sequence_number">sequence_number</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): u64 {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_sequence_number">sequence_number</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): u64 {
     self.sequence_number
 }
 </code></pre>
@@ -170,7 +169,7 @@ Return the sequence number of the current transaction
 Return the max gas to be used
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_max_gas_amount">max_gas_amount</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): u64
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_max_gas_amount">max_gas_amount</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): u64
 </code></pre>
 
 
@@ -179,7 +178,7 @@ Return the max gas to be used
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_max_gas_amount">max_gas_amount</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): u64 {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_max_gas_amount">max_gas_amount</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): u64 {
     self.max_gas_amount
 }
 </code></pre>
@@ -195,7 +194,7 @@ Return the max gas to be used
 Generate a new unique address,
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_fresh_address">fresh_address</a>(ctx: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <b>address</b>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_fresh_address">fresh_address</a>(ctx: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <b>address</b>
 </code></pre>
 
 
@@ -204,7 +203,7 @@ Generate a new unique address,
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_fresh_address">fresh_address</a>(ctx: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): <b>address</b> {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_fresh_address">fresh_address</a>(ctx: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): <b>address</b> {
     <b>let</b> addr = <a href="tx_context.md#0x2_tx_context_derive_id">derive_id</a>(ctx.tx_hash, ctx.ids_created);
     ctx.ids_created = ctx.ids_created + 1;
     addr
@@ -222,7 +221,7 @@ Generate a new unique address,
 Generate a new unique object ID
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_fresh_object_id">fresh_object_id</a>(ctx: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_fresh_object_id">fresh_object_id</a>(ctx: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
 </code></pre>
 
 
@@ -231,7 +230,7 @@ Generate a new unique object ID
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_fresh_object_id">fresh_object_id</a>(ctx: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): ObjectID {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_fresh_object_id">fresh_object_id</a>(ctx: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): ObjectID {
     <a href="object_id.md#0x2_object_id_address_to_object_id">object_id::address_to_object_id</a>(<a href="tx_context.md#0x2_tx_context_fresh_address">fresh_address</a>(ctx))
 }
 </code></pre>
@@ -275,7 +274,7 @@ Generate a new unique object ID
 Return the hash of the current transaction
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_tx_hash">tx_hash</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_tx_hash">tx_hash</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -284,7 +283,7 @@ Return the hash of the current transaction
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_tx_hash">tx_hash</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): <a href="">vector</a>&lt;u8&gt; {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_tx_hash">tx_hash</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): <a href="">vector</a>&lt;u8&gt; {
     self.tx_hash
 }
 </code></pre>
@@ -300,7 +299,7 @@ Return the hash of the current transaction
 Add a value to the context map
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_add">add</a>&lt;T: <b>copy</b>, drop, store&gt;(self: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>, value: T)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_add">add</a>&lt;T: <b>copy</b>, drop, store&gt;(self: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>, value: T)
 </code></pre>
 
 
@@ -309,7 +308,7 @@ Add a value to the context map
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_add">add</a>&lt;T: drop + store + <b>copy</b>&gt;(self: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>, value: T) {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_add">add</a>&lt;T: drop + store + <b>copy</b>&gt;(self: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>, value: T) {
     <b>let</b> <a href="any.md#0x2_any">any</a> = <a href="copyable_any.md#0x2_copyable_any_pack">copyable_any::pack</a>(value);
     <b>let</b> <a href="">type_name</a> = *<a href="copyable_any.md#0x2_copyable_any_type_name">copyable_any::type_name</a>(&<a href="any.md#0x2_any">any</a>);
     <a href="simple_map.md#0x2_simple_map_add">simple_map::add</a>(&<b>mut</b> self.map, <a href="">type_name</a>, <a href="any.md#0x2_any">any</a>)
@@ -327,7 +326,7 @@ Add a value to the context map
 Get a value from the context map
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_get">get</a>&lt;T: <b>copy</b>, drop, store&gt;(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="_Option">option::Option</a>&lt;T&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_get">get</a>&lt;T: <b>copy</b>, drop, store&gt;(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="_Option">option::Option</a>&lt;T&gt;
 </code></pre>
 
 
@@ -336,7 +335,7 @@ Get a value from the context map
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_get">get</a>&lt;T: drop + store + <b>copy</b>&gt;(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): Option&lt;T&gt; {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_get">get</a>&lt;T: drop + store + <b>copy</b>&gt;(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): Option&lt;T&gt; {
     <b>let</b> <a href="">type_name</a> = <a href="type_info.md#0x2_type_info_type_name">type_info::type_name</a>&lt;T&gt;();
     <b>if</b> (<a href="simple_map.md#0x2_simple_map_contains_key">simple_map::contains_key</a>(&self.map, &<a href="">type_name</a>)) {
         <b>let</b> <a href="any.md#0x2_any">any</a> = <a href="simple_map.md#0x2_simple_map_borrow">simple_map::borrow</a>(&self.map, &<a href="">type_name</a>);
@@ -358,7 +357,7 @@ Get a value from the context map
 Check if the key is in the context map
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_contains">contains</a>&lt;T: <b>copy</b>, drop, store&gt;(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): bool
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_contains">contains</a>&lt;T: <b>copy</b>, drop, store&gt;(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): bool
 </code></pre>
 
 
@@ -367,7 +366,7 @@ Check if the key is in the context map
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_contains">contains</a>&lt;T: drop + store + <b>copy</b>&gt;(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): bool {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_contains">contains</a>&lt;T: drop + store + <b>copy</b>&gt;(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): bool {
     <b>let</b> <a href="">type_name</a> = <a href="type_info.md#0x2_type_info_type_name">type_info::type_name</a>&lt;T&gt;();
     <a href="simple_map.md#0x2_simple_map_contains_key">simple_map::contains_key</a>(&self.map, &<a href="">type_name</a>)
 }
@@ -386,7 +385,7 @@ The TxMeta is writed by the VM before the transaction execution.
 The meta data is only available when executing or validating a transaction, otherwise abort(eg. readonly function call).
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta">tx_meta</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="tx_meta.md#0x2_tx_meta_TxMeta">tx_meta::TxMeta</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_meta.md#0x2_tx_meta">tx_meta</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="tx_meta.md#0x2_tx_meta_TxMeta">tx_meta::TxMeta</a>
 </code></pre>
 
 
@@ -395,7 +394,7 @@ The meta data is only available when executing or validating a transaction, othe
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta">tx_meta</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): TxMeta {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_meta.md#0x2_tx_meta">tx_meta</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): TxMeta {
     <b>let</b> meta = <a href="tx_context.md#0x2_tx_context_get">get</a>&lt;TxMeta&gt;(self);
     <b>assert</b>!(<a href="_is_some">option::is_some</a>(&meta), <a href="_invalid_state">error::invalid_state</a>(<a href="tx_context.md#0x2_tx_context_ErrorInvalidContext">ErrorInvalidContext</a>));
     <a href="_extract">option::extract</a>(&<b>mut</b> meta)
@@ -413,7 +412,7 @@ The meta data is only available when executing or validating a transaction, othe
 The result is only available in the <code>post_execute</code> function.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_result.md#0x2_tx_result">tx_result</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="tx_result.md#0x2_tx_result_TxResult">tx_result::TxResult</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_result.md#0x2_tx_result">tx_result</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="tx_result.md#0x2_tx_result_TxResult">tx_result::TxResult</a>
 </code></pre>
 
 
@@ -422,7 +421,7 @@ The result is only available in the <code>post_execute</code> function.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_result.md#0x2_tx_result">tx_result</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): TxResult {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_result.md#0x2_tx_result">tx_result</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): TxResult {
     <b>let</b> result = <a href="tx_context.md#0x2_tx_context_get">get</a>&lt;TxResult&gt;(self);
     <b>assert</b>!(<a href="_is_some">option::is_some</a>(&result), <a href="_invalid_state">error::invalid_state</a>(<a href="tx_context.md#0x2_tx_context_ErrorInvalidContext">ErrorInvalidContext</a>));
     <a href="_extract">option::extract</a>(&<b>mut</b> result)

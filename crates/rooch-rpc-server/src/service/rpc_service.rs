@@ -17,6 +17,7 @@ use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponse, ExecuteTransactio
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::account::Account;
 use rooch_types::address::{MultiChainAddress, RoochAddress};
+use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::{TransactionSequenceInfo, TransactionSequenceInfoMapping};
 use rooch_types::{transaction::TypedTransaction, H256};
@@ -171,14 +172,24 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn get_tx_sequence_mapping_by_order(
+    pub async fn get_tx_sequence_info_mapping_by_order(
         &self,
-        cursor: Option<u128>,
-        limit: u64,
-    ) -> Result<Vec<TransactionSequenceInfoMapping>> {
+        tx_orders: Vec<u128>,
+    ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>> {
         let resp = self
             .sequencer
-            .get_transaction_sequence_mapping_by_order(cursor, limit)
+            .get_transaction_sequence_info_mapping_by_order(tx_orders)
+            .await?;
+        Ok(resp)
+    }
+
+    pub async fn get_tx_sequence_info_mapping_by_hash(
+        &self,
+        tx_hashes: Vec<H256>,
+    ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>> {
+        let resp = self
+            .sequencer
+            .get_transaction_sequence_info_mapping_by_hash(tx_hashes)
             .await?;
         Ok(resp)
     }
@@ -191,6 +202,11 @@ impl RpcService {
             .executor
             .get_transaction_execution_infos_by_hash(tx_hashes)
             .await?;
+        Ok(resp)
+    }
+
+    pub async fn get_sequencer_order(&self) -> Result<Option<SequencerOrder>> {
+        let resp = self.sequencer.get_sequencer_order().await?;
         Ok(resp)
     }
 }

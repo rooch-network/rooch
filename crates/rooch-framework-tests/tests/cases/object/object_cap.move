@@ -21,15 +21,13 @@ module test::m {
 //check private_generics verify
 //# run --signers A
 script {
-    use moveos_std::storage_context::{Self, StorageContext};
-    use moveos_std::tx_context;
+    use moveos_std::context::{Self, Context};
     use moveos_std::object;
     use test::m::{Self, TestObject};
 
-    fun main(ctx: &mut StorageContext) {
-        let sender_addr = tx_context::sender(storage_context::tx_context(ctx));
+    fun main(ctx: &mut Context) {
         let object = m::new_test_object(12);
-        let obj = object::new<TestObject>(storage_context::tx_context_mut(ctx), sender_addr, object);
+        let obj = context::new_object<TestObject>(ctx, object);
 
         let _borrow_object = object::borrow(&obj);
         let (_id, _owner, test_object) = object::unpack(obj);

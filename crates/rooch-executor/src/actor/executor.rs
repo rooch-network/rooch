@@ -171,6 +171,7 @@ impl ExecutorActor {
         let tx_validate_function_result = tx_validator
             .validate(ctx, authenticator.clone())?
             .into_result();
+
         let vm_result = match tx_validate_function_result {
             Ok(tx_validate_result) => {
                 let auth_validator_option = tx_validate_result.auth_validator();

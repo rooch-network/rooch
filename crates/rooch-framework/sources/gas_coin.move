@@ -2,7 +2,7 @@
 module rooch_framework::gas_coin {
     use std::string;
     use std::signer;
-    use moveos_std::storage_context::StorageContext;
+    use moveos_std::context::Context;
     use rooch_framework::coin::{Self, Coin};
 
     friend rooch_framework::genesis;
@@ -12,41 +12,41 @@ module rooch_framework::gas_coin {
     //If not, we can remove `store` ability from GasCoin.
     struct GasCoin has key, store {}
 
-    public fun balance(ctx: &StorageContext, addr: address): u256 {
+    public fun balance(ctx: &Context, addr: address): u256 {
         coin::balance<GasCoin>(ctx, addr)
     }
 
-    fun mint(ctx: &mut StorageContext, amount: u256): Coin<GasCoin> {
+    fun mint(ctx: &mut Context, amount: u256): Coin<GasCoin> {
         coin::mint_extend<GasCoin>(ctx, amount)
     }
 
     #[test_only]
-    public fun mint_for_test(ctx: &mut StorageContext, amount: u256) : Coin<GasCoin> {
+    public fun mint_for_test(ctx: &mut Context, amount: u256) : Coin<GasCoin> {
         mint(ctx, amount)
     }
 
-    public fun burn(ctx: &mut StorageContext, coin: Coin<GasCoin>) {
+    public fun burn(ctx: &mut Context, coin: Coin<GasCoin>) {
         coin::burn_extend<GasCoin>(ctx, coin);
     }
 
     /// deduct gas coin from the given account.
-    public(friend) fun deduct_gas(ctx: &mut StorageContext, addr: address, amount: u256):Coin<GasCoin> {
+    public(friend) fun deduct_gas(ctx: &mut Context, addr: address, amount: u256):Coin<GasCoin> {
         coin::withdraw_extend<GasCoin>(ctx, addr, amount)
     }
 
     /// Mint gas coin to the given account.
-    public(friend) fun faucet(ctx: &mut StorageContext, addr: address, amount: u256) {
+    public(friend) fun faucet(ctx: &mut Context, addr: address, amount: u256) {
         let coin = mint(ctx, amount);
         coin::deposit_extend<GasCoin>(ctx, addr, coin);
     }
 
     #[test_only]
-    public fun faucet_for_test(ctx: &mut StorageContext, addr: address, amount: u256) {
+    public fun faucet_for_test(ctx: &mut Context, addr: address, amount: u256) {
         faucet(ctx, addr, amount);
     }
 
     /// TODO find a way to protect this function from DOS attack.
-    public entry fun faucet_entry(ctx: &mut StorageContext, account: &signer) {
+    public entry fun faucet_entry(ctx: &mut Context, account: &signer) {
         //100 RGC
         let amount = 100_000_000_000_000_000_000u256;
         let addr = signer::address_of(account);
@@ -54,7 +54,7 @@ module rooch_framework::gas_coin {
     }
 
     /// Can only called during genesis to initialize the Rooch coin.
-    public(friend) fun genesis_init(ctx: &mut StorageContext, _genesis_account: &signer){
+    public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer){
         coin::register_extend<GasCoin>(
             ctx,
             string::utf8(b"Rooch Gas Coin"),

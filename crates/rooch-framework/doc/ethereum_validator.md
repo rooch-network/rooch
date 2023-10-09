@@ -27,7 +27,7 @@ This module implements Ethereum validator with the ECDSA recoverable signature o
 <b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::signer</a>;
-<b>use</b> <a href="">0x2::storage_context</a>;
+<b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 <b>use</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable">0x3::ecdsa_k1_recoverable</a>;
@@ -118,7 +118,7 @@ there defines auth validator id for each blockchain
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, public_key: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, public_key: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -128,7 +128,7 @@ there defines auth validator id for each blockchain
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>(
-    ctx: &<b>mut</b> StorageContext,
+    ctx: &<b>mut</b> Context,
     <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>,
     public_key: <a href="">vector</a>&lt;u8&gt;
 ) {
@@ -155,7 +155,7 @@ there defines auth validator id for each blockchain
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -164,7 +164,7 @@ there defines auth validator id for each blockchain
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
+<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>(ctx: &<b>mut</b> Context, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
     <a href="account_authentication.md#0x3_account_authentication_remove_authentication_key">account_authentication::remove_authentication_key</a>&lt;<a href="ethereum_validator.md#0x3_ethereum_validator_EthereumValidator">EthereumValidator</a>&gt;(ctx, <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>));
 }
 </code></pre>
@@ -321,7 +321,7 @@ Get the authentication key of the given public key.
 Get the authentication key option of the given account.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_get_authentication_key_option_from_account">get_authentication_key_option_from_account</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_get_authentication_key_option_from_account">get_authentication_key_option_from_account</a>(ctx: &<a href="_Context">context::Context</a>, addr: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
 </code></pre>
 
 
@@ -330,7 +330,7 @@ Get the authentication key option of the given account.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_get_authentication_key_option_from_account">get_authentication_key_option_from_account</a>(ctx: &StorageContext, addr: <b>address</b>): Option&lt;<a href="">vector</a>&lt;u8&gt;&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_get_authentication_key_option_from_account">get_authentication_key_option_from_account</a>(ctx: &Context, addr: <b>address</b>): Option&lt;<a href="">vector</a>&lt;u8&gt;&gt; {
     <a href="account_authentication.md#0x3_account_authentication_get_authentication_key">account_authentication::get_authentication_key</a>&lt;<a href="ethereum_validator.md#0x3_ethereum_validator_EthereumValidator">EthereumValidator</a>&gt;(ctx, addr)
 }
 </code></pre>
@@ -346,7 +346,7 @@ Get the authentication key option of the given account.
 The authentication key exists in account or not.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_is_authentication_key_in_account">is_authentication_key_in_account</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_is_authentication_key_in_account">is_authentication_key_in_account</a>(ctx: &<a href="_Context">context::Context</a>, addr: <b>address</b>): bool
 </code></pre>
 
 
@@ -355,7 +355,7 @@ The authentication key exists in account or not.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_is_authentication_key_in_account">is_authentication_key_in_account</a>(ctx: &StorageContext, addr: <b>address</b>): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_is_authentication_key_in_account">is_authentication_key_in_account</a>(ctx: &Context, addr: <b>address</b>): bool {
     <a href="_is_some">option::is_some</a>(&<a href="ethereum_validator.md#0x3_ethereum_validator_get_authentication_key_option_from_account">get_authentication_key_option_from_account</a>(ctx, addr))
 }
 </code></pre>
@@ -371,7 +371,7 @@ The authentication key exists in account or not.
 Extract the authentication key of the authentication key option.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_get_authentication_key_from_account">get_authentication_key_from_account</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_get_authentication_key_from_account">get_authentication_key_from_account</a>(ctx: &<a href="_Context">context::Context</a>, addr: <b>address</b>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -380,7 +380,7 @@ Extract the authentication key of the authentication key option.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_get_authentication_key_from_account">get_authentication_key_from_account</a>(ctx: &StorageContext, addr: <b>address</b>): <a href="">vector</a>&lt;u8&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_get_authentication_key_from_account">get_authentication_key_from_account</a>(ctx: &Context, addr: <b>address</b>): <a href="">vector</a>&lt;u8&gt; {
     <a href="_extract">option::extract</a>(&<b>mut</b> <a href="ethereum_validator.md#0x3_ethereum_validator_get_authentication_key_option_from_account">get_authentication_key_option_from_account</a>(ctx, addr))
 }
 </code></pre>
@@ -427,7 +427,7 @@ Only validate the authenticator's signature.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_validate">validate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, authenticator_payload: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_validate">validate</a>(ctx: &<a href="_Context">context::Context</a>, authenticator_payload: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -436,8 +436,8 @@ Only validate the authenticator's signature.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_validate">validate</a>(ctx: &StorageContext, authenticator_payload: <a href="">vector</a>&lt;u8&gt;) {
-    <b>let</b> tx_hash = <a href="_tx_hash">storage_context::tx_hash</a>(ctx);
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_validate">validate</a>(ctx: &Context, authenticator_payload: <a href="">vector</a>&lt;u8&gt;) {
+    <b>let</b> tx_hash = <a href="_tx_hash">context::tx_hash</a>(ctx);
     <a href="ethereum_validator.md#0x3_ethereum_validator_validate_signature">validate_signature</a>(&authenticator_payload, &tx_hash);
 
     // TODO compare the auth_key from the payload <b>with</b> the auth_key from the <a href="account.md#0x3_account">account</a>

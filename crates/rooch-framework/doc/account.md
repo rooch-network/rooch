@@ -30,7 +30,7 @@
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::account_storage</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
-<b>use</b> <a href="">0x2::storage_context</a>;
+<b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 <b>use</b> <a href="gas_coin.md#0x3_gas_coin">0x3::gas_coin</a>;
@@ -243,7 +243,7 @@ whose address matches an existing address of a MultiEd25519 wallet.
 A entry function to create an account under <code>new_address</code>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="account.md#0x3_account_create_account_entry">create_account_entry</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, new_address: <b>address</b>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="account.md#0x3_account_create_account_entry">create_account_entry</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, new_address: <b>address</b>)
 </code></pre>
 
 
@@ -252,7 +252,7 @@ A entry function to create an account under <code>new_address</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="account.md#0x3_account_create_account_entry">create_account_entry</a>(ctx: &<b>mut</b> StorageContext, new_address: <b>address</b>){
+<pre><code><b>public</b> entry <b>fun</b> <a href="account.md#0x3_account_create_account_entry">create_account_entry</a>(ctx: &<b>mut</b> Context, new_address: <b>address</b>){
    // If <a href="account.md#0x3_account">account</a> already <b>exists</b>, do nothing
    // Because <b>if</b> the new <b>address</b> is the same <b>as</b> the sender, the <a href="account.md#0x3_account">account</a> must already created in the `<a href="transaction_validator.md#0x3_transaction_validator_pre_execute">transaction_validator::pre_execute</a>` function
    <b>if</b>(!<a href="account.md#0x3_account_exists_at">exists_at</a>(ctx, new_address)){
@@ -274,7 +274,7 @@ is returned. This way, the caller of this function can publish additional resour
 <code>new_address</code>.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_account">create_account</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, new_address: <b>address</b>): <a href="">signer</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_account">create_account</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, new_address: <b>address</b>): <a href="">signer</a>
 </code></pre>
 
 
@@ -283,7 +283,7 @@ is returned. This way, the caller of this function can publish additional resour
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_account">create_account</a>(ctx: &<b>mut</b> StorageContext, new_address: <b>address</b>): <a href="">signer</a> {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_account">create_account</a>(ctx: &<b>mut</b> Context, new_address: <b>address</b>): <a href="">signer</a> {
    <b>assert</b>!(
       new_address != @vm_reserved,
       <a href="_invalid_argument">error::invalid_argument</a>(<a href="account.md#0x3_account_ErrorAddressReseved">ErrorAddressReseved</a>)
@@ -311,7 +311,7 @@ is returned. This way, the caller of this function can publish additional resour
 create the account for system reserved addresses
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_framework_reserved_account">create_framework_reserved_account</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): (<a href="">signer</a>, <a href="account.md#0x3_account_SignerCapability">account::SignerCapability</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_framework_reserved_account">create_framework_reserved_account</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, addr: <b>address</b>): (<a href="">signer</a>, <a href="account.md#0x3_account_SignerCapability">account::SignerCapability</a>)
 </code></pre>
 
 
@@ -320,7 +320,7 @@ create the account for system reserved addresses
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_framework_reserved_account">create_framework_reserved_account</a>(ctx: &<b>mut</b> StorageContext, addr: <b>address</b>): (<a href="">signer</a>, <a href="account.md#0x3_account_SignerCapability">SignerCapability</a>) {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_framework_reserved_account">create_framework_reserved_account</a>(ctx: &<b>mut</b> Context, addr: <b>address</b>): (<a href="">signer</a>, <a href="account.md#0x3_account_SignerCapability">SignerCapability</a>) {
    <b>assert</b>!(
       addr == @0x1 ||
           addr == @0x2 ||
@@ -351,7 +351,7 @@ create the account for system reserved addresses
 Return the current sequence number at <code>addr</code>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_sequence_number">sequence_number</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_sequence_number">sequence_number</a>(ctx: &<a href="_Context">context::Context</a>, addr: <b>address</b>): u64
 </code></pre>
 
 
@@ -360,7 +360,7 @@ Return the current sequence number at <code>addr</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_sequence_number">sequence_number</a>(ctx: &StorageContext, addr: <b>address</b>): u64 {
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_sequence_number">sequence_number</a>(ctx: &Context, addr: <b>address</b>): u64 {
    // <b>if</b> <a href="account.md#0x3_account">account</a> does not exist, <b>return</b> 0 <b>as</b> sequence number
    // TODO: refactor this after we decide how <b>to</b> handle <a href="account.md#0x3_account">account</a> create.
    <b>if</b> (!<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, addr)) {
@@ -381,7 +381,7 @@ Return the current sequence number at <code>addr</code>
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_sequence_number_for_sender">sequence_number_for_sender</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_sequence_number_for_sender">sequence_number_for_sender</a>(ctx: &<a href="_Context">context::Context</a>): u64
 </code></pre>
 
 
@@ -390,8 +390,8 @@ Return the current sequence number at <code>addr</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_sequence_number_for_sender">sequence_number_for_sender</a>(ctx: &StorageContext): u64 {
-   <b>let</b> sender = <a href="_sender">storage_context::sender</a>(ctx);
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_sequence_number_for_sender">sequence_number_for_sender</a>(ctx: &Context): u64 {
+   <b>let</b> sender = <a href="_sender">context::sender</a>(ctx);
    <a href="account.md#0x3_account_sequence_number">sequence_number</a>(ctx, sender)
 }
 </code></pre>
@@ -406,7 +406,7 @@ Return the current sequence number at <code>addr</code>
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_increment_sequence_number">increment_sequence_number</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_increment_sequence_number">increment_sequence_number</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>)
 </code></pre>
 
 
@@ -415,8 +415,8 @@ Return the current sequence number at <code>addr</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_increment_sequence_number">increment_sequence_number</a>(ctx: &<b>mut</b> StorageContext) {
-   <b>let</b> sender = <a href="_sender">storage_context::sender</a>(ctx);
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_increment_sequence_number">increment_sequence_number</a>(ctx: &<b>mut</b> Context) {
+   <b>let</b> sender = <a href="_sender">context::sender</a>(ctx);
 
    <b>let</b> sequence_number = &<b>mut</b> <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, sender).sequence_number;
 
@@ -463,7 +463,7 @@ Return the current sequence number at <code>addr</code>
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_is_resource_account">is_resource_account</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_is_resource_account">is_resource_account</a>(ctx: &<a href="_Context">context::Context</a>, addr: <b>address</b>): bool
 </code></pre>
 
 
@@ -472,7 +472,7 @@ Return the current sequence number at <code>addr</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_is_resource_account">is_resource_account</a>(ctx: &StorageContext, addr: <b>address</b>): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_is_resource_account">is_resource_account</a>(ctx: &Context, addr: <b>address</b>): bool {
    // for resource <a href="account.md#0x3_account">account</a> , <a href="account.md#0x3_account">account</a> storage maybe not exist when create,
    // so need check <a href="account.md#0x3_account">account</a> storage eixst befor call <b>global</b> exist function
    <b>if</b>(<a href="_exist_account_storage">account_storage::exist_account_storage</a>(ctx, addr)){
@@ -493,7 +493,7 @@ Return the current sequence number at <code>addr</code>
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_exists_at">exists_at</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_exists_at">exists_at</a>(ctx: &<a href="_Context">context::Context</a>, addr: <b>address</b>): bool
 </code></pre>
 
 
@@ -502,7 +502,7 @@ Return the current sequence number at <code>addr</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_exists_at">exists_at</a>(ctx: &StorageContext, addr: <b>address</b>): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_exists_at">exists_at</a>(ctx: &Context, addr: <b>address</b>): bool {
    <b>if</b>(<a href="_exist_account_storage">account_storage::exist_account_storage</a>(ctx, addr)){
       <a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, addr)
    } <b>else</b> {
@@ -524,7 +524,7 @@ In Rooch a resource account is created based upon the sha3 256 of the source's a
 A resource account can only be created once
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_create_resource_account">create_resource_account</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, source: &<a href="">signer</a>): (<a href="">signer</a>, <a href="account.md#0x3_account_SignerCapability">account::SignerCapability</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_create_resource_account">create_resource_account</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, source: &<a href="">signer</a>): (<a href="">signer</a>, <a href="account.md#0x3_account_SignerCapability">account::SignerCapability</a>)
 </code></pre>
 
 
@@ -533,7 +533,7 @@ A resource account can only be created once
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_create_resource_account">create_resource_account</a>(ctx: &<b>mut</b> StorageContext, source: &<a href="">signer</a>): (<a href="">signer</a>, <a href="account.md#0x3_account_SignerCapability">SignerCapability</a>) {
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_create_resource_account">create_resource_account</a>(ctx: &<b>mut</b> Context, source: &<a href="">signer</a>): (<a href="">signer</a>, <a href="account.md#0x3_account_SignerCapability">SignerCapability</a>) {
    <b>let</b> source_addr = <a href="_address_of">signer::address_of</a>(source);
    <b>let</b> seed = <a href="account.md#0x3_account_generate_seed_bytes">generate_seed_bytes</a>(ctx, &source_addr);
    <b>let</b> resource_addr = <a href="account.md#0x3_account_create_resource_address">create_resource_address</a>(&source_addr, seed);

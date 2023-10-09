@@ -10,13 +10,10 @@
   "pipeline-transaction-processing": "Pipeline Transaction Processing",
   "sequence-proof": "Sequence Proof",
   "storage": {
-    "title": "Object and KV Storage",
-    "display": "hidden"
+    "title": "Storage"
   },
   "p2p-state-channel": {
     "title": "P2P Channel",
     "display": "hidden"
-  },
-  "storage_abstraction": "Storage Abstraction",
-  "transaction_flow": "Transaction Flow"
+  }
 }

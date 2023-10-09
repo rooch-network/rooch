@@ -443,7 +443,8 @@ Primarily used to destroy a map
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_to_vec_pair">to_vec_pair</a>&lt;Key: store, Value: store&gt;(
-    map: <a href="simple_map.md#0x2_simple_map_SimpleMap">SimpleMap</a>&lt;Key, Value&gt;): (<a href="">vector</a>&lt;Key&gt;, <a href="">vector</a>&lt;Value&gt;) {
+    map: <a href="simple_map.md#0x2_simple_map_SimpleMap">SimpleMap</a>&lt;Key, Value&gt;
+): (<a href="">vector</a>&lt;Key&gt;, <a href="">vector</a>&lt;Value&gt;) {
     <b>let</b> keys: <a href="">vector</a>&lt;Key&gt; = <a href="_empty">vector::empty</a>();
     <b>let</b> values: <a href="">vector</a>&lt;Value&gt; = <a href="_empty">vector::empty</a>();
     <b>let</b> <a href="simple_map.md#0x2_simple_map_SimpleMap">SimpleMap</a> { data } = map;
@@ -451,7 +452,9 @@ Primarily used to destroy a map
     <b>let</b> len = <a href="_length">vector::length</a>(&data);
     <b>while</b> (i &lt; len) {
         <b>let</b> e = <a href="_pop_back">vector::pop_back</a>(&<b>mut</b> data);
-        <b>let</b> <a href="simple_map.md#0x2_simple_map_Element">Element</a> { key, value } = e; <a href="_push_back">vector::push_back</a>(&<b>mut</b> keys, key); <a href="_push_back">vector::push_back</a>(&<b>mut</b> values, value);
+        <b>let</b> <a href="simple_map.md#0x2_simple_map_Element">Element</a> { key, value } = e;
+        <a href="_push_back">vector::push_back</a>(&<b>mut</b> keys, key);
+        <a href="_push_back">vector::push_back</a>(&<b>mut</b> values, value);
         i = i + 1;
     };
     <a href="_destroy_empty">vector::destroy_empty</a>(data);

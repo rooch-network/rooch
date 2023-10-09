@@ -149,7 +149,7 @@ Convert <code>a</code> to a hex-encoded ASCII string
 ## Function `length`
 
 Convert <code>a</code> to a hex-encoded ASCII string
-Length of a Sui address in bytes
+Length of a Rooch address in bytes
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_length">length</a>(): u64

@@ -1,7 +1,7 @@
 module rooch_examples::article_update_logic {
     use std::signer;
     use moveos_std::object::Object;
-    use moveos_std::storage_context::StorageContext;
+    use moveos_std::context::Context;
     use rooch_examples::article;
     use rooch_examples::article_updated;
     use std::string::String;
@@ -12,13 +12,13 @@ module rooch_examples::article_update_logic {
     const ErrorNotOwnerAccount: u64 = 113;
 
     public(friend) fun verify(
-        storage_ctx: &mut StorageContext,
+        ctx: &mut Context,
         account: &signer,
         title: String,
         body: String,
         article_obj: &Object<article::Article>,
     ): article::ArticleUpdated {
-        let _ = storage_ctx;
+        let _ = ctx;
         assert!(signer::address_of(account) == object::owner(article_obj), ErrorNotOwnerAccount);
         article::new_article_updated(
             article_obj,
@@ -28,7 +28,7 @@ module rooch_examples::article_update_logic {
     }
 
     public(friend) fun mutate(
-        storage_ctx: &mut StorageContext,
+        ctx: &mut Context,
         _account: &signer,
         article_updated: &article::ArticleUpdated,
         article_obj: Object<article::Article>,
@@ -36,7 +36,7 @@ module rooch_examples::article_update_logic {
         let title = article_updated::title(article_updated);
         let body = article_updated::body(article_updated);
         let id = article::id(&article_obj);
-        let _ = storage_ctx;
+        let _ = ctx;
         let _ = id;
         article::set_title(&mut article_obj, title);
         article::set_body(&mut article_obj, body);

@@ -2,21 +2,29 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { hexlify } from '@ethersproject/bytes'
-import { useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useAuth } from 'src/hooks/useAuth'
-import { useETH } from 'src/hooks/useETH'
+import { useRooch } from 'src/hooks/useRooch'
+
 import { AccountDataType } from 'src/context/auth/types'
 
 // ** Rooch SDK
 import {
   bcsTypes,
   IAccount,
+  IProvider,
+  FilteredProvider,
+  ITransactionFilterChain,
+  FilterFunc,
+  FuncFilter,
   Account,
-  JsonRpcProvider,
   PrivateKeyAuth,
   Ed25519Keypair,
   encodeMoveCallData,
   addressToSeqNumber,
+  parseRoochErrorSubStatus,
+  ErrorCategory,
+  getErrorCategoryName,
 } from '@rooch/sdk'
 
 // ** React Imports
@@ -29,62 +37,136 @@ type Props = {
 
 const SessionContext = createContext<Session>({
   loading: false,
-  account: undefined,
+  account: null,
+  errorMsg: null,
   requestAuthorize: undefined,
+  close: () => {},
 })
 
-const makeSessionAccountStoreKey = (address: string) => {
-  return `rooch::dashboard::account::${address}::current-session-key`
+const makeSessionAccountStoreKey = (chainId: number, address: string) => {
+  return `rooch::${chainId}::dashboard::account::${address}::current-session-key`
+}
+
+const loadSessionAccountFromSessionStorage = (provider: IProvider, roochAddress: string) => {
+  try {
+    // Get from local storage by key
+    const secretKey = window.sessionStorage.getItem(
+      makeSessionAccountStoreKey(provider.getChainId(), roochAddress),
+    )
+
+    if (secretKey) {
+      let sk = bcsTypes.fromB64(secretKey)
+
+      // The rooch cli generated key contains schema, remove it
+      if (sk.length > 32) {
+        sk = sk.slice(1)
+      }
+
+      const pk = Ed25519Keypair.fromSecretKey(sk)
+      const authorizer = new PrivateKeyAuth(pk)
+
+      return new Account(provider, roochAddress, authorizer)
+    }
+  } catch (error) {
+    // If error also return initialValue
+    console.log(error)
+  }
+
+  return null
+}
+
+const clearSessionAccountInSessionStorage = (provider: IProvider, roochAddress: string) => {
+  try {
+    window.sessionStorage.setItem(
+      makeSessionAccountStoreKey(provider.getChainId(), roochAddress),
+      '',
+    )
+  } catch (error) {
+    // If error also return initialValue
+    console.log(error)
+  }
+
+  return null
 }
 
 const SessionProvider = ({ children }: Props) => {
   const auth = useAuth()
-  const metaMask = useETH()
-  const [loading, setLoading] = useState(false)
+  const rooch = useRooch()
 
-  const [sessionAccount, setSessionAccount] = useState<IAccount | undefined>(() => {
-    const provider = new JsonRpcProvider()
-    const defaultAccount = auth.defaultAccount()
+  const [loading, setLoading] = useState<boolean>(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-    if (defaultAccount) {
+  const filterdProvider = useMemo(() => {
+    const sessionKeyInvalidFilterFunc: FilterFunc = async (
+      req: any,
+      chain: ITransactionFilterChain,
+    ): Promise<any> => {
       try {
-        // Get from local storage by key
-        const secretKey = window.localStorage.getItem(
-          makeSessionAccountStoreKey(defaultAccount.address),
-        )
+        return await chain.doFilter(req)
+      } catch (e: any) {
+        console.log('sessionKeyInvalidFilterFunc catch error:', e)
+        const subStatus = parseRoochErrorSubStatus(e.message)
+        if (
+          subStatus &&
+          ((subStatus.category === ErrorCategory.INVALID_ARGUMENT && subStatus.reason === 1001) ||
+            subStatus.category === ErrorCategory.PERMISSION_DENIED)
+        ) {
+          setSessionAccount(null)
 
-        if (secretKey) {
-          let sk = bcsTypes.fromB64(secretKey)
-
-          // The rooch cli generated key contains schema, remove it
-          if (sk.length > 32) {
-            sk = sk.slice(1)
+          const defaultAccount = auth.defaultAccount
+          if (defaultAccount) {
+            clearSessionAccountInSessionStorage(rooch.provider!, defaultAccount.roochAddress)
           }
-
-          const pk = Ed25519Keypair.fromSecretKey(sk)
-          const roochAddress = pk.getPublicKey().toRoochAddress()
-          const authorizer = new PrivateKeyAuth(pk)
-
-          return new Account(provider, roochAddress, authorizer)
         }
-      } catch (error) {
-        // If error also return initialValue
-        console.log(error)
+
+        throw e
       }
     }
 
-    return undefined
+    return new FilteredProvider(rooch.provider!, [new FuncFilter(sessionKeyInvalidFilterFunc)])
+  }, [rooch.provider, auth.defaultAccount])
+
+  const [sessionAccount, setSessionAccount] = useState<IAccount | null>(() => {
+    const defaultAccount = auth.defaultAccount
+
+    if (defaultAccount) {
+      const sessionAccount = loadSessionAccountFromSessionStorage(
+        filterdProvider,
+        defaultAccount.roochAddress,
+      )
+
+      return sessionAccount
+    }
+
+    return null
   })
+
+  useEffect(() => {
+    const defaultAccount = auth.defaultAccount
+
+    if (defaultAccount) {
+      const sessionAccount = loadSessionAccountFromSessionStorage(
+        filterdProvider,
+        defaultAccount.roochAddress,
+      )
+
+      if (sessionAccount) {
+        setSessionAccount(sessionAccount)
+      }
+    }
+  }, [auth.defaultAccount, filterdProvider])
 
   const waitTxConfirmed = async (ethereum: any, txHash: string) => {
     let receipt
     while (!receipt) {
-      await new Promise((resolve) => setTimeout(resolve, 5000)) // wait for 5 seconds before checking again
-
       receipt = await ethereum.request({
         method: 'eth_getTransactionReceipt',
         params: [txHash],
       })
+
+      if (!receipt) {
+        await new Promise((resolve) => setTimeout(resolve, 3000)) // wait for 3 seconds before checking again
+      }
     }
 
     return receipt
@@ -158,7 +240,7 @@ const SessionProvider = ({ children }: Props) => {
       },
     ]
 
-    const tx = ethereum.request({
+    const tx = await ethereum.request({
       method: 'eth_sendTransaction',
       params,
     })
@@ -168,82 +250,98 @@ const SessionProvider = ({ children }: Props) => {
   }
 
   const requestWalletCreateSessionKey = async (
+    provider: IProvider,
     account: AccountDataType,
     scope: Array<string>,
     maxInactiveInterval: number,
   ): Promise<IAccount | null> => {
-    const provider = new JsonRpcProvider()
-
     const pk = Ed25519Keypair.generate()
-    const roochAddress = pk.getPublicKey().toRoochAddress()
+    const authKey = pk.getPublicKey().toRoochAddress()
 
     try {
       await registerSessionKey(
-        metaMask.provider,
+        window.ethereum,
         account.address,
-        roochAddress,
+        authKey,
         scope,
         maxInactiveInterval,
       )
 
-      const key = makeSessionAccountStoreKey(account.address)
-      window.localStorage.setItem(key, pk.export().privateKey)
+      const key = makeSessionAccountStoreKey(provider.getChainId(), account.roochAddress)
+      window.sessionStorage.setItem(key, pk.export().privateKey)
       const authorizer = new PrivateKeyAuth(pk)
 
-      return new Account(provider, roochAddress, authorizer)
+      return new Account(provider, account.roochAddress, authorizer)
     } catch (err: any) {
       console.log(`registerSessionKey error:`, err)
 
-      return null
+      const subStatus = parseRoochErrorSubStatus(err.message)
+      if (subStatus) {
+        throw new Error(
+          'create session key fail, error category: ' +
+            getErrorCategoryName(subStatus.category) +
+            ', reason: ' +
+            subStatus.reason,
+        )
+      }
+
+      throw new Error('create session key error, reason:' + err.message)
     }
   }
 
   const requestPrivateCreateSessionKey = async (
+    provider: IProvider,
     account: IAccount,
     scope: Array<string>,
     maxInactiveInterval: number,
   ): Promise<IAccount | null> => {
-    const provider = new JsonRpcProvider()
-
     const pk = Ed25519Keypair.generate()
     const roochAddress = pk.getPublicKey().toRoochAddress()
 
     try {
       await account.registerSessionKey(roochAddress, scope, maxInactiveInterval)
 
-      const key = makeSessionAccountStoreKey(account.getAddress())
-      window.localStorage.setItem(key, pk.export().privateKey)
+      const key = makeSessionAccountStoreKey(provider.getChainId(), account.getAddress())
+      window.sessionStorage.setItem(key, pk.export().privateKey)
       const authorizer = new PrivateKeyAuth(pk)
 
       return new Account(provider, roochAddress, authorizer)
     } catch (err: any) {
       console.log(`registerSessionKey error:`, err)
 
-      return null
+      const subStatus = parseRoochErrorSubStatus(err.message)
+      if (subStatus) {
+        throw new Error(
+          'create session key fail, error category: ' +
+            getErrorCategoryName(subStatus.category) +
+            ', reason: ' +
+            subStatus.reason,
+        )
+      }
+
+      throw new Error('create session key error, reason:' + err.message)
     }
   }
 
   const requestAuthorize = async (scope: Array<string>, maxInactiveInterval: number) => {
     setLoading(true)
 
-    console.log('hshdhhsd')
-
     try {
-      const defaultAccount = auth.defaultAccount()
+      const defaultAccount = auth.defaultAccount
       if (!defaultAccount) {
-        setSessionAccount(undefined)
+        setSessionAccount(null)
 
         return
       }
 
       if (defaultAccount != null) {
         if (defaultAccount.kp != null) {
-          const provider = new JsonRpcProvider()
           const roochAddress = defaultAccount.address
           const authorizer = new PrivateKeyAuth(defaultAccount.kp)
-          const account = new Account(provider, roochAddress, authorizer)
+          const account = new Account(rooch.provider!, roochAddress, authorizer)
 
           const sessionAccount = await requestPrivateCreateSessionKey(
+            filterdProvider,
             account,
             scope,
             maxInactiveInterval,
@@ -254,6 +352,7 @@ const SessionProvider = ({ children }: Props) => {
           }
         } else if (defaultAccount.type === 'ETH') {
           const sessionAccount = await requestWalletCreateSessionKey(
+            filterdProvider,
             defaultAccount,
             scope,
             maxInactiveInterval,
@@ -264,16 +363,30 @@ const SessionProvider = ({ children }: Props) => {
           }
         }
       }
+    } catch (e: any) {
+      setErrorMsg(e.message)
+      setTimeout(() => {
+        setErrorMsg(null)
+      }, 5000)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const closeSession = () => {
+    const defaultAccount = auth.defaultAccount
+    if (defaultAccount) {
+      clearSessionAccountInSessionStorage(rooch.provider!, defaultAccount.roochAddress)
     }
   }
 
   const session = {
     loading,
     account: sessionAccount,
+    errorMsg,
     requestAuthorize,
-  }
+    close: closeSession,
+  } as Session
 
   return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>
 }

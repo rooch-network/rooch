@@ -1,6 +1,6 @@
 module rooch_examples::kv_store {
 
-   use moveos_std::storage_context::{Self, StorageContext};
+   use moveos_std::context::Context;
    use moveos_std::account_storage;
    use moveos_std::table::{Self, Table};
    use std::string::{String};
@@ -25,35 +25,34 @@ module rooch_examples::kv_store {
       table::borrow(&store.table, key)
    }
 
-   public fun borrow_kv_store(ctx: &mut StorageContext): &KVStore {
+   public fun borrow_kv_store(ctx: &mut Context): &KVStore {
       account_storage::global_borrow(ctx, @rooch_examples)
    }
 
-   public fun borrow_kv_store_mut(ctx: &mut StorageContext): &mut KVStore {
+   public fun borrow_kv_store_mut(ctx: &mut Context): &mut KVStore {
       account_storage::global_borrow_mut(ctx, @rooch_examples)
    }
 
    //init when module publish
-   fun init(ctx: &mut StorageContext, sender: signer) {
-      let tx_ctx = storage_context::tx_context_mut(ctx);
+   fun init(ctx: &mut Context, sender: signer) {
       let kv = KVStore{
-         table: table::new(tx_ctx),
+         table: table::new(ctx),
       };
       account_storage::global_move_to(ctx, &sender, kv);
    }
 
-   public entry fun add_value(ctx: &mut StorageContext, key: String, value: String) {
+   public entry fun add_value(ctx: &mut Context, key: String, value: String) {
       let kv = borrow_kv_store_mut(ctx);
       add(kv, key, value);
    }
 
-   public entry fun remove_value(ctx: &mut StorageContext, key: String) {
+   public entry fun remove_value(ctx: &mut Context, key: String) {
       let kv = borrow_kv_store_mut(ctx);
       remove(kv, key);
    }
 
    #[view]
-   public fun get_value(ctx: &mut StorageContext, key: String): String {
+   public fun get_value(ctx: &mut Context, key: String): String {
       let kv = borrow_kv_store(ctx);
       let value = borrow(kv, key);
       *value

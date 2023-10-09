@@ -1,12 +1,18 @@
 {
   "installation": "Installation",
   "cli": "CLI",
-  "faucet": "Faucet",
+  "faucet": {
+    "title": "Faucet",
+    "display": "hidden"
+  },
   "address-space": "Address space",
   "library": "Library",
   "create-rooch-move-contract": "Create Rooch Move contract",
   "start-server": "Start server",
   "object": "Object",
-  "interactive-ethereum": "Interactive with Ethereum",
+  "interactive-ethereum": {
+    "title": "Interactive with Ethereum",
+    "display": "hidden"
+  },
   "rpc": "RPC"
 }

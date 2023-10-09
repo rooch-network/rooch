@@ -162,7 +162,7 @@ This structure contains two fields, one is the name of the blog, and the other i
 Then define a function to create a blog:
 
 ```move
-public fun create_blog(ctx: &mut StorageContext, owner: &signer) {
+public fun create_blog(ctx: &mut Context, owner: &signer) {
     let articles = vector::empty();
     let myblog = MyBlog{
         name: string::utf8(b"MyBlog"),
@@ -171,7 +171,7 @@ public fun create_blog(ctx: &mut StorageContext, owner: &signer) {
     account_storage::global_move_to(ctx, owner, myblog);
 }
 
-public entry fun set_blog_name(ctx: &mut StorageContext, owner: &signer, blog_name: String) {
+public entry fun set_blog_name(ctx: &mut Context, owner: &signer, blog_name: String) {
     assert!(std::string::length(&blog_name) <= 200, error::invalid_argument(EDATA_TOO_LONG));
     let owner_address = signer::address_of(owner);
     // if blog not exist, create it
@@ -190,9 +190,9 @@ Then provide a contract initialization function, which will be automatically exe
 ```move
 /// This init function is called when the module is published
 /// The owner is the address of the account that publishes the module
-fun init(storage_ctx: &mut StorageContext, owner: &signer) {
+fun init(ctx: &mut Context, owner: &signer) {
     // auto create blog for module publisher 
-    create_blog(storage_ctx, owner);
+    create_blog(ctx, owner);
 }
 ```
 
@@ -205,7 +205,7 @@ module simple_blog::blog {
     use std::string::{Self,String};
     use std::vector;
     use moveos_std::object_id::ObjectID;
-    use moveos_std::storage_context::StorageContext;
+    use moveos_std::context::Context;
     use moveos_std::account_storage;
 
     const EDATA_TOO_LONG: u64 = 1;
@@ -218,12 +218,12 @@ module simple_blog::blog {
 
     /// This init function is called when the module is published
     /// The owner is the address of the account that publishes the module
-    fun init(storage_ctx: &mut StorageContext, owner: &signer) {
+    fun init(ctx: &mut Context, owner: &signer) {
         // auto create blog for module publisher 
-        create_blog(storage_ctx, owner);
+        create_blog(ctx, owner);
     }
 
-    public fun create_blog(ctx: &mut StorageContext, owner: &signer) {
+    public fun create_blog(ctx: &mut Context, owner: &signer) {
         let articles = vector::empty();
         let myblog = MyBlog{
             name: string::utf8(b"MyBlog"),
@@ -232,7 +232,7 @@ module simple_blog::blog {
         account_storage::global_move_to(ctx, owner, myblog);
     }
 
-    public entry fun set_blog_name(ctx: &mut StorageContext, owner: &signer, blog_name: String) {
+    public entry fun set_blog_name(ctx: &mut Context, owner: &signer, blog_name: String) {
         assert!(std::string::length(&blog_name) <= 200, error::invalid_argument(EDATA_TOO_LONG));
         let owner_address = signer::address_of(owner);
         // if blog not exist, create it
@@ -243,7 +243,7 @@ module simple_blog::blog {
         myblog.name = blog_name;
     }
 
-    fun add_article_to_myblog(ctx: &mut StorageContext, owner: &signer, article_id: ObjectID) {
+    fun add_article_to_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID) {
         let owner_address = signer::address_of(owner);
         // if blog not exist, create it
         if(!account_storage::global_exists<MyBlog>(ctx, owner_address)){
@@ -253,7 +253,7 @@ module simple_blog::blog {
         vector::push_back(&mut myblog.articles, article_id);
     }
 
-    fun delete_article_from_myblog(ctx: &mut StorageContext, owner: &signer, article_id: ObjectID) {
+    fun delete_article_from_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID) {
         let owner_address = signer::address_of(owner);
         let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
         let (contains, index) = vector::index_of(&myblog.articles, &article_id);
@@ -262,7 +262,7 @@ module simple_blog::blog {
     }
 
     /// Get owner's blog's articles
-    public fun get_blog_articles(ctx: &StorageContext, owner_address: address): vector<ObjectID> {
+    public fun get_blog_articles(ctx: &Context, owner_address: address): vector<ObjectID> {
         if(!account_storage::global_exists<MyBlog>(ctx, owner_address)){
             vector::empty()
         }else{
@@ -469,7 +469,7 @@ Define a function to create an article:
 ```move
 /// Create article
 public fun create_article(
-    ctx: &mut StorageContext,
+    ctx: &mut Context,
     owner: &signer,
     title: String,
     body: String,
@@ -477,21 +477,19 @@ public fun create_article(
     assert!(std::string::length(&title) <= 200, error::invalid_argument(EDATA_TOO_LONG));
     assert!(std::string::length(&body) <= 2000, error::invalid_argument(EDATA_TOO_LONG));
 
-    let tx_ctx = storage_context::tx_context_mut(ctx);
     let article = Article {
         version: 0,
         title,
         body,
     };
-    let owner_address = signer::address_of(owner);
-    let article_obj = object::new(
-        tx_ctx,
-        owner_address,
+    let owner_addr = signer::address_of(owner);
+    let article_obj = context::new_object_with_owner(
+        ctx,
+        owner_addr,
         article,
     );
     let id = object::id(&article_obj);
-    let object_storage = storage_context::object_storage_mut(ctx);
-    object_storage::add(object_storage, article_obj);
+    context::add_object(ctx, article_obj);
 
     let article_created_event = ArticleCreatedEvent {
         id,
@@ -506,22 +504,22 @@ In this function, first check whether the length of the article title and conten
 Then define the modification function:
 
 ```move
+/// Update article
 public fun update_article(
-        ctx: &mut StorageContext,
-        owner: &signer,
-        id: ObjectID,
-        new_title: String,
-        new_body: String,
+    ctx: &mut Context,
+    owner: &signer,
+    id: ObjectID,
+    new_title: String,
+    new_body: String,
 ) {
-    assert!(std::string::length(&new_title) <= 200, error::invalid_argument(EDATA_TOO_LONG));
-    assert!(std::string::length(&new_body) <= 2000, error::invalid_argument(EDATA_TOO_LONG));
+    assert!(std::string::length(&new_title) <= 200, error::invalid_argument(ErrorDataTooLong));
+    assert!(std::string::length(&new_body) <= 2000, error::invalid_argument(ErrorDataTooLong));
 
-    let object_storage = storage_context::object_storage_mut(ctx);
-    let article_obj = object_storage::borrow_mut<Article>(object_storage, id);
+    let article_obj = context::borrow_object_mut<Article>(ctx, id);
     let owner_address = signer::address_of(owner);
     
     // only article owner can update the article 
-    assert!(object::owner(article_obj) == owner_address, error::permission_denied(ENOT_OWNER_ACCOUNT));
+    assert!(object::owner(article_obj) == owner_address, error::permission_denied(ErrorNotOwnerAccount));
 
     let article = object::borrow_mut(article_obj);
     article.version = article.version + 1;
@@ -532,7 +530,7 @@ public fun update_article(
         id,
         version: article.version,
     };
-    event::emit_event(ctx, article_update_event);
+    event::emit(ctx, article_update_event);
 }
 ```
 
@@ -541,24 +539,23 @@ In this function, first check whether the length of the new article title and co
 Then define the delete function:
 
 ```move
- /// Delete article
+/// Delete article
 public fun delete_article(
-    ctx: &mut StorageContext,
+    ctx: &mut Context,
     owner: &signer,
     id: ObjectID,
 ) {
-    let object_storage = storage_context::object_storage_mut(ctx);
-    let article_obj = object_storage::remove<Article>(object_storage, id);
+    let article_obj = context::remove_object<Article>(ctx, id);
     let owner_address = signer::address_of(owner);
     
     // only article owner can delete the article 
-    assert!(object::owner(&article_obj) == owner_address, error::permission_denied(ENOT_OWNER_ACCOUNT));
+    assert!(object::owner(&article_obj) == owner_address, error::permission_denied(ErrorNotOwnerAccount));
 
     let article_deleted_event = ArticleDeletedEvent {
         id,
         version: object::borrow(&article_obj).version,
     };
-    event::emit_event(ctx, article_deleted_event);
+    event::emit(ctx, article_deleted_event);
     drop_article(article_obj);
 }
 ```
@@ -569,9 +566,8 @@ Finally, we also need to provide a function to query articles by ID for use by o
 
 ```move
 /// get article object by id
-public fun get_article(ctx: &StorageContext, article_id: ObjectID): &Object<Article> {
-    let obj_store = storage_context::object_storage(ctx);
-    object_storage::borrow(obj_store, article_id)
+public fun get_article(ctx: &Context, article_id: ObjectID): &Object<Article> {
+    context::borrow_object<Article>(ctx, article_id)
 }
 ```
 
@@ -586,11 +582,10 @@ module simple_blog::article {
     use moveos_std::event;
     use moveos_std::object::{Self, Object};
     use moveos_std::object_id::ObjectID;
-    use moveos_std::object_storage;
-    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::context::{Self, Context};
 
-    const EDATA_TOO_LONG: u64 = 1;
-    const ENOT_OWNER_ACCOUNT: u64 = 2;
+    const ErrorDataTooLong: u64 = 1;
+    const ErrorNotOwnerAccount: u64 = 2;
 
     struct Article has key {
         version: u64,
@@ -598,16 +593,16 @@ module simple_blog::article {
         body: String,
     }
 
-    struct ArticleCreatedEvent has key,copy,store {
+    struct ArticleCreatedEvent has copy,store {
         id: ObjectID,
     }
 
-    struct ArticleUpdatedEvent has key,copy,store {
+    struct ArticleUpdatedEvent has copy,store {
         id: ObjectID,
         version: u64,
     }
 
-    struct ArticleDeletedEvent has key,copy,store {
+    struct ArticleDeletedEvent has copy,store {
         id: ObjectID,
         version: u64,
     }
@@ -615,54 +610,51 @@ module simple_blog::article {
 
     /// Create article
     public fun create_article(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         owner: &signer,
         title: String,
         body: String,
     ): ObjectID {
-        assert!(std::string::length(&title) <= 200, error::invalid_argument(EDATA_TOO_LONG));
-        assert!(std::string::length(&body) <= 2000, error::invalid_argument(EDATA_TOO_LONG));
+        assert!(std::string::length(&title) <= 200, error::invalid_argument(ErrorDataTooLong));
+        assert!(std::string::length(&body) <= 2000, error::invalid_argument(ErrorDataTooLong));
 
-        let tx_ctx = storage_context::tx_context_mut(ctx);
         let article = Article {
             version: 0,
             title,
             body,
         };
-        let owner_address = signer::address_of(owner);
-        let article_obj = object::new(
-            tx_ctx,
-            owner_address,
+        let owner_addr = signer::address_of(owner);
+        let article_obj = context::new_object_with_owner(
+            ctx,
+            owner_addr,
             article,
         );
         let id = object::id(&article_obj);
-        let object_storage = storage_context::object_storage_mut(ctx);
-        object_storage::add(object_storage, article_obj);
+        context::add_object(ctx, article_obj);
 
         let article_created_event = ArticleCreatedEvent {
             id,
         };
-        event::emit_event(ctx, article_created_event);
+        event::emit(ctx, article_created_event);
         id
     }
 
     /// Update article
     public fun update_article(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         owner: &signer,
         id: ObjectID,
         new_title: String,
         new_body: String,
     ) {
-        assert!(std::string::length(&new_title) <= 200, error::invalid_argument(EDATA_TOO_LONG));
-        assert!(std::string::length(&new_body) <= 2000, error::invalid_argument(EDATA_TOO_LONG));
+        assert!(std::string::length(&new_title) <= 200, error::invalid_argument(ErrorDataTooLong));
+        assert!(std::string::length(&new_body) <= 2000, error::invalid_argument(ErrorDataTooLong));
 
-        let object_storage = storage_context::object_storage_mut(ctx);
-        let article_obj = object_storage::borrow_mut<Article>(object_storage, id);
+        let article_obj = context::borrow_object_mut<Article>(ctx, id);
         let owner_address = signer::address_of(owner);
         
         // only article owner can update the article 
-        assert!(object::owner(article_obj) == owner_address, error::permission_denied(ENOT_OWNER_ACCOUNT));
+        assert!(object::owner(article_obj) == owner_address, error::permission_denied(ErrorNotOwnerAccount));
 
         let article = object::borrow_mut(article_obj);
         article.version = article.version + 1;
@@ -673,27 +665,26 @@ module simple_blog::article {
             id,
             version: article.version,
         };
-        event::emit_event(ctx, article_update_event);
+        event::emit(ctx, article_update_event);
     }
 
     /// Delete article
     public fun delete_article(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         owner: &signer,
         id: ObjectID,
     ) {
-        let object_storage = storage_context::object_storage_mut(ctx);
-        let article_obj = object_storage::remove<Article>(object_storage, id);
+        let article_obj = context::remove_object<Article>(ctx, id);
         let owner_address = signer::address_of(owner);
         
         // only article owner can delete the article 
-        assert!(object::owner(&article_obj) == owner_address, error::permission_denied(ENOT_OWNER_ACCOUNT));
+        assert!(object::owner(&article_obj) == owner_address, error::permission_denied(ErrorNotOwnerAccount));
 
         let article_deleted_event = ArticleDeletedEvent {
             id,
             version: object::borrow(&article_obj).version,
         };
-        event::emit_event(ctx, article_deleted_event);
+        event::emit(ctx, article_deleted_event);
         drop_article(article_obj);
     }
 
@@ -709,9 +700,8 @@ module simple_blog::article {
     /// Read function of article
 
     /// get article object by id
-    public fun get_article(ctx: &StorageContext, article_id: ObjectID): &Object<Article> {
-        let obj_store = storage_context::object_storage(ctx);
-        object_storage::borrow(obj_store, article_id)
+    public fun get_article(ctx: &Context, article_id: ObjectID): &Object<Article> {
+        context::borrow_object<Article>(ctx, article_id)
     }
 
     /// get article id
@@ -741,34 +731,34 @@ module simple_blog::article {
 Next, we integrate the article contract in `blog.move` and provide the entry function:
 
 ```move
-    public entry fun create_article(
-        ctx: &mut StorageContext,
-        owner: signer,
-        title: String,
-        body: String,
-    ) {
-        let article_id = article::create_article(ctx, &owner, title, body);
-        add_article_to_myblog(ctx, &owner, article_id);
-    }
+public entry fun create_article(
+    ctx: &mut Context,
+    owner: signer,
+    title: String,
+    body: String,
+) {
+    let article_id = article::create_article(ctx, &owner, title, body);
+    add_article_to_myblog(ctx, &owner, article_id);
+}
 
-    public entry fun update_article(
-        ctx: &mut StorageContext,
-        owner: signer,
-        id: ObjectID,
-        new_title: String,
-        new_body: String,
-    ) {
-        article::update_article(ctx, &owner, id, new_title, new_body);
-    }
+public entry fun update_article(
+    ctx: &mut Context,
+    owner: signer,
+    id: ObjectID,
+    new_title: String,
+    new_body: String,
+) {
+    article::update_article(ctx, &owner, id, new_title, new_body);
+}
 
-    public entry fun delete_article(
-        ctx: &mut StorageContext,
-        owner: signer,
-        id: ObjectID,
-    ) {
-        article::delete_article(ctx, &owner, id);
-        delete_article_from_myblog(ctx, &owner, id);
-    }
+public entry fun delete_article(
+    ctx: &mut Context,
+    owner: signer,
+    id: ObjectID,
+) {
+    article::delete_article(ctx, &owner, id);
+    delete_article_from_myblog(ctx, &owner, id);
+}
 ```
 
 When creating and deleting articles, update the list of articles in the blog at the same time.

@@ -1,6 +1,9 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module moveos_std::tx_result {
 
-     /// The result of a transaction.
+    /// The result of a transaction.
     /// The VM will put this struct in the TxContext after the transaction execution.
     /// We can get the result in the `post_execute` function.
     struct TxResult has copy, store, drop {

@@ -7,10 +7,8 @@ module rooch_examples::article {
     use moveos_std::event;
     use moveos_std::object::{Self, Object};
     use moveos_std::object_id::ObjectID;
-    use moveos_std::object_storage;
-    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
-    use moveos_std::tx_context;
     use rooch_examples::comment::{Self, Comment};
     use std::error;
     use std::option;
@@ -35,9 +33,9 @@ module rooch_examples::article {
         comment_seq_id: u64,
     }
 
-    public fun initialize(storage_ctx: &mut StorageContext, account: &signer) {
+    public fun initialize(ctx: &mut Context, account: &signer) {
         assert!(signer::address_of(account) == @rooch_examples, error::invalid_argument(ErrorNotGenesisAccount));
-        let _ = storage_ctx;
+        let _ = ctx;
         let _ = account;
     }
 
@@ -89,11 +87,11 @@ module rooch_examples::article {
         object::borrow_mut(article_obj).body = body;
     }
 
-    public(friend) fun add_comment(storage_ctx: &mut StorageContext, article_obj: &mut Object<Article>, comment: Comment) {
+    public(friend) fun add_comment(ctx: &mut Context, article_obj: &mut Object<Article>, comment: Comment) {
         let comment_seq_id = comment::comment_seq_id(&comment);
         assert!(!table::contains(&object::borrow_mut(article_obj).comments, comment_seq_id), ErrorIdAlreadyExists);
         table::add(&mut object::borrow_mut(article_obj).comments, comment_seq_id, comment);
-        event::emit(storage_ctx, CommentTableItemAdded {
+        event::emit(ctx, CommentTableItemAdded {
             article_id: id(article_obj),
             comment_seq_id,
         });
@@ -118,7 +116,7 @@ module rooch_examples::article {
     }
 
     fun new_article(
-        tx_ctx: &mut tx_context::TxContext,
+        ctx: &mut Context,
         title: String,
         body: String,
     ): Article {
@@ -128,7 +126,7 @@ module rooch_examples::article {
             version: 0,
             title,
             body,
-            comments: table::new<u64, Comment>(tx_ctx),
+            comments: table::new<u64, Comment>(ctx),
             comment_seq_id_generator: CommentSeqIdGenerator { sequence: 0, },
         }
     }
@@ -335,54 +333,50 @@ module rooch_examples::article {
 
 
     public(friend) fun create_article(
-        storage_ctx: &mut StorageContext,
+        ctx: &mut Context,
         title: String,
         body: String,
     ): Object<Article> {
-        let tx_ctx = storage_context::tx_context_mut(storage_ctx);
         let article = new_article(
-            tx_ctx,
+            ctx,
             title,
             body,
         );
-        let obj_owner = tx_context::sender(tx_ctx);
-        let article_obj = object::new(
-            tx_ctx,
-            obj_owner,
+        
+        let article_obj = context::new_object(
+            ctx,
             article,
         );
         article_obj
     }
 
-    public(friend) fun update_version_and_add(storage_ctx: &mut StorageContext, article_obj: Object<Article>) {
+    public(friend) fun update_version_and_add(ctx: &mut Context, article_obj: Object<Article>) {
         object::borrow_mut(&mut article_obj).version = object::borrow( &mut article_obj).version + 1;
         //assert!(object::borrow(&article_obj).version != 0, ErrorInappropriateVersion);
-        private_add_article(storage_ctx, article_obj);
+        private_add_article(ctx, article_obj);
     }
 
-    public(friend) fun remove_article(storage_ctx: &mut StorageContext, obj_id: ObjectID): Object<Article> {
-        let obj_store = storage_context::object_storage_mut(storage_ctx);
-        object_storage::remove<Article>(obj_store, obj_id)
+    public(friend) fun remove_article(ctx: &mut Context, obj_id: ObjectID): Object<Article> {
+        context::remove_object<Article>(ctx, obj_id)
     }
 
-    public(friend) fun add_article(storage_ctx: &mut StorageContext, article_obj: Object<Article>) {
+    public(friend) fun add_article(ctx: &mut Context, article_obj: Object<Article>) {
         assert!(object::borrow(&article_obj).version == 0, ErrorInappropriateVersion);
-        private_add_article(storage_ctx, article_obj);
+        private_add_article(ctx, article_obj);
     }
 
-    fun private_add_article(storage_ctx: &mut StorageContext, article_obj: Object<Article>) {
+    fun private_add_article(ctx: &mut Context, article_obj: Object<Article>) {
         assert!(std::string::length(&object::borrow(&article_obj).title) <= 200, ErrorDataTooLong);
         assert!(std::string::length(&object::borrow(&article_obj).body) <= 2000, ErrorDataTooLong);
-        let obj_store = storage_context::object_storage_mut(storage_ctx);
-        object_storage::add(obj_store, article_obj);
+        context::add_object<Article>(ctx, article_obj);
     }
 
-    public fun get_article(storage_ctx: &mut StorageContext, obj_id: ObjectID): Object<Article> {
-        remove_article(storage_ctx, obj_id)
+    public fun get_article(ctx: &mut Context, obj_id: ObjectID): Object<Article> {
+        remove_article(ctx, obj_id)
     }
 
-    public fun return_article(storage_ctx: &mut StorageContext, article_obj: Object<Article>) {
-        private_add_article(storage_ctx, article_obj);
+    public fun return_article(ctx: &mut Context, article_obj: Object<Article>) {
+        private_add_article(ctx, article_obj);
     }
 
     public(friend) fun drop_article(article_obj: Object<Article>) {
@@ -400,28 +394,28 @@ module rooch_examples::article {
         table::destroy_empty(comments);
     }
 
-    public(friend) fun emit_comment_updated(storage_ctx: &mut StorageContext, comment_updated: CommentUpdated) {
-        event::emit(storage_ctx, comment_updated);
+    public(friend) fun emit_comment_updated(ctx: &mut Context, comment_updated: CommentUpdated) {
+        event::emit(ctx, comment_updated);
     }
 
-    public(friend) fun emit_comment_removed(storage_ctx: &mut StorageContext, comment_removed: CommentRemoved) {
-        event::emit(storage_ctx, comment_removed);
+    public(friend) fun emit_comment_removed(ctx: &mut Context, comment_removed: CommentRemoved) {
+        event::emit(ctx, comment_removed);
     }
 
-    public(friend) fun emit_comment_added(storage_ctx: &mut StorageContext, comment_added: CommentAdded) {
-        event::emit(storage_ctx, comment_added);
+    public(friend) fun emit_comment_added(ctx: &mut Context, comment_added: CommentAdded) {
+        event::emit(ctx, comment_added);
     }
 
-    public(friend) fun emit_article_created(storage_ctx: &mut StorageContext, article_created: ArticleCreated) {
-        event::emit(storage_ctx, article_created);
+    public(friend) fun emit_article_created(ctx: &mut Context, article_created: ArticleCreated) {
+        event::emit(ctx, article_created);
     }
 
-    public(friend) fun emit_article_updated(storage_ctx: &mut StorageContext, article_updated: ArticleUpdated) {
-        event::emit(storage_ctx, article_updated);
+    public(friend) fun emit_article_updated(ctx: &mut Context, article_updated: ArticleUpdated) {
+        event::emit(ctx, article_updated);
     }
 
-    public(friend) fun emit_article_deleted(storage_ctx: &mut StorageContext, article_deleted: ArticleDeleted) {
-        event::emit(storage_ctx, article_deleted);
+    public(friend) fun emit_article_deleted(ctx: &mut Context, article_deleted: ArticleDeleted) {
+        event::emit(ctx, article_deleted);
     }
 
 }

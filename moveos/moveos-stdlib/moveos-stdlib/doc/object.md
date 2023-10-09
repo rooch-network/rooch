@@ -7,12 +7,10 @@ Move Object
 The Object is a box style Object
 The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/sources/object.move#L75):
 1. The Object is a struct in Move
-2. The Object is a use case for the Hot Potato pattern in Move. Objects do not have any ability, so they cannot be drop, copy, or store, and can only be handled by ObjectStorage API after creation.
-More details about the Object can be found in [Storage Abstraction](https://github.com/rooch-network/rooch/blob/main/docs/design/storage_abstraction.md)
+2. The Object is a use case of the Hot Potato pattern in Move. Objects do not have any ability, so they cannot be drop, copy, or store, and can only be handled by StorageContext API after creation.
 
 
 -  [Struct `Object`](#0x2_object_Object)
--  [Constants](#@Constants_0)
 -  [Function `new`](#0x2_object_new)
 -  [Function `new_with_id`](#0x2_object_new_with_id)
 -  [Function `borrow`](#0x2_object_borrow)
@@ -23,8 +21,7 @@ More details about the Object can be found in [Storage Abstraction](https://gith
 -  [Function `unpack`](#0x2_object_unpack)
 
 
-<pre><code><b>use</b> <a href="">0x1::debug</a>;
-<b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
+<pre><code><b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 </code></pre>
 
@@ -35,7 +32,7 @@ More details about the Object can be found in [Storage Abstraction](https://gith
 ## Struct `Object`
 
 Box style object
-The object can not be copied, droped, only can be consumed by ObjectStorage API.
+The object can not be copied, droped and stored. It only can be consumed by StorageContext API.
 
 
 <pre><code><b>struct</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;
@@ -71,30 +68,14 @@ The object can not be copied, droped, only can be consumed by ObjectStorage API.
 
 </details>
 
-<a name="@Constants_0"></a>
-
-## Constants
-
-
-<a name="0x2_object_ErrorInvalidAccess"></a>
-
-Invalid access of object, the object is not owned by the signer or the object is not shared or immutable
-
-
-<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorInvalidAccess">ErrorInvalidAccess</a>: u64 = 0;
-</code></pre>
-
-
-
 <a name="0x2_object_new"></a>
 
 ## Function `new`
 
 Create a new object, the object is owned by <code>owner</code>
-The private generic is indicate the T should be defined in the same module as the caller. This is ensured by the verifier.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(ctx: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(ctx: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
 
@@ -103,12 +84,9 @@ The private generic is indicate the T should be defined in the same module as th
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(ctx: &<b>mut</b> TxContext, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt; {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(ctx: &<b>mut</b> TxContext, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt; {
     <b>let</b> id = <a href="tx_context.md#0x2_tx_context_fresh_object_id">tx_context::fresh_object_id</a>(ctx);
-    <b>let</b> obj = <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;{id, value, owner};
-    //TODO after add <a href="event.md#0x2_event">event</a>, then remove the <a href="">debug</a> info
-    <a href="_print">debug::print</a>(&obj);
-    obj
+    <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;{id, value, owner}
 }
 </code></pre>
 
@@ -168,7 +146,7 @@ The private generic is indicate the T should be defined in the same module as th
 
 ## Function `borrow_mut`
 
-Borrow the object mutable value
+Borrow the mutable object value
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_mut">borrow_mut</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): &<b>mut</b> T
@@ -266,6 +244,7 @@ Transfer object to recipient
 
 ## Function `unpack`
 
+Unpack the object, return the id, owner, and value
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_unpack">unpack</a>&lt;T&gt;(obj: <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): (<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, <b>address</b>, T)

@@ -11,6 +11,7 @@ use clap::Parser;
 use moveos_config::{temp_dir, DataDirPath};
 use once_cell::sync::Lazy;
 use rooch_types::chain_id::RoochChainID;
+use rooch_types::crypto::RoochKeyPair;
 use serde::{Deserialize, Serialize};
 use std::fs::create_dir_all;
 use std::sync::Arc;
@@ -82,6 +83,16 @@ pub struct RoochOpt {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long)]
     pub eth_rpc_url: Option<String>,
+
+    /// The address of the sequencer account
+    #[clap(long)]
+    pub sequencer_account: Option<String>,
+    /// The address of the proposer account
+    #[clap(long)]
+    pub proposer_account: Option<String>,
+    /// The address of the relayer account
+    #[clap(long)]
+    pub relayer_account: Option<String>,
 }
 
 impl std::fmt::Display for RoochOpt {
@@ -102,6 +113,9 @@ impl RoochOpt {
             store: StoreConfig::default(),
             port: None,
             eth_rpc_url: None,
+            sequencer_account: None,
+            proposer_account: None,
+            relayer_account: None,
         }
     }
 }
@@ -149,5 +163,33 @@ pub trait ConfigModule: Sized {
     /// Init the skip field or overwrite config by global command line option.
     fn merge_with_opt(&mut self, _opt: &RoochOpt, _base: Arc<BaseConfig>) -> Result<()> {
         Ok(())
+    }
+}
+
+#[derive(Debug, Parser, Default, Serialize, Deserialize)]
+pub struct ServerOpt {
+    /// Sequencer, proposer and relayer keypair
+    pub sequencer_keypair: Option<RoochKeyPair>,
+    pub proposer_keypair: Option<RoochKeyPair>,
+    pub relayer_keypair: Option<RoochKeyPair>,
+}
+
+impl std::fmt::Display for ServerOpt {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self).map_err(|_e| std::fmt::Error)?
+        )
+    }
+}
+
+impl ServerOpt {
+    pub fn new() -> Self {
+        ServerOpt {
+            sequencer_keypair: None,
+            proposer_keypair: None,
+            relayer_keypair: None,
+        }
     }
 }

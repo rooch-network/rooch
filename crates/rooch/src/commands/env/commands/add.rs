@@ -32,8 +32,8 @@ impl AddCommand {
 
         // TODO: is this request timeout okay?
         env.create_rpc_client(Duration::from_secs(5), None).await?;
-        context.config.add_env(env);
-        context.config.save()?;
+        context.client_config.add_env(env);
+        context.client_config.save()?;
 
         println!("Environment `{} was successfully added", alias);
 

@@ -4,21 +4,24 @@
 import fetch from 'isomorphic-fetch'
 import { HTTPTransport, RequestManager } from '@open-rpc/client-js'
 import { JsonRpcClient } from '../generated/client'
-import { Chain, ChainInfo, DevChain } from '../constants/chain.ts'
+import { Chain, ChainInfo, DevChain } from '../constants/chain'
 import {
   FunctionId,
   TypeTag,
   Arg,
   Bytes,
-  TransactionView,
+  // TransactionView,
   AnnotatedFunctionResultView,
   AnnotatedStateView,
   TransactionResultPageView,
   AnnotatedEventResultPageView,
+  ListAnnotatedStateResultPageView,
   StateView,
   StateResultPageView,
+  TransactionResultView,
 } from '../types'
 import { functionIdToStirng, typeTagToString, encodeArg, toHexString } from '../utils'
+import { IProvider } from './interface'
 
 /**
  * Configuration options for the JsonRpcProvider. If the value of a field is not provided,
@@ -38,7 +41,7 @@ const DEFAULT_OPTIONS: RpcProviderOptions = {
   versionCacheTimeoutInSeconds: 600,
 }
 
-export class JsonRpcProvider {
+export class JsonRpcProvider implements IProvider {
   public chain: Chain
 
   private client: JsonRpcClient
@@ -126,7 +129,7 @@ export class JsonRpcProvider {
     return this.client.rooch_sendRawTransaction(playload)
   }
 
-  async getTransactionsByHash(tx_hashes: string[]): Promise<TransactionView | null[]> {
+  async getTransactionsByHash(tx_hashes: string[]): Promise<TransactionResultView | null[]> {
     return await this.client.rooch_getTransactionsByHash(tx_hashes)
   }
 
@@ -185,5 +188,22 @@ export class JsonRpcProvider {
   //     cursor,
   //     limit,
   //   )
+  // }
+
+  async listAnnotatedStates(
+    access_path: string,
+    cursor: Bytes | null,
+    limit: number,
+  ): Promise<ListAnnotatedStateResultPageView> {
+    return await this.client.rooch_listAnnotatedStates(access_path, cursor as any, limit)
+  }
+
+  // // List the states by access_path
+  // async listStates(
+  //   access_path: string,
+  //   cursor: Uint8Array,
+  //   limit: number,
+  // ): Promise<PageView_for_Nullable_StateView_and_alloc_vec_Vec_U8Array> {
+  //   return await this.rpcClient.rooch_listStates(access_path, cursor, limit)
   // }
 }

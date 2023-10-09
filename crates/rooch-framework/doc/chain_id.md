@@ -16,7 +16,7 @@
 
 
 <pre><code><b>use</b> <a href="">0x2::account_storage</a>;
-<b>use</b> <a href="">0x2::storage_context</a>;
+<b>use</b> <a href="">0x2::context</a>;
 </code></pre>
 
 
@@ -96,7 +96,7 @@ The ChainID in the global storage
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="chain_id.md#0x3_chain_id_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, genesis_account: &<a href="">signer</a>, <a href="chain_id.md#0x3_chain_id">chain_id</a>: u64)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="chain_id.md#0x3_chain_id_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, genesis_account: &<a href="">signer</a>, <a href="chain_id.md#0x3_chain_id">chain_id</a>: u64)
 </code></pre>
 
 
@@ -105,7 +105,7 @@ The ChainID in the global storage
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="chain_id.md#0x3_chain_id_genesis_init">genesis_init</a>(ctx: &<b>mut</b> StorageContext, genesis_account: &<a href="">signer</a>, <a href="chain_id.md#0x3_chain_id">chain_id</a>: u64){
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="chain_id.md#0x3_chain_id_genesis_init">genesis_init</a>(ctx: &<b>mut</b> Context, genesis_account: &<a href="">signer</a>, <a href="chain_id.md#0x3_chain_id">chain_id</a>: u64){
     <b>let</b> <a href="chain_id.md#0x3_chain_id">chain_id</a> = <a href="chain_id.md#0x3_chain_id_ChainID">ChainID</a>{
         id: <a href="chain_id.md#0x3_chain_id">chain_id</a>
     };
@@ -123,7 +123,7 @@ The ChainID in the global storage
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id">chain_id</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id">chain_id</a>(ctx: &<a href="_Context">context::Context</a>): u64
 </code></pre>
 
 
@@ -132,7 +132,7 @@ The ChainID in the global storage
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id">chain_id</a>(ctx: &StorageContext) : u64 {
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id">chain_id</a>(ctx: &Context) : u64 {
     <b>let</b> <a href="chain_id.md#0x3_chain_id">chain_id</a> = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="chain_id.md#0x3_chain_id_ChainID">ChainID</a>&gt;(ctx, @rooch_framework);
     <a href="chain_id.md#0x3_chain_id">chain_id</a>.id
 }
@@ -148,7 +148,7 @@ The ChainID in the global storage
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_local">is_local</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_local">is_local</a>(ctx: &<a href="_Context">context::Context</a>): bool
 </code></pre>
 
 
@@ -157,7 +157,7 @@ The ChainID in the global storage
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_local">is_local</a>(ctx: &StorageContext) : bool {
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_local">is_local</a>(ctx: &Context) : bool {
     <a href="chain_id.md#0x3_chain_id">chain_id</a>(ctx) == <a href="chain_id.md#0x3_chain_id_CHAIN_ID_LOCAL">CHAIN_ID_LOCAL</a>
 }
 </code></pre>
@@ -172,7 +172,7 @@ The ChainID in the global storage
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_dev">is_dev</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_dev">is_dev</a>(ctx: &<a href="_Context">context::Context</a>): bool
 </code></pre>
 
 
@@ -181,7 +181,7 @@ The ChainID in the global storage
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_dev">is_dev</a>(ctx: &StorageContext) : bool {
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_dev">is_dev</a>(ctx: &Context) : bool {
     <a href="chain_id.md#0x3_chain_id">chain_id</a>(ctx) == <a href="chain_id.md#0x3_chain_id_CHAIN_ID_DEV">CHAIN_ID_DEV</a>
 }
 </code></pre>
@@ -196,7 +196,7 @@ The ChainID in the global storage
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_test">is_test</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_test">is_test</a>(ctx: &<a href="_Context">context::Context</a>): bool
 </code></pre>
 
 
@@ -205,7 +205,7 @@ The ChainID in the global storage
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_test">is_test</a>(ctx: &StorageContext) : bool {
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_test">is_test</a>(ctx: &Context) : bool {
     <a href="chain_id.md#0x3_chain_id">chain_id</a>(ctx) == <a href="chain_id.md#0x3_chain_id_CHAIN_ID_TEST">CHAIN_ID_TEST</a>
 }
 </code></pre>
@@ -220,7 +220,7 @@ The ChainID in the global storage
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_main">is_main</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_main">is_main</a>(ctx: &<a href="_Context">context::Context</a>): bool
 </code></pre>
 
 
@@ -229,7 +229,7 @@ The ChainID in the global storage
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_main">is_main</a>(ctx: &StorageContext) : bool {
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_main">is_main</a>(ctx: &Context) : bool {
     <a href="chain_id.md#0x3_chain_id">chain_id</a>(ctx) == <a href="chain_id.md#0x3_chain_id_CHAIN_ID_MAIN">CHAIN_ID_MAIN</a>
 }
 </code></pre>

@@ -2,7 +2,7 @@ module rooch_framework::genesis {
 
     use std::error;
     use std::option;
-    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::context::{Self, Context};
     use rooch_framework::account;
     use rooch_framework::auth_validator_registry;
     use rooch_framework::builtin_validators;
@@ -23,10 +23,10 @@ module rooch_framework::genesis {
         timestamp: u64,
     }
 
-    fun init(ctx: &mut StorageContext){
+    fun init(ctx: &mut Context){
         //TODO genesis account should be a resource account?
         let genesis_account = &account::create_account(ctx, @rooch_framework);
-        let genesis_context_option = storage_context::get<GenesisContext>(ctx);
+        let genesis_context_option = context::get<GenesisContext>(ctx);
         assert!(option::is_some(&genesis_context_option), error::invalid_argument(ErrorGenesisInit));
         let genesis_context = option::extract(&mut genesis_context_option);
         chain_id::genesis_init(ctx, genesis_account, genesis_context.chain_id);
@@ -42,10 +42,10 @@ module rooch_framework::genesis {
 
 
     #[test_only]
-    /// init the genesis context for test, and return the StorageContext with @rooch_framework genesis account
-    public fun init_for_test(): StorageContext{
-        let ctx = moveos_std::storage_context::new_test_context(@rooch_framework);
-        storage_context::add(&mut ctx, GenesisContext{chain_id: 20230103, timestamp: 0});
+    /// init the genesis context for test, and return the Context with @rooch_framework genesis account
+    public fun init_for_test(): Context{
+        let ctx = moveos_std::context::new_test_context(@rooch_framework);
+        context::add(&mut ctx, GenesisContext{chain_id: 20230103, timestamp: 0});
         init(&mut ctx);
         ctx
     }

@@ -6,7 +6,7 @@
     <% } %>
 
     <% if (schema.description) { %>// <%= schema.description %> <% } %>
-    <% if (schema.properties) { %>export type <%= alias(name) %> = {<% Object.entries(schema.properties).forEach(([propName, propSpec]) => { %><%= propName %><%= schema.required && schema.required.includes(propName) ? '' : '?' %>: <%= getType(propSpec, schemas, alias) %>; <% }) %>}
+    <% if (schema.properties) { %>export type <%= alias(name) %> = {<% Object.entries(schema.properties).forEach(([propName, propSpec]) => { %><%= propName %><%= schema.required && schema.required.includes(propName) ? '' : '' %>: <%= getType(propSpec, schemas, alias) %>; <% }) %>}
     <% } else if (schema.type || schema.anyOf || schema.oneOf) { %>
     <%   if (schema.oneOf) { %>
       <% schema.oneOf.forEach((subSchema, index) => { %>

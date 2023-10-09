@@ -32,7 +32,7 @@ impl CommandAction<()> for BalanceCommand {
             .address
             .map_or(
                 context
-                    .config
+                    .client_config
                     .active_address
                     .map(|active_address| AccountAddress::from(active_address).into()),
                 Some,

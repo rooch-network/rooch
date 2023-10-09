@@ -10,13 +10,10 @@
   "pipeline-transaction-processing": "基于流水线的并行交易处理",
   "sequence-proof": "交易排序证明",
   "storage": {
-    "title": "Object and KV Storage",
-    "display": "hidden"
+    "title": "存储"
   },
   "p2p-state-channel": {
     "title": "P2P 通道",
     "display": "hidden"
-  },
-  "storage_abstraction": "存储抽象",
-  "transaction_flow": "交易执行流"
+  }
 }

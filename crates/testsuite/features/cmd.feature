@@ -14,13 +14,15 @@ Feature: Rooch CLI integration tests
       Then cmd: "account list"
       Then cmd: "account import --mnemonic-phrase "fiber tube acid imitate frost coffee choose crowd grass topple donkey submit""
       Then cmd: "account update --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --mnemonic-phrase "spike air embody solid upper grow mule slender shrimp suggest pride young""
-      #Then cmd: "account update --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce --mnemonic-phrase "spike air embody solid upper grow mule slender shrimp suggest pride young""
       Then cmd: "account nullify --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce"
-      #Then cmd: "account nullify --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce"
 
       # session key
       Then cmd: "session-key create --sender-account {default} --scope 0x3::empty::empty"
       Then cmd: "move run --function 0x3::empty::empty --sender-account {default} --session-key {{$.session-key[-1].authentication_key}}"
+
+      # transaction
+      Then cmd: "transaction get-transactions-by-order --cursor 0 --limit 1"
+      Then cmd: "transaction get-transactions-by-hash --hashes {{$.transaction[-1].data[0].execution_info.tx_hash}}"
 
       # event example
       Then cmd: "move publish -p ../../examples/event --sender-account {default} --named-addresses rooch_examples={default}"
@@ -141,13 +143,13 @@ Feature: Rooch CLI integration tests
       Then cmd: "move run --function {default}::fixed_supply_coin::faucet --sender-account {default}"
       #TODO change the argument `0x3` address to a user account
       Then cmd: "move run --function 0x3::coin::transfer_entry --type-args {default}::fixed_supply_coin::FSC --args address:0x3  --args 1u256 --sender-account {default}"
-    
+
       Then stop the server
 
   @serial
     Scenario: rpc test
       Given a server for rpc
-      Then cmd: "rpc request --method eth_getBalance --params \"0x1111111111111111111111111111111111111111\"" 
+      Then cmd: "rpc request --method eth_getBalance --params \"0x1111111111111111111111111111111111111111\""
       Then assert: "{{$.rpc[-1]}} == 0x56bc75e2d63100000"
 
       Then stop the server

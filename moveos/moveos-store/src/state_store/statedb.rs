@@ -12,13 +12,13 @@ use moveos_types::move_types::is_table;
 use moveos_types::state::StateSet;
 use moveos_types::state_resolver::ListState;
 use moveos_types::{
+    context,
+    object::{AccountStorage, Object, ObjectID, RawObject, TableInfo},
+};
+use moveos_types::{
     h256::H256,
     move_module::MoveModule,
     state::{MoveStructState, State},
-};
-use moveos_types::{
-    object::{AccountStorage, Object, ObjectID, RawObject, TableInfo},
-    storage_context,
 };
 use moveos_types::{
     state::StateChangeSet,
@@ -253,13 +253,18 @@ impl StateDBStore {
 
         for (table_handle, table_change) in state_change_set.changes {
             // handle global object
-            if table_handle == storage_context::GLOBAL_OBJECT_STORAGE_HANDLE {
+            if table_handle == context::GLOBAL_OBJECT_STORAGE_HANDLE {
                 self.global_table
                     .put_changes(table_change.entries.into_iter())?;
+                // TODO: do we need to update the size of global table?
             } else {
                 let (mut object, table) = self.get_as_table_or_create(table_handle)?;
                 let new_state_root = table.put_changes(table_change.entries.into_iter())?;
                 object.value.state_root = AccountAddress::new(new_state_root.into());
+                let curr_table_size: i64 = object.value.size as i64;
+                let updated_table_size = curr_table_size + table_change.size_increment;
+                debug_assert!(updated_table_size >= 0);
+                object.value.size = updated_table_size as u64;
                 changed_objects.put(table_handle.to_bytes(), object.into());
             }
         }
@@ -357,17 +362,16 @@ impl StateDBStore {
 
             golbal_update_set.put(key, state);
         }
-        state_set.state_sets.insert(
-            storage_context::GLOBAL_OBJECT_STORAGE_HANDLE,
-            golbal_update_set,
-        );
+        state_set
+            .state_sets
+            .insert(context::GLOBAL_OBJECT_STORAGE_HANDLE, golbal_update_set);
 
         Ok(state_set)
     }
 }
 
 impl StateResolver for StateDBStore {
-    fn resolve_state(
+    fn resolve_table_item(
         &self,
         handle: &ObjectID,
         key: &[u8],
@@ -375,7 +379,7 @@ impl StateResolver for StateDBStore {
         self.resolve_state(handle, key)
     }
 
-    fn resolve_list_state(
+    fn list_table_items(
         &self,
         handle: &ObjectID,
         cursor: Option<Vec<u8>>,

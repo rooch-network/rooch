@@ -14,6 +14,7 @@ use moveos_types::{
     transaction::FunctionCall,
     tx_context::TxContext,
 };
+use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionResultView;
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedFunctionResultView, EventPageView,
     ListAnnotatedStatesPageView, ListBalanceInfoPageView, ListStatesPageView, StrView,
@@ -21,9 +22,13 @@ use rooch_rpc_api::jsonrpc_types::{
 };
 use rooch_rpc_api::{
     api::rooch_api::RoochAPIClient,
-    jsonrpc_types::{AnnotatedStateView, ExecuteTransactionResponseView, StateView},
+    jsonrpc_types::{
+        AnnotatedStateView, ExecuteTransactionResponseView, StateView, TransactionResultPageView,
+    },
 };
-use rooch_types::{account::Account, address::RoochAddress, transaction::rooch::RoochTransaction};
+use rooch_types::{
+    account::Account, address::RoochAddress, transaction::rooch::RoochTransaction, H256,
+};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -137,6 +142,29 @@ impl Client {
     // pub async fn get_transactions_by_hash(&self, hash: H256) -> Result<Option<TransactionView>> {
     //     Ok(self.rpc.http.get_transaction_by_hash(hash.into()).await?)
     // }
+
+    pub async fn get_transactions_by_order(
+        &self,
+        cursor: Option<u128>,
+        limit: Option<u64>,
+    ) -> Result<TransactionResultPageView> {
+        Ok(self
+            .rpc
+            .http
+            .get_transactions_by_order(cursor, limit)
+            .await?)
+    }
+
+    pub async fn get_transactions_by_hash(
+        &self,
+        tx_hashes: Vec<H256>,
+    ) -> Result<Vec<Option<TransactionResultView>>> {
+        Ok(self
+            .rpc
+            .http
+            .get_transactions_by_hash(tx_hashes.iter().map(|hash| (*hash).into()).collect())
+            .await?)
+    }
 
     pub async fn get_sequence_number(&self, sender: RoochAddress) -> Result<u64> {
         Ok(self

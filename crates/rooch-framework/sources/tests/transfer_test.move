@@ -24,7 +24,7 @@ module rooch_framework::transfer_test{
 
         assert!(gas_coin::balance(&genesis_ctx, from) == init_gas - amount, 1001);
         assert!(gas_coin::balance(&genesis_ctx, to) == amount, 1002);
-        moveos_std::storage_context::drop_test_context(genesis_ctx);
+        moveos_std::context::drop_test_context(genesis_ctx);
     }
 
     #[test_only]
@@ -49,7 +49,7 @@ module rooch_framework::transfer_test{
         transfer::transfer_coin_to_multichain_address<GasCoin>(&mut genesis_ctx, &from_signer, multichain_address::multichain_id(&to), *multichain_address::raw_address(&to), amount);
         assert!(gas_coin::balance(&genesis_ctx, to_address) == amount*2, 1004);
         
-        moveos_std::storage_context::drop_test_context(genesis_ctx);
+        moveos_std::context::drop_test_context(genesis_ctx);
     }
 
      #[test(from = @0x42)]

@@ -2,12 +2,12 @@ module rooch_examples::borrow_test {
     use rooch_examples::borrowd::{BorrowCapability, DataStore};
     use rooch_examples::borrowd;
     use moveos_std::account_storage;
-    use moveos_std::storage_context::{StorageContext};
+    use moveos_std::context::{Context};
 
     #[test_only]
     use std::signer;
     #[test_only]
-    use moveos_std::storage_context;
+    use moveos_std::context;
 
     struct Capabilities has key {
         borrow_cap: BorrowCapability,
@@ -18,7 +18,7 @@ module rooch_examples::borrow_test {
     }
 
     public fun init_borrow(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         account: &signer,
     ) {
         let borrow_cap = borrowd::new_borrow_cap();
@@ -32,7 +32,7 @@ module rooch_examples::borrow_test {
     }
 
     public fun borrow(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         addr: address,
     ) {
         let cap = account_storage::global_borrow_mut<Capabilities>(ctx, addr);
@@ -46,9 +46,9 @@ module rooch_examples::borrow_test {
     #[test(alice = @0x11)]
     fun test_borrow(alice: &signer,) {
         let addr = signer::address_of(alice);
-        let ctx = storage_context::new_test_context(addr);
+        let ctx = context::new_test_context(addr);
         init_borrow(&mut ctx, alice);
         borrow(&mut ctx, addr);
-        moveos_std::storage_context::drop_test_context(ctx);
+        moveos_std::context::drop_test_context(ctx);
     }
 }

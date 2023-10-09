@@ -24,6 +24,7 @@ pub struct GasParameters {
     schnorr: rooch_framework::crypto::schnorr::GasParameters,
     encoding: rooch_framework::crypto::encoding::GasParameters,
     decoding: rooch_framework::crypto::decoding::GasParameters,
+    bcs: rooch_framework::bcs::GasParameters,
 }
 
 impl FromOnChainGasSchedule for GasParameters {
@@ -40,6 +41,7 @@ impl FromOnChainGasSchedule for GasParameters {
             schnorr: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             encoding: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             decoding: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
+            bcs: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
         })
     }
 }
@@ -56,6 +58,7 @@ impl InitialGasSchedule for GasParameters {
             schnorr: InitialGasSchedule::initial(),
             encoding: InitialGasSchedule::initial(),
             decoding: InitialGasSchedule::initial(),
+            bcs: InitialGasSchedule::initial(),
         }
     }
 }
@@ -113,6 +116,7 @@ impl GasParameters {
             schnorr: rooch_framework::crypto::schnorr::GasParameters::zeros(),
             encoding: rooch_framework::crypto::encoding::GasParameters::zeros(),
             decoding: rooch_framework::crypto::decoding::GasParameters::zeros(),
+            bcs: rooch_framework::bcs::GasParameters::zeros(),
         }
     }
 }
@@ -163,6 +167,7 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
         "decoding",
         rooch_framework::crypto::decoding::make_all(gas_params.decoding)
     );
+    add_natives!("bcs", rooch_framework::bcs::make_all(gas_params.bcs));
 
     let rooch_native_fun_table = make_table_from_iter(ROOCH_FRAMEWORK_ADDRESS, natives);
     native_fun_table.extend(rooch_native_fun_table);

@@ -3,7 +3,7 @@
 module rooch_framework::coin_test{
     use std::signer;
     use std::string;
-    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::context::{Self, Context};
     use rooch_framework::account;
     use rooch_framework::coin;
     use rooch_framework::coin::{register_extend,
@@ -17,7 +17,7 @@ module rooch_framework::coin_test{
 
     #[test_only]
     fun register_fake_coin(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         decimals: u8,
     ) {
         coin::register_extend<FakeCoin>(
@@ -29,7 +29,7 @@ module rooch_framework::coin_test{
     }
 
     #[test_only]
-    fun mint_and_deposit(ctx: &mut StorageContext,to_address: address, amount: u256) {
+    fun mint_and_deposit(ctx: &mut Context,to_address: address, amount: u256) {
         let coins_minted = coin::mint_extend<FakeCoin>(ctx, amount);
         coin::deposit(ctx, to_address, coins_minted);
     }
@@ -42,7 +42,7 @@ module rooch_framework::coin_test{
         let source_ctx = rooch_framework::genesis::init_for_test();
         let source_addr = signer::address_of(&source);
         let destination_addr = signer::address_of(&destination);
-        let destination_ctx = storage_context::new_test_context_random(signer::address_of(&destination), b"test_tx1");
+        let destination_ctx = context::new_test_context_random(signer::address_of(&destination), b"test_tx1");
 
         let name = string::utf8(b"Fake coin");
         let symbol = string::utf8(b"FCD");
@@ -74,8 +74,8 @@ module rooch_framework::coin_test{
         assert!(value(&coin) == 10, 7);
         burn_extend(&mut source_ctx, coin);
         assert!(supply<FakeCoin>(&source_ctx, ) == 90, 8);
-        moveos_std::storage_context::drop_test_context(source_ctx);
-        moveos_std::storage_context::drop_test_context(destination_ctx);
+        moveos_std::context::drop_test_context(source_ctx);
+        moveos_std::context::drop_test_context(destination_ctx);
     }
 
     #[test(source = @rooch_framework, destination = @0x55)]
@@ -86,7 +86,7 @@ module rooch_framework::coin_test{
         let source_ctx = rooch_framework::genesis::init_for_test();
         let source_addr = signer::address_of(&source);
         let destination_addr = signer::address_of(&destination);
-        let destination_ctx = storage_context::new_test_context_random(signer::address_of(&destination), b"test_tx1");
+        let destination_ctx = context::new_test_context_random(signer::address_of(&destination), b"test_tx1");
 
         register_fake_coin(&mut source_ctx, 9);
 
@@ -105,8 +105,8 @@ module rooch_framework::coin_test{
         burn_extend(&mut source_ctx, coin);
         assert!(supply<FakeCoin>(&source_ctx) > 0, 4);
 
-        moveos_std::storage_context::drop_test_context(source_ctx);
-        moveos_std::storage_context::drop_test_context(destination_ctx);
+        moveos_std::context::drop_test_context(source_ctx);
+        moveos_std::context::drop_test_context(destination_ctx);
     }
 
     #[test]
@@ -128,7 +128,7 @@ module rooch_framework::coin_test{
             9,
         );
 
-        moveos_std::storage_context::drop_test_context(source_ctx);
+        moveos_std::context::drop_test_context(source_ctx);
     }
 
     #[test(source = @rooch_framework, destination = @0x55)]
@@ -140,7 +140,7 @@ module rooch_framework::coin_test{
         let source_ctx = rooch_framework::genesis::init_for_test();
         let source_addr = signer::address_of(&source);
         let destination_addr = signer::address_of(&destination);
-        let destination_ctx = storage_context::new_test_context_random(signer::address_of(&destination), b"test_tx1");
+        let destination_ctx = context::new_test_context_random(signer::address_of(&destination), b"test_tx1");
 
         register_fake_coin(&mut source_ctx, 9);
         assert!(supply<FakeCoin>(&source_ctx) == 0, 0);
@@ -149,8 +149,8 @@ module rooch_framework::coin_test{
         deposit(&mut source_ctx, source_addr, coins_minted);
         transfer<FakeCoin>(&mut source_ctx, &source, destination_addr, 50);
 
-        moveos_std::storage_context::drop_test_context(source_ctx);
-        moveos_std::storage_context::drop_test_context(destination_ctx);
+        moveos_std::context::drop_test_context(source_ctx);
+        moveos_std::context::drop_test_context(destination_ctx);
     }
 
     #[test(source = @rooch_framework)]
@@ -172,7 +172,7 @@ module rooch_framework::coin_test{
         assert!(balance<FakeCoin>(&source_ctx, source_addr) == 90, 2);
         assert!(supply<FakeCoin>(&source_ctx) == 90, 3);
 
-        moveos_std::storage_context::drop_test_context(source_ctx);
+        moveos_std::context::drop_test_context(source_ctx);
     }
 
     #[test]
@@ -185,7 +185,7 @@ module rooch_framework::coin_test{
         let coins_minted = mint_extend<FakeCoin>(&mut source_ctx, 100);
         destroy_zero(coins_minted);
 
-        moveos_std::storage_context::drop_test_context(source_ctx);
+        moveos_std::context::drop_test_context(source_ctx);
     }
 
 
@@ -207,7 +207,7 @@ module rooch_framework::coin_test{
 
         assert!(balance<FakeCoin>(&source_ctx, source_addr) == 100, 2);
 
-        moveos_std::storage_context::drop_test_context(source_ctx);
+        moveos_std::context::drop_test_context(source_ctx);
     }
 
 
@@ -218,7 +218,7 @@ module rooch_framework::coin_test{
 
         register_fake_coin(&mut ctx, 9);
         assert!(is_registered<FakeCoin>(&ctx), 1);
-        moveos_std::storage_context::drop_test_context(ctx);
+        moveos_std::context::drop_test_context(ctx);
     }
 
     #[test(account = @rooch_framework)]
@@ -239,7 +239,7 @@ module rooch_framework::coin_test{
         unfreeze_coin_store_extend<FakeCoin>(&mut ctx, addr);
         assert!(!is_coin_store_frozen<FakeCoin>(&ctx, addr), 1);
 
-        moveos_std::storage_context::drop_test_context(ctx);
+        moveos_std::context::drop_test_context(ctx);
     }
 
     #[test]
@@ -262,7 +262,7 @@ module rooch_framework::coin_test{
         let coin = withdraw_extend<FakeCoin>(&mut ctx, account_addr, 100);
         burn_extend(&mut ctx, coin);
 
-        moveos_std::storage_context::drop_test_context(ctx);
+        moveos_std::context::drop_test_context(ctx);
     }
 
     #[test(account = @rooch_framework)]
@@ -276,7 +276,7 @@ module rooch_framework::coin_test{
         let coin = withdraw<FakeCoin>(&mut ctx, &account, 10);
         burn_extend(&mut ctx, coin);
 
-        moveos_std::storage_context::drop_test_context(ctx);
+        moveos_std::context::drop_test_context(ctx);
     }
 
     #[test(account = @rooch_framework)]
@@ -290,7 +290,7 @@ module rooch_framework::coin_test{
         freeze_coin_store_extend<FakeCoin>(&mut ctx, account_addr);
         deposit(&mut ctx, account_addr, coins_minted);
 
-        moveos_std::storage_context::drop_test_context(ctx);
+        moveos_std::context::drop_test_context(ctx);
     }
 
     #[test(account = @rooch_framework)]
@@ -309,7 +309,7 @@ module rooch_framework::coin_test{
         let coin = withdraw<FakeCoin>(&mut ctx, &account, 10);
         burn_extend(&mut ctx, coin);
 
-        moveos_std::storage_context::drop_test_context(ctx);
+        moveos_std::context::drop_test_context(ctx);
     }
 
 
@@ -323,7 +323,7 @@ module rooch_framework::coin_test{
         do_accept_coin<FakeCoin>(&mut ctx, &framework);
         assert!(is_account_accept_coin<FakeCoin>(&ctx, @rooch_framework), 1);
 
-        moveos_std::storage_context::drop_test_context(ctx);
+        moveos_std::context::drop_test_context(ctx);
     }
 
     #[test(source1 = @0x33, source2 = @0x66)]
@@ -333,8 +333,8 @@ module rooch_framework::coin_test{
 
         let source1_addr = signer::address_of(&source1);
         let source2_addr = signer::address_of(&source2);
-        let source1_ctx = storage_context::new_test_context_random(source1_addr, b"test_tx2");
-        let source2_ctx = storage_context::new_test_context_random(source2_addr, b"test_tx3");
+        let source1_ctx = context::new_test_context_random(source1_addr, b"test_tx2");
+        let source2_ctx = context::new_test_context_random(source2_addr, b"test_tx3");
         register_fake_coin(&mut ctx, 9);
 
         let mint_coins1 = mint_extend<FakeCoin>(&mut ctx, 10);
@@ -350,9 +350,9 @@ module rooch_framework::coin_test{
         set_auto_accept_coin(&mut source2_ctx, &source2, false);
         deposit(&mut source2_ctx, source2_addr, mint_coins2);
 
-        moveos_std::storage_context::drop_test_context(ctx);
-        moveos_std::storage_context::drop_test_context(source1_ctx);
-        moveos_std::storage_context::drop_test_context(source2_ctx);
+        moveos_std::context::drop_test_context(ctx);
+        moveos_std::context::drop_test_context(source1_ctx);
+        moveos_std::context::drop_test_context(source2_ctx);
     }
 
     #[test(source1 = @0x33, source2 = @0x66)]
@@ -361,8 +361,8 @@ module rooch_framework::coin_test{
     
         let source1_addr = signer::address_of(&source1);
         let source2_addr = signer::address_of(&source2);
-        let source1_ctx = storage_context::new_test_context_random(source1_addr, b"test_tx2");
-        let source2_ctx = storage_context::new_test_context_random(source2_addr, b"test_tx3");
+        let source1_ctx = context::new_test_context_random(source1_addr, b"test_tx2");
+        let source2_ctx = context::new_test_context_random(source2_addr, b"test_tx3");
         register_fake_coin(&mut ctx, 9);
 
         let mint_coins1 = mint_extend<FakeCoin>(&mut ctx, 10);
@@ -382,9 +382,9 @@ module rooch_framework::coin_test{
         deposit(&mut source2_ctx, source2_addr, mint_coins2);
 
 
-        moveos_std::storage_context::drop_test_context(ctx);
-        moveos_std::storage_context::drop_test_context(source1_ctx);
-        moveos_std::storage_context::drop_test_context(source2_ctx);
+        moveos_std::context::drop_test_context(ctx);
+        moveos_std::context::drop_test_context(source1_ctx);
+        moveos_std::context::drop_test_context(source2_ctx);
     }
 
     #[test(from_addr= @0x33, to_addr= @0x66)]
@@ -402,6 +402,6 @@ module rooch_framework::coin_test{
         transfer<FakeCoin>(&mut ctx, &from, to_addr, 50u256);
         assert!(account::exists_at(&ctx, to_addr), 1000);
         assert!(balance<FakeCoin>(&ctx, to_addr) == 50u256, 1001);
-        moveos_std::storage_context::drop_test_context(ctx);
+        moveos_std::context::drop_test_context(ctx);
     }
 }

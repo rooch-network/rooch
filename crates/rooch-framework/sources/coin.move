@@ -7,11 +7,10 @@ module rooch_framework::coin {
     use moveos_std::object_id::ObjectID;
     use moveos_std::table;
     use moveos_std::table::Table;
-    use moveos_std::type_table::{TypeTable};
-    use moveos_std::storage_context;
+    use moveos_std::type_table::TypeTable;
     use moveos_std::type_table;
     use moveos_std::account_storage;
-    use moveos_std::storage_context::{StorageContext};
+    use moveos_std::context::Context;
     use moveos_std::event;
     use moveos_std::type_info::{Self, TypeInfo, type_of};
     use moveos_std::signer;
@@ -155,22 +154,23 @@ module rooch_framework::coin {
         amount: u256,
     }
 
-    public(friend) fun genesis_init(ctx: &mut StorageContext, genesis_account: &signer) {
-        let tx_ctx = storage_context::tx_context_mut(ctx);
-        account_storage::global_move_to(ctx, genesis_account, CoinInfos{
-            coin_infos: type_table::new(tx_ctx),
-        });
-        let tx_ctx = storage_context::tx_context_mut(ctx);
-        account_storage::global_move_to(ctx, genesis_account, AutoAcceptCoins{
-            auto_accept_coins: table::new<address, bool>(tx_ctx),
-        });
+    public(friend) fun genesis_init(ctx: &mut Context, genesis_account: &signer) {
+        let coin_infos = CoinInfos {
+            coin_infos: type_table::new(ctx),
+        };
+        account_storage::global_move_to(ctx, genesis_account, coin_infos);
+
+        let auto_accepted_coins = AutoAcceptCoins {
+            auto_accept_coins: table::new<address, bool>(ctx),
+        };
+        account_storage::global_move_to(ctx, genesis_account, auto_accepted_coins);
     }
 
-    public(friend) fun init_account_coin_store(ctx: &mut StorageContext, account: &signer){
-        let tx_ctx = storage_context::tx_context_mut(ctx);
-        account_storage::global_move_to(ctx, account, CoinStores{
-            coin_stores: type_table::new(tx_ctx),
-        });
+    public(friend) fun init_account_coin_store(ctx: &mut Context, account: &signer){
+        let coin_stores = CoinStores {
+            coin_stores: type_table::new(ctx),
+        };
+        account_storage::global_move_to(ctx, account, coin_stores);
     }
 
     //
@@ -185,7 +185,7 @@ module rooch_framework::coin {
 
 
     /// Returns the balance of `addr` for provided `CoinType`.
-    public fun balance<CoinType: key>(ctx: &StorageContext, addr: address): u256 {
+    public fun balance<CoinType: key>(ctx: &Context, addr: address): u256 {
         if (exist_coin_store<CoinType>(ctx, addr)) {
             borrow_coin_store<CoinType>(ctx, addr).coin.value
         } else {
@@ -194,7 +194,7 @@ module rooch_framework::coin {
     }
 
     /// Returns `true` if the type `CoinType` is an registered coin.
-    public fun is_registered<CoinType: key>(ctx: &StorageContext): bool {
+    public fun is_registered<CoinType: key>(ctx: &Context): bool {
         if (account_storage::global_exists<CoinInfos>(ctx, @rooch_framework)) {
             let coin_infos = account_storage::global_borrow<CoinInfos>(ctx, @rooch_framework);
             type_table::contains<CoinInfo<CoinType>>(&coin_infos.coin_infos)
@@ -204,25 +204,25 @@ module rooch_framework::coin {
     }
 
     /// Returns the name of the coin.
-    public fun name<CoinType: key>(ctx: &StorageContext): string::String {
+    public fun name<CoinType: key>(ctx: &Context): string::String {
         borrow_coin_info<CoinType>(ctx).name
     }
 
     /// Returns the symbol of the coin, usually a shorter version of the name.
-    public fun symbol<CoinType: key>(ctx: &StorageContext): string::String {
+    public fun symbol<CoinType: key>(ctx: &Context): string::String {
         borrow_coin_info<CoinType>(ctx).symbol
     }
 
     /// Returns the number of decimals used to get its user representation.
     /// For example, if `decimals` equals `2`, a balance of `505` coins should
     /// be displayed to a user as `5.05` (`505 / 10 ** 2`).
-    public fun decimals<CoinType: key>(ctx: &StorageContext): u8 {
+    public fun decimals<CoinType: key>(ctx: &Context): u8 {
         borrow_coin_info<CoinType>(ctx).decimals
     }
 
 
     /// Returns the amount of coin in existence.
-    public fun supply<CoinType: key>(ctx: &StorageContext): u256 {
+    public fun supply<CoinType: key>(ctx: &Context): u256 {
         borrow_coin_info<CoinType>(ctx).supply
     }
 
@@ -232,7 +232,7 @@ module rooch_framework::coin {
     }
 
     /// Return coin store handle for addr
-    public fun coin_store_handle(ctx: &StorageContext, addr: address): Option<ObjectID> {
+    public fun coin_store_handle(ctx: &Context, addr: address): Option<ObjectID> {
         if (account_storage::global_exists<CoinStores>(ctx, addr))
         {
             let coin_stores = account_storage::global_borrow<CoinStores>(ctx, addr);
@@ -243,7 +243,7 @@ module rooch_framework::coin {
     }
 
     /// Return coin info handle
-    public fun coin_info_handle(ctx: &StorageContext): ObjectID {
+    public fun coin_info_handle(ctx: &Context): ObjectID {
         // coin info ensured via the Genesis transaction, so it should always exist
         assert!(account_storage::global_exists<CoinInfos>(ctx, @rooch_framework), error::invalid_argument(ErrorCoinInfosNotFound));
         let coin_infos = account_storage::global_borrow<CoinInfos>(ctx, @rooch_framework);
@@ -254,46 +254,46 @@ module rooch_framework::coin {
     // Helper functions
     //
 
-    fun borrow_coin_info<CoinType: key>(ctx: &StorageContext): &CoinInfo<CoinType> {
+    fun borrow_coin_info<CoinType: key>(ctx: &Context): &CoinInfo<CoinType> {
         let coin_infos = account_storage::global_borrow<CoinInfos>(ctx, @rooch_framework);
         check_coin_info_registered<CoinType>(coin_infos);
         type_table::borrow<CoinInfo<CoinType>>(&coin_infos.coin_infos)
     }
 
-    fun borrow_mut_coin_info<CoinType: key>(ctx: &mut StorageContext): &mut CoinInfo<CoinType> {
+    fun borrow_mut_coin_info<CoinType: key>(ctx: &mut Context): &mut CoinInfo<CoinType> {
         let coin_infos = account_storage::global_borrow_mut<CoinInfos>(ctx, @rooch_framework);
         check_coin_info_registered<CoinType>(coin_infos);
         type_table::borrow_mut<CoinInfo<CoinType>>(&mut coin_infos.coin_infos)
     }
 
-    fun exist_auto_accept_token(ctx: &StorageContext, addr: address): bool {
+    fun exist_auto_accept_token(ctx: &Context, addr: address): bool {
         let auto_accept_coins = account_storage::global_borrow<AutoAcceptCoins>(ctx, @rooch_framework);
         table::contains<address, bool>(&auto_accept_coins.auto_accept_coins, addr)
     }
 
-    fun borrow_coin_store<CoinType: key>(ctx: &StorageContext, addr: address): &CoinStore<CoinType> {
+    fun borrow_coin_store<CoinType: key>(ctx: &Context, addr: address): &CoinStore<CoinType> {
         let coin_stores = account_storage::global_borrow<CoinStores>(ctx, addr);
         type_table::borrow<CoinStore<CoinType>>(&coin_stores.coin_stores)
     }
 
-    fun borrow_mut_coin_store<CoinType: key>(ctx: &mut StorageContext, addr: address): &mut CoinStore<CoinType> {
+    fun borrow_mut_coin_store<CoinType: key>(ctx: &mut Context, addr: address): &mut CoinStore<CoinType> {
         let coin_stores = account_storage::global_borrow_mut<CoinStores>(ctx, addr);
         type_table::borrow_mut<CoinStore<CoinType>>(&mut coin_stores.coin_stores)
     }
 
-    fun ensure_coin_store<CoinType: key>(ctx: &mut StorageContext, addr: address) {
+    fun ensure_coin_store<CoinType: key>(ctx: &mut Context, addr: address) {
         if (!exist_coin_store<CoinType>(ctx, addr) && can_auto_accept_coin(ctx, addr)) {
             inner_new_coin_store<CoinType>(ctx, addr)
         }
     }
 
-    fun ensure_coin_store_pass_auto_accept_flag<CoinType: key>(ctx: &mut StorageContext, addr: address) {
+    fun ensure_coin_store_pass_auto_accept_flag<CoinType: key>(ctx: &mut Context, addr: address) {
         if (!exist_coin_store<CoinType>(ctx, addr)) {
             inner_new_coin_store<CoinType>(ctx, addr)
         }
     }
 
-    fun inner_new_coin_store<CoinType: key>(ctx: &mut StorageContext, addr: address) {
+    fun inner_new_coin_store<CoinType: key>(ctx: &mut Context, addr: address) {
         let coin_stores = account_storage::global_borrow_mut<CoinStores>(ctx, addr);
         type_table::add<CoinStore<CoinType>>(&mut coin_stores.coin_stores, CoinStore<CoinType> {
             coin: Coin { value: 0 },
@@ -301,17 +301,17 @@ module rooch_framework::coin {
         })
     }
 
-    fun extract_coin<CoinType: key>(ctx: &mut StorageContext, addr: address, amount: u256): Coin<CoinType> {
+    fun extract_coin<CoinType: key>(ctx: &mut Context, addr: address, amount: u256): Coin<CoinType> {
         let coin_store = borrow_mut_coin_store<CoinType>(ctx, addr);
         extract<CoinType>(&mut coin_store.coin, amount)
     }
 
-    fun merge_coin<CoinType: key>(ctx: &mut StorageContext, addr: address, coin: Coin<CoinType>) {
+    fun merge_coin<CoinType: key>(ctx: &mut Context, addr: address, coin: Coin<CoinType>) {
         let coin_store = borrow_mut_coin_store<CoinType>(ctx, addr);
         merge<CoinType>(&mut coin_store.coin, coin)
     }
 
-    fun check_coin_store_frozen<CoinType: key>(ctx: &StorageContext, addr: address) {
+    fun check_coin_store_frozen<CoinType: key>(ctx: &Context, addr: address) {
         assert!(
             !is_coin_store_frozen<CoinType>(ctx, addr),
             error::permission_denied(ErrorAccountWithCoinFrozen),
@@ -329,7 +329,7 @@ module rooch_framework::coin {
     // Internal functions
     //
 
-    fun mint_internal<CoinType: key>(ctx: &mut StorageContext,
+    fun mint_internal<CoinType: key>(ctx: &mut Context,
         amount: u256): Coin<CoinType>{
         let coin_info = borrow_mut_coin_info<CoinType>(ctx);
         coin_info.supply = coin_info.supply + amount;
@@ -342,7 +342,7 @@ module rooch_framework::coin {
     }
 
     fun withdraw_internal<CoinType: key>(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         addr: address,
         amount: u256,
     ): Coin<CoinType> {
@@ -362,7 +362,7 @@ module rooch_framework::coin {
         extract_coin(ctx, addr, amount)
     }
 
-    fun deposit_internal<CoinType: key>(ctx: &mut StorageContext, addr: address, coin: Coin<CoinType>) {
+    fun deposit_internal<CoinType: key>(ctx: &mut Context, addr: address, coin: Coin<CoinType>) {
         assert!(
             is_account_accept_coin<CoinType>(ctx, addr),
             error::not_found(ErrorAccountNotAcceptCoin),
@@ -379,7 +379,7 @@ module rooch_framework::coin {
     }
 
     fun transfer_internal<CoinType: key>(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         from: address,
         to: address,
         amount: u256,
@@ -389,7 +389,7 @@ module rooch_framework::coin {
     }
 
     fun burn_internal<CoinType: key>(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         coin: Coin<CoinType>,
     ) {
         let Coin { value: amount } = coin;
@@ -409,7 +409,7 @@ module rooch_framework::coin {
     //
 
     /// Return whether the account at `addr` accept `Coin` type coins
-    public fun is_account_accept_coin<CoinType: key>(ctx: &StorageContext, addr: address): bool {
+    public fun is_account_accept_coin<CoinType: key>(ctx: &Context, addr: address): bool {
         if (can_auto_accept_coin(ctx, addr)) {
             true
         } else {
@@ -419,7 +419,7 @@ module rooch_framework::coin {
 
     /// Check whether the address can auto accept coin.
     /// Default is true if absent
-    public fun can_auto_accept_coin(ctx: &StorageContext, addr: address): bool {
+    public fun can_auto_accept_coin(ctx: &Context, addr: address): bool {
         if (account_storage::global_exists<AutoAcceptCoins>(ctx, @rooch_framework)) {
             let auto_accept_coins = account_storage::global_borrow<AutoAcceptCoins>(ctx, @rooch_framework);
             if (table::contains<address, bool>(&auto_accept_coins.auto_accept_coins, addr)) {
@@ -431,13 +431,13 @@ module rooch_framework::coin {
 
     /// Add a balance of `Coin` type to the sending account.
     /// If user turns off AutoAcceptCoin, call this method to receive the corresponding Coin
-    public fun do_accept_coin<CoinType: key>(ctx: &mut StorageContext, account: &signer) {
+    public fun do_accept_coin<CoinType: key>(ctx: &mut Context, account: &signer) {
         let addr = signer::address_of(account);
         ensure_coin_store_pass_auto_accept_flag<CoinType>(ctx, addr);
     }
 
     /// Configure whether auto-accept coins.
-    public fun set_auto_accept_coin(ctx: &mut StorageContext, account: &signer, enable: bool)  {
+    public fun set_auto_accept_coin(ctx: &mut Context, account: &signer, enable: bool)  {
         let addr = signer::address_of(account);
         let auto_accept_coins = account_storage::global_borrow_mut<AutoAcceptCoins>(ctx, @rooch_framework);
         table::upsert<address, bool>(&mut auto_accept_coins.auto_accept_coins, addr, enable);
@@ -452,7 +452,7 @@ module rooch_framework::coin {
     /// Withdraw specifed `amount` of coin `CoinType` from the signing account.
     /// This public entry function requires the `CoinType` to have `key` and `store` abilities.
     public fun withdraw<CoinType: key + store>(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         account: &signer,
         amount: u256,
     ): Coin<CoinType> {
@@ -464,7 +464,7 @@ module rooch_framework::coin {
 
     /// Deposit the coin into the recipient's account and emit an event.
     /// This public entry function requires the `CoinType` to have `key` and `store` abilities.
-    public fun deposit<CoinType: key + store>(ctx: &mut StorageContext, addr: address, coin: Coin<CoinType>) {
+    public fun deposit<CoinType: key + store>(ctx: &mut Context, addr: address, coin: Coin<CoinType>) {
         check_coin_store_frozen<CoinType>(ctx, addr);
         deposit_internal(ctx, addr, coin);
     }
@@ -472,7 +472,7 @@ module rooch_framework::coin {
     /// Transfer `amount` of coins `CoinType` from `from` to `to`.
     /// Any account and module can call this function to transfer coins, the `CoinType` must have `key` and `store` abilities.
     public fun transfer<CoinType: key + store>(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         from: &signer,
         to: address,
         amount: u256,
@@ -523,7 +523,7 @@ module rooch_framework::coin {
         }
     }
 
-    public fun exist_coin_store<CoinType: key>(ctx: &StorageContext, addr: address): bool {
+    public fun exist_coin_store<CoinType: key>(ctx: &Context, addr: address): bool {
         if (account_storage::global_exists<CoinStores>(ctx, addr)) {
             let coin_stores = account_storage::global_borrow<CoinStores>(ctx, addr);
             type_table::contains<CoinStore<CoinType>>(&coin_stores.coin_stores)
@@ -532,7 +532,7 @@ module rooch_framework::coin {
         }
     }
 
-    public fun is_coin_store_frozen<CoinType: key>(ctx: &StorageContext, addr: address): bool {
+    public fun is_coin_store_frozen<CoinType: key>(ctx: &Context, addr: address): bool {
         if (exist_coin_store<CoinType>(ctx, addr)) {
             borrow_coin_store<CoinType>(ctx, addr).frozen
         } else {
@@ -550,7 +550,7 @@ module rooch_framework::coin {
     /// (name, supply, etc.).
     /// This function is protected by `private_generics`, so it can only be called by the `CoinType` module.
     public fun register_extend<CoinType: key>(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         name: string::String,
         symbol: string::String,
         decimals: u8,
@@ -577,7 +577,7 @@ module rooch_framework::coin {
 
     #[private_generics(CoinType)]
     /// Mint new `Coin`, this function is only called by the `CoinType` module, for the developer to extend custom mint logic
-    public fun mint_extend<CoinType: key>(ctx: &mut StorageContext,amount: u256) : Coin<CoinType> {
+    public fun mint_extend<CoinType: key>(ctx: &mut Context,amount: u256) : Coin<CoinType> {
         mint_internal<CoinType>(ctx, amount)
     }
 
@@ -585,7 +585,7 @@ module rooch_framework::coin {
     /// Withdraw specifed `amount` of coin `CoinType` from any addr, this function does not check the Coin `frozen` attribute
     /// This function is only called by the `CoinType` module, for the developer to extend custom withdraw logic
     public fun withdraw_extend<CoinType: key>(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         addr: address,
         amount: u256,
     ): Coin<CoinType> {
@@ -595,7 +595,7 @@ module rooch_framework::coin {
     #[private_generics(CoinType)]
     /// Deposit the coin into the recipient's account and emit an event.
     /// This function is only called by the `CoinType` module, for the developer to extend custom deposit logic
-    public fun deposit_extend<CoinType: key>(ctx: &mut StorageContext, addr: address, coin: Coin<CoinType>) {
+    public fun deposit_extend<CoinType: key>(ctx: &mut Context, addr: address, coin: Coin<CoinType>) {
         deposit_internal(ctx, addr, coin);
     }
 
@@ -603,7 +603,7 @@ module rooch_framework::coin {
     /// Transfer `amount` of coins `CoinType` from `from` to `to`.
     /// This function is only called by the `CoinType` module, for the developer to extend custom transfer logic
     public fun transfer_extend<CoinType: key>(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         from: address,
         to: address,
         amount: u256,
@@ -615,7 +615,7 @@ module rooch_framework::coin {
     /// Burn `coin`
     /// This function is only called by the `CoinType` module, for the developer to extend custom burn logic
     public fun burn_extend<CoinType: key>(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         coin: Coin<CoinType>,
     ) {
         burn_internal(ctx, coin) 
@@ -624,7 +624,7 @@ module rooch_framework::coin {
     #[private_generics(CoinType)]
     /// Freeze a CoinStore to prevent transfers
     public fun freeze_coin_store_extend<CoinType: key>(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         addr: address,
     ) {
         ensure_coin_store<CoinType>(ctx, addr);
@@ -635,7 +635,7 @@ module rooch_framework::coin {
     #[private_generics(CoinType)]
     /// Unfreeze a CoinStore to allow transfers
     public fun unfreeze_coin_store_extend<CoinType: key>(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         addr: address,
     ) {
         ensure_coin_store<CoinType>(ctx, addr);
@@ -649,19 +649,19 @@ module rooch_framework::coin {
 
     /// Creating a resource that stores balance of `CoinType` on user's account.
     /// Required if user wants to start accepting deposits of `CoinType` in his account.
-    public entry fun accept_coin_entry<CoinType: key>(ctx: &mut StorageContext, account: &signer) {
+    public entry fun accept_coin_entry<CoinType: key>(ctx: &mut Context, account: &signer) {
         do_accept_coin<CoinType>(ctx, account)
     }
 
     /// Enable account's auto-accept-coin feature.
     /// The script function is reenterable.
-    public entry fun enable_auto_accept_coin_entry(ctx: &mut StorageContext, account: &signer) {
+    public entry fun enable_auto_accept_coin_entry(ctx: &mut Context, account: &signer) {
         set_auto_accept_coin(ctx, account, true)
     }
 
     /// Disable account's auto-accept-coin feature.
     /// The script function is reenterable.
-    public entry fun disable_auto_accept_coin_entry(ctx: &mut StorageContext, account: &signer) {
+    public entry fun disable_auto_accept_coin_entry(ctx: &mut Context, account: &signer) {
         set_auto_accept_coin(ctx, account, false);
     }
 }

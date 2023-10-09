@@ -4,7 +4,7 @@ module simple_blog::blog {
     use std::string::{Self,String};
     use std::vector;
     use moveos_std::object_id::ObjectID;
-    use moveos_std::storage_context::StorageContext;
+    use moveos_std::context::Context;
     use moveos_std::account_storage;
     use simple_blog::article;
 
@@ -18,12 +18,12 @@ module simple_blog::blog {
 
     /// This init function is called when the module is published
     /// The owner is the address of the account that publishes the module
-    fun init(storage_ctx: &mut StorageContext, owner: &signer) {
+    fun init(ctx: &mut Context, owner: &signer) {
         // auto create blog for module publisher 
-        create_blog(storage_ctx, owner);
+        create_blog(ctx, owner);
     }
 
-    public fun create_blog(ctx: &mut StorageContext, owner: &signer) {
+    public fun create_blog(ctx: &mut Context, owner: &signer) {
         let articles = vector::empty();
         let myblog = MyBlog{
             name: string::utf8(b"MyBlog"),
@@ -32,7 +32,7 @@ module simple_blog::blog {
         account_storage::global_move_to(ctx, owner, myblog);
     }
 
-    public entry fun set_blog_name(ctx: &mut StorageContext, owner: &signer, blog_name: String) {
+    public entry fun set_blog_name(ctx: &mut Context, owner: &signer, blog_name: String) {
         assert!(std::string::length(&blog_name) <= 200, error::invalid_argument(ErrorDataTooLong));
         let owner_address = signer::address_of(owner);
         // if blog not exist, create it
@@ -43,7 +43,7 @@ module simple_blog::blog {
         myblog.name = blog_name;
     }
 
-    fun add_article_to_myblog(ctx: &mut StorageContext, owner: &signer, article_id: ObjectID) {
+    fun add_article_to_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID) {
         let owner_address = signer::address_of(owner);
         // if blog not exist, create it
         if(!account_storage::global_exists<MyBlog>(ctx, owner_address)){
@@ -53,7 +53,7 @@ module simple_blog::blog {
         vector::push_back(&mut myblog.articles, article_id);
     }
 
-    fun delete_article_from_myblog(ctx: &mut StorageContext, owner: &signer, article_id: ObjectID) {
+    fun delete_article_from_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID) {
         let owner_address = signer::address_of(owner);
         let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
         let (contains, index) = vector::index_of(&myblog.articles, &article_id);
@@ -62,7 +62,7 @@ module simple_blog::blog {
     }
 
     /// Get owner's blog's articles
-    public fun get_blog_articles(ctx: &StorageContext, owner_address: address): vector<ObjectID> {
+    public fun get_blog_articles(ctx: &Context, owner_address: address): vector<ObjectID> {
         if(!account_storage::global_exists<MyBlog>(ctx, owner_address)){
             vector::empty()
         }else{
@@ -72,7 +72,7 @@ module simple_blog::blog {
     }
 
     public entry fun create_article(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         owner: signer,
         title: String,
         body: String,
@@ -82,7 +82,7 @@ module simple_blog::blog {
     }
 
     public entry fun update_article(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         owner: signer,
         id: ObjectID,
         new_title: String,
@@ -92,7 +92,7 @@ module simple_blog::blog {
     }
 
     public entry fun delete_article(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         owner: signer,
         id: ObjectID,
     ) {

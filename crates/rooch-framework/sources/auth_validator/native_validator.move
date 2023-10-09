@@ -5,7 +5,7 @@ module rooch_framework::native_validator {
     use std::vector;
     use std::option;
     use std::signer;
-    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::context::{Self, Context};
     use rooch_framework::hash;
     use rooch_framework::account_authentication;
     use rooch_framework::ed25519;
@@ -24,7 +24,7 @@ module rooch_framework::native_validator {
     }
 
     public entry fun rotate_authentication_key_entry(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
         account: &signer,
         public_key: vector<u8>
     ) {
@@ -40,11 +40,11 @@ module rooch_framework::native_validator {
         rotate_authentication_key(ctx, account_addr, authentication_key);
     }
 
-    fun rotate_authentication_key(ctx: &mut StorageContext, account_addr: address, authentication_key: vector<u8>) {
+    fun rotate_authentication_key(ctx: &mut Context, account_addr: address, authentication_key: vector<u8>) {
         account_authentication::rotate_authentication_key<NativeValidator>(ctx, account_addr, authentication_key);
     }
 
-    public entry fun remove_authentication_key_entry(ctx: &mut StorageContext, account: &signer) {
+    public entry fun remove_authentication_key_entry(ctx: &mut Context, account: &signer) {
         account_authentication::remove_authentication_key<NativeValidator>(ctx, signer::address_of(account));
     }
 
@@ -93,7 +93,7 @@ module rooch_framework::native_validator {
     }
 
     /// Get the authentication key of the given account, if it not exist, return the account address as authentication key.
-    public fun get_authentication_key_with_default(ctx: &StorageContext, addr: address): vector<u8> {
+    public fun get_authentication_key_with_default(ctx: &Context, addr: address): vector<u8> {
         let auth_key_option = account_authentication::get_authentication_key<NativeValidator>(ctx, addr);
         if (option::is_some(&auth_key_option)) {
             option::extract(&mut auth_key_option)
@@ -118,12 +118,12 @@ module rooch_framework::native_validator {
         );
     }
 
-    public fun validate(ctx: &StorageContext, authenticator_payload: vector<u8>) {
-        let tx_hash = storage_context::tx_hash(ctx);
+    public fun validate(ctx: &Context, authenticator_payload: vector<u8>) {
+        let tx_hash = context::tx_hash(ctx);
         validate_signature(&authenticator_payload, &tx_hash);
 
         let auth_key_from_authenticator_payload = get_authentication_key_from_authenticator_payload(&authenticator_payload);
-        let auth_key_in_account = get_authentication_key_with_default(ctx, storage_context::sender(ctx));
+        let auth_key_in_account = get_authentication_key_with_default(ctx, context::sender(ctx));
         assert!(
             auth_key_in_account == auth_key_from_authenticator_payload,
             auth_validator::error_invalid_account_auth_key()
@@ -131,13 +131,13 @@ module rooch_framework::native_validator {
     }
 
     fun pre_execute(
-        _ctx: &mut StorageContext,
+        _ctx: &mut Context,
     ) {}
 
     fun post_execute(
-        ctx: &mut StorageContext,
+        ctx: &mut Context,
     ) {
-        let account_addr = storage_context::sender(ctx);
+        let account_addr = context::sender(ctx);
         let auth_key_option = account_authentication::get_authentication_key<NativeValidator>(ctx, account_addr);
         // If the account does not have an authentication key, set the account address as the authentication key after the first transaction is executed.
         if (option::is_none(&auth_key_option)) {

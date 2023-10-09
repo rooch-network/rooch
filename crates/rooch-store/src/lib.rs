@@ -23,6 +23,8 @@ pub mod transaction_store;
 pub const TYPED_TRANSACTION_PREFIX_NAME: ColumnFamilyName = "typed_transaction";
 pub const TX_SEQUENCE_INFO_PREFIX_NAME: ColumnFamilyName = "tx_sequence_info";
 pub const TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME: ColumnFamilyName = "tx_sequence_info_mapping";
+pub const TX_SEQUENCE_INFO_REVERSE_MAPPING_PREFIX_NAME: ColumnFamilyName =
+    "tx_sequence_info_reverse_mapping";
 
 pub const META_SEQUENCER_ORDER_PREFIX_NAME: ColumnFamilyName = "meta_sequencer_order";
 
@@ -34,6 +36,7 @@ static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         TX_SEQUENCE_INFO_PREFIX_NAME,
         TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME,
         META_SEQUENCER_ORDER_PREFIX_NAME,
+        TX_SEQUENCE_INFO_REVERSE_MAPPING_PREFIX_NAME,
     ]
 });
 
@@ -116,7 +119,7 @@ impl TransactionStore for RoochStore {
         &self,
         cursor: Option<u128>,
         limit: u64,
-    ) -> Result<Vec<TransactionSequenceInfo>> {
+    ) -> Result<Vec<Option<TransactionSequenceInfo>>> {
         self.transaction_store
             .get_tx_sequence_infos_by_order(cursor, limit)
     }
@@ -128,11 +131,22 @@ impl TransactionStore for RoochStore {
 
     fn get_tx_sequence_info_mapping_by_order(
         &self,
-        cursor: Option<u128>,
-        limit: u64,
-    ) -> Result<Vec<TransactionSequenceInfoMapping>> {
+        tx_orders: Vec<u128>,
+    ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>> {
         self.transaction_store
-            .get_tx_sequence_mapping_by_order(cursor, limit)
+            .get_tx_sequence_info_mapping_by_order(tx_orders)
+    }
+
+    fn save_tx_sequence_info_reverse_mapping(&self, tx_hash: H256, tx_order: u128) -> Result<()> {
+        self.transaction_store
+            .save_tx_sequence_info_reverse_mapping(tx_hash, tx_order)
+    }
+    fn multi_get_tx_sequence_info_mapping_by_hash(
+        &self,
+        tx_hashes: Vec<H256>,
+    ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>> {
+        self.transaction_store
+            .multi_get_tx_sequence_info_mapping_by_hash(tx_hashes)
     }
 }
 

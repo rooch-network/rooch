@@ -1,13 +1,62 @@
-# Rooch object
-
-1. Rooch object introduction.
-2. The difference between the Sui object.
-3. How to use the Rooch object.
+# Rooch Object
 
 import { Callout, FileTree } from 'nextra/components'
 
-<Callout>
-  TODO:
+In Rooch, the `Object` follows a box-like pattern. It acts as a container with a globally unique ID, enclosing a type `T` as an Object.
 
-  This document is being improved!
+```move
+module moveos_std::object{
+    struct Object<T: key>{
+        id: ObjectID,
+        owner: address,
+        value: T,
+    }
+}
+```
+
+The `Object` provides the following functions to manipulate an `Object`:
+
+| Object Functions                                        | Description                                                                                |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `context::new_object<T: key>(self: &mut Context, value: T): Object<T` | Encapsulates `T` into an `Object` box，and returns `Object<T>`|
+| `context::new_object_with_owner<T: key>(self: &mut Context, owner: address, value: T): Object<T>` | Encapsulates `T` into an `Object` box with given owner，and returns `Object<T>`|
+| `object::borrow<T>(&Object<T>): &T`                        | Borrows an immutable reference to `T` from the `Object`                                 |
+| `object::borrow_mut<T>(&mut Object<T>): &mut T`            | Borrows a mutable reference to `T` from the `Object`                                     |
+| `object::transfer<T>(&mut Object<T>,address)`              | Transfers ownership of the `Object` to the specified `address`                           |
+| `object::unpack<T>(Object<T>): (ObjectID, address, T)`     | Unpacks the `Object<T>`                                                                 |
+
+These functions are restricted using `#[private_generics<T>]`, ensuring that only the module where `T` is defined can access these methods.
+
+Rooch Object is also an example of the [Hot Potato](https://examples.sui.io/patterns/hot-potato.html) pattern in Move. Object does not have any abilities, so it cannot be `drop`, `copy`, or `store`. It can only be handled by functions provided by `StorageContext`.
+
+`Context` provides the following functions to handle `Object`s:
+
+|Context Functions                                                                |Description |
+|---------------------------------------------------------------------------------|----------------------------------|
+|`context::borrow_object<T: key>(self: &Context, object_id: ObjectID): &Object<T>`              | Borrows a reference to `Object<T>` using `ObjectID`   |
+|`context::borrow_object_mut<T: key>(self: &mut Context, object_id: ObjectID): &mut Object<T>`  | Borrows a mutable reference to `Object<T>` using `ObjectID` |
+|`context::add_object<T: key>(self: &mut Context, obj: Object<T>)`                       | Adds `Object<T>` to global storage   |
+|`context::remove_object<T: key>(self: &mut Context, object_id: ObjectID): Object<T>`           | Removes `Object<T>` associated with `ObjectID`, returns `Object<T>` |
+|`contains_object(self: &Context, object_id: ObjectID): bool` | If `ObjectID` exists in global storage |
+
+These functions except `contains_object` are also restricted using `#[private_generics<T>]`, ensuring that only the module where `T` is defined can access these methods.
+
+### Comparison of Rooch Object, Sui Object, and Aptos Object
+
+1. Sui Object is a special `struct` that requires the `key` ability and the first field must be `UID`.
+2. Aptos Object is a special type of account where the `address` serves as the `ObjectID`.
+
+<Callout>
+TODO: This part of the document needs improvement.
 </Callout>
+
+### References
+
+1. [Rooch Object API document](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/object.md)
+2. [Rooch Object Source code](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/object.move)
+3. [Rooch Context API document](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/context.md)
+4. [Rooch Context Source code](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/context.move)
+5. [Sui Object](https://docs.sui.io/learn/objects)
+6. [Aptos Object](https://aptos.dev/standards/aptos-object/)
+7. [StorageAbstraction](../dive-into-rooch/storage-abstraction.zh-CN.md)
+7. [Hot Potato](https://examples.sui.io/patterns/hot-potato.html)

@@ -5,7 +5,7 @@
 
 module rooch_examples::blog_aggregate {
     use moveos_std::object_id::ObjectID;
-    use moveos_std::storage_context::StorageContext;
+    use moveos_std::context::Context;
     use rooch_examples::blog;
     use rooch_examples::blog_add_article_logic;
     use rooch_examples::blog_create_logic;
@@ -18,104 +18,104 @@ module rooch_examples::blog_aggregate {
     friend rooch_examples::article_delete_logic;
 
     public(friend) fun add_article(
-        storage_ctx: &mut StorageContext,
+        ctx: &mut Context,
         article_id: ObjectID,
     ) {
-        let blog = blog::borrow_blog(storage_ctx);
+        let blog = blog::borrow_blog(ctx);
         let article_added_to_blog = blog_add_article_logic::verify(
             article_id,
             blog,
         );
-        let mut_blog = blog::borrow_mut_blog(storage_ctx);
+        let mut_blog = blog::borrow_mut_blog(ctx);
         blog_add_article_logic::mutate(
             &article_added_to_blog,
             mut_blog,
         );
         blog::update_version(mut_blog);
-        blog::emit_article_added_to_blog(storage_ctx, article_added_to_blog);
+        blog::emit_article_added_to_blog(ctx, article_added_to_blog);
     }
 
     public(friend) fun remove_article(
-        storage_ctx: &mut StorageContext,
+        ctx: &mut Context,
         article_id: ObjectID,
     ) {
-        let blog = blog::borrow_blog(storage_ctx);
+        let blog = blog::borrow_blog(ctx);
         let article_removed_from_blog = blog_remove_article_logic::verify(
             article_id,
             blog,
         );
-        let mut_blog = blog::borrow_mut_blog(storage_ctx);
+        let mut_blog = blog::borrow_mut_blog(ctx);
         blog_remove_article_logic::mutate(
             &article_removed_from_blog,
             mut_blog,
         );
         blog::update_version(mut_blog);
-        blog::emit_article_removed_from_blog(storage_ctx, article_removed_from_blog);
+        blog::emit_article_removed_from_blog(ctx, article_removed_from_blog);
     }
 
     public entry fun create(
-        storage_ctx: &mut StorageContext,
+        ctx: &mut Context,
         account: &signer,
         name: String,
         articles: vector<ObjectID>,
     ) {
         let blog_created = blog_create_logic::verify(
-            storage_ctx,
+            ctx,
             account,
             name,
             articles,
         );
         let blog = blog_create_logic::mutate(
-            storage_ctx,
+            ctx,
             account,
             &blog_created,
         );
-        blog::add_blog(storage_ctx, account, blog);
-        blog::emit_blog_created(storage_ctx, blog_created);
+        blog::add_blog(ctx, account, blog);
+        blog::emit_blog_created(ctx, blog_created);
     }
 
     public entry fun update(
-        storage_ctx: &mut StorageContext,
+        ctx: &mut Context,
         account: &signer,
         name: String,
         articles: vector<ObjectID>,
     ) {
-        let blog = blog::remove_blog(storage_ctx);
+        let blog = blog::remove_blog(ctx);
         let blog_updated = blog_update_logic::verify(
-            storage_ctx,
+            ctx,
             account,
             name,
             articles,
             &blog,
         );
         let updated_blog = blog_update_logic::mutate(
-            storage_ctx,
+            ctx,
             account,
             &blog_updated,
             blog,
         );
-        blog::update_version_and_add(storage_ctx, account, updated_blog);
-        blog::emit_blog_updated(storage_ctx, blog_updated);
+        blog::update_version_and_add(ctx, account, updated_blog);
+        blog::emit_blog_updated(ctx, blog_updated);
     }
 
     public entry fun delete(
-        storage_ctx: &mut StorageContext,
+        ctx: &mut Context,
         account: &signer,
     ) {
-        let blog = blog::remove_blog(storage_ctx);
+        let blog = blog::remove_blog(ctx);
         let blog_deleted = blog_delete_logic::verify(
-            storage_ctx,
+            ctx,
             account,
             &blog,
         );
         let updated_blog = blog_delete_logic::mutate(
-            storage_ctx,
+            ctx,
             account,
             &blog_deleted,
             blog,
         );
         blog::drop_blog(updated_blog);
-        blog::emit_blog_deleted(storage_ctx, blog_deleted);
+        blog::emit_blog_deleted(ctx, blog_deleted);
     }
 
 }

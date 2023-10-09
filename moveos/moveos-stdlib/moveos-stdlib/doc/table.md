@@ -23,9 +23,13 @@ struct itself, while the operations are implemented as native functions. No trav
 -  [Function `remove`](#0x2_table_remove)
 -  [Function `contains`](#0x2_table_contains)
 -  [Function `destroy_empty`](#0x2_table_destroy_empty)
+-  [Function `length`](#0x2_table_length)
+-  [Function `is_empty`](#0x2_table_is_empty)
+-  [Function `drop`](#0x2_table_drop)
 
 
-<pre><code><b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
+<pre><code><b>use</b> <a href="context.md#0x2_context">0x2::context</a>;
+<b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="raw_table.md#0x2_raw_table">0x2::raw_table</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 </code></pre>
@@ -67,7 +71,7 @@ Type of tables
 Create a new Table.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_new">new</a>&lt;K: <b>copy</b>, drop, V: store&gt;(ctx: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_new">new</a>&lt;K: <b>copy</b>, drop, V: store&gt;(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>): <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;
 </code></pre>
 
 
@@ -76,9 +80,10 @@ Create a new Table.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_new">new</a>&lt;K: <b>copy</b> + drop, V: store&gt;(ctx: &<b>mut</b> TxContext): <a href="table.md#0x2_table_Table">Table</a>&lt;K, V&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_new">new</a>&lt;K: <b>copy</b> + drop, V: store&gt;(ctx: &<b>mut</b> Context): <a href="table.md#0x2_table_Table">Table</a>&lt;K, V&gt; {
+    <b>let</b> tx_ctx = <a href="context.md#0x2_context_tx_context_mut">context::tx_context_mut</a>(ctx);
     <a href="table.md#0x2_table_Table">Table</a> {
-        handle: <a href="raw_table.md#0x2_raw_table_new_table_handle">raw_table::new_table_handle</a>(ctx),
+        handle: <a href="raw_table.md#0x2_raw_table_new_table_handle">raw_table::new_table_handle</a>(tx_ctx),
     }
 }
 </code></pre>
@@ -326,7 +331,7 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 
 ## Function `destroy_empty`
 
-Destroy a table. The table must be empty to succeed.
+Destroy a table. Aborts if the table is not empty.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_destroy_empty">destroy_empty</a>&lt;K: <b>copy</b>, drop, V&gt;(<a href="table.md#0x2_table">table</a>: <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;)
@@ -341,6 +346,83 @@ Destroy a table. The table must be empty to succeed.
 <pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_destroy_empty">destroy_empty</a>&lt;K: <b>copy</b> + drop, V&gt;(<a href="table.md#0x2_table">table</a>: <a href="table.md#0x2_table_Table">Table</a>&lt;K, V&gt;) {
     <b>let</b> <a href="table.md#0x2_table_Table">Table</a> { handle } = <a href="table.md#0x2_table">table</a>;
     <a href="raw_table.md#0x2_raw_table_destroy_empty">raw_table::destroy_empty</a>(&handle)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_table_length"></a>
+
+## Function `length`
+
+Returns the size of the table, the number of key-value pairs
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_length">length</a>&lt;K: <b>copy</b>, drop, V&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_length">length</a>&lt;K: <b>copy</b> + drop, V&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">Table</a>&lt;K, V&gt;): u64 {
+    <a href="raw_table.md#0x2_raw_table_length">raw_table::length</a>(&<a href="table.md#0x2_table">table</a>.handle)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_table_is_empty"></a>
+
+## Function `is_empty`
+
+Returns true iff the table is empty (if <code>length</code> returns <code>0</code>)
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_is_empty">is_empty</a>&lt;K: <b>copy</b>, drop, V&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_is_empty">is_empty</a>&lt;K: <b>copy</b> + drop, V&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">Table</a>&lt;K, V&gt;): bool {
+    <a href="raw_table.md#0x2_raw_table_length">raw_table::length</a>(&<a href="table.md#0x2_table">table</a>.handle) == 0
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_table_drop"></a>
+
+## Function `drop`
+
+Drop a possibly non-empty table.
+Usable only if the value type <code>V</code> has the <code>drop</code> ability
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_drop">drop</a>&lt;K: <b>copy</b>, drop, V: drop&gt;(<a href="table.md#0x2_table">table</a>: <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_drop">drop</a>&lt;K: <b>copy</b> + drop, V: drop&gt;(<a href="table.md#0x2_table">table</a>: <a href="table.md#0x2_table_Table">Table</a>&lt;K, V&gt;) {
+    <b>let</b> <a href="table.md#0x2_table_Table">Table</a> { handle } = <a href="table.md#0x2_table">table</a>;
+    <a href="raw_table.md#0x2_raw_table_drop_unchecked">raw_table::drop_unchecked</a>(&handle)
 }
 </code></pre>
 

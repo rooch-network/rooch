@@ -7,12 +7,14 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::FunctionResult;
+use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::get_first_ty_as_struct_tag;
 use moveos_types::state_resolver::resource_tag_to_key;
 use moveos_types::transaction::FunctionCall;
 use moveos_types::tx_context::TxContext;
 use rooch_rpc_api::api::MAX_RESULT_LIMIT_USIZE;
+use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionResult;
 use rooch_types::account::BalanceInfo;
 use rooch_types::addresses::ROOCH_FRAMEWORK_ADDRESS_LITERAL;
 use rooch_types::framework::coin::{AnnotatedCoinInfo, AnnotatedCoinStore, CoinModule};
@@ -140,6 +142,48 @@ impl AggregateService {
         }
 
         Ok(result)
+    }
+
+    pub async fn get_transaction_results_by_hash_and_order(
+        &self,
+        tx_hashes: Vec<H256>,
+        tx_orders: Vec<u128>,
+    ) -> Result<Vec<TransactionResult>> {
+        let transactions = self
+            .rpc_service
+            .get_transactions_by_hash(tx_hashes.clone())
+            .await?;
+
+        let sequence_infos = self
+            .rpc_service
+            .get_transaction_sequence_infos(tx_orders)
+            .await?;
+
+        let execution_infos = self
+            .rpc_service
+            .get_transaction_execution_infos_by_hash(tx_hashes.clone())
+            .await?;
+
+        assert!(
+            transactions.len() == sequence_infos.len()
+                && transactions.len() == execution_infos.len()
+        );
+        let mut transaction_results: Vec<TransactionResult> = vec![];
+        for (index, _tx_hash) in tx_hashes.iter().enumerate() {
+            let transaction_result = TransactionResult {
+                transaction: transactions[index].clone().ok_or(anyhow::anyhow!(
+                    "Transaction should have value when construct TransactionResult"
+                ))?,
+                sequence_info: sequence_infos[index].clone().ok_or(anyhow::anyhow!(
+                    "TransactionSequenceInfo should have value when construct TransactionResult"
+                ))?,
+                execution_info: execution_infos[index].clone().ok_or(anyhow::anyhow!(
+                    "TransactionExecutionInfo should have value when construct TransactionResult"
+                ))?,
+            };
+            transaction_results.push(transaction_result)
+        }
+        Ok(transaction_results)
     }
 }
 

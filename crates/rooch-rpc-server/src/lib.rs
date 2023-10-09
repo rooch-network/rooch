@@ -6,7 +6,7 @@ use crate::server::rooch_server::RoochServer;
 use crate::service::aggregate_service::AggregateService;
 use crate::service::rpc_logger::RpcLogger;
 use crate::service::rpc_service::RpcService;
-use anyhow::Result;
+use anyhow::{Error, Result};
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::{system::ActorSystem, IntoActor};
 use hyper::header::HeaderValue;
@@ -19,11 +19,10 @@ use raw_store::rocks::RocksDB;
 use raw_store::StoreInstance;
 use rooch_config::server_config::ServerConfig;
 use rooch_config::store_config::StoreConfig;
-use rooch_config::{BaseConfig, RoochOpt};
+use rooch_config::{BaseConfig, RoochOpt, ServerOpt};
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
-use rooch_key::key_derive::generate_new_key_pair;
-use rooch_key::keypair::KeyPairType;
+use rooch_key::key_derive::{generate_new_key_pair, KeyStoreOperator};
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
 use rooch_proposer::proxy::ProposerProxy;
@@ -35,7 +34,8 @@ use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
 use rooch_types::address::RoochAddress;
 use rooch_types::crypto::RoochKeyPair;
-use rooch_types::error::GenesisError;
+use rooch_types::error::{GenesisError, RoochError};
+use rooch_types::keypair_type::KeyPairType;
 use serde_json::json;
 use std::env;
 use std::fmt::Debug;
@@ -86,8 +86,9 @@ impl Service {
         Self { handle: None }
     }
 
-    pub async fn start(&mut self, opt: &RoochOpt) -> Result<()> {
-        self.handle = Some(start_server(opt).await?);
+    // pub async fn start(&mut self, opt: &RoochOpt, key_keypair: Option<RoochKeyPair>) -> Result<()> {
+    pub async fn start(&mut self, opt: &RoochOpt, server_opt: ServerOpt) -> Result<()> {
+        self.handle = Some(start_server(opt, server_opt).await?);
         Ok(())
     }
 
@@ -122,8 +123,8 @@ impl RpcModuleBuilder {
 }
 
 // Start json-rpc server
-pub async fn start_server(opt: &RoochOpt) -> Result<ServerHandle> {
-    match run_start_server(opt).await {
+pub async fn start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<ServerHandle> {
+    match run_start_server(opt, server_opt).await {
         Ok(server_handle) => Ok(server_handle),
         Err(e) => match e.downcast::<GenesisError>() {
             Ok(e) => {
@@ -145,7 +146,7 @@ pub async fn start_server(opt: &RoochOpt) -> Result<ServerHandle> {
 }
 
 // run json-rpc server
-pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
+pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Result<ServerHandle> {
     // We may call `start_server` multiple times in testing scenarios
     // tracing_subscriber can only be inited once.
     let _ = tracing_subscriber::fmt::try_init();
@@ -175,25 +176,52 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
     .await?;
     let executor_proxy = ExecutorProxy::new(executor.into());
 
+    // Use an empty password by default
+    let password = String::new();
+
+    // TODO design a password mechanism
+    // // Prompt for a password if required
+    // rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
+
+    // Check for key pairs
+    if server_opt.sequencer_keypair.is_none()
+        || server_opt.proposer_keypair.is_none()
+        || server_opt.relayer_keypair.is_none()
+    {
+        // only for integration test, generate test key pairs
+        if chain_id_opt.is_test_or_dev_or_local() {
+            let result = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
+                KeyPairType::RoochKeyPairType,
+                None,
+                None,
+                Some(password.clone()),
+            )?;
+            let kp: RoochKeyPair = KeyPairType::RoochKeyPairType
+                .retrieve_key_pair(&result.result.encryption, Some(password))?;
+            server_opt.sequencer_keypair = Some(kp.copy());
+            server_opt.proposer_keypair = Some(kp.copy());
+            server_opt.relayer_keypair = Some(kp.copy());
+        } else {
+            return Err(Error::from(
+                RoochError::InvalidSequencerOrProposerOrRelayerKeyPair,
+            ));
+        }
+    }
+
     // Init sequencer
-    //TODO load from config
-    let (_, kp, _, _) = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
-        KeyPairType::RoochKeyPairType,
-        None,
-        None,
-    )?;
-    let sequencer = SequencerActor::new(kp, rooch_store, is_genesis)?
+    let sequencer_keypair = server_opt.sequencer_keypair.unwrap();
+    let sequencer_account: RoochAddress = (&sequencer_keypair.public()).into();
+    info!("RPC Server sequencer address: {:?}", sequencer_account);
+    let sequencer = SequencerActor::new(sequencer_keypair, rooch_store, is_genesis)?
         .into_actor(Some("Sequencer"), &actor_system)
         .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
 
     // Init proposer
-    let (_, kp, _, _) = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
-        KeyPairType::RoochKeyPairType,
-        None,
-        None,
-    )?;
-    let proposer = ProposerActor::new(kp)
+    let proposer_keypair = server_opt.proposer_keypair.unwrap();
+    let proposer_account: RoochAddress = (&proposer_keypair.public()).into();
+    info!("RPC Server proposer address: {:?}", proposer_account);
+    let proposer = ProposerActor::new(proposer_keypair)
         .into_actor(Some("Proposer"), &actor_system)
         .await?;
     let proposer_proxy = ProposerProxy::new(proposer.clone().into());
@@ -216,13 +244,10 @@ pub async fn run_start_server(opt: &RoochOpt) -> Result<ServerHandle> {
     let aggregate_service = AggregateService::new(rpc_service.clone());
 
     if let Some(eth_rpc_url) = &opt.eth_rpc_url {
-        //TODO load from config
-        let (_, kp, _, _) = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
-            KeyPairType::RoochKeyPairType,
-            None,
-            None,
-        )?;
-        let relayer = RelayerActor::new(kp, eth_rpc_url, rpc_service.clone())
+        let relayer_keypair = server_opt.relayer_keypair.unwrap();
+        let relayer_account: RoochAddress = (&relayer_keypair.public()).into();
+        info!("RPC Server relayer address: {:?}", relayer_account);
+        let relayer = RelayerActor::new(relayer_keypair, eth_rpc_url, rpc_service.clone())
             .await?
             .into_actor(Some("Relayer"), &actor_system)
             .await?;

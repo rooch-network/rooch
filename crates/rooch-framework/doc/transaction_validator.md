@@ -11,7 +11,7 @@
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x1::option</a>;
-<b>use</b> <a href="">0x2::storage_context</a>;
+<b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::tx_result</a>;
 <b>use</b> <a href="account.md#0x3_account">0x3::account</a>;
 <b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
@@ -137,7 +137,7 @@ This function is for Rooch to validate the transaction sender's authenticator.
 If the authenticator is invaid, abort this function.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_validate">validate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, <a href="chain_id.md#0x3_chain_id">chain_id</a>: u64, auth_validator_id: u64, authenticator_payload: <a href="">vector</a>&lt;u8&gt;): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">auth_validator::TxValidateResult</a>
+<pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_validate">validate</a>(ctx: &<a href="_Context">context::Context</a>, <a href="chain_id.md#0x3_chain_id">chain_id</a>: u64, auth_validator_id: u64, authenticator_payload: <a href="">vector</a>&lt;u8&gt;): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">auth_validator::TxValidateResult</a>
 </code></pre>
 
 
@@ -147,7 +147,7 @@ If the authenticator is invaid, abort this function.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_validate">validate</a>(
-    ctx: &StorageContext,
+    ctx: &Context,
     <a href="chain_id.md#0x3_chain_id">chain_id</a>: u64,
     auth_validator_id: u64,
     authenticator_payload: <a href="">vector</a>&lt;u8&gt;
@@ -160,7 +160,7 @@ If the authenticator is invaid, abort this function.
     );
 
     // === validate the sequence number ===
-    <b>let</b> tx_sequence_number = <a href="_sequence_number">storage_context::sequence_number</a>(ctx);
+    <b>let</b> tx_sequence_number = <a href="_sequence_number">context::sequence_number</a>(ctx);
     <b>assert</b>!(
         (tx_sequence_number <b>as</b> u128) &lt; <a href="transaction_validator.md#0x3_transaction_validator_MAX_U64">MAX_U64</a>,
         <a href="_out_of_range">error::out_of_range</a>(<a href="transaction_validator.md#0x3_transaction_validator_ErrorValidateSequenceNumberTooBig">ErrorValidateSequenceNumberTooBig</a>)
@@ -179,10 +179,10 @@ If the authenticator is invaid, abort this function.
         <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_ErrorValidateSequenceNumberTooNew">ErrorValidateSequenceNumberTooNew</a>)
     );
 
-    <b>let</b> sender = <a href="_sender">storage_context::sender</a>(ctx);
+    <b>let</b> sender = <a href="_sender">context::sender</a>(ctx);
 
     // === validate gas ===
-    <b>let</b> max_gas_amount = <a href="_max_gas_amount">storage_context::max_gas_amount</a>(ctx);
+    <b>let</b> max_gas_amount = <a href="_max_gas_amount">context::max_gas_amount</a>(ctx);
     <b>let</b> gas = <a href="transaction_fee.md#0x3_transaction_fee_calculate_gas">transaction_fee::calculate_gas</a>(ctx, max_gas_amount);
 
     // We skip the gas check for the new <a href="account.md#0x3_account">account</a>, for avoid <b>break</b> the current testcase
@@ -203,7 +203,7 @@ If the authenticator is invaid, abort this function.
     <b>if</b> (<a href="_is_some">option::is_some</a>(&session_key_option)) {
         <a href="auth_validator.md#0x3_auth_validator_new_tx_validate_result">auth_validator::new_tx_validate_result</a>(auth_validator_id, <a href="_none">option::none</a>(), session_key_option)
     }<b>else</b> {
-        <b>let</b> sender = <a href="_sender">storage_context::sender</a>(ctx);
+        <b>let</b> sender = <a href="_sender">context::sender</a>(ctx);
         <b>let</b> <a href="auth_validator.md#0x3_auth_validator">auth_validator</a> = <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator">auth_validator_registry::borrow_validator</a>(ctx, auth_validator_id);
         <b>let</b> validator_id = <a href="auth_validator.md#0x3_auth_validator_validator_id">auth_validator::validator_id</a>(<a href="auth_validator.md#0x3_auth_validator">auth_validator</a>);
         // builtin auth validator id do not need <b>to</b> install

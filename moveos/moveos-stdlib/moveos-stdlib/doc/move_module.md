@@ -100,8 +100,8 @@
 
 ## Function `verify_modules`
 
-Verifies the modules and returns their names
-This function need to ensure the module's bytecode is valid and the module id is matching the account address.
+Verify the modules and return their names and names of the modules with init function.
+This function will ensure the module's bytecode is valid and the module id is matching the account address.
 Return
 The first vector is the module names of all the modules.
 The second vector is the module names of the modules with init function.

@@ -4,10 +4,14 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use rooch_config::RoochOpt;
+use rooch_config::{RoochOpt, ServerOpt};
+use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_server::Service;
+use rooch_types::address::RoochAddress;
 use rooch_types::chain_id::RoochChainID;
 use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::keypair_type::KeyPairType;
+use std::str::FromStr;
 use tokio::signal::ctrl_c;
 #[cfg(unix)]
 use tokio::signal::unix::{signal, SignalKind};
@@ -25,16 +29,107 @@ pub struct StartCommand {
 
 #[async_trait]
 impl CommandAction<()> for StartCommand {
-    async fn execute(self) -> RoochResult<()> {
+    async fn execute(mut self) -> RoochResult<()> {
+        let mut context = self.context_options.build().await?;
+
+        // Use an empty password by default
+        let password = String::new();
+
+        // TODO design a password mechanism
+        // // Prompt for a password if required
+        // rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
+
+        //Parse key pair from Rooch opt
+        let sequencer_account = if self.opt.sequencer_account.is_none() {
+            let active_address_opt = context.client_config.active_address;
+            if active_address_opt.is_none() {
+                return Err(RoochError::ActiveAddressDoesNotExistError);
+            }
+            active_address_opt.unwrap()
+        } else {
+            RoochAddress::from_str(self.opt.sequencer_account.clone().unwrap().as_str()).map_err(
+                |e| {
+                    RoochError::CommandArgumentError(format!(
+                        "Invalid sequencer account address: {}",
+                        e
+                    ))
+                },
+            )?
+        };
+        let sequencer_keypair = context
+            .keystore
+            .get_key_pair_by_type_password(
+                &sequencer_account,
+                KeyPairType::RoochKeyPairType,
+                Some(password.clone()),
+            )
+            .map_err(|e| RoochError::SequencerKeyPairDoesNotExistError(e.to_string()))?;
+
+        let proposer_account = if self.opt.proposer_account.is_none() {
+            let active_address_opt = context.client_config.active_address;
+            if active_address_opt.is_none() {
+                return Err(RoochError::ActiveAddressDoesNotExistError);
+            }
+            active_address_opt.unwrap()
+        } else {
+            RoochAddress::from_str(self.opt.proposer_account.clone().unwrap().as_str()).map_err(
+                |e| {
+                    RoochError::CommandArgumentError(format!(
+                        "Invalid proposer account address: {}",
+                        e
+                    ))
+                },
+            )?
+        };
+        let proposer_keypair = context
+            .keystore
+            .get_key_pair_by_type_password(
+                &proposer_account,
+                KeyPairType::RoochKeyPairType,
+                Some(password.clone()),
+            )
+            .map_err(|e| RoochError::ProposerKeyPairDoesNotExistError(e.to_string()))?;
+
+        let relayer_account = if self.opt.relayer_account.is_none() {
+            let active_address_opt = context.client_config.active_address;
+            if active_address_opt.is_none() {
+                return Err(RoochError::ActiveAddressDoesNotExistError);
+            }
+            active_address_opt.unwrap()
+        } else {
+            RoochAddress::from_str(self.opt.relayer_account.clone().unwrap().as_str()).map_err(
+                |e| {
+                    RoochError::CommandArgumentError(format!(
+                        "Invalid relayer account address: {}",
+                        e
+                    ))
+                },
+            )?
+        };
+        let relayer_keypair = context
+            .keystore
+            .get_key_pair_by_type_password(
+                &relayer_account,
+                KeyPairType::RoochKeyPairType,
+                Some(password),
+            )
+            .map_err(|e| RoochError::RelayerKeyPairDoesNotExistError(e.to_string()))?;
+
+        // Construct sequencer, proposer and relayer keypair
+        let mut server_opt = ServerOpt::new();
+        server_opt.sequencer_keypair = Some(sequencer_keypair.copy());
+        server_opt.proposer_keypair = Some(proposer_keypair.copy());
+        server_opt.relayer_keypair = Some(relayer_keypair.copy());
+
         let mut service = Service::new();
         service
-            .start(&self.opt.clone())
+            .start(&self.opt.clone(), server_opt)
             .await
             .map_err(RoochError::from)?;
 
         //Automatically switch env when use start server, if network is local or dev seed
-        let mut context = self.context_options.build().await?;
-        let active_env = context.config.get_active_env()?;
+        // let mut context = self.context_options.build().await?;
+        let active_env = context.client_config.get_active_env()?;
         let rooch_chain_id = self.opt.chain_id.unwrap_or_default();
         let chain_name = rooch_chain_id.chain_name().to_lowercase();
         // When chain_id is not equals to env alias
@@ -56,7 +151,7 @@ impl CommandAction<()> for StartCommand {
 
         if let Some(switch_env_alias) = switch_env.clone() {
             if context
-                .config
+                .client_config
                 .get_env(&Some(switch_env_alias.clone()))
                 .is_none()
             {
@@ -65,8 +160,8 @@ impl CommandAction<()> for StartCommand {
                     switch_env_alias
                 )));
             }
-            context.config.active_env = switch_env;
-            context.config.save()?;
+            context.client_config.active_env = switch_env;
+            context.client_config.save()?;
             println!(
                 "The active env was successfully switched to `{}`",
                 switch_env_alias

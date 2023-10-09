@@ -3,3 +3,4 @@
 
 export * from './interface'
 export * from './json-rpc-provider'
+export * from './filtered-provider'

@@ -5,7 +5,7 @@ module rooch_framework::session_key_test{
     use std::vector;
     use std::option;
     use moveos_std::signer;
-    use moveos_std::storage_context;
+    use moveos_std::context;
     use moveos_std::bcs;
     use rooch_framework::session_key;
     use rooch_framework::timestamp;
@@ -14,7 +14,7 @@ module rooch_framework::session_key_test{
     fun test_session_key_end_to_end(sender:&signer){
         let genesis_ctx = rooch_framework::genesis::init_for_test();
         let sender_addr = signer::address_of(sender);
-        let user_ctx = storage_context::new_test_context(sender_addr);
+        let user_ctx = context::new_test_context(sender_addr);
         let scope = session_key::new_session_scope(@0x1, std::ascii::string(b"*"), std::ascii::string(b"*"));
         let authentication_key = bcs::to_bytes(&sender_addr);
         let max_inactive_interval = 10;
@@ -32,8 +32,8 @@ module rooch_framework::session_key_test{
         assert!(session_key::is_expired_session_key(&mut user_ctx, sender_addr, authentication_key), 1004);
         session_key::remove_session_key(&mut user_ctx, sender, authentication_key);
 
-        storage_context::drop_test_context(user_ctx);
-        storage_context::drop_test_context(genesis_ctx);
+        context::drop_test_context(user_ctx);
+        context::drop_test_context(genesis_ctx);
     }
 
 }

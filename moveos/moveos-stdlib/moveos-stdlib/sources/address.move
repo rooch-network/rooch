@@ -1,4 +1,10 @@
-//Source https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/sources/address.move
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+// Copyright (c) Mysten Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
+// Source https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/sources/address.move
 
 module moveos_std::address {
     use std::ascii;
@@ -50,7 +56,7 @@ module moveos_std::address {
     //     string::from_ascii(to_ascii_string(a))
     // }
 
-    /// Length of a Sui address in bytes
+    /// Length of a Rooch address in bytes
     public fun length(): u64 {
         LENGTH
     }

@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// Type of large-scale storage tables.
 /// source: https://github.com/move-language/move/blob/1b6b7513dcc1a5c866f178ca5c1e74beb2ce181e/language/extensions/move-table-extension/sources/Table.move#L1
 ///
@@ -7,7 +10,7 @@
 
 module moveos_std::table {
     use moveos_std::raw_table;
-    use moveos_std::tx_context::TxContext;
+    use moveos_std::context::{Self, Context};
     use moveos_std::object_id::{ObjectID};
 
     friend moveos_std::account_storage;
@@ -18,9 +21,10 @@ module moveos_std::table {
     }
 
     /// Create a new Table.
-    public fun new<K: copy + drop, V: store>(ctx: &mut TxContext): Table<K, V> {
+    public fun new<K: copy + drop, V: store>(ctx: &mut Context): Table<K, V> {
+        let tx_ctx = context::tx_context_mut(ctx);
         Table {
-            handle: raw_table::new_table_handle(ctx),
+            handle: raw_table::new_table_handle(tx_ctx),
         }
     }
 
@@ -79,17 +83,35 @@ module moveos_std::table {
         raw_table::contains<K>(&table.handle, key)
     }
 
+    /// Destroy a table. Aborts if the table is not empty.
+    public fun destroy_empty<K: copy + drop, V>(table: Table<K, V>) {
+        let Table { handle } = table;
+        raw_table::destroy_empty(&handle)
+    }
+
+    /// Returns the size of the table, the number of key-value pairs
+    public fun length<K: copy + drop, V>(table: &Table<K, V>): u64 {
+        raw_table::length(&table.handle)
+    }
+
+    /// Returns true iff the table is empty (if `length` returns `0`)
+    public fun is_empty<K: copy + drop, V>(table: &Table<K, V>): bool {
+        raw_table::length(&table.handle) == 0
+    }
+
+    /// Drop a possibly non-empty table.
+    /// Usable only if the value type `V` has the `drop` ability
+    public fun drop<K: copy + drop, V: drop>(table: Table<K, V>) {
+        let Table { handle } = table;
+        raw_table::drop_unchecked(&handle)
+    }
+
+
     #[test_only]
     /// Testing only: allows to drop a table even if it is not empty.
     public fun drop_unchecked<K: copy + drop, V>(table: Table<K, V>) {
         let Table { handle } = table;
         raw_table::drop_unchecked(&handle)
-    }
-
-    /// Destroy a table. The table must be empty to succeed.
-    public fun destroy_empty<K: copy + drop, V>(table: Table<K, V>) {
-        let Table { handle } = table;
-        raw_table::destroy_empty(&handle)
     }
 
 
@@ -101,8 +123,8 @@ module moveos_std::table {
     #[test(account = @0x1)]
     fun test_upsert(account: signer) {
         let sender = std::signer::address_of(&account);
-        let tx_context = moveos_std::tx_context::new_test_context(sender);
-        let t = new<u64, u8>(&mut tx_context);
+        let ctx = moveos_std::context::new_test_context(sender);
+        let t = new<u64, u8>(&mut ctx);
         let key: u64 = 111;
         let error_code: u64 = 1;
         assert!(!contains(&t, key), error_code);
@@ -112,13 +134,14 @@ module moveos_std::table {
         assert!(*borrow(&t, key) == 23, error_code);
 
         drop_unchecked(t);
+        moveos_std::context::drop_test_context(ctx);
     }
 
     #[test(account = @0x1)]
     fun test_borrow_with_default(account: signer) {
         let sender = std::signer::address_of(&account);
-        let tx_context = moveos_std::tx_context::new_test_context(sender);
-        let t = new<u64, u8>(&mut tx_context);
+        let ctx = moveos_std::context::new_test_context(sender);
+        let t = new<u64, u8>(&mut ctx);
         let key: u64 = 100;
         let error_code: u64 = 1;
         assert!(!contains(&t, key), error_code);
@@ -127,13 +150,14 @@ module moveos_std::table {
         assert!(*borrow_with_default(&t, key, &12) == 1, error_code);
 
         drop_unchecked(t);
+        moveos_std::context::drop_test_context(ctx);
     }
 
     #[test(account = @0x1)]
     fun test_all(account: signer) {
         let sender = std::signer::address_of(&account);
-        let tx_context = moveos_std::tx_context::new_test_context(sender);
-        let t = new<u64, u8>(&mut tx_context);
+        let ctx = moveos_std::context::new_test_context(sender);
+        let t = new<u64, u8>(&mut ctx);
         let key: u64 = 100;
         let error_code: u64 = 1;
         assert!(!contains(&t, key), error_code);
@@ -144,63 +168,68 @@ module moveos_std::table {
         remove(&mut t, key);
         assert!(!contains(&t, key), error_code);
         drop_unchecked(t);
+        moveos_std::context::drop_test_context(ctx);
     }
 
     #[test(account = @0x1)]
     #[expected_failure]
     fun test_add_key_exist_failure(account: signer) {
         let sender = std::signer::address_of(&account);
-        let tx_context = moveos_std::tx_context::new_test_context(sender);
-        let t = new<u64, u8>(&mut tx_context);
+        let ctx = moveos_std::context::new_test_context(sender);
+        let t = new<u64, u8>(&mut ctx);
         let key: u64 = 100;
         add(&mut t, key, 1);
         add(&mut t, key, 2);
 
         drop_unchecked(t);
+        moveos_std::context::drop_test_context(ctx);
     }
 
     #[test(account = @0x1)]
     #[expected_failure]
     fun test_borrow_key_not_exist_failure(account: signer) {
         let sender = std::signer::address_of(&account);
-        let tx_context = moveos_std::tx_context::new_test_context(sender);
-        let t = new<u64, u8>(&mut tx_context);
+        let ctx = moveos_std::context::new_test_context(sender);
+        let t = new<u64, u8>(&mut ctx);
         let key: u64 = 100;
         let _ = borrow(&mut t, key);
 
         drop_unchecked(t);
+        moveos_std::context::drop_test_context(ctx);
     }
 
     #[test(account = @0x1)]
     #[expected_failure]
     fun test_borrow_mut_key_not_exist_failure(account: signer) {
         let sender = std::signer::address_of(&account);
-        let tx_context = moveos_std::tx_context::new_test_context(sender);
-        let t = new<u64, u8>(&mut tx_context);
+        let ctx = moveos_std::context::new_test_context(sender);
+        let t = new<u64, u8>(&mut ctx);
         let key: u64 = 100;
         let _ = borrow_mut(&mut t, key);
 
         drop_unchecked(t);
+        moveos_std::context::drop_test_context(ctx);
     }
 
     #[test(account = @0x1)]
     #[expected_failure]
     fun test_remove_key_not_exist_failure(account: signer) {
         let sender = std::signer::address_of(&account);
-        let tx_context = moveos_std::tx_context::new_test_context(sender);
-        let t = new<u64, u8>(&mut tx_context);
+        let ctx = moveos_std::context::new_test_context(sender);
+        let t = new<u64, u8>(&mut ctx);
         let key: u64 = 100;
         remove(&mut t, key);
 
         drop_unchecked(t);
+        moveos_std::context::drop_test_context(ctx);
     }
 
     #[test(account = @0x1)]
     fun test_nested_table(account: signer) {
         let sender = std::signer::address_of(&account);
-        let tx_context = moveos_std::tx_context::new_test_context(sender);
-        let t1 = new<u64, Table<u8, u32>>(&mut tx_context);
-        let t2 = new<u8, u32>(&mut tx_context);
+        let ctx = moveos_std::context::new_test_context(sender);
+        let t1 = new<u64, Table<u8, u32>>(&mut ctx);
+        let t2 = new<u8, u32>(&mut ctx);
         let t2_id = t2.handle;
 
         let t1_key = 2u64;
@@ -214,37 +243,39 @@ module moveos_std::table {
 
         let t2 = new_with_id<u8, u32>(copy t2_id);
         assert!(contains(&t2, t2_key), 2);
-        drop_unchecked(t2);
+        let Table { handle: _ } = t2;
 
         let borrowed_mut_t2 = borrow_mut(&mut t1, t1_key);
         remove(borrowed_mut_t2, t2_key);
 
-        let t2 = new_with_id<u8, u32>(t2_id);
-        assert!(!contains(&t2, t2_key), 2);
-        drop_unchecked(t2);
-
+        let t3 = new_with_id<u8, u32>(t2_id);
+        assert!(!contains(&t3, t2_key), 2);
+        
+        drop_unchecked(t3); // No need to drop t2 as t2 shares same handle with t3
         drop_unchecked(t1);
+        moveos_std::context::drop_test_context(ctx);
     }
 
     #[test(account = @0x1)]
     #[expected_failure]
     fun test_destroy_nonempty_table(account: signer) {
         let sender = std::signer::address_of(&account);
-        let tx_context = moveos_std::tx_context::new_test_context(sender);
-        let t = new<u64, u8>(&mut tx_context);
+        let ctx = moveos_std::context::new_test_context(sender);
+        let t = new<u64, u8>(&mut ctx);
         let key: u64 = 100;
         add(&mut t, key, 1);
 
         destroy_empty(t);
+        moveos_std::context::drop_test_context(ctx);
     }
 
     #[test(account = @0x1)]
     #[expected_failure]
     fun test_nested_table_destroy(account: signer) {
         let sender = std::signer::address_of(&account);
-        let tx_context = moveos_std::tx_context::new_test_context(sender);
-        let t1 = new<u64, Table<u8, u32>>(&mut tx_context);
-        let t2 = new<u8, u32>(&mut tx_context);
+        let ctx = moveos_std::context::new_test_context(sender);
+        let t1 = new<u64, Table<u8, u32>>(&mut ctx);
+        let t2 = new<u8, u32>(&mut ctx);
         let t2_id = t2.handle;
 
         let t1_key = 2u64;
@@ -258,6 +289,7 @@ module moveos_std::table {
         assert!(*borrow(&t2, t2_key) == 32u32, 1);
 
         drop_unchecked(t2);
+        moveos_std::context::drop_test_context(ctx);
     }
 
 

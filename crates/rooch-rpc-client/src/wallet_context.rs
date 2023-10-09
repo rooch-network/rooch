@@ -8,13 +8,14 @@ use move_core_types::account_address::AccountAddress;
 use moveos_types::gas_config::GasConfig;
 use moveos_types::transaction::MoveAction;
 use rooch_config::config::{Config, PersistedConfig};
-use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG};
-use rooch_key::keypair::KeyPairType;
-use rooch_key::keystore::AccountKeystore;
+use rooch_config::server_config::ServerConfig;
+use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_SERVER_CONFIG};
+use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView};
 use rooch_types::address::RoochAddress;
-use rooch_types::crypto::{RoochKeyPair, Signature};
+use rooch_types::crypto::Signature;
 use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::keypair_type::KeyPairType;
 use rooch_types::transaction::{
     authenticator::Authenticator,
     rooch::{RoochTransaction, RoochTransactionData},
@@ -26,26 +27,45 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
 
-pub struct WalletContext {
+pub struct WalletContext<K: Ord> {
     client: Arc<RwLock<Option<Client>>>,
-    pub config: PersistedConfig<ClientConfig<RoochAddress, RoochKeyPair>>,
+    pub client_config: PersistedConfig<ClientConfig>,
+    pub server_config: PersistedConfig<ServerConfig>,
+    pub keystore: Keystore<K>,
 }
 
-impl WalletContext {
+impl WalletContext<RoochAddress> {
     pub async fn new(config_path: Option<PathBuf>) -> Result<Self, anyhow::Error> {
         let config_dir = config_path.unwrap_or(rooch_config_dir()?);
-        let config_path = config_dir.join(ROOCH_CLIENT_CONFIG);
-        let config: ClientConfig<RoochAddress, RoochKeyPair> = PersistedConfig::read(&config_path).map_err(|err| {
+        let client_config_path = config_dir.join(ROOCH_CLIENT_CONFIG);
+        let server_config_path = config_dir.join(ROOCH_SERVER_CONFIG);
+        let client_config: ClientConfig = PersistedConfig::read(&client_config_path).map_err(|err| {
             anyhow!(
                 "Cannot open wallet config file at {:?}. Err: {err}, Use `rooch init` to configuration",
-                config_path
+                client_config_path
+            )
+        })?;
+        let server_config: ServerConfig = PersistedConfig::read(&server_config_path).map_err(|err| {
+            anyhow!(
+                "Cannot open server config file at {:?}. Err: {err}, Use `rooch init` to configuration",
+                server_config_path
             )
         })?;
 
-        let config = config.persisted(&config_path);
+        let client_config = client_config.persisted(&client_config_path);
+        let server_config = server_config.persisted(&server_config_path);
+
+        let keystore_result = FileBasedKeystore::<RoochAddress>::load(&client_config.keystore_path);
+        let keystore = match keystore_result {
+            Ok(file_keystore) => Keystore::File(file_keystore),
+            Err(error) => return Err(error),
+        };
+
         Ok(Self {
             client: Default::default(),
-            config,
+            client_config,
+            server_config,
+            keystore,
         })
     }
 
@@ -73,7 +93,7 @@ impl WalletContext {
         } else {
             drop(read);
             let client = self
-                .config
+                .client_config
                 .get_active_env()?
                 .create_rpc_client(Duration::from_secs(DEFAULT_EXPIRATION_SECS), None)
                 .await?;
@@ -111,11 +131,11 @@ impl WalletContext {
         sender: RoochAddress,
         action: MoveAction,
         key_pair_type: KeyPairType,
+        password: Option<String>,
     ) -> RoochResult<RoochTransaction> {
         let kp = self
-            .config
             .keystore
-            .get_key_pair_by_key_pair_type(&sender, key_pair_type)
+            .get_key_pair_by_type_password(&sender, key_pair_type, password)
             .ok()
             .ok_or_else(|| {
                 RoochError::SignMessageError(format!("Cannot find key for address: [{sender}]"))
@@ -124,7 +144,7 @@ impl WalletContext {
         match key_pair_type {
             KeyPairType::RoochKeyPairType => {
                 let tx_data = self.build_rooch_tx_data(sender, action).await?;
-                let signature = Signature::new_hashed(tx_data.hash().as_bytes(), kp);
+                let signature = Signature::new_hashed(tx_data.hash().as_bytes(), &kp);
                 Ok(RoochTransaction::new(
                     tx_data,
                     Authenticator::rooch(signature),
@@ -152,8 +172,9 @@ impl WalletContext {
         sender: RoochAddress,
         action: MoveAction,
         key_pair_type: KeyPairType,
+        password: Option<String>,
     ) -> RoochResult<ExecuteTransactionResponseView> {
-        let tx = self.sign(sender, action, key_pair_type).await?;
+        let tx = self.sign(sender, action, key_pair_type, password).await?;
         self.execute(tx).await
     }
 
@@ -166,7 +187,7 @@ impl WalletContext {
             Ok(account_address)
         } else {
             let address = match account.as_str() {
-                "default" => AccountAddress::from(self.config.active_address.unwrap()),
+                "default" => AccountAddress::from(self.client_config.active_address.unwrap()),
                 _ => Err(RoochError::CommandArgumentError(
                     "Use rooch init configuration".to_owned(),
                 ))?,

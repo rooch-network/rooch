@@ -3,7 +3,7 @@ module coins::fixed_supply_coin {
     use std::string;
     use moveos_std::signer;
     use moveos_std::account_storage;
-    use moveos_std::storage_context::StorageContext;
+    use moveos_std::context::Context;
     use rooch_framework::coin::{Self, Coin};
 
     struct FSC has key, store {}
@@ -15,7 +15,7 @@ module coins::fixed_supply_coin {
     const TOTAL_SUPPLY: u256 = 210_000_000_000u256;
 
 
-    fun init(ctx: &mut StorageContext) {
+    fun init(ctx: &mut Context) {
         coin::register_extend<FSC>(
             ctx,
             string::utf8(b"Fixed Supply Coin"),
@@ -30,7 +30,7 @@ module coins::fixed_supply_coin {
 
     /// Provide a faucet to give out coins to users
     /// In a real world scenario, the coins should be given out in the application business logic.
-    public entry fun faucet(ctx: &mut StorageContext, account: &signer) {
+    public entry fun faucet(ctx: &mut Context, account: &signer) {
         let account_addr = signer::address_of(account);
         let treasury = account_storage::global_borrow_mut<Treasury>(ctx, @coins);
         let coin = coin::extract(&mut treasury.coin, 10000);

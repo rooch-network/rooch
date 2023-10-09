@@ -2,7 +2,7 @@ module rooch_framework::address_mapping{
     
     use std::option::{Self, Option};
     use std::signer;
-    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::context::Context;
     use moveos_std::table::{Self, Table};
     use moveos_std::account_storage;
     use rooch_framework::hash::{blake2b256};
@@ -16,16 +16,15 @@ module rooch_framework::address_mapping{
         mapping: Table<MultiChainAddress, address>,
     }
 
-    public(friend) fun genesis_init(ctx: &mut StorageContext, genesis_account: &signer) {
-        let tx_ctx = storage_context::tx_context_mut(ctx);
-        let mapping = table::new<MultiChainAddress, address>(tx_ctx);
+    public(friend) fun genesis_init(ctx: &mut Context, genesis_account: &signer) {
+        let mapping = table::new<MultiChainAddress, address>(ctx);
         account_storage::global_move_to(ctx, genesis_account, AddressMapping{
             mapping,
         });
     }
 
     /// Resolve a multi-chain address to a rooch address
-    public fun resolve(ctx: &StorageContext, maddress: MultiChainAddress): Option<address> {
+    public fun resolve(ctx: &Context, maddress: MultiChainAddress): Option<address> {
         if (multichain_address::is_rooch_address(&maddress)) {
             return option::some(multichain_address::into_rooch_address(maddress))
         };
@@ -39,7 +38,7 @@ module rooch_framework::address_mapping{
     }
 
     /// Resolve a multi-chain address to a rooch address, if not exists, generate a new rooch address
-    public fun resolve_or_generate(ctx: &StorageContext, maddress: MultiChainAddress): address {
+    public fun resolve_or_generate(ctx: &Context, maddress: MultiChainAddress): address {
         let addr = resolve(ctx, maddress);
         if(option::is_none(&addr)){
             generate_rooch_address(&maddress)
@@ -54,7 +53,7 @@ module rooch_framework::address_mapping{
     }
 
     /// Check if a multi-chain address is bound to a rooch address
-    public fun exists_mapping(ctx: &StorageContext, maddress: MultiChainAddress): bool {
+    public fun exists_mapping(ctx: &Context, maddress: MultiChainAddress): bool {
         if (multichain_address::is_rooch_address(&maddress)) {
             return true
         };
@@ -64,12 +63,12 @@ module rooch_framework::address_mapping{
 
     /// Bind a multi-chain address to the sender's rooch address
     /// The caller need to ensure the relationship between the multi-chain address and the rooch address
-    public fun bind(ctx: &mut StorageContext, sender: &signer, maddress: MultiChainAddress) {
+    public fun bind(ctx: &mut Context, sender: &signer, maddress: MultiChainAddress) {
         bind_no_check(ctx, signer::address_of(sender), maddress);
     } 
 
     /// Bind a rooch address to a multi-chain address
-    public(friend) fun bind_no_check(ctx: &mut StorageContext, rooch_address: address, maddress: MultiChainAddress) {
+    public(friend) fun bind_no_check(ctx: &mut Context, rooch_address: address, maddress: MultiChainAddress) {
         if(multichain_address::is_rooch_address(&maddress)){
             //Do nothing if the multi-chain address is a rooch address
             return

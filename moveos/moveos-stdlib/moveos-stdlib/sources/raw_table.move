@@ -1,6 +1,9 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// Raw Key Value table. This is the basic of storage abstraction.
 /// This type table doesn't care about the key and value types. We leave the data type checking to the Native implementation.
-/// This type table if for design internal global storage, so all functions are friend.
+/// This type table is for internal global storage, so all functions are friend.
 
 module moveos_std::raw_table {
     use moveos_std::tx_context::{Self, TxContext};
@@ -8,7 +11,7 @@ module moveos_std::raw_table {
     
     friend moveos_std::table;
     friend moveos_std::type_table;
-    friend moveos_std::object_storage;
+    friend moveos_std::storage_context;
     friend moveos_std::account_storage;
 
     /// The key already exists in the table
@@ -21,13 +24,15 @@ module moveos_std::raw_table {
     struct TableInfo has key {
         // Table SMT root
         state_root: address,
+        // Table size, number of items
+        size: u64,
     }
     
     /// Add a new entry to the table. Aborts if an entry for this
     /// key already exists. The entry itself is not stored in the
     /// table, and cannot be discovered from it.
     public(friend) fun add<K: copy + drop, V>(table_handle: &ObjectID, key: K, val: V) {
-        add_box<K, V, Box<V>>(table_handle, key, Box {val} )
+        add_box<K, V, Box<V>>(table_handle, key, Box {val} );
     }
 
     /// Acquire an immutable reference to the value which `key` maps to.
@@ -39,10 +44,10 @@ module moveos_std::raw_table {
     /// Acquire an immutable reference to the value which `key` maps to.
     /// Returns specified default value if there is no entry for `key`.
     public(friend) fun borrow_with_default<K: copy + drop, V>(table_handle: &ObjectID, key: K, default: &V): &V {
-        if (!contains<K>(table_handle, copy key)) {
+        if (!contains<K>(table_handle, key)) {
             default
         } else {
-            borrow(table_handle, copy key)
+            borrow(table_handle, key)
         }
     }
 
@@ -56,7 +61,7 @@ module moveos_std::raw_table {
     /// Insert the pair (`key`, `default`) first if there is no entry for `key`.
     public(friend) fun borrow_mut_with_default<K: copy + drop, V: drop>(table_handle: &ObjectID, key: K, default: V): &mut V {
         if (!contains<K>(table_handle, copy key)) {
-            add(table_handle, copy key, default)
+            add(table_handle, key, default)
         };
         borrow_mut(table_handle, key)
     }
@@ -65,7 +70,7 @@ module moveos_std::raw_table {
     /// update the value of the entry for `key` to `value` otherwise
     public(friend) fun upsert<K: copy + drop, V: drop>(table_handle: &ObjectID, key: K, value: V) {
         if (!contains<K>(table_handle, copy key)) {
-            add(table_handle, copy key, value)
+            add(table_handle, key, value)
         } else {
             let ref = borrow_mut(table_handle, key);
             *ref = value;
@@ -84,15 +89,25 @@ module moveos_std::raw_table {
         contains_box<K>(table_handle, key)
     }
 
-    #[test_only]
-    /// Testing only: allows to drop a table even if it is not empty.
+    /// Returns the size of the table, the number of key-value pairs
+    public(friend) fun length(table_handle: &ObjectID): u64 {
+        box_length(table_handle)
+    }
+
+    /// Returns true if the table is empty (if `length` returns `0`)
+    public(friend) fun is_empty(table_handle: &ObjectID): bool {
+        length(table_handle) == 0
+    }
+
+    /// Drop a table even if it is not empty.
     public(friend) fun drop_unchecked(table_handle: &ObjectID) {
         drop_unchecked_box(table_handle)
     }
     
-    /// Destroy a table. The table must be empty to succeed.
+    /// Destroy a table. Aborts if the table is not empty
     public(friend) fun destroy_empty(table_handle: &ObjectID) {
-        destroy_empty_box(table_handle)
+        assert!(is_empty(table_handle), ErrorNotEmpty);
+        drop_unchecked_box(table_handle)
     }
 
     // ======================================================================================================
@@ -118,7 +133,7 @@ module moveos_std::raw_table {
 
     native fun remove_box<K: copy + drop, V, B>(table_handle: &ObjectID, key: K): Box<V>;
 
-    native fun destroy_empty_box(table_handle: &ObjectID);
-
     native fun drop_unchecked_box(table_handle: &ObjectID);
+
+    native fun box_length(table_handle: &ObjectID): u64;
 }

@@ -9,13 +9,13 @@ module rooch_examples::rooch_examples {
     use moveos_std::account_storage;
     use moveos_std::event::Self;
     use moveos_std::simple_map::{Self, SimpleMap};
-    use moveos_std::storage_context::StorageContext;
+    use moveos_std::context::Context;
     use rooch_framework::coin;
     use rooch_examples::timestamp;
     use rooch_framework::account::{Self, SignerCapability};
 
     #[test_only]
-    use moveos_std::storage_context;
+    use moveos_std::context;
     #[test_only]
     use rooch_framework::genesis;
 
@@ -103,7 +103,7 @@ module rooch_examples::rooch_examples {
         event_creation_timestamp_in_seconds: u64
     }
 
-    fun init(account: &signer, ctx: &mut StorageContext) {
+    fun init(account: &signer, ctx: &mut Context) {
         // let source_addr = signer::address_of(account);
         let (signer, cap) = account::create_resource_account(ctx, account);
         let resource_address = signer::address_of(&signer);
@@ -131,7 +131,7 @@ module rooch_examples::rooch_examples {
         prize_pool_amount: u256,
         player_one_address: address,
         player_two_address: address,
-        ctx: &mut StorageContext
+        ctx: &mut Context
     ) {
         check_if_state_exists(ctx);
         let now = timestamp::now_seconds(ctx);
@@ -180,7 +180,7 @@ module rooch_examples::rooch_examples {
         game_id: u128,
         decision_hash: vector<u8>,
         salt_hash: vector<u8>,
-        ctx: &mut StorageContext
+        ctx: &mut Context
     ) {
         check_if_state_exists(ctx);
         let now = timestamp::now_seconds(ctx);
@@ -215,7 +215,7 @@ module rooch_examples::rooch_examples {
         player: &signer,
         game_id: u128,
         salt: String,
-        ctx: &mut StorageContext
+        ctx: &mut Context
     ) {
         check_if_state_exists(ctx);
         let now = timestamp::now_seconds(ctx);
@@ -291,7 +291,7 @@ module rooch_examples::rooch_examples {
     }
 
     public entry fun release_funds_after_expiration(_account: &signer, game_id: u128,
-                                                    ctx: &mut StorageContext) {
+                                                    ctx: &mut Context) {
         check_if_state_exists(ctx);
         let now = timestamp::now_seconds(ctx);
         let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(ctx, @rooch_examples).addr;
@@ -371,7 +371,7 @@ module rooch_examples::rooch_examples {
         return now_next_game_id
     }
 
-    fun check_if_state_exists(ctx: &mut StorageContext) {
+    fun check_if_state_exists(ctx: &mut Context) {
         assert!(account_storage::global_exists<ResouceAccountAddress>(ctx, @rooch_examples), ErrorStateIsNotInitialized);
         let resouce_address = account_storage::global_borrow<ResouceAccountAddress>(ctx, @rooch_examples).addr;
         assert!(account_storage::global_exists<State>(ctx, resouce_address), ErrorStateIsNotInitialized);
@@ -381,7 +381,7 @@ module rooch_examples::rooch_examples {
         assert!(signer::address_of(signer) == @rooch_examples, ErrorSignerIsNotDeployer);
     }
 
-    fun check_if_account_has_enough_apt_coins(account: &signer, amount: u256, ctx: &StorageContext, ) {
+    fun check_if_account_has_enough_apt_coins(account: &signer, amount: u256, ctx: &Context, ) {
         assert!(coin::balance<WGBCOIN>(ctx, signer::address_of(account)) >= amount, ErrorSignerHasInsufficientAptBalance);
     }
 
@@ -426,7 +426,7 @@ module rooch_examples::rooch_examples {
         assert!(hash::sha3_256(value) == hash, ErrorIncorrectHashValue);
     }
 
-    fun check_if_game_expired(game: &Game, ctx: &StorageContext) {
+    fun check_if_game_expired(game: &Game, ctx: &Context) {
         assert!(game.expiration_timestamp_in_seconds <= timestamp::now_seconds(ctx), ErrorGameNotExpiredYet);
     }
 
@@ -451,7 +451,7 @@ module rooch_examples::rooch_examples {
             13
         );
         assert!(coin::is_account_accept_coin<WGBCOIN>(ctx, resouce_address), 12);
-        storage_context::drop_test_context(storage_context);
+        context::drop_test_context(storage_context);
     }
 
     #[test]
@@ -465,7 +465,7 @@ module rooch_examples::rooch_examples {
 
         init(account, ctx);
         init(account, ctx);
-        storage_context::drop_test_context(storage_context);
+        context::drop_test_context(storage_context);
     }
 
     #[test]
@@ -510,7 +510,7 @@ module rooch_examples::rooch_examples {
 
         assert!(coin::balance<WGBCOIN>(ctx, resouce_address) == prize_pool_amount, 23);
 
-        storage_context::drop_test_context(storage_context);
+        context::drop_test_context(storage_context);
     }
 
 
@@ -572,7 +572,7 @@ module rooch_examples::rooch_examples {
         assert!(game.player_two.decision == DECISION_NOT_MADE, 22);
 
         assert!(coin::balance<WGBCOIN>(ctx, resouce_address) == prize_pool_amount, 24);
-        storage_context::drop_test_context(storage_context);
+        context::drop_test_context(storage_context);
     }
 
 
@@ -610,7 +610,7 @@ module rooch_examples::rooch_examples {
 
         submit_decision(&player_one, 0, decision_hash, salt_hash, ctx);
         submit_decision(&player_one, 0, decision_hash, salt_hash, ctx);
-        storage_context::drop_test_context(storage_context);
+        context::drop_test_context(storage_context);
     }
 
 
@@ -700,7 +700,7 @@ module rooch_examples::rooch_examples {
             assert!(coin::balance<WGBCOIN>(ctx, resouce_address) == 0, 40);
             assert!(coin::balance<WGBCOIN>(ctx, player_one_address) == prize_pool_amount / 2, 42);
             assert!(coin::balance<WGBCOIN>(ctx, player_two_address) == prize_pool_amount / 2, 43);
-            storage_context::drop_test_context(storage_context);
+            context::drop_test_context(storage_context);
         }
     }
 
@@ -766,7 +766,7 @@ module rooch_examples::rooch_examples {
             assert!(coin::balance<WGBCOIN>(ctx, player_one_address) == prize_pool_amount, 42);
             assert!(coin::balance<WGBCOIN>(ctx, player_two_address) == 0, 43);
         };
-        storage_context::drop_test_context(storage_context);
+        context::drop_test_context(storage_context);
     }
 
     #[test]
@@ -833,7 +833,7 @@ module rooch_examples::rooch_examples {
             assert!(coin::balance<WGBCOIN>(ctx, player_one_address) == 0, 42);
             assert!(coin::balance<WGBCOIN>(ctx, player_two_address) == prize_pool_amount, 43);
         };
-        storage_context::drop_test_context(storage_context);
+        context::drop_test_context(storage_context);
     }
 
     #[test]
@@ -899,7 +899,7 @@ module rooch_examples::rooch_examples {
             assert!(coin::balance<WGBCOIN>(ctx, player_one_address) == 0, 42);
             assert!(coin::balance<WGBCOIN>(ctx, player_two_address) == 0, 43);
         };
-        storage_context::drop_test_context(storage_context);
+        context::drop_test_context(storage_context);
     }
 
 
@@ -941,7 +941,7 @@ module rooch_examples::rooch_examples {
 
         submit_decision(&player_two, 0, player_two_decision_hash, player_two_salt_hash, ctx);
         reveal_decision(&player_two, 0, string::utf8(player_two_salt), ctx);
-        storage_context::drop_test_context(storage_context);
+        context::drop_test_context(storage_context);
     }
 
     #[test]
@@ -988,7 +988,7 @@ module rooch_examples::rooch_examples {
             assert!(coin::balance<WGBCOIN>(ctx, player_one_address) == 0, 14);
             assert!(coin::balance<WGBCOIN>(ctx, player_two_address) == 0, 15);
         };
-        storage_context::drop_test_context(storage_context);
+        context::drop_test_context(storage_context);
     }
 
     #[test]
@@ -1054,7 +1054,7 @@ module rooch_examples::rooch_examples {
             assert!(coin::balance<WGBCOIN>(ctx, player_one_address) == prize_pool_amount, 14);
             assert!(coin::balance<WGBCOIN>(ctx, player_two_address) == 0, 15);
         };
-        storage_context::drop_test_context(storage_context);
+        context::drop_test_context(storage_context);
     }
 
     #[test]

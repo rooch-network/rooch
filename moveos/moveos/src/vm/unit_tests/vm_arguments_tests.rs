@@ -280,7 +280,7 @@ impl ResourceResolver for RemoteStore {
 }
 
 impl StateResolver for RemoteStore {
-    fn resolve_state(
+    fn resolve_table_item(
         &self,
         _handle: &ObjectID,
         _key: &[u8],
@@ -288,7 +288,7 @@ impl StateResolver for RemoteStore {
         Ok(None)
     }
 
-    fn resolve_list_state(
+    fn list_table_items(
         &self,
         _handle: &ObjectID,
         _cursor: Option<Vec<u8>>,
@@ -593,7 +593,7 @@ type TestCases = Vec<(
 )>;
 
 fn general_cases() -> TestCases {
-    // In Moveos, the `StorageContext` will auto resolve singers,
+    // In Moveos, the `Context` will auto resolve singers,
     // so we don't need to pass a signer argument.
     vec![
         // too few signers (0)

@@ -97,12 +97,29 @@ pub enum RoochError {
     IncorrectSigner { error: String },
     #[error("Invalid chain ID")]
     InvalidChainID,
+    #[error("Invalid password error: {0}")]
+    InvalidPasswordError(String),
 
     #[error("Clean server error: {0}")]
     CleanServerError(String),
 
     #[error("Use of disabled feature: {:?}", error)]
     UnsupportedFeatureError { error: String },
+
+    #[error("Active address does not exist error")]
+    ActiveAddressDoesNotExistError,
+
+    #[error("Sequencer key pair does not exist error: {0}")]
+    SequencerKeyPairDoesNotExistError(String),
+
+    #[error("Proposer key pair does not exist error: {0}")]
+    ProposerKeyPairDoesNotExistError(String),
+
+    #[error("Relayer key pair does not exist error: {0}")]
+    RelayerKeyPairDoesNotExistError(String),
+
+    #[error("Invalid sequencer or proposer or relayer key pair")]
+    InvalidSequencerOrProposerOrRelayerKeyPair,
 }
 
 impl From<anyhow::Error> for RoochError {

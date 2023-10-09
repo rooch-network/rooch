@@ -27,7 +27,7 @@ This module implements the native validator.
 <b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
-<b>use</b> <a href="">0x2::storage_context</a>;
+<b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 <b>use</b> <a href="ed25519.md#0x3_ed25519">0x3::ed25519</a>;
@@ -118,7 +118,7 @@ there defines auth validator id for each blockchain
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="native_validator.md#0x3_native_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, public_key: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="native_validator.md#0x3_native_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, public_key: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -128,7 +128,7 @@ there defines auth validator id for each blockchain
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="native_validator.md#0x3_native_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>(
-    ctx: &<b>mut</b> StorageContext,
+    ctx: &<b>mut</b> Context,
     <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>,
     public_key: <a href="">vector</a>&lt;u8&gt;
 ) {
@@ -155,7 +155,7 @@ there defines auth validator id for each blockchain
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="native_validator.md#0x3_native_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>(ctx: &<b>mut</b> <a href="_StorageContext">storage_context::StorageContext</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="native_validator.md#0x3_native_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -164,7 +164,7 @@ there defines auth validator id for each blockchain
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="native_validator.md#0x3_native_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>(ctx: &<b>mut</b> StorageContext, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
+<pre><code><b>public</b> entry <b>fun</b> <a href="native_validator.md#0x3_native_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>(ctx: &<b>mut</b> Context, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
     <a href="account_authentication.md#0x3_account_authentication_remove_authentication_key">account_authentication::remove_authentication_key</a>&lt;<a href="native_validator.md#0x3_native_validator_NativeValidator">NativeValidator</a>&gt;(ctx, <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>));
 }
 </code></pre>
@@ -324,7 +324,7 @@ Get the authentication key of the given public key.
 Get the authentication key of the given account, if it not exist, return the account address as authentication key.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_get_authentication_key_with_default">get_authentication_key_with_default</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, addr: <b>address</b>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_get_authentication_key_with_default">get_authentication_key_with_default</a>(ctx: &<a href="_Context">context::Context</a>, addr: <b>address</b>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -333,7 +333,7 @@ Get the authentication key of the given account, if it not exist, return the acc
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_get_authentication_key_with_default">get_authentication_key_with_default</a>(ctx: &StorageContext, addr: <b>address</b>): <a href="">vector</a>&lt;u8&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_get_authentication_key_with_default">get_authentication_key_with_default</a>(ctx: &Context, addr: <b>address</b>): <a href="">vector</a>&lt;u8&gt; {
     <b>let</b> auth_key_option = <a href="account_authentication.md#0x3_account_authentication_get_authentication_key">account_authentication::get_authentication_key</a>&lt;<a href="native_validator.md#0x3_native_validator_NativeValidator">NativeValidator</a>&gt;(ctx, addr);
     <b>if</b> (<a href="_is_some">option::is_some</a>(&auth_key_option)) {
         <a href="_extract">option::extract</a>(&<b>mut</b> auth_key_option)
@@ -409,7 +409,7 @@ Only validate the authenticator's signature.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_validate">validate</a>(ctx: &<a href="_StorageContext">storage_context::StorageContext</a>, authenticator_payload: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_validate">validate</a>(ctx: &<a href="_Context">context::Context</a>, authenticator_payload: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -418,12 +418,12 @@ Only validate the authenticator's signature.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_validate">validate</a>(ctx: &StorageContext, authenticator_payload: <a href="">vector</a>&lt;u8&gt;) {
-    <b>let</b> tx_hash = <a href="_tx_hash">storage_context::tx_hash</a>(ctx);
+<pre><code><b>public</b> <b>fun</b> <a href="native_validator.md#0x3_native_validator_validate">validate</a>(ctx: &Context, authenticator_payload: <a href="">vector</a>&lt;u8&gt;) {
+    <b>let</b> tx_hash = <a href="_tx_hash">context::tx_hash</a>(ctx);
     <a href="native_validator.md#0x3_native_validator_validate_signature">validate_signature</a>(&authenticator_payload, &tx_hash);
 
     <b>let</b> auth_key_from_authenticator_payload = <a href="native_validator.md#0x3_native_validator_get_authentication_key_from_authenticator_payload">get_authentication_key_from_authenticator_payload</a>(&authenticator_payload);
-    <b>let</b> auth_key_in_account = <a href="native_validator.md#0x3_native_validator_get_authentication_key_with_default">get_authentication_key_with_default</a>(ctx, <a href="_sender">storage_context::sender</a>(ctx));
+    <b>let</b> auth_key_in_account = <a href="native_validator.md#0x3_native_validator_get_authentication_key_with_default">get_authentication_key_with_default</a>(ctx, <a href="_sender">context::sender</a>(ctx));
     <b>assert</b>!(
         auth_key_in_account == auth_key_from_authenticator_payload,
         <a href="auth_validator.md#0x3_auth_validator_error_invalid_account_auth_key">auth_validator::error_invalid_account_auth_key</a>()

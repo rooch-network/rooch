@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// Source from https://github.com/aptos-labs/aptos-core/blob/d50af4db34a6929642603c3896a0af17984b3054/aptos-move/framework/aptos-stdlib/sources/simple_map.move
 /// Do some refator because we do not support inline and lambda yet.
 /// This module provides a solution for unsorted maps, that is it has the properties that
@@ -131,7 +134,8 @@ module moveos_std::simple_map {
     /// Transform the map into two vectors with the keys and values respectively
     /// Primarily used to destroy a map
     public fun to_vec_pair<Key: store, Value: store>(
-        map: SimpleMap<Key, Value>): (vector<Key>, vector<Value>) {
+        map: SimpleMap<Key, Value>
+    ): (vector<Key>, vector<Value>) {
         let keys: vector<Key> = vector::empty();
         let values: vector<Value> = vector::empty();
         let SimpleMap { data } = map;
@@ -139,7 +143,9 @@ module moveos_std::simple_map {
         let len = vector::length(&data);
         while (i < len) {
             let e = vector::pop_back(&mut data);
-            let Element { key, value } = e; vector::push_back(&mut keys, key); vector::push_back(&mut values, value);
+            let Element { key, value } = e; 
+            vector::push_back(&mut keys, key); 
+            vector::push_back(&mut values, value);
             i = i + 1;
         };
         vector::destroy_empty(data);
@@ -161,9 +167,9 @@ module moveos_std::simple_map {
         map: &SimpleMap<Key, Value>,
         key: &Key,
     ): option::Option<u64>{
-        let leng = vector::length(&map.data);
+        let len = vector::length(&map.data);
         let i = 0;
-        while (i < leng) {
+        while (i < len) {
             let element = vector::borrow(&map.data, i);
             if (&element.key == key){
                 return option::some(i)

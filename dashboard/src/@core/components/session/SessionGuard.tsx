@@ -10,12 +10,15 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Snackbar,
+  Alert,
 } from '@mui/material'
 
 // ** Next Import
 import { useRouter } from 'next/router'
 
 // ** Hooks Import
+import { useAuth } from 'src/hooks/useAuth'
 import { useSession } from 'src/hooks/useSessionAccount'
 
 interface Props {
@@ -85,14 +88,19 @@ interface SessionGuardProps {
 
 const SessionGuard = (props: SessionGuardProps) => {
   const { children } = props
+
+  const auth = useAuth()
   const router = useRouter()
-  const { account, requestAuthorize } = useSession()
+  const { account, requestAuthorize, close, errorMsg } = useSession()
 
   const handleAuth = (scope: Array<string>, maxInactiveInterval: number) => {
     requestAuthorize && requestAuthorize(scope, maxInactiveInterval)
   }
 
   const hanleLogout = () => {
+    close && close()
+    auth.logout()
+
     if (router.asPath !== '/') {
       router.replace({
         pathname: '/login',
@@ -104,7 +112,7 @@ const SessionGuard = (props: SessionGuardProps) => {
   }
 
   const isSessionInvalid = () => {
-    return account === undefined
+    return account === undefined || account === null
   }
 
   return (
@@ -115,6 +123,13 @@ const SessionGuard = (props: SessionGuardProps) => {
           onReqAuthorize={handleAuth}
           onLogout={hanleLogout}
         ></AuthDialog>
+        <Snackbar
+          open={errorMsg !== null}
+          autoHideDuration={6000}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert severity="error">{errorMsg}</Alert>
+        </Snackbar>
       </div>
       <div>{children}</div>
     </div>
