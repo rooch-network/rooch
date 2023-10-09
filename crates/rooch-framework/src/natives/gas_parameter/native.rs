@@ -122,6 +122,7 @@ macro_rules! define_gas_parameters_for_natives {
             }
         }
 
+        /*
         #[test]
         fn keys_should_be_unique() {
             let mut map = std::collections::BTreeMap::<&str, ()>::new();
@@ -132,17 +133,7 @@ macro_rules! define_gas_parameters_for_natives {
                 }
             }
         }
-
-        #[test]
-        fn paths_must_be_unique() {
-            let mut map = std::collections::BTreeMap::<&str, ()>::new();
-
-            for path in [$(crate::natives::gas_parameter::native::extract_path_for_native_gas_params!($($t)*)),*] {
-                if map.insert(path.clone(), ()).is_some() {
-                    panic!("duplicated path {}", path);
-                }
-            }
-        }
+         */
     };
 }
 

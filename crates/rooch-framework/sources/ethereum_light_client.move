@@ -1,7 +1,7 @@
 module rooch_framework::ethereum_light_client{
 
     use std::error;
-    use moveos_std::bcs;
+    use rooch_framework::bcs;
     use moveos_std::context::Context;
     use moveos_std::account_storage;
     use moveos_std::table::{Self, Table};
