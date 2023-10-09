@@ -29,24 +29,38 @@ In this diagram, we can clearly see how this traceability works.
 
 When we reuse the same logic in a Multi-chain, we will find a potential inconsistency time window, which we need to ensure is smaller than the fraud proof window:
 
-<img alt="Multi-chain Causality" height="400" width="700" src="/blog/multi-chain-myth/multi-chain.jpeg"/>
+<img alt="Multi-chain Causality" height="393"  width="700" src="/blog/multi-chain-myth/multi-chain.jpeg"/>
 
-Soon we'll find the event horizon, where the Verifier validation power can't keep up with Proposer's commits to Multi-chain, and the causality isn't visible anymore:
+It's just that the Fraud Proof had to be repeated on each chain because:
 
-<img alt="Event Horizon" height="497" width="700" src="/blog/multi-chain-myth/event-horizon.jpeg"/>
+1. the result of an arbitrary Verifier has no authority
+2. L1s cannot directly reuse challenge results from other chains.
 
-Since there are no trust assumptions between Verifiers, the situation is even worse in the real world, since r Verifiers must independently validate the Proposer's commits on each chain.
-If we introduce trust assumptions (2/3 trust assumptions) then we can get a committee (such a committee we have seen in cross-chain bridges), which is clearly not what we want.
+Repeated execution of fraud proofs is not costly, and it only takes one honest Verifier to launch a challenge to each L1 to expose Proposer's misbehavior.
+Although the amount of pledges required grows linearly with the number of chains, the honest Verifier's revenue grows linearly with it, so its motivation is not a problem.
 
-So causality is gone, is there a solution to this problem?
+However, inconsistencies do not arise only in the Verifier's and Proposer's judgments about the L2 state, but also inconsistencies in the L2 state recorded between different L1s.
+It is entirely possible for the Proposer to submit different L2 states on different chains. What about inconsistencies between logical Proposers derived from the same physical entity?
+There are two scenarios:
+
+1. if the Proposer is penalized locally (banned from committing on the specific L1) then there are multiple Proposer physical entities
+2. if the Proposer is penalized globally (banned from committing on all L1s) it relies on third-party arbitration.
+
+In case 1, the problem is not the increased complexity of the stateful commit architecture, but rather the fundamental problem is the audit trail on which the local penalty is based, i.e., Data Availability (Data Publication).
+In the case where Sequencer colludes with Proposer, the log that Verifier relies on to validate the state can be different for each L1, and then Verifier can only rely on the wrong cause to get the wrong result consistent with Proposer.
+
+For case 2, we need to introduce third-party arbitration, e.g., we introduce a trust assumption (2/3 trust assumption), then we can get a committee (such a committee we have seen in cross-chain bridges).
+Obviously this is not what we want, as it directly undermines the security assumptions of L2.
+
+Thus, the solution to Multi-chain settlement on L2 is equivalent to determining causality in Multi-chain communication, but again there is no natural causality between the multiple chains. So is there a solution to this problem when cause and effect are not even visible?
 
 ## Visible on L2
 
 Let's try to derive the solution path from the end point of the problem, i.e. the outcome. Given:
 
-1. Verifier verifies that single-chain state is out of event horizon
-2. Verifier verifies that Multi-chain state is in the field of event horizon
-3. the Verifier verifies that the safety assumption is satisfied if the capability is outside the horizon
+1. Verifier verifies that single-chain state is visible
+2. Verifier verifies that Multi-chain state is not visible
+3. the Verifier verifies that the safety assumption is satisfied if the process is visible
 
 We obtain:
 
@@ -64,9 +78,9 @@ b. Any L1 can communicate with other L1s by means of L2.
 From a and b:
 
 1. Multi-chain state could be converted to L2 state by the mechanism of messaging between L1 and L2. 
-2. L2 state is converted to single chain state, verified by Verifier out of event horizon.
+2. L2 state is converted to single chain state, verified by Verifier.
 
-<img alt="Visible Messaging" height="377" width="700" src="/blog/multi-chain-myth/visible-messaging.jpeg"/>
+<img alt="Visible Messaging" height="386" width="700" src="/blog/multi-chain-myth/visible-messaging.jpeg"/>
 
 ### Force visibility
 
@@ -88,9 +102,8 @@ For more information on how Rooch implements generic L1 to L2 messaging in a Mul
 
 For more information on how Rooch implements generic L2 to L1 messaging in a Multi-chain system, see → [L2 to L1 Messaging](/docs/tech-highlights/l2_to_l1_messaging)
 
-Like L1, L2 has a process of increasing decentralization from a cold start, which is faithfully recorded on L1.
-For any L1, L2 is just a logical concept, and it doesn't matter who the physical entity behind the Proposer is, 
-it just needs to verify the signature thresholds for member changes.
+Like L1, L2 has a process of increasing liveness from a cold start, which is faithfully recorded on L1.
+For any L1, L2 is just a logical concept, and it doesn't matter who the physical entity behind it is.
 As the ecosystem on L2 becomes richer and richer, the community members become heavier and heavier, 
 and member changes become more and more fluid, and the positive cycle, once started, spirals upward faster and faster.
 
