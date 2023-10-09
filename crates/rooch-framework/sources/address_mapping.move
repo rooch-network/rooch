@@ -2,6 +2,7 @@ module rooch_framework::address_mapping{
     
     use std::option::{Self, Option};
     use std::signer;
+    use std::error;
     use moveos_std::context::Context;
     use moveos_std::table::{Self, Table};
     use moveos_std::account_storage;
@@ -12,6 +13,8 @@ module rooch_framework::address_mapping{
     friend rooch_framework::transaction_validator;
     friend rooch_framework::transfer;
     
+    const ErrorMultiChainAddressInvalid: u64 = 1;
+
     struct AddressMapping has key{
         mapping: Table<MultiChainAddress, address>,
     }
@@ -70,8 +73,10 @@ module rooch_framework::address_mapping{
     /// Bind a rooch address to a multi-chain address
     public(friend) fun bind_no_check(ctx: &mut Context, rooch_address: address, maddress: MultiChainAddress) {
         if(multichain_address::is_rooch_address(&maddress)){
-            //Do nothing if the multi-chain address is a rooch address
-            return
+            assert!(
+                multichain_address::into_rooch_address(maddress) == rooch_address, 
+                error::invalid_argument(ErrorMultiChainAddressInvalid)
+            );
         };
         let am = account_storage::global_borrow_mut<AddressMapping>(ctx, @rooch_framework);
         table::add(&mut am.mapping, maddress, rooch_address);
