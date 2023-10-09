@@ -26,26 +26,40 @@ import PostHeader from "/components/blog/postHeader";
 L2 安全假设的核心是至少有一个诚实的 Verifier 验证 Proposer 在 L1 上提交的状态。
 在这个图中，我们可以清晰的看到这种追溯能力是如何起作用的。
 
-当我们在多链中复用同样的逻辑，会发现潜在的不一致时间窗口，我们需要保证这个窗口小于欺诈证明窗口：
+当我们在多链中复用同样的逻辑，会发现潜在的不一致时间窗口（在 Proposer 作恶的情况下），我们需要保证这个窗口小于欺诈证明窗口：
 
-<img alt="Multi-chain Causality" height="400"  width="700" src="/blog/multi-chain-myth/multi-chain.jpeg"/>
+<img alt="Multi-chain Causality" height="393"  width="700" src="/blog/multi-chain-myth/multi-chain.jpeg"/>
 
-很快我们便会发现因果关系视界，即 Verifier 验证算力追不上 Proposer 在多条链上的提交速度，因果关系不可见了:
+只是欺诈证明不得不在每一条链上重复执行，因为：
 
-<img alt="Event Horizon" height="497"  width="700" src="/blog/multi-chain-myth/event-horizon.jpeg"/>
+1. 任意 Verifier 的结果无权威性
+2. L1 无法直接复用其他链的挑战结果
 
-由于 Verifiers 之间没有信任假设，因此在现实世界中，情况更加糟糕，因为 r 个 Verifiers 必须独立验证 Proposer 在每一条链上的提交。
-如果我们引入信任假设（2/3 信任假设），那么我们可以得到一个委员会（这样的委员会我们在跨链桥中见过），这显然不是我们想要的。
+重复执行欺诈证明的代价并不高，只要有一个诚实的 Verifier 向每条 L1 发起挑战，就可以将 Proposer 的错误行为暴露出来。
+尽管需要的质押金额会随着链的增多而线性增长，但诚实 Verifier 的收益也会随之线性增长，因此它的动力也不会是一个问题。
 
-那么因果都消失了，这问题还有解吗？
+然而不一致并不仅仅产生于 Verifier 与 Proposer 关于 L2 状态的判断上，还有不同 L1 之间记录的 L2 状态的不一致。
+Proposer 完全可以在不同链上提交不同的 L2 状态。那么这些由同一个物理实体派生的逻辑 Proposer 之间的不一致又该如何处理呢？
+会出现两种情况：
+
+1. 如果对 Proposer 进行局部惩罚（禁止其在出错的 L1 上提交）则会导致存在多个 Proposer 物理实体
+2. 如果对 Proposer 进行全局惩罚（禁止其在所有 L1 上提交）则依赖第三方仲裁
+
+对于情况一，其问题不在于状态提交架构的复杂性上升，根本性问题在于局部惩罚所依赖的审计跟踪日志上，即 Data Availability（Data Publication）。
+在 Sequencer 与 Proposer 合谋的情况下，Verifier 验证状态所依赖的日志摘要在每一条 L1 都可以不相同，那么 Verifier 只能依赖错误的原因得到与 Proposer 一致的错误的结果。
+
+对于情况二，我们需要引入第三方仲裁，比如我们引入信任假设（2/3 信任假设），那么我们可以得到一个委员会（这样的委员会我们在跨链桥中见过）。
+显然这不是我们想要的，因为直接破坏了 L2 的安全假设。
+
+因此 L2 上多链结算的解等价于确定多链通信中的因果关系，但多链之间又没有天然的因果关系。那么因果都不可见了，这问题还有解吗？
 
 ## 在 L2 上可见
 
 让我们试着从问题的终点，即结果出发推导求解路径。已知：
 
-1. Verifier 验证单链状态在视界之外
-2. Verifier 验证多链状态在视界之内
-3. Verifier 验证能力在视界之外则满足安全假设
+1. Verifier 验证单链状态的过程可见
+2. Verifier 验证多链状态的过程不可见
+3. Verifier 验证过程可见则满足安全假设
 
 可得：
 
@@ -63,9 +77,9 @@ b. 任意 L1 可借助 L2 与其他 L1 通信。
 由 a 和 b 可得：
 
 1. 借助 L1 与 L2 通信机制，将多链状态转换为 L2 状态
-2. L2 状态转换为单链状态，被 Verifier 在视界之外验证
+2. L2 状态转换为单链状态，被 Verifier 看见
 
-<img alt="Visible Messaging" height="377"  width="700" src="/blog/multi-chain-myth/visible-messaging.jpeg"/>
+<img alt="Visible Messaging" height="386"  width="700" src="/blog/multi-chain-myth/visible-messaging.jpeg"/>
 
 ### 强制可见
 
@@ -74,7 +88,7 @@ b. 任意 L1 可借助 L2 与其他 L1 通信。
 1. L2 可验证 L1 状态：在 L2 上通过合约实现轻节点，轻节点的正确工作依赖至少一个诚实的 Relayer
 2. L2 对 L1 状态提供时效性承诺：Relayer 中继的 L1 状态必须赶上欺诈证明窗口
 
-所幸的是，约束条件清晰且不违法基本定律，因此我们可以满足。
+所幸的是，约束条件清晰且不违反基本定律，因此我们可以满足。
 
 ### 螺旋上升
 
@@ -87,8 +101,8 @@ b. 任意 L1 可借助 L2 与其他 L1 通信。
 
 关于 Rooch 如何在多链系统中实现通用 L2 至 L1 消息传递，可参考 →  [L2 to L1 Messaging](../docs/dive-into-rooch/l2-to-l1-messaging.mdx) 
 
-和 L1 一样，L2 也有一个从冷启动逐步增强去中心化程度的过程，这个过程会被如实的记录在 L1 上。对于任意 L1 来说，
-L2 仅仅是一个逻辑概念，背后 Proposer 的物理实体是谁并不重要，只需要验证成员变更的签名阈值即可。
+和 L1 一样，L2 也有一个从冷启动逐步增强活性的过程，这个过程会被如实的记录在 L1 上。对于任意 L1 来说，
+L2 仅仅是一个逻辑概念，背后的物理实体是谁并不重要。
 随着 L2 之上的生态越来越丰富，社区成员的分量也会越来越重，成员变更也会越来越流畅，正向循环一旦开始，就会越来越快的螺旋上升。
 
 ## 神话还是现实
