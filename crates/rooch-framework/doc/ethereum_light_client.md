@@ -15,9 +15,9 @@
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x2::account_storage</a>;
-<b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::table</a>;
+<b>use</b> <a href="bcs.md#0x3_bcs">0x3::bcs</a>;
 <b>use</b> <a href="ethereum_address.md#0x3_ethereum_address">0x3::ethereum_address</a>;
 <b>use</b> <a href="timestamp.md#0x3_timestamp">0x3::timestamp</a>;
 </code></pre>
