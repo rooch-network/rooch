@@ -331,7 +331,7 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 
 ## Function `destroy_empty`
 
-Destroy a table. The table must be empty to succeed.
+Destroy a table. Aborts if the table is not empty.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_destroy_empty">destroy_empty</a>&lt;K: <b>copy</b>, drop, V&gt;(<a href="table.md#0x2_table">table</a>: <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;)
@@ -420,7 +420,7 @@ Usable only if the value type <code>V</code> has the <code>drop</code> ability
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_drop">drop</a>&lt;K: <b>copy</b> + drop , V: drop&gt;(<a href="table.md#0x2_table">table</a>: <a href="table.md#0x2_table_Table">Table</a>&lt;K, V&gt;) {
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_drop">drop</a>&lt;K: <b>copy</b> + drop, V: drop&gt;(<a href="table.md#0x2_table">table</a>: <a href="table.md#0x2_table_Table">Table</a>&lt;K, V&gt;) {
     <b>let</b> <a href="table.md#0x2_table_Table">Table</a> { handle } = <a href="table.md#0x2_table">table</a>;
     <a href="raw_table.md#0x2_raw_table_drop_unchecked">raw_table::drop_unchecked</a>(&handle)
 }

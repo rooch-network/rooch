@@ -1,8 +1,11 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// TypeTable is a table use struct Type as Key, struct as Value
 
 module moveos_std::type_table {
 
-    use std::ascii::{String};
+    use std::ascii::String;
     use moveos_std::raw_table;
     use moveos_std::context::{Self, Context};
     use moveos_std::object_id::ObjectID;
@@ -31,16 +34,13 @@ module moveos_std::type_table {
     /// Note: We use Type name as key, the key will be serialized by bcs in the native function. 
     fun key<V>(): String {
         let type_name = std::type_name::get<V>();
-        let name_string = std::type_name::into_string(type_name);
-        //std::debug::print(&name_string);
-        //std::debug::print(&std::bcs::to_bytes(&name_string));
-        name_string
+        std::type_name::into_string(type_name)
     }
 
     /// Add a new entry of `V` to the table. Aborts if an entry for
     /// entry of `V` type already exists.
     public fun add<V: key>(table: &mut TypeTable, val: V) {
-        raw_table::add<String, V>(&table.handle, key<V>(), val)
+        raw_table::add<String, V>(&table.handle, key<V>(), val);
     }
 
     /// Acquire an immutable reference to the value which type is `V`.

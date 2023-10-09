@@ -43,7 +43,7 @@
 
 Information about the transaction currently being executed.
 This cannot be constructed by a transaction--it is a privileged object created by
-the VM and passed in to the entrypoint of the transaction as <code>&<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a></code>.
+the VM, stored in a <code>Context</code> and passed in to the entrypoint of the transaction as <code>&<b>mut</b> Context</code>.
 
 
 <pre><code><b>struct</b> <a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a> <b>has</b> drop
@@ -116,8 +116,7 @@ the VM and passed in to the entrypoint of the transaction as <code>&<b>mut</b> <
 
 ## Function `sender`
 
-Return the address of the user that signed the current
-transaction
+Return the address of the user that signed the current transaction
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_sender">sender</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <b>address</b>

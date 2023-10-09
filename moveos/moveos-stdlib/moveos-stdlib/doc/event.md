@@ -86,8 +86,8 @@ A globally unique ID for this event stream. event handler id equal to guid.
 
 ## Function `get_event_handle`
 
-use query this method to get event handle Metadata
-is event_handle_id doesn't exist, sender will default 0x0
+Method to get event handle Metadata
+If event_handle_id doesn't exist, sender will be default address 0x0
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_get_event_handle">get_event_handle</a>&lt;T&gt;(ctx: &<a href="context.md#0x2_context_Context">context::Context</a>): (<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, <b>address</b>, u64)
@@ -152,7 +152,7 @@ Used for creating custom indexes and tracking onchain
 activity in a way that suits a specific application the most.
 
 The type T is the main way to index the event, and can contain
-phantom parameters, eg emit(MyEvent<phantom T>).
+phantom parameters, eg. emit(MyEvent<phantom T>).
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_emit">emit</a>&lt;T&gt;(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, <a href="event.md#0x2_event">event</a>: T)

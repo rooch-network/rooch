@@ -5,7 +5,7 @@
 
 Context is part of the StorageAbstraction
 It is used to provide a context for the storage operations, make the storage abstraction,
-and let developers can customize the storage
+and let developers customize the storage
 
 
 -  [Struct `Context`](#0x2_context_Context)

@@ -3,8 +3,8 @@
 
 # Module `0x2::storage_context`
 
-AccountStorage is part of the StorageAbstraction
-It is used to store the objects
+StorageContext is part of the StorageAbstraction
+It is used to store objects
 
 
 -  [Struct `StorageContext`](#0x2_storage_context_StorageContext)
@@ -222,7 +222,7 @@ Add object to storage context
 
 ## Function `contains`
 
-Determine whether the object exixts
+Returns true if the object exixts
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_contains">contains</a>(self: &<a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): bool

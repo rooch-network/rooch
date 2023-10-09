@@ -7,7 +7,7 @@ Move Object
 The Object is a box style Object
 The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/sources/object.move#L75):
 1. The Object is a struct in Move
-2. The Object is a use case for the Hot Potato pattern in Move. Objects do not have any ability, so they cannot be drop, copy, or store, and can only be handled by StorageContext API after creation.
+2. The Object is a use case of the Hot Potato pattern in Move. Objects do not have any ability, so they cannot be drop, copy, or store, and can only be handled by StorageContext API after creation.
 
 
 -  [Struct `Object`](#0x2_object_Object)
@@ -32,7 +32,7 @@ The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/5
 ## Struct `Object`
 
 Box style object
-The object can not be copied, droped, only can be consumed by StorageContext API.
+The object can not be copied, droped and stored. It only can be consumed by StorageContext API.
 
 
 <pre><code><b>struct</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;
@@ -86,8 +86,7 @@ Create a new object, the object is owned by <code>owner</code>
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(ctx: &<b>mut</b> TxContext, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt; {
     <b>let</b> id = <a href="tx_context.md#0x2_tx_context_fresh_object_id">tx_context::fresh_object_id</a>(ctx);
-    <b>let</b> obj = <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;{id, value, owner};
-    obj
+    <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;{id, value, owner}
 }
 </code></pre>
 
@@ -147,7 +146,7 @@ Create a new object, the object is owned by <code>owner</code>
 
 ## Function `borrow_mut`
 
-Borrow the object mutable value
+Borrow the mutable object value
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_mut">borrow_mut</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): &<b>mut</b> T

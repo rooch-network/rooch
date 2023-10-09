@@ -1,12 +1,14 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// AccountStorage is part of the StorageAbstraction
 /// It is used to store the account's resources and modules
-
 module moveos_std::account_storage {
 
     use std::string::String;
     use std::signer;
+    use std::vector;    
     use moveos_std::bcs;
-    use std::vector;
     use moveos_std::type_table::{Self, TypeTable};
     use moveos_std::table::{Self, Table};
     use moveos_std::object;

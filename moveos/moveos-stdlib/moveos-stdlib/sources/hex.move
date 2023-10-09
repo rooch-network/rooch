@@ -1,7 +1,10 @@
-// Source https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/sources/hex.move
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
+
+// Source https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/sources/hex.move
 
 /// HEX (Base16) encoding utility.
 module moveos_std::hex {

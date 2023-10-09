@@ -5,7 +5,7 @@
 
 Raw Key Value table. This is the basic of storage abstraction.
 This type table doesn't care about the key and value types. We leave the data type checking to the Native implementation.
-This type table if for design internal global storage, so all functions are friend.
+This type table is for internal global storage, so all functions are friend.
 
 
 -  [Resource `TableInfo`](#0x2_raw_table_TableInfo)
@@ -148,7 +148,7 @@ table, and cannot be discovered from it.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_add">add</a>&lt;K: <b>copy</b> + drop, V&gt;(table_handle: &ObjectID, key: K, val: V) {
-    <a href="raw_table.md#0x2_raw_table_add_box">add_box</a>&lt;K, V, <a href="raw_table.md#0x2_raw_table_Box">Box</a>&lt;V&gt;&gt;(table_handle, key, <a href="raw_table.md#0x2_raw_table_Box">Box</a> {val} )
+    <a href="raw_table.md#0x2_raw_table_add_box">add_box</a>&lt;K, V, <a href="raw_table.md#0x2_raw_table_Box">Box</a>&lt;V&gt;&gt;(table_handle, key, <a href="raw_table.md#0x2_raw_table_Box">Box</a> {val} );
 }
 </code></pre>
 
@@ -200,10 +200,10 @@ Returns specified default value if there is no entry for <code>key</code>.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_borrow_with_default">borrow_with_default</a>&lt;K: <b>copy</b> + drop, V&gt;(table_handle: &ObjectID, key: K, default: &V): &V {
-    <b>if</b> (!<a href="raw_table.md#0x2_raw_table_contains">contains</a>&lt;K&gt;(table_handle, <b>copy</b> key)) {
+    <b>if</b> (!<a href="raw_table.md#0x2_raw_table_contains">contains</a>&lt;K&gt;(table_handle, key)) {
         default
     } <b>else</b> {
-        <a href="raw_table.md#0x2_raw_table_borrow">borrow</a>(table_handle, <b>copy</b> key)
+        <a href="raw_table.md#0x2_raw_table_borrow">borrow</a>(table_handle, key)
     }
 }
 </code></pre>
@@ -257,7 +257,7 @@ Insert the pair (<code>key</code>, <code>default</code>) first if there is no en
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_borrow_mut_with_default">borrow_mut_with_default</a>&lt;K: <b>copy</b> + drop, V: drop&gt;(table_handle: &ObjectID, key: K, default: V): &<b>mut</b> V {
     <b>if</b> (!<a href="raw_table.md#0x2_raw_table_contains">contains</a>&lt;K&gt;(table_handle, <b>copy</b> key)) {
-        <a href="raw_table.md#0x2_raw_table_add">add</a>(table_handle, <b>copy</b> key, default)
+        <a href="raw_table.md#0x2_raw_table_add">add</a>(table_handle, key, default)
     };
     <a href="raw_table.md#0x2_raw_table_borrow_mut">borrow_mut</a>(table_handle, key)
 }
@@ -286,7 +286,7 @@ update the value of the entry for <code>key</code> to <code>value</code> otherwi
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_upsert">upsert</a>&lt;K: <b>copy</b> + drop, V: drop&gt;(table_handle: &ObjectID, key: K, value: V) {
     <b>if</b> (!<a href="raw_table.md#0x2_raw_table_contains">contains</a>&lt;K&gt;(table_handle, <b>copy</b> key)) {
-        <a href="raw_table.md#0x2_raw_table_add">add</a>(table_handle, <b>copy</b> key, value)
+        <a href="raw_table.md#0x2_raw_table_add">add</a>(table_handle, key, value)
     } <b>else</b> {
         <b>let</b> ref = <a href="raw_table.md#0x2_raw_table_borrow_mut">borrow_mut</a>(table_handle, key);
         *ref = value;
@@ -379,7 +379,7 @@ Returns the size of the table, the number of key-value pairs
 
 ## Function `is_empty`
 
-Returns true iff the table is empty (if <code>length</code> returns <code>0</code>)
+Returns true if the table is empty (if <code>length</code> returns <code>0</code>)
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_is_empty">is_empty</a>(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): bool
@@ -404,7 +404,7 @@ Returns true iff the table is empty (if <code>length</code> returns <code>0</cod
 
 ## Function `drop_unchecked`
 
-Testing only: allows to drop a table even if it is not empty.
+Drop a table even if it is not empty.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_drop_unchecked">drop_unchecked</a>(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>)

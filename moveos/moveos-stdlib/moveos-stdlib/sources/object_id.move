@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// Move object identifiers
 module moveos_std::object_id {
     friend moveos_std::tx_context;

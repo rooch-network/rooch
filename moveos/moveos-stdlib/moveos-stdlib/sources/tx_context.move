@@ -1,3 +1,9 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+// Copyright (c) Mysten Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 // Origin source https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/sources/tx_context.move#L24
 // And do refactoring
 
@@ -25,7 +31,7 @@ module moveos_std::tx_context {
 
     /// Information about the transaction currently being executed.
     /// This cannot be constructed by a transaction--it is a privileged object created by
-    /// the VM and passed in to the entrypoint of the transaction as `&mut TxContext`.
+    /// the VM, stored in a `Context` and passed in to the entrypoint of the transaction as `&mut Context`.
     struct TxContext has drop {
         /// The address of the user that signed the current transaction
         sender: address,
@@ -42,8 +48,7 @@ module moveos_std::tx_context {
         map: SimpleMap<String, Any>,
     }
 
-    /// Return the address of the user that signed the current
-    /// transaction
+    /// Return the address of the user that signed the current transaction
     public(friend) fun sender(self: &TxContext): address {
         self.sender
     }
@@ -83,7 +88,7 @@ module moveos_std::tx_context {
         self.tx_hash
     }
 
-    /// Return the number of id's created by the current transaction.
+    /// Return the number of ids created by the current transaction.
     /// Hidden for now, but may expose later
     fun ids_created(self: &TxContext): u64 {
         self.ids_created
