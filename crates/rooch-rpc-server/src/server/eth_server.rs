@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::service::{aggregate_service::AggregateService, rpc_service::RpcService};
-use ethers::types::{H160, U256, U64};
+use ethers::types::H160;
 use jsonrpsee::{
     core::{async_trait, Error as JsonRpcError, RpcResult},
     RpcModule,
 };
+use move_core_types::u256::U256;
 use moveos_types::{
     access_path::AccessPath, gas_config::GasConfig, h256::H256, state::MoveStructType,
 };
@@ -26,7 +27,7 @@ use rooch_rpc_api::{
             },
             AccessList, CallRequest, EthFeeHistory, Transaction, TransactionReceipt,
         },
-        H160View, H256View, U256View, U64View,
+        H176View, H256View, StrView,
     },
 };
 use rooch_types::{
@@ -89,8 +90,8 @@ impl EthAPIServer for EthServer {
         let parent_hash =
             H256::from_str("0xe5ece23ec875db0657f964cbc74fa34439eef3ab3dc8664e7f4ae8b5c5c963e1")
                 .unwrap();
-        let gas_limit = U256View::from(U256::from_str("0x1c9c380").unwrap());
-        let gas_used = U256View::from(U256::from_str("0xf4954d").unwrap());
+        let gas_limit = StrView(U256::from_str("0x1c9c380").unwrap());
+        let gas_used = StrView(U256::from_str("0xf4954d").unwrap());
 
         let txs = if include_txs {
             vec![TransactionType::Full(Transaction {
@@ -100,28 +101,28 @@ impl EthAPIServer for EthServer {
                     )
                     .unwrap(),
                 ),
-                nonce: U256View::from(U256::zero()),
+                nonce: StrView(U256::zero()),
                 block_hash: Some(parent_hash.into()),
                 block_number: Some(block_number),
-                transaction_index: Some(U64View::from(U64::from(0))),
-                from: H160View::from(
+                transaction_index: Some(StrView(u64::from(0u8))),
+                from: H176View::from(
                     H160::from_str("0x742d35Cc6634C0532925a3b844Bc454e4438f44e").unwrap(),
                 ),
-                to: Some(H160View::from(
+                to: Some(H176View::from(
                     H160::from_str("0x832daF8DDe81fA5186EF2D04b3099251c508D5A1").unwrap(),
                 )),
-                value: U256View::from(U256::from(1_000_000)),
-                gas_price: Some(U256View::from(U256::from(20_000_000_000u64))),
-                gas: U256View::from(U256::from(21_000)),
+                value: StrView(U256::from(1_000_000u64)),
+                gas_price: Some(StrView(U256::from(20_000_000_000u64))),
+                gas: StrView(U256::from(21_000u32)),
                 input: Bytes::new(vec![]),
-                r: U256View::from(U256::zero()),
-                s: U256View::from(U256::zero()),
-                v: U64View::from(U64::one()),
+                r: StrView(U256::zero()),
+                s: StrView(U256::zero()),
+                v: StrView(u64::from(0u8)),
                 transaction_type: Default::default(),
                 access_list: Some(AccessList::default()),
                 max_priority_fee_per_gas: Default::default(),
                 max_fee_per_gas: Default::default(),
-                chain_id: Some(U256View::from(U256::from(10001))),
+                chain_id: Some(StrView(U256::from(10001u32))),
                 other: OtherFields::default(),
             })]
         } else {
@@ -147,7 +148,7 @@ impl EthAPIServer for EthServer {
                 )
                 .unwrap(),
             ),
-            author: Some(H160View::from(
+            author: Some(H176View::from(
                 H160::from_str("0xbaf6dc2e647aeb6f510f9e318856a1bcd66c5e19").unwrap(),
             )),
             state_root: H256View::from(
@@ -176,18 +177,16 @@ impl EthAPIServer for EthServer {
             )
             .unwrap(),
             logs_bloom: None,
-            timestamp: U256View::from(U256::from_str("0x64731653").unwrap()),
-            difficulty: U256View::from(U256::zero()),
-            total_difficulty: Some(U256View::from(
-                U256::from_str("0xc70d815d562d3cfa955").unwrap(),
-            )),
+            timestamp: StrView(U256::from_str("0x64731653").unwrap()),
+            difficulty: StrView(U256::zero()),
+            total_difficulty: Some(StrView(U256::from_str("0xc70d815d562d3cfa955").unwrap())),
             seal_fields: vec![],
             uncles: vec![],
             transactions: txs,
             size: None,
             mix_hash: None,
             nonce: None,
-            base_fee_per_gas: Some(U256View::from(U256::from_str("0x52e0ce91c").unwrap())),
+            base_fee_per_gas: Some(StrView(U256::from_str("0x52e0ce91c").unwrap())),
             withdrawals_root: Some(H256View::from(
                 H256::from_str(
                     "0xdc8c2a8825fbbe669360d351e34f3ad09d320db83539c98e92bb18ea5fa93773",
@@ -195,12 +194,12 @@ impl EthAPIServer for EthServer {
                 .unwrap(),
             )),
             withdrawals: Some(vec![Withdrawal {
-                address: H160View::from(
+                address: H176View::from(
                     H160::from_str("0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f").unwrap(),
                 ),
-                amount: U256View::from(U256::from_str("0xc7a3fa").unwrap()),
-                index: U64View::from(U64::from_str("0x4e81dc").unwrap()),
-                validator_index: U64View::from(U64::from_str("0x5be41").unwrap()),
+                amount: StrView(U256::from_str("0xc7a3fa").unwrap()),
+                index: StrView(u64::from_str("0x4e81dc").unwrap()),
+                validator_index: StrView(u64::from_str("0x5be41").unwrap()),
             }]),
             other: OtherFields::default(),
         };
@@ -210,9 +209,9 @@ impl EthAPIServer for EthServer {
 
     async fn get_balance(
         &self,
-        address: H160View,
+        address: H176View,
         _num: Option<BlockNumber>,
-    ) -> RpcResult<U256View> {
+    ) -> RpcResult<StrView<U256>> {
         let account_address = self
             .rpc_service
             .resolve_address(MultiChainAddress::from(EthereumAddress(address.into())))
@@ -228,13 +227,9 @@ impl EthAPIServer for EthServer {
             .pop()
             .ok_or_else(|| JsonRpcError::Custom("Balance result must not empty".to_owned()))?
             .map(|(_cursor, balance_info)| {
-                U256View::from(U256::from_little_endian(
-                    &balance_info.balance.to_le_bytes(),
-                ))
+                StrView(U256::from_le_bytes(&balance_info.balance.to_le_bytes()))
             })
-            .unwrap_or(U256View::from(U256::from_little_endian(
-                &default_balance.to_le_bytes(),
-            )));
+            .unwrap_or(StrView(U256::from_le_bytes(&default_balance.to_le_bytes())));
         Ok(balance)
     }
 
@@ -242,7 +237,7 @@ impl EthAPIServer for EthServer {
         &self,
         request: CallRequest,
         _num: Option<BlockNumber>,
-    ) -> RpcResult<U256View> {
+    ) -> RpcResult<StrView<U256>> {
         let gas = match request.from {
             Some(from) => {
                 let account_address = self
@@ -252,39 +247,38 @@ impl EthAPIServer for EthServer {
                 let account_exists = self.rpc_service.exists_account(account_address).await?;
                 if account_exists {
                     //TODO call dry run to estimate gas
-                    U256View::from(U256::from(GasConfig::DEFAULT_MAX_GAS_AMOUNT))
+                    StrView(U256::from(GasConfig::DEFAULT_MAX_GAS_AMOUNT))
                 } else {
                     //The contract will automatically call faucet to deposit gas coin when the account does not exist.
                     //So, we return 0 gas to avoid MetaMask blocking the transaction submission.
                     //TODO when we implement the contract pay gas, we should return the real gas amount that user should pay.
-                    U256View::from(U256::zero())
+                    StrView(U256::zero())
                 }
             }
-            None => U256View::from(U256::from(GasConfig::DEFAULT_MAX_GAS_AMOUNT)),
+            None => StrView(U256::from(GasConfig::DEFAULT_MAX_GAS_AMOUNT)),
         };
         Ok(gas)
     }
 
     async fn fee_history(
         &self,
-        block_count: U256View,
+        block_count: StrView<U256>,
         newest_block: BlockNumber,
         reward_percentiles: Option<Vec<f64>>,
     ) -> RpcResult<EthFeeHistory> {
         let base_fee_per_gas: Vec<U256> = iter::repeat_with(U256::zero)
-            .take(<U256View as Into<U256>>::into(block_count.clone()).as_usize())
+            .take(block_count.0.unchecked_as_u128() as usize)
             .collect();
 
         let gas_used_ratio: Vec<f64> = iter::repeat_with(|| 0.1)
-            .take(<U256View as Into<U256>>::into(block_count.clone()).as_usize())
+            .take(block_count.0.unchecked_as_u128() as usize)
             .collect();
 
         let reward = match reward_percentiles {
             Some(percentiles) => {
-                let rewards: Vec<Vec<U256>> =
-                    (0..<U256View as Into<U256>>::into(block_count.clone()).as_usize())
-                        .map(|_| percentiles.iter().map(|_| U256::from(1)).collect())
-                        .collect();
+                let rewards: Vec<Vec<U256>> = (0..block_count.0.unchecked_as_u128())
+                    .map(|_| percentiles.iter().map(|_| U256::from(1u8)).collect())
+                    .collect();
                 Some(rewards)
             }
             None => None,
@@ -292,20 +286,17 @@ impl EthAPIServer for EthServer {
 
         match newest_block.as_number() {
             Some(newest_block_num) => {
-                let oldest_block_num = <U64View as Into<U64>>::into(newest_block_num)
-                    - <U256View as Into<U256>>::into(block_count).low_u64();
-                let base_fee_per_gas_view: Vec<U256View> = base_fee_per_gas
-                    .iter()
-                    .map(|u256| U256View::from(*u256))
-                    .collect();
-                let reward_view: Option<Vec<Vec<U256View>>> = reward.map(|rewards| {
+                let oldest_block_num = newest_block_num.0 - block_count.0.unchecked_as_u64();
+                let base_fee_per_gas_view: Vec<StrView<U256>> =
+                    base_fee_per_gas.iter().map(|u256| StrView(*u256)).collect();
+                let reward_view: Option<Vec<Vec<StrView<U256>>>> = reward.map(|rewards| {
                     rewards
                         .iter()
-                        .map(|inner| inner.iter().map(|u256| U256View::from(*u256)).collect())
+                        .map(|inner| inner.iter().map(|u256| StrView(*u256)).collect())
                         .collect()
                 });
                 Ok(EthFeeHistory {
-                    oldest_block: BlockNumber::Number(oldest_block_num.into()),
+                    oldest_block: BlockNumber::Number(StrView(oldest_block_num)),
                     base_fee_per_gas: base_fee_per_gas_view,
                     gas_used_ratio,
                     reward: reward_view,
@@ -319,16 +310,16 @@ impl EthAPIServer for EthServer {
         }
     }
 
-    async fn gas_price(&self) -> RpcResult<U256View> {
+    async fn gas_price(&self) -> RpcResult<StrView<U256>> {
         //TODO read the get_gas_factor from contract.
-        Ok(U256View::from(U256::from(1)))
+        Ok(StrView(U256::from(1u8)))
     }
 
     async fn transaction_count(
         &self,
-        address: H160View,
+        address: H176View,
         _num: Option<BlockNumber>,
-    ) -> RpcResult<U256View> {
+    ) -> RpcResult<StrView<U256>> {
         let account_address = self
             .rpc_service
             .resolve_address(MultiChainAddress::from(EthereumAddress(
@@ -349,8 +340,8 @@ impl EthAPIServer for EthServer {
             .flatten()
             .map(|state_view| state_view.as_move_state::<Account>())
             .transpose()?
-            .map_or(U256View::from(U256::zero()), |account| {
-                U256View::from(<u64 as Into<U256>>::into(account.sequence_number))
+            .map_or(StrView(U256::zero()), |account| {
+                StrView(<u64 as Into<U256>>::into(account.sequence_number))
             });
 
         info!("transaction_count seq_number: {:?}", seq_number);
@@ -394,16 +385,20 @@ impl EthAPIServer for EthServer {
                 trans.map(|info| TransactionReceipt {
                     transaction_hash: info.tx_hash.into(),
                     block_hash: Some(info.state_root.into()),
-                    block_number: Some(U64View::from(U64::from(10))),
-                    gas_used: Some(U256View::from(<u64 as Into<U256>>::into(info.gas_used))),
-                    status: Some(U64View::from(<u64 as Into<U64>>::into(
-                        info.status.is_success() as u64,
-                    ))),
-                    cumulative_gas_used: U256View::from(<u64 as Into<U256>>::into(info.gas_used)),
+                    block_number: Some(StrView(u64::from(10u16))),
+                    gas_used: Some(StrView(<u64 as Into<U256>>::into(info.gas_used))),
+                    status: Some(StrView(u64::from(info.status.is_success()))),
+                    cumulative_gas_used: StrView(<u64 as Into<U256>>::into(info.gas_used)),
                     contract_address: None,
                     logs: Vec::new(),
                     logs_bloom: Bloom::default(),
-                    ..Default::default()
+                    transaction_index: StrView(u64::from(0u8)),
+                    from: H176View::from(H160::default()),
+                    to: Some(H176View::from(H160::default())),
+                    root: Some(H256View::from(H256::default())),
+                    transaction_type: None,
+                    effective_gas_price: None,
+                    other: OtherFields::default(),
                 })
             });
 
@@ -420,22 +415,22 @@ impl EthAPIServer for EthServer {
         // Create a new Transaction instance and populate its fields
         let transaction = Transaction {
             hash: resp.tx_hash().into(),
-            nonce: U256View::from(U256::from(4391989)),
+            nonce: StrView(U256::from(4391989u64)),
             block_hash: Some(H256View::from(H256::from_str("0xc2794a16acacd9f7670379ffd12b6968ff98e2a602f57d7d1f880220aa5a4973").unwrap())),
-            block_number: Some(U64View::from(U64::from(8453214))),
-            transaction_index: Some(U64View::from(U64::from(0))),
+            block_number: Some(StrView(8453214)),
+            transaction_index: Some(StrView(u64::from(0u8))),
             from: EthereumAddress::try_from(resp.sender())?.0.into(),
-            to: Some(H160View::from(H160::from_str("0x4200000000000000000000000000000000000015").unwrap())),
-            value: U256View::from(U256::zero()),
-            gas_price: Some(U256View::from(U256::zero())),
-            gas: U256View::from(U256::from(1000000u64)),
+            to: Some(H176View::from(H160::from_str("0x4200000000000000000000000000000000000015").unwrap())),
+            value: StrView(U256::zero()),
+            gas_price: Some(StrView(U256::zero())),
+            gas: StrView(U256::from(1000000u64)),
             input: Bytes::new(
                 hex::decode("015d8eb90000000000000000000000000000000000000000000000000000000000878c1c00000000000000000000000000000000000000000000000000000000644662bc0000000000000000000000000000000000000000000000000000001ee24fba17b7e19cc10812911dfa8a438e0a81a9933f843aa5b528899b8d9e221b649ae0df00000000000000000000000000000000000000000000000000000000000000060000000000000000000000007431310e026b69bfc676c0013e12a1a11411eec9000000000000000000000000000000000000000000000000000000000000083400000000000000000000000000000000000000000000000000000000000f4240").unwrap()
             ),
-            r: U256View::from(U256::zero()),
-            s: U256View::from(U256::zero()),
-            v: U64View::from(U64::zero()),
-            transaction_type: Some(U64View::from(U64::from(126))),
+            r: StrView(U256::zero()),
+            s: StrView(U256::zero()),
+            v: StrView(u64::from(0u8)),
+            transaction_type: Some(StrView(u64::from(126u16))),
             access_list: None,
             max_priority_fee_per_gas: None,
             max_fee_per_gas: None,
@@ -451,39 +446,39 @@ impl EthAPIServer for EthServer {
         hash: H256View,
         include_txs: bool,
     ) -> RpcResult<Block<TransactionType>> {
-        let block_number = U64View::from(U64::from(10));
+        let block_number = StrView(u64::from(10u8));
         let parent_hash = H256View::from(
             H256::from_str("0xe5ece23ec875db0657f964cbc74fa34439eef3ab3dc8664e7f4ae8b5c5c963e1")
                 .unwrap(),
         );
-        let gas_limit = U256View::from(U256::from_str("0x1c9c380").unwrap());
-        let gas_used = U256View::from(U256::from_str("0xf4954d").unwrap());
+        let gas_limit = StrView(U256::from_str("0x1c9c380").unwrap());
+        let gas_used = StrView(U256::from_str("0xf4954d").unwrap());
 
         let txs = if include_txs {
             vec![TransactionType::Full(Transaction {
                 hash,
-                nonce: U256View::from(U256::zero()),
+                nonce: StrView(U256::zero()),
                 block_hash: Some(parent_hash.clone()),
                 block_number: Some(block_number),
-                transaction_index: Some(U64View::from(U64::from(0))),
-                from: H160View::from(
+                transaction_index: Some(StrView(u64::from(0u8))),
+                from: H176View::from(
                     H160::from_str("0x742d35Cc6634C0532925a3b844Bc454e4438f44e").unwrap(),
                 ),
-                to: Some(H160View::from(
+                to: Some(H176View::from(
                     H160::from_str("0x832daF8DDe81fA5186EF2D04b3099251c508D5A1").unwrap(),
                 )),
-                value: U256View::from(U256::from(1_000_000)),
-                gas_price: Some(U256View::from(U256::from(20_000_000_000u64))),
-                gas: U256View::from(U256::from(21_000)),
+                value: StrView(U256::from(1_000_000u64)),
+                gas_price: Some(StrView(U256::from(20_000_000_000u64))),
+                gas: StrView(U256::from(21_000u32)),
                 input: Bytes::new(vec![]),
-                r: U256View::from(U256::zero()),
-                s: U256View::from(U256::zero()),
-                v: U64View::from(U64::one()),
+                r: StrView(U256::zero()),
+                s: StrView(U256::zero()),
+                v: StrView(u64::from(1u8)),
                 transaction_type: Default::default(),
                 access_list: Some(AccessList::default()),
                 max_priority_fee_per_gas: Default::default(),
                 max_fee_per_gas: Default::default(),
-                chain_id: Some(U256View::from(U256::from(10001))),
+                chain_id: Some(StrView(U256::from(10001u32))),
                 other: OtherFields::default(),
             })]
         } else {
@@ -509,7 +504,7 @@ impl EthAPIServer for EthServer {
                 )
                 .unwrap(),
             ),
-            author: Some(H160View::from(
+            author: Some(H176View::from(
                 H160::from_str("0xbaf6dc2e647aeb6f510f9e318856a1bcd66c5e19").unwrap(),
             )),
             state_root: H256View::from(
@@ -538,18 +533,16 @@ impl EthAPIServer for EthServer {
             )
             .unwrap(),
             logs_bloom: None,
-            timestamp: U256View::from(U256::from_str("0x64731653").unwrap()),
-            difficulty: U256View::from(U256::zero()),
-            total_difficulty: Some(U256View::from(
-                U256::from_str("0xc70d815d562d3cfa955").unwrap(),
-            )),
+            timestamp: StrView(U256::from_str("0x64731653").unwrap()),
+            difficulty: StrView(U256::zero()),
+            total_difficulty: Some(StrView(U256::from_str("0xc70d815d562d3cfa955").unwrap())),
             seal_fields: vec![],
             uncles: vec![],
             transactions: txs,
             size: None,
             mix_hash: None,
             nonce: None,
-            base_fee_per_gas: Some(U256View::from(U256::from_str("0x52e0ce91c").unwrap())),
+            base_fee_per_gas: Some(StrView(U256::from_str("0x52e0ce91c").unwrap())),
             withdrawals_root: Some(H256View::from(
                 H256::from_str(
                     "0xdc8c2a8825fbbe669360d351e34f3ad09d320db83539c98e92bb18ea5fa93773",
@@ -557,12 +550,12 @@ impl EthAPIServer for EthServer {
                 .unwrap(),
             )),
             withdrawals: Some(vec![Withdrawal {
-                address: H160View::from(
+                address: H176View::from(
                     H160::from_str("0xb9d7934878b5fb9610b3fe8a5e441e8fad7e293f").unwrap(),
                 ),
-                amount: U256View::from(U256::from_str("0xc7a3fa").unwrap()),
-                index: U64View::from(U64::from_str("0x4e81dc").unwrap()),
-                validator_index: U64View::from(U64::from_str("0x5be41").unwrap()),
+                amount: StrView(U256::from_str("0xc7a3fa").unwrap()),
+                index: StrView(u64::from_str("0x4e81dc").unwrap()),
+                validator_index: StrView(u64::from_str("0x5be41").unwrap()),
             }]),
             other: OtherFields::default(),
         };

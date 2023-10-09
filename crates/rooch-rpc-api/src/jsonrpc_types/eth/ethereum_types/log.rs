@@ -1,18 +1,19 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use move_core_types::u256::U256;
 use schemars::JsonSchema;
 // Adapted from https://github.com/tomusdrw/rust-web3/blob/master/src/types/log.rs
 use serde::{Deserialize, Serialize};
 
-use crate::jsonrpc_types::{bytes::Bytes, H160View, H256View, U256View, U64View};
+use crate::jsonrpc_types::{bytes::Bytes, H176View, H256View, StrView};
 
 /// A log produced by a transaction.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Log {
     /// H160. the contract that emitted the log
-    pub address: H160View,
+    pub address: H176View,
 
     /// topics: Array of 0 to 4 32 Bytes of indexed log arguments.
     /// (In solidity: The first topic is the hash of the signature of the event
@@ -31,7 +32,7 @@ pub struct Log {
     /// Block Number
     #[serde(rename = "blockNumber")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub block_number: Option<U64View>,
+    pub block_number: Option<StrView<u64>>,
 
     /// Transaction Hash
     #[serde(rename = "transactionHash")]
@@ -41,18 +42,18 @@ pub struct Log {
     /// Transaction Index
     #[serde(rename = "transactionIndex")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub transaction_index: Option<U64View>,
+    pub transaction_index: Option<StrView<u64>>,
 
     /// Integer of the log index position in the block. None if it's a pending log.
     #[serde(rename = "logIndex")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub log_index: Option<U256View>,
+    pub log_index: Option<StrView<U256>>,
 
     /// Integer of the transactions index position log was created from.
     /// None when it's a pending log.
     #[serde(rename = "transactionLogIndex")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub transaction_log_index: Option<U256View>,
+    pub transaction_log_index: Option<StrView<U256>>,
 
     /// Log Type
     #[serde(rename = "logType")]

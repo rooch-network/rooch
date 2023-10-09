@@ -5,16 +5,17 @@
 
 #[cfg(not(feature = "celo"))]
 use crate::jsonrpc_types::bytes::Bytes;
-use crate::jsonrpc_types::{H160View, H256View, H64View, U256View, U64View};
+use crate::jsonrpc_types::{H176View, H256View, H64View, StrView};
 
 use super::{bloom::Bloom, other_fields::OtherFields, withdrawal::Withdrawal};
+use move_core_types::u256::U256;
 use schemars::JsonSchema;
 use serde::{Deserialize, Deserializer, Serialize};
 /// The block type returned from RPC calls.
 ///
 /// This is generic over a `TX` type which will be either the hash or the full transaction,
 /// i.e. `Block<TxHash>` or `Block<Transaction>`.
-#[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Block<TX> {
     /// Hash of the block
@@ -28,7 +29,7 @@ pub struct Block<TX> {
     pub uncles_hash: H256View,
     /// Miner/author's address. None if pending.
     #[serde(default, rename = "miner")]
-    pub author: Option<H160View>,
+    pub author: Option<H176View>,
     /// State root hash
     #[serde(default, rename = "stateRoot")]
     pub state_root: H256View,
@@ -39,14 +40,14 @@ pub struct Block<TX> {
     #[serde(default, rename = "receiptsRoot")]
     pub receipts_root: H256View,
     /// Block number. None if pending.
-    pub number: Option<U64View>,
+    pub number: Option<StrView<u64>>,
     /// Gas Used
-    #[serde(default, rename = "gasUsed")]
-    pub gas_used: U256View,
+    #[serde(rename = "gasUsed")]
+    pub gas_used: StrView<U256>,
     /// Gas Limit
     #[cfg(not(feature = "celo"))]
-    #[serde(default, rename = "gasLimit")]
-    pub gas_limit: U256View,
+    #[serde(rename = "gasLimit")]
+    pub gas_limit: StrView<U256>,
     /// Extra data
     #[serde(default, rename = "extraData")]
     pub extra_data: Bytes,
@@ -54,15 +55,13 @@ pub struct Block<TX> {
     #[serde(rename = "logsBloom")]
     pub logs_bloom: Option<Bloom>,
     /// Timestamp
-    #[serde(default)]
-    pub timestamp: U256View,
+    pub timestamp: StrView<U256>,
     /// Difficulty
     #[cfg(not(feature = "celo"))]
-    #[serde(default)]
-    pub difficulty: U256View,
+    pub difficulty: StrView<U256>,
     /// Total difficulty
     #[serde(rename = "totalDifficulty")]
-    pub total_difficulty: Option<U256View>,
+    pub total_difficulty: Option<StrView<U256>>,
     /// Seal fields
     #[serde(
         default,
@@ -78,7 +77,7 @@ pub struct Block<TX> {
     #[serde(bound = "TX: Serialize + serde::de::DeserializeOwned", default)]
     pub transactions: Vec<TX>,
     /// Size in bytes
-    pub size: Option<U256View>,
+    pub size: Option<StrView<U256>>,
     /// Mix Hash
     #[serde(rename = "mixHash")]
     #[cfg(not(feature = "celo"))]
@@ -88,7 +87,7 @@ pub struct Block<TX> {
     pub nonce: Option<H64View>,
     /// Base fee per unit of gas (if past London)
     #[serde(rename = "baseFeePerGas")]
-    pub base_fee_per_gas: Option<U256View>,
+    pub base_fee_per_gas: Option<StrView<U256>>,
     /// Withdrawals root hash (if past Shanghai)
     #[serde(
         default,
@@ -144,12 +143,12 @@ pub enum BlockNumber {
     /// Pending block (not yet part of the blockchain)
     Pending,
     /// Block by number from canon chain
-    Number(U64View),
+    Number(StrView<u64>),
 }
 
 impl BlockNumber {
     /// Returns the numeric block number if explicitly set
-    pub fn as_number(&self) -> Option<U64View> {
+    pub fn as_number(&self) -> Option<StrView<u64>> {
         match *self {
             BlockNumber::Number(num) => Some(num),
             _ => None,

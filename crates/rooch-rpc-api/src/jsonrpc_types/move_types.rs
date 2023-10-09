@@ -3,7 +3,7 @@
 
 use crate::jsonrpc_types::StrView;
 use anyhow::Result;
-use ethers::types::{H160, H64, U256, U64};
+use ethers::types::{H160, H64};
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
@@ -404,55 +404,30 @@ impl From<H64View> for H64 {
     }
 }
 
+// H176View represents 22 byte array for `0x` prefix added H160 hash
 #[serde_as]
 #[derive(Default, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
-pub struct H160View(
+pub struct H176View(
     #[schemars(with = "Hex")]
     #[serde_as(as = "Readable<Hex, _>")]
-    [u8; 20],
+    [u8; 22], // Change the array size to 22 bytes
 );
 
-impl From<H160> for H160View {
+impl From<H160> for H176View {
     fn from(value: H160) -> Self {
-        H160View(value.0)
+        let mut bytes = [0u8; 22];
+        bytes[0] = 0x30; // Set the first byte to '0' (ASCII value)
+        bytes[1] = 0x78; // Set the second byte to 'x' (ASCII value)
+        bytes[2..].copy_from_slice(&value.0);
+        H176View(bytes)
     }
 }
 
-impl From<H160View> for H160 {
-    fn from(value: H160View) -> Self {
-        H160(value.0)
-    }
-}
-
-#[serde_as]
-#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
-pub struct U256View([u64; 4]);
-
-impl From<U256> for U256View {
-    fn from(value: U256) -> Self {
-        U256View(value.0)
-    }
-}
-
-impl From<U256View> for U256 {
-    fn from(value: U256View) -> Self {
-        U256(value.0)
-    }
-}
-
-#[serde_as]
-#[derive(Default, Copy, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
-pub struct U64View([u64; 1]);
-
-impl From<U64> for U64View {
-    fn from(value: U64) -> Self {
-        U64View(value.0)
-    }
-}
-
-impl From<U64View> for U64 {
-    fn from(value: U64View) -> Self {
-        U64(value.0)
+impl From<H176View> for H160 {
+    fn from(value: H176View) -> Self {
+        let mut bytes = [0u8; 20];
+        bytes.copy_from_slice(&value.0[2..]);
+        H160(bytes)
     }
 }
 

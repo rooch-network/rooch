@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use ethers::types::{H160, H256, U256};
+use ethers::types::{H160, H256};
 use jsonrpsee::core::client::ClientT;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
+use move_core_types::u256::U256;
 use moveos_types::{
     access_path::AccessPath,
     function_return_value::FunctionResult,
@@ -21,10 +22,7 @@ use rooch_rpc_api::jsonrpc_types::{
     ListAnnotatedStatesPageView, ListBalanceInfoPageView, ListStatesPageView, StrView,
     StructTagView,
 };
-use rooch_rpc_api::{
-    api::eth_api::EthAPIClient,
-    jsonrpc_types::{H256View, U256View},
-};
+use rooch_rpc_api::{api::eth_api::EthAPIClient, jsonrpc_types::H256View};
 use rooch_rpc_api::{
     api::eth_api::TransactionType,
     jsonrpc_types::{
@@ -270,7 +268,11 @@ impl Client {
         Ok(self.rpc.http.get_block_by_number(num, include_txs).await?)
     }
 
-    pub async fn get_balance(&self, address: H160, num: Option<BlockNumber>) -> Result<U256View> {
+    pub async fn get_balance(
+        &self,
+        address: H160,
+        num: Option<BlockNumber>,
+    ) -> Result<StrView<U256>> {
         let response = self.rpc.http.get_balance(address.into(), num).await?;
         Result::Ok(response)
     }
@@ -279,7 +281,7 @@ impl Client {
         &self,
         request: CallRequest,
         num: Option<BlockNumber>,
-    ) -> Result<U256View> {
+    ) -> Result<StrView<U256>> {
         let response = self.rpc.http.estimate_gas(request, num).await?;
         Result::Ok(response)
     }
@@ -297,7 +299,7 @@ impl Client {
             .await?)
     }
 
-    pub async fn gas_price(&self) -> Result<U256View> {
+    pub async fn gas_price(&self) -> Result<StrView<U256>> {
         let response = self.rpc.http.gas_price().await?;
         Result::Ok(response)
     }
@@ -306,7 +308,7 @@ impl Client {
         &self,
         address: H160,
         num: Option<BlockNumber>,
-    ) -> Result<U256View> {
+    ) -> Result<StrView<U256>> {
         let response = self.rpc.http.transaction_count(address.into(), num).await?;
         Result::Ok(response)
     }

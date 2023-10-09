@@ -8,10 +8,11 @@ use crate::jsonrpc_types::{
         transaction::{Transaction, TransactionReceipt, TransactionRequest},
         CallRequest, EthFeeHistory,
     },
-    H160View, H256View, U256View,
+    H176View, H256View, StrView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
+use move_core_types::u256::U256;
 use moveos_types::h256::H256;
 use rooch_open_rpc_macros::open_rpc;
 use schemars::JsonSchema;
@@ -56,8 +57,11 @@ pub trait EthAPI {
 
     /// Returns the balance of the account of given address.
     #[method(name = "eth_getBalance")]
-    async fn get_balance(&self, address: H160View, num: Option<BlockNumber>)
-        -> RpcResult<U256View>;
+    async fn get_balance(
+        &self,
+        address: H176View,
+        num: Option<BlockNumber>,
+    ) -> RpcResult<StrView<U256>>;
 
     /// Generates and returns an estimate of how much gas is necessary to allow the transaction to complete.
     #[method(name = "eth_estimateGas")]
@@ -65,28 +69,28 @@ pub trait EthAPI {
         &self,
         request: CallRequest,
         num: Option<BlockNumber>,
-    ) -> RpcResult<U256View>;
+    ) -> RpcResult<StrView<U256>>;
 
     /// Transaction fee history
     #[method(name = "eth_feeHistory")]
     async fn fee_history(
         &self,
-        block_count: U256View,
+        block_count: StrView<U256>,
         newest_block: BlockNumber,
         reward_percentiles: Option<Vec<f64>>,
     ) -> RpcResult<EthFeeHistory>;
 
     /// Returns the current price per gas in wei.
     #[method(name = "eth_gasPrice")]
-    async fn gas_price(&self) -> RpcResult<U256View>;
+    async fn gas_price(&self) -> RpcResult<StrView<U256>>;
 
     /// Returns the number of transactions sent from an address.
     #[method(name = "eth_getTransactionCount")]
     async fn transaction_count(
         &self,
-        address: H160View,
+        address: H176View,
         num: Option<BlockNumber>,
-    ) -> RpcResult<U256View>;
+    ) -> RpcResult<StrView<U256>>;
 
     /// Sends transaction; will block waiting for signer to return the
     /// transaction hash.

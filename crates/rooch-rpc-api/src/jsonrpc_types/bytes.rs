@@ -31,7 +31,14 @@ impl FromStr for Bytes {
 
     /// Convert from a hexadecimal string representation of bytes.
     fn from_str(hex_string: &str) -> Result<Self, FromHexError> {
-        // Use the `hex` crate to parse the hexadecimal string into bytes.
+        // Remove the "0x" prefix if it exists.
+        let hex_string = if hex_string.starts_with("0x") || hex_string.starts_with("0X") {
+            &hex_string[2..]
+        } else {
+            hex_string
+        };
+
+        // Use the `hex` crate to parse the modified hexadecimal string into bytes.
         let bytes = hex::decode(hex_string)?;
 
         Ok(Self(bytes))

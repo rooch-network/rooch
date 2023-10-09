@@ -1,10 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use move_core_types::u256::U256;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::jsonrpc_types::{bytes::Bytes, H160View, H256View, U256View, U64View};
+use crate::jsonrpc_types::{bytes::Bytes, H176View, H256View, StrView};
 
 use super::{
     ethereum_types::{bloom::Bloom, ens::NameOrAddress, log::Log, other_fields::OtherFields},
@@ -12,14 +13,14 @@ use super::{
 };
 
 /// Details of a signed transaction
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Transaction {
     /// The transaction's hash
     pub hash: H256View,
 
     /// The transaction's nonce
-    pub nonce: U256View,
+    pub nonce: StrView<U256>,
 
     /// Block hash. None when pending.
     #[serde(default, rename = "blockHash")]
@@ -27,41 +28,41 @@ pub struct Transaction {
 
     /// Block number. None when pending.
     #[serde(default, rename = "blockNumber")]
-    pub block_number: Option<U64View>,
+    pub block_number: Option<StrView<u64>>,
 
     /// Transaction Index. None when pending.
     #[serde(default, rename = "transactionIndex")]
-    pub transaction_index: Option<U64View>,
+    pub transaction_index: Option<StrView<u64>>,
 
     /// Sender
-    // #[serde(default = "ethers::types::Address::zero")]
-    pub from: H160View,
+    #[serde(default)]
+    pub from: H176View,
 
     /// Recipient (None when contract creation)
     #[serde(default)]
-    pub to: Option<H160View>,
+    pub to: Option<H176View>,
 
     /// Transferred value
-    pub value: U256View,
+    pub value: StrView<U256>,
 
     /// Gas Price, null for Type 2 transactions
     #[serde(rename = "gasPrice")]
-    pub gas_price: Option<U256View>,
+    pub gas_price: Option<StrView<U256>>,
 
     /// Gas amount
-    pub gas: U256View,
+    pub gas: StrView<U256>,
 
     /// Input data
     pub input: Bytes,
 
     /// ECDSA recovery id
-    pub v: U64View,
+    pub v: StrView<u64>,
 
     /// ECDSA signature r
-    pub r: U256View,
+    pub r: StrView<U256>,
 
     /// ECDSA signature s
-    pub s: U256View,
+    pub s: StrView<U256>,
 
     ///////////////// Optimism-specific transaction fields //////////////
     /// The source-hash that uniquely identifies the origin of the deposit
@@ -113,7 +114,7 @@ pub struct Transaction {
     /// Transaction type, Some(2) for EIP-1559 transaction,
     /// Some(1) for AccessList transaction, None for Legacy
     #[serde(rename = "type", default, skip_serializing_if = "Option::is_none")]
-    pub transaction_type: Option<U64View>,
+    pub transaction_type: Option<StrView<u64>>,
 
     // EIP2930
     #[serde(
@@ -137,7 +138,7 @@ pub struct Transaction {
     /// priority fee.
     ///
     /// More context [here](https://hackmd.io/@q8X_WM2nTfu6nuvAzqXiTQ/1559-wallets)
-    pub max_priority_fee_per_gas: Option<U256View>,
+    pub max_priority_fee_per_gas: Option<StrView<U256>>,
 
     #[serde(
         rename = "maxFeePerGas",
@@ -147,10 +148,10 @@ pub struct Transaction {
     /// Represents the maximum amount that a user is willing to pay for their tx (inclusive of
     /// baseFeePerGas and maxPriorityFeePerGas). The difference between maxFeePerGas and
     /// baseFeePerGas + maxPriorityFeePerGas is “refunded” to the user.
-    pub max_fee_per_gas: Option<U256View>,
+    pub max_fee_per_gas: Option<StrView<U256>>,
 
     #[serde(rename = "chainId", default, skip_serializing_if = "Option::is_none")]
-    pub chain_id: Option<U256View>,
+    pub chain_id: Option<StrView<U256>>,
 
     /// Captures unknown fields such as additional fields used by L2s
     #[cfg(not(any(feature = "celo", feature = "optimism")))]
@@ -159,12 +160,12 @@ pub struct Transaction {
 }
 
 /// Parameters for sending a transaction
-#[derive(Clone, Default, Serialize, Deserialize, PartialEq, Eq, Debug, JsonSchema)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Debug, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct TransactionRequest {
     /// Sender address or ENS name
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub from: Option<H160View>,
+    pub from: Option<H176View>,
 
     /// Recipient address (None for contract creation)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -172,16 +173,16 @@ pub struct TransactionRequest {
 
     /// Supplied gas (None for sensible default)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub gas: Option<U256View>,
+    pub gas: Option<StrView<U256>>,
 
     /// Gas price (None for sensible default)
     #[serde(rename = "gasPrice")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub gas_price: Option<U256View>,
+    pub gas_price: Option<StrView<U256>>,
 
     /// Transferred value (None for no transfer)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub value: Option<U256View>,
+    pub value: Option<StrView<U256>>,
 
     /// The compiled code of a contract OR the first 4 bytes of the hash of the
     /// invoked method signature and encoded parameters. For details see Ethereum Contract ABI
@@ -190,12 +191,12 @@ pub struct TransactionRequest {
 
     /// Transaction nonce (None for next available nonce)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub nonce: Option<U256View>,
+    pub nonce: Option<StrView<U256>>,
 
     /// Chain ID (None for mainnet)
     #[serde(skip_serializing)]
     #[serde(default, rename = "chainId")]
-    pub chain_id: Option<U64View>,
+    pub chain_id: Option<StrView<u64>>,
 
     /////////////////  Celo-specific transaction fields /////////////////
     /// The currency fees are paid in (None for native currency)
@@ -218,7 +219,7 @@ pub struct TransactionRequest {
 }
 
 /// "Receipt" of an executed transaction: details of its execution.
-#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct TransactionReceipt {
     /// Transaction hash.
@@ -226,32 +227,32 @@ pub struct TransactionReceipt {
     pub transaction_hash: H256View,
     /// Index within the block.
     #[serde(rename = "transactionIndex")]
-    pub transaction_index: U64View,
+    pub transaction_index: StrView<u64>,
     /// Hash of the block this transaction was included within.
     #[serde(rename = "blockHash")]
     pub block_hash: Option<H256View>,
     /// Number of the block this transaction was included within.
     #[serde(rename = "blockNumber")]
-    pub block_number: Option<U64View>,
+    pub block_number: Option<StrView<u64>>,
     /// address of the sender.
-    pub from: H160View,
+    pub from: H176View,
     // address of the receiver. null when its a contract creation transaction.
-    pub to: Option<H160View>,
+    pub to: Option<H176View>,
     /// Cumulative gas used within the block after this was executed.
     #[serde(rename = "cumulativeGasUsed")]
-    pub cumulative_gas_used: U256View,
+    pub cumulative_gas_used: StrView<U256>,
     /// Gas used by this transaction alone.
     ///
     /// Gas used is `None` if the the client is running in light client mode.
     #[serde(rename = "gasUsed")]
-    pub gas_used: Option<U256View>,
+    pub gas_used: Option<StrView<U256>>,
     /// Contract address created, or `None` if not a deployment.
     #[serde(rename = "contractAddress")]
-    pub contract_address: Option<H160View>,
+    pub contract_address: Option<H176View>,
     /// Logs generated within this transaction.
     pub logs: Vec<Log>,
     /// Status: either 1 (success) or 0 (failure). Only present after activation of [EIP-658](https://eips.ethereum.org/EIPS/eip-658)
-    pub status: Option<U64View>,
+    pub status: Option<StrView<u64>>,
     /// State root. Only present before activation of [EIP-658](https://eips.ethereum.org/EIPS/eip-658)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub root: Option<H256View>,
@@ -260,7 +261,7 @@ pub struct TransactionReceipt {
     pub logs_bloom: Bloom,
     /// Transaction type, Some(1) for AccessList transaction, None for Legacy
     #[serde(rename = "type", default, skip_serializing_if = "Option::is_none")]
-    pub transaction_type: Option<U64View>,
+    pub transaction_type: Option<StrView<u64>>,
     /// The price paid post-execution by the transaction (i.e. base fee + priority fee).
     /// Both fields in 1559-style transactions are *maximums* (max fee + max priority fee), the
     /// amount that's actually paid by users can only be determined post-execution
@@ -269,7 +270,7 @@ pub struct TransactionReceipt {
         default,
         skip_serializing_if = "Option::is_none"
     )]
-    pub effective_gas_price: Option<U256View>,
+    pub effective_gas_price: Option<StrView<U256>>,
     /// Captures unknown fields such as additional fields used by L2s
     #[cfg(not(feature = "celo"))]
     #[serde(flatten)]
