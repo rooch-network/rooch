@@ -38,10 +38,14 @@ c. Only one honest verification node is needed to confirm the L2 state on the ar
 
 In short, we construct the L2 -> L1 -> L2 message validation mechanism so that any L1 is protected by the security of the arbitration chain.
 
-## Features
+## Comparison with cross-chain bridges
 
-- More secure: Compared to cross-chain bridges that rely on a central organization, Rooch multi-chain settlement is as secure as Rollups.
-- More generic: Generic state migration enables secure movement of Token, NFT, digital contract, etc. (any message).
+Rooch can not only act as a messenger like a cross-link bridge, but also as a producer of messages.
+
+In terms of messaging alone, Rooch offers the following features:
+
+- Rollup-level security: Message validation through trustless relays and light node in contract, and message force inclusion and arbitration through L2 security.
+- Generic messaging: Generic state migration enables secure movement of Token, NFT, digital contract, etc.
 
 ## Further Reading
 
