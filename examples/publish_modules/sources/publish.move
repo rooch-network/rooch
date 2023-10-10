@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// Notes:
 /// If the entry functions argument type is changed or the bytecode of the module is changed, and the tests are not updated, the tests will fail.
 /// Please update the tests as follows:

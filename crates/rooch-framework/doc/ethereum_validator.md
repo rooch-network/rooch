@@ -70,7 +70,6 @@ This module implements Ethereum validator with the ECDSA recoverable signature o
 
 <a name="0x3_ethereum_validator_ErrorInvalidPublicKeyLength"></a>
 
-error code
 
 
 <pre><code><b>const</b> <a href="ethereum_validator.md#0x3_ethereum_validator_ErrorInvalidPublicKeyLength">ErrorInvalidPublicKeyLength</a>: u64 = 0;

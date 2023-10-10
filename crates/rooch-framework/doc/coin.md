@@ -1099,7 +1099,7 @@ If user turns off AutoAcceptCoin, call this method to receive the corresponding 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_do_accept_coin">do_accept_coin</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> Context, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
     <b>let</b> addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
-    <a href="coin.md#0x3_coin_ensure_coin_store_pass_auto_accept_flag">ensure_coin_store_pass_auto_accept_flag</a>&lt;CoinType&gt;(ctx, addr);
+    <a href="coin.md#0x3_coin_ensure_coin_store_bypass_auto_accept_flag">ensure_coin_store_bypass_auto_accept_flag</a>&lt;CoinType&gt;(ctx, addr);
 }
 </code></pre>
 
@@ -1164,7 +1164,7 @@ This public entry function requires the <code>CoinType</code> to have <code>key<
 ): <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
     <b>let</b> addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
     // the <a href="coin.md#0x3_coin">coin</a> `frozen` only affect user withdraw, does not affect `withdraw_extend`.
-    <a href="coin.md#0x3_coin_check_account_coin_store_frozen">check_account_coin_store_frozen</a>&lt;CoinType&gt;(ctx, addr);
+    <a href="coin.md#0x3_coin_check_account_coin_store_not_frozen">check_account_coin_store_not_frozen</a>&lt;CoinType&gt;(ctx, addr);
     <a href="coin.md#0x3_coin_withdraw_internal">withdraw_internal</a>&lt;CoinType&gt;(ctx, addr, amount)
 }
 </code></pre>
@@ -1191,7 +1191,7 @@ This public entry function requires the <code>CoinType</code> to have <code>key<
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_deposit">deposit</a>&lt;CoinType: key + store&gt;(ctx: &<b>mut</b> Context, addr: <b>address</b>, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;) {
-    <a href="coin.md#0x3_coin_check_account_coin_store_frozen">check_account_coin_store_frozen</a>&lt;CoinType&gt;(ctx, addr);
+    <a href="coin.md#0x3_coin_check_account_coin_store_not_frozen">check_account_coin_store_not_frozen</a>&lt;CoinType&gt;(ctx, addr);
     <a href="coin.md#0x3_coin_deposit_internal">deposit_internal</a>(ctx, addr, <a href="coin.md#0x3_coin">coin</a>);
 }
 </code></pre>
@@ -1216,8 +1216,6 @@ This public entry function requires the <code>CoinType</code> to have <code>key<
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_deposit_to_store">deposit_to_store</a>&lt;CoinType: key + store&gt;(coin_store: &<b>mut</b> <a href="coin.md#0x3_coin_CoinStore">CoinStore</a>, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;) {
-    //<a href="coin.md#0x3_coin_check_coin_store_frozen">check_coin_store_frozen</a>&lt;CoinType&gt;(coin_store_ref);
-    //<b>let</b> coin_store = <a href="_borrow_mut">object_ref::borrow_mut</a>(coin_store_ref);
     <a href="coin.md#0x3_coin_merge_to_store">merge_to_store</a>&lt;CoinType&gt;(coin_store, <a href="coin.md#0x3_coin">coin</a>);
 }
 </code></pre>
@@ -1250,8 +1248,8 @@ Any account and module can call this function to transfer coins, the <code>CoinT
     amount: u256,
 ) {
     <b>let</b> from_addr = <a href="_address_of">signer::address_of</a>(from);
-    <a href="coin.md#0x3_coin_check_account_coin_store_frozen">check_account_coin_store_frozen</a>&lt;CoinType&gt;(ctx, from_addr);
-    <a href="coin.md#0x3_coin_check_account_coin_store_frozen">check_account_coin_store_frozen</a>&lt;CoinType&gt;(ctx, <b>to</b>);
+    <a href="coin.md#0x3_coin_check_account_coin_store_not_frozen">check_account_coin_store_not_frozen</a>&lt;CoinType&gt;(ctx, from_addr);
+    <a href="coin.md#0x3_coin_check_account_coin_store_not_frozen">check_account_coin_store_not_frozen</a>&lt;CoinType&gt;(ctx, <b>to</b>);
     <a href="coin.md#0x3_coin_transfer_internal">transfer_internal</a>&lt;CoinType&gt;(ctx, from_addr, <b>to</b>, amount);
 }
 </code></pre>
@@ -1569,8 +1567,6 @@ Create a new <code><a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;</cod
 ## Function `register_extend`
 
 Creates a new Coin with given <code>CoinType</code>
-The given signer also becomes the account hosting the information about the coin
-(name, supply, etc.).
 This function is protected by <code>private_generics</code>, so it can only be called by the <code>CoinType</code> module.
 
 

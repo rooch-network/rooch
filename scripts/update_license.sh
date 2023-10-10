@@ -32,6 +32,18 @@ process_rs_files() {
     done
 }
 
+# Function to process .move files
+process_move_files() {
+    local directory="$1"
+
+    # Find .move files in the directory and its subdirectories
+    find "$directory" -type f -name '*.move' | while read -r file; do
+        # Add license in the file
+        add_license "$file" "// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0"
+    done
+}
+
 # Function to process .sh files
 process_sh_files() {
     local directory="$1"
@@ -69,6 +81,11 @@ parent_directory="../"
 
 # Process .rs files
 process_rs_files "$parent_directory"
+
+# Process .move files
+process_move_files "${parent_directory}/examples/"
+process_move_files "${parent_directory}/crates/rooch-framework/"
+process_move_files "${parent_directory}/moveos/moveos-stdlib/"
 
 # Process .sh files
 process_sh_files "$parent_directory"

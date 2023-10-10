@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module moveos_std::object_ref {
 
     use moveos_std::object_id::ObjectID;

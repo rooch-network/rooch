@@ -58,6 +58,7 @@
 
 <a name="0x3_bitcoin_address_BECH32_ADDR_LENGTH"></a>
 
+Bech32 addresses including P2WPKH and P2WSH are 42 characters
 
 
 <pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_BECH32_ADDR_LENGTH">BECH32_ADDR_LENGTH</a>: u64 = 42;
@@ -76,7 +77,6 @@
 
 <a name="0x3_bitcoin_address_ErrorInvalidDecimalPrefix"></a>
 
-error code
 
 
 <pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidDecimalPrefix">ErrorInvalidDecimalPrefix</a>: u64 = 0;
@@ -122,6 +122,7 @@ error code
 
 <a name="0x3_bitcoin_address_P2PKH_ADDR_LENGTH"></a>
 
+P2PKH addresses are 34 characters
 
 
 <pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_P2PKH_ADDR_LENGTH">P2PKH_ADDR_LENGTH</a>: u64 = 34;
@@ -140,6 +141,7 @@ error code
 
 <a name="0x3_bitcoin_address_P2SH_ADDR_LENGTH"></a>
 
+P2SH addresses are 34 characters
 
 
 <pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_P2SH_ADDR_LENGTH">P2SH_ADDR_LENGTH</a>: u64 = 34;
@@ -149,6 +151,7 @@ error code
 
 <a name="0x3_bitcoin_address_P2TR_ADDR_LENGTH"></a>
 
+P2TR addresses with Bech32m encoding are 62 characters
 
 
 <pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_P2TR_ADDR_LENGTH">P2TR_ADDR_LENGTH</a>: u64 = 62;

@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_examples::rooch_examples {
     use std::bcs;
     use std::hash;

@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_framework::core_addresses {
     use std::error;
     use std::signer;
@@ -7,7 +10,7 @@ module rooch_framework::core_addresses {
     /// The address/account did not correspond to the association address
     const ErrorNotAssociationAddress: u64 = 2;
     /// The operation can only be performed by the VM
-    const ErrorVm: u64 = 3;
+    const ErrorNotVM: u64 = 3;
     /// The address/account did not correspond to the core framework address
     const ErrorNotRoochFrameworkAddress: u64 = 4;
     /// The address is not framework reserved address
@@ -77,7 +80,7 @@ module rooch_framework::core_addresses {
 
     /// Assert that the signer has the VM reserved address.
     public fun assert_vm(account: &signer) {
-        assert!(is_vm(account), error::permission_denied(ErrorVm))
+        assert!(is_vm(account), error::permission_denied(ErrorNotVM))
     }
 
     /// Return true if `addr` is a reserved address for the VM to call system modules.

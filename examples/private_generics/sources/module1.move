@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_examples::module1 {
     // #[test_only]
     // use rooch_examples::module2::{new_data, Data2};

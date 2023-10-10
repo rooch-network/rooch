@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// This module defines Rooch Gas Coin.
 module rooch_framework::gas_coin {
     use std::string;
@@ -53,7 +56,7 @@ module rooch_framework::gas_coin {
         faucet(ctx, addr, amount);
     }
 
-    /// Can only called during genesis to initialize the Rooch coin.
+    /// Can only be called during genesis to initialize the Rooch coin.
     public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer){
         coin::register_extend<GasCoin>(
             ctx,

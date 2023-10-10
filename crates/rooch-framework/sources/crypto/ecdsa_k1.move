@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_framework::ecdsa_k1 {
     /// constant codes
     const ECDSA_K1_TO_BITCOIN_VALIDATOR_ID_LENGTH: u64 = 1;

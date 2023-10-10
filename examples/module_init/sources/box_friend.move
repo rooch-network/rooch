@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_examples::box_friend {
     use std::string::{Self, String};
     use rooch_examples::box;

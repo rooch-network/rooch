@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 spec moveos_std::type_info {
 
     spec native fun spec_is_struct<T>(): bool;

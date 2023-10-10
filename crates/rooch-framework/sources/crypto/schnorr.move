@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_framework::schnorr {
     /// constant codes
     const SCHNORR_PUBKEY_LENGTH: u64 = 32;

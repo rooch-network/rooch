@@ -1,16 +1,19 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_framework::ethereum_address {
     use std::vector;
     use std::error;
     use rooch_framework::ecdsa_k1_recoverable;
     use rooch_framework::hash;
 
-    // Ethereum addresses are always 20 bytes
+    /// Ethereum addresses are always 20 bytes
     const ETHEREUM_ADDR_LENGTH: u64 = 20;
 
-    /// error code
+    // error code
     const ErrorMalformedPublicKey: u64 = 0;
     const ErrorDecompressPublicKey: u64 = 1;
-    const ErrorInvaidAddresBytes: u64 = 2;
+    const ErrorInvaidAddressBytes: u64 = 2;
 
     struct ETHAddress has store,copy,drop {
         bytes: vector<u8>,
@@ -54,7 +57,7 @@ module rooch_framework::ethereum_address {
     public fun from_bytes(bytes: vector<u8>): ETHAddress {
         assert!(
             vector::length(&bytes) == ETHEREUM_ADDR_LENGTH,
-            error::invalid_argument(ErrorInvaidAddresBytes)
+            error::invalid_argument(ErrorInvaidAddressBytes)
         );
         ETHAddress {
             bytes: bytes,

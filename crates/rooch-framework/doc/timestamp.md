@@ -114,7 +114,7 @@ Conversion factor between seconds and microseconds
 Updates the wall clock time, if the new time is smaller than the current time, aborts.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="timestamp.md#0x3_timestamp_update_global_time">update_global_time</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="timestamp.md#0x3_timestamp">timestamp</a>: u64)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="timestamp.md#0x3_timestamp_update_global_time">update_global_time</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, timestamp_microsecs: u64)
 </code></pre>
 
 
@@ -123,11 +123,11 @@ Updates the wall clock time, if the new time is smaller than the current time, a
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="timestamp.md#0x3_timestamp_update_global_time">update_global_time</a>(ctx: &<b>mut</b> Context,<a href="timestamp.md#0x3_timestamp">timestamp</a>: u64) {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="timestamp.md#0x3_timestamp_update_global_time">update_global_time</a>(ctx: &<b>mut</b> Context, timestamp_microsecs: u64) {
     <b>let</b> global_timer = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="timestamp.md#0x3_timestamp_CurrentTimeMicroseconds">CurrentTimeMicroseconds</a>&gt;(ctx, @rooch_framework);
     <b>let</b> now = global_timer.microseconds;
-    <b>assert</b>!(now &lt; <a href="timestamp.md#0x3_timestamp">timestamp</a>, <a href="_invalid_argument">error::invalid_argument</a>(<a href="timestamp.md#0x3_timestamp_ErrorInvalidTimestamp">ErrorInvalidTimestamp</a>));
-    global_timer.microseconds = <a href="timestamp.md#0x3_timestamp">timestamp</a>;
+    <b>assert</b>!(now &lt; timestamp_microsecs, <a href="_invalid_argument">error::invalid_argument</a>(<a href="timestamp.md#0x3_timestamp_ErrorInvalidTimestamp">ErrorInvalidTimestamp</a>));
+    global_timer.microseconds = timestamp_microsecs;
 }
 </code></pre>
 

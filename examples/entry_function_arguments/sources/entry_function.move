@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_examples::entry_function {
    use moveos_std::event;
    use moveos_std::object_id::ObjectID;

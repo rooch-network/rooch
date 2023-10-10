@@ -4,7 +4,7 @@
 # Module `0x3::account_authentication`
 
 This module contains the resources and functions that are used for account authentication.
-Migrate their from the account module for simplyfying the account module.
+Migrated from the account module for simplyfying the account module.
 
 
 -  [Resource `AuthenticationKey`](#0x3_account_authentication_AuthenticationKey)
@@ -265,7 +265,11 @@ This function is used to rotate a resource account's authentication key, only th
       <a href="_length">vector::length</a>(&new_auth_key) &lt;= <a href="account_authentication.md#0x3_account_authentication_MAX_AUTHENTICATION_KEY_LENGTH">MAX_AUTHENTICATION_KEY_LENGTH</a>,
       <a href="_invalid_argument">error::invalid_argument</a>(<a href="account_authentication.md#0x3_account_authentication_ErrorMalformedAuthenticationKey">ErrorMalformedAuthenticationKey</a>)
    );
-   //We need <b>to</b> ensure the <a href="account_authentication.md#0x3_account_authentication_AuthenticationKeys">AuthenticationKeys</a> resource <b>exists</b> before we can rotate the authentication key.
+   <b>assert</b>!(
+      <a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account_authentication.md#0x3_account_authentication_AuthenticationKeys">AuthenticationKeys</a>&gt;(ctx, account_addr),
+      <a href="_not_found">error::not_found</a>(<a href="account_authentication.md#0x3_account_authentication_ErrorAuthenticationKeysResourceNotFound">ErrorAuthenticationKeysResourceNotFound</a>)
+   );
+
    <b>let</b> authentication_keys = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="account_authentication.md#0x3_account_authentication_AuthenticationKeys">AuthenticationKeys</a>&gt;(ctx, account_addr);
    <b>if</b>(<a href="_contains">type_table::contains</a>&lt;<a href="account_authentication.md#0x3_account_authentication_AuthenticationKey">AuthenticationKey</a>&lt;ValidatorType&gt;&gt;(&authentication_keys.authentication_keys)){
       <b>let</b> authentication_key = <a href="_borrow_mut">type_table::borrow_mut</a>&lt;<a href="account_authentication.md#0x3_account_authentication_AuthenticationKey">AuthenticationKey</a>&lt;ValidatorType&gt;&gt;(&<b>mut</b> authentication_keys.authentication_keys);
@@ -323,7 +327,7 @@ This function is used to remove a resource account's authentication key, only th
 
 ## Function `is_auth_validator_installed`
 
-Return the authentication validator is installed for the account at <code>account_addr</code>.
+Return if the authentication validator is installed for the account at <code>account_addr</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_is_auth_validator_installed">is_auth_validator_installed</a>(ctx: &<a href="_Context">context::Context</a>, account_addr: <b>address</b>, auth_validator_id: u64): bool

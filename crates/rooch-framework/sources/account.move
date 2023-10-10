@@ -1,4 +1,7 @@
-module rooch_framework::account{
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+module rooch_framework::account {
    use std::error;
    use std::hash;
    use std::vector;
@@ -19,10 +22,10 @@ module rooch_framework::account{
       sequence_number: u64,
    }
 
-   // ResourceAccount can only be stored under address, not in other structs.
+   /// ResourceAccount can only be stored under address, not in other structs.
    struct ResourceAccount has key {}
-   // SignerCapability can only be stored in other structs, not under address.
-   // So that the capability is always controlled by contracts, not by some EOA.
+   /// SignerCapability can only be stored in other structs, not under address.
+   /// So that the capability is always controlled by contracts, not by some EOA.
    struct SignerCapability has store { addr: address }
 
    const MAX_U64: u128 = 18446744073709551615;
@@ -50,7 +53,7 @@ module rooch_framework::account{
    /// Resource Account can't derive resource account
    const ErrorAccountIsAlreadyResourceAccount: u64 = 7;
    /// Address to create is not a valid reserved address for Rooch framework
-   const ErrorNoValidFrameworkReservedAddress: u64 = 11;
+   const ErrorNotValidFrameworkReservedAddress: u64 = 11;
 
 
    //TODO should we provide create account from arbitrary address?
@@ -72,7 +75,7 @@ module rooch_framework::account{
          error::invalid_argument(ErrorAddressReseved)
       );
 
-      // there cannot be an Account resource under new_addr already.
+      // Make sure the Account is not already created.
       assert!(
          !account_storage::global_exists<Account>(ctx, new_address),
          error::already_exists(ErrorAccountAlreadyExists)
@@ -109,7 +112,7 @@ module rooch_framework::account{
              addr == @0x8 ||
              addr == @0x9 ||
              addr == @0xa,
-         error::permission_denied(ErrorNoValidFrameworkReservedAddress),
+         error::permission_denied(ErrorNotValidFrameworkReservedAddress),
       );
       let signer = create_account_unchecked(ctx, addr);
       let signer_cap = SignerCapability { addr };
@@ -182,7 +185,6 @@ module rooch_framework::account{
    /// A resource account is used to manage resources independent of an account managed by a user.
    /// In Rooch a resource account is created based upon the sha3 256 of the source's address and additional seed data.
    /// A resource account can only be created once
-   // public fun create_resource_account(source: &signer): (signer, SignerCapability) {
    public fun create_resource_account(ctx: &mut Context, source: &signer): (signer, SignerCapability) {
       let source_addr = signer::address_of(source);
       let seed = generate_seed_bytes(ctx, &source_addr);
