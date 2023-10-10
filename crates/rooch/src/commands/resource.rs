@@ -32,6 +32,7 @@ impl CommandAction<Option<AnnotatedStateView>> for ResourceCommand {
         let client = self.context_options.build().await?.get_client().await?;
 
         let resp = client
+            .rooch
             .get_annotated_states(AccessPath::resource(self.address, self.resource))
             .await?
             .pop()

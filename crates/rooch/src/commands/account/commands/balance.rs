@@ -46,10 +46,11 @@ impl CommandAction<()> for BalanceCommand {
 
         let balances = match self.coin_type {
             Some(coin_type) => {
-                vec![client.get_balance(address_addr, coin_type).await?]
+                vec![client.rooch.get_balance(address_addr, coin_type).await?]
             }
             None => {
                 client
+                    .rooch
                     .get_balances(address_addr, None, Some(MAX_RESULT_LIMIT_USIZE))
                     .await?
                     .data

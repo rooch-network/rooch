@@ -1,19 +1,19 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::u256::U256;
-use schemars::JsonSchema;
 // Adapted from https://github.com/tomusdrw/rust-web3/blob/master/src/types/log.rs
-use serde::{Deserialize, Serialize};
 
-use crate::jsonrpc_types::{bytes::Bytes, H176View, H256View, StrView};
+use crate::jsonrpc_types::{bytes::Bytes, H256View, StrView};
+use ethers::types::{H160, U256};
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 /// A log produced by a transaction.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Log {
     /// H160. the contract that emitted the log
-    pub address: H176View,
+    pub address: StrView<H160>,
 
     /// topics: Array of 0 to 4 32 Bytes of indexed log arguments.
     /// (In solidity: The first topic is the hash of the signature of the event

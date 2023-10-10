@@ -26,6 +26,7 @@ impl CommandAction<TransactionResultPageView> for GetTransactionsByOrderCommand 
         let client = self.context_options.build().await?.get_client().await?;
 
         let resp = client
+            .rooch
             .get_transactions_by_order(self.cursor, self.limit)
             .await?;
 

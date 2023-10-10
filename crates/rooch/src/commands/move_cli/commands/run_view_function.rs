@@ -68,6 +68,7 @@ impl CommandAction<AnnotatedFunctionResultView> for RunViewFunction {
 
         let client = self.context.build().await?.get_client().await?;
         client
+            .rooch
             .execute_view_function(function_call)
             .await
             .map_err(|e| RoochError::ViewFunctionError(e.to_string()))

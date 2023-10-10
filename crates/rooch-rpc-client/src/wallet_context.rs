@@ -108,8 +108,9 @@ impl WalletContext<RoochAddress> {
         action: MoveAction,
     ) -> RoochResult<RoochTransactionData> {
         let client = self.get_client().await?;
-        let chain_id = client.get_chain_id().await?;
+        let chain_id = client.rooch.get_chain_id().await?;
         let sequence_number = client
+            .rooch
             .get_sequence_number(sender)
             .await
             .map_err(RoochError::from)?;
@@ -162,6 +163,7 @@ impl WalletContext<RoochAddress> {
     ) -> RoochResult<ExecuteTransactionResponseView> {
         let client = self.get_client().await?;
         client
+            .rooch
             .execute_tx(tx)
             .await
             .map_err(|e| RoochError::TransactionError(e.to_string()))

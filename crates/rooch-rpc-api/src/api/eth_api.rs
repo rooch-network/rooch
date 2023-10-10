@@ -8,12 +8,11 @@ use crate::jsonrpc_types::{
         transaction::{Transaction, TransactionReceipt, TransactionRequest},
         CallRequest, EthFeeHistory,
     },
-    H176View, H256View, StrView,
+    H256View, StrView,
 };
+use ethers::types::{H160, H256, U256};
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
-use move_core_types::u256::U256;
-use moveos_types::h256::H256;
 use rooch_open_rpc_macros::open_rpc;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -31,8 +30,8 @@ impl Default for TransactionType {
     }
 }
 
-#[open_rpc(namespace = "ethereum")]
-#[rpc(server, client, namespace = "ethereum")]
+#[open_rpc]
+#[rpc(server, client)]
 #[async_trait]
 pub trait EthAPI {
     /// Returns the network version.
@@ -41,7 +40,7 @@ pub trait EthAPI {
 
     /// Returns the chain ID of the current network.
     #[method(name = "eth_chainId")]
-    async fn eth_chain_id(&self) -> RpcResult<String>;
+    async fn chain_id(&self) -> RpcResult<String>;
 
     /// Returns the number of most recent block.
     #[method(name = "eth_blockNumber")]
@@ -51,7 +50,7 @@ pub trait EthAPI {
     #[method(name = "eth_getBlockByNumber")]
     async fn get_block_by_number(
         &self,
-        num: BlockNumber,
+        num: StrView<BlockNumber>,
         include_txs: bool,
     ) -> RpcResult<Block<TransactionType>>;
 
@@ -59,8 +58,8 @@ pub trait EthAPI {
     #[method(name = "eth_getBalance")]
     async fn get_balance(
         &self,
-        address: H176View,
-        num: Option<BlockNumber>,
+        address: StrView<H160>,
+        num: Option<StrView<BlockNumber>>,
     ) -> RpcResult<StrView<U256>>;
 
     /// Generates and returns an estimate of how much gas is necessary to allow the transaction to complete.
@@ -68,7 +67,7 @@ pub trait EthAPI {
     async fn estimate_gas(
         &self,
         request: CallRequest,
-        num: Option<BlockNumber>,
+        num: Option<StrView<BlockNumber>>,
     ) -> RpcResult<StrView<U256>>;
 
     /// Transaction fee history
@@ -76,7 +75,7 @@ pub trait EthAPI {
     async fn fee_history(
         &self,
         block_count: StrView<U256>,
-        newest_block: BlockNumber,
+        newest_block: StrView<BlockNumber>,
         reward_percentiles: Option<Vec<f64>>,
     ) -> RpcResult<EthFeeHistory>;
 
@@ -88,8 +87,8 @@ pub trait EthAPI {
     #[method(name = "eth_getTransactionCount")]
     async fn transaction_count(
         &self,
-        address: H176View,
-        num: Option<BlockNumber>,
+        address: StrView<H160>,
+        num: Option<StrView<BlockNumber>>,
     ) -> RpcResult<StrView<U256>>;
 
     /// Sends transaction; will block waiting for signer to return the

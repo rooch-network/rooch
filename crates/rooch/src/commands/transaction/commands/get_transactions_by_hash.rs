@@ -23,7 +23,7 @@ impl CommandAction<Vec<Option<TransactionResultView>>> for GetTransactionsByHash
     async fn execute(self) -> RoochResult<Vec<Option<TransactionResultView>>> {
         let client = self.context_options.build().await?.get_client().await?;
 
-        let resp = client.get_transactions_by_hash(self.hashes).await?;
+        let resp = client.rooch.get_transactions_by_hash(self.hashes).await?;
 
         Ok(resp)
     }
