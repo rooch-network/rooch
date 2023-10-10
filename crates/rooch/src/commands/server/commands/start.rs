@@ -5,12 +5,13 @@ use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
 use rooch_config::{RoochOpt, ServerOpt};
+use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_server::Service;
 use rooch_types::address::RoochAddress;
 use rooch_types::chain_id::RoochChainID;
 use rooch_types::error::{RoochError, RoochResult};
-use rooch_types::keypair_type::KeyPairType;
+use rpassword::prompt_password;
 use std::str::FromStr;
 use tokio::signal::ctrl_c;
 #[cfg(unix)]
@@ -32,13 +33,6 @@ impl CommandAction<()> for StartCommand {
     async fn execute(mut self) -> RoochResult<()> {
         let mut context = self.context_options.build().await?;
 
-        // Use an empty password by default
-        let password = String::new();
-
-        // TODO design a password mechanism
-        // // Prompt for a password if required
-        // rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
-
         //Parse key pair from Rooch opt
         let sequencer_account = if self.opt.sequencer_account.is_none() {
             let active_address_opt = context.client_config.active_address;
@@ -56,15 +50,6 @@ impl CommandAction<()> for StartCommand {
                 },
             )?
         };
-        let sequencer_keypair = context
-            .keystore
-            .get_key_pair_by_type_password(
-                &sequencer_account,
-                KeyPairType::RoochKeyPairType,
-                Some(password.clone()),
-            )
-            .map_err(|e| RoochError::SequencerKeyPairDoesNotExistError(e.to_string()))?;
-
         let proposer_account = if self.opt.proposer_account.is_none() {
             let active_address_opt = context.client_config.active_address;
             if active_address_opt.is_none() {
@@ -81,15 +66,6 @@ impl CommandAction<()> for StartCommand {
                 },
             )?
         };
-        let proposer_keypair = context
-            .keystore
-            .get_key_pair_by_type_password(
-                &proposer_account,
-                KeyPairType::RoochKeyPairType,
-                Some(password.clone()),
-            )
-            .map_err(|e| RoochError::ProposerKeyPairDoesNotExistError(e.to_string()))?;
-
         let relayer_account = if self.opt.relayer_account.is_none() {
             let active_address_opt = context.client_config.active_address;
             if active_address_opt.is_none() {
@@ -106,15 +82,58 @@ impl CommandAction<()> for StartCommand {
                 },
             )?
         };
-        let relayer_keypair = context
-            .keystore
-            .get_key_pair_by_type_password(
-                &relayer_account,
-                KeyPairType::RoochKeyPairType,
-                Some(password),
-            )
-            .map_err(|e| RoochError::RelayerKeyPairDoesNotExistError(e.to_string()))?;
 
+        let (sequencer_keypair, proposer_keypair, relayer_keypair) =
+            if context.client_config.is_password_empty {
+                let sequencer_keypair = context
+                    .keystore
+                    .get_key_pair_by_password(&sequencer_account, None)
+                    .map_err(|e| RoochError::SequencerKeyPairDoesNotExistError(e.to_string()))?;
+
+                let proposer_keypair = context
+                    .keystore
+                    .get_key_pair_by_password(&proposer_account, None)
+                    .map_err(|e| RoochError::ProposerKeyPairDoesNotExistError(e.to_string()))?;
+
+                let relayer_keypair = context
+                    .keystore
+                    .get_key_pair_by_password(&relayer_account, None)
+                    .map_err(|e| RoochError::RelayerKeyPairDoesNotExistError(e.to_string()))?;
+
+                (sequencer_keypair, proposer_keypair, relayer_keypair)
+            } else {
+                let password = prompt_password(
+                    "Enter the password saved in client config to create a new key pair:",
+                )
+                .unwrap_or_default();
+                let is_verified = verify_password(
+                    Some(password.clone()),
+                    context.client_config.password_hash.unwrap_or_default(),
+                )?;
+
+                if !is_verified {
+                    return Err(RoochError::InvalidPasswordError(
+                        "Password is invalid".to_owned(),
+                    ));
+                }
+
+                let sequencer_keypair = context
+                    .keystore
+                    .get_key_pair_by_password(&sequencer_account, Some(password.clone()))
+                    .map_err(|e| RoochError::SequencerKeyPairDoesNotExistError(e.to_string()))?;
+
+                let proposer_keypair = context
+                    .keystore
+                    .get_key_pair_by_password(&proposer_account, Some(password.clone()))
+                    .map_err(|e| RoochError::ProposerKeyPairDoesNotExistError(e.to_string()))?;
+
+                let relayer_keypair = context
+                    .keystore
+                    .get_key_pair_by_password(&relayer_account, Some(password))
+                    .map_err(|e| RoochError::RelayerKeyPairDoesNotExistError(e.to_string()))?;
+
+                (sequencer_keypair, proposer_keypair, relayer_keypair)
+            };
         // Construct sequencer, proposer and relayer keypair
         let mut server_opt = ServerOpt::new();
         server_opt.sequencer_keypair = Some(sequencer_keypair.copy());

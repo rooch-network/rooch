@@ -22,7 +22,7 @@ use rooch_config::store_config::StoreConfig;
 use rooch_config::{BaseConfig, RoochOpt, ServerOpt};
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
-use rooch_key::key_derive::{generate_new_key_pair, KeyStoreOperator};
+use rooch_key::key_derive::{generate_new_key_pair, retrieve_key_pair};
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
 use rooch_proposer::proxy::ProposerProxy;
@@ -35,7 +35,6 @@ use rooch_store::RoochStore;
 use rooch_types::address::RoochAddress;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{GenesisError, RoochError};
-use rooch_types::keypair_type::KeyPairType;
 use serde_json::json;
 use std::env;
 use std::fmt::Debug;
@@ -176,13 +175,6 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     .await?;
     let executor_proxy = ExecutorProxy::new(executor.into());
 
-    // Use an empty password by default
-    let password = String::new();
-
-    // TODO design a password mechanism
-    // // Prompt for a password if required
-    // rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
-
     // Check for key pairs
     if server_opt.sequencer_keypair.is_none()
         || server_opt.proposer_keypair.is_none()
@@ -190,14 +182,10 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     {
         // only for integration test, generate test key pairs
         if chain_id_opt.is_test_or_dev_or_local() {
-            let result = generate_new_key_pair::<RoochAddress, RoochKeyPair>(
-                KeyPairType::RoochKeyPairType,
-                None,
-                None,
-                Some(password.clone()),
+            let result = generate_new_key_pair(
+                None, None, None, // TODO: provide a password option for server start
             )?;
-            let kp: RoochKeyPair = KeyPairType::RoochKeyPairType
-                .retrieve_key_pair(&result.result.encryption, Some(password))?;
+            let kp: RoochKeyPair = retrieve_key_pair(&result.result.encryption, None)?; // TODO: provide a password option for server start
             server_opt.sequencer_keypair = Some(kp.copy());
             server_opt.proposer_keypair = Some(kp.copy());
             server_opt.relayer_keypair = Some(kp.copy());

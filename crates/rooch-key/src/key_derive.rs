@@ -4,17 +4,14 @@
 use argon2::password_hash::{PasswordHash, PasswordHasher, SaltString};
 use argon2::Argon2;
 use argon2::PasswordVerifier;
-use bip32::{DerivationPath, XPrv};
+use bip32::DerivationPath;
 use bip39::{Language, Mnemonic, MnemonicType, Seed};
 use chacha20poly1305::aead::Aead;
 use chacha20poly1305::{AeadCore, ChaCha20Poly1305, KeyInit};
 use fastcrypto::ed25519::{Ed25519KeyPair, Ed25519PrivateKey};
-use fastcrypto::secp256k1::recoverable::{
-    Secp256k1RecoverableKeyPair, Secp256k1RecoverablePrivateKey,
-};
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use rand::rngs::OsRng;
-use rooch_types::address::{EthereumAddress, RoochAddress};
+use rooch_types::address::RoochAddress;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::RoochError;
 use rooch_types::key_struct::{EncryptionData, GenerateNewKeyPair, GeneratedKeyPair};
@@ -28,11 +25,9 @@ pub const DERIVATION_PATH_PURPOSE_SCHNORR: u32 = 44;
 pub const DERIVATION_PATH_PURPOSE_ECDSA: u32 = 54;
 pub const DERIVATION_PATH_PURPOSE_SECP256R1: u32 = 74;
 
-type EncryptionKeyResult = Result<(Vec<u8>, Vec<u8>, Vec<u8>), RoochError>;
-
 pub fn encrypt_private_key(
     private_key: &[u8],
-    password: Option<&str>,
+    password: Option<String>,
 ) -> Result<EncryptionData, RoochError> {
     let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
     let mut output_key_material = [0u8; 32];
@@ -47,7 +42,7 @@ pub fn encrypt_private_key(
     let cipher = ChaCha20Poly1305::new_from_slice(&output_key_material)
         .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
 
-    let ciphertext_with_tag = match cipher.encrypt(&nonce, &*private_key) {
+    let ciphertext_with_tag = match cipher.encrypt(&nonce, private_key) {
         Ok(ciphertext) => ciphertext,
         Err(_) => {
             return Err(RoochError::KeyConversionError(
@@ -70,7 +65,7 @@ pub fn decrypt_private_key(
     nonce: &[u8],
     ciphertext: &[u8],
     tag: &[u8],
-    password: Option<&str>,
+    password: Option<String>,
 ) -> Result<Vec<u8>, RoochError> {
     let mut output_key_material = [0u8; 32];
     Argon2::default()
@@ -97,7 +92,7 @@ pub fn decrypt_private_key(
 }
 
 pub fn verify_password(
-    password: Option<&str>,
+    password: Option<String>,
     password_hash: String,
 ) -> Result<bool, argon2::password_hash::Error> {
     let parsed_hash = PasswordHash::new(&password_hash)?;
@@ -106,9 +101,9 @@ pub fn verify_password(
         .is_ok())
 }
 
-pub fn hash_password(nonce: &[u8], password: Option<&str>) -> Result<String, RoochError> {
-    let salt = SaltString::encode_b64(&nonce)
-        .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
+pub fn hash_password(nonce: &[u8], password: Option<String>) -> Result<String, RoochError> {
+    let salt =
+        SaltString::encode_b64(nonce).map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
     let argon2 = Argon2::default();
     let password_hash = argon2
         .hash_password(password.unwrap_or_default().as_bytes(), &salt)
@@ -195,16 +190,9 @@ pub fn generate_new_key_pair(
 
     let sk = derive_private_key_from_path(seed.as_bytes(), derivation_path)?;
 
-    let (nonce, ciphertext, tag) = encrypt_private_key(&sk.clone(), password.clone())
-        .expect("Encryption failed for private key");
+    let encryption = encrypt_private_key(&sk, password).expect("Encryption failed for private key");
 
     let address = derive_address_from_private_key(sk)?;
-
-    let encryption = EncryptionData {
-        nonce,
-        ciphertext,
-        tag,
-    };
 
     let result = GenerateNewKeyPair {
         encryption,
@@ -229,8 +217,7 @@ fn parse_word_length(s: Option<String>) -> Result<MnemonicType, anyhow::Error> {
 /// Get a keypair from a random encryption data
 pub fn get_key_pair_from_red() -> (RoochAddress, EncryptionData) {
     let random_encryption_data = EncryptionData::new_for_test();
-    let kp: RoochKeyPair =
-        retrieve_key_pair(&random_encryption_data, Some("".to_owned()), None).unwrap();
+    let kp: RoochKeyPair = retrieve_key_pair(&random_encryption_data, None).unwrap();
 
     ((&kp.public()).into(), random_encryption_data)
 }

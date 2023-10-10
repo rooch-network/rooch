@@ -9,14 +9,10 @@ use anyhow::anyhow;
 use bip32::DerivationPath;
 use bip39::{Language, Mnemonic, Seed};
 use enum_dispatch::enum_dispatch;
-use fastcrypto::{
-    ed25519::{Ed25519KeyPair, Ed25519PublicKey, Ed25519Signature},
-    traits::{RecoverableSigner, ToFromBytes},
-};
 use rooch_types::{
     address::RoochAddress,
     authentication_key::AuthenticationKey,
-    crypto::{PublicKey, RoochKeyPair, RoochPublicKey, RoochSignature, Signature},
+    crypto::{PublicKey, RoochKeyPair, Signature},
     error::RoochError,
     key_struct::{EncryptionData, GeneratedKeyPair},
     transaction::{
@@ -39,11 +35,6 @@ pub struct ImportedMnemonic {
     pub encryption: EncryptionData,
 }
 
-pub struct UpdatedAddress {
-    pub key_pair: RoochKeyPair,
-    pub encryption: EncryptionData,
-}
-
 #[derive(Serialize, Deserialize, Debug)]
 #[enum_dispatch(AccountKeystore)]
 pub enum Keystore {
@@ -51,9 +42,8 @@ pub enum Keystore {
     InMem(InMemKeystore),
 }
 
-#[enum_dispatch]
 pub trait AccountKeystore {
-    fn add_encryption_data_by_key_pair_type(
+    fn add_encryption_data(
         &mut self,
         address: RoochAddress,
         encryption: EncryptionData,
@@ -61,11 +51,8 @@ pub trait AccountKeystore {
     fn get_address_public_keys(
         &self,
         password: Option<String>,
-    ) -> Result<Vec<(RoochAddress, Ed25519PublicKey)>, RoochError>;
-    fn get_public_key_by_key_pair_type(
-        &self,
-        password: Option<String>,
-    ) -> Result<Ed25519PublicKey, anyhow::Error>;
+    ) -> Result<Vec<(RoochAddress, PublicKey)>, RoochError>;
+    fn get_public_key(&self, password: Option<String>) -> Result<PublicKey, anyhow::Error>;
     fn get_key_pairs(
         &self,
         address: &RoochAddress,
@@ -76,7 +63,7 @@ pub trait AccountKeystore {
         address: &RoochAddress,
         password: Option<String>,
     ) -> Result<RoochKeyPair, RoochError>;
-    fn update_encryption_data_by_key_pair_type(
+    fn update_encryption_data(
         &mut self,
         address: &RoochAddress,
         encryption: EncryptionData,
@@ -88,7 +75,7 @@ pub trait AccountKeystore {
         address: &RoochAddress,
         msg: &[u8],
         password: Option<String>,
-    ) -> Result<Ed25519Signature, RoochError>;
+    ) -> Result<Signature, RoochError>;
 
     fn sign_transaction(
         &self,
@@ -102,7 +89,7 @@ pub trait AccountKeystore {
         address: &RoochAddress,
         msg: &T,
         password: Option<String>,
-    ) -> Result<Ed25519Signature, RoochError>
+    ) -> Result<Signature, RoochError>
     where
         T: Serialize;
 
@@ -116,10 +103,7 @@ pub trait AccountKeystore {
     ) -> Result<GeneratedKeyPair, anyhow::Error> {
         let result = generate_new_key_pair(derivation_path, word_length, password)?;
 
-        self.add_encryption_data_by_key_pair_type(
-            result.address,
-            result.result.encryption.clone(),
-        )?;
+        self.add_encryption_data(result.address, result.result.encryption.clone())?;
 
         Ok(result)
     }
@@ -135,23 +119,17 @@ pub trait AccountKeystore {
 
         let sk = derive_private_key_from_path(seed.as_bytes(), derivation_path)?;
 
-        let (nonce, ciphertext, tag) = encrypt_private_key(sk.clone(), password.clone())
-            .expect("Encryption failed for private key");
+        let encryption =
+            encrypt_private_key(&sk, password).expect("Encryption failed for private key");
 
         let address = derive_address_from_private_key(sk)?;
-
-        let encryption = EncryptionData {
-            nonce,
-            ciphertext,
-            tag,
-        };
 
         let result = ImportedMnemonic {
             address,
             encryption: encryption.clone(),
         };
 
-        self.add_encryption_data_by_key_pair_type(result.address, encryption)?;
+        self.add_encryption_data(result.address, encryption)?;
 
         Ok(result)
     }
@@ -162,35 +140,20 @@ pub trait AccountKeystore {
         phrase: String,
         derivation_path: Option<DerivationPath>,
         password: Option<String>,
-    ) -> Result<UpdatedAddress, anyhow::Error> {
+    ) -> Result<EncryptionData, anyhow::Error> {
         let mnemonic = Mnemonic::from_phrase(&phrase, Language::English)?;
         let seed = Seed::new(&mnemonic, "");
 
-        let sk = derive_private_key_from_path(seed.as_bytes(), derivation_path.clone())?;
+        let sk = derive_private_key_from_path(seed.as_bytes(), derivation_path)?;
 
-        let (nonce, ciphertext, tag) = encrypt_private_key(sk.clone(), password.clone())
-            .expect("Encryption failed for private key");
-
-        let sk_clone = derive_private_key_from_path(seed.as_bytes(), derivation_path)?;
+        let encryption_data =
+            encrypt_private_key(&sk, password).expect("Encryption failed for private key");
 
         let address = derive_address_from_private_key(sk)?;
 
-        let encryption = EncryptionData {
-            nonce,
-            ciphertext,
-            tag,
-        };
+        self.update_encryption_data(&address, encryption_data.clone())?;
 
-        let kp = retrieve_key_pair(&encryption, password)?;
-
-        let result = UpdatedAddress {
-            key_pair: kp,
-            encryption: encryption.clone(),
-        };
-
-        self.update_encryption_data_by_key_pair_type(&address, encryption)?;
-
-        Ok(result)
+        Ok(encryption_data)
     }
 
     fn nullify_address(&mut self, address: &RoochAddress) -> Result<(), anyhow::Error> {
@@ -238,18 +201,16 @@ impl AccountKeystore for Keystore {
         }
     }
 
-    fn add_encryption_data_by_key_pair_type(
+    fn add_encryption_data(
         &mut self,
         address: RoochAddress,
         encryption: EncryptionData,
     ) -> Result<(), anyhow::Error> {
         // Implement this method to add a key pair to the appropriate variant (File or InMem)
         match self {
-            Keystore::File(file_keystore) => {
-                file_keystore.add_encryption_data_by_key_pair_type(address, encryption)
-            }
+            Keystore::File(file_keystore) => file_keystore.add_encryption_data(address, encryption),
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.add_encryption_data_by_key_pair_type(address, encryption)
+                inmem_keystore.add_encryption_data(address, encryption)
             }
         }
     }
@@ -265,18 +226,11 @@ impl AccountKeystore for Keystore {
         }
     }
 
-    fn get_public_key_by_key_pair_type(
-        &self,
-        password: Option<String>,
-    ) -> Result<PublicKey, anyhow::Error> {
+    fn get_public_key(&self, password: Option<String>) -> Result<PublicKey, anyhow::Error> {
         // Implement this method to get the public key by coin ID from the appropriate variant (File or InMem)
         match self {
-            Keystore::File(file_keystore) => {
-                file_keystore.get_public_key_by_key_pair_type(password)
-            }
-            Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.get_public_key_by_key_pair_type(password)
-            }
+            Keystore::File(file_keystore) => file_keystore.get_public_key(password),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.get_public_key(password),
         }
     }
 
@@ -308,7 +262,7 @@ impl AccountKeystore for Keystore {
         }
     }
 
-    fn update_encryption_data_by_key_pair_type(
+    fn update_encryption_data(
         &mut self,
         address: &RoochAddress,
         encryption: EncryptionData,
@@ -316,10 +270,10 @@ impl AccountKeystore for Keystore {
         // Implement this method to update the key pair by coin ID for the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.update_encryption_data_by_key_pair_type(address, encryption)
+                file_keystore.update_encryption_data(address, encryption)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.update_encryption_data_by_key_pair_type(address, encryption)
+                inmem_keystore.update_encryption_data(address, encryption)
             }
         }
     }
@@ -498,7 +452,7 @@ impl AccountKeystore for BaseKeyStore {
         Ok(RoochTransaction::new(msg, auth))
     }
 
-    fn add_encryption_data_by_key_pair_type(
+    fn add_encryption_data(
         &mut self,
         address: RoochAddress,
         encryption: EncryptionData,
@@ -507,10 +461,7 @@ impl AccountKeystore for BaseKeyStore {
         Ok(())
     }
 
-    fn get_public_key_by_key_pair_type(
-        &self,
-        password: Option<String>,
-    ) -> Result<PublicKey, anyhow::Error> {
+    fn get_public_key(&self, password: Option<String>) -> Result<PublicKey, anyhow::Error> {
         self.keys
             .values()
             .find_map(|encryption| {
@@ -540,14 +491,14 @@ impl AccountKeystore for BaseKeyStore {
     ) -> Result<Vec<RoochKeyPair>, anyhow::Error> {
         match self.keys.get(address) {
             Some(encryption) => {
-                let kp = retrieve_key_pair(encryption, password.clone())?;
+                let kp = retrieve_key_pair(encryption, password)?;
                 Ok(vec![kp])
             }
             None => Err(anyhow!("Cannot find key for address: [{address}]")),
         }
     }
 
-    fn update_encryption_data_by_key_pair_type(
+    fn update_encryption_data(
         &mut self,
         address: &RoochAddress,
         encryption: EncryptionData,
@@ -671,13 +622,12 @@ impl AccountKeystore for FileBasedKeystore {
         self.keystore.sign_transaction(address, msg, password)
     }
 
-    fn add_encryption_data_by_key_pair_type(
+    fn add_encryption_data(
         &mut self,
         address: RoochAddress,
         encryption: EncryptionData,
     ) -> Result<(), anyhow::Error> {
-        self.keystore
-            .add_encryption_data_by_key_pair_type(address, encryption)?;
+        self.keystore.add_encryption_data(address, encryption)?;
         //TODO should check test env at here?
         if std::env::var_os("TEST_ENV").is_none() {
             self.save()?;
@@ -685,11 +635,8 @@ impl AccountKeystore for FileBasedKeystore {
         Ok(())
     }
 
-    fn get_public_key_by_key_pair_type(
-        &self,
-        password: Option<String>,
-    ) -> Result<PublicKey, anyhow::Error> {
-        self.keystore.get_public_key_by_key_pair_type(password)
+    fn get_public_key(&self, password: Option<String>) -> Result<PublicKey, anyhow::Error> {
+        self.keystore.get_public_key(password)
     }
 
     fn get_address_public_keys(
@@ -707,13 +654,12 @@ impl AccountKeystore for FileBasedKeystore {
         self.keystore.get_key_pairs(address, password)
     }
 
-    fn update_encryption_data_by_key_pair_type(
+    fn update_encryption_data(
         &mut self,
         address: &RoochAddress,
         encryption: EncryptionData,
     ) -> Result<(), anyhow::Error> {
-        self.keystore
-            .update_encryption_data_by_key_pair_type(address, encryption)?;
+        self.keystore.update_encryption_data(address, encryption)?;
         //TODO should check test env at here?
         if std::env::var_os("TEST_ENV").is_none() {
             self.save()?;
@@ -880,20 +826,16 @@ impl AccountKeystore for InMemKeystore {
         self.keystore.sign_transaction(address, msg, password)
     }
 
-    fn add_encryption_data_by_key_pair_type(
+    fn add_encryption_data(
         &mut self,
         address: RoochAddress,
         encryption: EncryptionData,
     ) -> Result<(), anyhow::Error> {
-        self.keystore
-            .add_encryption_data_by_key_pair_type(address, encryption)
+        self.keystore.add_encryption_data(address, encryption)
     }
 
-    fn get_public_key_by_key_pair_type(
-        &self,
-        password: Option<String>,
-    ) -> Result<PublicKey, anyhow::Error> {
-        self.keystore.get_public_key_by_key_pair_type(password)
+    fn get_public_key(&self, password: Option<String>) -> Result<PublicKey, anyhow::Error> {
+        self.keystore.get_public_key(password)
     }
 
     fn get_address_public_keys(
@@ -911,13 +853,12 @@ impl AccountKeystore for InMemKeystore {
         self.keystore.get_key_pairs(address, password)
     }
 
-    fn update_encryption_data_by_key_pair_type(
+    fn update_encryption_data(
         &mut self,
         address: &RoochAddress,
         encryption: EncryptionData,
     ) -> Result<(), anyhow::Error> {
-        self.keystore
-            .update_encryption_data_by_key_pair_type(address, encryption)
+        self.keystore.update_encryption_data(address, encryption)
     }
 
     fn nullify(&mut self, address: &RoochAddress) -> Result<(), anyhow::Error> {

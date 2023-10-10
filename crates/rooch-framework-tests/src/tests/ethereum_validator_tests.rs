@@ -4,9 +4,8 @@
 use ethers::types::{Bytes, U256};
 use moveos_types::transaction::MoveAction;
 use rooch_key::keystore::{AccountKeystore, InMemKeystore};
-use rooch_types::address::{EthereumAddress, MultiChainAddress};
+use rooch_types::address::MultiChainAddress;
 use rooch_types::framework::empty::Empty;
-use rooch_types::keypair_type::KeyPairType;
 use rooch_types::transaction::ethereum::EthereumTransactionData;
 use rooch_types::transaction::AbstractTransaction;
 
@@ -21,7 +20,7 @@ fn test_validate() {
     let address_mapping =
         binding_test.as_module_bundle::<rooch_types::framework::address_mapping::AddressMapping>();
 
-    let keystore = InMemKeystore::<EthereumAddress>::new_insecure_for_tests(1);
+    let keystore = InMemKeystore::new_insecure_for_tests(1);
     let sender = keystore.addresses()[0];
     let sequence_number = U256::zero();
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
@@ -29,12 +28,7 @@ fn test_validate() {
         Bytes::try_from(bcs::to_bytes(&action).unwrap()).expect("Convert action to bytes failed.");
     let tx_data = EthereumTransactionData::new_for_test(sender, sequence_number, action_bytes);
     keystore
-        .sign_transaction(
-            &sender,
-            tx_data.clone(),
-            KeyPairType::EthereumKeyPairType,
-            Some("".to_owned()),
-        )
+        .sign_transaction(&sender, tx_data.clone(), None)
         .unwrap();
     let auth_info = tx_data.authenticator_info().unwrap();
     let multichain_address = MultiChainAddress::from(sender);

@@ -47,14 +47,17 @@ impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
 
         // Execute the Move call as a transaction
         let mut result = if context.client_config.is_password_empty {
-            context.sign_and_execute(existing_address, action, None)
+            context
+                .sign_and_execute(existing_address, action, None)
+                .await?
         } else {
-            let password = prompt_password(
-                "Enter the password saved in client config to create a new key pair:",
-            )
-            .unwrap_or_default();
-            let is_verified =
-                verify_password(password.clone(), context.client_config.password_hash)?;
+            let password =
+                prompt_password("Enter the password saved in client config to delete the address:")
+                    .unwrap_or_default();
+            let is_verified = verify_password(
+                Some(password.clone()),
+                context.client_config.password_hash.unwrap_or_default(),
+            )?;
 
             if !is_verified {
                 return Err(RoochError::InvalidPasswordError(
@@ -62,7 +65,9 @@ impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
                 ));
             }
 
-            context.sign_and_execute(existing_address, action, Some(&password))
+            context
+                .sign_and_execute(existing_address, action, Some(password))
+                .await?
         };
         result = context.assert_execute_success(result)?;
 

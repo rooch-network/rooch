@@ -11,7 +11,7 @@ use rooch_config::server_config::ServerConfig;
 use rooch_config::{
     rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_KEYSTORE_FILENAME, ROOCH_SERVER_CONFIG,
 };
-use rooch_key::key_derive::{hash_password, retrieve_key_pair};
+use rooch_key::key_derive::hash_password;
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use rooch_rpc_client::client_config::{ClientConfig, Env};
 use rooch_types::address::RoochAddress;
@@ -147,7 +147,7 @@ impl CommandAction<()> for Init {
                     ("$argon2id$v=19$m=19456,t=2,p=1$zc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc0$RysE6tj+Zu0lLhtKJIedVHrKn9FspulS3vLj/UPaVvQ".to_owned(), true)
                 } else {
                     (
-                        hash_password(&result.result.encryption.nonce, password)?,
+                        hash_password(&result.result.encryption.nonce, Some(password))?,
                         false,
                     )
                 };

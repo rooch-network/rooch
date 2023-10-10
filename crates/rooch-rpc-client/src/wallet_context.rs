@@ -15,7 +15,6 @@ use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusV
 use rooch_types::address::RoochAddress;
 use rooch_types::crypto::Signature;
 use rooch_types::error::{RoochError, RoochResult};
-use rooch_types::keypair_type::KeyPairType;
 use rooch_types::transaction::{
     authenticator::Authenticator,
     rooch::{RoochTransaction, RoochTransactionData},
@@ -27,14 +26,14 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
 
-pub struct WalletContext<K: Ord> {
+pub struct WalletContext {
     client: Arc<RwLock<Option<Client>>>,
     pub client_config: PersistedConfig<ClientConfig>,
     pub server_config: PersistedConfig<ServerConfig>,
-    pub keystore: Keystore<K>,
+    pub keystore: Keystore,
 }
 
-impl WalletContext<RoochAddress> {
+impl WalletContext {
     pub async fn new(config_path: Option<PathBuf>) -> Result<Self, anyhow::Error> {
         let config_dir = config_path.unwrap_or(rooch_config_dir()?);
         let client_config_path = config_dir.join(ROOCH_CLIENT_CONFIG);
@@ -55,7 +54,7 @@ impl WalletContext<RoochAddress> {
         let client_config = client_config.persisted(&client_config_path);
         let server_config = server_config.persisted(&server_config_path);
 
-        let keystore_result = FileBasedKeystore::<RoochAddress>::load(&client_config.keystore_path);
+        let keystore_result = FileBasedKeystore::load(&client_config.keystore_path);
         let keystore = match keystore_result {
             Ok(file_keystore) => Keystore::File(file_keystore),
             Err(error) => return Err(error),

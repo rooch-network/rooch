@@ -3,14 +3,17 @@
 
 use crate::cli_types::{TransactionOptions, WalletContextOptions};
 use clap::Parser;
-use moveos_types::module_binding::MoveFunctionCaller;
-use rooch_key::keystore::AccountKeystore;
+use moveos_types::{module_binding::MoveFunctionCaller, transaction::MoveAction};
+use rooch_key::{key_derive::verify_password, keystore::AccountKeystore};
+use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
+use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_types::{
     address::RoochAddress,
+    authentication_key::AuthenticationKey,
     error::{RoochError, RoochResult},
     framework::session_key::{SessionKey, SessionKeyModule, SessionScope},
-    keypair_type::KeyPairType,
 };
+use rpassword::prompt_password;
 
 /// Create a new session key on-chain
 #[derive(Debug, Parser)]
@@ -37,13 +40,6 @@ impl CreateCommand {
     pub async fn execute(self) -> RoochResult<SessionKey> {
         let mut context = self.context_options.build().await?;
 
-        // Use an empty password by default
-        let password = String::new();
-
-        // TODO design a password mechanism
-        // // Prompt for a password if required
-        // rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
-
         if self.tx_options.sender_account.is_none() {
             return Err(RoochError::CommandArgumentError(
                 "--sender-account required".to_owned(),
@@ -53,10 +49,28 @@ impl CreateCommand {
             .parse_account_arg(self.tx_options.sender_account.unwrap())?
             .into();
 
-        let session_auth_key = context
-            .keystore
-            .generate_session_key(&sender, Some(password.clone()))?;
+        let session_auth_key = if context.client_config.is_password_empty {
+            context.keystore.generate_session_key(&sender, None)?
+        } else {
+            let password = prompt_password(
+                "Enter the password saved in client config to create a new key pair:",
+            )
+            .unwrap_or_default();
+            let is_verified = verify_password(
+                Some(password.clone()),
+                context.client_config.password_hash.unwrap_or_default(),
+            )?;
 
+            if !is_verified {
+                return Err(RoochError::InvalidPasswordError(
+                    "Password is invalid".to_owned(),
+                ));
+            }
+
+            context
+                .keystore
+                .generate_session_key(&sender, Some(password.clone()))?
+        };
         let session_scope = self.scope;
 
         let action =
@@ -68,14 +82,28 @@ impl CreateCommand {
 
         println!("Generated new session key {session_auth_key} for address [{sender}]",);
 
-        let result = context
-            .sign_and_execute(
-                sender,
-                action,
-                KeyPairType::RoochKeyPairType,
-                Some(password),
+        let result = if context.client_config.is_password_empty {
+            context.sign_and_execute(sender, action, None).await?
+        } else {
+            let password = prompt_password(
+                "Enter the password saved in client config to create a new key pair:",
             )
-            .await?;
+            .unwrap_or_default();
+            let is_verified = verify_password(
+                Some(password.clone()),
+                context.client_config.password_hash.unwrap_or_default(),
+            )?;
+
+            if !is_verified {
+                return Err(RoochError::InvalidPasswordError(
+                    "Password is invalid".to_owned(),
+                ));
+            }
+
+            context
+                .sign_and_execute(sender, action, Some(password))
+                .await?
+        };
         context.assert_execute_success(result)?;
         let client = context.get_client().await?;
         let session_key_module = client.as_module_binding::<SessionKeyModule>();
@@ -87,6 +115,7 @@ impl CreateCommand {
                     session_auth_key
                 ))
             })?;
+
         Ok(session_key)
     }
 }
