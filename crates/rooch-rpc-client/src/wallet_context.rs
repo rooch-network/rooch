@@ -126,35 +126,28 @@ impl WalletContext<RoochAddress> {
         Ok(tx_data)
     }
 
-    // TODO: remove key_pair_type: KeyPairType to construct specfic sign implementation based on keys from key store for Rooch and Ethereum transactions
     pub async fn sign(
         &self,
         sender: RoochAddress,
         action: MoveAction,
-        key_pair_type: KeyPairType,
         password: Option<String>,
     ) -> RoochResult<RoochTransaction> {
         let kp = self
             .keystore
-            .get_key_pair_by_type_password(&sender, key_pair_type, password)
+            .get_key_pair_by_password(&sender, password)
             .ok()
             .ok_or_else(|| {
-                RoochError::SignMessageError(format!("Cannot find key for address: [{sender}]"))
+                RoochError::SignMessageError(format!(
+                    "Cannot find encryption data for address: [{sender}]"
+                ))
             })?;
 
-        match key_pair_type {
-            KeyPairType::RoochKeyPairType => {
-                let tx_data = self.build_tx_data(sender, action).await?;
-                let signature = Signature::new_hashed(tx_data.hash().as_bytes(), &kp);
-                Ok(RoochTransaction::new(
-                    tx_data,
-                    Authenticator::rooch(signature),
-                ))
-            }
-            KeyPairType::EthereumKeyPairType => {
-                todo!()
-            }
-        }
+        let tx_data = self.build_tx_data(sender, action).await?;
+        let signature = Signature::new_hashed(tx_data.hash().as_bytes(), &kp);
+        Ok(RoochTransaction::new(
+            tx_data,
+            Authenticator::rooch(signature),
+        ))
     }
 
     pub async fn execute(
@@ -173,10 +166,9 @@ impl WalletContext<RoochAddress> {
         &self,
         sender: RoochAddress,
         action: MoveAction,
-        key_pair_type: KeyPairType,
         password: Option<String>,
     ) -> RoochResult<ExecuteTransactionResponseView> {
-        let tx = self.sign(sender, action, key_pair_type, password).await?;
+        let tx = self.sign(sender, action, password).await?;
         self.execute(tx).await
     }
 

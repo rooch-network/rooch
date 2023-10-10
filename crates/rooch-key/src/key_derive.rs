@@ -141,27 +141,19 @@ pub fn derive_address_from_private_key(private_key: Vec<u8>) -> Result<RoochAddr
 pub fn retrieve_key_pair(
     encryption: &EncryptionData,
     password: Option<String>,
-    password_hash: Option<String>,
 ) -> Result<RoochKeyPair, RoochError> {
-    let is_verified = verify_password(&password, &password_hash)?;
-
-    if is_verified {
-        let private_key = decrypt_private_key(
-            &encryption.nonce,
-            &encryption.ciphertext,
-            &encryption.tag,
-            password,
-        )?;
-        let kp: Ed25519KeyPair = Ed25519KeyPair::from(
-            Ed25519PrivateKey::from_bytes(&private_key)
-                .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
-        );
-        Ok(kp.into())
-    } else {
-        Err(RoochError::InvalidPasswordError(
-            "Password is invalid".to_owned(),
-        ))
-    }
+    // Assuming the password entered herein is correct.
+    let private_key = decrypt_private_key(
+        &encryption.nonce,
+        &encryption.ciphertext,
+        &encryption.tag,
+        password,
+    )?;
+    let kp: Ed25519KeyPair = Ed25519KeyPair::from(
+        Ed25519PrivateKey::from_bytes(&private_key)
+            .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
+    );
+    Ok(kp.into())
 }
 
 pub fn validate_path(path: Option<DerivationPath>) -> Result<DerivationPath, RoochError> {

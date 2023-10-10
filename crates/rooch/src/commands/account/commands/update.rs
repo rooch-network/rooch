@@ -9,7 +9,6 @@ use rooch_types::{
     address::RoochAddress,
     error::{RoochError, RoochResult},
     framework::native_validator::NativeValidatorModule,
-    keypair_type::KeyPairType,
 };
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
@@ -31,38 +30,48 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
     async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
         println!("{:?}", self.mnemonic_phrase);
 
-        // Use an empty password by default
-        let password = String::new();
-
-        // TODO design a password mechanism
-        // // Prompt for a password if required
-        // rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
-
         let mut context = self.context_options.build().await?;
 
         let existing_address = RoochAddress::from_str(&self.address).map_err(|e| {
             RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
         })?;
 
-        let result = context
-            .keystore
-            .update_address_with_key_pair_from_key_pair_type(
+        let result = if context.client_config.is_password_empty {
+            context.keystore.update_address_with_encryption_data(
                 &existing_address,
                 self.mnemonic_phrase,
-                KeyPairType::RoochKeyPairType,
                 None,
-                Some(password.clone()),
+                None,
+            )?
+        } else {
+            let password = prompt_password(
+                "Enter the password saved in client config to create a new key pair:",
             )
-            .map_err(|e| RoochError::UpdateAccountError(e.to_string()))?;
+            .unwrap_or_default();
+            let is_verified =
+                verify_password(password.clone(), context.client_config.password_hash)?;
+
+            if !is_verified {
+                return Err(RoochError::InvalidPasswordError(
+                    "Password is invalid".to_owned(),
+                ));
+            }
+
+            context.keystore.update_address_with_encryption_data(
+                &existing_address,
+                self.mnemonic_phrase,
+                None,
+                Some(&password),
+            )?
+        };
 
         println!(
             "{}",
             AccountAddress::from(existing_address).to_hex_literal()
         );
         println!(
-            "Generated a new keypair for an existing address {:?} for type {:?}",
+            "Generated a new keypair for an existing address {:?}",
             existing_address,
-            KeyPairType::RoochKeyPairType.type_of()
         );
 
         // Get public key
@@ -76,12 +85,7 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
 
         // Execute the Move call as a transaction
         let result = context
-            .sign_and_execute(
-                existing_address,
-                action,
-                KeyPairType::RoochKeyPairType,
-                Some(password),
-            )
+            .sign_and_execute(existing_address, action, Some(password))
             .await?;
         context.assert_execute_success(result)
     }
