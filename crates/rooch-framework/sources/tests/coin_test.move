@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 #[test_only]
 /// This test module is used to test the coin logic in coin and account module.
 module rooch_framework::coin_test{

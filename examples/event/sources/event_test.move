@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_examples::event_test {
     use moveos_std::context::{Self, Context};
     use moveos_std::event;

@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// Module which defines encoding functions.
 module rooch_framework::encoding {
    /// @param address_bytes: address bytes on the Bitcoin network 

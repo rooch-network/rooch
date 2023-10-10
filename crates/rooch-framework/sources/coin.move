@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// This module provides the foundation for typesafe Coins.
 module rooch_framework::coin {
     use std::string;

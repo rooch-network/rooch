@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_examples::article_add_comment_logic {
     use moveos_std::object::Object;
     use moveos_std::context::Context;

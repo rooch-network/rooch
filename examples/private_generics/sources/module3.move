@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_examples::module3 {
     #[test_only]
     use rooch_examples::module1::{new_box, get_box_value};

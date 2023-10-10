@@ -83,7 +83,9 @@ parent_directory="../"
 process_rs_files "$parent_directory"
 
 # Process .move files
-process_move_files "$parent_directory"
+process_move_files "${parent_directory}/examples/"
+process_move_files "${parent_directory}/crates/rooch-framework/"
+process_move_files "${parent_directory}/moveos/moveos-stdlib/"
 
 # Process .sh files
 process_sh_files "$parent_directory"

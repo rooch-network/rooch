@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_examples::box_fun {
     use std::string::{Self, String};
     use moveos_std::object_id::ObjectID;

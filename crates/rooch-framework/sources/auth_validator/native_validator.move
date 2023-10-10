@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// This module implements the native validator.
 module rooch_framework::native_validator {
 

@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module noop_auth_validator::noop_validator {
     use std::vector;
     use moveos_std::context::{Context};

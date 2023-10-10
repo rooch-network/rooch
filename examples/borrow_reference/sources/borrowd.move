@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_examples::borrowd {
     use moveos_std::account_storage;
     use moveos_std::context::{Self, Context};

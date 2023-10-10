@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// This module keeps a global wall clock that stores the current Unix time in microseconds.
 /// It interacts with the other modules in the following ways:
 /// * genesis: to initialize the timestamp

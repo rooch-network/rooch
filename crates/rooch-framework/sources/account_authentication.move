@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// This module contains the resources and functions that are used for account authentication.
 /// Migrated from the account module for simplyfying the account module.
 module rooch_framework::account_authentication {

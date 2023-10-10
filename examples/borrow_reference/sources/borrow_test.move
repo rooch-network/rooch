@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_examples::borrow_test {
     use rooch_examples::borrowd::{BorrowCapability, DataStore};
     use rooch_examples::borrowd;

@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 //# init --addresses genesis=0x1
 
 //create account by bob self

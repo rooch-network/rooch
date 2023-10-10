@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// This module implements Ethereum validator with the ECDSA recoverable signature over Secp256k1.
 module rooch_framework::ethereum_validator {
 
