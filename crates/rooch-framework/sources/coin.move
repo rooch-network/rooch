@@ -48,14 +48,8 @@ module rooch_framework::coin {
     /// Account hasn't accept `CoinType`
     const ErrorAccountNotAcceptCoin: u64 = 8;
 
-    /// Global CoinInfoRegistry should exist
-    const ErrorCoinInfoRegistryNotFound: u64 = 9;
-
-    /// Global AutoAcceptCoins should exist
-    const ErrorAutoAcceptCoinsNotFound: u64 = 10;
-
-    /// Account does not have CoinStore for `CoinType`
-    const ErrorCoinStoreNotFound: u64 = 11;
+    /// Global CoinInfos should exist
+    const ErrorCoinInfosNotFound: u64 = 9;
 
     /// The CoinType parameter and CoinType in CoinStore do not match
     const ErrorCoinTypeAndStoreMismatch: u64 = 10;
@@ -386,10 +380,8 @@ module rooch_framework::coin {
     // Internal functions
     //
 
-    fun mint_internal<CoinType: key>(
-        ctx: &mut Context,
-        amount: u256
-    ): Coin<CoinType>{
+    fun mint_internal<CoinType: key>(ctx: &mut Context,
+        amount: u256): Coin<CoinType>{
         let coin_info = borrow_mut_coin_info<CoinType>(ctx);
         coin_info.supply = coin_info.supply + amount;
         let coin_type = type_info::type_name<CoinType>();
@@ -423,7 +415,7 @@ module rooch_framework::coin {
 
     fun deposit_internal<CoinType: key>(ctx: &mut Context, addr: address, coin: Coin<CoinType>) {
         assert!(
-            can_auto_accept_coin<CoinType>(ctx, addr),
+            is_account_accept_coin<CoinType>(ctx, addr),
             error::not_found(ErrorAccountNotAcceptCoin),
         );
 
@@ -479,18 +471,16 @@ module rooch_framework::coin {
     /// Check whether the address can auto accept coin.
     /// Default is true if absent
     public fun can_auto_accept_coin(ctx: &Context, addr: address): bool {
-        // `AcceptCoins` should always exist which is ensured via the Genesis transaction
-        assert!(
-            account_storage::global_exists<AutoAcceptCoins>(ctx, @rooch_framework), 
-            error::not_found(ErrorAutoAcceptCoinsNotFound)
-        );
-        let auto_accept_coins = account_storage::global_borrow<AutoAcceptCoins>(ctx, @rooch_framework);
-        if (table::contains<address, bool>(&auto_accept_coins.auto_accept_coins, addr)) {
-            return *table::borrow<address, bool>(&auto_accept_coins.auto_accept_coins, addr)
+        if (account_storage::global_exists<AutoAcceptCoins>(ctx, @rooch_framework)) {
+            let auto_accept_coins = account_storage::global_borrow<AutoAcceptCoins>(ctx, @rooch_framework);
+            if (table::contains<address, bool>(&auto_accept_coins.auto_accept_coins, addr)) {
+                return *table::borrow<address, bool>(&auto_accept_coins.auto_accept_coins, addr)
+            }
         };
         true
     }
 
+    /// Add a balance of `Coin` type to the sending account.
     /// If user turns off AutoAcceptCoin, call this method to receive the corresponding Coin
     public fun do_accept_coin<CoinType: key>(ctx: &mut Context, account: &signer) {
         let addr = signer::address_of(account);
