@@ -3,12 +3,13 @@
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
+use clap::Parser;
 use moveos_types::access_path::AccessPath;
 use rooch_rpc_api::jsonrpc_types::AnnotatedStateView;
 use rooch_types::error::{RoochError, RoochResult};
 
 /// Get states by accessPath
-#[derive(clap::Parser)]
+#[derive(Parser)]
 pub struct StateCommand {
     /// /object/$object_id1[,$object_id2]
     /// /resource/$account_address/$resource_type1[,$resource_type2]

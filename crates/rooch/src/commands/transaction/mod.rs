@@ -7,12 +7,13 @@ use crate::commands::transaction::commands::{
     get_transactions_by_order::GetTransactionsByOrderCommand,
 };
 use async_trait::async_trait;
+use clap::{Parser, Subcommand};
 use rooch_types::error::RoochResult;
 
 pub mod commands;
 
 /// Tool for interacting with transaction
-#[derive(clap::Parser)]
+#[derive(Parser)]
 pub struct Transaction {
     #[clap(subcommand)]
     cmd: TransactionCommand,
@@ -28,7 +29,7 @@ impl CommandAction<String> for Transaction {
     }
 }
 
-#[derive(clap::Subcommand)]
+#[derive(Subcommand)]
 pub enum TransactionCommand {
     GetTransactionsByOrder(GetTransactionsByOrderCommand),
     GetTransactionsByHash(GetTransactionsByHashCommand),

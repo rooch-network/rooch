@@ -7,6 +7,7 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::transaction_argument::TransactionArgument;
 use move_core_types::u256::U256;
 use rooch_rpc_client::wallet_context::WalletContext;
+use rooch_types::address::RoochAddress;
 use rooch_types::authentication_key::AuthenticationKey;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::authenticator::Authenticator;
@@ -15,7 +16,6 @@ use std::fmt::{Display, Formatter};
 use std::ops::Deref;
 use std::path::PathBuf;
 
-use rooch_types::address::RoochAddress;
 use std::str::FromStr;
 
 #[async_trait]
@@ -101,7 +101,7 @@ pub struct WalletContextOptions {
 
 impl WalletContextOptions {
     pub async fn build(&self) -> RoochResult<WalletContext<RoochAddress>> {
-        WalletContext::new(self.config_dir.clone())
+        WalletContext::<RoochAddress>::new(self.config_dir.clone())
             .await
             .map_err(RoochError::from)
     }

@@ -3,12 +3,10 @@
 
 use anyhow::Result;
 use coerce::actor::message::Message;
+use moveos_types::h256::H256;
 use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::TransactionSequenceInfoMapping;
-use rooch_types::{
-    transaction::{TransactionSequenceInfo, TypedTransaction},
-    H256,
-};
+use rooch_types::transaction::{TransactionSequenceInfo, TypedTransaction};
 use serde::{Deserialize, Serialize};
 
 /// Transaction Sequence Message

@@ -6,6 +6,7 @@ use crate::transaction_store::{TransactionDBStore, TransactionStore};
 use anyhow::Result;
 use moveos_config::store_config::RocksdbConfig;
 use moveos_config::temp_dir;
+use moveos_types::h256::H256;
 use once_cell::sync::Lazy;
 use raw_store::rocks::RocksDB;
 use raw_store::{ColumnFamilyName, StoreInstance};
@@ -13,7 +14,6 @@ use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::{
     TransactionSequenceInfo, TransactionSequenceInfoMapping, TypedTransaction,
 };
-use rooch_types::H256;
 use std::fmt::{Debug, Display, Formatter};
 
 pub mod meta_store;

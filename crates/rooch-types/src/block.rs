@@ -1,9 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use moveos_types::h256::H256;
 use serde::{Deserialize, Serialize};
-
-use crate::H256;
 
 /// The block in Rooch is constructed by the proposer, representing a batch of transactions
 /// How many transactions in the block is determined by the proposer

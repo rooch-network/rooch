@@ -348,6 +348,27 @@ impl From<Secp256k1RecoverablePublicKey> for EthereumAddress {
     }
 }
 
+impl FromStr for EthereumAddress {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let address = H160::from_str(s)?;
+        Ok(Self(address))
+    }
+}
+
+impl From<EthereumAddress> for H160 {
+    fn from(address: EthereumAddress) -> Self {
+        H160::from(address.0 .0)
+    }
+}
+
+impl From<H160> for EthereumAddress {
+    fn from(h160: H160) -> Self {
+        Self(h160)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BitcoinAddress(pub Address);
 

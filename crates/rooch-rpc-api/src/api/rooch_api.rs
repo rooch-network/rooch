@@ -14,6 +14,7 @@ use rooch_open_rpc_macros::open_rpc;
 
 #[open_rpc(namespace = "rooch")]
 #[rpc(server, client, namespace = "rooch")]
+#[async_trait]
 pub trait RoochAPI {
     #[method(name = "getChainID")]
     async fn get_chain_id(&self) -> RpcResult<StrView<u64>>;

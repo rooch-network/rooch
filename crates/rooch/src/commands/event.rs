@@ -3,12 +3,13 @@
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
+use clap::{Parser, Subcommand};
 use move_core_types::language_storage::StructTag;
 use rooch_rpc_api::jsonrpc_types::EventPageView;
 use rooch_types::error::{RoochError, RoochResult};
 
 /// Tool for interacting with event
-#[derive(clap::Parser)]
+#[derive(Parser)]
 pub struct EventCommand {
     #[clap(subcommand)]
     cmd: EventSubCommand,
@@ -23,12 +24,12 @@ impl CommandAction<String> for EventCommand {
     }
 }
 
-#[derive(clap::Subcommand)]
+#[derive(Subcommand)]
 pub enum EventSubCommand {
     GetEventsByEventHandle(GetEventsByEventHandle),
 }
 /// Retrieves events based on their event handle.
-#[derive(Debug, clap::Parser)]
+#[derive(Debug, Parser)]
 pub struct GetEventsByEventHandle {
     /// Struct name as `ADDRESS::MODULE_NAME::STRUCT_NAME<TypeParam1?, TypeParam2?>`
     /// Example: `0x123::event_test::WithdrawEvent --cursor 0 --limit 1`

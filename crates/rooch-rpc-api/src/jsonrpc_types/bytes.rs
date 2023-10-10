@@ -1,25 +1,47 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use hex::FromHexError;
 use rustc_hex::{FromHex, ToHex};
+use schemars::JsonSchema;
 use serde::{
     de::{Error, Visitor},
     Deserialize, Deserializer, Serialize, Serializer,
 };
 use std::fmt;
+use std::str::FromStr;
 
 /// Wrapper structure around vector of bytes.
-#[derive(Debug, PartialEq, Eq, Default, Hash, Clone)]
+#[derive(Debug, PartialEq, Eq, Default, Hash, Clone, JsonSchema)]
 pub struct Bytes(pub Vec<u8>);
 
 impl Bytes {
     /// Simple constructor.
-    pub fn new(bytes: Vec<u8>) -> Bytes {
-        Bytes(bytes)
+    pub fn new(bytes: Vec<u8>) -> Self {
+        Self(bytes)
     }
     /// Convert back to vector
     pub fn into_vec(self) -> Vec<u8> {
         self.0
+    }
+}
+
+impl FromStr for Bytes {
+    type Err = FromHexError;
+
+    /// Convert from a hexadecimal string representation of bytes.
+    fn from_str(hex_string: &str) -> Result<Self, FromHexError> {
+        // Remove the "0x" prefix if it exists.
+        let hex_string = if hex_string.starts_with("0x") || hex_string.starts_with("0X") {
+            &hex_string[2..]
+        } else {
+            hex_string
+        };
+
+        // Use the `hex` crate to parse the modified hexadecimal string into bytes.
+        let bytes = hex::decode(hex_string)?;
+
+        Ok(Self(bytes))
     }
 }
 

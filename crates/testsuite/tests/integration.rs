@@ -10,6 +10,7 @@ use rooch::RoochCli;
 use rooch_config::{rooch_config_dir, RoochOpt, ServerOpt};
 use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_rpc_server::Service;
+use rooch_types::address::RoochAddress;
 use serde_json::Value;
 use tracing::info;
 
@@ -53,7 +54,9 @@ async fn run_cmd(world: &mut World, args: String) {
         .join("rooch_test");
 
     let default = if config_dir.exists() {
-        let context = WalletContext::new(Some(config_dir.clone())).await.unwrap();
+        let context = WalletContext::<RoochAddress>::new(Some(config_dir.clone()))
+            .await
+            .unwrap();
 
         match context.client_config.active_address {
             Some(addr) => AccountAddress::from(addr).to_hex_literal(),

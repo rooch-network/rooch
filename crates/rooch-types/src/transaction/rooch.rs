@@ -5,11 +5,11 @@ use super::{
     authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo, TransactionType,
 };
 use crate::crypto::{Ed25519RoochSignature, RoochKeyPair, Signature};
-use crate::H256;
 use crate::{address::RoochAddress, chain_id::RoochChainID};
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::gas_config::GasConfig;
+use moveos_types::h256::H256;
 use moveos_types::{
     transaction::{MoveAction, MoveOSTransaction},
     tx_context::TxContext,

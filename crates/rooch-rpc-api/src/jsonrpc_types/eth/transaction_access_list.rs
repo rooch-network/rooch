@@ -1,21 +1,23 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use ethers::types::{H160, H256};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::vec::Vec;
 
+use crate::jsonrpc_types::{H176View, H256View};
+
 pub type AccessList = Vec<AccessListItem>;
 
-#[derive(Debug, Clone, Default, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct AccessListItem {
-    address: H160,
-    storage_keys: Vec<H256>,
+    address: H176View,
+    storage_keys: Vec<H256View>,
 }
 
 impl AccessListItem {
-    pub fn new(address: H160, storage_keys: Vec<H256>) -> Self {
+    pub fn new(address: H176View, storage_keys: Vec<H256View>) -> Self {
         Self {
             address,
             storage_keys,

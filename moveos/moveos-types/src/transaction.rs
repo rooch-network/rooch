@@ -142,6 +142,12 @@ impl MoveAction {
             args,
         })
     }
+
+    // Serialize the MoveAction enum into bytes using BCS
+    pub fn encode(&self) -> Result<Vec<u8>, anyhow::Error> {
+        let encoded_data = bcs::to_bytes(self).expect("Serialization should succeed");
+        Ok(encoded_data)
+    }
 }
 
 /// The MoveAction after verifier
