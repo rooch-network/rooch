@@ -181,7 +181,7 @@ TODO find a way to protect this function from DOS attack.
 
 ## Function `genesis_init`
 
-Can only called during genesis to initialize the Rooch coin.
+Can only be called during genesis to initialize the Rooch coin.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, _genesis_account: &<a href="">signer</a>)

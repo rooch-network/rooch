@@ -75,12 +75,12 @@ The address/account did not correspond to the core framework address
 
 
 
-<a name="0x3_core_addresses_ErrorVm"></a>
+<a name="0x3_core_addresses_ErrorNotVM"></a>
 
 The operation can only be performed by the VM
 
 
-<pre><code><b>const</b> <a href="core_addresses.md#0x3_core_addresses_ErrorVm">ErrorVm</a>: u64 = 3;
+<pre><code><b>const</b> <a href="core_addresses.md#0x3_core_addresses_ErrorNotVM">ErrorNotVM</a>: u64 = 3;
 </code></pre>
 
 
@@ -383,7 +383,7 @@ Assert that the signer has the VM reserved address.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_vm">assert_vm</a>(<a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
-    <b>assert</b>!(<a href="core_addresses.md#0x3_core_addresses_is_vm">is_vm</a>(<a href="account.md#0x3_account">account</a>), <a href="_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ErrorVm">ErrorVm</a>))
+    <b>assert</b>!(<a href="core_addresses.md#0x3_core_addresses_is_vm">is_vm</a>(<a href="account.md#0x3_account">account</a>), <a href="_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ErrorNotVM">ErrorNotVM</a>))
 }
 </code></pre>
 

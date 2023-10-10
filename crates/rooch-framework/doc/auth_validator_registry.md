@@ -74,7 +74,7 @@
 <code>validator_num: u64</code>
 </dt>
 <dd>
-How many validators are registered
+ Number of registered validators
 </dd>
 <dt>
 <code>validators: <a href="_Table">table::Table</a>&lt;u64, <a href="auth_validator.md#0x3_auth_validator_AuthValidator">auth_validator::AuthValidator</a>&gt;</code>
@@ -234,6 +234,7 @@ Init function called by genesis.
 
 <pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_borrow_validator">borrow_validator</a>(ctx: &Context, id: u64): &AuthValidator {
     <b>let</b> registry = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="auth_validator_registry.md#0x3_auth_validator_registry_ValidatorRegistry">ValidatorRegistry</a>&gt;(ctx, @rooch_framework);
+    <b>assert</b>!(<a href="_contains">table::contains</a>(&registry.validators, id), <a href="_not_found">error::not_found</a>(<a href="auth_validator_registry.md#0x3_auth_validator_registry_ErrorValidatorUnregistered">ErrorValidatorUnregistered</a>));
     <a href="_borrow">table::borrow</a>(&registry.validators, id)
 }
 </code></pre>
