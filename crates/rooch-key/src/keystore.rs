@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::key_derive::{
+    derive_address_from_private_key, derive_private_key_from_path, encrypt_private_key,
     generate_new_key_pair, get_ethereum_key_pair_from_red, get_rooch_key_pair_from_red,
     KeyOperator, KeyStoreOperator,
 };
@@ -62,7 +63,6 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData>: Se
     fn add_encryption_data_by_key_pair_type(
         &mut self,
         address: Addr,
-        key_pair_type: KeyPairType,
         encryption: EncryptionData,
     ) -> Result<(), anyhow::Error>;
     fn get_address_public_keys(
@@ -127,24 +127,14 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData>: Se
 
     fn generate_and_add_new_key(
         &mut self,
-        key_pair_type: KeyPairType,
         derivation_path: Option<DerivationPath>,
         word_length: Option<String>,
         password: Option<String>,
-    ) -> Result<GeneratedKeyPair<Addr>, anyhow::Error>
-    where
-        KeyPairType: KeyStoreOperator<Addr, KeyPair>,
-    {
-        let result = generate_new_key_pair::<Addr, KeyPair>(
-            key_pair_type,
-            derivation_path,
-            word_length,
-            password,
-        )?;
+    ) -> Result<GeneratedKeyPair, anyhow::Error> {
+        let result = generate_new_key_pair(derivation_path, word_length, password)?;
 
         self.add_encryption_data_by_key_pair_type(
             result.address,
-            key_pair_type,
             result.result.encryption.clone(),
         )?;
 
@@ -154,29 +144,20 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData>: Se
     fn import_from_mnemonic(
         &mut self,
         phrase: &str,
-        key_pair_type: KeyPairType,
         derivation_path: Option<DerivationPath>,
         password: Option<String>,
-    ) -> Result<ImportedMnemonic<Addr>, anyhow::Error>
-    where
-        KeyPairType: KeyStoreOperator<Addr, KeyPair>,
-    {
+    ) -> Result<ImportedMnemonic, anyhow::Error> {
         let mnemonic = Mnemonic::from_phrase(phrase, Language::English)?;
         let seed = Seed::new(&mnemonic, "");
 
-        let sk = key_pair_type.derive_private_key_from_path(seed.as_bytes(), derivation_path)?;
+        let sk = derive_private_key_from_path(seed.as_bytes(), derivation_path)?;
 
-        let (nonce, ciphertext, tag) = key_pair_type
-            .encrypt_private_key(sk.clone(), password.clone())
+        let (nonce, ciphertext, tag) = encrypt_private_key(sk.clone(), password.clone())
             .expect("Encryption failed for private key");
 
-        let hashed_password = KeyPairType::hash_password(sk.clone(), password)
-            .expect("Encryption failed for password");
-
-        let address = key_pair_type.derive_address_from_private_key(sk)?;
+        let address = derive_address_from_private_key(sk)?;
 
         let encryption = EncryptionData {
-            hashed_password,
             nonce,
             ciphertext,
             tag,
@@ -187,7 +168,7 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData>: Se
             encryption: encryption.clone(),
         };
 
-        self.add_encryption_data_by_key_pair_type(result.address, key_pair_type, encryption)?;
+        self.add_encryption_data_by_key_pair_type(result.address, encryption)?;
 
         Ok(result)
     }
@@ -216,13 +197,9 @@ pub trait AccountKeystore<Addr: Copy, PubKey, KeyPair, Sig, TransactionData>: Se
         let sk_clone =
             key_pair_type.derive_private_key_from_path(seed.as_bytes(), derivation_path)?;
 
-        let hashed_password = KeyPairType::hash_password(sk_clone, password.clone())
-            .expect("Encryption failed for password");
-
         let address = key_pair_type.derive_address_from_private_key(sk)?;
 
         let encryption = EncryptionData {
-            hashed_password,
             nonce,
             ciphertext,
             tag,
@@ -749,7 +726,7 @@ pub(crate) struct BaseKeyStore<K>
 where
     K: Ord,
 {
-    keys: BTreeMap<K, BTreeMap<KeyPairType, EncryptionData>>,
+    keys: BTreeMap<K, EncryptionData>,
     /// RoochAddress -> BTreeMap<AuthenticationKey, RoochKeyPair>
     /// EthereumAddress -> BTreeMap<AuthenticationKey, Secp256k1RecoverableKeyPair>
     #[serde_as(as = "BTreeMap<DisplayFromStr, BTreeMap<DisplayFromStr, _>>")]
