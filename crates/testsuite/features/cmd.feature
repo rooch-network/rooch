@@ -4,7 +4,6 @@ Feature: Rooch CLI integration tests
       Then cmd: "init"
       Then cmd: "env switch --alias local"
 
-
     @serial
     Scenario: account
       Given a server for account
@@ -152,9 +151,12 @@ Feature: Rooch CLI integration tests
       Then stop the server
 
   @serial
-    Scenario: rpc test
-      Given a server for rpc
+    Scenario: ethereum rpc test
+      Given a server for ethereum
       Then cmd: "rpc request --method eth_getBalance --params \"0x1111111111111111111111111111111111111111\""
-      Then assert: "{{$.result}}" equals "0x56bc75e2d63100000"
-
+      Then assert: "{{$.rpc[-1]}} == 0x56bc75e2d63100000"
+      Then cmd: "rpc request --method eth_feeHistory --params [\"0x5\",\"0x6524cad7\",[10,20,30]]"
+      Then assert: ""{{$.rpc[-1]}}" contains baseFeePerGas"
       Then stop the server
+
+
