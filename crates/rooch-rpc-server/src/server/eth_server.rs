@@ -328,9 +328,7 @@ impl EthAPIServer for EthServer {
     ) -> RpcResult<StrView<U256>> {
         let account_address = self
             .rpc_service
-            .resolve_address(MultiChainAddress::from(EthereumAddress(
-                address.clone().into(),
-            )))
+            .resolve_address(MultiChainAddress::from(EthereumAddress(address.into())))
             .await?;
 
         info!(
