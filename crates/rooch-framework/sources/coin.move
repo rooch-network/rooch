@@ -294,11 +294,6 @@ module rooch_framework::coin {
         table::borrow_mut(&mut coin_infos.coin_infos, coin_type)
     }
 
-    fun exist_auto_accept_token(ctx: &Context, addr: address): bool {
-        let auto_accept_coins = account_storage::global_borrow<AutoAcceptCoins>(ctx, @rooch_framework);
-        table::contains<address, bool>(&auto_accept_coins.auto_accept_coins, addr)
-    }
-
     fun borrow_account_coin_store<CoinType: key>(ctx: &Context, addr: address): &CoinStore{
         let coin_stores = account_storage::global_borrow<CoinStores>(ctx, addr);
         let coin_type = type_info::type_name<CoinType>();
@@ -319,7 +314,7 @@ module rooch_framework::coin {
         }
     }
 
-    fun ensure_coin_store_pass_auto_accept_flag<CoinType: key>(ctx: &mut Context, addr: address) {
+    fun ensure_coin_store_bypass_auto_accept_flag<CoinType: key>(ctx: &mut Context, addr: address) {
         if (!exist_account_coin_store<CoinType>(ctx, addr)) {
             create_account_coin_store<CoinType>(ctx, addr)
         }
@@ -355,16 +350,9 @@ module rooch_framework::coin {
         merge_to_store<CoinType>(coin_store, coin)
     }
 
-    fun check_account_coin_store_frozen<CoinType: key>(ctx: &Context, addr: address) {
+    fun check_account_coin_store_not_frozen<CoinType: key>(ctx: &Context, addr: address) {
         assert!(
             !is_account_coin_store_frozen<CoinType>(ctx, addr),
-            error::permission_denied(ErrorAccountWithCoinFrozen),
-        );
-    }
-
-    fun check_coin_store_frozen<CoinType: key>(coin_store_ref: &ObjectRef<CoinStore>) {
-        assert!(
-            !is_coin_store_frozen<CoinType>(coin_store_ref),
             error::permission_denied(ErrorAccountWithCoinFrozen),
         );
     }
@@ -380,8 +368,10 @@ module rooch_framework::coin {
     // Internal functions
     //
 
-    fun mint_internal<CoinType: key>(ctx: &mut Context,
-        amount: u256): Coin<CoinType>{
+    fun mint_internal<CoinType: key>(
+        ctx: &mut Context,
+        amount: u256
+    ): Coin<CoinType>{
         let coin_info = borrow_mut_coin_info<CoinType>(ctx);
         coin_info.supply = coin_info.supply + amount;
         let coin_type = type_info::type_name<CoinType>();
@@ -396,13 +386,7 @@ module rooch_framework::coin {
         ctx: &mut Context,
         addr: address,
         amount: u256,
-    ): Coin<CoinType> {
-        assert!(
-            is_account_accept_coin<CoinType>(ctx, addr),
-            error::not_found(ErrorAccountNotAcceptCoin),
-        );
-
-        
+    ): Coin<CoinType> {       
         ensure_coin_store<CoinType>(ctx, addr);
         let coin_type = type_info::type_name<CoinType>();
         event::emit<WithdrawEvent>(ctx, WithdrawEvent {
@@ -484,7 +468,7 @@ module rooch_framework::coin {
     /// If user turns off AutoAcceptCoin, call this method to receive the corresponding Coin
     public fun do_accept_coin<CoinType: key>(ctx: &mut Context, account: &signer) {
         let addr = signer::address_of(account);
-        ensure_coin_store_pass_auto_accept_flag<CoinType>(ctx, addr);
+        ensure_coin_store_bypass_auto_accept_flag<CoinType>(ctx, addr);
     }
 
     /// Configure whether auto-accept coins.
@@ -509,20 +493,18 @@ module rooch_framework::coin {
     ): Coin<CoinType> {
         let addr = signer::address_of(account);
         // the coin `frozen` only affect user withdraw, does not affect `withdraw_extend`. 
-        check_account_coin_store_frozen<CoinType>(ctx, addr);
+        check_account_coin_store_not_frozen<CoinType>(ctx, addr);
         withdraw_internal<CoinType>(ctx, addr, amount) 
     }
 
     /// Deposit the coin into the recipient's account and emit an event.
     /// This public entry function requires the `CoinType` to have `key` and `store` abilities.
     public fun deposit<CoinType: key + store>(ctx: &mut Context, addr: address, coin: Coin<CoinType>) {
-        check_account_coin_store_frozen<CoinType>(ctx, addr);
+        check_account_coin_store_not_frozen<CoinType>(ctx, addr);
         deposit_internal(ctx, addr, coin);
     }
 
     public fun deposit_to_store<CoinType: key + store>(coin_store: &mut CoinStore, coin: Coin<CoinType>) {
-        //check_coin_store_frozen<CoinType>(coin_store_ref);
-        //let coin_store = object_ref::borrow_mut(coin_store_ref);
         merge_to_store<CoinType>(coin_store, coin);
     }
 
@@ -535,8 +517,8 @@ module rooch_framework::coin {
         amount: u256,
     ) {
         let from_addr = signer::address_of(from);
-        check_account_coin_store_frozen<CoinType>(ctx, from_addr);
-        check_account_coin_store_frozen<CoinType>(ctx, to);
+        check_account_coin_store_not_frozen<CoinType>(ctx, from_addr);
+        check_account_coin_store_not_frozen<CoinType>(ctx, to);
         transfer_internal<CoinType>(ctx, from_addr, to, amount);
     }
 
@@ -630,8 +612,6 @@ module rooch_framework::coin {
 
     #[private_generics(CoinType)]
     /// Creates a new Coin with given `CoinType`
-    /// The given signer also becomes the account hosting the information about the coin
-    /// (name, supply, etc.).
     /// This function is protected by `private_generics`, so it can only be called by the `CoinType` module.
     public fun register_extend<CoinType: key>(
         ctx: &mut Context,

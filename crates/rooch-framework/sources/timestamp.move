@@ -29,11 +29,11 @@ module rooch_framework::timestamp {
     }
 
     /// Updates the wall clock time, if the new time is smaller than the current time, aborts.
-    public(friend) fun update_global_time(ctx: &mut Context,timestamp: u64) {
+    public(friend) fun update_global_time(ctx: &mut Context, timestamp_microsecs: u64) {
         let global_timer = account_storage::global_borrow_mut<CurrentTimeMicroseconds>(ctx, @rooch_framework);
         let now = global_timer.microseconds;
-        assert!(now < timestamp, error::invalid_argument(ErrorInvalidTimestamp));
-        global_timer.microseconds = timestamp;
+        assert!(now < timestamp_microsecs, error::invalid_argument(ErrorInvalidTimestamp));
+        global_timer.microseconds = timestamp_microsecs;
     }
 
     /// Tries to update the wall clock time, if the new time is smaller than the current time, ignores the update, and returns false.
