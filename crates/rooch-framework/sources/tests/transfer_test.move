@@ -6,12 +6,16 @@
 module rooch_framework::transfer_test{
 
     use std::option;
+    use std::string;
+    use moveos_std::context::Context;
     use rooch_framework::account;
     use rooch_framework::transfer;
     use rooch_framework::gas_coin::{Self, GasCoin};
     use rooch_framework::multichain_address::{Self, MultiChainAddress};
     use rooch_framework::ethereum_address;
     use rooch_framework::address_mapping;
+    use rooch_framework::coin;
+    use rooch_framework::account_coin_store;
 
 
     #[test(from = @0x42, to = @0x43)]
@@ -60,5 +64,43 @@ module rooch_framework::transfer_test{
         let eth_address = ethereum_address::from_bytes(x"1111111111111111111111111111111111111111");
         let multichain_address = multichain_address::from_eth(eth_address);
         test_transfer_coin_to_multichain_address(from, multichain_address);
+    }
+
+    #[test_only]
+    struct FakeCoin has key, store {}
+
+    #[test_only]
+    fun register_fake_coin(
+        ctx: &mut Context,
+        decimals: u8,
+    ) {
+        coin::register_extend<FakeCoin>(
+            ctx,
+            string::utf8(b"Fake coin"),
+            string::utf8(b"FCD"),
+            decimals,
+        );
+    }
+
+    #[test_only]
+    fun mint_and_deposit(ctx: &mut Context,to_address: address, amount: u256) {
+        let coins_minted = coin::mint_extend<FakeCoin>(ctx, amount);
+        account_coin_store::deposit(ctx, to_address, coins_minted);
+    }
+
+    #[test(from_addr= @0x33, to_addr= @0x66)]
+    fun test_transfer_to_no_exists_account(from_addr: address, to_addr: address) {
+        let ctx = rooch_framework::genesis::init_for_test();
+        register_fake_coin(&mut ctx, 9);
+
+        let from = account::create_account_for_test(&mut ctx, from_addr);
+        assert!(!account::exists_at(&ctx, to_addr), 1000);
+
+        let amount = 100u256;
+        mint_and_deposit(&mut ctx, from_addr, amount);
+        transfer::transfer_coin<FakeCoin>(&mut ctx, &from, to_addr, 50u256);
+        assert!(account::exists_at(&ctx, to_addr), 1000);
+        assert!(account_coin_store::balance<FakeCoin>(&ctx, to_addr) == 50u256, 1001);
+        moveos_std::context::drop_test_context(ctx);
     }
 }

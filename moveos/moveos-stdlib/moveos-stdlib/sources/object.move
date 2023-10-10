@@ -76,6 +76,10 @@ module moveos_std::object {
     #[private_generics(T)]
     /// Unpack the object, return the id, owner, and value
     public fun unpack<T>(self: Object<T>): (ObjectID, address, T) {
+        unpack_internal(self)
+    }
+
+    public(friend) fun unpack_internal<T>(self: Object<T>): (ObjectID, address, T) {
         let Object{id, owner, value} = self;
         (id, owner, value)
     }

@@ -21,6 +21,7 @@ This type table is for internal global storage, so all functions are friend.
 -  [Function `borrow_mut_with_default`](#0x2_raw_table_borrow_mut_with_default)
 -  [Function `upsert`](#0x2_raw_table_upsert)
 -  [Function `remove`](#0x2_raw_table_remove)
+-  [Function `remove_from_global`](#0x2_raw_table_remove_from_global)
 -  [Function `contains`](#0x2_raw_table_contains)
 -  [Function `contains_global`](#0x2_raw_table_contains_global)
 -  [Function `length`](#0x2_raw_table_length)
@@ -404,6 +405,31 @@ Aborts if there is no entry for <code>key</code>.
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_remove">remove</a>&lt;K: <b>copy</b> + drop, V&gt;(table_handle: &ObjectID, key: K): V {
     <b>let</b> <a href="raw_table.md#0x2_raw_table_Box">Box</a> { val } = <a href="raw_table.md#0x2_raw_table_remove_box">remove_box</a>&lt;K, V, <a href="raw_table.md#0x2_raw_table_Box">Box</a>&lt;V&gt;&gt;(*table_handle, key);
+    val
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_raw_table_remove_from_global"></a>
+
+## Function `remove_from_global`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_remove_from_global">remove_from_global</a>&lt;T: key&gt;(<a href="object_id.md#0x2_object_id">object_id</a>: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_remove_from_global">remove_from_global</a>&lt;T: key&gt;(<a href="object_id.md#0x2_object_id">object_id</a>: &ObjectID): Object&lt;T&gt; {
+    <b>let</b> <a href="raw_table.md#0x2_raw_table_Box">Box</a> { val } = <a href="raw_table.md#0x2_raw_table_remove_box">remove_box</a>&lt;ObjectID, Object&lt;T&gt;, <a href="raw_table.md#0x2_raw_table_Box">Box</a>&lt;Object&lt;T&gt;&gt;&gt;(<a href="raw_table.md#0x2_raw_table_global_object_storage_handle">global_object_storage_handle</a>(), *<a href="object_id.md#0x2_object_id">object_id</a>);
     val
 }
 </code></pre>

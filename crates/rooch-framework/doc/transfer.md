@@ -11,8 +11,8 @@
 
 <pre><code><b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="account.md#0x3_account">0x3::account</a>;
+<b>use</b> <a href="account_coin_store.md#0x3_account_coin_store">0x3::account_coin_store</a>;
 <b>use</b> <a href="address_mapping.md#0x3_address_mapping">0x3::address_mapping</a>;
-<b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 <b>use</b> <a href="multichain_address.md#0x3_multichain_address">0x3::multichain_address</a>;
 </code></pre>
 
@@ -45,7 +45,7 @@ This public entry function requires the <code>CoinType</code> to have <code>key<
         <a href="account.md#0x3_account_create_account">account::create_account</a>(ctx, <b>to</b>);
     };
 
-    <a href="coin.md#0x3_coin_transfer">coin::transfer</a>&lt;CoinType&gt;(ctx, from, <b>to</b>, amount)
+    <a href="account_coin_store.md#0x3_account_coin_store_transfer">account_coin_store::transfer</a>&lt;CoinType&gt;(ctx, from, <b>to</b>, amount)
 }
 </code></pre>
 
@@ -84,7 +84,7 @@ This public entry function requires the <code>CoinType</code> to have <code>key<
         <a href="account.md#0x3_account_create_account">account::create_account</a>(ctx, <b>to</b>);
         <a href="address_mapping.md#0x3_address_mapping_bind_no_check">address_mapping::bind_no_check</a>(ctx, <b>to</b>, maddress);
     };
-    <a href="coin.md#0x3_coin_transfer">coin::transfer</a>&lt;CoinType&gt;(ctx, from, <b>to</b>, amount)
+    <a href="account_coin_store.md#0x3_account_coin_store_transfer">account_coin_store::transfer</a>&lt;CoinType&gt;(ctx, from, <b>to</b>, amount)
 }
 </code></pre>
 
