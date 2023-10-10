@@ -85,9 +85,10 @@ impl EthAPIServer for EthServer {
         num: StrView<BlockNumber>,
         include_txs: bool,
     ) -> RpcResult<Block<TransactionType>> {
-        let block_number = num.0.as_number().ok_or_else(|| {
-            JsonRpcError::Custom("block number should be a number".to_string())
-        })?;
+        let block_number = num
+            .0
+            .as_number()
+            .ok_or_else(|| JsonRpcError::Custom("block number should be a number".to_string()))?;
         let parent_hash =
             H256::from_str("0xe5ece23ec875db0657f964cbc74fa34439eef3ab3dc8664e7f4ae8b5c5c963e1")
                 .unwrap();
@@ -232,7 +233,9 @@ impl EthAPIServer for EthServer {
                     balance_info.balance
                 }
             })?;
-        Ok(StrView(U256::from_little_endian(balance.to_le_bytes().as_ref())))
+        Ok(StrView(U256::from_little_endian(
+            balance.to_le_bytes().as_ref(),
+        )))
     }
 
     async fn estimate_gas(
@@ -273,13 +276,9 @@ impl EthAPIServer for EthServer {
         } else {
             block_count.0.as_usize()
         };
-        let base_fee_per_gas: Vec<U256> = iter::repeat_with(U256::zero)
-            .take(block_count)
-            .collect();
+        let base_fee_per_gas: Vec<U256> = iter::repeat_with(U256::zero).take(block_count).collect();
 
-        let gas_used_ratio: Vec<f64> = iter::repeat_with(|| 0.1)
-            .take(block_count)
-            .collect();
+        let gas_used_ratio: Vec<f64> = iter::repeat_with(|| 0.1).take(block_count).collect();
 
         let reward = match reward_percentiles {
             Some(percentiles) => {
