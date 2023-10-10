@@ -24,7 +24,7 @@ use move_vm_types::{
     loaded_data::runtime_types::Type,
     natives::function::NativeResult,
     pop_arg,
-    values::{GlobalValue, Struct, StructRef, Value},
+    values::{GlobalValue, Struct, Value},
 };
 use moveos_types::{
     object::{ObjectID, TableInfo},
@@ -461,7 +461,7 @@ fn native_add_box(
 
     let val = args.pop_back().unwrap();
     let key = args.pop_back().unwrap();
-    let handle = get_table_handle(pop_arg!(args, StructRef))?;
+    let handle = get_table_handle(&mut args)?;
 
     let mut cost = gas_params.base;
 
@@ -517,7 +517,7 @@ fn native_borrow_box(
     let mut table_data = table_context.table_data.write();
 
     let key = args.pop_back().unwrap();
-    let handle = get_table_handle(pop_arg!(args, StructRef))?;
+    let handle = get_table_handle(&mut args)?;
 
     let table = table_data.get_or_create_table(context, handle, &ty_args[0])?;
 
@@ -569,7 +569,7 @@ fn native_contains_box(
     let mut table_data = table_context.table_data.write();
 
     let key = args.pop_back().unwrap();
-    let handle = get_table_handle(pop_arg!(args, StructRef))?;
+    let handle = get_table_handle(&mut args)?;
 
     let table = table_data.get_or_create_table(context, handle, &ty_args[0])?;
 
@@ -625,7 +625,7 @@ fn native_remove_box(
     let mut table_data = table_context.table_data.write();
 
     let key = args.pop_back().unwrap();
-    let handle = get_table_handle(pop_arg!(args, StructRef))?;
+    let handle = get_table_handle(&mut args)?;
 
     let table = table_data.get_or_create_table(context, handle, &ty_args[0])?;
 
@@ -675,7 +675,7 @@ fn native_box_length(
     let table_context = context.extensions().get::<NativeTableContext>();
     let table_data = table_context.table_data.write();
 
-    let handle = get_table_handle(pop_arg!(args, StructRef))?;
+    let handle = get_table_handle(&mut args)?;
 
     let remote_table_size = table_context
         .resolver
@@ -724,7 +724,7 @@ fn native_drop_unchecked_box(
     let table_context = context.extensions().get::<NativeTableContext>();
     let mut table_data = table_context.table_data.write();
 
-    let handle = get_table_handle(pop_arg!(args, StructRef))?;
+    let handle = get_table_handle(&mut args)?;
 
     if table_data.removed_tables.insert(handle) {
         Ok(NativeResult::ok(gas_params.base, smallvec![]))
@@ -789,8 +789,9 @@ impl GasParameters {
 // Helpers
 
 // The handle type in Move is `&ObjectID`. This function extracts the address from `ObjectID`.
-fn get_table_handle(table: StructRef) -> PartialVMResult<ObjectID> {
-    helpers::get_object_id(table)
+fn get_table_handle(args: &mut VecDeque<Value>) -> PartialVMResult<ObjectID> {
+    let handle = pop_arg!(args, Struct);
+    helpers::get_object_id_from_struct(handle)
 }
 
 pub fn serialize(layout: &MoveTypeLayout, val: &Value) -> PartialVMResult<Vec<u8>> {

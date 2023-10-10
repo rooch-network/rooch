@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::jsonrpc_types::account_view::BalanceInfoView;
 use crate::jsonrpc_types::transaction_view::TransactionResultView;
 use crate::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedFunctionResultView, AnnotatedStateView,
@@ -93,12 +94,19 @@ pub trait RoochAPI {
         limit: Option<u64>,
     ) -> RpcResult<TransactionResultPageView>;
 
+    /// get account balance by AccountAddress and CoinType
+    #[method(name = "getBalance")]
+    async fn get_balance(
+        &self,
+        account_addr: AccountAddressView,
+        coin_type: StructTagView,
+    ) -> RpcResult<BalanceInfoView>;
+
     /// get account balances by AccountAddress
     #[method(name = "getBalances")]
     async fn get_balances(
         &self,
         account_addr: AccountAddressView,
-        coin_type: Option<StructTagView>,
         cursor: Option<StrView<Vec<u8>>>,
         limit: Option<usize>,
     ) -> RpcResult<ListBalanceInfoPageView>;

@@ -4,7 +4,6 @@ Feature: Rooch CLI integration tests
       Then cmd: "init"
       Then cmd: "env switch --alias local"
 
-
     @serial
     Scenario: account
       Given a server for account
@@ -19,6 +18,7 @@ Feature: Rooch CLI integration tests
       # session key
       Then cmd: "session-key create --sender-account {default} --scope 0x3::empty::empty"
       Then cmd: "move run --function 0x3::empty::empty --sender-account {default} --session-key {{$.session-key[-1].authentication_key}}"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # transaction
       Then cmd: "transaction get-transactions-by-order --cursor 0 --limit 1"
@@ -26,12 +26,16 @@ Feature: Rooch CLI integration tests
 
       # event example
       Then cmd: "move publish -p ../../examples/event --sender-account {default} --named-addresses rooch_examples={default}"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function {default}::event_test::emit_event --sender-account {default} --args 10u64"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "event get-events-by-event-handle --event_handle_type {default}::event_test::WithdrawEvent --cursor 0 --limit 1"
 
       # account balance
       Then cmd: "move publish -p ../../examples/coins --sender-account {default} --named-addresses coins={default}"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function {default}::fixed_supply_coin::faucet --sender-account {default}"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "account balance"
       Then cmd: "account balance --coin-type {default}::fixed_supply_coin::FSC"
 
@@ -147,9 +151,12 @@ Feature: Rooch CLI integration tests
       Then stop the server
 
   @serial
-    Scenario: rpc test
-      Given a server for rpc
+    Scenario: ethereum rpc test
+      Given a server for ethereum
       Then cmd: "rpc request --method eth_getBalance --params \"0x1111111111111111111111111111111111111111\""
-      Then assert: "{{$.result}}" equals "0x56bc75e2d63100000"
-
+      Then assert: "{{$.rpc[-1]}} == 0x56bc75e2d63100000"
+      Then cmd: "rpc request --method eth_feeHistory --params [\"0x5\",\"0x6524cad7\",[10,20,30]]"
+      Then assert: ""{{$.rpc[-1]}}" contains baseFeePerGas"
       Then stop the server
+
+

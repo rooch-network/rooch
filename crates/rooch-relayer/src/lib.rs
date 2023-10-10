@@ -29,12 +29,12 @@ pub trait TxSubmiter: Send + Sync {
 #[async_trait]
 impl TxSubmiter for Client {
     async fn get_chain_id(&self) -> Result<u64> {
-        self.get_chain_id().await
+        self.rooch.get_chain_id().await
     }
     async fn get_sequence_number(&self, address: RoochAddress) -> Result<u64> {
-        self.get_sequence_number(address).await
+        self.rooch.get_sequence_number(address).await
     }
     async fn submit_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView> {
-        self.execute_tx(tx).await
+        self.rooch.execute_tx(tx).await
     }
 }

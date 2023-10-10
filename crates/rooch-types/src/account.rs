@@ -2,13 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
-use crate::framework::coin;
-use move_core_types::language_storage::StructTag;
+use crate::framework::coin::CoinInfo;
 use move_core_types::u256::U256;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
 };
-use moveos_types::move_types::random_struct_tag;
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     state::{MoveStructState, MoveStructType},
@@ -90,43 +88,12 @@ impl AccountInfo {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BalanceInfo {
-    pub coin_type: StructTag,
-    pub symbol: String,
+    pub coin_info: CoinInfo,
     pub balance: U256,
-    pub decimals: u8,
 }
 
 impl BalanceInfo {
-    pub fn new(coin_type: StructTag, symbol: String, balance: U256, decimals: u8) -> Self {
-        Self {
-            coin_type,
-            symbol,
-            balance,
-            decimals,
-        }
-    }
-
-    pub fn new_with_default(coin_type: StructTag, balance: U256) -> Self {
-        let default_symbol = coin_type.name.to_string();
-        let default_decimals = coin::DEFAULT_DECIMALS;
-        Self {
-            coin_type,
-            symbol: default_symbol,
-            balance,
-            decimals: default_decimals,
-        }
-    }
-
-    pub fn random() -> Self {
-        let coin_type = random_struct_tag();
-        let balance = U256::zero();
-        let symbol = coin_type.name.to_string();
-
-        BalanceInfo {
-            coin_type,
-            symbol,
-            balance,
-            decimals: 9u8,
-        }
+    pub fn new(coin_info: CoinInfo, balance: U256) -> Self {
+        Self { coin_info, balance }
     }
 }

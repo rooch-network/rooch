@@ -29,6 +29,7 @@ impl CommandAction<Vec<Option<AnnotatedStateView>>> for StateCommand {
         let client = self.context_options.build().await?.get_client().await?;
 
         let resp = client
+            .rooch
             .get_annotated_states(self.access_path)
             .await
             .map_err(RoochError::from)?;

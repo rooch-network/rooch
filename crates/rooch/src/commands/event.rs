@@ -51,6 +51,7 @@ impl CommandAction<EventPageView> for GetEventsByEventHandle {
     async fn execute(self) -> RoochResult<EventPageView> {
         let client = self.context_options.build().await?.get_client().await?;
         let resp = client
+            .rooch
             .get_events_by_event_handle(self.event_handle_type.into(), self.cursor, self.limit)
             .await
             .map_err(RoochError::from)?;

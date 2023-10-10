@@ -115,6 +115,11 @@ module moveos_std::table {
     }
 
 
+    /// Returns table handle of `table`.
+    public fun handle<K: copy + drop, V>(table: &Table<K, V>): &ObjectID {
+        &table.handle
+    }
+
     #[test_only]
     struct TableHolder<phantom K: copy + drop, phantom V: drop> has key {
         t: Table<K, V>

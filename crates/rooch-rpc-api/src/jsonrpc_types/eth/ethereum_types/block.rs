@@ -3,14 +3,18 @@
 
 // Modified from <https://github.com/tomusdrw/rust-web3/blob/master/src/types/block.rs>
 
+use super::{bloom::Bloom, other_fields::OtherFields, withdrawal::Withdrawal};
 #[cfg(not(feature = "celo"))]
 use crate::jsonrpc_types::bytes::Bytes;
-use crate::jsonrpc_types::{H176View, H256View, H64View, StrView};
-
-use super::{bloom::Bloom, other_fields::OtherFields, withdrawal::Withdrawal};
-use move_core_types::u256::U256;
+use crate::jsonrpc_types::{H256View, H64View, StrView};
+use ethers::types::{H160, U256, U64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Deserializer, Serialize};
+
+pub use ethers::types::BlockNumber;
+
+impl_str_view_for!(BlockNumber);
+
 /// The block type returned from RPC calls.
 ///
 /// This is generic over a `TX` type which will be either the hash or the full transaction,
@@ -29,7 +33,7 @@ pub struct Block<TX> {
     pub uncles_hash: H256View,
     /// Miner/author's address. None if pending.
     #[serde(default, rename = "miner")]
-    pub author: Option<H176View>,
+    pub author: Option<StrView<H160>>,
     /// State root hash
     #[serde(default, rename = "stateRoot")]
     pub state_root: H256View,
@@ -40,7 +44,7 @@ pub struct Block<TX> {
     #[serde(default, rename = "receiptsRoot")]
     pub receipts_root: H256View,
     /// Block number. None if pending.
-    pub number: Option<StrView<u64>>,
+    pub number: Option<StrView<U64>>,
     /// Gas Used
     #[serde(rename = "gasUsed")]
     pub gas_used: StrView<U256>,
@@ -125,63 +129,4 @@ where
 {
     let opt = Option::deserialize(deserializer)?;
     Ok(opt.unwrap_or_default())
-}
-
-/// A block number or tag.
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub enum BlockNumber {
-    /// Latest block
-    #[default]
-    Latest,
-    /// Finalized block accepted as canonical
-    Finalized,
-    /// Safe head block
-    Safe,
-    /// Earliest block (genesis)
-    Earliest,
-    /// Pending block (not yet part of the blockchain)
-    Pending,
-    /// Block by number from canon chain
-    Number(StrView<u64>),
-}
-
-impl BlockNumber {
-    /// Returns the numeric block number if explicitly set
-    pub fn as_number(&self) -> Option<StrView<u64>> {
-        match *self {
-            BlockNumber::Number(num) => Some(num),
-            _ => None,
-        }
-    }
-
-    /// Returns `true` if a numeric block number is set
-    pub fn is_number(&self) -> bool {
-        matches!(self, BlockNumber::Number(_))
-    }
-
-    /// Returns `true` if it's "latest"
-    pub fn is_latest(&self) -> bool {
-        matches!(self, BlockNumber::Latest)
-    }
-
-    /// Returns `true` if it's "finalized"
-    pub fn is_finalized(&self) -> bool {
-        matches!(self, BlockNumber::Finalized)
-    }
-
-    /// Returns `true` if it's "safe"
-    pub fn is_safe(&self) -> bool {
-        matches!(self, BlockNumber::Safe)
-    }
-
-    /// Returns `true` if it's "pending"
-    pub fn is_pending(&self) -> bool {
-        matches!(self, BlockNumber::Pending)
-    }
-
-    /// Returns `true` if it's "earliest"
-    pub fn is_earliest(&self) -> bool {
-        matches!(self, BlockNumber::Earliest)
-    }
 }

@@ -4,7 +4,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::{account_address::AccountAddress, u256};
+use ethers::types::{H160, H256};
+use move_core_types::account_address::AccountAddress;
 use schemars::gen::SchemaGenerator;
 use schemars::schema::{InstanceType, Schema, SchemaObject};
 use schemars::JsonSchema;
@@ -62,6 +63,15 @@ where
     }
 }
 
+impl<T> Default for StrView<T>
+where
+    T: Default,
+{
+    fn default() -> Self {
+        Self(T::default())
+    }
+}
+
 macro_rules! impl_str_view_for {
     ($($t:ty)*) => {$(
     impl std::fmt::Display for StrView<$t> {
@@ -83,7 +93,7 @@ macro_rules! impl_str_view_for {
     )*}
 }
 
-impl_str_view_for! {u64 i64 u128 i128 u16 i16 u32 i32 u256::U256 }
+impl_str_view_for! {u64 i64 u128 i128 u16 i16 u32 i32 move_core_types::u256::U256 H160 H256}
 
 impl std::fmt::Display for StrView<Vec<u8>> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -129,5 +139,45 @@ impl FromStr for StrView<AccountAddress> {
 impl From<StrView<AccountAddress>> for AccountAddress {
     fn from(value: StrView<AccountAddress>) -> Self {
         value.0
+    }
+}
+
+impl FromStr for StrView<ethers::types::U256> {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(StrView(ethers::types::U256::from_str(s)?))
+    }
+}
+
+impl From<StrView<ethers::types::U256>> for ethers::types::U256 {
+    fn from(value: StrView<ethers::types::U256>) -> Self {
+        value.0
+    }
+}
+
+impl std::fmt::Display for StrView<ethers::types::U256> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        //The U256 in ethereum should display as hex string with `0x` prefix
+        write!(f, "0x{:x}", self.0)
+    }
+}
+
+impl FromStr for StrView<ethers::types::U64> {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(StrView(ethers::types::U64::from_str(s)?))
+    }
+}
+
+impl From<StrView<ethers::types::U64>> for ethers::types::U64 {
+    fn from(value: StrView<ethers::types::U64>) -> Self {
+        value.0
+    }
+}
+
+impl std::fmt::Display for StrView<ethers::types::U64> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        //The U64 in ethereum should display as hex string with `0x` prefix
+        write!(f, "0x{:x}", self.0)
     }
 }

@@ -11,6 +11,7 @@ module moveos_std::context {
     use moveos_std::tx_context::{Self, TxContext};
     use moveos_std::object_id::ObjectID;
     use moveos_std::object::{Self, Object};
+    use moveos_std::object_ref::{Self, ObjectRef};
     use moveos_std::tx_meta::{TxMeta};
     use moveos_std::tx_result::{TxResult};
 
@@ -90,7 +91,7 @@ module moveos_std::context {
     }
 
 
-    // Wrap functions for StorageContext 
+    // Wrap functions for StorageContext and ObjectRef 
 
     #[private_generics(T)]
     /// Borrow Object from object store with object_id
@@ -107,6 +108,12 @@ module moveos_std::context {
     #[private_generics(T)]
     /// Remove object from object store
     public fun remove_object<T: key>(self: &mut Context, object_id: ObjectID): Object<T> {
+        storage_context::remove<T>(&mut self.storage_context, object_id)
+    }
+
+    #[private_generics(T)]
+    public fun remove_object_with_ref<T: key>(self: &mut Context, object_ref: ObjectRef<T>): Object<T> {
+        let object_id = object_ref::into_id(object_ref);
         storage_context::remove<T>(&mut self.storage_context, object_id)
     }
 
@@ -161,5 +168,29 @@ module moveos_std::context {
     /// Testing only: allow to drop Context
     public fun drop_test_context(self: Context) {
         moveos_std::test_helper::destroy<Context>(self);
+    }
+
+    #[test_only]
+    struct TestObjectValue has key {
+        value: u64,
+    }
+
+    #[test(sender = @0x42)]
+    fun test_object_mut(sender: address){
+        let ctx = new_test_context(sender);
+        
+        let obj = new_object(&mut ctx, TestObjectValue{value: 1});
+        let ref = object_ref::new(&obj);
+        add_object(&mut ctx, obj);
+        
+        {
+            let obj_value = object_ref::borrow_mut(&mut ref);
+            obj_value.value = 2;
+        };
+        {
+            let obj_value = object_ref::borrow(&ref);
+            assert!(obj_value.value == 2, 1000);
+        };
+        drop_test_context(ctx);
     }
 }

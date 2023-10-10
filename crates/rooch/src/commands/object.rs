@@ -24,6 +24,7 @@ impl CommandAction<Option<AnnotatedStateView>> for ObjectCommand {
     async fn execute(self) -> RoochResult<Option<AnnotatedStateView>> {
         let client = self.context_options.build().await?.get_client().await?;
         let resp = client
+            .rooch
             .get_annotated_states(AccessPath::object(self.id))
             .await?
             .pop()

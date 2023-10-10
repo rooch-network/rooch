@@ -14,7 +14,9 @@ The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/5
 -  [Function `new`](#0x2_object_new)
 -  [Function `new_with_id`](#0x2_object_new_with_id)
 -  [Function `borrow`](#0x2_object_borrow)
+-  [Function `internal_borrow`](#0x2_object_internal_borrow)
 -  [Function `borrow_mut`](#0x2_object_borrow_mut)
+-  [Function `internal_borrow_mut`](#0x2_object_internal_borrow_mut)
 -  [Function `transfer`](#0x2_object_transfer)
 -  [Function `id`](#0x2_object_id)
 -  [Function `owner`](#0x2_object_owner)
@@ -142,6 +144,30 @@ Create a new object, the object is owned by <code>owner</code>
 
 </details>
 
+<a name="0x2_object_internal_borrow"></a>
+
+## Function `internal_borrow`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_internal_borrow">internal_borrow</a>&lt;T&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): &T
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_internal_borrow">internal_borrow</a>&lt;T&gt;(self: &<a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): &T {
+    &self.value
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x2_object_borrow_mut"></a>
 
 ## Function `borrow_mut`
@@ -159,6 +185,30 @@ Borrow the mutable object value
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_mut">borrow_mut</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): &<b>mut</b> T {
+    &<b>mut</b> self.value
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_object_internal_borrow_mut"></a>
+
+## Function `internal_borrow_mut`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_internal_borrow_mut">internal_borrow_mut</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): &<b>mut</b> T
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_internal_borrow_mut">internal_borrow_mut</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): &<b>mut</b> T {
     &<b>mut</b> self.value
 }
 </code></pre>
@@ -247,7 +297,7 @@ Transfer object to recipient
 Unpack the object, return the id, owner, and value
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_unpack">unpack</a>&lt;T&gt;(obj: <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): (<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, <b>address</b>, T)
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_unpack">unpack</a>&lt;T&gt;(self: <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): (<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, <b>address</b>, T)
 </code></pre>
 
 
@@ -256,8 +306,8 @@ Unpack the object, return the id, owner, and value
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_unpack">unpack</a>&lt;T&gt;(obj: <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): (ObjectID, <b>address</b>, T) {
-    <b>let</b> <a href="object.md#0x2_object_Object">Object</a>{id, owner, value} = obj;
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_unpack">unpack</a>&lt;T&gt;(self: <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): (ObjectID, <b>address</b>, T) {
+    <b>let</b> <a href="object.md#0x2_object_Object">Object</a>{id, owner, value} = self;
     (id, owner, value)
 }
 </code></pre>

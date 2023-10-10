@@ -4,10 +4,11 @@
 // Copyright (c) The Move Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use move_binary_format::errors::PartialVMResult;
+use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::account_address::AccountAddress;
+use move_core_types::vm_status::StatusCode;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
-use move_vm_types::values::{Reference, StructRef};
+use move_vm_types::values::{Reference, Struct, StructRef};
 use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, values::Value,
 };
@@ -23,6 +24,19 @@ pub fn get_object_id(raw_data: StructRef) -> PartialVMResult<ObjectID> {
         .borrow_field(OBJECT_ID_HANDLE_FIELD_INDEX)?
         .value_as::<Reference>()?
         .read_ref()?
+        .value_as::<AccountAddress>()?;
+    Ok(ObjectID::new(raw_object_id.into()))
+}
+
+// The handle type in Move is `ObjectID`. This function extracts the address from `ObjectID`.
+pub fn get_object_id_from_struct(raw_data: Struct) -> PartialVMResult<ObjectID> {
+    let raw_object_id = raw_data
+        .unpack()?
+        .next()
+        .ok_or_else(|| {
+            PartialVMError::new(StatusCode::INTERNAL_TYPE_ERROR)
+                .with_message("ObjectID must have at least one field".to_string())
+        })?
         .value_as::<AccountAddress>()?;
     Ok(ObjectID::new(raw_object_id.into()))
 }

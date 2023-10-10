@@ -123,6 +123,7 @@ pub trait MoveOSResolver: MoveResolver<Err = anyhow::Error> + StateResolver {}
 
 impl<T> MoveOSResolver for T where T: MoveResolver<Err = anyhow::Error> + StateResolver {}
 
+//TODO define a ResourceKey trait to unify the resource key type, and auto impl it for ObjectID and StructTag.
 pub fn resource_tag_to_key(tag: &StructTag) -> Vec<u8> {
     // The resource key is struct_tag to_canonical_string in bcs serialize format string, not String::into_bytes.
     bcs::to_bytes(&tag.to_canonical_string()).expect("bcs to_bytes String must success.")
