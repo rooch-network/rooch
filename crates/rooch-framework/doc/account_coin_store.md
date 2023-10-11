@@ -16,7 +16,7 @@
 -  [Function `balance`](#0x3_account_coin_store_balance)
 -  [Function `coin_store_id`](#0x3_account_coin_store_coin_store_id)
 -  [Function `coin_stores_handle`](#0x3_account_coin_store_coin_stores_handle)
--  [Function `is_account_accept_coin`](#0x3_account_coin_store_is_account_accept_coin)
+-  [Function `is_accept_coin`](#0x3_account_coin_store_is_accept_coin)
 -  [Function `can_auto_accept_coin`](#0x3_account_coin_store_can_auto_accept_coin)
 -  [Function `do_accept_coin`](#0x3_account_coin_store_do_accept_coin)
 -  [Function `set_auto_accept_coin`](#0x3_account_coin_store_set_auto_accept_coin)
@@ -378,14 +378,14 @@ Return CoinStores table handle for addr
 
 </details>
 
-<a name="0x3_account_coin_store_is_account_accept_coin"></a>
+<a name="0x3_account_coin_store_is_accept_coin"></a>
 
-## Function `is_account_accept_coin`
+## Function `is_accept_coin`
 
 Return whether the account at <code>addr</code> accept <code>Coin</code> type coins
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_is_account_accept_coin">is_account_accept_coin</a>&lt;CoinType: key&gt;(ctx: &<a href="_Context">context::Context</a>, addr: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_is_accept_coin">is_accept_coin</a>&lt;CoinType: key&gt;(ctx: &<a href="_Context">context::Context</a>, addr: <b>address</b>): bool
 </code></pre>
 
 
@@ -394,7 +394,7 @@ Return whether the account at <code>addr</code> accept <code>Coin</code> type co
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_is_account_accept_coin">is_account_accept_coin</a>&lt;CoinType: key&gt;(ctx: &Context, addr: <b>address</b>): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_is_accept_coin">is_accept_coin</a>&lt;CoinType: key&gt;(ctx: &Context, addr: <b>address</b>): bool {
     <b>if</b> (<a href="account_coin_store.md#0x3_account_coin_store_can_auto_accept_coin">can_auto_accept_coin</a>(ctx, addr)) {
         <b>true</b>
     } <b>else</b> {
@@ -425,11 +425,9 @@ Default is true if absent
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_can_auto_accept_coin">can_auto_accept_coin</a>(ctx: &Context, addr: <b>address</b>): bool {
-    <b>if</b> (<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account_coin_store.md#0x3_account_coin_store_AutoAcceptCoins">AutoAcceptCoins</a>&gt;(ctx, @rooch_framework)) {
-        <b>let</b> auto_accept_coins = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="account_coin_store.md#0x3_account_coin_store_AutoAcceptCoins">AutoAcceptCoins</a>&gt;(ctx, @rooch_framework);
-        <b>if</b> (<a href="_contains">table::contains</a>&lt;<b>address</b>, bool&gt;(&auto_accept_coins.auto_accept_coins, addr)) {
-            <b>return</b> *<a href="_borrow">table::borrow</a>&lt;<b>address</b>, bool&gt;(&auto_accept_coins.auto_accept_coins, addr)
-        }
+    <b>let</b> auto_accept_coins = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="account_coin_store.md#0x3_account_coin_store_AutoAcceptCoins">AutoAcceptCoins</a>&gt;(ctx, @rooch_framework);
+    <b>if</b> (<a href="_contains">table::contains</a>&lt;<b>address</b>, bool&gt;(&auto_accept_coins.auto_accept_coins, addr)) {
+        <b>return</b> *<a href="_borrow">table::borrow</a>&lt;<b>address</b>, bool&gt;(&auto_accept_coins.auto_accept_coins, addr)
     };
     <b>true</b>
 }
