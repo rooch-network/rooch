@@ -3,14 +3,17 @@
 
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
-use rooch_key::keystore::AccountKeystore;
+use rooch_key::{
+    key_derive::{retrieve_key_pair, verify_password},
+    keystore::AccountKeystore,
+};
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_types::{
     address::RoochAddress,
     error::{RoochError, RoochResult},
     framework::native_validator::NativeValidatorModule,
-    keypair_type::KeyPairType,
 };
+use rpassword::prompt_password;
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use std::str::FromStr;
@@ -26,62 +29,70 @@ pub struct UpdateCommand {
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
 }
+
 #[async_trait]
 impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
     async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
-        println!("{:?}", self.mnemonic_phrase);
-
-        // Use an empty password by default
-        let password = String::new();
-
-        // TODO design a password mechanism
-        // // Prompt for a password if required
-        // rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
-
         let mut context = self.context_options.build().await?;
+        let existing_address = RoochAddress::from_str(&self.address)?;
 
-        let existing_address = RoochAddress::from_str(&self.address).map_err(|e| {
-            RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
-        })?;
-
-        let result = context
-            .keystore
-            .update_address_with_key_pair_from_key_pair_type(
-                &existing_address,
-                self.mnemonic_phrase,
-                KeyPairType::RoochKeyPairType,
+        // TODO: custom mnemonic_phrase and derivation_path are required to generate a new encryption data
+        let (encryption, password) = if context.client_config.is_password_empty {
+            (
+                context.keystore.update_address_with_encryption_data(
+                    &existing_address,
+                    self.mnemonic_phrase,
+                    None,
+                    None,
+                )?,
                 None,
-                Some(password.clone()),
             )
-            .map_err(|e| RoochError::UpdateAccountError(e.to_string()))?;
+        } else {
+            let password = prompt_password(
+                "Enter the password saved in client config to update address with a new encryption data:",
+            )
+            .unwrap_or_default();
+            let is_verified = verify_password(
+                Some(password.clone()),
+                context
+                    .client_config
+                    .password_hash
+                    .as_ref()
+                    .cloned()
+                    .unwrap_or_default(),
+            )?;
+
+            if !is_verified {
+                return Err(RoochError::InvalidPasswordError(
+                    "Password is invalid".to_owned(),
+                ));
+            }
+
+            (
+                context.keystore.update_address_with_encryption_data(
+                    &existing_address,
+                    self.mnemonic_phrase,
+                    None,
+                    Some(password.clone()),
+                )?,
+                Some(password),
+            )
+        };
 
         println!(
             "{}",
             AccountAddress::from(existing_address).to_hex_literal()
         );
         println!(
-            "Generated a new keypair for an existing address {:?} for type {:?}",
-            existing_address,
-            KeyPairType::RoochKeyPairType.type_of()
+            "Updated a new encryption data for an existing address {:?}",
+            existing_address
         );
 
-        // Get public key
-        let public_key = result.key_pair.public();
-
-        // Get public key reference
-        let public_key = public_key.as_ref().to_vec();
-
-        // Create MoveAction from native validator
+        let kp = retrieve_key_pair(&encryption, password.clone())?;
+        let public_key = kp.public().as_ref().to_vec();
         let action = NativeValidatorModule::rotate_authentication_key_action(public_key);
-
-        // Execute the Move call as a transaction
         let result = context
-            .sign_and_execute(
-                existing_address,
-                action,
-                KeyPairType::RoochKeyPairType,
-                Some(password),
-            )
+            .sign_and_execute(existing_address, action, password.clone())
             .await?;
         context.assert_execute_success(result)
     }

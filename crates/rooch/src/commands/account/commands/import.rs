@@ -2,14 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::Parser;
+use rpassword::prompt_password;
 use std::fmt::Debug;
 
 use async_trait::async_trait;
-use rooch_key::keystore::AccountKeystore;
-use rooch_types::{
-    error::{RoochError, RoochResult},
-    keypair_type::KeyPairType,
-};
+use rooch_key::{key_derive::verify_password, keystore::AccountKeystore};
+use rooch_types::error::{RoochError, RoochResult};
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
 
@@ -29,28 +27,34 @@ impl CommandAction<()> for ImportCommand {
 
         let mut context = self.context_options.build().await?;
 
-        // Use an empty password by default
-        let password = String::new();
+        let result = if context.client_config.is_password_empty {
+            context
+                .keystore
+                .import_from_mnemonic(&self.mnemonic_phrase, None, None)?
+        } else {
+            let password = prompt_password("Enter the password saved in client config to import a key pair from mnemonic phrase:").unwrap_or_default();
+            let is_verified = verify_password(
+                Some(password.clone()),
+                context
+                    .client_config
+                    .password_hash
+                    .as_ref()
+                    .cloned()
+                    .unwrap_or_default(),
+            )?;
 
-        // TODO design a password mechanism
-        // // Prompt for a password if required
-        // rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
+            if !is_verified {
+                return Err(RoochError::InvalidPasswordError(
+                    "Password is invalid".to_owned(),
+                ));
+            }
 
-        let result = context
-            .keystore
-            .import_from_mnemonic(
-                &self.mnemonic_phrase,
-                KeyPairType::RoochKeyPairType,
-                None,
-                Some(password),
-            )
-            .map_err(|e| RoochError::ImportAccountError(e.to_string()))?;
+            context
+                .keystore
+                .import_from_mnemonic(&self.mnemonic_phrase, None, Some(password))?
+        };
 
-        println!(
-            "Key imported for address on type {:?}: [{}]",
-            KeyPairType::RoochKeyPairType.type_of(),
-            result.address
-        );
+        println!("Key imported for address [{}]", result.address);
 
         Ok(())
     }

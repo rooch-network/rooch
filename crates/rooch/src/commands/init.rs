@@ -11,12 +11,12 @@ use rooch_config::server_config::ServerConfig;
 use rooch_config::{
     rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_KEYSTORE_FILENAME, ROOCH_SERVER_CONFIG,
 };
+use rooch_key::key_derive::hash_password;
 use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use rooch_rpc_client::client_config::{ClientConfig, Env};
-use rooch_types::address::RoochAddress;
 use rooch_types::error::RoochError;
 use rooch_types::error::RoochResult;
-use rooch_types::keypair_type::KeyPairType;
+use rpassword::prompt_password;
 use std::fs;
 
 /// Tool for init with rooch
@@ -27,6 +27,9 @@ pub struct Init {
     pub server_url: Option<String>,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
+    /// Whether a non-empty password should be provided to rooch.keystore when it comes to the init command
+    #[clap(long = "encrypt-keystore")]
+    pub encrypt_keystore: Option<bool>,
 }
 
 #[async_trait]
@@ -50,7 +53,7 @@ impl CommandAction<()> for Init {
             .unwrap_or(&rooch_config_dir()?)
             .join(ROOCH_KEYSTORE_FILENAME);
 
-        let keystore_result = FileBasedKeystore::<RoochAddress>::new(&keystore_path);
+        let keystore_result = FileBasedKeystore::new(&keystore_path);
         let mut keystore = match keystore_result {
             Ok(file_keystore) => Keystore::File(file_keystore),
             Err(error) => return Err(RoochError::GenerateKeyError(error.to_string())),
@@ -134,36 +137,40 @@ impl CommandAction<()> for Init {
             };
 
             if let Some(env) = env {
-                // Use an empty password by default
-                let password = String::new();
+                let password = if self.encrypt_keystore.is_some() {
+                    Some(prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap_or_default())
+                } else {
+                    None
+                };
 
-                // TODO design a password mechanism
-                // // Prompt for a password if required
-                // rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
-
-                let result = keystore.generate_and_add_new_key(
-                    KeyPairType::RoochKeyPairType,
-                    None,
-                    None,
-                    Some(password),
-                )?;
-                println!(
-                    "Generated new keypair for address with type {:?} [{}]",
-                    result.result.key_pair_type.type_of(),
-                    result.address
-                );
+                let result = keystore.generate_and_add_new_key(None, None, password.clone())?;
+                println!("Generated new keypair for address [{}]", result.address);
                 println!("Secret Recovery Phrase : [{}]", result.result.mnemonic);
                 let dev_env = Env::new_dev_env();
                 let active_env_alias = dev_env.alias.clone();
-                ClientConfig {
+
+                let (password_hash, is_password_empty) = if password.is_none() {
+                    ("$argon2id$v=19$m=19456,t=2,p=1$zc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc0$RysE6tj+Zu0lLhtKJIedVHrKn9FspulS3vLj/UPaVvQ".to_owned(), true)
+                } else {
+                    (
+                        hash_password(&result.result.encryption.nonce, password)?,
+                        false,
+                    )
+                };
+
+                let client_config = ClientConfig {
                     keystore_path,
+                    password_hash: Some(password_hash),
+                    is_password_empty,
                     envs: vec![env, dev_env],
                     active_address: Some(result.address),
                     // make dev env as default env
                     active_env: Some(active_env_alias),
-                }
-                .persisted(client_config_path.as_path())
-                .save()?;
+                };
+
+                client_config
+                    .persisted(client_config_path.as_path())
+                    .save()?;
             }
 
             println!(
