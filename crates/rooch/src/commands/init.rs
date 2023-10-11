@@ -5,6 +5,7 @@ use crate::cli_types::{CommandAction, WalletContextOptions};
 use crate::utils::read_line;
 use async_trait::async_trait;
 use clap::Parser;
+use fastcrypto::encoding::{Base64, Encoding};
 use regex::Regex;
 use rooch_config::config::Config;
 use rooch_config::server_config::ServerConfig;
@@ -153,7 +154,11 @@ impl CommandAction<()> for Init {
                 let dev_env = Env::new_dev_env();
                 let active_env_alias = dev_env.alias.clone();
 
-                let password_hash = hash_password(&result.result.encryption.nonce, password)?;
+                let password_hash = hash_password(
+                    &Base64::decode(&result.result.encryption.nonce)
+                        .map_err(|e| RoochError::KeyConversionError(e.to_string()))?,
+                    password,
+                )?;
                 keystore.set_password_hash_with_indicator(password_hash, is_password_empty)?;
 
                 let client_config = ClientConfig {

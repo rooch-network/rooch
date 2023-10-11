@@ -1,15 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use fastcrypto::encoding::{Base64, Encoding};
 use serde::{Deserialize, Serialize};
 
 use crate::address::RoochAddress;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct EncryptionData {
-    pub nonce: Vec<u8>,
-    pub ciphertext: Vec<u8>,
-    pub tag: Vec<u8>,
+    pub nonce: String,
+    pub ciphertext: String,
+    pub tag: String,
 }
 pub struct GenerateNewKeyPair {
     pub encryption: EncryptionData,
@@ -35,9 +36,9 @@ impl EncryptionData {
         .to_vec();
 
         EncryptionData {
-            nonce,
-            ciphertext,
-            tag,
+            nonce: Base64::encode(nonce),
+            ciphertext: Base64::encode(ciphertext),
+            tag: Base64::encode(tag),
         }
     }
 }
