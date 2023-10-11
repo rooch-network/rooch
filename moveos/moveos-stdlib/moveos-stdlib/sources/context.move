@@ -106,9 +106,10 @@ module moveos_std::context {
     }
 
     #[private_generics(T)]
-    /// Remove object from object store
-    public fun remove_object<T: key>(self: &mut Context, object_id: ObjectID): Object<T> {
-        storage_context::remove<T>(&mut self.storage_context, object_id)
+    /// Remove object from object store, and unpack the Object
+    public fun remove_object<T: key>(self: &mut Context, object_id: ObjectID): (ObjectID, address, T) {
+        let obj = storage_context::remove<T>(&mut self.storage_context, object_id);
+        object::unpack_internal(obj)
     }
 
     public fun contains_object(self: &Context, object_id: ObjectID): bool {
