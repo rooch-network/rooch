@@ -17,7 +17,6 @@
 
 
 <pre><code><b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="raw_table.md#0x2_raw_table">0x2::raw_table</a>;
 </code></pre>
 
@@ -43,7 +42,7 @@ TODO should we support drop?
 
 <dl>
 <dt>
-<code>id: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a></code>
+<code>id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a></code>
 </dt>
 <dd>
 
@@ -168,7 +167,7 @@ Remove the object from the global storage, and return the object value
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_id">id</a>&lt;T&gt;(self: &<a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_id">id</a>&lt;T&gt;(self: &<a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
@@ -243,7 +242,7 @@ Check if the object is still exist in the global storage
 Convert the ObjectRef to ObjectID
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_into_id">into_id</a>&lt;T: key&gt;(self: <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_into_id">into_id</a>&lt;T: key&gt;(self: <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 

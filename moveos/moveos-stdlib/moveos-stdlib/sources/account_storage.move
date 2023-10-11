@@ -11,7 +11,6 @@ module moveos_std::account_storage {
     use moveos_std::bcs;
     use moveos_std::type_table::{Self, TypeTable};
     use moveos_std::table::{Self, Table};
-    use moveos_std::object;
     use moveos_std::object::{Self, ObjectID};
     use moveos_std::context::{Self, Context};
     use moveos_std::tx_context;

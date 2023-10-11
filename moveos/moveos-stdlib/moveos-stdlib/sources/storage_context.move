@@ -6,8 +6,7 @@
 
 module moveos_std::storage_context {
     use moveos_std::raw_table;
-    use moveos_std::object::{Self, Object};
-    use moveos_std::object::{Self, ObjectID};
+    use moveos_std::object::{Self, Object, ObjectID};
     #[test_only]
     use moveos_std::test_helper;
     #[test_only]
