@@ -18,6 +18,7 @@ This module defines Rooch Gas Coin.
 <pre><code><b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::context</a>;
+<b>use</b> <a href="account_coin_store.md#0x3_account_coin_store">0x3::account_coin_store</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 </code></pre>
 
@@ -66,7 +67,7 @@ This module defines Rooch Gas Coin.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_balance">balance</a>(ctx: &Context, addr: <b>address</b>): u256 {
-    <a href="coin.md#0x3_coin_balance">coin::balance</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a>&gt;(ctx, addr)
+    <a href="account_coin_store.md#0x3_account_coin_store_balance">account_coin_store::balance</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a>&gt;(ctx, addr)
 }
 </code></pre>
 
@@ -115,7 +116,7 @@ deduct gas coin from the given account.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_deduct_gas">deduct_gas</a>(ctx: &<b>mut</b> Context, addr: <b>address</b>, amount: u256):Coin&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a>&gt; {
-    <a href="coin.md#0x3_coin_withdraw_extend">coin::withdraw_extend</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a>&gt;(ctx, addr, amount)
+    <a href="account_coin_store.md#0x3_account_coin_store_withdraw_extend">account_coin_store::withdraw_extend</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a>&gt;(ctx, addr, amount)
 }
 </code></pre>
 
@@ -141,7 +142,7 @@ Mint gas coin to the given account.
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_faucet">faucet</a>(ctx: &<b>mut</b> Context, addr: <b>address</b>, amount: u256) {
     <b>let</b> <a href="coin.md#0x3_coin">coin</a> = <a href="gas_coin.md#0x3_gas_coin_mint">mint</a>(ctx, amount);
-    <a href="coin.md#0x3_coin_deposit_extend">coin::deposit_extend</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a>&gt;(ctx, addr, <a href="coin.md#0x3_coin">coin</a>);
+    <a href="account_coin_store.md#0x3_account_coin_store_deposit_extend">account_coin_store::deposit_extend</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a>&gt;(ctx, addr, <a href="coin.md#0x3_coin">coin</a>);
 }
 </code></pre>
 
@@ -181,7 +182,7 @@ TODO find a way to protect this function from DOS attack.
 
 ## Function `genesis_init`
 
-Can only called during genesis to initialize the Rooch coin.
+Can only be called during genesis to initialize the Rooch coin.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, _genesis_account: &<a href="">signer</a>)

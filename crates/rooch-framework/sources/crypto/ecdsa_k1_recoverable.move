@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_framework::ecdsa_k1_recoverable {
     /// constant codes
     const ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH: u64 = 33;

@@ -102,6 +102,11 @@ module moveos_std::raw_table {
         val
     }
 
+    public(friend) fun remove_from_global<T: key>(object_id: &ObjectID): Object<T> {
+        let Box { val } = remove_box<ObjectID, Object<T>, Box<Object<T>>>(global_object_storage_handle(), *object_id);
+        val
+    }
+
     /// Returns true if `table` contains an entry for `key`.
     public(friend) fun contains<K: copy + drop>(table_handle: &ObjectID, key: K): bool {
         contains_box<K>(*table_handle, key)

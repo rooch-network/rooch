@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 #[test_only]
 /// This test module is used to test the address_mapping
 module rooch_framework::address_mapping_test{

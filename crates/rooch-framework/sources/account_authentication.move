@@ -1,6 +1,9 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// This module contains the resources and functions that are used for account authentication.
-/// Migrate their from the account module for simplyfying the account module.
-module rooch_framework::account_authentication{
+/// Migrated from the account module for simplyfying the account module.
+module rooch_framework::account_authentication {
    
    use std::error;
    use std::option::{Self, Option};
@@ -14,7 +17,7 @@ module rooch_framework::account_authentication{
 
    friend rooch_framework::account;
 
-    /// max authentication key length
+   /// max authentication key length
    const MAX_AUTHENTICATION_KEY_LENGTH: u64 = 256;
 
    /// The authentication validator is already installed
@@ -73,7 +76,11 @@ module rooch_framework::account_authentication{
          vector::length(&new_auth_key) <= MAX_AUTHENTICATION_KEY_LENGTH,
          error::invalid_argument(ErrorMalformedAuthenticationKey)
       );
-      //We need to ensure the AuthenticationKeys resource exists before we can rotate the authentication key.
+      assert!(
+         account_storage::global_exists<AuthenticationKeys>(ctx, account_addr),
+         error::not_found(ErrorAuthenticationKeysResourceNotFound)
+      );
+
       let authentication_keys = account_storage::global_borrow_mut<AuthenticationKeys>(ctx, account_addr);
       if(type_table::contains<AuthenticationKey<ValidatorType>>(&authentication_keys.authentication_keys)){
          let authentication_key = type_table::borrow_mut<AuthenticationKey<ValidatorType>>(&mut authentication_keys.authentication_keys);
@@ -103,7 +110,7 @@ module rooch_framework::account_authentication{
       removed_authentication_key
    }
 
-   /// Return the authentication validator is installed for the account at `account_addr`.
+   /// Return if the authentication validator is installed for the account at `account_addr`.
    public fun is_auth_validator_installed(ctx: &Context, account_addr: address, auth_validator_id: u64): bool {
       if(account_storage::global_exists<InstalledAuthValidator>(ctx, account_addr)){
          let installed_auth_validator = account_storage::global_borrow<InstalledAuthValidator>(ctx, account_addr);

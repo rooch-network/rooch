@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// This module keeps a global wall clock that stores the current Unix time in microseconds.
 /// It interacts with the other modules in the following ways:
 /// * genesis: to initialize the timestamp
@@ -29,11 +32,11 @@ module rooch_framework::timestamp {
     }
 
     /// Updates the wall clock time, if the new time is smaller than the current time, aborts.
-    public(friend) fun update_global_time(ctx: &mut Context,timestamp: u64) {
+    public(friend) fun update_global_time(ctx: &mut Context, timestamp_microsecs: u64) {
         let global_timer = account_storage::global_borrow_mut<CurrentTimeMicroseconds>(ctx, @rooch_framework);
         let now = global_timer.microseconds;
-        assert!(now < timestamp, error::invalid_argument(ErrorInvalidTimestamp));
-        global_timer.microseconds = timestamp;
+        assert!(now < timestamp_microsecs, error::invalid_argument(ErrorInvalidTimestamp));
+        global_timer.microseconds = timestamp_microsecs;
     }
 
     /// Tries to update the wall clock time, if the new time is smaller than the current time, ignores the update, and returns false.

@@ -32,8 +32,7 @@
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
-<b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
-<b>use</b> <a href="gas_coin.md#0x3_gas_coin">0x3::gas_coin</a>;
+<b>use</b> <a href="account_coin_store.md#0x3_account_coin_store">0x3::account_coin_store</a>;
 </code></pre>
 
 
@@ -70,6 +69,7 @@ Resource representing an account.
 
 ## Resource `ResourceAccount`
 
+ResourceAccount can only be stored under address, not in other structs.
 
 
 <pre><code><b>struct</b> <a href="account.md#0x3_account_ResourceAccount">ResourceAccount</a> <b>has</b> key
@@ -97,6 +97,8 @@ Resource representing an account.
 
 ## Struct `SignerCapability`
 
+SignerCapability can only be stored in other structs, not under address.
+So that the capability is always controlled by contracts, not by some EOA.
 
 
 <pre><code><b>struct</b> <a href="account.md#0x3_account_SignerCapability">SignerCapability</a> <b>has</b> store
@@ -183,12 +185,12 @@ Cannot create account because address is reserved
 
 
 
-<a name="0x3_account_ErrorNoValidFrameworkReservedAddress"></a>
+<a name="0x3_account_ErrorNotValidFrameworkReservedAddress"></a>
 
 Address to create is not a valid reserved address for Rooch framework
 
 
-<pre><code><b>const</b> <a href="account.md#0x3_account_ErrorNoValidFrameworkReservedAddress">ErrorNoValidFrameworkReservedAddress</a>: u64 = 11;
+<pre><code><b>const</b> <a href="account.md#0x3_account_ErrorNotValidFrameworkReservedAddress">ErrorNotValidFrameworkReservedAddress</a>: u64 = 11;
 </code></pre>
 
 
@@ -289,7 +291,7 @@ is returned. This way, the caller of this function can publish additional resour
       <a href="_invalid_argument">error::invalid_argument</a>(<a href="account.md#0x3_account_ErrorAddressReseved">ErrorAddressReseved</a>)
    );
 
-   // there cannot be an <a href="account.md#0x3_account_Account">Account</a> resource under new_addr already.
+   // Make sure the <a href="account.md#0x3_account_Account">Account</a> is not already created.
    <b>assert</b>!(
       !<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, new_address),
       <a href="_already_exists">error::already_exists</a>(<a href="account.md#0x3_account_ErrorAccountAlreadyExists">ErrorAccountAlreadyExists</a>)
@@ -332,7 +334,7 @@ create the account for system reserved addresses
           addr == @0x8 ||
           addr == @0x9 ||
           addr == @0xa,
-      <a href="_permission_denied">error::permission_denied</a>(<a href="account.md#0x3_account_ErrorNoValidFrameworkReservedAddress">ErrorNoValidFrameworkReservedAddress</a>),
+      <a href="_permission_denied">error::permission_denied</a>(<a href="account.md#0x3_account_ErrorNotValidFrameworkReservedAddress">ErrorNotValidFrameworkReservedAddress</a>),
    );
    <b>let</b> <a href="">signer</a> = <a href="account.md#0x3_account_create_account_unchecked">create_account_unchecked</a>(ctx, addr);
    <b>let</b> signer_cap = <a href="account.md#0x3_account_SignerCapability">SignerCapability</a> { addr };

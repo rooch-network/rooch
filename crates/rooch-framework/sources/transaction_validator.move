@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_framework::transaction_validator {
     use std::error;
     use std::option;
@@ -147,7 +150,7 @@ module rooch_framework::transaction_validator {
 
         // Active the session key
 
-        let session_key_opt = auth_validator::get_session_key_from_tx_ctx_option(ctx);
+        let session_key_opt = auth_validator::get_session_key_from_ctx_option(ctx);
         if (option::is_some(&session_key_opt)) {
             let session_key = option::extract(&mut session_key_opt);
             session_key::active_session_key(ctx, session_key);

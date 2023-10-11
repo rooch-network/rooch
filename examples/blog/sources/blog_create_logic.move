@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_examples::blog_create_logic {
     use moveos_std::object_id::ObjectID;
     use moveos_std::context::Context;

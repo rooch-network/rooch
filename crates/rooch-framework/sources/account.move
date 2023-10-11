@@ -1,14 +1,16 @@
-module rooch_framework::account{
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+module rooch_framework::account {
    use std::error;
    use std::hash;
    use std::vector;
    use std::signer;
-   use rooch_framework::gas_coin::{GasCoin};
    use moveos_std::bcs;
    use moveos_std::context::{Self, Context};
    use moveos_std::account_storage;
    use rooch_framework::account_authentication;
-   use rooch_framework::coin::{Self};
+   use rooch_framework::account_coin_store;
 
    friend rooch_framework::transaction_validator;
    friend rooch_framework::transfer;
@@ -19,10 +21,10 @@ module rooch_framework::account{
       sequence_number: u64,
    }
 
-   // ResourceAccount can only be stored under address, not in other structs.
+   /// ResourceAccount can only be stored under address, not in other structs.
    struct ResourceAccount has key {}
-   // SignerCapability can only be stored in other structs, not under address.
-   // So that the capability is always controlled by contracts, not by some EOA.
+   /// SignerCapability can only be stored in other structs, not under address.
+   /// So that the capability is always controlled by contracts, not by some EOA.
    struct SignerCapability has store { addr: address }
 
    const MAX_U64: u128 = 18446744073709551615;
@@ -50,7 +52,7 @@ module rooch_framework::account{
    /// Resource Account can't derive resource account
    const ErrorAccountIsAlreadyResourceAccount: u64 = 7;
    /// Address to create is not a valid reserved address for Rooch framework
-   const ErrorNoValidFrameworkReservedAddress: u64 = 11;
+   const ErrorNotValidFrameworkReservedAddress: u64 = 11;
 
 
    //TODO should we provide create account from arbitrary address?
@@ -72,7 +74,7 @@ module rooch_framework::account{
          error::invalid_argument(ErrorAddressReseved)
       );
 
-      // there cannot be an Account resource under new_addr already.
+      // Make sure the Account is not already created.
       assert!(
          !account_storage::global_exists<Account>(ctx, new_address),
          error::already_exists(ErrorAccountAlreadyExists)
@@ -92,7 +94,7 @@ module rooch_framework::account{
             sequence_number: 0,
       });
       account_authentication::init_authentication_keys(ctx, &new_account);
-      coin::init_account_coin_store(ctx, &new_account);
+      account_coin_store::init_account_coin_stores(ctx, &new_account);
       new_account
    }
 
@@ -109,7 +111,7 @@ module rooch_framework::account{
              addr == @0x8 ||
              addr == @0x9 ||
              addr == @0xa,
-         error::permission_denied(ErrorNoValidFrameworkReservedAddress),
+         error::permission_denied(ErrorNotValidFrameworkReservedAddress),
       );
       let signer = create_account_unchecked(ctx, addr);
       let signer_cap = SignerCapability { addr };
@@ -182,7 +184,6 @@ module rooch_framework::account{
    /// A resource account is used to manage resources independent of an account managed by a user.
    /// In Rooch a resource account is created based upon the sha3 256 of the source's address and additional seed data.
    /// A resource account can only be created once
-   // public fun create_resource_account(source: &signer): (signer, SignerCapability) {
    public fun create_resource_account(ctx: &mut Context, source: &signer): (signer, SignerCapability) {
       let source_addr = signer::address_of(source);
       let seed = generate_seed_bytes(ctx, &source_addr);
@@ -208,12 +209,9 @@ module rooch_framework::account{
    /// This is a helper function to generate seed for resource address
    fun generate_seed_bytes(ctx: &Context, addr: &address): vector<u8> {
       let sequence_number = Self::sequence_number(ctx, *addr);
-      // use rooch gas coin balance as part of seed, just for new address more random.
-      let balance = coin::balance<GasCoin>(ctx, *addr);
 
       let seed_bytes = bcs::to_bytes(addr);
       vector::append(&mut seed_bytes, bcs::to_bytes(&sequence_number));
-      vector::append(&mut seed_bytes, bcs::to_bytes(&balance));
 
       hash::sha3_256(seed_bytes)
    }
@@ -309,8 +307,9 @@ module rooch_framework::account{
       context::drop_test_context(ctx);
    }
 
+   //TODO figure out why this test should failed
    #[test(sender=@0x42, resource_account=@0xbb6e573f7feb9d8474ac20813fc086cc3100b8b7d49c246b0f4aee8ea19eaef4)]
-   // #[expected_failure(abort_code = 0x30006, location = Self)]
+   #[expected_failure(abort_code = 196614, location = Self)]
    fun test_failure_create_resource_account_wrong_sequence_number(sender: address, resource_account: address){
       {
          let ctx = context::new_test_context(resource_account);

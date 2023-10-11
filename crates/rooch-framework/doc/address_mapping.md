@@ -6,6 +6,7 @@
 
 
 -  [Resource `AddressMapping`](#0x3_address_mapping_AddressMapping)
+-  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x3_address_mapping_genesis_init)
 -  [Function `resolve`](#0x3_address_mapping_resolve)
 -  [Function `resolve_or_generate`](#0x3_address_mapping_resolve_or_generate)
@@ -14,7 +15,8 @@
 -  [Function `bind_no_check`](#0x3_address_mapping_bind_no_check)
 
 
-<pre><code><b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::error</a>;
+<b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x2::account_storage</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
@@ -52,6 +54,20 @@
 
 
 </details>
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x3_address_mapping_ErrorMultiChainAddressInvalid"></a>
+
+
+
+<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_ErrorMultiChainAddressInvalid">ErrorMultiChainAddressInvalid</a>: u64 = 1;
+</code></pre>
+
+
 
 <a name="0x3_address_mapping_genesis_init"></a>
 
@@ -217,8 +233,10 @@ Bind a rooch address to a multi-chain address
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind_no_check">bind_no_check</a>(ctx: &<b>mut</b> Context, rooch_address: <b>address</b>, maddress: MultiChainAddress) {
     <b>if</b>(<a href="multichain_address.md#0x3_multichain_address_is_rooch_address">multichain_address::is_rooch_address</a>(&maddress)){
-        //Do nothing <b>if</b> the multi-chain <b>address</b> is a rooch <b>address</b>
-        <b>return</b>
+        <b>assert</b>!(
+            <a href="multichain_address.md#0x3_multichain_address_into_rooch_address">multichain_address::into_rooch_address</a>(maddress) == rooch_address,
+            <a href="_invalid_argument">error::invalid_argument</a>(<a href="address_mapping.md#0x3_address_mapping_ErrorMultiChainAddressInvalid">ErrorMultiChainAddressInvalid</a>)
+        );
     };
     <b>let</b> am = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="address_mapping.md#0x3_address_mapping_AddressMapping">AddressMapping</a>&gt;(ctx, @rooch_framework);
     <a href="_add">table::add</a>(&<b>mut</b> am.mapping, maddress, rooch_address);

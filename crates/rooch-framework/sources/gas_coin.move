@@ -1,9 +1,13 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// This module defines Rooch Gas Coin.
 module rooch_framework::gas_coin {
     use std::string;
     use std::signer;
     use moveos_std::context::Context;
     use rooch_framework::coin::{Self, Coin};
+    use rooch_framework::account_coin_store;
 
     friend rooch_framework::genesis;
     friend rooch_framework::transaction_validator;
@@ -13,7 +17,7 @@ module rooch_framework::gas_coin {
     struct GasCoin has key, store {}
 
     public fun balance(ctx: &Context, addr: address): u256 {
-        coin::balance<GasCoin>(ctx, addr)
+        account_coin_store::balance<GasCoin>(ctx, addr)
     }
 
     fun mint(ctx: &mut Context, amount: u256): Coin<GasCoin> {
@@ -31,13 +35,13 @@ module rooch_framework::gas_coin {
 
     /// deduct gas coin from the given account.
     public(friend) fun deduct_gas(ctx: &mut Context, addr: address, amount: u256):Coin<GasCoin> {
-        coin::withdraw_extend<GasCoin>(ctx, addr, amount)
+        account_coin_store::withdraw_extend<GasCoin>(ctx, addr, amount)
     }
 
     /// Mint gas coin to the given account.
     public(friend) fun faucet(ctx: &mut Context, addr: address, amount: u256) {
         let coin = mint(ctx, amount);
-        coin::deposit_extend<GasCoin>(ctx, addr, coin);
+        account_coin_store::deposit_extend<GasCoin>(ctx, addr, coin);
     }
 
     #[test_only]
@@ -53,7 +57,7 @@ module rooch_framework::gas_coin {
         faucet(ctx, addr, amount);
     }
 
-    /// Can only called during genesis to initialize the Rooch coin.
+    /// Can only be called during genesis to initialize the Rooch coin.
     public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer){
         coin::register_extend<GasCoin>(
             ctx,

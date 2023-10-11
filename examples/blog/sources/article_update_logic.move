@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_examples::article_update_logic {
     use std::signer;
     use moveos_std::object::Object;

@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_examples::blog_remove_article_logic {
     use std::vector;
     use moveos_std::object_id::ObjectID;
