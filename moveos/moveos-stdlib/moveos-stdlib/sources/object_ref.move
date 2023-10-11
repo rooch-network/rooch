@@ -3,8 +3,7 @@
 
 module moveos_std::object_ref {
 
-    use moveos_std::object_id::ObjectID;
-    use moveos_std::object::{Self, Object};
+    use moveos_std::object::{Self, Object, ObjectID};
     use moveos_std::raw_table;
 
     /// ObjectRef<T> is a reference of the Object<T>

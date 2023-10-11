@@ -7,7 +7,7 @@
 module moveos_std::storage_context {
     use moveos_std::raw_table;
     use moveos_std::object::{Self, Object};
-    use moveos_std::object_id::{Self, ObjectID};
+    use moveos_std::object::{Self, ObjectID};
     #[test_only]
     use moveos_std::test_helper;
     #[test_only]
@@ -32,7 +32,7 @@ module moveos_std::storage_context {
 
     /// The global object storage's table handle should be `0x0`
     public(friend) fun global_object_storage_handle(): ObjectID {
-        object_id::address_to_object_id(GlobalObjectStorageHandle)
+        object::address_to_object_id(GlobalObjectStorageHandle)
     }
 
     /// Borrow object from storage context with object_id

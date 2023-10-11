@@ -3,7 +3,7 @@
 
 module rooch_examples::blog_remove_article_logic {
     use std::vector;
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::ObjectID;
     use rooch_examples::article_removed_from_blog;
     use rooch_examples::blog;
 

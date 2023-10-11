@@ -12,7 +12,7 @@ module moveos_std::account_storage {
     use moveos_std::type_table::{Self, TypeTable};
     use moveos_std::table::{Self, Table};
     use moveos_std::object;
-    use moveos_std::object_id::{Self, ObjectID};
+    use moveos_std::object::{Self, ObjectID};
     use moveos_std::context::{Self, Context};
     use moveos_std::tx_context;
     use moveos_std::move_module::{Self, MoveModule};
@@ -42,12 +42,12 @@ module moveos_std::account_storage {
 
     //Ensure the NamedTableID generate use same method with Rust code
     public fun named_table_id(account: address, table_type: u64): ObjectID{
-        object_id::address_to_object_id(tx_context::derive_id(bcs::to_bytes(&account), table_type))
+        object::address_to_object_id(tx_context::derive_id(bcs::to_bytes(&account), table_type))
     }
 
     /// Create a new account storage space
     public fun create_account_storage(ctx: &mut Context, account: address) {
-        let object_id = object_id::address_to_object_id(account);
+        let object_id = object::address_to_object_id(account);
         let account_storage = AccountStorage {
             resources: type_table::new_with_id(named_table_id(account, NamedTableResource)),
             modules: table::new_with_id(named_table_id(account, NamedTableModule)),
@@ -59,7 +59,7 @@ module moveos_std::account_storage {
 
     /// check if account storage eixst
     public fun exist_account_storage(ctx: &Context, account: address): bool {
-        let object_id = object_id::address_to_object_id(account);
+        let object_id = object::address_to_object_id(account);
         context::contains_object(ctx, object_id)
     }
 
@@ -72,13 +72,13 @@ module moveos_std::account_storage {
     //TODO the resource and module table's id is determined by the account address, so we can use the account address to get the table id
     //And don't need to borrow the account storage from the object storage, but if we create the table every time, how to drop the table?
     fun borrow_account_storage(ctx: &Context, account: address): &AccountStorage{
-        let object_id = object_id::address_to_object_id(account);
+        let object_id = object::address_to_object_id(account);
         let object = context::borrow_object<AccountStorage>(ctx, object_id);
         object::borrow(object)
     }
 
     fun borrow_account_storage_mut(ctx: &mut Context, account: address): &mut AccountStorage{
-        let object_id = object_id::address_to_object_id(account);
+        let object_id = object::address_to_object_id(account);
         let object = context::borrow_object_mut<AccountStorage>(ctx, object_id);
         object::borrow_mut(object)
     }
@@ -226,8 +226,8 @@ module moveos_std::account_storage {
 
     #[test]
     fun test_named_table_id() {
-        assert!(named_table_id(@0xae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647, NamedTableResource) == object_id::address_to_object_id(@0x04d8b5ccef4d5b55fa9371d1a9c344fcd4bd40dd9f32dd1d94696775fe3f3013), 1000);
-        assert!(named_table_id(@0xae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647, NamedTableModule) == object_id::address_to_object_id(@0xead64c5e724c9d52b0eb792b350d56001f1fe0dc2dec0e2e713420daba18109a), 1001);
+        assert!(named_table_id(@0xae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647, NamedTableResource) == object::address_to_object_id(@0x04d8b5ccef4d5b55fa9371d1a9c344fcd4bd40dd9f32dd1d94696775fe3f3013), 1000);
+        assert!(named_table_id(@0xae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647, NamedTableModule) == object::address_to_object_id(@0xead64c5e724c9d52b0eb792b350d56001f1fe0dc2dec0e2e713420daba18109a), 1001);
     }
 
     #[test_only]

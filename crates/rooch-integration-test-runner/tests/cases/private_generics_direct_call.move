@@ -5,8 +5,7 @@ module creator::test {
     use std::string;
     use moveos_std::account_storage;
     use moveos_std::context::{Self, Context};
-    use moveos_std::object;
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::{Self, ObjectID};
     use std::debug;
 
     struct Foo has key, store {

@@ -9,7 +9,7 @@
 module rooch_examples::blog {
     use moveos_std::account_storage;
     use moveos_std::event;
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::ObjectID;
     use moveos_std::context::Context;
     use std::error;
     use std::signer;
