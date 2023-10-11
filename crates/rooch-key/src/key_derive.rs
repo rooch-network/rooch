@@ -29,6 +29,16 @@ pub const DERIVATION_PATH_PURPOSE_SCHNORR: u32 = 44;
 pub const DERIVATION_PATH_PURPOSE_ECDSA: u32 = 54;
 pub const DERIVATION_PATH_PURPOSE_SECP256R1: u32 = 74;
 
+
+/// Derivation path template
+/// A piece of data which tells a wallet how to derive a specific key within a tree of keys
+/// 637 is the key for Aptos
+/// https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki
+/// m / purpose' / coin_type' / account' / change / address_index
+pub const DERIVATION_PATH: &str = "m/{purpose}'/{coin_type}'/0'/0'/{account_index}'";
+//
+// Ok(format!("m/{}'/{}/0'/0'/0'", purpose, coin_type)
+
 type EncryptionKeyResult = Result<(Vec<u8>, Vec<u8>, Vec<u8>), RoochError>;
 
 // Create a common trait for encryption and decryption operations
@@ -275,10 +285,10 @@ pub fn validate_path(
     let (purpose, coin_type) = match key_pair_type {
         KeyPairType::RoochKeyPairType => (
             DERIVATION_PATH_PURPOSE_ED25519,
-            RoochMultiChainID::Sui as u32,
+            RoochMultiChainID::Rooch as u32,
         ),
         KeyPairType::EthereumKeyPairType => {
-            (DERIVATION_PATH_PURPOSE_ECDSA, RoochMultiChainID::Sui as u32)
+            (DERIVATION_PATH_PURPOSE_ECDSA, RoochMultiChainID::Rooch as u32)
         }
     };
 
@@ -315,6 +325,12 @@ where
     KeyPairType: KeyStoreOperator<Addr, KeyPair>,
 {
     let mnemonic = Mnemonic::new(parse_word_length(word_length)?, Language::English);
+
+    // load mnemonic phrase from keystore
+    // TODO
+    let path = DERIVATION_PATH.replace("{index}", &i.to_string());
+
+
     let seed = Seed::new(&mnemonic, "");
 
     let sk = key_pair_type.derive_private_key_from_path(seed.as_bytes(), derivation_path)?;

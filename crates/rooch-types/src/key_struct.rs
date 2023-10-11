@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::address::RoochAddress;
 use serde::{Deserialize, Serialize};
 
 use crate::keypair_type::KeyPairType;
@@ -44,4 +45,9 @@ impl EncryptionData {
             tag,
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MnemonicPhraseGeneratedAddress<K> {
+    pub addresses: Vec<K>,
 }

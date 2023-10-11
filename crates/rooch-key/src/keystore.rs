@@ -15,6 +15,7 @@ use fastcrypto::{
     secp256k1::recoverable::{Secp256k1RecoverableKeyPair, Secp256k1RecoverablePublicKey},
     traits::{RecoverableSigner, ToFromBytes},
 };
+use rooch_types::key_struct::MnemonicPhraseGeneratedAddress;
 use rooch_types::{
     address::{EthereumAddress, RoochAddress},
     authentication_key::AuthenticationKey,
@@ -750,8 +751,7 @@ where
     K: Ord,
 {
     keys: BTreeMap<K, BTreeMap<KeyPairType, EncryptionData>>,
-    /// RoochAddress -> BTreeMap<AuthenticationKey, RoochKeyPair>
-    /// EthereumAddress -> BTreeMap<AuthenticationKey, Secp256k1RecoverableKeyPair>
+    mnemonic_phrases: BTreeMap<String, BTreeMap<KeyPairType, MnemonicPhraseGeneratedAddress<K>>>,
     #[serde_as(as = "BTreeMap<DisplayFromStr, BTreeMap<DisplayFromStr, _>>")]
     session_keys: BTreeMap<K, BTreeMap<AuthenticationKey, EncryptionData>>,
 }
@@ -763,6 +763,7 @@ where
     pub fn new(keys: BTreeMap<K, BTreeMap<KeyPairType, EncryptionData>>) -> Self {
         Self {
             keys,
+            mnemonic_phrases: BTreeMap::new(),
             session_keys: BTreeMap::new(),
         }
     }
