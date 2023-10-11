@@ -6,7 +6,7 @@ module test::m {
     use moveos_std::table::{Self, Table};
     use moveos_std::context::{Self, Context};
     use moveos_std::object;
-    use moveos_std::object::{ObjectID};
+    use moveos_std::object::ObjectID;
 
     struct KVStore has store, key {
         table: Table<String,vector<u8>>,
@@ -61,7 +61,7 @@ script {
 script {
     use std::string;
     use moveos_std::context::{Context};
-    use moveos_std::object::{ObjectID};
+    use moveos_std::object::ObjectID;
     use test::m;
 
     fun main(ctx: &mut Context, object_id: ObjectID) {

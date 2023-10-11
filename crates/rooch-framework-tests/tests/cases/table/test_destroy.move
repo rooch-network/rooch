@@ -6,7 +6,7 @@ module test::m {
     use moveos_std::table::{Self, Table};
     use moveos_std::context::{Self, Context};
     use moveos_std::object;
-    use moveos_std::object::{ObjectID};
+    use moveos_std::object::ObjectID;
     use moveos_std::account_storage;
 
     struct KVStore has store, key {
