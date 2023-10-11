@@ -10,6 +10,7 @@ use move_bytecode_utils::Modules;
 use move_cli::Move;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
 use rooch_key::key_derive::verify_password;
+use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_types::transaction::rooch::RoochTransaction;
 use rpassword::prompt_password;
@@ -153,7 +154,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                     context.execute(tx).await?
                 }
                 None => {
-                    if context.client_config.is_password_empty {
+                    if context.keystore.get_if_password_is_empty() {
                         context.sign_and_execute(sender, action, None).await?
                     } else {
                         let password = prompt_password(
@@ -162,12 +163,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                         .unwrap_or_default();
                         let is_verified = verify_password(
                             Some(password.clone()),
-                            context
-                                .client_config
-                                .password_hash
-                                .as_ref()
-                                .cloned()
-                                .unwrap_or_default(),
+                            context.keystore.get_password_hash(),
                         )?;
 
                         if !is_verified {
@@ -186,21 +182,14 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
             // Handle MoveAction.ModuleBundle case
             let action = MoveAction::ModuleBundle(bundles);
 
-            if context.client_config.is_password_empty {
+            if context.keystore.get_if_password_is_empty() {
                 context.sign_and_execute(sender, action, None).await?
             } else {
                 let password =
                     prompt_password("Enter the password saved in client config to publish:")
                         .unwrap_or_default();
-                let is_verified = verify_password(
-                    Some(password.clone()),
-                    context
-                        .client_config
-                        .password_hash
-                        .as_ref()
-                        .cloned()
-                        .unwrap_or_default(),
-                )?;
+                let is_verified =
+                    verify_password(Some(password.clone()), context.keystore.get_password_hash())?;
 
                 if !is_verified {
                     return Err(RoochError::InvalidPasswordError(

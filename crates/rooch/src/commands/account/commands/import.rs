@@ -27,21 +27,14 @@ impl CommandAction<()> for ImportCommand {
 
         let mut context = self.context_options.build().await?;
 
-        let result = if context.client_config.is_password_empty {
+        let result = if context.keystore.get_if_password_is_empty() {
             context
                 .keystore
                 .import_from_mnemonic(&self.mnemonic_phrase, None, None)?
         } else {
             let password = prompt_password("Enter the password saved in client config to import a key pair from mnemonic phrase:").unwrap_or_default();
-            let is_verified = verify_password(
-                Some(password.clone()),
-                context
-                    .client_config
-                    .password_hash
-                    .as_ref()
-                    .cloned()
-                    .unwrap_or_default(),
-            )?;
+            let is_verified =
+                verify_password(Some(password.clone()), context.keystore.get_password_hash())?;
 
             if !is_verified {
                 return Err(RoochError::InvalidPasswordError(

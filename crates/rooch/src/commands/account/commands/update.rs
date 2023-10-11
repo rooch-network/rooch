@@ -37,7 +37,7 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
         let existing_address = RoochAddress::from_str(&self.address)?;
 
         // TODO: custom mnemonic_phrase and derivation_path are required to generate a new encryption data
-        let (encryption, password) = if context.client_config.is_password_empty {
+        let (encryption, password) = if context.keystore.get_if_password_is_empty() {
             (
                 context.keystore.update_address_with_encryption_data(
                     &existing_address,
@@ -52,15 +52,8 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                 "Enter the password saved in client config to update address with a new encryption data:",
             )
             .unwrap_or_default();
-            let is_verified = verify_password(
-                Some(password.clone()),
-                context
-                    .client_config
-                    .password_hash
-                    .as_ref()
-                    .cloned()
-                    .unwrap_or_default(),
-            )?;
+            let is_verified =
+                verify_password(Some(password.clone()), context.keystore.get_password_hash())?;
 
             if !is_verified {
                 return Err(RoochError::InvalidPasswordError(

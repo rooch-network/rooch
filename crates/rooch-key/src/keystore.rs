@@ -5,7 +5,7 @@ use crate::key_derive::{
     derive_address_from_private_key, derive_private_key_from_path, encrypt_private_key,
     generate_new_key_pair, get_key_pair_from_red, retrieve_key_pair,
 };
-use anyhow::anyhow;
+use anyhow::{anyhow, Error, Ok};
 use bip32::DerivationPath;
 use bip39::{Language, Mnemonic, Seed};
 use enum_dispatch::enum_dispatch;
@@ -23,8 +23,8 @@ use rooch_types::{
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::collections::BTreeMap;
+use std::fmt::Display;
 use std::fmt::Write;
-use std::fmt::{Display, Formatter};
 use std::fs;
 use std::fs::File;
 use std::io::BufReader;
@@ -51,7 +51,7 @@ pub trait AccountKeystore {
     fn get_address_public_keys(
         &self,
         password: Option<String>,
-    ) -> Result<Vec<(RoochAddress, PublicKey)>, RoochError>;
+    ) -> Result<Vec<(RoochAddress, PublicKey)>, anyhow::Error>;
     fn get_public_key(&self, password: Option<String>) -> Result<PublicKey, anyhow::Error>;
     fn get_key_pairs(
         &self,
@@ -62,7 +62,9 @@ pub trait AccountKeystore {
         &self,
         address: &RoochAddress,
         password: Option<String>,
-    ) -> Result<RoochKeyPair, RoochError>;
+    ) -> Result<RoochKeyPair, anyhow::Error>;
+    fn get_password_hash(&self) -> String;
+    fn get_if_password_is_empty(&self) -> bool;
     fn update_encryption_data(
         &mut self,
         address: &RoochAddress,
@@ -75,21 +77,21 @@ pub trait AccountKeystore {
         address: &RoochAddress,
         msg: &[u8],
         password: Option<String>,
-    ) -> Result<Signature, RoochError>;
+    ) -> Result<Signature, anyhow::Error>;
 
     fn sign_transaction(
         &self,
         address: &RoochAddress,
         msg: RoochTransactionData,
         password: Option<String>,
-    ) -> Result<RoochTransaction, RoochError>;
+    ) -> Result<RoochTransaction, anyhow::Error>;
 
     fn sign_secure<T>(
         &self,
         address: &RoochAddress,
         msg: &T,
         password: Option<String>,
-    ) -> Result<Signature, RoochError>
+    ) -> Result<Signature, anyhow::Error>
     where
         T: Serialize;
 
@@ -173,7 +175,13 @@ pub trait AccountKeystore {
         msg: RoochTransactionData,
         authentication_key: &AuthenticationKey,
         password: Option<String>,
-    ) -> Result<RoochTransaction, signature::Error>;
+    ) -> Result<RoochTransaction, anyhow::Error>;
+
+    fn set_password_hash_with_indicator(
+        &mut self,
+        password_hash: String,
+        is_password_empty: bool,
+    ) -> Result<(), anyhow::Error>;
 }
 
 impl AccountKeystore for Keystore {
@@ -183,7 +191,7 @@ impl AccountKeystore for Keystore {
         msg: RoochTransactionData,
         authentication_key: &AuthenticationKey,
         password: Option<String>,
-    ) -> Result<RoochTransaction, signature::Error> {
+    ) -> Result<RoochTransaction, anyhow::Error> {
         // Implement this method by delegating the call to the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => file_keystore.sign_transaction_via_session_key(
@@ -218,7 +226,7 @@ impl AccountKeystore for Keystore {
     fn get_address_public_keys(
         &self,
         password: Option<String>,
-    ) -> Result<Vec<(RoochAddress, PublicKey)>, RoochError> {
+    ) -> Result<Vec<(RoochAddress, PublicKey)>, anyhow::Error> {
         // Implement this method to collect public keys from the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => file_keystore.get_address_public_keys(password),
@@ -250,7 +258,7 @@ impl AccountKeystore for Keystore {
         &self,
         address: &RoochAddress,
         password: Option<String>,
-    ) -> Result<RoochKeyPair, RoochError> {
+    ) -> Result<RoochKeyPair, anyhow::Error> {
         // Implement this method to get the key pair by coin ID from the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
@@ -291,7 +299,7 @@ impl AccountKeystore for Keystore {
         address: &RoochAddress,
         msg: &[u8],
         password: Option<String>,
-    ) -> Result<Signature, RoochError> {
+    ) -> Result<Signature, anyhow::Error> {
         // Implement this method to sign a hashed message for the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => file_keystore.sign_hashed(address, msg, password),
@@ -304,7 +312,7 @@ impl AccountKeystore for Keystore {
         address: &RoochAddress,
         msg: RoochTransactionData,
         password: Option<String>,
-    ) -> Result<RoochTransaction, RoochError> {
+    ) -> Result<RoochTransaction, anyhow::Error> {
         // Implement this method to sign a transaction for the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => file_keystore.sign_transaction(address, msg, password),
@@ -319,7 +327,7 @@ impl AccountKeystore for Keystore {
         address: &RoochAddress,
         msg: &T,
         password: Option<String>,
-    ) -> Result<Signature, RoochError>
+    ) -> Result<Signature, anyhow::Error>
     where
         T: Serialize,
     {
@@ -350,23 +358,50 @@ impl AccountKeystore for Keystore {
             Keystore::InMem(inmem_keystore) => inmem_keystore.addresses(),
         }
     }
+
+    fn set_password_hash_with_indicator(
+        &mut self,
+        password_hash: String,
+        is_password_empty: bool,
+    ) -> Result<(), anyhow::Error> {
+        match self {
+            Keystore::File(file_keystore) => {
+                file_keystore.set_password_hash_with_indicator(password_hash, is_password_empty)
+            }
+            Keystore::InMem(inmem_keystore) => {
+                inmem_keystore.set_password_hash_with_indicator(password_hash, is_password_empty)
+            }
+        }
+    }
+
+    fn get_password_hash(&self) -> String {
+        match self {
+            Keystore::File(file_keystore) => file_keystore.get_password_hash(),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.get_password_hash(),
+        }
+    }
+
+    fn get_if_password_is_empty(&self) -> bool {
+        match self {
+            Keystore::File(file_keystore) => file_keystore.get_if_password_is_empty(),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.get_if_password_is_empty(),
+        }
+    }
 }
 
 impl Display for Keystore {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let mut writer = String::new();
         match self {
             Keystore::File(file) => {
                 writeln!(writer, "Keystore Type : Rooch File")?;
                 write!(writer, "Keystore Path : {:?}", file.path)?;
-                write!(f, "{}", writer)?;
             }
             Keystore::InMem(_) => {
                 writeln!(writer, "Keystore Type : Rooch InMem")?;
-                write!(f, "{}", writer)?;
             }
         }
-        Ok(())
+        write!(f, "{}", writer)
     }
 }
 
@@ -377,6 +412,8 @@ pub(crate) struct BaseKeyStore {
     /// RoochAddress -> BTreeMap<AuthenticationKey, RoochKeyPair>
     #[serde_as(as = "BTreeMap<DisplayFromStr, BTreeMap<DisplayFromStr, _>>")]
     session_keys: BTreeMap<RoochAddress, BTreeMap<AuthenticationKey, EncryptionData>>,
+    password_hash: Option<String>,
+    is_password_empty: bool,
 }
 
 impl BaseKeyStore {
@@ -384,6 +421,8 @@ impl BaseKeyStore {
         Self {
             keys,
             session_keys: BTreeMap::new(),
+            password_hash: None,
+            is_password_empty: true,
         }
     }
 }
@@ -393,15 +432,15 @@ impl AccountKeystore for BaseKeyStore {
         &self,
         address: &RoochAddress,
         password: Option<String>,
-    ) -> Result<RoochKeyPair, RoochError> {
+    ) -> Result<RoochKeyPair, anyhow::Error> {
         if let Some(encryption) = self.keys.get(address) {
             let keypair: RoochKeyPair = retrieve_key_pair(encryption, password)?;
             Ok(keypair)
         } else {
-            Err(RoochError::SignMessageError(format!(
+            Err(Error::new(RoochError::SignMessageError(format!(
                 "Cannot find key for address: [{:?}]",
                 address
-            )))
+            ))))
         }
     }
 
@@ -410,7 +449,7 @@ impl AccountKeystore for BaseKeyStore {
         address: &RoochAddress,
         msg: &[u8],
         password: Option<String>,
-    ) -> Result<Signature, RoochError> {
+    ) -> Result<Signature, anyhow::Error> {
         Ok(Signature::new_hashed(
             msg,
             &self.get_key_pair_by_password(address, password)?,
@@ -422,7 +461,7 @@ impl AccountKeystore for BaseKeyStore {
         address: &RoochAddress,
         msg: &T,
         password: Option<String>,
-    ) -> Result<Signature, RoochError>
+    ) -> Result<Signature, anyhow::Error>
     where
         T: Serialize,
     {
@@ -437,7 +476,7 @@ impl AccountKeystore for BaseKeyStore {
         address: &RoochAddress,
         msg: RoochTransactionData,
         password: Option<String>,
-    ) -> Result<RoochTransaction, RoochError> {
+    ) -> Result<RoochTransaction, anyhow::Error> {
         let kp = self
             .get_key_pair_by_password(address, password)
             .ok()
@@ -474,7 +513,7 @@ impl AccountKeystore for BaseKeyStore {
     fn get_address_public_keys(
         &self,
         password: Option<String>,
-    ) -> Result<Vec<(RoochAddress, PublicKey)>, RoochError> {
+    ) -> Result<Vec<(RoochAddress, PublicKey)>, anyhow::Error> {
         let mut result = Vec::new();
         for (address, encryption) in &self.keys {
             let keypair: RoochKeyPair = retrieve_key_pair(encryption, password.clone())?;
@@ -535,7 +574,7 @@ impl AccountKeystore for BaseKeyStore {
         msg: RoochTransactionData,
         authentication_key: &AuthenticationKey,
         password: Option<String>,
-    ) -> Result<RoochTransaction, signature::Error> {
+    ) -> Result<RoochTransaction, anyhow::Error> {
         let encryption = self
             .session_keys
             .get(address)
@@ -575,6 +614,24 @@ impl AccountKeystore for BaseKeyStore {
 
         addresses
     }
+
+    fn set_password_hash_with_indicator(
+        &mut self,
+        password_hash: String,
+        is_password_empty: bool,
+    ) -> Result<(), anyhow::Error> {
+        self.password_hash = Some(password_hash);
+        self.is_password_empty = is_password_empty;
+        Ok(())
+    }
+
+    fn get_password_hash(&self) -> String {
+        self.password_hash.clone().unwrap_or_default()
+    }
+
+    fn get_if_password_is_empty(&self) -> bool {
+        self.is_password_empty
+    }
 }
 
 #[derive(Default, Serialize, Deserialize, Debug)]
@@ -588,7 +645,7 @@ impl AccountKeystore for FileBasedKeystore {
         &self,
         address: &RoochAddress,
         password: Option<String>,
-    ) -> Result<RoochKeyPair, RoochError> {
+    ) -> Result<RoochKeyPair, anyhow::Error> {
         self.keystore.get_key_pair_by_password(address, password)
     }
 
@@ -597,7 +654,7 @@ impl AccountKeystore for FileBasedKeystore {
         address: &RoochAddress,
         msg: &[u8],
         password: Option<String>,
-    ) -> Result<Signature, RoochError> {
+    ) -> Result<Signature, anyhow::Error> {
         self.keystore.sign_hashed(address, msg, password)
     }
 
@@ -606,7 +663,7 @@ impl AccountKeystore for FileBasedKeystore {
         address: &RoochAddress,
         msg: &T,
         password: Option<String>,
-    ) -> Result<Signature, RoochError>
+    ) -> Result<Signature, anyhow::Error>
     where
         T: Serialize,
     {
@@ -618,7 +675,7 @@ impl AccountKeystore for FileBasedKeystore {
         address: &RoochAddress,
         msg: RoochTransactionData,
         password: Option<String>,
-    ) -> Result<RoochTransaction, RoochError> {
+    ) -> Result<RoochTransaction, anyhow::Error> {
         self.keystore.sign_transaction(address, msg, password)
     }
 
@@ -642,7 +699,7 @@ impl AccountKeystore for FileBasedKeystore {
     fn get_address_public_keys(
         &self,
         password: Option<String>,
-    ) -> Result<Vec<(RoochAddress, PublicKey)>, RoochError> {
+    ) -> Result<Vec<(RoochAddress, PublicKey)>, anyhow::Error> {
         self.keystore.get_address_public_keys(password)
     }
 
@@ -692,7 +749,7 @@ impl AccountKeystore for FileBasedKeystore {
         msg: RoochTransactionData,
         authentication_key: &AuthenticationKey,
         password: Option<String>,
-    ) -> Result<RoochTransaction, signature::Error> {
+    ) -> Result<RoochTransaction, anyhow::Error> {
         self.keystore
             .sign_transaction_via_session_key(address, msg, authentication_key, password)
     }
@@ -711,6 +768,27 @@ impl AccountKeystore for FileBasedKeystore {
         }
 
         addresses
+    }
+
+    fn set_password_hash_with_indicator(
+        &mut self,
+        password_hash: String,
+        is_password_empty: bool,
+    ) -> Result<(), anyhow::Error> {
+        self.keystore.password_hash = Some(password_hash);
+        self.keystore.is_password_empty = is_password_empty;
+        if std::env::var_os("TEST_ENV").is_none() {
+            self.save()?;
+        }
+        Ok(())
+    }
+
+    fn get_password_hash(&self) -> String {
+        self.keystore.password_hash.clone().unwrap_or_default()
+    }
+
+    fn get_if_password_is_empty(&self) -> bool {
+        self.keystore.is_password_empty
     }
 }
 
@@ -810,7 +888,7 @@ impl AccountKeystore for InMemKeystore {
         address: &RoochAddress,
         msg: &T,
         password: Option<String>,
-    ) -> Result<Signature, RoochError>
+    ) -> Result<Signature, anyhow::Error>
     where
         T: Serialize,
     {
@@ -822,7 +900,7 @@ impl AccountKeystore for InMemKeystore {
         address: &RoochAddress,
         msg: RoochTransactionData,
         password: Option<String>,
-    ) -> Result<RoochTransaction, RoochError> {
+    ) -> Result<RoochTransaction, anyhow::Error> {
         self.keystore.sign_transaction(address, msg, password)
     }
 
@@ -841,7 +919,7 @@ impl AccountKeystore for InMemKeystore {
     fn get_address_public_keys(
         &self,
         password: Option<String>,
-    ) -> Result<Vec<(RoochAddress, PublicKey)>, RoochError> {
+    ) -> Result<Vec<(RoochAddress, PublicKey)>, anyhow::Error> {
         self.keystore.get_address_public_keys(password)
     }
 
@@ -869,7 +947,7 @@ impl AccountKeystore for InMemKeystore {
         &self,
         address: &RoochAddress,
         password: Option<String>,
-    ) -> Result<RoochKeyPair, RoochError> {
+    ) -> Result<RoochKeyPair, anyhow::Error> {
         self.keystore.get_key_pair_by_password(address, password)
     }
 
@@ -878,7 +956,7 @@ impl AccountKeystore for InMemKeystore {
         address: &RoochAddress,
         msg: &[u8],
         password: Option<String>,
-    ) -> Result<Signature, RoochError> {
+    ) -> Result<Signature, anyhow::Error> {
         self.keystore.sign_hashed(address, msg, password)
     }
 
@@ -896,7 +974,7 @@ impl AccountKeystore for InMemKeystore {
         msg: RoochTransactionData,
         authentication_key: &AuthenticationKey,
         password: Option<String>,
-    ) -> Result<RoochTransaction, signature::Error> {
+    ) -> Result<RoochTransaction, anyhow::Error> {
         self.keystore
             .sign_transaction_via_session_key(address, msg, authentication_key, password)
     }
@@ -915,6 +993,24 @@ impl AccountKeystore for InMemKeystore {
         }
 
         addresses
+    }
+
+    fn set_password_hash_with_indicator(
+        &mut self,
+        password_hash: String,
+        is_password_empty: bool,
+    ) -> Result<(), anyhow::Error> {
+        self.keystore.password_hash = Some(password_hash);
+        self.keystore.is_password_empty = is_password_empty;
+        Ok(())
+    }
+
+    fn get_password_hash(&self) -> String {
+        self.keystore.password_hash.clone().unwrap_or_default()
+    }
+
+    fn get_if_password_is_empty(&self) -> bool {
+        self.keystore.is_password_empty
     }
 }
 
