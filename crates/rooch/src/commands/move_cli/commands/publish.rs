@@ -156,10 +156,8 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                     if context.client_config.is_password_empty {
                         context.sign_and_execute(sender, action, None).await?
                     } else {
-                        let password = prompt_password(
-                            "Enter the password saved in client config to publish:",
-                        )
-                        .unwrap_or_default();
+                        let password =
+                            prompt_password("Enter the password to publish:").unwrap_or_default();
                         let is_verified = verify_password(
                             Some(password.clone()),
                             context
@@ -190,8 +188,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                 context.sign_and_execute(sender, action, None).await?
             } else {
                 let password =
-                    prompt_password("Enter the password saved in client config to publish:")
-                        .unwrap_or_default();
+                    prompt_password("Enter the password to publish:").unwrap_or_default();
                 let is_verified = verify_password(
                     Some(password.clone()),
                     context

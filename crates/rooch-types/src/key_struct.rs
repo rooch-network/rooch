@@ -11,12 +11,13 @@ pub struct EncryptionData {
     pub tag: Vec<u8>,
 }
 pub struct GenerateNewKeyPair {
-    pub encryption: EncryptionData,
-    pub mnemonic: String,
+    pub mnemonic_phrase: String,
+    pub private_key_encryption: EncryptionData,
+    pub mnemonic_phrase_encryption: EncryptionData,
 }
 pub struct GeneratedKeyPair {
     pub address: RoochAddress,
-    pub result: GenerateNewKeyPair,
+    pub key_pair_data: GenerateNewKeyPair,
 }
 
 impl EncryptionData {
@@ -42,6 +43,15 @@ impl EncryptionData {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct MnemonicPhraseGeneratedAddress {
+pub struct MnemonicResult {
+    pub mnemonic_phrase: String,
+    pub mnemonic_phrase_key: String,
+    pub mnemonic_data: MnemonicData,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MnemonicData {
+    // pub mnemonic_phrase: String,
     pub addresses: Vec<RoochAddress>,
+    pub mnemonic_phrase_encryption: EncryptionData,
 }

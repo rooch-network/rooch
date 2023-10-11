@@ -12,7 +12,9 @@ use rooch_config::{
     rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_KEYSTORE_FILENAME, ROOCH_SERVER_CONFIG,
 };
 use rooch_key::key_derive::hash_password;
-use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
+use rooch_key::keystore::account_keystore::AccountKeystore;
+use rooch_key::keystore::file_keystore::FileBasedKeystore;
+use rooch_key::keystore::keystore::Keystore;
 use rooch_rpc_client::client_config::{ClientConfig, Env};
 use rooch_types::error::RoochError;
 use rooch_types::error::RoochResult;
@@ -25,11 +27,14 @@ pub struct Init {
     /// Command line input of custom server URL
     #[clap(short = 's', long = "server-url")]
     pub server_url: Option<String>,
-    #[clap(flatten)]
-    pub context_options: WalletContextOptions,
     /// Whether a non-empty password should be provided to rooch.keystore when it comes to the init command
     #[clap(long = "encrypt-keystore")]
     pub encrypt_keystore: Option<bool>,
+    #[clap(short = 'm', long = "mnemonic-phrase")]
+    mnemonic_phrase: Option<String>,
+
+    #[clap(flatten)]
+    pub context_options: WalletContextOptions,
 }
 
 #[async_trait]
@@ -143,9 +148,17 @@ impl CommandAction<()> for Init {
                     None
                 };
 
-                let result = keystore.generate_and_add_new_key(None, None, password.clone())?;
+                let result = keystore.generate_and_add_new_key(
+                    self.mnemonic_phrase,
+                    None,
+                    None,
+                    password.clone(),
+                )?;
                 println!("Generated new keypair for address [{}]", result.address);
-                println!("Secret Recovery Phrase : [{}]", result.result.mnemonic);
+                println!(
+                    "Secret Recovery Phrase : [{}]",
+                    result.key_pair_data.mnemonic_phrase
+                );
                 let dev_env = Env::new_dev_env();
                 let active_env_alias = dev_env.alias.clone();
 
@@ -153,7 +166,10 @@ impl CommandAction<()> for Init {
                     ("$argon2id$v=19$m=19456,t=2,p=1$zc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc0$RysE6tj+Zu0lLhtKJIedVHrKn9FspulS3vLj/UPaVvQ".to_owned(), true)
                 } else {
                     (
-                        hash_password(&result.result.encryption.nonce, password)?,
+                        hash_password(
+                            &result.key_pair_data.private_key_encryption.nonce,
+                            password,
+                        )?,
                         false,
                     )
                 };

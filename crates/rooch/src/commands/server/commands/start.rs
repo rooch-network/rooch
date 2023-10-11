@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use clap::Parser;
 use rooch_config::{RoochOpt, ServerOpt};
 use rooch_key::key_derive::verify_password;
-use rooch_key::keystore::AccountKeystore;
+use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_server::Service;
 use rooch_types::address::RoochAddress;
 use rooch_types::chain_id::RoochChainID;
@@ -102,10 +102,8 @@ impl CommandAction<()> for StartCommand {
 
                 (sequencer_keypair, proposer_keypair, relayer_keypair)
             } else {
-                let password = prompt_password(
-                    "Enter the password saved in client config to create a new key pair:",
-                )
-                .unwrap_or_default();
+                let password = prompt_password("Enter the password to create a new key pair:")
+                    .unwrap_or_default();
                 let is_verified = verify_password(
                     Some(password.clone()),
                     context

@@ -4,7 +4,7 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use rooch_key::keystore::AccountKeystore;
+use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::{crypto::EncodeDecodeBase64, error::RoochResult};
 use rpassword::prompt_password;
 use std::fmt::Debug;
@@ -26,10 +26,7 @@ impl CommandAction<()> for ListCommand {
             None
         } else {
             Some(
-                prompt_password(
-                    "Enter the password saved in client config to create a new key pair:",
-                )
-                .unwrap_or_default(),
+                prompt_password("Enter the password to create a new key pair:").unwrap_or_default(),
             )
         };
 

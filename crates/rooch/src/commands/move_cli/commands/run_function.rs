@@ -96,10 +96,8 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                         .sign_transaction_via_session_key(&sender, tx_data, &session_key, None)
                         .map_err(|e| RoochError::SignMessageError(e.to_string()))?
                 } else {
-                    let password = prompt_password(
-                        "Enter the password saved in client config to run functions:",
-                    )
-                    .unwrap_or_default();
+                    let password =
+                        prompt_password("Enter the password to run functions:").unwrap_or_default();
                     let is_verified = verify_password(
                         Some(password.clone()),
                         context
@@ -132,10 +130,8 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                 if context.client_config.is_password_empty {
                     context.sign_and_execute(sender, action, None).await
                 } else {
-                    let password = prompt_password(
-                        "Enter the password saved in client config to run functions:",
-                    )
-                    .unwrap_or_default();
+                    let password =
+                        prompt_password("Enter the password to run functions:").unwrap_or_default();
                     let is_verified = verify_password(
                         Some(password.clone()),
                         context

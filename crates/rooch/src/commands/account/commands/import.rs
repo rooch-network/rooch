@@ -6,7 +6,8 @@ use rpassword::prompt_password;
 use std::fmt::Debug;
 
 use async_trait::async_trait;
-use rooch_key::{key_derive::verify_password, keystore::AccountKeystore};
+use rooch_key::key_derive::verify_password;
+use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::error::{RoochError, RoochResult};
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
@@ -32,7 +33,9 @@ impl CommandAction<()> for ImportCommand {
                 .keystore
                 .import_from_mnemonic(&self.mnemonic_phrase, None, None)?
         } else {
-            let password = prompt_password("Enter the password saved in client config to import a key pair from mnemonic phrase:").unwrap_or_default();
+            let password =
+                prompt_password("Enter the password to import a key pair from mnemonic phrase:")
+                    .unwrap_or_default();
             let is_verified = verify_password(
                 Some(password.clone()),
                 context
