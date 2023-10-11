@@ -87,17 +87,17 @@ impl CommandAction<()> for StartCommand {
             if context.keystore.get_if_password_is_empty() {
                 let sequencer_keypair = context
                     .keystore
-                    .get_key_pair_by_password(&sequencer_account, None)
+                    .get_key_pair_with_password(&sequencer_account, None)
                     .map_err(|e| RoochError::SequencerKeyPairDoesNotExistError(e.to_string()))?;
 
                 let proposer_keypair = context
                     .keystore
-                    .get_key_pair_by_password(&proposer_account, None)
+                    .get_key_pair_with_password(&proposer_account, None)
                     .map_err(|e| RoochError::ProposerKeyPairDoesNotExistError(e.to_string()))?;
 
                 let relayer_keypair = context
                     .keystore
-                    .get_key_pair_by_password(&relayer_account, None)
+                    .get_key_pair_with_password(&relayer_account, None)
                     .map_err(|e| RoochError::RelayerKeyPairDoesNotExistError(e.to_string()))?;
 
                 (sequencer_keypair, proposer_keypair, relayer_keypair)
@@ -117,17 +117,17 @@ impl CommandAction<()> for StartCommand {
 
                 let sequencer_keypair = context
                     .keystore
-                    .get_key_pair_by_password(&sequencer_account, Some(password.clone()))
+                    .get_key_pair_with_password(&sequencer_account, Some(password.clone()))
                     .map_err(|e| RoochError::SequencerKeyPairDoesNotExistError(e.to_string()))?;
 
                 let proposer_keypair = context
                     .keystore
-                    .get_key_pair_by_password(&proposer_account, Some(password.clone()))
+                    .get_key_pair_with_password(&proposer_account, Some(password.clone()))
                     .map_err(|e| RoochError::ProposerKeyPairDoesNotExistError(e.to_string()))?;
 
                 let relayer_keypair = context
                     .keystore
-                    .get_key_pair_by_password(&relayer_account, Some(password))
+                    .get_key_pair_with_password(&relayer_account, Some(password))
                     .map_err(|e| RoochError::RelayerKeyPairDoesNotExistError(e.to_string()))?;
 
                 (sequencer_keypair, proposer_keypair, relayer_keypair)

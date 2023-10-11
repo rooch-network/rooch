@@ -58,7 +58,7 @@ pub trait AccountKeystore {
         address: &RoochAddress,
         password: Option<String>,
     ) -> Result<Vec<RoochKeyPair>, anyhow::Error>;
-    fn get_key_pair_by_password(
+    fn get_key_pair_with_password(
         &self,
         address: &RoochAddress,
         password: Option<String>,
@@ -254,7 +254,7 @@ impl AccountKeystore for Keystore {
         }
     }
 
-    fn get_key_pair_by_password(
+    fn get_key_pair_with_password(
         &self,
         address: &RoochAddress,
         password: Option<String>,
@@ -262,10 +262,10 @@ impl AccountKeystore for Keystore {
         // Implement this method to get the key pair by coin ID from the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.get_key_pair_by_password(address, password)
+                file_keystore.get_key_pair_with_password(address, password)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.get_key_pair_by_password(address, password)
+                inmem_keystore.get_key_pair_with_password(address, password)
             }
         }
     }
@@ -428,7 +428,7 @@ impl BaseKeyStore {
 }
 
 impl AccountKeystore for BaseKeyStore {
-    fn get_key_pair_by_password(
+    fn get_key_pair_with_password(
         &self,
         address: &RoochAddress,
         password: Option<String>,
@@ -452,7 +452,7 @@ impl AccountKeystore for BaseKeyStore {
     ) -> Result<Signature, anyhow::Error> {
         Ok(Signature::new_hashed(
             msg,
-            &self.get_key_pair_by_password(address, password)?,
+            &self.get_key_pair_with_password(address, password)?,
         ))
     }
 
@@ -467,7 +467,7 @@ impl AccountKeystore for BaseKeyStore {
     {
         Ok(Signature::new_secure(
             msg,
-            &self.get_key_pair_by_password(address, password)?,
+            &self.get_key_pair_with_password(address, password)?,
         ))
     }
 
@@ -478,7 +478,7 @@ impl AccountKeystore for BaseKeyStore {
         password: Option<String>,
     ) -> Result<RoochTransaction, anyhow::Error> {
         let kp = self
-            .get_key_pair_by_password(address, password)
+            .get_key_pair_with_password(address, password)
             .ok()
             .ok_or_else(|| {
                 RoochError::SignMessageError(format!("Cannot find key for address: [{address}]"))
@@ -641,12 +641,12 @@ pub struct FileBasedKeystore {
 }
 
 impl AccountKeystore for FileBasedKeystore {
-    fn get_key_pair_by_password(
+    fn get_key_pair_with_password(
         &self,
         address: &RoochAddress,
         password: Option<String>,
     ) -> Result<RoochKeyPair, anyhow::Error> {
-        self.keystore.get_key_pair_by_password(address, password)
+        self.keystore.get_key_pair_with_password(address, password)
     }
 
     fn sign_hashed(
@@ -943,12 +943,12 @@ impl AccountKeystore for InMemKeystore {
         self.keystore.nullify(address)
     }
 
-    fn get_key_pair_by_password(
+    fn get_key_pair_with_password(
         &self,
         address: &RoochAddress,
         password: Option<String>,
     ) -> Result<RoochKeyPair, anyhow::Error> {
-        self.keystore.get_key_pair_by_password(address, password)
+        self.keystore.get_key_pair_with_password(address, password)
     }
 
     fn sign_hashed(
