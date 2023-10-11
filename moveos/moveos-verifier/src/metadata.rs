@@ -47,8 +47,8 @@ pub struct KnownAttribute {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Default)]
 pub struct GasFreeFunction {
-    gas_validate: String,
-    gas_charge_post: String,
+    pub gas_validate: String,
+    pub gas_charge_post: String,
 }
 
 /// V1 of Aptos specific metadata attached to the metadata section of file_format.
