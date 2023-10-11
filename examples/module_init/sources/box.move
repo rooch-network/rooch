@@ -70,3 +70,4 @@ module rooch_examples::box {
         context::remove_object<Box>(ctx, obj_id)
     }
 }
+

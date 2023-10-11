@@ -38,3 +38,4 @@ module rooch_examples::box_fun {
         box::add_box(ctx, update_obj);
     }
 }
+
