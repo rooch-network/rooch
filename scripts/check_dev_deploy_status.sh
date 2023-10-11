@@ -19,16 +19,17 @@ if [ "$STATUS" != "running" ]; then
     echo "Container $CONTAINER_ID is not running，trying to clean data and restart"
     echo "Start cleaning the data."
     rooch server clean -n dev
+    # TODO rooch init with phrase
     docker start $CONTAINER_ID
     if [ $? -eq 0 ]; then
         echo "Container $CONTAINER_ID Successfully restarted."
         echo "Redeploy the examples"
-        for dir in ../examples/*/; do
+        for dir in examples/*/; do
             dir=${dir%*/}
             name_addr=$(basename $dir)
             echo $name_addr
             rooch move build -p "$dir" --named-addresses rooch_examples=default,$name_addr=default
-            rooch move publish --named-addresses rooch_examples=default,$name_addr=default -p ../examples/$name_addr/
+            rooch move publish --named-addresses rooch_examples=default,$name_addr=default -p examples/$name_addr/
         done
     else
         echo "Container $CONTAINER_ID Startup failed, please check the reason."
