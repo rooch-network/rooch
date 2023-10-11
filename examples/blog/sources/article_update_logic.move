@@ -3,12 +3,11 @@
 
 module rooch_examples::article_update_logic {
     use std::signer;
-    use moveos_std::object::Object;
+    use moveos_std::object_ref::{Self, ObjectRef};
     use moveos_std::context::Context;
-    use rooch_examples::article;
+    use rooch_examples::article::{Self, Article};
     use rooch_examples::article_updated;
     use std::string::String;
-    use moveos_std::object;
 
     friend rooch_examples::article_aggregate;
 
@@ -19,10 +18,10 @@ module rooch_examples::article_update_logic {
         account: &signer,
         title: String,
         body: String,
-        article_obj: &Object<article::Article>,
+        article_obj: &ObjectRef<Article>,
     ): article::ArticleUpdated {
         let _ = ctx;
-        assert!(signer::address_of(account) == object::owner(article_obj), ErrorNotOwnerAccount);
+        assert!(signer::address_of(account) == object_ref::owner(article_obj), ErrorNotOwnerAccount);
         article::new_article_updated(
             article_obj,
             title,
@@ -34,8 +33,8 @@ module rooch_examples::article_update_logic {
         ctx: &mut Context,
         _account: &signer,
         article_updated: &article::ArticleUpdated,
-        article_obj: Object<article::Article>,
-    ): Object<article::Article> {
+        article_obj: ObjectRef<Article>,
+    ): ObjectRef<Article> {
         let title = article_updated::title(article_updated);
         let body = article_updated::body(article_updated);
         let id = article::id(&article_obj);

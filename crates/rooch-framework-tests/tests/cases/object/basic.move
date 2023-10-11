@@ -4,7 +4,7 @@
 
 module test::m {
     use moveos_std::context::{Self, Context};
-    use moveos_std::object::{Self, ObjectID};
+    use moveos_std::object::ObjectID;
     use moveos_std::account_storage;
     use std::debug;
 
@@ -22,9 +22,7 @@ module test::m {
 
     public entry fun move_s_to_global(ctx: &mut Context, sender: signer, object_id: ObjectID) {
         debug::print(&object_id);
-        let obj = context::remove_object<S>(ctx, object_id);
-        debug::print(&obj);
-        let (_id, _owner, value) = object::unpack(obj);
+        let (_id, _owner, value)  = context::remove_object<S>(ctx, object_id);
         account_storage::global_move_to(ctx, &sender, value);
     }
 
@@ -34,9 +32,7 @@ module test::m {
     }
 
     public entry fun move_cup_to_global<T:store>(ctx: &mut Context, sender: signer, object_id: ObjectID) {
-        let obj = context::remove_object<Cup<S>>(ctx, object_id);
-        debug::print(&obj);
-        let (_id,_owner,value) = object::unpack(obj);
+        let (_id,_owner,value) = context::remove_object<Cup<S>>(ctx, object_id);
         account_storage::global_move_to(ctx, &sender, value);
     }
 }

@@ -102,8 +102,8 @@ module moveos_std::object {
         let object = TestObject {
             count: object_count,
         };
-        let id = moveos_std::tx_context::fresh_object_id(&mut tx_context);
-        let obj = new<TestObject>(id, sender_addr, object);
+        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut tx_context));
+        let obj = new<TestObject>(object_id, sender_addr, object);
 
         let borrow_object = borrow_mut(&mut obj);
         assert!(borrow_object.count == object_count, 1001);

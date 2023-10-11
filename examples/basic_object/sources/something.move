@@ -3,9 +3,9 @@
 
 module rooch_examples::something {
     use std::string::String;
-
     use moveos_std::event;
-    use moveos_std::object::{Self, Object, ObjectID};
+    use moveos_std::object_ref::{Self, ObjectRef};
+    use moveos_std::object::ObjectID;
     use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
 
@@ -20,26 +20,26 @@ module rooch_examples::something {
     }
 
     /// get object id
-    public fun id(obj: &Object<SomethingProperties>): ObjectID {
-        object::id(obj)
+    public fun id(obj: &ObjectRef<SomethingProperties>): ObjectID {
+        object_ref::id(obj)
     }
 
     /// get property 'i' from object
-    public fun i(obj: &Object<SomethingProperties>): u32 {
-        object::borrow(obj).i
+    public fun i(obj: &ObjectRef<SomethingProperties>): u32 {
+        object_ref::borrow(obj).i
     }
 
     /// set property 'i' of object
-    public(friend) fun set_i(obj: &mut Object<SomethingProperties>, i: u32) {
-        object::borrow_mut(obj).i = i;
+    public(friend) fun set_i(obj: &mut ObjectRef<SomethingProperties>, i: u32) {
+        object_ref::borrow_mut(obj).i = i;
     }
 
-    public fun j(obj: &Object<SomethingProperties>): u128 {
-        object::borrow(obj).j
+    public fun j(obj: &ObjectRef<SomethingProperties>): u128 {
+        object_ref::borrow(obj).j
     }
 
-    public(friend) fun set_j(obj: &mut Object<SomethingProperties>, j: u128) {
-        object::borrow_mut(obj).j = j;
+    public(friend) fun set_j(obj: &mut ObjectRef<SomethingProperties>, j: u128) {
+        object_ref::borrow_mut(obj).j = j;
     }
 
     struct SomethingCreated {
@@ -65,14 +65,14 @@ module rooch_examples::something {
         ctx: &mut Context,
         i: u32,
         j: u128,
-    ): Object<SomethingProperties> {
+    ): ObjectRef<SomethingProperties> {
         let value = new_something_properties(ctx, i, j);
         let obj = context::new_object(
             ctx,
             value,
         );
         event::emit(ctx, SomethingCreated {
-            obj_id: object::id(&obj),
+            obj_id: object_ref::id(&obj),
             i,
             j,
         });
@@ -112,11 +112,11 @@ module rooch_examples::something {
 
     public(friend) fun add_foo_table_item(
         ctx: &mut Context,
-        obj: &mut Object<SomethingProperties>,
+        obj: &mut ObjectRef<SomethingProperties>,
         key: String,
         val: String
     ) {
-        table::add(&mut object::borrow_mut(obj).fooTable, key, val);
+        table::add(&mut object_ref::borrow_mut(obj).fooTable, key, val);
         event::emit(ctx, FooTableItemAdded {
             item: KeyValuePair {
                 key,
@@ -125,14 +125,19 @@ module rooch_examples::something {
         });
     }
 
-    public(friend) fun add_something(ctx: &mut Context, obj: Object<SomethingProperties>) {
-        context::add_object(ctx, obj);
+    public(friend) fun get_something(
+        ctx: &mut Context,
+        obj_id: ObjectID
+    ): ObjectRef<SomethingProperties> {
+        let obj =  context::borrow_object_mut<SomethingProperties>(ctx, obj_id);
+        object_ref::new(obj)
     }
 
     public(friend) fun remove_something(
         ctx: &mut Context,
         obj_id: ObjectID
-    ): Object<SomethingProperties> {
-        context::remove_object<SomethingProperties>(ctx, obj_id)
+    ): SomethingProperties {
+        let (_id, _owner, value) =  context::remove_object<SomethingProperties>(ctx, obj_id);
+        value
     }
 }

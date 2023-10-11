@@ -7,7 +7,7 @@ module test::m {
     use moveos_std::context::{Self, Context};
     use moveos_std::object;
     use moveos_std::object::ObjectID;
-    use moveos_std::object_ref::{Self, ObjectRef};
+    use moveos_std::object_ref::{ObjectRef};
 
     struct KVStore has store, key {
         table: Table<String,vector<u8>>,
@@ -55,7 +55,7 @@ script {
     }
 }
 
-//# run --signers test --args @0x1a2c876ea44c751aedab69ef139181114c79abf4fb8bca363b66969218e7d815
+//# run --signers test --args @0xcc48c91b1a0f15813bed988390a2794660ae5dadcd86fdb1b55d4a28d0f74c4d
 script {
     use std::string;
     use moveos_std::context::{Context};

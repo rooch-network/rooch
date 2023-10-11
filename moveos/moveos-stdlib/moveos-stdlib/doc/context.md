@@ -434,7 +434,7 @@ Borrow mut Object from object store with object_id
 Remove object from object store, and unpack the Object
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_remove_object">remove_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): (<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, <b>address</b>, T)
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_remove_object">remove_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): (<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, <b>address</b>, T)
 </code></pre>
 
 
@@ -443,8 +443,8 @@ Remove object from object store, and unpack the Object
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_remove_object">remove_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, <a href="object_id.md#0x2_object_id">object_id</a>: ObjectID): (ObjectID, <b>address</b>, T) {
-    <b>let</b> obj = <a href="storage_context.md#0x2_storage_context_remove">storage_context::remove</a>&lt;T&gt;(&<b>mut</b> self.<a href="storage_context.md#0x2_storage_context">storage_context</a>, <a href="object_id.md#0x2_object_id">object_id</a>);
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_remove_object">remove_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, object_id: ObjectID): (ObjectID, <b>address</b>, T) {
+    <b>let</b> obj = <a href="storage_context.md#0x2_storage_context_remove">storage_context::remove</a>&lt;T&gt;(&<b>mut</b> self.<a href="storage_context.md#0x2_storage_context">storage_context</a>, object_id);
     <a href="object.md#0x2_object_unpack_internal">object::unpack_internal</a>(obj)
 }
 </code></pre>
@@ -523,8 +523,8 @@ Add the Object to the global object storage and return the ObjectRef
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_object_with_owner">new_object_with_owner</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, owner: <b>address</b>, value: T): ObjectRef&lt;T&gt; {
-    <b>let</b> <a href="object_id.md#0x2_object_id">object_id</a> = <a href="context.md#0x2_context_fresh_object_id">fresh_object_id</a>(self);
-    <a href="context.md#0x2_context_new_object_with_id">new_object_with_id</a>(self, <a href="object_id.md#0x2_object_id">object_id</a>, owner, value)
+    <b>let</b> object_id = <a href="context.md#0x2_context_fresh_object_id">fresh_object_id</a>(self);
+    <a href="context.md#0x2_context_new_object_with_id">new_object_with_id</a>(self, object_id, owner, value)
 }
 </code></pre>
 
@@ -538,7 +538,7 @@ Add the Object to the global object storage and return the ObjectRef
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="context.md#0x2_context_new_object_with_id">new_object_with_id</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, id: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, owner: <b>address</b>, value: T): <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="context.md#0x2_context_new_object_with_id">new_object_with_id</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, owner: <b>address</b>, value: T): <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;
 </code></pre>
 
 

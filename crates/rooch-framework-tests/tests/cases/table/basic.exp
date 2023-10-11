@@ -1,70 +1,10 @@
 processed 4 tasks
 
 task 1 'publish'. lines 3-42:
-Error: warning: unused alias
-   ┌─ /tmp/tempfile:10:21
-   │
-10 │     use moveos_std::object_ref::{Self, ObjectRef};
-   │                     ^^^^^^^^^^ Unused 'use' of alias 'object_ref'. Consider removing it
-
-warning[W09001]: unused alias
-   ┌─ /tmp/tempfile:10:21
-   │
-10 │     use moveos_std::object_ref::{Self, ObjectRef};
-   │                     ^^^^^^^^^^ Unused 'use' of alias 'object_ref'. Consider removing it
-
-
+status EXECUTED
 
 task 2 'run'. lines 44-56:
-Error: error[E03002]: unbound module
-   ┌─ /tmp/tempfile:48:9
-   │
-48 │     use test::m;
-   │         ^^^^^^^ Invalid 'use'. Unbound module: '(test=0x42)::m'
-
-error[E03002]: unbound module
-   ┌─ /tmp/tempfile:50:18
-   │
-50 │         let kv = m::make_kv_store(ctx);
-   │                  ^ Unbound module alias 'm'
-
-error[E03002]: unbound module
-   ┌─ /tmp/tempfile:51:9
-   │
-51 │         m::add(&mut kv, string::utf8(b"test"), b"value");
-   │         ^ Unbound module alias 'm'
-
-error[E03002]: unbound module
-   ┌─ /tmp/tempfile:52:26
-   │
-52 │         let object_ref = m::save_to_object_storage(ctx, kv);
-   │                          ^ Unbound module alias 'm'
-
-
+status EXECUTED
 
 task 3 'run'. lines 58-71:
-Error: error[E03002]: unbound module
-   ┌─ /tmp/tempfile:63:9
-   │
-63 │     use test::m;
-   │         ^^^^^^^ Invalid 'use'. Unbound module: '(test=0x42)::m'
-
-error[E03002]: unbound module
-   ┌─ /tmp/tempfile:65:18
-   │
-65 │         let kv = m::borrow_from_object_storage(ctx, object_id);
-   │                  ^ Unbound module alias 'm'
-
-error[E03002]: unbound module
-   ┌─ /tmp/tempfile:66:17
-   │
-66 │         assert!(m::contains(kv, string::utf8(b"test")), 1000);
-   │                 ^ Unbound module alias 'm'
-
-error[E03002]: unbound module
-   ┌─ /tmp/tempfile:67:17
-   │
-67 │         let v = m::borrow(kv, string::utf8(b"test"));
-   │                 ^ Unbound module alias 'm'
-
-
+status EXECUTED
