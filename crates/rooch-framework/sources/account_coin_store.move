@@ -136,7 +136,7 @@ module rooch_framework::account_coin_store {
     /// If user turns off AutoAcceptCoin, call this method to receive the corresponding Coin
     public fun do_accept_coin<CoinType: key>(ctx: &mut Context, account: &signer) {
         let addr = signer::address_of(account);
-        ensure_coin_store_pass_auto_accept_flag<CoinType>(ctx, addr);
+        ensure_coin_store_bypass_auto_accept_flag<CoinType>(ctx, addr);
     }
 
     /// Configure whether auto-accept coins.
@@ -258,11 +258,6 @@ module rooch_framework::account_coin_store {
     // Internal functions
     // 
 
-    fun exist_auto_accept_token(ctx: &Context, addr: address): bool {
-        let auto_accept_coins = account_storage::global_borrow<AutoAcceptCoins>(ctx, @rooch_framework);
-        table::contains<address, bool>(&auto_accept_coins.auto_accept_coins, addr)
-    }
-
     fun borrow_account_coin_store<CoinType: key>(ctx: &Context, addr: address): &CoinStore{
         let coin_stores = account_storage::global_borrow<CoinStores>(ctx, addr);
         let coin_type = type_info::type_name<CoinType>();
@@ -283,14 +278,14 @@ module rooch_framework::account_coin_store {
         }
     }
 
-    fun ensure_coin_store_pass_auto_accept_flag<CoinType: key>(ctx: &mut Context, addr: address) {
+    fun ensure_coin_store_bypass_auto_accept_flag<CoinType: key>(ctx: &mut Context, addr: address) {
         if (!exist_account_coin_store<CoinType>(ctx, addr)) {
             create_account_coin_store<CoinType>(ctx, addr)
         }
     }
 
     fun create_account_coin_store<CoinType: key>(ctx: &mut Context, addr: address) {
-        let coin_store_ref = coin_store::create_coin_store<CoinType>(ctx);
+        let coin_store_ref = coin_store::create_coin_store_internal<CoinType>(ctx);
         let coin_stores = account_storage::global_borrow_mut<CoinStores>(ctx, addr);
         let coin_type = type_info::type_name<CoinType>();
         table::add(&mut coin_stores.coin_stores, coin_type, coin_store_ref);

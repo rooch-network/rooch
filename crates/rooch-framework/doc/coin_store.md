@@ -9,6 +9,7 @@
 -  [Resource `CoinStore`](#0x3_coin_store_CoinStore)
 -  [Constants](#@Constants_0)
 -  [Function `create_coin_store`](#0x3_coin_store_create_coin_store)
+-  [Function `create_coin_store_extend`](#0x3_coin_store_create_coin_store_extend)
 -  [Function `drop_coin_store`](#0x3_coin_store_drop_coin_store)
 -  [Function `coin_type`](#0x3_coin_store_coin_type)
 -  [Function `balance`](#0x3_coin_store_balance)
@@ -18,6 +19,7 @@
 -  [Function `is_coin_store_frozen`](#0x3_coin_store_is_coin_store_frozen)
 -  [Function `get_balance_with_id`](#0x3_coin_store_get_balance_with_id)
 -  [Function `freeze_coin_store_extend`](#0x3_coin_store_freeze_coin_store_extend)
+-  [Function `create_coin_store_internal`](#0x3_coin_store_create_coin_store_internal)
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
@@ -151,9 +153,10 @@ The CoinType parameter and CoinType in CoinStore do not match
 ## Function `create_coin_store`
 
 Create a new CoinStore Object for <code>CoinType</code> and return the ObjectRef
+Anyone can create a CoinStore Object for public Coin<CoinType>, the <code>CoinType</code> must has <code>key</code> and <code>store</code> ability
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store">create_coin_store</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>): <a href="_ObjectRef">object_ref::ObjectRef</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store">create_coin_store</a>&lt;CoinType: store, key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>): <a href="_ObjectRef">object_ref::ObjectRef</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&gt;
 </code></pre>
 
 
@@ -162,17 +165,33 @@ Create a new CoinStore Object for <code>CoinType</code> and return the ObjectRef
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store">create_coin_store</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> Context): ObjectRef&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;{
-    <a href="coin.md#0x3_coin_check_coin_info_registered">coin::check_coin_info_registered</a>&lt;CoinType&gt;(ctx);
+<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store">create_coin_store</a>&lt;CoinType: key + store&gt;(ctx: &<b>mut</b> Context): ObjectRef&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;{
+    <a href="coin_store.md#0x3_coin_store_create_coin_store_internal">create_coin_store_internal</a>&lt;CoinType&gt;(ctx)
+}
+</code></pre>
 
-    <b>let</b> coin_store_object = <a href="_new_object">context::new_object</a>(ctx, <a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>{
-        coin_type: <a href="_type_name">type_info::type_name</a>&lt;CoinType&gt;(),
-        balance: <a href="coin_store.md#0x3_coin_store_Balance">Balance</a> { value: 0 },
-        frozen: <b>false</b>,
-    });
-    <b>let</b> ref = <a href="_new">object_ref::new</a>(&<b>mut</b> coin_store_object);
-    <a href="_add_object">context::add_object</a>(ctx, coin_store_object);
-    ref
+
+
+</details>
+
+<a name="0x3_coin_store_create_coin_store_extend"></a>
+
+## Function `create_coin_store_extend`
+
+This function is for the <code>CoinType</code> module to extend
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store_extend">create_coin_store_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>): <a href="_ObjectRef">object_ref::ObjectRef</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store_extend">create_coin_store_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> Context): ObjectRef&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt; {
+    <a href="coin_store.md#0x3_coin_store_create_coin_store_internal">create_coin_store_internal</a>&lt;CoinType&gt;(ctx)
 }
 </code></pre>
 
@@ -298,7 +317,7 @@ Withdraw <code>amount</code> Coin<CoinType> from the balance of the passed-in <c
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_withdraw">withdraw</a>&lt;CoinType: key&gt;(<a href="coin_store.md#0x3_coin_store">coin_store</a>: &<b>mut</b> <a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>, amount: u256) : Coin&lt;CoinType&gt; {
-    <a href="coin_store.md#0x3_coin_store_check_coin_store_frozen">check_coin_store_frozen</a>(<a href="coin_store.md#0x3_coin_store">coin_store</a>);
+    <a href="coin_store.md#0x3_coin_store_check_coin_store_not_frozen">check_coin_store_not_frozen</a>(<a href="coin_store.md#0x3_coin_store">coin_store</a>);
     <a href="coin_store.md#0x3_coin_store_extract_from_balance">extract_from_balance</a>&lt;CoinType&gt;(<a href="coin_store.md#0x3_coin_store">coin_store</a>, amount)
 }
 </code></pre>
@@ -324,7 +343,7 @@ Deposit <code>amount</code> Coin<CoinType> to the balance of the passed-in <code
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_deposit">deposit</a>&lt;CoinType: key&gt;(<a href="coin_store.md#0x3_coin_store">coin_store</a>: &<b>mut</b> <a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>, <a href="coin.md#0x3_coin">coin</a>: Coin&lt;CoinType&gt;) {
-    <a href="coin_store.md#0x3_coin_store_check_coin_store_frozen">check_coin_store_frozen</a>(<a href="coin_store.md#0x3_coin_store">coin_store</a>);
+    <a href="coin_store.md#0x3_coin_store_check_coin_store_not_frozen">check_coin_store_not_frozen</a>(<a href="coin_store.md#0x3_coin_store">coin_store</a>);
     <a href="coin_store.md#0x3_coin_store_merge_to_balance">merge_to_balance</a>&lt;CoinType&gt;(<a href="coin_store.md#0x3_coin_store">coin_store</a>, <a href="coin.md#0x3_coin">coin</a>);
 }
 </code></pre>
@@ -421,6 +440,39 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
     <b>assert</b>!(<a href="_contains_object">context::contains_object</a>(ctx, coin_store_id), <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin_store.md#0x3_coin_store_ErrorCoinStoreNotFound">ErrorCoinStoreNotFound</a>));
     <b>let</b> coin_store_object = <a href="_borrow_object_mut">context::borrow_object_mut</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;(ctx, coin_store_id);
     <a href="_borrow_mut">object::borrow_mut</a>(coin_store_object).frozen = frozen;
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_coin_store_create_coin_store_internal"></a>
+
+## Function `create_coin_store_internal`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store_internal">create_coin_store_internal</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>): <a href="_ObjectRef">object_ref::ObjectRef</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store_internal">create_coin_store_internal</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> Context): ObjectRef&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;{
+    <a href="coin.md#0x3_coin_check_coin_info_registered">coin::check_coin_info_registered</a>&lt;CoinType&gt;(ctx);
+
+    <b>let</b> coin_store_object = <a href="_new_object">context::new_object</a>(ctx, <a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>{
+        coin_type: <a href="_type_name">type_info::type_name</a>&lt;CoinType&gt;(),
+        balance: <a href="coin_store.md#0x3_coin_store_Balance">Balance</a> { value: 0 },
+        frozen: <b>false</b>,
+    });
+    <b>let</b> ref = <a href="_new">object_ref::new</a>(&<b>mut</b> coin_store_object);
+    <a href="_add_object">context::add_object</a>(ctx, coin_store_object);
+    ref
 }
 </code></pre>
 

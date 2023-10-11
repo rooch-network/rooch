@@ -21,28 +21,28 @@ module rooch_framework::coin {
     //
 
     /// `CoinType` is not registered as a coin
-    const ErrorCoinInfoNotRegistered: u64 = 0;
+    const ErrorCoinInfoNotRegistered: u64 = 1;
 
     /// `CoinType` is already registered as a coin
-    const ErrorCoinInfoAlreadyRegistered: u64 = 1;
+    const ErrorCoinInfoAlreadyRegistered: u64 = 2;
 
     /// Not enough coins to extract
-    const ErrorInSufficientBalance: u64 = 2;
+    const ErrorInSufficientBalance: u64 = 3;
 
     /// Cannot destroy non-zero coins
-    const ErrorDestroyOfNonZeroCoin: u64 = 3;
+    const ErrorDestroyOfNonZeroCoin: u64 = 4;
 
     /// Coin amount cannot be zero
-    const ErrorZeroCoinAmount: u64 = 4;
+    const ErrorZeroCoinAmount: u64 = 5;
 
     /// Name of the coin is too long
-    const ErrorCoinNameTooLong: u64 = 5;
+    const ErrorCoinNameTooLong: u64 = 6;
 
     /// Symbol of the coin is too long
-    const ErrorCoinSymbolTooLong: u64 = 6;
+    const ErrorCoinSymbolTooLong: u64 = 7;
 
     /// Global CoinInfos should exist
-    const ErrorCoinInfosNotFound: u64 = 9;
+    const ErrorCoinInfosNotFound: u64 = 8;
 
 
     //

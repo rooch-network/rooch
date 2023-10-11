@@ -271,7 +271,7 @@ Maximum possible coin supply.
 <code>CoinType</code> is already registered as a coin
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinInfoAlreadyRegistered">ErrorCoinInfoAlreadyRegistered</a>: u64 = 1;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinInfoAlreadyRegistered">ErrorCoinInfoAlreadyRegistered</a>: u64 = 2;
 </code></pre>
 
 
@@ -281,7 +281,7 @@ Maximum possible coin supply.
 <code>CoinType</code> is not registered as a coin
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinInfoNotRegistered">ErrorCoinInfoNotRegistered</a>: u64 = 0;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinInfoNotRegistered">ErrorCoinInfoNotRegistered</a>: u64 = 1;
 </code></pre>
 
 
@@ -291,7 +291,7 @@ Maximum possible coin supply.
 Global CoinInfos should exist
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinInfosNotFound">ErrorCoinInfosNotFound</a>: u64 = 9;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinInfosNotFound">ErrorCoinInfosNotFound</a>: u64 = 8;
 </code></pre>
 
 
@@ -301,7 +301,7 @@ Global CoinInfos should exist
 Name of the coin is too long
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinNameTooLong">ErrorCoinNameTooLong</a>: u64 = 5;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinNameTooLong">ErrorCoinNameTooLong</a>: u64 = 6;
 </code></pre>
 
 
@@ -311,7 +311,7 @@ Name of the coin is too long
 Symbol of the coin is too long
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinSymbolTooLong">ErrorCoinSymbolTooLong</a>: u64 = 6;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinSymbolTooLong">ErrorCoinSymbolTooLong</a>: u64 = 7;
 </code></pre>
 
 
@@ -321,7 +321,7 @@ Symbol of the coin is too long
 Cannot destroy non-zero coins
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorDestroyOfNonZeroCoin">ErrorDestroyOfNonZeroCoin</a>: u64 = 3;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorDestroyOfNonZeroCoin">ErrorDestroyOfNonZeroCoin</a>: u64 = 4;
 </code></pre>
 
 
@@ -331,7 +331,7 @@ Cannot destroy non-zero coins
 Not enough coins to extract
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorInSufficientBalance">ErrorInSufficientBalance</a>: u64 = 2;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorInSufficientBalance">ErrorInSufficientBalance</a>: u64 = 3;
 </code></pre>
 
 
@@ -341,7 +341,7 @@ Not enough coins to extract
 Coin amount cannot be zero
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorZeroCoinAmount">ErrorZeroCoinAmount</a>: u64 = 4;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorZeroCoinAmount">ErrorZeroCoinAmount</a>: u64 = 5;
 </code></pre>
 
 

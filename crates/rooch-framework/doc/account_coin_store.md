@@ -458,7 +458,7 @@ If user turns off AutoAcceptCoin, call this method to receive the corresponding 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_do_accept_coin">do_accept_coin</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> Context, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
     <b>let</b> addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
-    <a href="account_coin_store.md#0x3_account_coin_store_ensure_coin_store_pass_auto_accept_flag">ensure_coin_store_pass_auto_accept_flag</a>&lt;CoinType&gt;(ctx, addr);
+    <a href="account_coin_store.md#0x3_account_coin_store_ensure_coin_store_bypass_auto_accept_flag">ensure_coin_store_bypass_auto_accept_flag</a>&lt;CoinType&gt;(ctx, addr);
 }
 </code></pre>
 
