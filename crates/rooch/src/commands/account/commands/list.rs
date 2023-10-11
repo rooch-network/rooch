@@ -22,12 +22,6 @@ impl CommandAction<()> for ListCommand {
         let context = self.context_options.build().await?;
         let active_address = context.client_config.active_address;
 
-        println!(
-            "{:^66} | {:^48} | {:^16} | {:^12}",
-            "Rooch Address (Ed25519)", "Public Key (Base64)", "Auth Validator ID", "Active Address"
-        );
-        println!("{}", ["-"; 153].join(""));
-
         let password = if context.client_config.is_password_empty {
             None
         } else {
@@ -38,6 +32,12 @@ impl CommandAction<()> for ListCommand {
                 .unwrap_or_default(),
             )
         };
+
+        println!(
+            "{:^66} | {:^48} | {:^16} | {:^12}",
+            "Rooch Address (Ed25519)", "Public Key (Base64)", "Auth Validator ID", "Active Address"
+        );
+        println!("{}", ["-"; 153].join(""));
 
         for (address, public_key) in context.keystore.get_address_public_keys(password)? {
             let auth_validator_id = public_key.auth_validator().flag();

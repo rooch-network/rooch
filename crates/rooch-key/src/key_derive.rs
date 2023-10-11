@@ -94,8 +94,16 @@ pub fn decrypt_private_key(
 pub fn verify_password(
     password: Option<String>,
     password_hash: String,
-) -> Result<bool, argon2::password_hash::Error> {
-    let parsed_hash = PasswordHash::new(&password_hash)?;
+) -> Result<bool, RoochError> {
+    let parsed_hash = match PasswordHash::new(&password_hash) {
+        Ok(parsed) => parsed,
+        Err(err) => {
+            return Err(RoochError::InvalidPasswordError(format!(
+                "PasswordHash error: {}",
+                err
+            )))
+        }
+    };
     Ok(Argon2::default()
         .verify_password(password.unwrap_or_default().as_bytes(), &parsed_hash)
         .is_ok())

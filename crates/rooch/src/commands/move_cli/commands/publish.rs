@@ -72,7 +72,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         let package_path = self
             .move_args
             .package_path
-            .unwrap_or_else(|| std::env::current_dir()?);
+            .unwrap_or_else(|| std::env::current_dir().unwrap());
         let config = self.move_args.build_config.clone();
         let mut config = config.clone();
 
@@ -162,7 +162,12 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                         .unwrap_or_default();
                         let is_verified = verify_password(
                             Some(password.clone()),
-                            context.client_config.password_hash.unwrap_or_default(),
+                            context
+                                .client_config
+                                .password_hash
+                                .as_ref()
+                                .cloned()
+                                .unwrap_or_default(),
                         )?;
 
                         if !is_verified {
@@ -189,7 +194,12 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                         .unwrap_or_default();
                 let is_verified = verify_password(
                     Some(password.clone()),
-                    context.client_config.password_hash.unwrap_or_default(),
+                    context
+                        .client_config
+                        .password_hash
+                        .as_ref()
+                        .cloned()
+                        .unwrap_or_default(),
                 )?;
 
                 if !is_verified {

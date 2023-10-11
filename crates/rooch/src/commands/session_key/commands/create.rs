@@ -3,13 +3,10 @@
 
 use crate::cli_types::{TransactionOptions, WalletContextOptions};
 use clap::Parser;
-use moveos_types::{module_binding::MoveFunctionCaller, transaction::MoveAction};
+use moveos_types::module_binding::MoveFunctionCaller;
 use rooch_key::{key_derive::verify_password, keystore::AccountKeystore};
-use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
-use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_types::{
     address::RoochAddress,
-    authentication_key::AuthenticationKey,
     error::{RoochError, RoochResult},
     framework::session_key::{SessionKey, SessionKeyModule, SessionScope},
 };
@@ -58,7 +55,12 @@ impl CreateCommand {
             .unwrap_or_default();
             let is_verified = verify_password(
                 Some(password.clone()),
-                context.client_config.password_hash.unwrap_or_default(),
+                context
+                    .client_config
+                    .password_hash
+                    .as_ref()
+                    .cloned()
+                    .unwrap_or_default(),
             )?;
 
             if !is_verified {
@@ -69,7 +71,7 @@ impl CreateCommand {
 
             context
                 .keystore
-                .generate_session_key(&sender, Some(password.clone()))?
+                .generate_session_key(&sender, Some(password))?
         };
         let session_scope = self.scope;
 
@@ -91,7 +93,12 @@ impl CreateCommand {
             .unwrap_or_default();
             let is_verified = verify_password(
                 Some(password.clone()),
-                context.client_config.password_hash.unwrap_or_default(),
+                context
+                    .client_config
+                    .password_hash
+                    .as_ref()
+                    .cloned()
+                    .unwrap_or_default(),
             )?;
 
             if !is_verified {

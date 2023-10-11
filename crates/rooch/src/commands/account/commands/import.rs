@@ -35,7 +35,12 @@ impl CommandAction<()> for ImportCommand {
             let password = prompt_password("Enter the password saved in client config to import a key pair from mnemonic phrase:").unwrap_or_default();
             let is_verified = verify_password(
                 Some(password.clone()),
-                context.client_config.password_hash.unwrap_or_default(),
+                context
+                    .client_config
+                    .password_hash
+                    .as_ref()
+                    .cloned()
+                    .unwrap_or_default(),
             )?;
 
             if !is_verified {
@@ -46,7 +51,7 @@ impl CommandAction<()> for ImportCommand {
 
             context
                 .keystore
-                .import_from_mnemonic(&self.mnemonic_phrase, None, Some(&password))?
+                .import_from_mnemonic(&self.mnemonic_phrase, None, Some(password))?
         };
 
         println!("Key imported for address [{}]", result.address);

@@ -54,7 +54,12 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
             .unwrap_or_default();
             let is_verified = verify_password(
                 Some(password.clone()),
-                context.client_config.password_hash.unwrap_or_default(),
+                context
+                    .client_config
+                    .password_hash
+                    .as_ref()
+                    .cloned()
+                    .unwrap_or_default(),
             )?;
 
             if !is_verified {
@@ -68,7 +73,7 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
                     &existing_address,
                     self.mnemonic_phrase,
                     None,
-                    Some(password),
+                    Some(password.clone()),
                 )?,
                 Some(password),
             )
@@ -89,6 +94,6 @@ impl CommandAction<ExecuteTransactionResponseView> for UpdateCommand {
         let result = context
             .sign_and_execute(existing_address, action, password.clone())
             .await?;
-        context.assert_execute_success(result);
+        context.assert_execute_success(result)
     }
 }

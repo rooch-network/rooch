@@ -20,9 +20,9 @@ pub const ROOCH_TEST_NET_URL: &str = "https://test-seed.rooch.network:443/";
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ClientConfig {
+    pub keystore_path: PathBuf,
     pub password_hash: Option<String>,
     pub is_password_empty: bool,
-    pub keystore_path: PathBuf,
     pub active_address: Option<RoochAddress>,
     pub envs: Vec<Env>,
     pub active_env: Option<String>,
@@ -31,9 +31,9 @@ pub struct ClientConfig {
 impl ClientConfig {
     pub fn new(keystore_path: PathBuf) -> Self {
         ClientConfig {
+            keystore_path,
             password_hash: None,
             is_password_empty: true,
-            keystore_path,
             active_address: None,
             envs: vec![],
             active_env: None,

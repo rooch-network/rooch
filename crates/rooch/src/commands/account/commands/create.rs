@@ -34,7 +34,12 @@ impl CreateCommand {
             .unwrap_or_default();
             let is_verified = verify_password(
                 Some(password.clone()),
-                context.client_config.password_hash.unwrap_or_default(),
+                context
+                    .client_config
+                    .password_hash
+                    .as_ref()
+                    .cloned()
+                    .unwrap_or_default(),
             )?;
 
             if !is_verified {

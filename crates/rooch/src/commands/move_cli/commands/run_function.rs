@@ -102,7 +102,12 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                     .unwrap_or_default();
                     let is_verified = verify_password(
                         Some(password.clone()),
-                        context.client_config.password_hash.unwrap_or_default(),
+                        context
+                            .client_config
+                            .password_hash
+                            .as_ref()
+                            .cloned()
+                            .unwrap_or_default(),
                     )?;
 
                     if !is_verified {
@@ -117,7 +122,7 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                             &sender,
                             tx_data,
                             &session_key,
-                            Some(password.clone()),
+                            Some(password),
                         )
                         .map_err(|e| RoochError::SignMessageError(e.to_string()))?
                 };
@@ -133,7 +138,12 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                     .unwrap_or_default();
                     let is_verified = verify_password(
                         Some(password.clone()),
-                        context.client_config.password_hash.unwrap_or_default(),
+                        context
+                            .client_config
+                            .password_hash
+                            .as_ref()
+                            .cloned()
+                            .unwrap_or_default(),
                     )?;
 
                     if !is_verified {
