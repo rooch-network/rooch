@@ -27,6 +27,9 @@ pub struct Init {
     pub server_url: Option<String>,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
+    /// This is a tweak command flag to skip the integration test when executing cmd.feature file
+    #[clap(long = "skip-integration-test")]
+    skip_integration_test: bool,
 }
 
 #[async_trait]
@@ -134,11 +137,14 @@ impl CommandAction<()> for Init {
             };
 
             if let Some(env) = env {
-                let input_password = prompt_password("Enter a password to encrypt the keys in the keystore. Press enter to leave it an empty password: ")?;
-                let (password, is_password_empty) = if input_password.is_empty() {
-                    (None, true)
-                } else {
-                    (Some(input_password), false)
+                let (mut password, mut is_password_empty) = (None, true);
+                if !self.skip_integration_test {
+                    let input_password = prompt_password("Enter a password to encrypt the keys in the keystore. Press enter to leave it an empty password: ")?;
+                    (password, is_password_empty) = if input_password.is_empty() {
+                        (None, true)
+                    } else {
+                        (Some(input_password), false)
+                    };
                 };
 
                 let result = keystore.generate_and_add_new_key(None, None, password.clone())?;

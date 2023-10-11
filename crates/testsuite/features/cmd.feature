@@ -1,7 +1,7 @@
 Feature: Rooch CLI integration tests
     @serial
     Scenario: Init
-      Then cmd: "init"
+      Then cmd: "init --skip-integration-test"
       Then cmd: "env switch --alias local"
 
     @serial
