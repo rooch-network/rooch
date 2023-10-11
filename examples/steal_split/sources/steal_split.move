@@ -454,7 +454,7 @@ module rooch_examples::rooch_examples {
             account::create_signer_with_capability(&state.cap) == account::create_signer_for_test(resouce_address),
             13
         );
-        assert!(account_coin_store::is_account_accept_coin<WGBCOIN>(ctx, resouce_address), 12);
+        assert!(account_coin_store::is_accept_coin<WGBCOIN>(ctx, resouce_address), 12);
         context::drop_test_context(storage_context);
     }
 

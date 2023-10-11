@@ -112,7 +112,7 @@ module rooch_framework::account_coin_store {
     }
 
     /// Return whether the account at `addr` accept `Coin` type coins
-    public fun is_account_accept_coin<CoinType: key>(ctx: &Context, addr: address): bool {
+    public fun is_accept_coin<CoinType: key>(ctx: &Context, addr: address): bool {
         if (can_auto_accept_coin(ctx, addr)) {
             true
         } else {
@@ -123,11 +123,9 @@ module rooch_framework::account_coin_store {
     /// Check whether the address can auto accept coin.
     /// Default is true if absent
     public fun can_auto_accept_coin(ctx: &Context, addr: address): bool {
-        if (account_storage::global_exists<AutoAcceptCoins>(ctx, @rooch_framework)) {
-            let auto_accept_coins = account_storage::global_borrow<AutoAcceptCoins>(ctx, @rooch_framework);
-            if (table::contains<address, bool>(&auto_accept_coins.auto_accept_coins, addr)) {
-                return *table::borrow<address, bool>(&auto_accept_coins.auto_accept_coins, addr)
-            }
+        let auto_accept_coins = account_storage::global_borrow<AutoAcceptCoins>(ctx, @rooch_framework);
+        if (table::contains<address, bool>(&auto_accept_coins.auto_accept_coins, addr)) {
+            return *table::borrow<address, bool>(&auto_accept_coins.auto_accept_coins, addr)
         };
         true
     }
@@ -303,7 +301,7 @@ module rooch_framework::account_coin_store {
 
     fun deposit_internal<CoinType: key>(ctx: &mut Context, addr: address, coin: Coin<CoinType>) {
         assert!(
-            is_account_accept_coin<CoinType>(ctx, addr),
+            is_accept_coin<CoinType>(ctx, addr),
             error::not_found(ErrorAccountNotAcceptCoin),
         );
 

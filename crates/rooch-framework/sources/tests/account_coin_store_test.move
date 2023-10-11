@@ -9,7 +9,7 @@ module rooch_framework::account_coin_store_test{
         supply, value, mint_extend, burn_extend
     };
     use rooch_framework::account_coin_store::{Self, transfer, withdraw, withdraw_extend,
-        is_account_accept_coin, do_accept_coin, set_auto_accept_coin, balance, deposit};
+        is_accept_coin, do_accept_coin, set_auto_accept_coin, balance, deposit};
 
     #[test_only]
     struct FakeCoin has key, store {}
@@ -95,7 +95,7 @@ module rooch_framework::account_coin_store_test{
         // Registering twice should not fail.
         do_accept_coin<FakeCoin>(&mut ctx, &framework);
         do_accept_coin<FakeCoin>(&mut ctx, &framework);
-        assert!(is_account_accept_coin<FakeCoin>(&ctx, @rooch_framework), 1);
+        assert!(is_accept_coin<FakeCoin>(&ctx, @rooch_framework), 1);
 
         moveos_std::context::drop_test_context(ctx);
     }
