@@ -16,7 +16,9 @@ use moveos_types::transaction::FunctionCall;
 use moveos_types::tx_context::TxContext;
 use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionResult;
 use rooch_types::account::BalanceInfo;
-use rooch_types::framework::coin::{CoinInfo, CoinModule, CoinStore};
+use rooch_types::framework::account_coin_store::AccountCoinStoreModule;
+use rooch_types::framework::coin::{CoinInfo, CoinModule};
+use rooch_types::framework::coin_store::CoinStore;
 use std::collections::HashMap;
 use tokio::runtime::Handle;
 
@@ -82,7 +84,7 @@ impl AggregateService {
         account_addr: AccountAddress,
         coin_type: StructTag,
     ) -> Result<BalanceInfo> {
-        let coin_module = self.as_module_binding::<CoinModule>();
+        let account_coin_store_module = self.as_module_binding::<AccountCoinStoreModule>();
 
         let coin_info = self
             .get_coin_infos(vec![coin_type.clone()])
@@ -94,7 +96,8 @@ impl AggregateService {
                 anyhow::anyhow!("Can not find CoinInfo with coin_type: {}", coin_type)
             })?;
 
-        let coin_store_id = coin_module.coin_store_id(account_addr, coin_type.clone())?;
+        let coin_store_id =
+            account_coin_store_module.coin_store_id(account_addr, coin_type.clone())?;
         let balance = match coin_store_id {
             Some(coin_store_id) => {
                 let coin_store = self
@@ -118,9 +121,8 @@ impl AggregateService {
         cursor: Option<Vec<u8>>,
         limit: usize,
     ) -> Result<Vec<(Option<Vec<u8>>, BalanceInfo)>> {
-        let coin_module = self.as_module_binding::<CoinModule>();
-
-        let coin_stores_handle_opt = coin_module.coin_stores_handle(account_addr)?;
+        let account_coin_store_module = self.as_module_binding::<AccountCoinStoreModule>();
+        let coin_stores_handle_opt = account_coin_store_module.coin_stores_handle(account_addr)?;
 
         match coin_stores_handle_opt {
             Some(coin_stores_handle) => {

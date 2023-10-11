@@ -16,16 +16,11 @@ module moveos_std::object_ref {
 
     #[private_generics(T)]
     /// Get the object reference
-    public fun new<T: key>(object: &Object<T>) : ObjectRef<T> {
+    /// Note: new ObjectRef need the &mut Object<T>, because the ObjectRef can borrow mutable value from the object
+    public fun new<T: key>(object: &mut Object<T>) : ObjectRef<T> {
         //TODO should we track the reference count?
         ObjectRef {
             id: object::id(object),
-        }
-    }
-
-    public(friend) fun new_with_id<T>(id: ObjectID): ObjectRef<T> {
-        ObjectRef {
-            id: id,
         }
     }
 
@@ -41,6 +36,14 @@ module moveos_std::object_ref {
         object::internal_borrow_mut(obj)
     }
 
+    /// Remove the object from the global storage, and return the object value
+    public fun remove<T: key>(self: ObjectRef<T>) : T {
+        let ObjectRef{id} = self;
+        let object = raw_table::remove_from_global(&id);
+        let (_id, _owner, value) = object::unpack_internal(object);
+        value
+    }
+
     public fun id<T>(self: &ObjectRef<T>): ObjectID {
         self.id
     }
@@ -50,8 +53,8 @@ module moveos_std::object_ref {
         object::owner(obj)
     }
 
-    /// Check if the object is still contains in the global storage
-    public fun contains<T: key>(self: &ObjectRef<T>): bool {
+    /// Check if the object is still exist in the global storage
+    public fun exist_object<T: key>(self: &ObjectRef<T>): bool {
         raw_table::contains_global(&self.id)
     }
 

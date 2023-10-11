@@ -4,7 +4,7 @@
 module rooch_framework::transfer {    
     use moveos_std::context::Context;
     use rooch_framework::account;
-    use rooch_framework::coin;
+    use rooch_framework::account_coin_store;
     use rooch_framework::multichain_address;
     use rooch_framework::address_mapping;
 
@@ -20,7 +20,7 @@ module rooch_framework::transfer {
             account::create_account(ctx, to);
         };
 
-        coin::transfer<CoinType>(ctx, from, to, amount)
+        account_coin_store::transfer<CoinType>(ctx, from, to, amount)
     }
 
     /// Transfer `amount` of coins `CoinType` from `from` to a MultiChainAddress.
@@ -39,6 +39,6 @@ module rooch_framework::transfer {
             account::create_account(ctx, to);
             address_mapping::bind_no_check(ctx, to, maddress);
         };
-        coin::transfer<CoinType>(ctx, from, to, amount)
+        account_coin_store::transfer<CoinType>(ctx, from, to, amount)
     }
 }

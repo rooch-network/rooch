@@ -180,7 +180,7 @@ module moveos_std::context {
         let ctx = new_test_context(sender);
         
         let obj = new_object(&mut ctx, TestObjectValue{value: 1});
-        let ref = object_ref::new(&obj);
+        let ref = object_ref::new(&mut obj);
         add_object(&mut ctx, obj);
         
         {
