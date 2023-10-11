@@ -28,9 +28,9 @@ pub struct Init {
     pub server_url: Option<String>,
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
-    /// This is a tweak command flag to skip the integration test when executing cmd.feature file
-    #[clap(long = "skip-integration-test")]
-    skip_integration_test: bool,
+    /// This is a tweak command flag to skip the integration test when executing cmd.feature file or use with rooch init to ignore entering password
+    #[clap(long = "skip-password")]
+    skip_password: bool,
 }
 
 #[async_trait]
@@ -139,7 +139,7 @@ impl CommandAction<()> for Init {
 
             if let Some(env) = env {
                 let (mut password, mut is_password_empty) = (None, true);
-                if !self.skip_integration_test {
+                if !self.skip_password {
                     let input_password = prompt_password("Enter a password to encrypt the keys in the keystore. Press enter to leave it an empty password: ")?;
                     (password, is_password_empty) = if input_password.is_empty() {
                         (None, true)

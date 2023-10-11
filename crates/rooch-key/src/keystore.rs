@@ -777,9 +777,6 @@ impl AccountKeystore for FileBasedKeystore {
     ) -> Result<(), anyhow::Error> {
         self.keystore.password_hash = Some(password_hash);
         self.keystore.is_password_empty = is_password_empty;
-        if std::env::var_os("TEST_ENV").is_none() {
-            self.save()?;
-        }
         Ok(())
     }
 
