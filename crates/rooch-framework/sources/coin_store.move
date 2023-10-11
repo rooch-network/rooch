@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_framework::coin_store {
 
     use std::string;
@@ -5,7 +8,7 @@ module rooch_framework::coin_store {
     use moveos_std::object::{Self, ObjectID};
     use moveos_std::context::{Self, Context};
     use moveos_std::type_info;
-    use moveos_std::object_ref::{Self, ObjectRef};
+    use moveos_std::object_ref::{ObjectRef};
     use rooch_framework::coin::{Self, Coin};
 
     friend rooch_framework::account_coin_store;
@@ -129,14 +132,11 @@ module rooch_framework::coin_store {
     public(friend) fun create_coin_store_internal<CoinType: key>(ctx: &mut Context): ObjectRef<CoinStore>{
         coin::check_coin_info_registered<CoinType>(ctx);
 
-        let coin_store_object = context::new_object(ctx, CoinStore{
+        context::new_object(ctx, CoinStore{
             coin_type: type_info::type_name<CoinType>(),
             balance: Balance { value: 0 },
             frozen: false,
-        });
-        let ref = object_ref::new(&mut coin_store_object);
-        context::add_object(ctx, coin_store_object);
-        ref
+        })
     }
 
     fun check_coin_store_not_frozen(coin_store: &CoinStore) {

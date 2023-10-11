@@ -464,14 +464,11 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store_internal">create_coin_store_internal</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> Context): ObjectRef&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;{
     <a href="coin.md#0x3_coin_check_coin_info_registered">coin::check_coin_info_registered</a>&lt;CoinType&gt;(ctx);
 
-    <b>let</b> coin_store_object = <a href="_new_object">context::new_object</a>(ctx, <a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>{
+    <a href="_new_object">context::new_object</a>(ctx, <a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>{
         coin_type: <a href="_type_name">type_info::type_name</a>&lt;CoinType&gt;(),
         balance: <a href="coin_store.md#0x3_coin_store_Balance">Balance</a> { value: 0 },
         frozen: <b>false</b>,
-    });
-    <b>let</b> ref = <a href="_new">object_ref::new</a>(&<b>mut</b> coin_store_object);
-    <a href="_add_object">context::add_object</a>(ctx, coin_store_object);
-    ref
+    })
 }
 </code></pre>
 

@@ -6,6 +6,7 @@ module test::m {
     use moveos_std::table::{Self, Table};
     use moveos_std::context::{Self, Context};
     use moveos_std::object;
+    use moveos_std::object_ref::{ObjectRef};
     use moveos_std::object::ObjectID;
     use moveos_std::account_storage;
 
@@ -35,11 +36,8 @@ module test::m {
         table::borrow(&store.table, key)
     }
 
-    public fun save_to_object_storage(ctx: &mut Context, kv: KVStore) : ObjectID {        
-        let object = context::new_object(ctx, kv);
-        let object_id = object::id(&object);
-        context::add_object(ctx, object);
-        object_id
+    public fun save_to_object_storage(ctx: &mut Context, kv: KVStore) : ObjectRef<KVStore> {        
+        context::new_object(ctx, kv)
     }
 
     public fun borrow_from_object_storage(ctx: &mut Context, object_id: ObjectID): &KVStore {

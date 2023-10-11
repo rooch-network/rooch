@@ -10,7 +10,7 @@ module moveos_std::storage_context {
     #[test_only]
     use moveos_std::test_helper;
     #[test_only]
-    use moveos_std::tx_context::TxContext;
+    use moveos_std::tx_context::{Self, TxContext};
 
     friend moveos_std::account_storage;
     friend moveos_std::context;
@@ -95,13 +95,14 @@ module moveos_std::storage_context {
     fun test_object_storage(sender: address) {
         let ctx = moveos_std::tx_context::new_test_context(sender);
         let os = new(&mut ctx);
-        let object = object::new(&mut ctx, sender, TestObject { f: 1 });
+        let object_id = tx_context::fresh_object_id(&mut ctx);
+        let object = object::new(object_id, sender, TestObject { f: 1 });
         let object_id = object::id(&object);
         add(&mut os, object);
         assert!(contains(&os, object_id), 1000);
 
-        let object2 = object::new(&mut ctx, sender, TestObject2 { f: 1 });
-        let object_id2 = object::id(&object2);
+        let object_id2 = tx_context::fresh_object_id(&mut ctx);
+        let object2 = object::new(object_id2, sender, TestObject2 { f: 1 });
         // The object_id2 is not in the object storage
         assert!(!contains(&os, object_id2), 1001);
 
@@ -126,8 +127,8 @@ module moveos_std::storage_context {
         let sender_addr = std::signer::address_of(&sender);
         let ctx = moveos_std::tx_context::new_test_context(sender_addr);
         let os = new(&mut ctx);
-        let object = object::new(&mut ctx, sender_addr, TestObject { f: 1 });
-        let object_id = object::id(&object);
+        let object_id = tx_context::fresh_object_id(&mut ctx);
+        let object = object::new(object_id, sender_addr, TestObject { f: 1 });
 
         let _obj_ref = borrow<TestObject>(&os, object_id);
         drop_object_storage(os);
@@ -141,8 +142,8 @@ module moveos_std::storage_context {
         let sender_addr = std::signer::address_of(&sender);
         let ctx = moveos_std::tx_context::new_test_context(sender_addr);
         let os = new(&mut ctx);
-        let object = object::new(&mut ctx, sender_addr, TestObject { f: 1 });
-        let object_id = object::id(&object);
+        let object_id = tx_context::fresh_object_id(&mut ctx);
+        let object = object::new(object_id, sender_addr, TestObject { f: 1 });
         add<TestObject>(&mut os, object);
         let obj_rem1 = remove<TestObject>(&mut os, object_id);
         let obj_rem2 = remove<TestObject>(&mut os, object_id);
@@ -159,8 +160,8 @@ module moveos_std::storage_context {
         let sender_addr = std::signer::address_of(&sender);
         let ctx = moveos_std::tx_context::new_test_context(sender_addr);
         let os = new(&mut ctx);
-        let object = object::new(&mut ctx, sender_addr, TestObject { f: 1 });
-        let object_id = object::id(&object);
+        let object_id = moveos_std::tx_context::fresh_object_id(&mut ctx);
+        let object = object::new(object_id, sender_addr, TestObject { f: 1 });
 
         let obj_rem = remove<TestObject>(&mut os, object_id);
         drop_object_storage(os);
