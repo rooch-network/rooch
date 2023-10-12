@@ -146,14 +146,15 @@ impl CommandAction<()> for Init {
             };
 
             if let Some(env) = env {
-                let (mut password, mut is_password_empty) = (None, true);
-                if !self.skip_password {
-                    let input_password = prompt_password("Enter a password to encrypt the keys in the keystore. Press enter to leave it an empty password: ")?;
-                    (password, is_password_empty) = if input_password.is_empty() {
+                let (password, is_password_empty) = if !self.skip_password {
+                    let input_password = prompt_password("Enter a password to encrypt the keys. Press enter to leave it an empty password: ")?;
+                    if input_password.is_empty() {
                         (None, true)
                     } else {
                         (Some(input_password), false)
-                    };
+                    }
+                } else {
+                    (None, true)
                 };
 
                 let result = keystore.generate_and_add_new_key(
@@ -173,7 +174,7 @@ impl CommandAction<()> for Init {
                 let password_hash = hash_password(
                     &Base64::decode(&result.key_pair_data.private_key_encryption.nonce)
                         .map_err(|e| RoochError::KeyConversionError(e.to_string()))?,
-                    password.clone(),
+                    password,
                 )?;
                 keystore.set_password_hash_with_indicator(password_hash, is_password_empty)?;
 

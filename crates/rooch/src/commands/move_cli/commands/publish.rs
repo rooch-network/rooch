@@ -10,7 +10,6 @@ use move_bytecode_utils::Modules;
 use move_cli::Move;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
 use rooch_key::key_derive::verify_password;
-use rooch_key::keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_types::transaction::rooch::RoochTransaction;
 use rpassword::prompt_password;
@@ -21,6 +20,7 @@ use moveos_types::{
     addresses::MOVEOS_STD_ADDRESS, move_types::FunctionId, transaction::MoveAction,
 };
 use moveos_verifier::build::run_verifier;
+use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::address::RoochAddress;
 use rooch_types::error::{RoochError, RoochResult};
 use std::collections::BTreeMap;
