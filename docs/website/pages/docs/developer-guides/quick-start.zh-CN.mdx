@@ -8,6 +8,108 @@
 
 我们可以使用任何编程语言来实现这个小程序，我们这里将使用 Move 语言来编写它，并且让它成功运行在 Rooch 上。
 
+## 创建计数器项目
+
+在我们创建计数器合约程序前，我们可以使用 Rooch 提供的 CLI 命令来初始化一个空项目：
+
+```shell
+rooch move new counter
+```
+
+详细的方法请参考[创建 Rooch Move 合约](<++>)。
+
+为了更清楚的演示，我需要稍微修改 `Move.toml` 文件：
+
+```toml
+[addresses]
+counter_addr = "0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6"
+```
+
+将 `[addresses]` 的 `counter` 改为 `counter_addr`。
+
+接下来在 `sources` 目录里创建一个 `counter.move` 文件来编写我们的合约代码。
+
 ## 合约编写
+
+```move
+module counter_addr::counter {
+    use moveos_std::account_storage;
+    use moveos_std::context::Context;
+
+    struct Counter has key {
+        value: u64
+    }
+
+    fun init(ctx: &mut Context, account: &signer) {
+        account_storage::global_move_to(ctx, account, Counter { value: 0 })
+    }
+
+    fun increase(ctx: &mut Context) {
+        let counter = account_storage::global_borrow_mut<Counter>(ctx, @counter_addr);
+        counter.value = counter.value + 1;
+    }
+
+    entry fun incr(ctx: &mut Context) {
+        increase(ctx);
+    }
+}
+```
+
+通过简单的 21 行代码，就在 Rooch Move 上实现了简单的计数器功能。
+
+接下来将详细介绍代码的每一行功能。
+
+### 模块声明
+
+在 Move 语言中，合约通常编写在一个个模块中，简单的合约通过一个模块就能完成，而复杂的合约可能由多个模块构成。我们的计数器合约非常简单，所以只有一个 `counter` 模块。
+
+模块中，通常包含实现当前模块功能所需要的数据类型和函数。
+
+```move
+module counter_addr::counter {
+```
+
+在第 1 行中，我们用 `module` 关键字来声明一个 `counter` 模块。
+
+在 Move 系的区块链系统中，模块是通过地址来唯一标识的，即一个地址只能拥有一个同类型的模块，无法多次发布同一个类型的模块。同一份合约可以被多个地址发布，为了在巨大的区块链系统中识别出合约模块到底是谁发布的，需要通过`地址`来唯一标识。
+
+所以，声明一个 Move 模块的语法是 `module 地址::模块名`。
+
+### 导入模块
+
+```move
+use moveos_std::account_storage;
+use moveos_std::context::Context;
+```
+
+在第 2~3 行中，是导入模块的语句。要在 Rooch 上实现计数器合约，我们需要使用 Rooch 的某些功能库，此合约使用了 MoveOS 标准库提供的 `account_storage` 和 `context` 等功能模块。
+
+### 定义数据结构
+
+```move
+struct Counter has key {
+    value: u64
+}
+```
+
+我们定义一个 `Counter` 类型的结构体用来记录计数值，结构体只包含一个 `u64` 类型的字段。
+
+我们要将 `Counter` 类型的值记录到 Rooch 的全局存储中，所以需要给这个类型提供一个 `key` 能力，让 Move 能够通过`键`来查找数据。
+
+### 初始化函数
+
+```move
+fun init(ctx: &mut Context, account: &signer) {
+    account_storage::global_move_to(ctx, account, Counter { value: 0 })
+}
+```
+
+Move 中提供一个特定的初始化函数 `init` 来自动初始化合约，确保合约发布后一些必需的操作已被执行。
+
+例如，我们希望计数器合约一经发布，合约就自动为我们初始化好计数器，使它的计数值为 `0`。
+
+第 9 行是 `init` 函数的函数签名，接受两个参数 `ctx` 和 `account`。
+
+
 
 

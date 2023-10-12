@@ -8,7 +8,7 @@ MoveosStdlib = { local = "../../moveos/moveos-stdlib/moveos-stdlib" }
 RoochFramework = { local = "../../crates/rooch-framework" }
 
 [addresses]
-quick-start = "0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6"
+counter_addr = "0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6"
 std = "0x1"
 moveos_std = "0x2"
 rooch_framework = "0x3"
