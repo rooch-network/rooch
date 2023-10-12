@@ -22,7 +22,7 @@ impl CommandAction<()> for ListCommand {
         let context = self.context_options.build().await?;
         let active_address = context.client_config.active_address;
 
-        let password = if context.client_config.is_password_empty {
+        let password = if context.keystore.get_if_password_is_empty() {
             None
         } else {
             Some(

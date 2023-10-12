@@ -47,22 +47,15 @@ impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
         let action = NativeValidatorModule::remove_authentication_key_action();
 
         // Execute the Move call as a transaction
-        let mut result = if context.client_config.is_password_empty {
+        let mut result = if context.keystore.get_if_password_is_empty() {
             context
                 .sign_and_execute(existing_address, action, None)
                 .await?
         } else {
             let password =
                 prompt_password("Enter the password to delete the address:").unwrap_or_default();
-            let is_verified = verify_password(
-                Some(password.clone()),
-                context
-                    .client_config
-                    .password_hash
-                    .as_ref()
-                    .cloned()
-                    .unwrap_or_default(),
-            )?;
+            let is_verified =
+                verify_password(Some(password.clone()), context.keystore.get_password_hash())?;
 
             if !is_verified {
                 return Err(RoochError::InvalidPasswordError(

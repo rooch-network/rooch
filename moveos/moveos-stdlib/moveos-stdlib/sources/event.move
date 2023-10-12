@@ -9,8 +9,7 @@ module moveos_std::event {
     use std::hash;
     use moveos_std::bcs;
     use moveos_std::context::{Self, Context};
-    use moveos_std::object_id::{Self, ObjectID};
-    use moveos_std::object;
+    use moveos_std::object::{Self, ObjectID};
     use moveos_std::type_info;
 
     #[test_only]
@@ -30,7 +29,7 @@ module moveos_std::event {
     public fun derive_event_handle_id<T>(): ObjectID {
         let type_info = type_info::type_of<T>();
         let event_handle_address = bcs::to_address(hash::sha3_256(bcs::to_bytes(&type_info)));
-        object_id::address_to_object_id(event_handle_address)
+        object::address_to_object_id(event_handle_address)
     }
 
     fun exists_event_handle<T>(ctx: &Context): bool {

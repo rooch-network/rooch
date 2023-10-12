@@ -14,8 +14,7 @@ module creator::test {
     use creator::test0::KeyStruct;
     use moveos_std::account_storage;
     use moveos_std::context::{Self, Context};
-    use moveos_std::object;
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::{Self, ObjectID};
 
     struct Foo has key {
         x: u64,

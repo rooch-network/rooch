@@ -10,13 +10,12 @@ use rooch_types::{
     address::RoochAddress,
     authentication_key::AuthenticationKey,
     crypto::{PublicKey, RoochKeyPair, Signature},
-    error::RoochError,
     key_struct::EncryptionData,
     transaction::rooch::{RoochTransaction, RoochTransactionData},
 };
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 use std::fmt::Write;
-use std::fmt::{Display, Formatter};
 
 pub mod account_keystore;
 pub mod base_keystore;
@@ -42,7 +41,7 @@ impl AccountKeystore for Keystore {
         msg: RoochTransactionData,
         authentication_key: &AuthenticationKey,
         password: Option<String>,
-    ) -> Result<RoochTransaction, signature::Error> {
+    ) -> Result<RoochTransaction, anyhow::Error> {
         // Implement this method by delegating the call to the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => file_keystore.sign_transaction_via_session_key(
@@ -79,7 +78,7 @@ impl AccountKeystore for Keystore {
     fn get_address_public_keys(
         &self,
         password: Option<String>,
-    ) -> Result<Vec<(RoochAddress, PublicKey)>, RoochError> {
+    ) -> Result<Vec<(RoochAddress, PublicKey)>, anyhow::Error> {
         // Implement this method to collect public keys from the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => file_keystore.get_address_public_keys(password),
@@ -107,18 +106,18 @@ impl AccountKeystore for Keystore {
         }
     }
 
-    fn get_key_pair_by_password(
+    fn get_key_pair_with_password(
         &self,
         address: &RoochAddress,
         password: Option<String>,
-    ) -> Result<RoochKeyPair, RoochError> {
+    ) -> Result<RoochKeyPair, anyhow::Error> {
         // Implement this method to get the key pair by coin ID from the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => {
-                file_keystore.get_key_pair_by_password(address, password)
+                file_keystore.get_key_pair_with_password(address, password)
             }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.get_key_pair_by_password(address, password)
+                inmem_keystore.get_key_pair_with_password(address, password)
             }
         }
     }
@@ -152,7 +151,7 @@ impl AccountKeystore for Keystore {
         address: &RoochAddress,
         msg: &[u8],
         password: Option<String>,
-    ) -> Result<Signature, RoochError> {
+    ) -> Result<Signature, anyhow::Error> {
         // Implement this method to sign a hashed message for the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => file_keystore.sign_hashed(address, msg, password),
@@ -165,7 +164,7 @@ impl AccountKeystore for Keystore {
         address: &RoochAddress,
         msg: RoochTransactionData,
         password: Option<String>,
-    ) -> Result<RoochTransaction, RoochError> {
+    ) -> Result<RoochTransaction, anyhow::Error> {
         // Implement this method to sign a transaction for the appropriate variant (File or InMem)
         match self {
             Keystore::File(file_keystore) => file_keystore.sign_transaction(address, msg, password),
@@ -180,7 +179,7 @@ impl AccountKeystore for Keystore {
         address: &RoochAddress,
         msg: &T,
         password: Option<String>,
-    ) -> Result<Signature, RoochError>
+    ) -> Result<Signature, anyhow::Error>
     where
         T: Serialize,
     {
@@ -209,6 +208,35 @@ impl AccountKeystore for Keystore {
         match self {
             Keystore::File(file_keystore) => file_keystore.addresses(),
             Keystore::InMem(inmem_keystore) => inmem_keystore.addresses(),
+        }
+    }
+
+    fn set_password_hash_with_indicator(
+        &mut self,
+        password_hash: String,
+        is_password_empty: bool,
+    ) -> Result<(), anyhow::Error> {
+        match self {
+            Keystore::File(file_keystore) => {
+                file_keystore.set_password_hash_with_indicator(password_hash, is_password_empty)
+            }
+            Keystore::InMem(inmem_keystore) => {
+                inmem_keystore.set_password_hash_with_indicator(password_hash, is_password_empty)
+            }
+        }
+    }
+
+    fn get_password_hash(&self) -> String {
+        match self {
+            Keystore::File(file_keystore) => file_keystore.get_password_hash(),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.get_password_hash(),
+        }
+    }
+
+    fn get_if_password_is_empty(&self) -> bool {
+        match self {
+            Keystore::File(file_keystore) => file_keystore.get_if_password_is_empty(),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.get_if_password_is_empty(),
         }
     }
 
@@ -254,19 +282,17 @@ impl AccountKeystore for Keystore {
 }
 
 impl Display for Keystore {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let mut writer = String::new();
         match self {
             Keystore::File(file) => {
                 writeln!(writer, "Keystore Type : Rooch File")?;
                 write!(writer, "Keystore Path : {:?}", file.path)?;
-                write!(f, "{}", writer)?;
             }
             Keystore::InMem(_) => {
                 writeln!(writer, "Keystore Type : Rooch InMem")?;
-                write!(f, "{}", writer)?;
             }
         }
-        Ok(())
+        write!(f, "{}", writer)
     }
 }

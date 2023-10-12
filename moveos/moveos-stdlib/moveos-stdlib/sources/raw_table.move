@@ -7,8 +7,7 @@
 
 module moveos_std::raw_table {
     use moveos_std::tx_context::{Self, TxContext};
-    use moveos_std::object_id::{Self, ObjectID};
-    use moveos_std::object::Object;
+    use moveos_std::object::{Self, Object, ObjectID};
     
     friend moveos_std::table;
     friend moveos_std::type_table;
@@ -35,7 +34,7 @@ module moveos_std::raw_table {
 
      /// The global object storage's table handle should be `0x0`
     public(friend) fun global_object_storage_handle(): ObjectID {
-        object_id::address_to_object_id(GlobalObjectStorageHandle)
+        object::address_to_object_id(GlobalObjectStorageHandle)
     }
 
     /// Add a new entry to the table. Aborts if an entry for this
@@ -147,7 +146,7 @@ module moveos_std::raw_table {
     }
 
     public(friend) fun new_table_handle(ctx: &mut TxContext): ObjectID {
-        tx_context::fresh_object_id(ctx)
+        object::address_to_object_id(tx_context::fresh_address(ctx))
     }
 
     native fun add_box<K: copy + drop, V, B>(table_handle: ObjectID, key: K, val: Box<V>);

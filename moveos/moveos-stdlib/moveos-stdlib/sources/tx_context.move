@@ -14,7 +14,6 @@ module moveos_std::tx_context {
     use std::option::{Self, Option};
     use std::error;
     use moveos_std::bcs;
-    use moveos_std::object_id::{Self, ObjectID};
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::copyable_any::{Self, Any};
     use moveos_std::type_info;
@@ -68,11 +67,6 @@ module moveos_std::tx_context {
         let addr = derive_id(ctx.tx_hash, ctx.ids_created);
         ctx.ids_created = ctx.ids_created + 1;
         addr
-    }
-
-    /// Generate a new unique object ID
-    public(friend) fun fresh_object_id(ctx: &mut TxContext): ObjectID {
-        object_id::address_to_object_id(fresh_address(ctx))
     }
 
     public(friend) fun derive_id(hash: vector<u8>, index: u64): address {

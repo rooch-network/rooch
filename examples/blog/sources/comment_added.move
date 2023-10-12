@@ -8,7 +8,7 @@
 
 module rooch_examples::comment_added {
 
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::ObjectID;
     use rooch_examples::article::{Self, CommentAdded};
     use std::string::String;
 

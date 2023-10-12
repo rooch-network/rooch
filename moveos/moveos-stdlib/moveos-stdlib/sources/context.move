@@ -9,8 +9,7 @@ module moveos_std::context {
     use std::option::Option;
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::tx_context::{Self, TxContext};
-    use moveos_std::object_id::ObjectID;
-    use moveos_std::object::{Self, Object};
+    use moveos_std::object::{Self, Object, ObjectID};
     use moveos_std::object_ref::{Self, ObjectRef};
     use moveos_std::tx_meta::{TxMeta};
     use moveos_std::tx_result::{TxResult};
@@ -64,7 +63,7 @@ module moveos_std::context {
 
     /// Generate a new unique object ID
     public fun fresh_object_id(self: &mut Context): ObjectID {
-        tx_context::fresh_object_id(&mut self.tx_context)
+        object::address_to_object_id(tx_context::fresh_address(&mut self.tx_context))
     }
 
     /// Return the hash of the current transaction

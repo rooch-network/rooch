@@ -8,6 +8,7 @@ use crate::key_derive::{
 use crate::keystore::ImportedMnemonic;
 use bip32::DerivationPath;
 use bip39::{Language, Mnemonic, Seed};
+use fastcrypto::encoding::{Base64, Encoding};
 use rooch_types::key_struct::{MnemonicData, MnemonicResult};
 use rooch_types::{
     address::RoochAddress,
@@ -28,18 +29,29 @@ pub trait AccountKeystore {
     fn get_address_public_keys(
         &self,
         password: Option<String>,
-    ) -> Result<Vec<(RoochAddress, PublicKey)>, RoochError>;
+    ) -> Result<Vec<(RoochAddress, PublicKey)>, anyhow::Error>;
     fn get_public_key(&self, password: Option<String>) -> Result<PublicKey, anyhow::Error>;
     fn get_key_pairs(
         &self,
         address: &RoochAddress,
         password: Option<String>,
     ) -> Result<Vec<RoochKeyPair>, anyhow::Error>;
-    fn get_key_pair_by_password(
+    fn get_key_pair_with_password(
         &self,
         address: &RoochAddress,
         password: Option<String>,
-    ) -> Result<RoochKeyPair, RoochError>;
+    ) -> Result<RoochKeyPair, anyhow::Error>;
+
+    fn get_password_hash(&self) -> String;
+
+    fn get_if_password_is_empty(&self) -> bool;
+
+    fn set_password_hash_with_indicator(
+        &mut self,
+        password_hash: String,
+        is_password_empty: bool,
+    ) -> Result<(), anyhow::Error>;
+
     fn update_address_encryption_data(
         &mut self,
         address: &RoochAddress,
@@ -52,21 +64,21 @@ pub trait AccountKeystore {
         address: &RoochAddress,
         msg: &[u8],
         password: Option<String>,
-    ) -> Result<Signature, RoochError>;
+    ) -> Result<Signature, anyhow::Error>;
 
     fn sign_transaction(
         &self,
         address: &RoochAddress,
         msg: RoochTransactionData,
         password: Option<String>,
-    ) -> Result<RoochTransaction, RoochError>;
+    ) -> Result<RoochTransaction, anyhow::Error>;
 
     fn sign_secure<T>(
         &self,
         address: &RoochAddress,
         msg: &T,
         password: Option<String>,
-    ) -> Result<Signature, RoochError>
+    ) -> Result<Signature, anyhow::Error>
     where
         T: Serialize;
 
@@ -112,7 +124,8 @@ pub trait AccountKeystore {
             // generate mnemonic for the first time
         } else {
             let mnemonic_key = hash_password(
-                &result.key_pair_data.private_key_encryption.nonce,
+                &Base64::decode(&result.key_pair_data.private_key_encryption.nonce)
+                    .map_err(|e| RoochError::KeyConversionError(e.to_string()))?,
                 Some(result.key_pair_data.mnemonic_phrase.clone()),
             )?;
             let mnemonic_data = MnemonicData {
@@ -189,7 +202,7 @@ pub trait AccountKeystore {
         msg: RoochTransactionData,
         authentication_key: &AuthenticationKey,
         password: Option<String>,
-    ) -> Result<RoochTransaction, signature::Error>;
+    ) -> Result<RoochTransaction, anyhow::Error>;
 
     fn get_mnemonics(&self, password: Option<String>)
         -> Result<Vec<MnemonicResult>, anyhow::Error>;

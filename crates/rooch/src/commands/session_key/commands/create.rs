@@ -47,20 +47,13 @@ impl CreateCommand {
             .parse_account_arg(self.tx_options.sender_account.unwrap())?
             .into();
 
-        let session_auth_key = if context.client_config.is_password_empty {
+        let session_auth_key = if context.keystore.get_if_password_is_empty() {
             context.keystore.generate_session_key(&sender, None)?
         } else {
             let password =
                 prompt_password("Enter the password to create a new key pair:").unwrap_or_default();
-            let is_verified = verify_password(
-                Some(password.clone()),
-                context
-                    .client_config
-                    .password_hash
-                    .as_ref()
-                    .cloned()
-                    .unwrap_or_default(),
-            )?;
+            let is_verified =
+                verify_password(Some(password.clone()), context.keystore.get_password_hash())?;
 
             if !is_verified {
                 return Err(RoochError::InvalidPasswordError(
@@ -83,20 +76,13 @@ impl CreateCommand {
 
         println!("Generated new session key {session_auth_key} for address [{sender}]",);
 
-        let result = if context.client_config.is_password_empty {
+        let result = if context.keystore.get_if_password_is_empty() {
             context.sign_and_execute(sender, action, None).await?
         } else {
             let password =
                 prompt_password("Enter the password to create a new key pair:").unwrap_or_default();
-            let is_verified = verify_password(
-                Some(password.clone()),
-                context
-                    .client_config
-                    .password_hash
-                    .as_ref()
-                    .cloned()
-                    .unwrap_or_default(),
-            )?;
+            let is_verified =
+                verify_password(Some(password.clone()), context.keystore.get_password_hash())?;
 
             if !is_verified {
                 return Err(RoochError::InvalidPasswordError(

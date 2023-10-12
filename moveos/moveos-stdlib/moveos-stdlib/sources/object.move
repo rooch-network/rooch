@@ -9,13 +9,13 @@
 module moveos_std::object {
     
     use moveos_std::tx_context::{Self, TxContext};
-    use moveos_std::object_id::ObjectID;
 
     friend moveos_std::context;
     friend moveos_std::account_storage;
     friend moveos_std::storage_context;
     friend moveos_std::event;
     friend moveos_std::object_ref;
+    friend moveos_std::raw_table;
    
     /// Box style object
     /// The object can not be copied, droped and stored. It only can be consumed by StorageContext API.
@@ -28,10 +28,21 @@ module moveos_std::object {
         // The value must be the last field
         value: T,
     }
+  
+    /// An object ID
+    struct ObjectID has store, copy, drop {
+        // TODO should use u256 to replace address?
+        id: address,
+    }
+
+    /// Generate a new ObjectID from an address
+    public(friend) fun address_to_object_id(address: address): ObjectID {
+        ObjectID { id: address }
+    }
 
     /// Create a new object, the object is owned by `owner`
     public(friend) fun new<T: key>(ctx: &mut TxContext, owner: address, value: T): Object<T> {
-        let id = tx_context::fresh_object_id(ctx);
+        let id = address_to_object_id(tx_context::fresh_address(ctx));
         Object<T>{id, value, owner}
     }
 

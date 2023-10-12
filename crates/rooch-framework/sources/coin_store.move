@@ -2,8 +2,7 @@ module rooch_framework::coin_store {
 
     use std::string;
     use std::error;
-    use moveos_std::object;
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::{Self, ObjectID};
     use moveos_std::context::{Self, Context};
     use moveos_std::type_info;
     use moveos_std::object_ref::{Self, ObjectRef};

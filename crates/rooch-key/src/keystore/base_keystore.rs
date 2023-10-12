@@ -4,6 +4,7 @@
 use crate::key_derive::{decrypt_key, generate_new_key_pair, retrieve_key_pair};
 use crate::keystore::account_keystore::AccountKeystore;
 use anyhow::anyhow;
+use fastcrypto::encoding::{Base64, Encoding};
 use rooch_types::key_struct::{MnemonicData, MnemonicResult};
 use rooch_types::{
     address::RoochAddress,
@@ -27,6 +28,8 @@ pub(crate) struct BaseKeyStore {
     pub(crate) mnemonics: BTreeMap<String, MnemonicData>,
     #[serde_as(as = "BTreeMap<DisplayFromStr, BTreeMap<DisplayFromStr, _>>")]
     pub(crate) session_keys: BTreeMap<RoochAddress, BTreeMap<AuthenticationKey, EncryptionData>>,
+    pub(crate) password_hash: Option<String>,
+    pub(crate) is_password_empty: bool,
 }
 
 impl BaseKeyStore {
@@ -35,24 +38,26 @@ impl BaseKeyStore {
             keys,
             mnemonics: BTreeMap::new(),
             session_keys: BTreeMap::new(),
+            password_hash: None,
+            is_password_empty: true,
         }
     }
 }
 
 impl AccountKeystore for BaseKeyStore {
-    fn get_key_pair_by_password(
+    fn get_key_pair_with_password(
         &self,
         address: &RoochAddress,
         password: Option<String>,
-    ) -> Result<RoochKeyPair, RoochError> {
+    ) -> Result<RoochKeyPair, anyhow::Error> {
         if let Some(encryption) = self.keys.get(address) {
             let keypair: RoochKeyPair = retrieve_key_pair(encryption, password)?;
             Ok(keypair)
         } else {
-            Err(RoochError::SignMessageError(format!(
+            Err(anyhow::Error::new(RoochError::SignMessageError(format!(
                 "Cannot find key for address: [{:?}]",
                 address
-            )))
+            ))))
         }
     }
 
@@ -61,10 +66,10 @@ impl AccountKeystore for BaseKeyStore {
         address: &RoochAddress,
         msg: &[u8],
         password: Option<String>,
-    ) -> Result<Signature, RoochError> {
+    ) -> Result<Signature, anyhow::Error> {
         Ok(Signature::new_hashed(
             msg,
-            &self.get_key_pair_by_password(address, password)?,
+            &self.get_key_pair_with_password(address, password)?,
         ))
     }
 
@@ -73,13 +78,13 @@ impl AccountKeystore for BaseKeyStore {
         address: &RoochAddress,
         msg: &T,
         password: Option<String>,
-    ) -> Result<Signature, RoochError>
+    ) -> Result<Signature, anyhow::Error>
     where
         T: Serialize,
     {
         Ok(Signature::new_secure(
             msg,
-            &self.get_key_pair_by_password(address, password)?,
+            &self.get_key_pair_with_password(address, password)?,
         ))
     }
 
@@ -88,9 +93,9 @@ impl AccountKeystore for BaseKeyStore {
         address: &RoochAddress,
         msg: RoochTransactionData,
         password: Option<String>,
-    ) -> Result<RoochTransaction, RoochError> {
+    ) -> Result<RoochTransaction, anyhow::Error> {
         let kp = self
-            .get_key_pair_by_password(address, password)
+            .get_key_pair_with_password(address, password)
             .ok()
             .ok_or_else(|| {
                 RoochError::SignMessageError(format!("Cannot find key for address: [{address}]"))
@@ -125,7 +130,7 @@ impl AccountKeystore for BaseKeyStore {
     fn get_address_public_keys(
         &self,
         password: Option<String>,
-    ) -> Result<Vec<(RoochAddress, PublicKey)>, RoochError> {
+    ) -> Result<Vec<(RoochAddress, PublicKey)>, anyhow::Error> {
         let mut result = Vec::new();
         for (address, encryption) in &self.keys {
             let keypair: RoochKeyPair = retrieve_key_pair(encryption, password.clone())?;
@@ -190,7 +195,7 @@ impl AccountKeystore for BaseKeyStore {
         msg: RoochTransactionData,
         authentication_key: &AuthenticationKey,
         password: Option<String>,
-    ) -> Result<RoochTransaction, signature::Error> {
+    ) -> Result<RoochTransaction, anyhow::Error> {
         let encryption = self
             .session_keys
             .get(address)
@@ -231,16 +236,45 @@ impl AccountKeystore for BaseKeyStore {
         addresses
     }
 
+    fn set_password_hash_with_indicator(
+        &mut self,
+        password_hash: String,
+        is_password_empty: bool,
+    ) -> Result<(), anyhow::Error> {
+        self.password_hash = Some(password_hash);
+        self.is_password_empty = is_password_empty;
+        Ok(())
+    }
+
+    fn get_password_hash(&self) -> String {
+        self.password_hash.clone().unwrap_or_default()
+    }
+
+    fn get_if_password_is_empty(&self) -> bool {
+        self.is_password_empty
+    }
+
     fn get_mnemonics(
         &self,
         password: Option<String>,
     ) -> Result<Vec<MnemonicResult>, anyhow::Error> {
         match self.mnemonics.first_key_value() {
             Some((k, v)) => {
+                let nonce = Base64::decode(&v.mnemonic_phrase_encryption.nonce).map_err(|e| {
+                    anyhow::Error::new(RoochError::KeyConversionError(e.to_string()))
+                })?;
+                let ciphertext =
+                    Base64::decode(&v.mnemonic_phrase_encryption.ciphertext).map_err(|e| {
+                        anyhow::Error::new(RoochError::KeyConversionError(e.to_string()))
+                    })?;
+                let tag = Base64::decode(&v.mnemonic_phrase_encryption.tag).map_err(|e| {
+                    anyhow::Error::new(RoochError::KeyConversionError(e.to_string()))
+                })?;
+
                 let mnemonic_phrase = decrypt_key(
-                    &v.mnemonic_phrase_encryption.nonce,
-                    &v.mnemonic_phrase_encryption.ciphertext,
-                    &v.mnemonic_phrase_encryption.tag,
+                    nonce.as_slice(),
+                    ciphertext.as_slice(),
+                    tag.as_slice(),
                     password,
                 )?;
 
