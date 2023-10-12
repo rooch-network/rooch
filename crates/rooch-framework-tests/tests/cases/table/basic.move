@@ -57,7 +57,7 @@ script {
     }
 }
 
-//# run --signers test --args @0x67aa19f0f97630ffdbdee1014c35a70f0de510847212c3b29fa755ab53ca254f
+//# run --signers test --args @0x1a2c876ea44c751aedab69ef139181114c79abf4fb8bca363b66969218e7d815
 script {
     use std::string;
     use moveos_std::context::{Context};
