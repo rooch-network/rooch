@@ -1,5 +1,6 @@
 {
   "storage-abstraction": "Storage Abstraction",
+  "account-abstraction": "Account Abstraction",
   "transaction-flow": "Transaction Flow",
   "l1-to-l2-messaging": "L1 to L2 Messaging",
   "l2-to-l1-messaging": "L2 to L1 Messaging"
