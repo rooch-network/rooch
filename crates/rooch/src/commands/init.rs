@@ -28,9 +28,6 @@ pub struct Init {
     /// Command line input of custom server URL
     #[clap(short = 's', long = "server-url")]
     pub server_url: Option<String>,
-    /// Whether a non-empty password should be provided to rooch.keystore when it comes to the init command
-    #[clap(long = "encrypt-keystore")]
-    pub encrypt_keystore: Option<bool>,
     #[clap(short = 'm', long = "mnemonic-phrase")]
     mnemonic_phrase: Option<String>,
     /// This is a tweak command flag to skip the integration test when executing cmd.feature file or use with rooch init to ignore entering password
