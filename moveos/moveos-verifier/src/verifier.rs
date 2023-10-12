@@ -33,8 +33,8 @@ where
     verify_private_generics(module, &db)?;
     verify_entry_function_at_publish(module)?;
     verify_global_storage_access(module)?;
-    verify_init_function(module)?;
-    verify_gas_free_function(module)
+    verify_gas_free_function(module)?;
+    verify_init_function(module)
 }
 
 /// The initializer function must have the following properties in order to be executed at publication:
