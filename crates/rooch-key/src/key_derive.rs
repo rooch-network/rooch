@@ -9,6 +9,7 @@ use bip39::{Language, Mnemonic, MnemonicType, Seed};
 use chacha20poly1305::aead::Aead;
 use chacha20poly1305::{AeadCore, ChaCha20Poly1305, KeyInit};
 use fastcrypto::ed25519::{Ed25519KeyPair, Ed25519PrivateKey};
+use fastcrypto::encoding::{Base64, Encoding};
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use rand::rngs::OsRng;
 use rooch_types::address::RoochAddress;
@@ -55,9 +56,9 @@ pub fn encrypt_private_key(
     let tag = ciphertext_with_tag[ciphertext_with_tag.len() - 16..].to_vec();
 
     Ok(EncryptionData {
-        nonce: nonce.to_vec(),
-        ciphertext,
-        tag,
+        nonce: Base64::encode(nonce),
+        ciphertext: Base64::encode(ciphertext),
+        tag: Base64::encode(tag),
     })
 }
 
@@ -145,17 +146,20 @@ pub fn retrieve_key_pair(
     encryption: &EncryptionData,
     password: Option<String>,
 ) -> Result<RoochKeyPair, RoochError> {
-    // Assuming the password entered herein is correct.
-    let private_key = decrypt_private_key(
-        &encryption.nonce,
-        &encryption.ciphertext,
-        &encryption.tag,
-        password,
-    )?;
-    let kp: Ed25519KeyPair = Ed25519KeyPair::from(
+    let nonce = Base64::decode(&encryption.nonce)
+        .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
+    let ciphertext = Base64::decode(&encryption.ciphertext)
+        .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
+    let tag = Base64::decode(&encryption.tag)
+        .map_err(|e| RoochError::KeyConversionError(e.to_string()))?;
+
+    let private_key = decrypt_private_key(&nonce, &ciphertext, &tag, password)?;
+
+    let kp = Ed25519KeyPair::from(
         Ed25519PrivateKey::from_bytes(&private_key)
             .map_err(|e| RoochError::SignatureKeyGenError(e.to_string()))?,
     );
+
     Ok(kp.into())
 }
 

@@ -90,7 +90,7 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
             }
             (_, Some(session_key)) => {
                 let tx_data = context.build_tx_data(sender, action).await?;
-                let tx = if context.client_config.is_password_empty {
+                let tx = if context.keystore.get_if_password_is_empty() {
                     context
                         .keystore
                         .sign_transaction_via_session_key(&sender, tx_data, &session_key, None)
@@ -102,12 +102,7 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                     .unwrap_or_default();
                     let is_verified = verify_password(
                         Some(password.clone()),
-                        context
-                            .client_config
-                            .password_hash
-                            .as_ref()
-                            .cloned()
-                            .unwrap_or_default(),
+                        context.keystore.get_password_hash(),
                     )?;
 
                     if !is_verified {
@@ -129,7 +124,7 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                 context.execute(tx).await
             }
             (None, None) => {
-                if context.client_config.is_password_empty {
+                if context.keystore.get_if_password_is_empty() {
                     context.sign_and_execute(sender, action, None).await
                 } else {
                     let password = prompt_password(
@@ -138,12 +133,7 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                     .unwrap_or_default();
                     let is_verified = verify_password(
                         Some(password.clone()),
-                        context
-                            .client_config
-                            .password_hash
-                            .as_ref()
-                            .cloned()
-                            .unwrap_or_default(),
+                        context.keystore.get_password_hash(),
                     )?;
 
                     if !is_verified {

@@ -133,7 +133,7 @@ impl WalletContext {
     ) -> RoochResult<RoochTransaction> {
         let kp = self
             .keystore
-            .get_key_pair_by_password(&sender, password)
+            .get_key_pair_with_password(&sender, password)
             .ok()
             .ok_or_else(|| {
                 RoochError::SignMessageError(format!(
