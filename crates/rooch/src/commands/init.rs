@@ -13,7 +13,9 @@ use rooch_config::{
     rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_KEYSTORE_FILENAME, ROOCH_SERVER_CONFIG,
 };
 use rooch_key::key_derive::hash_password;
-use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
+use rooch_key::keystore::account_keystore::AccountKeystore;
+use rooch_key::keystore::file_keystore::FileBasedKeystore;
+use rooch_key::keystore::Keystore;
 use rooch_rpc_client::client_config::{ClientConfig, Env};
 use rooch_types::error::RoochError;
 use rooch_types::error::RoochResult;
@@ -26,11 +28,14 @@ pub struct Init {
     /// Command line input of custom server URL
     #[clap(short = 's', long = "server-url")]
     pub server_url: Option<String>,
-    #[clap(flatten)]
-    pub context_options: WalletContextOptions,
+    #[clap(short = 'm', long = "mnemonic-phrase")]
+    mnemonic_phrase: Option<String>,
     /// This is a tweak command flag to skip the integration test when executing cmd.feature file or use with rooch init to ignore entering password
     #[clap(long = "skip-password")]
     skip_password: bool,
+
+    #[clap(flatten)]
+    pub context_options: WalletContextOptions,
 }
 
 #[async_trait]
@@ -99,7 +104,7 @@ impl CommandAction<()> for Init {
 
                 None => {
                     println!(
-                        "Creating config file [{:?}] with server and rooch native validator.",
+                        "Creating client config file [{:?}] with rooch native validator.",
                         client_config_path
                     );
                     let url = if self.server_url.is_none() {
@@ -138,24 +143,33 @@ impl CommandAction<()> for Init {
             };
 
             if let Some(env) = env {
-                let (mut password, mut is_password_empty) = (None, true);
-                if !self.skip_password {
-                    let input_password = prompt_password("Enter a password to encrypt the keys in the keystore. Press enter to leave it an empty password: ")?;
-                    (password, is_password_empty) = if input_password.is_empty() {
+                let (password, is_password_empty) = if !self.skip_password {
+                    let input_password = prompt_password("Enter a password to encrypt the keys. Press enter to leave it an empty password: ")?;
+                    if input_password.is_empty() {
                         (None, true)
                     } else {
                         (Some(input_password), false)
-                    };
+                    }
+                } else {
+                    (None, true)
                 };
 
-                let result = keystore.generate_and_add_new_key(None, None, password.clone())?;
+                let result = keystore.generate_and_add_new_key(
+                    self.mnemonic_phrase,
+                    None,
+                    None,
+                    password.clone(),
+                )?;
                 println!("Generated new keypair for address [{}]", result.address);
-                println!("Secret Recovery Phrase : [{}]", result.result.mnemonic);
+                println!(
+                    "Secret Recovery Phrase : [{}]",
+                    result.key_pair_data.mnemonic_phrase
+                );
                 let dev_env = Env::new_dev_env();
                 let active_env_alias = dev_env.alias.clone();
 
                 let password_hash = hash_password(
-                    &Base64::decode(&result.result.encryption.nonce)
+                    &Base64::decode(&result.key_pair_data.private_key_encryption.nonce)
                         .map_err(|e| RoochError::KeyConversionError(e.to_string()))?,
                     password,
                 )?;

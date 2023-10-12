@@ -40,7 +40,7 @@ impl CommandAction<()> for BalanceCommand {
                     .map(|active_address| AccountAddress::from(active_address).into()),
                 Some,
             )
-            .expect("Account not found error");
+            .ok_or_else(|| anyhow::anyhow!("Account not found error"))?;
 
         let client = context.get_client().await?;
 

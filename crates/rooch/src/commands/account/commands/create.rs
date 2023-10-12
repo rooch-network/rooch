@@ -4,7 +4,8 @@
 use crate::cli_types::WalletContextOptions;
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
-use rooch_key::{key_derive::verify_password, keystore::AccountKeystore};
+use rooch_key::key_derive::verify_password;
+use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::error::{RoochError, RoochResult};
 use rpassword::prompt_password;
 
@@ -26,12 +27,10 @@ impl CreateCommand {
         let result = if context.keystore.get_if_password_is_empty() {
             context
                 .keystore
-                .generate_and_add_new_key(None, None, None)?
+                .generate_and_add_new_key(None, None, None, None)?
         } else {
-            let password = prompt_password(
-                "Enter the password saved in client config to create a new key pair:",
-            )
-            .unwrap_or_default();
+            let password =
+                prompt_password("Enter the password to create a new key pair:").unwrap_or_default();
             let is_verified =
                 verify_password(Some(password.clone()), context.keystore.get_password_hash())?;
 
@@ -43,7 +42,7 @@ impl CreateCommand {
 
             context
                 .keystore
-                .generate_and_add_new_key(None, None, Some(password))?
+                .generate_and_add_new_key(None, None, None, Some(password))?
         };
 
         let address = AccountAddress::from(result.address).to_hex_literal();
@@ -51,7 +50,10 @@ impl CreateCommand {
             "Generated new keypair for address with key pair type [{}]",
             result.address
         );
-        println!("Secret Recovery Phrase : [{}]", result.result.mnemonic);
+        println!(
+            "Secret Recovery Phrase : [{}]",
+            result.key_pair_data.mnemonic_phrase
+        );
 
         Ok(address)
     }

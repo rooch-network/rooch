@@ -5,8 +5,7 @@ use crate::cli_types::CommandAction;
 use crate::commands::account::commands::balance::BalanceCommand;
 use async_trait::async_trait;
 use commands::{
-    create::CreateCommand, import::ImportCommand, list::ListCommand, nullify::NullifyCommand,
-    switch::SwitchCommand, update::UpdateCommand,
+    create::CreateCommand, list::ListCommand, nullify::NullifyCommand, switch::SwitchCommand,
 };
 use rooch_types::error::{RoochError, RoochResult};
 use std::path::PathBuf;
@@ -31,9 +30,7 @@ impl CommandAction<String> for Account {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
             AccountCommand::List(list) => list.execute().await.map(|_| "".to_owned()),
-            AccountCommand::Import(import) => import.execute().await.map(|_| "".to_owned()),
             AccountCommand::Switch(switch) => switch.execute().await.map(|_| "".to_owned()),
-            AccountCommand::Update(update) => update.execute().await.map(|_| "".to_owned()),
             AccountCommand::Nullify(nullify) => nullify.execute().await.map(|_| "".to_owned()),
             AccountCommand::Balance(balance) => balance.execute().await.map(|_| "".to_owned()),
         }
@@ -46,9 +43,7 @@ impl CommandAction<String> for Account {
 pub enum AccountCommand {
     Create(CreateCommand),
     List(ListCommand),
-    Import(ImportCommand),
     Switch(SwitchCommand),
-    Update(UpdateCommand),
     Nullify(NullifyCommand),
     Balance(BalanceCommand),
 }
