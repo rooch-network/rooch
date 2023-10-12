@@ -157,7 +157,6 @@ impl CommandAction<()> for Init {
                     (None, true)
                 };
 
-                println!("OnemnemonicDebug  password {:?}", password);
                 let result = keystore.generate_and_add_new_key(
                     self.mnemonic_phrase,
                     None,
@@ -177,7 +176,6 @@ impl CommandAction<()> for Init {
                         .map_err(|e| RoochError::KeyConversionError(e.to_string()))?,
                     password,
                 )?;
-                println!("OnemnemonicDebug  password_hash {:?}", password_hash);
                 keystore.set_password_hash_with_indicator(password_hash, is_password_empty)?;
 
                 let client_config = ClientConfig {
