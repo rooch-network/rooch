@@ -3,7 +3,7 @@
 
 module rooch_examples::box_fun {
     use std::string::{Self, String};
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::ObjectID;
     use moveos_std::context::{Context};
     use rooch_examples::box;
     use rooch_examples::box_friend;

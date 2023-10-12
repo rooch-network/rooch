@@ -19,7 +19,6 @@ events emitted to a handle and emit events to the event store.
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 <b>use</b> <a href="context.md#0x2_context">0x2::context</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="type_info.md#0x2_type_info">0x2::type_info</a>;
 </code></pre>
 
@@ -62,7 +61,7 @@ A handle for an event such that:
 A globally unique ID for this event stream. event handler id equal to guid.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_derive_event_handle_id">derive_event_handle_id</a>&lt;T&gt;(): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_derive_event_handle_id">derive_event_handle_id</a>&lt;T&gt;(): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
@@ -74,7 +73,7 @@ A globally unique ID for this event stream. event handler id equal to guid.
 <pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_derive_event_handle_id">derive_event_handle_id</a>&lt;T&gt;(): ObjectID {
     <b>let</b> <a href="type_info.md#0x2_type_info">type_info</a> = <a href="type_info.md#0x2_type_info_type_of">type_info::type_of</a>&lt;T&gt;();
     <b>let</b> event_handle_address = bcs::to_address(<a href="_sha3_256">hash::sha3_256</a>(<a href="_to_bytes">bcs::to_bytes</a>(&<a href="type_info.md#0x2_type_info">type_info</a>)));
-    <a href="object_id.md#0x2_object_id_address_to_object_id">object_id::address_to_object_id</a>(event_handle_address)
+    <a href="object.md#0x2_object_address_to_object_id">object::address_to_object_id</a>(event_handle_address)
 }
 </code></pre>
 
@@ -90,7 +89,7 @@ Method to get event handle Metadata
 If event_handle_id doesn't exist, sender will be default address 0x0
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_get_event_handle">get_event_handle</a>&lt;T&gt;(ctx: &<a href="context.md#0x2_context_Context">context::Context</a>): (<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, <b>address</b>, u64)
+<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_get_event_handle">get_event_handle</a>&lt;T&gt;(ctx: &<a href="context.md#0x2_context_Context">context::Context</a>): (<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, <b>address</b>, u64)
 </code></pre>
 
 

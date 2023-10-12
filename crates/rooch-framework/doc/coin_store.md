@@ -26,7 +26,6 @@
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::object</a>;
-<b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="">0x2::object_ref</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
@@ -359,7 +358,7 @@ Deposit <code>amount</code> Coin<CoinType> to the balance of the passed-in <code
 Get if the CoinStore is frozen via the coin store id
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_is_coin_store_frozen">is_coin_store_frozen</a>(ctx: &<a href="_Context">context::Context</a>, coin_store_id: <a href="_ObjectID">object_id::ObjectID</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_is_coin_store_frozen">is_coin_store_frozen</a>(ctx: &<a href="_Context">context::Context</a>, coin_store_id: <a href="_ObjectID">object::ObjectID</a>): bool
 </code></pre>
 
 
@@ -391,7 +390,7 @@ Get the balance of the CoinStore with the coin store id
 If the CoinStore is not exist, return 0
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_get_balance_with_id">get_balance_with_id</a>(ctx: &<a href="_Context">context::Context</a>, coin_store_id: <a href="_ObjectID">object_id::ObjectID</a>): u256
+<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_get_balance_with_id">get_balance_with_id</a>(ctx: &<a href="_Context">context::Context</a>, coin_store_id: <a href="_ObjectID">object::ObjectID</a>): u256
 </code></pre>
 
 
@@ -423,7 +422,7 @@ This function is for he <code>CoinType</code> module to extend,
 Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the coin store id
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_freeze_coin_store_extend">freeze_coin_store_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, coin_store_id: <a href="_ObjectID">object_id::ObjectID</a>, frozen: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_freeze_coin_store_extend">freeze_coin_store_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, coin_store_id: <a href="_ObjectID">object::ObjectID</a>, frozen: bool)
 </code></pre>
 
 

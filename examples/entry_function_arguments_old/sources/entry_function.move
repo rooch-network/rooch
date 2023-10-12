@@ -3,7 +3,7 @@
 
 module rooch_examples::entry_function {
    use moveos_std::event;
-   use moveos_std::object_id::ObjectID;
+   use moveos_std::object::ObjectID;
    use moveos_std::context::Context;
 
    struct BoolEvent {

@@ -110,7 +110,7 @@ impl std::fmt::Display for ObjectID {
 
 impl MoveStructType for ObjectID {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = ident_str!("object_id");
+    const MODULE_NAME: &'static IdentStr = ident_str!("object");
     const STRUCT_NAME: &'static IdentStr = ident_str!("ObjectID");
 }
 

@@ -4,7 +4,7 @@
 module rooch_examples::something_aggregate {
     use std::string::String;
 
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::ObjectID;
     use moveos_std::context::Context;
     use rooch_examples::something;
     use rooch_examples::something_do_logic;

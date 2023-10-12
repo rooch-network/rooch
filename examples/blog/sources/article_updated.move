@@ -8,7 +8,7 @@
 
 module rooch_examples::article_updated {
 
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::ObjectID;
     use rooch_examples::article::{Self, ArticleUpdated};
     use std::string::String;
 

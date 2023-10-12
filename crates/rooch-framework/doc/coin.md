@@ -39,7 +39,7 @@ This module provides the foundation for typesafe Coins.
 <b>use</b> <a href="">0x2::account_storage</a>;
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::event</a>;
-<b>use</b> <a href="">0x2::object_id</a>;
+<b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 </code></pre>
@@ -581,7 +581,7 @@ Return true if the type <code>CoinType1</code> is same with <code>CoinType2</cod
 Return CoinInfos table handle
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_infos_handle">coin_infos_handle</a>(ctx: &<a href="_Context">context::Context</a>): <a href="_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_infos_handle">coin_infos_handle</a>(ctx: &<a href="_Context">context::Context</a>): <a href="_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
