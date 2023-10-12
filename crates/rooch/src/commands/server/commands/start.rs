@@ -102,7 +102,7 @@ impl CommandAction<()> for StartCommand {
 
                 (sequencer_keypair, proposer_keypair, relayer_keypair)
             } else {
-                let password = prompt_password("Enter the password to create a new key pair:")
+                let password = prompt_password("Enter the password:")
                     .unwrap_or_default();
                 let is_verified =
                     verify_password(Some(password.clone()), context.keystore.get_password_hash())?;

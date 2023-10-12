@@ -156,6 +156,7 @@ impl AccountKeystore for FileBasedKeystore {
     ) -> Result<(), anyhow::Error> {
         self.keystore.password_hash = Some(password_hash);
         self.keystore.is_password_empty = is_password_empty;
+        self.save()?;
         Ok(())
     }
 

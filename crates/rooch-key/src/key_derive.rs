@@ -27,16 +27,6 @@ pub const DERIVATION_PATH_PURPOSE_SCHNORR: u32 = 44;
 pub const DERIVATION_PATH_PURPOSE_ECDSA: u32 = 54;
 pub const DERIVATION_PATH_PURPOSE_SECP256R1: u32 = 74;
 
-/// Derivation path template
-/// A piece of data which tells a wallet how to derive a specific key within a tree of keys
-/// 637 is the key for Aptos
-/// https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki
-/// m / purpose' / coin_type' / account' / change / address_index
-// pub const ROOCH_DERIVATION_PATH: &str = "m/{purpose}'/{coin_type}'/0'/0'/{account_index}'";
-pub const ROOCH_DERIVATION_PATH: &str = "m/{}'/{}'/0'/0'/{}'";
-//
-// Ok(format!("m/{}'/{}/0'/0'/0'", purpose, coin_type)
-
 pub fn encrypt_key(key: &[u8], password: Option<String>) -> Result<EncryptionData, RoochError> {
     let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
     let mut output_key_material = [0u8; 32];
