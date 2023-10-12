@@ -183,7 +183,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         // only for integration test, generate test key pairs
         if chain_id_opt.is_test_or_dev_or_local() {
             let result = generate_new_key_pair(
-                None, None, None, // TODO: provide a password option for server start
+                None, None, None, None, // TODO: provide a password option for server start
             )?;
             let kp: RoochKeyPair =
                 retrieve_key_pair(&result.key_pair_data.private_key_encryption, None)?; // TODO: provide a password option for server start

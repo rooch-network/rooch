@@ -244,8 +244,10 @@ impl AccountKeystore for BaseKeyStore {
                     password,
                 )?;
 
+                let mnemonic_phrase = String::from_utf8(mnemonic_phrase)
+                    .map_err(|e| anyhow::anyhow!("Parse mnemonic phrase error:{}", e))?;
                 let mnemonic_generated_address = MnemonicResult {
-                    mnemonic_phrase: mnemonic_phrase.into(),
+                    mnemonic_phrase,
                     mnemonic_phrase_key: k.clone(),
                     mnemonic_data: v.clone(),
                 };

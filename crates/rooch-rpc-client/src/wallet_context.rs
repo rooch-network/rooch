@@ -12,7 +12,7 @@ use rooch_config::server_config::ServerConfig;
 use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_SERVER_CONFIG};
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::file_keystore::FileBasedKeystore;
-use rooch_key::keystore::keystore::Keystore;
+use rooch_key::keystore::Keystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView};
 use rooch_types::address::RoochAddress;
 use rooch_types::crypto::Signature;

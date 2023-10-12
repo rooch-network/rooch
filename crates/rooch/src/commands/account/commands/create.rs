@@ -49,7 +49,7 @@ impl CreateCommand {
 
             context
                 .keystore
-                .generate_and_add_new_key(None,None, None, Some(password))?
+                .generate_and_add_new_key(None, None, None, Some(password))?
         };
 
         let address = AccountAddress::from(result.address).to_hex_literal();

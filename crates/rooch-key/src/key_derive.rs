@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Error;
 use argon2::password_hash::{PasswordHash, PasswordHasher, SaltString};
 use argon2::Argon2;
 use argon2::PasswordVerifier;
@@ -18,8 +17,8 @@ use rooch_types::error::RoochError;
 use rooch_types::key_struct::{EncryptionData, GenerateNewKeyPair, GeneratedKeyPair};
 use rooch_types::multichain_id::RoochMultiChainID;
 use slip10_ed25519::derive_ed25519_private_key;
+use std::str::FromStr;
 use std::string::String;
-use proptest::char::any;
 
 // Purpose constants
 pub const DERIVATION_PATH_PURPOSE_ED25519: u32 = 44;
@@ -187,21 +186,15 @@ pub fn validate_derivation_path(
                 {
                     Ok(p)
                 } else {
-                    Err(RoochError::SignatureKeyGenError(
-                        "Invalid derivation path".to_owned(),
-                    ))
+                    Err(anyhow::anyhow!("Invalid derivation path: {}", p))
                 }
             } else {
-                anyhow::Error(RoochError::SignatureKeyGenError(
-                    "Invalid derivation path".to_owned(),
-                ))
+                Err(anyhow::anyhow!("Invalid derivation path: {}", p))
             }
         }
         None => Ok(format!("m/{}'/{}'/0'/0'/0'", purpose, coin_type)
             .parse()
-            .map_err(|_| {
-                RoochError::SignatureKeyGenError("Cannot parse derivation path".to_owned())
-            })?),
+            .map_err(|e| anyhow::anyhow!("Cannot parse derivation path, error:{}", e))?),
     }
 }
 
@@ -216,13 +209,10 @@ pub fn generate_derivation_path(account_index: u32) -> Result<DerivationPath, Ro
         RoochMultiChainID::Rooch as u32,
     );
 
-    Ok(
-        format!("m/{}'/{}'/0'/0'/{}'", purpose, coin_type, account_index)
-            .parse()
-            .map_err(|_| {
-                RoochError::SignatureKeyGenError("Cannot parse derivation path".to_owned())
-            })?,
+    DerivationPath::from_str(
+        format!("m/{}'/{}'/0'/0'/{}'", purpose, coin_type, account_index).as_str(),
     )
+    .map_err(|_| RoochError::SignatureKeyGenError("Cannot parse derivation path".to_owned()))
 }
 
 pub fn generate_new_key_pair(
@@ -245,7 +235,7 @@ pub fn generate_new_key_pair(
 
     let private_key_encryption =
         encrypt_key(&sk, password.clone()).expect("Encryption failed for private key");
-    let mnemonic_phrase_encryption = encrypt_key(&mnemonic.phrase().as_bytes(), password)
+    let mnemonic_phrase_encryption = encrypt_key(mnemonic.phrase().as_bytes(), password)
         .expect("Encryption failed for mnemonic phrase");
 
     let address = derive_address_from_private_key(sk)?;

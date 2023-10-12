@@ -5,7 +5,7 @@ use crate::key_derive::{
     derive_address_from_private_key, derive_private_key_from_path, encrypt_key,
     generate_derivation_path, generate_new_key_pair, hash_password,
 };
-use crate::keystore::keystore::ImportedMnemonic;
+use crate::keystore::ImportedMnemonic;
 use bip32::DerivationPath;
 use bip39::{Language, Mnemonic, Seed};
 use rooch_types::key_struct::{MnemonicData, MnemonicResult};
@@ -97,13 +97,20 @@ pub trait AccountKeystore {
 
         let result =
             generate_new_key_pair(mnemonic_phrase, derivation_path, word_length, password)?;
-        let new_address = result.address.clone();
+        let new_address = result.address;
         self.add_address_encryption_data(
             new_address,
             result.key_pair_data.private_key_encryption.clone(),
         )?;
-        // generate mnemonic for the first time
-        if one_mnemonic.is_none() {
+        // reuse mnemonic if mnemonic already generate
+        if let Some(mut update_mnemonic) = one_mnemonic {
+            update_mnemonic.mnemonic_data.addresses.push(new_address);
+            self.update_mnemonic_data(
+                update_mnemonic.mnemonic_phrase_key,
+                update_mnemonic.mnemonic_data,
+            )?;
+            // generate mnemonic for the first time
+        } else {
             let mnemonic_key = hash_password(
                 &result.key_pair_data.private_key_encryption.nonce,
                 Some(result.key_pair_data.mnemonic_phrase.clone()),
@@ -113,14 +120,6 @@ pub trait AccountKeystore {
                 mnemonic_phrase_encryption: result.key_pair_data.mnemonic_phrase_encryption.clone(),
             };
             self.add_mnemonic_data(mnemonic_key, mnemonic_data)?;
-            // reuse mnemonic if mnemonic already generate
-        } else {
-            let mut update_mnemonic = one_mnemonic.clone().unwrap();
-            update_mnemonic.mnemonic_data.addresses.push(new_address);
-            self.update_mnemonic_data(
-                update_mnemonic.mnemonic_phrase_key,
-                update_mnemonic.mnemonic_data,
-            )?;
         }
 
         Ok(result)

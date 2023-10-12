@@ -14,7 +14,7 @@ use rooch_config::{
 use rooch_key::key_derive::hash_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::file_keystore::FileBasedKeystore;
-use rooch_key::keystore::keystore::Keystore;
+use rooch_key::keystore::Keystore;
 use rooch_rpc_client::client_config::{ClientConfig, Env};
 use rooch_types::error::RoochError;
 use rooch_types::error::RoochResult;
