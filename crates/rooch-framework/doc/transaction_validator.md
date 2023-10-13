@@ -48,7 +48,7 @@
 Transaction exceeded its allocated max gas
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_ErrorOutOfGas">ErrorOutOfGas</a>: u64 = 6;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_ErrorOutOfGas">ErrorOutOfGas</a>: u64 = 1;
 </code></pre>
 
 

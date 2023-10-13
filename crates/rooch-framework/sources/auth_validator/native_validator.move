@@ -18,7 +18,7 @@ module rooch_framework::native_validator {
     const NATIVE_VALIDATOR_ID: u64 = 0;
 
     // error code
-    const ErrorInvalidPublicKeyLength: u64 = 0;
+    const ErrorInvalidPublicKeyLength: u64 = 1;
 
     struct NativeValidator has store, drop {}
 

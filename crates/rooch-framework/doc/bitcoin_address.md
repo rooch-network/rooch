@@ -70,7 +70,7 @@ Bech32 addresses including P2WPKH and P2WSH are 42 characters
 
 
 
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidCompressedPublicKeyLength">ErrorInvalidCompressedPublicKeyLength</a>: u64 = 2;
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidCompressedPublicKeyLength">ErrorInvalidCompressedPublicKeyLength</a>: u64 = 3;
 </code></pre>
 
 
@@ -79,7 +79,7 @@ Bech32 addresses including P2WPKH and P2WSH are 42 characters
 
 
 
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidDecimalPrefix">ErrorInvalidDecimalPrefix</a>: u64 = 0;
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidDecimalPrefix">ErrorInvalidDecimalPrefix</a>: u64 = 1;
 </code></pre>
 
 
@@ -88,7 +88,7 @@ Bech32 addresses including P2WPKH and P2WSH are 42 characters
 
 
 
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidHashedPublicKeyLength">ErrorInvalidHashedPublicKeyLength</a>: u64 = 3;
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidHashedPublicKeyLength">ErrorInvalidHashedPublicKeyLength</a>: u64 = 4;
 </code></pre>
 
 
@@ -97,7 +97,7 @@ Bech32 addresses including P2WPKH and P2WSH are 42 characters
 
 
 
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidSchnorrPublicKeyLength">ErrorInvalidSchnorrPublicKeyLength</a>: u64 = 4;
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidSchnorrPublicKeyLength">ErrorInvalidSchnorrPublicKeyLength</a>: u64 = 5;
 </code></pre>
 
 
@@ -106,7 +106,7 @@ Bech32 addresses including P2WPKH and P2WSH are 42 characters
 
 
 
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidScriptVersion">ErrorInvalidScriptVersion</a>: u64 = 1;
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidScriptVersion">ErrorInvalidScriptVersion</a>: u64 = 2;
 </code></pre>
 
 

@@ -11,7 +11,7 @@ module moveos_std::copyable_any {
     use moveos_std::bcs;
 
     /// The type provided for `unpack` is not the same as was given for `pack`.
-    const ErrorTypeMismatch: u64 = 0;
+    const ErrorTypeMismatch: u64 = 1;
 
     /// The same as `any::Any` but with the copy ability.
     struct Any has drop, store, copy {

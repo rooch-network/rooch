@@ -21,7 +21,7 @@ module rooch_framework::transaction_validator {
 
 
     /// Transaction exceeded its allocated max gas
-    const ErrorOutOfGas: u64 = 6;
+    const ErrorOutOfGas: u64 = 1;
 
     //TODO Migrate the error code to the auth_validator module 
     /// Validate errors. These are separated out from the other errors in this

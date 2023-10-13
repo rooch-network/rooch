@@ -18,10 +18,10 @@ use move_vm_types::{
 use smallvec::smallvec;
 use std::collections::VecDeque;
 
-pub const INVALID_PUBKEY: u64 = 0;
-pub const EXCESSIVE_SCRIPT_SIZE: u64 = 1;
-pub const INVALID_DATA: u64 = 2;
-pub const INVALID_SCRIPT_VERSION: u64 = 3;
+pub const INVALID_PUBKEY: u64 = 1;
+pub const EXCESSIVE_SCRIPT_SIZE: u64 = 2;
+pub const INVALID_DATA: u64 = 3;
+pub const INVALID_SCRIPT_VERSION: u64 = 4;
 
 /***************************************************************************************************
  * native fun base58

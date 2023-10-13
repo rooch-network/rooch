@@ -11,13 +11,13 @@ module rooch_framework::ecdsa_k1_recoverable {
     const KECCAK256: u8 = 0;
 
     /// Error if the public key cannot be recovered from the signature.
-    const ErrorFailToRecoverPubKey: u64 = 0;
+    const ErrorFailToRecoverPubKey: u64 = 1;
 
     /// Error if the signature is invalid.
-    const ErrorInvalidSignature: u64 = 1;
+    const ErrorInvalidSignature: u64 = 2;
 
     /// Error if the public key is invalid.
-    const ErrorInvalidPubKey: u64 = 2;
+    const ErrorInvalidPubKey: u64 = 3;
 
     /// built-in functions
     public fun public_key_length(): u64 {
