@@ -1,6 +1,7 @@
 {
   "installation": "安装",
   "cli": "CLI",
+  "quick-start": "快速开始",
   "faucet": {
     "title": "水龙头",
     "display": "hidden"

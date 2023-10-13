@@ -6,7 +6,7 @@
 
 计数器是一个计数的小程序，它包含一个初始值，我们可以通过一个递增指令，让它的值递增，从而达到计数的目的。
 
-我们可以使用任何编程语言来实现这个小程序，我们这里将使用 Move 语言来编写它，并且让它成功运行在 Rooch 上。
+我们可以使用任何编程语言来实现这个小程序，这篇教程将使用 Move 语言来编写它，并且让它成功运行在 Rooch 上。
 
 ## 创建计数器项目
 
@@ -16,9 +16,9 @@
 rooch move new counter
 ```
 
-详细的方法请参考[创建 Rooch Move 合约](<++>)。
+详细的方法请参考[创建 Rooch Move 合约](./create-rooch-move-contract.zh-CN.mdx)。
 
-为了更清楚的演示，我需要稍微修改 `Move.toml` 文件：
+为了更清楚的演示，我需要稍微修改 `Move.toml` 文件，让地址的别名（命名地址）更加清晰：
 
 ```toml
 [addresses]
@@ -112,7 +112,7 @@ Move 中提供一个特定的初始化函数 `init` 来自动初始化合约，�
 
 ### 递增函数
 
-接下来，我们要定义一个递增函数，每执行一次，就让计数器的值递增 1。
+接下来，我们要定义一个递增函数，每执行一次，就让计数器的值递增 `1`。
 
 ```move
 fun increase(ctx: &mut Context) {
@@ -135,7 +135,7 @@ fun increase(ctx: &mut Context) {
 
 入口函数是由 `entry` 关键字修饰的函数。
 
-出于安全考虑，在 Move 虚拟机中禁止了外部（命令行等）直接调用操作模块数据的函数，而是提供一种名为`入口函数`的方式来间接调用逻辑函数，入口函数是合约对外暴露的一种接口。
+出于安全考虑，在 Move 虚拟机中禁止了外部（命令行等）直接调用操作模块数据的函数，而是提供一种名为`入口函数`的方式来间接调用逻辑函数，入口函数是合约向外暴露的一种接口。
 
 ```move
 entry fun incr(ctx: &mut Context) {
@@ -164,7 +164,7 @@ StoreConfig init store dir "/home/joe/.rooch/local/roochdb/rooch_store" "/home/j
 2023-10-13T04:04:17.615393Z  INFO rooch_rpc_server: Available JSON-RPC methods : ["eth_blockNumber", "eth_getBalance", "eth_gasPrice", "net_version", "rooch_listAnnotatedStates", "rooch_getBalance", "rooch_sendRawTransaction", "rooch_getAnnotatedStates", "rooch_getTransactionsByHash", "rooch_executeRawTransaction", "rooch_getEventsByEventHandle", "eth_getTransactionCount", "eth_sendTransaction", "rooch_executeViewFunction", "rooch_getBalances", "eth_getBlockByNumber", "eth_feeHistory", "rooch_listStates", "rooch_getTransactionsByOrder", "eth_sendRawTransaction", "rooch_getChainID", "eth_getTransactionByHash", "eth_getBlockByHash", "eth_getTransactionReceipt", "eth_chainId", "eth_estimateGas", "rooch_getStates"]
 ```
 
-2. 开启令一个终端，并切换到 `counter` 项目的根目录，编译合约：
+2. 开启另一个终端，并切换到 `counter` 项目的根目录，编译合约：
 
 ```shell
 $ rooch move build
@@ -268,6 +268,3 @@ $ rooch resource --address 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21
 至此，你已经了解了如何在 Rooch 中编写合约以及如何在命令行中调用合约了。
 
 接下来，我们增加一点点难度，我们将演示如何在前端中运行和使用计数器合约程序。
-
-
-

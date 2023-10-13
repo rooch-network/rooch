@@ -1,6 +1,7 @@
 {
   "installation": "Installation",
   "cli": "CLI",
+  "quick-start": "Quick start",
   "faucet": {
     "title": "Faucet",
     "display": "hidden"
