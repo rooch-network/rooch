@@ -14,7 +14,7 @@ use move_vm_types::{
 use smallvec::smallvec;
 use std::collections::VecDeque;
 
-pub const DECODE_FAILED: u64 = 0;
+pub const DECODE_FAILED: u64 = 1;
 
 /***************************************************************************************************
  * native fun base58

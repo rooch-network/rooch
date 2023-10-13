@@ -10,10 +10,10 @@ module rooch_framework::schnorr {
     const SHA256: u8 = 1;
 
     /// Error if the signature is invalid.
-    const ErrorInvalidSignature: u64 = 0;
+    const ErrorInvalidSignature: u64 = 1;
 
     /// Error if the public key is invalid.
-    const ErrorInvalidPubKey: u64 = 1;
+    const ErrorInvalidPubKey: u64 = 2;
 
     /// built-in functions
     public fun public_key_length(): u64 {

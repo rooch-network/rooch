@@ -108,7 +108,7 @@ It is used to store the account's resources and modules
 The account with the given address already exists
 
 
-<pre><code><b>const</b> <a href="account_storage.md#0x2_account_storage_ErrorAccountAlreadyExists">ErrorAccountAlreadyExists</a>: u64 = 0;
+<pre><code><b>const</b> <a href="account_storage.md#0x2_account_storage_ErrorAccountAlreadyExists">ErrorAccountAlreadyExists</a>: u64 = 1;
 </code></pre>
 
 
@@ -118,7 +118,7 @@ The account with the given address already exists
 The resource with the given type already exists
 
 
-<pre><code><b>const</b> <a href="account_storage.md#0x2_account_storage_ErrorResourceAlreadyExists">ErrorResourceAlreadyExists</a>: u64 = 1;
+<pre><code><b>const</b> <a href="account_storage.md#0x2_account_storage_ErrorResourceAlreadyExists">ErrorResourceAlreadyExists</a>: u64 = 2;
 </code></pre>
 
 
@@ -128,7 +128,7 @@ The resource with the given type already exists
 The resource with the given type not exists
 
 
-<pre><code><b>const</b> <a href="account_storage.md#0x2_account_storage_ErrorResourceNotExists">ErrorResourceNotExists</a>: u64 = 2;
+<pre><code><b>const</b> <a href="account_storage.md#0x2_account_storage_ErrorResourceNotExists">ErrorResourceNotExists</a>: u64 = 3;
 </code></pre>
 
 

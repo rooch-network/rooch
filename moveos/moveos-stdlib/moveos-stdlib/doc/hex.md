@@ -26,7 +26,7 @@ HEX (Base16) encoding utility.
 
 
 
-<pre><code><b>const</b> <a href="hex.md#0x2_hex_ErrorInvalidHexLength">ErrorInvalidHexLength</a>: u64 = 0;
+<pre><code><b>const</b> <a href="hex.md#0x2_hex_ErrorInvalidHexLength">ErrorInvalidHexLength</a>: u64 = 1;
 </code></pre>
 
 
@@ -35,7 +35,7 @@ HEX (Base16) encoding utility.
 
 
 
-<pre><code><b>const</b> <a href="hex.md#0x2_hex_ErrorNotValidHexCharacter">ErrorNotValidHexCharacter</a>: u64 = 1;
+<pre><code><b>const</b> <a href="hex.md#0x2_hex_ErrorNotValidHexCharacter">ErrorNotValidHexCharacter</a>: u64 = 2;
 </code></pre>
 
 

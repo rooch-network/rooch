@@ -18,10 +18,10 @@ module moveos_std::address {
     const MAX: u256 = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
 
     /// Error from `from_bytes` when it is supplied too many or too few bytes.
-    const ErrorAddressParseError: u64 = 0;
+    const ErrorAddressParseError: u64 = 1;
 
     /// Error from `from_u256` when
-    const ErrorU256TooBigToConvertToAddress: u64 = 1;
+    const ErrorU256TooBigToConvertToAddress: u64 = 2;
 
     //TODO
     /// Convert `a` into a u256 by interpreting `a` as the bytes of a big-endian integer

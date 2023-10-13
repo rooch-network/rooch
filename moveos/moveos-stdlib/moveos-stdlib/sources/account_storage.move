@@ -17,12 +17,12 @@ module moveos_std::account_storage {
     use moveos_std::move_module::{Self, MoveModule};
 
     /// The account with the given address already exists
-    const ErrorAccountAlreadyExists: u64 = 0;
+    const ErrorAccountAlreadyExists: u64 = 1;
 
     /// The resource with the given type already exists
-    const ErrorResourceAlreadyExists: u64 = 1;
+    const ErrorResourceAlreadyExists: u64 = 2;
     /// The resource with the given type not exists 
-    const ErrorResourceNotExists: u64 = 2;
+    const ErrorResourceNotExists: u64 = 3;
 
     const NamedTableResource: u64 = 0;
     const NamedTableModule: u64 = 1;
@@ -278,7 +278,7 @@ module moveos_std::account_storage {
     }
 
     #[test(sender=@0x42)]
-    #[expected_failure(abort_code = 0x0, location = Self)]
+    #[expected_failure(abort_code = 1, location = Self)]
     fun test_failure_repeatedly_create_account_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
         let ctx = context::new_test_context(sender_addr);
@@ -288,7 +288,7 @@ module moveos_std::account_storage {
     }
 
     #[test(sender=@0x42)]
-    #[expected_failure(abort_code = 0x1, location = Self)]
+    #[expected_failure(abort_code = 2, location = Self)]
     fun test_failure_repeatedly_move_to_account_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
         let ctx = context::new_test_context(sender_addr);
@@ -305,7 +305,7 @@ module moveos_std::account_storage {
     }
 
     #[test(sender=@0x42)]
-    #[expected_failure(abort_code = 0x2, location = Self)]
+    #[expected_failure(abort_code = 3, location = Self)]
     fun test_failure_repeatedly_move_from_account_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
         let ctx = context::new_test_context(sender_addr);

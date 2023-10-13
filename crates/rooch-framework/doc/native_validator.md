@@ -72,7 +72,7 @@ This module implements the native validator.
 
 
 
-<pre><code><b>const</b> <a href="native_validator.md#0x3_native_validator_ErrorInvalidPublicKeyLength">ErrorInvalidPublicKeyLength</a>: u64 = 0;
+<pre><code><b>const</b> <a href="native_validator.md#0x3_native_validator_ErrorInvalidPublicKeyLength">ErrorInvalidPublicKeyLength</a>: u64 = 1;
 </code></pre>
 
 
