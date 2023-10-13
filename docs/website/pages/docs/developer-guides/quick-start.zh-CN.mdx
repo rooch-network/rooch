@@ -110,6 +110,164 @@ Move 中提供一个特定的初始化函数 `init` 来自动初始化合约，�
 
 第 9 行是 `init` 函数的函数签名，接受两个参数 `ctx` 和 `account`。
 
+### 递增函数
+
+接下来，我们要定义一个递增函数，每执行一次，就让计数器的值递增 1。
+
+```move
+fun increase(ctx: &mut Context) {
+    let counter = account_storage::global_borrow_mut<Counter>(ctx, @counter_addr);
+    counter.value = counter.value + 1;
+}
+```
+
+第 13 行是 `increase` 函数的签名，接受一个上下文参数。
+
+在第 14 行中，调用 Rooch 提供的账户存储的 `global_borrow_mut` 指令来获取 `Counter` 类型的可变引用，并将函数的返回值绑定到 `counter` 变量。借用到 `Counter` 的可变引用，我们就可以对他的值进行修改操作。
+
+`global_borrow_mut` 函数接受一个上下文参数，和一个要借用 `Counter` 资源的地址参数，为了简单起见，我们直接使用发布计数器模块的地址作为借用方。
+
+在第 15 行中，我们通过成员运算获取到 `Counter` 的字段值，并进行加一操作。
+
+至此，我们就实现了计数器的递增逻辑。
+
+### 入口函数
+
+入口函数是由 `entry` 关键字修饰的函数。
+
+出于安全考虑，在 Move 虚拟机中禁止了外部（命令行等）直接调用操作模块数据的函数，而是提供一种名为`入口函数`的方式来间接调用逻辑函数，入口函数是合约对外暴露的一种接口。
+
+```move
+entry fun incr(ctx: &mut Context) {
+    increase(ctx);
+}
+```
+
+如你所见，第 18~20 行，就是调用 `increase` 函数的入口函数。有了入口函数，我们就可以在命令行或其他客户端中执行计数器的递增操作了。
+
+第 18 行是入口函数 `incr` 的函数签名，接受一个上下文参数。特别注意，这里的上下文参数是 Move VM 自动传递的参数，所以在命令行中调用 `incr` 函数时，不需要传递任何参数。
+
+## 在 Rooch 的命令行界面中演示计数器程序
+
+1. 首先启动 Rooch 的服务：
+
+```shell
+$ rooch server start
+
+StoreConfig init store dir "/home/joe/.rooch/local/roochdb/rooch_store" "/home/joe/.rooch/local/roochdb/moveos_store"
+2023-10-13T04:04:16.379378Z  INFO moveos_common::utils: set max open fds 45056
+2023-10-13T04:04:17.614000Z  INFO rooch_rpc_server: RPC Server sequencer address: 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6
+2023-10-13T04:04:17.614128Z  INFO rooch_sequencer::actor::sequencer: Load latest sequencer order 0
+2023-10-13T04:04:17.614550Z  INFO rooch_rpc_server: RPC Server proposer address: 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6
+2023-10-13T04:04:17.614974Z  INFO rooch_rpc_server: acl=Const("*")
+2023-10-13T04:04:17.615380Z  INFO rooch_rpc_server: JSON-RPC HTTP Server start listening 0.0.0.0:50051
+2023-10-13T04:04:17.615393Z  INFO rooch_rpc_server: Available JSON-RPC methods : ["eth_blockNumber", "eth_getBalance", "eth_gasPrice", "net_version", "rooch_listAnnotatedStates", "rooch_getBalance", "rooch_sendRawTransaction", "rooch_getAnnotatedStates", "rooch_getTransactionsByHash", "rooch_executeRawTransaction", "rooch_getEventsByEventHandle", "eth_getTransactionCount", "eth_sendTransaction", "rooch_executeViewFunction", "rooch_getBalances", "eth_getBlockByNumber", "eth_feeHistory", "rooch_listStates", "rooch_getTransactionsByOrder", "eth_sendRawTransaction", "rooch_getChainID", "eth_getTransactionByHash", "eth_getBlockByHash", "eth_getTransactionReceipt", "eth_chainId", "eth_estimateGas", "rooch_getStates"]
+```
+
+2. 开启令一个终端，并切换到 `counter` 项目的根目录，编译合约：
+
+```shell
+$ rooch move build
+
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+INCLUDING DEPENDENCY MoveStdlib
+INCLUDING DEPENDENCY MoveosStdlib
+INCLUDING DEPENDENCY RoochFramework
+BUILDING counter
+Success
+```
+
+3. 发布计数器合约到 Rooch 上：
+
+```shell
+......
+Publish modules to address: 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6
+{
+  "sequence_info": {
+    "tx_order": "0",
+    "tx_order_signature": {
+      "auth_validator_id": "0",
+      "payload": "0x003c988e0674b1c83fc01dcd6ed91f5fc1229905cdfc2b05355529e05b6eb19542ba634898496e4cd9b3c37f983fd7d6a066834d1b192cc4b22ce3e3c8e3dfa50cff7601c5cb4b3728059c9de799e94d7f47d6e32ab1cdeef3c96264de23a58103"
+    },
+    "tx_accumulator_root": "0xd59793bd681a120c201d6c69d880812184b2409a9dde53474aea97d57fe5e658"
+  },
+  "execution_info": {
+    "tx_hash": "0xfa2b589b718951f3acb4e23a43579947879cff95f11f2e19a552a39fe7ede649",
+    "state_root": "0x9679155aa61bf01ace2bb370ddea5c36e328631d18b747e065c611ea038a536a",
+    "event_root": "0xd58502028bbdee763851bdb1d42554926a85ef1144b5706e760363f48d5b103f",
+    "gas_used": 1604134,
+    "status": {
+      "type": "executed"
+    }
+  },
+......
+```
+
+看到输出结果的 `status` 中出现 `executed`，说明计数器合约已经成功发布，并且初始化好了计数器。
+
+4. 我们使用 Rooch 提供的资源查找命令来获取 `Counter` 资源的相关信息。
+
+语法是 `rooch resource --address 发布资源的地址 --resource 资源的类型`：
+
+```move
+$ rooch resource --address 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6 --resource 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6::counter::Counter
+
+{
+  "state": {
+    "value": "0x0000000000000000",
+    "value_type": "0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6::counter::Counter"
+  },
+  "move_value": {
+    "abilities": 8,
+    "type": "0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6::counter::Counter",
+    "value": {
+      "value": "0"
+    }
+  }
+}
+```
+
+注意 `value` 属性，可以看到在 `Counter` 资源的输出信息中，`Counter` 的字段值 `value` 确实是 `0`。
+
+5. 接着我们调用计数器的递增函数：
+
+语法是 `rooch move run --function 模块发布的地址::模块名::入口函数名 --sender-account 发送当前交易的地址`。
+
+> 注意：区块链系统中，执行某些操作通常是通过向区块链系统中发送某个交易来执行相应的操作。
+
+```shell
+$ rooch move run --function 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6::counter::incr --sender-account 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6
+```
+
+6. 再次查看计数器的值是否是我们预期的值：
+
+```shell
+$ rooch resource --address 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6 --resource 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6::counter::Counter
+{
+  "state": {
+    "value": "0x0100000000000000",
+    "value_type": "0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6::counter::Counter"
+  },
+  "move_value": {
+    "abilities": 8,
+    "type": "0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6::counter::Counter",
+    "value": {
+      "value": "1"
+    }
+  }
+}
+```
+
+如你所见，`Counter` 的 `value` 字段的值确实已经更新为 `1` 了。
+
+至此，你已经了解了如何在 Rooch 中编写合约以及如何在命令行中调用合约了。
+
+接下来，我们增加一点点难度，我们将演示如何在前端中运行和使用计数器合约程序。
 
 
 
