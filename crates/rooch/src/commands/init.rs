@@ -28,9 +28,10 @@ pub struct Init {
     /// Command line input of custom server URL
     #[clap(short = 's', long = "server-url")]
     pub server_url: Option<String>,
+    /// Command line input of custom mnemonic phrase
     #[clap(short = 'm', long = "mnemonic-phrase")]
     mnemonic_phrase: Option<String>,
-    /// This is a tweak command flag to skip the integration test when executing cmd.feature file or use with rooch init to ignore entering password
+    /// Flag to use with rooch init command to ignore entering password
     #[clap(long = "skip-password")]
     skip_password: bool,
 
