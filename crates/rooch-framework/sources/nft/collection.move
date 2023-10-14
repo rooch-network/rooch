@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_framework::collection{
+    use std::option;
     use std::option::Option;
     use std::string::String;
     use moveos_std::object::ObjectID;
@@ -13,14 +14,16 @@ module rooch_framework::collection{
     use moveos_std::object_ref::ObjectRef;
     use moveos_std::type_table;
 
+    friend rooch_framework::nft;
+
     const EMutatorNotExist: u64 = 100;
     const ECollectionNotExist: u64 = 101;
+    const ECollectionMaximumSupply: u64 = 102;
 
     struct Collection has store{
         name: String,
         uri: String,
         creator: address,
-        description: String,
         supply:  Supply,
         extend: type_table::TypeTable
     }
@@ -58,7 +61,6 @@ module rooch_framework::collection{
             name,
             uri,
             creator,
-            description,
             supply: Supply {
                 current: 0,
                 maximum: max_supply,
@@ -85,15 +87,51 @@ module rooch_framework::collection{
         object_ref
     }
 
-    public fun generate_mutator_ref(collection: ObjectRef<Collection>, ctx: &mut Context):ObjectRef<MutatorRef>{
+    public fun generate_mutator_ref(collection: &ObjectRef<Collection>, ctx: &mut Context):ObjectRef<MutatorRef>{
         let mutator_ref = context::new_object_with_owner(
             ctx,
-            object_ref::owner(&collection),
+            object_ref::owner(collection),
             MutatorRef {
-                collection: object_ref::id(&collection),
+                collection: object_ref::id(collection),
             }
         );
         mutator_ref
+    }
+
+    public fun get_collection_id(mutator: &ObjectRef<MutatorRef>): ObjectID{
+        assert_mutator_exist_of_ref(mutator);
+        let mutator_object_ref = object_ref::borrow(mutator);
+        mutator_object_ref.collection
+    }
+
+
+    public(friend) fun increment_supply(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context): Option<u64>{
+        assert_mutator_exist_of_ref(mutator);
+        let mutator_object_ref = object_ref::borrow(mutator);
+        assert_collection_exist_of_id(mutator_object_ref.collection, ctx);
+        let collection_object_mut_ref = context::borrow_object_mut<Collection>(ctx, mutator_object_ref.collection);
+        let collection_mut_ref = object::borrow_mut(collection_object_mut_ref);
+        collection_mut_ref.supply.current = collection_mut_ref.supply.current + 1;
+        if(option::is_some(&collection_mut_ref.supply.maximum)){
+            assert!(collection_mut_ref.supply.current <= *option::borrow(&collection_mut_ref.supply.maximum), ECollectionMaximumSupply);
+            option::some(collection_mut_ref.supply.current)
+        }else{
+            option::none<u64>()
+        }
+    }
+
+    public (friend) fun decrement_supply(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context): Option<u64>{
+        assert_mutator_exist_of_ref(mutator);
+        let mutator_object_ref = object_ref::borrow(mutator);
+        assert_collection_exist_of_id(mutator_object_ref.collection, ctx);
+        let collection_object_mut_ref = context::borrow_object_mut<Collection>(ctx, mutator_object_ref.collection);
+        let collection_mut_ref = object::borrow_mut(collection_object_mut_ref);
+        collection_mut_ref.supply.current = collection_mut_ref.supply.current - 1;
+        if(option::is_some(&collection_mut_ref.supply.maximum)){
+            option::some(collection_mut_ref.supply.current)
+        }else{
+            option::none<u64>()
+        }
     }
 
     // assert
@@ -115,53 +153,55 @@ module rooch_framework::collection{
         context::borrow_object<MutatorRef>(ctx, mutatorID);
     }
 
+    #[private_generics(T)]
     public fun add_collection_extend<V: key>(mutator: &ObjectRef<MutatorRef>,val: V,ctx: &mut Context){
         assert_mutator_exist_of_ref(mutator);
-        let collection = object_ref::borrow(mutator);
-        assert_collection_exist_of_id(collection.collection, ctx);
-        let collection_object_mut_ref = context::borrow_object_mut<Collection>(ctx, collection.collection);
+        let mutator_object_ref = object_ref::borrow(mutator);
+        assert_collection_exist_of_id(mutator_object_ref.collection, ctx);
+        let collection_object_mut_ref = context::borrow_object_mut<Collection>(ctx, mutator_object_ref.collection);
         let collection_mut_ref = object::borrow_mut(collection_object_mut_ref);
         type_table::add( &mut collection_mut_ref.extend, val);
     }
 
     public fun borrow_collection_extend<V: key>(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context):&V{
         assert_mutator_exist_of_ref(mutator);
-        let collection = object_ref::borrow(mutator);
-        assert_collection_exist_of_id(collection.collection, ctx);
-        let collection_object_ref = context::borrow_object<Collection>(ctx, collection.collection);
+        let mutator_object_ref = object_ref::borrow(mutator);
+        assert_collection_exist_of_id(mutator_object_ref.collection, ctx);
+        let collection_object_ref = context::borrow_object<Collection>(ctx, mutator_object_ref.collection);
         let collection_ref = object::borrow(collection_object_ref);
         type_table::borrow(&collection_ref.extend)
     }
 
+    #[private_generics(T)]
     public fun borrow_mut_collection_extend<V: key>(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context):&mut V{
         assert_mutator_exist_of_ref(mutator);
-        let collection = object_ref::borrow(mutator);
-        assert_collection_exist_of_id(collection.collection, ctx);
-        let collection_object_mut_ref = context::borrow_object_mut<Collection>(ctx, collection.collection);
+        let mutator_object_ref = object_ref::borrow(mutator);
+        assert_collection_exist_of_id(mutator_object_ref.collection, ctx);
+        let collection_object_mut_ref = context::borrow_object_mut<Collection>(ctx, mutator_object_ref.collection);
         let collection_mut_ref = object::borrow_mut(collection_object_mut_ref);
         type_table::borrow_mut(&mut collection_mut_ref.extend)
     }
 
+    #[private_generics(T)]
     public fun remove_collection_extend<V: key>(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context){
         assert_mutator_exist_of_ref(mutator);
-        let collection = object_ref::borrow(mutator);
-        assert_collection_exist_of_id(collection.collection, ctx);
-        let collection_object_mut_ref = context::borrow_object_mut<Collection>(ctx, collection.collection);
+        let mutator_object_ref = object_ref::borrow(mutator);
+        assert_collection_exist_of_id(mutator_object_ref.collection, ctx);
+        let collection_object_mut_ref = context::borrow_object_mut<Collection>(ctx, mutator_object_ref.collection);
         let collection_mut_ref = object::borrow_mut(collection_object_mut_ref);
         type_table::remove(&mut collection_mut_ref.extend)
     }
 
     public fun contains_collection_extend<V: key>(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context): bool{
         assert_mutator_exist_of_ref(mutator);
-        let collection = object_ref::borrow(mutator);
-        assert_collection_exist_of_id(collection.collection, ctx);
-        let collection_object_ref = context::borrow_object<Collection>(ctx, collection.collection);
+        let mutator_object_ref = object_ref::borrow(mutator);
+        assert_collection_exist_of_id(mutator_object_ref.collection, ctx);
+        let collection_object_ref = context::borrow_object<Collection>(ctx, mutator_object_ref.collection);
         let collection_ref = object::borrow(collection_object_ref);
         type_table::contains<V>(&collection_ref.extend)
     }
 
     // view
-
     public fun get_collection_name(collectionID: ObjectID, ctx: &mut Context): String{
         assert_collection_exist_of_id(collectionID, ctx);
         let collection_object_ref = context::borrow_object<Collection>(ctx, collectionID);
@@ -181,13 +221,6 @@ module rooch_framework::collection{
         let collection_object_ref = context::borrow_object<Collection>(ctx, collectionID);
         let collection_ref = object::borrow(collection_object_ref);
         collection_ref.creator
-    }
-
-    public fun get_collection_description(collectionID: ObjectID, ctx: &mut Context): String{
-        assert_collection_exist_of_id(collectionID, ctx);
-        let collection_object_ref = context::borrow_object<Collection>(ctx, collectionID);
-        let collection_ref = object::borrow(collection_object_ref);
-        collection_ref.description
     }
 
     public fun get_collection_current_supply(collectionID: ObjectID, ctx: &mut Context): u64{
