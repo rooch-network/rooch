@@ -43,3 +43,4 @@ move-prover = { workspace = true }
 
 moveos-types = { workspace = true }
 moveos-verifier = { workspace = true }
+moveos-stdlib-builder = { workspace = true }

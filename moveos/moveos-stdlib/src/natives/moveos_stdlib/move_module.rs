@@ -23,6 +23,7 @@ use move_vm_types::{
     pop_arg,
     values::{Struct, Value, Vector, VectorRef},
 };
+use moveos_stdlib_builder::dependency_order::sort_by_dependency_order;
 use smallvec::smallvec;
 use std::collections::{BTreeSet, VecDeque};
 
@@ -112,7 +113,9 @@ fn native_verify_modules_inner(
         .iter()
         .map(|b| CompiledModule::deserialize(b))
         .collect::<PartialVMResult<Vec<CompiledModule>>>()?;
-
+    let compiled_modules = sort_by_dependency_order(&compiled_modules).map_err(|e| {
+        PartialVMError::new(StatusCode::CYCLIC_MODULE_DEPENDENCY).with_message(e.to_string())
+    })?;
     // move verifier
     context.verify_module_bundle_for_publication(&compiled_modules)?;
 
