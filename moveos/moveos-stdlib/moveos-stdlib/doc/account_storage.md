@@ -31,6 +31,7 @@ It is used to store the account's resources and modules
 <b>use</b> <a href="context.md#0x2_context">0x2::context</a>;
 <b>use</b> <a href="move_module.md#0x2_move_module">0x2::move_module</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
+<b>use</b> <a href="object_ref.md#0x2_object_ref">0x2::object_ref</a>;
 <b>use</b> <a href="table.md#0x2_table">0x2::table</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 <b>use</b> <a href="type_table.md#0x2_type_table">0x2::type_table</a>;
@@ -193,13 +194,13 @@ Create a new account storage space
 
 <pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_create_account_storage">create_account_storage</a>(ctx: &<b>mut</b> Context, account: <b>address</b>) {
     <b>let</b> object_id = <a href="object.md#0x2_object_address_to_object_id">object::address_to_object_id</a>(account);
+    <b>assert</b>!(!<a href="context.md#0x2_context_exist_object">context::exist_object</a>(ctx, object_id), <a href="account_storage.md#0x2_account_storage_ErrorAccountAlreadyExists">ErrorAccountAlreadyExists</a>);
     <b>let</b> <a href="account_storage.md#0x2_account_storage">account_storage</a> = <a href="account_storage.md#0x2_account_storage_AccountStorage">AccountStorage</a> {
         resources: <a href="type_table.md#0x2_type_table_new_with_id">type_table::new_with_id</a>(<a href="account_storage.md#0x2_account_storage_named_table_id">named_table_id</a>(account, <a href="account_storage.md#0x2_account_storage_NamedTableResource">NamedTableResource</a>)),
         modules: <a href="table.md#0x2_table_new_with_id">table::new_with_id</a>(<a href="account_storage.md#0x2_account_storage_named_table_id">named_table_id</a>(account, <a href="account_storage.md#0x2_account_storage_NamedTableModule">NamedTableModule</a>)),
     };
-    <b>assert</b>!(!<a href="context.md#0x2_context_contains_object">context::contains_object</a>(ctx, object_id), <a href="account_storage.md#0x2_account_storage_ErrorAccountAlreadyExists">ErrorAccountAlreadyExists</a>);
-    <b>let</b> <a href="object.md#0x2_object">object</a> = <a href="object.md#0x2_object_new_with_id">object::new_with_id</a>(object_id, account, <a href="account_storage.md#0x2_account_storage">account_storage</a>);
-    <a href="context.md#0x2_context_add_object">context::add_object</a>(ctx, <a href="object.md#0x2_object">object</a>);
+    //Should we keep the storage ref?
+    <b>let</b> _account_storage_ref = <a href="context.md#0x2_context_new_object_with_id">context::new_object_with_id</a>(ctx, object_id, account, <a href="account_storage.md#0x2_account_storage">account_storage</a>);
 }
 </code></pre>
 
@@ -225,7 +226,7 @@ check if account storage eixst
 
 <pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_exist_account_storage">exist_account_storage</a>(ctx: &Context, account: <b>address</b>): bool {
     <b>let</b> object_id = <a href="object.md#0x2_object_address_to_object_id">object::address_to_object_id</a>(account);
-    <a href="context.md#0x2_context_contains_object">context::contains_object</a>(ctx, object_id)
+    <a href="context.md#0x2_context_exist_object">context::exist_object</a>(ctx, object_id)
 }
 </code></pre>
 

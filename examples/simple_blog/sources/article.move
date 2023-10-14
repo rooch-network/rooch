@@ -8,6 +8,7 @@ module simple_blog::article {
     use std::string::String; 
     use moveos_std::event;
     use moveos_std::object::{Self, Object, ObjectID};
+    use moveos_std::object_ref;
     use moveos_std::context::{Self, Context};
 
     const ErrorDataTooLong: u64 = 1;
@@ -50,13 +51,12 @@ module simple_blog::article {
             body,
         };
         let owner_addr = signer::address_of(owner);
-        let article_obj = context::new_object_with_owner(
+        let article_ref = context::new_object_with_owner(
             ctx,
             owner_addr,
             article,
         );
-        let id = object::id(&article_obj);
-        context::add_object(ctx, article_obj);
+        let id = object_ref::id(&article_ref);
 
         let article_created_event = ArticleCreatedEvent {
             id,
@@ -100,22 +100,23 @@ module simple_blog::article {
         owner: &signer,
         id: ObjectID,
     ) {
-        let article_obj = context::remove_object<Article>(ctx, id);
+
+        
         let owner_address = signer::address_of(owner);
+        let (id, owner, article) = context::remove_object<Article>(ctx, id);
         
         // only article owner can delete the article 
-        assert!(object::owner(&article_obj) == owner_address, error::permission_denied(ErrorNotOwnerAccount));
+        assert!(owner == owner_address, error::permission_denied(ErrorNotOwnerAccount));
 
         let article_deleted_event = ArticleDeletedEvent {
             id,
-            version: object::borrow(&article_obj).version,
+            version: article.version,
         };
         event::emit(ctx, article_deleted_event);
-        drop_article(article_obj);
+        drop_article(article);
     }
 
-    fun drop_article(article_obj: Object<Article>) {
-        let (_id, _owner, article) =  object::unpack(article_obj);
+    fun drop_article(article: Article) {
         let Article {
             version: _version,
             title: _title,

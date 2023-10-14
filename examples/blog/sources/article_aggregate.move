@@ -27,7 +27,7 @@ module rooch_examples::article_aggregate {
         body: String,
         owner: address,
     ) {
-        let article_obj = article::remove_article(ctx, id);
+        let article_obj = article::get_article(ctx, id);
         let comment_updated = article_update_comment_logic::verify(
             ctx,
             account,
@@ -53,7 +53,7 @@ module rooch_examples::article_aggregate {
         id: ObjectID,
         comment_seq_id: u64,
     ) {
-        let article_obj = article::remove_article(ctx, id);
+        let article_obj = article::get_article(ctx, id);
         let comment_removed = article_remove_comment_logic::verify(
             ctx,
             account,
@@ -77,7 +77,7 @@ module rooch_examples::article_aggregate {
         commenter: String,
         body: String,
     ) {
-        let article_obj = article::remove_article(ctx, id);
+        let article_obj = article::get_article(ctx, id);
         let comment_added = article_add_comment_logic::verify(
             ctx,
             account,
@@ -124,7 +124,7 @@ module rooch_examples::article_aggregate {
         title: String,
         body: String,
     ) {
-        let article_obj = article::remove_article(ctx, id);
+        let article_obj = article::get_article(ctx, id);
         let article_updated = article_update_logic::verify(
             ctx,
             account,
@@ -147,7 +147,7 @@ module rooch_examples::article_aggregate {
         account: &signer,
         id: ObjectID,
     ) {
-        let article_obj = article::remove_article(ctx, id);
+        let article_obj = article::get_article(ctx, id);
         let article_deleted = article_delete_logic::verify(
             ctx,
             account,

@@ -14,7 +14,6 @@ The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/5
 -  [Struct `ObjectID`](#0x2_object_ObjectID)
 -  [Function `address_to_object_id`](#0x2_object_address_to_object_id)
 -  [Function `new`](#0x2_object_new)
--  [Function `new_with_id`](#0x2_object_new_with_id)
 -  [Function `borrow`](#0x2_object_borrow)
 -  [Function `internal_borrow`](#0x2_object_internal_borrow)
 -  [Function `borrow_mut`](#0x2_object_borrow_mut)
@@ -26,8 +25,7 @@ The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/5
 -  [Function `unpack_internal`](#0x2_object_unpack_internal)
 
 
-<pre><code><b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
-</code></pre>
+<pre><code></code></pre>
 
 
 
@@ -132,7 +130,7 @@ Generate a new ObjectID from an address
 Create a new object, the object is owned by <code>owner</code>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(ctx: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
 
@@ -141,33 +139,8 @@ Create a new object, the object is owned by <code>owner</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(ctx: &<b>mut</b> TxContext, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt; {
-    <b>let</b> id = <a href="object.md#0x2_object_address_to_object_id">address_to_object_id</a>(<a href="tx_context.md#0x2_tx_context_fresh_address">tx_context::fresh_address</a>(ctx));
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(id: <a href="object.md#0x2_object_ObjectID">ObjectID</a>, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt; {
     <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;{id, value, owner}
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_object_new_with_id"></a>
-
-## Function `new_with_id`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new_with_id">new_with_id</a>&lt;T: key&gt;(id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new_with_id">new_with_id</a>&lt;T: key&gt;(id: <a href="object.md#0x2_object_ObjectID">ObjectID</a>, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt; {
-    <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;{id, owner, value}
 }
 </code></pre>
 

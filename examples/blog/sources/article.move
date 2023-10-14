@@ -8,7 +8,8 @@
 
 module rooch_examples::article {
     use moveos_std::event;
-    use moveos_std::object::{Self, Object, ObjectID};
+    use moveos_std::object_ref::{Self, ObjectRef};
+    use moveos_std::object::ObjectID;
     use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
     use rooch_examples::comment::{Self, Comment};
@@ -53,68 +54,68 @@ module rooch_examples::article {
         sequence: u64,
     }
 
-    public(friend) fun current_comment_seq_id(article_obj: &Object<Article>): u64 {
-        object::borrow(article_obj).comment_seq_id_generator.sequence
+    public(friend) fun current_comment_seq_id(article_obj: &ObjectRef<Article>): u64 {
+        object_ref::borrow(article_obj).comment_seq_id_generator.sequence
     }
 
-    public(friend) fun next_comment_seq_id(article_obj: &mut Object<Article>): u64 {
-        object::borrow_mut(article_obj).comment_seq_id_generator.sequence = object::borrow(article_obj).comment_seq_id_generator.sequence + 1;
-        object::borrow(article_obj).comment_seq_id_generator.sequence
+    public(friend) fun next_comment_seq_id(article_obj: &mut ObjectRef<Article>): u64 {
+        object_ref::borrow_mut(article_obj).comment_seq_id_generator.sequence = object_ref::borrow(article_obj).comment_seq_id_generator.sequence + 1;
+        object_ref::borrow(article_obj).comment_seq_id_generator.sequence
     }
 
     /// get object id
-    public fun id(article_obj: &Object<Article>): ObjectID {
-        object::id(article_obj)
+    public fun id(article_obj: &ObjectRef<Article>): ObjectID {
+        object_ref::id(article_obj)
     }
 
-    public fun version(article_obj: &Object<Article>): u64 {
-        object::borrow(article_obj).version
+    public fun version(article_obj: &ObjectRef<Article>): u64 {
+        object_ref::borrow(article_obj).version
     }
 
-    public fun title(article_obj: &Object<Article>): String {
-        object::borrow(article_obj).title
+    public fun title(article_obj: &ObjectRef<Article>): String {
+        object_ref::borrow(article_obj).title
     }
 
-    public(friend) fun set_title(article_obj: &mut Object<Article>, title: String) {
+    public(friend) fun set_title(article_obj: &mut ObjectRef<Article>, title: String) {
         assert!(std::string::length(&title) <= 200, ErrorDataTooLong);
-        object::borrow_mut(article_obj).title = title;
+        object_ref::borrow_mut(article_obj).title = title;
     }
 
-    public fun body(article_obj: &Object<Article>): String {
-        object::borrow(article_obj).body
+    public fun body(article_obj: &ObjectRef<Article>): String {
+        object_ref::borrow(article_obj).body
     }
 
-    public(friend) fun set_body(article_obj: &mut Object<Article>, body: String) {
+    public(friend) fun set_body(article_obj: &mut ObjectRef<Article>, body: String) {
         assert!(std::string::length(&body) <= 2000, ErrorDataTooLong);
-        object::borrow_mut(article_obj).body = body;
+        object_ref::borrow_mut(article_obj).body = body;
     }
 
-    public(friend) fun add_comment(ctx: &mut Context, article_obj: &mut Object<Article>, comment: Comment) {
+    public(friend) fun add_comment(ctx: &mut Context, article_obj: &mut ObjectRef<Article>, comment: Comment) {
         let comment_seq_id = comment::comment_seq_id(&comment);
-        assert!(!table::contains(&object::borrow_mut(article_obj).comments, comment_seq_id), ErrorIdAlreadyExists);
-        table::add(&mut object::borrow_mut(article_obj).comments, comment_seq_id, comment);
+        assert!(!table::contains(&object_ref::borrow_mut(article_obj).comments, comment_seq_id), ErrorIdAlreadyExists);
+        table::add(&mut object_ref::borrow_mut(article_obj).comments, comment_seq_id, comment);
         event::emit(ctx, CommentTableItemAdded {
             article_id: id(article_obj),
             comment_seq_id,
         });
     }
 
-    public(friend) fun remove_comment(article_obj: &mut Object<Article>, comment_seq_id: u64) {
-        assert!(table::contains(&object::borrow_mut(article_obj).comments, comment_seq_id), ErrorIdNotFound);
-        let comment = table::remove(&mut object::borrow_mut(article_obj).comments, comment_seq_id);
+    public(friend) fun remove_comment(article_obj: &mut ObjectRef<Article>, comment_seq_id: u64) {
+        assert!(table::contains(&object_ref::borrow_mut(article_obj).comments, comment_seq_id), ErrorIdNotFound);
+        let comment = table::remove(&mut object_ref::borrow_mut(article_obj).comments, comment_seq_id);
         comment::drop_comment(comment);
     }
 
-    public(friend) fun borrow_mut_comment(article_obj: &mut Object<Article>, comment_seq_id: u64): &mut Comment {
-        table::borrow_mut(&mut object::borrow_mut(article_obj).comments, comment_seq_id)
+    public(friend) fun borrow_mut_comment(article_obj: &mut ObjectRef<Article>, comment_seq_id: u64): &mut Comment {
+        table::borrow_mut(&mut object_ref::borrow_mut(article_obj).comments, comment_seq_id)
     }
 
-    public fun borrow_comment(article_obj: &Object<Article>, comment_seq_id: u64): &Comment {
-        table::borrow(&object::borrow(article_obj).comments, comment_seq_id)
+    public fun borrow_comment(article_obj: &ObjectRef<Article>, comment_seq_id: u64): &Comment {
+        table::borrow(&object_ref::borrow(article_obj).comments, comment_seq_id)
     }
 
-    public fun comments_contains(article_obj: &Object<Article>, comment_seq_id: u64): bool {
-        table::contains(&object::borrow(article_obj).comments, comment_seq_id)
+    public fun comments_contains(article_obj: &ObjectRef<Article>, comment_seq_id: u64): bool {
+        table::contains(&object_ref::borrow(article_obj).comments, comment_seq_id)
     }
 
     fun new_article(
@@ -163,7 +164,7 @@ module rooch_examples::article {
     }
 
     public(friend) fun new_comment_updated(
-        article_obj: &Object<Article>,
+        article_obj: &ObjectRef<Article>,
         comment_seq_id: u64,
         commenter: String,
         body: String,
@@ -194,7 +195,7 @@ module rooch_examples::article {
     }
 
     public(friend) fun new_comment_removed(
-        article_obj: &Object<Article>,
+        article_obj: &ObjectRef<Article>,
         comment_seq_id: u64,
     ): CommentRemoved {
         CommentRemoved {
@@ -234,7 +235,7 @@ module rooch_examples::article {
     }
 
     public(friend) fun new_comment_added(
-        article_obj: &Object<Article>,
+        article_obj: &ObjectRef<Article>,
         comment_seq_id: u64,
         commenter: String,
         body: String,
@@ -303,7 +304,7 @@ module rooch_examples::article {
     }
 
     public(friend) fun new_article_updated(
-        article_obj: &Object<Article>,
+        article_obj: &ObjectRef<Article>,
         title: String,
         body: String,
     ): ArticleUpdated {
@@ -325,7 +326,7 @@ module rooch_examples::article {
     }
 
     public(friend) fun new_article_deleted(
-        article_obj: &Object<Article>,
+        article_obj: &ObjectRef<Article>,
     ): ArticleDeleted {
         ArticleDeleted {
             id: id(article_obj),
@@ -338,7 +339,7 @@ module rooch_examples::article {
         ctx: &mut Context,
         title: String,
         body: String,
-    ): Object<Article> {
+    ): ObjectRef<Article> {
         let article = new_article(
             ctx,
             title,
@@ -352,37 +353,38 @@ module rooch_examples::article {
         article_obj
     }
 
-    public(friend) fun update_version_and_add(ctx: &mut Context, article_obj: Object<Article>) {
-        object::borrow_mut(&mut article_obj).version = object::borrow( &mut article_obj).version + 1;
-        //assert!(object::borrow(&article_obj).version != 0, ErrorInappropriateVersion);
+    public(friend) fun update_version_and_add(ctx: &mut Context, article_obj: ObjectRef<Article>) {
+        object_ref::borrow_mut(&mut article_obj).version = object_ref::borrow( &mut article_obj).version + 1;
+        //assert!(object_ref::borrow(&article_obj).version != 0, ErrorInappropriateVersion);
         private_add_article(ctx, article_obj);
     }
 
-    public(friend) fun remove_article(ctx: &mut Context, obj_id: ObjectID): Object<Article> {
-        context::remove_object<Article>(ctx, obj_id)
+    public(friend) fun remove_article(ctx: &mut Context, obj_id: ObjectID): Article {
+        let (_id,_owner,article) = context::remove_object<Article>(ctx, obj_id);
+        article
     }
 
-    public(friend) fun add_article(ctx: &mut Context, article_obj: Object<Article>) {
-        assert!(object::borrow(&article_obj).version == 0, ErrorInappropriateVersion);
+    public(friend) fun add_article(ctx: &mut Context, article_obj: ObjectRef<Article>) {
+        assert!(object_ref::borrow(&article_obj).version == 0, ErrorInappropriateVersion);
         private_add_article(ctx, article_obj);
     }
 
-    fun private_add_article(ctx: &mut Context, article_obj: Object<Article>) {
-        assert!(std::string::length(&object::borrow(&article_obj).title) <= 200, ErrorDataTooLong);
-        assert!(std::string::length(&object::borrow(&article_obj).body) <= 2000, ErrorDataTooLong);
-        context::add_object<Article>(ctx, article_obj);
+    fun private_add_article(_ctx: &mut Context, article_obj: ObjectRef<Article>) {
+        assert!(std::string::length(&object_ref::borrow(&article_obj).title) <= 200, ErrorDataTooLong);
+        assert!(std::string::length(&object_ref::borrow(&article_obj).body) <= 2000, ErrorDataTooLong);
     }
 
-    public fun get_article(ctx: &mut Context, obj_id: ObjectID): Object<Article> {
-        remove_article(ctx, obj_id)
+    public fun get_article(ctx: &mut Context, obj_id: ObjectID): ObjectRef<Article> {
+        let object_ref = context::borrow_object_mut<Article>(ctx, obj_id);
+        object_ref::new(object_ref)
     }
 
-    public fun return_article(ctx: &mut Context, article_obj: Object<Article>) {
+    public fun return_article(ctx: &mut Context, article_obj: ObjectRef<Article>) {
         private_add_article(ctx, article_obj);
     }
 
-    public(friend) fun drop_article(article_obj: Object<Article>) {
-        let (_id, _owner, article) =  object::unpack(article_obj);
+    public(friend) fun drop_article(article_obj: ObjectRef<Article>) {
+        let article = object_ref::remove(article_obj);
         let Article {
             version: _version,
             title: _title,

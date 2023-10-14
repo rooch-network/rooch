@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_examples::article_add_comment_logic {
-    use moveos_std::object::Object;
     use moveos_std::context::Context;
-    use rooch_examples::article;
+    use moveos_std::object_ref::ObjectRef;
+    use rooch_examples::article::{Self, Article};
     use rooch_examples::comment;
     use rooch_examples::comment_added;
     use std::string::String;
@@ -16,7 +16,7 @@ module rooch_examples::article_add_comment_logic {
         account: &signer,
         commenter: String,
         body: String,
-        article_obj: &Object<article::Article>,
+        article_obj: &ObjectRef<Article>,
     ): article::CommentAdded {
         let _ = ctx;
         let _ = account;
@@ -34,8 +34,8 @@ module rooch_examples::article_add_comment_logic {
         ctx: &mut Context,
         _account: &signer,
         comment_added: &article::CommentAdded,
-        article_obj: Object<article::Article>,
-    ): Object<article::Article> {
+        article_obj: ObjectRef<Article>,
+    ): ObjectRef<Article> {
         let comment_seq_id = article::next_comment_seq_id(&mut article_obj);
         let commenter = comment_added::commenter(comment_added);
         let body = comment_added::body(comment_added);

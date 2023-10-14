@@ -3,23 +3,17 @@ processed 3 tasks
 task 1 'publish'. lines 3-8:
 status EXECUTED
 
-task 2 'publish'. lines 10-40:
+task 2 'publish'. lines 10-38:
 Error: error: resource type "KeyStruct" in function "0x2::context::remove_object" not defined in current module or not allowed
-   ┌─ /tmp/tempfile:31:19
+   ┌─ /tmp/tempfile:31:34
    │
-31 │         let obj = context::remove_object<KeyStruct>(ctx, object_id);
-   │                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-error: resource type "KeyStruct" in function "0x2::object::unpack" not defined in current module or not allowed
-   ┌─ /tmp/tempfile:33:34
-   │
-33 │         let (_id,_owner,value) = object::unpack(obj);
-   │                                  ^^^^^^^^^^^^^^^^^^^
+31 │         let (_id,_owner,value) = context::remove_object<KeyStruct>(ctx, object_id);
+   │                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error: resource type "KeyStruct" in function "0x2::account_storage::global_move_to" not defined in current module or not allowed
-   ┌─ /tmp/tempfile:34:9
+   ┌─ /tmp/tempfile:32:9
    │
-34 │         account_storage::global_move_to(ctx, sender, value);
+32 │         account_storage::global_move_to(ctx, sender, value);
    │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error: resource type "KeyStruct" in function "0x42::test::publish_foo" not defined in current module or not allowed

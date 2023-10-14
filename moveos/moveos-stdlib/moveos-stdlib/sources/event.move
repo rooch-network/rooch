@@ -34,7 +34,7 @@ module moveos_std::event {
 
     fun exists_event_handle<T>(ctx: &Context): bool {
         let event_handle_id = derive_event_handle_id<T>();
-        context::contains_object(ctx, event_handle_id)
+        context::exist_object(ctx, event_handle_id)
     }
 
     /// Borrow a event handle from the object storage
@@ -80,8 +80,8 @@ module moveos_std::event {
         let event_handle = EventHandle {
             counter: 0,
         };
-        let object = object::new_with_id<EventHandle>(event_handle_id, account_addr, event_handle);
-        context::add_object(ctx, object)
+        //TODO should we keep the event_handle_ref?
+        let _handle_ref = context::new_object_with_id<EventHandle>(ctx, event_handle_id, account_addr, event_handle);
     }
 
     public fun ensure_event_handle<T>(ctx: &mut Context) {

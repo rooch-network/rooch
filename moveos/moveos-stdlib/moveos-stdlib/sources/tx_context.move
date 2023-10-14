@@ -25,6 +25,7 @@ module moveos_std::tx_context {
     friend moveos_std::account_storage;
     friend moveos_std::event;
     friend moveos_std::context;
+    friend moveos_std::storage_context;
 
     const ErrorInvalidContext: u64 = 1;
 

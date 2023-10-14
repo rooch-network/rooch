@@ -5,7 +5,7 @@ module creator::test {
     use std::string;
     use moveos_std::account_storage;
     use moveos_std::context::{Self, Context};
-    use moveos_std::object::{Self, ObjectID};
+    use moveos_std::object::ObjectID;
     use std::debug;
 
     struct Foo has key, store {
@@ -24,9 +24,7 @@ module creator::test {
 
     public fun call_moveos_std<T: store>(ctx: &mut Context, sender: &signer, object_id: ObjectID) {
         debug::print(&object_id);
-        let obj = context::remove_object<Foo>(ctx, object_id);
-        debug::print(&obj);
-        let (_id,_owner,value) = object::unpack(obj);
+        let (_id,_owner,value) = context::remove_object<Foo>(ctx, object_id);
         account_storage::global_move_to<Foo>(ctx, sender, value);
     }
 }

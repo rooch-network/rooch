@@ -8,8 +8,7 @@
 /// 2. The Object is a use case of the Hot Potato pattern in Move. Objects do not have any ability, so they cannot be drop, copy, or store, and can only be handled by StorageContext API after creation.
 module moveos_std::object {
     
-    use moveos_std::tx_context::{Self, TxContext};
-
+    
     friend moveos_std::context;
     friend moveos_std::account_storage;
     friend moveos_std::storage_context;
@@ -41,13 +40,8 @@ module moveos_std::object {
     }
 
     /// Create a new object, the object is owned by `owner`
-    public(friend) fun new<T: key>(ctx: &mut TxContext, owner: address, value: T): Object<T> {
-        let id = address_to_object_id(tx_context::fresh_address(ctx));
+    public(friend) fun new<T: key>(id: ObjectID, owner: address, value: T): Object<T> {
         Object<T>{id, value, owner}
-    }
-
-    public(friend) fun new_with_id<T: key>(id: ObjectID, owner: address, value: T): Object<T> {
-        Object<T>{id, owner, value}
     }
 
     #[private_generics(T)]
@@ -108,7 +102,8 @@ module moveos_std::object {
         let object = TestObject {
             count: object_count,
         };
-        let obj = new<TestObject>(&mut tx_context, sender_addr, object);
+        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut tx_context));
+        let obj = new<TestObject>(object_id, sender_addr, object);
 
         let borrow_object = borrow_mut(&mut obj);
         assert!(borrow_object.count == object_count, 1001);

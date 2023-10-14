@@ -368,7 +368,7 @@ Get if the CoinStore is frozen via the coin store id
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_is_coin_store_frozen">is_coin_store_frozen</a>(ctx: &Context, coin_store_id: ObjectID): bool {
-    <b>if</b> (<a href="_contains_object">context::contains_object</a>(ctx, coin_store_id)){
+    <b>if</b> (<a href="_exist_object">context::exist_object</a>(ctx, coin_store_id)){
         <b>let</b> coin_store_object = <a href="_borrow_object">context::borrow_object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;(ctx, coin_store_id);
         <a href="_borrow">object::borrow</a>(coin_store_object).frozen
     }<b>else</b>{
@@ -400,7 +400,7 @@ If the CoinStore is not exist, return 0
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_get_balance_with_id">get_balance_with_id</a>(ctx: &Context, coin_store_id: ObjectID): u256 {
-    <b>if</b> (<a href="_contains_object">context::contains_object</a>(ctx, coin_store_id)){
+    <b>if</b> (<a href="_exist_object">context::exist_object</a>(ctx, coin_store_id)){
         <b>let</b> coin_store_object = <a href="_borrow_object">context::borrow_object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;(ctx, coin_store_id);
         <a href="_borrow">object::borrow</a>(coin_store_object).balance.value
     }<b>else</b>{
@@ -436,7 +436,7 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
     coin_store_id: ObjectID,
     frozen: bool,
 ) {
-    <b>assert</b>!(<a href="_contains_object">context::contains_object</a>(ctx, coin_store_id), <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin_store.md#0x3_coin_store_ErrorCoinStoreNotFound">ErrorCoinStoreNotFound</a>));
+    <b>assert</b>!(<a href="_exist_object">context::exist_object</a>(ctx, coin_store_id), <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin_store.md#0x3_coin_store_ErrorCoinStoreNotFound">ErrorCoinStoreNotFound</a>));
     <b>let</b> coin_store_object = <a href="_borrow_object_mut">context::borrow_object_mut</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;(ctx, coin_store_id);
     <a href="_borrow_mut">object::borrow_mut</a>(coin_store_object).frozen = frozen;
 }
@@ -464,14 +464,11 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store_internal">create_coin_store_internal</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> Context): ObjectRef&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;{
     <a href="coin.md#0x3_coin_check_coin_info_registered">coin::check_coin_info_registered</a>&lt;CoinType&gt;(ctx);
 
-    <b>let</b> coin_store_object = <a href="_new_object">context::new_object</a>(ctx, <a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>{
+    <a href="_new_object">context::new_object</a>(ctx, <a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>{
         coin_type: <a href="_type_name">type_info::type_name</a>&lt;CoinType&gt;(),
         balance: <a href="coin_store.md#0x3_coin_store_Balance">Balance</a> { value: 0 },
         frozen: <b>false</b>,
-    });
-    <b>let</b> ref = <a href="_new">object_ref::new</a>(&<b>mut</b> coin_store_object);
-    <a href="_add_object">context::add_object</a>(ctx, coin_store_object);
-    ref
+    })
 }
 </code></pre>
 
