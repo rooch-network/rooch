@@ -28,7 +28,11 @@ module rooch_framework::nft {
         nft: ObjectID,
     }
 
-    public fun create_nft(
+    struct BurnerRef has store{
+        nft: ObjectID,
+    }
+
+    public fun mint(
         name: String,
         uri: String,
         mutator_ref: &ObjectRef<collection::MutatorRef>,
@@ -53,6 +57,30 @@ module rooch_framework::nft {
         );
 
         object_ref
+    }
+
+    public fun burn (
+        burn_ref: &ObjectRef<BurnerRef>,
+        mutator_ref: &ObjectRef<collection::MutatorRef>,
+        ctx: &mut Context
+    ) {
+        assert_burner_exist_of_ref(burn_ref);
+        let burner_object_ref = object_ref::borrow(burn_ref);
+        assert_burner_exist_of_id(burner_object_ref.nft, ctx);
+        // let nft_object_mut_ref = context::borrow_object_mut<NFT>(ctx, burner_object_ref.nft);
+        collection::decrement_supply(mutator_ref, ctx);
+        let (
+            _,
+            _,
+            NFT {
+                name:_,
+                uri:_,
+                collection:_,
+                creator:_,
+                extend
+            }
+        ) = context::remove_object<NFT>(ctx, burner_object_ref.nft);
+        type_table::destroy_empty(extend)
     }
 
     public fun generate_mutator_ref(nft_object_ref: &ObjectRef<NFT>, ctx: &mut Context):ObjectRef<MutatorRef>{
@@ -83,6 +111,15 @@ module rooch_framework::nft {
     public fun assert_mutator_exist_of_id(objectId: ObjectID, ctx: &Context) {
         assert!(context::exist_object(ctx, objectId), EMutatorNotExist);
         context::borrow_object<MutatorRef>(ctx, objectId);
+    }
+
+    public fun assert_burner_exist_of_ref(burner_ref: &ObjectRef<BurnerRef>) {
+        assert!(object_ref::exist_object(burner_ref), EMutatorNotExist);
+    }
+
+    public fun assert_burner_exist_of_id(objectId: ObjectID, ctx: &Context) {
+        assert!(context::exist_object(ctx, objectId), EMutatorNotExist);
+        context::borrow_object<BurnerRef>(ctx, objectId);
     }
 
     #[private_generics(T)]
