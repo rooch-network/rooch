@@ -34,7 +34,7 @@ module moveos_std::event {
 
     fun exists_event_handle<T>(ctx: &Context): bool {
         let event_handle_id = derive_event_handle_id<T>();
-        context::contains_object(ctx, event_handle_id)
+        context::exist_object(ctx, event_handle_id)
     }
 
     /// Borrow a event handle from the object storage

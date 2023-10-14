@@ -194,7 +194,7 @@ Create a new account storage space
 
 <pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_create_account_storage">create_account_storage</a>(ctx: &<b>mut</b> Context, account: <b>address</b>) {
     <b>let</b> object_id = <a href="object.md#0x2_object_address_to_object_id">object::address_to_object_id</a>(account);
-    <b>assert</b>!(!<a href="context.md#0x2_context_contains_object">context::contains_object</a>(ctx, object_id), <a href="account_storage.md#0x2_account_storage_ErrorAccountAlreadyExists">ErrorAccountAlreadyExists</a>);
+    <b>assert</b>!(!<a href="context.md#0x2_context_exist_object">context::exist_object</a>(ctx, object_id), <a href="account_storage.md#0x2_account_storage_ErrorAccountAlreadyExists">ErrorAccountAlreadyExists</a>);
     <b>let</b> <a href="account_storage.md#0x2_account_storage">account_storage</a> = <a href="account_storage.md#0x2_account_storage_AccountStorage">AccountStorage</a> {
         resources: <a href="type_table.md#0x2_type_table_new_with_id">type_table::new_with_id</a>(<a href="account_storage.md#0x2_account_storage_named_table_id">named_table_id</a>(account, <a href="account_storage.md#0x2_account_storage_NamedTableResource">NamedTableResource</a>)),
         modules: <a href="table.md#0x2_table_new_with_id">table::new_with_id</a>(<a href="account_storage.md#0x2_account_storage_named_table_id">named_table_id</a>(account, <a href="account_storage.md#0x2_account_storage_NamedTableModule">NamedTableModule</a>)),
@@ -226,7 +226,7 @@ check if account storage eixst
 
 <pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_exist_account_storage">exist_account_storage</a>(ctx: &Context, account: <b>address</b>): bool {
     <b>let</b> object_id = <a href="object.md#0x2_object_address_to_object_id">object::address_to_object_id</a>(account);
-    <a href="context.md#0x2_context_contains_object">context::contains_object</a>(ctx, object_id)
+    <a href="context.md#0x2_context_exist_object">context::exist_object</a>(ctx, object_id)
 }
 </code></pre>
 

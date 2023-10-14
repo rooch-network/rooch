@@ -24,7 +24,7 @@ and let developers customize the storage
 -  [Function `borrow_object`](#0x2_context_borrow_object)
 -  [Function `borrow_object_mut`](#0x2_context_borrow_object_mut)
 -  [Function `remove_object`](#0x2_context_remove_object)
--  [Function `contains_object`](#0x2_context_contains_object)
+-  [Function `exist_object`](#0x2_context_exist_object)
 -  [Function `new_object`](#0x2_context_new_object)
 -  [Function `new_object_with_owner`](#0x2_context_new_object_with_owner)
 -  [Function `new_object_with_id`](#0x2_context_new_object_with_id)
@@ -453,13 +453,13 @@ Remove object from object store, and unpack the Object
 
 </details>
 
-<a name="0x2_context_contains_object"></a>
+<a name="0x2_context_exist_object"></a>
 
-## Function `contains_object`
+## Function `exist_object`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_contains_object">contains_object</a>(self: &<a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_exist_object">exist_object</a>(self: &<a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): bool
 </code></pre>
 
 
@@ -468,7 +468,7 @@ Remove object from object store, and unpack the Object
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_contains_object">contains_object</a>(self: &<a href="context.md#0x2_context_Context">Context</a>, object_id: ObjectID): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_exist_object">exist_object</a>(self: &<a href="context.md#0x2_context_Context">Context</a>, object_id: ObjectID): bool {
     <a href="storage_context.md#0x2_storage_context_contains">storage_context::contains</a>(&self.<a href="storage_context.md#0x2_storage_context">storage_context</a>, object_id)
 }
 </code></pre>

@@ -112,7 +112,7 @@ module moveos_std::context {
         object::unpack_internal(obj)
     }
 
-    public fun contains_object(self: &Context, object_id: ObjectID): bool {
+    public fun exist_object(self: &Context, object_id: ObjectID): bool {
         storage_context::contains(&self.storage_context, object_id)
     }
 

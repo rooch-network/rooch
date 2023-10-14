@@ -47,7 +47,7 @@ module moveos_std::account_storage {
     /// Create a new account storage space
     public fun create_account_storage(ctx: &mut Context, account: address) {
         let object_id = object::address_to_object_id(account);
-        assert!(!context::contains_object(ctx, object_id), ErrorAccountAlreadyExists);
+        assert!(!context::exist_object(ctx, object_id), ErrorAccountAlreadyExists);
         let account_storage = AccountStorage {
             resources: type_table::new_with_id(named_table_id(account, NamedTableResource)),
             modules: table::new_with_id(named_table_id(account, NamedTableModule)),
@@ -59,7 +59,7 @@ module moveos_std::account_storage {
     /// check if account storage eixst
     public fun exist_account_storage(ctx: &Context, account: address): bool {
         let object_id = object::address_to_object_id(account);
-        context::contains_object(ctx, object_id)
+        context::exist_object(ctx, object_id)
     }
 
     public fun ensure_account_storage(ctx: &mut Context, account: address) {
