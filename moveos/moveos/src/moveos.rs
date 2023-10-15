@@ -7,6 +7,8 @@ use anyhow::{bail, ensure, Result};
 use backtrace::Backtrace;
 use move_binary_format::errors::VMError;
 use move_binary_format::errors::{vm_status_of_result, Location, PartialVMError, VMResult};
+use move_binary_format::CompiledModule;
+use move_core_types::value::MoveValue;
 use move_core_types::vm_status::{KeptVMStatus, VMStatus};
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, vm_status::StatusCode,
@@ -21,6 +23,7 @@ use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::moveos_std::tx_context::TxContext;
+use moveos_types::move_types::FunctionId;
 use moveos_types::moveos_std::tx_result::TxResult;
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::MoveState;
@@ -29,6 +32,7 @@ use moveos_types::transaction::{
     MoveOSTransaction, TransactionOutput, VerifiedMoveAction, VerifiedMoveOSTransaction,
 };
 use moveos_types::{h256::H256, transaction::FunctionCall};
+use moveos_verifier::metadata::get_metadata_from_compiled_module;
 
 pub struct MoveOSConfig {
     pub vm_config: VMConfig,
@@ -211,11 +215,11 @@ impl MoveOS {
 
         match self.execute_user_action(
             &mut session,
-            action,
+            action.clone(),
             pre_execute_functions.clone(),
             post_execute_functions.clone(),
         ) {
-            Ok(status) => self.execution_cleanup(session, status),
+            Ok(status) => self.execution_cleanup(session, status, Some(action)),
             Err((vm_err, need_respawn)) => {
                 if need_respawn {
                     let mut s = session.respawn(system_env);
@@ -231,11 +235,174 @@ impl MoveOS {
                     // We just cleanup with the VM error return by `execute_user_action`, ignore
                     // the result of `execute_pre_and_post`
                     // TODO: do we need to handle the result of `execute_pre_and_post` after respawn?
-                    self.execution_cleanup(s, vm_err.into_vm_status())
+                    self.execution_cleanup(s, vm_err.into_vm_status(), None)
                 } else {
-                    self.execution_cleanup(session, vm_err.into_vm_status())
+                    self.execution_cleanup(session, vm_err.into_vm_status(), None)
                 }
             }
+        }
+    }
+
+    fn execute_gas_validate(
+        &self,
+        session: &mut MoveOSSession<'_, '_, MoveOSResolverProxy<MoveOSStore>, MoveOSGasMeter>,
+        action: &VerifiedMoveAction,
+    ) -> VMResult<Option<bool>> {
+        match action {
+            VerifiedMoveAction::Function { call } => {
+                let module_id = &call.function_id.module_id;
+                let loaded_module_bytes = session.get_data_store().load_module(module_id);
+
+                let compiled_module_opt = {
+                    match loaded_module_bytes {
+                        Ok(module_bytes) => {
+                            CompiledModule::deserialize(module_bytes.as_slice()).ok()
+                        }
+                        Err(_) => {
+                            unreachable!("Module data {:} should exists", module_id.to_string());
+                        }
+                    }
+                };
+
+                let gas_free_function_info = {
+                    match compiled_module_opt {
+                        None => {
+                            return Err(PartialVMError::new(
+                                StatusCode::FAILED_TO_DESERIALIZE_RESOURCE,
+                            )
+                            .with_message(format!(
+                                "failed to deserialize module {:?}",
+                                module_id.to_string()
+                            ))
+                            .finish(Location::Module(module_id.clone())))
+                        }
+                        Some(compiled_module) => {
+                            let metadata = get_metadata_from_compiled_module(&compiled_module);
+                            match metadata {
+                                None => None,
+                                Some(runtime_metadata) => {
+                                    Some(runtime_metadata.gas_free_function_map)
+                                }
+                            }
+                        }
+                    }
+                };
+
+                let called_function_name = call.function_id.function_name.to_string();
+                match gas_free_function_info {
+                    None => Ok(None),
+                    Some(gas_func_info) => {
+                        let gas_func_info_opt = gas_func_info.get(&called_function_name);
+
+                        if let Some(gas_func_info) = gas_func_info_opt {
+                            let gas_validate_func_name = gas_func_info.gas_validate.clone();
+
+                            let gas_validate_func_call = FunctionCall::new(
+                                FunctionId::new(
+                                    call.function_id.module_id.clone(),
+                                    Identifier::new(gas_validate_func_name).unwrap(),
+                                ),
+                                vec![],
+                                vec![],
+                            );
+
+                            let return_value = session
+                                .execute_function_bypass_visibility(gas_validate_func_call)?;
+
+                            return if !return_value.is_empty() {
+                                let first_return_value = return_value.get(0).unwrap();
+                                Ok(Some(
+                                    bcs::from_bytes::<bool>(first_return_value.value.as_slice())
+                                        .expect(
+                                        "the return value of gas validate function should be bool",
+                                    ),
+                                ))
+                            } else {
+                                Ok(None)
+                            };
+                        }
+
+                        Ok(None)
+                    }
+                }
+            }
+            _ => Ok(None),
+        }
+    }
+
+    fn execute_gas_charge_post(
+        &self,
+        session: &mut MoveOSSession<'_, '_, MoveOSResolverProxy<MoveOSStore>, MoveOSGasMeter>,
+        action: &VerifiedMoveAction,
+    ) -> VMResult<Option<bool>> {
+        match action {
+            VerifiedMoveAction::Function { call } => {
+                let module_id = &call.function_id.module_id;
+                let loaded_module_bytes = session.get_data_store().load_module(module_id);
+
+                let compiled_module_opt = {
+                    match loaded_module_bytes {
+                        Ok(module_bytes) => {
+                            CompiledModule::deserialize(module_bytes.as_slice()).ok()
+                        }
+                        Err(_) => {
+                            unreachable!("Module data {:} should exists", module_id.to_string());
+                        }
+                    }
+                };
+
+                let gas_free_function_info = {
+                    match compiled_module_opt {
+                        None => {
+                            return Err(PartialVMError::new(
+                                StatusCode::FAILED_TO_DESERIALIZE_RESOURCE,
+                            )
+                            .with_message(format!(
+                                "failed to deserialize module {:?}",
+                                module_id.to_string()
+                            ))
+                            .finish(Location::Module(module_id.clone())))
+                        }
+                        Some(compiled_module) => {
+                            let metadata = get_metadata_from_compiled_module(&compiled_module);
+                            match metadata {
+                                None => None,
+                                Some(runtime_metadata) => {
+                                    Some(runtime_metadata.gas_free_function_map)
+                                }
+                            }
+                        }
+                    }
+                };
+
+                let called_function_name = call.function_id.function_name.to_string();
+                match gas_free_function_info {
+                    None => Ok(None),
+                    Some(gas_func_info) => {
+                        let gas_func_info_opt = gas_func_info.get(&called_function_name);
+
+                        if let Some(gas_func_info) = gas_func_info_opt {
+                            let gas_charge_post_func_name = gas_func_info.gas_charge_post.clone();
+
+                            let gas_validate_func_call = FunctionCall::new(
+                                FunctionId::new(
+                                    call.function_id.module_id.clone(),
+                                    Identifier::new(gas_charge_post_func_name).unwrap(),
+                                ),
+                                vec![],
+                                vec![MoveValue::U64(session.query_gas_used())
+                                    .simple_serialize()
+                                    .unwrap()],
+                            );
+
+                            session.execute_function_bypass_visibility(gas_validate_func_call)?;
+                        }
+
+                        Ok(None)
+                    }
+                }
+            }
+            _ => Ok(None),
         }
     }
 
@@ -380,6 +547,7 @@ impl MoveOS {
         &self,
         mut session: MoveOSSession<'_, '_, MoveOSResolverProxy<MoveOSStore>, MoveOSGasMeter>,
         status: VMStatus,
+        action_opt: Option<VerifiedMoveAction>,
     ) -> Result<TransactionOutput> {
         let kept_status = match status.keep_or_discard() {
             Ok(kept_status) => kept_status,
@@ -389,6 +557,13 @@ impl MoveOS {
                 panic!("Discard status: {:?}\n{:?}", discard_status, backtrace);
             }
         };
+
+        let mut _can_pay_gas = None;
+        let action_opt_cloned = action_opt.clone();
+        if let Some(action) = action_opt {
+            _can_pay_gas = self.execute_gas_validate(&mut session, &action)?;
+        }
+
         // update txn result to TxContext
         let gas_used = session.query_gas_used();
         //TODO is it a good approach to add tx_result to TxContext?
@@ -404,6 +579,10 @@ impl MoveOS {
         session
             .execute_function_call(self.system_post_execute_functions.clone(), false)
             .expect("system_post_execute should not fail.");
+
+        if _can_pay_gas.is_some() {
+            self.execute_gas_charge_post(&mut session, &action_opt_cloned.unwrap())?;
+        }
 
         let (_ctx, output) = session.finish_with_extensions(kept_status)?;
         Ok(output)

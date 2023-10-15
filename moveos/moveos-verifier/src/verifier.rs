@@ -684,7 +684,7 @@ fn generate_full_module_name(
     format!("{}::{}", module_address, module_name)
 }
 
-fn generate_vm_error(
+pub fn generate_vm_error(
     status_code: StatusCode,
     error_msg: String,
     fhandle: FunctionHandleIndex,
