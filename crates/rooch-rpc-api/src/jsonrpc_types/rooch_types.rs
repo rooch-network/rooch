@@ -19,9 +19,8 @@ use std::string::String;
 
 pub type EventPageViewResult = PageView<Option<AnnotatedEventView>, u64>;
 pub type TransactionPageViewResult = PageView<TransactionViewResult, u128>;
-pub type StatePageViewResult = PageView<Option<StateViewResult>, StrView<Vec<u8>>>;
-pub type AnnotatedStatePageViewResult =
-    PageView<Option<AnnotatedStateViewResult>, StrView<Vec<u8>>>;
+pub type StatePageViewResult = PageView<StateViewResult, StrView<Vec<u8>>>;
+pub type AnnotatedStatePageViewResult = PageView<AnnotatedStateViewResult, StrView<Vec<u8>>>;
 pub type BalanceInfoPageViewResult = PageView<BalanceInfoViewResult, StrView<Vec<u8>>>;
 
 /// `next_cursor` points to the last item in the page;

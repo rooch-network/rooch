@@ -120,12 +120,12 @@ impl RoochAPIServer for RoochServer {
             MAX_RESULT_LIMIT_USIZE,
         );
         let cursor_of = cursor.clone().map(|v| v.0);
-        let mut data: Vec<Option<(Vec<u8>, StateViewResult)>> = self
+        let mut data: Vec<(Vec<u8>, StateViewResult)> = self
             .rpc_service
             .list_states(access_path.into(), cursor_of, limit_of + 1)
             .await?
             .into_iter()
-            .map(|item| item.map(|(key, state)| (key, StateViewResult::from(state))))
+            .map(|(key, state)| (key, StateViewResult::from(state)))
             .collect::<Vec<_>>();
 
         let has_next_page = data.len() > limit_of;
@@ -153,12 +153,13 @@ impl RoochAPIServer for RoochServer {
             MAX_RESULT_LIMIT_USIZE,
         );
         let cursor_of = cursor.clone().map(|v| v.0);
-        let mut data: Vec<Option<(Vec<u8>, AnnotatedStateViewResult)>> = self
+
+        let mut data: Vec<(Vec<u8>, AnnotatedStateViewResult)> = self
             .rpc_service
             .list_annotated_states(access_path.into(), cursor_of, limit_of + 1)
             .await?
             .into_iter()
-            .map(|item| item.map(|(key, state)| (key, AnnotatedStateViewResult::from(state))))
+            .map(|(key, state)| (key, AnnotatedStateViewResult::from(state)))
             .collect::<Vec<_>>();
 
         let has_next_page = data.len() > limit_of;
