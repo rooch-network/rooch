@@ -166,11 +166,7 @@ export class JsonRpcProvider implements IProvider {
   }
 
   // List the states by access_path
-  async listStates(
-    access_path: string,
-    cursor: Uint8Array,
-    limit: number,
-  ): Promise<StatePageView> {
+  async listStates(access_path: string, cursor: Uint8Array, limit: number): Promise<StatePageView> {
     return await this.client.rooch_listStates(access_path, cursor, limit)
   }
 
