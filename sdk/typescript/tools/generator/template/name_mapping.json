@@ -8,6 +8,6 @@
     "moveos_types_move_types_FunctionId": "RoochFunctionId",
     "PageView_for_TransactionWithInfoView_and_uint128": "TransactionWithInfoPageView",
     "PageView_for_AnnotatedStateView_and_alloc_vec_Vec_U8Array": "AnnotatedStatePageView",
-    "PageView_for_Nullable_AnnotatedEventView_and_uint64": "AnnotatedEventPageView",
+    "PageView_for_AnnotatedEventView_and_uint64": "AnnotatedEventPageView",
     "PageView_for_StateView_and_alloc_vec_Vec_U8Array": "StatePageView"
 }

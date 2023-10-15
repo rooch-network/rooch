@@ -112,7 +112,7 @@ pub struct GetEventsByEventHandleMessage {
 }
 
 impl Message for GetEventsByEventHandleMessage {
-    type Result = Result<Vec<Option<AnnotatedMoveOSEvent>>>;
+    type Result = Result<Vec<AnnotatedMoveOSEvent>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -121,7 +121,7 @@ pub struct GetEventsMessage {
 }
 
 impl Message for GetEventsMessage {
-    type Result = Result<Vec<Option<AnnotatedMoveOSEvent>>>;
+    type Result = Result<Vec<AnnotatedMoveOSEvent>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
