@@ -144,7 +144,10 @@ export class JsonRpcProvider implements IProvider {
     return await this.client.rooch_getAnnotatedStates(accessPath)
   }
 
-  async getTransactionsByOrder(cursor: number, limit: number): Promise<TransactionWithInfoPageView> {
+  async getTransactionsByOrder(
+    cursor: number,
+    limit: number,
+  ): Promise<TransactionWithInfoPageView> {
     return this.client.rooch_getTransactionsByOrder(cursor, limit)
   }
 
