@@ -3,7 +3,6 @@
 
 pub mod abi;
 pub mod account;
-pub mod dashboard;
 pub mod env;
 pub mod event;
 pub mod init;

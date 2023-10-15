@@ -34,8 +34,6 @@ hex = { workspace = true }
 regex = { workspace = true }
 serde-reflection = { workspace = true }
 serde-generate = { workspace = true }
-rust-embed = { workspace = true }
-rocket = { workspace = true }
 parking_lot = { workspace = true }
 bcs-ext = { workspace = true }
 rpassword = { workspace = true }
