@@ -276,7 +276,7 @@
         }
       ],
       "result": {
-        "name": "TransactionResultPageView",
+        "name": "TransactionWithInfoPageView",
         "required": true,
         "schema": {
           "$ref": "#/components/schemas/PageView_for_TransactionWithInfoView_and_uint128"

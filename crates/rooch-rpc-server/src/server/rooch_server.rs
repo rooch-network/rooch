@@ -15,7 +15,7 @@ use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedEventView, AnnotatedStateView, EventPageView,
     ExecuteTransactionResponseView, FunctionCallView, H256View, ListAnnotatedStatesPageView,
     ListBalanceInfoPageView, ListStatesPageView, StateView, StrView, StructTagView,
-    TransactionResultPageView,
+    TransactionWithInfoPageView,
 };
 use rooch_rpc_api::{api::rooch_api::RoochAPIServer, api::DEFAULT_RESULT_LIMIT};
 use rooch_rpc_api::{
@@ -246,7 +246,7 @@ impl RoochAPIServer for RoochServer {
         &self,
         cursor: Option<u128>,
         limit: Option<u64>,
-    ) -> RpcResult<TransactionResultPageView> {
+    ) -> RpcResult<TransactionWithInfoPageView> {
         let last_sequencer_order = self
             .rpc_service
             .get_sequencer_order()
@@ -295,7 +295,7 @@ impl RoochAPIServer for RoochServer {
             .map(TransactionWithInfoView::from)
             .collect::<Vec<_>>();
 
-        Ok(TransactionResultPageView {
+        Ok(TransactionWithInfoPageView {
             data,
             next_cursor,
             has_next_page,

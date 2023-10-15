@@ -13,7 +13,7 @@ import {
   // TransactionView,
   AnnotatedFunctionResultView,
   AnnotatedStateView,
-  TransactionResultPageView,
+  TransactionWithInfoPageView,
   AnnotatedEventResultPageView,
   ListAnnotatedStateResultPageView,
   StateView,
@@ -144,7 +144,7 @@ export class JsonRpcProvider implements IProvider {
     return await this.client.rooch_getAnnotatedStates(accessPath)
   }
 
-  async getTransactionsByOrder(cursor: number, limit: number): Promise<TransactionResultPageView> {
+  async getTransactionsByOrder(cursor: number, limit: number): Promise<TransactionWithInfoPageView> {
     return this.client.rooch_getTransactionsByOrder(cursor, limit)
   }
 

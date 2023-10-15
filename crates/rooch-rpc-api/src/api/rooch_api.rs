@@ -7,7 +7,7 @@ use crate::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedFunctionResultView, AnnotatedStateView,
     EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
     ListAnnotatedStatesPageView, ListBalanceInfoPageView, ListStatesPageView, StateView, StrView,
-    StructTagView, TransactionResultPageView,
+    StructTagView, TransactionWithInfoPageView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -92,7 +92,7 @@ pub trait RoochAPI {
         &self,
         cursor: Option<u128>,
         limit: Option<u64>,
-    ) -> RpcResult<TransactionResultPageView>;
+    ) -> RpcResult<TransactionWithInfoPageView>;
 
     /// get account balance by AccountAddress and CoinType
     #[method(name = "getBalance")]

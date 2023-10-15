@@ -10,7 +10,7 @@ use moveos_types::{
     transaction::FunctionCall,
 };
 use rooch_rpc_api::api::rooch_api::RoochAPIClient;
-use rooch_rpc_api::jsonrpc_types::TransactionResultPageView;
+use rooch_rpc_api::jsonrpc_types::TransactionWithInfoPageView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, transaction_view::TransactionWithInfoView,
 };
@@ -77,7 +77,7 @@ impl RoochRpcClient {
         &self,
         cursor: Option<u128>,
         limit: Option<u64>,
-    ) -> Result<TransactionResultPageView> {
+    ) -> Result<TransactionWithInfoPageView> {
         Ok(self.http.get_transactions_by_order(cursor, limit).await?)
     }
 
