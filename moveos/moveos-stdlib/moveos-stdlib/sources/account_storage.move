@@ -170,18 +170,31 @@ module moveos_std::account_storage {
         exists_module_at_account_storage(account_storage, name) 
     }
 
+    fun pop_module_by_name(modules: &mut vector<MoveModule>, name: String): MoveModule {
+        let i = 0;
+        let len = vector::length(modules);
+        while (i < len) {
+            let m = vector::borrow(modules, i);
+            if (move_module::module_name(m) == name) {
+                return vector::remove(modules, i)
+            };
+            i = i + 1;
+        };
+        abort(0x0) // unreachable.
+    }
+
     /// Publish modules to the account's storage
     public fun publish_modules(ctx: &mut Context, account: &signer, modules: vector<MoveModule>) {
         let account_address = signer::address_of(account);
         let account_storage = borrow_account_storage_mut(ctx, account_address);
         let i = 0;
         let len = vector::length(&modules);
-        let (module_names, module_names_with_init_fn) = move_module::verify_modules(&modules, account_address);
+        let (module_names, module_names_with_init_fn) = move_module::sort_and_verify_modules(&modules, account_address);
         
         let upgrade_flag = false;
         while (i < len) {
             let name = vector::pop_back(&mut module_names);
-            let m = vector::pop_back(&mut modules);   
+            let m = pop_module_by_name(&mut modules, name);   
 
             // The module already exists, which means we are upgrading the module
             if (table::contains(&account_storage.modules, name)) {
@@ -218,8 +231,7 @@ module moveos_std::account_storage {
             vector::push_back(&mut module_vec, m);
             i = i + 1;
         };
-        // The input modules are sorted by dependency order which must not be changed.
-        vector::reverse(&mut module_vec);
+        
         publish_modules(ctx, account, module_vec);
     }
 

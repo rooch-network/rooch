@@ -80,7 +80,7 @@ fn native_module_name_inner(
 }
 
 /***************************************************************************************************
- * native fun verify_modules_inner(
+ * native fun sort_and_verify_modules_inner(
  *      modules: &vector<vector<u8>>,
  *      account_address: address
  * ): (vector<String>, vector<String>);
@@ -95,7 +95,7 @@ pub struct VerifyModulesGasParameters {
     pub per_byte: InternalGasPerByte,
 }
 
-fn native_verify_modules_inner(
+fn native_sort_and_verify_modules_inner(
     gas_params: &VerifyModulesGasParameters,
     context: &mut NativeContext,
     _ty_args: Vec<Type>,
@@ -259,7 +259,7 @@ fn check_compatibililty_inner(
 #[derive(Debug, Clone)]
 pub struct GasParameters {
     pub module_name_inner: ModuleNameInnerGasParameters,
-    pub verify_modules_inner: VerifyModulesGasParameters,
+    pub sort_and_verify_modules_inner: VerifyModulesGasParameters,
     pub request_init_functions: RequestInitFunctionsGasParameters,
     pub check_compatibililty_inner: CheckCompatibilityInnerGasParameters,
 }
@@ -271,7 +271,7 @@ impl GasParameters {
                 base: 0.into(),
                 per_byte_in_str: 0.into(),
             },
-            verify_modules_inner: VerifyModulesGasParameters {
+            sort_and_verify_modules_inner: VerifyModulesGasParameters {
                 base: 0.into(),
                 per_byte: 0.into(),
             },
@@ -294,8 +294,11 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
             make_native(gas_params.module_name_inner, native_module_name_inner),
         ),
         (
-            "verify_modules_inner",
-            make_native(gas_params.verify_modules_inner, native_verify_modules_inner),
+            "sort_and_verify_modules_inner",
+            make_native(
+                gas_params.sort_and_verify_modules_inner,
+                native_sort_and_verify_modules_inner,
+            ),
         ),
         (
             "request_init_functions",
