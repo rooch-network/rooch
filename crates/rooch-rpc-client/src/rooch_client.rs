@@ -12,7 +12,7 @@ use moveos_types::{
 use rooch_rpc_api::api::rooch_api::RoochAPIClient;
 use rooch_rpc_api::jsonrpc_types::TransactionResultPageView;
 use rooch_rpc_api::jsonrpc_types::{
-    account_view::BalanceInfoView, transaction_view::TransactionResultView,
+    account_view::BalanceInfoView, transaction_view::TransactionWithInfoView,
 };
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedFunctionResultView, EventPageView,
@@ -84,7 +84,7 @@ impl RoochRpcClient {
     pub async fn get_transactions_by_hash(
         &self,
         tx_hashes: Vec<H256>,
-    ) -> Result<Vec<Option<TransactionResultView>>> {
+    ) -> Result<Vec<Option<TransactionWithInfoView>>> {
         Ok(self
             .http
             .get_transactions_by_hash(tx_hashes.iter().map(|hash| (*hash).into()).collect())

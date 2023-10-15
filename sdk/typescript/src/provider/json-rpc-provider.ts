@@ -18,7 +18,7 @@ import {
   ListAnnotatedStateResultPageView,
   StateView,
   StateResultPageView,
-  TransactionResultView,
+  TransactionWithInfoView,
 } from '../types'
 import { functionIdToStirng, typeTagToString, encodeArg, toHexString } from '../utils'
 import { IProvider } from './interface'
@@ -129,7 +129,7 @@ export class JsonRpcProvider implements IProvider {
     return this.client.rooch_sendRawTransaction(playload)
   }
 
-  async getTransactionsByHash(tx_hashes: string[]): Promise<TransactionResultView | null[]> {
+  async getTransactionsByHash(tx_hashes: string[]): Promise<TransactionWithInfoView | null[]> {
     return await this.client.rooch_getTransactionsByHash(tx_hashes)
   }
 

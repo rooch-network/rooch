@@ -238,14 +238,14 @@
         }
       ],
       "result": {
-        "name": "Vec<Option<TransactionResultView>>",
+        "name": "Vec<Option<TransactionWithInfoView>>",
         "required": true,
         "schema": {
           "type": "array",
           "items": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/TransactionResultView"
+                "$ref": "#/components/schemas/TransactionWithInfoView"
               },
               {
                 "type": "null"
@@ -279,7 +279,7 @@
         "name": "TransactionResultPageView",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_TransactionResultView_and_uint128"
+          "$ref": "#/components/schemas/PageView_for_TransactionWithInfoView_and_uint128"
         }
       }
     },
@@ -1074,7 +1074,7 @@
           }
         }
       },
-      "PageView_for_TransactionResultView_and_uint128": {
+      "PageView_for_TransactionWithInfoView_and_uint128": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -1085,7 +1085,7 @@
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/TransactionResultView"
+              "$ref": "#/components/schemas/TransactionWithInfoView"
             }
           },
           "has_next_page": {
@@ -1266,25 +1266,6 @@
           }
         }
       },
-      "TransactionResultView": {
-        "type": "object",
-        "required": [
-          "execution_info",
-          "sequence_info",
-          "transaction"
-        ],
-        "properties": {
-          "execution_info": {
-            "$ref": "#/components/schemas/TransactionExecutionInfoView"
-          },
-          "sequence_info": {
-            "$ref": "#/components/schemas/TransactionSequenceInfoView"
-          },
-          "transaction": {
-            "$ref": "#/components/schemas/TransactionView"
-          }
-        }
-      },
       "TransactionSequenceInfoView": {
         "type": "object",
         "required": [
@@ -1341,6 +1322,25 @@
           },
           "transaction_type": {
             "$ref": "#/components/schemas/TransactionTypeView"
+          }
+        }
+      },
+      "TransactionWithInfoView": {
+        "type": "object",
+        "required": [
+          "execution_info",
+          "sequence_info",
+          "transaction"
+        ],
+        "properties": {
+          "execution_info": {
+            "$ref": "#/components/schemas/TransactionExecutionInfoView"
+          },
+          "sequence_info": {
+            "$ref": "#/components/schemas/TransactionSequenceInfoView"
+          },
+          "transaction": {
+            "$ref": "#/components/schemas/TransactionView"
           }
         }
       },

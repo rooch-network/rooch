@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::account_view::BalanceInfoView;
-use crate::jsonrpc_types::transaction_view::TransactionResultView;
+use crate::jsonrpc_types::transaction_view::TransactionWithInfoView;
 use crate::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedFunctionResultView, AnnotatedStateView,
     EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
@@ -85,7 +85,7 @@ pub trait RoochAPI {
     async fn get_transactions_by_hash(
         &self,
         tx_hashes: Vec<H256View>,
-    ) -> RpcResult<Vec<Option<TransactionResultView>>>;
+    ) -> RpcResult<Vec<Option<TransactionWithInfoView>>>;
 
     #[method(name = "getTransactionsByOrder")]
     async fn get_transactions_by_order(
