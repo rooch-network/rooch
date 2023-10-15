@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
+use async_trait::async_trait;
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use rooch_rpc_api::api::MAX_RESULT_LIMIT_USIZE;

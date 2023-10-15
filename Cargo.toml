@@ -126,8 +126,6 @@ fastcrypto = { git = "https://github.com/rooch-network/fastcrypto", rev = "aa5f9
 futures = "0.3.28"
 hex = "0.4.3"
 rustc-hex = "1.0"
-rust-embed = "6.8.1"
-rocket = { version = "0.5.0-rc.2", default-features = false }
 itertools = "0.10.5"
 jsonrpsee = { version = "0.16.3", features = ["full"] }
 jpst = "0.1.1"
