@@ -293,7 +293,7 @@ impl StateResolver for RemoteStore {
         _handle: &ObjectID,
         _cursor: Option<Vec<u8>>,
         _limit: usize,
-    ) -> anyhow::Result<Vec<Option<ListState>>, anyhow::Error> {
+    ) -> anyhow::Result<Vec<ListState>, anyhow::Error> {
         todo!()
     }
 }

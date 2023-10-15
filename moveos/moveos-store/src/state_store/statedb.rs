@@ -51,7 +51,7 @@ where
         self.smt.get(key)
     }
 
-    pub fn list(&self, cursor: Option<Vec<u8>>, limit: usize) -> Result<Vec<Option<ListState>>> {
+    pub fn list(&self, cursor: Option<Vec<u8>>, limit: usize) -> Result<Vec<ListState>> {
         self.smt.list(cursor, limit)
     }
 
@@ -141,7 +141,7 @@ impl StateDBStore {
         self.global_table.get(id.to_bytes())
     }
 
-    pub fn list(&self, cursor: Option<Vec<u8>>, limit: usize) -> Result<Vec<Option<ListState>>> {
+    pub fn list(&self, cursor: Option<Vec<u8>>, limit: usize) -> Result<Vec<ListState>> {
         self.global_table.list(cursor, limit)
     }
 
@@ -225,11 +225,11 @@ impl StateDBStore {
         id: ObjectID,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<Option<ListState>>> {
-        self.get_as_table(id).and_then(|res| {
-            res.map(|(_, table)| table.list(cursor, limit))
-                .unwrap_or(Ok(vec![]))
-        })
+    ) -> Result<Vec<ListState>> {
+        let (_table_info, table) = self
+            .get_as_table(id)?
+            .ok_or_else(|| anyhow::format_err!("table with id {} not found", id))?;
+        table.list(cursor, limit)
     }
 
     pub fn apply_change_set(
@@ -303,7 +303,7 @@ impl StateDBStore {
         handle: &ObjectID,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<Option<ListState>>, Error> {
+    ) -> Result<Vec<ListState>, Error> {
         if handle == &state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
             self.global_table.list(cursor, limit)
         } else {
@@ -384,7 +384,7 @@ impl StateResolver for StateDBStore {
         handle: &ObjectID,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> std::result::Result<Vec<Option<ListState>>, Error> {
+    ) -> std::result::Result<Vec<ListState>, Error> {
         self.resolve_list_state(handle, cursor, limit)
     }
 }

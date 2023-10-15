@@ -38,7 +38,7 @@ pub trait StateResolver {
         handle: &ObjectID,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<Option<ListState>>, anyhow::Error>;
+    ) -> Result<Vec<ListState>, anyhow::Error>;
 
     // get object data from global state tree.
     fn resolve_object_state(&self, object: &ObjectID) -> Result<Option<State>, anyhow::Error> {
@@ -114,7 +114,7 @@ where
         handle: &ObjectID,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<Option<ListState>>, anyhow::Error> {
+    ) -> Result<Vec<ListState>, anyhow::Error> {
         self.0.list_table_items(handle, cursor, limit)
     }
 }
@@ -151,7 +151,7 @@ pub trait StateReader: StateResolver {
         path: AccessPath,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<Option<ListState>>> {
+    ) -> Result<Vec<ListState>> {
         let (handle, _keys) = path.into_table_query();
         self.list_table_items(&handle, cursor, limit)
     }
@@ -177,20 +177,18 @@ pub trait AnnotatedStateReader: StateReader + MoveResolver {
         path: AccessPath,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<Option<ListAnnotatedState>>> {
+    ) -> Result<Vec<ListAnnotatedState>> {
         let annotator = MoveValueAnnotator::new(self);
         Ok(self
             .list_states(path, cursor, limit)?
             .into_iter()
-            .map(|item| {
-                item.map(|(key, state)| {
-                    (
-                        key,
-                        state
-                            .into_annotated_state(&annotator)
-                            .expect("state into_annotated_state should success"),
-                    )
-                })
+            .map(|(key, state)| {
+                (
+                    key,
+                    state
+                        .into_annotated_state(&annotator)
+                        .expect("state into_annotated_state should success"),
+                )
             })
             .collect::<Vec<_>>())
     }

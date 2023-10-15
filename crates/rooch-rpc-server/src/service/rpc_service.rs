@@ -113,7 +113,7 @@ impl RpcService {
         access_path: AccessPath,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<Option<(Vec<u8>, State)>>> {
+    ) -> Result<Vec<(Vec<u8>, State)>> {
         self.executor.list_states(access_path, cursor, limit).await
     }
 
@@ -122,7 +122,7 @@ impl RpcService {
         access_path: AccessPath,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<Option<(Vec<u8>, AnnotatedState)>>> {
+    ) -> Result<Vec<(Vec<u8>, AnnotatedState)>> {
         self.executor
             .list_annotated_states(access_path, cursor, limit)
             .await
