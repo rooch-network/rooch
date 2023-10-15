@@ -94,6 +94,33 @@ module rooch_framework::nft {
         mutator_ref
     }
 
+    public fun destroy_mutator_ref(mutator_ref :ObjectRef<MutatorRef>):ObjectID{
+        assert_mutator_exist_of_ref(&mutator_ref);
+        let MutatorRef {
+            nft
+        } = object_ref::remove(mutator_ref);
+        nft
+    }
+
+    public fun generate_burner_ref(nft_object_ref: &ObjectRef<NFT>, ctx: &mut Context):ObjectRef<BurnerRef>{
+        let burner_ref = context::new_object_with_owner(
+            ctx,
+            object_ref::owner(nft_object_ref),
+            BurnerRef {
+                nft: object_ref::id(nft_object_ref),
+            }
+        );
+        burner_ref
+    }
+
+    public fun destroy_burner_ref(burner_ref :ObjectRef<BurnerRef>):ObjectID{
+        assert_burner_exist_of_ref(&burner_ref);
+        let BurnerRef {
+            nft
+        } = object_ref::remove(burner_ref);
+        nft
+    }
+
     // assert
     public fun assert_nft_exist_of_id(objectId: ObjectID, ctx: &Context) {
         assert!(context::exist_object(ctx, objectId), ENftNotExist);
