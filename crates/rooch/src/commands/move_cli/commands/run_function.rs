@@ -7,7 +7,7 @@ use clap::Parser;
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
 use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
-use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, TypeTagView};
+use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionViewResult, TypeTagView};
 use rooch_types::{
     address::RoochAddress,
     error::{RoochError, RoochResult},
@@ -57,8 +57,8 @@ pub struct RunFunction {
 }
 
 #[async_trait]
-impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
-    async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
+impl CommandAction<ExecuteTransactionViewResult> for RunFunction {
+    async fn execute(self) -> RoochResult<ExecuteTransactionViewResult> {
         let args: Vec<Vec<u8>> = self
             .args
             .into_iter()

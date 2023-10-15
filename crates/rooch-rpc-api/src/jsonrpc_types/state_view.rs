@@ -12,12 +12,12 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
-pub struct StateView {
+pub struct StateViewResult {
     pub value: StrView<Vec<u8>>,
     pub value_type: TypeTagView,
 }
 
-impl From<State> for StateView {
+impl From<State> for StateViewResult {
     fn from(state: State) -> Self {
         Self {
             value: StrView(state.value),
@@ -26,8 +26,8 @@ impl From<State> for StateView {
     }
 }
 
-impl From<StateView> for State {
-    fn from(state: StateView) -> Self {
+impl From<StateViewResult> for State {
+    fn from(state: StateViewResult) -> Self {
         Self {
             value: state.value.0,
             value_type: state.value_type.into(),
@@ -36,12 +36,12 @@ impl From<StateView> for State {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
-pub struct AnnotatedStateView {
-    pub state: StateView,
+pub struct AnnotatedStateViewResult {
+    pub state: StateViewResult,
     pub move_value: AnnotatedMoveValueView,
 }
 
-impl From<AnnotatedState> for AnnotatedStateView {
+impl From<AnnotatedState> for AnnotatedStateViewResult {
     fn from(state: AnnotatedState) -> Self {
         Self {
             state: state.state.into(),
@@ -109,7 +109,7 @@ pub enum OpView<T> {
     Delete,
 }
 
-impl From<Op<State>> for OpView<StateView> {
+impl From<Op<State>> for OpView<StateViewResult> {
     fn from(op: Op<State>) -> Self {
         match op {
             Op::New(data) => Self::New(data.into()),
@@ -121,7 +121,7 @@ impl From<Op<State>> for OpView<StateView> {
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TableChangeView {
-    pub entries: BTreeMap<StrView<Vec<u8>>, OpView<StateView>>,
+    pub entries: BTreeMap<StrView<Vec<u8>>, OpView<StateViewResult>>,
 }
 
 impl From<TableChange> for TableChangeView {

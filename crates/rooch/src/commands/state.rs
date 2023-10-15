@@ -5,7 +5,7 @@ use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::access_path::AccessPath;
-use rooch_rpc_api::jsonrpc_types::AnnotatedStateView;
+use rooch_rpc_api::jsonrpc_types::AnnotatedStateViewResult;
 use rooch_types::error::{RoochError, RoochResult};
 
 /// Get states by accessPath
@@ -24,8 +24,8 @@ pub struct StateCommand {
 }
 
 #[async_trait]
-impl CommandAction<Vec<Option<AnnotatedStateView>>> for StateCommand {
-    async fn execute(self) -> RoochResult<Vec<Option<AnnotatedStateView>>> {
+impl CommandAction<Vec<Option<AnnotatedStateViewResult>>> for StateCommand {
+    async fn execute(self) -> RoochResult<Vec<Option<AnnotatedStateViewResult>>> {
         let client = self.context_options.build().await?.get_client().await?;
 
         let resp = client

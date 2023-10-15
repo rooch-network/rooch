@@ -14,9 +14,9 @@ import {
   FunctionId,
   TypeTag,
   Arg,
-  AnnotatedFunctionResultView,
-  AnnotatedStateView,
-  AnnotatedStatePageView,
+  AnnotatedStateViewResult,
+  AnnotatedFunctionViewResult,
+  AnnotatedStatePageViewResult,
 } from '../types'
 
 const mockFilter: ITransactionFilter = {
@@ -38,17 +38,17 @@ const mockProvider: IProvider = {
     funcId: FunctionId,
     tyArgs?: TypeTag[] | undefined,
     args?: Arg[] | undefined,
-  ): Promise<AnnotatedFunctionResultView> {
+  ): Promise<AnnotatedFunctionViewResult> {
     throw new Error('Function not implemented.')
   },
-  getAnnotatedStates: function (accessPath: string): Promise<AnnotatedStateView | null[]> {
+  getAnnotatedStates: function (accessPath: string): Promise<AnnotatedStateViewResult | null[]> {
     throw new Error('Function not implemented.')
   },
   listAnnotatedStates: function (
     access_path: string,
     cursor: Uint8Array | null,
     limit: number,
-  ): Promise<AnnotatedStatePageView> {
+  ): Promise<AnnotatedStatePageViewResult> {
     throw new Error('Function not implemented.')
   },
 }

@@ -14,7 +14,7 @@ use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_proposer::proxy::ProposerProxy;
 use rooch_relayer::TxSubmiter;
-use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponse, ExecuteTransactionResponseView};
+use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResult, ExecuteTransactionViewResult};
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::account::Account;
 use rooch_types::address::{MultiChainAddress, RoochAddress};
@@ -61,7 +61,7 @@ impl RpcService {
         Ok(())
     }
 
-    pub async fn execute_tx(&self, tx: TypedTransaction) -> Result<ExecuteTransactionResponse> {
+    pub async fn execute_tx(&self, tx: TypedTransaction) -> Result<ExecuteTransactionResult> {
         //First, validate the transactin
         let moveos_tx = self.executor.validate_transaction(tx.clone()).await?;
         let sequence_info = self.sequencer.sequence_transaction(tx.clone()).await?;
@@ -71,7 +71,7 @@ impl RpcService {
             .propose_transaction(tx, execution_info.clone(), sequence_info.clone())
             .await?;
 
-        Ok(ExecuteTransactionResponse {
+        Ok(ExecuteTransactionResult {
             sequence_info,
             execution_info,
             output,
@@ -229,7 +229,7 @@ impl TxSubmiter for RpcService {
             .transpose()?
             .map_or(0, |account| account.sequence_number))
     }
-    async fn submit_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView> {
+    async fn submit_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionViewResult> {
         Ok(self.execute_tx(TypedTransaction::Rooch(tx)).await?.into())
     }
 }

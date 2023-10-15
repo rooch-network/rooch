@@ -13,7 +13,7 @@ use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_SERVER_CONFIG};
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::file_keystore::FileBasedKeystore;
 use rooch_key::keystore::Keystore;
-use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView};
+use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionViewResult, KeptVMStatusView};
 use rooch_types::address::RoochAddress;
 use rooch_types::crypto::Signature;
 use rooch_types::error::{RoochError, RoochResult};
@@ -151,10 +151,7 @@ impl WalletContext {
         ))
     }
 
-    pub async fn execute(
-        &self,
-        tx: RoochTransaction,
-    ) -> RoochResult<ExecuteTransactionResponseView> {
+    pub async fn execute(&self, tx: RoochTransaction) -> RoochResult<ExecuteTransactionViewResult> {
         let client = self.get_client().await?;
         client
             .rooch
@@ -168,7 +165,7 @@ impl WalletContext {
         sender: RoochAddress,
         action: MoveAction,
         password: Option<String>,
-    ) -> RoochResult<ExecuteTransactionResponseView> {
+    ) -> RoochResult<ExecuteTransactionViewResult> {
         let tx = self.sign(sender, action, password).await?;
         self.execute(tx).await
     }
@@ -194,8 +191,8 @@ impl WalletContext {
 
     pub fn assert_execute_success(
         &self,
-        result: ExecuteTransactionResponseView,
-    ) -> RoochResult<ExecuteTransactionResponseView> {
+        result: ExecuteTransactionViewResult,
+    ) -> RoochResult<ExecuteTransactionViewResult> {
         if KeptVMStatusView::Executed != result.execution_info.status {
             Err(RoochError::TransactionError(format!(
                 "Transaction execution failed: {:?}",

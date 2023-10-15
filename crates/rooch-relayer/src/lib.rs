@@ -4,7 +4,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use moveos_types::transaction::FunctionCall;
-use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
+use rooch_rpc_api::jsonrpc_types::ExecuteTransactionViewResult;
 use rooch_rpc_client::Client;
 use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction};
 
@@ -23,7 +23,7 @@ pub trait Relayer: Send + Sync {
 pub trait TxSubmiter: Send + Sync {
     async fn get_chain_id(&self) -> Result<u64>;
     async fn get_sequence_number(&self, address: RoochAddress) -> Result<u64>;
-    async fn submit_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView>;
+    async fn submit_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionViewResult>;
 }
 
 #[async_trait]
@@ -34,7 +34,7 @@ impl TxSubmiter for Client {
     async fn get_sequence_number(&self, address: RoochAddress) -> Result<u64> {
         self.rooch.get_sequence_number(address).await
     }
-    async fn submit_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView> {
+    async fn submit_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionViewResult> {
         self.rooch.execute_tx(tx).await
     }
 }

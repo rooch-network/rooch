@@ -4,7 +4,7 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use moveos_types::h256::H256;
-use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionWithInfoView;
+use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionViewResult;
 use rooch_types::error::RoochResult;
 
 /// Get transactions by hashes
@@ -19,8 +19,8 @@ pub struct GetTransactionsByHashCommand {
 }
 
 #[async_trait]
-impl CommandAction<Vec<Option<TransactionWithInfoView>>> for GetTransactionsByHashCommand {
-    async fn execute(self) -> RoochResult<Vec<Option<TransactionWithInfoView>>> {
+impl CommandAction<Vec<Option<TransactionViewResult>>> for GetTransactionsByHashCommand {
+    async fn execute(self) -> RoochResult<Vec<Option<TransactionViewResult>>> {
         let client = self.context_options.build().await?.get_client().await?;
 
         let resp = client.rooch.get_transactions_by_hash(self.hashes).await?;

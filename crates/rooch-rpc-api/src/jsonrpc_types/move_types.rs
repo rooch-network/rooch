@@ -386,6 +386,26 @@ impl From<H256View> for H256 {
 
 #[serde_as]
 #[derive(Default, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+pub struct H256ViewResult(
+    #[schemars(with = "Hex")]
+    #[serde_as(as = "Readable<Hex, _>")]
+    [u8; 32],
+);
+
+impl From<H256> for H256ViewResult {
+    fn from(value: H256) -> Self {
+        H256ViewResult(value.0)
+    }
+}
+
+impl From<H256ViewResult> for H256 {
+    fn from(value: H256ViewResult) -> Self {
+        H256(value.0)
+    }
+}
+
+#[serde_as]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub struct H64View(
     #[schemars(with = "Hex")]
     #[serde_as(as = "Readable<Hex, _>")]

@@ -28,10 +28,10 @@
         }
       ],
       "result": {
-        "name": "ExecuteTransactionResponseView",
+        "name": "ExecuteTransactionViewResult",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/ExecuteTransactionResponseView"
+          "$ref": "#/components/schemas/ExecuteTransactionViewResult"
         }
       }
     },
@@ -48,10 +48,10 @@
         }
       ],
       "result": {
-        "name": "AnnotatedFunctionResultView",
+        "name": "AnnotatedFunctionViewResult",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/AnnotatedFunctionResultView"
+          "$ref": "#/components/schemas/AnnotatedFunctionViewResult"
         }
       }
     },
@@ -68,14 +68,14 @@
         }
       ],
       "result": {
-        "name": "Vec<Option<AnnotatedStateView>>",
+        "name": "Vec<Option<AnnotatedStateViewResult>>",
         "required": true,
         "schema": {
           "type": "array",
           "items": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/AnnotatedStateView"
+                "$ref": "#/components/schemas/AnnotatedStateViewResult"
               },
               {
                 "type": "null"
@@ -105,10 +105,10 @@
         }
       ],
       "result": {
-        "name": "BalanceInfoView",
+        "name": "BalanceInfoViewResult",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/BalanceInfoView"
+          "$ref": "#/components/schemas/BalanceInfoViewResult"
         }
       }
     },
@@ -139,10 +139,10 @@
         }
       ],
       "result": {
-        "name": "BalanceInfoPageView",
+        "name": "BalanceInfoPageViewResult",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_BalanceInfoView_and_alloc::vec::Vec<u8>"
+          "$ref": "#/components/schemas/PageView_for_BalanceInfoViewResult_and_alloc::vec::Vec<u8>"
         }
       }
     },
@@ -186,7 +186,7 @@
         }
       ],
       "result": {
-        "name": "EventPageView",
+        "name": "EventPageViewResult",
         "required": true,
         "schema": {
           "$ref": "#/components/schemas/PageView_for_Nullable_AnnotatedEventView_and_uint64"
@@ -206,14 +206,14 @@
         }
       ],
       "result": {
-        "name": "Vec<Option<StateView>>",
+        "name": "Vec<Option<StateViewResult>>",
         "required": true,
         "schema": {
           "type": "array",
           "items": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/StateView"
+                "$ref": "#/components/schemas/StateViewResult"
               },
               {
                 "type": "null"
@@ -232,20 +232,20 @@
           "schema": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/H256View"
+              "$ref": "#/components/schemas/H256ViewResult"
             }
           }
         }
       ],
       "result": {
-        "name": "Vec<Option<TransactionWithInfoView>>",
+        "name": "Vec<Option<TransactionViewResult>>",
         "required": true,
         "schema": {
           "type": "array",
           "items": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/TransactionWithInfoView"
+                "$ref": "#/components/schemas/TransactionViewResult"
               },
               {
                 "type": "null"
@@ -276,10 +276,10 @@
         }
       ],
       "result": {
-        "name": "TransactionWithInfoPageView",
+        "name": "TransactionPageViewResult",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_TransactionWithInfoView_and_uint128"
+          "$ref": "#/components/schemas/PageView_for_TransactionViewResult_and_uint128"
         }
       }
     },
@@ -310,10 +310,10 @@
         }
       ],
       "result": {
-        "name": "AnnotatedStatesPageView",
+        "name": "AnnotatedStatePageViewResult",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_AnnotatedStateView_and_alloc::vec::Vec<u8>"
+          "$ref": "#/components/schemas/PageView_for_Nullable_AnnotatedStateViewResult_and_alloc::vec::Vec<u8>"
         }
       }
     },
@@ -344,10 +344,10 @@
         }
       ],
       "result": {
-        "name": "StatesPageView",
+        "name": "StatePageViewResult",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_StateView_and_alloc::vec::Vec<u8>"
+          "$ref": "#/components/schemas/PageView_for_Nullable_StateViewResult_and_alloc::vec::Vec<u8>"
         }
       }
     },
@@ -364,10 +364,10 @@
         }
       ],
       "result": {
-        "name": "H256View",
+        "name": "H256ViewResult",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/H256View"
+          "$ref": "#/components/schemas/H256ViewResult"
         }
       }
     }
@@ -411,7 +411,22 @@
           }
         }
       },
-      "AnnotatedFunctionResultView": {
+      "AnnotatedFunctionReturnValueView": {
+        "type": "object",
+        "required": [
+          "move_value",
+          "value"
+        ],
+        "properties": {
+          "move_value": {
+            "$ref": "#/components/schemas/AnnotatedMoveValueView"
+          },
+          "value": {
+            "$ref": "#/components/schemas/FunctionReturnValueView"
+          }
+        }
+      },
+      "AnnotatedFunctionViewResult": {
         "type": "object",
         "required": [
           "vm_status"
@@ -428,21 +443,6 @@
           },
           "vm_status": {
             "$ref": "#/components/schemas/VMStatusView"
-          }
-        }
-      },
-      "AnnotatedFunctionReturnValueView": {
-        "type": "object",
-        "required": [
-          "move_value",
-          "value"
-        ],
-        "properties": {
-          "move_value": {
-            "$ref": "#/components/schemas/AnnotatedMoveValueView"
-          },
-          "value": {
-            "$ref": "#/components/schemas/FunctionReturnValueView"
           }
         }
       },
@@ -524,7 +524,7 @@
           }
         ]
       },
-      "AnnotatedStateView": {
+      "AnnotatedStateViewResult": {
         "type": "object",
         "required": [
           "move_value",
@@ -535,7 +535,7 @@
             "$ref": "#/components/schemas/AnnotatedMoveValueView"
           },
           "state": {
-            "$ref": "#/components/schemas/StateView"
+            "$ref": "#/components/schemas/StateViewResult"
           }
         }
       },
@@ -554,7 +554,7 @@
           }
         }
       },
-      "BalanceInfoView": {
+      "BalanceInfoViewResult": {
         "type": "object",
         "required": [
           "balance",
@@ -636,7 +636,7 @@
           }
         }
       },
-      "ExecuteTransactionResponseView": {
+      "ExecuteTransactionViewResult": {
         "type": "object",
         "required": [
           "execution_info",
@@ -696,6 +696,9 @@
         }
       },
       "H256View": {
+        "$ref": "#/components/schemas/Hex"
+      },
+      "H256ViewResult": {
         "$ref": "#/components/schemas/Hex"
       },
       "Hex": {
@@ -877,7 +880,7 @@
       "ObjectID": {
         "$ref": "#/components/schemas/Hex"
       },
-      "OpView_for_StateView": {
+      "OpView_for_StateViewResult": {
         "oneOf": [
           {
             "type": "object",
@@ -939,7 +942,7 @@
           }
         ]
       },
-      "PageView_for_AnnotatedStateView_and_alloc::vec::Vec<u8>": {
+      "PageView_for_BalanceInfoViewResult_and_alloc::vec::Vec<u8>": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -950,36 +953,7 @@
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AnnotatedStateView"
-            }
-          },
-          "has_next_page": {
-            "type": "boolean"
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        }
-      },
-      "PageView_for_BalanceInfoView_and_alloc::vec::Vec<u8>": {
-        "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
-        "type": "object",
-        "required": [
-          "data",
-          "has_next_page"
-        ],
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/BalanceInfoView"
+              "$ref": "#/components/schemas/BalanceInfoViewResult"
             }
           },
           "has_next_page": {
@@ -1031,7 +1005,7 @@
           }
         }
       },
-      "PageView_for_StateView_and_alloc::vec::Vec<u8>": {
+      "PageView_for_Nullable_AnnotatedStateViewResult_and_alloc::vec::Vec<u8>": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -1042,7 +1016,14 @@
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/StateView"
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/AnnotatedStateViewResult"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           },
           "has_next_page": {
@@ -1060,7 +1041,7 @@
           }
         }
       },
-      "PageView_for_TransactionWithInfoView_and_uint128": {
+      "PageView_for_Nullable_StateViewResult_and_alloc::vec::Vec<u8>": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -1071,7 +1052,43 @@
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/TransactionWithInfoView"
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/StateViewResult"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "has_next_page": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "PageView_for_TransactionViewResult_and_uint128": {
+        "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
+        "type": "object",
+        "required": [
+          "data",
+          "has_next_page"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionViewResult"
             }
           },
           "has_next_page": {
@@ -1155,7 +1172,7 @@
           }
         }
       },
-      "StateView": {
+      "StateViewResult": {
         "type": "object",
         "required": [
           "value",
@@ -1179,7 +1196,7 @@
           "entries": {
             "type": "object",
             "additionalProperties": {
-              "$ref": "#/components/schemas/OpView_for_StateView"
+              "$ref": "#/components/schemas/OpView_for_StateViewResult"
             }
           }
         }
@@ -1221,6 +1238,39 @@
           },
           "tx_hash": {
             "$ref": "#/components/schemas/H256View"
+          }
+        }
+      },
+      "TransactionInfoView": {
+        "type": "object",
+        "required": [
+          "action",
+          "action_type",
+          "raw",
+          "sender",
+          "sequence_number",
+          "transaction_type"
+        ],
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/MoveActionView"
+          },
+          "action_type": {
+            "$ref": "#/components/schemas/MoveActionTypeView"
+          },
+          "raw": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          },
+          "sender": {
+            "type": "string"
+          },
+          "sequence_number": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "transaction_type": {
+            "$ref": "#/components/schemas/TransactionTypeView"
           }
         }
       },
@@ -1278,40 +1328,7 @@
           "ethereum"
         ]
       },
-      "TransactionView": {
-        "type": "object",
-        "required": [
-          "action",
-          "action_type",
-          "raw",
-          "sender",
-          "sequence_number",
-          "transaction_type"
-        ],
-        "properties": {
-          "action": {
-            "$ref": "#/components/schemas/MoveActionView"
-          },
-          "action_type": {
-            "$ref": "#/components/schemas/MoveActionTypeView"
-          },
-          "raw": {
-            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
-          },
-          "sender": {
-            "type": "string"
-          },
-          "sequence_number": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          },
-          "transaction_type": {
-            "$ref": "#/components/schemas/TransactionTypeView"
-          }
-        }
-      },
-      "TransactionWithInfoView": {
+      "TransactionViewResult": {
         "type": "object",
         "required": [
           "execution_info",
@@ -1326,7 +1343,7 @@
             "$ref": "#/components/schemas/TransactionSequenceInfoView"
           },
           "transaction": {
-            "$ref": "#/components/schemas/TransactionView"
+            "$ref": "#/components/schemas/TransactionInfoView"
           }
         }
       },

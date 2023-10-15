@@ -19,7 +19,7 @@ import { fetchData } from 'src/store/scan/transaction'
 import { useAppDispatch, useAppSelector } from 'src/store'
 
 // ** SDK Imports
-import { TransactionResultView } from '@rooch/sdk'
+import { TransactionViewResult } from '@rooch/sdk'
 
 // ** Utils
 import { formatAddress } from 'src/@core/utils/format'
@@ -30,7 +30,7 @@ import { useRooch } from '../../../../hooks/useRooch'
 // import toast from "react-hot-toast";
 
 interface CellType {
-  row: TransactionResultView
+  row: TransactionViewResult
 }
 
 // ** Styled components
@@ -120,7 +120,7 @@ const TransactionList = () => {
   // ** State
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 })
 
-  // const [data, setData] = useState<TransactionResultView[]>([])
+  // const [data, setData] = useState<TransactionViewResult[]>([])
 
   // const clipboard = useClipboard()
 

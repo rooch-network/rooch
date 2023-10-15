@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::{
-    TransactionExecutionInfoView, TransactionSequenceInfoView, TransactionView,
+    TransactionExecutionInfoView, TransactionInfoView, TransactionSequenceInfoView,
 };
 use moveos_types::transaction::TransactionExecutionInfo;
 use rooch_types::transaction::{TransactionSequenceInfo, TypedTransaction};
@@ -18,13 +18,13 @@ pub struct TransactionWithInfo {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct TransactionWithInfoView {
-    pub transaction: TransactionView,
+pub struct TransactionViewResult {
+    pub transaction: TransactionInfoView,
     pub sequence_info: TransactionSequenceInfoView,
     pub execution_info: TransactionExecutionInfoView,
 }
 
-impl From<TransactionWithInfo> for TransactionWithInfoView {
+impl From<TransactionWithInfo> for TransactionViewResult {
     fn from(tx: TransactionWithInfo) -> Self {
         Self {
             transaction: tx.transaction.into(),

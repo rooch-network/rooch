@@ -5,9 +5,9 @@ import {
   FunctionId,
   TypeTag,
   Arg,
-  AnnotatedFunctionResultView,
-  AnnotatedStateView,
-  AnnotatedStatePageView,
+  AnnotatedFunctionViewResult,
+  AnnotatedStateViewResult,
+  AnnotatedStatePageViewResult,
 } from '../types'
 import { IProvider } from './interface'
 
@@ -63,11 +63,11 @@ export class FilteredProvider implements IProvider {
     funcId: FunctionId,
     tyArgs?: TypeTag[] | undefined,
     args?: Arg[] | undefined,
-  ): Promise<AnnotatedFunctionResultView> {
+  ): Promise<AnnotatedFunctionViewResult> {
     return this.target.executeViewFunction(funcId, tyArgs, args)
   }
 
-  getAnnotatedStates(accessPath: string): Promise<AnnotatedStateView | null[]> {
+  getAnnotatedStates(accessPath: string): Promise<AnnotatedStateViewResult | null[]> {
     return this.target.getAnnotatedStates(accessPath)
   }
 
@@ -75,7 +75,7 @@ export class FilteredProvider implements IProvider {
     access_path: string,
     cursor: Uint8Array | null,
     limit: number,
-  ): Promise<AnnotatedStatePageView> {
+  ): Promise<AnnotatedStatePageViewResult> {
     return this.target.listAnnotatedStates(access_path, cursor, limit)
   }
 

@@ -10,9 +10,9 @@ import {
   FunctionId,
   TypeTag,
   Arg,
-  AnnotatedStatePageView,
   Bytes,
   IPage,
+  AnnotatedStatePageViewResult,
 } from '../types'
 import { BcsSerializer } from '../types/bcs'
 import {
@@ -223,7 +223,7 @@ export class Account implements IAccount {
     throw new Error('not found state')
   }
 
-  private convertToSessionKey(data: AnnotatedStatePageView): Array<ISessionKey> {
+  private convertToSessionKey(data: AnnotatedStatePageViewResult): Array<ISessionKey> {
     const result = new Array<ISessionKey>()
 
     for (const state of data.data as any) {

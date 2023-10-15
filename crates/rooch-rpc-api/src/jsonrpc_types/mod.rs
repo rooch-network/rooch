@@ -4,7 +4,7 @@
 #[macro_use]
 
 mod str_view;
-mod execute_tx_response;
+mod execute_tx_result;
 mod function_return_value_view;
 mod move_types;
 mod rooch_types;
@@ -17,7 +17,7 @@ pub mod eth;
 pub mod transaction_view;
 
 pub use self::rooch_types::*;
-pub use execute_tx_response::*;
+pub use execute_tx_result::*;
 pub use function_return_value_view::*;
 pub use move_types::*;
 pub use state_view::*;

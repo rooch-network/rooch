@@ -4,7 +4,7 @@
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use rooch_key::key_derive::verify_password;
-use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
+use rooch_rpc_api::jsonrpc_types::ExecuteTransactionViewResult;
 use rpassword::prompt_password;
 use std::fmt::Debug;
 
@@ -30,8 +30,8 @@ pub struct NullifyCommand {
 }
 
 #[async_trait]
-impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
-    async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
+impl CommandAction<ExecuteTransactionViewResult> for NullifyCommand {
+    async fn execute(self) -> RoochResult<ExecuteTransactionViewResult> {
         let mut context = self.context_options.build().await?;
 
         let existing_address = RoochAddress::from_str(self.address.as_str()).map_err(|e| {

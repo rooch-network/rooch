@@ -10,7 +10,7 @@ use move_bytecode_utils::Modules;
 use move_cli::Move;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
 use rooch_key::key_derive::verify_password;
-use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
+use rooch_rpc_api::jsonrpc_types::ExecuteTransactionViewResult;
 use rooch_types::transaction::rooch::RoochTransaction;
 use rpassword::prompt_password;
 
@@ -64,8 +64,8 @@ impl Publish {
 }
 
 #[async_trait]
-impl CommandAction<ExecuteTransactionResponseView> for Publish {
-    async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
+impl CommandAction<ExecuteTransactionViewResult> for Publish {
+    async fn execute(self) -> RoochResult<ExecuteTransactionViewResult> {
         // Build context and handle errors
         let context = self.context_options.build().await?;
 

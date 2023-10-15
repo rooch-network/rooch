@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use clap::Parser;
 use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
 use moveos_types::access_path::AccessPath;
-use rooch_rpc_api::jsonrpc_types::AnnotatedStateView;
+use rooch_rpc_api::jsonrpc_types::AnnotatedStateViewResult;
 use rooch_types::error::RoochResult;
 
 #[derive(Debug, Parser)]
@@ -27,8 +27,8 @@ pub struct ResourceCommand {
 }
 
 #[async_trait]
-impl CommandAction<Option<AnnotatedStateView>> for ResourceCommand {
-    async fn execute(self) -> RoochResult<Option<AnnotatedStateView>> {
+impl CommandAction<Option<AnnotatedStateViewResult>> for ResourceCommand {
+    async fn execute(self) -> RoochResult<Option<AnnotatedStateViewResult>> {
         let client = self.context_options.build().await?.get_client().await?;
 
         let resp = client

@@ -159,21 +159,21 @@ impl From<TransactionOutput> for TransactionOutputView {
 }
 
 #[derive(Debug, Clone)]
-pub struct ExecuteTransactionResponse {
+pub struct ExecuteTransactionResult {
     pub sequence_info: TransactionSequenceInfo,
     pub execution_info: TransactionExecutionInfo,
     pub output: TransactionOutput,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct ExecuteTransactionResponseView {
+pub struct ExecuteTransactionViewResult {
     pub sequence_info: TransactionSequenceInfoView,
     pub execution_info: TransactionExecutionInfoView,
     pub output: TransactionOutputView,
 }
 
-impl From<ExecuteTransactionResponse> for ExecuteTransactionResponseView {
-    fn from(response: ExecuteTransactionResponse) -> Self {
+impl From<ExecuteTransactionResult> for ExecuteTransactionViewResult {
+    fn from(response: ExecuteTransactionResult) -> Self {
         Self {
             sequence_info: response.sequence_info.into(),
             execution_info: response.execution_info.into(),

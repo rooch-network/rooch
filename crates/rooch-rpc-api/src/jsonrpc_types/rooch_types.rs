@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::AccountAddressView;
-use crate::jsonrpc_types::account_view::BalanceInfoView;
-use crate::jsonrpc_types::transaction_view::TransactionWithInfoView;
+use crate::jsonrpc_types::account_view::BalanceInfoViewResult;
+use crate::jsonrpc_types::transaction_view::TransactionViewResult;
 use crate::jsonrpc_types::{
     move_types::{MoveActionTypeView, MoveActionView},
-    AnnotatedMoveStructView, AnnotatedStateView, EventView, H256View, StateView, StrView,
+    AnnotatedMoveStructView, AnnotatedStateViewResult, EventView, H256View, StateViewResult, StrView,
     StructTagView,
 };
 use move_core_types::u256::U256;
@@ -17,11 +17,12 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::string::String;
 
-pub type EventPageView = PageView<Option<AnnotatedEventView>, u64>;
-pub type TransactionWithInfoPageView = PageView<TransactionWithInfoView, u128>;
-pub type StatesPageView = PageView<StateView, StrView<Vec<u8>>>;
-pub type AnnotatedStatesPageView = PageView<AnnotatedStateView, StrView<Vec<u8>>>;
-pub type BalanceInfoPageView = PageView<BalanceInfoView, StrView<Vec<u8>>>;
+pub type EventPageViewResult = PageView<Option<AnnotatedEventView>, u64>;
+pub type TransactionPageViewResult = PageView<TransactionViewResult, u128>;
+pub type StatePageViewResult = PageView<Option<StateViewResult>, StrView<Vec<u8>>>;
+pub type AnnotatedStatePageViewResult =
+    PageView<Option<AnnotatedStateViewResult>, StrView<Vec<u8>>>;
+pub type BalanceInfoPageViewResult = PageView<BalanceInfoViewResult, StrView<Vec<u8>>>;
 
 /// `next_cursor` points to the last item in the page;
 /// Reading with `next_cursor` will start from the next item after `next_cursor` if
@@ -50,7 +51,7 @@ impl From<TransactionType> for TransactionTypeView {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct TransactionView {
+pub struct TransactionInfoView {
     pub transaction_type: TransactionTypeView,
     pub sequence_number: u64,
     // TBD: how to represent the sender.
@@ -60,7 +61,7 @@ pub struct TransactionView {
     pub raw: StrView<Vec<u8>>,
 }
 
-impl From<TypedTransaction> for TransactionView {
+impl From<TypedTransaction> for TransactionInfoView {
     fn from(transaction: TypedTransaction) -> Self {
         let transaction_type = transaction.transaction_type();
         match transaction {

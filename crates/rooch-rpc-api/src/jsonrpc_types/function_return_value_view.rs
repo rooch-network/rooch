@@ -84,12 +84,12 @@ impl TryFrom<VMStatusView> for VMStatus {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct AnnotatedFunctionResultView {
+pub struct AnnotatedFunctionViewResult {
     pub vm_status: VMStatusView,
     pub return_values: Option<Vec<AnnotatedFunctionReturnValueView>>,
 }
 
-impl From<AnnotatedFunctionResult> for AnnotatedFunctionResultView {
+impl From<AnnotatedFunctionResult> for AnnotatedFunctionViewResult {
     fn from(value: AnnotatedFunctionResult) -> Self {
         Self {
             vm_status: value.vm_status.into(),
@@ -100,10 +100,10 @@ impl From<AnnotatedFunctionResult> for AnnotatedFunctionResultView {
     }
 }
 
-impl TryFrom<AnnotatedFunctionResultView> for FunctionResult {
+impl TryFrom<AnnotatedFunctionViewResult> for FunctionResult {
     type Error = anyhow::Error;
 
-    fn try_from(value: AnnotatedFunctionResultView) -> Result<Self, Self::Error> {
+    fn try_from(value: AnnotatedFunctionViewResult) -> Result<Self, Self::Error> {
         Ok(Self {
             vm_status: value.vm_status.try_into()?,
             return_values: value.return_values.map(|v| {

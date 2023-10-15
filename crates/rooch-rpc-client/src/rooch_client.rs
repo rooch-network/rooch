@@ -10,15 +10,17 @@ use moveos_types::{
     transaction::FunctionCall,
 };
 use rooch_rpc_api::api::rooch_api::RoochAPIClient;
-use rooch_rpc_api::jsonrpc_types::TransactionWithInfoPageView;
+use rooch_rpc_api::jsonrpc_types::TransactionPageViewResult;
 use rooch_rpc_api::jsonrpc_types::{
-    account_view::BalanceInfoView, transaction_view::TransactionWithInfoView,
+    account_view::BalanceInfoViewResult, transaction_view::TransactionViewResult,
 };
 use rooch_rpc_api::jsonrpc_types::{
-    AccessPathView, AccountAddressView, AnnotatedFunctionResultView, AnnotatedStatesPageView,
-    BalanceInfoPageView, EventPageView, StatesPageView, StrView, StructTagView,
+    AccessPathView, AccountAddressView, AnnotatedFunctionViewResult, AnnotatedStatePageViewResult,
+    BalanceInfoPageViewResult, EventPageViewResult, StatePageViewResult, StrView, StructTagView,
 };
-use rooch_rpc_api::jsonrpc_types::{AnnotatedStateView, ExecuteTransactionResponseView, StateView};
+use rooch_rpc_api::jsonrpc_types::{
+    AnnotatedStateViewResult, ExecuteTransactionViewResult, StateViewResult,
+};
 use rooch_types::{account::Account, address::RoochAddress, transaction::rooch::RoochTransaction};
 use std::sync::Arc;
 
@@ -39,7 +41,7 @@ impl RoochRpcClient {
         Ok(self.http.get_chain_id().await?.0)
     }
 
-    pub async fn execute_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView> {
+    pub async fn execute_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionViewResult> {
         let tx_payload = bcs::to_bytes(&tx)?;
         self.http
             .execute_raw_transaction(tx_payload.into())
@@ -50,21 +52,21 @@ impl RoochRpcClient {
     pub async fn execute_view_function(
         &self,
         function_call: FunctionCall,
-    ) -> Result<AnnotatedFunctionResultView> {
+    ) -> Result<AnnotatedFunctionViewResult> {
         self.http
             .execute_view_function(function_call.into())
             .await
             .map_err(|e| anyhow::anyhow!(e))
     }
 
-    pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<StateView>>> {
+    pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<StateViewResult>>> {
         Ok(self.http.get_states(access_path.into()).await?)
     }
 
     pub async fn get_annotated_states(
         &self,
         access_path: AccessPath,
-    ) -> Result<Vec<Option<AnnotatedStateView>>> {
+    ) -> Result<Vec<Option<AnnotatedStateViewResult>>> {
         Ok(self.http.get_annotated_states(access_path.into()).await?)
     }
 
@@ -76,14 +78,14 @@ impl RoochRpcClient {
         &self,
         cursor: Option<u128>,
         limit: Option<u64>,
-    ) -> Result<TransactionWithInfoPageView> {
+    ) -> Result<TransactionPageViewResult> {
         Ok(self.http.get_transactions_by_order(cursor, limit).await?)
     }
 
     pub async fn get_transactions_by_hash(
         &self,
         tx_hashes: Vec<H256>,
-    ) -> Result<Vec<Option<TransactionWithInfoView>>> {
+    ) -> Result<Vec<Option<TransactionViewResult>>> {
         Ok(self
             .http
             .get_transactions_by_hash(tx_hashes.iter().map(|hash| (*hash).into()).collect())
@@ -109,7 +111,7 @@ impl RoochRpcClient {
         event_handle_type: StructTagView,
         cursor: Option<u64>,
         limit: Option<u64>,
-    ) -> Result<EventPageView> {
+    ) -> Result<EventPageViewResult> {
         let s = self
             .http
             .get_events_by_event_handle(event_handle_type, cursor, limit)
@@ -122,7 +124,7 @@ impl RoochRpcClient {
         access_path: AccessPathView,
         cursor: Option<StrView<Vec<u8>>>,
         limit: Option<usize>,
-    ) -> Result<StatesPageView> {
+    ) -> Result<StatePageViewResult> {
         Ok(self.http.list_states(access_path, cursor, limit).await?)
     }
 
@@ -131,7 +133,7 @@ impl RoochRpcClient {
         access_path: AccessPathView,
         cursor: Option<StrView<Vec<u8>>>,
         limit: Option<usize>,
-    ) -> Result<AnnotatedStatesPageView> {
+    ) -> Result<AnnotatedStatePageViewResult> {
         Ok(self
             .http
             .list_annotated_states(access_path, cursor, limit)
@@ -142,7 +144,7 @@ impl RoochRpcClient {
         &self,
         account_addr: AccountAddressView,
         coin_type: StructTagView,
-    ) -> Result<BalanceInfoView> {
+    ) -> Result<BalanceInfoViewResult> {
         Ok(self.http.get_balance(account_addr, coin_type).await?)
     }
 
@@ -151,7 +153,7 @@ impl RoochRpcClient {
         account_addr: AccountAddressView,
         cursor: Option<StrView<Vec<u8>>>,
         limit: Option<usize>,
-    ) -> Result<BalanceInfoPageView> {
+    ) -> Result<BalanceInfoPageViewResult> {
         Ok(self.http.get_balances(account_addr, cursor, limit).await?)
     }
 }

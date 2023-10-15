@@ -5,7 +5,7 @@ use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::{access_path::AccessPath, object::ObjectID};
-use rooch_rpc_api::jsonrpc_types::AnnotatedStateView;
+use rooch_rpc_api::jsonrpc_types::AnnotatedStateViewResult;
 use rooch_types::error::RoochResult;
 
 /// Get object by object id
@@ -20,8 +20,8 @@ pub struct ObjectCommand {
 }
 
 #[async_trait]
-impl CommandAction<Option<AnnotatedStateView>> for ObjectCommand {
-    async fn execute(self) -> RoochResult<Option<AnnotatedStateView>> {
+impl CommandAction<Option<AnnotatedStateViewResult>> for ObjectCommand {
+    async fn execute(self) -> RoochResult<Option<AnnotatedStateViewResult>> {
         let client = self.context_options.build().await?.get_client().await?;
         let resp = client
             .rooch

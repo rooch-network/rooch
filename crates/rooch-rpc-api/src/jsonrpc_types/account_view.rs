@@ -10,13 +10,13 @@ use serde::{Deserialize, Serialize};
 use std::ops::Div;
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct BalanceInfoView {
+pub struct BalanceInfoViewResult {
     #[serde(flatten)]
     pub coin_info: CoinInfoView,
     pub balance: StrView<U256>,
 }
 
-impl BalanceInfoView {
+impl BalanceInfoViewResult {
     //TODO implements big decimal calculation for Decimal point display
     pub fn get_balance_show(&self) -> String {
         let balance = U256::div(
@@ -27,9 +27,9 @@ impl BalanceInfoView {
     }
 }
 
-impl From<BalanceInfo> for BalanceInfoView {
+impl From<BalanceInfo> for BalanceInfoViewResult {
     fn from(balance_info: BalanceInfo) -> Self {
-        BalanceInfoView {
+        BalanceInfoViewResult {
             coin_info: balance_info.coin_info.into(),
             balance: balance_info.balance.into(),
         }
