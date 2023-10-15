@@ -73,6 +73,7 @@ module rooch_framework::collection{
             creator,
             collection
         );
+
         event::emit(
             ctx,
             CreateCollectionEvent {
@@ -96,6 +97,14 @@ module rooch_framework::collection{
             }
         );
         mutator_ref
+    }
+
+    public fun destroy_mutator_ref(mutator_ref :ObjectRef<MutatorRef>):ObjectID{
+        assert_mutator_exist_of_ref(&mutator_ref);
+        let MutatorRef {
+            collection
+        } = object_ref::remove(mutator_ref);
+        collection
     }
 
     public fun get_collection_id(mutator: &ObjectRef<MutatorRef>): ObjectID{
