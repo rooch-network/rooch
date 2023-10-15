@@ -328,9 +328,9 @@ const SessionProvider = ({ children }: Props) => {
 
     try {
       const defaultAccount = auth.defaultAccount
+
       if (!defaultAccount) {
         setSessionAccount(null)
-
         return
       }
 
