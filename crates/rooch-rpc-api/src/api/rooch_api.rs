@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::account_view::BalanceInfoView;
-use crate::jsonrpc_types::transaction_view::TransactionResultView;
+use crate::jsonrpc_types::transaction_view::TransactionWithInfoView;
 use crate::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedFunctionResultView, AnnotatedStateView,
     EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
     ListAnnotatedStatesPageView, ListBalanceInfoPageView, ListStatesPageView, StateView, StrView,
-    StructTagView, TransactionResultPageView,
+    StructTagView, TransactionWithInfoPageView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -85,14 +85,14 @@ pub trait RoochAPI {
     async fn get_transactions_by_hash(
         &self,
         tx_hashes: Vec<H256View>,
-    ) -> RpcResult<Vec<Option<TransactionResultView>>>;
+    ) -> RpcResult<Vec<Option<TransactionWithInfoView>>>;
 
     #[method(name = "getTransactionsByOrder")]
     async fn get_transactions_by_order(
         &self,
         cursor: Option<u128>,
         limit: Option<u64>,
-    ) -> RpcResult<TransactionResultPageView>;
+    ) -> RpcResult<TransactionWithInfoPageView>;
 
     /// get account balance by AccountAddress and CoinType
     #[method(name = "getBalance")]

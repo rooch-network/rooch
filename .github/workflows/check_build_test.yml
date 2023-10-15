@@ -50,7 +50,8 @@ jobs:
       - name: Check code format
         run: cargo fmt -- --check
       - name: Lint rust sources
-        run: ./scripts/pr.sh -c
+        #FIXME mkdir is a workaroud solution for https://github.com/rooch-network/rooch/issues/968
+        run: mkdir -p crates/rooch/public/dashboard/ && ./scripts/pr.sh -c
       - name: Build
         run: cargo build
       - name: Execute rust tests

@@ -13,7 +13,8 @@ fn main() {
         let base_path: String;
         let dashboard_dir = "dashboard";
         let output_dir = "crates/rooch/public/dashboard/";
-
+        //make sure the output directory exists
+        fs::create_dir_all(output_dir).expect("Failed to create output directory");
         if let Ok(output) = Command::new("git")
             .args(["rev-parse", "--show-toplevel"])
             .output()

@@ -10,12 +10,12 @@ use jsonrpsee::{
 use moveos_types::h256::H256;
 use rooch_rpc_api::api::{MAX_RESULT_LIMIT, MAX_RESULT_LIMIT_USIZE};
 use rooch_rpc_api::jsonrpc_types::account_view::BalanceInfoView;
-use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionResultView;
+use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionWithInfoView;
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedEventView, AnnotatedStateView, EventPageView,
     ExecuteTransactionResponseView, FunctionCallView, H256View, ListAnnotatedStatesPageView,
     ListBalanceInfoPageView, ListStatesPageView, StateView, StrView, StructTagView,
-    TransactionResultPageView,
+    TransactionWithInfoPageView,
 };
 use rooch_rpc_api::{api::rooch_api::RoochAPIServer, api::DEFAULT_RESULT_LIMIT};
 use rooch_rpc_api::{
@@ -210,7 +210,7 @@ impl RoochAPIServer for RoochServer {
     async fn get_transactions_by_hash(
         &self,
         tx_hashes: Vec<H256View>,
-    ) -> RpcResult<Vec<Option<TransactionResultView>>> {
+    ) -> RpcResult<Vec<Option<TransactionWithInfoView>>> {
         let tx_hashes: Vec<H256> = tx_hashes
             .iter()
             .map(|m| (*m).clone().into())
@@ -236,7 +236,7 @@ impl RoochAPIServer for RoochServer {
             .get_transaction_results_by_hash_and_order(tx_hashes, tx_orders)
             .await?
             .into_iter()
-            .map(|item| Some(TransactionResultView::from(item)))
+            .map(|item| Some(TransactionWithInfoView::from(item)))
             .collect::<Vec<_>>();
 
         Ok(data)
@@ -246,7 +246,7 @@ impl RoochAPIServer for RoochServer {
         &self,
         cursor: Option<u128>,
         limit: Option<u64>,
-    ) -> RpcResult<TransactionResultPageView> {
+    ) -> RpcResult<TransactionWithInfoPageView> {
         let last_sequencer_order = self
             .rpc_service
             .get_sequencer_order()
@@ -292,10 +292,10 @@ impl RoochAPIServer for RoochServer {
             .get_transaction_results_by_hash_and_order(tx_hashes, tx_orders)
             .await?
             .into_iter()
-            .map(TransactionResultView::from)
+            .map(TransactionWithInfoView::from)
             .collect::<Vec<_>>();
 
-        Ok(TransactionResultPageView {
+        Ok(TransactionWithInfoPageView {
             data,
             next_cursor,
             has_next_page,
