@@ -87,7 +87,7 @@ impl ExecutorProxy {
         access_path: AccessPath,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<Option<(Vec<u8>, State)>>> {
+    ) -> Result<Vec<(Vec<u8>, State)>> {
         self.actor
             .send(ListStatesMessage {
                 access_path,
@@ -102,7 +102,7 @@ impl ExecutorProxy {
         access_path: AccessPath,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<Option<(Vec<u8>, AnnotatedState)>>> {
+    ) -> Result<Vec<(Vec<u8>, AnnotatedState)>> {
         self.actor
             .send(ListAnnotatedStatesMessage {
                 access_path,

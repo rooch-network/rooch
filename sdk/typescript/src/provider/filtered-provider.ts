@@ -7,7 +7,7 @@ import {
   Arg,
   AnnotatedFunctionResultView,
   AnnotatedStateView,
-  ListAnnotatedStateResultPageView,
+  AnnotatedStatePageView,
 } from '../types'
 import { IProvider } from './interface'
 
@@ -75,7 +75,7 @@ export class FilteredProvider implements IProvider {
     access_path: string,
     cursor: Uint8Array | null,
     limit: number,
-  ): Promise<ListAnnotatedStateResultPageView> {
+  ): Promise<AnnotatedStatePageView> {
     return this.target.listAnnotatedStates(access_path, cursor, limit)
   }
 

@@ -13,7 +13,7 @@ import {
   IPage,
   ISessionKey,
   JsonRpcProvider,
-  ListAnnotatedStateResultPageView,
+  AnnotatedStatePageView,
   parseRoochErrorSubStatus,
   getErrorCategoryName,
 } from '@rooch/sdk'
@@ -33,7 +33,7 @@ interface RemoveParams {
   refresh: () => void
 }
 
-const convertToSessionKey = (data: ListAnnotatedStateResultPageView): Array<ISessionKey> => {
+const convertToSessionKey = (data: AnnotatedStatePageView): Array<ISessionKey> => {
   const result = new Array<ISessionKey>()
 
   for (const state of data.data as any) {

@@ -5,9 +5,9 @@ use crate::jsonrpc_types::account_view::BalanceInfoView;
 use crate::jsonrpc_types::transaction_view::TransactionWithInfoView;
 use crate::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedFunctionResultView, AnnotatedStateView,
-    EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
-    ListAnnotatedStatesPageView, ListBalanceInfoPageView, ListStatesPageView, StateView, StrView,
-    StructTagView, TransactionWithInfoPageView,
+    AnnotatedStatesPageView, BalanceInfoPageView, EventPageView, ExecuteTransactionResponseView,
+    FunctionCallView, H256View, StateView, StatesPageView, StrView, StructTagView,
+    TransactionWithInfoPageView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -60,7 +60,7 @@ pub trait RoochAPI {
         access_path: AccessPathView,
         cursor: Option<StrView<Vec<u8>>>,
         limit: Option<usize>,
-    ) -> RpcResult<ListStatesPageView>;
+    ) -> RpcResult<StatesPageView>;
 
     /// List the annotated states by access_path
     /// The annotated states include the decoded move value of the state
@@ -70,7 +70,7 @@ pub trait RoochAPI {
         access_path: AccessPathView,
         cursor: Option<StrView<Vec<u8>>>,
         limit: Option<usize>,
-    ) -> RpcResult<ListAnnotatedStatesPageView>;
+    ) -> RpcResult<AnnotatedStatesPageView>;
 
     /// Get the events by event handle id
     #[method(name = "getEventsByEventHandle")]
@@ -109,5 +109,5 @@ pub trait RoochAPI {
         account_addr: AccountAddressView,
         cursor: Option<StrView<Vec<u8>>>,
         limit: Option<usize>,
-    ) -> RpcResult<ListBalanceInfoPageView>;
+    ) -> RpcResult<BalanceInfoPageView>;
 }

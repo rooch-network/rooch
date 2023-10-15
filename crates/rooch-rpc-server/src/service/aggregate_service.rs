@@ -135,7 +135,6 @@ impl AggregateService {
                     )
                     .await?
                     .into_iter()
-                    .flatten()
                     .map(|(k, v)| {
                         let coin_store_ref = v.as_move_state::<ObjectRef<CoinStore>>()?;
                         Ok((k, coin_store_ref.id))

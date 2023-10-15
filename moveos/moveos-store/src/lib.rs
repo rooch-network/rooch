@@ -300,7 +300,7 @@ impl StateResolver for MoveOSStore {
         handle: &ObjectID,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> std::result::Result<Vec<Option<(Vec<u8>, State)>>, Error> {
+    ) -> std::result::Result<Vec<(Vec<u8>, State)>, Error> {
         self.statedb.list_table_items(handle, cursor, limit)
     }
 }

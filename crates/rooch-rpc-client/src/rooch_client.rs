@@ -15,9 +15,8 @@ use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, transaction_view::TransactionWithInfoView,
 };
 use rooch_rpc_api::jsonrpc_types::{
-    AccessPathView, AccountAddressView, AnnotatedFunctionResultView, EventPageView,
-    ListAnnotatedStatesPageView, ListBalanceInfoPageView, ListStatesPageView, StrView,
-    StructTagView,
+    AccessPathView, AccountAddressView, AnnotatedFunctionResultView, AnnotatedStatesPageView,
+    BalanceInfoPageView, EventPageView, StatesPageView, StrView, StructTagView,
 };
 use rooch_rpc_api::jsonrpc_types::{AnnotatedStateView, ExecuteTransactionResponseView, StateView};
 use rooch_types::{account::Account, address::RoochAddress, transaction::rooch::RoochTransaction};
@@ -123,7 +122,7 @@ impl RoochRpcClient {
         access_path: AccessPathView,
         cursor: Option<StrView<Vec<u8>>>,
         limit: Option<usize>,
-    ) -> Result<ListStatesPageView> {
+    ) -> Result<StatesPageView> {
         Ok(self.http.list_states(access_path, cursor, limit).await?)
     }
 
@@ -132,7 +131,7 @@ impl RoochRpcClient {
         access_path: AccessPathView,
         cursor: Option<StrView<Vec<u8>>>,
         limit: Option<usize>,
-    ) -> Result<ListAnnotatedStatesPageView> {
+    ) -> Result<AnnotatedStatesPageView> {
         Ok(self
             .http
             .list_annotated_states(access_path, cursor, limit)
@@ -152,7 +151,7 @@ impl RoochRpcClient {
         account_addr: AccountAddressView,
         cursor: Option<StrView<Vec<u8>>>,
         limit: Option<usize>,
-    ) -> Result<ListBalanceInfoPageView> {
+    ) -> Result<BalanceInfoPageView> {
         Ok(self.http.get_balances(account_addr, cursor, limit).await?)
     }
 }

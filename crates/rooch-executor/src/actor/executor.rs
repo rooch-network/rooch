@@ -361,7 +361,7 @@ impl Handler<ListStatesMessage> for ExecutorActor {
         &mut self,
         msg: ListStatesMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Vec<Option<(Vec<u8>, State)>>, anyhow::Error> {
+    ) -> Result<Vec<(Vec<u8>, State)>, anyhow::Error> {
         let statedb = self.moveos.moveos_resolver();
         statedb.list_states(msg.access_path, msg.cursor, msg.limit)
     }
@@ -373,7 +373,7 @@ impl Handler<ListAnnotatedStatesMessage> for ExecutorActor {
         &mut self,
         msg: ListAnnotatedStatesMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Vec<Option<(Vec<u8>, AnnotatedState)>>, anyhow::Error> {
+    ) -> Result<Vec<(Vec<u8>, AnnotatedState)>, anyhow::Error> {
         let statedb = self.moveos.moveos_resolver();
         statedb.list_annotated_states(msg.access_path, msg.cursor, msg.limit)
     }

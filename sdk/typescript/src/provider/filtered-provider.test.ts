@@ -16,7 +16,7 @@ import {
   Arg,
   AnnotatedFunctionResultView,
   AnnotatedStateView,
-  ListAnnotatedStateResultPageView,
+  AnnotatedStatePageView,
 } from '../types'
 
 const mockFilter: ITransactionFilter = {
@@ -48,7 +48,7 @@ const mockProvider: IProvider = {
     access_path: string,
     cursor: Uint8Array | null,
     limit: number,
-  ): Promise<ListAnnotatedStateResultPageView> {
+  ): Promise<AnnotatedStatePageView> {
     throw new Error('Function not implemented.')
   },
 }
