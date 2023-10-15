@@ -3,7 +3,6 @@
 
 use crate::natives::helpers::{make_module_natives, make_native};
 use fastcrypto::{
-    error::FastCryptoError,
     hash::{Keccak256, Sha256},
     secp256k1::{recoverable::Secp256k1RecoverableSignature, Secp256k1PublicKey},
     traits::{RecoverableSignature, ToFromBytes},
