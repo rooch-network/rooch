@@ -147,14 +147,14 @@ const TransactionList = () => {
         pagination
         disableColumnMenu={true}
         rowCount={
-          status === 'finished'
+          status === 'finished' && result.data
             ? result.has_next_page
               ? result.data.length + 1
               : result.data.length
             : 0
         }
         rows={
-          status === 'finished'
+          status === 'finished' && result.data
             ? result.data.map((row) => ({ ...row, id: row.execution_info.tx_hash }))
             : []
         }

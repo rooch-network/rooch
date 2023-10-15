@@ -14,8 +14,8 @@ use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionViewResult;
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedEventView, AnnotatedStatePageViewResult,
     AnnotatedStateViewResult, BalanceInfoPageViewResult, EventPageViewResult,
-    ExecuteTransactionViewResult, FunctionCallView, H256ViewResult, StatePageViewResult, StateViewResult,
-    StrView, StructTagView, TransactionPageViewResult,
+    ExecuteTransactionViewResult, FunctionCallView, H256ViewResult, StatePageViewResult,
+    StateViewResult, StrView, StructTagView, TransactionPageViewResult,
 };
 use rooch_rpc_api::{api::rooch_api::RoochAPIServer, api::DEFAULT_RESULT_LIMIT};
 use rooch_rpc_api::{
@@ -83,7 +83,10 @@ impl RoochAPIServer for RoochServer {
             .into())
     }
 
-    async fn get_states(&self, access_path: AccessPathView) -> RpcResult<Vec<Option<StateViewResult>>> {
+    async fn get_states(
+        &self,
+        access_path: AccessPathView,
+    ) -> RpcResult<Vec<Option<StateViewResult>>> {
         Ok(self
             .rpc_service
             .get_states(access_path.into())

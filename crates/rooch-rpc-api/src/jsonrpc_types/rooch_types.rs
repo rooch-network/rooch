@@ -6,8 +6,8 @@ use crate::jsonrpc_types::account_view::BalanceInfoViewResult;
 use crate::jsonrpc_types::transaction_view::TransactionViewResult;
 use crate::jsonrpc_types::{
     move_types::{MoveActionTypeView, MoveActionView},
-    AnnotatedMoveStructView, AnnotatedStateViewResult, EventView, H256View, StateViewResult, StrView,
-    StructTagView,
+    AnnotatedMoveStructView, AnnotatedStateViewResult, EventView, H256View, StateViewResult,
+    StrView, StructTagView,
 };
 use move_core_types::u256::U256;
 use moveos_types::event::AnnotatedMoveOSEvent;

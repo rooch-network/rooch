@@ -59,7 +59,10 @@ impl RoochRpcClient {
             .map_err(|e| anyhow::anyhow!(e))
     }
 
-    pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<StateViewResult>>> {
+    pub async fn get_states(
+        &self,
+        access_path: AccessPath,
+    ) -> Result<Vec<Option<StateViewResult>>> {
         Ok(self.http.get_states(access_path.into()).await?)
     }
 

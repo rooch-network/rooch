@@ -6,8 +6,8 @@ use crate::jsonrpc_types::transaction_view::TransactionViewResult;
 use crate::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedFunctionViewResult, AnnotatedStatePageViewResult,
     AnnotatedStateViewResult, BalanceInfoPageViewResult, EventPageViewResult,
-    ExecuteTransactionViewResult, FunctionCallView, H256ViewResult, StatePageViewResult, StateViewResult,
-    StrView, StructTagView, TransactionPageViewResult,
+    ExecuteTransactionViewResult, FunctionCallView, H256ViewResult, StatePageViewResult,
+    StateViewResult, StrView, StructTagView, TransactionPageViewResult,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -44,7 +44,10 @@ pub trait RoochAPI {
 
     /// Get the states by access_path
     #[method(name = "getStates")]
-    async fn get_states(&self, access_path: AccessPathView) -> RpcResult<Vec<Option<StateViewResult>>>;
+    async fn get_states(
+        &self,
+        access_path: AccessPathView,
+    ) -> RpcResult<Vec<Option<StateViewResult>>>;
 
     /// Get the annotated states by access_path
     /// The annotated states include the decoded move value of the state
