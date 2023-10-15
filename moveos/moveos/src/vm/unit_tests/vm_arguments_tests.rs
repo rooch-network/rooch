@@ -28,7 +28,7 @@ use move_core_types::{
     value::{serialize_values, MoveValue},
     vm_status::{StatusCode, StatusType},
 };
-use moveos_types::state_resolver::ListState;
+use moveos_types::state_resolver::StateKV;
 use moveos_types::{
     move_types::FunctionId,
     object::ObjectID,
@@ -293,7 +293,7 @@ impl StateResolver for RemoteStore {
         _handle: &ObjectID,
         _cursor: Option<Vec<u8>>,
         _limit: usize,
-    ) -> anyhow::Result<Vec<ListState>, anyhow::Error> {
+    ) -> anyhow::Result<Vec<StateKV>, anyhow::Error> {
         todo!()
     }
 }

@@ -18,8 +18,8 @@ use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnn
 
 pub const GLOBAL_OBJECT_STORAGE_HANDLE: ObjectID = ObjectID::ZERO;
 
-pub type ListState = (Vec<u8>, State);
-pub type ListAnnotatedState = (Vec<u8>, AnnotatedState);
+pub type StateKV = (Vec<u8>, State);
+pub type AnnotatedStateKV = (Vec<u8>, AnnotatedState);
 
 /// A global state resolver which needs to be provided by the environment.
 /// This allows to lookup data in remote storage.
@@ -38,7 +38,7 @@ pub trait StateResolver {
         handle: &ObjectID,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<ListState>, anyhow::Error>;
+    ) -> Result<Vec<StateKV>, anyhow::Error>;
 
     // get object data from global state tree.
     fn resolve_object_state(&self, object: &ObjectID) -> Result<Option<State>, anyhow::Error> {
@@ -114,7 +114,7 @@ where
         handle: &ObjectID,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<ListState>, anyhow::Error> {
+    ) -> Result<Vec<StateKV>, anyhow::Error> {
         self.0.list_table_items(handle, cursor, limit)
     }
 }
@@ -151,7 +151,7 @@ pub trait StateReader: StateResolver {
         path: AccessPath,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<ListState>> {
+    ) -> Result<Vec<StateKV>> {
         let (handle, _keys) = path.into_table_query();
         self.list_table_items(&handle, cursor, limit)
     }
@@ -177,7 +177,7 @@ pub trait AnnotatedStateReader: StateReader + MoveResolver {
         path: AccessPath,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<ListAnnotatedState>> {
+    ) -> Result<Vec<AnnotatedStateKV>> {
         let annotator = MoveValueAnnotator::new(self);
         Ok(self
             .list_states(path, cursor, limit)?

@@ -10,7 +10,7 @@ use move_core_types::{
 };
 use moveos_types::move_types::is_table;
 use moveos_types::state::StateSet;
-use moveos_types::state_resolver::ListState;
+use moveos_types::state_resolver::StateKV;
 use moveos_types::{
     context,
     object::{AccountStorage, Object, ObjectID, RawObject, TableInfo},
@@ -51,7 +51,7 @@ where
         self.smt.get(key)
     }
 
-    pub fn list(&self, cursor: Option<Vec<u8>>, limit: usize) -> Result<Vec<ListState>> {
+    pub fn list(&self, cursor: Option<Vec<u8>>, limit: usize) -> Result<Vec<StateKV>> {
         self.smt.list(cursor, limit)
     }
 
@@ -141,7 +141,7 @@ impl StateDBStore {
         self.global_table.get(id.to_bytes())
     }
 
-    pub fn list(&self, cursor: Option<Vec<u8>>, limit: usize) -> Result<Vec<ListState>> {
+    pub fn list(&self, cursor: Option<Vec<u8>>, limit: usize) -> Result<Vec<StateKV>> {
         self.global_table.list(cursor, limit)
     }
 
@@ -225,7 +225,7 @@ impl StateDBStore {
         id: ObjectID,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<ListState>> {
+    ) -> Result<Vec<StateKV>> {
         let (_table_info, table) = self
             .get_as_table(id)?
             .ok_or_else(|| anyhow::format_err!("table with id {} not found", id))?;
@@ -303,7 +303,7 @@ impl StateDBStore {
         handle: &ObjectID,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<ListState>, Error> {
+    ) -> Result<Vec<StateKV>, Error> {
         if handle == &state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
             self.global_table.list(cursor, limit)
         } else {
@@ -384,7 +384,7 @@ impl StateResolver for StateDBStore {
         handle: &ObjectID,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> std::result::Result<Vec<ListState>, Error> {
+    ) -> std::result::Result<Vec<StateKV>, Error> {
         self.resolve_list_state(handle, cursor, limit)
     }
 }
