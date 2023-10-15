@@ -29,6 +29,10 @@ use std::collections::{BTreeSet, VecDeque};
 
 // ========================================================================================
 
+const E_ADDRESS_NOT_MATCH_WITH_SIGNER: u64 = 1;
+const E_MODULE_VERIFICATION_ERROR: u64 = 2;
+const E_MODULE_INCOMPATIBLE: u64 = 3;
+
 /// The native module context.
 #[derive(Tid)]
 pub struct NativeModuleContext<'a> {
@@ -69,7 +73,6 @@ fn native_module_name_inner(
     let name = module.self_id().name().to_owned().into_string();
     let cost = gas_params.base
         + if gas_params.per_byte_in_str > 0.into() {
-            //TODO charge gas cost
             gas_params.per_byte_in_str * NumBytes::new(name.len() as u64)
         } else {
             0.into()
@@ -125,21 +128,25 @@ fn native_sort_and_verify_modules_inner(
     let mut init_identifier = vec![];
     for module in &compiled_modules {
         if *module.self_id().address() != account_address {
-            return Err(
-                PartialVMError::new(StatusCode::VERIFICATION_ERROR).with_message(format!(
-                    "Module address {:?} not match with signer address {:?}",
-                    module.self_id().address(),
-                    account_address
-                )),
-            );
+            return Ok(NativeResult::err(
+                cost,
+                moveos_types::move_std::error::invalid_argument(E_ADDRESS_NOT_MATCH_WITH_SIGNER),
+            ));
         }
         let result = moveos_verifier::verifier::verify_module(module, module_context.resolver);
         match result {
             Ok(res) => {
                 if res {
                     init_identifier.push(module.self_id());
+                    module_names.push(module.self_id().name().to_owned().into_string());
+                } else {
+                    return Ok(NativeResult::err(
+                        cost,
+                        moveos_types::move_std::error::invalid_argument(
+                            E_MODULE_VERIFICATION_ERROR,
+                        ),
+                    ));
                 }
-                module_names.push(module.self_id().name().to_owned().into_string());
             }
             Err(_) => return Err(PartialVMError::new(StatusCode::VERIFICATION_ERROR)),
         }
@@ -248,7 +255,15 @@ fn check_compatibililty_inner(
         let new_m = normalized::Module::new(&new_module);
         let old_m = normalized::Module::new(&old_module);
 
-        compat.check(&old_m, &new_m)?;
+        match compat.check(&old_m, &new_m) {
+            Ok(_) => {}
+            Err(_) => {
+                return Ok(NativeResult::err(
+                    cost,
+                    moveos_types::move_std::error::invalid_argument(E_MODULE_INCOMPATIBLE),
+                ))
+            }
+        }
     }
     Ok(NativeResult::ok(cost, smallvec![]))
 }
