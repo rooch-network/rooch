@@ -12,6 +12,8 @@ use move_vm_types::{
 use smallvec::smallvec;
 use std::collections::VecDeque;
 
+const E_TYPE_NOT_MATCH: u64 = 1;
+
 #[derive(Debug, Clone)]
 pub struct FromBytesGasParameters {
     pub base: InternalGas,
@@ -27,7 +29,7 @@ impl FromBytesGasParameters {
 /// Bytes are in BCS (Binary Canonical Serialization) format.
 #[inline]
 fn native_from_bytes(
-    _gas_params: &FromBytesGasParameters,
+    gas_params: &FromBytesGasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -35,7 +37,7 @@ fn native_from_bytes(
     debug_assert_eq!(ty_args.len(), 1);
     debug_assert_eq!(args.len(), 1);
 
-    let cost = 0.into();
+    let cost = gas_params.base;
 
     // TODO(Gas): charge for getting the layout
     let layout = context.type_to_type_layout(&ty_args[0])?.ok_or_else(|| {
@@ -49,8 +51,10 @@ fn native_from_bytes(
     let val = match Value::simple_deserialize(&bytes, &layout) {
         Some(val) => val,
         None => {
-            // TODO(gas): charge the gas for the failure.
-            return Err(PartialVMError::new(StatusCode::VALUE_DESERIALIZATION_ERROR));
+            return Ok(NativeResult::err(
+                cost,
+                moveos_types::move_std::error::invalid_argument(E_TYPE_NOT_MATCH),
+            ));
         }
     };
     // TODO(gas): charge gas for deserialization

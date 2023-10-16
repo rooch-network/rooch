@@ -217,22 +217,12 @@ impl RoochAPIServer for RoochServer {
             .get_tx_sequence_info_mapping_by_hash(tx_hashes.clone())
             .await?;
 
-        let mut tx_orders = vec![];
-        for item in tx_sequence_info_mapping {
-            if item.is_none() {
-                return Err(JsonRpcError::Custom(String::from(
-                    "Invalid tx hash or tx order",
-                )));
-            }
-            tx_orders.push(item.unwrap().tx_order);
-        }
-
         let data = self
             .aggregate_service
-            .get_transaction_results_by_hash_and_order(tx_hashes, tx_orders)
+            .get_transaction_with_info(tx_hashes, tx_sequence_info_mapping)
             .await?
             .into_iter()
-            .map(|item| Some(TransactionWithInfoView::from(item)))
+            .map(|item| item.map(TransactionWithInfoView::from))
             .collect::<Vec<_>>();
 
         Ok(data)
@@ -274,10 +264,10 @@ impl RoochAPIServer for RoochServer {
             .map_or(cursor, |m| m.clone().map(|v| v.tx_order));
 
         let mut tx_hashes = vec![];
-        for item in tx_sequence_info_mapping {
+        for item in tx_sequence_info_mapping.clone() {
             if item.is_none() {
                 return Err(JsonRpcError::Custom(String::from(
-                    "Invalid tx hash or tx order",
+                    "The tx hash corresponding to tx order does not exist",
                 )));
             }
             tx_hashes.push(item.unwrap().tx_hash);
@@ -286,9 +276,10 @@ impl RoochAPIServer for RoochServer {
 
         let data = self
             .aggregate_service
-            .get_transaction_results_by_hash_and_order(tx_hashes, tx_orders)
+            .get_transaction_with_info(tx_hashes, tx_sequence_info_mapping)
             .await?
             .into_iter()
+            .flatten()
             .map(TransactionWithInfoView::from)
             .collect::<Vec<_>>();
 

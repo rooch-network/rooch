@@ -19,8 +19,10 @@ module moveos_std::raw_table {
     const ErrorAlreadyExists: u64 = 1;
     /// Can not found the key in the table
     const ErrorNotFound: u64 = 2;
+    /// Duplicate operation on the table
+    const ErrorDuplicateOperation: u64 = 3;
     /// The table is not empty
-    const ErrorNotEmpty: u64 = 3;
+    const ErrorNotEmpty: u64 = 4;
 
      //TODO redesign the global object storage handle
     const GlobalObjectStorageHandle: address = @0x0;

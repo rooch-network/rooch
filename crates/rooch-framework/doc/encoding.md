@@ -6,6 +6,7 @@
 Module which defines encoding functions.
 
 
+-  [Constants](#@Constants_0)
 -  [Function `base58`](#0x3_encoding_base58)
 -  [Function `base58check`](#0x3_encoding_base58check)
 -  [Function `bech32`](#0x3_encoding_bech32)
@@ -14,6 +15,51 @@ Module which defines encoding functions.
 
 
 <pre><code></code></pre>
+
+
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x3_encoding_ErrorExcessiveScriptSize"></a>
+
+Excessive script size
+
+
+<pre><code><b>const</b> <a href="encoding.md#0x3_encoding_ErrorExcessiveScriptSize">ErrorExcessiveScriptSize</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x3_encoding_ErrorInvalidData"></a>
+
+Invalid data
+
+
+<pre><code><b>const</b> <a href="encoding.md#0x3_encoding_ErrorInvalidData">ErrorInvalidData</a>: u64 = 3;
+</code></pre>
+
+
+
+<a name="0x3_encoding_ErrorInvalidPubkey"></a>
+
+Invalid publich key
+
+
+<pre><code><b>const</b> <a href="encoding.md#0x3_encoding_ErrorInvalidPubkey">ErrorInvalidPubkey</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x3_encoding_ErrorInvalidScriptVersion"></a>
+
+Invalid script version
+
+
+<pre><code><b>const</b> <a href="encoding.md#0x3_encoding_ErrorInvalidScriptVersion">ErrorInvalidScriptVersion</a>: u64 = 4;
+</code></pre>
 
 
 

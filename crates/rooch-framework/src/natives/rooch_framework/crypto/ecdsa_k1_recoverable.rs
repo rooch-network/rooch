@@ -3,7 +3,6 @@
 
 use crate::natives::helpers::{make_module_natives, make_native};
 use fastcrypto::{
-    error::FastCryptoError,
     hash::{Keccak256, Sha256},
     secp256k1::{recoverable::Secp256k1RecoverableSignature, Secp256k1PublicKey},
     traits::{RecoverableSignature, ToFromBytes},
@@ -20,15 +19,16 @@ use move_vm_types::{
 use smallvec::smallvec;
 use std::collections::VecDeque;
 
-pub const FAIL_TO_RECOVER_PUBKEY: u64 = 1;
-pub const INVALID_SIGNATURE: u64 = 2;
-pub const INVALID_PUBKEY: u64 = 3;
+pub const E_FAIL_TO_RECOVER_PUBKEY: u64 = 1;
+pub const E_INVALID_SIGNATURE: u64 = 2;
+pub const E_INVALID_PUBKEY: u64 = 3;
+pub const E_INVALID_HASH_TYPE: u64 = 4;
 
 pub const KECCAK256: u8 = 0;
 pub const SHA256: u8 = 1;
 
 pub fn native_ecrecover(
-    _gas_params: &FromBytesGasParameters,
+    gas_params: &FromBytesGasParameters,
     _context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -45,16 +45,21 @@ pub fn native_ecrecover(
 
     // TODO(Gas): Charge the arg size dependent costs
 
-    let cost = 0.into();
+    let cost = gas_params.base;
 
     let Ok(sig) = <Secp256k1RecoverableSignature as ToFromBytes>::from_bytes(&signature_ref) else {
-        return Ok(NativeResult::err(cost, INVALID_SIGNATURE));
+        return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_INVALID_SIGNATURE)));
     };
 
     let pk = match hash {
         KECCAK256 => sig.recover_with_hash::<Keccak256>(&msg_ref),
         SHA256 => sig.recover_with_hash::<Sha256>(&msg_ref),
-        _ => Err(FastCryptoError::InvalidInput), // We should never reach here
+        _ => {
+            return Ok(NativeResult::err(
+                cost,
+                moveos_types::move_std::error::invalid_argument(E_INVALID_HASH_TYPE),
+            ))
+        } // We should never reach here
     };
 
     match pk {
@@ -62,12 +67,15 @@ pub fn native_ecrecover(
             cost,
             smallvec![Value::vector_u8(pk.as_bytes().to_vec())],
         )),
-        Err(_) => Ok(NativeResult::err(cost, FAIL_TO_RECOVER_PUBKEY)),
+        Err(_) => Ok(NativeResult::err(
+            cost,
+            moveos_types::move_std::error::internal(E_FAIL_TO_RECOVER_PUBKEY),
+        )),
     }
 }
 
 pub fn native_decompress_pubkey(
-    _gas_params: &FromBytesGasParameters,
+    gas_params: &FromBytesGasParameters,
     _context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -79,7 +87,7 @@ pub fn native_decompress_pubkey(
     let pubkey_ref = pubkey.as_bytes_ref();
 
     // TODO(Gas): Charge the arg size dependent costs
-    let cost = 0.into();
+    let cost = gas_params.base;
 
     match Secp256k1PublicKey::from_bytes(&pubkey_ref) {
         Ok(pubkey) => {
@@ -89,12 +97,15 @@ pub fn native_decompress_pubkey(
                 smallvec![Value::vector_u8(uncompressed.to_vec())],
             ))
         }
-        Err(_) => Ok(NativeResult::err(cost, INVALID_PUBKEY)),
+        Err(_) => Ok(NativeResult::err(
+            cost,
+            moveos_types::move_std::error::invalid_argument(E_INVALID_PUBKEY),
+        )),
     }
 }
 
 pub fn native_verify(
-    _gas_params: &FromBytesGasParameters,
+    gas_params: &FromBytesGasParameters,
     _context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -112,10 +123,10 @@ pub fn native_verify(
 
     // TODO(Gas): Charge the arg size dependent costs
 
-    let cost = 0.into();
+    let cost = gas_params.base;
 
     let Ok(sig) = <Secp256k1RecoverableSignature as ToFromBytes>::from_bytes(&signature_bytes_ref) else {
-        return Ok(NativeResult::err(cost, INVALID_SIGNATURE));
+        return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_INVALID_SIGNATURE)));
     };
 
     let pk = match hash {
