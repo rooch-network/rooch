@@ -3,7 +3,7 @@
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
-use rooch_rpc_api::jsonrpc_types::TransactionResultPageView;
+use rooch_rpc_api::jsonrpc_types::TransactionWithInfoPageView;
 use rooch_types::error::RoochResult;
 
 /// Get transactions by order
@@ -21,8 +21,8 @@ pub struct GetTransactionsByOrderCommand {
 }
 
 #[async_trait]
-impl CommandAction<TransactionResultPageView> for GetTransactionsByOrderCommand {
-    async fn execute(self) -> RoochResult<TransactionResultPageView> {
+impl CommandAction<TransactionWithInfoPageView> for GetTransactionsByOrderCommand {
+    async fn execute(self) -> RoochResult<TransactionWithInfoPageView> {
         let client = self.context_options.build().await?.get_client().await?;
 
         let resp = client

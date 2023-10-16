@@ -13,12 +13,12 @@ import {
   // TransactionView,
   AnnotatedFunctionResultView,
   AnnotatedStateView,
-  TransactionResultPageView,
-  AnnotatedEventResultPageView,
-  ListAnnotatedStateResultPageView,
+  TransactionWithInfoPageView,
+  AnnotatedEventPageView,
+  AnnotatedStatePageView,
   StateView,
-  StateResultPageView,
-  TransactionResultView,
+  StatePageView,
+  TransactionWithInfoView,
 } from '../types'
 import { functionIdToStirng, typeTagToString, encodeArg, toHexString } from '../utils'
 import { IProvider } from './interface'
@@ -129,7 +129,7 @@ export class JsonRpcProvider implements IProvider {
     return this.client.rooch_sendRawTransaction(playload)
   }
 
-  async getTransactionsByHash(tx_hashes: string[]): Promise<TransactionResultView | null[]> {
+  async getTransactionsByHash(tx_hashes: string[]): Promise<TransactionWithInfoView | null[]> {
     return await this.client.rooch_getTransactionsByHash(tx_hashes)
   }
 
@@ -144,7 +144,10 @@ export class JsonRpcProvider implements IProvider {
     return await this.client.rooch_getAnnotatedStates(accessPath)
   }
 
-  async getTransactionsByOrder(cursor: number, limit: number): Promise<TransactionResultPageView> {
+  async getTransactionsByOrder(
+    cursor: number,
+    limit: number,
+  ): Promise<TransactionWithInfoPageView> {
     return this.client.rooch_getTransactionsByOrder(cursor, limit)
   }
 
@@ -153,7 +156,7 @@ export class JsonRpcProvider implements IProvider {
     event_handle_type: string,
     cursor: number,
     limit: number,
-  ): Promise<AnnotatedEventResultPageView> {
+  ): Promise<AnnotatedEventPageView> {
     return await this.client.rooch_getEventsByEventHandle(event_handle_type, cursor, limit)
   }
 
@@ -163,11 +166,7 @@ export class JsonRpcProvider implements IProvider {
   }
 
   // List the states by access_path
-  async listStates(
-    access_path: string,
-    cursor: Uint8Array,
-    limit: number,
-  ): Promise<StateResultPageView> {
+  async listStates(access_path: string, cursor: Uint8Array, limit: number): Promise<StatePageView> {
     return await this.client.rooch_listStates(access_path, cursor, limit)
   }
 
@@ -194,7 +193,7 @@ export class JsonRpcProvider implements IProvider {
     access_path: string,
     cursor: Bytes | null,
     limit: number,
-  ): Promise<ListAnnotatedStateResultPageView> {
+  ): Promise<AnnotatedStatePageView> {
     return await this.client.rooch_listAnnotatedStates(access_path, cursor as any, limit)
   }
 

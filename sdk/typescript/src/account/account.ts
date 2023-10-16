@@ -10,7 +10,7 @@ import {
   FunctionId,
   TypeTag,
   Arg,
-  ListAnnotatedStateResultPageView,
+  AnnotatedStatePageView,
   Bytes,
   IPage,
 } from '../types'
@@ -223,7 +223,7 @@ export class Account implements IAccount {
     throw new Error('not found state')
   }
 
-  private convertToSessionKey(data: ListAnnotatedStateResultPageView): Array<ISessionKey> {
+  private convertToSessionKey(data: AnnotatedStatePageView): Array<ISessionKey> {
     const result = new Array<ISessionKey>()
 
     for (const state of data.data as any) {

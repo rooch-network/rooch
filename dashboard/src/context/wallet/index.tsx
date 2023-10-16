@@ -47,7 +47,6 @@ const ETHProvider = ({ children }: Props) => {
 
   useEffect(() => {
     setLoading(true)
-
     const refreshAccounts = (newAccounts: any) => {
       if (newAccounts && newAccounts.length > 0) {
         updateWallet(newAccounts)

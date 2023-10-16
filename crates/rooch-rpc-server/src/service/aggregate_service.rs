@@ -14,7 +14,7 @@ use moveos_types::object::ObjectID;
 use moveos_types::state_resolver::resource_tag_to_key;
 use moveos_types::transaction::FunctionCall;
 use moveos_types::tx_context::TxContext;
-use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionResult;
+use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionWithInfo;
 use rooch_types::account::BalanceInfo;
 use rooch_types::framework::account_coin_store::AccountCoinStoreModule;
 use rooch_types::framework::coin::{CoinInfo, CoinModule};
@@ -135,7 +135,6 @@ impl AggregateService {
                     )
                     .await?
                     .into_iter()
-                    .flatten()
                     .map(|(k, v)| {
                         let coin_store_ref = v.as_move_state::<ObjectRef<CoinStore>>()?;
                         Ok((k, coin_store_ref.id))
@@ -180,7 +179,7 @@ impl AggregateService {
         &self,
         tx_hashes: Vec<H256>,
         tx_orders: Vec<u128>,
-    ) -> Result<Vec<TransactionResult>> {
+    ) -> Result<Vec<TransactionWithInfo>> {
         let transactions = self
             .rpc_service
             .get_transactions_by_hash(tx_hashes.clone())
@@ -200,9 +199,9 @@ impl AggregateService {
             transactions.len() == sequence_infos.len()
                 && transactions.len() == execution_infos.len()
         );
-        let mut transaction_results: Vec<TransactionResult> = vec![];
+        let mut transaction_with_info: Vec<TransactionWithInfo> = vec![];
         for (index, _tx_hash) in tx_hashes.iter().enumerate() {
-            let transaction_result = TransactionResult {
+            let transaction_result = TransactionWithInfo {
                 transaction: transactions[index].clone().ok_or(anyhow::anyhow!(
                     "Transaction should have value when construct TransactionResult"
                 ))?,
@@ -213,9 +212,9 @@ impl AggregateService {
                     "TransactionExecutionInfo should have value when construct TransactionResult"
                 ))?,
             };
-            transaction_results.push(transaction_result)
+            transaction_with_info.push(transaction_result)
         }
-        Ok(transaction_results)
+        Ok(transaction_with_info)
     }
 }
 

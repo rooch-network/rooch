@@ -5,7 +5,7 @@ import {
   TypeTag,
   FunctionId,
   AnnotatedFunctionResultView,
-  ListAnnotatedStateResultPageView,
+  AnnotatedStatePageView,
   AnnotatedStateView,
   Bytes,
 } from '../types'
@@ -29,5 +29,5 @@ export interface IProvider {
     access_path: string,
     cursor: Bytes | null,
     limit: number,
-  ): Promise<ListAnnotatedStateResultPageView>
+  ): Promise<AnnotatedStatePageView>
 }

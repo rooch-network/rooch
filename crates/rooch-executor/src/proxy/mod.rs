@@ -87,7 +87,7 @@ impl ExecutorProxy {
         access_path: AccessPath,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<Option<(Vec<u8>, State)>>> {
+    ) -> Result<Vec<(Vec<u8>, State)>> {
         self.actor
             .send(ListStatesMessage {
                 access_path,
@@ -102,7 +102,7 @@ impl ExecutorProxy {
         access_path: AccessPath,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<Option<(Vec<u8>, AnnotatedState)>>> {
+    ) -> Result<Vec<(Vec<u8>, AnnotatedState)>> {
         self.actor
             .send(ListAnnotatedStatesMessage {
                 access_path,
@@ -117,7 +117,7 @@ impl ExecutorProxy {
         event_handle_type: StructTag,
         cursor: Option<u64>,
         limit: u64,
-    ) -> Result<Vec<Option<AnnotatedMoveOSEvent>>> {
+    ) -> Result<Vec<AnnotatedMoveOSEvent>> {
         self.actor
             .send(GetEventsByEventHandleMessage {
                 event_handle_type,
@@ -127,10 +127,7 @@ impl ExecutorProxy {
             .await?
     }
 
-    pub async fn get_events(
-        &self,
-        filter: EventFilter,
-    ) -> Result<Vec<Option<AnnotatedMoveOSEvent>>> {
+    pub async fn get_events(&self, filter: EventFilter) -> Result<Vec<AnnotatedMoveOSEvent>> {
         self.actor.send(GetEventsMessage { filter }).await?
     }
 

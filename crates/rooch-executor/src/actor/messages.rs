@@ -90,7 +90,7 @@ pub struct ListStatesMessage {
 }
 
 impl Message for ListStatesMessage {
-    type Result = Result<Vec<Option<(Vec<u8>, State)>>>;
+    type Result = Result<Vec<(Vec<u8>, State)>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -101,7 +101,7 @@ pub struct ListAnnotatedStatesMessage {
 }
 
 impl Message for ListAnnotatedStatesMessage {
-    type Result = Result<Vec<Option<(Vec<u8>, AnnotatedState)>>>;
+    type Result = Result<Vec<(Vec<u8>, AnnotatedState)>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -112,7 +112,7 @@ pub struct GetEventsByEventHandleMessage {
 }
 
 impl Message for GetEventsByEventHandleMessage {
-    type Result = Result<Vec<Option<AnnotatedMoveOSEvent>>>;
+    type Result = Result<Vec<AnnotatedMoveOSEvent>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -121,7 +121,7 @@ pub struct GetEventsMessage {
 }
 
 impl Message for GetEventsMessage {
-    type Result = Result<Vec<Option<AnnotatedMoveOSEvent>>>;
+    type Result = Result<Vec<AnnotatedMoveOSEvent>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
