@@ -3,6 +3,10 @@
 
 /// Module which defines decoding functions.
 module rooch_framework::decoding {
+
+   /// Failed to decode an address
+   const ErrorDecodeFailed: u64 = 1;
+   
    /// @param encoded_address_bytes: encoded Bitcoin address bytes on the Bitcoin network 
    /// Decode the Bitcoin address bytes with Base58 algorithm and returns a raw address bytes
    native public fun base58(encoded_address_bytes: &vector<u8>): vector<u8>;

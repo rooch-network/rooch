@@ -56,6 +56,15 @@
 ## Constants
 
 
+<a name="0x3_bitcoin_address_ErrorInvalidScriptVersion"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidScriptVersion">ErrorInvalidScriptVersion</a>: u64 = 2;
+</code></pre>
+
+
+
 <a name="0x3_bitcoin_address_BECH32_ADDR_LENGTH"></a>
 
 Bech32 addresses including P2WPKH and P2WSH are 42 characters
@@ -98,15 +107,6 @@ Bech32 addresses including P2WPKH and P2WSH are 42 characters
 
 
 <pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidSchnorrPublicKeyLength">ErrorInvalidSchnorrPublicKeyLength</a>: u64 = 5;
-</code></pre>
-
-
-
-<a name="0x3_bitcoin_address_ErrorInvalidScriptVersion"></a>
-
-
-
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidScriptVersion">ErrorInvalidScriptVersion</a>: u64 = 2;
 </code></pre>
 
 

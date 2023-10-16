@@ -83,6 +83,16 @@ Error if the public key cannot be recovered from the signature.
 
 
 
+<a name="0x3_ecdsa_k1_recoverable_ErrorInvalidHashType"></a>
+
+Invalid hash function
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ErrorInvalidHashType">ErrorInvalidHashType</a>: u64 = 4;
+</code></pre>
+
+
+
 <a name="0x3_ecdsa_k1_recoverable_KECCAK256"></a>
 
 Hash function name that are valid for ecrecover and verify.

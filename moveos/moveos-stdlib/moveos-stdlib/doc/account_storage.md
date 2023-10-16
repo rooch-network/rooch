@@ -449,12 +449,12 @@ Publish modules to the account's storage
     <b>let</b> <a href="account_storage.md#0x2_account_storage">account_storage</a> = <a href="account_storage.md#0x2_account_storage_borrow_account_storage_mut">borrow_account_storage_mut</a>(ctx, account_address);
     <b>let</b> i = 0;
     <b>let</b> len = <a href="_length">vector::length</a>(&modules);
-    <b>let</b> (module_names, module_names_with_init_fn) = <a href="move_module.md#0x2_move_module_verify_modules">move_module::verify_modules</a>(&modules, account_address);
+    <b>let</b> (module_names, module_names_with_init_fn) = <a href="move_module.md#0x2_move_module_sort_and_verify_modules">move_module::sort_and_verify_modules</a>(&modules, account_address);
 
     <b>let</b> upgrade_flag = <b>false</b>;
     <b>while</b> (i &lt; len) {
         <b>let</b> name = <a href="_pop_back">vector::pop_back</a>(&<b>mut</b> module_names);
-        <b>let</b> m = <a href="_pop_back">vector::pop_back</a>(&<b>mut</b> modules);
+        <b>let</b> m = <a href="account_storage.md#0x2_account_storage_pop_module_by_name">pop_module_by_name</a>(&<b>mut</b> modules, name);
 
         // The <b>module</b> already <b>exists</b>, which means we are upgrading the <b>module</b>
         <b>if</b> (<a href="table.md#0x2_table_contains">table::contains</a>(&<a href="account_storage.md#0x2_account_storage">account_storage</a>.modules, name)) {
@@ -511,8 +511,7 @@ The order of modules must be sorted by dependency order.
         <a href="_push_back">vector::push_back</a>(&<b>mut</b> module_vec, m);
         i = i + 1;
     };
-    // The input modules are sorted by dependency order which must not be changed.
-    <a href="_reverse">vector::reverse</a>(&<b>mut</b> module_vec);
+
     <a href="account_storage.md#0x2_account_storage_publish_modules">publish_modules</a>(ctx, account, module_vec);
 }
 </code></pre>

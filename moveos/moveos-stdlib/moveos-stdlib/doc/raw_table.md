@@ -114,12 +114,22 @@ The key already exists in the table
 
 
 
+<a name="0x2_raw_table_ErrorDuplicateOperation"></a>
+
+Duplicate operation on the table
+
+
+<pre><code><b>const</b> <a href="raw_table.md#0x2_raw_table_ErrorDuplicateOperation">ErrorDuplicateOperation</a>: u64 = 3;
+</code></pre>
+
+
+
 <a name="0x2_raw_table_ErrorNotEmpty"></a>
 
 The table is not empty
 
 
-<pre><code><b>const</b> <a href="raw_table.md#0x2_raw_table_ErrorNotEmpty">ErrorNotEmpty</a>: u64 = 3;
+<pre><code><b>const</b> <a href="raw_table.md#0x2_raw_table_ErrorNotEmpty">ErrorNotEmpty</a>: u64 = 4;
 </code></pre>
 
 
