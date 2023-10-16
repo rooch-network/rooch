@@ -133,7 +133,7 @@ impl RpcService {
         event_handle_type: StructTag,
         cursor: Option<u64>,
         limit: u64,
-    ) -> Result<Vec<Option<AnnotatedMoveOSEvent>>> {
+    ) -> Result<Vec<AnnotatedMoveOSEvent>> {
         let resp = self
             .executor
             .get_events_by_event_handle(event_handle_type, cursor, limit)
@@ -141,10 +141,7 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn get_events(
-        &self,
-        filter: EventFilter,
-    ) -> Result<Vec<Option<AnnotatedMoveOSEvent>>> {
+    pub async fn get_events(&self, filter: EventFilter) -> Result<Vec<AnnotatedMoveOSEvent>> {
         let resp = self.executor.get_events(filter).await?;
         Ok(resp)
     }

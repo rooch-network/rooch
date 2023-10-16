@@ -180,19 +180,19 @@ impl RoochAPIServer for RoochServer {
     ) -> RpcResult<EventPageView> {
         // NOTE: fetch one more object to check if there is next page
         let limit_of = min(limit.unwrap_or(DEFAULT_RESULT_LIMIT), MAX_RESULT_LIMIT);
-        let mut data: Vec<Option<AnnotatedEventView>> = self
+        let mut data: Vec<AnnotatedEventView> = self
             .rpc_service
             .get_events_by_event_handle(event_handle_type.into(), cursor, limit_of + 1)
             .await?
             .into_iter()
-            .map(|event| event.map(AnnotatedEventView::from))
+            .map(AnnotatedEventView::from)
             .collect();
 
         let has_next_page = (data.len() as u64) > limit_of;
         data.truncate(limit_of as usize);
-        let next_cursor = data.last().map_or(cursor, |event| {
-            Some(event.clone().unwrap().event.event_id.event_seq)
-        });
+        let next_cursor = data
+            .last()
+            .map_or(cursor, |event| Some(event.event.event_id.event_seq));
 
         Ok(EventPageView {
             data,

@@ -17,7 +17,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::string::String;
 
-pub type EventPageView = PageView<Option<AnnotatedEventView>, u64>;
+pub type EventPageView = PageView<AnnotatedEventView, u64>;
 pub type TransactionWithInfoPageView = PageView<TransactionWithInfoView, u128>;
 pub type StatesPageView = PageView<StateView, StrView<Vec<u8>>>;
 pub type AnnotatedStatesPageView = PageView<AnnotatedStateView, StrView<Vec<u8>>>;
