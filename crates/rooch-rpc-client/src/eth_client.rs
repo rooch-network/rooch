@@ -9,11 +9,11 @@ use rooch_rpc_api::jsonrpc_types::{H256View, StrView};
 use rooch_rpc_api::{
     api::eth_api::TransactionType,
     jsonrpc_types::{
-        bytes::Bytes,
         eth::{
             ethereum_types::block::{Block, BlockNumber},
             CallRequest, EthFeeHistory, Transaction, TransactionReceipt,
         },
+        BytesView,
     },
 };
 use std::sync::Arc;
@@ -26,10 +26,6 @@ pub struct EthRpcClient {
 impl EthRpcClient {
     pub fn new(http: Arc<HttpClient>) -> Self {
         Self { http }
-    }
-
-    pub async fn net_version(&self) -> Result<String> {
-        Ok(self.http.net_version().await?)
     }
 
     pub async fn chain_id(&self) -> Result<String> {
@@ -101,7 +97,7 @@ impl EthRpcClient {
         Result::Ok(response)
     }
 
-    pub async fn send_raw_transaction(&self, bytes: Bytes) -> Result<H256View> {
+    pub async fn send_raw_transaction(&self, bytes: BytesView) -> Result<H256View> {
         let response = self.http.send_raw_transaction(bytes).await?;
         Result::Ok(response)
     }

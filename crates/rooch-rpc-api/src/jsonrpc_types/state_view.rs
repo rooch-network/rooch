@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{AnnotatedMoveValueView, StrView, TypeTagView};
+use super::{AnnotatedMoveValueView, BytesView, StrView, TypeTagView};
 use move_core_types::effects::Op;
 use moveos_types::{
     object::ObjectID,
@@ -13,7 +13,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct StateView {
-    pub value: StrView<Vec<u8>>,
+    pub value: BytesView,
     pub value_type: TypeTagView,
 }
 
@@ -121,7 +121,7 @@ impl From<Op<State>> for OpView<StateView> {
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TableChangeView {
-    pub entries: BTreeMap<StrView<Vec<u8>>, OpView<StateView>>,
+    pub entries: BTreeMap<BytesView, OpView<StateView>>,
 }
 
 impl From<TableChange> for TableChangeView {

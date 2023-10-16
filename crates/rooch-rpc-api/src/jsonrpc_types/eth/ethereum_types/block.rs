@@ -5,9 +5,9 @@
 
 use super::{bloom::Bloom, other_fields::OtherFields, withdrawal::Withdrawal};
 #[cfg(not(feature = "celo"))]
-use crate::jsonrpc_types::bytes::Bytes;
-use crate::jsonrpc_types::{H256View, H64View, StrView};
-use ethers::types::{H160, U256, U64};
+use crate::jsonrpc_types::BytesView;
+use crate::jsonrpc_types::{H160View, H256View, H64View, StrView};
+use ethers::types::{U256, U64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Deserializer, Serialize};
 
@@ -33,7 +33,7 @@ pub struct Block<TX> {
     pub uncles_hash: H256View,
     /// Miner/author's address. None if pending.
     #[serde(default, rename = "miner")]
-    pub author: Option<StrView<H160>>,
+    pub author: Option<H160View>,
     /// State root hash
     #[serde(default, rename = "stateRoot")]
     pub state_root: H256View,
@@ -54,7 +54,7 @@ pub struct Block<TX> {
     pub gas_limit: StrView<U256>,
     /// Extra data
     #[serde(default, rename = "extraData")]
-    pub extra_data: Bytes,
+    pub extra_data: BytesView,
     /// Logs bloom
     #[serde(rename = "logsBloom")]
     pub logs_bloom: Option<Bloom>,
@@ -72,7 +72,7 @@ pub struct Block<TX> {
         rename = "sealFields",
         deserialize_with = "deserialize_null_default"
     )]
-    pub seal_fields: Vec<Bytes>,
+    pub seal_fields: Vec<BytesView>,
     /// Uncles' hashes
     #[cfg(not(feature = "celo"))]
     #[serde(default)]

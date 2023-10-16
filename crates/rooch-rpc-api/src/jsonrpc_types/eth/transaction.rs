@@ -5,8 +5,8 @@ use super::{
     ethereum_types::{bloom::Bloom, ens::NameOrAddress, log::Log, other_fields::OtherFields},
     AccessList,
 };
-use crate::jsonrpc_types::{bytes::Bytes, H256View, StrView};
-use ethers::types::{H160, U256, U64};
+use crate::jsonrpc_types::{BytesView, H160View, H256View, StrView};
+use ethers::types::{U256, U64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -34,11 +34,11 @@ pub struct Transaction {
 
     /// Sender
     #[serde(default)]
-    pub from: StrView<H160>,
+    pub from: H160View,
 
     /// Recipient (None when contract creation)
     #[serde(default)]
-    pub to: Option<StrView<H160>>,
+    pub to: Option<H160View>,
 
     /// Transferred value
     pub value: StrView<U256>,
@@ -51,7 +51,7 @@ pub struct Transaction {
     pub gas: StrView<U256>,
 
     /// Input data
-    pub input: Bytes,
+    pub input: BytesView,
 
     /// ECDSA recovery id
     pub v: StrView<U64>,
@@ -163,7 +163,7 @@ pub struct Transaction {
 pub struct TransactionRequest {
     /// Sender address or ENS name
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub from: Option<StrView<H160>>,
+    pub from: Option<H160View>,
 
     /// Recipient address (None for contract creation)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -185,7 +185,7 @@ pub struct TransactionRequest {
     /// The compiled code of a contract OR the first 4 bytes of the hash of the
     /// invoked method signature and encoded parameters. For details see Ethereum Contract ABI
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub data: Option<Bytes>,
+    pub data: Option<BytesView>,
 
     /// Transaction nonce (None for next available nonce)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -233,9 +233,9 @@ pub struct TransactionReceipt {
     #[serde(rename = "blockNumber")]
     pub block_number: Option<StrView<U64>>,
     /// address of the sender.
-    pub from: StrView<H160>,
+    pub from: H160View,
     // address of the receiver. null when its a contract creation transaction.
-    pub to: Option<StrView<H160>>,
+    pub to: Option<H160View>,
     /// Cumulative gas used within the block after this was executed.
     #[serde(rename = "cumulativeGasUsed")]
     pub cumulative_gas_used: StrView<U256>,
@@ -246,7 +246,7 @@ pub struct TransactionReceipt {
     pub gas_used: Option<StrView<U256>>,
     /// Contract address created, or `None` if not a deployment.
     #[serde(rename = "contractAddress")]
-    pub contract_address: Option<StrView<H160>>,
+    pub contract_address: Option<H160View>,
     /// Logs generated within this transaction.
     pub logs: Vec<Log>,
     /// Status: either 1 (success) or 0 (failure). Only present after activation of [EIP-658](https://eips.ethereum.org/EIPS/eip-658)

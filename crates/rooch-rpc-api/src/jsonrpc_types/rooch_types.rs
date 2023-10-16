@@ -6,8 +6,8 @@ use crate::jsonrpc_types::account_view::BalanceInfoView;
 use crate::jsonrpc_types::transaction_view::TransactionWithInfoView;
 use crate::jsonrpc_types::{
     move_types::{MoveActionTypeView, MoveActionView},
-    AnnotatedMoveStructView, AnnotatedStateView, EventView, H256View, StateView, StrView,
-    StructTagView,
+    AnnotatedMoveStructView, AnnotatedStateView, BytesView, EventView, H256View, StateView,
+    StrView, StructTagView,
 };
 use move_core_types::u256::U256;
 use moveos_types::event::AnnotatedMoveOSEvent;
@@ -19,9 +19,9 @@ use std::string::String;
 
 pub type EventPageView = PageView<AnnotatedEventView, u64>;
 pub type TransactionWithInfoPageView = PageView<TransactionWithInfoView, u128>;
-pub type StatesPageView = PageView<StateView, StrView<Vec<u8>>>;
-pub type AnnotatedStatesPageView = PageView<AnnotatedStateView, StrView<Vec<u8>>>;
-pub type BalanceInfoPageView = PageView<BalanceInfoView, StrView<Vec<u8>>>;
+pub type StatesPageView = PageView<StateView, BytesView>;
+pub type AnnotatedStatesPageView = PageView<AnnotatedStateView, BytesView>;
+pub type BalanceInfoPageView = PageView<BalanceInfoView, BytesView>;
 
 /// `next_cursor` points to the last item in the page;
 /// Reading with `next_cursor` will start from the next item after `next_cursor` if
@@ -57,7 +57,7 @@ pub struct TransactionView {
     pub sender: String,
     pub action_type: MoveActionTypeView,
     pub action: MoveActionView,
-    pub raw: StrView<Vec<u8>>,
+    pub raw: BytesView,
 }
 
 impl From<TypedTransaction> for TransactionView {
