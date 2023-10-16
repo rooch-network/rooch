@@ -8,13 +8,12 @@ use jsonrpsee::{
     RpcModule,
 };
 use moveos_types::h256::H256;
-use rooch_rpc_api::jsonrpc_types::account_view::BalanceInfoView;
 use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionWithInfoView;
+use rooch_rpc_api::jsonrpc_types::{account_view::BalanceInfoView, StateOptions};
 use rooch_rpc_api::jsonrpc_types::{
-    AccessPathView, AccountAddressView, AnnotatedEventView, AnnotatedStateView,
-    AnnotatedStatesPageView, BalanceInfoPageView, EventPageView, ExecuteTransactionResponseView,
-    FunctionCallView, H256View, StateView, StatesPageView, StrView, StructTagView,
-    TransactionWithInfoPageView,
+    AccessPathView, AccountAddressView, AnnotatedEventView, BalanceInfoPageView, EventPageView,
+    ExecuteTransactionResponseView, FunctionCallView, H256View, StateView, StatesPageView, StrView,
+    StructTagView, TransactionWithInfoPageView,
 };
 use rooch_rpc_api::{api::rooch_api::RoochAPIServer, api::DEFAULT_RESULT_LIMIT};
 use rooch_rpc_api::{
@@ -86,27 +85,29 @@ impl RoochAPIServer for RoochServer {
             .into())
     }
 
-    async fn get_states(&self, access_path: AccessPathView) -> RpcResult<Vec<Option<StateView>>> {
-        Ok(self
-            .rpc_service
-            .get_states(access_path.into())
-            .await?
-            .into_iter()
-            .map(|s| s.map(StateView::from))
-            .collect())
-    }
-
-    async fn get_annotated_states(
+    async fn get_states(
         &self,
         access_path: AccessPathView,
-    ) -> RpcResult<Vec<Option<AnnotatedStateView>>> {
-        Ok(self
-            .rpc_service
-            .get_annotated_states(access_path.into())
-            .await?
-            .into_iter()
-            .map(|s| s.map(AnnotatedStateView::from))
-            .collect())
+        state_option: Option<StateOptions>,
+    ) -> RpcResult<Vec<Option<StateView>>> {
+        let state_option = state_option.unwrap_or_default();
+        if state_option.decode {
+            Ok(self
+                .rpc_service
+                .get_annotated_states(access_path.into())
+                .await?
+                .into_iter()
+                .map(|s| s.map(StateView::from))
+                .collect())
+        } else {
+            Ok(self
+                .rpc_service
+                .get_states(access_path.into())
+                .await?
+                .into_iter()
+                .map(|s| s.map(StateView::from))
+                .collect())
+        }
     }
 
     async fn list_states(
@@ -114,19 +115,29 @@ impl RoochAPIServer for RoochServer {
         access_path: AccessPathView,
         cursor: Option<BytesView>,
         limit: Option<StrView<usize>>,
+        state_option: Option<StateOptions>,
     ) -> RpcResult<StatesPageView> {
+        let state_option = state_option.unwrap_or_default();
         let limit_of = min(
             limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
         );
         let cursor_of = cursor.clone().map(|v| v.0);
-        let mut data: Vec<(Vec<u8>, StateView)> = self
-            .rpc_service
-            .list_states(access_path.into(), cursor_of, limit_of + 1)
-            .await?
-            .into_iter()
-            .map(|(key, state)| (key, StateView::from(state)))
-            .collect::<Vec<_>>();
+        let mut data: Vec<(Vec<u8>, StateView)> = if state_option.decode {
+            self.rpc_service
+                .list_annotated_states(access_path.into(), cursor_of, limit_of + 1)
+                .await?
+                .into_iter()
+                .map(|(key, state)| (key, StateView::from(state)))
+                .collect::<Vec<_>>();
+        } else {
+            self.rpc_service
+                .list_states(access_path.into(), cursor_of, limit_of + 1)
+                .await?
+                .into_iter()
+                .map(|(key, state)| (key, StateView::from(state)))
+                .collect::<Vec<_>>();
+        };
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
@@ -136,39 +147,6 @@ impl RoochAPIServer for RoochServer {
         let result = data.into_iter().map(|(_key, state)| state).collect();
 
         Ok(StatesPageView {
-            data: result,
-            next_cursor,
-            has_next_page,
-        })
-    }
-
-    async fn list_annotated_states(
-        &self,
-        access_path: AccessPathView,
-        cursor: Option<BytesView>,
-        limit: Option<StrView<usize>>,
-    ) -> RpcResult<AnnotatedStatesPageView> {
-        let limit_of = min(
-            limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
-            MAX_RESULT_LIMIT_USIZE,
-        );
-        let cursor_of = cursor.clone().map(|v| v.0);
-        let mut data: Vec<(Vec<u8>, AnnotatedStateView)> = self
-            .rpc_service
-            .list_annotated_states(access_path.into(), cursor_of, limit_of + 1)
-            .await?
-            .into_iter()
-            .map(|(key, state)| (key, AnnotatedStateView::from(state)))
-            .collect::<Vec<_>>();
-
-        let has_next_page = data.len() > limit_of;
-        data.truncate(limit_of);
-        let next_cursor = data
-            .last()
-            .map_or(cursor, |(key, _state)| Some(StrView(key.clone())));
-        let result = data.into_iter().map(|(_key, state)| state).collect();
-
-        Ok(AnnotatedStatesPageView {
             data: result,
             next_cursor,
             has_next_page,

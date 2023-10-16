@@ -189,13 +189,19 @@
     },
     {
       "name": "rooch_getStates",
-      "description": "Get the states by access_path",
+      "description": "Get the states by access_path If the StateOptions.decode is true, the state is decoded and the decoded value is returned in the response.",
       "params": [
         {
           "name": "access_path",
           "required": true,
           "schema": {
             "$ref": "#/components/schemas/moveos_types::access_path::AccessPath"
+          }
+        },
+        {
+          "name": "state_option",
+          "schema": {
+            "$ref": "#/components/schemas/ObjectDataOptions"
           }
         }
       ],
@@ -832,6 +838,16 @@
               "format": "uint8",
               "minimum": 0.0
             }
+          }
+        }
+      },
+      "ObjectDataOptions": {
+        "type": "object",
+        "properties": {
+          "decode": {
+            "description": "If true, the state is decoded and the decoded value is returned in the response.",
+            "default": false,
+            "type": "boolean"
           }
         }
       },

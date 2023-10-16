@@ -4,10 +4,9 @@
 use crate::jsonrpc_types::account_view::BalanceInfoView;
 use crate::jsonrpc_types::transaction_view::TransactionWithInfoView;
 use crate::jsonrpc_types::{
-    AccessPathView, AccountAddressView, AnnotatedFunctionResultView, AnnotatedStateView,
-    AnnotatedStatesPageView, BalanceInfoPageView, BytesView, EventPageView,
-    ExecuteTransactionResponseView, FunctionCallView, H256View, StateView, StatesPageView, StrView,
-    StructTagView, TransactionWithInfoPageView,
+    AccessPathView, AccountAddressView, AnnotatedFunctionResultView, BalanceInfoPageView,
+    BytesView, EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
+    StateOptions, StateView, StatesPageView, StrView, StructTagView, TransactionWithInfoPageView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -42,35 +41,24 @@ pub trait RoochAPI {
     ) -> RpcResult<AnnotatedFunctionResultView>;
 
     /// Get the states by access_path
+    /// If the StateOptions.decode is true, the state is decoded and the decoded value is returned in the response.
     #[method(name = "getStates")]
-    async fn get_states(&self, access_path: AccessPathView) -> RpcResult<Vec<Option<StateView>>>;
-
-    /// Get the annotated states by access_path
-    /// The annotated states include the decoded move value of the state
-    #[method(name = "getAnnotatedStates")]
-    async fn get_annotated_states(
+    async fn get_states(
         &self,
         access_path: AccessPathView,
-    ) -> RpcResult<Vec<Option<AnnotatedStateView>>>;
+        state_option: Option<StateOptions>,
+    ) -> RpcResult<Vec<Option<StateView>>>;
 
     /// List the states by access_path
+    /// If the StateOptions.decode is true, the state is decoded and the decoded value is returned in the response.
     #[method(name = "listStates")]
     async fn list_states(
         &self,
         access_path: AccessPathView,
         cursor: Option<BytesView>,
         limit: Option<StrView<usize>>,
+        state_option: Option<StateOptions>,
     ) -> RpcResult<StatesPageView>;
-
-    /// List the annotated states by access_path
-    /// The annotated states include the decoded move value of the state
-    #[method(name = "listAnnotatedStates")]
-    async fn list_annotated_states(
-        &self,
-        access_path: AccessPathView,
-        cursor: Option<BytesView>,
-        limit: Option<StrView<usize>>,
-    ) -> RpcResult<AnnotatedStatesPageView>;
 
     /// Get the events by event handle id
     #[method(name = "getEventsByEventHandle")]

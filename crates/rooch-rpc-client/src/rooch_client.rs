@@ -14,11 +14,11 @@ use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, transaction_view::TransactionWithInfoView,
 };
 use rooch_rpc_api::jsonrpc_types::{
-    AccessPathView, AccountAddressView, AnnotatedFunctionResultView, AnnotatedStatesPageView,
-    BalanceInfoPageView, EventPageView, StatesPageView, StructTagView,
+    AccessPathView, AccountAddressView, AnnotatedFunctionResultView, BalanceInfoPageView,
+    EventPageView, StateOptions, StatesPageView, StructTagView,
 };
-use rooch_rpc_api::jsonrpc_types::{AnnotatedStateView, ExecuteTransactionResponseView, StateView};
 use rooch_rpc_api::jsonrpc_types::{BytesView, TransactionWithInfoPageView};
+use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, StateView};
 use rooch_types::{account::Account, address::RoochAddress, transaction::rooch::RoochTransaction};
 use std::sync::Arc;
 
@@ -58,19 +58,21 @@ impl RoochRpcClient {
     }
 
     pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<StateView>>> {
-        Ok(self.http.get_states(access_path.into()).await?)
+        Ok(self.http.get_states(access_path.into(), None).await?)
     }
 
-    pub async fn get_annotated_states(
+    pub async fn get_decoded_states(
         &self,
         access_path: AccessPath,
-    ) -> Result<Vec<Option<AnnotatedStateView>>> {
-        Ok(self.http.get_annotated_states(access_path.into()).await?)
+    ) -> Result<Vec<Option<StateView>>> {
+        Ok(self
+            .http
+            .get_states(
+                access_path.into(),
+                Some(StateOptions::default().decode(true)),
+            )
+            .await?)
     }
-
-    // pub async fn get_transactions_by_hash(&self, hash: H256) -> Result<Option<TransactionView>> {
-    //     Ok(self.http.get_transaction_by_hash(hash.into()).await?)
-    // }
 
     pub async fn get_transactions_by_order(
         &self,
@@ -132,19 +134,24 @@ impl RoochRpcClient {
     ) -> Result<StatesPageView> {
         Ok(self
             .http
-            .list_states(access_path, cursor, limit.map(Into::into))
+            .list_states(access_path, cursor, limit.map(Into::into), None)
             .await?)
     }
 
-    pub async fn list_annotated_states(
+    pub async fn list_decoded_states(
         &self,
         access_path: AccessPathView,
         cursor: Option<BytesView>,
         limit: Option<usize>,
-    ) -> Result<AnnotatedStatesPageView> {
+    ) -> Result<StatesPageView> {
         Ok(self
             .http
-            .list_annotated_states(access_path, cursor, limit.map(Into::into))
+            .list_states(
+                access_path,
+                cursor,
+                limit.map(Into::into),
+                Some(StateOptions::default().decode(true)),
+            )
             .await?)
     }
 

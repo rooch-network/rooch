@@ -5,7 +5,7 @@ use crate::jsonrpc_types::account_view::BalanceInfoView;
 use crate::jsonrpc_types::transaction_view::TransactionWithInfoView;
 use crate::jsonrpc_types::{
     move_types::{MoveActionTypeView, MoveActionView},
-    AnnotatedStateView, BytesView, EventView, StateView, StrView, StructTagView,
+    AnnotatedMoveStructView, BytesView, EventView, H256View, StateView, StrView, StructTagView,
 };
 use move_core_types::u256::U256;
 use moveos_types::event::AnnotatedMoveOSEvent;
@@ -18,7 +18,6 @@ use std::string::String;
 pub type EventPageView = PageView<AnnotatedEventView, u64>;
 pub type TransactionWithInfoPageView = PageView<TransactionWithInfoView, u128>;
 pub type StatesPageView = PageView<StateView, BytesView>;
-pub type AnnotatedStatesPageView = PageView<AnnotatedStateView, BytesView>;
 pub type BalanceInfoPageView = PageView<BalanceInfoView, BytesView>;
 
 /// `next_cursor` points to the last item in the page;
