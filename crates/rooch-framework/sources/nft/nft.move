@@ -3,6 +3,7 @@
 
 module rooch_framework::nft {
     use std::string::String;
+    use rooch_framework::display::Display;
     use moveos_std::object_ref;
     use moveos_std::object;
     use rooch_framework::collection;
@@ -22,7 +23,7 @@ module rooch_framework::nft {
     const ENftNotExist: u64 = 100;
     const EMutatorNotExist: u64 = 101;
 
-    struct NFT has store {
+    struct NFT has key {
         name: String,
         uri: String,
         collection: ObjectID,
@@ -30,11 +31,11 @@ module rooch_framework::nft {
         extend: TypeTable
     }
 
-    struct MutatorRef has store{
+    struct MutatorRef has key {
         nft: ObjectID,
     }
 
-    struct BurnerRef has store{
+    struct BurnerRef has key {
         nft: ObjectID,
     }
 
@@ -104,7 +105,7 @@ module rooch_framework::nft {
         assert_mutator_exist_of_ref(&mutator_ref);
         let MutatorRef {
             nft
-        } = object_ref::remove(mutator_ref);
+        } = object_ref::remove<MutatorRef>(mutator_ref);
         nft
     }
 
@@ -123,7 +124,7 @@ module rooch_framework::nft {
         assert_burner_exist_of_ref(&burner_ref);
         let BurnerRef {
             nft
-        } = object_ref::remove(burner_ref);
+        } = object_ref::remove<BurnerRef>(burner_ref);
         nft
     }
 
@@ -155,8 +156,51 @@ module rooch_framework::nft {
         context::borrow_object<BurnerRef>(ctx, objectId);
     }
 
-    #[private_generics(T)]
-    public fun add_nft_extend<V: key>(mutator: &ObjectRef<MutatorRef>,val: V,ctx: &mut Context) {
+    public fun add_display(mutator: &ObjectRef<MutatorRef>, display: Display, ctx: &mut Context){
+        add_extend_internal(mutator, display, ctx);
+    }
+
+    public fun borrow_display(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context):&Display{
+        borrow_extend_internal(mutator, ctx)
+    }
+
+    public fun borrow_mut_display(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context):&mut Display{
+        borrow_mut_extend_internal(mutator, ctx)
+    }
+
+    public fun remove_display(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context):Display{
+        remove_extend_internal(mutator, ctx)
+    }
+
+    public fun contains_display(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context): bool{
+        contains_extend_internal<Display>(mutator, ctx)
+    }
+
+    #[private_generics(V)]
+    public fun add_extend<V: key>(mutator: &ObjectRef<MutatorRef>, val: V, ctx: &mut Context){
+        add_extend_internal(mutator, val, ctx);
+    }
+
+    public fun borrow_extend<V: key>(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context):&V{
+        borrow_extend_internal(mutator, ctx)
+    }
+
+    #[private_generics(V)]
+    public fun borrow_mut_extend<V: key>(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context):&mut V{
+        borrow_mut_extend_internal(mutator, ctx)
+    }
+
+    #[private_generics(V)]
+    public fun remove_extend<V: key>(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context):V{
+        remove_extend_internal(mutator, ctx)
+    }
+
+    public fun contains_extend<V: key>(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context): bool{
+        contains_extend_internal<V>(mutator, ctx)
+    }
+
+
+    fun add_extend_internal<V: key>(mutator: &ObjectRef<MutatorRef>,val: V,ctx: &mut Context) {
         assert_mutator_exist_of_ref(mutator);
         let mutator_object_ref = object_ref::borrow(mutator);
         assert_nft_exist_of_id(mutator_object_ref.nft, ctx);
@@ -165,8 +209,7 @@ module rooch_framework::nft {
         type_table::add( &mut nft_mut_ref.extend, val);
     }
 
-
-    public fun borrow_nft_extend<V: key>(mutator: &ObjectRef<MutatorRef>,ctx: &Context): &V {
+    fun borrow_extend_internal<V: key>(mutator: &ObjectRef<MutatorRef>,ctx: &Context): &V {
         assert_mutator_exist_of_ref(mutator);
         let mutator_object_ref = object_ref::borrow(mutator);
         assert_nft_exist_of_id(mutator_object_ref.nft, ctx);
@@ -175,8 +218,7 @@ module rooch_framework::nft {
         type_table::borrow(&nft_mut_ref.extend)
     }
 
-    #[private_generics(T)]
-    public fun borrow_mut_nft_extend<V: key>(mutator: &ObjectRef<MutatorRef>,ctx: &mut Context): &mut V {
+    fun borrow_mut_extend_internal<V: key>(mutator: &ObjectRef<MutatorRef>,ctx: &mut Context): &mut V {
         assert_mutator_exist_of_ref(mutator);
         let mutator_object_ref = object_ref::borrow(mutator);
         assert_nft_exist_of_id(mutator_object_ref.nft, ctx);
@@ -185,17 +227,16 @@ module rooch_framework::nft {
         type_table::borrow_mut(&mut nft_mut_ref.extend)
     }
 
-    #[private_generics(T)]
-    public fun remove_nft_extend<V: key>(mutator: &ObjectRef<MutatorRef>,ctx: &mut Context) {
+    fun remove_extend_internal<V: key>(mutator: &ObjectRef<MutatorRef>,ctx: &mut Context):V {
         assert_mutator_exist_of_ref(mutator);
         let mutator_object_ref = object_ref::borrow(mutator);
         assert_nft_exist_of_id(mutator_object_ref.nft, ctx);
         let nft_object_mut_ref = context::borrow_object_mut<NFT>(ctx, mutator_object_ref.nft);
         let nft_mut_ref = object::borrow_mut(nft_object_mut_ref);
-        type_table::remove(&mut nft_mut_ref.extend)
+        type_table::remove<V>(&mut nft_mut_ref.extend)
     }
 
-    public fun contains_nft_extend<V: key>(mutator: &ObjectRef<MutatorRef>,ctx: &Context): bool {
+    fun contains_extend_internal<V: key>(mutator: &ObjectRef<MutatorRef>,ctx: &Context): bool {
         assert_mutator_exist_of_ref(mutator);
         let mutator_object_ref = object_ref::borrow(mutator);
         assert_nft_exist_of_id(mutator_object_ref.nft, ctx);
@@ -254,9 +295,11 @@ module rooch_framework::nft {
         display::set(&mut collcetion_display, string::utf8(b"description"), string::utf8(b"{ description }"));
         display::set(&mut collcetion_display, string::utf8(b"creator"), string::utf8(b"{ creator }"));
         display::set(&mut collcetion_display, string::utf8(b"supply"), string::utf8(b"{ supply }"));
-        collection::add_collection_extend(
+
+        collection::add_display(
             &collection_mutator_ref,
-            collcetion_display, &mut ctx
+            collcetion_display,
+            &mut ctx
         );
 
         let nft_object_ref = mint(
@@ -273,11 +316,20 @@ module rooch_framework::nft {
         display::set(&mut nft_display, string::utf8(b"collection"), string::utf8(b"{ collection }"));
 
         let nft_mutaor_ref = generate_mutator_ref(&nft_object_ref, &mut ctx);
-        add_nft_extend(
+        add_display(
             &nft_mutaor_ref,
             nft_display,
             &mut ctx
         );
+
+
+        let burner_ref = generate_burner_ref(&nft_object_ref, &mut ctx);
+        burn(&burner_ref, &collection_mutator_ref, &mut ctx);
+
+
+        collection::destroy_mutator_ref(collection_mutator_ref);
+        destroy_mutator_ref(nft_mutaor_ref);
+        destroy_burner_ref(burner_ref);
 
         context::drop_test_context(ctx);
     }

@@ -5,6 +5,7 @@ module rooch_framework::collection{
     use std::option;
     use std::option::Option;
     use std::string::String;
+    use rooch_framework::display::Display;
     use moveos_std::object::ObjectID;
     use moveos_std::object_ref;
     use moveos_std::event;
@@ -20,7 +21,7 @@ module rooch_framework::collection{
     const ECollectionNotExist: u64 = 101;
     const ECollectionMaximumSupply: u64 = 102;
 
-    struct Collection has store{
+    struct Collection has key{
         name: String,
         uri: String,
         creator: address,
@@ -33,7 +34,7 @@ module rooch_framework::collection{
         maximum: Option<u64>,
     }
 
-    struct MutatorRef has store{
+    struct MutatorRef has key{
         collection: ObjectID,
     }
 
@@ -103,7 +104,7 @@ module rooch_framework::collection{
         assert_mutator_exist_of_ref(&mutator_ref);
         let MutatorRef {
             collection
-        } = object_ref::remove(mutator_ref);
+        } = object_ref::remove<MutatorRef>(mutator_ref);
         collection
     }
 
@@ -162,9 +163,53 @@ module rooch_framework::collection{
         context::borrow_object<MutatorRef>(ctx, mutatorID);
     }
 
-    #[private_generics(T)]
-    public fun add_collection_extend<V: key>(mutator: &ObjectRef<MutatorRef>,val: V,ctx: &mut Context){
+    public fun add_display(mutator: &ObjectRef<MutatorRef>, display: Display, ctx: &mut Context){
+        add_extend_internal(mutator, display, ctx);
+    }
+
+    public fun borrow_display(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context):&Display{
+        borrow_extend_internal(mutator, ctx)
+    }
+
+    public fun borrow_mut_display(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context):&mut Display{
+        borrow_mut_extend_internal(mutator, ctx)
+    }
+
+    public fun remove_display(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context):Display{
+        remove_extend_internal(mutator, ctx)
+    }
+
+    public fun contains_display(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context): bool{
+        contains_extend_internal<Display>(mutator, ctx)
+    }
+
+    #[private_generics(V)]
+    public fun add_extend<V: key>(mutator: &ObjectRef<MutatorRef>, val: V, ctx: &mut Context){
+        add_extend_internal(mutator, val, ctx);
+    }
+
+    public fun borrow_extend<V: key>(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context):&V{
+        borrow_extend_internal(mutator, ctx)
+    }
+
+    #[private_generics(V)]
+    public fun borrow_mut_extend<V: key>(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context):&mut V{
+        borrow_mut_extend_internal(mutator, ctx)
+    }
+
+    #[private_generics(V)]
+    public fun remove_extend<V: key>(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context):V{
+        remove_extend_internal(mutator, ctx)
+    }
+
+    public fun contains_extend<V: key>(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context): bool{
+        contains_extend_internal<V>(mutator, ctx)
+    }
+
+
+    fun add_extend_internal<V: key>(mutator: &ObjectRef<MutatorRef>,val: V,ctx: &mut Context){
         assert_mutator_exist_of_ref(mutator);
+
         let mutator_object_ref = object_ref::borrow(mutator);
         assert_collection_exist_of_id(mutator_object_ref.collection, ctx);
         let collection_object_mut_ref = context::borrow_object_mut<Collection>(ctx, mutator_object_ref.collection);
@@ -172,7 +217,7 @@ module rooch_framework::collection{
         type_table::add( &mut collection_mut_ref.extend, val);
     }
 
-    public fun borrow_collection_extend<V: key>(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context):&V{
+    fun borrow_extend_internal<V: key>(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context):&V{
         assert_mutator_exist_of_ref(mutator);
         let mutator_object_ref = object_ref::borrow(mutator);
         assert_collection_exist_of_id(mutator_object_ref.collection, ctx);
@@ -181,8 +226,7 @@ module rooch_framework::collection{
         type_table::borrow(&collection_ref.extend)
     }
 
-    #[private_generics(T)]
-    public fun borrow_mut_collection_extend<V: key>(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context):&mut V{
+    fun borrow_mut_extend_internal<V: key>(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context):&mut V{
         assert_mutator_exist_of_ref(mutator);
         let mutator_object_ref = object_ref::borrow(mutator);
         assert_collection_exist_of_id(mutator_object_ref.collection, ctx);
@@ -191,17 +235,16 @@ module rooch_framework::collection{
         type_table::borrow_mut(&mut collection_mut_ref.extend)
     }
 
-    #[private_generics(T)]
-    public fun remove_collection_extend<V: key>(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context){
+    fun remove_extend_internal<V: key>(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context):V{
         assert_mutator_exist_of_ref(mutator);
         let mutator_object_ref = object_ref::borrow(mutator);
         assert_collection_exist_of_id(mutator_object_ref.collection, ctx);
         let collection_object_mut_ref = context::borrow_object_mut<Collection>(ctx, mutator_object_ref.collection);
         let collection_mut_ref = object::borrow_mut(collection_object_mut_ref);
-        type_table::remove(&mut collection_mut_ref.extend)
+        type_table::remove<V>(&mut collection_mut_ref.extend)
     }
 
-    public fun contains_collection_extend<V: key>(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context): bool{
+    fun contains_extend_internal<V: key>(mutator: &ObjectRef<MutatorRef>, ctx: &mut Context): bool{
         assert_mutator_exist_of_ref(mutator);
         let mutator_object_ref = object_ref::borrow(mutator);
         assert_collection_exist_of_id(mutator_object_ref.collection, ctx);
