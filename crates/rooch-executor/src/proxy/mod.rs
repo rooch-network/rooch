@@ -22,7 +22,7 @@ use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::{access_path::AccessPath, transaction::VerifiedMoveOSTransaction};
 use moveos_types::{
-    event::AnnotatedMoveOSEvent,
+    event::AnnotatedEvent,
     event_filter::EventFilter,
     state::{AnnotatedState, State},
 };
@@ -117,7 +117,7 @@ impl ExecutorProxy {
         event_handle_type: StructTag,
         cursor: Option<u64>,
         limit: u64,
-    ) -> Result<Vec<AnnotatedMoveOSEvent>> {
+    ) -> Result<Vec<AnnotatedEvent>> {
         self.actor
             .send(GetEventsByEventHandleMessage {
                 event_handle_type,
@@ -127,7 +127,7 @@ impl ExecutorProxy {
             .await?
     }
 
-    pub async fn get_events(&self, filter: EventFilter) -> Result<Vec<AnnotatedMoveOSEvent>> {
+    pub async fn get_events(&self, filter: EventFilter) -> Result<Vec<AnnotatedEvent>> {
         self.actor.send(GetEventsMessage { filter }).await?
     }
 

@@ -6,8 +6,8 @@ import {
   TypeTag,
   Arg,
   AnnotatedFunctionResultView,
-  AnnotatedStateView,
-  AnnotatedStatePageView,
+  StateView,
+  StatePageView,
 } from '../types'
 import { IProvider } from './interface'
 
@@ -67,16 +67,16 @@ export class FilteredProvider implements IProvider {
     return this.target.executeViewFunction(funcId, tyArgs, args)
   }
 
-  getAnnotatedStates(accessPath: string): Promise<AnnotatedStateView | null[]> {
-    return this.target.getAnnotatedStates(accessPath)
+  getStates(accessPath: string): Promise<StateView | null[]> {
+    return this.target.getStates(accessPath)
   }
 
-  listAnnotatedStates(
+  listStates(
     access_path: string,
     cursor: Uint8Array | null,
     limit: number,
-  ): Promise<AnnotatedStatePageView> {
-    return this.target.listAnnotatedStates(access_path, cursor, limit)
+  ): Promise<StatePageView> {
+    return this.target.listStates(access_path, cursor, limit)
   }
 
   sendRawTransaction(playload: Uint8Array): Promise<string> {

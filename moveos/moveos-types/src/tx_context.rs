@@ -182,12 +182,12 @@ mod tests {
         let serialized = test.to_bytes();
         let deserialized: TxContext = bcs::from_bytes(&serialized).unwrap();
         assert_eq!(test, deserialized);
-        let move_value = MoveValue::simple_deserialize(
+        let decoded_value = MoveValue::simple_deserialize(
             &serialized,
             &(MoveTypeLayout::Struct(TxContext::struct_layout())),
         )
         .unwrap();
-        let serialized2 = move_value.simple_serialize().unwrap();
+        let serialized2 = decoded_value.simple_serialize().unwrap();
         assert_eq!(serialized, serialized2);
     }
 }

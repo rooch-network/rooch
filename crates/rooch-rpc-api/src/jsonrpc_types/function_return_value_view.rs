@@ -142,14 +142,14 @@ impl From<FunctionReturnValueView> for FunctionReturnValue {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct AnnotatedFunctionReturnValueView {
     pub value: FunctionReturnValueView,
-    pub move_value: AnnotatedMoveValueView,
+    pub decoded_value: AnnotatedMoveValueView,
 }
 
 impl From<AnnotatedFunctionReturnValue> for AnnotatedFunctionReturnValueView {
     fn from(value: AnnotatedFunctionReturnValue) -> Self {
         Self {
             value: value.value.into(),
-            move_value: value.move_value.into(),
+            decoded_value: value.decoded_value.into(),
         }
     }
 }

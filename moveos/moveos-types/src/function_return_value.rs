@@ -115,5 +115,5 @@ impl FunctionReturnValue {
 #[derive(Debug, Clone)]
 pub struct AnnotatedFunctionReturnValue {
     pub value: FunctionReturnValue,
-    pub move_value: AnnotatedMoveValue,
+    pub decoded_value: AnnotatedMoveValue,
 }

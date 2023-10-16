@@ -6,7 +6,7 @@ use coerce::actor::message::Message;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
-use moveos_types::event::AnnotatedMoveOSEvent;
+use moveos_types::event::AnnotatedEvent;
 use moveos_types::event_filter::EventFilter;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
@@ -112,7 +112,7 @@ pub struct GetEventsByEventHandleMessage {
 }
 
 impl Message for GetEventsByEventHandleMessage {
-    type Result = Result<Vec<AnnotatedMoveOSEvent>>;
+    type Result = Result<Vec<AnnotatedEvent>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -121,7 +121,7 @@ pub struct GetEventsMessage {
 }
 
 impl Message for GetEventsMessage {
-    type Result = Result<Vec<AnnotatedMoveOSEvent>>;
+    type Result = Result<Vec<AnnotatedEvent>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]

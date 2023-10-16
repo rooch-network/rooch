@@ -6,10 +6,11 @@
 
 use crate::moveos_std::type_info::TypeInfo;
 use crate::object::ObjectID;
-use crate::state::{AnnotatedState, MoveStructType};
+use crate::state::MoveStructType;
 use anyhow::{ensure, Error, Result};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::{language_storage::StructTag, language_storage::TypeTag};
+use move_resource_viewer::AnnotatedMoveStruct;
 use schemars::JsonSchema;
 // #[cfg(any(test, feature = "fuzzing"))]
 // use rand::{rngs::OsRng, RngCore};
@@ -219,58 +220,17 @@ impl EventHandle {
     //         count,
     //     }
     // }
-
-    // /// Derive a unique handle by using an AccountAddress and a counter.
-    // pub fn new_from_address(addr: &AccountAddress, salt: u64) -> Self {
-    //     Self {
-    //         event_id: EventID::new_from_address(addr, salt),
-    //         count: 0,
-    //     }
-    // }
-}
-
-// #[derive(Eq, PartialEq, Clone, Debug, Serialize, Deserialize, JsonSchema)]
-// #[derive(Clone, Debug)]
-// #[serde_as]
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub struct MoveOSEvent {
-    pub event: Event,
-    // /// Sender's address.
-    // pub sender: AccountAddress,
-    // /// Transaction hash
-    // pub tx_hash: Option<H256>,
-    // /// UTC timestamp in milliseconds since epoch (1/1/1970)
-    // #[serde(skip_serializing_if = "Option::is_none")]
-    // #[schemars(with = "Option<u64>")]
-    // #[serde_as(as = "Option<u64>")]
-    // pub timestamp_ms: Option<u64>,
-    // block height
-    // #[serde(skip_serializing_if = "Option::is_none")]
-    // #[schemars(with = "Option<u64>")]
-    // #[serde_as(as = "Option<u64>")]
-    // pub block_height: Option<u64>,
-}
-
-impl MoveOSEvent {
-    pub fn new(event: Event) -> Self {
-        MoveOSEvent { event }
-    }
 }
 
 #[derive(Debug, Clone)]
-pub struct AnnotatedMoveOSEvent {
+pub struct AnnotatedEvent {
     pub event: Event,
-    // pub sender: AccountAddress,
-    // pub tx_hash: Option<H256>,
-    // pub event_data: Vec<u8>,
-    // pub timestamp_ms: Option<u64>,
-    // pub block_height: Option<u64>,
-    pub decoded_event_data: AnnotatedState,
+    pub decoded_event_data: AnnotatedMoveStruct,
 }
 
-impl AnnotatedMoveOSEvent {
-    pub fn new(event: Event, decoded_event_data: AnnotatedState) -> Self {
-        AnnotatedMoveOSEvent {
+impl AnnotatedEvent {
+    pub fn new(event: Event, decoded_event_data: AnnotatedMoveStruct) -> Self {
+        AnnotatedEvent {
             event,
             decoded_event_data,
         }

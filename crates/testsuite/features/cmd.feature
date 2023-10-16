@@ -46,10 +46,10 @@ Feature: Rooch CLI integration tests
       #FIXME how to pass args at here.
       #Then cmd: "move run --function {default}::kv_store::add_value --args 'b\"key1\"' 'b\"value1\"' --sender-account default"
       #Then cmd: "move view --function {default}::kv_store::get_value --args 'b\"key1\"' "
-      #Then assert: "{{$.move[-1][0].move_value}} == "value1""
+      #Then assert: "{{$.move[-1][0].decoded_value}} == "value1""
       #Then cmd: "state --access-path /resource/{default}/{default}::kv_store::KVStore
-      #Then cmd: "state --access-path /table/{{$.move[-1][0].move_value.value.table.value.handle}}/key1"
-      #Then assert: "{{$.move[-1][0].move_value}} == "value1""
+      #Then cmd: "state --access-path /table/{{$.move[-1][0].decoded_value.value.table.value.handle}}/key1"
+      #Then assert: "{{$.move[-1][0].decoded_value}} == "value1""
 
 
       Then stop the server
@@ -89,12 +89,12 @@ Feature: Rooch CLI integration tests
       # The counter example
       Then cmd: "move publish -p ../../examples/counter --sender-account {default} --named-addresses rooch_examples={default} --by-move-action"
       Then cmd: "move view --function {default}::counter::value"
-      Then assert: "{{$.move[-1].return_values[0].move_value}} == 0"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 0"
       Then cmd: "move run --function {default}::counter::increase --sender-account {default}"
       Then cmd: "move view --function {default}::counter::value"
-      Then assert: "{{$.move[-1].return_values[0].move_value}} == 1"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 1"
       Then cmd: "resource --address {default} --resource {default}::counter::Counter"
-      Then assert: "{{$.resource[-1].move_value.value.value}} == 1"
+      Then assert: "{{$.resource[-1].decoded_value.value.value}} == 1"
 
       # The entry_function_arguments example
       Then cmd: "move publish -p ../../examples/entry_function_arguments_old/ --sender-account {default} --named-addresses rooch_examples={default} --by-move-action"
@@ -116,12 +116,12 @@ Feature: Rooch CLI integration tests
       # The counter example
       Then cmd: "move publish -p ../../examples/counter --sender-account {default} --named-addresses rooch_examples={default}"
       Then cmd: "move view --function {default}::counter::value"
-      Then assert: "{{$.move[-1].return_values[0].move_value}} == 0"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 0"
       Then cmd: "move run --function {default}::counter::increase --sender-account {default}"
       Then cmd: "move view --function {default}::counter::value"
-      Then assert: "{{$.move[-1].return_values[0].move_value}} == 1"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 1"
       Then cmd: "resource --address {default} --resource {default}::counter::Counter"
-      Then assert: "{{$.resource[-1].move_value.value.value}} == 1"
+      Then assert: "{{$.resource[-1].decoded_value.value.value}} == 1"
 
       # The entry_function_arguments example
       Then cmd: "move publish -p ../../examples/entry_function_arguments_old/ --sender-account {default} --named-addresses rooch_examples={default}"

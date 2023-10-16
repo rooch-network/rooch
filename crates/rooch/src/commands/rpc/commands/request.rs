@@ -10,14 +10,14 @@ use rooch_types::error::RoochResult;
 #[derive(Debug, Parser)]
 pub struct RequestCommand {
     /// The RPC method name
-    /// --method rooch_getAnnotatedStates
+    /// --method rooch_getStates
     #[clap(long)]
     pub method: String,
 
     /// The RPC method params, json value.
     /// --params '"/resource/0x3/0x3::timestamp::CurrentTimeMicroseconds"'
     /// or
-    /// --params '["/resource/0x3/0x3::timestamp::CurrentTimeMicroseconds"]'
+    /// --params '["/resource/0x3/0x3::timestamp::CurrentTimeMicroseconds", {"decode": true}]'
     #[clap(long)]
     pub params: Option<serde_json::Value>,
 
