@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_framework::ecdsa_k1 {
+
     /// constant codes
     const ECDSA_K1_TO_BITCOIN_VALIDATOR_ID_LENGTH: u64 = 1;
     const ECDSA_K1_COMPRESSED_PUBKEY_LENGTH: u64 = 33;
@@ -62,7 +63,7 @@ module rooch_framework::ecdsa_k1 {
     }
 
     #[test]
-    #[expected_failure(abort_code = ErrorInvalidSignature)]
+    #[expected_failure(location=Self, abort_code = 65537)] // std::error::invalid_argument(ErrorInvalidSignature)
     fun test_verify_fails_invalid_sig() {
         let msg = x"00010203";
         let pubkey = x"033e99a541db69bd32040dfe5037fbf5210dafa8151a71e21c5204b05d95ce0a62";
@@ -71,7 +72,7 @@ module rooch_framework::ecdsa_k1 {
     }
 
     #[test]
-    #[expected_failure(abort_code = ErrorInvalidPubKey)]
+    #[expected_failure(location=Self, abort_code = 65538)] // std::error::invalid_argument(ErrorInvalidPubKey)
     fun test_verify_fails_invalid_pubkey() {
         let msg = x"00010203";
         let pubkey = x"";
