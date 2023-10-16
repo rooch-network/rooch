@@ -27,7 +27,7 @@ import { useETH } from 'src/hooks/useETH'
 import { useRooch } from '../../hooks/useRooch'
 
 // ** Rooch SDK
-import { bcsTypes, Ed25519Keypair, addressToSeqNumber } from '@rooch/sdk'
+import { addressToSeqNumber, bcsTypes, Ed25519Keypair } from '@rooch/sdk'
 
 // ** Defaults
 const defaultProvider: AuthValuesType = {
@@ -277,7 +277,32 @@ const AuthProvider = ({ children }: Props) => {
   const getAccounts = (): Map<string, AccountDataType> | null => {
     const allAccounts = accounts ?? new Map<string, AccountDataType>()
 
+    // Todo Parse the rooch address
+    if (metamask.accounts.length > 0) {
+      metamask.accounts.forEach((v) => {
+        allAccounts.set(v, {
+          roochAddress: v,
+          address: v,
+          activate: true,
+          kp: null,
+          type: AccountType.ETH,
+        })
+      })
+    }
+
     return allAccounts.size > 0 ? allAccounts : null
+  }
+
+  const getDefaultAccount = (): AccountDataType | null => {
+    return defaultAccount ?? metamask.accounts.length > 0
+      ? {
+          roochAddress: metamask.accounts[0],
+          address: metamask.accounts[0],
+          kp: null,
+          activate: true,
+          type: AccountType.ETH,
+        }
+      : null
   }
 
   const values = {
@@ -286,7 +311,7 @@ const AuthProvider = ({ children }: Props) => {
     accounts: getAccounts(),
     setAccounts,
     supportWallets: supportWallets(),
-    defaultAccount,
+    defaultAccount: getDefaultAccount(),
     loginByWallet,
     loginBySecretKey,
     loginByNewAccount,
