@@ -5,15 +5,7 @@ import { DEFAULT_MAX_GAS_AMOUNT } from '../constants'
 import { IAccount, CallOption, ISessionKey } from './interface'
 import { IProvider } from '../provider'
 import { IAuthorizer, IAuthorization, PrivateKeyAuth } from '../auth'
-import {
-  AccountAddress,
-  FunctionId,
-  TypeTag,
-  Arg,
-  AnnotatedStatePageView,
-  Bytes,
-  IPage,
-} from '../types'
+import { AccountAddress, FunctionId, TypeTag, Arg, StatePageView, Bytes, IPage } from '../types'
 import { BcsSerializer } from '../types/bcs'
 import {
   RoochTransaction,
@@ -205,13 +197,13 @@ export class Account implements IAccount {
 
   async querySessionKeys(cursor: Bytes | null, limit: number): Promise<IPage<ISessionKey>> {
     const accessPath = `/resource/${this.address}/0x3::session_key::SessionKeys`
-    const state = await this.provider.getAnnotatedStates(accessPath)
+    const state = await this.provider.getStates(accessPath)
     if (state) {
       const stateView = state as any
-      const tableId = stateView[0].state.value
+      const tableId = stateView[0].value
 
       const accessPath = `/table/${tableId}`
-      const pageView = await this.provider.listAnnotatedStates(accessPath, cursor, limit)
+      const pageView = await this.provider.listStates(accessPath, cursor, limit)
 
       return {
         data: this.convertToSessionKey(pageView),
@@ -223,11 +215,11 @@ export class Account implements IAccount {
     throw new Error('not found state')
   }
 
-  private convertToSessionKey(data: AnnotatedStatePageView): Array<ISessionKey> {
+  private convertToSessionKey(data: StatePageView): Array<ISessionKey> {
     const result = new Array<ISessionKey>()
 
     for (const state of data.data as any) {
-      const moveValue = state?.move_value as any
+      const moveValue = state?.decoded_value as any
 
       if (moveValue) {
         const val = moveValue.value

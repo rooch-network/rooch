@@ -165,10 +165,10 @@ describe('SDK', () => {
     })
   })
 
-  describe('#getAnnotatedStates', () => {
+  describe('#getStates', () => {
     it('get annotated states should be ok', async () => {
       const provider = new JsonRpcProvider(LocalChain)
-      const result = provider.getAnnotatedStates('/object/0x1')
+      const result = provider.getStates('/object/0x1')
       expect(result).toBeDefined()
     })
   })

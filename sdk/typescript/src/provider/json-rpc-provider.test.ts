@@ -82,7 +82,7 @@ describe('provider', () => {
       }
     })
 
-    describe('#getAnnotatedStates', () => {
+    describe('#getStates', () => {
       it('should get annotated statues ok', async () => {
         const mockFetch = vi.fn().mockImplementation(() => {
           const mock = fetchMock.sandbox()
@@ -113,7 +113,7 @@ describe('provider', () => {
 
         try {
           const assetsPath = '/object::0x1'
-          const result = await provider.getAnnotatedStates(assetsPath)
+          const result = await provider.getStates(assetsPath)
 
           expect(result).toHaveLength(1)
         } catch (err: any) {
@@ -122,7 +122,7 @@ describe('provider', () => {
       })
     })
 
-    describe('#listAnnotatedStates', () => {
+    describe('#listStates', () => {
       it('should list annotated states ok', async () => {
         const mockFetch = vi.fn().mockImplementation(() => {
           const mock = fetchMock.sandbox()
@@ -170,7 +170,7 @@ describe('provider', () => {
           const assetsPath =
             '/table/0x82af1915608fa5f3e5286e4372e289b5b3ef03d0126cdae9ca7f561a145359c8'
           const cursor = new Uint8Array([0])
-          const result = await provider.listAnnotatedStates(assetsPath, cursor, 10)
+          const result = await provider.listStates(assetsPath, cursor, 10)
 
           expect(result.data).toBeDefined()
           expect(result.next_cursor).toBe(

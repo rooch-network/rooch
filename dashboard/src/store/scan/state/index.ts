@@ -8,7 +8,7 @@ import { createAsyncThunk, Dispatch, AnyAction } from '@reduxjs/toolkit'
 import { CreateGenericSlice, GenericState } from '../../generic'
 
 // ** sdk import
-import { AnnotatedStateView, JsonRpcProvider } from '@rooch/sdk'
+import { StateView, JsonRpcProvider } from '@rooch/sdk'
 
 interface DataParams {
   dispatch: Dispatch<AnyAction>
@@ -22,7 +22,7 @@ export const fetchData = createAsyncThunk('state/fetchData', async (params: Data
 
   try {
     console.log(params.provider)
-    let result = await params.provider.getAnnotatedStates(params.accessPath)
+    let result = await params.provider.getStates(params.accessPath)
     params.dispatch(success(result))
 
     return result
@@ -35,7 +35,7 @@ export const StateSlice = CreateGenericSlice({
   name: 'state',
   initialState: {
     result: [],
-  } as GenericState<AnnotatedStateView | null[]>,
+  } as GenericState<StateView | null[]>,
   reducers: {},
 })
 
