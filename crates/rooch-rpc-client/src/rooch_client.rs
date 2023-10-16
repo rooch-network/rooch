@@ -10,15 +10,15 @@ use moveos_types::{
     transaction::FunctionCall,
 };
 use rooch_rpc_api::api::rooch_api::RoochAPIClient;
-use rooch_rpc_api::jsonrpc_types::TransactionWithInfoPageView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, transaction_view::TransactionWithInfoView,
 };
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedFunctionResultView, AnnotatedStatesPageView,
-    BalanceInfoPageView, EventPageView, StatesPageView, StrView, StructTagView,
+    BalanceInfoPageView, EventPageView, StatesPageView, StructTagView,
 };
 use rooch_rpc_api::jsonrpc_types::{AnnotatedStateView, ExecuteTransactionResponseView, StateView};
+use rooch_rpc_api::jsonrpc_types::{BytesView, TransactionWithInfoPageView};
 use rooch_types::{account::Account, address::RoochAddress, transaction::rooch::RoochTransaction};
 use std::sync::Arc;
 
@@ -77,7 +77,10 @@ impl RoochRpcClient {
         cursor: Option<u128>,
         limit: Option<u64>,
     ) -> Result<TransactionWithInfoPageView> {
-        Ok(self.http.get_transactions_by_order(cursor, limit).await?)
+        Ok(self
+            .http
+            .get_transactions_by_order(cursor.map(Into::into), limit.map(Into::into))
+            .await?)
     }
 
     pub async fn get_transactions_by_hash(
@@ -112,7 +115,11 @@ impl RoochRpcClient {
     ) -> Result<EventPageView> {
         let s = self
             .http
-            .get_events_by_event_handle(event_handle_type, cursor, limit)
+            .get_events_by_event_handle(
+                event_handle_type,
+                cursor.map(Into::into),
+                limit.map(Into::into),
+            )
             .await?;
         Ok(s)
     }
@@ -120,21 +127,24 @@ impl RoochRpcClient {
     pub async fn list_states(
         &self,
         access_path: AccessPathView,
-        cursor: Option<StrView<Vec<u8>>>,
+        cursor: Option<BytesView>,
         limit: Option<usize>,
     ) -> Result<StatesPageView> {
-        Ok(self.http.list_states(access_path, cursor, limit).await?)
+        Ok(self
+            .http
+            .list_states(access_path, cursor, limit.map(Into::into))
+            .await?)
     }
 
     pub async fn list_annotated_states(
         &self,
         access_path: AccessPathView,
-        cursor: Option<StrView<Vec<u8>>>,
+        cursor: Option<BytesView>,
         limit: Option<usize>,
     ) -> Result<AnnotatedStatesPageView> {
         Ok(self
             .http
-            .list_annotated_states(access_path, cursor, limit)
+            .list_annotated_states(access_path, cursor, limit.map(Into::into))
             .await?)
     }
 
@@ -149,9 +159,12 @@ impl RoochRpcClient {
     pub async fn get_balances(
         &self,
         account_addr: AccountAddressView,
-        cursor: Option<StrView<Vec<u8>>>,
+        cursor: Option<BytesView>,
         limit: Option<usize>,
     ) -> Result<BalanceInfoPageView> {
-        Ok(self.http.get_balances(account_addr, cursor, limit).await?)
+        Ok(self
+            .http
+            .get_balances(account_addr, cursor, limit.map(Into::into))
+            .await?)
     }
 }

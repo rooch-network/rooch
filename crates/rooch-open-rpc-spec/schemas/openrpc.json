@@ -132,9 +132,7 @@
         {
           "name": "limit",
           "schema": {
-            "type": "integer",
-            "format": "uint",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/usize"
           }
         }
       ],
@@ -171,17 +169,13 @@
         {
           "name": "cursor",
           "schema": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           }
         },
         {
           "name": "limit",
           "schema": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           }
         }
       ],
@@ -232,7 +226,7 @@
           "schema": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/H256View"
+              "$ref": "#/components/schemas/primitive_types::H256"
             }
           }
         }
@@ -261,17 +255,13 @@
         {
           "name": "cursor",
           "schema": {
-            "type": "integer",
-            "format": "uint128",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u128"
           }
         },
         {
           "name": "limit",
           "schema": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           }
         }
       ],
@@ -303,9 +293,7 @@
         {
           "name": "limit",
           "schema": {
-            "type": "integer",
-            "format": "uint",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/usize"
           }
         }
       ],
@@ -337,9 +325,7 @@
         {
           "name": "limit",
           "schema": {
-            "type": "integer",
-            "format": "uint",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/usize"
           }
         }
       ],
@@ -367,7 +353,7 @@
         "name": "H256View",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/H256View"
+          "$ref": "#/components/schemas/primitive_types::H256"
         }
       }
     }
@@ -402,7 +388,7 @@
           "tx_hash": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/H256View"
+                "$ref": "#/components/schemas/primitive_types::H256"
               },
               {
                 "type": "null"
@@ -694,9 +680,6 @@
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
           }
         }
-      },
-      "H256View": {
-        "$ref": "#/components/schemas/Hex"
       },
       "Hex": {
         "description": "Hex string encoding.",
@@ -1199,7 +1182,7 @@
         ],
         "properties": {
           "event_root": {
-            "$ref": "#/components/schemas/H256View"
+            "$ref": "#/components/schemas/primitive_types::H256"
           },
           "gas_used": {
             "type": "integer",
@@ -1207,13 +1190,13 @@
             "minimum": 0.0
           },
           "state_root": {
-            "$ref": "#/components/schemas/H256View"
+            "$ref": "#/components/schemas/primitive_types::H256"
           },
           "status": {
             "$ref": "#/components/schemas/KeptVMStatusView"
           },
           "tx_hash": {
-            "$ref": "#/components/schemas/H256View"
+            "$ref": "#/components/schemas/primitive_types::H256"
           }
         }
       },
@@ -1254,7 +1237,7 @@
         ],
         "properties": {
           "tx_accumulator_root": {
-            "$ref": "#/components/schemas/H256View"
+            "$ref": "#/components/schemas/primitive_types::H256"
           },
           "tx_order": {
             "$ref": "#/components/schemas/u128"
@@ -1429,10 +1412,16 @@
       "moveos_types::move_types::FunctionId": {
         "type": "string"
       },
+      "primitive_types::H256": {
+        "type": "string"
+      },
       "u128": {
         "type": "string"
       },
       "u64": {
+        "type": "string"
+      },
+      "usize": {
         "type": "string"
       }
     }

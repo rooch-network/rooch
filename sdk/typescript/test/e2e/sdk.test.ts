@@ -391,8 +391,9 @@ describe('SDK', () => {
       const account = new Account(provider, roochAddress, authorizer)
       expect(account).toBeDefined()
 
+      //TODO for loop to check the timestamp is updated, or wait for timestamp sync when start rooch server
       // wait timestamp sync
-      await new Promise((resolve) => setTimeout(resolve, 5000))
+      await new Promise((resolve) => setTimeout(resolve, 10000))
 
       // create session account
       const sessionAccount = await account.createSessionAccount(

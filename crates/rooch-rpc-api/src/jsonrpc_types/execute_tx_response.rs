@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::BytesView;
 use super::{ModuleIdView, StateChangeSetView, StrView};
 use crate::jsonrpc_types::{EventView, H256View};
 use move_core_types::vm_status::{AbortLocation, KeptVMStatus};
@@ -81,7 +82,7 @@ impl From<KeptVMStatus> for KeptVMStatusView {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct AuthenticatorView {
     pub auth_validator_id: StrView<u64>,
-    pub payload: StrView<Vec<u8>>,
+    pub payload: BytesView,
 }
 
 impl From<Authenticator> for AuthenticatorView {
