@@ -8,6 +8,7 @@ use anyhow::Result;
 use clap::ArgEnum;
 use clap::Parser;
 use rooch_open_rpc::Project;
+use rooch_rpc_api::api::eth_api::EthAPIOpenRpc;
 use rooch_rpc_api::api::rooch_api::RoochAPIOpenRpc;
 use std::fs::File;
 use std::io::Write;
@@ -41,6 +42,8 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn build_rooch_rpc_spec() -> Project {
     let mut open_rpc = rooch_rpc_doc(VERSION);
     open_rpc.add_module(RoochAPIOpenRpc::module_doc());
+    //FIXME if add the EthAPIOpenRpc, the pnpm sdk gen raies error
+    //open_rpc.add_module(EthAPIOpenRpc::module_doc());
     //open_rpc.add_examples(RpcExampleProvider::new().examples());
     open_rpc
 }

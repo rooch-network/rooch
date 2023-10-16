@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::jsonrpc_types::StrView;
-use ethers::types::{H160, U256, U64};
+use crate::jsonrpc_types::{H160View, StrView};
+use ethers::types::{U256, U64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -18,7 +18,7 @@ pub struct Withdrawal {
     pub validator_index: StrView<U64>,
 
     /// Target address for withdrawn ether
-    pub address: StrView<H160>,
+    pub address: H160View,
 
     /// Value of withdrawal (in wei)
     pub amount: StrView<U256>,
