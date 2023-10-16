@@ -10,6 +10,7 @@ function because this can violate implicit struct invariants, therefore only pri
 a general conversion back-and-force is needed, consider the <code>moveos_std::Any</code> type which preserves invariants.
 
 
+-  [Constants](#@Constants_0)
 -  [Function `to_bytes`](#0x2_bcs_to_bytes)
 -  [Function `to_bool`](#0x2_bcs_to_bool)
 -  [Function `to_u8`](#0x2_bcs_to_u8)
@@ -20,6 +21,21 @@ a general conversion back-and-force is needed, consider the <code>moveos_std::An
 
 
 <pre><code><b>use</b> <a href="">0x1::bcs</a>;
+</code></pre>
+
+
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x2_bcs_ErrorTypeNotMatch"></a>
+
+The request Move type is not match with input Move type.
+
+
+<pre><code><b>const</b> <a href="bcs.md#0x2_bcs_ErrorTypeNotMatch">ErrorTypeNotMatch</a>: u64 = 1;
 </code></pre>
 
 

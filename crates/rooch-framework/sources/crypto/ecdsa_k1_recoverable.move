@@ -19,6 +19,9 @@ module rooch_framework::ecdsa_k1_recoverable {
     /// Error if the public key is invalid.
     const ErrorInvalidPubKey: u64 = 3;
 
+    /// Invalid hash function
+    const ErrorInvalidHashType: u64 = 4;
+
     /// built-in functions
     public fun public_key_length(): u64 {
         ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH

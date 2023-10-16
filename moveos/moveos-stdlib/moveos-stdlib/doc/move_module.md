@@ -7,6 +7,7 @@
 
 
 -  [Struct `MoveModule`](#0x2_move_module_MoveModule)
+-  [Constants](#@Constants_0)
 -  [Function `new`](#0x2_move_module_new)
 -  [Function `module_name`](#0x2_move_module_module_name)
 -  [Function `sort_and_verify_modules`](#0x2_move_module_sort_and_verify_modules)
@@ -45,6 +46,41 @@
 
 
 </details>
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x2_move_module_ErrorAddressNotMatchWithSigner"></a>
+
+Module address is not the same as the signer
+
+
+<pre><code><b>const</b> <a href="move_module.md#0x2_move_module_ErrorAddressNotMatchWithSigner">ErrorAddressNotMatchWithSigner</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x2_move_module_ErrorModuleIncompatible"></a>
+
+Module incompatible with the old ones.
+
+
+<pre><code><b>const</b> <a href="move_module.md#0x2_move_module_ErrorModuleIncompatible">ErrorModuleIncompatible</a>: u64 = 3;
+</code></pre>
+
+
+
+<a name="0x2_move_module_ErrorModuleVerificationError"></a>
+
+Module verification error
+
+
+<pre><code><b>const</b> <a href="move_module.md#0x2_move_module_ErrorModuleVerificationError">ErrorModuleVerificationError</a>: u64 = 2;
+</code></pre>
+
+
 
 <a name="0x2_move_module_new"></a>
 

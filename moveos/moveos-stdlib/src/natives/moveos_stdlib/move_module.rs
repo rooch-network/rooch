@@ -138,17 +138,15 @@ fn native_sort_and_verify_modules_inner(
             Ok(res) => {
                 if res {
                     init_identifier.push(module.self_id());
-                    module_names.push(module.self_id().name().to_owned().into_string());
-                } else {
-                    return Ok(NativeResult::err(
-                        cost,
-                        moveos_types::move_std::error::invalid_argument(
-                            E_MODULE_VERIFICATION_ERROR,
-                        ),
-                    ));
                 }
+                module_names.push(module.self_id().name().to_owned().into_string());
             }
-            Err(_) => return Err(PartialVMError::new(StatusCode::VERIFICATION_ERROR)),
+            Err(_) => {
+                return Ok(NativeResult::err(
+                    cost,
+                    moveos_types::move_std::error::invalid_argument(E_MODULE_VERIFICATION_ERROR),
+                ))
+            }
         }
     }
 

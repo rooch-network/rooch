@@ -8,6 +8,15 @@ module moveos_std::move_module {
 
     friend moveos_std::account_storage;
     
+    /// Module address is not the same as the signer
+    const ErrorAddressNotMatchWithSigner: u64 = 1;
+
+    /// Module verification error
+    const ErrorModuleVerificationError: u64 = 2;
+
+    /// Module incompatible with the old ones.
+    const ErrorModuleIncompatible: u64 = 3;
+
     struct MoveModule has store, drop {
         byte_codes: vector<u8>,
     }
