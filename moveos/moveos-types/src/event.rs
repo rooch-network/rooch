@@ -6,7 +6,7 @@
 
 use crate::moveos_std::type_info::TypeInfo;
 use crate::object::ObjectID;
-use crate::state::MoveStructType;
+use crate::state::{AnnotatedState, MoveStructType};
 use anyhow::{ensure, Error, Result};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::{language_storage::StructTag, language_storage::TypeTag};
@@ -20,8 +20,6 @@ use std::convert::TryFrom;
 use std::str::FromStr;
 
 use crate::h256::H256;
-use move_resource_viewer::AnnotatedMoveStruct;
-use serde_with::serde_as;
 
 /// A struct that represents a globally unique id for an Event stream that a user can listen to.
 /// the Unique ID is a combination of event handle id and event seq number.
@@ -233,19 +231,19 @@ impl EventHandle {
 
 // #[derive(Eq, PartialEq, Clone, Debug, Serialize, Deserialize, JsonSchema)]
 // #[derive(Clone, Debug)]
-#[serde_as]
+// #[serde_as]
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct MoveOSEvent {
     pub event: Event,
-    /// Sender's address.
-    pub sender: AccountAddress,
-    /// Transaction hash
-    pub tx_hash: Option<H256>,
-    /// UTC timestamp in milliseconds since epoch (1/1/1970)
+    // /// Sender's address.
+    // pub sender: AccountAddress,
+    // /// Transaction hash
+    // pub tx_hash: Option<H256>,
+    // /// UTC timestamp in milliseconds since epoch (1/1/1970)
     // #[serde(skip_serializing_if = "Option::is_none")]
     // #[schemars(with = "Option<u64>")]
     // #[serde_as(as = "Option<u64>")]
-    pub timestamp_ms: Option<u64>,
+    // pub timestamp_ms: Option<u64>,
     // block height
     // #[serde(skip_serializing_if = "Option::is_none")]
     // #[schemars(with = "Option<u64>")]
@@ -254,51 +252,27 @@ pub struct MoveOSEvent {
 }
 
 impl MoveOSEvent {
-    pub fn new(
-        event: Event,
-        tx_hash: Option<H256>,
-        timestamp_ms: Option<u64>,
-        // block_height: Option<u64>,
-    ) -> Self {
-        let sender = AccountAddress::ZERO;
-
-        MoveOSEvent {
-            event,
-            sender,
-            tx_hash,
-            timestamp_ms,
-            // block_height,
-        }
+    pub fn new(event: Event) -> Self {
+        MoveOSEvent { event }
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct AnnotatedMoveOSEvent {
     pub event: Event,
-    pub sender: AccountAddress,
-    pub tx_hash: Option<H256>,
+    // pub sender: AccountAddress,
+    // pub tx_hash: Option<H256>,
     // pub event_data: Vec<u8>,
-    pub timestamp_ms: Option<u64>,
+    // pub timestamp_ms: Option<u64>,
     // pub block_height: Option<u64>,
-    pub parsed_event_data: AnnotatedMoveStruct,
+    pub decoded_event_data: AnnotatedState,
 }
 
 impl AnnotatedMoveOSEvent {
-    pub fn new(
-        event: Event,
-        parsed_event_data: AnnotatedMoveStruct,
-        tx_hash: Option<H256>,
-        timestamp_ms: Option<u64>,
-        // block_height: Option<u64>,
-    ) -> Self {
-        let sender = AccountAddress::ZERO;
+    pub fn new(event: Event, decoded_event_data: AnnotatedState) -> Self {
         AnnotatedMoveOSEvent {
             event,
-            sender,
-            tx_hash,
-            parsed_event_data,
-            timestamp_ms,
-            // block_height,
+            decoded_event_data,
         }
     }
 }

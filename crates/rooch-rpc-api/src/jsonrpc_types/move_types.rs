@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::H256View;
 use crate::jsonrpc_types::{BytesView, StrView};
 use anyhow::Result;
 use move_core_types::{
@@ -346,13 +345,13 @@ impl FromStr for StrView<ModuleId> {
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub enum EventFilterView {
-    /// Query by sender address.
-    Sender(AccountAddressView),
-    /// Return events emitted by the given transaction.
-    Transaction(
-        ///tx hash of the transaction
-        H256View,
-    ),
+    // /// Query by sender address.
+    // Sender(AccountAddressView),
+    // /// Return events emitted by the given transaction.
+    // Transaction(
+    //     ///tx hash of the transaction
+    //     H256View,
+    // ),
     /// Return events with the given move event struct name
     MoveEventType(
         // #[schemars(with = "String")]
@@ -363,18 +362,18 @@ pub enum EventFilterView {
         path: String,
         value: Value,
     },
-    /// Return events emitted in [start_time, end_time) interval
-    // #[serde(rename_all = "camelCase")]
-    TimeRange {
-        /// left endpoint of time interval, milliseconds since epoch, inclusive
-        // #[schemars(with = "u64")]
-        // #[serde_as(as = "u64")]
-        start_time: u64,
-        /// right endpoint of time interval, milliseconds since epoch, exclusive
-        // #[schemars(with = "u64")]
-        // #[serde_as(as = "u64")]
-        end_time: u64,
-    },
+    // /// Return events emitted in [start_time, end_time) interval
+    // // #[serde(rename_all = "camelCase")]
+    // TimeRange {
+    //     /// left endpoint of time interval, milliseconds since epoch, inclusive
+    //     // #[schemars(with = "u64")]
+    //     // #[serde_as(as = "u64")]
+    //     start_time: u64,
+    //     /// right endpoint of time interval, milliseconds since epoch, exclusive
+    //     // #[schemars(with = "u64")]
+    //     // #[serde_as(as = "u64")]
+    //     end_time: u64,
+    // },
     /// Return events emitted in [from_block, to_block) interval
     // #[serde(rename_all = "camelCase")]
     // BlockRange {
@@ -396,17 +395,17 @@ pub enum EventFilterView {
 impl From<EventFilterView> for EventFilter {
     fn from(value: EventFilterView) -> Self {
         match value {
-            EventFilterView::Sender(address) => Self::Sender(address.into()),
-            EventFilterView::Transaction(tx_hash) => Self::Transaction(tx_hash.into()),
+            // EventFilterView::Sender(address) => Self::Sender(address.into()),
+            // EventFilterView::Transaction(tx_hash) => Self::Transaction(tx_hash.into()),
             EventFilterView::MoveEventType(type_tag) => Self::MoveEventType(type_tag.into()),
             EventFilterView::MoveEventField { path, value } => Self::MoveEventField { path, value },
-            EventFilterView::TimeRange {
-                start_time,
-                end_time,
-            } => Self::TimeRange {
-                start_time,
-                end_time,
-            },
+            // EventFilterView::TimeRange {
+            //     start_time,
+            //     end_time,
+            // } => Self::TimeRange {
+            //     start_time,
+            //     end_time,
+            // },
             EventFilterView::All(filters) => {
                 Self::All(filters.into_iter().map(|f| f.into()).collect())
             }

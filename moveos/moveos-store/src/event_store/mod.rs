@@ -87,8 +87,9 @@ impl EventDBStore {
             .map_err(|e| anyhow::anyhow!("EventStore get_events_by_tx_hash seek: {:?}", e))?;
         let data: Vec<Event> = iter
             .filter_map(|item| {
-                let ((tx_hash_key, _), event) =
-                    item.unwrap_or_else(|_| panic!("Get item from store shoule hava a value."));
+                let ((tx_hash_key, _), event) = item.unwrap_or_else(|err| {
+                    panic!("{}", format!("Get events by tx hash error, {:?}", err))
+                });
                 if tx_hash_key == *tx_hash {
                     Some(event)
                 } else {
@@ -116,8 +117,21 @@ impl EventDBStore {
 
         let data: Vec<Event> = iter
             .filter_map(|item| {
-                let ((handle_id, event_seq), event) =
-                    item.unwrap_or_else(|_| panic!("Get item from store shoule hava a value."));
+                // let ((handle_id, event_seq), event) = match item {
+                //     Ok(z) => z,
+                //     Err(err) => {
+                //         return anyhow!(format!(
+                //             "Get events by event handle id error, {:?}",
+                //             err
+                //         ));
+                //     }
+                // };
+                let ((handle_id, event_seq), event) = item.unwrap_or_else(|err| {
+                    panic!(
+                        "{}",
+                        format!("Get events by event handle id error, {:?}", err)
+                    )
+                });
                 if Option::is_some(&cursor) {
                     if handle_id == *event_handle_id && (event_seq > start && event_seq <= end) {
                         return Some(event);
@@ -138,10 +152,14 @@ impl EventDBStore {
         let mut iter = self.event_store.iter()?;
         //TODO choose the right seek key to optimize performance
         iter.seek_to_first();
-        let data: Vec<Event> = iter
+        let data: Vec<_> = iter
             .filter_map(|item| {
-                let ((_event_handle_id, _event_seq), event) =
-                    item.unwrap_or_else(|_| panic!("Get item from store shoule hava a value."));
+                let ((_event_handle_id, _event_seq), event) = item.unwrap_or_else(|err| {
+                    panic!(
+                        "{}",
+                        format!("Get events by event handle type error, {:?}", err)
+                    )
+                });
                 if type_tag_match(event.type_tag(), event_handle_type) {
                     Some(event)
                 } else {
@@ -160,28 +178,28 @@ impl EventDBStore {
                     "This type does not currently support filter combinations."
                 ));
             }
-            EventFilter::Transaction(tx_hash) => self.get_events_by_tx_hash(&tx_hash)?,
+            // EventFilter::Transaction(tx_hash) => self.get_events_by_tx_hash(&tx_hash)?,
             EventFilter::MoveEventType(move_event_type) => {
                 self.get_events_by_event_handle_type(&move_event_type)?
             }
-            EventFilter::Sender(_sender) => {
-                return Err(anyhow!(
-                    "This type does not currently support filter combinations."
-                ));
-            }
+            // EventFilter::Sender(_sender) => {
+            //     return Err(anyhow!(
+            //         "This type does not currently support filter combinations."
+            //     ));
+            // }
             EventFilter::MoveEventField { path: _, value: _ } => {
                 return Err(anyhow!(
                     "This type does not currently support filter combinations."
                 ));
             }
-            EventFilter::TimeRange {
-                start_time: _,
-                end_time: _,
-            } => {
-                return Err(anyhow!(
-                    "This type does not currently support filter combinations."
-                ));
-            }
+            // EventFilter::TimeRange {
+            //     start_time: _,
+            //     end_time: _,
+            // } => {
+            //     return Err(anyhow!(
+            //         "This type does not currently support filter combinations."
+            //     ));
+            // },
             _ => {
                 return Err(anyhow!(
                     "This type does not currently support filter combinations."

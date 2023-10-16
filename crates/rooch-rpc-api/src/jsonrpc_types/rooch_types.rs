@@ -1,13 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::AccountAddressView;
 use crate::jsonrpc_types::account_view::BalanceInfoView;
 use crate::jsonrpc_types::transaction_view::TransactionWithInfoView;
 use crate::jsonrpc_types::{
     move_types::{MoveActionTypeView, MoveActionView},
-    AnnotatedMoveStructView, AnnotatedStateView, BytesView, EventView, H256View, StateView,
-    StrView, StructTagView,
+    AnnotatedStateView, BytesView, EventView, StateView, StrView, StructTagView,
 };
 use move_core_types::u256::U256;
 use moveos_types::event::AnnotatedMoveOSEvent;
@@ -87,38 +85,21 @@ impl From<TypedTransaction> for TransactionView {
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct AnnotatedEventView {
     pub event: EventView,
-    pub sender: AccountAddressView,
-    pub tx_hash: Option<H256View>,
-    pub timestamp_ms: Option<u64>,
+    // pub sender: AccountAddressView,
+    // pub tx_hash: Option<H256View>,
+    // pub timestamp_ms: Option<u64>,
     // pub block_height: Option<u64>,
-    pub parsed_event_data: AnnotatedMoveStructView,
+    pub decoded_event_data: AnnotatedStateView,
 }
 
 impl From<AnnotatedMoveOSEvent> for AnnotatedEventView {
     fn from(event: AnnotatedMoveOSEvent) -> Self {
         AnnotatedEventView {
             event: event.event.into(),
-            sender: event.sender.into(),
-            tx_hash: event.tx_hash.map(|h256| h256.into()),
-            timestamp_ms: event.timestamp_ms,
-            // block_height: event.block_height,
-            parsed_event_data: event.parsed_event_data.into(),
+            decoded_event_data: event.decoded_event_data.into(),
         }
     }
 }
-
-// impl From<AnnotatedEventView> for AnnotatedMoveOSEvent {
-//     fn from(event: AnnotatedEventView) -> Self {
-//         AnnotatedMoveOSEvent {
-//             event: event.into(),
-//             sender: AccountAddress::try_from(event.sender).unwrap(),
-//             tx_hash: event.tx_hash,
-//             timestamp_ms: event.timestamp_ms,
-//             // block_height: event.block_height,
-//             parsed_event_data: event.parsed_event_data.into(),
-//         }
-//     }
-// }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct CoinInfoView {

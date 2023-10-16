@@ -15,7 +15,7 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::VMStatus;
-use move_resource_viewer::MoveValueAnnotator;
+use move_resource_viewer::{AnnotatedMoveValue, MoveValueAnnotator};
 use moveos::moveos::MoveOS;
 use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_store::transaction_store::TransactionStore;
@@ -401,14 +401,11 @@ impl Handler<GetEventsByEventHandleMessage> for ExecutorActor {
             .into_iter()
             .map(|event| {
                 let state = State::new(event.event_data.clone(), event.type_tag.clone());
-                let annotated_event_data = MoveValueAnnotator::new(resolver)
+                let event_move_value = MoveValueAnnotator::new(resolver)
                     .view_resource(&event_handle_type, state.value.as_slice())?;
-                Ok(AnnotatedMoveOSEvent::new(
-                    event,
-                    annotated_event_data,
-                    None,
-                    None,
-                ))
+                let annotated_event_data =
+                    AnnotatedState::new(state, AnnotatedMoveValue::Struct(event_move_value));
+                Ok(AnnotatedMoveOSEvent::new(event, annotated_event_data))
             })
             .collect::<Result<Vec<_>>>()
     }
@@ -431,14 +428,11 @@ impl Handler<GetEventsMessage> for ExecutorActor {
             .map(|event| {
                 let state = State::new(event.event_data.clone(), event.type_tag.clone());
                 let struct_tag = as_struct_tag(event.type_tag.clone())?;
-                let annotated_event_data = MoveValueAnnotator::new(resolver)
+                let event_move_value = MoveValueAnnotator::new(resolver)
                     .view_resource(&struct_tag, state.value.as_slice())?;
-                Ok(AnnotatedMoveOSEvent::new(
-                    event,
-                    annotated_event_data,
-                    None,
-                    None,
-                ))
+                let annotated_event_data =
+                    AnnotatedState::new(state, AnnotatedMoveValue::Struct(event_move_value));
+                Ok(AnnotatedMoveOSEvent::new(event, annotated_event_data))
             })
             .collect::<Result<Vec<_>>>()
     }

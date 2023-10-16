@@ -363,37 +363,15 @@
       "AnnotatedEventView": {
         "type": "object",
         "required": [
-          "event",
-          "parsed_event_data",
-          "sender"
+          "decoded_event_data",
+          "event"
         ],
         "properties": {
+          "decoded_event_data": {
+            "$ref": "#/components/schemas/AnnotatedStateView"
+          },
           "event": {
             "$ref": "#/components/schemas/EventView"
-          },
-          "parsed_event_data": {
-            "$ref": "#/components/schemas/AnnotatedMoveStructView"
-          },
-          "sender": {
-            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
-          },
-          "timestamp_ms": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "uint64",
-            "minimum": 0.0
-          },
-          "tx_hash": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/primitive_types::H256"
-              },
-              {
-                "type": "null"
-              }
-            ]
           }
         }
       },
