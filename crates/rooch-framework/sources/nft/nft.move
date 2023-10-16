@@ -18,7 +18,10 @@ module rooch_framework::nft {
     #[test_only]
     use std::string;
     #[test_only]
+    use rooch_framework::account;
+    #[test_only]
     use rooch_framework::display;
+
 
     const ENftNotExist: u64 = 100;
     const EMutatorNotExist: u64 = 101;
@@ -73,8 +76,7 @@ module rooch_framework::nft {
     ) {
         assert_burner_exist_of_ref(burn_ref);
         let burner_object_ref = object_ref::borrow(burn_ref);
-        assert_burner_exist_of_id(burner_object_ref.nft, ctx);
-        // let nft_object_mut_ref = context::borrow_object_mut<NFT>(ctx, burner_object_ref.nft);
+        assert_nft_exist_of_id(burner_object_ref.nft, ctx);
         collection::decrement_supply(mutator_ref, ctx);
         let (
             _,
@@ -87,6 +89,9 @@ module rooch_framework::nft {
                 extend
             }
         ) = context::remove_object<NFT>(ctx, burner_object_ref.nft);
+        if(type_table::contains<Display>( &extend )){
+           type_table::remove<Display>( &mut extend);
+        };
         type_table::destroy_empty(extend)
     }
 
@@ -277,7 +282,9 @@ module rooch_framework::nft {
 
     #[test(sender = @0x2)]
     public fun test_create_nft (sender: address){
-        let ctx = context::new_test_context(sender);
+        let storage_context = context::new_test_context(sender);
+        let ctx = &mut storage_context;
+        account::create_account_for_test(ctx, sender);
 
         let collection_object_ref = collection::create_collection(
             string::utf8(b"name"),
@@ -285,10 +292,11 @@ module rooch_framework::nft {
             sender,
             string::utf8(b"description"),
             option::none(),
-            &mut ctx
+            ctx
         );
 
-        let collection_mutator_ref = collection::generate_mutator_ref(&collection_object_ref, &mut ctx);
+        let collection_mutator_ref = collection::generate_mutator_ref(&collection_object_ref,  ctx);
+
         let collcetion_display =  display::new();
         display::set(&mut collcetion_display, string::utf8(b"name"), string::utf8(b"{ name }"));
         display::set(&mut collcetion_display, string::utf8(b"uri"), string::utf8(b"{ uri }"));
@@ -299,7 +307,7 @@ module rooch_framework::nft {
         collection::add_display(
             &collection_mutator_ref,
             collcetion_display,
-            &mut ctx
+             ctx
         );
 
         let nft_object_ref = mint(
@@ -307,7 +315,7 @@ module rooch_framework::nft {
             string::utf8(b"uri"),
             &collection_mutator_ref,
             sender,
-            &mut ctx
+             ctx
         );
 
         let nft_display = display::new();
@@ -315,23 +323,25 @@ module rooch_framework::nft {
         display::set(&mut nft_display, string::utf8(b"uri"), string::utf8(b"{ uri }/{ name }.png"));
         display::set(&mut nft_display, string::utf8(b"collection"), string::utf8(b"{ collection }"));
 
-        let nft_mutaor_ref = generate_mutator_ref(&nft_object_ref, &mut ctx);
+        let nft_mutaor_ref = generate_mutator_ref(&nft_object_ref, ctx);
         add_display(
             &nft_mutaor_ref,
             nft_display,
-            &mut ctx
+             ctx
         );
 
+        let burner_ref = generate_burner_ref(&nft_object_ref,  ctx);
 
-        let burner_ref = generate_burner_ref(&nft_object_ref, &mut ctx);
-        burn(&burner_ref, &collection_mutator_ref, &mut ctx);
+        remove_display(&nft_mutaor_ref, ctx);
+        burn(&burner_ref, &collection_mutator_ref,  ctx);
 
-
+        collection::remove_display(&collection_mutator_ref, ctx);
         collection::destroy_mutator_ref(collection_mutator_ref);
+
         destroy_mutator_ref(nft_mutaor_ref);
         destroy_burner_ref(burner_ref);
 
-        context::drop_test_context(ctx);
+        context::drop_test_context(storage_context);
     }
 
 }

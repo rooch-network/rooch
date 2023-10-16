@@ -246,8 +246,7 @@
 ) {
     <a href="nft.md#0x3_nft_assert_burner_exist_of_ref">assert_burner_exist_of_ref</a>(burn_ref);
     <b>let</b> burner_object_ref = <a href="_borrow">object_ref::borrow</a>(burn_ref);
-    <a href="nft.md#0x3_nft_assert_burner_exist_of_id">assert_burner_exist_of_id</a>(burner_object_ref.<a href="nft.md#0x3_nft">nft</a>, ctx);
-    // <b>let</b> nft_object_mut_ref = <a href="_borrow_object_mut">context::borrow_object_mut</a>&lt;<a href="nft.md#0x3_nft_NFT">NFT</a>&gt;(ctx, burner_object_ref.<a href="nft.md#0x3_nft">nft</a>);
+    <a href="nft.md#0x3_nft_assert_nft_exist_of_id">assert_nft_exist_of_id</a>(burner_object_ref.<a href="nft.md#0x3_nft">nft</a>, ctx);
     <a href="collection.md#0x3_collection_decrement_supply">collection::decrement_supply</a>(mutator_ref, ctx);
     <b>let</b> (
         _,
@@ -260,6 +259,9 @@
             extend
         }
     ) = <a href="_remove_object">context::remove_object</a>&lt;<a href="nft.md#0x3_nft_NFT">NFT</a>&gt;(ctx, burner_object_ref.<a href="nft.md#0x3_nft">nft</a>);
+    <b>if</b>(<a href="_contains">type_table::contains</a>&lt;Display&gt;( &extend )){
+       <a href="_remove">type_table::remove</a>&lt;Display&gt;( &<b>mut</b> extend);
+    };
     <a href="_destroy_empty">type_table::destroy_empty</a>(extend)
 }
 </code></pre>
