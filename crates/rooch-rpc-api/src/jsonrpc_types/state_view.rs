@@ -33,7 +33,7 @@ impl From<AnnotatedState> for StateView {
         Self {
             value: StrView(state.state.value),
             value_type: state.state.value_type.into(),
-            decoded_value: Some(state.move_value.into()),
+            decoded_value: Some(state.decoded_value.into()),
         }
     }
 }

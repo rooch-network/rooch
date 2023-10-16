@@ -306,10 +306,10 @@ impl Handler<ExecuteViewFunctionMessage> for ExecutorActor {
                     values
                         .into_iter()
                         .map(|v| {
-                            let move_value = resoler.view_value(&v.type_tag, &v.value)?;
+                            let decoded_value = resoler.view_value(&v.type_tag, &v.value)?;
                             Ok(AnnotatedFunctionReturnValue {
                                 value: v,
-                                move_value,
+                                decoded_value,
                             })
                         })
                         .collect::<Result<Vec<AnnotatedFunctionReturnValue>, anyhow::Error>>()?,

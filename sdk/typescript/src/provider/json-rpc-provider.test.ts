@@ -25,7 +25,7 @@ describe('provider', () => {
                 type_tag: 'u64',
                 value: '0x0000000000000000',
               },
-              move_value: '0',
+              decoded_value: '0',
             },
           ],
           id: '0',
@@ -91,11 +91,9 @@ describe('provider', () => {
             jsonrpc: '2.0',
             result: [
               {
-                value: {
                   type_tag: 'u64',
                   value: '0x0000000000000000',
-                },
-                move_value: '0',
+                  decoded_value: '0',
               },
             ],
             id: '0',
@@ -136,18 +134,18 @@ describe('provider', () => {
                     value:
                       '0x0e526f6f63682047617320436f696e03524743090000000000000000000000000000000000000000000000000000000000000000',
                     value_type: '0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>',
-                  },
-                  move_value: {
-                    abilities: 8,
-                    type: '0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>',
-                    value: {
-                      decimals: 9,
-                      name: 'Rooch Gas Coin',
-                      supply: '0',
-                      symbol: 'RGC',
+                    decoded_value: {
+                      abilities: 8,
+                      type: '0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>',
+                      value: {
+                        decimals: 9,
+                        name: 'Rooch Gas Coin',
+                        supply: '0',
+                        symbol: 'RGC',
+                      },
                     },
                   },
-                },
+                }
               ],
               next_cursor:
                 '0xa501303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a636f696e3a3a436f696e496e666f3c303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e3e',

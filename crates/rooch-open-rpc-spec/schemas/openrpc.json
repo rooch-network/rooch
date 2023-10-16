@@ -339,11 +339,11 @@
       "AnnotatedFunctionReturnValueView": {
         "type": "object",
         "required": [
-          "move_value",
+          "decoded_value",
           "value"
         ],
         "properties": {
-          "move_value": {
+          "decoded_value": {
             "$ref": "#/components/schemas/AnnotatedMoveValueView"
           },
           "value": {

@@ -96,7 +96,7 @@ export class Account implements IAccount {
     )
 
     if (resp && resp.return_values) {
-      return resp.return_values[0].move_value as number
+      return resp.return_values[0].decoded_value as number
     }
 
     return 0
@@ -272,6 +272,6 @@ export class Account implements IAccount {
       throw new Error('view 0x3::session_key::is_expired_session_key fail')
     }
 
-    return result.return_values![0].move_value as boolean
+    return result.return_values![0].decoded_value as boolean
   }
 }
