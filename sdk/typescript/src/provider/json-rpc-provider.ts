@@ -157,7 +157,11 @@ export class JsonRpcProvider implements IProvider {
     cursor: number,
     limit: number,
   ): Promise<AnnotatedEventPageView> {
-    return await this.client.rooch_getEventsByEventHandle(event_handle_type, cursor.toString(), limit.toString())
+    return await this.client.rooch_getEventsByEventHandle(
+      event_handle_type,
+      cursor.toString(),
+      limit.toString(),
+    )
   }
 
   // Get the states by access_path
