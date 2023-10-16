@@ -1,8 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::jsonrpc_types::StrView;
-use ethers::types::H160;
+use crate::jsonrpc_types::H160View;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -13,5 +12,5 @@ pub enum NameOrAddress {
     /// An ENS Name (format does not get checked)
     Name(String),
     /// An Ethereum Address
-    Address(StrView<H160>),
+    Address(H160View),
 }

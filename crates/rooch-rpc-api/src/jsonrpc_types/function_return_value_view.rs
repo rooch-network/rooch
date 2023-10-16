@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::AbortLocationView;
+use super::{AbortLocationView, BytesView};
 use crate::jsonrpc_types::{
     move_types::{AnnotatedMoveValueView, TypeTagView},
     StrView,
@@ -118,7 +118,7 @@ impl TryFrom<AnnotatedFunctionResultView> for FunctionResult {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct FunctionReturnValueView {
     pub type_tag: TypeTagView,
-    pub value: StrView<Vec<u8>>,
+    pub value: BytesView,
 }
 
 impl From<FunctionReturnValue> for FunctionReturnValueView {

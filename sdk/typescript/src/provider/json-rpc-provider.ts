@@ -148,7 +148,7 @@ export class JsonRpcProvider implements IProvider {
     cursor: number,
     limit: number,
   ): Promise<TransactionWithInfoPageView> {
-    return this.client.rooch_getTransactionsByOrder(cursor, limit)
+    return this.client.rooch_getTransactionsByOrder(cursor.toString(), limit.toString())
   }
 
   // Get the events by event handle id
@@ -157,7 +157,7 @@ export class JsonRpcProvider implements IProvider {
     cursor: number,
     limit: number,
   ): Promise<AnnotatedEventPageView> {
-    return await this.client.rooch_getEventsByEventHandle(event_handle_type, cursor, limit)
+    return await this.client.rooch_getEventsByEventHandle(event_handle_type, cursor.toString(), limit.toString())
   }
 
   // Get the states by access_path
@@ -167,7 +167,7 @@ export class JsonRpcProvider implements IProvider {
 
   // List the states by access_path
   async listStates(access_path: string, cursor: Uint8Array, limit: number): Promise<StatePageView> {
-    return await this.client.rooch_listStates(access_path, cursor, limit)
+    return await this.client.rooch_listStates(access_path, cursor, limit.toString())
   }
 
   // TODO:
@@ -194,7 +194,7 @@ export class JsonRpcProvider implements IProvider {
     cursor: Bytes | null,
     limit: number,
   ): Promise<AnnotatedStatePageView> {
-    return await this.client.rooch_listAnnotatedStates(access_path, cursor as any, limit)
+    return await this.client.rooch_listAnnotatedStates(access_path, cursor as any, limit.toString())
   }
 
   // // List the states by access_path
