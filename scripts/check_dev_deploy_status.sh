@@ -24,12 +24,12 @@ if [ "$STATUS" != "running" ]; then
     if [ $? -eq 0 ]; then
         echo "Container $CONTAINER_ID Successfully restarted."
         echo "Redeploy the examples"
-        for dir in examples/*/; do
+        for dir in /root/rooch/examples/*/; do
             dir=${dir%*/}
             name_addr=$(basename $dir)
             echo $name_addr
-            rooch move build -p "$dir" --named-addresses rooch_examples=default,$name_addr=default
-            rooch move publish --named-addresses rooch_examples=default,$name_addr=default -p examples/$name_addr/
+            docker run -v /root:/root $CONTAINER_ID move build -p "$dir" --named-addresses rooch_examples=default,$name_addr=default
+            docker run -v /root:/root $CONTAINER_ID move publish -p "$dir" --named-addresses rooch_examples=default,$name_addr=default
         done
     else
         echo "Container $CONTAINER_ID Startup failed, please check the reason."
