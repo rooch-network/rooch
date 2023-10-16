@@ -204,7 +204,7 @@ impl AggregateService {
             .get_transaction_execution_infos_by_hash(tx_hashes.clone())
             .await?;
 
-        assert!(
+        debug_assert!(
             transactions.len() >= sequence_infos.len()
                 && transactions.len() == execution_infos.len()
         );
