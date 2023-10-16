@@ -23,8 +23,9 @@ module rooch_framework::nft {
     use rooch_framework::display;
 
 
-    const ENftNotExist: u64 = 100;
-    const EMutatorNotExist: u64 = 101;
+    const ErrorNftNotExist: u64 = 1;
+    const ErrorMutatorNotExist: u64 = 2;
+    const ErrorBurnerNotExist: u64 = 3;
 
     struct NFT has key {
         name: String,
@@ -135,29 +136,29 @@ module rooch_framework::nft {
 
     // assert
     public fun assert_nft_exist_of_id(objectId: ObjectID, ctx: &Context) {
-        assert!(context::exist_object(ctx, objectId), ENftNotExist);
+        assert!(context::exist_object(ctx, objectId), ErrorNftNotExist);
         context::borrow_object<NFT>(ctx, objectId);
     }
 
     public fun assert_nft_exist_of_ref(nft_object_ref: &ObjectRef<NFT>) {
-        assert!(object_ref::exist_object(nft_object_ref), ENftNotExist);
+        assert!(object_ref::exist_object(nft_object_ref), ErrorNftNotExist);
     }
 
     public fun assert_mutator_exist_of_ref(mutator_ref: &ObjectRef<MutatorRef>) {
-        assert!(object_ref::exist_object(mutator_ref), EMutatorNotExist);
+        assert!(object_ref::exist_object(mutator_ref), ErrorMutatorNotExist);
     }
 
     public fun assert_mutator_exist_of_id(objectId: ObjectID, ctx: &Context) {
-        assert!(context::exist_object(ctx, objectId), EMutatorNotExist);
+        assert!(context::exist_object(ctx, objectId), ErrorMutatorNotExist);
         context::borrow_object<MutatorRef>(ctx, objectId);
     }
 
     public fun assert_burner_exist_of_ref(burner_ref: &ObjectRef<BurnerRef>) {
-        assert!(object_ref::exist_object(burner_ref), EMutatorNotExist);
+        assert!(object_ref::exist_object(burner_ref), ErrorBurnerNotExist);
     }
 
     public fun assert_burner_exist_of_id(objectId: ObjectID, ctx: &Context) {
-        assert!(context::exist_object(ctx, objectId), EMutatorNotExist);
+        assert!(context::exist_object(ctx, objectId), ErrorBurnerNotExist);
         context::borrow_object<BurnerRef>(ctx, objectId);
     }
 

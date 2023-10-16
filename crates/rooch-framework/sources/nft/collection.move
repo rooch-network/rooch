@@ -17,9 +17,9 @@ module rooch_framework::collection{
 
     friend rooch_framework::nft;
 
-    const EMutatorNotExist: u64 = 100;
-    const ECollectionNotExist: u64 = 101;
-    const ECollectionMaximumSupply: u64 = 102;
+    const ErrorMutatorNotExist: u64 = 1;
+    const ErrorCollectionNotExist: u64 = 2;
+    const ErrorCollectionMaximumSupply: u64 = 3;
 
     struct Collection has key{
         name: String,
@@ -123,7 +123,7 @@ module rooch_framework::collection{
         let collection_mut_ref = object::borrow_mut(collection_object_mut_ref);
         collection_mut_ref.supply.current = collection_mut_ref.supply.current + 1;
         if(option::is_some(&collection_mut_ref.supply.maximum)){
-            assert!(collection_mut_ref.supply.current <= *option::borrow(&collection_mut_ref.supply.maximum), ECollectionMaximumSupply);
+            assert!(collection_mut_ref.supply.current <= *option::borrow(&collection_mut_ref.supply.maximum), ErrorCollectionMaximumSupply);
             option::some(collection_mut_ref.supply.current)
         }else{
             option::none<u64>()
@@ -146,20 +146,20 @@ module rooch_framework::collection{
 
     // assert
     public fun assert_collection_exist_of_ref(collectionRef: &ObjectRef<Collection>){
-        assert!( object_ref::exist_object(collectionRef), ECollectionNotExist);
+        assert!( object_ref::exist_object(collectionRef), ErrorCollectionNotExist);
     }
 
     public fun assert_collection_exist_of_id(collectionID: ObjectID, ctx: & Context){
-        assert!( context::exist_object(ctx, collectionID), ECollectionNotExist);
+        assert!( context::exist_object(ctx, collectionID), ErrorCollectionNotExist);
         context::borrow_object<Collection>(ctx,collectionID);
     }
 
     public fun assert_mutator_exist_of_ref(mutatorRef: &ObjectRef<MutatorRef>){
-        assert!( object_ref::exist_object(mutatorRef), EMutatorNotExist);
+        assert!( object_ref::exist_object(mutatorRef), ErrorMutatorNotExist);
     }
 
     public fun assert_mutator_exist_of_id(mutatorID: ObjectID, ctx: & Context){
-        assert!( context::exist_object(ctx, mutatorID), EMutatorNotExist);
+        assert!( context::exist_object(ctx, mutatorID), ErrorMutatorNotExist);
         context::borrow_object<MutatorRef>(ctx, mutatorID);
     }
 
