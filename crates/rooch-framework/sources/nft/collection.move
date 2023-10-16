@@ -209,7 +209,6 @@ module rooch_framework::collection{
 
     fun add_extend_internal<V: key>(mutator: &ObjectRef<MutatorRef>,val: V,ctx: &mut Context){
         assert_mutator_exist_of_ref(mutator);
-
         let mutator_object_ref = object_ref::borrow(mutator);
         assert_collection_exist_of_id(mutator_object_ref.collection, ctx);
         let collection_object_mut_ref = context::borrow_object_mut<Collection>(ctx, mutator_object_ref.collection);
