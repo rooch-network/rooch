@@ -15,12 +15,12 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::VMStatus;
-use move_resource_viewer::{AnnotatedMoveValue, MoveValueAnnotator};
+use move_resource_viewer::MoveValueAnnotator;
 use moveos::moveos::MoveOS;
 use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_store::transaction_store::TransactionStore;
 use moveos_store::MoveOSStore;
-use moveos_types::event::AnnotatedMoveOSEvent;
+use moveos_types::event::AnnotatedEvent;
 use moveos_types::event::EventHandle;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
@@ -385,7 +385,7 @@ impl Handler<GetEventsByEventHandleMessage> for ExecutorActor {
         &mut self,
         msg: GetEventsByEventHandleMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Vec<AnnotatedMoveOSEvent>> {
+    ) -> Result<Vec<AnnotatedEvent>> {
         let GetEventsByEventHandleMessage {
             event_handle_type,
             cursor,
@@ -400,12 +400,9 @@ impl Handler<GetEventsByEventHandleMessage> for ExecutorActor {
         events
             .into_iter()
             .map(|event| {
-                let state = State::new(event.event_data.clone(), event.type_tag.clone());
                 let event_move_value = MoveValueAnnotator::new(resolver)
-                    .view_resource(&event_handle_type, state.value.as_slice())?;
-                let annotated_event_data =
-                    AnnotatedState::new(state, AnnotatedMoveValue::Struct(event_move_value));
-                Ok(AnnotatedMoveOSEvent::new(event, annotated_event_data))
+                    .view_resource(&event_handle_type, event.event_data())?;
+                Ok(AnnotatedEvent::new(event, event_move_value))
             })
             .collect::<Result<Vec<_>>>()
     }
@@ -417,7 +414,7 @@ impl Handler<GetEventsMessage> for ExecutorActor {
         &mut self,
         msg: GetEventsMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Vec<AnnotatedMoveOSEvent>> {
+    ) -> Result<Vec<AnnotatedEvent>> {
         let GetEventsMessage { filter } = msg;
         let event_store = self.moveos.event_store();
         let resolver = self.moveos.moveos_resolver();
@@ -426,13 +423,10 @@ impl Handler<GetEventsMessage> for ExecutorActor {
         events
             .into_iter()
             .map(|event| {
-                let state = State::new(event.event_data.clone(), event.type_tag.clone());
                 let struct_tag = as_struct_tag(event.type_tag.clone())?;
                 let event_move_value = MoveValueAnnotator::new(resolver)
-                    .view_resource(&struct_tag, state.value.as_slice())?;
-                let annotated_event_data =
-                    AnnotatedState::new(state, AnnotatedMoveValue::Struct(event_move_value));
-                Ok(AnnotatedMoveOSEvent::new(event, annotated_event_data))
+                    .view_resource(&struct_tag, event.event_data())?;
+                Ok(AnnotatedEvent::new(event, event_move_value))
             })
             .collect::<Result<Vec<_>>>()
     }

@@ -5,7 +5,7 @@ use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::{Parser, Subcommand};
 use move_core_types::language_storage::StructTag;
-use rooch_rpc_api::jsonrpc_types::EventPageView;
+use rooch_rpc_api::jsonrpc_types::{EventOptions, EventPageView};
 use rooch_types::error::{RoochError, RoochResult};
 
 /// Tool for interacting with event
@@ -52,7 +52,12 @@ impl CommandAction<EventPageView> for GetEventsByEventHandle {
         let client = self.context_options.build().await?.get_client().await?;
         let resp = client
             .rooch
-            .get_events_by_event_handle(self.event_handle_type.into(), self.cursor, self.limit)
+            .get_events_by_event_handle(
+                self.event_handle_type.into(),
+                self.cursor,
+                self.limit,
+                Some(EventOptions::default().decode(true)),
+            )
             .await
             .map_err(RoochError::from)?;
         Ok(resp)

@@ -8,10 +8,12 @@ use jsonrpsee::{
     RpcModule,
 };
 use moveos_types::h256::H256;
-use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionWithInfoView;
 use rooch_rpc_api::jsonrpc_types::{account_view::BalanceInfoView, StateOptions};
 use rooch_rpc_api::jsonrpc_types::{
-    AccessPathView, AccountAddressView, AnnotatedEventView, BalanceInfoPageView, EventPageView,
+    transaction_view::TransactionWithInfoView, EventOptions, EventView,
+};
+use rooch_rpc_api::jsonrpc_types::{
+    AccessPathView, AccountAddressView, BalanceInfoPageView, EventPageView,
     ExecuteTransactionResponseView, FunctionCallView, H256View, StateView, StatesPageView, StrView,
     StructTagView, TransactionWithInfoPageView,
 };
@@ -129,14 +131,14 @@ impl RoochAPIServer for RoochServer {
                 .await?
                 .into_iter()
                 .map(|(key, state)| (key, StateView::from(state)))
-                .collect::<Vec<_>>();
+                .collect::<Vec<_>>()
         } else {
             self.rpc_service
                 .list_states(access_path.into(), cursor_of, limit_of + 1)
                 .await?
                 .into_iter()
                 .map(|(key, state)| (key, StateView::from(state)))
-                .collect::<Vec<_>>();
+                .collect::<Vec<_>>()
         };
 
         let has_next_page = data.len() > limit_of;
@@ -158,24 +160,35 @@ impl RoochAPIServer for RoochServer {
         event_handle_type: StructTagView,
         cursor: Option<StrView<u64>>,
         limit: Option<StrView<u64>>,
+        event_options: Option<EventOptions>,
     ) -> RpcResult<EventPageView> {
+        let event_options = event_options.unwrap_or_default();
         let cursor = cursor.map(|v| v.0);
         let limit = limit.map(|v| v.0);
         // NOTE: fetch one more object to check if there is next page
         let limit_of = min(limit.unwrap_or(DEFAULT_RESULT_LIMIT), MAX_RESULT_LIMIT);
-        let mut data: Vec<AnnotatedEventView> = self
-            .rpc_service
-            .get_events_by_event_handle(event_handle_type.into(), cursor, limit_of + 1)
-            .await?
-            .into_iter()
-            .map(AnnotatedEventView::from)
-            .collect();
+        let mut data = if event_options.decode {
+            self.rpc_service
+                .get_events_by_event_handle(event_handle_type.into(), cursor, limit_of + 1)
+                .await?
+                .into_iter()
+                .map(EventView::from)
+                .collect::<Vec<_>>()
+        } else {
+            //TODO provide a function to directly get the Event, not the AnnotatedEvent
+            self.rpc_service
+                .get_events_by_event_handle(event_handle_type.into(), cursor, limit_of + 1)
+                .await?
+                .into_iter()
+                .map(|e| EventView::from(e.event))
+                .collect::<Vec<_>>()
+        };
 
         let has_next_page = (data.len() as u64) > limit_of;
         data.truncate(limit_of as usize);
         let next_cursor = data
             .last()
-            .map_or(cursor, |event| Some(event.event.event_id.event_seq));
+            .map_or(cursor, |event| Some(event.event_id.event_seq));
 
         Ok(EventPageView {
             data,

@@ -31,7 +31,7 @@ impl From<State> for StateView {
 impl From<AnnotatedState> for StateView {
     fn from(state: AnnotatedState) -> Self {
         Self {
-            value: StrView(state.state.value.0),
+            value: StrView(state.state.value),
             value_type: state.state.value_type.into(),
             decoded_value: Some(state.move_value.into()),
         }

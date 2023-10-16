@@ -5,7 +5,7 @@ use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
-use moveos_types::event::AnnotatedMoveOSEvent;
+use moveos_types::event::AnnotatedEvent;
 use moveos_types::event_filter::EventFilter;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
@@ -133,7 +133,7 @@ impl RpcService {
         event_handle_type: StructTag,
         cursor: Option<u64>,
         limit: u64,
-    ) -> Result<Vec<AnnotatedMoveOSEvent>> {
+    ) -> Result<Vec<AnnotatedEvent>> {
         let resp = self
             .executor
             .get_events_by_event_handle(event_handle_type, cursor, limit)
@@ -141,7 +141,7 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn get_events(&self, filter: EventFilter) -> Result<Vec<AnnotatedMoveOSEvent>> {
+    pub async fn get_events(&self, filter: EventFilter) -> Result<Vec<AnnotatedEvent>> {
         let resp = self.executor.get_events(filter).await?;
         Ok(resp)
     }

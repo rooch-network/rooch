@@ -5,17 +5,16 @@ use crate::jsonrpc_types::account_view::BalanceInfoView;
 use crate::jsonrpc_types::transaction_view::TransactionWithInfoView;
 use crate::jsonrpc_types::{
     move_types::{MoveActionTypeView, MoveActionView},
-    AnnotatedMoveStructView, BytesView, EventView, H256View, StateView, StrView, StructTagView,
+    BytesView, EventView, StateView, StrView, StructTagView,
 };
 use move_core_types::u256::U256;
-use moveos_types::event::AnnotatedMoveOSEvent;
 use rooch_types::framework::coin::CoinInfo;
 use rooch_types::transaction::{AbstractTransaction, TransactionType, TypedTransaction};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::string::String;
 
-pub type EventPageView = PageView<AnnotatedEventView, u64>;
+pub type EventPageView = PageView<EventView, u64>;
 pub type TransactionWithInfoPageView = PageView<TransactionWithInfoView, u128>;
 pub type StatesPageView = PageView<StateView, BytesView>;
 pub type BalanceInfoPageView = PageView<BalanceInfoView, BytesView>;
@@ -77,25 +76,6 @@ impl From<TypedTransaction> for TransactionView {
                 action_type: eth.decode_calldata_to_action().unwrap().into(),
                 raw: eth.encode().into(),
             },
-        }
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
-pub struct AnnotatedEventView {
-    pub event: EventView,
-    // pub sender: AccountAddressView,
-    // pub tx_hash: Option<H256View>,
-    // pub timestamp_ms: Option<u64>,
-    // pub block_height: Option<u64>,
-    pub decoded_event_data: AnnotatedStateView,
-}
-
-impl From<AnnotatedMoveOSEvent> for AnnotatedEventView {
-    fn from(event: AnnotatedMoveOSEvent) -> Self {
-        AnnotatedEventView {
-            event: event.event.into(),
-            decoded_event_data: event.decoded_event_data.into(),
         }
     }
 }

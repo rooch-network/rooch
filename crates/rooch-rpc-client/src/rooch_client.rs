@@ -15,7 +15,7 @@ use rooch_rpc_api::jsonrpc_types::{
 };
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedFunctionResultView, BalanceInfoPageView,
-    EventPageView, StateOptions, StatesPageView, StructTagView,
+    EventOptions, EventPageView, StateOptions, StatesPageView, StructTagView,
 };
 use rooch_rpc_api::jsonrpc_types::{BytesView, TransactionWithInfoPageView};
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, StateView};
@@ -114,6 +114,7 @@ impl RoochRpcClient {
         event_handle_type: StructTagView,
         cursor: Option<u64>,
         limit: Option<u64>,
+        event_options: Option<EventOptions>,
     ) -> Result<EventPageView> {
         let s = self
             .http
@@ -121,6 +122,7 @@ impl RoochRpcClient {
                 event_handle_type,
                 cursor.map(Into::into),
                 limit.map(Into::into),
+                event_options,
             )
             .await?;
         Ok(s)

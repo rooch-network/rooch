@@ -5,8 +5,9 @@ use crate::jsonrpc_types::account_view::BalanceInfoView;
 use crate::jsonrpc_types::transaction_view::TransactionWithInfoView;
 use crate::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedFunctionResultView, BalanceInfoPageView,
-    BytesView, EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
-    StateOptions, StateView, StatesPageView, StrView, StructTagView, TransactionWithInfoPageView,
+    BytesView, EventOptions, EventPageView, ExecuteTransactionResponseView, FunctionCallView,
+    H256View, StateOptions, StateView, StatesPageView, StrView, StructTagView,
+    TransactionWithInfoPageView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -67,6 +68,7 @@ pub trait RoochAPI {
         event_handle_type: StructTagView,
         cursor: Option<StrView<u64>>,
         limit: Option<StrView<u64>>,
+        event_options: Option<EventOptions>,
     ) -> RpcResult<EventPageView>;
 
     #[method(name = "getTransactionsByHash")]
