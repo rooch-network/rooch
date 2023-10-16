@@ -1,0 +1,51 @@
+---
+title: Rooch Weekly 2023-10-16
+description: "Do some finishing work on Rooch v0.2, refactor and rename some interfaces, add some documentation and fix some bugs"
+author: geometryolife
+category: Rooch Weekly
+date: 2023/10/16
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch's Development Progress
+
+### New features
+
+- **[gh-786] Add Ethereum RPC client API to client library. (#788)** (2023-10-09) @feliciss
+- **[Framework & RPC] Implement ObjectRef, refactor CoinStore and balance RPC (#935)** (2023-10-10) @jolestar
+- **[gh-933] use one password for rooch keystore (#942)** (2023-10-10) @feliciss
+- **[gh-933] move password hash into keystore. (#954)** (2023-10-11) @feliciss
+- **Use one mnemonic phrase for keystore (#950)** (2023-10-12) @Bai Chuan
+
+### Major refactoring
+
+- **make the bcs::from_bytes to friend (#930)** (2023-10-09) @stevenlaw123
+- **[Framework] Migrate CoinStore to coin_store module and Account CoinStores to account_coin_store module (#944)** (2023-10-11) @jolestar
+- **[Framework] Migrate the ObjectID to object module (#951)** (2023-10-12) @0xPause
+- **unify framework error code start from 1 (#957)** (2023-10-13) @Bai Chuan
+- **[MoveosStd] Refactor ObjectRef, context:new_object and context::remove_object (#948)** (2023-10-14) @jolestar
+- **[Rpc] rename TransactionResult to TransactionWithInfo (#964)** (2023-10-15) @jolestar
+
+### Improvements and fixes
+
+- **Framework review - Optimize moveos_stdlib code style (#929)** (2023-10-09) @0xPause
+- **add weekly 2023-10-09 (#931)** (2023-10-09) @Joe Chen
+- **add team member justin's profile to website (#934)** (2023-10-09) @Joe Chen
+- **docs(blog): refine multichain blog (#938)** (2023-10-09) @popcnt
+- **miss the pulling image step (#939)** (2023-10-10) @yourmoonlight
+- **auto deploy examples (#940)** (2023-10-10) @yourmoonlight
+- **docs(multi-chain): compare with bridge (#941)** (2023-10-09) @popcnt
+- **Framework review, update rooch-framework (#943)** (2023-10-11) @0xPause
+- **check deploy status if not running, clean data and redeploy the examples (#947)** (2023-10-11) @yourmoonlight
+- **fix relative path and add a todo for the later rooch init feature (#953)** (2023-10-12) @yourmoonlight
+- **[gh-933] add command explanations. (#959)** (2023-10-12) @feliciss
+- **[Documents] Account abstraction (#956)** (2023-10-14) @jolestar
+
+### Rooch Community Dev Meeting
+
+- Discuss the related design of `ObjectRef`
+- Discuss the use of `Object` and `CoinStore`
+- Share and discuss the design of the NFT standard
