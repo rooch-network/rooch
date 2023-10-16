@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // ** React Imports
-import {createContext, ReactNode, useEffect, useState} from 'react'
+import { createContext, ReactNode, useEffect, useState } from 'react'
 
 // ** Next Import
-import {useRouter} from 'next/router'
+import { useRouter } from 'next/router'
 
 // ** Config
 import authConfig from 'src/configs/auth'
@@ -20,14 +20,14 @@ import {
   WalletType,
 } from 'src/context/auth/types'
 
-import {ErrCallbackType} from 'src/context/types'
+import { ErrCallbackType } from 'src/context/types'
 
 // ** Hooks
-import {useETH} from 'src/hooks/useETH'
-import {useRooch} from '../../hooks/useRooch'
+import { useETH } from 'src/hooks/useETH'
+import { useRooch } from '../../hooks/useRooch'
 
 // ** Rooch SDK
-import {addressToSeqNumber, bcsTypes, Ed25519Keypair} from '@rooch/sdk'
+import { addressToSeqNumber, bcsTypes, Ed25519Keypair } from '@rooch/sdk'
 
 // ** Defaults
 const defaultProvider: AuthValuesType = {
@@ -294,13 +294,15 @@ const AuthProvider = ({ children }: Props) => {
   }
 
   const getDefaultAccount = (): AccountDataType | null => {
-    return defaultAccount ?? metamask.accounts.length > 0 ? {
-      roochAddress: metamask.accounts[0],
-      address: metamask.accounts[0],
-      kp:null,
-      activate:true,
-      type: AccountType.ETH
-    } : null
+    return defaultAccount ?? metamask.accounts.length > 0
+      ? {
+          roochAddress: metamask.accounts[0],
+          address: metamask.accounts[0],
+          kp: null,
+          activate: true,
+          type: AccountType.ETH,
+        }
+      : null
   }
 
   const values = {
