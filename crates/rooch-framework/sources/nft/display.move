@@ -1,5 +1,5 @@
 module rooch_framework::display{
-    use std::ascii::String;
+    use std::string::String;
     use moveos_std::simple_map;
 
     struct Display has key, store,drop,copy {
@@ -36,7 +36,7 @@ module rooch_framework::display{
         simple_map::values(& self.sample_map)
     }
 
-    public fun contains_key (self: & Display, key: String) -> bool {
-        simple_map::contains(& self.sample_map, key)
+    public fun contains_key (self: & Display, key: String): bool {
+        simple_map::contains_key(& self.sample_map, &key)
     }
 }

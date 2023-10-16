@@ -12,6 +12,12 @@ module rooch_framework::nft {
     use moveos_std::type_table;
     use moveos_std::object::ObjectID;
     use moveos_std::type_table::TypeTable;
+    #[test_only]
+    use std::option;
+    #[test_only]
+    use std::string;
+    #[test_only]
+    use rooch_framework::display;
 
     const ENftNotExist: u64 = 100;
     const EMutatorNotExist: u64 = 101;
@@ -228,5 +234,52 @@ module rooch_framework::nft {
         nft.creator
     }
 
+    #[test(sender = @0x2)]
+    public fun test_create_nft (sender: address){
+        let ctx = context::new_test_context(sender);
+
+        let collection_object_ref = collection::create_collection(
+            string::utf8(b"name"),
+            string::utf8(b"uri"),
+            sender,
+            string::utf8(b"description"),
+            option::none(),
+            &mut ctx
+        );
+
+        let collection_mutator_ref = collection::generate_mutator_ref(&collection_object_ref, &mut ctx);
+        let collcetion_display =  display::new();
+        display::set(&mut collcetion_display, string::utf8(b"name"), string::utf8(b"{ name }"));
+        display::set(&mut collcetion_display, string::utf8(b"uri"), string::utf8(b"{ uri }"));
+        display::set(&mut collcetion_display, string::utf8(b"description"), string::utf8(b"{ description }"));
+        display::set(&mut collcetion_display, string::utf8(b"creator"), string::utf8(b"{ creator }"));
+        display::set(&mut collcetion_display, string::utf8(b"supply"), string::utf8(b"{ supply }"));
+        collection::add_collection_extend(
+            &collection_mutator_ref,
+            collcetion_display, &mut ctx
+        );
+
+        let nft_object_ref = mint(
+            string::utf8(b"name"),
+            string::utf8(b"uri"),
+            &collection_mutator_ref,
+            sender,
+            &mut ctx
+        );
+
+        let nft_display = display::new();
+        display::set(&mut nft_display, string::utf8(b"name"), string::utf8(b"{ name }"));
+        display::set(&mut nft_display, string::utf8(b"uri"), string::utf8(b"{ uri }/{ name }.png"));
+        display::set(&mut nft_display, string::utf8(b"collection"), string::utf8(b"{ collection }"));
+
+        let nft_mutaor_ref = generate_mutator_ref(&nft_object_ref, &mut ctx);
+        add_nft_extend(
+            &nft_mutaor_ref,
+            nft_display,
+            &mut ctx
+        );
+
+        context::drop_test_context(ctx);
+    }
 
 }
