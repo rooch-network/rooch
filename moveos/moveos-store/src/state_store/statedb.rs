@@ -13,7 +13,7 @@ use moveos_types::state::StateSet;
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{
     h256::H256,
-    move_module::MoveModule,
+    moveos_std::move_module::MoveModule,
     state::{MoveStructState, State},
 };
 use moveos_types::{

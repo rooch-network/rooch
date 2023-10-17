@@ -21,8 +21,8 @@ use move_vm_types::{
 };
 use moveos_stdlib::natives::moveos_stdlib::raw_table::{serialize, TableData, TableRuntimeValue};
 use moveos_types::{
-    move_module::MoveModule,
     move_std::string::MoveString,
+    moveos_std::move_module::MoveModule,
     state::{MoveStructState, State, StateChangeSet, TableChange},
     state_resolver::{module_name_to_key, MoveOSResolver},
 };
@@ -73,7 +73,7 @@ impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
         // Key type: std::string::String
         let key_typetag = TypeTag::Struct(Box::new(MoveString::struct_tag()));
 
-        // value type: moveos_std::move_module::MoveModule
+        // value type: moveos_std::moveos_std::move_module::MoveModule
         let value_typetag = TypeTag::Struct(Box::new(MoveModule::struct_tag()));
         (key_typetag, value_typetag)
     }
@@ -182,7 +182,7 @@ impl<'r, 'l, S: MoveOSResolver> DataStore for MoveosDataCache<'r, 'l, S> {
         let table_handle = NamedTableID::Module(*sender).to_object_id();
 
         // Key type: std::string::String
-        // value type: moveos_std::move_module::MoveModule
+        // value type: moveos_std::moveos_std::move_module::MoveModule
         let (_, value_type) = Self::module_table_typetag();
 
         let key_layout = MoveTypeLayout::Struct(MoveString::struct_layout());
@@ -332,7 +332,7 @@ fn unbox_and_serialize(layout: &MoveTypeLayout, box_val: Value) -> PartialVMResu
     serialize(layout, &val)
 }
 
-// load module bytes stored in `moveos_std::raw_table::Box<moveos_std::move_module::MoveModule>`
+// load module bytes stored in `moveos_std::raw_table::Box<moveos_std::moveos_std::move_module::MoveModule>`
 fn load_module_from_table_runtime_value(
     global_value: &TableRuntimeValue,
     value_type: TypeTag,
