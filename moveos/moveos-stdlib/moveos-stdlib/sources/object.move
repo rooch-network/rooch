@@ -50,6 +50,10 @@ module moveos_std::object {
         &self.value
     }
 
+    public fun public_borrow<T: key + store>(self: &Object<T>): &T {
+        &self.value
+    }
+
     public(friend) fun internal_borrow<T>(self: &Object<T>): &T {
         &self.value
     }
@@ -60,6 +64,10 @@ module moveos_std::object {
         &mut self.value
     }
 
+    public fun public_borrow_mut<T: key + store>(self: &mut Object<T>): &mut T {
+        &mut self.value
+    }
+
     public(friend) fun internal_borrow_mut<T>(self: &mut Object<T>): &mut T {
         &mut self.value
     }
@@ -67,6 +75,10 @@ module moveos_std::object {
     #[private_generics(T)]
     /// Transfer object to recipient
     public fun transfer<T: key>(self: &mut Object<T>, recipient: address) {
+        self.owner = recipient;
+    }
+
+    public fun public_transfer<T: key + store>(self: &mut Object<T>, recipient: address) {
         self.owner = recipient;
     }
 

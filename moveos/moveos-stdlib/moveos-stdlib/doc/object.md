@@ -15,10 +15,13 @@ The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/5
 -  [Function `address_to_object_id`](#0x2_object_address_to_object_id)
 -  [Function `new`](#0x2_object_new)
 -  [Function `borrow`](#0x2_object_borrow)
+-  [Function `public_borrow`](#0x2_object_public_borrow)
 -  [Function `internal_borrow`](#0x2_object_internal_borrow)
 -  [Function `borrow_mut`](#0x2_object_borrow_mut)
+-  [Function `public_borrow_mut`](#0x2_object_public_borrow_mut)
 -  [Function `internal_borrow_mut`](#0x2_object_internal_borrow_mut)
 -  [Function `transfer`](#0x2_object_transfer)
+-  [Function `public_transfer`](#0x2_object_public_transfer)
 -  [Function `id`](#0x2_object_id)
 -  [Function `owner`](#0x2_object_owner)
 -  [Function `unpack`](#0x2_object_unpack)
@@ -172,6 +175,30 @@ Create a new object, the object is owned by <code>owner</code>
 
 </details>
 
+<a name="0x2_object_public_borrow"></a>
+
+## Function `public_borrow`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_public_borrow">public_borrow</a>&lt;T: store, key&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): &T
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_public_borrow">public_borrow</a>&lt;T: key + store&gt;(self: &<a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): &T {
+    &self.value
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x2_object_internal_borrow"></a>
 
 ## Function `internal_borrow`
@@ -221,6 +248,30 @@ Borrow the mutable object value
 
 </details>
 
+<a name="0x2_object_public_borrow_mut"></a>
+
+## Function `public_borrow_mut`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_public_borrow_mut">public_borrow_mut</a>&lt;T: store, key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): &<b>mut</b> T
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_public_borrow_mut">public_borrow_mut</a>&lt;T: key + store&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): &<b>mut</b> T {
+    &<b>mut</b> self.value
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x2_object_internal_borrow_mut"></a>
 
 ## Function `internal_borrow_mut`
@@ -262,6 +313,30 @@ Transfer object to recipient
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_transfer">transfer</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;, recipient: <b>address</b>) {
+    self.owner = recipient;
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_object_public_transfer"></a>
+
+## Function `public_transfer`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_public_transfer">public_transfer</a>&lt;T: store, key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, recipient: <b>address</b>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_public_transfer">public_transfer</a>&lt;T: key + store&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;, recipient: <b>address</b>) {
     self.owner = recipient;
 }
 </code></pre>
