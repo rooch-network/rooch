@@ -558,10 +558,10 @@ impl MoveOS {
             }
         };
 
-        let mut _can_pay_gas = None;
+        let mut can_pay_gas = None;
         let action_opt_cloned = action_opt.clone();
         if let Some(action) = action_opt {
-            _can_pay_gas = self.execute_gas_validate(&mut session, &action)?;
+            can_pay_gas = self.execute_gas_validate(&mut session, &action)?;
         }
 
         // update txn result to TxContext
@@ -574,13 +574,30 @@ impl MoveOS {
             .add(tx_result)
             .expect("Add tx_result to TxContext should always success");
 
+        if let Some(pay_gas) = can_pay_gas {
+            if pay_gas {
+                let verified_action = &action_opt_cloned.clone().unwrap();
+                let func_call_opt = {
+                    match verified_action {
+                        VerifiedMoveAction::Function { call } => Some(call),
+                        _ => None,
+                    }
+                };
+
+                if let Some(func_call) = func_call_opt {
+                    let module_id = func_call.function_id.module_id.address();
+                    session.storage_context_mut().tx_context.sender = *module_id;
+                }
+            }
+        }
+
         // system post_execute
         // we do not charge gas for system_post_execute function
         session
             .execute_function_call(self.system_post_execute_functions.clone(), false)
             .expect("system_post_execute should not fail.");
 
-        if _can_pay_gas.is_some() {
+        if can_pay_gas.is_some() {
             self.execute_gas_charge_post(&mut session, &action_opt_cloned.unwrap())?;
         }
 
