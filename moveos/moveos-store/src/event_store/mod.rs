@@ -3,11 +3,11 @@
 
 use anyhow::{anyhow, Result};
 use move_core_types::language_storage::TypeTag;
-use moveos_types::event::{Event, EventID};
 use moveos_types::event_filter::EventFilter;
 use moveos_types::h256::H256;
 use moveos_types::move_types::type_tag_match;
-use moveos_types::object::ObjectID;
+use moveos_types::moveos_std::event::{Event, EventID};
+use moveos_types::moveos_std::object::ObjectID;
 
 use crate::{EVENT_INDEX_PREFIX_NAME, EVENT_PREFIX_NAME};
 use raw_store::{derive_store, CodecKVStore, StoreInstance};

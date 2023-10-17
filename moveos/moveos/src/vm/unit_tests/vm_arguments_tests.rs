@@ -31,11 +31,11 @@ use move_core_types::{
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{
     move_types::FunctionId,
-    object::ObjectID,
+    moveos_std::object::ObjectID,
+    moveos_std::tx_context::TxContext,
     state::State,
     state_resolver::StateResolver,
     transaction::{FunctionCall, MoveAction},
-    tx_context::TxContext,
 };
 
 // make a script with a given signature for main.

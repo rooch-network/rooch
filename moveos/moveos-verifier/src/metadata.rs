@@ -17,7 +17,7 @@ use move_model::ast::Attribute;
 use move_model::model::{FunctionEnv, GlobalEnv, Loc, ModuleEnv};
 use move_model::ty::PrimitiveType;
 use move_model::ty::Type;
-use moveos_types::context::Context;
+use moveos_types::moveos_std::context::Context;
 use moveos_types::state::MoveStructType;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};

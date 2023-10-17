@@ -22,8 +22,8 @@ use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::{access_path::AccessPath, transaction::VerifiedMoveOSTransaction};
 use moveos_types::{
-    event::AnnotatedEvent,
     event_filter::EventFilter,
+    moveos_std::event::AnnotatedEvent,
     state::{AnnotatedState, State},
 };
 use rooch_types::address::MultiChainAddress;

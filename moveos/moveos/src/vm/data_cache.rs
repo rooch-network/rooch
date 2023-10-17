@@ -31,7 +31,7 @@ use std::collections::{btree_map::BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 use move_core_types::language_storage::TypeTag;
-use moveos_types::object::NamedTableID;
+use moveos_types::moveos_std::object::NamedTableID;
 use moveos_types::state::MoveStructType;
 
 /// Transaction data cache. Keep updates within a transaction so they can all be published at

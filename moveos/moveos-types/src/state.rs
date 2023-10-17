@@ -3,7 +3,7 @@
 
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
-    object::{self, AnnotatedObject, Object, ObjectID, RawObject},
+    moveos_std::object::{self, AnnotatedObject, Object, ObjectID, RawObject},
 };
 use anyhow::{bail, ensure, Result};
 use move_core_types::{

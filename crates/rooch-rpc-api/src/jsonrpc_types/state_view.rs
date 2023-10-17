@@ -4,7 +4,7 @@
 use super::{AnnotatedMoveValueView, BytesView, StrView, TypeTagView};
 use move_core_types::effects::Op;
 use moveos_types::{
-    object::ObjectID,
+    moveos_std::object::ObjectID,
     state::{AnnotatedState, State, StateChangeSet, TableChange, TableTypeInfo},
 };
 use schemars::JsonSchema;

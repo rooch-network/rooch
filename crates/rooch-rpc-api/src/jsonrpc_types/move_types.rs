@@ -10,15 +10,15 @@ use move_core_types::{
     u256,
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
-use moveos_types::event::{AnnotatedEvent, Event, EventID};
 use moveos_types::move_types::parse_module_id;
+use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
 use moveos_types::moveos_std::type_info::TypeInfo;
 use moveos_types::transaction::MoveAction;
 use moveos_types::{
     access_path::AccessPath,
     event_filter::EventFilter,
     move_types::FunctionId,
-    object::{AnnotatedObject, ObjectID},
+    moveos_std::object::{AnnotatedObject, ObjectID},
     transaction::{FunctionCall, ScriptCall},
 };
 use moveos_types::{

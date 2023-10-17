@@ -12,7 +12,7 @@ use move_vm_types::values::{Reference, Struct, StructRef};
 use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, values::Value,
 };
-use moveos_types::object::ObjectID;
+use moveos_types::moveos_std::object::ObjectID;
 use std::{collections::VecDeque, sync::Arc};
 
 // The index of the address field in ObjectID.

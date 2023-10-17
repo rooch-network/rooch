@@ -4,7 +4,7 @@
 use crate::{
     access_path::AccessPath,
     move_module::MoveModule,
-    object::{AnnotatedObject, NamedTableID, ObjectID},
+    moveos_std::object::{AnnotatedObject, NamedTableID, ObjectID},
     state::{AnnotatedState, State},
 };
 use anyhow::{ensure, Result};
