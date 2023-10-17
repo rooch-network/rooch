@@ -12,7 +12,7 @@ use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state::{MoveStructState, MoveStructType};
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
-    move_option::MoveOption,
+    move_std::option::MoveOption,
     moveos_std::tx_context::TxContext,
     transaction::FunctionCall,
 };

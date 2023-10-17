@@ -3,7 +3,7 @@
 
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
-    move_option::MoveOption,
+    move_std::option::MoveOption,
     move_std::ascii::MoveAsciiString,
     state::{MoveStructState, MoveStructType},
     transaction::MoveAction,
