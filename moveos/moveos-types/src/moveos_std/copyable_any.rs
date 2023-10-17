@@ -17,7 +17,6 @@ use serde::{Deserialize, Serialize};
 
 pub use super::any::AnyTrait;
 
-
 /// `Any` is represented `moveos_std::copyable_any::Any` in Move.
 #[derive(Clone, Deserialize, Serialize, Eq, PartialEq)]
 pub struct Any {
@@ -35,7 +34,6 @@ impl std::fmt::Debug for Any {
         )
     }
 }
-
 
 impl AnyTrait for Any {
     fn new(type_name: MoveString, data: Vec<u8>) -> Self

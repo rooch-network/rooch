@@ -6,10 +6,10 @@
 use crate::addresses::MOVEOS_STD_ADDRESS;
 use crate::gas_config::GasConfig;
 use crate::h256::{self, H256};
-use crate::moveos_std::copyable_any::{AnyTrait, Any};
-use crate::move_simple_map::SimpleMap;
 use crate::move_std::string::MoveString;
+use crate::moveos_std::copyable_any::{Any, AnyTrait};
 use crate::moveos_std::object::ObjectID;
+use crate::moveos_std::simple_map::SimpleMap;
 use crate::state::{MoveState, MoveStructState, MoveStructType};
 use anyhow::Result;
 use move_core_types::value::{MoveStructLayout, MoveTypeLayout};
