@@ -28,7 +28,7 @@ This allows us to decouple `address` and `PrivateKey`.
 
 ## Authentication Validator
 
-Based on the above abstraction, we can implement account abstraction by defining custom authentication validators. An authentication validator is a smart contract, which primarily checks the validity of transactions.
+Based on the above abstraction, we can implement account abstraction by defining custom authentication validators. An authentication validator is a smart contract, which primarily verify the identity of the sender of a transaction.
 
 The authentication validator should include the following methods:
 
