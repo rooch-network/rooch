@@ -35,21 +35,22 @@ impl std::fmt::Debug for Any {
     }
 }
 
-/// `CopyableAny` is represented `moveos_std::copyable_any::Any` in Move.
-#[derive(Clone, Deserialize, Serialize, Eq, PartialEq)]
-pub struct CopyableAny {
-    pub type_name: MoveString,
-    pub data: Vec<u8>,
+impl MoveStructType for Any {
+    const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = ident_str!("any");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Any");
+
+    fn type_params() -> Vec<TypeTag> {
+        vec![]
+    }
 }
 
-impl std::fmt::Debug for CopyableAny {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "CopyableAny {{ type_name: {}, data: {} }}",
-            self.type_name,
-            hex::encode(&self.data)
-        )
+impl MoveStructState for Any {
+    fn struct_layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![
+            MoveTypeLayout::Struct(MoveString::struct_layout()),
+            MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
+        ])
     }
 }
 
@@ -101,56 +102,5 @@ impl AnyTrait for Any {
 
     fn into_inner(self) -> (MoveString, Vec<u8>) {
         (self.type_name, self.data)
-    }
-}
-
-impl AnyTrait for CopyableAny {
-    fn new(type_name: MoveString, data: Vec<u8>) -> Self
-    where
-        Self: Sized,
-    {
-        Self { type_name, data }
-    }
-
-    fn into_inner(self) -> (MoveString, Vec<u8>) {
-        (self.type_name, self.data)
-    }
-}
-
-impl MoveStructType for Any {
-    const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = ident_str!("any");
-    const STRUCT_NAME: &'static IdentStr = ident_str!("Any");
-
-    fn type_params() -> Vec<TypeTag> {
-        vec![]
-    }
-}
-
-impl MoveStructState for Any {
-    fn struct_layout() -> MoveStructLayout {
-        MoveStructLayout::new(vec![
-            MoveTypeLayout::Struct(MoveString::struct_layout()),
-            MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
-        ])
-    }
-}
-
-impl MoveStructType for CopyableAny {
-    const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = ident_str!("copyable_any");
-    const STRUCT_NAME: &'static IdentStr = ident_str!("Any");
-
-    fn type_params() -> Vec<TypeTag> {
-        vec![]
-    }
-}
-
-impl MoveStructState for CopyableAny {
-    fn struct_layout() -> MoveStructLayout {
-        MoveStructLayout::new(vec![
-            MoveTypeLayout::Struct(MoveString::struct_layout()),
-            MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
-        ])
     }
 }

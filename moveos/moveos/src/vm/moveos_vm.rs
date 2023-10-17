@@ -39,7 +39,7 @@ use moveos_stdlib::natives::moveos_stdlib::{
 };
 use moveos_types::{
     function_return_value::FunctionReturnValue,
-    move_any::CopyableAny,
+    moveos_std::copyable_any::Any,
     move_simple_map::SimpleMap,
     move_std::string::MoveString,
     move_types::FunctionId,
@@ -141,7 +141,7 @@ where
     }
 
     /// Re spawn a new session with the same context.
-    pub fn respawn(self, env: SimpleMap<MoveString, CopyableAny>) -> Self {
+    pub fn respawn(self, env: SimpleMap<MoveString, Any>) -> Self {
         //FIXME
         //The TxContext::spawn function will reset the ids_created and kv map.
         //But we need some TxContext value in the pre_execute and post_execute function, such as the TxValidateResult.
