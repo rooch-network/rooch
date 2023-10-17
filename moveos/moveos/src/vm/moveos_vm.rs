@@ -41,7 +41,7 @@ use moveos_types::{
     function_return_value::FunctionReturnValue,
     move_any::CopyableAny,
     move_simple_map::SimpleMap,
-    move_string::MoveString,
+    move_std::string::MoveString,
     move_types::FunctionId,
     moveos_std::context::Context,
     moveos_std::event::{Event, EventID},

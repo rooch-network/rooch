@@ -6,7 +6,7 @@ use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::{AccountChangeSet, ChangeSet, Op};
 use moveos_types::h256::H256;
-use moveos_types::move_string::MoveString;
+use moveos_types::move_std::string::MoveString;
 use moveos_types::move_types::random_type_tag;
 use moveos_types::moveos_std::context;
 use moveos_types::moveos_std::object::{NamedTableID, ObjectID};

@@ -6,6 +6,7 @@ use crate::authentication_key::AuthenticationKey;
 use anyhow::Result;
 use move_core_types::value::MoveValue;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
+use moveos_types::move_std::ascii::MoveAsciiString;
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_option::MoveOption,
@@ -14,7 +15,6 @@ use moveos_types::{
     transaction::{FunctionCall, MoveAction},
 };
 use moveos_types::{
-    move_string::MoveAsciiString,
     serde::Readable,
     state::{MoveStructState, MoveStructType},
 };

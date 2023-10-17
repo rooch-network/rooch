@@ -3,7 +3,7 @@
 
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
-    move_string::MoveString,
+    move_std::string::MoveString,
     state::{MoveState, MoveStructState, MoveStructType},
 };
 use anyhow::{bail, Result};

@@ -22,7 +22,7 @@ use move_vm_types::{
 use moveos_stdlib::natives::moveos_stdlib::raw_table::{serialize, TableData, TableRuntimeValue};
 use moveos_types::{
     move_module::MoveModule,
-    move_string::MoveString,
+    move_std::string::MoveString,
     state::{MoveStructState, State, StateChangeSet, TableChange},
     state_resolver::{module_name_to_key, MoveOSResolver},
 };

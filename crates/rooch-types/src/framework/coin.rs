@@ -6,7 +6,7 @@ use anyhow::Result;
 use move_core_types::language_storage::StructTag;
 use move_core_types::u256::U256;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
-use moveos_types::move_string::MoveString;
+use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state::{MoveStructState, MoveStructType};
 use moveos_types::{

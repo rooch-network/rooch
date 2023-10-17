@@ -9,7 +9,8 @@ use move_core_types::{
     identifier::Identifier,
     language_storage::{StructTag, TypeTag},
 };
-use moveos_types::move_string::{MoveAsciiString, MoveString};
+use moveos_types::move_std::ascii::MoveAsciiString;
+use moveos_types::move_std::string::MoveString;
 use moveos_types::transaction::MoveAction;
 use rooch_types::error::RoochResult;
 use rooch_types::transaction::rooch::RoochTransaction;
