@@ -9,7 +9,7 @@ use moveos_types::access_path::AccessPath;
 use moveos_types::event_filter::EventFilter;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
-use moveos_types::moveos_std::event::AnnotatedEvent;
+use moveos_types::moveos_std::event::{AnnotatedEvent, EventID};
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
@@ -113,6 +113,15 @@ pub struct GetEventsByEventHandleMessage {
 
 impl Message for GetEventsByEventHandleMessage {
     type Result = Result<Vec<AnnotatedEvent>>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetEventsByEventIDsMessage {
+    pub event_ids: Vec<EventID>,
+}
+
+impl Message for GetEventsByEventIDsMessage {
+    type Result = Result<Vec<Option<AnnotatedEvent>>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]

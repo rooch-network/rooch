@@ -8,6 +8,7 @@ use jsonrpsee::{
     RpcModule,
 };
 use moveos_types::h256::H256;
+use moveos_types::moveos_std::event::EventID;
 use rooch_rpc_api::jsonrpc_types::{account_view::BalanceInfoView, StateOptions};
 use rooch_rpc_api::jsonrpc_types::{
     transaction_view::TransactionWithInfoView, EventOptions, EventView,
@@ -162,24 +163,44 @@ impl RoochAPIServer for RoochServer {
         limit: Option<StrView<u64>>,
         event_options: Option<EventOptions>,
     ) -> RpcResult<EventPageView> {
+        let (event_handle_id, _sender, last_event_seq) = self
+            .aggregate_service
+            .get_event_handle(event_handle_type.clone().into())
+            .await?;
+
         let event_options = event_options.unwrap_or_default();
         let cursor = cursor.map(|v| v.0);
         let limit = limit.map(|v| v.0);
         // NOTE: fetch one more object to check if there is next page
         let limit_of = min(limit.unwrap_or(DEFAULT_RESULT_LIMIT), MAX_RESULT_LIMIT);
+
+        let start = cursor.unwrap_or(0);
+        let end = min(start + (limit_of + 1), last_event_seq + 1);
+        let event_seqs: Vec<_> = if cursor.is_some() {
+            ((start + 1)..=end).collect()
+        } else {
+            (start..end).collect()
+        };
+        let event_ids = event_seqs
+            .into_iter()
+            .map(|v| EventID::new(event_handle_id, v))
+            .collect::<Vec<_>>();
+
         let mut data = if event_options.decode {
             self.rpc_service
-                .get_events_by_event_handle(event_handle_type.into(), cursor, limit_of + 1)
+                .get_events_by_event_ids(event_ids)
                 .await?
                 .into_iter()
+                .flatten()
                 .map(EventView::from)
                 .collect::<Vec<_>>()
         } else {
             //TODO provide a function to directly get the Event, not the AnnotatedEvent
             self.rpc_service
-                .get_events_by_event_handle(event_handle_type.into(), cursor, limit_of + 1)
+                .get_events_by_event_ids(event_ids)
                 .await?
                 .into_iter()
+                .flatten()
                 .map(|e| EventView::from(e.event))
                 .collect::<Vec<_>>()
         };

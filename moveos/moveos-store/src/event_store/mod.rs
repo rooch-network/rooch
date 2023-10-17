@@ -28,6 +28,7 @@ pub trait EventStore {
 
     fn get_event(&self, event_id: EventID) -> Result<Option<Event>>;
 
+    fn multi_get_events(&self, event_ids: Vec<EventID>) -> Result<Vec<Option<Event>>>;
     fn get_events_by_tx_hash(&self, tx_hash: &H256) -> Result<Vec<Event>>;
 
     fn get_events_by_event_handle_id(
@@ -78,6 +79,14 @@ impl EventDBStore {
     pub fn get_event(&self, event_id: EventID) -> Result<Option<Event>> {
         let key = (event_id.event_handle_id, event_id.event_seq);
         self.event_store.kv_get(key)
+    }
+
+    pub fn multi_get_events(&self, event_ids: Vec<EventID>) -> Result<Vec<Option<Event>>> {
+        let keys: Vec<_> = event_ids
+            .into_iter()
+            .map(|v| (v.event_handle_id, v.event_seq))
+            .collect();
+        self.event_store.multiple_get(keys)
     }
 
     pub fn get_events_by_tx_hash(&self, tx_hash: &H256) -> Result<Vec<Event>> {

@@ -195,6 +195,10 @@ impl EventStore for MoveOSStore {
         self.get_event_store().get_event(event_id)
     }
 
+    fn multi_get_events(&self, event_ids: Vec<EventID>) -> Result<Vec<Option<Event>>> {
+        self.get_event_store().multi_get_events(event_ids)
+    }
+
     fn get_events_by_tx_hash(&self, tx_hash: &H256) -> Result<Vec<Event>> {
         self.get_event_store().get_events_by_tx_hash(tx_hash)
     }

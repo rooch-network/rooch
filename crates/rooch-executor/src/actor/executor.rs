@@ -7,7 +7,8 @@ use super::messages::{
     StatesMessage, ValidateTransactionMessage,
 };
 use crate::actor::messages::{
-    GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage, ListStatesMessage,
+    GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage,
+    ListStatesMessage,
 };
 use accumulator::inmemory::InMemoryAccumulator;
 use anyhow::Result;
@@ -403,6 +404,34 @@ impl Handler<GetEventsByEventHandleMessage> for ExecutorActor {
                 let event_move_value = MoveValueAnnotator::new(resolver)
                     .view_resource(&event_handle_type, event.event_data())?;
                 Ok(AnnotatedEvent::new(event, event_move_value))
+            })
+            .collect::<Result<Vec<_>>>()
+    }
+}
+
+#[async_trait]
+impl Handler<GetEventsByEventIDsMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: GetEventsByEventIDsMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<Option<AnnotatedEvent>>> {
+        let GetEventsByEventIDsMessage { event_ids } = msg;
+        let event_store = self.moveos.event_store();
+        let resolver = self.moveos.moveos_resolver();
+
+        event_store
+            .multi_get_events(event_ids)?
+            .into_iter()
+            .map(|v| match v {
+                Some(event) => {
+                    let event_move_value = MoveValueAnnotator::new(resolver).view_resource(
+                        &as_struct_tag(event.type_tag.clone())?,
+                        event.event_data(),
+                    )?;
+                    Ok(Some(AnnotatedEvent::new(event, event_move_value)))
+                }
+                None => Ok(None),
             })
             .collect::<Result<Vec<_>>>()
     }
