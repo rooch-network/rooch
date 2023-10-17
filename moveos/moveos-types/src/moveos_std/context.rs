@@ -3,10 +3,10 @@
 
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
-    object::ObjectID,
+    moveos_std::object::ObjectID,
+    moveos_std::tx_context::TxContext,
     state::{MoveStructState, MoveStructType},
     state_resolver,
-    tx_context::TxContext,
 };
 use anyhow::Result;
 use move_core_types::{

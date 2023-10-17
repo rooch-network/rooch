@@ -27,7 +27,7 @@ use move_vm_types::{
     values::{GlobalValue, Struct, Value},
 };
 use moveos_types::{
-    object::{ObjectID, TableInfo},
+    moveos_std::object::{ObjectID, TableInfo},
     state::TableTypeInfo,
     state_resolver::StateResolver,
 };

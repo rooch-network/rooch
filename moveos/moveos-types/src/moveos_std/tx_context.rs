@@ -9,7 +9,7 @@ use crate::h256::{self, H256};
 use crate::move_any::{AnyTrait, CopyableAny};
 use crate::move_simple_map::SimpleMap;
 use crate::move_string::MoveString;
-use crate::object::ObjectID;
+use crate::moveos_std::object::ObjectID;
 use crate::state::{MoveState, MoveStructState, MoveStructType};
 use anyhow::Result;
 use move_core_types::value::{MoveStructLayout, MoveTypeLayout};

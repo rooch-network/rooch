@@ -5,10 +5,10 @@ use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
-use moveos_types::event::AnnotatedEvent;
 use moveos_types::event_filter::EventFilter;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
+use moveos_types::moveos_std::event::{AnnotatedEvent, EventID};
 use moveos_types::state::{AnnotatedState, MoveStructType, State};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
 use rooch_executor::proxy::ExecutorProxy;
@@ -138,6 +138,14 @@ impl RpcService {
             .executor
             .get_events_by_event_handle(event_handle_type, cursor, limit)
             .await?;
+        Ok(resp)
+    }
+
+    pub async fn get_events_by_event_ids(
+        &self,
+        event_ids: Vec<EventID>,
+    ) -> Result<Vec<Option<AnnotatedEvent>>> {
+        let resp = self.executor.get_events_by_event_ids(event_ids).await?;
         Ok(resp)
     }
 

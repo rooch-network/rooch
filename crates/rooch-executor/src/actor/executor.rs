@@ -7,7 +7,8 @@ use super::messages::{
     StatesMessage, ValidateTransactionMessage,
 };
 use crate::actor::messages::{
-    GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage, ListStatesMessage,
+    GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage,
+    ListStatesMessage,
 };
 use accumulator::inmemory::InMemoryAccumulator;
 use anyhow::Result;
@@ -20,21 +21,21 @@ use moveos::moveos::MoveOS;
 use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_store::transaction_store::TransactionStore;
 use moveos_store::MoveOSStore;
-use moveos_types::event::AnnotatedEvent;
-use moveos_types::event::EventHandle;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::as_struct_tag;
+use moveos_types::moveos_std::event::AnnotatedEvent;
+use moveos_types::moveos_std::event::EventHandle;
+use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::state_resolver::{AnnotatedStateReader, StateReader};
 use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
-use moveos_types::tx_context::TxContext;
 use rooch_genesis::RoochGenesis;
 use rooch_store::RoochStore;
 use rooch_types::address::MultiChainAddress;
@@ -403,6 +404,34 @@ impl Handler<GetEventsByEventHandleMessage> for ExecutorActor {
                 let event_move_value = MoveValueAnnotator::new(resolver)
                     .view_resource(&event_handle_type, event.event_data())?;
                 Ok(AnnotatedEvent::new(event, event_move_value))
+            })
+            .collect::<Result<Vec<_>>>()
+    }
+}
+
+#[async_trait]
+impl Handler<GetEventsByEventIDsMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: GetEventsByEventIDsMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<Option<AnnotatedEvent>>> {
+        let GetEventsByEventIDsMessage { event_ids } = msg;
+        let event_store = self.moveos.event_store();
+        let resolver = self.moveos.moveos_resolver();
+
+        event_store
+            .multi_get_events(event_ids)?
+            .into_iter()
+            .map(|v| match v {
+                Some(event) => {
+                    let event_move_value = MoveValueAnnotator::new(resolver).view_resource(
+                        &as_struct_tag(event.type_tag.clone())?,
+                        event.event_data(),
+                    )?;
+                    Ok(Some(AnnotatedEvent::new(event, event_move_value)))
+                }
+                None => Ok(None),
             })
             .collect::<Result<Vec<_>>>()
     }

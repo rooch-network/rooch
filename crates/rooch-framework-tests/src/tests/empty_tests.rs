@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::binding_test;
-use moveos_types::tx_context::TxContext;
+use moveos_types::moveos_std::tx_context::TxContext;
 
 #[test]
 fn test_empty() {

@@ -7,8 +7,8 @@ use move_core_types::{account_address::AccountAddress, ident_str, identifier::Id
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_types::FunctionId,
+    moveos_std::tx_context::TxContext,
     transaction::FunctionCall,
-    tx_context::TxContext,
 };
 
 /// Rust bindings for RoochFramework transaction_validator module

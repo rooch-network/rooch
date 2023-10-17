@@ -4,8 +4,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::event::Event;
 use crate::move_types::type_tag_match;
+use crate::moveos_std::event::Event;
 use anyhow::Result;
 use move_core_types::language_storage::TypeTag;
 use serde::{Deserialize, Serialize};

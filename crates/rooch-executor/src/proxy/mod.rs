@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{
-    GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage, ListStatesMessage,
+    GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage,
+    ListStatesMessage,
 };
 use crate::actor::{
     executor::ExecutorActor,
@@ -17,13 +18,14 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
+use moveos_types::moveos_std::event::EventID;
 use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::{access_path::AccessPath, transaction::VerifiedMoveOSTransaction};
 use moveos_types::{
-    event::AnnotatedEvent,
     event_filter::EventFilter,
+    moveos_std::event::AnnotatedEvent,
     state::{AnnotatedState, State},
 };
 use rooch_types::address::MultiChainAddress;
@@ -124,6 +126,15 @@ impl ExecutorProxy {
                 cursor,
                 limit,
             })
+            .await?
+    }
+
+    pub async fn get_events_by_event_ids(
+        &self,
+        event_ids: Vec<EventID>,
+    ) -> Result<Vec<Option<AnnotatedEvent>>> {
+        self.actor
+            .send(GetEventsByEventIDsMessage { event_ids })
             .await?
     }
 

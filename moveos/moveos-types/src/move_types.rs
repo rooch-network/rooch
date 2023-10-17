@@ -11,7 +11,7 @@ use std::fmt;
 use std::str::FromStr;
 
 use crate::addresses::MOVEOS_STD_ADDRESS;
-use crate::object;
+use crate::moveos_std::object;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::prelude::*;
 use rand::prelude::{Distribution, SliceRandom};
@@ -207,7 +207,7 @@ pub fn as_struct_tag(type_tag: TypeTag) -> Result<StructTag> {
     if let TypeTag::Struct(struct_tag) = type_tag {
         Ok(*struct_tag)
     } else {
-        bail!("invalid struct tag: {:?}", type_tag)
+        bail!("Invalid struct tag: {:?}", type_tag)
     }
 }
 

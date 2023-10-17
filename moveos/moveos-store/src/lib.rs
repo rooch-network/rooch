@@ -19,10 +19,10 @@ use crate::state_store::NodeDBStore;
 use crate::transaction_store::{TransactionDBStore, TransactionStore};
 use move_core_types::language_storage::TypeTag;
 use moveos_config::store_config::RocksdbConfig;
-use moveos_types::event::{Event, EventID};
 use moveos_types::event_filter::EventFilter;
 use moveos_types::h256::H256;
-use moveos_types::object::ObjectID;
+use moveos_types::moveos_std::event::{Event, EventID};
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::State;
 use moveos_types::state_resolver::StateResolver;
@@ -193,6 +193,10 @@ impl EventStore for MoveOSStore {
 
     fn get_event(&self, event_id: EventID) -> Result<Option<Event>> {
         self.get_event_store().get_event(event_id)
+    }
+
+    fn multi_get_events(&self, event_ids: Vec<EventID>) -> Result<Vec<Option<Event>>> {
+        self.get_event_store().multi_get_events(event_ids)
     }
 
     fn get_events_by_tx_hash(&self, tx_hash: &H256) -> Result<Vec<Event>> {

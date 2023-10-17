@@ -3,11 +3,11 @@
 
 use anyhow::{anyhow, Result};
 use move_core_types::language_storage::TypeTag;
-use moveos_types::event::{Event, EventID};
 use moveos_types::event_filter::EventFilter;
 use moveos_types::h256::H256;
 use moveos_types::move_types::type_tag_match;
-use moveos_types::object::ObjectID;
+use moveos_types::moveos_std::event::{Event, EventID};
+use moveos_types::moveos_std::object::ObjectID;
 
 use crate::{EVENT_INDEX_PREFIX_NAME, EVENT_PREFIX_NAME};
 use raw_store::{derive_store, CodecKVStore, StoreInstance};
@@ -28,6 +28,7 @@ pub trait EventStore {
 
     fn get_event(&self, event_id: EventID) -> Result<Option<Event>>;
 
+    fn multi_get_events(&self, event_ids: Vec<EventID>) -> Result<Vec<Option<Event>>>;
     fn get_events_by_tx_hash(&self, tx_hash: &H256) -> Result<Vec<Event>>;
 
     fn get_events_by_event_handle_id(
@@ -80,6 +81,14 @@ impl EventDBStore {
         self.event_store.kv_get(key)
     }
 
+    pub fn multi_get_events(&self, event_ids: Vec<EventID>) -> Result<Vec<Option<Event>>> {
+        let keys: Vec<_> = event_ids
+            .into_iter()
+            .map(|v| (v.event_handle_id, v.event_seq))
+            .collect();
+        self.event_store.multiple_get(keys)
+    }
+
     pub fn get_events_by_tx_hash(&self, tx_hash: &H256) -> Result<Vec<Event>> {
         let mut iter = self.indexer_store.iter()?;
         let seek_key = (*tx_hash, 0u64);
@@ -117,15 +126,6 @@ impl EventDBStore {
 
         let data: Vec<Event> = iter
             .filter_map(|item| {
-                // let ((handle_id, event_seq), event) = match item {
-                //     Ok(z) => z,
-                //     Err(err) => {
-                //         return anyhow!(format!(
-                //             "Get events by event handle id error, {:?}",
-                //             err
-                //         ));
-                //     }
-                // };
                 let ((handle_id, event_seq), event) = item.unwrap_or_else(|err| {
                     panic!(
                         "{}",

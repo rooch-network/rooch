@@ -9,7 +9,7 @@ use move_vm_types::{
     data_store::{DataStore, TransactionCache},
     loaded_data::runtime_types::{StructType, Type},
 };
-use moveos_types::{context::Context, state::MoveStructType};
+use moveos_types::{moveos_std::context::Context, state::MoveStructType};
 use std::sync::Arc;
 
 /// Transaction Argument Resolver will implemented by the Move Extension

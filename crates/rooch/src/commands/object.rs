@@ -4,7 +4,7 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use moveos_types::{access_path::AccessPath, object::ObjectID};
+use moveos_types::{access_path::AccessPath, moveos_std::object::ObjectID};
 use rooch_rpc_api::jsonrpc_types::StateView;
 use rooch_types::error::RoochResult;
 
