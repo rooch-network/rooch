@@ -1,22 +1,20 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{anyhow, bail, format_err, Result};
+use crate::addresses::MOVEOS_STD_ADDRESS;
+use crate::moveos_std::object;
+use anyhow::{anyhow, bail, Result};
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
     language_storage::StructTag, language_storage::TypeTag,
 };
-use serde::{Deserialize, Serialize, Serializer};
-use std::fmt;
-use std::str::FromStr;
-
-use crate::addresses::MOVEOS_STD_ADDRESS;
-use crate::moveos_std::object;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::prelude::*;
 use rand::prelude::{Distribution, SliceRandom};
 use rand::rngs::OsRng;
 use rand::Rng;
+use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 /// Identifier of a module function
 /// The FunctionId is of the form <address>::<module>::<function>
@@ -95,54 +93,6 @@ impl FromStr for StructId {
             module_id,
             struct_name,
         })
-    }
-}
-
-/// Hex encoded bytes to allow for having bytes represented in JSON
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct HexEncodedBytes(pub Vec<u8>);
-
-impl HexEncodedBytes {
-    pub fn json(&self) -> anyhow::Result<serde_json::Value> {
-        Ok(serde_json::to_value(self)?)
-    }
-}
-
-impl FromStr for HexEncodedBytes {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> anyhow::Result<Self, anyhow::Error> {
-        let hex_str = if let Some(hex) = s.strip_prefix("0x") {
-            hex
-        } else {
-            s
-        };
-        Ok(Self(hex::decode(hex_str).map_err(|e| {
-            format_err!(
-                "decode hex-encoded string({:?}) failed, caused by error: {}",
-                s,
-                e
-            )
-        })?))
-    }
-}
-
-impl fmt::Display for HexEncodedBytes {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "0x{}", hex::encode(&self.0))?;
-        Ok(())
-    }
-}
-
-impl Serialize for HexEncodedBytes {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.to_string().serialize(serializer)
-    }
-}
-
-impl From<Vec<u8>> for HexEncodedBytes {
-    fn from(bytes: Vec<u8>) -> Self {
-        Self(bytes)
     }
 }
 
