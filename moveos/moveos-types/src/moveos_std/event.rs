@@ -164,14 +164,12 @@ pub struct Event {
 impl Event {
     pub fn new(
         event_id: EventID,
-        // sequence_number: u64,
         type_tag: TypeTag,
         event_data: Vec<u8>,
         event_index: u64,
     ) -> Self {
         Self {
             event_id,
-            // sequence_number,
             type_tag,
             event_data,
             event_index,
@@ -268,15 +266,6 @@ impl EventHandle {
             .unwrap()
             .into()
     }
-
-    // #[cfg(any(test, feature = "fuzzing"))]
-    // /// Create a random event handle for testing
-    // pub fn random_handle(count: u64) -> Self {
-    //     Self {
-    //         event_id: EventID::random(),
-    //         count,
-    //     }
-    // }
 }
 
 #[derive(Debug, Clone)]

@@ -126,15 +126,6 @@ impl EventDBStore {
 
         let data: Vec<Event> = iter
             .filter_map(|item| {
-                // let ((handle_id, event_seq), event) = match item {
-                //     Ok(z) => z,
-                //     Err(err) => {
-                //         return anyhow!(format!(
-                //             "Get events by event handle id error, {:?}",
-                //             err
-                //         ));
-                //     }
-                // };
                 let ((handle_id, event_seq), event) = item.unwrap_or_else(|err| {
                     panic!(
                         "{}",
