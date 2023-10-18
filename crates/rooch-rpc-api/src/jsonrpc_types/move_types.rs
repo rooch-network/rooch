@@ -10,9 +10,12 @@ use move_core_types::{
     u256,
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
+use moveos_types::move_std::ascii::MoveAsciiString;
+use moveos_types::move_std::string::MoveString;
 use moveos_types::move_types::parse_module_id;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
 use moveos_types::moveos_std::type_info::TypeInfo;
+use moveos_types::state::MoveStructState;
 use moveos_types::transaction::MoveAction;
 use moveos_types::{
     access_path::AccessPath,
@@ -20,10 +23,6 @@ use moveos_types::{
     move_types::FunctionId,
     moveos_std::object::{AnnotatedObject, ObjectID},
     transaction::{FunctionCall, ScriptCall},
-};
-use moveos_types::{
-    move_string::{MoveAsciiString, MoveString},
-    state::MoveStructState,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

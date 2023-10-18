@@ -5,7 +5,7 @@ use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use move_core_types::language_storage::StructTag;
 use move_core_types::u256::U256;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
-use moveos_types::move_string::MoveString;
+use moveos_types::move_std::string::MoveString;
 use moveos_types::state::{MoveStructState, MoveStructType};
 use serde::{Deserialize, Serialize};
 
