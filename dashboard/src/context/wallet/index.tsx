@@ -95,8 +95,6 @@ const ETHProvider = ({ children }: Props) => {
   const connect = async (targetChain?: ChainInfo) => {
     let connectChain = targetChain ?? rooch.getActiveChina().info
 
-    console.log(connectChain)
-
     if (chainId !== connectChain.chainId) {
       try {
         await switchChina(connectChain)

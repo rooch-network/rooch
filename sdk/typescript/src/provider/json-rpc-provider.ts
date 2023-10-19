@@ -155,7 +155,6 @@ export class JsonRpcProvider implements IProvider {
 
   // Get the states by access_path
   async getStates(access_path: string): Promise<StateView | null[]> {
-    console.log('state')
     return await this.client.rooch_getStates(access_path, { decode: true } as StateOptions)
   }
 

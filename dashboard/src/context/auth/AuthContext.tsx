@@ -241,6 +241,7 @@ const AuthProvider = ({ children }: Props) => {
       }
     } catch (e) {
       console.log(e)
+
       return
     }
 
@@ -268,6 +269,7 @@ const AuthProvider = ({ children }: Props) => {
   const handleLogout = () => {
     window.localStorage.removeItem(authConfig.secretKey)
     setAccounts(null)
+
     // TODO: wait fix in next metamask sdk
     // metamask.disconnect()
   }
@@ -275,10 +277,8 @@ const AuthProvider = ({ children }: Props) => {
   const getAccounts = (): Map<string, AccountDataType> | null => {
     const allAccounts = accounts ?? new Map<string, AccountDataType>()
 
-    console.log(metamask.accounts.length)
     // Todo Parse the rooch address
     if (metamask.accounts.length > 0) {
-
       metamask.accounts.forEach((v) => {
         allAccounts.set(v, {
           roochAddress: v,
