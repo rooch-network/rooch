@@ -28,7 +28,7 @@ and let developers customize the storage
 -  [Function `new_object`](#0x2_context_new_object)
 -  [Function `new_object_with_owner`](#0x2_context_new_object_with_owner)
 -  [Function `new_object_with_id`](#0x2_context_new_object_with_id)
--  [Function `new_single_object`](#0x2_context_new_single_object)
+-  [Function `new_singleton_object`](#0x2_context_new_singleton_object)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -561,13 +561,13 @@ Add the Object to the global object storage and return the ObjectRef
 
 </details>
 
-<a name="0x2_context_new_single_object"></a>
+<a name="0x2_context_new_singleton_object"></a>
 
-## Function `new_single_object`
+## Function `new_singleton_object`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_single_object">new_single_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, value: T): <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_singleton_object">new_singleton_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, value: T): <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;
 </code></pre>
 
 
@@ -576,7 +576,7 @@ Add the Object to the global object storage and return the ObjectRef
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_single_object">new_single_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, value: T): ObjectRef&lt;T&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_singleton_object">new_singleton_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, value: T): ObjectRef&lt;T&gt; {
     <b>let</b> object_id = <a href="object.md#0x2_object_singleton_object_id">object::singleton_object_id</a>&lt;T&gt;();
     <a href="context.md#0x2_context_new_object_with_id">new_object_with_id</a>(self, object_id, <a href="type_info.md#0x2_type_info_account_address">type_info::account_address</a>(&<a href="type_info.md#0x2_type_info_type_of">type_info::type_of</a>&lt;T&gt;()), value)
 }

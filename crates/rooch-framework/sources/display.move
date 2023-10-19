@@ -11,7 +11,7 @@ module rooch_framework::display{
     }
 
     public fun new<T>(ctx: &mut Context): ObjectRef<Display<T>> {
-        context::new_single_object(ctx, Display<T> {
+        context::new_singleton_object(ctx, Display<T> {
             sample_map: simple_map::create()
         })
     }

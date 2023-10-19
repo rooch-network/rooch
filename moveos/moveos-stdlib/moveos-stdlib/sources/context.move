@@ -144,7 +144,7 @@ module moveos_std::context {
     }
 
     #[private_generics(T)]
-    public fun new_single_object<T: key>(self: &mut Context, value: T): ObjectRef<T> {
+    public fun new_singleton_object<T: key>(self: &mut Context, value: T): ObjectRef<T> {
         let object_id = object::singleton_object_id<T>();
         new_object_with_id(self, object_id, type_info::account_address(&type_info::type_of<T>()), value)
     }

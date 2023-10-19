@@ -67,7 +67,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_new">new</a>&lt;T&gt;(ctx: &<b>mut</b> Context): ObjectRef&lt;<a href="display.md#0x3_display_Display">Display</a>&lt;T&gt;&gt; {
-    <a href="_new_single_object">context::new_single_object</a>(ctx, <a href="display.md#0x3_display_Display">Display</a>&lt;T&gt; {
+    <a href="_new_singleton_object">context::new_singleton_object</a>(ctx, <a href="display.md#0x3_display_Display">Display</a>&lt;T&gt; {
         sample_map: <a href="_create">simple_map::create</a>()
     })
 }
