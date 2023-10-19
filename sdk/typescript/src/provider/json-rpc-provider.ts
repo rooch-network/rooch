@@ -10,7 +10,6 @@ import {
   TypeTag,
   Arg,
   Bytes,
-  // TransactionView,
   AnnotatedFunctionResultView,
   TransactionWithInfoPageView,
   EventPageView,
@@ -69,7 +68,7 @@ export class JsonRpcProvider implements IProvider {
   }
 
   switchChain(chain: Chain) {
-    // this.client.close()
+    this.client.close()
     this.chain = chain
     this.client = new JsonRpcClient(
       new RequestManager([
