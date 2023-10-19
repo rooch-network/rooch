@@ -7,8 +7,11 @@
 /// 1. The Object is a struct in Move
 /// 2. The Object is a use case of the Hot Potato pattern in Move. Objects do not have any ability, so they cannot be drop, copy, or store, and can only be handled by StorageContext API after creation.
 module moveos_std::object {
-    
-    
+
+    use std::hash;
+    use moveos_std::type_info;
+    use moveos_std::bcs;
+    use moveos_std::address;
     friend moveos_std::context;
     friend moveos_std::account_storage;
     friend moveos_std::storage_context;
@@ -37,6 +40,18 @@ module moveos_std::object {
     /// Generate a new ObjectID from an address
     public(friend) fun address_to_object_id(address: address): ObjectID {
         ObjectID { id: address }
+    }
+
+    public(friend) fun singleton_object_id<T>(): ObjectID {
+        address_to_object_id(
+            address::from_bytes(
+                hash::sha3_256(
+                    bcs::to_bytes(
+                        &type_info::type_of<T>()
+                    )
+                )
+            )
+        )
     }
 
     /// Create a new object, the object is owned by `owner`
