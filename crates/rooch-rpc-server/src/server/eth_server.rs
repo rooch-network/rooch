@@ -10,7 +10,10 @@ use jsonrpsee::{
 use moveos_types::{
     access_path::AccessPath, gas_config::GasConfig, h256::H256, state::MoveStructType,
 };
-use rooch_rpc_api::{jsonrpc_types::{eth::ethereum_types::bloom::Bloom, H160View}, api::eth_api::EthNetAPIServer};
+use rooch_rpc_api::{
+    api::eth_api::EthNetAPIServer,
+    jsonrpc_types::{eth::ethereum_types::bloom::Bloom, H160View},
+};
 use rooch_rpc_api::{
     api::{
         eth_api::{EthAPIServer, TransactionType},

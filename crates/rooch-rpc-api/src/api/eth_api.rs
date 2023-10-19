@@ -33,7 +33,6 @@ impl Default for TransactionType {
 #[rpc(server, client, namespace = "eth")]
 #[async_trait]
 pub trait EthAPI {
-    
     /// Returns the chain ID of the current network.
     #[method(name = "chainId")]
     async fn chain_id(&self) -> RpcResult<String>;
@@ -123,7 +122,6 @@ pub trait EthAPI {
 #[rpc(server, client)]
 #[async_trait]
 pub trait EthNetAPI {
-
     // The `net_version`` is not in the `eth` namespace,
     // So we put it in a new trait.
     // The metamask will call this method for connecting to the network.

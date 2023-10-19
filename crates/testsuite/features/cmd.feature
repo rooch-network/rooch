@@ -5,6 +5,18 @@ Feature: Rooch CLI integration tests
       Then cmd: "env switch --alias local"
 
     @serial
+    Scenario: ethereum rpc test
+      Given a server for ethereum
+      Then cmd: "rpc request --method eth_getBalance --params \"0x1111111111111111111111111111111111111111\""
+      Then assert: "{{$.rpc[-1]}} == 0x56bc75e2d63100000"
+      Then cmd: "rpc request --method eth_feeHistory --params [\"0x5\",\"0x6524cad7\",[10,20,30]]"
+      Then assert: "'{{$.rpc[-1]}}' contains baseFeePerGas"
+      Then cmd: "rpc request --method net_version"
+      Then assert: "'{{$.rpc[-1]}}' == '20230104'"
+      Then stop the server
+
+
+    @serial
     Scenario: account
       Given a server for account
 
@@ -99,13 +111,13 @@ Feature: Rooch CLI integration tests
       # The entry_function_arguments example
       Then cmd: "move publish -p ../../examples/entry_function_arguments_old/ --sender-account {default} --named-addresses rooch_examples={default} --by-move-action"
       Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
-      Then assert: ""{{$.move[-1]}}" contains FUNCTION_RESOLUTION_FAILURE"
+      Then assert: "'{{$.move[-1]}}' contains FUNCTION_RESOLUTION_FAILURE"
       Then cmd: "move publish -p ../../examples/entry_function_arguments/ --sender-account {default} --named-addresses rooch_examples={default} --by-move-action"
       Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
       Then assert: "{{$.move[-1].output.status.type}} == executed"
       # check compatibility
       Then cmd: "move publish -p ../../examples/entry_function_arguments_old/ --sender-account {default} --named-addresses rooch_examples={default} --by-move-action"
-      Then assert: ""{{$.move[-1]}}" contains MiscellaneousError"
+      Then assert: "'{{$.move[-1]}}' contains MoveAbort"
 
       Then stop the server
 
@@ -126,14 +138,14 @@ Feature: Rooch CLI integration tests
       # The entry_function_arguments example
       Then cmd: "move publish -p ../../examples/entry_function_arguments_old/ --sender-account {default} --named-addresses rooch_examples={default}"
       Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
-      Then assert: ""{{$.move[-1]}}" contains FUNCTION_RESOLUTION_FAILURE"
+      Then assert: "'{{$.move[-1]}}' contains FUNCTION_RESOLUTION_FAILURE"
       Then cmd: "move publish -p ../../examples/entry_function_arguments/ --sender-account {default} --named-addresses rooch_examples={default}"
       Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
       Then assert: "{{$.move[-1].output.status.type}} == executed"
 
       # check compatibility
       Then cmd: "move publish -p ../../examples/entry_function_arguments_old/ --sender-account {default} --named-addresses rooch_examples={default}"
-      Then assert: ""{{$.move[-1]}}" contains MiscellaneousError"
+      Then assert: "'{{$.move[-1]}}' contains MiscellaneousError"
 
       Then stop the server
 
@@ -147,14 +159,4 @@ Feature: Rooch CLI integration tests
       Then cmd: "move run --function 0x3::coin::transfer_entry --type-args {default}::fixed_supply_coin::FSC --args address:0x3  --args 1u256 --sender-account {default}"
 
       Then stop the server
-
-  @serial
-    Scenario: ethereum rpc test
-      Given a server for ethereum
-      Then cmd: "rpc request --method eth_getBalance --params \"0x1111111111111111111111111111111111111111\""
-      Then assert: "{{$.rpc[-1]}} == 0x56bc75e2d63100000"
-      Then cmd: "rpc request --method eth_feeHistory --params [\"0x5\",\"0x6524cad7\",[10,20,30]]"
-      Then assert: ""{{$.rpc[-1]}}" contains baseFeePerGas"
-      Then stop the server
-
 
