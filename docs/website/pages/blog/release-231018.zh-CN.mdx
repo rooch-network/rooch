@@ -1,9 +1,9 @@
 ---
 title: Rooch v0.2 发布，运行开发者测试网
-description: "该版本提供了 Rooch 容器预览版、开发者工具、Move 标准库和框架、JSON RPC 等关键特性。下一步计划完善开发者工具、实现多链结算、Token/NFT 标准以及多链资产映射。探索更多的应用场景，致力于成为 Web3 基础设施"
+description: "Rooch v0.2 发布，运行开发者测试网。"
 author: jolestar
 category: News
-date: 2023/07/17
+date: 2023/10/18
 ---
 
 import PostHeader from "/components/blog/postHeader";
@@ -16,14 +16,17 @@ Rooch v0.2 发布，运行开发者测试网。这是 Rooch 第三个里程碑"�
 
 这个版本主要提供了以下主要特性：
 
-### Rooch 命令行工具
+### Rooch 命令行以及节点
 
-改进了本地配置文件以及私钥管理，提供了通过助记词恢复私钥的功能，提供了本地私钥的安全保护。未来升级会保证客户端配置文件的兼容性。
+1. 改进了本地配置文件以及私钥管理，提供了通过助记词恢复私钥的功能，提供了本地私钥的安全保护。未来升级会保证客户端配置文件的兼容性。
+2. 实现了本地状态以及交易的存储。
 
 ### 账户抽象
 
 * 实现了身份验证抽象，允许第三方开发身份验证器来扩展签名验证或者社交登陆。
-* 实现了会话私钥
+* 实现了会话私钥。会话私钥是一种临时的私钥，它可以用来签名交易，但保存在应用中，而不是钱包中，避免用户每次操作都需要通过钱包签名，从而提高用户体验。
+
+关于 Rooch 账户抽象的详细设计请参看：[账户抽象](../docs/dive-into-rooch/account-abstraction.zh-CN.mdx)。
 
 ### Ethereum 支持
 
@@ -34,110 +37,52 @@ Rooch v0.2 发布，运行开发者测试网。这是 Rooch 第三个里程碑"�
 ### Bitcoin 支持
 
 * 合约中支持 Bitcoin 地址映射，以及 Bitcoin 签名校验。
-* 合约中支持 nostr 地址映射。
-* 支持 Schnorr 签名验证。
+* 合约中支持 Schnorr 签名验证。
 
 ### Move 标准库以及虚拟机
 
-* 实现了 Coin 以及 CoinStore 标准
-* 实现了 Gas 计费以及 GasToken
-* 
+* 实现了在 Move 中发布 Move 模块：[account_storage::publish_modules_entry](https://github.com/rooch-network/rooch/blob/7fd6418dff1aa7e40cae9e8eede375b776bbb771/moveos/moveos-stdlib/moveos-stdlib/sources/account_storage.move#L224)。
+* 实现了 [Coin](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/coin.move)， [CoinStore](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/coin_store.move) 以及 [account_coin_store](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/account_coin_store.move)。想进一步了解 Rooch 的 Coin 标准，可以参考 [examples/coins](https://github.com/rooch-network/rooch/tree/main/examples/coins)。
+* 实现了 Gas 计费以及 GasToken。
+* 实现了 [Event](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/event.move) 标准。
+* 改进了 Object 以及 [StorageAbstraction](../docs/dive-into-rooch/storage-abstraction.zh-CN.mdx) 的设计。
 
-### Move 标准库以及框架
 
-* 扩展了更多的 `crypto` 相关的算法，支持 Bitcoin 的签名验证，以及 Bitcoin 地址生成。
-* 
+### JSON RPC 以及 SDK
 
-Rooch 内置了 `MoveStdlib`、`MoveosStdlib` 和 `RoochFramework` 三个 Move 标准库，其中 MoveStdlib 是 Move 语言的标准库，MoveosStdlib 是 MoveOS 的标准库，RoochFramework 是 Rooch 的应用框架。
+* 改进 Ethereum RPC Proxy，完善了 MetaMask 的互通。
+* 发布了 [Rooch Typescript SDK](https://www.npmjs.com/package/@roochnetwork/sdk)。
+* 提供状态的遍历接口。
+* 提供了余额查询接口。
 
-1. `MoveStdlib` 使用地址 `0x1`。直接复用 Move 语言的标准库。
-2. `MoveosStdlib` 使用地址 `0x2`，提供了对 MoveStdlib 的扩展，以及应用状态存储的抽象，和数据结构封装：`Table`、`TypeTable`、`Object`、`ObjectStorage`、`AccountStorage` 等。
-3. `RoochFramework` 使用地址 `0x3`，包含 Rooch 的账户（`Account`）、交易验证、多链地址映射等模块。
+Rooch 当前支持的接口请参看：[Rooch JSON RPC](../docs/developer-guids/rpc.zh-CN.mdx)。
 
-Rooch 的这种基础库地址分配方式，一方面避免了模块的命名冲突，方便扩展。另外一方面也提供了这样一种可能，生态项目也可以直接给 Rooch 内置 Framework，比如 DAO、DeFi、Gaming、Social 等。下个阶段 Rooch 会发布 Framework 共建的计划，敬请关注。
-
-### Move 存储抽象
-
-Rooch 在 Move 基础上实现了存储抽象，同时提供了 `ObjectStorage` 和 `AccountStorage` 两种状态存储模式，废弃了 Move 原有的全局存储指令，用 `AccountStorage`中的方法替代，下面是二者的映射表。
-
-| Move 全局存储指令 | AccountStorage 中的方法 |
-| ----------------- | ----------------------- |
-| `move_to<T:key>(&signer,T)` | `account_storage::global_move_to<T:key>(&mut StorageContext,&signer,T)` |
-| `move_from<T:key>(address)` | `account_storage::global_move_from<T:key>(&mut StorageContext,address)` |
-| `borrow_global<T:key>(address)` | `account_storage::global_borrow<T:key>(&mut StorageContext,address)` |
-| `borrow_global_mut<T:key>(address)` | `account_storage::global_borrow_mut<T:key>(&mut StorageContext,address)` |
-
-这样做主要有两个目的：
-
-1. 通过合约来定义状态的存储，通过底层的 Key-Value 接口统一 `ObjectStorage` 和 `AccountStorage`。为未来扩展状态存储提供可能，比如提供应用专用的存储空间。  
-2. 解决了 Move 的引用难题。开发者无法在自己的方法中返回通过 `borrow_global<T>` 指令借用的引用，因为这个引用是凭空创造的，不能作为方法的返回值。而如果通过 `StorageContext` 借用，则可以达到这个目标，该引用的生命周期和 `StorageContext` 的生命周期绑定。
-
-同时，为了保证状态存储的安全性，让 `AccountStorage` 和 `ObjectStorage` 的方法遵循和 Move 全局状态指令一样类型安全规则，Rooch 引入了 `#[private_generics(T)]` 注解（annotation）。这个注解可以加在方法上，表示该方法的泛型参数 `T` 必须定义在调用方的当前合约中，遵循 Move 全局存储指令一样的约束。
-
-关于状态存储的详细设计请参看：[存储抽象](/docs/dive-into-rooch/storage-abstraction)。
-
-### Rooch 的 JSON RPC
-
-应用可以通过 JSON RPC 来提交交易以及查询应用合约的状态。
-
-Rooch 提供一种基于统一的访问路径（AccessPath）的状态查询接口 `rooch_getStates`，返回 Move 状态的 BCS 序列化结果。同时，Rooch 还提供 `rooch_getAnnotatedStates` 接口，返回 Move 状态的 JSON 结构，方便不支持 BCS 的编程语言直接使用。
-
-这个版本提供了 Ethereum RPC Proxy 的演示版本，用户可以通过 MetaMask 和 Rooch Container 进行交互。
-
-Rooch 当前支持的接口请参看：[Rooch JSON RPC](/docs/reference/rpc)。
-
-### Sequencer 以及 Proposer 原型实现 
-
-Sequencer 以及 Proposer 这个版本中只包含了一个原型实现，主要表达了 Rooch 中的交易的执行流程，以及即时确认的特性。关于 Rooch 中的交易执行流程请参看：[交易执行流](../docs/dive-into-rooch/transaction-flow.zh-CN.mdx)。
-
-### 示例
-
-这个版本中，提供了一些简单的示例项目，包括：
-
-1. [coins]
-
-1. [counter](https://github.com/rooch-network/rooch/tree/main/examples/counter)：一个简单的计数器，并且初步实现了和 `MetaMask` 的交互界面。
-2. [basic_object](https://github.com/rooch-network/rooch/tree/main/examples/basic_object)：简单的 `Object` 示例。
-3. [complex_struct](https://github.com/rooch-network/rooch/tree/main/examples/complex_struct)：展示复杂的 `struct` 结构在 JSON RPC 中的输出结果。
-4. [event](https://github.com/rooch-network/rooch/tree/main/examples/event)：展示 `Event` 的使用。
-5. [entry_function_arguments](https://github.com/rooch-network/rooch/tree/main/examples/entry_function_arguments)：展示 entry function 支持的参数类型。
-6. [kv_store](https://github.com/rooch-network/rooch/tree/main/examples/kv_store)：一个简单的 KV 存储。
-7. [blog](https://github.com/rooch-network/rooch/tree/main/examples/blog)：一个简单的博客应用，带有评论。
-
-这些项目可以让开发者快速上手 Rooch，了解 Rooch 的基本特性。
 
 ### 运行 Rooch Dashboard
 
+Rooch Dashboard 是一个基于 Rooch JSON RPC 的 Web 应用，地址：[https://dashboard.roooch.network/](https://dashboard.roooch.network/)。 
+用户可以通过 MetaMask 操作 Dashboard，使用说明请参看：[Rooch Dashboard 使用说明](../docs/user-guides/dashboard.zh-CN.mdx)。
 
 ### 部署并运行开发者测试网
 
-开发者可以直接使用 `rooch` 命令连接开发者测试网部署合约测试。开发者测试网会自动部署 `main` 分支的代码，如果 `genesis` 变更，会自动清理数据。
+开发者网络信息
+
+1. 名称: dev
+2. ChainID: 20230103
+3. RPC: https://dev-seed.roooch.network/
+
+如何使用开发者测试网，请参考文档：[连接开发者测试网络](../docs/developer-guides/connect-devnet.zh-CN.mdx)
 
 ## 下一步的目标
 
-下一步，Rooch 主要从三个方向进行改进：
+下一步，Rooch 的主要目标：
 
-1. 继续完善开发者工具，改进 Rooch 的存储和检索接口，探索支持 SQL 查询的检索接口，让 Rooch 成为最高效易用的 Web3 原生应用开发框架。
-2. 实现多链结算，让 Rooch 的合约可以直接校验并处理其他链上的交易。进一步完善多链的 RPC Proxy 接口，改进钱包使用体验。
-3. 实现 Token/NFT 标准以及多链资产映射，完成账户抽象（AccountAbstraction），实现 Gas 代付，SessionKey，以及 Web2 账户登陆。
+1. 连接到 DA 链，可以让 Rooch 可以用来启动 Move 应用的主权 Rollup。
+2. 启动正式测试网络。
+3. 实现和 Ethereum 的资产互通。
+4. 实现和 Bitcoin 的数据互通。
 
-基于以上特性，Rooch 这个阶段主要从 **Rooch 即后端服务（Rooch as a Backend Service）** 角度探索可落地的应用场景。让任何想接入区块链的应用直接使用 Rooch 作为后端服务，开发者只需要掌握前端技能以及 Move 语言。虽然当前只是一个中心化的方案，但未来应用可以通过接入 Rooch 主网来实现去中心化。
-
-它比基于 Web2 的开发框架有以下优势：
-
-1. 内置的多链支持，包括签名校验，区块头验证，地址映射以及钱包支持。
-2. 丰富的检索能力，不需要进行二次开发。
-3. 支持基于 Gas 的防 DDoS 攻击。
-4. 支持即时确认，以及 SessionKey 可以实现类似于 Web2 的用户体验。
-
-一些具体场景：
-
-1. Web3 Blog，Web3 Forum 等。比如将 Rooch 作为 nostr 协议的一种实现。
-2. Rooch 作为 Bitcoin 铭文协议(BRC20)的 Index Service。
-3. Rooch 作为类 Wiki 的公共数据平台，通过治理实现数据的更新。
-4. Rooch 作为全链游戏的后端服务。
-
-更多的可能性，等待开发者的探索。我们即将发布 Rooch 脑洞大赛，敬请关注。
+更多请关注：[Rooch v0.3 Roadmap](https://github.com/rooch-network/rooch/issues/1000)
 
 ## Rooch 里程碑
 
@@ -170,4 +115,4 @@ Rooch 在主网启动之前一共有五个里程碑。我们用植物的生长�
 ## 总结
 
 Rooch 的里程碑遵循应用场景驱动的原则，以开发者和用户的使用体验为中心，尝试拓展 Web3 应用的边界，探索 Web3 大规模采用落地的可能。想了解并试用 Rooch，请参看文档：[新手入门](/docs/getting-started)。
-Rooch v0.1 详细的发布说明请参看：[Rooch v0.1](https://github.com/rooch-network/rooch/releases/tag/v0.1)。感谢参与贡献的十多位开发者，如果想进一步了解和参与 Rooch，请加入 [Rooch Discord](https://discord.gg/rooch)。
+Rooch v0.2 详细的发布说明请参看：[Rooch v0.2.1](https://github.com/rooch-network/rooch/releases/tag/v0.2.1)。感谢参与贡献的十多位开发者，如果想进一步了解和参与 Rooch，请加入 [Rooch Discord](https://discord.gg/rooch)。
