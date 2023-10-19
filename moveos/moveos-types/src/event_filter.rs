@@ -4,8 +4,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::event::MoveOSEvent;
 use crate::move_types::type_tag_match;
+use crate::moveos_std::event::Event;
 use anyhow::Result;
 use move_core_types::language_storage::TypeTag;
 use serde::{Deserialize, Serialize};
@@ -63,11 +63,9 @@ pub enum EventFilter {
 }
 
 impl EventFilter {
-    fn try_matches(&self, item: &MoveOSEvent) -> Result<bool> {
+    fn try_matches(&self, item: &Event) -> Result<bool> {
         Ok(match self {
-            EventFilter::MoveEventType(event_type) => {
-                type_tag_match(&item.event.type_tag, event_type)
-            }
+            EventFilter::MoveEventType(event_type) => type_tag_match(&item.type_tag, event_type),
             EventFilter::MoveEventField { path: _, value: _ } => {
                 // matches!(item.decoded_event_data.pointer(path), Some(v) if v == value)
                 false
@@ -114,8 +112,8 @@ impl EventFilter {
     }
 }
 
-impl Filter<MoveOSEvent> for EventFilter {
-    fn matches(&self, item: &MoveOSEvent) -> bool {
+impl Filter<Event> for EventFilter {
+    fn matches(&self, item: &Event) -> bool {
         self.try_matches(item).unwrap_or_default()
     }
 }

@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    move_string::MoveString,
+    move_std::string::MoveString,
     move_types::{random_identity, random_struct_tag},
-    object::{NamedTableID, ObjectID},
+    moveos_std::object::{NamedTableID, ObjectID},
     state_resolver::{self, module_name_to_key, resource_tag_to_key},
 };
 use move_core_types::{

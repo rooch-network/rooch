@@ -97,12 +97,21 @@ async fn run_cmd(world: &mut World, args: String) {
 }
 
 #[then(regex = r#"assert: "([^"]*)""#)]
-async fn assert_output(world: &mut World, args: String) {
+async fn assert_output(world: &mut World, orginal_args: String) {
     assert!(world.tpl_ctx.is_some(), "tpl_ctx is none");
-    let args = eval_command_args(world.tpl_ctx.as_ref().unwrap(), args);
-    let parameters = split_string_with_quotes(&args).expect("Invalid commands");
-    info!("parameters: {:?}", parameters);
-    for chunk in parameters.chunks(3) {
+    assert!(orginal_args.len() > 0, "assert args is empty");
+    let args = eval_command_args(world.tpl_ctx.as_ref().unwrap(), orginal_args.clone());
+    let splited_args = split_string_with_quotes(&args).expect("Invalid commands");
+    info!(
+        "originl args: {}\n after eval: {}\n after split: {:?}",
+        orginal_args, args, splited_args
+    );
+    assert!(
+        !splited_args.is_empty(),
+        "splited_args should not empty, the orginal_args:{}",
+        orginal_args
+    );
+    for chunk in splited_args.chunks(3) {
         let first = chunk.get(0).cloned();
         let op = chunk.get(1).cloned();
         let second = chunk.get(2).cloned();
@@ -146,6 +155,7 @@ fn split_string_with_quotes(s: &str) -> Result<Vec<String>> {
     let mut current = String::new();
     let mut in_quotes = false;
     let mut in_escape = false;
+    let mut in_single_quotes = false;
 
     while let Some(c) = chars.next() {
         match c {
@@ -156,12 +166,25 @@ fn split_string_with_quotes(s: &str) -> Result<Vec<String>> {
                 if in_escape {
                     current.push(c);
                     in_escape = false;
+                } else if in_single_quotes {
+                    current.push(c);
                 } else {
                     // Skip the quote
                     in_quotes = !in_quotes;
                 }
             }
-            ' ' if !in_quotes => {
+            '\'' => {
+                if in_escape {
+                    current.push(c);
+                    in_escape = false;
+                } else if in_quotes {
+                    current.push(c);
+                } else {
+                    // Skip the quote
+                    in_single_quotes = !in_single_quotes;
+                }
+            }
+            ' ' if !in_quotes && !in_single_quotes => {
                 if !current.is_empty() {
                     result.push(current.clone());
                     current.clear();

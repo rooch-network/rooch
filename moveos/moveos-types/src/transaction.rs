@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    event::Event, gas_config::GasConfig, h256, h256::H256, move_types::FunctionId,
-    moveos_std::tx_meta::TxMeta, state::StateChangeSet, tx_context::TxContext,
+    gas_config::GasConfig, h256, h256::H256, move_types::FunctionId, moveos_std::event::Event,
+    moveos_std::tx_context::TxContext, moveos_std::tx_meta::TxMeta, state::StateChangeSet,
 };
 use move_core_types::{
     account_address::AccountAddress,

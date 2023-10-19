@@ -183,7 +183,7 @@ const AuthProvider = ({ children }: Props) => {
     console.log('resoleRoochAddress result:', result)
 
     if (result && result.vm_status === 'Executed' && result.return_values) {
-      return result.return_values[0].move_value as string
+      return result.return_values[0].decoded_value as string
     }
 
     throw new Error('resolve rooch address fail')

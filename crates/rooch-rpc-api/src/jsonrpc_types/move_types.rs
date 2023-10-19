@@ -10,20 +10,19 @@ use move_core_types::{
     u256,
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
-use moveos_types::event::{Event, EventID};
+use moveos_types::move_std::ascii::MoveAsciiString;
+use moveos_types::move_std::string::MoveString;
 use moveos_types::move_types::parse_module_id;
+use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
 use moveos_types::moveos_std::type_info::TypeInfo;
+use moveos_types::state::MoveStructState;
 use moveos_types::transaction::MoveAction;
 use moveos_types::{
     access_path::AccessPath,
     event_filter::EventFilter,
     move_types::FunctionId,
-    object::{AnnotatedObject, ObjectID},
+    moveos_std::object::{AnnotatedObject, ObjectID},
     transaction::{FunctionCall, ScriptCall},
-};
-use moveos_types::{
-    move_string::{MoveAsciiString, MoveString},
-    state::MoveStructState,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -428,6 +427,7 @@ pub struct EventView {
     pub type_tag: TypeTagView,
     pub event_data: BytesView,
     pub event_index: u64,
+    pub decoded_event_data: Option<AnnotatedMoveStructView>,
 }
 
 impl From<Event> for EventView {
@@ -437,6 +437,7 @@ impl From<Event> for EventView {
             type_tag: event.type_tag.into(),
             event_data: StrView(event.event_data),
             event_index: event.event_index,
+            decoded_event_data: None,
         }
     }
 }
@@ -448,6 +449,18 @@ impl From<EventView> for Event {
             type_tag: event.type_tag.into(),
             event_data: event.event_data.0,
             event_index: event.event_index,
+        }
+    }
+}
+
+impl From<AnnotatedEvent> for EventView {
+    fn from(event: AnnotatedEvent) -> Self {
+        EventView {
+            event_id: event.event.event_id,
+            type_tag: event.event.type_tag.into(),
+            event_data: StrView(event.event.event_data),
+            event_index: event.event.event_index,
+            decoded_event_data: Some(event.decoded_event_data.into()),
         }
     }
 }

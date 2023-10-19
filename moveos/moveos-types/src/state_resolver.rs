@@ -3,8 +3,8 @@
 
 use crate::{
     access_path::AccessPath,
-    move_module::MoveModule,
-    object::{AnnotatedObject, NamedTableID, ObjectID},
+    moveos_std::move_module::MoveModule,
+    moveos_std::object::{AnnotatedObject, NamedTableID, ObjectID},
     state::{AnnotatedState, State},
 };
 use anyhow::{ensure, Result};

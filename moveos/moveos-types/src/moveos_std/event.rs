@@ -4,22 +4,80 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::addresses::MOVEOS_STD_ADDRESS;
+use crate::h256;
+use crate::moveos_std::object::ObjectID;
 use crate::moveos_std::type_info::TypeInfo;
-use crate::object::ObjectID;
-use crate::state::{AnnotatedState, MoveStructType};
+use crate::state::MoveStructType;
 use anyhow::{ensure, Error, Result};
 use move_core_types::account_address::AccountAddress;
-use move_core_types::{language_storage::StructTag, language_storage::TypeTag};
+use move_core_types::identifier::IdentStr;
+use move_core_types::{ident_str, language_storage::StructTag, language_storage::TypeTag};
+use move_resource_viewer::AnnotatedMoveStruct;
 use schemars::JsonSchema;
-// #[cfg(any(test, feature = "fuzzing"))]
-// use rand::{rngs::OsRng, RngCore};
-use crate::h256;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::str::FromStr;
 
 use crate::h256::H256;
+use crate::module_binding::{ModuleBinding, MoveFunctionCaller};
+use crate::moveos_std::tx_context::TxContext;
+use crate::transaction::FunctionCall;
+
+/// Rust bindings for MoveosStd event module
+pub struct EventModule<'a> {
+    caller: &'a dyn MoveFunctionCaller,
+}
+
+impl<'a> EventModule<'a> {
+    pub const GET_EVENT_HANDLE_FUNCTION_NAME: &'static IdentStr = ident_str!("get_event_handle");
+
+    pub fn get_event_handle(
+        &self,
+        event_handle_type: StructTag,
+    ) -> Result<(ObjectID, AccountAddress, u64)> {
+        let ctx = TxContext::zero();
+        let call = FunctionCall::new(
+            Self::function_id(Self::GET_EVENT_HANDLE_FUNCTION_NAME),
+            vec![TypeTag::Struct(Box::new(event_handle_type))],
+            vec![],
+        );
+
+        let result = self
+            .caller
+            .call_function(&ctx, call)?
+            .into_result()
+            .map_err(|e| anyhow::anyhow!("Call get event handle error:{}", e))?;
+
+        let event_handle_id = match result.get(0) {
+            Some(value) => bcs::from_bytes::<ObjectID>(&value.value)?,
+            None => return Err(anyhow::anyhow!("Event handle should have event handle id")),
+        };
+        let sender = match result.get(1) {
+            Some(value) => bcs::from_bytes::<AccountAddress>(&value.value)?,
+            None => return Err(anyhow::anyhow!("Event handle should have sender")),
+        };
+        let event_seq = match result.get(2) {
+            Some(value) => bcs::from_bytes::<u64>(&value.value)?,
+            None => return Err(anyhow::anyhow!("Event handle should have event seq")),
+        };
+
+        Ok((event_handle_id, sender, event_seq))
+    }
+}
+
+impl<'a> ModuleBinding<'a> for EventModule<'a> {
+    const MODULE_NAME: &'static IdentStr = ident_str!("event");
+    const MODULE_ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
+
+    fn new(caller: &'a impl MoveFunctionCaller) -> Self
+    where
+        Self: Sized,
+    {
+        Self { caller }
+    }
+}
 
 /// A struct that represents a globally unique id for an Event stream that a user can listen to.
 /// the Unique ID is a combination of event handle id and event seq number.
@@ -106,14 +164,12 @@ pub struct Event {
 impl Event {
     pub fn new(
         event_id: EventID,
-        // sequence_number: u64,
         type_tag: TypeTag,
         event_data: Vec<u8>,
         event_index: u64,
     ) -> Self {
         Self {
             event_id,
-            // sequence_number,
             type_tag,
             event_data,
             event_index,
@@ -210,67 +266,17 @@ impl EventHandle {
             .unwrap()
             .into()
     }
-
-    // #[cfg(any(test, feature = "fuzzing"))]
-    // /// Create a random event handle for testing
-    // pub fn random_handle(count: u64) -> Self {
-    //     Self {
-    //         event_id: EventID::random(),
-    //         count,
-    //     }
-    // }
-
-    // /// Derive a unique handle by using an AccountAddress and a counter.
-    // pub fn new_from_address(addr: &AccountAddress, salt: u64) -> Self {
-    //     Self {
-    //         event_id: EventID::new_from_address(addr, salt),
-    //         count: 0,
-    //     }
-    // }
-}
-
-// #[derive(Eq, PartialEq, Clone, Debug, Serialize, Deserialize, JsonSchema)]
-// #[derive(Clone, Debug)]
-// #[serde_as]
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub struct MoveOSEvent {
-    pub event: Event,
-    // /// Sender's address.
-    // pub sender: AccountAddress,
-    // /// Transaction hash
-    // pub tx_hash: Option<H256>,
-    // /// UTC timestamp in milliseconds since epoch (1/1/1970)
-    // #[serde(skip_serializing_if = "Option::is_none")]
-    // #[schemars(with = "Option<u64>")]
-    // #[serde_as(as = "Option<u64>")]
-    // pub timestamp_ms: Option<u64>,
-    // block height
-    // #[serde(skip_serializing_if = "Option::is_none")]
-    // #[schemars(with = "Option<u64>")]
-    // #[serde_as(as = "Option<u64>")]
-    // pub block_height: Option<u64>,
-}
-
-impl MoveOSEvent {
-    pub fn new(event: Event) -> Self {
-        MoveOSEvent { event }
-    }
 }
 
 #[derive(Debug, Clone)]
-pub struct AnnotatedMoveOSEvent {
+pub struct AnnotatedEvent {
     pub event: Event,
-    // pub sender: AccountAddress,
-    // pub tx_hash: Option<H256>,
-    // pub event_data: Vec<u8>,
-    // pub timestamp_ms: Option<u64>,
-    // pub block_height: Option<u64>,
-    pub decoded_event_data: AnnotatedState,
+    pub decoded_event_data: AnnotatedMoveStruct,
 }
 
-impl AnnotatedMoveOSEvent {
-    pub fn new(event: Event, decoded_event_data: AnnotatedState) -> Self {
-        AnnotatedMoveOSEvent {
+impl AnnotatedEvent {
+    pub fn new(event: Event, decoded_event_data: AnnotatedMoveStruct) -> Self {
+        AnnotatedEvent {
             event,
             decoded_event_data,
         }

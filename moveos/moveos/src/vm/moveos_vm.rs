@@ -38,18 +38,18 @@ use moveos_stdlib::natives::moveos_stdlib::{
     raw_table::{NativeTableContext, TableData},
 };
 use moveos_types::{
-    context::Context,
-    event::{Event, EventID},
     function_return_value::FunctionReturnValue,
-    move_any::CopyableAny,
-    move_simple_map::SimpleMap,
-    move_string::MoveString,
+    move_std::string::MoveString,
     move_types::FunctionId,
+    moveos_std::context::Context,
+    moveos_std::copyable_any::Any,
+    moveos_std::event::{Event, EventID},
     moveos_std::module_upgrade_flag::ModuleUpgradeFlag,
-    object::ObjectID,
+    moveos_std::object::ObjectID,
+    moveos_std::simple_map::SimpleMap,
+    moveos_std::tx_context::TxContext,
     state_resolver::MoveOSResolver,
     transaction::{FunctionCall, MoveAction, TransactionOutput, VerifiedMoveAction},
-    tx_context::TxContext,
 };
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
 use parking_lot::RwLock;
@@ -141,7 +141,7 @@ where
     }
 
     /// Re spawn a new session with the same context.
-    pub fn respawn(self, env: SimpleMap<MoveString, CopyableAny>) -> Self {
+    pub fn respawn(self, env: SimpleMap<MoveString, Any>) -> Self {
         //FIXME
         //The TxContext::spawn function will reset the ids_created and kv map.
         //But we need some TxContext value in the pre_execute and post_execute function, such as the TxValidateResult.

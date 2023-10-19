@@ -8,7 +8,6 @@ use anyhow::Result;
 use clap::ArgEnum;
 use clap::Parser;
 use rooch_open_rpc::Project;
-use rooch_rpc_api::api::eth_api::EthAPIOpenRpc;
 use rooch_rpc_api::api::rooch_api::RoochAPIOpenRpc;
 use std::fs::File;
 use std::io::Write;

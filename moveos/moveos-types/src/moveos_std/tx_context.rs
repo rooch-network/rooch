@@ -6,10 +6,10 @@
 use crate::addresses::MOVEOS_STD_ADDRESS;
 use crate::gas_config::GasConfig;
 use crate::h256::{self, H256};
-use crate::move_any::{AnyTrait, CopyableAny};
-use crate::move_simple_map::SimpleMap;
-use crate::move_string::MoveString;
-use crate::object::ObjectID;
+use crate::move_std::string::MoveString;
+use crate::moveos_std::copyable_any::{Any, AnyTrait};
+use crate::moveos_std::object::ObjectID;
+use crate::moveos_std::simple_map::SimpleMap;
 use crate::state::{MoveState, MoveStructState, MoveStructType};
 use anyhow::Result;
 use move_core_types::value::{MoveStructLayout, MoveTypeLayout};
@@ -34,7 +34,7 @@ pub struct TxContext {
     /// Number of `ObjectID`'s generated during execution of the current transaction
     pub ids_created: u64,
     /// A map for storing context data
-    pub map: SimpleMap<MoveString, CopyableAny>,
+    pub map: SimpleMap<MoveString, Any>,
 }
 
 impl std::fmt::Debug for TxContext {
@@ -74,7 +74,7 @@ impl TxContext {
     }
 
     /// Spawn a new TxContext with a new `ids_created` counter and empty map
-    pub fn spawn(self, env: SimpleMap<MoveString, CopyableAny>) -> Self {
+    pub fn spawn(self, env: SimpleMap<MoveString, Any>) -> Self {
         Self {
             sender: self.sender,
             sequence_number: self.sequence_number,
@@ -131,7 +131,7 @@ impl TxContext {
 
     pub fn add<T: MoveState>(&mut self, value: T) -> Result<()> {
         let type_name = MoveString::from_str(&T::type_tag().to_canonical_string())?;
-        let any = CopyableAny::pack(value)?;
+        let any = Any::pack(value)?;
         self.map.add(type_name, any);
         Ok(())
     }
@@ -165,7 +165,7 @@ impl MoveStructState for TxContext {
             MoveTypeLayout::U64,
             MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
             MoveTypeLayout::U64,
-            MoveTypeLayout::Struct(SimpleMap::<MoveString, CopyableAny>::struct_layout()),
+            MoveTypeLayout::Struct(SimpleMap::<MoveString, Any>::struct_layout()),
         ])
     }
 }
@@ -182,12 +182,12 @@ mod tests {
         let serialized = test.to_bytes();
         let deserialized: TxContext = bcs::from_bytes(&serialized).unwrap();
         assert_eq!(test, deserialized);
-        let move_value = MoveValue::simple_deserialize(
+        let decoded_value = MoveValue::simple_deserialize(
             &serialized,
             &(MoveTypeLayout::Struct(TxContext::struct_layout())),
         )
         .unwrap();
-        let serialized2 = move_value.simple_serialize().unwrap();
+        let serialized2 = decoded_value.simple_serialize().unwrap();
         assert_eq!(serialized, serialized2);
     }
 }

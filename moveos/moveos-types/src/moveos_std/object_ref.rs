@@ -3,7 +3,7 @@
 
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
-    object::ObjectID,
+    moveos_std::object::ObjectID,
     state::{MoveStructState, MoveStructType},
 };
 use move_core_types::{
