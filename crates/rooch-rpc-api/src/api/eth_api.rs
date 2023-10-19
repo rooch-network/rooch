@@ -33,13 +33,7 @@ impl Default for TransactionType {
 #[rpc(server, client, namespace = "eth")]
 #[async_trait]
 pub trait EthAPI {
-    // The net_version method is not supported by this server.
-    // Please use the chain_id method instead.
-    // Because the net_version is not in the `eth` namespace,
-    // And eip-695 don't recommend to use net_version.
-    // #[method(name = "net_version")]
-    // async fn net_version(&self) -> RpcResult<String>;
-
+    
     /// Returns the chain ID of the current network.
     #[method(name = "chainId")]
     async fn chain_id(&self) -> RpcResult<String>;
@@ -73,7 +67,7 @@ pub trait EthAPI {
     ) -> RpcResult<StrView<U256>>;
 
     /// Transaction fee history
-    #[method(name = "eth_feeHistory")]
+    #[method(name = "feeHistory")]
     async fn fee_history(
         &self,
         block_count: StrView<U256>,
@@ -123,4 +117,16 @@ pub trait EthAPI {
         hash: H256View,
         include_txs: bool,
     ) -> RpcResult<Block<TransactionType>>;
+}
+
+#[open_rpc]
+#[rpc(server, client)]
+#[async_trait]
+pub trait EthNetAPI {
+
+    // The `net_version`` is not in the `eth` namespace,
+    // So we put it in a new trait.
+    // The metamask will call this method for connecting to the network.
+    #[method(name = "net_version")]
+    async fn net_version(&self) -> RpcResult<String>;
 }

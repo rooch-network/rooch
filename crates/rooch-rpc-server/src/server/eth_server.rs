@@ -10,7 +10,7 @@ use jsonrpsee::{
 use moveos_types::{
     access_path::AccessPath, gas_config::GasConfig, h256::H256, state::MoveStructType,
 };
-use rooch_rpc_api::jsonrpc_types::{eth::ethereum_types::bloom::Bloom, H160View};
+use rooch_rpc_api::{jsonrpc_types::{eth::ethereum_types::bloom::Bloom, H160View}, api::eth_api::EthNetAPIServer};
 use rooch_rpc_api::{
     api::{
         eth_api::{EthAPIServer, TransactionType},
@@ -564,6 +564,29 @@ impl EthAPIServer for EthServer {
 }
 
 impl RoochRpcModule for EthServer {
+    fn rpc(self) -> RpcModule<Self> {
+        self.into_rpc()
+    }
+}
+
+pub struct EthNetServer {
+    chain_id: ChainID,
+}
+
+impl EthNetServer {
+    pub fn new(chain_id: ChainID) -> Self {
+        Self { chain_id }
+    }
+}
+
+#[async_trait]
+impl EthNetAPIServer for EthNetServer {
+    async fn net_version(&self) -> RpcResult<String> {
+        Ok(format!("{}", self.chain_id.id()))
+    }
+}
+
+impl RoochRpcModule for EthNetServer {
     fn rpc(self) -> RpcModule<Self> {
         self.into_rpc()
     }
