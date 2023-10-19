@@ -976,16 +976,14 @@ pub fn load_module_metadata(
     };
 
     match compiled_module_opt {
-        None => {
-            Err(
-                PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_RESOURCE)
-                    .with_message(format!(
-                        "failed to deserialize module {:?}",
-                        module_id.to_string()
-                    ))
-                    .finish(Location::Module(module_id.clone())),
-            )
-        }
+        None => Err(
+            PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_RESOURCE)
+                .with_message(format!(
+                    "failed to deserialize module {:?}",
+                    module_id.to_string()
+                ))
+                .finish(Location::Module(module_id.clone())),
+        ),
         Some(compiled_module) => Ok(get_metadata_from_compiled_module(&compiled_module)),
     }
 }
