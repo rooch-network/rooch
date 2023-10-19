@@ -5,7 +5,7 @@
 import { createContext, useEffect, useState, ReactNode } from 'react'
 
 // ** SDK
-import { JsonRpcProvider, Chain, AllChain, DevChain } from '@rooch/sdk'
+import {JsonRpcProvider, Chain, AllChain, DevChain, LocalChain} from '@rooch/sdk'
 
 // ** Types
 import { RoochProviderValueType } from 'src/context/rooch/types'
@@ -151,7 +151,7 @@ const RoochProvider = ({ children }: Props) => {
 
   const getActiveChina = () => {
     const activeChinaID = parseInt(
-      window.localStorage.getItem(authConfig.activeChain) ?? DevChain.id.toString(),
+      window.localStorage.getItem(authConfig.activeChain) ?? LocalChain.id.toString(),
     )
 
     return getAllChina().find((v) => activeChinaID === v.id) ?? DevChain

@@ -10,7 +10,6 @@ import {
   TypeTag,
   Arg,
   Bytes,
-  // TransactionView,
   AnnotatedFunctionResultView,
   TransactionWithInfoPageView,
   EventPageView,
@@ -69,7 +68,7 @@ export class JsonRpcProvider implements IProvider {
   }
 
   switchChain(chain: Chain) {
-    // this.client.close()
+    this.client.close()
     this.chain = chain
     this.client = new JsonRpcClient(
       new RequestManager([
@@ -156,6 +155,7 @@ export class JsonRpcProvider implements IProvider {
 
   // Get the states by access_path
   async getStates(access_path: string): Promise<StateView | null[]> {
+    console.log('state')
     return await this.client.rooch_getStates(access_path, { decode: true } as StateOptions)
   }
 

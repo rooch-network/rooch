@@ -21,7 +21,7 @@ export const fetchData = createAsyncThunk('state/fetchData', async (params: Data
   params.dispatch(start())
 
   try {
-    console.log(params.provider)
+    console.log('hh')
     let result = await params.provider.getStates(params.accessPath)
     params.dispatch(success(result))
 

@@ -180,8 +180,6 @@ const AuthProvider = ({ children }: Props) => {
       ],
     )
 
-    console.log('resoleRoochAddress result:', result)
-
     if (result && result.vm_status === 'Executed' && result.return_values) {
       return result.return_values[0].decoded_value as string
     }
@@ -243,7 +241,6 @@ const AuthProvider = ({ children }: Props) => {
       }
     } catch (e) {
       console.log(e)
-
       return
     }
 
@@ -271,14 +268,17 @@ const AuthProvider = ({ children }: Props) => {
   const handleLogout = () => {
     window.localStorage.removeItem(authConfig.secretKey)
     setAccounts(null)
-    metamask.disconnect()
+    // TODO: wait fix in next metamask sdk
+    // metamask.disconnect()
   }
 
   const getAccounts = (): Map<string, AccountDataType> | null => {
     const allAccounts = accounts ?? new Map<string, AccountDataType>()
 
+    console.log(metamask.accounts.length)
     // Todo Parse the rooch address
     if (metamask.accounts.length > 0) {
+
       metamask.accounts.forEach((v) => {
         allAccounts.set(v, {
           roochAddress: v,

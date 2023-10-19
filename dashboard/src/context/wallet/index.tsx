@@ -95,6 +95,8 @@ const ETHProvider = ({ children }: Props) => {
   const connect = async (targetChain?: ChainInfo) => {
     let connectChain = targetChain ?? rooch.getActiveChina().info
 
+    console.log(connectChain)
+
     if (chainId !== connectChain.chainId) {
       try {
         await switchChina(connectChain)
@@ -145,9 +147,9 @@ const ETHProvider = ({ children }: Props) => {
   }
 
   const disconnect = async () => {
-    if (window.ethereum?.isConnected()) {
-      console.log(window.ethereum)
-    }
+    // if (window.ethereum?.isConnected()) {
+    //   console.log(window.ethereum)
+    // }
   }
 
   const values = {
