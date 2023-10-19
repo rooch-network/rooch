@@ -2,9 +2,6 @@ name: Deploy Examples To Rooch Network
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'examples/**'
 
 
 jobs:
