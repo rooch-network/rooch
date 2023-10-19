@@ -5,6 +5,8 @@ module creator::collection{
     use std::option;
     use std::option::Option;
     use std::string::String;
+    use rooch_framework::display;
+    use rooch_framework::display::Display;
     use moveos_std::object::ObjectID;
     use moveos_std::object_ref;
     use moveos_std::event;
@@ -37,7 +39,6 @@ module creator::collection{
         collection: ObjectID,
     }
 
-    // event
     struct CreateCollectionEvent{
         objectID: ObjectID,
         name: String,
@@ -47,8 +48,7 @@ module creator::collection{
         description: String,
     }
 
-    #[private_generics(T)]
-    public fun create_collection<T>(
+    public(friend) fun create_collection<T>(
         name: String,
         uri: String,
         creator: address,
@@ -92,6 +92,10 @@ module creator::collection{
         MutatorRef {
             collection: object_ref::id(collection),
         }
+    }
+
+    public(friend) fun new_display<T>(ctx: &mut Context):ObjectRef<Display<Collection<T>>>{
+        display::new<Collection<T>>(ctx)
     }
 
     public fun destroy_mutator_ref(mutator_ref :MutatorRef):ObjectID{

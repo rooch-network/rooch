@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module creator::nft {
+    use std::option::{Option};
     use std::string::String;
+    use creator::collection::Collection;
+    use rooch_framework::display;
     use rooch_framework::display::Display;
     use moveos_std::object_ref;
     use moveos_std::object;
@@ -19,9 +22,6 @@ module creator::nft {
     use std::string;
     #[test_only]
     use rooch_framework::account;
-    #[test_only]
-    use rooch_framework::display;
-
 
     const ErrorNftNotExist: u64 = 1;
     const ErrorMutatorNotExist: u64 = 2;
@@ -41,6 +41,29 @@ module creator::nft {
 
     struct BurnerRef<phantom T> has key,store {
         nft: ObjectID,
+    }
+
+    #[private_generics(T)]
+    public fun create_collection<T>(
+        name: String,
+        uri: String,
+        creator: address,
+        description: String,
+        supply: Option<u64>,
+        ctx: &mut Context
+    ):(ObjectRef<Collection<T>>,ObjectRef<Display<Collection<T>>>,ObjectRef<Display<NFT<T>>>) {
+        let collection_object_ref = collection::create_collection<T>(
+            name,
+            uri,
+            creator,
+            description,
+            supply,
+            ctx
+        );
+        let collection_display_object_ref =  collection::new_display<T>(ctx);
+        let nft_display_object_ref =  display::new<NFT<T>>(ctx);
+
+        (collection_object_ref, collection_display_object_ref, nft_display_object_ref)
     }
 
     #[private_generics(T)]
@@ -153,7 +176,6 @@ module creator::nft {
         contains_extend_internal<T,V>(mutator, ctx)
     }
 
-
     fun add_extend_internal<T,V: key>(mutator: &MutatorRef<T>,val: V,ctx: &mut Context) {
         let nft_object_mut_ref = context::borrow_object_mut<NFT<T>>(ctx, mutator.nft);
         let nft_mut_ref = object::borrow_mut(nft_object_mut_ref);
@@ -217,14 +239,17 @@ module creator::nft {
     #[test_only]
     struct Test has key {}
 
-
-    #[test(sender = @0x2)]
+    #[test(sender = @creator)]
     public fun test_create_nft (sender: address){
         let storage_context = context::new_test_context(sender);
         let ctx = &mut storage_context;
         account::create_account_for_test(ctx, sender);
 
-        let collection_object_ref = collection::create_collection<Test>(
+        let (
+            collection_object_ref,
+            collection_display_object_ref,
+            nft_display_object_ref
+        ) = create_collection<Test>(
             string::utf8(b"name"),
             string::utf8(b"uri"),
             sender,
@@ -235,13 +260,14 @@ module creator::nft {
 
         let collection_mutator_ref = collection::generate_mutator_ref(&collection_object_ref);
 
-        let collcetion_display =  display::new<Test>(ctx);
-        display::set(&mut collcetion_display, string::utf8(b"name"), string::utf8(b"{ name }"));
-        display::set(&mut collcetion_display, string::utf8(b"uri"), string::utf8(b"{ uri }"));
-        display::set(&mut collcetion_display, string::utf8(b"description"), string::utf8(b"{ description }"));
-        display::set(&mut collcetion_display, string::utf8(b"creator"), string::utf8(b"{ creator }"));
-        display::set(&mut collcetion_display, string::utf8(b"supply"), string::utf8(b"{ supply }"));
+        display::set(&mut collection_display_object_ref, string::utf8(b"name"), string::utf8(b"{ name }"));
+        display::set(&mut collection_display_object_ref, string::utf8(b"uri"), string::utf8(b"{ uri }"));
+        display::set(&mut collection_display_object_ref, string::utf8(b"description"), string::utf8(b"{ description }"));
+        display::set(&mut collection_display_object_ref, string::utf8(b"creator"), string::utf8(b"{ creator }"));
+        display::set(&mut collection_display_object_ref, string::utf8(b"supply"), string::utf8(b"{ supply }"));
 
+        display::set(&mut nft_display_object_ref, string::utf8(b"name"), string::utf8(b"{ name }"));
+        display::set(&mut nft_display_object_ref, string::utf8(b"uri"), string::utf8(b"{ uri }"));
 
         let nft_object_ref = mint<Test>(
             string::utf8(b"name"),
@@ -253,9 +279,7 @@ module creator::nft {
 
         let nft_mutaor_ref = generate_mutator_ref(&nft_object_ref);
 
-
         let burner_ref = generate_burner_ref(&nft_object_ref);
-
 
         burn(&burner_ref, &collection_mutator_ref,  ctx);
 
