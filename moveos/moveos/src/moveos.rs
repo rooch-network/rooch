@@ -7,7 +7,6 @@ use anyhow::{bail, ensure, Result};
 use backtrace::Backtrace;
 use move_binary_format::errors::VMError;
 use move_binary_format::errors::{vm_status_of_result, Location, PartialVMError, VMResult};
-use move_binary_format::CompiledModule;
 use move_core_types::value::MoveValue;
 use move_core_types::vm_status::{KeptVMStatus, VMStatus};
 use move_core_types::{
@@ -22,8 +21,8 @@ use moveos_store::transaction_store::TransactionDBStore;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
-use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::move_types::FunctionId;
+use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::moveos_std::tx_result::TxResult;
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::MoveState;
@@ -32,7 +31,7 @@ use moveos_types::transaction::{
     MoveOSTransaction, TransactionOutput, VerifiedMoveAction, VerifiedMoveOSTransaction,
 };
 use moveos_types::{h256::H256, transaction::FunctionCall};
-use moveos_verifier::metadata::get_metadata_from_compiled_module;
+use moveos_verifier::metadata::load_module_metadata;
 
 pub struct MoveOSConfig {
     pub vm_config: VMConfig,
@@ -253,38 +252,11 @@ impl MoveOS {
                 let module_id = &call.function_id.module_id;
                 let loaded_module_bytes = session.get_data_store().load_module(module_id);
 
-                let compiled_module_opt = {
-                    match loaded_module_bytes {
-                        Ok(module_bytes) => {
-                            CompiledModule::deserialize(module_bytes.as_slice()).ok()
-                        }
-                        Err(_) => {
-                            unreachable!("Module data {:} should exists", module_id.to_string());
-                        }
-                    }
-                };
-
+                let module_metadata = load_module_metadata(module_id, loaded_module_bytes)?;
                 let gas_free_function_info = {
-                    match compiled_module_opt {
-                        None => {
-                            return Err(PartialVMError::new(
-                                StatusCode::FAILED_TO_DESERIALIZE_RESOURCE,
-                            )
-                            .with_message(format!(
-                                "failed to deserialize module {:?}",
-                                module_id.to_string()
-                            ))
-                            .finish(Location::Module(module_id.clone())))
-                        }
-                        Some(compiled_module) => {
-                            let metadata = get_metadata_from_compiled_module(&compiled_module);
-                            match metadata {
-                                None => None,
-                                Some(runtime_metadata) => {
-                                    Some(runtime_metadata.gas_free_function_map)
-                                }
-                            }
-                        }
+                    match module_metadata {
+                        None => None,
+                        Some(runtime_metadata) => Some(runtime_metadata.gas_free_function_map),
                     }
                 };
 
@@ -340,38 +312,11 @@ impl MoveOS {
                 let module_id = &call.function_id.module_id;
                 let loaded_module_bytes = session.get_data_store().load_module(module_id);
 
-                let compiled_module_opt = {
-                    match loaded_module_bytes {
-                        Ok(module_bytes) => {
-                            CompiledModule::deserialize(module_bytes.as_slice()).ok()
-                        }
-                        Err(_) => {
-                            unreachable!("Module data {:} should exists", module_id.to_string());
-                        }
-                    }
-                };
-
+                let module_metadata = load_module_metadata(module_id, loaded_module_bytes)?;
                 let gas_free_function_info = {
-                    match compiled_module_opt {
-                        None => {
-                            return Err(PartialVMError::new(
-                                StatusCode::FAILED_TO_DESERIALIZE_RESOURCE,
-                            )
-                            .with_message(format!(
-                                "failed to deserialize module {:?}",
-                                module_id.to_string()
-                            ))
-                            .finish(Location::Module(module_id.clone())))
-                        }
-                        Some(compiled_module) => {
-                            let metadata = get_metadata_from_compiled_module(&compiled_module);
-                            match metadata {
-                                None => None,
-                                Some(runtime_metadata) => {
-                                    Some(runtime_metadata.gas_free_function_map)
-                                }
-                            }
-                        }
+                    match module_metadata {
+                        None => None,
+                        Some(runtime_metadata) => Some(runtime_metadata.gas_free_function_map),
                     }
                 };
 

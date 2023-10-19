@@ -7,12 +7,14 @@
 use crate::build::ROOCH_METADATA_KEY;
 use crate::verifier::INIT_FN_NAME_IDENTIFIER;
 use move_binary_format::binary_views::BinaryIndexedView;
+use move_binary_format::errors::{Location, PartialVMError, VMResult};
 use move_binary_format::file_format::{
     Bytecode, FunctionInstantiation, SignatureToken, Visibility,
 };
 use move_binary_format::CompiledModule;
 use move_core_types::language_storage::ModuleId;
 use move_core_types::metadata::Metadata;
+use move_core_types::vm_status::StatusCode;
 use move_model::ast::{Attribute, AttributeValue};
 use move_model::model::{FunctionEnv, GlobalEnv, Loc, ModuleEnv};
 use move_model::ty::PrimitiveType;
@@ -794,7 +796,7 @@ fn check_gas_validate_function(fenv: &FunctionEnv, global_env: &GlobalEnv) -> (b
             let struct_name = global_env
                 .get_struct(module_id.qualified(*struct_id))
                 .get_full_name_str();
-            if struct_name != "0x2::storage_context::StorageContext" {
+            if struct_name != "0x2::context::Context" {
                 (
                     false,
                     format!(
@@ -958,4 +960,32 @@ pub fn check_metadata_format(module: &CompiledModule) -> Result<(), MalformedErr
     }
 
     Ok(())
+}
+
+pub fn load_module_metadata(
+    module_id: &ModuleId,
+    loaded_module_bytes: VMResult<Vec<u8>>,
+) -> VMResult<Option<RuntimeModuleMetadataV1>> {
+    let compiled_module_opt = {
+        match loaded_module_bytes {
+            Ok(module_bytes) => CompiledModule::deserialize(module_bytes.as_slice()).ok(),
+            Err(err) => {
+                return Err(err);
+            }
+        }
+    };
+
+    match compiled_module_opt {
+        None => {
+            Err(
+                PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_RESOURCE)
+                    .with_message(format!(
+                        "failed to deserialize module {:?}",
+                        module_id.to_string()
+                    ))
+                    .finish(Location::Module(module_id.clone())),
+            )
+        }
+        Some(compiled_module) => Ok(get_metadata_from_compiled_module(&compiled_module)),
+    }
 }
