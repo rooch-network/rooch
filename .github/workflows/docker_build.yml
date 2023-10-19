@@ -54,6 +54,7 @@ jobs:
           PRIVATE_KEY: ${{ secrets.GCP_SSH_PRIVATE_KEY }}
           HOST: ${{ secrets.GCP_VM_HOST }}
           USER: ${{ secrets.GCP_VM_USER }}
+          DEV_MNEMONIC_PHRASE: ${{secrets.DEV_MNEMONIC_PHRASE}}
         run: |
           echo "$PRIVATE_KEY" > private_key.pem
           chmod 600 private_key.pem
