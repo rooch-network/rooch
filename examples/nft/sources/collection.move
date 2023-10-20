@@ -1,22 +1,18 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module creator::collection{
+module nft::collection{
     use std::option;
     use std::option::Option;
     use std::string::String;
-    use rooch_framework::display;
-    use rooch_framework::display::Display;
-    use moveos_std::object::ObjectID;
-    use moveos_std::object_ref;
+    use rooch_framework::display::{Self, Display};
+    use moveos_std::object::{Self, ObjectID};
     use moveos_std::event;
-    use moveos_std::context;
-    use moveos_std::context::Context;
-    use moveos_std::object;
-    use moveos_std::object_ref::ObjectRef;
+    use moveos_std::context::{Self, Context};
+    use moveos_std::object_ref::{Self, ObjectRef};
     use moveos_std::type_table;
 
-    friend creator::nft;
+    friend nft::nft;
 
     const ErrorMutatorNotExist: u64 = 1;
     const ErrorCollectionNotExist: u64 = 2;

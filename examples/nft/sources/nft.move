@@ -1,20 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module creator::nft {
-    use std::option::{Option};
+module nft::nft {
+    use std::option::Option;
     use std::string::String;
-    use creator::collection::Collection;
-    use rooch_framework::display;
-    use rooch_framework::display::Display;
-    use moveos_std::object_ref;
-    use moveos_std::object;
-    use creator::collection;
-    use moveos_std::object_ref::ObjectRef;
-    use moveos_std::context::Context;
-    use moveos_std::context;
+    use nft::collection::{Self, Collection};
+    use rooch_framework::display::{Self, Display};
+    use moveos_std::object_ref::{Self, ObjectRef};
+    use moveos_std::context::{Self, Context};
     use moveos_std::type_table;
-    use moveos_std::object::ObjectID;
+    use moveos_std::object::{Self, ObjectID};
     use moveos_std::type_table::TypeTable;
     #[test_only]
     use std::option;
@@ -239,7 +234,7 @@ module creator::nft {
     #[test_only]
     struct Test has key {}
 
-    #[test(sender = @creator)]
+    #[test(sender = @nft)]
     public fun test_create_nft (sender: address){
         let storage_context = context::new_test_context(sender);
         let ctx = &mut storage_context;
