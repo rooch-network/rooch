@@ -2,4 +2,4 @@ pragma circom 2.1.5;
 
 include "../helpers/string.circom";
 
-component main { public [ text ] } = Split(100, 3, '.');
+component main { public [ text, index ] } = ChatAt();
