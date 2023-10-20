@@ -30,7 +30,6 @@ interface Props {
 const AuthDialog: React.FC<Props> = ({ open, onReqAuthorize, onLogout }) => {
   const [scope, setScope] = useState<Array<string>>(['0x1::*::*', '0x3::*::*'])
   const [maxInactiveInterval, setMaxInactiveInterval] = useState<number>(1200)
-
   const handleAuth = () => {
     onReqAuthorize && onReqAuthorize(scope, maxInactiveInterval)
   }

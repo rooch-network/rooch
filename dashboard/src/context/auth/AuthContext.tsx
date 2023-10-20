@@ -54,13 +54,9 @@ const AuthProvider = ({ children }: Props) => {
   const rooch = useRooch()
 
   // ** States
-  const [defaultAccount, setDefaultAccount] = useState<AccountDataType | null>(() => {
-    if (defaultProvider.accounts && defaultProvider.accounts.size > 0) {
-      return defaultProvider.accounts.values().next().value
-    }
-
-    return null
-  })
+  const [defaultAccount, setDefaultAccount] = useState<AccountDataType | null>(
+    defaultProvider.defaultAccount,
+  )
 
   const [accounts, setAccounts] = useState<Map<string, AccountDataType> | null>(
     defaultProvider.accounts,
@@ -294,7 +290,11 @@ const AuthProvider = ({ children }: Props) => {
   }
 
   const getDefaultAccount = (): AccountDataType | null => {
-    return defaultAccount ?? metamask.accounts.length > 0
+    if (defaultAccount) {
+      return defaultAccount
+    }
+
+    return metamask.accounts.length > 0
       ? {
           roochAddress: metamask.accounts[0],
           address: metamask.accounts[0],
