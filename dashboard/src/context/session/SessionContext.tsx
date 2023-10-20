@@ -2,33 +2,32 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { hexlify } from '@ethersproject/bytes'
-import { useEffect, useState, useMemo } from 'react'
+
+// ** React Imports
+import { createContext, ReactNode, useEffect, useMemo, useState } from 'react'
 import { useAuth } from 'src/hooks/useAuth'
 import { useRooch } from 'src/hooks/useRooch'
 
-import { AccountDataType } from 'src/context/auth/types'
+import { AccountDataType, AccountType } from 'src/context/auth/types'
 
 // ** Rooch SDK
 import {
-  bcsTypes,
-  IAccount,
-  IProvider,
-  FilteredProvider,
-  ITransactionFilterChain,
-  FilterFunc,
-  FuncFilter,
   Account,
-  PrivateKeyAuth,
+  addressToSeqNumber,
+  bcsTypes,
   Ed25519Keypair,
   encodeMoveCallData,
-  addressToSeqNumber,
-  parseRoochErrorSubStatus,
   ErrorCategory,
+  FilteredProvider,
+  FilterFunc,
+  FuncFilter,
   getErrorCategoryName,
+  IAccount,
+  IProvider,
+  ITransactionFilterChain,
+  parseRoochErrorSubStatus,
+  PrivateKeyAuth,
 } from '@rooch/sdk'
-
-// ** React Imports
-import { createContext, ReactNode } from 'react'
 import { Session } from 'src/context/session/types'
 
 type Props = {
@@ -376,7 +375,7 @@ const SessionProvider = ({ children }: Props) => {
 
   const closeSession = () => {
     const defaultAccount = auth.defaultAccount
-    if (defaultAccount) {
+    if (defaultAccount && defaultAccount.type === AccountType.ROOCH) {
       clearSessionAccountInSessionStorage(rooch.provider!, defaultAccount.roochAddress)
     }
   }

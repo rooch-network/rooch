@@ -145,9 +145,9 @@ const ETHProvider = ({ children }: Props) => {
   }
 
   const disconnect = async () => {
-    if (window.ethereum?.isConnected()) {
-      console.log(window.ethereum)
-    }
+    // if (window.ethereum?.isConnected()) {
+    //   console.log(window.ethereum)
+    // }
   }
 
   const values = {

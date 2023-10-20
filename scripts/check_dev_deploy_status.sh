@@ -19,7 +19,8 @@ if [ "$STATUS" != "running" ]; then
     echo "Container $CONTAINER_ID is not running，trying to clean data and restart"
     echo "Start cleaning the data."
     rooch server clean -n dev
-    # TODO rooch init with phrase
+    rm -rf ~/.rooch
+    rooch init -m "$DEV_MNEMONIC_PHRASE"
     docker start $CONTAINER_ID
     if [ $? -eq 0 ]; then
         echo "Container $CONTAINER_ID Successfully restarted."

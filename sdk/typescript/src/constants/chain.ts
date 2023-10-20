@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 const LocalNetworkURL = 'http://127.0.0.1:50051'
-const DevNetworkURL = 'https://dev-seed.rooch.network'
-const TestNetworkURL = 'https://test-seed.rooch.network'
+const DevNetworkURL = 'https://dev-seed.rooch.network:443'
+// const TestNetworkURL = 'https://test-seed.rooch.network'
 
-const LOCAL_CHAIN_ID = 0x134afd8
 const DEV_CHAIN_ID = 0x134afd7
-const TEST_CHAIN_ID = 0x134afd6
+const LOCAL_CHAIN_ID = 0x134afd8
+// const TEST_CHAIN_ID = 0x134afd6
 // const MAIN_CHIAN_ID = 0x134afd5
 
 export interface ChainInfo {
@@ -72,8 +72,8 @@ export const DevChain = new Chain(DEV_CHAIN_ID, 'dev', {
   url: DevNetworkURL,
 })
 
-export const TestChain = new Chain(TEST_CHAIN_ID, 'test', {
-  url: TestNetworkURL,
-})
+// export const TestChain = new Chain(TEST_CHAIN_ID, 'test', {
+//   url: TestNetworkURL,
+// })
 
-export const AllChain = [LocalChain, DevChain, TestChain]
+export const AllChain = [LocalChain, DevChain]
