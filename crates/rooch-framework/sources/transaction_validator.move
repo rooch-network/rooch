@@ -70,10 +70,13 @@ module rooch_framework::transaction_validator {
 
         // Check that the transaction's sequence number matches the
         // current sequence number. Otherwise sequence number is too new.
-        assert!(
-            tx_sequence_number == account_sequence_number,
-            error::invalid_argument(ErrorValidateSequenceNumberTooNew)
-        );
+        //FIXME we temporarily disable this check, in order to improve the devnet experience
+        //Because the devnet will be reset frequently, so the sequence number will be reset to 0
+        //But the sequence number(nonce) in MetaMask will not be reset, so the transaction will be rejected 
+        // assert!(
+        //     tx_sequence_number == account_sequence_number,
+        //     error::invalid_argument(ErrorValidateSequenceNumberTooNew)
+        // );
 
         let sender = context::sender(ctx);
 
