@@ -54,6 +54,7 @@ const AuthProvider = ({ children }: Props) => {
   const rooch = useRooch()
 
   // ** States
+  const [roochAddressMap, setRoochAddressMap] = useState<Map<string, string>>(new Map())
   const [defaultAccount, setDefaultAccount] = useState<AccountDataType | null>(() => {
     if (defaultProvider.accounts && defaultProvider.accounts.size > 0) {
       return defaultProvider.accounts.values().next().value
@@ -74,6 +75,12 @@ const AuthProvider = ({ children }: Props) => {
   useEffect(() => {
     const initAuth = async (): Promise<void> => {
       setLoading(true)
+
+      const roochAddressMapStr = window.localStorage.getItem(authConfig.roochAccountMap)
+
+      if (roochAddressMapStr) {
+        setRoochAddressMap(new Map<string, string>(JSON.parse(roochAddressMapStr)))
+      }
 
       const secretKey = window.localStorage.getItem(authConfig.secretKey)
 
@@ -187,9 +194,10 @@ const AuthProvider = ({ children }: Props) => {
     throw new Error('resolve rooch address fail')
   }
 
-  const updateETHAccount = async () => {
-    if (metamask.accounts.length > 0) {
-      const ethAddress = metamask.accounts[0]
+  const updateETHAccount = async (account?: string[]) => {
+    const _account = account ?? metamask.accounts
+    if (_account.length > 0) {
+      const ethAddress = _account[0]
       const roochAddress = await resoleRoochAddress(ethAddress)
 
       setAccountWrapper({
@@ -199,6 +207,14 @@ const AuthProvider = ({ children }: Props) => {
         kp: null,
         type: AccountType.ETH,
       })
+
+      // TODO: clear
+      roochAddressMap.set(ethAddress, roochAddress)
+
+      window.localStorage.setItem(
+        authConfig.roochAccountMap,
+        JSON.stringify(Array.from(roochAddressMap.entries())),
+      )
     }
   }
 
@@ -207,8 +223,8 @@ const AuthProvider = ({ children }: Props) => {
       case WalletType.Metamask:
         metamask
           .connect()
-          .then(() => {
-            updateETHAccount().then(() => {
+          .then((v: any) => {
+            updateETHAccount(v).then(() => {
               loginSuccess && loginSuccess()
             })
           })
@@ -281,7 +297,7 @@ const AuthProvider = ({ children }: Props) => {
     if (metamask.accounts.length > 0) {
       metamask.accounts.forEach((v) => {
         allAccounts.set(v, {
-          roochAddress: v,
+          roochAddress: roochAddressMap.get(v) ?? v,
           address: v,
           activate: true,
           kp: null,
@@ -290,19 +306,29 @@ const AuthProvider = ({ children }: Props) => {
       })
     }
 
+    console.log('all acc', allAccounts)
+
     return allAccounts.size > 0 ? allAccounts : null
   }
 
   const getDefaultAccount = (): AccountDataType | null => {
-    return defaultAccount ?? metamask.accounts.length > 0
-      ? {
-          roochAddress: metamask.accounts[0],
-          address: metamask.accounts[0],
-          kp: null,
-          activate: true,
-          type: AccountType.ETH,
-        }
-      : null
+    if (defaultAccount) {
+      return defaultAccount
+    }
+
+    if (metamask.accounts.length > 0) {
+      const account = metamask.accounts[0]
+
+      return {
+        roochAddress: roochAddressMap.get(account) ?? account,
+        address: account,
+        kp: null,
+        activate: true,
+        type: AccountType.ETH,
+      }
+    }
+
+    return null
   }
 
   const values = {

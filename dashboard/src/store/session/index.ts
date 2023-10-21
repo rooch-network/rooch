@@ -80,10 +80,11 @@ export const fetchData = createAsyncThunk('state/fetchData', async (params: Data
   try {
     const accessPath = `/resource/${account_address}/0x3::session_key::SessionKeys`
     const stateResult = await params.provider.getStates(accessPath)
+
     if (stateResult) {
       const stateView = stateResult as any
       if (stateView && stateView.length > 0 && stateView[0]) {
-        const tableId = stateView[0].state.value
+        const tableId = stateView[0].decoded_value.value.keys.value.handle
 
         const accessPath = `/table/${tableId}`
         const pageView = await params.provider.listStates(accessPath, cursor, limit)

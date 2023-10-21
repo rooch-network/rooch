@@ -38,6 +38,7 @@ const SessionContext = createContext<Session>({
   loading: false,
   account: null,
   errorMsg: null,
+  defaultSession: '',
   requestAuthorize: undefined,
   close: () => {},
 })
@@ -334,33 +335,31 @@ const SessionProvider = ({ children }: Props) => {
         return
       }
 
-      if (defaultAccount != null) {
-        if (defaultAccount.kp != null) {
-          const roochAddress = defaultAccount.address
-          const authorizer = new PrivateKeyAuth(defaultAccount.kp)
-          const account = new Account(rooch.provider!, roochAddress, authorizer)
+      if (defaultAccount.kp != null) {
+        const roochAddress = defaultAccount.address
+        const authorizer = new PrivateKeyAuth(defaultAccount.kp)
+        const account = new Account(rooch.provider!, roochAddress, authorizer)
 
-          const sessionAccount = await requestPrivateCreateSessionKey(
-            filterdProvider,
-            account,
-            scope,
-            maxInactiveInterval,
-          )
+        const sessionAccount = await requestPrivateCreateSessionKey(
+          filterdProvider,
+          account,
+          scope,
+          maxInactiveInterval,
+        )
 
-          if (sessionAccount) {
-            setSessionAccount(sessionAccount)
-          }
-        } else if (defaultAccount.type === 'ETH') {
-          const sessionAccount = await requestWalletCreateSessionKey(
-            filterdProvider,
-            defaultAccount,
-            scope,
-            maxInactiveInterval,
-          )
+        if (sessionAccount) {
+          setSessionAccount(sessionAccount)
+        }
+      } else if (defaultAccount.type === 'ETH') {
+        const sessionAccount = await requestWalletCreateSessionKey(
+          filterdProvider,
+          defaultAccount,
+          scope,
+          maxInactiveInterval,
+        )
 
-          if (sessionAccount) {
-            setSessionAccount(sessionAccount)
-          }
+        if (sessionAccount) {
+          setSessionAccount(sessionAccount)
         }
       }
     } catch (e: any) {
@@ -380,11 +379,18 @@ const SessionProvider = ({ children }: Props) => {
     }
   }
 
+  const getDefaultSession = (): string => {
+    return ''
+
+    // return window.sessionStorage.getItem(makeSessionAccountStoreKey(rooch.provider!.getChainId(), auth.defaultAccount?.roochAddress ?? '')) ?? ''
+  }
+
   const session = {
     loading,
     account: sessionAccount,
     errorMsg,
     requestAuthorize,
+    defaultSession: getDefaultSession(),
     close: closeSession,
   } as Session
 

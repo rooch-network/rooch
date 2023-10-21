@@ -54,7 +54,6 @@ const ETHProvider = ({ children }: Props) => {
         updateWallet([])
       }
     }
-
     const refreshChina = (chainId: any) => {
       setChainId(chainId)
 
@@ -111,6 +110,8 @@ const ETHProvider = ({ children }: Props) => {
       })
       .then((accounts: any) => {
         updateWallet(accounts)
+
+        return accounts
       })
   }
 
