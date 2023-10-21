@@ -20,7 +20,7 @@ if [ "$STATUS" != "running" ]; then
     echo "Start cleaning the data."
     rooch server clean -n dev
     rm -rf ~/.rooch
-    rooch init -m "$DEV_MNEMONIC_PHRASE"
+    rooch init -m "$DEV_MNEMONIC_PHRASE" --skip-password
     docker start $CONTAINER_ID
     if [ $? -eq 0 ]; then
         echo "Container $CONTAINER_ID Successfully restarted."
