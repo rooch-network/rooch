@@ -15,6 +15,7 @@ const navigation = (): VerticalNavItemsType => {
         },
       ],
     },
+
     // {
     //   sectionTitle: 'Tutorial',
     // },
@@ -36,6 +37,7 @@ const navigation = (): VerticalNavItemsType => {
       icon: 'bx-collection',
       path: '/scan/transaction/list',
     },
+
     // {
     //   sectionTitle: 'Wallet & Assets',
     // },
@@ -74,6 +76,7 @@ const navigation = (): VerticalNavItemsType => {
       icon: 'bx:food-menu',
       path: '/session',
     },
+
     // {
     //   title: 'OAuth',
     //   icon: 'bx:lock-open-alt',
