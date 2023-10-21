@@ -13,6 +13,7 @@ The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/5
 -  [Struct `Object`](#0x2_object_Object)
 -  [Struct `ObjectID`](#0x2_object_ObjectID)
 -  [Function `address_to_object_id`](#0x2_object_address_to_object_id)
+-  [Function `singleton_object_id`](#0x2_object_singleton_object_id)
 -  [Function `new`](#0x2_object_new)
 -  [Function `borrow`](#0x2_object_borrow)
 -  [Function `internal_borrow`](#0x2_object_internal_borrow)
@@ -25,7 +26,11 @@ The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/5
 -  [Function `unpack_internal`](#0x2_object_unpack_internal)
 
 
-<pre><code></code></pre>
+<pre><code><b>use</b> <a href="">0x1::hash</a>;
+<b>use</b> <a href="address.md#0x2_address">0x2::address</a>;
+<b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
+<b>use</b> <a href="type_info.md#0x2_type_info">0x2::type_info</a>;
+</code></pre>
 
 
 
@@ -116,6 +121,38 @@ Generate a new ObjectID from an address
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_address_to_object_id">address_to_object_id</a>(<b>address</b>: <b>address</b>): <a href="object.md#0x2_object_ObjectID">ObjectID</a> {
     <a href="object.md#0x2_object_ObjectID">ObjectID</a> { id: <b>address</b> }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_object_singleton_object_id"></a>
+
+## Function `singleton_object_id`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_singleton_object_id">singleton_object_id</a>&lt;T&gt;(): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_singleton_object_id">singleton_object_id</a>&lt;T&gt;(): <a href="object.md#0x2_object_ObjectID">ObjectID</a> {
+    <a href="object.md#0x2_object_address_to_object_id">address_to_object_id</a>(
+        <a href="address.md#0x2_address_from_bytes">address::from_bytes</a>(
+            <a href="_sha3_256">hash::sha3_256</a>(
+                <a href="_to_bytes">bcs::to_bytes</a>(
+                    &<a href="type_info.md#0x2_type_info_type_of">type_info::type_of</a>&lt;T&gt;()
+                )
+            )
+        )
+    )
 }
 </code></pre>
 

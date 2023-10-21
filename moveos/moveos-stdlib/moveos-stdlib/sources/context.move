@@ -7,6 +7,7 @@
 module moveos_std::context {
 
     use std::option::Option;
+    use moveos_std::type_info;
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::tx_context::{Self, TxContext};
     use moveos_std::object::{Self, Object, ObjectID};
@@ -140,6 +141,12 @@ module moveos_std::context {
         let obj_ref = object_ref::new_internal(&mut obj);
         storage_context::add(&mut self.storage_context, obj);
         obj_ref
+    }
+
+    #[private_generics(T)]
+    public fun new_singleton_object<T: key>(self: &mut Context, value: T): ObjectRef<T> {
+        let object_id = object::singleton_object_id<T>();
+        new_object_with_id(self, object_id, type_info::account_address(&type_info::type_of<T>()), value)
     }
 
     #[test_only]
