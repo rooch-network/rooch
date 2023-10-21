@@ -29,8 +29,8 @@ if [ "$STATUS" != "running" ]; then
             dir=${dir%*/}
             name_addr=$(basename $dir)
             echo $name_addr
-            docker run -v /root:/root $CONTAINER_ID move build -p "$dir" --named-addresses rooch_examples=default,$name_addr=default
-            docker run -v /root:/root $CONTAINER_ID move publish -p "$dir" --named-addresses rooch_examples=default,$name_addr=default
+            docker run -v /root:/root ghcr.io/rooch-network/rooch:$IMAGE_TAG move build -p "$dir" --named-addresses rooch_examples=default,$name_addr=default
+            docker run -v /root:/root ghcr.io/rooch-network/rooch:$IMAGE_TAG move publish -p "$dir" --named-addresses rooch_examples=default,$name_addr=default
         done
     else
         echo "Container $CONTAINER_ID Startup failed, please check the reason."
