@@ -180,6 +180,7 @@ export default function SessionKeyList() {
   }
 
   const handleConfirmRemove = (authentication_key: string | undefined) => {
+    // Todo: how to handle current session key
     setConfirmDeleteDialog({
       open: false,
       authKey: undefined,
@@ -233,7 +234,7 @@ export default function SessionKeyList() {
       <Card>
         <CardHeader title="Session Keys" />
         <CardContent>
-          <Box sx={{ textAlign: 'right', marginBottom: '10px' }}>
+          <Box sx={{ textAlign: 'right', marginBottom: '10px', mr: '20px' }}>
             <Button
               variant="contained"
               color="primary"
