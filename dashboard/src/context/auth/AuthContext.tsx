@@ -306,8 +306,6 @@ const AuthProvider = ({ children }: Props) => {
       })
     }
 
-    console.log('all acc', allAccounts)
-
     return allAccounts.size > 0 ? allAccounts : null
   }
 

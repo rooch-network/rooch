@@ -19,7 +19,7 @@ import { fetchData } from 'src/store/scan/transaction'
 import { useAppDispatch, useAppSelector } from 'src/store'
 
 // ** SDK Imports
-import { TransactionResultView } from '@rooch/sdk'
+import { TransactionWithInfoView } from '@rooch/sdk'
 
 // ** Utils
 import { formatAddress } from 'src/@core/utils/format'
@@ -30,7 +30,7 @@ import { useRooch } from '../../../../hooks/useRooch'
 // import toast from "react-hot-toast";
 
 interface CellType {
-  row: TransactionResultView
+  row: TransactionWithInfoView
 }
 
 // ** Styled components
