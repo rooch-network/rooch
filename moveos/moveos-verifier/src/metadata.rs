@@ -658,17 +658,29 @@ impl<'a> ExtendedChecker<'a> {
                                             if let Some(gas_function) =
                                                 get_module_env_function(module, &gas_function_name)
                                             {
-                                                let current_module = module.get_full_name_str();
+                                                let current_module =
+                                                    module.self_address().to_hex_literal();
+                                                let current_module_name = fenv
+                                                    .symbol_pool()
+                                                    .string(fenv.module_env.get_name().name())
+                                                    .to_string();
                                                 let full_function_name = format!(
-                                                    "{}::{}",
-                                                    current_module, gas_function_name
+                                                    "{}::{}::{}",
+                                                    current_module,
+                                                    current_module_name,
+                                                    gas_function_name
                                                 );
 
                                                 let current_module =
-                                                    fenv.module_env.get_full_name_str();
+                                                    fenv.module_env.self_address().to_hex_literal();
+                                                let current_module_name = fenv
+                                                    .symbol_pool()
+                                                    .string(fenv.module_env.get_name().name())
+                                                    .to_string();
                                                 let current_function_name = format!(
-                                                    "{}::{}",
+                                                    "{}::{}::{}",
                                                     current_module,
+                                                    current_module_name,
                                                     module.symbol_pool().string(fenv.get_name())
                                                 );
 
@@ -713,12 +725,19 @@ impl<'a> ExtendedChecker<'a> {
                                         }
 
                                         Some(module_name_ref) => {
-                                            let module_name_symbol = module_name_ref.name();
-                                            let module_addr =
-                                                module_name_opt.clone().unwrap().addr().to_string();
-                                            let module_name = module
+                                            let gas_function_name = module
                                                 .symbol_pool()
-                                                .string(module_name_symbol)
+                                                .string(*function_name_symbol)
+                                                .to_string();
+                                            if module_name_ref != module.get_name() {
+                                                self.env.error(&fenv.get_loc(), format!("Gas function {:?} is not found in current module.", gas_function_name).as_str());
+                                            }
+
+                                            let current_module =
+                                                fenv.module_env.self_address().to_hex_literal();
+                                            let current_module_name = fenv
+                                                .symbol_pool()
+                                                .string(fenv.module_env.get_name().name())
                                                 .to_string();
                                             let function_name = module
                                                 .symbol_pool()
@@ -726,7 +745,7 @@ impl<'a> ExtendedChecker<'a> {
                                                 .to_string();
                                             let full_function_name = format!(
                                                 "{}::{}::{}",
-                                                module_addr, module_name, function_name
+                                                current_module, current_module_name, function_name
                                             );
 
                                             let current_module =
@@ -755,6 +774,12 @@ impl<'a> ExtendedChecker<'a> {
                             }
                         }
                     }
+                }
+
+                if !attribute_gas_validate_found || !attribute_gas_charge_post_found {
+                    self.env.error(&fenv.get_loc(),
+                                   format!("The gas_validate function or gas_charge_post function for the {} function was not found.",
+                                   module.symbol_pool().string(fenv.get_name())).as_str());
                 }
 
                 let module_metadata = self
