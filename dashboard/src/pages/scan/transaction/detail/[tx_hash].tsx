@@ -20,9 +20,6 @@ import { useRouter } from 'next/router'
 // ** Store
 import { useAppSelector } from 'src/store'
 
-// ** SDK
-import { TransactionResultView } from '@rooch/sdk'
-
 const MUITableCell = styled(TableCell)<TableCellBaseProps>(({ theme }) => ({
   borderBottom: 0,
   paddingLeft: '0 !important',
@@ -41,7 +38,7 @@ const TransactionDetail = () => {
 
   const txHash = router.query.tx_hash
 
-  let data: TransactionResultView | undefined
+  let data: any | undefined
 
   if (status === 'finished') {
     data = result.data.find((v) => v.execution_info.tx_hash === txHash)
