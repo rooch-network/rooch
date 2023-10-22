@@ -74,6 +74,7 @@ impl RuntimeModuleMetadataV1 {
         self.fun_attributes.is_empty()
             && self.struct_attributes.is_empty()
             && self.private_generics_indices.is_empty()
+            && self.gas_free_function_map.is_empty()
     }
 }
 

@@ -5,7 +5,8 @@ module rooch_examples::gas_payer {
         true
     }
 
-    fun gas_charge_post_function(_ctx: &mut Context, _gas_used: u128) {
+    fun gas_charge_post_function(_ctx: &mut Context, _gas_used: u128): bool {
+        true
     }
 
     #[gas_free(gas_validate=gas_validate_function, gas_charge_post=gas_charge_post_function)]

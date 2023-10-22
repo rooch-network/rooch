@@ -553,13 +553,13 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                     );
                 }
 
-                if func_signature.len() != 1 || func_signature.len() != 1 {
+                if func_signature.len() != 1 && return_signature.len() != 1 {
                     let full_path_module_name = generate_full_module_name(func_handle_index, view);
 
                     let err_msg = format!(
-                        "function {:?} in module {:?} with incorrect number of parameters or return values.",
-                        gas_validate_function, full_path_module_name
-                    );
+                            "function {:?} in module {:?} with incorrect number of parameters or return values.",
+                            gas_validate_function, full_path_module_name
+                        );
 
                     return generate_vm_error(
                         StatusCode::TOO_MANY_PARAMETERS,
@@ -703,8 +703,11 @@ fn check_if_function_exist(
     let module_bin_view = BinaryIndexedView::Module(module);
     for fdef in module.function_defs.iter() {
         let func_handle = module_bin_view.function_handle_at(fdef.function);
+        let module_address = module.address().to_hex_literal();
+        let module_name = module.name().to_string();
         let func_name = module_bin_view.identifier_at(func_handle.name).to_string();
-        if &func_name == function_name {
+        let full_func_name = format!("{}::{}::{}", module_address, module_name, func_name);
+        if &full_func_name == function_name {
             let fhandle_index = fdef.function.0;
             return (true, FunctionHandleIndex::new(fhandle_index));
         }
@@ -718,20 +721,29 @@ fn check_gas_validate_function(
     func_signature: &Signature,
     return_signature: &Signature,
 ) -> bool {
-    let mut parameter_check_result = false;
+    // let mut parameter_check_result = false;
     let first_parameter = func_signature.0.get(0).unwrap();
-    match first_parameter {
-        SignatureToken::Struct(struct_handle_idx) => {
-            let struct_name = struct_full_name_from_sid(struct_handle_idx, view);
-            if struct_name == "0x2::storage_context::StorageContext" {
-                parameter_check_result = true;
-            }
+
+    let check_struct_type = |struct_handle_idx: &StructHandleIndex| -> bool {
+        let struct_name = struct_full_name_from_sid(struct_handle_idx, view);
+        if struct_name == "0x2::context::Context" {
+            return true;
         }
-        _ => parameter_check_result = false,
-    }
+
+        false
+    };
+
+    let parameter_check_result = match first_parameter {
+        SignatureToken::Reference(reference) => match reference.as_ref() {
+            SignatureToken::Struct(struct_handle_idx) => check_struct_type(struct_handle_idx),
+            _ => false,
+        },
+        SignatureToken::Struct(struct_handle_idx) => check_struct_type(struct_handle_idx),
+        _ => false,
+    };
 
     if !parameter_check_result {
-        return false;
+        return parameter_check_result;
     }
 
     if return_signature.len() != 1 {
@@ -748,23 +760,33 @@ fn check_gas_charge_post_function(
     return_signature: &Signature,
 ) -> bool {
     let first_parameter = func_signature.0.get(0).unwrap();
-    let mut first_checking_result = false;
-    match first_parameter {
-        SignatureToken::Struct(struct_handle_idx) => {
-            let struct_name = struct_full_name_from_sid(struct_handle_idx, view);
-            if struct_name == "0x2::storage_context::StorageContext" {
-                first_checking_result = true;
-            }
+
+    let check_struct_type = |struct_handle_idx: &StructHandleIndex| -> bool {
+        let struct_name = struct_full_name_from_sid(struct_handle_idx, view);
+        if struct_name == "0x2::context::Context" {
+            return true;
         }
-        _ => first_checking_result = false,
-    }
+
+        false
+    };
+
+    let first_checking_result = {
+        match first_parameter {
+            SignatureToken::MutableReference(reference) => match reference.as_ref() {
+                SignatureToken::Struct(struct_handle_idx) => check_struct_type(struct_handle_idx),
+                _ => false,
+            },
+            SignatureToken::Struct(struct_handle_idx) => check_struct_type(struct_handle_idx),
+            _ => false,
+        }
+    };
 
     if !first_checking_result {
         return first_checking_result;
     }
 
-    let second_parameter = func_signature.0.get(0).unwrap();
-    let second_checking_result = matches!(second_parameter, SignatureToken::U64);
+    let second_parameter = func_signature.0.get(1).unwrap();
+    let second_checking_result = matches!(second_parameter, SignatureToken::U128);
 
     if !second_checking_result {
         return second_checking_result;
