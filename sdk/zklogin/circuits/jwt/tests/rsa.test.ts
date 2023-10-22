@@ -3,10 +3,9 @@
 
 import fs from 'fs'
 import path from 'path'
-import { pki } from "node-forge";
+import { pki } from "node-forge"
 import { wasm as wasm_tester } from 'circom_tester'
 import { shaHash, toHex, toCircomBigIntBytes } from '../src'
-import { createPublicKey } from 'crypto'
 
 describe('RSA', () => {
   jest.setTimeout(10 * 60 * 1000) // 10 minutes
@@ -52,4 +51,3 @@ describe('RSA', () => {
     await circuit.assertOut(witness, {})
   })
 })
-
