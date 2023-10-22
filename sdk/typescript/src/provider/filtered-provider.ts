@@ -71,11 +71,7 @@ export class FilteredProvider implements IProvider {
     return this.target.getState(accessPath)
   }
 
-  getStates(
-    access_path: string,
-    cursor: Uint8Array | null,
-    limit: number,
-  ): Promise<StatePageView> {
+  getStates(access_path: string, cursor: Uint8Array | null, limit: number): Promise<StatePageView> {
     return this.target.getStates(access_path, cursor, limit)
   }
 

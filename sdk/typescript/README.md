@@ -5,18 +5,21 @@ This is the Rooch TypeScript SDK built on the Rooch [JSON RPC API](https://githu
 WARNING: Note that we are still iterating on the RPC and SDK API before TestNet, therefore please expect frequent breaking changes in the short-term. We expect the API to stabilize after the upcoming TestNet launch.
 
 ## Installation
-``` shell
+
+```shell
 npm i @roochnetwork/sdk
 ```
+
 ## Connecting to Rooch Network
 
 The JsonRpcProvider class provides a connection to the JSON-RPC Server and should be used for all read-only operations. The default URLs to connect with the RPC server are:
+
 - local: http://127.0.0.1:500051
-- DevNet: https://dev-seed.rooch.network
+- DevNet: https://dev-seed.rooch.network::443
 
 For local development, you can run cargo run server start to start a local network. Refer to this guide for more information.
 
-``` typescript
+```typescript
 import { JsonRpcProvider, DevChain } from '@rooch/sdk'
 
 // create a provider connected to devnet
@@ -28,7 +31,7 @@ await provider.getTransactionsByOrder(0, 10)
 
 You can also construct your own in custom connections, with the URL for your own network
 
-``` typescript
+```typescript
 import { JsonRpcProvider, Chain } from '@rooch/sdk'
 
 // Definition custom chian
@@ -47,26 +50,27 @@ await provider.getTransactionsByOrder(0, 10)
 Rooch Account
 
 ```typescript
-
 import { JsonRpcProvider, DevChain, Account, Ed25519Keypair } from '@rooch/sdk'
 const provider = new JsonRpcProvider(DevChain)
 const pk = Ed25519Keypair.generate()
 const authorizer = new PrivateKeyAuth(pk)
-        
-const keypairAccount =  Account(provider, account.roochAddress, authorizer)
 
+const keypairAccount = Account(provider, account.roochAddress, authorizer)
 ```
+
 Session Account
 
 ```typescript
-
 import { JsonRpcProvider, DevChain, Account, Ed25519Keypair } from '@rooch/sdk'
 const provider = new JsonRpcProvider(DevChain)
 const pk = Ed25519Keypair.generate()
 const authorizer = new PrivateKeyAuth(pk)
-        
-const sessionAccount =  new Account(provider, account.roochAddress, authorizer).createSessionAccount(scope, maxInactiveInterval, opts)
 
+const sessionAccount = new Account(provider, account.roochAddress, authorizer).createSessionAccount(
+  scope,
+  maxInactiveInterval,
+  opts,
+)
 ```
 
 ### Move Call
@@ -79,22 +83,30 @@ const authorizer = new PrivateKeyAuth(pk)
 
 const keypairAccount = Account(provider, account.roochAddress, authorizer)
 
-const result = keypairAccount.runFunction('0x49ee3cf17a017b331ab2b8a4d40ecc9706f328562f9db63cba625a9c106cdf35::counter::increase', [], [], {
-  maxGasAmount: 100000000,
-})
+const result = keypairAccount.runFunction(
+  '0x49ee3cf17a017b331ab2b8a4d40ecc9706f328562f9db63cba625a9c106cdf35::counter::increase',
+  [],
+  [],
+  {
+    maxGasAmount: 100000000,
+  },
+)
 ```
 
 ## Reading APIs
 
 ### Move view
+
 ```typescript
 import { JsonRpcProvider, DevChain } from '@rooch/sdk'
 const provider = new JsonRpcProvider(DevChain)
 
-const result = provider.executeViewFunction('0x49ee3cf17a017b331ab2b8a4d40ecc9706f328562f9db63cba625a9c106cdf35::counter::view')
+const result = provider.executeViewFunction(
+  '0x49ee3cf17a017b331ab2b8a4d40ecc9706f328562f9db63cba625a9c106cdf35::counter::view',
+)
 ```
-## 
 
+##
 
 ### Get Transactions By Hash
 
@@ -102,7 +114,9 @@ const result = provider.executeViewFunction('0x49ee3cf17a017b331ab2b8a4d40ecc970
 import { JsonRpcProvider, DevChain } from '@rooch/sdk'
 const provider = new JsonRpcProvider(DevChain)
 
-const allTransaction = provider.getTransactionsByHash(['0x70c42b134148cbe598b347c66574fc19f5a0fb6ee33df37255a96d8a8310c7a5'])
+const allTransaction = provider.getTransactionsByHash([
+  '0x70c42b134148cbe598b347c66574fc19f5a0fb6ee33df37255a96d8a8310c7a5',
+])
 ```
 
 ### listTransactions
@@ -111,10 +125,12 @@ const allTransaction = provider.getTransactionsByHash(['0x70c42b134148cbe598b347
 import { JsonRpcProvider, DevChain } from '@rooch/sdk'
 const provider = new JsonRpcProvider(DevChain)
 
-const allTransaction = provider.getTransactionsByHash(['0x70c42b134148cbe598b347c66574fc19f5a0fb6ee33df37255a96d8a8310c7a5'])
+const allTransaction = provider.getTransactionsByHash([
+  '0x70c42b134148cbe598b347c66574fc19f5a0fb6ee33df37255a96d8a8310c7a5',
+])
 ```
 
-### Get State 
+### Get State
 
 Refer to [this storage guide](https://rooch.network/zh-CN/docs/dive-into-rooch/storage-abstraction) for more information.
 
@@ -147,11 +163,6 @@ Core layer – Exposes the functionalities needed by most applications.
 Transport Layer Responsible on communication with the blockchain server.
 
 See below a high-level architecture diagram of the Rooch TypeScript SDK.
-
-|              | Client              |         |     |
-| ------------ | ------------------- | ------- | --- |
-| BCS          | Transaction Builder | Account |     |
-| RPC Provider | Metamask Provider   |         |     |
 
 ## File Structure
 

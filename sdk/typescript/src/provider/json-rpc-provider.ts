@@ -132,10 +132,7 @@ export class JsonRpcProvider implements IProvider {
     return await this.client.rooch_getTransactionsByHash(tx_hashes)
   }
 
-  async getTransactions(
-    cursor: number,
-    limit: number,
-  ): Promise<TransactionWithInfoPageView> {
+  async getTransactions(cursor: number, limit: number): Promise<TransactionWithInfoPageView> {
     return this.client.rooch_getTransactionsByOrder(cursor.toString(), limit.toString())
   }
 
