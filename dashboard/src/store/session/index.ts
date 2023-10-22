@@ -79,7 +79,7 @@ export const fetchData = createAsyncThunk('state/fetchData', async (params: Data
 
   try {
     const accessPath = `/resource/${account_address}/0x3::session_key::SessionKeys`
-    const stateResult = await params.provider.getStates(accessPath)
+    const stateResult = await params.provider.getState(accessPath)
 
     if (stateResult) {
       const stateView = stateResult as any
@@ -87,7 +87,7 @@ export const fetchData = createAsyncThunk('state/fetchData', async (params: Data
         const tableId = stateView[0].decoded_value.value.keys.value.handle
 
         const accessPath = `/table/${tableId}`
-        const pageView = await params.provider.listStates(accessPath, cursor, limit)
+        const pageView = await params.provider.getStates(accessPath, cursor, limit)
 
         const result = {
           data: convertToSessionKey(pageView),

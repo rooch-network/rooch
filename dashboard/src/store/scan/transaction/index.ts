@@ -22,7 +22,7 @@ export const fetchData = createAsyncThunk('state/fetchData', async (params: Data
   params.dispatch(start())
 
   try {
-    let result = await params.provider.getTransactionsByOrder(params.cursor, params.limit)
+    let result = await params.provider.getTransactions(params.cursor, params.limit)
     params.dispatch(success(result))
 
     console.log(result)

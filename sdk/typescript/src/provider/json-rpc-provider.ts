@@ -128,11 +128,11 @@ export class JsonRpcProvider implements IProvider {
     return this.client.rooch_sendRawTransaction(playload)
   }
 
-  async getTransactionsByHash(tx_hashes: string[]): Promise<TransactionWithInfoView | null[]> {
+  async getTransactionsByHashes(tx_hashes: string[]): Promise<TransactionWithInfoView | null[]> {
     return await this.client.rooch_getTransactionsByHash(tx_hashes)
   }
 
-  async getTransactionsByOrder(
+  async getTransactions(
     cursor: number,
     limit: number,
   ): Promise<TransactionWithInfoPageView> {
@@ -140,7 +140,7 @@ export class JsonRpcProvider implements IProvider {
   }
 
   // Get the events by event handle id
-  async getEventsByEventHandle(
+  async getEvents(
     event_handle_type: string,
     cursor: number,
     limit: number,
@@ -154,11 +154,11 @@ export class JsonRpcProvider implements IProvider {
   }
 
   // Get the states by access_path
-  async getStates(access_path: string): Promise<StateView | null[]> {
+  async getState(access_path: string): Promise<StateView | null[]> {
     return await this.client.rooch_getStates(access_path, { decode: true } as StateOptions)
   }
 
-  async listStates(
+  async getStates(
     access_path: string,
     cursor: Bytes | null,
     limit: number,
