@@ -3,23 +3,23 @@ pragma circom 2.0.0;
 // jwt.circom
 include "../../node_modules/circomlib/circuits/poseidon.circom";
 include "../../node_modules/circomlib/circuits/eddsa.circom";
-include "helpers/split.circom";
+include "./helpers/string.circom";
 
-template verifyJwtSignature() {
-
+template verifyJwtSignature(jwt_max_bytes) {
+  signal input jwt[jwt_max_bytes];
   signal input pubKey;
-  signal input jwt;
-
+  
   signal output verified;
 
   // split JWT 
-  component sqrJWT = Split(3, '.');
+  component sqrJWT = Split(jwt_max_bytes, 46, 3); // 46 is '.'
 
   sqrJWT.in <== jwt;
   var header = sqrJWT.out[0];
   var payload = sqrJWT.out[1];
   var signature = sqrJWT.out[2];
 
+  /*
   // poseidon hash
   component poseidonHash = Poseidon(2);
   
@@ -35,6 +35,7 @@ template verifyJwtSignature() {
   eddsaVerifier.sig <== signature;
 
   verified <== eddsaVerifier.out;
+  */
 }
 
 component main = verifyJwtSignature();

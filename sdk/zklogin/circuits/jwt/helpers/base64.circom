@@ -1,114 +1,84 @@
 pragma circom 2.1.5;
 
-include "circomlib/circuits/comparators.circom";
-
-// http://0x80.pl/notesen/2016-01-17-sse-base64-decoding.html#vector-lookup-base
 template Base64Lookup() {
     signal input in;
     signal output out;
 
-    // ['A', 'Z']
-    component le_Z = LessThan(8);
-    le_Z.in[0] <== in;
-    le_Z.in[1] <== 90+1;
+    // Assume that input inacters are valid Base64 inacters.
+    // Map 'A'-'Z' to 0-25
+    signal isUpper <-- in >= 65 && in <= 90;
+    signal upperValue <== isUpper * (in - 65);
 
-    component ge_A = GreaterThan(8);
-    ge_A.in[0] <== in;
-    ge_A.in[1] <== 65-1;
+    // Map 'a'-'z' to 26-51
+    signal isLower <-- in >= 97 && in <= 122;
+    signal lowerValue <== isLower * (in - 97 + 26);
 
-    signal range_AZ <== ge_A.out * le_Z.out;
-    signal sum_AZ <== range_AZ * (in - 65);
+    // Map '0'-'9' to 52-61
+    signal isDigit <-- in >= 48 && in <= 57;
+    signal digitValue <== isDigit * (in - 48 + 52);
 
-    // ['a', 'z']
-    component le_z = LessThan(8);
-    le_z.in[0] <== in;
-    le_z.in[1] <== 122+1;
+    // Map '+' to 62
+    signal isPlus <-- in == 43;
+    signal plusValue <-- isPlus * 62;
 
-    component ge_a = GreaterThan(8);
-    ge_a.in[0] <== in;
-    ge_a.in[1] <== 97-1;
+    // Map '/' to 63
+    signal isSlash <-- in == 47;
+    signal slashValue <-- isSlash * 63;
 
-    signal range_az <== ge_a.out * le_z.out;
-    signal sum_az <== sum_AZ + range_az * (in - 71);
+    // Map '=' to 0
+    signal isEqSign <-- in == 61;
+    signal eqsignValue <-- isEqSign * 0;
 
-    // ['0', '9']
-    component le_9 = LessThan(8);
-    le_9.in[0] <== in;
-    le_9.in[1] <== 57+1;
+    // Map '' to 0
+    signal isZero <-- in == 0;
+    signal zeroValue <-- isZero * 0;
 
-    component ge_0 = GreaterThan(8);
-    ge_0.in[0] <== in;
-    ge_0.in[1] <== 48-1;
+    // Combine the values
+    out <== upperValue + lowerValue + digitValue + plusValue + slashValue + eqsignValue + zeroValue;
 
-    signal range_09 <== ge_0.out * le_9.out;
-    signal sum_09 <== sum_az + range_09 * (in + 4);
+    1 === isUpper + isLower + isDigit + isPlus + isSlash + isEqSign + isZero;
+}
 
-    // '+'
-    component equal_plus = IsZero();
-    equal_plus.in <== in - 43;
-    signal sum_plus <== sum_09 + equal_plus.out * (in + 19);
+template Base64Decoder() {
+    signal input in[4];  // Assume input is a 4-inacter Base64 encoded string
+    signal output out[3];  // Output is a 3-byte decoded string
 
-    // '/'
-    component equal_slash = IsZero();
-    equal_slash.in <== in - 47;
-    signal sum_slash <== sum_plus + equal_slash.out * (in + 16);
+    component lookup[4];
+    for (var i = 0; i < 4; i++) {
+        lookup[i] = Base64Lookup();
+        lookup[i].in <== in[i];
+    }
 
-    out <== sum_slash;
-
-    // '='
-    component equal_eqsign = IsZero();
-    equal_eqsign.in <== in - 61;
-
-    1 === range_AZ + range_az + range_09 + equal_plus.out + equal_slash.out + equal_eqsign.out;
+    // Reassemble the bits into bytes.
+    out[0] <-- (lookup[0].out << 2) | (lookup[1].out >> 4);
+    out[1] <-- ((lookup[1].out & 0xF) << 4) | (lookup[2].out >> 2);
+    out[2] <-- ((lookup[2].out & 0x3) << 6) | lookup[3].out;
 }
 
 template Base64Decode(N) {
-    var M = 4*((N+2)\3);
-    signal input in[M];
+    signal input in[N];
     signal output out[N];
 
-    component bits_in[M\4][4];
-    component bits_out[M\4][3];
-    component translate[M\4][4];
+    assert(N % 4 == 0);
 
     var idx = 0;
-    for (var i = 0; i < M; i += 4) {
-        for (var j = 0; j < 3; j++) {
-            bits_out[i\4][j] = Bits2Num(8);
-        }
+    component decoders[N/4];
 
+    for (var i = 0; i < N; i += 4) {
+        decoders[i/4] = Base64Decoder();
+        
         for (var j = 0; j < 4; j++) {
-            bits_in[i\4][j] = Num2Bits(6);
-            translate[i\4][j] = Base64Lookup();
-            translate[i\4][j].in <== in[i+j];
-            translate[i\4][j].out ==> bits_in[i\4][j].in;
+            decoders[i/4].in[j] <== in[i+j];
         }
 
-        // Do the re-packing from four 6-bit words to three 8-bit words.
-        for (var j = 0; j < 6; j++) {
-            bits_out[i\4][0].in[j+2] <== bits_in[i\4][0].out[j];
-        }
-        bits_out[i\4][0].in[0] <== bits_in[i\4][1].out[4];
-        bits_out[i\4][0].in[1] <== bits_in[i\4][1].out[5];
-
-        for (var j = 0; j < 4; j++) {
-            bits_out[i\4][1].in[j+4] <== bits_in[i\4][1].out[j];
-        }
-        for (var j = 0; j < 4; j++) {
-            bits_out[i\4][1].in[j] <== bits_in[i\4][2].out[j+2];
+        for (var k = 0; k < 3; k++) {
+            out[idx + k] <== decoders[i/4].out[k];
         }
 
-        bits_out[i\4][2].in[6] <== bits_in[i\4][2].out[0];
-        bits_out[i\4][2].in[7] <== bits_in[i\4][2].out[1];
-        for (var j = 0; j < 6; j++) {
-            bits_out[i\4][2].in[j] <== bits_in[i\4][3].out[j];
-        }
-
-        for (var j = 0; j < 3; j++) {
-            if (idx+j < N) {
-                out[idx+j] <== bits_out[i\4][j].out;
-            }
-        }
         idx += 3;
+    }
+
+    for (var i=idx; i < N; i ++) {
+        out[i] <== 0;
     }
 }
