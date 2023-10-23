@@ -67,12 +67,12 @@ export class FilteredProvider implements IProvider {
     return this.target.executeViewFunction(funcId, tyArgs, args)
   }
 
-  getState(accessPath: string): Promise<StateView | null[]> {
-    return this.target.getState(accessPath)
+  getStates(accessPath: string): Promise<StateView | null[]> {
+    return this.target.getStates(accessPath)
   }
 
-  getStates(access_path: string, cursor: Uint8Array | null, limit: number): Promise<StatePageView> {
-    return this.target.getStates(access_path, cursor, limit)
+  listStates(access_path: string, cursor: Uint8Array | null, limit: number): Promise<StatePageView> {
+    return this.target.listStates(access_path, cursor, limit)
   }
 
   sendRawTransaction(playload: Uint8Array): Promise<string> {

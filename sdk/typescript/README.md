@@ -141,7 +141,7 @@ const provider = new JsonRpcProvider(DevChain)
 const state = provider.getStates('object/0x1')
 ```
 
-### Get States
+### Get List States
 
 Refer to [this storage guide](https://rooch.network/zh-CN/docs/dive-into-rooch/storage-abstraction) for more information.
 
@@ -149,7 +149,7 @@ Refer to [this storage guide](https://rooch.network/zh-CN/docs/dive-into-rooch/s
 import { JsonRpcProvider, DevChain } from '@rooch/sdk'
 const provider = new JsonRpcProvider(DevChain)
 
-const states = provider.getStates('object/0x1', null, 10)
+const states = provider.listStates('object/0x1', null, 10)
 ```
 
 ## Project Structure

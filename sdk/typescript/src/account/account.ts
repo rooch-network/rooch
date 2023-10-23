@@ -197,13 +197,13 @@ export class Account implements IAccount {
 
   async querySessionKeys(cursor: Bytes | null, limit: number): Promise<IPage<ISessionKey>> {
     const accessPath = `/resource/${this.address}/0x3::session_key::SessionKeys`
-    const state = await this.provider.getState(accessPath)
+    const state = await this.provider.getStates(accessPath)
     if (state) {
       const stateView = state as any
       const tableId = stateView[0].value
 
       const accessPath = `/table/${tableId}`
-      const pageView = await this.provider.getStates(accessPath, cursor, limit)
+      const pageView = await this.provider.listStates(accessPath, cursor, limit)
 
       return {
         data: this.convertToSessionKey(pageView),

@@ -23,7 +23,7 @@ export interface IProvider {
 
   sendRawTransaction(playload: Bytes): Promise<string>
 
-  getState(accessPath: string): Promise<StateView | null[]>
+  getStates(accessPath: string): Promise<StateView | null[]>
 
-  getStates(access_path: string, cursor: Bytes | null, limit: number): Promise<StatePageView>
+  listStates(access_path: string, cursor: Bytes | null, limit: number): Promise<StatePageView>
 }
