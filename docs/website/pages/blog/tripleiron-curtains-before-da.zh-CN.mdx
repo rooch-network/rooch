@@ -1,6 +1,6 @@
 ---
 title: Data "Availability" 身前的三重铁幕
-description: ""
+description: "DA 作为异步验证的桥梁，将会是整个 Layer2 系统吞吐的瓶颈。那么如何在使其更加迅捷的同时不降低 L2 的安全性呢？"
 author: popcnt
 category: Technology
 date: 2023/10/17
@@ -12,12 +12,12 @@ import PostHeader from "/components/blog/postHeader";
 
 ## DA，可观测的无共识复制
 
-DA 作为审计跟踪必要的持久化层，将会是整个 Layer2 系统吞吐的瓶颈。状态更新的速度必须和 DA 的吞吐取得动态平衡，若状态更新速度长期大于 DA，
+DA 作为异步验证的桥梁，将会是整个 Layer2 系统吞吐的瓶颈。状态更新的速度必须和 DA 的吞吐取得动态平衡，若状态更新速度长期大于 DA，
 则肯定会出现由于 DA 无数据导致 Verifier 无法在挑战期内验证状态的情况。于是 DAC 成为了 DA 的一种相对放松的实现成为了不少人的选择：
 
 <img alt="DA Layer2 Bottleneck" height="620"  width="505" src="/blog/da-3curtains/bottleneck.jpeg"/>
 
-我们固然希望 DAC 或是别的什么东西既能突破性能桎梏又能完全达到与 Layer1 一致的安全性。有趣的是，我们也明白这等于要求 Layer1 自身突破自身，
+我们固然希望 DAC 或是别的什么东西既能突破性能桎梏又能完全达到与 Layer2 一致的安全性。有趣的是，我们也明白这等于要求 Layer1 自身突破自身，
 于是我们不得不要放松一些 DA 与 Layer1 的联系。最直接的方式是缩小网络规模另起炉灶得到一个 mini Blockchain，当网络足够小时， DAC 若影若现。
 但这样的思路是 Layer1 的不可能三角漩涡的涟漪，并没有把 Layer2 作为视角的核心。这也是 DAC 很容易招致本能反感的直接原因，
 因为其总是表现为一个依赖信任的伪区块链。
@@ -93,8 +93,7 @@ Visible Buffer 与 Data Publication（关于 Data Availability 与 Data Publicat
 
 1. user：DA 的使用者，包括 Sequencer 和 Verifier。
 2. relayer：DA 的去中心化中继节点，由 Data Visibility 构成的 user-facing 服务。
-3. backend: realyer 所依赖的存储服务，可能是 Data Publication 如果存储对象仅有短期读需求，也可能是 Data Storage 如果存储对象需要长期读需求。
-    具体的实现依赖 relayer 对收益和服务质量的考量。
+3. backend: realyer 所依赖的存储服务，可能是 Data Publication 如果存储对象仅有短期读需求，也可能是 Data Storage 如果存储对象需要长期读需求。具体的实现依赖 relayer 对收益和服务质量的考量。
 
 对于我们来说，现在需要挽起袖子，打足精神，开始详细分析中间层，即 Data Visibility（DV）所面临的具体问题。其作为有状态的存储，必须从 I/O 出发确保其诚实工作：
 
@@ -127,7 +126,7 @@ Visible Buffer 与 Data Publication（关于 Data Availability 与 Data Publicat
 
 至于（2）实际上社区也已经做了很多有趣的工作，究其本质都是在尽量减少区块链智能合约开销下的提供基于状态距离的持久化证明：
 
-<img alt="Data Visibility" height="135"  width="700" src="/blog/da-3curtains/state-distance.jpeg"/>
+<img alt="State Distance" height="135"  width="700" src="/blog/da-3curtains/state-distance.jpeg"/>
 
 我们需要 t0 （证明生成时间）与 t1 （本地 I/O 时间）之和小于证明提交期限。为了明显区别于 t2 （远程 I/O），我们这个和尽可能的小于它。
 这一点我们可以通过反复大量的随机 I/O 实现，以期望碎片化的请求造成的网络开销显著增长。 状态距离作为强证据（尤其是多轮过后）可以有效识别 DV 节点的不作为，
@@ -137,7 +136,7 @@ Visible Buffer 与 Data Publication（关于 Data Availability 与 Data Publicat
 另外，我们必须明确的是 DV 负责的对象是 Layer2 ，因此在 Layer2 发起的检查是正确的做法（不要忘了，如果 Layer2 作弊将无法通过欺诈证明）。
 为了在 Optimistic Rollup 中进一步提升检查效率，我们可以用交互式证明的方式工作：
 
-1. Sequencer 按照固定尺寸将数据切成固定数量的切片，并组成  merkle tree。其中 root （下称 object_root) 将等待 DV 返回后验证
+1. Sequencer 按照固定尺寸将数据切成固定数量的切片(不足用0在计算中补齐），并组成  merkle tree。其中 root （下称 object_root) 将等待 DV 返回后验证
 2. 挑战者生成大量切片 range（如切片1中 [0,256) 字节），并将 range 列表中的数据组成 merkle tree。该列表由挑战者的随机数种子生成
 3. 挑战者以随机数种子通过 L2 向某个 DV 服务方方发起挑战。若被挑战者满足挑战周期（如七天未被挑战）则挑战发起有效
 4. 被挑战方根据随机数种子生成 range list，并将在合约规定时间内生成 merkle tree root。否则被惩罚
@@ -155,7 +154,7 @@ Visible Buffer 与 Data Publication（关于 Data Availability 与 Data Publicat
 
 对于 Layer2 来说，即时的大规模的读取需求主要来自于 Verifier 节点，Verifier 作为 Layer2 网络的安全防线自然是可以承担对 DV 可用性检测的责任的，
 否则 Layer2 网络不成立。在这个前提下， Verifiers 作为处理两将军问题的相对权威第三方是可以接受的。
-	
+
 因此通过 Verifiers 作用于对抗无响应攻击的最直接方式是：
 
 Verifiers 通过匿藏真实请求地址的方式请求 DV 从而避免 DV 对请求进行识别，并记录 DV 节点的响应质量。将该数据定期作为 tx 定期写入到 Layer2 中以供 DAO 裁决。
@@ -175,7 +174,7 @@ DV 还有第三种关键作弊武器，也是容易被忽视的，因为其背�
 不同于 Layer1，Layer2 网络缺乏同步验证，静默错误就开始粉墨登场。毕竟，当你自己都不知道自己错误的情况下如何指正自己的错误呢？
 而 DV 节点恰好可以利用这一点伪装自己的恶意。它完全可以返回错误响应并表示自己只是很不幸的碰上了静默错误，那么如何区分恶意与无奈？
 一棒子打死所有错误响应是十分不妥的，因为静默错误出现的概率远比想象中高！
-	
+
 和处理无响应错误一样，我们需要先建立服务质量预期，在这里主要是网络传输的误码率。解决这个问题的办法很成熟了，也就是无处不在的纠错码。
 在纠错范围内，DV 节点的恶意毫无意义，在纠错范围外，我们认为 DV 节点主观作弊了。纠错码的使用代价很低，随时开启它也不会造成吞吐效率的下降。
 
