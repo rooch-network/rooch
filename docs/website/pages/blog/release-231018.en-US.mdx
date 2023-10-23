@@ -1,0 +1,127 @@
+---
+title: Rooch v0.2 release, launching developer testnet
+description: "Rooch v0.2 has been released, featuring AccountAbstraction, introducing a Dashboard, and launching a developer testnet"
+author: jolestar
+category: News
+date: 2023/10/18
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+Rooch v0.2 has been released, featuring AccountAbstraction, introducing a Dashboard, and launching a developer testnet. This is part of Rooch's third milestone called "Rooting."
+
+## Key Features of Rooch v0.2
+
+Main features of this release include:
+
+### Rooch Command Line and Nodes
+
+1. Improved local configuration files and private key management. Added functionality to recover private keys through mnemonics and enhanced local private key security. Future upgrades will ensure client configuration file compatibility.
+2. Implemented storage for states, transactions, and events.
+
+### AccountAbstraction
+
+* Introduced `AuthenticationAbstraction`, allowing third parties to develop `Authentication Validator` to extend signature validation or social logins.
+* Implemented `SessionKey`. These temporary private keys can sign transactions and are stored within the app rather than the wallet. This avoids the need for wallet signatures with every operation, enhancing user experience.
+
+For a detailed design on Rooch AccountAbstraction, refer to: [Design and Implementation of Account Abstraction](../docs/dive-into-rooch/account-abstraction.en-US.mdx).
+
+### Ethereum Support
+
+* Rooch Move Framework now support Ethereum address mapping and Ethereum signature verification.
+* Improved Rooch's Ethereum RPC API and enhanced support for MetaMask.
+* Launched Rooch Ethereum Relayer and Move Ethereum light client prototype to synchronize Ethereum block headers' timestamps to Rooch.
+
+### Bitcoin Support
+
+* Rooch Move Framework now support Bitcoin address mapping and Bitcoin signature verification.
+* Provide Schnorr signature validation in Move.
+
+### Advanced Multi-chain Settlement Solutions
+
+* [Multi-chain Settlement](../tech-highlights/multi-chain-settlement.en-US.mdx)
+* [Multi-chain settlement by L2-Myth or Reality](./multi-chain_settlement_by_layer2-myth_or_Reality.en-US.mdx)
+
+### Move Standard Library, Framework and Virtual Machine
+
+* Enabled publishing Move modules in Move: [account_storage::publish_modules_entry](https://github.com/rooch-network/rooch/blob/7fd6418dff1aa7e40cae9e8eede375b776bbb771/moveos/moveos-stdlib/moveos-stdlib/sources/account_storage.move#L224).
+* Implemented [Coin](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/coin.move), [CoinStore](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/coin_store.move), and [account_coin_store](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/account_coin_store.move). To further understand Rooch's Coin standards, refer to [examples/coins](https://github.com/rooch-network/rooch/tree/main/examples/coins).
+* Introduced Gas billing and GasToken.
+* Introduced [Event](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/event.move) standards.
+* Improved [Object](../docs/developer-guids/object.en-US.mdx) and [StorageAbstraction](../docs/dive-into-rooch/storage-abstraction.en-US.mdx) designs.
+
+### JSON RPC and SDK
+
+This version standardizes RPC API outputs and inputs, promising future RPC API compatibility.
+
+* Offered transaction query and traversal API: `rooch_getTransactionsByHash`, `rooch_getTransactionsByOrder`.
+* Offered state query and traversal API: `rooch_getStates`, `rooch_listStates`.
+* Offered event traversal API: `rooch_getEventsByEventHandle`.
+* Introduced balance query and traversal API: `rooch_getBalance`, `rooch_getBalances`.
+* Released [Rooch Typescript SDK](https://www.npmjs.com/package/@roochnetwork/sdk).
+
+For currently supported API, see: [Rooch JSON RPC](../docs/developer-guids/rpc.en-US.mdx).
+
+### Rooch Dashboard
+
+The Rooch Dashboard is a web application based on Rooch JSON RPC, providing state and transaction queries, and account setting management features. More features will be added in the future.
+Visit: [https://dashboard.rooch.network/](https://dashboard.rooch.network/).
+
+Users can operate the Dashboard through MetaMask. Instructions available at: [Rooch Dashboard User Guide](../docs/user-guides/dashboard.en-US.mdx).
+
+### Developer Testnet
+
+Developer Network Information:
+
+1. Name: dev
+2. ChainID: 20230103
+3. RPC: https://dev-seed.rooch.network/
+
+For guidance on using the developer testnet, refer to: [Connecting to Developer Testnet](../docs/developer-guides/connect-devnet.en-US.mdx).
+
+## Next Steps
+
+Rooch's primary objectives moving forward:
+
+1. Connect to the DA chain, allowing Rooch to initiate Move applications' sovereign Rollup.
+2. Launch the official testnet, providing a stable testing environment for developers to deploy apps and for users to try out.
+3. Achieve asset interoperability with Ethereum, allowing users to deposit ETH/ERC20 assets into Rooch.
+4. Realize data interoperability with Bitcoin, enabling developers to process and verify Bitcoin transactions on Rooch using Move.
+
+For more, stay tuned to: [Rooch v0.3 Roadmap](https://github.com/rooch-network/rooch/issues/1000).
+
+
+## Rooch Milestones
+
+Before the launch of the mainnet, Rooch has five milestones. We have named these milestones via the stages of plant growth, aiming for Rooch to grow from a seed to a towering tree, becoming the infrastructure for Web3.
+
+### Seeding -- 2023 Q1
+
+Complete technical design and team formation.
+
+### Sprouting -- 2023 Q2
+
+Release the first preview version of Rooch Container, providing basic developer tools for building applications on Rooch.
+
+### Rooting -- 2023 Q3
+
+Connect to different L1 public chains and DA chains, providing support for multi-chain settlement. Release a stable version of the Move Framework. Run a public developer test network.
+
+### Branching -- 2023 Q4
+
+Collaborate with ecosystem teams to build frameworks and Layer2 infrastructure, providing app-specific containers and storage solutions. Run a permanent incentive test network.
+
+### Strengthening -- 2024 Q1
+
+Enhance security and optimize performance. Run a pre-main network.
+
+### Foliage -- 2024 Q1
+
+Numerous applications thrive on the Rooch network. Run the mainnet.
+
+## Conclusion
+
+Rooch's milestones are driven by application scenarios, focusing on the experience of developers and users. The goal is to expand the boundaries of Web3 applications and explore the possibilities of mass adoption. To learn more and try Rooch, please refer to the [Getting Started](../docs/getting-started.en-US.mdx) documentation.
+For more detailed information on Rooch v0.2, please refer to the [Rooch v0.2 release notes](https://github.com/rooch-network/rooch/releases/tag/v0.2.1). We would like to thank the over ten developers who have contributed to Rooch so far. If you want to learn more and get involved in Rooch, please join the [Rooch Discord](https://discord.gg/rooch).
