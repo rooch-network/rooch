@@ -48,7 +48,7 @@ module quick_start_counter::quick_start_counter {
 
 ### 模块声明
 
-在 Move 语言中，合约通常编写在一个个模块中，简单的合约通过一个模块就能完成，而复杂的合约可能由多个模块构成。我们的计数器合约非常简单，所以只有一个 `quick_start_counter` 模块。
+在 Move 语言中，合约通常编写在一个个模块中，简单的合约通过一个模块就能完成，而复杂的合约可能由多个模块组成。我们的计数器合约非常简单，所以只有一个 `quick_start_counter` 模块。
 
 模块中，通常包含实现当前模块功能所需要的数据类型和函数。
 
@@ -58,7 +58,7 @@ module quick_start_counter::quick_start_counter {
 
 在第 1 行中，我们用 `module` 关键字来声明一个 `quick_start_counter` 模块。
 
-在 Move 系的区块链系统中，模块是通过地址来唯一标识的，即一个地址只能拥有一个同名称的模块，无法多次发布同一个同名称的模块。同一份合约可以被多个地址发布，为了在区块链系统中识别出合约模块到底是谁发布的，需要通过`地址`来唯一标识。
+在 Move 系的区块链系统中，模块是通过地址来唯一标识的，即一个地址只能拥有一个同名称的模块，无法多次发布同一个名称的模块。同一份合约可以被多个地址发布，为了在区块链系统中识别出合约模块到底是谁发布的，需要通过`地址`来唯一标识。
 
 所以，声明一个 Move 模块的语法是 `module 地址::模块名`。
 
@@ -81,7 +81,7 @@ struct Counter has key {
 
 我们定义一个 `Counter` 类型的结构体用来记录计数值，结构体只包含一个 `u64` 类型的字段 `count_value`。
 
-我们要将 `Counter` 类型的值记录到 Rooch 的全局存储中，所以需要给这个类型提供一个 `key` 能力，让 Move 能够通过`键`来查找数据。
+我们要将 `Counter` 类型的值记录到 Rooch 的全局存储中，所以需要给这个类型提供一个 `key` 能力，让 Move 能够通过**键**来查找数据。
 
 ### 初始化函数
 
@@ -124,28 +124,28 @@ entry fun increase(ctx: &mut Context) {
 
 出于安全考虑，在 Move 虚拟机中禁止了外部（命令行等）直接调用操作模块数据的函数，而是提供一种名为`入口函数`的方式来间接调用逻辑函数，入口函数是合约向外暴露的一种接口。
 
+> 注意：本例中演示的计数器合约，我们为了尽可能地精简，我们将逻辑操作和入口函数合并成了一个 `increase` 函数，在实际开发中，建议将逻辑和入口分开封装到不同的函数中。
+
 如果要把 `increase` 函数提供jj
 
-如你所见，第 18~20 行，就是调用 `increase` 函数的入口函数。有了入口函数，我们就可以在命令行或其他客户端中执行计数器的递增操作了。
+如你所见，第 13 行的 `increase` 函数被 `entry` 关键字修饰了，因此它便成为了一个入口函数。有了入口函数，我们就可以在命令行或其他客户端中执行计数器的递增操作了。
 
-第 18 行是入口函数 `incr` 的函数签名，接受一个上下文参数。特别注意，这里的上下文参数是 Move VM 自动传递的参数，所以在命令行中调用 `incr` 函数时，不需要传递任何参数。
+> 特别注意，`increase` 函数的上下文参数是 Move VM 自动传递的参数，在合约编写中需要显式传递，而对外部调用而言，则不需要手动传递，所以在命令行中调用 `increase` 函数时，不需要传递任何参数。
 
 ## 在 Rooch 的命令行界面中演示计数器程序
 
-1. 首先启动 Rooch 的服务：
+1. 首先检查当前 Rooch 默认激活的网络是否为 `dev` 网络：
 
 ```shell
-$ rooch server start
+$ rooch env list
 
-StoreConfig init store dir "/home/joe/.rooch/local/roochdb/rooch_store" "/home/joe/.rooch/local/roochdb/moveos_store"
-2023-10-13T04:04:16.379378Z  INFO moveos_common::utils: set max open fds 45056
-2023-10-13T04:04:17.614000Z  INFO rooch_rpc_server: RPC Server sequencer address: 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6
-2023-10-13T04:04:17.614128Z  INFO rooch_sequencer::actor::sequencer: Load latest sequencer order 0
-2023-10-13T04:04:17.614550Z  INFO rooch_rpc_server: RPC Server proposer address: 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6
-2023-10-13T04:04:17.614974Z  INFO rooch_rpc_server: acl=Const("*")
-2023-10-13T04:04:17.615380Z  INFO rooch_rpc_server: JSON-RPC HTTP Server start listening 0.0.0.0:50051
-2023-10-13T04:04:17.615393Z  INFO rooch_rpc_server: Available JSON-RPC methods : ["eth_blockNumber", "eth_getBalance", "eth_gasPrice", "net_version", "rooch_listAnnotatedStates", "rooch_getBalance", "rooch_sendRawTransaction", "rooch_getAnnotatedStates", "rooch_getTransactionsByHash", "rooch_executeRawTransaction", "rooch_getEventsByEventHandle", "eth_getTransactionCount", "eth_sendTransaction", "rooch_executeViewFunction", "rooch_getBalances", "eth_getBlockByNumber", "eth_feeHistory", "rooch_listStates", "rooch_getTransactionsByOrder", "eth_sendRawTransaction", "rooch_getChainID", "eth_getTransactionByHash", "eth_getBlockByHash", "eth_getTransactionReceipt", "eth_chainId", "eth_estimateGas", "rooch_getStates"]
+       Env Alias         |                     RPC URL                      |                  Websocket URL                   |  Active Env
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+         local           |               http://0.0.0.0:50051               |                       Null                       |
+          dev            |       https://dev-seed.rooch.network:443/        |                       Null                       |     True
 ```
+
+<++>
 
 2. 开启另一个终端，并切换到 `counter` 项目的根目录，编译合约：
 
@@ -161,11 +161,48 @@ UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
 INCLUDING DEPENDENCY MoveStdlib
 INCLUDING DEPENDENCY MoveosStdlib
 INCLUDING DEPENDENCY RoochFramework
-BUILDING counter
+BUILDING quick_start_counter
 Success
 ```
 
 3. 发布计数器合约到 Rooch 上：
+
+```shell
+[joe@mx quick_start_counter]$ rooch move publish
+
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+INCLUDING DEPENDENCY MoveStdlib
+INCLUDING DEPENDENCY MoveosStdlib
+INCLUDING DEPENDENCY RoochFramework
+BUILDING quick_start_counter
+Publish modules to address: 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6
+{
+  "sequence_info": {
+    "tx_order": "12576",
+    "tx_order_signature": {
+      "auth_validator_id": "0",
+      "payload": "0x00fc3e16490728ecb0ada639500346a56787e1fcf85d6c3527b99be29b82e2df60aa601b3717d94fb12a36fc4c8186bb5462203ea7dd279f30c3c849982e34d90bca2ecf17ab26b7c32ddba10913e6f74d43b5258905bef0f88b6d744d73bc9ce9"
+    },
+    "tx_accumulator_root": "0x750a2168c34add2c44cefca10d88bb59f3535855e5e3ec983852cfedf8f9cdee"
+  },
+  "execution_info": {
+    "tx_hash": "0x3aa3526c01551880efe69e61103db71a3d703f36e067a2f852ee217048ece81d",
+    "state_root": "0x03af8787f1032c06d5fa893445d12d9455b4544178984abed1923cb44c60ef65",
+    "event_root": "0x2d992fe0509ee0ae4ae063f78c54c58a762b52ac23edca288cd7b90549550eb4",
+    "gas_used": 1644906,
+    "status": {
+      "type": "executed"
+    }
+  },
+......
+```
+
+<++>
 
 ```shell
 ......
