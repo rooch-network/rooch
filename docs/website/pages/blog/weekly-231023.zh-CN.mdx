@@ -1,0 +1,53 @@
+---
+title: Rooch 周报 2023-10-23
+description: "主要对 RPC 的相关代码进行重构和优化，新增 NFT 标准，改进和修复 Dashboard 的一些显示组件和已知 bug"
+
+author: geometryolife
+category: Rooch Weekly
+date: 2023/10/23
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch 的开发进展
+
+### 新特性
+
+- **[RPC] Make event rpc page view no nullable (#972)** (2023-10-16) @jolestar
+- **Auto sort modules by dependency order and review native function errors (#971)** (2023-10-16) @0xPause
+- **Opt event rpc for using multi get instead of scanning the event store (#987)** (2023-10-17) @Bai Chuan
+- **[RPC] Add net_version API (#996)** (2023-10-19) @jolestar
+- **[NFT Standard]  (#963)** (2023-10-21) @WGB5445
+
+### 重大重构
+
+- **[RPC] Refactor rpc list view (#965)** (2023-10-16) @jolestar
+- **remove dashboard cmd (#974)** (2023-10-16) @sven Tan
+- **[RPC] Unify view types with StrView (#979)** (2023-10-16) @jolestar
+- **Multi key query RPC should return `Vec<Option<V>>` (#980)** (2023-10-16) @Bai Chuan
+- **refactor event RPC to make a pure event (#983)** (2023-10-16) @Bai Chuan
+- **[RPC] Merge the state API and refactor event API (#984)** (2023-10-17) @jolestar
+- **[types] Migrate Move mapping types to move_std and moveos_std (#988)** (2023-10-18) @jolestar
+- **hide dashboard todo feature (#1013)** (2023-10-21) @sven Tan
+
+### 改进和修复
+
+- **Fix dashboard refresh lost login status (#975)** (2023-10-16) @sven Tan
+- **[DevOps] Fix docker deploy (#978)** (2023-10-16) @yourmoonlight
+- **add weekly 2023-10-16 (#981)** (2023-10-16) @Joe Chen
+- **[docs] account abstractions: fix typo (#990)** (2023-10-18) @jolestar
+- **docs: add a Rooch event blog and tranlate it as zh (#936)** (2023-10-18) @Joe Chen
+- **recovery dev addr and mannual deploy examples (#1006)** (2023-10-20) @yourmoonlight
+- **fix dashboard bugs (#1008)** (2023-10-20) @sven Tan
+- **fix bug (#1012)** (2023-10-21) @sven Tan
+- **[Framework] Transaction accept future sequence_number. (#1014)** (2023-10-21) @jolestar
+- **fix deploy devnet workflow with skip-password (#1016)** (2023-10-21) @yourmoonlight
+- **fix with image_tag (#1017)** (2023-10-21) @yourmoonlight
+- **fix transcation (#1021)** (2023-10-22) @sven Tan
+
+### Rooch 社区开发会议
+
+- 讨论 `v0.2.1` 版本的发布
+- 讨论和规划 `v0.3` 的 milestone，请参阅 [#1000](https://github.com/rooch-network/rooch/issues/1000)
