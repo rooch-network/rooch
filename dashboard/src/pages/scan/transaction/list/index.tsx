@@ -125,11 +125,6 @@ const TransactionList = () => {
   // const clipboard = useClipboard()
 
   useEffect(() => {
-    // Ignore part of request
-    // if ((!result.has_next_page && status === 'finished') || status === 'loading') {
-    //   return
-    // }
-    // TODO : fix
     dispatch(
       fetchData({
         cursor: 0,
