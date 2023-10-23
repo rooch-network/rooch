@@ -180,4 +180,64 @@ describe('String Test', () => {
       }
     })
   })
+
+  describe('Concat', () => {
+    beforeAll(async () => {
+      circuit = await wasm_tester(path.join(__dirname, './string-concat-test.circom'), {
+        // @dev During development recompile can be set to false if you are only making changes in the tests.
+        // This will save time by not recompiling the circuit every time.
+        // Compile: circom "./tests/email-verifier-test.circom" --r1cs --wasm --sym --c --wat --output "./tests/compiled-test-circuit"
+        recompile: true,
+        output: path.join(__dirname, './compiled-test-circuit'),
+        include: path.join(__dirname, '../../../node_modules'),
+      })
+    })
+
+    it('should concat be ok', async function () {
+      const inputs = [[padString('ABC', 4), padString('DEFGHI', 8), padString('ABCDEFGHI', 12)]]
+
+      for (const [text1, text2, output] of inputs) {
+        const witness = await circuit.calculateWitness({
+          text1,
+          text2,
+        })
+        await circuit.checkConstraints(witness)
+        await circuit.assertOut(witness, { out: output })
+      }
+    })
+  })
+
+  describe('Concat3', () => {
+    beforeAll(async () => {
+      circuit = await wasm_tester(path.join(__dirname, './string-concat3-test.circom'), {
+        // @dev During development recompile can be set to false if you are only making changes in the tests.
+        // This will save time by not recompiling the circuit every time.
+        // Compile: circom "./tests/email-verifier-test.circom" --r1cs --wasm --sym --c --wat --output "./tests/compiled-test-circuit"
+        recompile: true,
+        output: path.join(__dirname, './compiled-test-circuit'),
+        include: path.join(__dirname, '../../../node_modules'),
+      })
+    })
+
+    it('should concat be ok', async function () {
+      const inputs = [
+        [
+          padString('ABC', 4),
+          padString('.', 2),
+          padString('DEFGHI', 8),
+          padString('ABC.DEFGHI', 14),
+        ],
+      ]
+
+      for (const [text1, text2, text3, output] of inputs) {
+        const witness = await circuit.calculateWitness({
+          text1,
+          text2,
+          text3,
+        })
+        await circuit.checkConstraints(witness)
+        await circuit.assertOut(witness, { out: output })
+      }
+    })
+  })
 })

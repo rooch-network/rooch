@@ -5,7 +5,7 @@
     "publish": "yarn npm publish --access=public",
     "test:unit": "NODE_OPTIONS=--max_old_space_size=8192 jest src/**/*.ts",
     "test:circom": "NODE_OPTIONS=--max_old_space_size=8192 jest tests/*.ts",
-    "test:circom:debug": "NODE_OPTIONS=--max_old_space_size=8192 jest tests/rsa.*.ts"
+    "test:circom:debug": "NODE_OPTIONS=--max_old_space_size=8192 jest tests/jwt.*.ts"
   },
   "dependencies": {
     "@zk-email/zk-regex-circom": "^1.1.0"

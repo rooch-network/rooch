@@ -92,7 +92,7 @@ template SplitPart(str_max_len, sep_ch) {
   findIndex <== indexOf.index;
 }
 
-template Split(str_max_len, sep_ch, count) {
+template SplitBy(str_max_len, sep_ch, count) {
   signal input text[str_max_len];
   signal output out[count][str_max_len];
 
@@ -106,5 +106,41 @@ template Split(str_max_len, sep_ch, count) {
 
     out[i] <== splitParts[i].token;
     currentIndex = splitParts[i].findIndex == -1 ? 0 : splitParts[i].findIndex + 1;
+  }
+}
+
+template Concat(str_max_len1, str_max_len2) {
+  signal input text1[str_max_len1];
+  signal input text2[str_max_len2];
+  signal output out[str_max_len1 + str_max_len2];
+
+  component len1 = Len(str_max_len1);
+  len1.text <== text1;
+  
+  component len2 = Len(str_max_len2);
+  len2.text <== text2;
+
+  for (var i = 0; i < str_max_len1 + str_max_len2; i++) {
+    out[i] <-- i < len1.length ? text1[i] : (i < len1.length + len2.length ? text2[i - len1.length] : 0);
+  }
+}
+
+template Concat3(str_max_len1, str_max_len2, str_max_len3) {
+  signal input text1[str_max_len1];
+  signal input text2[str_max_len2];
+  signal input text3[str_max_len3];
+  signal output out[str_max_len1 + str_max_len2 + str_max_len3];
+
+  component len1 = Len(str_max_len1);
+  len1.text <== text1;
+  
+  component len2 = Len(str_max_len2);
+  len2.text <== text2;
+
+  component len3 = Len(str_max_len3);
+  len3.text <== text3;
+
+  for (var i = 0; i < str_max_len1 + str_max_len2 + str_max_len3; i++) {
+    out[i] <-- i < len1.length ? text1[i] : (i < len1.length + len2.length ? text2[i - len1.length] : (i < len1.length + len2.length + len3.length ? text3[i - len1.length - len2.length] : 0));
   }
 }
