@@ -54,7 +54,7 @@ describe('JWT Test', () => {
     })
   })
   */
- 
+
   describe('JWTVerify', () => {
     beforeAll(async () => {
       circuit = await wasm_tester(path.join(__dirname, './jwt-verify-test.circom'), {
@@ -80,14 +80,14 @@ describe('JWT Test', () => {
       const pubkeyBigInt = BigInt(pubKeyData.n.toString())
 
       const witness = await circuit.calculateWitness({
-        jwt_header: padString('eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9', 511),
-        jwt_payload: padString(
-          'eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0',
+        jwt: padString(
+          'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0',
           512,
         ),
         signature: toCircomBigIntBytes(signatureBigInt),
         pubkey: toCircomBigIntBytes(pubkeyBigInt),
       })
+
       await circuit.checkConstraints(witness)
       await circuit.assertOut(witness, {})
     })

@@ -19,31 +19,21 @@ template JWTSplit(max_bytes) {
   signature <== splitedJWT.out[2];
 }
 
-template JWTVerify(max_header_bytes, max_payload_bytes, n, k) {
-  assert((max_header_bytes + 1) % 64 == 0);
-  assert(max_payload_bytes % 64 == 0);
+template JWTVerify(max_bytes, n, k) {
+  assert(max_bytes % 64 == 0);
   assert(n * k > 2048); // constraints for 2048 bit RSA
   assert(n < (255 \ 2)); // we want a multiplication to fit into a circom signal
 
-  signal input jwt_header[max_header_bytes];
-  signal input jwt_payload[max_payload_bytes];
+  signal input jwt[max_bytes];
   signal input signature[k];
   signal input pubkey[k];
 
-  // Concat jwt header and jwt body
-  component concat3 = Concat3(max_header_bytes, 1, max_payload_bytes);
-  concat3.text1 <== jwt_header;
-  concat3.text2[0] <== 46; // 46 is '.'
-  concat3.text3 <== jwt_payload;
-
-  var jwt_max_bytes = max_header_bytes + max_payload_bytes + 1;
-  signal jwt[jwt_max_bytes] <== concat3.out;
-
-  component jwt_len = Len(jwt_max_bytes);
+  // JWT length
+  component jwt_len = Len(max_bytes);
   jwt_len.text <== jwt;
 
   // JWT hash
-  signal output sha[256] <== Sha256Bytes(jwt_max_bytes)(jwt, jwt_len.length);
+  signal output sha[256] <== Sha256Bytes(max_bytes)(jwt, jwt_len.length);
 
   var msg_len = (256 + n) \ n;
 
@@ -70,3 +60,4 @@ template JWTVerify(max_header_bytes, max_payload_bytes, n, k) {
   rsa.signature <== signature;
   rsa.modulus <== pubkey;
 }
+
