@@ -5,9 +5,8 @@ module test::m {
     use std::string::String;
     use moveos_std::table::{Self, Table};
     use moveos_std::context::{Self, Context};
-    use moveos_std::object;
     use moveos_std::object::ObjectID;
-    use moveos_std::object_ref::{ObjectRef};
+    use moveos_std::object_ref;
 
     struct KVStore has store, key {
         table: Table<String,vector<u8>>,
@@ -31,13 +30,11 @@ module test::m {
         table::borrow(&store.table, key)
     }
 
-    public fun save_to_object_storage(ctx: &mut Context, kv: KVStore) : ObjectRef<KVStore> {
-        context::new_object(ctx, kv)
-    }
-
-    public fun borrow_from_object_storage(ctx: &mut Context, object_id: ObjectID): &KVStore {
-        let object = context::borrow_object(ctx, object_id);
-        object::borrow<KVStore>(object)
+    public fun save_to_object_storage(ctx: &mut Context, kv: KVStore) : ObjectID {
+        let object_ref = context::new_object(ctx, kv);
+        let object_id = object_ref::id(&object_ref);
+        object_ref::to_user_owner(object_ref, context::sender(ctx));
+        object_id
     }
 }
 
@@ -50,20 +47,19 @@ script {
     fun main(ctx: &mut Context) {
         let kv = m::make_kv_store(ctx);
         m::add(&mut kv, string::utf8(b"test"), b"value");
-        let object_ref = m::save_to_object_storage(ctx, kv);
-        std::debug::print(&object_ref);
+        let object_id = m::save_to_object_storage(ctx, kv);
+        std::debug::print(&object_id);
     }
 }
 
-//# run --signers test --args @0xcc48c91b1a0f15813bed988390a2794660ae5dadcd86fdb1b55d4a28d0f74c4d
+//# run --signers test --args @0x1a2c876ea44c751aedab69ef139181114c79abf4fb8bca363b66969218e7d815
 script {
     use std::string;
-    use moveos_std::context::{Context};
-    use moveos_std::object::ObjectID;
-    use test::m;
+    use moveos_std::object_ref::{Self, ObjectRef};
+    use test::m::{Self, KVStore};
 
-    fun main(ctx: &mut Context, object_id: ObjectID) {
-        let kv = m::borrow_from_object_storage(ctx, object_id);
+    fun main(kv_object: &ObjectRef<KVStore>) {
+        let kv = object_ref::borrow(kv_object);
         assert!(m::contains(kv, string::utf8(b"test")), 1000);
         let v = m::borrow(kv, string::utf8(b"test"));
         assert!(v == &b"value", 1001);

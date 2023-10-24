@@ -82,10 +82,9 @@ module rooch_framework::account_coin_store {
     
     /// Returns the balance of `addr` for provided `CoinType`.
     public fun balance<CoinType: key>(ctx: &Context, addr: address): u256 {
-        let coin_store_id_option = coin_store_id<CoinType>(ctx, addr);
-        if (option::is_some(&coin_store_id_option)) {
-            let coin_store_id = option::extract(&mut coin_store_id_option);
-            coin_store::get_balance_with_id(ctx, coin_store_id)
+        if(exist_account_coin_store<CoinType>(ctx, addr)) {
+            let coin_store = borrow_account_coin_store<CoinType>(ctx, addr);
+            coin_store::balance(coin_store)
         } else {
             0u256
         }

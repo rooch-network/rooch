@@ -301,10 +301,9 @@ Returns the balance of <code>addr</code> for provided <code>CoinType</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_balance">balance</a>&lt;CoinType: key&gt;(ctx: &Context, addr: <b>address</b>): u256 {
-    <b>let</b> coin_store_id_option = <a href="account_coin_store.md#0x3_account_coin_store_coin_store_id">coin_store_id</a>&lt;CoinType&gt;(ctx, addr);
-    <b>if</b> (<a href="_is_some">option::is_some</a>(&coin_store_id_option)) {
-        <b>let</b> coin_store_id = <a href="_extract">option::extract</a>(&<b>mut</b> coin_store_id_option);
-        <a href="coin_store.md#0x3_coin_store_get_balance_with_id">coin_store::get_balance_with_id</a>(ctx, coin_store_id)
+    <b>if</b>(<a href="account_coin_store.md#0x3_account_coin_store_exist_account_coin_store">exist_account_coin_store</a>&lt;CoinType&gt;(ctx, addr)) {
+        <b>let</b> <a href="coin_store.md#0x3_coin_store">coin_store</a> = <a href="account_coin_store.md#0x3_account_coin_store_borrow_account_coin_store">borrow_account_coin_store</a>&lt;CoinType&gt;(ctx, addr);
+        <a href="coin_store.md#0x3_coin_store_balance">coin_store::balance</a>(<a href="coin_store.md#0x3_coin_store">coin_store</a>)
     } <b>else</b> {
         0u256
     }

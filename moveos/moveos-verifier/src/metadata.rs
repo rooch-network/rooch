@@ -487,6 +487,7 @@ pub fn is_allowed_input_struct(name: String) -> bool {
             | "0x1::ascii::String"
             | "0x2::object::ObjectID"
             | "0x2::context::Context"
+            | "0x2::object_ref::ObjectRef"
     )
 }
 

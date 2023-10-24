@@ -12,12 +12,15 @@ module moveos_std::object {
     use moveos_std::type_info;
     use moveos_std::bcs;
     use moveos_std::address;
+
     friend moveos_std::context;
     friend moveos_std::account_storage;
     friend moveos_std::storage_context;
     friend moveos_std::event;
     friend moveos_std::object_ref;
     friend moveos_std::raw_table;
+
+    const CODE_OWNER_ADDRESS: address = @0x0;
    
     /// Box style object
     /// The object can not be copied, droped and stored. It only can be consumed by StorageContext API.
@@ -54,8 +57,13 @@ module moveos_std::object {
         )
     }
 
+    public fun code_owner_address(): address {
+        CODE_OWNER_ADDRESS
+    }
+
     /// Create a new object, the object is owned by `owner`
-    public(friend) fun new<T: key>(id: ObjectID, owner: address, value: T): Object<T> {
+    public(friend) fun new<T: key>(id: ObjectID, value: T): Object<T> {
+        let owner = CODE_OWNER_ADDRESS;
         Object<T>{id, value, owner}
     }
 
@@ -77,6 +85,10 @@ module moveos_std::object {
 
     public(friend) fun internal_borrow_mut<T>(self: &mut Object<T>): &mut T {
         &mut self.value
+    }
+
+    public(friend) fun set_owner<T>(self: &mut Object<T>, owner: address) {
+        self.owner = owner;
     }
 
     #[private_generics(T)]
@@ -118,7 +130,7 @@ module moveos_std::object {
             count: object_count,
         };
         let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut tx_context));
-        let obj = new<TestObject>(object_id, sender_addr, object);
+        let obj = new<TestObject>(object_id, object);
 
         let borrow_object = borrow_mut(&mut obj);
         assert!(borrow_object.count == object_count, 1001);

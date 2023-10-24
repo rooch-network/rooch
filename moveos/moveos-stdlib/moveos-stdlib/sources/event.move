@@ -75,13 +75,13 @@ module moveos_std::event {
     /// Use EventHandle to generate a unique event handle
     /// user doesn't need to call this method directly
     fun new_event_handle<T>(ctx: &mut Context) {
-        let account_addr = context::sender(ctx);
         let event_handle_id = derive_event_handle_id<T>();
         let event_handle = EventHandle {
             counter: 0,
         };
-        //TODO should we keep the event_handle_ref?
-        let _handle_ref = context::new_object_with_id<EventHandle>(ctx, event_handle_id, account_addr, event_handle);
+        //TODO refactor EventHandle with singleton Object.
+        let event_handle_object = object::new(event_handle_id, event_handle);
+        context::add_object(ctx, event_handle_object);
     }
 
     public fun ensure_event_handle<T>(ctx: &mut Context) {

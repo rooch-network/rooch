@@ -31,7 +31,6 @@ It is used to store the account's resources and modules
 <b>use</b> <a href="context.md#0x2_context">0x2::context</a>;
 <b>use</b> <a href="move_module.md#0x2_move_module">0x2::move_module</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="object_ref.md#0x2_object_ref">0x2::object_ref</a>;
 <b>use</b> <a href="table.md#0x2_table">0x2::table</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 <b>use</b> <a href="type_table.md#0x2_type_table">0x2::type_table</a>;
@@ -199,8 +198,8 @@ Create a new account storage space
         resources: <a href="type_table.md#0x2_type_table_new_with_id">type_table::new_with_id</a>(<a href="account_storage.md#0x2_account_storage_named_table_id">named_table_id</a>(account, <a href="account_storage.md#0x2_account_storage_NamedTableResource">NamedTableResource</a>)),
         modules: <a href="table.md#0x2_table_new_with_id">table::new_with_id</a>(<a href="account_storage.md#0x2_account_storage_named_table_id">named_table_id</a>(account, <a href="account_storage.md#0x2_account_storage_NamedTableModule">NamedTableModule</a>)),
     };
-    //Should we keep the storage ref?
-    <b>let</b> _account_storage_ref = <a href="context.md#0x2_context_new_object_with_id">context::new_object_with_id</a>(ctx, object_id, account, <a href="account_storage.md#0x2_account_storage">account_storage</a>);
+    <b>let</b> obj = <a href="object.md#0x2_object_new">object::new</a>(object_id, <a href="account_storage.md#0x2_account_storage">account_storage</a>);
+    <a href="context.md#0x2_context_add_object">context::add_object</a>(ctx, obj);
 }
 </code></pre>
 

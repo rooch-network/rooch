@@ -5,7 +5,7 @@ module rooch_framework::coin_store {
 
     use std::string;
     use std::error;
-    use moveos_std::object::{Self, ObjectID};
+    use moveos_std::object::{ObjectID};
     use moveos_std::context::{Self, Context};
     use moveos_std::type_info;
     use moveos_std::object_ref::{ObjectRef};
@@ -35,7 +35,7 @@ module rooch_framework::coin_store {
 
     /// A holder of a specific coin types.
     /// These are kept in a single resource to ensure locality of data.
-    struct CoinStore has key {
+    struct CoinStore has key,store {
         coin_type: string::String,
         balance: Balance,
         frozen: bool,
@@ -91,40 +91,19 @@ module rooch_framework::coin_store {
         merge_to_balance<CoinType>(coin_store, coin);
     }
 
-    /// Get if the CoinStore is frozen via the coin store id
-    public fun is_coin_store_frozen(ctx: &Context, coin_store_id: ObjectID): bool {
-        if (context::exist_object(ctx, coin_store_id)){
-            let coin_store_object = context::borrow_object<CoinStore>(ctx, coin_store_id);
-            object::borrow(coin_store_object).frozen
-        }else{
-            //TODO if the coin store is not exist, should we return true or false?
-            false
-        }
-    }
-
-    /// Get the balance of the CoinStore with the coin store id
-    /// If the CoinStore is not exist, return 0
-    public fun get_balance_with_id(ctx: &Context, coin_store_id: ObjectID): u256 {
-        if (context::exist_object(ctx, coin_store_id)){
-            let coin_store_object = context::borrow_object<CoinStore>(ctx, coin_store_id);
-            object::borrow(coin_store_object).balance.value
-        }else{
-            0u256
-        }
-    }
-
     #[private_generics(CoinType)]
     /// Freeze or Unfreeze a CoinStore to prevent withdraw and desposit
     /// This function is for he `CoinType` module to extend,
     /// Only the `CoinType` module can freeze or unfreeze a CoinStore by the coin store id
     public fun freeze_coin_store_extend<CoinType: key>(
-        ctx: &mut Context,
-        coin_store_id: ObjectID,
-        frozen: bool,
+        _ctx: &mut Context,
+        _coin_store_id: ObjectID,
+        _frozen: bool,
     ) {
-        assert!(context::exist_object(ctx, coin_store_id), error::invalid_argument(ErrorCoinStoreNotFound));
-        let coin_store_object = context::borrow_object_mut<CoinStore>(ctx, coin_store_id);
-        object::borrow_mut(coin_store_object).frozen = frozen;
+        //TODO how to provide freeze coin store via coin store id
+        // assert!(context::exist_object(ctx, coin_store_id), error::invalid_argument(ErrorCoinStoreNotFound));
+        // let coin_store_object = context::borrow_object_mut<CoinStore>(ctx, coin_store_id);
+        // object::borrow_mut(coin_store_object).frozen = frozen;
     }
 
     // Internal functions

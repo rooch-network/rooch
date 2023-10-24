@@ -12,13 +12,16 @@ The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/5
 
 -  [Struct `Object`](#0x2_object_Object)
 -  [Struct `ObjectID`](#0x2_object_ObjectID)
+-  [Constants](#@Constants_0)
 -  [Function `address_to_object_id`](#0x2_object_address_to_object_id)
 -  [Function `singleton_object_id`](#0x2_object_singleton_object_id)
+-  [Function `code_owner_address`](#0x2_object_code_owner_address)
 -  [Function `new`](#0x2_object_new)
 -  [Function `borrow`](#0x2_object_borrow)
 -  [Function `internal_borrow`](#0x2_object_internal_borrow)
 -  [Function `borrow_mut`](#0x2_object_borrow_mut)
 -  [Function `internal_borrow_mut`](#0x2_object_internal_borrow_mut)
+-  [Function `set_owner`](#0x2_object_set_owner)
 -  [Function `transfer`](#0x2_object_transfer)
 -  [Function `id`](#0x2_object_id)
 -  [Function `owner`](#0x2_object_owner)
@@ -103,6 +106,20 @@ An object ID
 
 </details>
 
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x2_object_CODE_OWNER_ADDRESS"></a>
+
+
+
+<pre><code><b>const</b> <a href="object.md#0x2_object_CODE_OWNER_ADDRESS">CODE_OWNER_ADDRESS</a>: <b>address</b> = 0;
+</code></pre>
+
+
+
 <a name="0x2_object_address_to_object_id"></a>
 
 ## Function `address_to_object_id`
@@ -160,14 +177,13 @@ Generate a new ObjectID from an address
 
 </details>
 
-<a name="0x2_object_new"></a>
+<a name="0x2_object_code_owner_address"></a>
 
-## Function `new`
-
-Create a new object, the object is owned by <code>owner</code>
+## Function `code_owner_address`
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_code_owner_address">code_owner_address</a>(): <b>address</b>
 </code></pre>
 
 
@@ -176,7 +192,33 @@ Create a new object, the object is owned by <code>owner</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(id: <a href="object.md#0x2_object_ObjectID">ObjectID</a>, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_code_owner_address">code_owner_address</a>(): <b>address</b> {
+    <a href="object.md#0x2_object_CODE_OWNER_ADDRESS">CODE_OWNER_ADDRESS</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_object_new"></a>
+
+## Function `new`
+
+Create a new object, the object is owned by <code>owner</code>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(id: <a href="object.md#0x2_object_ObjectID">ObjectID</a>, value: T): <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt; {
+    <b>let</b> owner = <a href="object.md#0x2_object_CODE_OWNER_ADDRESS">CODE_OWNER_ADDRESS</a>;
     <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;{id, value, owner}
 }
 </code></pre>
@@ -275,6 +317,30 @@ Borrow the mutable object value
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_internal_borrow_mut">internal_borrow_mut</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): &<b>mut</b> T {
     &<b>mut</b> self.value
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_object_set_owner"></a>
+
+## Function `set_owner`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_set_owner">set_owner</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, owner: <b>address</b>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_set_owner">set_owner</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;, owner: <b>address</b>) {
+    self.owner = owner;
 }
 </code></pre>
 

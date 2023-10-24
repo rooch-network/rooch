@@ -4,7 +4,7 @@
 
 module test::m {
     use moveos_std::context::{Self, Context};
-    use moveos_std::object::ObjectID;
+    use moveos_std::object_ref::{Self, ObjectRef};
     use moveos_std::account_storage;
     use std::debug;
 
@@ -17,22 +17,27 @@ module test::m {
         // if the tx hash change, need to figure out why.
         assert!(x"7852c5dcbd87e82102dba0db36d44b5a9fb0006b3e828c0b5f0832f70a8ff6ee" == tx_hash, 1000);
         let obj_ref = context::new_object(ctx, S { v: 1});
+        let sender = context::sender(ctx);
         debug::print(&obj_ref);
+        object_ref::to_user_owner(obj_ref, sender);
     }
 
-    public entry fun move_s_to_global(ctx: &mut Context, sender: signer, object_id: ObjectID) {
+    public entry fun move_s_to_global(ctx: &mut Context, sender: signer, object_s: ObjectRef<S>) {
+        let object_id = object_ref::id(&object_s);
         debug::print(&object_id);
-        let (_id, _owner, value)  = context::remove_object<S>(ctx, object_id);
+        let value = object_ref::remove(object_s);
         account_storage::global_move_to(ctx, &sender, value);
     }
 
     public entry fun mint_cup<T: store>(ctx: &mut Context) {
         let obj_ref = context::new_object(ctx, Cup<T> { v: 2 });
         debug::print(&obj_ref);
+        let sender = context::sender(ctx);
+        object_ref::to_user_owner(obj_ref, sender);
     }
 
-    public entry fun move_cup_to_global<T:store>(ctx: &mut Context, sender: signer, object_id: ObjectID) {
-        let (_id,_owner,value) = context::remove_object<Cup<S>>(ctx, object_id);
+    public entry fun move_cup_to_global<T:store>(ctx: &mut Context, sender: signer, object_s: ObjectRef<Cup<S>>) {
+        let value = object_ref::remove(object_s);
         account_storage::global_move_to(ctx, &sender, value);
     }
 }

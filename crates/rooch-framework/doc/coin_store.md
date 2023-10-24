@@ -16,8 +16,6 @@
 -  [Function `is_frozen`](#0x3_coin_store_is_frozen)
 -  [Function `withdraw`](#0x3_coin_store_withdraw)
 -  [Function `deposit`](#0x3_coin_store_deposit)
--  [Function `is_coin_store_frozen`](#0x3_coin_store_is_coin_store_frozen)
--  [Function `get_balance_with_id`](#0x3_coin_store_get_balance_with_id)
 -  [Function `freeze_coin_store_extend`](#0x3_coin_store_freeze_coin_store_extend)
 -  [Function `create_coin_store_internal`](#0x3_coin_store_create_coin_store_internal)
 
@@ -69,7 +67,7 @@ A holder of a specific coin types.
 These are kept in a single resource to ensure locality of data.
 
 
-<pre><code><b>struct</b> <a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a> <b>has</b> store, key
 </code></pre>
 
 
@@ -351,68 +349,6 @@ Deposit <code>amount</code> Coin<CoinType> to the balance of the passed-in <code
 
 </details>
 
-<a name="0x3_coin_store_is_coin_store_frozen"></a>
-
-## Function `is_coin_store_frozen`
-
-Get if the CoinStore is frozen via the coin store id
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_is_coin_store_frozen">is_coin_store_frozen</a>(ctx: &<a href="_Context">context::Context</a>, coin_store_id: <a href="_ObjectID">object::ObjectID</a>): bool
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_is_coin_store_frozen">is_coin_store_frozen</a>(ctx: &Context, coin_store_id: ObjectID): bool {
-    <b>if</b> (<a href="_exist_object">context::exist_object</a>(ctx, coin_store_id)){
-        <b>let</b> coin_store_object = <a href="_borrow_object">context::borrow_object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;(ctx, coin_store_id);
-        <a href="_borrow">object::borrow</a>(coin_store_object).frozen
-    }<b>else</b>{
-        //TODO <b>if</b> the <a href="coin.md#0x3_coin">coin</a> store is not exist, should we <b>return</b> <b>true</b> or <b>false</b>?
-        <b>false</b>
-    }
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x3_coin_store_get_balance_with_id"></a>
-
-## Function `get_balance_with_id`
-
-Get the balance of the CoinStore with the coin store id
-If the CoinStore is not exist, return 0
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_get_balance_with_id">get_balance_with_id</a>(ctx: &<a href="_Context">context::Context</a>, coin_store_id: <a href="_ObjectID">object::ObjectID</a>): u256
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_get_balance_with_id">get_balance_with_id</a>(ctx: &Context, coin_store_id: ObjectID): u256 {
-    <b>if</b> (<a href="_exist_object">context::exist_object</a>(ctx, coin_store_id)){
-        <b>let</b> coin_store_object = <a href="_borrow_object">context::borrow_object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;(ctx, coin_store_id);
-        <a href="_borrow">object::borrow</a>(coin_store_object).balance.value
-    }<b>else</b>{
-        0u256
-    }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_coin_store_freeze_coin_store_extend"></a>
 
 ## Function `freeze_coin_store_extend`
@@ -422,7 +358,7 @@ This function is for he <code>CoinType</code> module to extend,
 Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the coin store id
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_freeze_coin_store_extend">freeze_coin_store_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, coin_store_id: <a href="_ObjectID">object::ObjectID</a>, frozen: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_freeze_coin_store_extend">freeze_coin_store_extend</a>&lt;CoinType: key&gt;(_ctx: &<b>mut</b> <a href="_Context">context::Context</a>, _coin_store_id: <a href="_ObjectID">object::ObjectID</a>, _frozen: bool)
 </code></pre>
 
 
@@ -432,13 +368,14 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_freeze_coin_store_extend">freeze_coin_store_extend</a>&lt;CoinType: key&gt;(
-    ctx: &<b>mut</b> Context,
-    coin_store_id: ObjectID,
-    frozen: bool,
+    _ctx: &<b>mut</b> Context,
+    _coin_store_id: ObjectID,
+    _frozen: bool,
 ) {
-    <b>assert</b>!(<a href="_exist_object">context::exist_object</a>(ctx, coin_store_id), <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin_store.md#0x3_coin_store_ErrorCoinStoreNotFound">ErrorCoinStoreNotFound</a>));
-    <b>let</b> coin_store_object = <a href="_borrow_object_mut">context::borrow_object_mut</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;(ctx, coin_store_id);
-    <a href="_borrow_mut">object::borrow_mut</a>(coin_store_object).frozen = frozen;
+    //TODO how <b>to</b> provide <b>freeze</b> <a href="coin.md#0x3_coin">coin</a> store via <a href="coin.md#0x3_coin">coin</a> store id
+    // <b>assert</b>!(<a href="_exist_object">context::exist_object</a>(ctx, coin_store_id), <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin_store.md#0x3_coin_store_ErrorCoinStoreNotFound">ErrorCoinStoreNotFound</a>));
+    // <b>let</b> coin_store_object = <a href="_borrow_object_mut">context::borrow_object_mut</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;(ctx, coin_store_id);
+    // <a href="_borrow_mut">object::borrow_mut</a>(coin_store_object).frozen = frozen;
 }
 </code></pre>
 

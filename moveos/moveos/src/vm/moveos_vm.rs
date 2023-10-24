@@ -1,10 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{
-    data_cache::{into_change_set, MoveosDataCache},
-    tx_argument_resolver::TxArgumentResolver,
-};
+use super::data_cache::{into_change_set, MoveosDataCache};
 use move_binary_format::{
     compatibility::Compatibility,
     errors::{Location, PartialVMError, VMError, VMResult},
@@ -106,13 +103,13 @@ impl MoveOSVM {
 /// It is used to execute a transaction, every transaction should be executed in a new session.
 /// Every session has a TxContext, if the transaction have multiple actions, the TxContext is shared.
 pub struct MoveOSSession<'r, 'l, S, G> {
-    vm: &'l MoveVM,
-    remote: &'r S,
-    session: Session<'r, 'l, MoveosDataCache<'r, 'l, S>>,
-    ctx: Context,
-    table_data: Arc<RwLock<TableData>>,
-    gas_meter: G,
-    read_only: bool,
+    pub(crate) vm: &'l MoveVM,
+    pub(crate) remote: &'r S,
+    pub(crate) session: Session<'r, 'l, MoveosDataCache<'r, 'l, S>>,
+    pub(crate) ctx: Context,
+    pub(crate) table_data: Arc<RwLock<TableData>>,
+    pub(crate) gas_meter: G,
+    pub(crate) read_only: bool,
 }
 
 impl<'r, 'l, S, G> MoveOSSession<'r, 'l, S, G>
@@ -187,10 +184,7 @@ where
                     .load_script(call.code.as_slice(), call.ty_args.clone())?;
                 moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)
                     .map_err(|e| e.finish(Location::Undefined))?;
-                let _resolved_args = self
-                    .ctx
-                    .resolve_argument(&self.session, &loaded_function, call.args.clone())
-                    .map_err(|e| e.finish(Location::Undefined))?;
+                let _resolved_args = self.resolve_argument(&loaded_function, call.args.clone())?;
                 Ok(VerifiedMoveAction::Script { call })
             }
             MoveAction::Function(call) => {
@@ -201,10 +195,7 @@ where
                 )?;
                 moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)
                     .map_err(|e| e.finish(Location::Undefined))?;
-                let _resolved_args = self
-                    .ctx
-                    .resolve_argument(&self.session, &loaded_function, call.args.clone())
-                    .map_err(|e| e.finish(Location::Undefined))?;
+                let _resolved_args = self.resolve_argument(&loaded_function, call.args.clone())?;
                 Ok(VerifiedMoveAction::Function { call })
             }
             MoveAction::ModuleBundle(module_bundle) => {
@@ -243,11 +234,8 @@ where
                     .session
                     .load_script(call.code.as_slice(), call.ty_args.clone())?;
 
-                let resolved_args = self
-                    .ctx
-                    .resolve_argument(&self.session, &loaded_function, call.args)
-                    .map_err(|e| e.finish(Location::Undefined))?;
-
+                let resolved_args = self.resolve_argument(&loaded_function, call.args)?;
+                self.load_argument(&loaded_function, &resolved_args);
                 self.session
                     .execute_script(call.code, call.ty_args, resolved_args, &mut self.gas_meter)
                     .map(|ret| {
@@ -265,11 +253,8 @@ where
                     call.ty_args.as_slice(),
                 )?;
 
-                let resolved_args = self
-                    .ctx
-                    .resolve_argument(&self.session, &loaded_function, call.args)
-                    .map_err(|e| e.finish(Location::Undefined))?;
-
+                let resolved_args = self.resolve_argument(&loaded_function, call.args)?;
+                self.load_argument(&loaded_function, &resolved_args);
                 self.session
                     .execute_entry_function(
                         &call.function_id.module_id,
@@ -371,13 +356,8 @@ where
             &call.function_id.function_name,
             call.ty_args.as_slice(),
         )?;
-        let resolved_args = self
-            .ctx
-            .resolve_argument(&self.session, &loaded_function, call.args)
-            .map_err(|e: move_binary_format::errors::PartialVMError| {
-                e.finish(Location::Undefined)
-            })?;
-
+        let resolved_args = self.resolve_argument(&loaded_function, call.args)?;
+        self.load_argument(&loaded_function, &resolved_args);
         let return_values = self.session.execute_function_bypass_visibility(
             &call.function_id.module_id,
             &call.function_id.function_name,

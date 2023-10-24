@@ -7,7 +7,6 @@
 module moveos_std::context {
 
     use std::option::Option;
-    use moveos_std::type_info;
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::tx_context::{Self, TxContext};
     use moveos_std::object::{Self, Object, ObjectID};
@@ -92,28 +91,29 @@ module moveos_std::context {
     }
 
 
-    // Wrap functions for StorageContext and ObjectRef 
+    // Wrap functions for StorageContext
 
-    #[private_generics(T)]
     /// Borrow Object from object store with object_id
-    public fun borrow_object<T: key>(self: &Context, object_id: ObjectID): &Object<T> {
+    public(friend) fun borrow_object<T: key>(self: &Context, object_id: ObjectID): &Object<T> {
         storage_context::borrow<T>(&self.storage_context, object_id)
     }
 
-    #[private_generics(T)]
     /// Borrow mut Object from object store with object_id
-    public fun borrow_object_mut<T: key>(self: &mut Context, object_id: ObjectID): &mut Object<T> {
+    public(friend) fun borrow_object_mut<T: key>(self: &mut Context, object_id: ObjectID): &mut Object<T> {
         storage_context::borrow_mut<T>(&mut self.storage_context, object_id)
     }
 
-    #[private_generics(T)]
     /// Remove object from object store, and unpack the Object
-    public fun remove_object<T: key>(self: &mut Context, object_id: ObjectID): (ObjectID, address, T) {
+    public(friend) fun remove_object<T: key>(self: &mut Context, object_id: ObjectID): (ObjectID, address, T) {
         let obj = storage_context::remove<T>(&mut self.storage_context, object_id);
         object::unpack_internal(obj)
     }
 
-    public fun exist_object(self: &Context, object_id: ObjectID): bool {
+    public(friend) fun add_object<T: key>(self: &mut Context, object: Object<T>) {
+        storage_context::add(&mut self.storage_context, object);
+    }
+
+    public(friend) fun exist_object(self: &Context, object_id: ObjectID): bool {
         storage_context::contains(&self.storage_context, object_id)
     }
 
@@ -124,20 +124,11 @@ module moveos_std::context {
     /// Add the Object to the global object storage and return the ObjectRef
     public fun new_object<T: key>(self: &mut Context, value: T): ObjectRef<T> {
         let id = fresh_object_id(self);
-        let owner = sender(self);
-        new_object_with_id(self, id, owner, value)
+        new_object_with_id(self, id, value)
     }
 
-    #[private_generics(T)]
-    /// Create a new Object with owner
-    /// Add the Object to the global object storage and return the ObjectRef
-    public fun new_object_with_owner<T: key>(self: &mut Context, owner: address, value: T): ObjectRef<T> {
-        let object_id = fresh_object_id(self);
-        new_object_with_id(self, object_id, owner, value)
-    }
-
-    public(friend) fun new_object_with_id<T: key>(self: &mut Context, id: ObjectID, owner: address, value: T) : ObjectRef<T> {
-        let obj = object::new(id, owner, value);
+    public(friend) fun new_object_with_id<T: key>(self: &mut Context, id: ObjectID, value: T) : ObjectRef<T> {
+        let obj = object::new(id, value);
         let obj_ref = object_ref::new_internal(&mut obj);
         storage_context::add(&mut self.storage_context, obj);
         obj_ref
@@ -146,7 +137,7 @@ module moveos_std::context {
     #[private_generics(T)]
     public fun new_singleton_object<T: key>(self: &mut Context, value: T): ObjectRef<T> {
         let object_id = object::singleton_object_id<T>();
-        new_object_with_id(self, object_id, type_info::account_address(&type_info::type_of<T>()), value)
+        new_object_with_id(self, object_id, value)
     }
 
     #[test_only]
@@ -189,13 +180,14 @@ module moveos_std::context {
         let ref = new_object(&mut ctx, TestObjectValue{value: 1});
         
         {
-            let obj_value = object_ref::borrow_mut(&mut ref);
+            let obj_value = object_ref::borrow_mut_extend(&mut ref);
             obj_value.value = 2;
         };
         {
-            let obj_value = object_ref::borrow(&ref);
+            let obj_value = object_ref::borrow_extend(&ref);
             assert!(obj_value.value == 2, 1000);
         };
+        object_ref::to_user_owner(ref, sender);
         drop_test_context(ctx);
     }
 }

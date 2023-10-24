@@ -52,8 +52,8 @@ module moveos_std::account_storage {
             resources: type_table::new_with_id(named_table_id(account, NamedTableResource)),
             modules: table::new_with_id(named_table_id(account, NamedTableModule)),
         };
-        //Should we keep the storage ref?
-        let _account_storage_ref = context::new_object_with_id(ctx, object_id, account, account_storage);
+        let obj = object::new(object_id, account_storage);
+        context::add_object(ctx, obj);
     }
 
     /// check if account storage eixst
