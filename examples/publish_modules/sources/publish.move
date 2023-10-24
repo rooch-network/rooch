@@ -14,11 +14,6 @@ module rooch_examples::publish {
     use moveos_std::context::Context;
     use moveos_std::account_storage;
 
-    #[test_only]
-    use moveos_std::context;
-    #[test_only]
-    use std::debug;
-
     public entry fun publish_modules_entry(ctx: &mut Context,  account: &signer, module_bytes: vector<u8>) {
         account_storage::ensure_account_storage(ctx, signer::address_of(account));
         let m: MoveModule = move_module::new(module_bytes);
