@@ -11,6 +11,7 @@ module rooch_framework::genesis {
     use rooch_framework::builtin_validators;
     use rooch_framework::chain_id;
     use rooch_framework::coin;
+    use rooch_framework::account_coin_store;
     use rooch_framework::gas_coin;
     use rooch_framework::transaction_fee;
     use rooch_framework::timestamp;
@@ -36,6 +37,7 @@ module rooch_framework::genesis {
         auth_validator_registry::genesis_init(ctx, genesis_account);
         builtin_validators::genesis_init(ctx, genesis_account);
         coin::genesis_init(ctx, genesis_account);
+        account_coin_store::genesis_init(ctx, genesis_account);
         gas_coin::genesis_init(ctx, genesis_account);
         transaction_fee::genesis_init(ctx, genesis_account);
         timestamp::genesis_init(ctx, genesis_account, genesis_context.timestamp);

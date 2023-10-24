@@ -10,8 +10,8 @@
 module moveos_std::hex {
     use std::vector;
 
-    const ErrorInvalidHexLength: u64 = 0;
-    const ErrorNotValidHexCharacter: u64 = 1;
+    const ErrorInvalidHexLength: u64 = 1;
+    const ErrorNotValidHexCharacter: u64 = 2;
 
     /// Vector of Base16 values from `00` to `FF`
     const HEX: vector<vector<u8>> = vector[

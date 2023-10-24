@@ -5,14 +5,15 @@ use crate::cli_types::{ArgWithType, CommandAction, TransactionOptions, WalletCon
 use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
-use rooch_key::keystore::AccountKeystore;
+use rooch_key::key_derive::verify_password;
+use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, TypeTagView};
 use rooch_types::{
     address::RoochAddress,
     error::{RoochError, RoochResult},
-    keypair_type::KeyPairType,
     transaction::rooch::RoochTransaction,
 };
+use rpassword::prompt_password;
 
 /// Run a Move function
 #[derive(Parser)]
@@ -70,13 +71,6 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
             ));
         }
 
-        // Use an empty password by default
-        let password = String::new();
-
-        // TODO design a password mechanism
-        // // Prompt for a password if required
-        // rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
-
         let context = self.context.build().await?;
         let sender: RoochAddress = context
             .parse_account_arg(self.tx_options.sender_account.unwrap())?
@@ -97,26 +91,58 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
             }
             (_, Some(session_key)) => {
                 let tx_data = context.build_tx_data(sender, action).await?;
-                let tx = context
-                    .keystore
-                    .sign_transaction_via_session_key(
-                        &sender,
-                        tx_data,
-                        &session_key,
+                let tx = if context.keystore.get_if_password_is_empty() {
+                    context
+                        .keystore
+                        .sign_transaction_via_session_key(&sender, tx_data, &session_key, None)
+                        .map_err(|e| RoochError::SignMessageError(e.to_string()))?
+                } else {
+                    let password =
+                        prompt_password("Enter the password to run functions:").unwrap_or_default();
+                    let is_verified = verify_password(
                         Some(password.clone()),
-                    )
-                    .map_err(|e| RoochError::SignMessageError(e.to_string()))?;
+                        context.keystore.get_password_hash(),
+                    )?;
+
+                    if !is_verified {
+                        return Err(RoochError::InvalidPasswordError(
+                            "Password is invalid".to_owned(),
+                        ));
+                    }
+
+                    context
+                        .keystore
+                        .sign_transaction_via_session_key(
+                            &sender,
+                            tx_data,
+                            &session_key,
+                            Some(password),
+                        )
+                        .map_err(|e| RoochError::SignMessageError(e.to_string()))?
+                };
                 context.execute(tx).await
             }
             (None, None) => {
-                context
-                    .sign_and_execute(
-                        sender,
-                        action,
-                        KeyPairType::RoochKeyPairType,
-                        Some(password),
-                    )
-                    .await
+                if context.keystore.get_if_password_is_empty() {
+                    context.sign_and_execute(sender, action, None).await
+                } else {
+                    let password =
+                        prompt_password("Enter the password to run functions:").unwrap_or_default();
+                    let is_verified = verify_password(
+                        Some(password.clone()),
+                        context.keystore.get_password_hash(),
+                    )?;
+
+                    if !is_verified {
+                        return Err(RoochError::InvalidPasswordError(
+                            "Password is invalid".to_owned(),
+                        ));
+                    }
+
+                    context
+                        .sign_and_execute(sender, action, Some(password))
+                        .await
+                }
             }
         }
     }

@@ -3,8 +3,8 @@
 
 // Adapted from https://github.com/tomusdrw/rust-web3/blob/master/src/types/log.rs
 
-use crate::jsonrpc_types::{bytes::Bytes, H256View, StrView};
-use ethers::types::{H160, U256};
+use crate::jsonrpc_types::{BytesView, H160View, H256View, StrView};
+use ethers::types::U256;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct Log {
     /// H160. the contract that emitted the log
-    pub address: StrView<H160>,
+    pub address: H160View,
 
     /// topics: Array of 0 to 4 32 Bytes of indexed log arguments.
     /// (In solidity: The first topic is the hash of the signature of the event
@@ -22,7 +22,7 @@ pub struct Log {
     pub topics: Vec<H256View>,
 
     /// Data
-    pub data: Bytes,
+    pub data: BytesView,
 
     /// Block Hash
     #[serde(rename = "blockHash")]

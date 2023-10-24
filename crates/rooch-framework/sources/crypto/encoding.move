@@ -3,6 +3,19 @@
 
 /// Module which defines encoding functions.
 module rooch_framework::encoding {
+
+   /// Invalid publich key
+   const ErrorInvalidPubkey: u64 = 1;
+
+   /// Excessive script size
+   const ErrorExcessiveScriptSize: u64 = 2;
+
+   /// Invalid data
+   const ErrorInvalidData: u64 = 3;
+
+   /// Invalid script version
+   const ErrorInvalidScriptVersion: u64 = 4;
+   
    /// @param address_bytes: address bytes on the Bitcoin network 
    /// Encode the address bytes with Base58 algorithm and returns an encoded Bitcoin address
    native public fun base58(address_bytes: &vector<u8>): vector<u8>;

@@ -67,7 +67,7 @@ impl<'a> DependencyGraph<'a> {
     /// Fails with an error if `self` contains circular dependencies
     pub fn compute_topological_order(&self) -> Result<impl Iterator<Item = &CompiledModule>> {
         match petgraph::algo::toposort(&self.graph, None) {
-            Err(_) => bail!("Circular dependency detected"),
+            Err(_) => bail!("Cyclic dependency detected"),
             Ok(ordered_idxs) => Ok(ordered_idxs.into_iter().map(move |idx| self.modules[idx.0])),
         }
     }

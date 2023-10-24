@@ -2,33 +2,32 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { hexlify } from '@ethersproject/bytes'
-import { useEffect, useState, useMemo } from 'react'
+
+// ** React Imports
+import { createContext, ReactNode, useEffect, useMemo, useState } from 'react'
 import { useAuth } from 'src/hooks/useAuth'
 import { useRooch } from 'src/hooks/useRooch'
 
-import { AccountDataType } from 'src/context/auth/types'
+import { AccountDataType, AccountType } from 'src/context/auth/types'
 
 // ** Rooch SDK
 import {
-  bcsTypes,
-  IAccount,
-  IProvider,
-  FilteredProvider,
-  ITransactionFilterChain,
-  FilterFunc,
-  FuncFilter,
   Account,
-  PrivateKeyAuth,
+  addressToSeqNumber,
+  bcsTypes,
   Ed25519Keypair,
   encodeMoveCallData,
-  addressToSeqNumber,
-  parseRoochErrorSubStatus,
   ErrorCategory,
+  FilteredProvider,
+  FilterFunc,
+  FuncFilter,
   getErrorCategoryName,
+  IAccount,
+  IProvider,
+  ITransactionFilterChain,
+  parseRoochErrorSubStatus,
+  PrivateKeyAuth,
 } from '@rooch/sdk'
-
-// ** React Imports
-import { createContext, ReactNode } from 'react'
 import { Session } from 'src/context/session/types'
 
 type Props = {
@@ -39,6 +38,7 @@ const SessionContext = createContext<Session>({
   loading: false,
   account: null,
   errorMsg: null,
+  defaultSession: '',
   requestAuthorize: undefined,
   close: () => {},
 })
@@ -328,39 +328,38 @@ const SessionProvider = ({ children }: Props) => {
 
     try {
       const defaultAccount = auth.defaultAccount
+
       if (!defaultAccount) {
         setSessionAccount(null)
 
         return
       }
 
-      if (defaultAccount != null) {
-        if (defaultAccount.kp != null) {
-          const roochAddress = defaultAccount.address
-          const authorizer = new PrivateKeyAuth(defaultAccount.kp)
-          const account = new Account(rooch.provider!, roochAddress, authorizer)
+      if (defaultAccount.kp != null) {
+        const roochAddress = defaultAccount.address
+        const authorizer = new PrivateKeyAuth(defaultAccount.kp)
+        const account = new Account(rooch.provider!, roochAddress, authorizer)
 
-          const sessionAccount = await requestPrivateCreateSessionKey(
-            filterdProvider,
-            account,
-            scope,
-            maxInactiveInterval,
-          )
+        const sessionAccount = await requestPrivateCreateSessionKey(
+          filterdProvider,
+          account,
+          scope,
+          maxInactiveInterval,
+        )
 
-          if (sessionAccount) {
-            setSessionAccount(sessionAccount)
-          }
-        } else if (defaultAccount.type === 'ETH') {
-          const sessionAccount = await requestWalletCreateSessionKey(
-            filterdProvider,
-            defaultAccount,
-            scope,
-            maxInactiveInterval,
-          )
+        if (sessionAccount) {
+          setSessionAccount(sessionAccount)
+        }
+      } else if (defaultAccount.type === 'ETH') {
+        const sessionAccount = await requestWalletCreateSessionKey(
+          filterdProvider,
+          defaultAccount,
+          scope,
+          maxInactiveInterval,
+        )
 
-          if (sessionAccount) {
-            setSessionAccount(sessionAccount)
-          }
+        if (sessionAccount) {
+          setSessionAccount(sessionAccount)
         }
       }
     } catch (e: any) {
@@ -375,9 +374,15 @@ const SessionProvider = ({ children }: Props) => {
 
   const closeSession = () => {
     const defaultAccount = auth.defaultAccount
-    if (defaultAccount) {
+    if (defaultAccount && defaultAccount.type === AccountType.ROOCH) {
       clearSessionAccountInSessionStorage(rooch.provider!, defaultAccount.roochAddress)
     }
+  }
+
+  const getDefaultSession = (): string => {
+    return ''
+
+    // return window.sessionStorage.getItem(makeSessionAccountStoreKey(rooch.provider!.getChainId(), auth.defaultAccount?.roochAddress ?? '')) ?? ''
   }
 
   const session = {
@@ -385,6 +390,7 @@ const SessionProvider = ({ children }: Props) => {
     account: sessionAccount,
     errorMsg,
     requestAuthorize,
+    defaultSession: getDefaultSession(),
     close: closeSession,
   } as Session
 

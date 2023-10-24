@@ -4,10 +4,9 @@
 use crate::binding_test;
 use ethers::prelude::*;
 use moveos_types::transaction::MoveAction;
-use rooch_key::keystore::{AccountKeystore, InMemKeystore};
-use rooch_types::address::RoochAddress;
+use rooch_key::keystore::account_keystore::AccountKeystore;
+use rooch_key::keystore::memory_keystore::InMemKeystore;
 use rooch_types::framework::ethereum_light_client::BlockHeader;
-use rooch_types::keypair_type::KeyPairType;
 use rooch_types::transaction::rooch::RoochTransactionData;
 
 #[test]
@@ -15,7 +14,7 @@ fn test_submit_block() {
     tracing_subscriber::fmt::init();
     let mut binding_test = binding_test::RustBindingTest::new().unwrap();
 
-    let keystore = InMemKeystore::<RoochAddress>::new_insecure_for_tests(1);
+    let keystore = InMemKeystore::new_insecure_for_tests(1);
     let sender = keystore.addresses()[0];
     let sequence_number = 0;
 
@@ -55,14 +54,7 @@ fn test_submit_block() {
     let block_header = BlockHeader::try_from(&ethereum_block).unwrap();
     let action = MoveAction::Function(rooch_types::framework::ethereum_light_client::EthereumLightClientModule::create_submit_new_block_call(&block_header));
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
-    let tx = keystore
-        .sign_transaction(
-            &sender,
-            tx_data,
-            KeyPairType::RoochKeyPairType,
-            Some("".to_owned()),
-        )
-        .unwrap();
+    let tx = keystore.sign_transaction(&sender, tx_data, None).unwrap();
     binding_test.execute(tx).unwrap();
 
     let timestamp_module =

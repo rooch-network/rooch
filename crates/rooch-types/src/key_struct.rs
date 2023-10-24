@@ -1,31 +1,29 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::address::RoochAddress;
+use fastcrypto::encoding::{Base64, Encoding};
 use serde::{Deserialize, Serialize};
-
-use crate::keypair_type::KeyPairType;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct EncryptionData {
-    pub hashed_password: String,
-    pub nonce: Vec<u8>,
-    pub ciphertext: Vec<u8>,
-    pub tag: Vec<u8>,
+    pub nonce: String,
+    pub ciphertext: String,
+    pub tag: String,
 }
 pub struct GenerateNewKeyPair {
-    pub key_pair_type: KeyPairType,
-    pub encryption: EncryptionData,
-    pub mnemonic: String,
+    pub mnemonic_phrase: String,
+    pub private_key_encryption: EncryptionData,
+    pub mnemonic_phrase_encryption: EncryptionData,
 }
-pub struct GeneratedKeyPair<Addr> {
-    pub address: Addr,
-    pub result: GenerateNewKeyPair,
+pub struct GeneratedKeyPair {
+    pub address: RoochAddress,
+    pub key_pair_data: GenerateNewKeyPair,
 }
 
 impl EncryptionData {
     // The data is for test only, please do not use the data for applications.
     pub fn new_for_test() -> EncryptionData {
-        let hashed_password = "$argon2id$v=19$m=19456,t=2,p=1$zc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc0$RysE6tj+Zu0lLhtKJIedVHrKn9FspulS3vLj/UPaVvQ".to_owned();
         let nonce = [202, 31, 86, 27, 113, 29, 104, 237, 218, 110, 152, 145].to_vec();
         let ciphertext = [
             86, 255, 133, 44, 42, 219, 86, 153, 245, 192, 200, 93, 172, 157, 89, 211, 13, 158, 128,
@@ -38,10 +36,23 @@ impl EncryptionData {
         .to_vec();
 
         EncryptionData {
-            hashed_password,
-            nonce,
-            ciphertext,
-            tag,
+            nonce: Base64::encode(nonce),
+            ciphertext: Base64::encode(ciphertext),
+            tag: Base64::encode(tag),
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MnemonicResult {
+    pub mnemonic_phrase: String,
+    pub mnemonic_phrase_key: String,
+    pub mnemonic_data: MnemonicData,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MnemonicData {
+    // pub mnemonic_phrase: String,
+    pub addresses: Vec<RoochAddress>,
+    pub mnemonic_phrase_encryption: EncryptionData,
 }

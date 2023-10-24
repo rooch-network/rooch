@@ -5,15 +5,7 @@ import { DEFAULT_MAX_GAS_AMOUNT } from '../constants'
 import { IAccount, CallOption, ISessionKey } from './interface'
 import { IProvider } from '../provider'
 import { IAuthorizer, IAuthorization, PrivateKeyAuth } from '../auth'
-import {
-  AccountAddress,
-  FunctionId,
-  TypeTag,
-  Arg,
-  ListAnnotatedStateResultPageView,
-  Bytes,
-  IPage,
-} from '../types'
+import { AccountAddress, FunctionId, TypeTag, Arg, StatePageView, Bytes, IPage } from '../types'
 import { BcsSerializer } from '../types/bcs'
 import {
   RoochTransaction,
@@ -104,7 +96,7 @@ export class Account implements IAccount {
     )
 
     if (resp && resp.return_values) {
-      return resp.return_values[0].move_value as number
+      return resp.return_values[0].decoded_value as number
     }
 
     return 0
@@ -205,13 +197,13 @@ export class Account implements IAccount {
 
   async querySessionKeys(cursor: Bytes | null, limit: number): Promise<IPage<ISessionKey>> {
     const accessPath = `/resource/${this.address}/0x3::session_key::SessionKeys`
-    const state = await this.provider.getAnnotatedStates(accessPath)
+    const state = await this.provider.getStates(accessPath)
     if (state) {
       const stateView = state as any
-      const tableId = stateView[0].state.value
+      const tableId = stateView[0].value
 
       const accessPath = `/table/${tableId}`
-      const pageView = await this.provider.listAnnotatedStates(accessPath, cursor, limit)
+      const pageView = await this.provider.listStates(accessPath, cursor, limit)
 
       return {
         data: this.convertToSessionKey(pageView),
@@ -223,11 +215,11 @@ export class Account implements IAccount {
     throw new Error('not found state')
   }
 
-  private convertToSessionKey(data: ListAnnotatedStateResultPageView): Array<ISessionKey> {
+  private convertToSessionKey(data: StatePageView): Array<ISessionKey> {
     const result = new Array<ISessionKey>()
 
     for (const state of data.data as any) {
-      const moveValue = state?.move_value as any
+      const moveValue = state?.decoded_value as any
 
       if (moveValue) {
         const val = moveValue.value
@@ -280,6 +272,6 @@ export class Account implements IAccount {
       throw new Error('view 0x3::session_key::is_expired_session_key fail')
     }
 
-    return result.return_values![0].move_value as boolean
+    return result.return_values![0].decoded_value as boolean
   }
 }

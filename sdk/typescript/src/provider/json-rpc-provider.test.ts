@@ -25,7 +25,7 @@ describe('provider', () => {
                 type_tag: 'u64',
                 value: '0x0000000000000000',
               },
-              move_value: '0',
+              decoded_value: '0',
             },
           ],
           id: '0',
@@ -82,7 +82,7 @@ describe('provider', () => {
       }
     })
 
-    describe('#getAnnotatedStates', () => {
+    describe('#getStates', () => {
       it('should get annotated statues ok', async () => {
         const mockFetch = vi.fn().mockImplementation(() => {
           const mock = fetchMock.sandbox()
@@ -91,11 +91,9 @@ describe('provider', () => {
             jsonrpc: '2.0',
             result: [
               {
-                value: {
-                  type_tag: 'u64',
-                  value: '0x0000000000000000',
-                },
-                move_value: '0',
+                type_tag: 'u64',
+                value: '0x0000000000000000',
+                decoded_value: '0',
               },
             ],
             id: '0',
@@ -113,7 +111,7 @@ describe('provider', () => {
 
         try {
           const assetsPath = '/object::0x1'
-          const result = await provider.getAnnotatedStates(assetsPath)
+          const result = await provider.getStates(assetsPath)
 
           expect(result).toHaveLength(1)
         } catch (err: any) {
@@ -122,7 +120,7 @@ describe('provider', () => {
       })
     })
 
-    describe('#listAnnotatedStates', () => {
+    describe('#listStates', () => {
       it('should list annotated states ok', async () => {
         const mockFetch = vi.fn().mockImplementation(() => {
           const mock = fetchMock.sandbox()
@@ -136,15 +134,15 @@ describe('provider', () => {
                     value:
                       '0x0e526f6f63682047617320436f696e03524743090000000000000000000000000000000000000000000000000000000000000000',
                     value_type: '0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>',
-                  },
-                  move_value: {
-                    abilities: 8,
-                    type: '0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>',
-                    value: {
-                      decimals: 9,
-                      name: 'Rooch Gas Coin',
-                      supply: '0',
-                      symbol: 'RGC',
+                    decoded_value: {
+                      abilities: 8,
+                      type: '0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>',
+                      value: {
+                        decimals: 9,
+                        name: 'Rooch Gas Coin',
+                        supply: '0',
+                        symbol: 'RGC',
+                      },
                     },
                   },
                 },
@@ -170,7 +168,7 @@ describe('provider', () => {
           const assetsPath =
             '/table/0x82af1915608fa5f3e5286e4372e289b5b3ef03d0126cdae9ca7f561a145359c8'
           const cursor = new Uint8Array([0])
-          const result = await provider.listAnnotatedStates(assetsPath, cursor, 10)
+          const result = await provider.listStates(assetsPath, cursor, 10)
 
           expect(result.data).toBeDefined()
           expect(result.next_cursor).toBe(

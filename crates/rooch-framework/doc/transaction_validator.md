@@ -48,7 +48,7 @@
 Transaction exceeded its allocated max gas
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_ErrorOutOfGas">ErrorOutOfGas</a>: u64 = 6;
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_ErrorOutOfGas">ErrorOutOfGas</a>: u64 = 1;
 </code></pre>
 
 
@@ -174,10 +174,13 @@ If the authenticator is invaid, abort this function.
 
     // Check that the transaction's sequence number matches the
     // current sequence number. Otherwise sequence number is too new.
-    <b>assert</b>!(
-        tx_sequence_number == account_sequence_number,
-        <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_ErrorValidateSequenceNumberTooNew">ErrorValidateSequenceNumberTooNew</a>)
-    );
+    //FIXME we temporarily disable this check, in order <b>to</b> improve the devnet experience
+    //Because the devnet will be reset frequently, so the sequence number will be reset <b>to</b> 0
+    //But the sequence number(nonce) in MetaMask will not be reset, so the transaction will be rejected
+    // <b>assert</b>!(
+    //     tx_sequence_number == account_sequence_number,
+    //     <a href="_invalid_argument">error::invalid_argument</a>(<a href="transaction_validator.md#0x3_transaction_validator_ErrorValidateSequenceNumberTooNew">ErrorValidateSequenceNumberTooNew</a>)
+    // );
 
     <b>let</b> sender = <a href="_sender">context::sender</a>(ctx);
 

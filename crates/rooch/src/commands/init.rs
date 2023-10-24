@@ -5,18 +5,21 @@ use crate::cli_types::{CommandAction, WalletContextOptions};
 use crate::utils::read_line;
 use async_trait::async_trait;
 use clap::Parser;
+use fastcrypto::encoding::{Base64, Encoding};
 use regex::Regex;
 use rooch_config::config::Config;
 use rooch_config::server_config::ServerConfig;
 use rooch_config::{
     rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_KEYSTORE_FILENAME, ROOCH_SERVER_CONFIG,
 };
-use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
+use rooch_key::key_derive::hash_password;
+use rooch_key::keystore::account_keystore::AccountKeystore;
+use rooch_key::keystore::file_keystore::FileBasedKeystore;
+use rooch_key::keystore::Keystore;
 use rooch_rpc_client::client_config::{ClientConfig, Env};
-use rooch_types::address::RoochAddress;
 use rooch_types::error::RoochError;
 use rooch_types::error::RoochResult;
-use rooch_types::keypair_type::KeyPairType;
+use rpassword::prompt_password;
 use std::fs;
 
 /// Tool for init with rooch
@@ -25,6 +28,13 @@ pub struct Init {
     /// Command line input of custom server URL
     #[clap(short = 's', long = "server-url")]
     pub server_url: Option<String>,
+    /// Command line input of custom mnemonic phrase
+    #[clap(short = 'm', long = "mnemonic-phrase")]
+    mnemonic_phrase: Option<String>,
+    /// Flag to use with rooch init command to ignore entering password
+    #[clap(long = "skip-password")]
+    skip_password: bool,
+
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
 }
@@ -50,7 +60,7 @@ impl CommandAction<()> for Init {
             .unwrap_or(&rooch_config_dir()?)
             .join(ROOCH_KEYSTORE_FILENAME);
 
-        let keystore_result = FileBasedKeystore::<RoochAddress>::new(&keystore_path);
+        let keystore_result = FileBasedKeystore::new(&keystore_path);
         let mut keystore = match keystore_result {
             Ok(file_keystore) => Keystore::File(file_keystore),
             Err(error) => return Err(RoochError::GenerateKeyError(error.to_string())),
@@ -95,7 +105,7 @@ impl CommandAction<()> for Init {
 
                 None => {
                     println!(
-                        "Creating config file [{:?}] with server and rooch native validator.",
+                        "Creating client config file [{:?}] with rooch native validator.",
                         client_config_path
                     );
                     let url = if self.server_url.is_none() {
@@ -134,36 +144,49 @@ impl CommandAction<()> for Init {
             };
 
             if let Some(env) = env {
-                // Use an empty password by default
-                let password = String::new();
-
-                // TODO design a password mechanism
-                // // Prompt for a password if required
-                // rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
+                let (password, is_password_empty) = if !self.skip_password {
+                    let input_password = prompt_password("Enter a password to encrypt the keys. Press enter to leave it an empty password: ")?;
+                    if input_password.is_empty() {
+                        (None, true)
+                    } else {
+                        (Some(input_password), false)
+                    }
+                } else {
+                    (None, true)
+                };
 
                 let result = keystore.generate_and_add_new_key(
-                    KeyPairType::RoochKeyPairType,
+                    self.mnemonic_phrase,
                     None,
                     None,
-                    Some(password),
+                    password.clone(),
                 )?;
+                println!("Generated new keypair for address [{}]", result.address);
                 println!(
-                    "Generated new keypair for address with type {:?} [{}]",
-                    result.result.key_pair_type.type_of(),
-                    result.address
+                    "Secret Recovery Phrase : [{}]",
+                    result.key_pair_data.mnemonic_phrase
                 );
-                println!("Secret Recovery Phrase : [{}]", result.result.mnemonic);
                 let dev_env = Env::new_dev_env();
                 let active_env_alias = dev_env.alias.clone();
-                ClientConfig {
+
+                let password_hash = hash_password(
+                    &Base64::decode(&result.key_pair_data.private_key_encryption.nonce)
+                        .map_err(|e| RoochError::KeyConversionError(e.to_string()))?,
+                    password,
+                )?;
+                keystore.set_password_hash_with_indicator(password_hash, is_password_empty)?;
+
+                let client_config = ClientConfig {
                     keystore_path,
                     envs: vec![env, dev_env],
                     active_address: Some(result.address),
                     // make dev env as default env
                     active_env: Some(active_env_alias),
-                }
-                .persisted(client_config_path.as_path())
-                .save()?;
+                };
+
+                client_config
+                    .persisted(client_config_path.as_path())
+                    .save()?;
             }
 
             println!(

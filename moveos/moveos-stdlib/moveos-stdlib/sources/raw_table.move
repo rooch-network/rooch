@@ -7,8 +7,7 @@
 
 module moveos_std::raw_table {
     use moveos_std::tx_context::{Self, TxContext};
-    use moveos_std::object_id::{Self, ObjectID};
-    use moveos_std::object::Object;
+    use moveos_std::object::{Self, Object, ObjectID};
     
     friend moveos_std::table;
     friend moveos_std::type_table;
@@ -20,8 +19,10 @@ module moveos_std::raw_table {
     const ErrorAlreadyExists: u64 = 1;
     /// Can not found the key in the table
     const ErrorNotFound: u64 = 2;
+    /// Duplicate operation on the table
+    const ErrorDuplicateOperation: u64 = 3;
     /// The table is not empty
-    const ErrorNotEmpty: u64 = 3;
+    const ErrorNotEmpty: u64 = 4;
 
      //TODO redesign the global object storage handle
     const GlobalObjectStorageHandle: address = @0x0;
@@ -35,7 +36,7 @@ module moveos_std::raw_table {
 
      /// The global object storage's table handle should be `0x0`
     public(friend) fun global_object_storage_handle(): ObjectID {
-        object_id::address_to_object_id(GlobalObjectStorageHandle)
+        object::address_to_object_id(GlobalObjectStorageHandle)
     }
 
     /// Add a new entry to the table. Aborts if an entry for this
@@ -102,6 +103,11 @@ module moveos_std::raw_table {
         val
     }
 
+    public(friend) fun remove_from_global<T: key>(object_id: &ObjectID): Object<T> {
+        let Box { val } = remove_box<ObjectID, Object<T>, Box<Object<T>>>(global_object_storage_handle(), *object_id);
+        val
+    }
+
     /// Returns true if `table` contains an entry for `key`.
     public(friend) fun contains<K: copy + drop>(table_handle: &ObjectID, key: K): bool {
         contains_box<K>(*table_handle, key)
@@ -142,7 +148,7 @@ module moveos_std::raw_table {
     }
 
     public(friend) fun new_table_handle(ctx: &mut TxContext): ObjectID {
-        tx_context::fresh_object_id(ctx)
+        object::address_to_object_id(tx_context::fresh_address(ctx))
     }
 
     native fun add_box<K: copy + drop, V, B>(table_handle: ObjectID, key: K, val: Box<V>);

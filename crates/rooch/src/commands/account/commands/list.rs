@@ -4,8 +4,9 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use rooch_key::keystore::AccountKeystore;
+use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::{crypto::EncodeDecodeBase64, error::RoochResult};
+use rpassword::prompt_password;
 use std::fmt::Debug;
 
 /// List all keys by its Rooch address, Base64 encoded public key
@@ -21,28 +22,30 @@ impl CommandAction<()> for ListCommand {
         let context = self.context_options.build().await?;
         let active_address = context.client_config.active_address;
 
-        // Use an empty password by default
-        let password = String::new();
-
-        // TODO design a password mechanism
-        // // Prompt for a password if required
-        // rpassword::prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap()
+        let password = if context.keystore.get_if_password_is_empty() {
+            None
+        } else {
+            Some(
+                prompt_password("Enter the password to create a new key pair:").unwrap_or_default(),
+            )
+        };
 
         println!(
-            "{0: ^66} | {1: ^48} | {2: ^16} | {3: ^12}",
+            "{:^66} | {:^48} | {:^16} | {:^12}",
             "Rooch Address (Ed25519)", "Public Key (Base64)", "Auth Validator ID", "Active Address"
         );
         println!("{}", ["-"; 153].join(""));
 
-        for (address, public_key) in context.keystore.get_address_public_keys(Some(password))? {
+        for (address, public_key) in context.keystore.get_address_public_keys(password)? {
             let auth_validator_id = public_key.auth_validator().flag();
-            let mut active = "";
-            if active_address == Some(address) {
-                active = "True";
+            let active = if active_address == Some(address) {
+                "True"
+            } else {
+                ""
             };
 
             println!(
-                "{0: ^66} | {1: ^48} | {2: ^16} | {3: ^12}",
+                "{:^66} | {:^48} | {:^16} | {:^12}",
                 address,
                 public_key.encode_base64(),
                 auth_validator_id.to_string(),

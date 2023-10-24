@@ -5,8 +5,8 @@ import {
   TypeTag,
   FunctionId,
   AnnotatedFunctionResultView,
-  ListAnnotatedStateResultPageView,
-  AnnotatedStateView,
+  StatePageView,
+  StateView,
   Bytes,
 } from '../types'
 
@@ -23,11 +23,7 @@ export interface IProvider {
 
   sendRawTransaction(playload: Bytes): Promise<string>
 
-  getAnnotatedStates(accessPath: string): Promise<AnnotatedStateView | null[]>
+  getStates(accessPath: string): Promise<StateView | null[]>
 
-  listAnnotatedStates(
-    access_path: string,
-    cursor: Bytes | null,
-    limit: number,
-  ): Promise<ListAnnotatedStateResultPageView>
+  listStates(access_path: string, cursor: Bytes | null, limit: number): Promise<StatePageView>
 }

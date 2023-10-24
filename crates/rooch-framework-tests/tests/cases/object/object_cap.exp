@@ -3,23 +3,17 @@ processed 3 tasks
 task 1 'publish'. lines 3-21:
 status EXECUTED
 
-task 2 'run'. lines 22-36:
+task 2 'run'. lines 22-34:
 Error: error: resource type "TestObject" in function "0x2::context::new_object" not defined in current module or not allowed
-   ┌─ /tmp/tempfile:29:19
+   ┌─ /tmp/tempfile:29:23
    │
-29 │         let obj = context::new_object<TestObject>(ctx, object);
-   │                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+29 │         let obj_ref = context::new_object<TestObject>(ctx, object);
+   │                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-error: resource type "TestObject" in function "0x2::object::borrow" not defined in current module or not allowed
-   ┌─ /tmp/tempfile:30:30
+error: resource type "TestObject" in function "0x2::context::remove_object" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:30:42
    │
-30 │         let _borrow_object = object::borrow(&obj);
-   │                              ^^^^^^^^^^^^^^^^^^^^
-
-error: resource type "TestObject" in function "0x2::object::unpack" not defined in current module or not allowed
-   ┌─ /tmp/tempfile:31:42
-   │
-31 │         let (_id, _owner, test_object) = object::unpack(obj);
-   │                                          ^^^^^^^^^^^^^^^^^^^
+30 │         let (_id, _owner, test_object) = context::remove_object<TestObject>(ctx, object_ref::id(&obj_ref));
+   │                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 

@@ -46,6 +46,5 @@ move-errmapgen = { workspace = true }
 move-docgen = { workspace = true }
 move-model = { workspace = true }
 
-
 moveos-types = { workspace = true }
 moveos-verifier = { workspace = true }

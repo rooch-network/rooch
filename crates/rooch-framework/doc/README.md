@@ -14,6 +14,7 @@ This is the reference documentation of the Rooch Framework.
 
 -  [`0x3::account`](account.md#0x3_account)
 -  [`0x3::account_authentication`](account_authentication.md#0x3_account_authentication)
+-  [`0x3::account_coin_store`](account_coin_store.md#0x3_account_coin_store)
 -  [`0x3::address_mapping`](address_mapping.md#0x3_address_mapping)
 -  [`0x3::auth_validator`](auth_validator.md#0x3_auth_validator)
 -  [`0x3::auth_validator_registry`](auth_validator_registry.md#0x3_auth_validator_registry)
@@ -22,8 +23,10 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::builtin_validators`](builtin_validators.md#0x3_builtin_validators)
 -  [`0x3::chain_id`](chain_id.md#0x3_chain_id)
 -  [`0x3::coin`](coin.md#0x3_coin)
+-  [`0x3::coin_store`](coin_store.md#0x3_coin_store)
 -  [`0x3::core_addresses`](core_addresses.md#0x3_core_addresses)
 -  [`0x3::decoding`](decoding.md#0x3_decoding)
+-  [`0x3::display`](display.md#0x3_display)
 -  [`0x3::ecdsa_k1`](ecdsa_k1.md#0x3_ecdsa_k1)
 -  [`0x3::ecdsa_k1_recoverable`](ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable)
 -  [`0x3::ed25519`](ed25519.md#0x3_ed25519)

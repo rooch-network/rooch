@@ -65,7 +65,7 @@ The same as <code><a href="any.md#0x2_any_Any">any::Any</a></code> but with the 
 The type provided for <code>unpack</code> is not the same as was given for <code>pack</code>.
 
 
-<pre><code><b>const</b> <a href="copyable_any.md#0x2_copyable_any_ErrorTypeMismatch">ErrorTypeMismatch</a>: u64 = 0;
+<pre><code><b>const</b> <a href="copyable_any.md#0x2_copyable_any_ErrorTypeMismatch">ErrorTypeMismatch</a>: u64 = 1;
 </code></pre>
 
 

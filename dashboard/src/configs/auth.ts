@@ -3,6 +3,7 @@
 
 export default {
   secretKey: 'secret_key',
+  roochAccountMap: 'rooch_account_map',
   activeChain: 'activeChain',
   chains: 'chains',
   roochChain: {

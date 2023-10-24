@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
+use async_trait::async_trait;
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use rooch_rpc_api::api::MAX_RESULT_LIMIT_USIZE;
@@ -40,7 +41,7 @@ impl CommandAction<()> for BalanceCommand {
                     .map(|active_address| AccountAddress::from(active_address).into()),
                 Some,
             )
-            .expect("Account not found error");
+            .ok_or_else(|| anyhow::anyhow!("Account not found error"))?;
 
         let client = context.get_client().await?;
 

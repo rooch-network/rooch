@@ -21,6 +21,7 @@ This type table is for internal global storage, so all functions are friend.
 -  [Function `borrow_mut_with_default`](#0x2_raw_table_borrow_mut_with_default)
 -  [Function `upsert`](#0x2_raw_table_upsert)
 -  [Function `remove`](#0x2_raw_table_remove)
+-  [Function `remove_from_global`](#0x2_raw_table_remove_from_global)
 -  [Function `contains`](#0x2_raw_table_contains)
 -  [Function `contains_global`](#0x2_raw_table_contains_global)
 -  [Function `length`](#0x2_raw_table_length)
@@ -31,7 +32,6 @@ This type table is for internal global storage, so all functions are friend.
 
 
 <pre><code><b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 </code></pre>
 
@@ -114,12 +114,22 @@ The key already exists in the table
 
 
 
+<a name="0x2_raw_table_ErrorDuplicateOperation"></a>
+
+Duplicate operation on the table
+
+
+<pre><code><b>const</b> <a href="raw_table.md#0x2_raw_table_ErrorDuplicateOperation">ErrorDuplicateOperation</a>: u64 = 3;
+</code></pre>
+
+
+
 <a name="0x2_raw_table_ErrorNotEmpty"></a>
 
 The table is not empty
 
 
-<pre><code><b>const</b> <a href="raw_table.md#0x2_raw_table_ErrorNotEmpty">ErrorNotEmpty</a>: u64 = 3;
+<pre><code><b>const</b> <a href="raw_table.md#0x2_raw_table_ErrorNotEmpty">ErrorNotEmpty</a>: u64 = 4;
 </code></pre>
 
 
@@ -150,7 +160,7 @@ Can not found the key in the table
 The global object storage's table handle should be <code>0x0</code>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_global_object_storage_handle">global_object_storage_handle</a>(): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_global_object_storage_handle">global_object_storage_handle</a>(): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
@@ -160,7 +170,7 @@ The global object storage's table handle should be <code>0x0</code>
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_global_object_storage_handle">global_object_storage_handle</a>(): ObjectID {
-    <a href="object_id.md#0x2_object_id_address_to_object_id">object_id::address_to_object_id</a>(<a href="raw_table.md#0x2_raw_table_GlobalObjectStorageHandle">GlobalObjectStorageHandle</a>)
+    <a href="object.md#0x2_object_address_to_object_id">object::address_to_object_id</a>(<a href="raw_table.md#0x2_raw_table_GlobalObjectStorageHandle">GlobalObjectStorageHandle</a>)
 }
 </code></pre>
 
@@ -177,7 +187,7 @@ key already exists. The entry itself is not stored in the
 table, and cannot be discovered from it.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_add">add</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, key: K, val: V)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_add">add</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K, val: V)
 </code></pre>
 
 
@@ -203,7 +213,7 @@ Acquire an immutable reference to the value which <code>key</code> maps to.
 Aborts if there is no entry for <code>key</code>.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_borrow">borrow</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, key: K): &V
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_borrow">borrow</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): &V
 </code></pre>
 
 
@@ -227,7 +237,7 @@ Aborts if there is no entry for <code>key</code>.
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_borrow_from_global">borrow_from_global</a>&lt;T: key&gt;(<a href="object_id.md#0x2_object_id">object_id</a>: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_borrow_from_global">borrow_from_global</a>&lt;T: key&gt;(object_id: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
 
@@ -236,8 +246,8 @@ Aborts if there is no entry for <code>key</code>.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_borrow_from_global">borrow_from_global</a>&lt;T: key&gt;(<a href="object_id.md#0x2_object_id">object_id</a>: &ObjectID): &Object&lt;T&gt; {
-    &<a href="raw_table.md#0x2_raw_table_borrow_box">borrow_box</a>&lt;ObjectID, Object&lt;T&gt;, <a href="raw_table.md#0x2_raw_table_Box">Box</a>&lt;Object&lt;T&gt;&gt;&gt;(<a href="raw_table.md#0x2_raw_table_global_object_storage_handle">global_object_storage_handle</a>(), *<a href="object_id.md#0x2_object_id">object_id</a>).val
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_borrow_from_global">borrow_from_global</a>&lt;T: key&gt;(object_id: &ObjectID): &Object&lt;T&gt; {
+    &<a href="raw_table.md#0x2_raw_table_borrow_box">borrow_box</a>&lt;ObjectID, Object&lt;T&gt;, <a href="raw_table.md#0x2_raw_table_Box">Box</a>&lt;Object&lt;T&gt;&gt;&gt;(<a href="raw_table.md#0x2_raw_table_global_object_storage_handle">global_object_storage_handle</a>(), *object_id).val
 }
 </code></pre>
 
@@ -253,7 +263,7 @@ Acquire an immutable reference to the value which <code>key</code> maps to.
 Returns specified default value if there is no entry for <code>key</code>.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_borrow_with_default">borrow_with_default</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, key: K, default: &V): &V
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_borrow_with_default">borrow_with_default</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K, default: &V): &V
 </code></pre>
 
 
@@ -283,7 +293,7 @@ Acquire a mutable reference to the value which <code>key</code> maps to.
 Aborts if there is no entry for <code>key</code>.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_borrow_mut">borrow_mut</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, key: K): &<b>mut</b> V
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_borrow_mut">borrow_mut</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): &<b>mut</b> V
 </code></pre>
 
 
@@ -307,7 +317,7 @@ Aborts if there is no entry for <code>key</code>.
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_borrow_mut_from_global">borrow_mut_from_global</a>&lt;T: key&gt;(<a href="object_id.md#0x2_object_id">object_id</a>: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_borrow_mut_from_global">borrow_mut_from_global</a>&lt;T: key&gt;(object_id: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
 
@@ -316,8 +326,8 @@ Aborts if there is no entry for <code>key</code>.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_borrow_mut_from_global">borrow_mut_from_global</a>&lt;T: key&gt;(<a href="object_id.md#0x2_object_id">object_id</a>: &ObjectID): &<b>mut</b> Object&lt;T&gt; {
-    &<b>mut</b> <a href="raw_table.md#0x2_raw_table_borrow_box_mut">borrow_box_mut</a>&lt;ObjectID, Object&lt;T&gt;, <a href="raw_table.md#0x2_raw_table_Box">Box</a>&lt;Object&lt;T&gt;&gt;&gt;(<a href="raw_table.md#0x2_raw_table_global_object_storage_handle">global_object_storage_handle</a>(), *<a href="object_id.md#0x2_object_id">object_id</a>).val
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_borrow_mut_from_global">borrow_mut_from_global</a>&lt;T: key&gt;(object_id: &ObjectID): &<b>mut</b> Object&lt;T&gt; {
+    &<b>mut</b> <a href="raw_table.md#0x2_raw_table_borrow_box_mut">borrow_box_mut</a>&lt;ObjectID, Object&lt;T&gt;, <a href="raw_table.md#0x2_raw_table_Box">Box</a>&lt;Object&lt;T&gt;&gt;&gt;(<a href="raw_table.md#0x2_raw_table_global_object_storage_handle">global_object_storage_handle</a>(), *object_id).val
 }
 </code></pre>
 
@@ -333,7 +343,7 @@ Acquire a mutable reference to the value which <code>key</code> maps to.
 Insert the pair (<code>key</code>, <code>default</code>) first if there is no entry for <code>key</code>.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_borrow_mut_with_default">borrow_mut_with_default</a>&lt;K: <b>copy</b>, drop, V: drop&gt;(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, key: K, default: V): &<b>mut</b> V
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_borrow_mut_with_default">borrow_mut_with_default</a>&lt;K: <b>copy</b>, drop, V: drop&gt;(table_handle: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K, default: V): &<b>mut</b> V
 </code></pre>
 
 
@@ -362,7 +372,7 @@ Insert the pair (<code>key</code>, <code>value</code>) if there is no entry for 
 update the value of the entry for <code>key</code> to <code>value</code> otherwise
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_upsert">upsert</a>&lt;K: <b>copy</b>, drop, V: drop&gt;(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, key: K, value: V)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_upsert">upsert</a>&lt;K: <b>copy</b>, drop, V: drop&gt;(table_handle: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K, value: V)
 </code></pre>
 
 
@@ -393,7 +403,7 @@ Remove from <code><a href="table.md#0x2_table">table</a></code> and return the v
 Aborts if there is no entry for <code>key</code>.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_remove">remove</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, key: K): V
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_remove">remove</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): V
 </code></pre>
 
 
@@ -412,6 +422,31 @@ Aborts if there is no entry for <code>key</code>.
 
 </details>
 
+<a name="0x2_raw_table_remove_from_global"></a>
+
+## Function `remove_from_global`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_remove_from_global">remove_from_global</a>&lt;T: key&gt;(object_id: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_remove_from_global">remove_from_global</a>&lt;T: key&gt;(object_id: &ObjectID): Object&lt;T&gt; {
+    <b>let</b> <a href="raw_table.md#0x2_raw_table_Box">Box</a> { val } = <a href="raw_table.md#0x2_raw_table_remove_box">remove_box</a>&lt;ObjectID, Object&lt;T&gt;, <a href="raw_table.md#0x2_raw_table_Box">Box</a>&lt;Object&lt;T&gt;&gt;&gt;(<a href="raw_table.md#0x2_raw_table_global_object_storage_handle">global_object_storage_handle</a>(), *object_id);
+    val
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x2_raw_table_contains"></a>
 
 ## Function `contains`
@@ -419,7 +454,7 @@ Aborts if there is no entry for <code>key</code>.
 Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an entry for <code>key</code>.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_contains">contains</a>&lt;K: <b>copy</b>, drop&gt;(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, key: K): bool
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_contains">contains</a>&lt;K: <b>copy</b>, drop&gt;(table_handle: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): bool
 </code></pre>
 
 
@@ -443,7 +478,7 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_contains_global">contains_global</a>(<a href="object_id.md#0x2_object_id">object_id</a>: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): bool
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_contains_global">contains_global</a>(object_id: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): bool
 </code></pre>
 
 
@@ -452,8 +487,8 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_contains_global">contains_global</a>(<a href="object_id.md#0x2_object_id">object_id</a>: &ObjectID): bool {
-    <a href="raw_table.md#0x2_raw_table_contains_box">contains_box</a>&lt;ObjectID&gt;(<a href="raw_table.md#0x2_raw_table_global_object_storage_handle">global_object_storage_handle</a>(), *<a href="object_id.md#0x2_object_id">object_id</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_contains_global">contains_global</a>(object_id: &ObjectID): bool {
+    <a href="raw_table.md#0x2_raw_table_contains_box">contains_box</a>&lt;ObjectID&gt;(<a href="raw_table.md#0x2_raw_table_global_object_storage_handle">global_object_storage_handle</a>(), *object_id)
 }
 </code></pre>
 
@@ -468,7 +503,7 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 Returns the size of the table, the number of key-value pairs
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_length">length</a>(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): u64
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_length">length</a>(table_handle: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): u64
 </code></pre>
 
 
@@ -493,7 +528,7 @@ Returns the size of the table, the number of key-value pairs
 Returns true if the table is empty (if <code>length</code> returns <code>0</code>)
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_is_empty">is_empty</a>(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): bool
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_is_empty">is_empty</a>(table_handle: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): bool
 </code></pre>
 
 
@@ -518,7 +553,7 @@ Returns true if the table is empty (if <code>length</code> returns <code>0</code
 Drop a table even if it is not empty.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_drop_unchecked">drop_unchecked</a>(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_drop_unchecked">drop_unchecked</a>(table_handle: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>)
 </code></pre>
 
 
@@ -543,7 +578,7 @@ Drop a table even if it is not empty.
 Destroy a table. Aborts if the table is not empty
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_destroy_empty">destroy_empty</a>(table_handle: &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_destroy_empty">destroy_empty</a>(table_handle: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>)
 </code></pre>
 
 
@@ -568,7 +603,7 @@ Destroy a table. Aborts if the table is not empty
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_new_table_handle">new_table_handle</a>(ctx: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_new_table_handle">new_table_handle</a>(ctx: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
@@ -578,7 +613,7 @@ Destroy a table. Aborts if the table is not empty
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_new_table_handle">new_table_handle</a>(ctx: &<b>mut</b> TxContext): ObjectID {
-    <a href="tx_context.md#0x2_tx_context_fresh_object_id">tx_context::fresh_object_id</a>(ctx)
+    <a href="object.md#0x2_object_address_to_object_id">object::address_to_object_id</a>(<a href="tx_context.md#0x2_tx_context_fresh_address">tx_context::fresh_address</a>(ctx))
 }
 </code></pre>
 

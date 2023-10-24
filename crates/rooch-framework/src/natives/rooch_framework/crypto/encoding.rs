@@ -18,10 +18,10 @@ use move_vm_types::{
 use smallvec::smallvec;
 use std::collections::VecDeque;
 
-pub const INVALID_PUBKEY: u64 = 0;
-pub const EXCESSIVE_SCRIPT_SIZE: u64 = 1;
-pub const INVALID_DATA: u64 = 2;
-pub const INVALID_SCRIPT_VERSION: u64 = 3;
+pub const E_INVALID_PUBKEY: u64 = 1;
+pub const E_EXCESSIVE_SCRIPT_SIZE: u64 = 2;
+pub const E_INVALID_DATA: u64 = 3;
+pub const E_INVALID_SCRIPT_VERSION: u64 = 4;
 
 /***************************************************************************************************
  * native fun base58
@@ -31,7 +31,7 @@ pub const INVALID_SCRIPT_VERSION: u64 = 3;
  *              + encoding_base58_data_cost_per_block * num_blocks     | cost depends on number of blocks in message
  **************************************************************************************************/
 pub fn native_base58(
-    _gas_params: &FromBytesGasParameters,
+    gas_params: &FromBytesGasParameters,
     _context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -41,7 +41,7 @@ pub fn native_base58(
 
     // TODO(Gas): Charge the arg size dependent costs
 
-    let cost = 0.into();
+    let cost = gas_params.base;
 
     let address_bytes = pop_arg!(args, VectorRef);
 
@@ -61,7 +61,7 @@ pub fn native_base58(
  *              + encoding_base58check_data_cost_per_block * num_blocks     | cost depends on number of blocks in message
  **************************************************************************************************/
 pub fn native_base58check(
-    _gas_params: &FromBytesGasParameters,
+    gas_params: &FromBytesGasParameters,
     _context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -71,7 +71,7 @@ pub fn native_base58check(
 
     // TODO(Gas): Charge the arg size dependent costs
 
-    let cost = 0.into();
+    let cost = gas_params.base;
 
     let version_byte = pop_arg!(args, u8);
     let address_bytes = pop_arg!(args, VectorRef);
@@ -94,7 +94,7 @@ pub fn native_base58check(
  *              + encoding_bech32_data_cost_per_block * num_blocks     | cost depends on number of blocks in message
  **************************************************************************************************/
 pub fn native_bech32(
-    _gas_params: &FromBytesGasParameters,
+    gas_params: &FromBytesGasParameters,
     _context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -104,14 +104,14 @@ pub fn native_bech32(
 
     // TODO(Gas): Charge the arg size dependent costs
 
-    let cost = 0.into();
+    let cost = gas_params.base;
 
     let version = pop_arg!(args, u8);
     let public_key = pop_arg!(args, VectorRef);
 
     // Version 0 for bech32 encoding and 1-16 are for bech32m encoding
     let Ok(version) = u5::try_from_u8(version) else {
-        return Ok(NativeResult::err(cost, INVALID_DATA));
+        return Ok(NativeResult::err(cost, E_INVALID_DATA));
     };
 
     let Ok(witness_program) = WitnessProgram::new(
@@ -119,7 +119,7 @@ pub fn native_bech32(
         public_key.as_bytes_ref().to_vec(),
         Bech32Network::Bitcoin, // TODO network selection
     ) else {
-        return Ok(NativeResult::err(cost, INVALID_SCRIPT_VERSION));
+        return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_INVALID_SCRIPT_VERSION)));
     };
 
     let address = witness_program.to_address();
@@ -139,7 +139,7 @@ pub fn native_bech32(
  *              + encoding_p2pkh_data_cost_per_block * num_blocks     | cost depends on number of blocks in message
  **************************************************************************************************/
 pub fn native_p2pkh(
-    _gas_params: &FromBytesGasParameters,
+    gas_params: &FromBytesGasParameters,
     _context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -149,13 +149,13 @@ pub fn native_p2pkh(
 
     // TODO(Gas): Charge the arg size dependent costs
 
-    let cost = 0.into();
+    let cost = gas_params.base;
 
     let public_key = pop_arg!(args, VectorRef);
     let public_key_bytes_ref = public_key.as_bytes_ref();
 
     let Ok(public_key) = <Secp256k1PublicKey as ToFromBytes>::from_bytes(&public_key_bytes_ref) else {
-        return Ok(NativeResult::err(cost, INVALID_PUBKEY));
+        return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_INVALID_PUBKEY)));
     };
 
     let bitcoin_public_key = PublicKey::new(public_key.pubkey);
@@ -178,7 +178,7 @@ pub fn native_p2pkh(
  *              + encoding_p2sh_data_cost_per_block * num_blocks     | cost depends on number of blocks in message
  **************************************************************************************************/
 pub fn native_p2sh(
-    _gas_params: &FromBytesGasParameters,
+    gas_params: &FromBytesGasParameters,
     _context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -188,13 +188,13 @@ pub fn native_p2sh(
 
     // TODO(Gas): Charge the arg size dependent costs
 
-    let cost = 0.into();
+    let cost = gas_params.base;
 
     let public_key = pop_arg!(args, VectorRef);
     let public_key_bytes_ref = public_key.as_bytes_ref();
 
     let Ok(public_key) = <Secp256k1PublicKey as ToFromBytes>::from_bytes(&public_key_bytes_ref) else {
-        return Ok(NativeResult::err(cost, INVALID_PUBKEY));
+        return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_INVALID_PUBKEY)));
     };
 
     let bitcoin_public_key = PublicKey::new(public_key.pubkey);
@@ -207,7 +207,7 @@ pub fn native_p2sh(
         redeem_script,
         Network::Bitcoin, // TODO network selection
     ) else {
-        return Ok(NativeResult::err(cost, EXCESSIVE_SCRIPT_SIZE));
+        return Ok(NativeResult::err(cost, moveos_types::move_std::error::internal(E_EXCESSIVE_SCRIPT_SIZE)));
     };
     let p2sh_address_bytes = p2sh_address.to_string().as_bytes().to_vec();
 

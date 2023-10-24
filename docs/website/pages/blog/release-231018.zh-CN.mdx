@@ -1,0 +1,129 @@
+---
+title: Rooch v0.2 发布，启动开发者测试网
+description: "Rooch v0.2 发布，实现账户抽象，提供 Dashboard，启动开发者测试网。"
+author: jolestar
+category: News
+date: 2023/10/18
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+Rooch v0.2 发布，实现账户抽象，提供 Dashboard，启动开发者测试网。这是 Rooch 第三个里程碑"生根 (Rooting)"的一部分。
+
+## Rooch v0.2 的关键特性
+
+这个版本主要提供了以下主要特性：
+
+### Rooch 命令行以及节点
+
+1. 改进了本地配置文件以及私钥管理，提供了通过助记词恢复私钥的功能以及本地私钥的安全保护。未来升级会保证客户端配置文件的兼容性。
+2. 实现了状态，交易以及事件的存储。
+
+### 账户抽象
+
+* 实现了身份验证抽象，允许第三方开发身份验证器来扩展签名验证或者社交登陆。
+* 实现了会话私钥。会话私钥是一种临时的私钥，它可以用来签名交易，但保存在应用中，而不是钱包中，避免用户每次操作都需要通过钱包签名，从而提高用户体验。
+
+关于 Rooch 账户抽象的详细设计请参看：[账户抽象的设计与实现](../docs/dive-into-rooch/account-abstraction.zh-CN.mdx)。
+
+### Ethereum 支持
+
+* RoochFramework 中支持 Ethereum 地址映射，以及 Ethereum 签名校验。
+* 改进 Rooch 的 Ethereum RPC 接口，完善了对 MetaMask 的支持。
+* 实现了 Rooch Ethereum Relayer，以及 Move 语言的 Ethereum 轻客户端原型，可以将 Ethereum 区块头中的时间戳同步到 Rooch 中。 
+
+### Bitcoin 支持
+
+* 合约中支持 Bitcoin 地址映射，以及 Bitcoin 签名校验。
+* 合约中支持 Schnorr 签名验证。
+
+### 完善多链结算的方案
+
+* [多链结算](../tech-highlights/multi-chain-settlement.zh-CN.mdx)
+* [二层网络实现多链结算-神话还是现实](./multi-chain_settlement_by_layer2-myth_or_Reality.zh-CN.mdx)
+
+### Move 标准库以及虚拟机
+
+* 实现了在 Move 中发布 Move 模块：[account_storage::publish_modules_entry](https://github.com/rooch-network/rooch/blob/7fd6418dff1aa7e40cae9e8eede375b776bbb771/moveos/moveos-stdlib/moveos-stdlib/sources/account_storage.move#L224)。
+* 实现了 [Coin](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/coin.move)， [CoinStore](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/coin_store.move) 以及 [account_coin_store](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/account_coin_store.move)。想进一步了解 Rooch 的 Coin 标准，可以参考 [examples/coins](https://github.com/rooch-network/rooch/tree/main/examples/coins)。
+* 实现了 Gas 计费以及 GasToken。
+* 实现了 [Event](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/event.move) 标准。
+* 改进了 [Object](../docs/developer-guids/object.zh-CN.mdx) 以及 [StorageAbstraction](../docs/dive-into-rooch/storage-abstraction.zh-CN.mdx) 的设计。
+
+
+### JSON RPC 以及 SDK
+
+这个版本标准化了 RPC 接口的输出和输入，未来将保证 RPC 接口的兼容性。
+
+* 提供交易的查询与遍历接口：`rooch_getTransactionsByHash`，`rooch_getTransactionsByOrder`。
+* 提供状态的查询与遍历接口：`rooch_getStates`，`rooch_listStates`。
+* 提供事件的遍历接口：`rooch_getEventsByEventHandle`。
+* 提供了余额查询与遍历接口：`rooch_getBalance`，`rooch_getBalances`。
+* 发布了 [Rooch Typescript SDK](https://www.npmjs.com/package/@roochnetwork/sdk)。
+
+
+Rooch 当前支持的接口请参看：[Rooch JSON RPC](../docs/developer-guids/rpc.zh-CN.mdx)。
+
+
+### Rooch Dashboard
+
+Rooch Dashboard 是一个基于 Rooch JSON RPC 的 Web 应用，提供状态和交易查询，账户设置管理能功能，未来会增加新的功能。
+访问地址：[https://dashboard.rooch.network/](https://dashboard.rooch.network/)。 
+
+用户可以通过 MetaMask 操作 Dashboard，使用说明请参看：[Rooch Dashboard 使用说明](../docs/user-guides/dashboard.zh-CN.mdx)。
+
+### 开发者测试网
+
+开发者网络信息
+
+1. 名称: dev
+2. ChainID: 20230103
+3. RPC: https://dev-seed.rooch.network/
+
+如何使用开发者测试网，请参考文档：[连接开发者测试网络](../docs/developer-guides/connect-devnet.zh-CN.mdx)
+
+## 下一步的目标
+
+下一步，Rooch 的主要目标：
+
+1. 连接到 DA 链，可以让 Rooch 可以用来启动 Move 应用的主权 Rollup。
+2. 启动正式测试网络，提供一个稳定的测试环境，让开发者可以在上面部署应用，让用户试用。
+3. 实现和 Ethereum 的资产互通，用户可以将 ETH/ERC20 的资产充值到 Rooch 中。
+4. 实现和 Bitcoin 的数据互通，开发者可以在 Rooch 上用 Move 处理和校验 Bitcoin 交易。
+
+更多请关注：[Rooch v0.3 Roadmap](https://github.com/rooch-network/rooch/issues/1000)
+
+## Rooch 里程碑
+
+Rooch 在主网启动之前一共有五个里程碑。我们用植物的生长过程来命名这些里程碑，希望 Rooch 能够像植物一样，从种子到参天大树，成为 Web3 的基础设施。
+
+### 播种 (Seeding) -- 2023 Q1
+
+完成技术方案设计和团队组建。
+
+### 萌芽｜Sprouting -- 2023 Q2
+
+发布第一个 Rooch 容器预览版本，提供基本的开发者工具，让开发者可以基于 Rooch 容器进行开发。
+
+### 生根 (Rooting) -- 2023 Q3
+
+连接到不同的 L1 公链，以及 DA 链，提供多链结算的支持。发布 Move Framework 稳定版。运行公开的开发者测试网。
+
+### 开枝 (Branching) -- 2023 Q4
+
+和生态团队一起共建 Framework 以及 Layer2 基础设施，提供 App 专用容器以及存储方案。运行永久激励测试网（incentive test network）。
+
+### 固本 (Strengthening) -- 2024 Q1
+
+安全加固以及性能优化，运行预备主网（pre-main network）。
+
+### 散叶 (Foliage) -- 2024 Q1
+
+各种应用在 Rooch 网络中成长起来，运行主网。
+
+## 总结
+
+Rooch 的里程碑遵循应用场景驱动的原则，以开发者和用户的使用体验为中心，尝试拓展 Web3 应用的边界，探索 Web3 大规模采用落地的可能。想了解并试用 Rooch，请参看文档：[新手入门](../docs/getting-started.zh-US.mdx)。
+Rooch v0.2 详细的发布说明请参看：[Rooch v0.2.1](https://github.com/rooch-network/rooch/releases/tag/v0.2.1)。感谢参与贡献的十多位开发者，如果想进一步了解和参与 Rooch，请加入 [Rooch Discord](https://discord.gg/rooch)。

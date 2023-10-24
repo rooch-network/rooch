@@ -26,7 +26,7 @@
 Error if the public key is invalid.
 
 
-<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_ErrorInvalidPubKey">ErrorInvalidPubKey</a>: u64 = 1;
+<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_ErrorInvalidPubKey">ErrorInvalidPubKey</a>: u64 = 2;
 </code></pre>
 
 
@@ -36,7 +36,7 @@ Error if the public key is invalid.
 Error if the signature is invalid.
 
 
-<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_ErrorInvalidSignature">ErrorInvalidSignature</a>: u64 = 0;
+<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_ErrorInvalidSignature">ErrorInvalidSignature</a>: u64 = 1;
 </code></pre>
 
 

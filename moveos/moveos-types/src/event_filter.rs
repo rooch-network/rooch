@@ -4,11 +4,9 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::event::MoveOSEvent;
-use crate::h256::H256;
 use crate::move_types::type_tag_match;
+use crate::moveos_std::event::Event;
 use anyhow::Result;
-use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::TypeTag;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -17,13 +15,13 @@ use serde_with::serde_as;
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum EventFilter {
-    /// Query by sender address.
-    Sender(AccountAddress),
-    /// Return events emitted by the given transaction.
-    Transaction(
-        ///tx hash of the transaction
-        H256,
-    ),
+    // /// Query by sender address.
+    // Sender(AccountAddress),
+    // /// Return events emitted by the given transaction.
+    // Transaction(
+    //     ///tx hash of the transaction
+    //     H256,
+    // ),
     /// Return events with the given move event struct name
     MoveEventType(
         // #[schemars(with = "String")]
@@ -34,19 +32,19 @@ pub enum EventFilter {
         path: String,
         value: Value,
     },
-    /// Return events emitted in [start_time, end_time) interval
-    // #[serde(rename_all = "camelCase")]
-    TimeRange {
-        /// left endpoint of time interval, milliseconds since epoch, inclusive
-        // #[schemars(with = "u64")]
-        // #[serde_as(as = "u64")]
-        start_time: u64,
-        /// right endpoint of time interval, milliseconds since epoch, exclusive
-        // #[schemars(with = "u64")]
-        // #[serde_as(as = "u64")]
-        end_time: u64,
-    },
-    /// Return events emitted in [from_block, to_block) interval
+    // /// Return events emitted in [start_time, end_time) interval
+    // // #[serde(rename_all = "camelCase")]
+    // TimeRange {
+    //     /// left endpoint of time interval, milliseconds since epoch, inclusive
+    //     // #[schemars(with = "u64")]
+    //     // #[serde_as(as = "u64")]
+    //     start_time: u64,
+    //     /// right endpoint of time interval, milliseconds since epoch, exclusive
+    //     // #[schemars(with = "u64")]
+    //     // #[serde_as(as = "u64")]
+    //     end_time: u64,
+    // },
+    // /// Return events emitted in [from_block, to_block) interval
     // #[serde(rename_all = "camelCase")]
     // BlockRange {
     //     /// left endpoint of block height, inclusive
@@ -65,17 +63,15 @@ pub enum EventFilter {
 }
 
 impl EventFilter {
-    fn try_matches(&self, item: &MoveOSEvent) -> Result<bool> {
+    fn try_matches(&self, item: &Event) -> Result<bool> {
         Ok(match self {
-            EventFilter::MoveEventType(event_type) => {
-                type_tag_match(&item.event.type_tag, event_type)
-            }
+            EventFilter::MoveEventType(event_type) => type_tag_match(&item.type_tag, event_type),
             EventFilter::MoveEventField { path: _, value: _ } => {
-                // matches!(item.parsed_event_data.pointer(path), Some(v) if v == value)
+                // matches!(item.decoded_event_data.pointer(path), Some(v) if v == value)
                 false
             }
 
-            EventFilter::Sender(sender) => &item.sender == sender,
+            // EventFilter::Sender(sender) => &item.sender == sender,
             EventFilter::All(filters) => filters.iter().all(|f| f.matches(item)),
             EventFilter::Any(filters) => filters.iter().any(|f| f.matches(item)),
             EventFilter::And(f1, f2) => {
@@ -83,20 +79,19 @@ impl EventFilter {
             }
             EventFilter::Or(f1, f2) => {
                 EventFilter::Any(vec![*(*f1).clone(), *(*f2).clone()]).matches(item)
-            }
-            EventFilter::Transaction(tx_hash) => {
-                Option::is_some(&item.tx_hash) && (tx_hash == &item.tx_hash.unwrap())
-            }
-            EventFilter::TimeRange {
-                start_time,
-                end_time,
-            } => {
-                if let Some(timestamp) = &item.timestamp_ms {
-                    start_time <= timestamp && end_time > timestamp
-                } else {
-                    false
-                }
-            } // EventFilter::BlockRange {
+            } // EventFilter::Transaction(tx_hash) => {
+              //     Option::is_some(&item.tx_hash) && (tx_hash == &item.tx_hash.unwrap())
+              // }
+              // EventFilter::TimeRange {
+              //     start_time,
+              //     end_time,
+              // } => {
+              //     if let Some(timestamp) = &item.timestamp_ms {
+              //         start_time <= timestamp && end_time > timestamp
+              //     } else {
+              //         false
+              //     }
+              // } // EventFilter::BlockRange {
               //     from_block,
               //     to_block,
               // } => {
@@ -117,8 +112,8 @@ impl EventFilter {
     }
 }
 
-impl Filter<MoveOSEvent> for EventFilter {
-    fn matches(&self, item: &MoveOSEvent) -> bool {
+impl Filter<Event> for EventFilter {
+    fn matches(&self, item: &Event) -> bool {
         self.try_matches(item).unwrap_or_default()
     }
 }

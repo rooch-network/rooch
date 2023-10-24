@@ -8,19 +8,24 @@ use jsonrpsee::{
     RpcModule,
 };
 use moveos_types::h256::H256;
-use rooch_rpc_api::api::{MAX_RESULT_LIMIT, MAX_RESULT_LIMIT_USIZE};
-use rooch_rpc_api::jsonrpc_types::account_view::BalanceInfoView;
-use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionResultView;
+use moveos_types::moveos_std::event::EventID;
+use rooch_rpc_api::jsonrpc_types::{account_view::BalanceInfoView, StateOptions};
 use rooch_rpc_api::jsonrpc_types::{
-    AccessPathView, AccountAddressView, AnnotatedEventView, AnnotatedStateView, EventPageView,
-    ExecuteTransactionResponseView, FunctionCallView, H256View, ListAnnotatedStatesPageView,
-    ListBalanceInfoPageView, ListStatesPageView, StateView, StrView, StructTagView,
-    TransactionResultPageView,
+    transaction_view::TransactionWithInfoView, EventOptions, EventView,
+};
+use rooch_rpc_api::jsonrpc_types::{
+    AccessPathView, AccountAddressView, BalanceInfoPageView, EventPageView,
+    ExecuteTransactionResponseView, FunctionCallView, H256View, StateView, StatesPageView, StrView,
+    StructTagView, TransactionWithInfoPageView,
 };
 use rooch_rpc_api::{api::rooch_api::RoochAPIServer, api::DEFAULT_RESULT_LIMIT};
 use rooch_rpc_api::{
     api::{RoochRpcModule, DEFAULT_RESULT_LIMIT_USIZE},
     jsonrpc_types::AnnotatedFunctionResultView,
+};
+use rooch_rpc_api::{
+    api::{MAX_RESULT_LIMIT, MAX_RESULT_LIMIT_USIZE},
+    jsonrpc_types::BytesView,
 };
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::{AbstractTransaction, TypedTransaction};
@@ -48,7 +53,7 @@ impl RoochAPIServer for RoochServer {
         Ok(StrView(chain_id))
     }
 
-    async fn send_raw_transaction(&self, payload: StrView<Vec<u8>>) -> RpcResult<H256View> {
+    async fn send_raw_transaction(&self, payload: BytesView) -> RpcResult<H256View> {
         info!("send_raw_transaction payload: {:?}", payload);
         let tx = bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;
         info!("send_raw_transaction tx: {:?}", tx);
@@ -62,7 +67,7 @@ impl RoochAPIServer for RoochServer {
 
     async fn execute_raw_transaction(
         &self,
-        payload: StrView<Vec<u8>>,
+        payload: BytesView,
     ) -> RpcResult<ExecuteTransactionResponseView> {
         let tx = bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;
         Ok(self
@@ -83,95 +88,68 @@ impl RoochAPIServer for RoochServer {
             .into())
     }
 
-    async fn get_states(&self, access_path: AccessPathView) -> RpcResult<Vec<Option<StateView>>> {
-        Ok(self
-            .rpc_service
-            .get_states(access_path.into())
-            .await?
-            .into_iter()
-            .map(|s| s.map(StateView::from))
-            .collect())
-    }
-
-    async fn get_annotated_states(
+    async fn get_states(
         &self,
         access_path: AccessPathView,
-    ) -> RpcResult<Vec<Option<AnnotatedStateView>>> {
-        Ok(self
-            .rpc_service
-            .get_annotated_states(access_path.into())
-            .await?
-            .into_iter()
-            .map(|s| s.map(AnnotatedStateView::from))
-            .collect())
+        state_option: Option<StateOptions>,
+    ) -> RpcResult<Vec<Option<StateView>>> {
+        let state_option = state_option.unwrap_or_default();
+        if state_option.decode {
+            Ok(self
+                .rpc_service
+                .get_annotated_states(access_path.into())
+                .await?
+                .into_iter()
+                .map(|s| s.map(StateView::from))
+                .collect())
+        } else {
+            Ok(self
+                .rpc_service
+                .get_states(access_path.into())
+                .await?
+                .into_iter()
+                .map(|s| s.map(StateView::from))
+                .collect())
+        }
     }
 
     async fn list_states(
         &self,
         access_path: AccessPathView,
-        cursor: Option<StrView<Vec<u8>>>,
-        limit: Option<usize>,
-    ) -> RpcResult<ListStatesPageView> {
+        cursor: Option<BytesView>,
+        limit: Option<StrView<usize>>,
+        state_option: Option<StateOptions>,
+    ) -> RpcResult<StatesPageView> {
+        let state_option = state_option.unwrap_or_default();
         let limit_of = min(
-            limit.unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
+            limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
         );
         let cursor_of = cursor.clone().map(|v| v.0);
-        let mut data: Vec<Option<(Vec<u8>, StateView)>> = self
-            .rpc_service
-            .list_states(access_path.into(), cursor_of, limit_of + 1)
-            .await?
-            .into_iter()
-            .map(|item| item.map(|(key, state)| (key, StateView::from(state))))
-            .collect::<Vec<_>>();
+        let mut data: Vec<(Vec<u8>, StateView)> = if state_option.decode {
+            self.rpc_service
+                .list_annotated_states(access_path.into(), cursor_of, limit_of + 1)
+                .await?
+                .into_iter()
+                .map(|(key, state)| (key, StateView::from(state)))
+                .collect::<Vec<_>>()
+        } else {
+            self.rpc_service
+                .list_states(access_path.into(), cursor_of, limit_of + 1)
+                .await?
+                .into_iter()
+                .map(|(key, state)| (key, StateView::from(state)))
+                .collect::<Vec<_>>()
+        };
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
-        let next_cursor = data.last().map_or(cursor, |item| {
-            item.clone().map(|(key, _state)| StrView(key))
-        });
-        let result = data
-            .into_iter()
-            .map(|item| item.map(|(_key, state)| state))
-            .collect();
+        let next_cursor = data
+            .last()
+            .map_or(cursor, |(key, _state)| Some(StrView(key.clone())));
+        let result = data.into_iter().map(|(_key, state)| state).collect();
 
-        Ok(ListStatesPageView {
-            data: result,
-            next_cursor,
-            has_next_page,
-        })
-    }
-
-    async fn list_annotated_states(
-        &self,
-        access_path: AccessPathView,
-        cursor: Option<StrView<Vec<u8>>>,
-        limit: Option<usize>,
-    ) -> RpcResult<ListAnnotatedStatesPageView> {
-        let limit_of = min(
-            limit.unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
-            MAX_RESULT_LIMIT_USIZE,
-        );
-        let cursor_of = cursor.clone().map(|v| v.0);
-        let mut data: Vec<Option<(Vec<u8>, AnnotatedStateView)>> = self
-            .rpc_service
-            .list_annotated_states(access_path.into(), cursor_of, limit_of + 1)
-            .await?
-            .into_iter()
-            .map(|item| item.map(|(key, state)| (key, AnnotatedStateView::from(state))))
-            .collect::<Vec<_>>();
-
-        let has_next_page = data.len() > limit_of;
-        data.truncate(limit_of);
-        let next_cursor = data.last().map_or(cursor, |item| {
-            item.clone().map(|(key, _state)| StrView(key))
-        });
-        let result = data
-            .into_iter()
-            .map(|item| item.map(|(_key, state)| state))
-            .collect();
-
-        Ok(ListAnnotatedStatesPageView {
+        Ok(StatesPageView {
             data: result,
             next_cursor,
             has_next_page,
@@ -181,24 +159,57 @@ impl RoochAPIServer for RoochServer {
     async fn get_events_by_event_handle(
         &self,
         event_handle_type: StructTagView,
-        cursor: Option<u64>,
-        limit: Option<u64>,
+        cursor: Option<StrView<u64>>,
+        limit: Option<StrView<u64>>,
+        event_options: Option<EventOptions>,
     ) -> RpcResult<EventPageView> {
+        let (event_handle_id, _sender, last_event_seq) = self
+            .aggregate_service
+            .get_event_handle(event_handle_type.clone().into())
+            .await?;
+
+        let event_options = event_options.unwrap_or_default();
+        let cursor = cursor.map(|v| v.0);
+        let limit = limit.map(|v| v.0);
         // NOTE: fetch one more object to check if there is next page
         let limit_of = min(limit.unwrap_or(DEFAULT_RESULT_LIMIT), MAX_RESULT_LIMIT);
-        let mut data: Vec<Option<AnnotatedEventView>> = self
-            .rpc_service
-            .get_events_by_event_handle(event_handle_type.into(), cursor, limit_of + 1)
-            .await?
+
+        let start = cursor.unwrap_or(0);
+        let end = min(start + (limit_of + 1), last_event_seq + 1);
+        let event_seqs: Vec<_> = if cursor.is_some() {
+            ((start + 1)..=end).collect()
+        } else {
+            (start..end).collect()
+        };
+        let event_ids = event_seqs
             .into_iter()
-            .map(|event| event.map(AnnotatedEventView::from))
-            .collect();
+            .map(|v| EventID::new(event_handle_id, v))
+            .collect::<Vec<_>>();
+
+        let mut data = if event_options.decode {
+            self.rpc_service
+                .get_events_by_event_ids(event_ids)
+                .await?
+                .into_iter()
+                .flatten()
+                .map(EventView::from)
+                .collect::<Vec<_>>()
+        } else {
+            //TODO provide a function to directly get the Event, not the AnnotatedEvent
+            self.rpc_service
+                .get_events_by_event_ids(event_ids)
+                .await?
+                .into_iter()
+                .flatten()
+                .map(|e| EventView::from(e.event))
+                .collect::<Vec<_>>()
+        };
 
         let has_next_page = (data.len() as u64) > limit_of;
         data.truncate(limit_of as usize);
-        let next_cursor = data.last().map_or(cursor, |event| {
-            Some(event.clone().unwrap().event.event_id.event_seq)
-        });
+        let next_cursor = data
+            .last()
+            .map_or(cursor, |event| Some(event.event_id.event_seq));
 
         Ok(EventPageView {
             data,
@@ -210,33 +221,20 @@ impl RoochAPIServer for RoochServer {
     async fn get_transactions_by_hash(
         &self,
         tx_hashes: Vec<H256View>,
-    ) -> RpcResult<Vec<Option<TransactionResultView>>> {
-        let tx_hashes: Vec<H256> = tx_hashes
-            .iter()
-            .map(|m| (*m).clone().into())
-            .collect::<Vec<_>>();
+    ) -> RpcResult<Vec<Option<TransactionWithInfoView>>> {
+        let tx_hashes: Vec<H256> = tx_hashes.iter().map(|m| (*m).into()).collect::<Vec<_>>();
 
         let tx_sequence_info_mapping = self
             .rpc_service
             .get_tx_sequence_info_mapping_by_hash(tx_hashes.clone())
             .await?;
 
-        let mut tx_orders = vec![];
-        for item in tx_sequence_info_mapping {
-            if item.is_none() {
-                return Err(JsonRpcError::Custom(String::from(
-                    "Invalid tx hash or tx order",
-                )));
-            }
-            tx_orders.push(item.unwrap().tx_order);
-        }
-
         let data = self
             .aggregate_service
-            .get_transaction_results_by_hash_and_order(tx_hashes, tx_orders)
+            .get_transaction_with_info(tx_hashes, tx_sequence_info_mapping)
             .await?
             .into_iter()
-            .map(|item| Some(TransactionResultView::from(item)))
+            .map(|item| item.map(TransactionWithInfoView::from))
             .collect::<Vec<_>>();
 
         Ok(data)
@@ -244,16 +242,17 @@ impl RoochAPIServer for RoochServer {
 
     async fn get_transactions_by_order(
         &self,
-        cursor: Option<u128>,
-        limit: Option<u64>,
-    ) -> RpcResult<TransactionResultPageView> {
+        cursor: Option<StrView<u128>>,
+        limit: Option<StrView<u64>>,
+    ) -> RpcResult<TransactionWithInfoPageView> {
         let last_sequencer_order = self
             .rpc_service
             .get_sequencer_order()
             .await?
             .map_or(0, |v| v.last_order);
 
-        let limit_of = limit.unwrap_or(DEFAULT_RESULT_LIMIT);
+        let limit_of = limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT);
+        let cursor = cursor.map(|v| v.0);
         let start = cursor.unwrap_or(0);
         let end = min(start + ((limit_of + 1) as u128), last_sequencer_order + 1);
 
@@ -277,10 +276,10 @@ impl RoochAPIServer for RoochServer {
             .map_or(cursor, |m| m.clone().map(|v| v.tx_order));
 
         let mut tx_hashes = vec![];
-        for item in tx_sequence_info_mapping {
+        for item in tx_sequence_info_mapping.clone() {
             if item.is_none() {
                 return Err(JsonRpcError::Custom(String::from(
-                    "Invalid tx hash or tx order",
+                    "The tx hash corresponding to tx order does not exist",
                 )));
             }
             tx_hashes.push(item.unwrap().tx_hash);
@@ -289,13 +288,14 @@ impl RoochAPIServer for RoochServer {
 
         let data = self
             .aggregate_service
-            .get_transaction_results_by_hash_and_order(tx_hashes, tx_orders)
+            .get_transaction_with_info(tx_hashes, tx_sequence_info_mapping)
             .await?
             .into_iter()
-            .map(TransactionResultView::from)
+            .flatten()
+            .map(TransactionWithInfoView::from)
             .collect::<Vec<_>>();
 
-        Ok(TransactionResultPageView {
+        Ok(TransactionWithInfoPageView {
             data,
             next_cursor,
             has_next_page,
@@ -318,11 +318,11 @@ impl RoochAPIServer for RoochServer {
     async fn get_balances(
         &self,
         account_addr: AccountAddressView,
-        cursor: Option<StrView<Vec<u8>>>,
-        limit: Option<usize>,
-    ) -> RpcResult<ListBalanceInfoPageView> {
+        cursor: Option<BytesView>,
+        limit: Option<StrView<usize>>,
+    ) -> RpcResult<BalanceInfoPageView> {
         let limit_of = min(
-            limit.unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
+            limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
         );
         let cursor_of = cursor.clone().map(|v| v.0);
@@ -343,7 +343,7 @@ impl RoochAPIServer for RoochServer {
             .cloned()
             .map_or(cursor, |(key, _balance_info)| key.map(StrView));
 
-        Ok(ListBalanceInfoPageView {
+        Ok(BalanceInfoPageView {
             data: data
                 .into_iter()
                 .map(|(_, balance_info)| balance_info)

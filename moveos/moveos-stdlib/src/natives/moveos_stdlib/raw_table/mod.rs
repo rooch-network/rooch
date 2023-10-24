@@ -27,7 +27,7 @@ use move_vm_types::{
     values::{GlobalValue, Struct, Value},
 };
 use moveos_types::{
-    object::{ObjectID, TableInfo},
+    moveos_std::object::{ObjectID, TableInfo},
     state::TableTypeInfo,
     state_resolver::StateResolver,
 };
@@ -52,6 +52,7 @@ pub struct NativeTableContext<'a> {
 const E_ALREADY_EXISTS: u64 = 1;
 const E_NOT_FOUND: u64 = 2;
 const E_DUPLICATE_OPERATION: u64 = 3;
+const _E_NOT_EMPTY: u64 = 4; // This is not used, just used to keep consistent with raw_table.move
 
 // ===========================================================================================
 // Private Data Structures and Constants

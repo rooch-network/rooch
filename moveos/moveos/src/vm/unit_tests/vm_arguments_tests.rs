@@ -28,14 +28,14 @@ use move_core_types::{
     value::{serialize_values, MoveValue},
     vm_status::{StatusCode, StatusType},
 };
-use moveos_types::state_resolver::ListState;
+use moveos_types::state_resolver::StateKV;
 use moveos_types::{
     move_types::FunctionId,
-    object::ObjectID,
+    moveos_std::object::ObjectID,
+    moveos_std::tx_context::TxContext,
     state::State,
     state_resolver::StateResolver,
     transaction::{FunctionCall, MoveAction},
-    tx_context::TxContext,
 };
 
 // make a script with a given signature for main.
@@ -293,7 +293,7 @@ impl StateResolver for RemoteStore {
         _handle: &ObjectID,
         _cursor: Option<Vec<u8>>,
         _limit: usize,
-    ) -> anyhow::Result<Vec<Option<ListState>>, anyhow::Error> {
+    ) -> anyhow::Result<Vec<StateKV>, anyhow::Error> {
         todo!()
     }
 }

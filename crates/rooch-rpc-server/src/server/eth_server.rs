@@ -10,14 +10,16 @@ use jsonrpsee::{
 use moveos_types::{
     access_path::AccessPath, gas_config::GasConfig, h256::H256, state::MoveStructType,
 };
-use rooch_rpc_api::jsonrpc_types::eth::ethereum_types::bloom::Bloom;
+use rooch_rpc_api::{
+    api::eth_api::EthNetAPIServer,
+    jsonrpc_types::{eth::ethereum_types::bloom::Bloom, H160View},
+};
 use rooch_rpc_api::{
     api::{
         eth_api::{EthAPIServer, TransactionType},
         RoochRpcModule,
     },
     jsonrpc_types::{
-        bytes::Bytes,
         eth::{
             ethereum_types::{
                 block::{Block, BlockNumber},
@@ -26,7 +28,7 @@ use rooch_rpc_api::{
             },
             AccessList, CallRequest, EthFeeHistory, Transaction, TransactionReceipt,
         },
-        H256View, StrView,
+        BytesView, H256View, StrView,
     },
 };
 use rooch_types::{
@@ -63,10 +65,6 @@ impl EthServer {
 
 #[async_trait]
 impl EthAPIServer for EthServer {
-    async fn net_version(&self) -> RpcResult<String> {
-        Ok(String::from("1"))
-    }
-
     async fn chain_id(&self) -> RpcResult<String> {
         Ok(format!("0x{:x}", self.chain_id.id()))
     }
@@ -116,7 +114,7 @@ impl EthAPIServer for EthServer {
                 value: StrView(U256::from(1_000_000u64)),
                 gas_price: Some(StrView(U256::from(20_000_000_000u64))),
                 gas: StrView(U256::from(21_000u32)),
-                input: Bytes::new(vec![]),
+                input: BytesView::from(vec![]),
                 r: StrView(U256::zero()),
                 s: StrView(U256::zero()),
                 v: StrView(U64::from(0u8)),
@@ -174,7 +172,7 @@ impl EthAPIServer for EthServer {
             number: Some(block_number.into()),
             gas_used,
             gas_limit,
-            extra_data: Bytes::from_str(
+            extra_data: BytesView::from_str(
                 "0x4d616465206f6e20746865206d6f6f6e20627920426c6f636b6e6174697665",
             )
             .unwrap(),
@@ -211,7 +209,7 @@ impl EthAPIServer for EthServer {
 
     async fn get_balance(
         &self,
-        address: StrView<H160>,
+        address: H160View,
         _num: Option<StrView<BlockNumber>>,
     ) -> RpcResult<StrView<U256>> {
         let account_address = self
@@ -323,7 +321,7 @@ impl EthAPIServer for EthServer {
 
     async fn transaction_count(
         &self,
-        address: StrView<H160>,
+        address: H160View,
         _num: Option<StrView<BlockNumber>>,
     ) -> RpcResult<StrView<U256>> {
         let account_address = self
@@ -353,7 +351,7 @@ impl EthAPIServer for EthServer {
         Ok(seq_number)
     }
 
-    async fn send_raw_transaction(&self, bytes: Bytes) -> RpcResult<H256View> {
+    async fn send_raw_transaction(&self, bytes: BytesView) -> RpcResult<H256View> {
         info!("send_raw_transaction: {:?}", bytes);
         let eth_tx = EthereumTransactionData::decode(&bytes.0)?;
         info!("send_raw_transaction input: {:?}", eth_tx.0.input);
@@ -428,7 +426,7 @@ impl EthAPIServer for EthServer {
             value: StrView(U256::zero()),
             gas_price: Some(StrView(U256::zero())),
             gas: StrView(U256::from(1000000u64)),
-            input: Bytes::new(
+            input: BytesView::from(
                 hex::decode("015d8eb90000000000000000000000000000000000000000000000000000000000878c1c00000000000000000000000000000000000000000000000000000000644662bc0000000000000000000000000000000000000000000000000000001ee24fba17b7e19cc10812911dfa8a438e0a81a9933f843aa5b528899b8d9e221b649ae0df00000000000000000000000000000000000000000000000000000000000000060000000000000000000000007431310e026b69bfc676c0013e12a1a11411eec9000000000000000000000000000000000000000000000000000000000000083400000000000000000000000000000000000000000000000000000000000f4240").unwrap()
             ),
             r: StrView(U256::zero()),
@@ -462,7 +460,7 @@ impl EthAPIServer for EthServer {
             vec![TransactionType::Full(Transaction {
                 hash,
                 nonce: StrView(U256::zero()),
-                block_hash: Some(parent_hash.clone()),
+                block_hash: Some(parent_hash),
                 block_number: Some(block_number),
                 transaction_index: Some(StrView(U64::from(0u8))),
                 from: StrView(
@@ -474,7 +472,7 @@ impl EthAPIServer for EthServer {
                 value: StrView(U256::from(1_000_000u64)),
                 gas_price: Some(StrView(U256::from(20_000_000_000u64))),
                 gas: StrView(U256::from(21_000u32)),
-                input: Bytes::new(vec![]),
+                input: BytesView::from(vec![]),
                 r: StrView(U256::zero()),
                 s: StrView(U256::zero()),
                 v: StrView(U64::from(1u8)),
@@ -532,7 +530,7 @@ impl EthAPIServer for EthServer {
             number: Some(block_number),
             gas_used,
             gas_limit,
-            extra_data: Bytes::from_str(
+            extra_data: BytesView::from_str(
                 "0x4d616465206f6e20746865206d6f6f6e20627920426c6f636b6e6174697665",
             )
             .unwrap(),
@@ -569,6 +567,29 @@ impl EthAPIServer for EthServer {
 }
 
 impl RoochRpcModule for EthServer {
+    fn rpc(self) -> RpcModule<Self> {
+        self.into_rpc()
+    }
+}
+
+pub struct EthNetServer {
+    chain_id: ChainID,
+}
+
+impl EthNetServer {
+    pub fn new(chain_id: ChainID) -> Self {
+        Self { chain_id }
+    }
+}
+
+#[async_trait]
+impl EthNetAPIServer for EthNetServer {
+    async fn net_version(&self) -> RpcResult<String> {
+        Ok(format!("{}", self.chain_id.id()))
+    }
+}
+
+impl RoochRpcModule for EthNetServer {
     fn rpc(self) -> RpcModule<Self> {
         self.into_rpc()
     }

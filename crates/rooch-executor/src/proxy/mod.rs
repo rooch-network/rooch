@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{
-    GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage, ListStatesMessage,
+    GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage,
+    ListStatesMessage,
 };
 use crate::actor::{
     executor::ExecutorActor,
@@ -17,13 +18,14 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
+use moveos_types::moveos_std::event::EventID;
 use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::{access_path::AccessPath, transaction::VerifiedMoveOSTransaction};
 use moveos_types::{
-    event::AnnotatedMoveOSEvent,
     event_filter::EventFilter,
+    moveos_std::event::AnnotatedEvent,
     state::{AnnotatedState, State},
 };
 use rooch_types::address::MultiChainAddress;
@@ -87,7 +89,7 @@ impl ExecutorProxy {
         access_path: AccessPath,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<Option<(Vec<u8>, State)>>> {
+    ) -> Result<Vec<(Vec<u8>, State)>> {
         self.actor
             .send(ListStatesMessage {
                 access_path,
@@ -102,7 +104,7 @@ impl ExecutorProxy {
         access_path: AccessPath,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<Option<(Vec<u8>, AnnotatedState)>>> {
+    ) -> Result<Vec<(Vec<u8>, AnnotatedState)>> {
         self.actor
             .send(ListAnnotatedStatesMessage {
                 access_path,
@@ -117,7 +119,7 @@ impl ExecutorProxy {
         event_handle_type: StructTag,
         cursor: Option<u64>,
         limit: u64,
-    ) -> Result<Vec<Option<AnnotatedMoveOSEvent>>> {
+    ) -> Result<Vec<AnnotatedEvent>> {
         self.actor
             .send(GetEventsByEventHandleMessage {
                 event_handle_type,
@@ -127,10 +129,16 @@ impl ExecutorProxy {
             .await?
     }
 
-    pub async fn get_events(
+    pub async fn get_events_by_event_ids(
         &self,
-        filter: EventFilter,
-    ) -> Result<Vec<Option<AnnotatedMoveOSEvent>>> {
+        event_ids: Vec<EventID>,
+    ) -> Result<Vec<Option<AnnotatedEvent>>> {
+        self.actor
+            .send(GetEventsByEventIDsMessage { event_ids })
+            .await?
+    }
+
+    pub async fn get_events(&self, filter: EventFilter) -> Result<Vec<AnnotatedEvent>> {
         self.actor.send(GetEventsMessage { filter }).await?
     }
 

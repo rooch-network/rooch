@@ -23,10 +23,15 @@ use move_vm_types::{
     pop_arg,
     values::{Struct, Value, Vector, VectorRef},
 };
+use moveos_stdlib_builder::dependency_order::sort_by_dependency_order;
 use smallvec::smallvec;
 use std::collections::{BTreeSet, VecDeque};
 
 // ========================================================================================
+
+const E_ADDRESS_NOT_MATCH_WITH_SIGNER: u64 = 1;
+const E_MODULE_VERIFICATION_ERROR: u64 = 2;
+const E_MODULE_INCOMPATIBLE: u64 = 3;
 
 /// The native module context.
 #[derive(Tid)]
@@ -68,7 +73,6 @@ fn native_module_name_inner(
     let name = module.self_id().name().to_owned().into_string();
     let cost = gas_params.base
         + if gas_params.per_byte_in_str > 0.into() {
-            //TODO charge gas cost
             gas_params.per_byte_in_str * NumBytes::new(name.len() as u64)
         } else {
             0.into()
@@ -79,7 +83,7 @@ fn native_module_name_inner(
 }
 
 /***************************************************************************************************
- * native fun verify_modules_inner(
+ * native fun sort_and_verify_modules_inner(
  *      modules: &vector<vector<u8>>,
  *      account_address: address
  * ): (vector<String>, vector<String>);
@@ -94,7 +98,7 @@ pub struct VerifyModulesGasParameters {
     pub per_byte: InternalGasPerByte,
 }
 
-fn native_verify_modules_inner(
+fn native_sort_and_verify_modules_inner(
     gas_params: &VerifyModulesGasParameters,
     context: &mut NativeContext,
     _ty_args: Vec<Type>,
@@ -112,7 +116,9 @@ fn native_verify_modules_inner(
         .iter()
         .map(|b| CompiledModule::deserialize(b))
         .collect::<PartialVMResult<Vec<CompiledModule>>>()?;
-
+    let compiled_modules = sort_by_dependency_order(&compiled_modules).map_err(|e| {
+        PartialVMError::new(StatusCode::CYCLIC_MODULE_DEPENDENCY).with_message(e.to_string())
+    })?;
     // move verifier
     context.verify_module_bundle_for_publication(&compiled_modules)?;
 
@@ -122,13 +128,10 @@ fn native_verify_modules_inner(
     let mut init_identifier = vec![];
     for module in &compiled_modules {
         if *module.self_id().address() != account_address {
-            return Err(
-                PartialVMError::new(StatusCode::VERIFICATION_ERROR).with_message(format!(
-                    "Module address {:?} not match with signer address {:?}",
-                    module.self_id().address(),
-                    account_address
-                )),
-            );
+            return Ok(NativeResult::err(
+                cost,
+                moveos_types::move_std::error::invalid_argument(E_ADDRESS_NOT_MATCH_WITH_SIGNER),
+            ));
         }
         let result = moveos_verifier::verifier::verify_module(module, module_context.resolver);
         match result {
@@ -138,7 +141,12 @@ fn native_verify_modules_inner(
                 }
                 module_names.push(module.self_id().name().to_owned().into_string());
             }
-            Err(_) => return Err(PartialVMError::new(StatusCode::VERIFICATION_ERROR)),
+            Err(_) => {
+                return Ok(NativeResult::err(
+                    cost,
+                    moveos_types::move_std::error::invalid_argument(E_MODULE_VERIFICATION_ERROR),
+                ))
+            }
         }
     }
 
@@ -245,7 +253,15 @@ fn check_compatibililty_inner(
         let new_m = normalized::Module::new(&new_module);
         let old_m = normalized::Module::new(&old_module);
 
-        compat.check(&old_m, &new_m)?;
+        match compat.check(&old_m, &new_m) {
+            Ok(_) => {}
+            Err(_) => {
+                return Ok(NativeResult::err(
+                    cost,
+                    moveos_types::move_std::error::invalid_argument(E_MODULE_INCOMPATIBLE),
+                ))
+            }
+        }
     }
     Ok(NativeResult::ok(cost, smallvec![]))
 }
@@ -256,7 +272,7 @@ fn check_compatibililty_inner(
 #[derive(Debug, Clone)]
 pub struct GasParameters {
     pub module_name_inner: ModuleNameInnerGasParameters,
-    pub verify_modules_inner: VerifyModulesGasParameters,
+    pub sort_and_verify_modules_inner: VerifyModulesGasParameters,
     pub request_init_functions: RequestInitFunctionsGasParameters,
     pub check_compatibililty_inner: CheckCompatibilityInnerGasParameters,
 }
@@ -268,7 +284,7 @@ impl GasParameters {
                 base: 0.into(),
                 per_byte_in_str: 0.into(),
             },
-            verify_modules_inner: VerifyModulesGasParameters {
+            sort_and_verify_modules_inner: VerifyModulesGasParameters {
                 base: 0.into(),
                 per_byte: 0.into(),
             },
@@ -291,8 +307,11 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
             make_native(gas_params.module_name_inner, native_module_name_inner),
         ),
         (
-            "verify_modules_inner",
-            make_native(gas_params.verify_modules_inner, native_verify_modules_inner),
+            "sort_and_verify_modules_inner",
+            make_native(
+                gas_params.sort_and_verify_modules_inner,
+                native_sort_and_verify_modules_inner,
+            ),
         ),
         (
             "request_init_functions",

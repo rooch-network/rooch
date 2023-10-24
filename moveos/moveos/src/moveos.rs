@@ -20,6 +20,7 @@ use moveos_store::transaction_store::TransactionDBStore;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::moveos_std::tx_result::TxResult;
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::MoveState;
@@ -27,7 +28,6 @@ use moveos_types::state_resolver::MoveOSResolverProxy;
 use moveos_types::transaction::{
     MoveOSTransaction, TransactionOutput, VerifiedMoveAction, VerifiedMoveOSTransaction,
 };
-use moveos_types::tx_context::TxContext;
 use moveos_types::{h256::H256, transaction::FunctionCall};
 
 pub struct MoveOSConfig {

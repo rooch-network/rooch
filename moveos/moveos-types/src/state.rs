@@ -3,7 +3,7 @@
 
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
-    object::{self, AnnotatedObject, Object, ObjectID, RawObject},
+    moveos_std::object::{self, AnnotatedObject, Object, ObjectID, RawObject},
 };
 use anyhow::{bail, ensure, Result};
 use move_core_types::{
@@ -350,20 +350,23 @@ impl State {
         self,
         annotator: &MoveValueAnnotator<T>,
     ) -> Result<AnnotatedState> {
-        let move_value = annotator.view_value(&self.value_type, &self.value)?;
-        Ok(AnnotatedState::new(self, move_value))
+        let decoded_value = annotator.view_value(&self.value_type, &self.value)?;
+        Ok(AnnotatedState::new(self, decoded_value))
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct AnnotatedState {
     pub state: State,
-    pub move_value: AnnotatedMoveValue,
+    pub decoded_value: AnnotatedMoveValue,
 }
 
 impl AnnotatedState {
-    pub fn new(state: State, move_value: AnnotatedMoveValue) -> Self {
-        Self { state, move_value }
+    pub fn new(state: State, decoded_value: AnnotatedMoveValue) -> Self {
+        Self {
+            state,
+            decoded_value,
+        }
     }
 
     pub fn into_annotated_object(self) -> Result<AnnotatedObject> {
@@ -373,11 +376,11 @@ impl AnnotatedState {
             self.state.value_type()
         );
 
-        match self.move_value {
+        match self.decoded_value {
             AnnotatedMoveValue::Struct(annotated_move_object) => {
                 AnnotatedObject::new_from_annotated_struct(annotated_move_object)
             }
-            _ => bail!("Expect MoveStruct but found {:?}", self.move_value),
+            _ => bail!("Expect MoveStruct but found {:?}", self.decoded_value),
         }
     }
 }

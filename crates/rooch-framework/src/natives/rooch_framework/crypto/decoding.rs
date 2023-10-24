@@ -14,7 +14,7 @@ use move_vm_types::{
 use smallvec::smallvec;
 use std::collections::VecDeque;
 
-pub const DECODE_FAILED: u64 = 0;
+pub const E_DECODE_FAILED: u64 = 1;
 
 /***************************************************************************************************
  * native fun base58
@@ -24,7 +24,7 @@ pub const DECODE_FAILED: u64 = 0;
  *              + decoding_base58_data_cost_per_block * num_blocks     | cost depends on number of blocks in message
  **************************************************************************************************/
 pub fn native_base58(
-    _gas_params: &FromBytesGasParameters,
+    gas_params: &FromBytesGasParameters,
     _context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -34,14 +34,14 @@ pub fn native_base58(
 
     // TODO(Gas): Charge the arg size dependent costs
 
-    let cost = 0.into();
+    let cost = gas_params.base;
 
     let encoded_address_bytes = pop_arg!(args, VectorRef);
 
     let Ok(bs58_raw_bytes) = bs58::decode(encoded_address_bytes.as_bytes_ref().to_vec())
         .into_vec()
     else {
-        return Ok(NativeResult::err(cost, DECODE_FAILED));
+        return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_DECODE_FAILED)));
     };
 
     Ok(NativeResult::ok(
@@ -58,7 +58,7 @@ pub fn native_base58(
  *              + decoding_base58check_data_cost_per_block * num_blocks     | cost depends on number of blocks in message
  **************************************************************************************************/
 pub fn native_base58check(
-    _gas_params: &FromBytesGasParameters,
+    gas_params: &FromBytesGasParameters,
     _context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -68,7 +68,7 @@ pub fn native_base58check(
 
     // TODO(Gas): Charge the arg size dependent costs
 
-    let cost = 0.into();
+    let cost = gas_params.base;
 
     let version_byte = pop_arg!(args, u8);
     let encoded_address_bytes = pop_arg!(args, VectorRef);
@@ -77,7 +77,7 @@ pub fn native_base58check(
         .with_check(Some(version_byte))
         .into_vec()
     else {
-        return Ok(NativeResult::err(cost, DECODE_FAILED));
+        return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_DECODE_FAILED)));
     };
 
     Ok(NativeResult::ok(

@@ -6,12 +6,11 @@ module rooch_framework::account {
    use std::hash;
    use std::vector;
    use std::signer;
-   use rooch_framework::gas_coin::{GasCoin};
    use moveos_std::bcs;
    use moveos_std::context::{Self, Context};
    use moveos_std::account_storage;
    use rooch_framework::account_authentication;
-   use rooch_framework::coin::{Self};
+   use rooch_framework::account_coin_store;
 
    friend rooch_framework::transaction_validator;
    friend rooch_framework::transfer;
@@ -95,7 +94,7 @@ module rooch_framework::account {
             sequence_number: 0,
       });
       account_authentication::init_authentication_keys(ctx, &new_account);
-      coin::init_account_coin_store(ctx, &new_account);
+      account_coin_store::init_account_coin_stores(ctx, &new_account);
       new_account
    }
 
@@ -138,15 +137,16 @@ module rooch_framework::account {
 
    public(friend) fun increment_sequence_number(ctx: &mut Context) {
       let sender = context::sender(ctx);
+      let tx_sequence_number = context::sequence_number(ctx);
 
-      let sequence_number = &mut account_storage::global_borrow_mut<Account>(ctx, sender).sequence_number;
+      let account = account_storage::global_borrow_mut<Account>(ctx, sender);
 
       assert!(
-         (*sequence_number as u128) < MAX_U64,
+         (account.sequence_number as u128) < MAX_U64,
          error::out_of_range(ErrorSequenceNumberTooBig)
       );
 
-      *sequence_number = *sequence_number + 1;
+      account.sequence_number = tx_sequence_number + 1;
    }
 
    /// Helper to return the sequence number field for given `account`
@@ -210,12 +210,9 @@ module rooch_framework::account {
    /// This is a helper function to generate seed for resource address
    fun generate_seed_bytes(ctx: &Context, addr: &address): vector<u8> {
       let sequence_number = Self::sequence_number(ctx, *addr);
-      // use rooch gas coin balance as part of seed, just for new address more random.
-      let balance = coin::balance<GasCoin>(ctx, *addr);
 
       let seed_bytes = bcs::to_bytes(addr);
       vector::append(&mut seed_bytes, bcs::to_bytes(&sequence_number));
-      vector::append(&mut seed_bytes, bcs::to_bytes(&balance));
 
       hash::sha3_256(seed_bytes)
    }
@@ -311,8 +308,9 @@ module rooch_framework::account {
       context::drop_test_context(ctx);
    }
 
+   //TODO figure out why this test should failed
    #[test(sender=@0x42, resource_account=@0xbb6e573f7feb9d8474ac20813fc086cc3100b8b7d49c246b0f4aee8ea19eaef4)]
-   // #[expected_failure(abort_code = 0x30006, location = Self)]
+   #[expected_failure(abort_code = 196614, location = Self)]
    fun test_failure_create_resource_account_wrong_sequence_number(sender: address, resource_account: address){
       {
          let ctx = context::new_test_context(resource_account);

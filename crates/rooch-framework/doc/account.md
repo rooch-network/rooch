@@ -32,8 +32,7 @@
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
-<b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
-<b>use</b> <a href="gas_coin.md#0x3_gas_coin">0x3::gas_coin</a>;
+<b>use</b> <a href="account_coin_store.md#0x3_account_coin_store">0x3::account_coin_store</a>;
 </code></pre>
 
 
@@ -420,15 +419,16 @@ Return the current sequence number at <code>addr</code>
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_increment_sequence_number">increment_sequence_number</a>(ctx: &<b>mut</b> Context) {
    <b>let</b> sender = <a href="_sender">context::sender</a>(ctx);
+   <b>let</b> tx_sequence_number = <a href="_sequence_number">context::sequence_number</a>(ctx);
 
-   <b>let</b> sequence_number = &<b>mut</b> <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, sender).sequence_number;
+   <b>let</b> <a href="account.md#0x3_account">account</a> = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="account.md#0x3_account_Account">Account</a>&gt;(ctx, sender);
 
    <b>assert</b>!(
-      (*sequence_number <b>as</b> u128) &lt; <a href="account.md#0x3_account_MAX_U64">MAX_U64</a>,
+      (<a href="account.md#0x3_account">account</a>.sequence_number <b>as</b> u128) &lt; <a href="account.md#0x3_account_MAX_U64">MAX_U64</a>,
       <a href="_out_of_range">error::out_of_range</a>(<a href="account.md#0x3_account_ErrorSequenceNumberTooBig">ErrorSequenceNumberTooBig</a>)
    );
 
-   *sequence_number = *sequence_number + 1;
+   <a href="account.md#0x3_account">account</a>.sequence_number = tx_sequence_number + 1;
 }
 </code></pre>
 
