@@ -3,7 +3,7 @@
 
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
-use rooch_key::{key_derive::verify_password, keystore::AccountKeystore};
+use rooch_key::key_derive::verify_password;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use rpassword::prompt_password;
 use std::fmt::Debug;
@@ -16,6 +16,7 @@ use rooch_types::{
 };
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
+use rooch_key::keystore::account_keystore::AccountKeystore;
 use std::str::FromStr;
 
 /// Nullify a keypair from a selected coin id with a Rooch address in rooch.keystore
@@ -46,23 +47,15 @@ impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
         let action = NativeValidatorModule::remove_authentication_key_action();
 
         // Execute the Move call as a transaction
-        let mut result = if context.client_config.is_password_empty {
+        let mut result = if context.keystore.get_if_password_is_empty() {
             context
                 .sign_and_execute(existing_address, action, None)
                 .await?
         } else {
             let password =
-                prompt_password("Enter the password saved in client config to delete the address:")
-                    .unwrap_or_default();
-            let is_verified = verify_password(
-                Some(password.clone()),
-                context
-                    .client_config
-                    .password_hash
-                    .as_ref()
-                    .cloned()
-                    .unwrap_or_default(),
-            )?;
+                prompt_password("Enter the password to delete the address:").unwrap_or_default();
+            let is_verified =
+                verify_password(Some(password.clone()), context.keystore.get_password_hash())?;
 
             if !is_verified {
                 return Err(RoochError::InvalidPasswordError(

@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use clap::Parser;
 use rooch_config::{RoochOpt, ServerOpt};
 use rooch_key::key_derive::verify_password;
-use rooch_key::keystore::AccountKeystore;
+use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_server::Service;
 use rooch_types::address::RoochAddress;
 use rooch_types::chain_id::RoochChainID;
@@ -84,37 +84,27 @@ impl CommandAction<()> for StartCommand {
         };
 
         let (sequencer_keypair, proposer_keypair, relayer_keypair) =
-            if context.client_config.is_password_empty {
+            if context.keystore.get_if_password_is_empty() {
                 let sequencer_keypair = context
                     .keystore
-                    .get_key_pair_by_password(&sequencer_account, None)
+                    .get_key_pair_with_password(&sequencer_account, None)
                     .map_err(|e| RoochError::SequencerKeyPairDoesNotExistError(e.to_string()))?;
 
                 let proposer_keypair = context
                     .keystore
-                    .get_key_pair_by_password(&proposer_account, None)
+                    .get_key_pair_with_password(&proposer_account, None)
                     .map_err(|e| RoochError::ProposerKeyPairDoesNotExistError(e.to_string()))?;
 
                 let relayer_keypair = context
                     .keystore
-                    .get_key_pair_by_password(&relayer_account, None)
+                    .get_key_pair_with_password(&relayer_account, None)
                     .map_err(|e| RoochError::RelayerKeyPairDoesNotExistError(e.to_string()))?;
 
                 (sequencer_keypair, proposer_keypair, relayer_keypair)
             } else {
-                let password = prompt_password(
-                    "Enter the password saved in client config to create a new key pair:",
-                )
-                .unwrap_or_default();
-                let is_verified = verify_password(
-                    Some(password.clone()),
-                    context
-                        .client_config
-                        .password_hash
-                        .as_ref()
-                        .cloned()
-                        .unwrap_or_default(),
-                )?;
+                let password = prompt_password("Enter the password:").unwrap_or_default();
+                let is_verified =
+                    verify_password(Some(password.clone()), context.keystore.get_password_hash())?;
 
                 if !is_verified {
                     return Err(RoochError::InvalidPasswordError(
@@ -124,17 +114,17 @@ impl CommandAction<()> for StartCommand {
 
                 let sequencer_keypair = context
                     .keystore
-                    .get_key_pair_by_password(&sequencer_account, Some(password.clone()))
+                    .get_key_pair_with_password(&sequencer_account, Some(password.clone()))
                     .map_err(|e| RoochError::SequencerKeyPairDoesNotExistError(e.to_string()))?;
 
                 let proposer_keypair = context
                     .keystore
-                    .get_key_pair_by_password(&proposer_account, Some(password.clone()))
+                    .get_key_pair_with_password(&proposer_account, Some(password.clone()))
                     .map_err(|e| RoochError::ProposerKeyPairDoesNotExistError(e.to_string()))?;
 
                 let relayer_keypair = context
                     .keystore
-                    .get_key_pair_by_password(&relayer_account, Some(password))
+                    .get_key_pair_with_password(&relayer_account, Some(password))
                     .map_err(|e| RoochError::RelayerKeyPairDoesNotExistError(e.to_string()))?;
 
                 (sequencer_keypair, proposer_keypair, relayer_keypair)

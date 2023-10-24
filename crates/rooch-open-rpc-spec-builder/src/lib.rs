@@ -41,6 +41,8 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn build_rooch_rpc_spec() -> Project {
     let mut open_rpc = rooch_rpc_doc(VERSION);
     open_rpc.add_module(RoochAPIOpenRpc::module_doc());
+    //FIXME if add the EthAPIOpenRpc, the pnpm sdk gen raies error
+    //open_rpc.add_module(EthAPIOpenRpc::module_doc());
     //open_rpc.add_examples(RpcExampleProvider::new().examples());
     open_rpc
 }

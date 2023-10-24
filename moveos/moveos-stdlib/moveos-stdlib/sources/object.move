@@ -7,15 +7,17 @@
 /// 1. The Object is a struct in Move
 /// 2. The Object is a use case of the Hot Potato pattern in Move. Objects do not have any ability, so they cannot be drop, copy, or store, and can only be handled by StorageContext API after creation.
 module moveos_std::object {
-    
-    use moveos_std::tx_context::{Self, TxContext};
-    use moveos_std::object_id::ObjectID;
 
+    use std::hash;
+    use moveos_std::type_info;
+    use moveos_std::bcs;
+    use moveos_std::address;
     friend moveos_std::context;
     friend moveos_std::account_storage;
     friend moveos_std::storage_context;
     friend moveos_std::event;
     friend moveos_std::object_ref;
+    friend moveos_std::raw_table;
    
     /// Box style object
     /// The object can not be copied, droped and stored. It only can be consumed by StorageContext API.
@@ -28,15 +30,33 @@ module moveos_std::object {
         // The value must be the last field
         value: T,
     }
-
-    /// Create a new object, the object is owned by `owner`
-    public(friend) fun new<T: key>(ctx: &mut TxContext, owner: address, value: T): Object<T> {
-        let id = tx_context::fresh_object_id(ctx);
-        Object<T>{id, value, owner}
+  
+    /// An object ID
+    struct ObjectID has store, copy, drop {
+        // TODO should use u256 to replace address?
+        id: address,
     }
 
-    public(friend) fun new_with_id<T: key>(id: ObjectID, owner: address, value: T): Object<T> {
-        Object<T>{id, owner, value}
+    /// Generate a new ObjectID from an address
+    public(friend) fun address_to_object_id(address: address): ObjectID {
+        ObjectID { id: address }
+    }
+
+    public(friend) fun singleton_object_id<T>(): ObjectID {
+        address_to_object_id(
+            address::from_bytes(
+                hash::sha3_256(
+                    bcs::to_bytes(
+                        &type_info::type_of<T>()
+                    )
+                )
+            )
+        )
+    }
+
+    /// Create a new object, the object is owned by `owner`
+    public(friend) fun new<T: key>(id: ObjectID, owner: address, value: T): Object<T> {
+        Object<T>{id, value, owner}
     }
 
     #[private_generics(T)]
@@ -97,7 +117,8 @@ module moveos_std::object {
         let object = TestObject {
             count: object_count,
         };
-        let obj = new<TestObject>(&mut tx_context, sender_addr, object);
+        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut tx_context));
+        let obj = new<TestObject>(object_id, sender_addr, object);
 
         let borrow_object = borrow_mut(&mut obj);
         assert!(borrow_object.count == object_count, 1001);

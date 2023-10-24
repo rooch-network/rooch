@@ -7,9 +7,10 @@
 
 
 -  [Struct `MoveModule`](#0x2_move_module_MoveModule)
+-  [Constants](#@Constants_0)
 -  [Function `new`](#0x2_move_module_new)
 -  [Function `module_name`](#0x2_move_module_module_name)
--  [Function `verify_modules`](#0x2_move_module_verify_modules)
+-  [Function `sort_and_verify_modules`](#0x2_move_module_sort_and_verify_modules)
 -  [Function `check_comatibility`](#0x2_move_module_check_comatibility)
 -  [Function `request_init_functions`](#0x2_move_module_request_init_functions)
 
@@ -45,6 +46,41 @@
 
 
 </details>
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x2_move_module_ErrorAddressNotMatchWithSigner"></a>
+
+Module address is not the same as the signer
+
+
+<pre><code><b>const</b> <a href="move_module.md#0x2_move_module_ErrorAddressNotMatchWithSigner">ErrorAddressNotMatchWithSigner</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x2_move_module_ErrorModuleIncompatible"></a>
+
+Module incompatible with the old ones.
+
+
+<pre><code><b>const</b> <a href="move_module.md#0x2_move_module_ErrorModuleIncompatible">ErrorModuleIncompatible</a>: u64 = 3;
+</code></pre>
+
+
+
+<a name="0x2_move_module_ErrorModuleVerificationError"></a>
+
+Module verification error
+
+
+<pre><code><b>const</b> <a href="move_module.md#0x2_move_module_ErrorModuleVerificationError">ErrorModuleVerificationError</a>: u64 = 2;
+</code></pre>
+
+
 
 <a name="0x2_move_module_new"></a>
 
@@ -96,18 +132,19 @@
 
 </details>
 
-<a name="0x2_move_module_verify_modules"></a>
+<a name="0x2_move_module_sort_and_verify_modules"></a>
 
-## Function `verify_modules`
+## Function `sort_and_verify_modules`
 
-Verify the modules and return their names and names of the modules with init function.
+Sort modules by dependency order and then verify.
+Return their names and names of the modules with init function if sorted dependency order.
 This function will ensure the module's bytecode is valid and the module id is matching the account address.
 Return
-The first vector is the module names of all the modules.
-The second vector is the module names of the modules with init function.
+1. Module names of all the modules. Order of names is not matching the input, but sorted by module dependency order
+2. Module names of the modules with init function.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_verify_modules">verify_modules</a>(modules: &<a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, account_address: <b>address</b>): (<a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_sort_and_verify_modules">sort_and_verify_modules</a>(modules: &<a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, account_address: <b>address</b>): (<a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;)
 </code></pre>
 
 
@@ -116,7 +153,7 @@ The second vector is the module names of the modules with init function.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_verify_modules">verify_modules</a>(modules: &<a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>&gt;, account_address: <b>address</b>): (<a href="">vector</a>&lt;String&gt;, <a href="">vector</a>&lt;String&gt;) {
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_sort_and_verify_modules">sort_and_verify_modules</a>(modules: &<a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>&gt;, account_address: <b>address</b>): (<a href="">vector</a>&lt;String&gt;, <a href="">vector</a>&lt;String&gt;) {
     <b>let</b> bytes_vec = <a href="_empty">vector::empty</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;();
     <b>let</b> i = 0u64;
     <b>let</b> len = <a href="_length">vector::length</a>(modules);
@@ -124,7 +161,7 @@ The second vector is the module names of the modules with init function.
         <a href="_push_back">vector::push_back</a>(&<b>mut</b> bytes_vec, <a href="_borrow">vector::borrow</a>(modules, i).byte_codes);
         i = i + 1;
     };
-    <a href="move_module.md#0x2_move_module_verify_modules_inner">verify_modules_inner</a>(bytes_vec, account_address)
+    <a href="move_module.md#0x2_move_module_sort_and_verify_modules_inner">sort_and_verify_modules_inner</a>(bytes_vec, account_address)
 }
 </code></pre>
 

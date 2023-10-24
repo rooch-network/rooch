@@ -14,8 +14,7 @@ module creator::test {
     use creator::test0::KeyStruct;
     use moveos_std::account_storage;
     use moveos_std::context::{Self, Context};
-    use moveos_std::object;
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::ObjectID;
 
     struct Foo has key {
         x: u64,
@@ -33,9 +32,7 @@ module creator::test {
 
     public fun call_moveos_std<T:store>(ctx: &mut Context, sender: &signer, object_id: ObjectID) {
         debug::print(&object_id);
-        let obj = context::remove_object<KeyStruct>(ctx, object_id);
-        debug::print(&obj);
-        let (_id,_owner,value) = object::unpack(obj);
+        let (_id,_owner,value) = context::remove_object<KeyStruct>(ctx, object_id);
         account_storage::global_move_to(ctx, sender, value);
     }
 }

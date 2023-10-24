@@ -7,10 +7,10 @@
 module moveos_std::context {
 
     use std::option::Option;
+    use moveos_std::type_info;
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::tx_context::{Self, TxContext};
-    use moveos_std::object_id::ObjectID;
-    use moveos_std::object::{Self, Object};
+    use moveos_std::object::{Self, Object, ObjectID};
     use moveos_std::object_ref::{Self, ObjectRef};
     use moveos_std::tx_meta::{TxMeta};
     use moveos_std::tx_result::{TxResult};
@@ -18,6 +18,7 @@ module moveos_std::context {
     friend moveos_std::table;
     friend moveos_std::type_table;
     friend moveos_std::account_storage;
+    friend moveos_std::event;
 
     /// Information about the global context include TxContext and StorageContext
     /// We can not put the StorageContext to TxContext, because object module depends on tx_context module,
@@ -64,7 +65,7 @@ module moveos_std::context {
 
     /// Generate a new unique object ID
     public fun fresh_object_id(self: &mut Context): ObjectID {
-        tx_context::fresh_object_id(&mut self.tx_context)
+        object::address_to_object_id(tx_context::fresh_address(&mut self.tx_context))
     }
 
     /// Return the hash of the current transaction
@@ -106,24 +107,13 @@ module moveos_std::context {
     }
 
     #[private_generics(T)]
-    /// Remove object from object store
-    public fun remove_object<T: key>(self: &mut Context, object_id: ObjectID): Object<T> {
-        storage_context::remove<T>(&mut self.storage_context, object_id)
+    /// Remove object from object store, and unpack the Object
+    public fun remove_object<T: key>(self: &mut Context, object_id: ObjectID): (ObjectID, address, T) {
+        let obj = storage_context::remove<T>(&mut self.storage_context, object_id);
+        object::unpack_internal(obj)
     }
 
-    #[private_generics(T)]
-    public fun remove_object_with_ref<T: key>(self: &mut Context, object_ref: ObjectRef<T>): Object<T> {
-        let object_id = object_ref::into_id(object_ref);
-        storage_context::remove<T>(&mut self.storage_context, object_id)
-    }
-
-    #[private_generics(T)]
-    /// Add object to object store
-    public fun add_object<T: key>(self: &mut Context, obj: Object<T>) {
-        storage_context::add<T>(&mut self.storage_context, obj)
-    }
-
-    public fun contains_object(self: &Context, object_id: ObjectID): bool {
+    public fun exist_object(self: &Context, object_id: ObjectID): bool {
         storage_context::contains(&self.storage_context, object_id)
     }
 
@@ -131,15 +121,32 @@ module moveos_std::context {
 
     #[private_generics(T)]
     /// Create a new Object, the owner is the `sender`
-    public fun new_object<T: key>(self: &mut Context, value: T): Object<T> {
+    /// Add the Object to the global object storage and return the ObjectRef
+    public fun new_object<T: key>(self: &mut Context, value: T): ObjectRef<T> {
+        let id = fresh_object_id(self);
         let owner = sender(self);
-        object::new<T>(&mut self.tx_context, owner, value)
+        new_object_with_id(self, id, owner, value)
     }
 
     #[private_generics(T)]
     /// Create a new Object with owner
-    public fun new_object_with_owner<T: key>(self: &mut Context, owner: address, value: T): Object<T> {
-        object::new(&mut self.tx_context, owner, value)
+    /// Add the Object to the global object storage and return the ObjectRef
+    public fun new_object_with_owner<T: key>(self: &mut Context, owner: address, value: T): ObjectRef<T> {
+        let object_id = fresh_object_id(self);
+        new_object_with_id(self, object_id, owner, value)
+    }
+
+    public(friend) fun new_object_with_id<T: key>(self: &mut Context, id: ObjectID, owner: address, value: T) : ObjectRef<T> {
+        let obj = object::new(id, owner, value);
+        let obj_ref = object_ref::new_internal(&mut obj);
+        storage_context::add(&mut self.storage_context, obj);
+        obj_ref
+    }
+
+    #[private_generics(T)]
+    public fun new_singleton_object<T: key>(self: &mut Context, value: T): ObjectRef<T> {
+        let object_id = object::singleton_object_id<T>();
+        new_object_with_id(self, object_id, type_info::account_address(&type_info::type_of<T>()), value)
     }
 
     #[test_only]
@@ -179,9 +186,7 @@ module moveos_std::context {
     fun test_object_mut(sender: address){
         let ctx = new_test_context(sender);
         
-        let obj = new_object(&mut ctx, TestObjectValue{value: 1});
-        let ref = object_ref::new(&mut obj);
-        add_object(&mut ctx, obj);
+        let ref = new_object(&mut ctx, TestObjectValue{value: 1});
         
         {
             let obj_value = object_ref::borrow_mut(&mut ref);

@@ -11,19 +11,18 @@ module moveos_std::account_storage {
     use moveos_std::bcs;
     use moveos_std::type_table::{Self, TypeTable};
     use moveos_std::table::{Self, Table};
-    use moveos_std::object;
-    use moveos_std::object_id::{Self, ObjectID};
+    use moveos_std::object::{Self, ObjectID};
     use moveos_std::context::{Self, Context};
     use moveos_std::tx_context;
     use moveos_std::move_module::{Self, MoveModule};
 
     /// The account with the given address already exists
-    const ErrorAccountAlreadyExists: u64 = 0;
+    const ErrorAccountAlreadyExists: u64 = 1;
 
     /// The resource with the given type already exists
-    const ErrorResourceAlreadyExists: u64 = 1;
+    const ErrorResourceAlreadyExists: u64 = 2;
     /// The resource with the given type not exists 
-    const ErrorResourceNotExists: u64 = 2;
+    const ErrorResourceNotExists: u64 = 3;
 
     const NamedTableResource: u64 = 0;
     const NamedTableModule: u64 = 1;
@@ -42,25 +41,25 @@ module moveos_std::account_storage {
 
     //Ensure the NamedTableID generate use same method with Rust code
     public fun named_table_id(account: address, table_type: u64): ObjectID{
-        object_id::address_to_object_id(tx_context::derive_id(bcs::to_bytes(&account), table_type))
+        object::address_to_object_id(tx_context::derive_id(bcs::to_bytes(&account), table_type))
     }
 
     /// Create a new account storage space
     public fun create_account_storage(ctx: &mut Context, account: address) {
-        let object_id = object_id::address_to_object_id(account);
+        let object_id = object::address_to_object_id(account);
+        assert!(!context::exist_object(ctx, object_id), ErrorAccountAlreadyExists);
         let account_storage = AccountStorage {
             resources: type_table::new_with_id(named_table_id(account, NamedTableResource)),
             modules: table::new_with_id(named_table_id(account, NamedTableModule)),
         };
-        assert!(!context::contains_object(ctx, object_id), ErrorAccountAlreadyExists);
-        let object = object::new_with_id(object_id, account, account_storage);
-        context::add_object(ctx, object);
+        //Should we keep the storage ref?
+        let _account_storage_ref = context::new_object_with_id(ctx, object_id, account, account_storage);
     }
 
     /// check if account storage eixst
     public fun exist_account_storage(ctx: &Context, account: address): bool {
-        let object_id = object_id::address_to_object_id(account);
-        context::contains_object(ctx, object_id)
+        let object_id = object::address_to_object_id(account);
+        context::exist_object(ctx, object_id)
     }
 
     public fun ensure_account_storage(ctx: &mut Context, account: address) {
@@ -72,13 +71,13 @@ module moveos_std::account_storage {
     //TODO the resource and module table's id is determined by the account address, so we can use the account address to get the table id
     //And don't need to borrow the account storage from the object storage, but if we create the table every time, how to drop the table?
     fun borrow_account_storage(ctx: &Context, account: address): &AccountStorage{
-        let object_id = object_id::address_to_object_id(account);
+        let object_id = object::address_to_object_id(account);
         let object = context::borrow_object<AccountStorage>(ctx, object_id);
         object::borrow(object)
     }
 
     fun borrow_account_storage_mut(ctx: &mut Context, account: address): &mut AccountStorage{
-        let object_id = object_id::address_to_object_id(account);
+        let object_id = object::address_to_object_id(account);
         let object = context::borrow_object_mut<AccountStorage>(ctx, object_id);
         object::borrow_mut(object)
     }
@@ -171,18 +170,31 @@ module moveos_std::account_storage {
         exists_module_at_account_storage(account_storage, name) 
     }
 
+    fun pop_module_by_name(modules: &mut vector<MoveModule>, name: String): MoveModule {
+        let i = 0;
+        let len = vector::length(modules);
+        while (i < len) {
+            let m = vector::borrow(modules, i);
+            if (move_module::module_name(m) == name) {
+                return vector::remove(modules, i)
+            };
+            i = i + 1;
+        };
+        abort(0x0) // unreachable.
+    }
+
     /// Publish modules to the account's storage
     public fun publish_modules(ctx: &mut Context, account: &signer, modules: vector<MoveModule>) {
         let account_address = signer::address_of(account);
         let account_storage = borrow_account_storage_mut(ctx, account_address);
         let i = 0;
         let len = vector::length(&modules);
-        let (module_names, module_names_with_init_fn) = move_module::verify_modules(&modules, account_address);
+        let (module_names, module_names_with_init_fn) = move_module::sort_and_verify_modules(&modules, account_address);
         
         let upgrade_flag = false;
         while (i < len) {
             let name = vector::pop_back(&mut module_names);
-            let m = vector::pop_back(&mut modules);   
+            let m = pop_module_by_name(&mut modules, name);   
 
             // The module already exists, which means we are upgrading the module
             if (table::contains(&account_storage.modules, name)) {
@@ -219,15 +231,14 @@ module moveos_std::account_storage {
             vector::push_back(&mut module_vec, m);
             i = i + 1;
         };
-        // The input modules are sorted by dependency order which must not be changed.
-        vector::reverse(&mut module_vec);
+        
         publish_modules(ctx, account, module_vec);
     }
 
     #[test]
     fun test_named_table_id() {
-        assert!(named_table_id(@0xae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647, NamedTableResource) == object_id::address_to_object_id(@0x04d8b5ccef4d5b55fa9371d1a9c344fcd4bd40dd9f32dd1d94696775fe3f3013), 1000);
-        assert!(named_table_id(@0xae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647, NamedTableModule) == object_id::address_to_object_id(@0xead64c5e724c9d52b0eb792b350d56001f1fe0dc2dec0e2e713420daba18109a), 1001);
+        assert!(named_table_id(@0xae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647, NamedTableResource) == object::address_to_object_id(@0x04d8b5ccef4d5b55fa9371d1a9c344fcd4bd40dd9f32dd1d94696775fe3f3013), 1000);
+        assert!(named_table_id(@0xae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647, NamedTableModule) == object::address_to_object_id(@0xead64c5e724c9d52b0eb792b350d56001f1fe0dc2dec0e2e713420daba18109a), 1001);
     }
 
     #[test_only]
@@ -279,7 +290,7 @@ module moveos_std::account_storage {
     }
 
     #[test(sender=@0x42)]
-    #[expected_failure(abort_code = 0x0, location = Self)]
+    #[expected_failure(abort_code = 1, location = Self)]
     fun test_failure_repeatedly_create_account_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
         let ctx = context::new_test_context(sender_addr);
@@ -289,7 +300,7 @@ module moveos_std::account_storage {
     }
 
     #[test(sender=@0x42)]
-    #[expected_failure(abort_code = 0x1, location = Self)]
+    #[expected_failure(abort_code = 2, location = Self)]
     fun test_failure_repeatedly_move_to_account_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
         let ctx = context::new_test_context(sender_addr);
@@ -306,7 +317,7 @@ module moveos_std::account_storage {
     }
 
     #[test(sender=@0x42)]
-    #[expected_failure(abort_code = 0x2, location = Self)]
+    #[expected_failure(abort_code = 3, location = Self)]
     fun test_failure_repeatedly_move_from_account_storage(sender: signer){
         let sender_addr = signer::address_of(&sender);
         let ctx = context::new_test_context(sender_addr);

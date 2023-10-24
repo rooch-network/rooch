@@ -2,6 +2,8 @@
   "installation": "安装",
   "cli": "CLI",
   "quick-start": "快速开始",
+  "connect-devnet": "连接开发网络",
+  "run-local-testnet": "运行本地测试网络",
   "faucet": {
     "title": "水龙头",
     "display": "hidden"
@@ -9,7 +11,6 @@
   "address-space": "地址空间",
   "library": "库",
   "create-rooch-move-contract": "创建 Rooch Move 合约",
-  "start-server": "启动服务",
   "object": "对象",
   "interactive-ethereum": {
     "title": "与以太坊交互",

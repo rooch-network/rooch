@@ -9,8 +9,7 @@ module moveos_std::event {
     use std::hash;
     use moveos_std::bcs;
     use moveos_std::context::{Self, Context};
-    use moveos_std::object_id::{Self, ObjectID};
-    use moveos_std::object;
+    use moveos_std::object::{Self, ObjectID};
     use moveos_std::type_info;
 
     #[test_only]
@@ -30,12 +29,12 @@ module moveos_std::event {
     public fun derive_event_handle_id<T>(): ObjectID {
         let type_info = type_info::type_of<T>();
         let event_handle_address = bcs::to_address(hash::sha3_256(bcs::to_bytes(&type_info)));
-        object_id::address_to_object_id(event_handle_address)
+        object::address_to_object_id(event_handle_address)
     }
 
     fun exists_event_handle<T>(ctx: &Context): bool {
         let event_handle_id = derive_event_handle_id<T>();
-        context::contains_object(ctx, event_handle_id)
+        context::exist_object(ctx, event_handle_id)
     }
 
     /// Borrow a event handle from the object storage
@@ -81,8 +80,8 @@ module moveos_std::event {
         let event_handle = EventHandle {
             counter: 0,
         };
-        let object = object::new_with_id<EventHandle>(event_handle_id, account_addr, event_handle);
-        context::add_object(ctx, object)
+        //TODO should we keep the event_handle_ref?
+        let _handle_ref = context::new_object_with_id<EventHandle>(ctx, event_handle_id, account_addr, event_handle);
     }
 
     public fun ensure_event_handle<T>(ctx: &mut Context) {

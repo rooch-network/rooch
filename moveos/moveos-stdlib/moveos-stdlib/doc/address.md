@@ -30,7 +30,7 @@
 Error from <code>from_bytes</code> when it is supplied too many or too few bytes.
 
 
-<pre><code><b>const</b> <a href="address.md#0x2_address_ErrorAddressParseError">ErrorAddressParseError</a>: u64 = 0;
+<pre><code><b>const</b> <a href="address.md#0x2_address_ErrorAddressParseError">ErrorAddressParseError</a>: u64 = 1;
 </code></pre>
 
 
@@ -40,7 +40,7 @@ Error from <code>from_bytes</code> when it is supplied too many or too few bytes
 Error from <code>from_u256</code> when
 
 
-<pre><code><b>const</b> <a href="address.md#0x2_address_ErrorU256TooBigToConvertToAddress">ErrorU256TooBigToConvertToAddress</a>: u64 = 1;
+<pre><code><b>const</b> <a href="address.md#0x2_address_ErrorU256TooBigToConvertToAddress">ErrorU256TooBigToConvertToAddress</a>: u64 = 2;
 </code></pre>
 
 

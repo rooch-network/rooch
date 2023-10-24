@@ -11,8 +11,10 @@ The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/5
 
 
 -  [Struct `Object`](#0x2_object_Object)
+-  [Struct `ObjectID`](#0x2_object_ObjectID)
+-  [Function `address_to_object_id`](#0x2_object_address_to_object_id)
+-  [Function `singleton_object_id`](#0x2_object_singleton_object_id)
 -  [Function `new`](#0x2_object_new)
--  [Function `new_with_id`](#0x2_object_new_with_id)
 -  [Function `borrow`](#0x2_object_borrow)
 -  [Function `internal_borrow`](#0x2_object_internal_borrow)
 -  [Function `borrow_mut`](#0x2_object_borrow_mut)
@@ -24,8 +26,10 @@ The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/5
 -  [Function `unpack_internal`](#0x2_object_unpack_internal)
 
 
-<pre><code><b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
-<b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
+<pre><code><b>use</b> <a href="">0x1::hash</a>;
+<b>use</b> <a href="address.md#0x2_address">0x2::address</a>;
+<b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
+<b>use</b> <a href="type_info.md#0x2_type_info">0x2::type_info</a>;
 </code></pre>
 
 
@@ -49,7 +53,7 @@ The object can not be copied, droped and stored. It only can be consumed by Stor
 
 <dl>
 <dt>
-<code>id: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a></code>
+<code>id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a></code>
 </dt>
 <dd>
 
@@ -71,14 +75,42 @@ The object can not be copied, droped and stored. It only can be consumed by Stor
 
 </details>
 
-<a name="0x2_object_new"></a>
+<a name="0x2_object_ObjectID"></a>
 
-## Function `new`
+## Struct `ObjectID`
 
-Create a new object, the object is owned by <code>owner</code>
+An object ID
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(ctx: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+<pre><code><b>struct</b> <a href="object.md#0x2_object_ObjectID">ObjectID</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>id: <b>address</b></code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x2_object_address_to_object_id"></a>
+
+## Function `address_to_object_id`
+
+Generate a new ObjectID from an address
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_address_to_object_id">address_to_object_id</a>(<b>address</b>: <b>address</b>): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
@@ -87,9 +119,8 @@ Create a new object, the object is owned by <code>owner</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(ctx: &<b>mut</b> TxContext, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt; {
-    <b>let</b> id = <a href="tx_context.md#0x2_tx_context_fresh_object_id">tx_context::fresh_object_id</a>(ctx);
-    <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;{id, value, owner}
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_address_to_object_id">address_to_object_id</a>(<b>address</b>: <b>address</b>): <a href="object.md#0x2_object_ObjectID">ObjectID</a> {
+    <a href="object.md#0x2_object_ObjectID">ObjectID</a> { id: <b>address</b> }
 }
 </code></pre>
 
@@ -97,13 +128,13 @@ Create a new object, the object is owned by <code>owner</code>
 
 </details>
 
-<a name="0x2_object_new_with_id"></a>
+<a name="0x2_object_singleton_object_id"></a>
 
-## Function `new_with_id`
+## Function `singleton_object_id`
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new_with_id">new_with_id</a>&lt;T: key&gt;(id: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_singleton_object_id">singleton_object_id</a>&lt;T&gt;(): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
@@ -112,8 +143,41 @@ Create a new object, the object is owned by <code>owner</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new_with_id">new_with_id</a>&lt;T: key&gt;(id: ObjectID, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt; {
-    <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;{id, owner, value}
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_singleton_object_id">singleton_object_id</a>&lt;T&gt;(): <a href="object.md#0x2_object_ObjectID">ObjectID</a> {
+    <a href="object.md#0x2_object_address_to_object_id">address_to_object_id</a>(
+        <a href="address.md#0x2_address_from_bytes">address::from_bytes</a>(
+            <a href="_sha3_256">hash::sha3_256</a>(
+                <a href="_to_bytes">bcs::to_bytes</a>(
+                    &<a href="type_info.md#0x2_type_info_type_of">type_info::type_of</a>&lt;T&gt;()
+                )
+            )
+        )
+    )
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_object_new"></a>
+
+## Function `new`
+
+Create a new object, the object is owned by <code>owner</code>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(id: <a href="object.md#0x2_object_ObjectID">ObjectID</a>, owner: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt; {
+    <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;{id, value, owner}
 }
 </code></pre>
 
@@ -249,7 +313,7 @@ Transfer object to recipient
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_id">id</a>&lt;T&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_id">id</a>&lt;T&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
@@ -258,7 +322,7 @@ Transfer object to recipient
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_id">id</a>&lt;T&gt;(self: &<a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): ObjectID {
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_id">id</a>&lt;T&gt;(self: &<a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): <a href="object.md#0x2_object_ObjectID">ObjectID</a> {
     self.id
 }
 </code></pre>
@@ -298,7 +362,7 @@ Transfer object to recipient
 Unpack the object, return the id, owner, and value
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_unpack">unpack</a>&lt;T&gt;(self: <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): (<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, <b>address</b>, T)
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_unpack">unpack</a>&lt;T&gt;(self: <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): (<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, <b>address</b>, T)
 </code></pre>
 
 
@@ -307,7 +371,7 @@ Unpack the object, return the id, owner, and value
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_unpack">unpack</a>&lt;T&gt;(self: <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): (ObjectID, <b>address</b>, T) {
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_unpack">unpack</a>&lt;T&gt;(self: <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): (<a href="object.md#0x2_object_ObjectID">ObjectID</a>, <b>address</b>, T) {
     <a href="object.md#0x2_object_unpack_internal">unpack_internal</a>(self)
 }
 </code></pre>
@@ -322,7 +386,7 @@ Unpack the object, return the id, owner, and value
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_unpack_internal">unpack_internal</a>&lt;T&gt;(self: <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): (<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, <b>address</b>, T)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_unpack_internal">unpack_internal</a>&lt;T&gt;(self: <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): (<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, <b>address</b>, T)
 </code></pre>
 
 
@@ -331,7 +395,7 @@ Unpack the object, return the id, owner, and value
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_unpack_internal">unpack_internal</a>&lt;T&gt;(self: <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): (ObjectID, <b>address</b>, T) {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_unpack_internal">unpack_internal</a>&lt;T&gt;(self: <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): (<a href="object.md#0x2_object_ObjectID">ObjectID</a>, <b>address</b>, T) {
     <b>let</b> <a href="object.md#0x2_object_Object">Object</a>{id, owner, value} = self;
     (id, owner, value)
 }

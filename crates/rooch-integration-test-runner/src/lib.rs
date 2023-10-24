@@ -24,7 +24,7 @@ use moveos::moveos::MoveOS;
 use moveos::moveos_test_runner::{CompiledState, MoveOSTestAdapter, TaskInput};
 use moveos_store::MoveOSStore;
 use moveos_types::move_types::FunctionId;
-use moveos_types::object::ObjectID;
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state_resolver::AnnotatedStateReader;
 use moveos_types::transaction::{MoveAction, MoveOSTransaction, TransactionOutput};
 use moveos_verifier::build::build_model;

@@ -8,7 +8,7 @@ import { createAsyncThunk, Dispatch, AnyAction } from '@reduxjs/toolkit'
 import { CreateGenericSlice, GenericState } from '../../generic'
 
 // ** sdk import
-import { JsonRpcProvider, TransactionResultPageView } from '@rooch/sdk'
+import { JsonRpcProvider, TransactionWithInfoPageView } from '@rooch/sdk'
 
 interface DataParams {
   dispatch: Dispatch<AnyAction>
@@ -22,7 +22,7 @@ export const fetchData = createAsyncThunk('state/fetchData', async (params: Data
   params.dispatch(start())
 
   try {
-    let result = await params.provider.getTransactionsByOrder(params.cursor, params.limit)
+    let result = await params.provider.getTransactions(params.cursor, params.limit)
     params.dispatch(success(result))
 
     console.log(result)
@@ -37,7 +37,7 @@ export const TransactionSlice = CreateGenericSlice({
   name: 'state',
   initialState: {
     result: {},
-  } as GenericState<TransactionResultPageView>,
+  } as GenericState<TransactionWithInfoPageView>,
   reducers: {},
 })
 

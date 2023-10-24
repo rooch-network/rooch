@@ -5,6 +5,7 @@ use crate::cli_types::{CommandAction, WalletContextOptions};
 use crate::utils::read_line;
 use async_trait::async_trait;
 use clap::Parser;
+use fastcrypto::encoding::{Base64, Encoding};
 use regex::Regex;
 use rooch_config::config::Config;
 use rooch_config::server_config::ServerConfig;
@@ -12,7 +13,9 @@ use rooch_config::{
     rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_KEYSTORE_FILENAME, ROOCH_SERVER_CONFIG,
 };
 use rooch_key::key_derive::hash_password;
-use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
+use rooch_key::keystore::account_keystore::AccountKeystore;
+use rooch_key::keystore::file_keystore::FileBasedKeystore;
+use rooch_key::keystore::Keystore;
 use rooch_rpc_client::client_config::{ClientConfig, Env};
 use rooch_types::error::RoochError;
 use rooch_types::error::RoochResult;
@@ -25,11 +28,15 @@ pub struct Init {
     /// Command line input of custom server URL
     #[clap(short = 's', long = "server-url")]
     pub server_url: Option<String>,
+    /// Command line input of custom mnemonic phrase
+    #[clap(short = 'm', long = "mnemonic-phrase")]
+    mnemonic_phrase: Option<String>,
+    /// Flag to use with rooch init command to ignore entering password
+    #[clap(long = "skip-password")]
+    skip_password: bool,
+
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
-    /// Whether a non-empty password should be provided to rooch.keystore when it comes to the init command
-    #[clap(long = "encrypt-keystore")]
-    pub encrypt_keystore: Option<bool>,
 }
 
 #[async_trait]
@@ -98,7 +105,7 @@ impl CommandAction<()> for Init {
 
                 None => {
                     println!(
-                        "Creating config file [{:?}] with server and rooch native validator.",
+                        "Creating client config file [{:?}] with rooch native validator.",
                         client_config_path
                     );
                     let url = if self.server_url.is_none() {
@@ -137,31 +144,40 @@ impl CommandAction<()> for Init {
             };
 
             if let Some(env) = env {
-                let password = if self.encrypt_keystore.is_some() {
-                    Some(prompt_password("Enter a password to encrypt the keys in the rooch keystore. Press return to have an empty value: ").unwrap_or_default())
+                let (password, is_password_empty) = if !self.skip_password {
+                    let input_password = prompt_password("Enter a password to encrypt the keys. Press enter to leave it an empty password: ")?;
+                    if input_password.is_empty() {
+                        (None, true)
+                    } else {
+                        (Some(input_password), false)
+                    }
                 } else {
-                    None
+                    (None, true)
                 };
 
-                let result = keystore.generate_and_add_new_key(None, None, password.clone())?;
+                let result = keystore.generate_and_add_new_key(
+                    self.mnemonic_phrase,
+                    None,
+                    None,
+                    password.clone(),
+                )?;
                 println!("Generated new keypair for address [{}]", result.address);
-                println!("Secret Recovery Phrase : [{}]", result.result.mnemonic);
+                println!(
+                    "Secret Recovery Phrase : [{}]",
+                    result.key_pair_data.mnemonic_phrase
+                );
                 let dev_env = Env::new_dev_env();
                 let active_env_alias = dev_env.alias.clone();
 
-                let (password_hash, is_password_empty) = if password.is_none() {
-                    ("$argon2id$v=19$m=19456,t=2,p=1$zc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc0$RysE6tj+Zu0lLhtKJIedVHrKn9FspulS3vLj/UPaVvQ".to_owned(), true)
-                } else {
-                    (
-                        hash_password(&result.result.encryption.nonce, password)?,
-                        false,
-                    )
-                };
+                let password_hash = hash_password(
+                    &Base64::decode(&result.key_pair_data.private_key_encryption.nonce)
+                        .map_err(|e| RoochError::KeyConversionError(e.to_string()))?,
+                    password,
+                )?;
+                keystore.set_password_hash_with_indicator(password_hash, is_password_empty)?;
 
                 let client_config = ClientConfig {
                     keystore_path,
-                    password_hash: Some(password_hash),
-                    is_password_empty,
                     envs: vec![env, dev_env],
                     active_address: Some(result.address),
                     // make dev env as default env

@@ -15,14 +15,15 @@ const navigation = (): VerticalNavItemsType => {
         },
       ],
     },
-    {
-      sectionTitle: 'Tutorial',
-    },
-    {
-      title: 'Publish Package',
-      icon: 'bxs-package',
-      path: '/tutorial/publish/package',
-    },
+
+    // {
+    //   sectionTitle: 'Tutorial',
+    // },
+    // {
+    //   title: 'Publish Package',
+    //   icon: 'bxs-package',
+    //   path: '/tutorial/publish/package',
+    // },
     {
       sectionTitle: 'Scan',
     },
@@ -36,36 +37,37 @@ const navigation = (): VerticalNavItemsType => {
       icon: 'bx-collection',
       path: '/scan/transaction/list',
     },
-    {
-      sectionTitle: 'Wallet & Assets',
-    },
-    {
-      title: 'Wallet',
-      icon: 'bx-wallet',
-      path: '/wallet',
-    },
-    {
-      title: 'Assets',
-      icon: 'bxs-badge-dollar',
-      children: [
-        {
-          title: 'Overvier',
-          path: '/assets/overview',
-        },
-        {
-          title: 'Deposit',
-          path: '/assets/deposit',
-        },
-        {
-          title: 'Withdraw',
-          path: '/assets/withdraw',
-        },
-        {
-          title: 'Transfer',
-          path: '/assets/transfer',
-        },
-      ],
-    },
+
+    // {
+    //   sectionTitle: 'Wallet & Assets',
+    // },
+    // {
+    //   title: 'Wallet',
+    //   icon: 'bx-wallet',
+    //   path: '/wallet',
+    // },
+    // {
+    //   title: 'Assets',
+    //   icon: 'bxs-badge-dollar',
+    //   children: [
+    //     {
+    //       title: 'Overvier',
+    //       path: '/assets/overview',
+    //     },
+    //     {
+    //       title: 'Deposit',
+    //       path: '/assets/deposit',
+    //     },
+    //     {
+    //       title: 'Withdraw',
+    //       path: '/assets/withdraw',
+    //     },
+    //     {
+    //       title: 'Transfer',
+    //       path: '/assets/transfer',
+    //     },
+    //   ],
+    // },
     {
       sectionTitle: 'Authentication',
     },
@@ -74,11 +76,12 @@ const navigation = (): VerticalNavItemsType => {
       icon: 'bx:food-menu',
       path: '/session',
     },
-    {
-      title: 'OAuth',
-      icon: 'bx:lock-open-alt',
-      path: '/oauth',
-    },
+
+    // {
+    //   title: 'OAuth',
+    //   icon: 'bx:lock-open-alt',
+    //   path: '/oauth',
+    // },
     {
       sectionTitle: 'Other',
     },

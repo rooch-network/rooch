@@ -10,15 +10,14 @@ import {
   TypeTag,
   Arg,
   Bytes,
-  // TransactionView,
   AnnotatedFunctionResultView,
-  AnnotatedStateView,
-  TransactionResultPageView,
-  AnnotatedEventResultPageView,
-  ListAnnotatedStateResultPageView,
+  TransactionWithInfoPageView,
+  EventPageView,
   StateView,
-  StateResultPageView,
-  TransactionResultView,
+  StatePageView,
+  TransactionWithInfoView,
+  StateOptions,
+  EventOptions,
 } from '../types'
 import { functionIdToStirng, typeTagToString, encodeArg, toHexString } from '../utils'
 import { IProvider } from './interface'
@@ -69,7 +68,7 @@ export class JsonRpcProvider implements IProvider {
   }
 
   switchChain(chain: Chain) {
-    // this.client.close()
+    this.client.close()
     this.chain = chain
     this.client = new JsonRpcClient(
       new RequestManager([
@@ -129,81 +128,40 @@ export class JsonRpcProvider implements IProvider {
     return this.client.rooch_sendRawTransaction(playload)
   }
 
-  async getTransactionsByHash(tx_hashes: string[]): Promise<TransactionResultView | null[]> {
+  async getTransactionsByHashes(tx_hashes: string[]): Promise<TransactionWithInfoView | null[]> {
     return await this.client.rooch_getTransactionsByHash(tx_hashes)
   }
 
-  // async getTransactionInfosByHash(
-  //   txHashes: string[],
-  // ): Promise<TransactionExecutionInfoView | null[]> {
-  //   return await this.client.rooch_getTransactionInfosByHash(txHashes)
-  // }
-
-  // Get the annotated states by access_path The annotated states include the decoded move value of the state
-  async getAnnotatedStates(accessPath: string): Promise<AnnotatedStateView | null[]> {
-    return await this.client.rooch_getAnnotatedStates(accessPath)
-  }
-
-  async getTransactionsByOrder(cursor: number, limit: number): Promise<TransactionResultPageView> {
-    return this.client.rooch_getTransactionsByOrder(cursor, limit)
+  async getTransactions(cursor: number, limit: number): Promise<TransactionWithInfoPageView> {
+    return this.client.rooch_getTransactionsByOrder(cursor.toString(), limit.toString())
   }
 
   // Get the events by event handle id
-  async getEventsByEventHandle(
+  async getEvents(
     event_handle_type: string,
     cursor: number,
     limit: number,
-  ): Promise<AnnotatedEventResultPageView> {
-    return await this.client.rooch_getEventsByEventHandle(event_handle_type, cursor, limit)
+  ): Promise<EventPageView> {
+    return await this.client.rooch_getEventsByEventHandle(
+      event_handle_type,
+      cursor.toString(),
+      limit.toString(),
+      { decode: true } as EventOptions,
+    )
   }
 
   // Get the states by access_path
   async getStates(access_path: string): Promise<StateView | null[]> {
-    return await this.client.rooch_getStates(access_path)
+    return await this.client.rooch_getStates(access_path, { decode: true } as StateOptions)
   }
 
-  // List the states by access_path
   async listStates(
-    access_path: string,
-    cursor: Uint8Array,
-    limit: number,
-  ): Promise<StateResultPageView> {
-    return await this.client.rooch_listStates(access_path, cursor, limit)
-  }
-
-  // TODO:
-  // async getTransactionByHash(hash: string): Promise<TransactionView> {
-  //   return this.client.rooch_getTransactionByHash(hash)
-  // }
-
-  //
-  // // List the annotated states by access_path The annotated states include the decoded move value of the state
-  // async listAnnotatedStates(
-  //   access_path: string,
-  //   cursor: Uint8Array,
-  //   limit: number,
-  // ): Promise<PageView_for_Nullable_AnnotatedStateView_and_alloc_vec_Vec_U8Array> {
-  //   return await this.rpcClient.rooch_listAnnotatedStates(
-  //     access_path,
-  //     cursor,
-  //     limit,
-  //   )
-  // }
-
-  async listAnnotatedStates(
     access_path: string,
     cursor: Bytes | null,
     limit: number,
-  ): Promise<ListAnnotatedStateResultPageView> {
-    return await this.client.rooch_listAnnotatedStates(access_path, cursor as any, limit)
+  ): Promise<StatePageView> {
+    return await this.client.rooch_listStates(access_path, cursor as any, limit.toString(), {
+      decode: true,
+    } as StateOptions)
   }
-
-  // // List the states by access_path
-  // async listStates(
-  //   access_path: string,
-  //   cursor: Uint8Array,
-  //   limit: number,
-  // ): Promise<PageView_for_Nullable_StateView_and_alloc_vec_Vec_U8Array> {
-  //   return await this.rpcClient.rooch_listStates(access_path, cursor, limit)
-  // }
 }

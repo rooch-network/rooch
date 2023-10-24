@@ -6,11 +6,27 @@
 Module which defines decoding functions.
 
 
+-  [Constants](#@Constants_0)
 -  [Function `base58`](#0x3_decoding_base58)
 -  [Function `base58check`](#0x3_decoding_base58check)
 
 
 <pre><code></code></pre>
+
+
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x3_decoding_ErrorDecodeFailed"></a>
+
+Failed to decode an address
+
+
+<pre><code><b>const</b> <a href="decoding.md#0x3_decoding_ErrorDecodeFailed">ErrorDecodeFailed</a>: u64 = 1;
+</code></pre>
 
 
 

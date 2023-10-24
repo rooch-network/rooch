@@ -9,16 +9,18 @@ use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::moveos_std::event::EventModule;
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::object_ref::ObjectRef;
-use moveos_types::object::ObjectID;
+use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state_resolver::resource_tag_to_key;
 use moveos_types::transaction::FunctionCall;
-use moveos_types::tx_context::TxContext;
-use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionResult;
+use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionWithInfo;
 use rooch_types::account::BalanceInfo;
 use rooch_types::framework::account_coin_store::AccountCoinStoreModule;
 use rooch_types::framework::coin::{CoinInfo, CoinModule};
 use rooch_types::framework::coin_store::CoinStore;
+use rooch_types::transaction::TransactionSequenceInfoMapping;
 use std::collections::HashMap;
 use tokio::runtime::Handle;
 
@@ -135,7 +137,6 @@ impl AggregateService {
                     )
                     .await?
                     .into_iter()
-                    .flatten()
                     .map(|(k, v)| {
                         let coin_store_ref = v.as_move_state::<ObjectRef<CoinStore>>()?;
                         Ok((k, coin_store_ref.id))
@@ -176,11 +177,19 @@ impl AggregateService {
         }
     }
 
-    pub async fn get_transaction_results_by_hash_and_order(
+    pub async fn get_transaction_with_info(
         &self,
         tx_hashes: Vec<H256>,
-        tx_orders: Vec<u128>,
-    ) -> Result<Vec<TransactionResult>> {
+        tx_sequence_info_mapping: Vec<Option<TransactionSequenceInfoMapping>>,
+    ) -> Result<Vec<Option<TransactionWithInfo>>> {
+        // If the tx hash is invalid, filled None when returned.
+        let tx_orders = tx_sequence_info_mapping
+            .clone()
+            .iter()
+            .flatten()
+            .map(|m| m.tx_order)
+            .collect();
+
         let transactions = self
             .rpc_service
             .get_transactions_by_hash(tx_hashes.clone())
@@ -196,26 +205,52 @@ impl AggregateService {
             .get_transaction_execution_infos_by_hash(tx_hashes.clone())
             .await?;
 
-        assert!(
-            transactions.len() == sequence_infos.len()
+        debug_assert!(
+            transactions.len() >= sequence_infos.len()
                 && transactions.len() == execution_infos.len()
         );
-        let mut transaction_results: Vec<TransactionResult> = vec![];
-        for (index, _tx_hash) in tx_hashes.iter().enumerate() {
-            let transaction_result = TransactionResult {
-                transaction: transactions[index].clone().ok_or(anyhow::anyhow!(
-                    "Transaction should have value when construct TransactionResult"
-                ))?,
-                sequence_info: sequence_infos[index].clone().ok_or(anyhow::anyhow!(
-                    "TransactionSequenceInfo should have value when construct TransactionResult"
-                ))?,
-                execution_info: execution_infos[index].clone().ok_or(anyhow::anyhow!(
-                    "TransactionExecutionInfo should have value when construct TransactionResult"
-                ))?,
-            };
-            transaction_results.push(transaction_result)
-        }
-        Ok(transaction_results)
+        let sequence_info_map = sequence_infos
+            .into_iter()
+            .flatten()
+            .map(|sequence_info| (sequence_info.tx_order, sequence_info))
+            .collect::<HashMap<_, _>>(); // collect into a hashmap
+
+        tx_sequence_info_mapping
+            .iter()
+            .enumerate()
+            .map(|(index, tx_mapping_opt)| {
+                match tx_mapping_opt {
+                    Some(tx_mapping) => {
+                        let sequence_info = match sequence_info_map.get(&tx_mapping.tx_order) {
+                            Some(v) => v.clone(),
+                            None => {
+                                return Err(anyhow::anyhow!(
+                                    "TransactionSequenceInfo should exist when construct TransactionWithInfo"
+                                ))
+                            }
+                        };
+                        Ok(Some(TransactionWithInfo {
+                            transaction: transactions[index].clone().ok_or(anyhow::anyhow!(
+                                "Transaction should exist when construct TransactionWithInfo"
+                            ))?,
+                            sequence_info,
+                            execution_info: execution_infos[index].clone().ok_or(anyhow::anyhow!(
+                                "TransactionExecutionInfo should exist when construct TransactionWithInfo"
+                            ))?,
+                        }))
+                    },
+                    None => Ok(None),
+                }
+            })
+            .collect::<Result<Vec<_>>>()
+    }
+
+    pub async fn get_event_handle(
+        &self,
+        event_handle_type: StructTag,
+    ) -> Result<(ObjectID, AccountAddress, u64)> {
+        let event_module = self.as_module_binding::<EventModule>();
+        event_module.get_event_handle(event_handle_type)
     }
 }
 

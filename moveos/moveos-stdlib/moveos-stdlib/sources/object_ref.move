@@ -3,22 +3,28 @@
 
 module moveos_std::object_ref {
 
-    use moveos_std::object_id::ObjectID;
-    use moveos_std::object::{Self, Object};
+    use moveos_std::object::{Self, Object, ObjectID};
     use moveos_std::raw_table;
+
+    friend moveos_std::context;
 
     /// ObjectRef<T> is a reference of the Object<T>
     /// It likes ObjectID, but it contains the type information of the object.
     /// TODO should we support drop?
-    struct ObjectRef<phantom T> has key, store, copy, drop {
+    struct ObjectRef<phantom T> has key, store, drop {
         id: ObjectID,
     }
 
     #[private_generics(T)]
     /// Get the object reference
+    /// This function is protected by private_generics, so it can only be called by the module which defined the T
     /// Note: new ObjectRef need the &mut Object<T>, because the ObjectRef can borrow mutable value from the object
     public fun new<T: key>(object: &mut Object<T>) : ObjectRef<T> {
         //TODO should we track the reference count?
+        new_internal(object)
+    }
+
+    public(friend) fun new_internal<T: key>(object: &mut Object<T>) : ObjectRef<T> {
         ObjectRef {
             id: object::id(object),
         }

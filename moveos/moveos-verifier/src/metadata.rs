@@ -17,7 +17,7 @@ use move_model::ast::Attribute;
 use move_model::model::{FunctionEnv, GlobalEnv, Loc, ModuleEnv};
 use move_model::ty::PrimitiveType;
 use move_model::ty::Type;
-use moveos_types::context::Context;
+use moveos_types::moveos_std::context::Context;
 use moveos_types::state::MoveStructType;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -465,7 +465,7 @@ pub fn is_allowed_input_struct(name: String) -> bool {
         name.as_str(),
         "0x1::string::String"
             | "0x1::ascii::String"
-            | "0x2::object_id::ObjectID"
+            | "0x2::object::ObjectID"
             | "0x2::context::Context"
     )
 }

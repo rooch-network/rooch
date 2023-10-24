@@ -5,7 +5,8 @@ use crate::cli_types::{ArgWithType, CommandAction, TransactionOptions, WalletCon
 use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
-use rooch_key::{key_derive::verify_password, keystore::AccountKeystore};
+use rooch_key::key_derive::verify_password;
+use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, TypeTagView};
 use rooch_types::{
     address::RoochAddress,
@@ -90,24 +91,17 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
             }
             (_, Some(session_key)) => {
                 let tx_data = context.build_tx_data(sender, action).await?;
-                let tx = if context.client_config.is_password_empty {
+                let tx = if context.keystore.get_if_password_is_empty() {
                     context
                         .keystore
                         .sign_transaction_via_session_key(&sender, tx_data, &session_key, None)
                         .map_err(|e| RoochError::SignMessageError(e.to_string()))?
                 } else {
-                    let password = prompt_password(
-                        "Enter the password saved in client config to run functions:",
-                    )
-                    .unwrap_or_default();
+                    let password =
+                        prompt_password("Enter the password to run functions:").unwrap_or_default();
                     let is_verified = verify_password(
                         Some(password.clone()),
-                        context
-                            .client_config
-                            .password_hash
-                            .as_ref()
-                            .cloned()
-                            .unwrap_or_default(),
+                        context.keystore.get_password_hash(),
                     )?;
 
                     if !is_verified {
@@ -129,21 +123,14 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                 context.execute(tx).await
             }
             (None, None) => {
-                if context.client_config.is_password_empty {
+                if context.keystore.get_if_password_is_empty() {
                     context.sign_and_execute(sender, action, None).await
                 } else {
-                    let password = prompt_password(
-                        "Enter the password saved in client config to run functions:",
-                    )
-                    .unwrap_or_default();
+                    let password =
+                        prompt_password("Enter the password to run functions:").unwrap_or_default();
                     let is_verified = verify_password(
                         Some(password.clone()),
-                        context
-                            .client_config
-                            .password_hash
-                            .as_ref()
-                            .cloned()
-                            .unwrap_or_default(),
+                        context.keystore.get_password_hash(),
                     )?;
 
                     if !is_verified {

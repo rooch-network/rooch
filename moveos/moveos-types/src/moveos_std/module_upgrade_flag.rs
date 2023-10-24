@@ -13,7 +13,7 @@ use move_core_types::{
 };
 use serde::{Deserialize, Serialize};
 
-/// `ModuleUpgradeFlag` is represented `moveos_std::move_module::ModuleUpgradeFlag` in Move.
+/// `ModuleUpgradeFlag` is represented `moveos_std::account_storage::ModuleUpgradeFlag` in Move.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct ModuleUpgradeFlag {
     pub is_upgrade: bool,

@@ -8,7 +8,7 @@
 
 module rooch_examples::blog_created {
 
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::ObjectID;
     use rooch_examples::blog::{Self, BlogCreated};
     use std::string::String;
 

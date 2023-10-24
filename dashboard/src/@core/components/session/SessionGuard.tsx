@@ -3,15 +3,15 @@
 
 import React, { ReactNode, useState } from 'react'
 import {
+  Alert,
   Button,
-  TextField,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
   Snackbar,
-  Alert,
+  TextField,
 } from '@mui/material'
 
 // ** Next Import
@@ -20,11 +20,12 @@ import { useRouter } from 'next/router'
 // ** Hooks Import
 import { useAuth } from 'src/hooks/useAuth'
 import { useSession } from 'src/hooks/useSessionAccount'
+import { AccountType } from '../../../context/auth/types'
 
 interface Props {
   open: boolean
   onReqAuthorize: (scope: Array<string>, maxInactiveInterval: number) => void
-  onLogout: () => void
+  onLogout?: () => void
 }
 
 const AuthDialog: React.FC<Props> = ({ open, onReqAuthorize, onLogout }) => {
@@ -75,7 +76,7 @@ const AuthDialog: React.FC<Props> = ({ open, onReqAuthorize, onLogout }) => {
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onLogout}>Logout</Button>
+        {onLogout ? <Button onClick={onLogout}>Logout</Button> : null}
         <Button onClick={handleAuth}>Authorize</Button>
       </DialogActions>
     </Dialog>
@@ -121,7 +122,7 @@ const SessionGuard = (props: SessionGuardProps) => {
         <AuthDialog
           open={isSessionInvalid()}
           onReqAuthorize={handleAuth}
-          onLogout={hanleLogout}
+          onLogout={auth.defaultAccount?.type === AccountType.ROOCH ? hanleLogout : undefined}
         ></AuthDialog>
         <Snackbar
           open={errorMsg !== null}

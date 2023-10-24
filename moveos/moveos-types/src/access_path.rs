@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    move_string::MoveString,
+    move_std::string::MoveString,
     move_types::{random_identity, random_struct_tag},
-    object::{NamedTableID, ObjectID},
+    moveos_std::object::{NamedTableID, ObjectID},
     state_resolver::{self, module_name_to_key, resource_tag_to_key},
 };
 use move_core_types::{
@@ -109,10 +109,14 @@ impl FromStr for Path {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.trim_start_matches('/');
         let mut iter = s.split('/');
-        let path_type = iter.next().ok_or_else(|| anyhow::anyhow!("Invalid path"))?;
+        let path_type = iter
+            .next()
+            .ok_or_else(|| anyhow::anyhow!("Invalid access path"))?;
         match path_type {
             "object" => {
-                let object_ids = iter.next().ok_or_else(|| anyhow::anyhow!("Invalid path"))?;
+                let object_ids = iter
+                    .next()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid access path"))?;
                 let object_ids = object_ids
                     .split(',')
                     .map(ObjectID::from_str)
@@ -120,7 +124,9 @@ impl FromStr for Path {
                 Ok(Path::Object { object_ids })
             }
             "resource" => {
-                let account = iter.next().ok_or_else(|| anyhow::anyhow!("Invalid path"))?;
+                let account = iter
+                    .next()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid access path"))?;
                 let account = AccountAddress::from_hex_literal(account)?;
                 let resource_types = match iter.next() {
                     Some(v) => Some(
@@ -137,7 +143,9 @@ impl FromStr for Path {
                 })
             }
             "module" => {
-                let account = iter.next().ok_or_else(|| anyhow::anyhow!("Invalid path"))?;
+                let account = iter
+                    .next()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid access path"))?;
                 let account = AccountAddress::from_hex_literal(account)?;
                 let module_names = match iter.next() {
                     Some(v) => Some(
@@ -154,15 +162,18 @@ impl FromStr for Path {
                 })
             }
             "table" => {
-                let table_handle = iter.next().ok_or_else(|| anyhow::anyhow!("Invalid path"))?;
+                let table_handle = iter
+                    .next()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid access path"))?;
                 let table_handle = ObjectID::from_str(table_handle)?;
 
                 let keys = match iter.next() {
                     Some(v) => Some(
                         v.split(',')
                             .map(|key| match key.strip_prefix("0x") {
-                                Some(key) => hex::decode(key)
-                                    .map_err(|_| anyhow::anyhow!("Invalid path key: {}", key)),
+                                Some(key) => hex::decode(key).map_err(|_| {
+                                    anyhow::anyhow!("Invalid access path key: {}", key)
+                                }),
                                 None => {
                                     let move_str = MoveString::from_str(key)?;
                                     Ok(bcs::to_bytes(&move_str)?)
@@ -175,7 +186,7 @@ impl FromStr for Path {
 
                 Ok(Path::Table { table_handle, keys })
             }
-            _ => Err(anyhow::anyhow!("Invalid path: {}", s)),
+            _ => Err(anyhow::anyhow!("Invalid access path: {}", s)),
         }
     }
 }

@@ -11,7 +11,6 @@
 -  [Function `sequence_number`](#0x2_tx_context_sequence_number)
 -  [Function `max_gas_amount`](#0x2_tx_context_max_gas_amount)
 -  [Function `fresh_address`](#0x2_tx_context_fresh_address)
--  [Function `fresh_object_id`](#0x2_tx_context_fresh_object_id)
 -  [Function `derive_id`](#0x2_tx_context_derive_id)
 -  [Function `tx_hash`](#0x2_tx_context_tx_hash)
 -  [Function `add`](#0x2_tx_context_add)
@@ -28,7 +27,6 @@
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 <b>use</b> <a href="copyable_any.md#0x2_copyable_any">0x2::copyable_any</a>;
-<b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="simple_map.md#0x2_simple_map">0x2::simple_map</a>;
 <b>use</b> <a href="tx_meta.md#0x2_tx_meta">0x2::tx_meta</a>;
 <b>use</b> <a href="tx_result.md#0x2_tx_result">0x2::tx_result</a>;
@@ -207,31 +205,6 @@ Generate a new unique address,
     <b>let</b> addr = <a href="tx_context.md#0x2_tx_context_derive_id">derive_id</a>(ctx.tx_hash, ctx.ids_created);
     ctx.ids_created = ctx.ids_created + 1;
     addr
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_tx_context_fresh_object_id"></a>
-
-## Function `fresh_object_id`
-
-Generate a new unique object ID
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_fresh_object_id">fresh_object_id</a>(ctx: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_fresh_object_id">fresh_object_id</a>(ctx: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): ObjectID {
-    <a href="object_id.md#0x2_object_id_address_to_object_id">object_id::address_to_object_id</a>(<a href="tx_context.md#0x2_tx_context_fresh_address">fresh_address</a>(ctx))
 }
 </code></pre>
 

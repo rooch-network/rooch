@@ -19,14 +19,14 @@ use move_vm_types::{
 use smallvec::smallvec;
 use std::collections::VecDeque;
 
-pub const INVALID_SIGNATURE: u64 = 0;
-pub const INVALID_PUBKEY: u64 = 1;
+pub const E_INVALID_SIGNATURE: u64 = 1;
+pub const E_INVALID_PUBKEY: u64 = 2;
 
 pub const KECCAK256: u8 = 0;
 pub const SHA256: u8 = 1;
 
 pub fn native_verify(
-    _gas_params: &FromBytesGasParameters,
+    gas_params: &FromBytesGasParameters,
     _context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -46,14 +46,14 @@ pub fn native_verify(
 
     // TODO(Gas): Charge the arg size dependent costs
 
-    let cost = 0.into();
+    let cost = gas_params.base;
 
     let Ok(sig) = <Secp256k1Signature as ToFromBytes>::from_bytes(&signature_bytes_ref) else {
-        return Ok(NativeResult::err(cost, INVALID_SIGNATURE));
+        return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_INVALID_SIGNATURE)));
     };
 
     let Ok(public_key) = <Secp256k1PublicKey as ToFromBytes>::from_bytes(&public_key_bytes_ref) else {
-        return Ok(NativeResult::err(cost, INVALID_PUBKEY));
+        return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_INVALID_PUBKEY)));
     };
 
     let result = match hash {

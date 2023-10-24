@@ -4,7 +4,8 @@
 use crate::binding_test;
 use ethers::prelude::*;
 use moveos_types::transaction::MoveAction;
-use rooch_key::keystore::{AccountKeystore, InMemKeystore};
+use rooch_key::keystore::account_keystore::AccountKeystore;
+use rooch_key::keystore::memory_keystore::InMemKeystore;
 use rooch_types::framework::ethereum_light_client::BlockHeader;
 use rooch_types::transaction::rooch::RoochTransactionData;
 

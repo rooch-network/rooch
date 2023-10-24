@@ -47,7 +47,6 @@ const ETHProvider = ({ children }: Props) => {
 
   useEffect(() => {
     setLoading(true)
-
     const refreshAccounts = (newAccounts: any) => {
       if (newAccounts && newAccounts.length > 0) {
         updateWallet(newAccounts)
@@ -55,7 +54,6 @@ const ETHProvider = ({ children }: Props) => {
         updateWallet([])
       }
     }
-
     const refreshChina = (chainId: any) => {
       setChainId(chainId)
 
@@ -112,6 +110,8 @@ const ETHProvider = ({ children }: Props) => {
       })
       .then((accounts: any) => {
         updateWallet(accounts)
+
+        return accounts
       })
   }
 
@@ -146,9 +146,9 @@ const ETHProvider = ({ children }: Props) => {
   }
 
   const disconnect = async () => {
-    if (window.ethereum?.isConnected()) {
-      console.log(window.ethereum)
-    }
+    // if (window.ethereum?.isConnected()) {
+    //   console.log(window.ethereum)
+    // }
   }
 
   const values = {

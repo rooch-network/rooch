@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::account_view::BalanceInfoView;
-use crate::jsonrpc_types::transaction_view::TransactionResultView;
+use crate::jsonrpc_types::transaction_view::TransactionWithInfoView;
 use crate::jsonrpc_types::{
-    AccessPathView, AccountAddressView, AnnotatedFunctionResultView, AnnotatedStateView,
-    EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
-    ListAnnotatedStatesPageView, ListBalanceInfoPageView, ListStatesPageView, StateView, StrView,
-    StructTagView, TransactionResultPageView,
+    AccessPathView, AccountAddressView, AnnotatedFunctionResultView, BalanceInfoPageView,
+    BytesView, EventOptions, EventPageView, ExecuteTransactionResponseView, FunctionCallView,
+    H256View, StateOptions, StateView, StatesPageView, StrView, StructTagView,
+    TransactionWithInfoPageView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -23,14 +23,14 @@ pub trait RoochAPI {
     /// Send the signed transaction in bcs hex format
     /// This method does not block waiting for the transaction to be executed.
     #[method(name = "sendRawTransaction")]
-    async fn send_raw_transaction(&self, tx_bcs_hex: StrView<Vec<u8>>) -> RpcResult<H256View>;
+    async fn send_raw_transaction(&self, tx_bcs_hex: BytesView) -> RpcResult<H256View>;
 
     /// Send the signed transaction in bcs hex format
     /// This method blocks waiting for the transaction to be executed.
     #[method(name = "executeRawTransaction")]
     async fn execute_raw_transaction(
         &self,
-        tx_bcs_hex: StrView<Vec<u8>>,
+        tx_bcs_hex: BytesView,
     ) -> RpcResult<ExecuteTransactionResponseView>;
 
     /// Execute a read-only function call
@@ -42,57 +42,47 @@ pub trait RoochAPI {
     ) -> RpcResult<AnnotatedFunctionResultView>;
 
     /// Get the states by access_path
+    /// If the StateOptions.decode is true, the state is decoded and the decoded value is returned in the response.
     #[method(name = "getStates")]
-    async fn get_states(&self, access_path: AccessPathView) -> RpcResult<Vec<Option<StateView>>>;
-
-    /// Get the annotated states by access_path
-    /// The annotated states include the decoded move value of the state
-    #[method(name = "getAnnotatedStates")]
-    async fn get_annotated_states(
+    async fn get_states(
         &self,
         access_path: AccessPathView,
-    ) -> RpcResult<Vec<Option<AnnotatedStateView>>>;
+        state_option: Option<StateOptions>,
+    ) -> RpcResult<Vec<Option<StateView>>>;
 
     /// List the states by access_path
+    /// If the StateOptions.decode is true, the state is decoded and the decoded value is returned in the response.
     #[method(name = "listStates")]
     async fn list_states(
         &self,
         access_path: AccessPathView,
-        cursor: Option<StrView<Vec<u8>>>,
-        limit: Option<usize>,
-    ) -> RpcResult<ListStatesPageView>;
-
-    /// List the annotated states by access_path
-    /// The annotated states include the decoded move value of the state
-    #[method(name = "listAnnotatedStates")]
-    async fn list_annotated_states(
-        &self,
-        access_path: AccessPathView,
-        cursor: Option<StrView<Vec<u8>>>,
-        limit: Option<usize>,
-    ) -> RpcResult<ListAnnotatedStatesPageView>;
+        cursor: Option<BytesView>,
+        limit: Option<StrView<usize>>,
+        state_option: Option<StateOptions>,
+    ) -> RpcResult<StatesPageView>;
 
     /// Get the events by event handle id
     #[method(name = "getEventsByEventHandle")]
     async fn get_events_by_event_handle(
         &self,
         event_handle_type: StructTagView,
-        cursor: Option<u64>,
-        limit: Option<u64>,
+        cursor: Option<StrView<u64>>,
+        limit: Option<StrView<u64>>,
+        event_options: Option<EventOptions>,
     ) -> RpcResult<EventPageView>;
 
     #[method(name = "getTransactionsByHash")]
     async fn get_transactions_by_hash(
         &self,
         tx_hashes: Vec<H256View>,
-    ) -> RpcResult<Vec<Option<TransactionResultView>>>;
+    ) -> RpcResult<Vec<Option<TransactionWithInfoView>>>;
 
     #[method(name = "getTransactionsByOrder")]
     async fn get_transactions_by_order(
         &self,
-        cursor: Option<u128>,
-        limit: Option<u64>,
-    ) -> RpcResult<TransactionResultPageView>;
+        cursor: Option<StrView<u128>>,
+        limit: Option<StrView<u64>>,
+    ) -> RpcResult<TransactionWithInfoPageView>;
 
     /// get account balance by AccountAddress and CoinType
     #[method(name = "getBalance")]
@@ -107,7 +97,7 @@ pub trait RoochAPI {
     async fn get_balances(
         &self,
         account_addr: AccountAddressView,
-        cursor: Option<StrView<Vec<u8>>>,
-        limit: Option<usize>,
-    ) -> RpcResult<ListBalanceInfoPageView>;
+        cursor: Option<BytesView>,
+        limit: Option<StrView<usize>>,
+    ) -> RpcResult<BalanceInfoPageView>;
 }

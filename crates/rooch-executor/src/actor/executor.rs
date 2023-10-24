@@ -7,7 +7,8 @@ use super::messages::{
     StatesMessage, ValidateTransactionMessage,
 };
 use crate::actor::messages::{
-    GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage, ListStatesMessage,
+    GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage,
+    ListStatesMessage,
 };
 use accumulator::inmemory::InMemoryAccumulator;
 use anyhow::Result;
@@ -20,21 +21,21 @@ use moveos::moveos::MoveOS;
 use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_store::transaction_store::TransactionStore;
 use moveos_store::MoveOSStore;
-use moveos_types::event::AnnotatedMoveOSEvent;
-use moveos_types::event::EventHandle;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::as_struct_tag;
+use moveos_types::moveos_std::event::AnnotatedEvent;
+use moveos_types::moveos_std::event::EventHandle;
+use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::state_resolver::{AnnotatedStateReader, StateReader};
 use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
-use moveos_types::tx_context::TxContext;
 use rooch_genesis::RoochGenesis;
 use rooch_store::RoochStore;
 use rooch_types::address::MultiChainAddress;
@@ -306,10 +307,10 @@ impl Handler<ExecuteViewFunctionMessage> for ExecutorActor {
                     values
                         .into_iter()
                         .map(|v| {
-                            let move_value = resoler.view_value(&v.type_tag, &v.value)?;
+                            let decoded_value = resoler.view_value(&v.type_tag, &v.value)?;
                             Ok(AnnotatedFunctionReturnValue {
                                 value: v,
-                                move_value,
+                                decoded_value,
                             })
                         })
                         .collect::<Result<Vec<AnnotatedFunctionReturnValue>, anyhow::Error>>()?,
@@ -361,7 +362,7 @@ impl Handler<ListStatesMessage> for ExecutorActor {
         &mut self,
         msg: ListStatesMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Vec<Option<(Vec<u8>, State)>>, anyhow::Error> {
+    ) -> Result<Vec<(Vec<u8>, State)>, anyhow::Error> {
         let statedb = self.moveos.moveos_resolver();
         statedb.list_states(msg.access_path, msg.cursor, msg.limit)
     }
@@ -373,7 +374,7 @@ impl Handler<ListAnnotatedStatesMessage> for ExecutorActor {
         &mut self,
         msg: ListAnnotatedStatesMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Vec<Option<(Vec<u8>, AnnotatedState)>>, anyhow::Error> {
+    ) -> Result<Vec<(Vec<u8>, AnnotatedState)>, anyhow::Error> {
         let statedb = self.moveos.moveos_resolver();
         statedb.list_annotated_states(msg.access_path, msg.cursor, msg.limit)
     }
@@ -385,7 +386,7 @@ impl Handler<GetEventsByEventHandleMessage> for ExecutorActor {
         &mut self,
         msg: GetEventsByEventHandleMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Vec<Option<AnnotatedMoveOSEvent>>> {
+    ) -> Result<Vec<AnnotatedEvent>> {
         let GetEventsByEventHandleMessage {
             event_handle_type,
             cursor,
@@ -397,24 +398,42 @@ impl Handler<GetEventsByEventHandleMessage> for ExecutorActor {
         let event_handle_id = EventHandle::derive_event_handle_id(event_handle_type.clone());
         let events = event_store.get_events_by_event_handle_id(&event_handle_id, cursor, limit)?;
 
-        // for ev in events
-        let result = events
+        events
             .into_iter()
-            // .enumerate()
             .map(|event| {
-                let state = State::new(event.event_data.clone(), event.type_tag.clone());
-                let annotated_event_data = MoveValueAnnotator::new(resolver)
-                    .view_resource(&event_handle_type, state.value.as_slice())
-                    .unwrap();
-                Some(AnnotatedMoveOSEvent::new(
-                    event,
-                    annotated_event_data,
-                    None,
-                    None,
-                ))
+                let event_move_value = MoveValueAnnotator::new(resolver)
+                    .view_resource(&event_handle_type, event.event_data())?;
+                Ok(AnnotatedEvent::new(event, event_move_value))
             })
-            .collect();
-        Ok(result)
+            .collect::<Result<Vec<_>>>()
+    }
+}
+
+#[async_trait]
+impl Handler<GetEventsByEventIDsMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: GetEventsByEventIDsMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<Option<AnnotatedEvent>>> {
+        let GetEventsByEventIDsMessage { event_ids } = msg;
+        let event_store = self.moveos.event_store();
+        let resolver = self.moveos.moveos_resolver();
+
+        event_store
+            .multi_get_events(event_ids)?
+            .into_iter()
+            .map(|v| match v {
+                Some(event) => {
+                    let event_move_value = MoveValueAnnotator::new(resolver).view_resource(
+                        &as_struct_tag(event.type_tag.clone())?,
+                        event.event_data(),
+                    )?;
+                    Ok(Some(AnnotatedEvent::new(event, event_move_value)))
+                }
+                None => Ok(None),
+            })
+            .collect::<Result<Vec<_>>>()
     }
 }
 
@@ -424,29 +443,21 @@ impl Handler<GetEventsMessage> for ExecutorActor {
         &mut self,
         msg: GetEventsMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Vec<Option<AnnotatedMoveOSEvent>>> {
+    ) -> Result<Vec<AnnotatedEvent>> {
         let GetEventsMessage { filter } = msg;
         let event_store = self.moveos.event_store();
         let resolver = self.moveos.moveos_resolver();
-        //TODO handle tx hash
-        let mut result: Vec<Option<AnnotatedMoveOSEvent>> = Vec::new();
+
         let events = event_store.get_events_with_filter(filter)?;
-        for ev in events
+        events
             .into_iter()
-            .enumerate()
-            .map(|(_i, event)| {
-                let state = State::new(event.event_data.clone(), event.type_tag.clone());
-                let struct_tag = as_struct_tag(event.type_tag.clone()).unwrap();
-                let annotated_event_data = MoveValueAnnotator::new(resolver)
-                    .view_resource(&struct_tag, state.value.as_slice())
-                    .unwrap();
-                AnnotatedMoveOSEvent::new(event, annotated_event_data, None, None)
+            .map(|event| {
+                let struct_tag = as_struct_tag(event.type_tag.clone())?;
+                let event_move_value = MoveValueAnnotator::new(resolver)
+                    .view_resource(&struct_tag, event.event_data())?;
+                Ok(AnnotatedEvent::new(event, event_move_value))
             })
-            .collect::<Vec<_>>()
-        {
-            result.push(Some(ev));
-        }
-        Ok(result)
+            .collect::<Result<Vec<_>>>()
     }
 }
 

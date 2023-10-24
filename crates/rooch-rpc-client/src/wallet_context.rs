@@ -10,7 +10,9 @@ use moveos_types::transaction::MoveAction;
 use rooch_config::config::{Config, PersistedConfig};
 use rooch_config::server_config::ServerConfig;
 use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_SERVER_CONFIG};
-use rooch_key::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
+use rooch_key::keystore::account_keystore::AccountKeystore;
+use rooch_key::keystore::file_keystore::FileBasedKeystore;
+use rooch_key::keystore::Keystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView};
 use rooch_types::address::RoochAddress;
 use rooch_types::crypto::Signature;
@@ -133,7 +135,7 @@ impl WalletContext {
     ) -> RoochResult<RoochTransaction> {
         let kp = self
             .keystore
-            .get_key_pair_by_password(&sender, password)
+            .get_key_pair_with_password(&sender, password)
             .ok()
             .ok_or_else(|| {
                 RoochError::SignMessageError(format!(

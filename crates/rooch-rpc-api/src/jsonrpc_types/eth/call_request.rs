@@ -1,10 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::jsonrpc_types::bytes::Bytes;
 use crate::jsonrpc_types::eth::AccessList;
+use crate::jsonrpc_types::BytesView;
+use crate::jsonrpc_types::H160View;
 use crate::jsonrpc_types::StrView;
-use ethers::types::{H160, U256};
+use ethers::types::U256;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -17,9 +18,9 @@ pub struct CallRequest {
     #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     pub transaction_type: Option<StrView<u64>>,
     /// From
-    pub from: Option<StrView<H160>>,
+    pub from: Option<H160View>,
     /// To
-    pub to: Option<StrView<H160>>,
+    pub to: Option<H160View>,
     /// Gas Price
     #[serde(skip_serializing_if = "Option::is_none")]
     pub gas_price: Option<StrView<U256>>,
@@ -31,7 +32,7 @@ pub struct CallRequest {
     /// Value
     pub value: Option<StrView<U256>>,
     /// Data
-    pub data: Option<Bytes>,
+    pub data: Option<BytesView>,
     /// Nonce
     pub nonce: Option<StrView<U256>>,
     /// Access list

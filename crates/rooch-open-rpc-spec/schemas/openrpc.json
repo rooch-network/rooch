@@ -56,36 +56,6 @@
       }
     },
     {
-      "name": "rooch_getAnnotatedStates",
-      "description": "Get the annotated states by access_path The annotated states include the decoded move value of the state",
-      "params": [
-        {
-          "name": "access_path",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/moveos_types::access_path::AccessPath"
-          }
-        }
-      ],
-      "result": {
-        "name": "Vec<Option<AnnotatedStateView>>",
-        "required": true,
-        "schema": {
-          "type": "array",
-          "items": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AnnotatedStateView"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
       "name": "rooch_getBalance",
       "description": "get account balance by AccountAddress and CoinType",
       "params": [
@@ -132,14 +102,12 @@
         {
           "name": "limit",
           "schema": {
-            "type": "integer",
-            "format": "uint",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/usize"
           }
         }
       ],
       "result": {
-        "name": "ListBalanceInfoPageView",
+        "name": "BalanceInfoPageView",
         "required": true,
         "schema": {
           "$ref": "#/components/schemas/PageView_for_BalanceInfoView_and_alloc::vec::Vec<u8>"
@@ -171,17 +139,19 @@
         {
           "name": "cursor",
           "schema": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           }
         },
         {
           "name": "limit",
           "schema": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
+          }
+        },
+        {
+          "name": "event_options",
+          "schema": {
+            "$ref": "#/components/schemas/EventOptions"
           }
         }
       ],
@@ -189,19 +159,25 @@
         "name": "EventPageView",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_Nullable_AnnotatedEventView_and_uint64"
+          "$ref": "#/components/schemas/PageView_for_EventView_and_uint64"
         }
       }
     },
     {
       "name": "rooch_getStates",
-      "description": "Get the states by access_path",
+      "description": "Get the states by access_path If the StateOptions.decode is true, the state is decoded and the decoded value is returned in the response.",
       "params": [
         {
           "name": "access_path",
           "required": true,
           "schema": {
             "$ref": "#/components/schemas/moveos_types::access_path::AccessPath"
+          }
+        },
+        {
+          "name": "state_option",
+          "schema": {
+            "$ref": "#/components/schemas/StateOptions"
           }
         }
       ],
@@ -232,20 +208,20 @@
           "schema": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/H256View"
+              "$ref": "#/components/schemas/primitive_types::H256"
             }
           }
         }
       ],
       "result": {
-        "name": "Vec<Option<TransactionResultView>>",
+        "name": "Vec<Option<TransactionWithInfoView>>",
         "required": true,
         "schema": {
           "type": "array",
           "items": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/TransactionResultView"
+                "$ref": "#/components/schemas/TransactionWithInfoView"
               },
               {
                 "type": "null"
@@ -261,65 +237,27 @@
         {
           "name": "cursor",
           "schema": {
-            "type": "integer",
-            "format": "uint128",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u128"
           }
         },
         {
           "name": "limit",
           "schema": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/u64"
           }
         }
       ],
       "result": {
-        "name": "TransactionResultPageView",
+        "name": "TransactionWithInfoPageView",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_TransactionResultView_and_uint128"
-        }
-      }
-    },
-    {
-      "name": "rooch_listAnnotatedStates",
-      "description": "List the annotated states by access_path The annotated states include the decoded move value of the state",
-      "params": [
-        {
-          "name": "access_path",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/moveos_types::access_path::AccessPath"
-          }
-        },
-        {
-          "name": "cursor",
-          "schema": {
-            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
-          }
-        },
-        {
-          "name": "limit",
-          "schema": {
-            "type": "integer",
-            "format": "uint",
-            "minimum": 0.0
-          }
-        }
-      ],
-      "result": {
-        "name": "ListAnnotatedStatesPageView",
-        "required": true,
-        "schema": {
-          "$ref": "#/components/schemas/PageView_for_Nullable_AnnotatedStateView_and_alloc::vec::Vec<u8>"
+          "$ref": "#/components/schemas/PageView_for_TransactionWithInfoView_and_uint128"
         }
       }
     },
     {
       "name": "rooch_listStates",
-      "description": "List the states by access_path",
+      "description": "List the states by access_path If the StateOptions.decode is true, the state is decoded and the decoded value is returned in the response.",
       "params": [
         {
           "name": "access_path",
@@ -337,17 +275,21 @@
         {
           "name": "limit",
           "schema": {
-            "type": "integer",
-            "format": "uint",
-            "minimum": 0.0
+            "$ref": "#/components/schemas/usize"
+          }
+        },
+        {
+          "name": "state_option",
+          "schema": {
+            "$ref": "#/components/schemas/StateOptions"
           }
         }
       ],
       "result": {
-        "name": "ListStatesPageView",
+        "name": "StatesPageView",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_Nullable_StateView_and_alloc::vec::Vec<u8>"
+          "$ref": "#/components/schemas/PageView_for_StateView_and_alloc::vec::Vec<u8>"
         }
       }
     },
@@ -367,50 +309,13 @@
         "name": "H256View",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/H256View"
+          "$ref": "#/components/schemas/primitive_types::H256"
         }
       }
     }
   ],
   "components": {
     "schemas": {
-      "AnnotatedEventView": {
-        "type": "object",
-        "required": [
-          "event",
-          "parsed_event_data",
-          "sender"
-        ],
-        "properties": {
-          "event": {
-            "$ref": "#/components/schemas/EventView"
-          },
-          "parsed_event_data": {
-            "$ref": "#/components/schemas/AnnotatedMoveStructView"
-          },
-          "sender": {
-            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
-          },
-          "timestamp_ms": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "uint64",
-            "minimum": 0.0
-          },
-          "tx_hash": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/H256View"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        }
-      },
       "AnnotatedFunctionResultView": {
         "type": "object",
         "required": [
@@ -434,11 +339,11 @@
       "AnnotatedFunctionReturnValueView": {
         "type": "object",
         "required": [
-          "move_value",
+          "decoded_value",
           "value"
         ],
         "properties": {
-          "move_value": {
+          "decoded_value": {
             "$ref": "#/components/schemas/AnnotatedMoveValueView"
           },
           "value": {
@@ -524,21 +429,6 @@
           }
         ]
       },
-      "AnnotatedStateView": {
-        "type": "object",
-        "required": [
-          "move_value",
-          "state"
-        ],
-        "properties": {
-          "move_value": {
-            "$ref": "#/components/schemas/AnnotatedMoveValueView"
-          },
-          "state": {
-            "$ref": "#/components/schemas/StateView"
-          }
-        }
-      },
       "AuthenticatorView": {
         "type": "object",
         "required": [
@@ -611,6 +501,16 @@
           }
         }
       },
+      "EventOptions": {
+        "type": "object",
+        "properties": {
+          "decode": {
+            "description": "If true, the event is decoded and the decoded value is returned in the response.",
+            "default": false,
+            "type": "boolean"
+          }
+        }
+      },
       "EventView": {
         "type": "object",
         "required": [
@@ -620,6 +520,16 @@
           "type_tag"
         ],
         "properties": {
+          "decoded_event_data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnnotatedMoveStructView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "event_data": {
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
           },
@@ -694,9 +604,6 @@
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
           }
         }
-      },
-      "H256View": {
-        "$ref": "#/components/schemas/Hex"
       },
       "Hex": {
         "description": "Hex string encoding.",
@@ -887,6 +794,16 @@
               "value_type"
             ],
             "properties": {
+              "decoded_value": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/AnnotatedMoveValueView"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "type": {
                 "type": "string",
                 "enum": [
@@ -909,6 +826,16 @@
               "value_type"
             ],
             "properties": {
+              "decoded_value": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/AnnotatedMoveValueView"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "type": {
                 "type": "string",
                 "enum": [
@@ -968,7 +895,7 @@
           }
         }
       },
-      "PageView_for_Nullable_AnnotatedEventView_and_uint64": {
+      "PageView_for_EventView_and_uint64": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -979,14 +906,7 @@
           "data": {
             "type": "array",
             "items": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/AnnotatedEventView"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "$ref": "#/components/schemas/EventView"
             }
           },
           "has_next_page": {
@@ -1002,7 +922,7 @@
           }
         }
       },
-      "PageView_for_Nullable_AnnotatedStateView_and_alloc::vec::Vec<u8>": {
+      "PageView_for_StateView_and_alloc::vec::Vec<u8>": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -1013,14 +933,7 @@
           "data": {
             "type": "array",
             "items": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/AnnotatedStateView"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "$ref": "#/components/schemas/StateView"
             }
           },
           "has_next_page": {
@@ -1038,7 +951,7 @@
           }
         }
       },
-      "PageView_for_Nullable_StateView_and_alloc::vec::Vec<u8>": {
+      "PageView_for_TransactionWithInfoView_and_uint128": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -1049,43 +962,7 @@
           "data": {
             "type": "array",
             "items": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/StateView"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            }
-          },
-          "has_next_page": {
-            "type": "boolean"
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        }
-      },
-      "PageView_for_TransactionResultView_and_uint128": {
-        "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
-        "type": "object",
-        "required": [
-          "data",
-          "has_next_page"
-        ],
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TransactionResultView"
+              "$ref": "#/components/schemas/TransactionWithInfoView"
             }
           },
           "has_next_page": {
@@ -1169,6 +1046,16 @@
           }
         }
       },
+      "StateOptions": {
+        "type": "object",
+        "properties": {
+          "decode": {
+            "description": "If true, the state is decoded and the decoded value is returned in the response.",
+            "default": false,
+            "type": "boolean"
+          }
+        }
+      },
       "StateView": {
         "type": "object",
         "required": [
@@ -1176,6 +1063,16 @@
           "value_type"
         ],
         "properties": {
+          "decoded_value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnnotatedMoveValueView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "value": {
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
           },
@@ -1220,7 +1117,7 @@
         ],
         "properties": {
           "event_root": {
-            "$ref": "#/components/schemas/H256View"
+            "$ref": "#/components/schemas/primitive_types::H256"
           },
           "gas_used": {
             "type": "integer",
@@ -1228,13 +1125,13 @@
             "minimum": 0.0
           },
           "state_root": {
-            "$ref": "#/components/schemas/H256View"
+            "$ref": "#/components/schemas/primitive_types::H256"
           },
           "status": {
             "$ref": "#/components/schemas/KeptVMStatusView"
           },
           "tx_hash": {
-            "$ref": "#/components/schemas/H256View"
+            "$ref": "#/components/schemas/primitive_types::H256"
           }
         }
       },
@@ -1266,25 +1163,6 @@
           }
         }
       },
-      "TransactionResultView": {
-        "type": "object",
-        "required": [
-          "execution_info",
-          "sequence_info",
-          "transaction"
-        ],
-        "properties": {
-          "execution_info": {
-            "$ref": "#/components/schemas/TransactionExecutionInfoView"
-          },
-          "sequence_info": {
-            "$ref": "#/components/schemas/TransactionSequenceInfoView"
-          },
-          "transaction": {
-            "$ref": "#/components/schemas/TransactionView"
-          }
-        }
-      },
       "TransactionSequenceInfoView": {
         "type": "object",
         "required": [
@@ -1294,7 +1172,7 @@
         ],
         "properties": {
           "tx_accumulator_root": {
-            "$ref": "#/components/schemas/H256View"
+            "$ref": "#/components/schemas/primitive_types::H256"
           },
           "tx_order": {
             "$ref": "#/components/schemas/u128"
@@ -1341,6 +1219,25 @@
           },
           "transaction_type": {
             "$ref": "#/components/schemas/TransactionTypeView"
+          }
+        }
+      },
+      "TransactionWithInfoView": {
+        "type": "object",
+        "required": [
+          "execution_info",
+          "sequence_info",
+          "transaction"
+        ],
+        "properties": {
+          "execution_info": {
+            "$ref": "#/components/schemas/TransactionExecutionInfoView"
+          },
+          "sequence_info": {
+            "$ref": "#/components/schemas/TransactionSequenceInfoView"
+          },
+          "transaction": {
+            "$ref": "#/components/schemas/TransactionView"
           }
         }
       },
@@ -1450,10 +1347,16 @@
       "moveos_types::move_types::FunctionId": {
         "type": "string"
       },
+      "primitive_types::H256": {
+        "type": "string"
+      },
       "u128": {
         "type": "string"
       },
       "u64": {
+        "type": "string"
+      },
+      "usize": {
         "type": "string"
       }
     }

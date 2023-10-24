@@ -137,15 +137,16 @@ module rooch_framework::account {
 
    public(friend) fun increment_sequence_number(ctx: &mut Context) {
       let sender = context::sender(ctx);
+      let tx_sequence_number = context::sequence_number(ctx);
 
-      let sequence_number = &mut account_storage::global_borrow_mut<Account>(ctx, sender).sequence_number;
+      let account = account_storage::global_borrow_mut<Account>(ctx, sender);
 
       assert!(
-         (*sequence_number as u128) < MAX_U64,
+         (account.sequence_number as u128) < MAX_U64,
          error::out_of_range(ErrorSequenceNumberTooBig)
       );
 
-      *sequence_number = *sequence_number + 1;
+      account.sequence_number = tx_sequence_number + 1;
    }
 
    /// Helper to return the sequence number field for given `account`

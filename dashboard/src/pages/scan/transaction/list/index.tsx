@@ -19,7 +19,7 @@ import { fetchData } from 'src/store/scan/transaction'
 import { useAppDispatch, useAppSelector } from 'src/store'
 
 // ** SDK Imports
-import { TransactionResultView } from '@rooch/sdk'
+import { TransactionWithInfoView } from '@rooch/sdk'
 
 // ** Utils
 import { formatAddress } from 'src/@core/utils/format'
@@ -30,7 +30,7 @@ import { useRooch } from '../../../../hooks/useRooch'
 // import toast from "react-hot-toast";
 
 interface CellType {
-  row: TransactionResultView
+  row: TransactionWithInfoView
 }
 
 // ** Styled components
@@ -125,11 +125,6 @@ const TransactionList = () => {
   // const clipboard = useClipboard()
 
   useEffect(() => {
-    // Ignore part of request
-    // if ((!result.has_next_page && status === 'finished') || status === 'loading') {
-    //   return
-    // }
-    // TODO : fix
     dispatch(
       fetchData({
         cursor: 0,
@@ -147,14 +142,14 @@ const TransactionList = () => {
         pagination
         disableColumnMenu={true}
         rowCount={
-          status === 'finished'
+          status === 'finished' && result.data
             ? result.has_next_page
               ? result.data.length + 1
               : result.data.length
             : 0
         }
         rows={
-          status === 'finished'
+          status === 'finished' && result.data
             ? result.data.map((row) => ({ ...row, id: row.execution_info.tx_hash }))
             : []
         }

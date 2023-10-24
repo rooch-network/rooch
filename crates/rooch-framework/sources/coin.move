@@ -5,7 +5,7 @@
 module rooch_framework::coin {
     use std::string;
     use std::error;
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::ObjectID;
     use moveos_std::table;
     use moveos_std::table::Table;
     use moveos_std::account_storage;

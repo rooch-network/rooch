@@ -2,6 +2,9 @@
   "installation": "Installation",
   "cli": "CLI",
   "quick-start": "Quick start",
+  "connect-devnet": "Connect to devnet",
+  "run-local-testnet": "Run a local testnet",
+  "local-env": "Local dev environment",
   "faucet": {
     "title": "Faucet",
     "display": "hidden"
@@ -9,7 +12,6 @@
   "address-space": "Address space",
   "library": "Library",
   "create-rooch-move-contract": "Create Rooch Move contract",
-  "start-server": "Start server",
   "object": "Object",
   "interactive-ethereum": {
     "title": "Interactive with Ethereum",

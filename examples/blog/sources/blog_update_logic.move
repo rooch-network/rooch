@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_examples::blog_update_logic {
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::ObjectID;
     use moveos_std::context::Context;
     use rooch_examples::blog;
     use rooch_examples::blog_updated;

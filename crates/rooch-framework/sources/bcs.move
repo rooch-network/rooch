@@ -9,6 +9,9 @@
 /// a general conversion back-and-force is needed, consider the `moveos_std::Any` type which preserves invariants.
 module rooch_framework::bcs {
 
+    /// The request Move type is not match with input Move type.
+    const ErrorTypeNotMatch: u64 = 1;
+
     public fun to_bytes<MoveValue>(v: &MoveValue): vector<u8> {
         std::bcs::to_bytes(v)
     }

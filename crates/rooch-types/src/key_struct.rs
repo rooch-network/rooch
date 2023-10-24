@@ -1,23 +1,24 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use serde::{Deserialize, Serialize};
-
 use crate::address::RoochAddress;
+use fastcrypto::encoding::{Base64, Encoding};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct EncryptionData {
-    pub nonce: Vec<u8>,
-    pub ciphertext: Vec<u8>,
-    pub tag: Vec<u8>,
+    pub nonce: String,
+    pub ciphertext: String,
+    pub tag: String,
 }
 pub struct GenerateNewKeyPair {
-    pub encryption: EncryptionData,
-    pub mnemonic: String,
+    pub mnemonic_phrase: String,
+    pub private_key_encryption: EncryptionData,
+    pub mnemonic_phrase_encryption: EncryptionData,
 }
 pub struct GeneratedKeyPair {
     pub address: RoochAddress,
-    pub result: GenerateNewKeyPair,
+    pub key_pair_data: GenerateNewKeyPair,
 }
 
 impl EncryptionData {
@@ -35,9 +36,23 @@ impl EncryptionData {
         .to_vec();
 
         EncryptionData {
-            nonce,
-            ciphertext,
-            tag,
+            nonce: Base64::encode(nonce),
+            ciphertext: Base64::encode(ciphertext),
+            tag: Base64::encode(tag),
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MnemonicResult {
+    pub mnemonic_phrase: String,
+    pub mnemonic_phrase_key: String,
+    pub mnemonic_data: MnemonicData,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MnemonicData {
+    // pub mnemonic_phrase: String,
+    pub addresses: Vec<RoochAddress>,
+    pub mnemonic_phrase_encryption: EncryptionData,
 }

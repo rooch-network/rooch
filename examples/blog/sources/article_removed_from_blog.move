@@ -8,7 +8,7 @@
 
 module rooch_examples::article_removed_from_blog {
 
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::ObjectID;
     use rooch_examples::blog::{Self, ArticleRemovedFromBlog};
 
     public fun article_id(article_removed_from_blog: &ArticleRemovedFromBlog): ObjectID {

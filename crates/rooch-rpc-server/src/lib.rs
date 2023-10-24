@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::server::eth_server::EthServer;
+use crate::server::eth_server::{EthNetServer, EthServer};
 use crate::server::rooch_server::RoochServer;
 use crate::service::aggregate_service::AggregateService;
 use crate::service::rpc_logger::RpcLogger;
@@ -182,10 +182,9 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     {
         // only for integration test, generate test key pairs
         if chain_id_opt.is_test_or_dev_or_local() {
-            let result = generate_new_key_pair(
-                None, None, None, // TODO: provide a password option for server start
-            )?;
-            let kp: RoochKeyPair = retrieve_key_pair(&result.result.encryption, None)?; // TODO: provide a password option for server start
+            let result = generate_new_key_pair(None, None, None, None)?;
+            let kp: RoochKeyPair =
+                retrieve_key_pair(&result.key_pair_data.private_key_encryption, None)?;
             server_opt.sequencer_keypair = Some(kp.copy());
             server_opt.proposer_keypair = Some(kp.copy());
             server_opt.relayer_keypair = Some(kp.copy());
@@ -283,6 +282,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         rpc_service.clone(),
         aggregate_service.clone(),
     ))?;
+    rpc_module_builder.register_module(EthNetServer::new(chain_id_opt.chain_id()))?;
     rpc_module_builder.register_module(EthServer::new(
         chain_id_opt.chain_id(),
         rpc_service.clone(),

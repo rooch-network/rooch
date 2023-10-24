@@ -7,6 +7,7 @@
 
 -  [Resource `ObjectRef`](#0x2_object_ref_ObjectRef)
 -  [Function `new`](#0x2_object_ref_new)
+-  [Function `new_internal`](#0x2_object_ref_new_internal)
 -  [Function `borrow`](#0x2_object_ref_borrow)
 -  [Function `borrow_mut`](#0x2_object_ref_borrow_mut)
 -  [Function `remove`](#0x2_object_ref_remove)
@@ -17,7 +18,6 @@
 
 
 <pre><code><b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="raw_table.md#0x2_raw_table">0x2::raw_table</a>;
 </code></pre>
 
@@ -32,7 +32,7 @@ It likes ObjectID, but it contains the type information of the object.
 TODO should we support drop?
 
 
-<pre><code><b>struct</b> <a href="object_ref.md#0x2_object_ref_ObjectRef">ObjectRef</a>&lt;T&gt; <b>has</b> <b>copy</b>, drop, store, key
+<pre><code><b>struct</b> <a href="object_ref.md#0x2_object_ref_ObjectRef">ObjectRef</a>&lt;T&gt; <b>has</b> drop, store, key
 </code></pre>
 
 
@@ -43,7 +43,7 @@ TODO should we support drop?
 
 <dl>
 <dt>
-<code>id: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a></code>
+<code>id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a></code>
 </dt>
 <dd>
 
@@ -58,6 +58,7 @@ TODO should we support drop?
 ## Function `new`
 
 Get the object reference
+This function is protected by private_generics, so it can only be called by the module which defined the T
 Note: new ObjectRef need the &mut Object<T>, because the ObjectRef can borrow mutable value from the object
 
 
@@ -72,6 +73,30 @@ Note: new ObjectRef need the &mut Object<T>, because the ObjectRef can borrow mu
 
 <pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_new">new</a>&lt;T: key&gt;(<a href="object.md#0x2_object">object</a>: &<b>mut</b> Object&lt;T&gt;) : <a href="object_ref.md#0x2_object_ref_ObjectRef">ObjectRef</a>&lt;T&gt; {
     //TODO should we track the reference count?
+    <a href="object_ref.md#0x2_object_ref_new_internal">new_internal</a>(<a href="object.md#0x2_object">object</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_object_ref_new_internal"></a>
+
+## Function `new_internal`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object_ref.md#0x2_object_ref_new_internal">new_internal</a>&lt;T: key&gt;(<a href="object.md#0x2_object">object</a>: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object_ref.md#0x2_object_ref_new_internal">new_internal</a>&lt;T: key&gt;(<a href="object.md#0x2_object">object</a>: &<b>mut</b> Object&lt;T&gt;) : <a href="object_ref.md#0x2_object_ref_ObjectRef">ObjectRef</a>&lt;T&gt; {
     <a href="object_ref.md#0x2_object_ref_ObjectRef">ObjectRef</a> {
         id: <a href="object.md#0x2_object_id">object::id</a>(<a href="object.md#0x2_object">object</a>),
     }
@@ -168,7 +193,7 @@ Remove the object from the global storage, and return the object value
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_id">id</a>&lt;T&gt;(self: &<a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_id">id</a>&lt;T&gt;(self: &<a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
@@ -243,7 +268,7 @@ Check if the object is still exist in the global storage
 Convert the ObjectRef to ObjectID
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_into_id">into_id</a>&lt;T: key&gt;(self: <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_into_id">into_id</a>&lt;T: key&gt;(self: <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 

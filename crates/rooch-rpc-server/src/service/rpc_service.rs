@@ -5,10 +5,10 @@ use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
-use moveos_types::event::AnnotatedMoveOSEvent;
 use moveos_types::event_filter::EventFilter;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
+use moveos_types::moveos_std::event::{AnnotatedEvent, EventID};
 use moveos_types::state::{AnnotatedState, MoveStructType, State};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
 use rooch_executor::proxy::ExecutorProxy;
@@ -113,7 +113,7 @@ impl RpcService {
         access_path: AccessPath,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<Option<(Vec<u8>, State)>>> {
+    ) -> Result<Vec<(Vec<u8>, State)>> {
         self.executor.list_states(access_path, cursor, limit).await
     }
 
@@ -122,7 +122,7 @@ impl RpcService {
         access_path: AccessPath,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<Option<(Vec<u8>, AnnotatedState)>>> {
+    ) -> Result<Vec<(Vec<u8>, AnnotatedState)>> {
         self.executor
             .list_annotated_states(access_path, cursor, limit)
             .await
@@ -133,7 +133,7 @@ impl RpcService {
         event_handle_type: StructTag,
         cursor: Option<u64>,
         limit: u64,
-    ) -> Result<Vec<Option<AnnotatedMoveOSEvent>>> {
+    ) -> Result<Vec<AnnotatedEvent>> {
         let resp = self
             .executor
             .get_events_by_event_handle(event_handle_type, cursor, limit)
@@ -141,10 +141,15 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn get_events(
+    pub async fn get_events_by_event_ids(
         &self,
-        filter: EventFilter,
-    ) -> Result<Vec<Option<AnnotatedMoveOSEvent>>> {
+        event_ids: Vec<EventID>,
+    ) -> Result<Vec<Option<AnnotatedEvent>>> {
+        let resp = self.executor.get_events_by_event_ids(event_ids).await?;
+        Ok(resp)
+    }
+
+    pub async fn get_events(&self, filter: EventFilter) -> Result<Vec<AnnotatedEvent>> {
         let resp = self.executor.get_events(filter).await?;
         Ok(resp)
     }

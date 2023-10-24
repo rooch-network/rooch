@@ -30,7 +30,7 @@
 Error if the public key is invalid.
 
 
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ErrorInvalidPubKey">ErrorInvalidPubKey</a>: u64 = 2;
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ErrorInvalidPubKey">ErrorInvalidPubKey</a>: u64 = 3;
 </code></pre>
 
 
@@ -40,7 +40,7 @@ Error if the public key is invalid.
 Error if the signature is invalid.
 
 
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ErrorInvalidSignature">ErrorInvalidSignature</a>: u64 = 1;
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ErrorInvalidSignature">ErrorInvalidSignature</a>: u64 = 2;
 </code></pre>
 
 
@@ -78,7 +78,17 @@ constant codes
 Error if the public key cannot be recovered from the signature.
 
 
-<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ErrorFailToRecoverPubKey">ErrorFailToRecoverPubKey</a>: u64 = 0;
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ErrorFailToRecoverPubKey">ErrorFailToRecoverPubKey</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_recoverable_ErrorInvalidHashType"></a>
+
+Invalid hash function
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ErrorInvalidHashType">ErrorInvalidHashType</a>: u64 = 4;
 </code></pre>
 
 

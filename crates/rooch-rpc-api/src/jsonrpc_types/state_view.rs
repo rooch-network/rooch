@@ -1,10 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{AnnotatedMoveValueView, StrView, TypeTagView};
+use super::{AnnotatedMoveValueView, BytesView, StrView, TypeTagView};
 use move_core_types::effects::Op;
 use moveos_types::{
-    object::ObjectID,
+    moveos_std::object::ObjectID,
     state::{AnnotatedState, State, StateChangeSet, TableChange, TableTypeInfo},
 };
 use schemars::JsonSchema;
@@ -13,8 +13,9 @@ use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct StateView {
-    pub value: StrView<Vec<u8>>,
+    pub value: BytesView,
     pub value_type: TypeTagView,
+    pub decoded_value: Option<AnnotatedMoveValueView>,
 }
 
 impl From<State> for StateView {
@@ -22,6 +23,17 @@ impl From<State> for StateView {
         Self {
             value: StrView(state.value),
             value_type: state.value_type.into(),
+            decoded_value: None,
+        }
+    }
+}
+
+impl From<AnnotatedState> for StateView {
+    fn from(state: AnnotatedState) -> Self {
+        Self {
+            value: StrView(state.state.value),
+            value_type: state.state.value_type.into(),
+            decoded_value: Some(state.decoded_value.into()),
         }
     }
 }
@@ -34,35 +46,6 @@ impl From<StateView> for State {
         }
     }
 }
-
-#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
-pub struct AnnotatedStateView {
-    pub state: StateView,
-    pub move_value: AnnotatedMoveValueView,
-}
-
-impl From<AnnotatedState> for AnnotatedStateView {
-    fn from(state: AnnotatedState) -> Self {
-        Self {
-            state: state.state.into(),
-            move_value: state.move_value.into(),
-        }
-    }
-}
-
-//TODO Is it need to convert the AnnotatedStateView back to AnnotatedState?
-//If not, please remove this code. Otherwise, it needs to be fixed. include TryFrom<AnnotatedMoveValueView> for AnnotatedMoveValue
-// impl TryFrom<AnnotatedStateView> for AnnotatedState {
-//     type Error = anyhow::Error;
-
-//     fn try_from(value: AnnotatedStateView) -> Result<Self, Self::Error> {
-//         Ok(Self {
-//             state: value.state.into(),
-//             move_value: value.move_value.try_into()?,
-//         })
-//     }
-// }
-
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TableTypeInfoView {
     pub key_type: TypeTagView,
@@ -121,7 +104,7 @@ impl From<Op<State>> for OpView<StateView> {
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TableChangeView {
-    pub entries: BTreeMap<StrView<Vec<u8>>, OpView<StateView>>,
+    pub entries: BTreeMap<BytesView, OpView<StateView>>,
 }
 
 impl From<TableChange> for TableChangeView {

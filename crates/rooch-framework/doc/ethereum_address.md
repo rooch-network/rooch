@@ -66,7 +66,7 @@ Ethereum addresses are always 20 bytes
 
 
 
-<pre><code><b>const</b> <a href="ethereum_address.md#0x3_ethereum_address_ErrorDecompressPublicKey">ErrorDecompressPublicKey</a>: u64 = 1;
+<pre><code><b>const</b> <a href="ethereum_address.md#0x3_ethereum_address_ErrorDecompressPublicKey">ErrorDecompressPublicKey</a>: u64 = 2;
 </code></pre>
 
 
@@ -75,7 +75,7 @@ Ethereum addresses are always 20 bytes
 
 
 
-<pre><code><b>const</b> <a href="ethereum_address.md#0x3_ethereum_address_ErrorInvaidAddressBytes">ErrorInvaidAddressBytes</a>: u64 = 2;
+<pre><code><b>const</b> <a href="ethereum_address.md#0x3_ethereum_address_ErrorInvaidAddressBytes">ErrorInvaidAddressBytes</a>: u64 = 3;
 </code></pre>
 
 
@@ -84,7 +84,7 @@ Ethereum addresses are always 20 bytes
 
 
 
-<pre><code><b>const</b> <a href="ethereum_address.md#0x3_ethereum_address_ErrorMalformedPublicKey">ErrorMalformedPublicKey</a>: u64 = 0;
+<pre><code><b>const</b> <a href="ethereum_address.md#0x3_ethereum_address_ErrorMalformedPublicKey">ErrorMalformedPublicKey</a>: u64 = 1;
 </code></pre>
 
 
