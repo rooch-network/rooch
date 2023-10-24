@@ -74,6 +74,7 @@ module moveos_std::move_module {
             i = i + 1;
         };
         let remapped_bytes = remap_module_addresses_inner(bytes_vec, old_addresses, new_addresses);
+        // let remapped_bytes = remap_module_addresses_inner(bytes_vec);
         let remapped_modules = vector::empty<MoveModule>();
         i = 0u64;
         let len = vector::length(&remapped_bytes);
@@ -143,5 +144,38 @@ module moveos_std::move_module {
         context::drop_test_context(ctx);  
     }
 
+    #[test(account=@0x1314)]
+    #[expected_failure(abort_code = 0x10001, location = Self)]
+    fun test_address_mismatch_failure(account: &signer) {
+        let addr = signer::address_of(account);
+        let ctx = context::new_test_context(addr);
+        // The following is the bytes and hex of the compiled module: example/counter/sources/counter.move
+        // with account 0x42
+        let module_bytes: vector<u8> = x"a11ceb0b060000000b010006020608030e26043406053a32076c7d08e9014006a902220acb02050cd002560da6030200000101010200030c00020400000005000100000600010000070201000008030400010907080108010a09010108010b0a0b0108040605060606010708010002070801060c0106080101030107080001080002070801050107090003070801060c090002060801050106090007636f756e7465720f6163636f756e745f73746f7261676507636f6e7465787407436f756e74657207436f6e7465787408696e63726561736509696e6372656173655f04696e69740576616c756511676c6f62616c5f626f72726f775f6d75740e676c6f62616c5f6d6f76655f746f0d676c6f62616c5f626f72726f77000000000000000000000000000000000000000000000000000000000000004200000000000000000000000000000000000000000000000000000000000000020520000000000000000000000000000000000000000000000000000000000000004200020108030001040001030b0011010201010000050d0b00070038000c010a01100014060100000000000000160b010f0015020200000001060b000b0106000000000000000012003801020301000001060b000700380210001402000000";
+        let m: MoveModule = Self::new(module_bytes);
+        let modules = vector::singleton(m);
+        let (module_names, _module_names_with_init_fn) = Self::sort_and_verify_modules(&modules, addr);
+        debug::print(&module_names);
+        context::drop_test_context(ctx);  
+    }
+
+    #[test(account=@0x1314)]
+    fun test_remap_address(account: &signer) {
+        let addr = signer::address_of(account);
+        let ctx = context::new_test_context(addr);
+        // The following is the bytes and hex of the compiled module: example/counter/sources/counter.move
+        // with account 0x42
+        let module_bytes: vector<u8> = x"a11ceb0b060000000b010006020608030e26043406053a32076c7d08e9014006a902220acb02050cd002560da6030200000101010200030c00020400000005000100000600010000070201000008030400010907080108010a09010108010b0a0b0108040605060606010708010002070801060c0106080101030107080001080002070801050107090003070801060c090002060801050106090007636f756e7465720f6163636f756e745f73746f7261676507636f6e7465787407436f756e74657207436f6e7465787408696e63726561736509696e6372656173655f04696e69740576616c756511676c6f62616c5f626f72726f775f6d75740e676c6f62616c5f6d6f76655f746f0d676c6f62616c5f626f72726f77000000000000000000000000000000000000000000000000000000000000004200000000000000000000000000000000000000000000000000000000000000020520000000000000000000000000000000000000000000000000000000000000004200020108030001040001030b0011010201010000050d0b00070038000c010a01100014060100000000000000160b010f0015020200000001060b000b0106000000000000000012003801020301000001060b000700380210001402000000";
+        let m: MoveModule = Self::new(module_bytes);
+        let modules = vector::singleton(m);
+        let new_addresses = vector::singleton(addr);
+        let old_addresses = vector::singleton(@0x42);
+        let remapped_modules = Self::remap_module_addresses(modules, old_addresses, new_addresses);
+        // In `sort_and_verify_modules`, addresses of modules are ensured to be the same with signer address
+        // So if the remapping is failed, the verification will fail
+        let (module_names, _module_names_with_init_fn) = Self::sort_and_verify_modules(&remapped_modules, addr);
+        debug::print(&module_names);
+        context::drop_test_context(ctx);  
+    }
 
 }

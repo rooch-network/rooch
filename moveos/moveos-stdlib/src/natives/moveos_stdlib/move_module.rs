@@ -34,7 +34,7 @@ use std::collections::{BTreeSet, HashMap, VecDeque};
 const E_ADDRESS_NOT_MATCH_WITH_SIGNER: u64 = 1;
 const E_MODULE_VERIFICATION_ERROR: u64 = 2;
 const E_MODULE_INCOMPATIBLE: u64 = 3;
-const _E_LENTH_NOT_MATCH: u64 = 4;
+const E_LENTH_NOT_MATCH: u64 = 4;
 
 /// The native module context.
 #[derive(Tid)]
@@ -290,12 +290,23 @@ fn remap_module_addresses_inner(
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
+    debug_assert!(args.len() == 3, "Wrong number of arguments");
     let mut cost = gas_params.base;
-    let new_address_vec = pop_arg!(args, Vec<Value>);
-    let old_address_vec = pop_arg!(args, Vec<Value>);
+    let new_address_vec = pop_arg!(args, Vector);
+    let old_address_vec = pop_arg!(args, Vector);
+    let num_addresses = new_address_vec.elem_views().len();
+    if num_addresses != old_address_vec.elem_views().len() {
+        return Ok(NativeResult::err(
+            cost,
+            moveos_types::move_std::error::invalid_argument(E_LENTH_NOT_MATCH),
+        ));
+    };
+    let num_addresses = num_addresses as u64;
+    let new_addresses = new_address_vec.unpack(&Type::Address, num_addresses)?;
+    let old_addresses = old_address_vec.unpack(&Type::Address, num_addresses)?;
 
     let address_mapping: HashMap<AccountAddress, AccountAddress> =
-        zip_eq(old_address_vec, new_address_vec)
+        zip_eq(old_addresses, new_addresses)
             .map(|(a, b)| {
                 Ok((
                     a.value_as::<AccountAddress>()?,
@@ -321,19 +332,13 @@ fn remap_module_addresses_inner(
         module_remap_addresses(m, &address_mapping)?;
         let mut binary: Vec<u8> = vec![];
         m.serialize(&mut binary).map_err(|e| {
-            PartialVMError::new(StatusCode::INTERNAL_TYPE_ERROR).with_message(e.to_string())
+            PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR).with_message(e.to_string())
         })?;
         let value = Value::vector_u8(binary);
         remapped_bubdles.push(value);
     }
-
-    Ok(NativeResult::ok(
-        cost,
-        smallvec![Vector::pack(
-            &Type::Vector(Box::new(Type::U8)),
-            remapped_bubdles
-        )?],
-    ))
+    let output_modules = Vector::pack(&Type::Vector(Box::new(Type::U8)), remapped_bubdles)?;
+    Ok(NativeResult::ok(cost, smallvec![output_modules]))
 }
 
 fn module_remap_constant_addresses(value: &mut MoveValue, f: &dyn Fn(&mut AccountAddress)) {

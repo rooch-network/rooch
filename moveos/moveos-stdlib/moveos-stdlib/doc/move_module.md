@@ -241,6 +241,7 @@ Remap addresses in module binary where the length of
         i = i + 1;
     };
     <b>let</b> remapped_bytes = <a href="move_module.md#0x2_move_module_remap_module_addresses_inner">remap_module_addresses_inner</a>(bytes_vec, old_addresses, new_addresses);
+    // <b>let</b> remapped_bytes = <a href="move_module.md#0x2_move_module_remap_module_addresses_inner">remap_module_addresses_inner</a>(bytes_vec);
     <b>let</b> remapped_modules = <a href="_empty">vector::empty</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>&gt;();
     i = 0u64;
     <b>let</b> len = <a href="_length">vector::length</a>(&remapped_bytes);
