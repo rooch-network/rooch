@@ -2,6 +2,32 @@
 
 Here are all Rooch examples introduction and source code indices.
 
+## About the sample project naming explanation
+
+Rooch provides the command `rooch move new` to automatically create and initialize projects. When we want to write a new contract project, we can use this command to simplify our initialization work.
+
+We can use any legal character as the project name, including `-`, but when we use a project name with `-`, the `rooch move new` command will automatically use the project name as the address of this project.
+
+For example:
+
+```shell
+move rooch new hello-world
+```
+
+However, `-` is not a legal character for naming addresses (variables), so after we create the project using `rooch move new`, be sure to check the project address alias in the `Move.toml` file for illegal characters.
+
+Use `rooch move new` to create a project (name) with `-`. We recommend manually modifying the `Move.toml` file and replacing `-` with `_`.
+
+Another way is to directly use `_` as the hyphen for the project name word when creating the project.
+
+For example:
+
+```shell
+move rooch new hello_world
+```
+
+In Rooch's `examples`, the names of the projects we create use `_` connection. As for the actual development, which style to use, please decide according to your preferences.
+
 ## Basic object
 
 This example introduces how to use the Rooch object.
