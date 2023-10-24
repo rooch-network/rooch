@@ -145,7 +145,7 @@ $ rooch env list
           dev            |       https://dev-seed.rooch.network:443/        |                       Null                       |     True
 ```
 
-<++>
+注意，如果 `Active Env` 的 `dev` 环境不是 `True`，使用 `rooch env switch --alias dev` 命令切换到开发网络。
 
 2. 开启另一个终端，并切换到 `counter` 项目的根目录，编译合约：
 
@@ -168,7 +168,7 @@ Success
 3. 发布计数器合约到 Rooch 上：
 
 ```shell
-[joe@mx quick_start_counter]$ rooch move publish
+$ rooch move publish
 
 UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
 UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
@@ -180,20 +180,20 @@ INCLUDING DEPENDENCY MoveStdlib
 INCLUDING DEPENDENCY MoveosStdlib
 INCLUDING DEPENDENCY RoochFramework
 BUILDING quick_start_counter
-Publish modules to address: 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6
+Publish modules to address: 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81
 {
   "sequence_info": {
-    "tx_order": "12576",
+    "tx_order": "17128",
     "tx_order_signature": {
       "auth_validator_id": "0",
-      "payload": "0x00fc3e16490728ecb0ada639500346a56787e1fcf85d6c3527b99be29b82e2df60aa601b3717d94fb12a36fc4c8186bb5462203ea7dd279f30c3c849982e34d90bca2ecf17ab26b7c32ddba10913e6f74d43b5258905bef0f88b6d744d73bc9ce9"
+      "payload": "0x00b5d56a8178299d628e0d341fff4b97904f7ff80f9e3e8aca10f0d1d9ac65e5736757caec9be17aa54b1da860b183a6d1574f1db9ba632910fb308c4d6283d30eca2ecf17ab26b7c32ddba10913e6f74d43b5258905bef0f88b6d744d73bc9ce9"
     },
-    "tx_accumulator_root": "0x750a2168c34add2c44cefca10d88bb59f3535855e5e3ec983852cfedf8f9cdee"
+    "tx_accumulator_root": "0xb408f55b7e003f54fa37a87ccaa25937bedb7d04d3d8a06f745de4e30b25a3cf"
   },
   "execution_info": {
-    "tx_hash": "0x3aa3526c01551880efe69e61103db71a3d703f36e067a2f852ee217048ece81d",
-    "state_root": "0x03af8787f1032c06d5fa893445d12d9455b4544178984abed1923cb44c60ef65",
-    "event_root": "0x2d992fe0509ee0ae4ae063f78c54c58a762b52ac23edca288cd7b90549550eb4",
+    "tx_hash": "0xa45998b0a7d979597d0ed4021c2ffbe778d2e0889d3151ad29493e3d91f177a6",
+    "state_root": "0x0a5f095123b459749938b4fc436c06c429066f6a48a8f014bba6360471b6d03b",
+    "event_root": "0x8be169d5a1b2bdace1ff085fae4753e37f69095ec543a83ef34cae23e9ebb747",
     "gas_used": 1644906,
     "status": {
       "type": "executed"
@@ -202,57 +202,29 @@ Publish modules to address: 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f2
 ......
 ```
 
-<++>
-
-```shell
-......
-Publish modules to address: 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6
-{
-  "sequence_info": {
-    "tx_order": "0",
-    "tx_order_signature": {
-      "auth_validator_id": "0",
-      "payload": "0x003c988e0674b1c83fc01dcd6ed91f5fc1229905cdfc2b05355529e05b6eb19542ba634898496e4cd9b3c37f983fd7d6a066834d1b192cc4b22ce3e3c8e3dfa50cff7601c5cb4b3728059c9de799e94d7f47d6e32ab1cdeef3c96264de23a58103"
-    },
-    "tx_accumulator_root": "0xd59793bd681a120c201d6c69d880812184b2409a9dde53474aea97d57fe5e658"
-  },
-  "execution_info": {
-    "tx_hash": "0xfa2b589b718951f3acb4e23a43579947879cff95f11f2e19a552a39fe7ede649",
-    "state_root": "0x9679155aa61bf01ace2bb370ddea5c36e328631d18b747e065c611ea038a536a",
-    "event_root": "0xd58502028bbdee763851bdb1d42554926a85ef1144b5706e760363f48d5b103f",
-    "gas_used": 1604134,
-    "status": {
-      "type": "executed"
-    }
-  },
-......
-```
-
-看到输出结果的 `status` 中出现 `executed`，说明计数器合约已经成功发布，并且初始化好了计数器。
+看到输出结果的 `execution_info.status` 中出现 `executed`，说明计数器合约已经成功发布，并且初始化好了计数器。
 
 4. 我们使用 Rooch 提供的资源查找命令来获取 `Counter` 资源的相关信息。
 
 语法是 `rooch resource --address 发布资源的地址 --resource 资源的类型`：
 
-```move
-$ rooch resource --address 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6 --resource 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6::counter::Counter
+```shell
+$ rooch resource --address 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81 --resource 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter
 
 {
-  "state": {
-    "value": "0x0000000000000000",
-    "value_type": "0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6::counter::Counter"
-  },
-  "move_value": {
+  "value": "0x0000000000000000",
+  "value_type": "0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter",
+  "decoded_value": {
     "abilities": 8,
-    "type": "0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6::counter::Counter",
+    "type": "0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter",
     "value": {
-      "value": "0"
+      "count_value": "0"
     }
   }
 }
 ```
 
-注意 `value` 属性，可以看到在 `Counter` 资源的输出信息中，`Counter` 的字段值 `value` 确实是 `0`。
+注意 `value` 属性，可以看到在 `Counter` 资源的输出信息中，`Counter` 的字段值 `count_value` 确实是 `0`。
 
 5. 接着我们调用计数器的递增函数：
 
@@ -261,23 +233,44 @@ $ rooch resource --address 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21
 > 注意：区块链系统中，执行某些操作通常是通过向区块链系统中发送某个交易来执行相应的操作。
 
 ```shell
-$ rooch move run --function 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6::counter::incr --sender-account 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6
+$ rooch move run --function 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::increase --sender-account 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81
+
+{
+  "sequence_info": {
+    "tx_order": "17160",
+    "tx_order_signature": {
+      "auth_validator_id": "0",
+      "payload": "0x00f3809e65ee7aef9d9f4f7f79820ad6a25d44aed583c74300f30a0550f8256e371546e4515125636646acb3e625bb5d02db933656218832103300861b4a2b9d07ca2ecf17ab26b7c32ddba10913e6f74d43b5258905bef0f88b6d744d73bc9ce9"
+    },
+    "tx_accumulator_root": "0x89ace9f8d15707a008f7237566761e28743a4c73d9f5b19622c65e4a072850bc"
+  },
+  "execution_info": {
+    "tx_hash": "0x19139e0f8779c43e7feb989553d66e41eab2840705417898dee376b3ea2ea3d0",
+    "state_root": "0xb876495e3c144700fb315cf2697a990d25578b4b832f9b34bb74e4f233d4faf2",
+    "event_root": "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
+    "gas_used": 12769,
+    "status": {
+      "type": "executed"
+    }
+  },
+......
 ```
+
+如果看到 `status` 中提示了 `executed`，证明 `increase` 函数调用成功了。
 
 6. 再次查看计数器的值是否是我们预期的值：
 
 ```shell
-$ rooch resource --address 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6 --resource 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6::counter::Counter
+$ rooch resource --address 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81 --resource 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter
+
 {
-  "state": {
-    "value": "0x0100000000000000",
-    "value_type": "0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6::counter::Counter"
-  },
-  "move_value": {
+  "value": "0x0100000000000000",
+  "value_type": "0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter",
+  "decoded_value": {
     "abilities": 8,
-    "type": "0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6::counter::Counter",
+    "type": "0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter",
     "value": {
-      "value": "1"
+      "count_value": "1"
     }
   }
 }
@@ -288,3 +281,24 @@ $ rooch resource --address 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21
 至此，你已经了解了如何在 Rooch 中编写合约以及如何在命令行中调用合约了。
 
 接下来，我们增加一点点难度，我们将演示如何在前端中运行和使用计数器合约程序。
+
+## 快速体验
+
+这个例子的源代码存放在 `rooch/examples/quick_start_counter` 目录中，为了更方便测试，我们将 `Move.toml` 文件中的地址修改为通配符 `_`。
+
+如果直接使用我们提供的例子运行，执行的 Shell 命令会有一点区别：
+
+```shell
+$ rooch move build --named-addresses quick_start_counter=default
+
+$ rooch move publish --named-addresses quick_start_counter=default
+
+# 注意 `0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81` 是我演示的地址，当你实际运行时，需要更改为你自己的钱包地址
+$ rooch resource --address 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81 --resource 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter
+
+$ rooch move run --function 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::increase --sender-account default
+
+$ rooch resource --address 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81 --resource 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter
+```
+
+> 注意：命令中的 `default` 代表的是 Rooch 配置中的默认地址，如果你想使用其他的地址，也可以直接传递以 `0x` 开头的地址。
