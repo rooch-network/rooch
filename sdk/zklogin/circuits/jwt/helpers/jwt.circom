@@ -1,7 +1,7 @@
 pragma circom 2.1.5;
 
 include "./string.circom";
-include "./sha.circom";
+include "./sha256.circom";
 include "./rsa.circom";
 
 template JWTSplit(max_bytes) {

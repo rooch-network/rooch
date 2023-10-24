@@ -1,6 +1,7 @@
 pragma circom 2.1.5;
 
 include "circomlib/circuits/bitify.circom";
+include "./string.circom";
 include "./sha256general.circom";
 include "./sha256partial.circom";
 
@@ -25,4 +26,33 @@ template Sha256Bytes(max_num_bytes) {
     for (var i = 0; i < 256; i++) {
         out[i] <== sha.out[i];
     }
+}
+
+template Sha256Pad(max_bytes) {
+    assert(max_bytes % 64 == 0);
+
+    signal input text[max_bytes];
+    signal output padded_text[max_bytes];
+    signal output text_len;
+
+    // text length
+    component len = Len(max_bytes);
+    len.text <== text;
+
+    for (var i = 0; i < max_bytes; i++) {
+        padded_text[i] <-- i < len.length ? text[i] : (i == len.length ? 128: 0); // Add the 1 on the end
+    }
+
+    text_len <== max_bytes;
+}
+
+template Sha256String(max_bytes) {
+    signal input text[max_bytes];
+    signal output sha[256];
+
+    // text pad
+    component sha256Pad = Sha256Pad(max_bytes);
+    sha256Pad.text <== text;
+
+    sha <== Sha256Bytes(max_bytes)(sha256Pad.padded_text, sha256Pad.text_len);
 }
