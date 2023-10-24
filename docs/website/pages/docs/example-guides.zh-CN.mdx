@@ -1,6 +1,32 @@
-# Example guides
+# 示例指南
 
-Here are all Rooch examples introduction and source code indices.
+这里是所有 Rooch 示例介绍和源代码索引。
+
+## 关于示例项目命名解释
+
+Rooch 提供自动创建并初始化项目的命令 `rooch move new`，当我们要编写新的合约项目时，可以利用这个命令简化我们的初始化工作。
+
+我们可以使用任何合法字符来作为项目名，包括 `-`，但是，当我们使用带有 `-` 的项目名时，`rooch move new` 命令会自动将项目名用作这个项目的地址。
+
+例如：
+
+```shell
+move rooch new hello-world
+```
+
+然而，`-` 不是命名地址（变量）的合法字符，所以当我们使用 `rooch move new` 创建好项目后，务必检查 `Move.toml` 文件中的项目地址别名是否存在非法字符。
+
+使用 `rooch move new` 创建带有 `-` 的项目（名），我们推荐手动修改 `Move.toml` 文件，将 `-` 替换为 `_`。
+
+另一种方式是，创建项目时，直接使用 `_` 作为项目名称单词的连接符号。
+
+例如：
+
+```shell
+move rooch new hello_world
+```
+
+在 Rooch 的 `examples` 中，我们创建的项目的名字统一使用 `_` 连接，至于实际开发中，使用那种风格，请根据您的喜好决定。
 
 ## Basic object
 
@@ -12,7 +38,7 @@ This example introduces how to use the Rooch object.
 
 ## Blog
 
-This example introduces how to use a low-code tool to develop a blog sample application.
+本示例介绍如何使用低代码工具开发博客示例应用程序。
 
 ### Source code
 
@@ -86,7 +112,7 @@ This example introduces how to use a low-code tool to develop a blog sample appl
 
 ### References
 
-[Read private generic functions in one article](https://rooch.network/blog/read-private-generics-in-one-article)
+[一文读懂私有泛型函数](https://rooch.network/blog/read-private-generics-in-one-article)
 
 ## Publish modules
 
