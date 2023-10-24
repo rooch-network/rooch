@@ -5,6 +5,11 @@ use anyhow::Result;
 use eth_client::EthRpcClient;
 use jsonrpsee::core::client::ClientT;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
+use move_core_types::language_storage::ModuleId;
+use move_core_types::resolver::ModuleResolver;
+use moveos_types::access_path::AccessPath;
+use moveos_types::moveos_std::move_module::MoveModule;
+use moveos_types::state::State;
 use moveos_types::{
     function_return_value::FunctionResult, module_binding::MoveFunctionCaller,
     moveos_std::tx_context::TxContext, transaction::FunctionCall,
@@ -101,5 +106,26 @@ impl MoveFunctionCaller for Client {
         let function_result =
             futures::executor::block_on(self.rooch.execute_view_function(function_call))?;
         function_result.try_into()
+    }
+}
+
+impl ModuleResolver for &Client {
+    type Error = anyhow::Error;
+    fn get_module(&self, id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
+        futures::executor::block_on(async {
+            let mut states = self
+                .rooch
+                .get_states(AccessPath::module(*id.address(), id.name().to_owned()))
+                .await?;
+            states
+                .pop()
+                .flatten()
+                .map(|state_view| {
+                    let state = State::from(state_view);
+                    let module = state.as_move_state::<MoveModule>()?;
+                    Ok(module.byte_codes)
+                })
+                .transpose()
+        })
     }
 }
