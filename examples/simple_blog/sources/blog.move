@@ -7,9 +7,10 @@ module simple_blog::blog {
     use std::string::{Self,String};
     use std::vector;
     use moveos_std::object::ObjectID;
+    use moveos_std::object_ref::{Self, ObjectRef};
     use moveos_std::context::Context;
     use moveos_std::account_storage;
-    use simple_blog::article;
+    use simple_blog::article::{Self, Article};
 
     const ErrorDataTooLong: u64 = 1;
     const ErrorNotFound: u64 = 2;
@@ -86,20 +87,20 @@ module simple_blog::blog {
 
     public entry fun update_article(
         ctx: &mut Context,
-        owner: signer,
-        id: ObjectID,
+        article_obj: &mut ObjectRef<Article>,
         new_title: String,
         new_body: String,
     ) {
-        article::update_article(ctx, &owner, id, new_title, new_body);
+        article::update_article(ctx, article_obj, new_title, new_body);
     }
 
     public entry fun delete_article(
         ctx: &mut Context,
         owner: signer,
-        id: ObjectID,
+        article_obj: ObjectRef<Article>,
     ) {
-        article::delete_article(ctx, &owner, id);
+        let id = object_ref::id(&article_obj);
+        article::delete_article(ctx, article_obj);
         delete_article_from_myblog(ctx, &owner, id);
     }
 }

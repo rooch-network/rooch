@@ -113,7 +113,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                     pkg_address.clone(),
                 )));
             };
-            verifier::verify_module(&module, &resolver).map_err(|e| RoochError::VMError(e))?;
+            verifier::verify_module(&module, &resolver)?;
             let mut binary: Vec<u8> = vec![];
             module.serialize(&mut binary)?;
             bundles.push(binary);
