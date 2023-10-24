@@ -13,6 +13,6 @@ crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasPar
     [.request_init_functions.per_byte, "request_init_functions.per_byte", (5 + 1) * MUL],
     [.check_compatibililty_inner.base, "check_compatibililty_inner.base", (5 + 1) * MUL],
     [.check_compatibililty_inner.per_byte, "check_compatibililty_inner.per_byte", (5 + 1) * MUL],
-    [.remap_addresses.base, "remap_addresses.base", (5 + 1) * MUL],
-    [.remap_addresses.per_byte, "remap_addresses.per_byte", (5 + 1) * MUL],
+    [.remap_module_addresses_inner.base, "remap_module_addresses_inner.base", (5 + 1) * MUL],
+    [.remap_module_addresses_inner.per_byte, "remap_module_addresses_inner.per_byte", (5 + 1) * MUL],
 ]);

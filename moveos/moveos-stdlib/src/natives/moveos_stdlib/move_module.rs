@@ -395,7 +395,7 @@ pub struct GasParameters {
     pub sort_and_verify_modules_inner: VerifyModulesGasParameters,
     pub request_init_functions: RequestInitFunctionsGasParameters,
     pub check_compatibililty_inner: CheckCompatibilityInnerGasParameters,
-    pub remap_addresses: RemapAddressesGasParameters,
+    pub remap_module_addresses_inner: RemapAddressesGasParameters,
 }
 
 impl GasParameters {
@@ -417,7 +417,7 @@ impl GasParameters {
                 base: 0.into(),
                 per_byte: 0.into(),
             },
-            remap_addresses: RemapAddressesGasParameters {
+            remap_module_addresses_inner: RemapAddressesGasParameters {
                 base: 0.into(),
                 per_byte: 0.into(),
             },
@@ -451,7 +451,10 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         ),
         (
             "remap_module_addresses_inner",
-            make_native(gas_params.remap_addresses, remap_module_addresses_inner),
+            make_native(
+                gas_params.remap_module_addresses_inner,
+                remap_module_addresses_inner,
+            ),
         ),
     ];
     make_module_natives(natives)
